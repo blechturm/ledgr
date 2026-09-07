@@ -11,19 +11,21 @@
 - Stage 2 gate-record commit: pending until committed after a passing gate.
 - Final immutable spike commit or archive reference: pending.
 - Prototype change inventory: pending.
+- Stage 3 code registry (`evidence/stage3_code.csv`): pending; created only
+  after the gate-record commit.
 
 ## Roles
 
-- Maintainer approver: pending.
-- Spike executor: Claude by charter default; confirmation pending.
-- Independent conformance reviewer: pending.
+- Maintainer approver: repository maintainer.
+- Spike executor: Claude.
+- Independent conformance reviewer: Codex.
 - Terminal-outcome reviewer: pending.
 
 ## Frozen Inputs
 
-- Approved policy ID: `asset_availability_initial_policy_v2`.
-- Witness specification version: pending.
-- Checker mutation set: pending.
+- Approved policy ID: `asset_availability_initial_policy_v4`.
+- Witness specification version: `asset_availability_witness_v1`.
+- Checker mutation set: M1-M5, approved with the witness contract.
 - Machine-readable freeze set: `frozen_hashes.csv`.
 - Permitted pre-prototype code: `preprototype_code.csv`.
 

@@ -1,0 +1,17 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W29,c1,1,2024-01-03T21:00:00Z,A01,alias,character,AAA,,not_applicable,exact,,before rename,,
+W29,c1,2,2024-01-03T21:00:00Z,A01,feature_identity,absent,,,captured,exact,,rm2 node identity before the rename,proto:feature_node_id,
+W29,c1,3,2024-01-04T21:00:00Z,A01,alias,character,AAX,,not_applicable,exact,,rename effective 2024-01-04,,
+W29,c1,4,2024-01-04T21:00:00Z,A01,held_qty,integer,100,,not_applicable,exact,,lot continues,,
+W29,c1,5,2024-01-04T21:00:00Z,A01,lot_basis,double,100.00,,not_applicable,abs_tol,1e-8,unchanged,,
+W29,c1,6,2024-01-04T21:00:00Z,A01,feature_value,double,101.5,,not_applicable,abs_tol,1e-9,(101+102)/2,,
+W29,c1,7,2024-01-04T21:00:00Z,A01,feature_identity,absent,,,equal,exact,,alias is not an identity input; baseline step 2,proto:feature_node_id,case:c1@2
+W29,c1,8,2024-01-04T21:00:00Z,A01,asset_state_value,integer,7,,not_applicable,exact,,continues across rename,,
+W29,c1,9,2024-01-08T21:00:00Z,A06,alias,character,AAA,,not_applicable,exact,,old ticker reused,,
+W29,c1,10,2024-01-08T21:00:00Z,A06,stable_id_equals_A01,logical,false,,not_applicable,exact,,different asset,,
+W29,c1,11,2024-01-08T21:00:00Z,A06,held_qty,integer,0,,not_applicable,exact,,no inherited lot,,
+W29,c1,12,2024-01-08T21:00:00Z,A06,history_rows_admissible_before_entry,integer,0,,not_applicable,exact,,no inherited history,,
+W29,c1,13,2024-01-08T21:00:00Z,A06,asset_state_present,logical,false,,not_applicable,exact,,no inherited state,,
+W29,c1,14,2024-01-08T21:00:00Z,A06,feature_value,absent,,,not_applicable,exact,,one observation only,,
+W29,c1,15,2024-01-08T21:00:00Z,A01,feature_value,double,103.5,,not_applicable,abs_tol,1e-9,(103+104)/2,,
+W29,c1,16,2024-01-08T21:00:00Z,A01,alias,character,AAX,,not_applicable,exact,,label retained,,

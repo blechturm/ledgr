@@ -1,0 +1,19 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W12,c0,1,2024-01-03T21:00:00Z,,fit_population_id,character,est_pop_members,,not_applicable,exact,,default population,,
+W12,c0,2,2024-01-03T21:00:00Z,,fit_population,character,A01|A02,,not_applicable,exact,,investment membership at cutoff,,
+W12,c0,3,2024-01-03T21:00:00Z,,fit_cutoff,timestamp,2024-01-03T21:00:00Z,,not_applicable,exact,,S2 close,,
+W12,c0,4,2024-01-03T21:00:00Z,,population_knowable_at_cutoff,logical,true,,not_applicable,exact,,membership facts known 2023-11-30,,
+W12,c0,5,2024-01-03T21:00:00Z,,fit_verdict,character,causal_ok,,not_applicable,exact,,inputs and population knowable,,
+W12,c0,6,2024-01-03T21:00:00Z,,fitted_mean,double,75.0,,not_applicable,abs_tol,1e-9,(100+100+50+50)/4,,
+W12,c0,7,2024-01-04T21:00:00Z,A01,feature_value,double,25.0,,not_applicable,abs_tol,1e-9,100-75,,
+W12,c0,8,2024-01-03T21:00:00Z,,fitted_artifact_identity,absent,,,captured,exact,,baseline artifact identity for c1,proto:fitted_artifact_id,
+W12,c0,9,2024-01-03T21:00:00Z,,snapshot_hash,absent,,,captured,exact,,baseline sealed facts for c1,snapshot_hash,
+W12,c1,1,2024-01-03T21:00:00Z,,fit_population_id,character,est_pop_broad_v1,,not_applicable,exact,,explicit named override,,
+W12,c1,2,2024-01-03T21:00:00Z,,fit_population,character,A01|A02|A03,,not_applicable,exact,,listed assets with accepted observations by cutoff,,
+W12,c1,3,2024-01-03T21:00:00Z,,population_knowable_at_cutoff,logical,true,,not_applicable,exact,,listing and observations knowable before cutoff,,
+W12,c1,4,2024-01-03T21:00:00Z,,fit_verdict,character,causal_ok,,not_applicable,exact,,broader population permitted,,
+W12,c1,5,2024-01-03T21:00:00Z,,fitted_mean,double,56.6666666667,,not_applicable,abs_tol,1e-9,340/6,,
+W12,c1,6,2024-01-04T21:00:00Z,A01,feature_value,double,43.3333333333,,not_applicable,abs_tol,1e-9,100-340/6,,
+W12,c1,7,2024-01-03T21:00:00Z,,fitted_artifact_identity,absent,,,changed,exact,,population identity differs from c0 step 8,proto:fitted_artifact_id,case:c0@8
+W12,c1,8,2024-01-03T21:00:00Z,,snapshot_hash,absent,,,equal,exact,,same sealed facts as c0 step 9,snapshot_hash,case:c0@9
+W12,c1,9,2024-01-03T21:00:00Z,,rng_identity,character,fixed:20240103,,not_applicable,exact,,recorded fit RNG identity,,

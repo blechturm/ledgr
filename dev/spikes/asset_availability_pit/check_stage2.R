@@ -49,8 +49,8 @@ git_status <- function(args) {
   ))
 }
 
-if (!mode %in% c("setup", "gate")) {
-  fail("`--mode` must be `setup` or `gate`.")
+if (!mode %in% c("setup", "review", "gate")) {
+  fail("`--mode` must be `setup`, `review`, or `gate`.")
 }
 
 if (!file.exists("DESCRIPTION")) {
@@ -69,6 +69,12 @@ code_registry_path <- file.path(
   "preprototype_code.csv"
 )
 checker_path <- file.path(spike_dir, "check_stage2.R")
+mutation_definitions_path <- file.path(
+  spike_dir,
+  "evidence",
+  "checker_mutations",
+  "README.md"
+)
 charter_path <- file.path(
   "inst",
   "design",
@@ -84,6 +90,7 @@ required_files <- c(
   hashes_path,
   code_registry_path,
   checker_path,
+  mutation_definitions_path,
   charter_path
 )
 missing_required <- required_files[!file.exists(required_files)]
@@ -282,11 +289,200 @@ if (length(runtime_changes) > 0L) {
   fail(paste("Uncommitted package runtime paths changed:", change_text))
 }
 
+# ---- expected-table contract ------------------------------------------------
+
+expected_columns <- c(
+  "witness_id", "case_id", "step", "event_time", "asset_id", "field",
+  "expected_type", "expected_value", "reason_code", "identity_expectation",
+  "comparison", "tolerance", "derivation", "identity_name", "reference"
+)
+timestamp_rx <- "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+integer_rx <- "^(0|-?[1-9][0-9]*)$"
+is_canonical_timestamp <- function(x) {
+  if (!grepl(timestamp_rx, x)) {
+    return(FALSE)
+  }
+  parsed <- as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  !is.na(parsed) && identical(format(parsed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), x)
+}
+identity_name_rx <- paste0(
+  "^(snapshot_hash|config_hash|feature_cache_key|risk_chain_hash|",
+  "cost_model_hash|feature_set_hash|candidate_key|session_id|panel_hash|",
+  "proto:[a-z0-9_]+)$"
+)
+reference_rx <- "^(case:[A-Za-z0-9_]+@[1-9][0-9]*|source:[a-z0-9_]+)$"
+allowed_identity_sources <- c("package_fold")
+
+validate_expected_table <- function(path, witness_id) {
+  bad <- function(message) {
+    fail(paste0("Expected table ", witness_id, ": ", message))
+  }
+  tbl <- read_contract_csv(path)
+  if (!identical(names(tbl), expected_columns)) {
+    bad("columns do not match the Stage 2 contract")
+  }
+  if (nrow(tbl) == 0L) {
+    bad("has no rows")
+  }
+  if (any(tbl$witness_id != witness_id)) {
+    bad("witness_id does not match the registry")
+  }
+  for (column in c("case_id", "field", "derivation")) {
+    if (any(!nzchar(tbl[[column]]))) {
+      bad(paste("has an empty", column))
+    }
+  }
+  if (any(!grepl("^[1-9][0-9]*$", tbl$step))) {
+    bad("step must be a positive base-10 integer")
+  }
+  for (case_id in unique(tbl$case_id)) {
+    steps <- as.integer(tbl$step[tbl$case_id == case_id])
+    if (!identical(steps, seq_along(steps))) {
+      bad(paste("steps are not 1..n in case", case_id))
+    }
+  }
+  event_times <- tbl$event_time[nzchar(tbl$event_time)]
+  if (any(!vapply(event_times, is_canonical_timestamp, logical(1L)))) {
+    bad("event_time must be a calendar-valid UTC ISO-8601 timestamp or empty")
+  }
+  allowed_types <- c(
+    "logical", "integer", "double", "character", "timestamp", "absent"
+  )
+  if (any(!tbl$expected_type %in% allowed_types)) {
+    bad("expected_type is invalid")
+  }
+  double_rows <- tbl$expected_type == "double"
+  if (any(tbl$comparison[double_rows] != "abs_tol")) {
+    bad("double rows must use abs_tol")
+  }
+  tolerance <- suppressWarnings(as.numeric(tbl$tolerance[double_rows]))
+  if (any(!is.finite(tolerance)) || any(tolerance < 0)) {
+    bad("double tolerance must be a finite non-negative number")
+  }
+  double_values <- suppressWarnings(as.numeric(tbl$expected_value[double_rows]))
+  if (any(!is.finite(double_values))) {
+    bad("double values must be numeric")
+  }
+  exact_rows <- !double_rows
+  if (any(tbl$comparison[exact_rows] != "exact") ||
+      any(nzchar(tbl$tolerance[exact_rows]))) {
+    bad("non-double rows must use exact comparison with an empty tolerance")
+  }
+  logical_values <- tbl$expected_value[tbl$expected_type == "logical"]
+  if (any(!logical_values %in% c("true", "false"))) {
+    bad("logical values must be lowercase true or false")
+  }
+  integer_values <- tbl$expected_value[tbl$expected_type == "integer"]
+  if (any(!grepl(integer_rx, integer_values))) {
+    bad("integer values must be canonical base-10 (no leading zeros, no -0)")
+  }
+  timestamp_values <- tbl$expected_value[tbl$expected_type == "timestamp"]
+  if (any(!vapply(timestamp_values, is_canonical_timestamp, logical(1L)))) {
+    bad("timestamp values must be calendar-valid UTC ISO-8601")
+  }
+  if (any(nzchar(tbl$expected_value[tbl$expected_type == "absent"]))) {
+    bad("absent values must be empty")
+  }
+  if (any(!nzchar(tbl$expected_value[tbl$expected_type == "character"]))) {
+    bad("character values must be non-empty")
+  }
+  allowed_identity <- c(
+    "equal", "changed", "captured", "absent", "not_applicable"
+  )
+  if (any(!tbl$identity_expectation %in% allowed_identity)) {
+    bad("identity_expectation is invalid")
+  }
+  compare_rows <- tbl$identity_expectation %in% c("equal", "changed")
+  capture_rows <- tbl$identity_expectation == "captured"
+  absent_identity_rows <- tbl$identity_expectation == "absent"
+  identity_rows <- compare_rows | capture_rows | absent_identity_rows
+  if (any(tbl$expected_type[identity_rows] != "absent")) {
+    bad("identity rows must use expected_type absent")
+  }
+  if (any(!grepl(identity_name_rx, tbl$identity_name[identity_rows]))) {
+    bad("identity rows must name a ledgr identity or a proto: identity")
+  }
+  if (any(nzchar(tbl$identity_name[!identity_rows])) ||
+      any(nzchar(tbl$reference[!identity_rows]))) {
+    bad("non-identity rows must leave identity_name and reference empty")
+  }
+  if (any(nzchar(tbl$reference[capture_rows | absent_identity_rows]))) {
+    bad("captured and absent identity rows must leave reference empty")
+  }
+  if (any(!grepl(reference_rx, tbl$reference[compare_rows]))) {
+    bad("identity references must be case:<case_id>@<step> or source:<name>")
+  }
+  for (k in which(compare_rows)) {
+    reference <- tbl$reference[[k]]
+    if (startsWith(reference, "source:")) {
+      source_name <- sub("^source:", "", reference)
+      if (!source_name %in% allowed_identity_sources) {
+        bad(paste("unknown identity source", reference))
+      }
+      next
+    }
+    target <- strsplit(sub("^case:", "", reference), "@", fixed = TRUE)[[1L]]
+    hit <- tbl$case_id == target[[1L]] & tbl$step == target[[2L]]
+    if (sum(hit) != 1L ||
+        !identical(tbl$identity_expectation[hit], "captured") ||
+        !identical(tbl$identity_name[hit], tbl$identity_name[[k]])) {
+      bad(paste(
+        "identity reference", reference,
+        "must resolve to a captured row of the same identity_name"
+      ))
+    }
+  }
+  nrow(tbl)
+}
+
+validate_witness_artifacts <- function(rows) {
+  total <- 0L
+  for (i in seq_len(nrow(rows))) {
+    manifest_file <- repo_path(file.path(spike_dir, rows$fixture_manifest[[i]]))
+    expected_file <- repo_path(file.path(spike_dir, rows$expected_table[[i]]))
+    if (!file.exists(manifest_file)) {
+      fail(paste("Missing fixture manifest for", rows$witness_id[[i]]))
+    }
+    if (!file.exists(expected_file)) {
+      fail(paste("Missing expected table for", rows$witness_id[[i]]))
+    }
+    total <- total + validate_expected_table(expected_file, rows$witness_id[[i]])
+  }
+  total
+}
+
+status_counts <- table(factor(registry$status, levels = allowed_status))
+present_rows <- registry[registry$status %in% c("drafted", "approved"), , drop = FALSE]
+
 if (identical(mode, "setup")) {
+  validated_rows <- validate_witness_artifacts(present_rows)
   cat("Stage 2 workspace setup is structurally valid.\n")
-  approved <- sum(registry$status == "approved")
-  cat("Witnesses: 31; approved: ", approved, ".\n", sep = "")
+  cat(sprintf(
+    "Witnesses: 31; pending: %d; drafted: %d; approved: %d.\n",
+    status_counts[["pending"]], status_counts[["drafted"]],
+    status_counts[["approved"]]
+  ))
+  cat(sprintf(
+    "Validated %d present witness packets (%d expected rows).\n",
+    nrow(present_rows), validated_rows
+  ))
   cat("Prototype implementation remains blocked until --mode=gate passes.\n")
+  quit(save = "no", status = 0L)
+}
+
+if (identical(mode, "review")) {
+  if (nrow(present_rows) != 31L) {
+    fail(sprintf(
+      "Review requires all 31 witnesses drafted or approved; %d are pending.",
+      status_counts[["pending"]]
+    ))
+  }
+  validated_rows <- validate_witness_artifacts(present_rows)
+  cat(sprintf(
+    "Stage 2 review check passed: 31 witness packets present; %d expected rows validated.\n",
+    validated_rows
+  ))
+  cat("Immutable hashing and the freeze commit remain outstanding.\n")
   quit(save = "no", status = 0L)
 }
 
@@ -313,72 +509,7 @@ if (!all(tolower(registry$independent_reviewed) == "true")) {
   fail("Every witness requires independent review.")
 }
 
-artifact_paths <- c(registry$fixture_manifest, registry$expected_table)
-artifact_paths <- repo_path(file.path(spike_dir, artifact_paths))
-missing_artifacts <- artifact_paths[!file.exists(artifact_paths)]
-if (length(missing_artifacts) > 0L) {
-  artifact_text <- paste(missing_artifacts, collapse = ", ")
-  fail(paste("Missing witness artifacts:", artifact_text))
-}
-
-expected_columns <- c(
-  "witness_id", "case_id", "step", "event_time", "asset_id", "field",
-  "expected_type", "expected_value", "reason_code", "identity_expectation",
-  "comparison", "tolerance", "derivation"
-)
-for (i in seq_len(nrow(registry))) {
-  expected_path <- repo_path(file.path(spike_dir, registry$expected_table[[i]]))
-  expected_table <- read_contract_csv(expected_path)
-  if (!identical(names(expected_table), expected_columns)) {
-    fail(paste(
-      "Expected-table columns are invalid for",
-      registry$witness_id[[i]]
-    ))
-  }
-  if (nrow(expected_table) == 0L ||
-      any(expected_table$witness_id != registry$witness_id[[i]])) {
-    fail(paste(
-      "Expected-table witness IDs are invalid for",
-      registry$witness_id[[i]]
-    ))
-  }
-  allowed_types <- c(
-    "logical", "integer", "double", "character", "timestamp", "absent"
-  )
-  if (any(!expected_table$expected_type %in% allowed_types)) {
-    fail(paste("Expected-table type is invalid for", registry$witness_id[[i]]))
-  }
-  double_rows <- expected_table$expected_type == "double"
-  if (any(expected_table$comparison[double_rows] != "abs_tol")) {
-    fail(paste("Double rows must use `abs_tol` for", registry$witness_id[[i]]))
-  }
-  numeric_tolerance <- suppressWarnings(as.numeric(
-    expected_table$tolerance[double_rows]
-  ))
-  if (any(!is.finite(numeric_tolerance)) || any(numeric_tolerance < 0)) {
-    fail(paste("Double tolerance is invalid for", registry$witness_id[[i]]))
-  }
-  exact_rows <- !double_rows
-  if (any(expected_table$comparison[exact_rows] != "exact") ||
-      any(nzchar(expected_table$tolerance[exact_rows]))) {
-    fail(paste("Non-double rows must use exact comparison for",
-      registry$witness_id[[i]]))
-  }
-  allowed_identity <- c("equal", "changed", "absent", "not_applicable")
-  if (any(!expected_table$identity_expectation %in% allowed_identity)) {
-    fail(paste("Identity expectation is invalid for", registry$witness_id[[i]]))
-  }
-  absent_rows <- expected_table$expected_type == "absent"
-  if (any(nzchar(expected_table$expected_value[absent_rows]))) {
-    fail(paste("Absent values must be empty for", registry$witness_id[[i]]))
-  }
-  logical_rows <- expected_table$expected_type == "logical"
-  invalid_logical <- !expected_table$expected_value[logical_rows] %in%
-    c("true", "false")
-  if (any(invalid_logical)) {
-    fail(paste("Logical values are invalid for", registry$witness_id[[i]]))
-  }
-}
+invisible(validate_witness_artifacts(registry))
 
 freeze_match <- regexec(
   "- Stage 2 evidence commit: `([0-9a-f]{40})`\\.",
@@ -417,14 +548,16 @@ fixed_targets <- data.frame(
     policy_path,
     spec_path,
     registry_path,
-    code_registry_path
+    code_registry_path,
+    mutation_definitions_path
   )),
   role = c(
     "charter",
     "policy",
     "witness_spec",
     "witness_registry",
-    "code_registry"
+    "code_registry",
+    "mutation_definitions"
   ),
   stringsAsFactors = FALSE
 )

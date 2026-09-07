@@ -1,0 +1,26 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W17,c1,1,2024-01-02T21:00:00Z,,visible_domain,character,A01|A02,,not_applicable,exact,,baseline members,,
+W17,c1,2,2024-01-02T21:00:00Z,A02,pre_risk_target,integer,100,,not_applicable,exact,,scripted,,
+W17,c1,3,2024-01-03T14:30:00Z,A02,fill_price,double,50.00,,not_applicable,abs_tol,1e-8,S2 open,,
+W17,c1,4,2024-01-03T14:30:00Z,,cash_after,double,95000.00,,not_applicable,abs_tol,1e-8,100000-5000,,
+W17,c1,5,2024-01-04T21:00:00Z,A02,feature_value,double,50.00,,not_applicable,abs_tol,1e-9,accepted S3 close as the feature,,
+W17,c1,6,2024-01-04T21:00:00Z,,equity,double,100000.00,,not_applicable,abs_tol,1e-8,95000+5000 at cutoff,,
+W17,c1,7,2024-01-05T21:00:00Z,,visible_domain,character,A01|A02,,not_applicable,exact,,S4,,
+W17,c1,8,2024-01-08T21:00:00Z,,visible_domain,character,A01|A02,,not_applicable,exact,,S5 baseline,,
+W17,c1,9,,,snapshot_hash,absent,,,captured,exact,,baseline sealed snapshot,snapshot_hash,
+W17,c1,10,,,feature_cache_key,absent,,,captured,exact,,baseline snapshot-keyed feature cache key,feature_cache_key,
+W17,c1,11,,,config_hash,absent,,,captured,exact,,baseline logical config including data.snapshot_id,config_hash,
+W17,c2,1,2024-01-02T21:00:00Z,,visible_domain,character,A01|A02,,not_applicable,exact,,unchanged before cutoff,,
+W17,c2,2,2024-01-02T21:00:00Z,A02,pre_risk_target,integer,100,,not_applicable,exact,,unchanged,,
+W17,c2,3,2024-01-03T14:30:00Z,A02,fill_price,double,50.00,,not_applicable,abs_tol,1e-8,unchanged,,
+W17,c2,4,2024-01-03T14:30:00Z,,cash_after,double,95000.00,,not_applicable,abs_tol,1e-8,unchanged,,
+W17,c2,5,2024-01-04T21:00:00Z,A02,feature_value,double,50.00,,not_applicable,abs_tol,1e-9,unchanged feature value at cutoff,,
+W17,c2,6,2024-01-04T21:00:00Z,,equity,double,100000.00,,not_applicable,abs_tol,1e-8,unchanged at cutoff,,
+W17,c2,7,2024-01-04T21:00:00Z,,feature_values_through_cutoff_equal,logical,true,,not_applicable,exact,,same admissible inputs through S3,,
+W17,c2,8,2024-01-05T21:00:00Z,,visible_domain,character,A01|A02,,not_applicable,exact,,announcement knowable at 22:00 after S4 decision,,
+W17,c2,9,2024-01-08T21:00:00Z,,visible_domain,character,A01|A02|A04,,not_applicable,exact,,A04 member and knowable at S5,,
+W17,c2,10,2024-01-08T21:00:00Z,A04,pre_risk_target,integer,50,,not_applicable,exact,,declared strategy consumes the new member,,
+W17,c2,11,,,snapshot_hash,absent,,,changed,exact,,hashed source facts changed; baseline c1 step 9,snapshot_hash,case:c1@9
+W17,c2,12,,,feature_cache_key,absent,,,changed,exact,,key includes snapshot_hash; baseline c1 step 10,feature_cache_key,case:c1@10
+W17,c2,13,,,config_hash,absent,,,changed,exact,,payload keeps data.snapshot_id of the new snapshot; baseline c1 step 11,config_hash,case:c1@11
+W17,c2,14,2024-01-04T21:00:00Z,A04,visible_before_cutoff,logical,false,,not_applicable,exact,,not knowable before 2024-01-05T22:00,,

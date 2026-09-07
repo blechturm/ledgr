@@ -1,0 +1,33 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W25,g1,1,2024-01-02T21:00:00Z,A01,feature_value,absent,,,not_applicable,exact,,rolling mean needs two values,,
+W25,g1,2,2024-01-03T21:00:00Z,A01,feature_value,double,2.0,,not_applicable,abs_tol,1e-9,(1+3)/2,,
+W25,g1,3,2024-01-04T21:00:00Z,A01,feature_value,double,3.0,,not_applicable,abs_tol,1e-9,(3+3)/2 after carry,,
+W25,g1,4,2024-01-05T21:00:00Z,A01,feature_value,double,6.0,,not_applicable,abs_tol,1e-9,(3+9)/2,,
+W25,g1,5,,,bars_created,integer,0,,not_applicable,exact,,no observed or executable bar,,
+W25,g1,6,,,raw_series_identity,absent,,,captured,exact,,sealed sig node baseline,proto:raw_series_id,
+W25,g1,7,,,graph_identity,absent,,,captured,exact,,carry-then-roll graph baseline,proto:graph_id,
+W25,g1,8,,,fit_identity,absent,,,captured,exact,,W15 fitted node baseline,proto:fitted_artifact_id,
+W25,g2,1,2024-01-02T21:00:00Z,A01,feature_value,absent,,,not_applicable,exact,,rolling mean needs two values,,
+W25,g2,2,2024-01-03T21:00:00Z,A01,feature_value,double,2.0,,not_applicable,abs_tol,1e-9,(1+3)/2,,
+W25,g2,3,2024-01-04T21:00:00Z,A01,feature_value,double,2.0,,not_applicable,abs_tol,1e-9,raw mean NA carried from S2,,
+W25,g2,4,2024-01-05T21:00:00Z,A01,feature_value,double,2.0,,not_applicable,abs_tol,1e-9,raw mean NA carried,,
+W25,g2,5,,,graph_identity,absent,,,changed,exact,,roll-then-carry differs from g1 step 7,proto:graph_id,case:g1@7
+W25,g2,6,,,graph_identity_g2,absent,,,captured,exact,,roll-then-carry graph baseline,proto:graph_id,
+W25,g2,7,,,bars_created,integer,0,,not_applicable,exact,,no observed or executable bar,,
+W25,m_cal,1,,,raw_series_identity,absent,,,equal,exact,,sealed sig unchanged; g1 step 6,proto:raw_series_id,case:g1@6
+W25,m_cal,2,,,graph_identity_g1,absent,,,changed,exact,,history rule depends on calendar; g1 step 7,proto:graph_id,case:g1@7
+W25,m_cal,3,,,graph_identity_g2,absent,,,changed,exact,,history rule depends on calendar; g2 step 6,proto:graph_id,case:g2@6
+W25,m_cal,4,,,fit_identity,absent,,,changed,exact,,calendar is an ancestor; g1 step 8,proto:fitted_artifact_id,case:g1@8
+W25,m_cls,1,,,raw_series_identity,absent,,,equal,exact,,sealed sig unchanged; g1 step 6,proto:raw_series_id,case:g1@6
+W25,m_cls,2,,,graph_identity_g1,absent,,,changed,exact,,classifier version is an ancestor; g1 step 7,proto:graph_id,case:g1@7
+W25,m_cls,3,,,graph_identity_g2,absent,,,changed,exact,,classifier version is an ancestor; g2 step 6,proto:graph_id,case:g2@6
+W25,m_cls,4,,,fit_identity,absent,,,changed,exact,,classifier version is an ancestor; g1 step 8,proto:fitted_artifact_id,case:g1@8
+W25,m_pop,1,,,raw_series_identity,absent,,,equal,exact,,unchanged; g1 step 6,proto:raw_series_id,case:g1@6
+W25,m_pop,2,,,graph_identity_g1,absent,,,equal,exact,,no dependency on estimation population; g1 step 7,proto:graph_id,case:g1@7
+W25,m_pop,3,,,graph_identity_g2,absent,,,equal,exact,,no dependency on estimation population; g2 step 6,proto:graph_id,case:g2@6
+W25,m_pop,4,,,fit_identity,absent,,,changed,exact,,population is a fit input; g1 step 8,proto:fitted_artifact_id,case:g1@8
+W25,m_cut,1,,,raw_series_identity,absent,,,equal,exact,,unchanged; g1 step 6,proto:raw_series_id,case:g1@6
+W25,m_cut,2,,,graph_identity_g1,absent,,,equal,exact,,no dependency on training cutoff; g1 step 7,proto:graph_id,case:g1@7
+W25,m_cut,3,,,graph_identity_g2,absent,,,equal,exact,,no dependency on training cutoff; g2 step 6,proto:graph_id,case:g2@6
+W25,m_cut,4,,,fit_identity,absent,,,changed,exact,,cutoff is a fit input; g1 step 8,proto:fitted_artifact_id,case:g1@8
+W25,m_cut,5,,,warm_cache_ancestors_preserved,logical,true,,not_applicable,exact,,raw and rolling nodes reused,,

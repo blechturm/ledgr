@@ -1,2 +1,4 @@
 path,role
 dev/spikes/asset_availability_pit/check_stage2.R,stage_gate
+dev/spikes/asset_availability_pit/references/budget_arithmetic.R,reference_calculation
+dev/spikes/asset_availability_pit/references/series_and_clock.R,reference_calculation

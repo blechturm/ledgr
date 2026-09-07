@@ -1,0 +1,14 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W14,c1,1,2024-01-12T21:00:00Z,,fitted_mean,double,104.0,,not_applicable,abs_tol,1e-9,936/9,,
+W14,c1,2,2024-01-12T21:00:00Z,,artifact_available_at,timestamp,2024-01-12T21:00:00Z,,not_applicable,exact,,fit cutoff equals window end,,
+W14,c1,3,2024-01-12T21:00:00Z,,fitted_artifact_identity,absent,,,captured,exact,,the single fitted artifact,proto:fitted_artifact_id,
+W14,c1,4,2024-01-03T21:00:00Z,,fit_mode,character,causal,,not_applicable,exact,,declared mode,,
+W14,c1,5,2024-01-03T21:00:00Z,,artifact_request_verdict,character,rejected,artifact_not_available_at_decision,not_applicable,exact,,decision precedes availability,,
+W14,c1,6,2024-01-03T21:00:00Z,A01,feature_value,absent,,,not_applicable,exact,,no transformed value,,
+W14,c1,7,2024-01-03T21:00:00Z,,stop_reason,character,artifact_not_available_at_decision,,not_applicable,exact,,unsupported causal claim fails,,
+W14,c2,1,2024-01-03T21:00:00Z,,fit_mode,character,retrospective_in_sample,,not_applicable,exact,,declared mode,,
+W14,c2,2,2024-01-03T21:00:00Z,,artifact_request_verdict,character,accepted_with_label,retrospective_in_sample,not_applicable,exact,,explicit label required,,
+W14,c2,3,2024-01-03T21:00:00Z,,oos_interpretation_barred,logical,true,,not_applicable,exact,,label bars OOS reading,,
+W14,c2,4,2024-01-03T21:00:00Z,A01,feature_value,double,-3.0,,not_applicable,abs_tol,1e-9,101-104,,
+W14,c2,5,2024-01-03T21:00:00Z,,fitted_artifact_identity,absent,,,equal,exact,,same artifact as c1 step 3,proto:fitted_artifact_id,case:c1@3
+W14,c2,6,2024-01-03T21:00:00Z,,stop_reason,absent,,,not_applicable,exact,,labeled use permitted,,

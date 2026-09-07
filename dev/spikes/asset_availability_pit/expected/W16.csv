@@ -1,0 +1,11 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W16,c1,1,2024-01-05T21:00:00Z,A03,member_asof_q1,logical,true,,not_applicable,exact,,v1 open and knowable at S4 cutoff,,
+W16,c1,2,2024-01-05T21:00:00Z,A03,provenance_q1,character,m_A03_v1,,not_applicable,exact,,only v1 knowable,,
+W16,c1,3,2024-01-05T21:00:00Z,A03,member_asof_q2,logical,true,,not_applicable,exact,,open interval covers 2024-01-08 at S4 cutoff,,
+W16,c1,4,2024-01-05T21:00:00Z,A03,provenance_q2,character,m_A03_v1,,not_applicable,exact,,earlier answer preserved,,
+W16,c1,5,2024-01-10T21:00:00Z,A03,member_asof_q3,logical,false,,not_applicable,exact,,v2 ends membership 2024-01-08T00:00,,
+W16,c1,6,2024-01-10T21:00:00Z,A03,provenance_q3,character,m_A03_v2,,not_applicable,exact,,amendment knowable at S7 cutoff,,
+W16,c1,7,2024-01-10T21:00:00Z,A03,member_asof_q4,logical,true,,not_applicable,exact,,v2 interval still covers 2024-01-05,,
+W16,c1,8,2024-01-10T21:00:00Z,A03,provenance_q4,character,m_A03_v2,,not_applicable,exact,,superseding assertion,,
+W16,c1,9,2024-01-10T21:00:00Z,A03,superseded_assertion,character,m_A03_v1,,not_applicable,exact,,v2 supersedes v1,,
+W16,c1,10,2024-01-10T21:00:00Z,,earlier_result_changed_retroactively,logical,false,,not_applicable,exact,,q1 and q2 answers unchanged by v2,,

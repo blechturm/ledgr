@@ -1,0 +1,10 @@
+witness_id,case_id,step,event_time,asset_id,field,expected_type,expected_value,reason_code,identity_expectation,comparison,tolerance,derivation,identity_name,reference
+W13,c1,1,2024-01-03T21:00:00Z,,fit_population_id,character,est_pop_future_union_v1,,not_applicable,exact,,future-selected rule,,
+W13,c1,2,2024-01-03T21:00:00Z,,fit_population,character,A01|A02|A03,,not_applicable,exact,,same rows as W12 c1,,
+W13,c1,3,2024-01-03T21:00:00Z,,fit_cutoff,timestamp,2024-01-03T21:00:00Z,,not_applicable,exact,,S2 close,,
+W13,c1,4,2024-01-03T21:00:00Z,,population_construction_knowledge_time,timestamp,2024-01-05T22:00:00Z,,not_applicable,exact,,A03 entry knowable after cutoff,,
+W13,c1,5,2024-01-03T21:00:00Z,,population_knowable_at_cutoff,logical,false,,not_applicable,exact,,construction uses post-cutoff knowledge,,
+W13,c1,6,2024-01-03T21:00:00Z,,fit_verdict,character,rejected,estimation_population_non_causal,not_applicable,exact,,non-causal population,,
+W13,c1,7,2024-01-03T21:00:00Z,,fitted_mean,absent,,,not_applicable,exact,,no artifact produced,,
+W13,c1,8,2024-01-04T21:00:00Z,A01,feature_value,absent,,,not_applicable,exact,,transform unavailable,,
+W13,c1,9,2024-01-03T21:00:00Z,,difference_from_w12,character,population_construction_information,,not_applicable,exact,,rows identical; construction differs,,

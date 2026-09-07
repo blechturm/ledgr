@@ -1,7 +1,8 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Workspace initialized. Stage 2 witness evidence is not frozen or
-approved. Prototype implementation must not start.
+**Status:** Stage 2 witness evidence is maintainer approved and independently
+reviewed; immutable freeze recording is in progress. Prototype implementation
+must not start until the gate-record commit exists.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 
@@ -35,23 +36,24 @@ result.
 ## Current Gate
 
 Charter clarification and freeze completed at package base commit `1f42cf7`.
-Only the Stage 2 workspace setup is complete. The Stage 2 gate remains closed
-until:
+The v4 comparison policy and W01-W31 packet are maintainer approved and
+independently reviewed. The Stage 2 gate remains closed until:
 
-1. `initial_policy_config.md` is maintainer approved.
-2. W01-W31 each have exact fixture manifests and expected-output tables.
-3. Expected arithmetic and temporal reasoning are independently reviewed.
-4. `witness_registry.csv` marks every row approved and reviewed.
-5. Every frozen input matches `evidence/frozen_hashes.csv`.
-6. `check_stage2.R --mode=gate` exits successfully before prototype code exists.
+1. `check_stage2.R --mode=review` passes on the approved packet.
+2. Every frozen input matches `evidence/frozen_hashes.csv`.
+3. The approved freeze commit is recorded in the evidence manifest.
+4. `check_stage2.R --mode=gate` exits successfully before prototype code exists.
 
-Run the setup check from the repository root:
+Run the checks from the repository root:
 
 ```powershell
 & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=setup
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=review
 ```
 
-The gate command is intentionally expected to fail until Stage 2 is complete:
+Setup validates every drafted or approved packet that is present. Review
+additionally requires all 31 packets. The gate command is intentionally
+expected to fail until Stage 2 is complete:
 
 ```powershell
 & "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=gate
@@ -63,13 +65,13 @@ The gate command is intentionally expected to fail until Stage 2 is complete:
 | --- | --- |
 | `witness_spec.md` | Exact input/output schema and freeze protocol |
 | `witness_registry.csv` | Machine-readable W01-W31 status and artifact paths |
-| `initial_policy_config.md` | Proposed comparison policy awaiting approval |
-| `fixtures/` | Small deterministic input manifests and source tables |
+| `initial_policy_config.md` | Maintainer-approved v3 comparison policy |
+| `fixtures/` | Self-contained fixture manifests with embedded source tables |
 | `expected/` | Independently calculated expected-output tables |
-| `evidence/` | Branch-tracked manifests, environment records, and conclusions |
 | `references/` | Registered independent reference calculations |
+| `evidence/` | Branch-tracked manifests, environment records, and conclusions |
 | `scratch/` | Ignored local logs, profiles, and replaceable scratch output |
-| `check_stage2.R` | Stage 2 structural and evidence-freeze gate |
+| `check_stage2.R` | Stage 2 structural, review, and evidence-freeze gate |
 
 Later code, if Stage 2 passes, stays below this directory. It must not modify
 `R/`, `src/`, `tests/testthat/`, `NAMESPACE`, `DESCRIPTION`, or `man/`.
