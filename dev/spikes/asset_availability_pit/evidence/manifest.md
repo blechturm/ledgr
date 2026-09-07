@@ -12,7 +12,7 @@
   `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6` (the first gate run exposed a
   Windows `HOME` lifetime defect in the checker; expected answers were
   unchanged in witness specification v2).
-- Stage 2 gate-record commit: pending until committed after a passing gate.
+- Stage 2 gate-record commit: `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`.
 - Final immutable spike commit or archive reference: pending.
 - Prototype change inventory: pending.
 - Stage 3 code registry (`evidence/stage3_code.csv`): pending; created only

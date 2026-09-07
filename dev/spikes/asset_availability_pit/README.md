@@ -2,7 +2,8 @@
 
 **Status:** Stage 2 witness evidence is maintainer approved, independently
 reviewed, and frozen at `b818d761891516cea5c1afd2a4b05724cca84fd6`.
-Prototype implementation must not start until the gate-record commit exists.
+The Stage 2 gate passed at `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`;
+the shared fold-fork implementation may begin in Stage 3.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 
