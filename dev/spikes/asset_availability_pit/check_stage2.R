@@ -283,7 +283,6 @@ runtime_changes <- system2(
   stdout = TRUE,
   stderr = FALSE
 )
-Sys.setenv(HOME = old_home)
 if (length(runtime_changes) > 0L) {
   change_text <- paste(runtime_changes, collapse = "; ")
   fail(paste("Uncommitted package runtime paths changed:", change_text))
@@ -624,10 +623,6 @@ if (length(hash_mismatch) > 0L) {
     collapse = ", ")))
 }
 
-old_home <- Sys.getenv("HOME")
-if (nzchar(user_profile)) {
-  Sys.setenv(HOME = user_profile)
-}
 freeze_diff <- git_status(c(
   "diff",
   "--quiet",

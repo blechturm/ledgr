@@ -2,7 +2,14 @@
 
 **Status:** Frozen and maintainer approved.
 
-**Witness schema:** `asset_availability_witness_v1`.
+**Witness schema:** `asset_availability_witness_v2`.
+
+**Revision history:** `asset_availability_witness_v1` was approved on
+2026-09-07. Version 2 was approved before prototype work after the first
+freeze-gate run exposed that the checker restored R's original `HOME` before
+its late Git ancestry checks. Version 2 keeps the approved witnesses and
+expected answers unchanged and extends the existing safe-directory environment
+through every Git check.
 
 **Charter base:** package commit `1f42cf7`.
 
