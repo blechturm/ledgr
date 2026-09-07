@@ -1,7 +1,7 @@
 # Stage 3 Fork Change Inventory
 
-**Status:** Review corrections and witness v3 independently accepted; awaiting
-the active-evidence commit and first-appearance commit registry.
+**Status:** Review corrections and witness v3 independently accepted; evidence
+and code-origin anchors recorded; final Stage 3 gate pending.
 
 **Executor substitution:** The maintainer directed Codex to execute Stage 3.
 Claude remains the intended independent reviewer for this stage.
@@ -11,6 +11,7 @@ Claude remains the intended independent reviewer for this stage.
 - Package base commit: `1f42cf7`.
 - Passing Stage 2 gate target: `9d957a3`.
 - Stage 3 authorization and gate-record commit: `c82c485`.
+- Reviewed Stage 3 implementation and active-evidence commit: `d7a1fd3`.
 - Approved policy: `asset_availability_initial_policy_v4`.
 - Maintainer-approved and independently reviewed witness contract:
   `asset_availability_witness_v3`.

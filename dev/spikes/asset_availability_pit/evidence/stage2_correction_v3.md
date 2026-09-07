@@ -43,11 +43,13 @@ Policy v4 is unchanged. W02 `c0a` corrects a package error-class label; W22
 separates an execution price from a stale valuation mark so the already
 approved no-stale-execution principle is testable.
 
-Every implementation of W02 and W22 must be rerun after approval. No Stage 3
-implementation has been committed and no Stage 4 provider exists.
+Every implementation of W02 and W22 must be rerun after approval. The reviewed
+Stage 3 implementation and corrected evidence are anchored at `d7a1fd3`; no
+Stage 4 provider exists.
 
 ## Approval
 
 - Maintainer approver: repository maintainer, approved 2026-09-07.
 - Independent correction reviewer: Claude, accepted 2026-09-07.
-- Active Stage 2 evidence commit: pending commit.
+- Active Stage 2 evidence commit:
+  `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.

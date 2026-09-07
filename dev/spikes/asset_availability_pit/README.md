@@ -1,8 +1,8 @@
 # Asset Availability And PIT Universe Spike
 
 **Status:** Witness v3 and the repaired Stage 3 implementation are maintainer-
-approved and independently reviewed. The active-evidence and first-appearance
-commit gates remain. The prior v2 evidence remains at
+approved and independently reviewed. Active-evidence and code-origin anchors
+are recorded; the final Stage 3 gate remains. The prior v2 evidence remains at
 `b818d761891516cea5c1afd2a4b05724cca84fd6`.
 
 **Branch:** `spike/asset-availability-pit-universes`.

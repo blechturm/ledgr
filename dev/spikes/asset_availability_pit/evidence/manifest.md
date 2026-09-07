@@ -1,7 +1,7 @@
 # Spike Evidence Manifest
 
-**Status:** Stage 2 witness-v3 correction maintainer-approved and independently
-reviewed on 2026-09-07; active-evidence commit pending.
+**Status:** Stage 3 independently reviewed; active-evidence and code-origin
+anchors recorded; final Stage 3 gate pending.
 
 ## Repository
 
@@ -14,12 +14,13 @@ reviewed on 2026-09-07; active-evidence commit pending.
   Windows `HOME` lifetime defect in the checker; expected answers were
   unchanged in witness specification v2).
 - Stage 2 gate-record commit: `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`.
-- Active Stage 2 evidence commit: pending commit.
+- Active Stage 2 evidence commit:
+  `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
 - Correction record: `stage2_correction_v3.md`.
 - Final immutable spike commit or archive reference: pending.
-- Prototype change inventory: pending.
-- Stage 3 code registry (`evidence/stage3_code.csv`): pending the reviewed
-  code's first-appearance commit.
+- Prototype change inventory: `stage3_change_inventory.md`.
+- Stage 3 code registry: `stage3_code.csv`; every executable first appears at
+  `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
 
 ## Roles
 
@@ -51,7 +52,7 @@ reviewed on 2026-09-07; active-evidence commit pending.
 ## Results
 
 - Stage 3 dense control and checker-baseline tables: `stage3_results/`
-  (provisional until the active-evidence and first-appearance commit gates).
+  (provisional until the final Stage 3 gate).
 - Checker mutation results: `stage3_results/checker_mutations.csv`.
 - Measurement bundles: pending.
 - Comprehension-check record: pending.
