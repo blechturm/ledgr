@@ -2,9 +2,10 @@
 
 This directory holds non-binding research inputs that are fed to RFC seeds as
 design-space or empirical context. Most files are deep-research LLM outputs.
-Project-authored empirical syntheses may also be preserved here when a private
-or licensed evidence cycle needs a durable, non-reconstructive input to an
-upstream RFC.
+Project-authored empirical syntheses and companion evidence handoffs may also
+be preserved here when an external, private, or licensed research workflow has
+produced durable, non-reconstructive input for an upstream RFC. Each file
+belongs to a named RFC cycle or parked RFC direction.
 
 **Status:** non-binding inputs. Preserve indefinitely as audit trail. Do not
 promote to a user-facing docs surface.
@@ -55,6 +56,8 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | `Reproducible-Leakage-Safe-ML.md` | Informs the 2026-06-14 horizon entry "General ML-strategy preparedness (QRF ranking as the motivating spike)"; the dedicated ML-architecture RFC is parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycle to seed the architectural requirements; synthesis deferred to v0.2.x). |
 | `Stable-Parameter-Region-Detection.md` | Ad-hoc input resolving the `ledgr_objective_stable_region()` detector methodology that `rfc_validation_toolkit_v0_1_9_x_synthesis.md` section 4.1 left as a spec-cut open question (not a new RFC cycle). | Pending (the v0.1.9.7 spec packet's `stable_region` detector spike). |
 | `Cross-Asset-Accounting-Critical-Events.md` | Informs the 2026-06-28 horizon entry "Cross-asset accounting-critical economic events"; the corporate-actions / instrument-master and explicit accounting-critical event-types RFCs are parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycles after vendor-ingestion work surfaced LFB-001; synthesis deferred to v0.2.x). |
+| `ledgr_ragged_universe_prior_art_review.md` | Informs the 2026-09-06 horizon entry "Ragged-universe prior art and RFC evidence handoff" and the future ragged-universe / asset-lifetime RFC. No seed has been opened. | Pending (source-based prior-art input; the future RFC must re-verify any load-bearing claim and run the proposed empirical spike). |
+| `rfc-evidence-handoff.md` | Companion empirical handoff for the same future ragged-universe / asset-lifetime RFC. It records the vendor-ingestion pressure result, dense control result, lineage boundary, and unresolved architecture questions without choosing a design. | Pending (evidence handoff only; future seed and synthesis not yet written). |
 
 `Reproducible-Leakage-Safe-ML.md` was conducted ahead of its RFC cycle to inform the parked horizon seed rather than at stage 1 of an open cycle; when the v0.2.x ML-architecture RFC opens, its seed should cite this file by path per the normal convention.
 
@@ -67,6 +70,14 @@ corporate-actions / instrument-master and explicit accounting-critical
 event-types work; the binding artifact will be the future accepted synthesis,
 not this file. Per this directory's policy the file is preserved indefinitely
 and is not promoted to a user-facing surface.
+
+`ledgr_ragged_universe_prior_art_review.md` and `rfc-evidence-handoff.md` are
+paired inputs to the parked ragged-universe / asset-lifetime RFC. The first is
+external prior-art research; the second is a concise handoff from empirical
+vendor-ingestion and strategy-testing work. Neither is an RFC seed or accepted
+architecture. The future seed must cite both, verify the handoff against its
+source artifacts, and keep the current strict dense mode as the migration and
+parity oracle unless a later accepted synthesis explicitly changes that rule.
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
 

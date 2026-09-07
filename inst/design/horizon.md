@@ -26,11 +26,9 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-05):** v0.1.9.6 has closed. v0.1.9.7 is active
-at `inst/design/ledgr_v0_1_9_7_spec_packet/`; its implementation scope and
-local release gate are complete after review, with remote CI still pending.
-Horizon entries below remain non-binding unless a future active packet,
-roadmap, contracts, or an accepted RFC promotes them.
+**Current packet note (2026-09-06):** v0.1.9.6 and v0.1.9.7 have closed. No
+versioned packet is active. Horizon entries below remain non-binding unless a
+future active packet, roadmap, contracts, or an accepted RFC promotes them.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
@@ -73,8 +71,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   temporal-CV / embargo machinery and needing a dedicated RFC (see the
   2026-06-14 entry).
 - **v0.2.x to v0.3.0** -- live bad-data resilience, ragged-universe
-  (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
-  needs a dedicated RFC).
+  (asset-lifetime) handling, and sim-to-real backtest fidelity. Keep the
+  offline research-validity substrate distinct from the later live runtime;
+  both need dedicated RFC treatment (see the 2026-05-28 and 2026-09-06
+  `[data]` entries).
 - **Post-K1 / B2 gates** -- compiled fold core (`ledgrcore` sister
   package) functionally parked. The K1 measurement spike completed and
   the scoped v0.1.8.10 B2 spot-FIFO accelerator shipped with
@@ -86,6 +86,138 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-06 [infrastructure] CI critical-path and release-gate runtime hardening
+
+The v0.1.9.7 release CI was profiled after branch, main, and tag runs of the
+same release SHA. The long wait is primarily a workflow-shape problem, not a
+large v0.1.9.7 code or test regression.
+
+Measured GitHub Actions baseline:
+
+- Branch checks took 48.8 minutes on Ubuntu and 31.1 minutes on Windows.
+- Main checks took 47.4 minutes on Ubuntu and 30.4 minutes on Windows. Main
+  also ran the separate pkgdown workflow for 10.2 minutes.
+- Tag checks took 48.1 minutes on Ubuntu and 24.9 minutes on Windows.
+- Running the same SHA through branch, main, and tag consumed about 144.3
+  minutes on the serial critical path and about 241 runner-minutes in total.
+- Comparable v0.1.9.6 Ubuntu runs took 44.4 to 45.9 minutes. v0.1.9.7 added
+  roughly two to three minutes, about six percent, to an already-long
+  baseline; it did not create the underlying CI cost.
+
+The Ubuntu job is the critical path because it serializes independent gates.
+On the tag run, the acceptance preflight took about 0.6 minutes, R CMD check
+about 22.5 minutes, pkgdown about 6.9 minutes, and coverage about 16.2 minutes.
+The full test suite runs inside R CMD check and again under coverage. Main also
+builds pkgdown once inside `R-CMD-check.yaml` and again in the dedicated
+`pkgdown.yaml` workflow.
+
+The R CMD check timing contains two separate vignette costs. The source-build
+phase spent about four minutes creating vignettes because
+`rcmdcheck::rcmdcheck()` receives `--no-build-vignettes` as a check argument
+but receives no corresponding `build_args`. The subsequent package check still
+spent about 1.9 minutes running vignette code. Package tests were the largest
+check subphase at about 14.1 minutes.
+
+Local profiling confirms broad integration cost rather than one pathological
+test file. The full 112-file suite took about 12.3 minutes; the five slowest
+files represented about 31 percent and the ten slowest about 44 percent of
+recorded test time. The suite repeatedly creates snapshots, databases, runs,
+sweeps, and walk-forward sessions, so optimization must preserve isolation and
+must not replace realistic fixtures with shared mutable state merely for speed.
+
+The profile also exposed a resource-lifecycle hardening lead. A walk-forward
+orchestrator test creates a walk-forward result without explicitly closing its
+`test_runs`, unlike neighboring tests. Focused runs emitted an automatic
+checkpoint-on-finalization warning, and isolated timings moved substantially
+between runs. Audit explicit close discipline across integration fixtures before
+treating individual file timings as stable evidence.
+
+Recommended future hardening sequence:
+
+- Split R CMD check, coverage, and pkgdown into parallel jobs with independent
+  required statuses. This preserves all current evidence while reducing one
+  run's estimated critical path from about 48 minutes toward 25 to 30 minutes,
+  subject to setup and cache measurements.
+- Give main one pkgdown build owner. Prefer the dedicated pkgdown/deploy
+  workflow rather than rebuilding the same site inside the Linux check job.
+- Add concurrency cancellation for superseded branch or pull-request runs, but
+  never cancel main or tag release evidence.
+- Make test resource cleanup explicit, starting with unclosed walk-forward test
+  runs, then re-profile before considering test sharding or fixture redesign.
+- Spike `build_args = "--no-build-vignettes"` for routine branch CI while
+  retaining one full source-vignette build on the release path. Do not silently
+  remove source-package vignette verification from every path.
+- Publish a small per-job and per-gate timing artifact so future release deltas
+  are visible without reconstructing timestamps from action logs.
+
+Reducing coverage scope, moving integration tests to nightly-only execution, or
+weakening release checks is not the first route. Parallelism and duplicate-work
+removal offer the larger low-risk gain. The branch-to-main-to-tag repetition is
+currently deliberate independent release evidence; consolidating those stages
+would be a release-playbook decision, not an incidental CI edit. This entry
+authorizes no workflow or release-playbook change by itself.
+
+### 2026-09-06 [data] Ragged-universe prior art and RFC evidence handoff
+
+Two non-binding inputs now sharpen the parked ragged-universe / asset-lifetime
+direction:
+
+- `inst/design/research/ledgr_ragged_universe_prior_art_review.md` compares
+  LEAN, zipline-reloaded, NautilusTrader, vectorbt, Qlib, and the quantstrat
+  stack, then surveys missing-data, point-in-time, terminal-event, and
+  fold-safe preprocessing concerns.
+- `inst/design/research/rfc-evidence-handoff.md` records the empirical handoff
+  from the separate vendor-ingestion and strategy-testing work. It is a
+  concise evidence memo, not an RFC seed or architecture decision.
+- `inst/design/research/Sharadar-Empirical-Evidence.md` is the reviewed,
+  non-reconstructive empirical synthesis from the Sharadar Data MVP and
+  Evidence Promotion v0.1.0 cycle. Private evidence artifacts at source commit
+  `e53bda3b108e51ad44720b9812c8072624b8820e` remain authoritative for exact
+  audit.
+
+The prior-art result supports an evolutionary direction rather than permissive
+NA handling. Preserve the strict complete-panel mode as a migration and parity
+oracle. A future ragged mode must distinguish instrument lifetime,
+point-in-time membership, expected observation, observed fact, quality state,
+valuation eligibility, feature validity, and execution eligibility. Carried,
+imputed, or otherwise synthetic values must not silently become execution
+evidence, and terminal economic outcomes must not disappear when a price row
+does.
+
+The empirical synthesis records a concrete pressure result over the complete
+supported 2019-2021 XNYS reference population: 757 expected sessions, 563
+point-in-time members, and 382,288 expected member/session rows. ledgr could
+seal the available bars, but its static instrument input could not preserve the
+membership stream without distortion. This establishes changing membership;
+it does not independently establish that ordinary expected-session bar gaps
+occurred, because the tracked Gate 4 evidence did not separate that predicate.
+A frozen 5-by-20 dense control sealed, reopened, and reconciled, which confirms
+the present dense/static plumbing without establishing historical-universe
+validity. Vendor lineage remained in a hash-bound sidecar, and current
+accounting still could not support dividend-inclusive or terminal-event
+performance claims.
+
+Routing consequence: separate the offline research-validity problem from the
+later streaming/live bad-data problem. The offline ragged-universe substrate
+should not wait automatically for OMS or the live data log, although it must
+coordinate with point-in-time tables, corporate actions / instrument master,
+and accounting-critical event types. The future seed should decide whether an
+umbrella architecture RFC followed by smaller implementation RFCs, or several
+coordinated seeds, gives the cleanest ownership boundaries.
+
+Before choosing storage layout, mask granularity, or strategy-facing API, run
+the proposed real-data spike across strict dense, dense-plus-masks, sparse
+event, and sparse-storage / fold-local-dense prototypes. Required evidence
+includes legacy dense parity, no fills on carried or imputed prices, pre-event
+invariance under future-listing or revision perturbation, explicit stale and
+unpriced states, run/sweep/cache/chunking parity, sample-retention diagnostics,
+and runtime/memory profiles. Fold-fitted transforms remain train-local model
+artifacts rather than snapshot-seal repair.
+
+The ragged-universe / asset-lifetime RFC remains a gate without a seed. These
+files are staged evidence for that future cycle and authorize no schema,
+runtime, imputation, accounting, or public API change.
 
 ### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
 

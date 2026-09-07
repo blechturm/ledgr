@@ -2358,7 +2358,8 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-05)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-06)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "No\\s+versioned packet is active")
   testthat::expect_match(
     docs$horizon,
     "Objective-filtered walk-forward identity (synthesis D4)",

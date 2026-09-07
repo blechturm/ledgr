@@ -1832,6 +1832,55 @@ Constraints:
 - feature beta, universe-derived benchmarks, and fundamental/factor features
   depend on this layer.
 
+### v0.2.x Ragged Universe And Asset Lifetime RFC
+
+Intent:
+
+- preserve the current strict complete-panel mode as the dense/static baseline
+  and parity oracle;
+- represent point-in-time instrument lifetime, universe membership, expected
+  observation, observed fact, quality, valuation eligibility, feature
+  validity, and execution eligibility without collapsing them into one NA
+  state;
+- support historically valid broad-equity research without survivor filtering,
+  date intersection, silent price filling, or fabricated rows;
+- evaluate sparse storage with fold-local dense values and masks alongside
+  strict dense and other candidate representations before selecting an
+  architecture.
+
+Constraints:
+
+- permissive NA handling is not the target, and carried, imputed, stale, or
+  synthetic values must not silently become execution evidence;
+- terminal events, censored labels, valuation fallback, and order behavior
+  through an observation gap require explicit, separately auditable policy;
+- transformations fitted from data remain train-fold-local artifacts with
+  identity and caching distinct from deterministic as-of materialization;
+- preserve the shared run/sweep semantic kernel and require parity across
+  cache state, chunking, and parallel dispatch;
+- coordinate with point-in-time tables, corporate actions / instrument master,
+  and explicit accounting-critical event types, but do not make the offline
+  research-validity substrate wait automatically for OMS or the live data log;
+- keep first-class live bad-data handling and paper-trading stream simulation
+  in their later runtime RFC.
+
+Source material:
+
+- `inst/design/research/Sharadar-Empirical-Evidence.md` records the reviewed,
+  non-reconstructive empirical evidence from the private Sharadar cycle;
+  private source artifacts remain authoritative for exact audit;
+- `inst/design/research/ledgr_ragged_universe_prior_art_review.md` records the
+  external prior-art and methodology review;
+- `inst/design/research/rfc-evidence-handoff.md` records the empirical
+  vendor-ingestion / strategy-testing handoff and unresolved RFC questions;
+- `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` supplies the
+  adjacent terminal-event and cross-asset accounting context.
+
+The RFC remains unopened. The seed must verify load-bearing source claims and
+the handoff's empirical provenance, preserve the synthesis's explicit
+non-conclusions, then bind any additional adversarial spike needed before a
+schema, runtime, imputation, or strategy-facing API is selected.
+
 ### v0.2.x Corporate Actions And Instrument Master
 
 Intent:
