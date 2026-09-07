@@ -1876,10 +1876,14 @@ Source material:
 - `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` supplies the
   adjacent terminal-event and cross-asset accounting context.
 
-The RFC remains unopened. The seed must verify load-bearing source claims and
-the handoff's empirical provenance, preserve the synthesis's explicit
-non-conclusions, then bind any additional adversarial spike needed before a
-schema, runtime, imputation, or strategy-facing API is selected.
+The RFC cycle opened on 2026-09-07 at non-binding Seed v1:
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`.
+Response-stage adversarial review by a different author is next. The seed
+verifies load-bearing source claims and the handoff's empirical provenance,
+preserves the empirical synthesis's explicit non-conclusions, and requires a
+comparative architecture spike before synthesis selects a schema, runtime
+state encoding, imputation boundary, or strategy-facing API. It authorizes no
+implementation.
 
 ### v0.2.x Corporate Actions And Instrument Master
 

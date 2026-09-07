@@ -160,8 +160,8 @@ authorizes no workflow or release-playbook change by itself.
 
 ### 2026-09-06 [data] Ragged-universe prior art and RFC evidence handoff
 
-Two non-binding inputs now sharpen the parked ragged-universe / asset-lifetime
-direction:
+Three non-binding inputs sharpened the then-parked ragged-universe /
+asset-lifetime direction:
 
 - `inst/design/research/ledgr_ragged_universe_prior_art_review.md` compares
   LEAN, zipline-reloaded, NautilusTrader, vectorbt, Qlib, and the quantstrat
@@ -202,22 +202,28 @@ Routing consequence: separate the offline research-validity problem from the
 later streaming/live bad-data problem. The offline ragged-universe substrate
 should not wait automatically for OMS or the live data log, although it must
 coordinate with point-in-time tables, corporate actions / instrument master,
-and accounting-critical event types. The future seed should decide whether an
-umbrella architecture RFC followed by smaller implementation RFCs, or several
-coordinated seeds, gives the cleanest ownership boundaries.
+and accounting-critical event types. Seed v1 uses one umbrella architecture
+RFC and leaves smaller implementation packets or coordinated sibling RFCs to
+later accepted decisions.
 
 Before choosing storage layout, mask granularity, or strategy-facing API, run
 the proposed real-data spike across strict dense, dense-plus-masks, sparse
 event, and sparse-storage / fold-local-dense prototypes. Required evidence
-includes legacy dense parity, no fills on carried or imputed prices, pre-event
+includes current dense parity, no fills on carried or imputed prices, pre-event
 invariance under future-listing or revision perturbation, explicit stale and
 unpriced states, run/sweep/cache/chunking parity, sample-retention diagnostics,
 and runtime/memory profiles. Fold-fitted transforms remain train-local model
 artifacts rather than snapshot-seal repair.
 
-The ragged-universe / asset-lifetime RFC remains a gate without a seed. These
-files are staged evidence for that future cycle and authorize no schema,
-runtime, imputation, accounting, or public API change.
+**Status update (2026-09-07):** The RFC cycle is now in flight at non-binding
+Seed v1:
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`.
+Response-stage adversarial review by a different author is next. The three
+research files remain evidence inputs rather than architecture authority, and
+the Seed v1 proposal requires comparative architecture evidence before a
+synthesis may select storage, state-plane, or public-context shapes. Neither
+the research nor Seed v1 authorizes a schema, runtime, imputation, accounting,
+or public API change.
 
 ### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
 
