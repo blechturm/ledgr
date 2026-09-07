@@ -9,10 +9,15 @@ comparative architecture spike. Non-binding for implementation.
 
 **Date:** 2026-09-07.
 
-**Revision note:** Revised after charter review to restore four omitted review
-details, distinguish the pre-existing portfolio-budget gap from ragged-universe
-exposure, and preserve the accepted quantity semantics while reopening only
-the removal-policy default and its budget interaction.
+**Revision history:**
+
+- Revision 1 restored four omitted review details, distinguished the
+  pre-existing portfolio-budget gap from ragged-universe exposure, and
+  preserved the accepted quantity semantics while reopening only the
+  removal-policy default and its budget interaction.
+- Revision 2 corrected the Section 16.3 finding: the response leaves the stale
+  mark and observed-close relationship underspecified; it does not logically
+  require a stale mark in the close vector.
 
 **Reviews:**
 
@@ -269,14 +274,16 @@ predicate. Lookback and mark age must name their clocks: global pulses,
 instrument-expected sessions, accepted observations, or elapsed time.
 Observed closes and valuation marks remain separate values.
 
-The response's Section 16.3 alternative contains a factual contradiction that
-must not survive into Seed v2: `priced` includes a stale-within-policy mark,
-while `ctx$vec$close` is said to be `NA` only where `!priced`. Taken together,
-those statements put a stale valuation mark into the strategy close vector,
-which the response's own F-1 correction forbids. An accepted observed close
-and an accepted valuation mark need separate fields and state. A holding can
-be valued from a permitted stale mark while its strategy-visible close remains
-`NA` because no current observation was accepted.
+The response's Section 16.3 alternative is underspecified and must not survive
+unchanged into Seed v2: `priced` includes a stale-within-policy mark, while the
+statement that `ctx$vec$close` is `NA` wherever `!priced` says nothing about
+what `close` contains when a stale mark makes `priced` true. It does not
+logically require the stale mark to appear in `close`, but it leaves that
+forbidden collapse available. Seed v2 must state the positive contract instead:
+an accepted observed close and an accepted valuation mark have separate fields
+and state. A holding can be valued from a permitted stale mark while its
+strategy-visible close remains `NA` because no current observation was
+accepted.
 
 ### R11. Explainability Must Join Decision To Outcome
 
