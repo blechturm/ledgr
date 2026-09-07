@@ -7,7 +7,11 @@
 - Package base commit: `1f42cf7`.
 - Evidence branch: `spike/asset-availability-pit-universes`.
 - Frozen charter commit: `1f42cf7`.
-- Stage 2 evidence commit: `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6`.
+- Stage 2 evidence commit: `b818d761891516cea5c1afd2a4b05724cca84fd6`.
+- Superseded Stage 2 evidence commit:
+  `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6` (the first gate run exposed a
+  Windows `HOME` lifetime defect in the checker; expected answers were
+  unchanged in witness specification v2).
 - Stage 2 gate-record commit: pending until committed after a passing gate.
 - Final immutable spike commit or archive reference: pending.
 - Prototype change inventory: pending.
@@ -24,7 +28,7 @@
 ## Frozen Inputs
 
 - Approved policy ID: `asset_availability_initial_policy_v4`.
-- Witness specification version: `asset_availability_witness_v1`.
+- Witness specification version: `asset_availability_witness_v2`.
 - Checker mutation set: M1-M5, approved with the witness contract.
 - Machine-readable freeze set: `frozen_hashes.csv`.
 - Permitted pre-prototype code: `preprototype_code.csv`.

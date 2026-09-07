@@ -1,7 +1,7 @@
 # Asset Availability And PIT Universe Spike
 
 **Status:** Stage 2 witness evidence is maintainer approved, independently
-reviewed, and frozen at `56ef24bb3f80d06ba616a8501dd61ee4ba2e70f6`.
+reviewed, and frozen at `b818d761891516cea5c1afd2a4b05724cca84fd6`.
 Prototype implementation must not start until the gate-record commit exists.
 
 **Branch:** `spike/asset-availability-pit-universes`.
