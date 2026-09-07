@@ -1,13 +1,13 @@
 # Initial Comparison Policy
 
-**Status:** Proposed; maintainer approval required.
+**Status:** Maintainer approved.
 
-**Policy ID:** `asset_availability_initial_policy_v2_proposed`.
+**Policy ID:** `asset_availability_initial_policy_v2`.
 
-This is one coherent starting configuration for comparing representations. It
-is not a package default, API decision, or implementation authorization. The
-maintainer may revise it before approving Stage 2. Once approved, every
-provider uses the same configuration.
+This is the approved starting configuration for comparing representations. It
+is not a package default, API decision, or implementation authorization. Every
+provider uses the same configuration unless a later reviewed amendment applies
+an alternative scenario to every provider.
 
 ## Portfolio Budget
 
@@ -143,7 +143,8 @@ comparison and must be applied to every provider.
 
 ## Approval
 
-- Maintainer: pending.
-- Date: pending.
-- Approved policy ID: pending.
-- Notes or amendments: pending.
+- Maintainer: repository maintainer.
+- Date: 2026-09-07.
+- Approved policy ID: `asset_availability_initial_policy_v2`.
+- Notes or amendments: approved after iterative independent review; no
+  amendments remain open at approval.

@@ -21,7 +21,7 @@
 
 ## Frozen Inputs
 
-- Approved policy ID: pending.
+- Approved policy ID: `asset_availability_initial_policy_v2`.
 - Witness specification version: pending.
 - Checker mutation set: pending.
 - Machine-readable freeze set: `frozen_hashes.csv`.
