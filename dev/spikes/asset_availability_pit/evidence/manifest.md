@@ -1,7 +1,6 @@
 # Spike Evidence Manifest
 
-**Status:** Stage 3 independently reviewed; active-evidence and code-origin
-anchors recorded; final Stage 3 gate pending.
+**Status:** Stage 3 independently reviewed and gate-complete on 2026-09-07.
 
 ## Repository
 
@@ -20,6 +19,8 @@ anchors recorded; final Stage 3 gate pending.
 - Prototype change inventory: `stage3_change_inventory.md`.
 - Stage 3 code registry: `stage3_code.csv`; every executable first appears at
   `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
+- Stage 3 gate-record commit:
+  `093e946a631cddedc32b0c241c176df7d9c4b518`.
 
 ## Roles
 
@@ -50,8 +51,7 @@ anchors recorded; final Stage 3 gate pending.
 
 ## Results
 
-- Stage 3 dense control and checker-baseline tables: `stage3_results/`
-  (provisional until the final Stage 3 gate).
+- Stage 3 dense control and checker-baseline tables: `stage3_results/`.
 - Checker mutation results: `stage3_results/checker_mutations.csv`.
 - Measurement bundles: pending.
 - Comprehension-check record: pending.

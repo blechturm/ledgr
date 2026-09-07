@@ -1,9 +1,8 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Witness v3 and the repaired Stage 3 implementation are maintainer-
-approved and independently reviewed. Active-evidence and code-origin anchors
-are recorded; the final Stage 3 gate remains. The prior v2 evidence remains at
-`b818d761891516cea5c1afd2a4b05724cca84fd6`.
+**Status:** Stage 3 is independently reviewed and gate-complete. The prior v2
+evidence remains at `b818d761891516cea5c1afd2a4b05724cca84fd6`; witness v3
+and the reviewed implementation are anchored at `d7a1fd3`.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 
@@ -49,6 +48,9 @@ Stage 3 closes only after:
 5. Independent review accepts the implementation and change inventory.
 6. The committed code's first-appearance hashes are recorded in
    `evidence/stage3_code.csv`, then `check_stage3.R --mode=gate` passes.
+
+All six conditions are satisfied. The final gate passed at `093e946` on
+2026-09-07. Stage 4 is the next spike phase.
 
 The Stage 2 commands remain available only for inspecting the frozen packet
 before prototype work. Run the Stage 3 review check from the repository root:

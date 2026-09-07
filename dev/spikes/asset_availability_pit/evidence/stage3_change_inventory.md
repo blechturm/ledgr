@@ -1,7 +1,7 @@
 # Stage 3 Fork Change Inventory
 
-**Status:** Review corrections and witness v3 independently accepted; evidence
-and code-origin anchors recorded; final Stage 3 gate pending.
+**Status:** Review corrections and witness v3 independently accepted; Stage 3
+gate passed on 2026-09-07.
 
 **Executor substitution:** The maintainer directed Codex to execute Stage 3.
 Claude remains the intended independent reviewer for this stage.
@@ -75,8 +75,29 @@ semantic invariants.
   accounting is fee-net. Seed v2 must preserve or explicitly resolve that
   evidence-surface distinction.
 - No Stage 3 timing is eligible for architecture comparison.
-- `evidence/stage3_code.csv` cannot be finalized until these files have a real
-  first-appearance commit. It lands immediately after review and that commit.
+- `evidence/stage3_code.csv` records the reviewed implementation commit as the
+  first appearance of every Stage 3 executable.
+
+## Accepted Residual Review Notes
+
+The independent reviewer accepted these Low-severity containment limits for
+Stage 3. They do not change the recorded witness outcomes:
+
+- Surplus identity evidence under an unknown case can escape the current
+  materializer filter; missing expected identities still fail closed.
+- A surplus-evidence finding would render its internal key separator as a
+  control character in the CSV finding text.
+- The W21 adapter still uses literals for its unrealized-P&L lot basis,
+  strategy-validation label, and final-pulse fill count. Other derived rows
+  catch divergence in the recorded fixture.
+- The Stage 3 gate does not independently enforce witness-registry approval
+  flags. All 31 registry rows are approved for this run.
+- One W22 manifest table row exceeds the prose width convention by two
+  characters.
+
+These are candidates for checker hardening before reuse. They are not
+architecture findings and must not be promoted into production requirements
+without the normal design process.
 
 ## Failure And Repair Inventory
 
