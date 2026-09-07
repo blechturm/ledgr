@@ -1,4 +1,4 @@
-# Stage 1 Witness Evidence Contract
+# Stage 2 Witness Evidence Contract
 
 **Status:** Setup skeleton; not frozen and not maintainer approved.
 
@@ -49,10 +49,21 @@ Each witness gets one long table under `expected/` with these columns:
 | `expected_value` | Canonical expected scalar representation |
 | `reason_code` | Typed reason or blank when not applicable |
 | `identity_expectation` | Equal, changed, absent, or not_applicable |
+| `comparison` | `exact` for non-double values or `abs_tol` for doubles |
+| `tolerance` | Non-negative absolute tolerance for doubles; blank otherwise |
 | `derivation` | Short independent arithmetic or temporal justification |
 
 Additional case-specific tables are allowed, but this long table is the
 minimum checker input and cannot be replaced by prose.
+
+Logical values use lowercase `true` or `false`; integers use base-10 strings;
+timestamps use UTC ISO-8601 strings; and absent values use an empty
+`expected_value`. Double values use a canonical decimal expectation and an
+explicit per-row absolute tolerance. There is no implicit global numeric
+tolerance.
+
+`identity_expectation` is one of `equal`, `changed`, `absent`, or
+`not_applicable`. The gate validates these representations before hashing.
 
 ## Freeze Protocol
 
@@ -62,9 +73,24 @@ minimum checker input and cannot be replaced by prose.
 3. The maintainer approves the policy and expected outcomes.
 4. A non-executing reviewer checks temporal reasoning, arithmetic, and table
    completeness.
-5. Approved files receive immutable content hashes in the evidence manifest.
+5. Approved files receive immutable content hashes in
+   `evidence/frozen_hashes.csv`.
 6. Registry status changes to `approved` only after both approvals.
-7. `check_stage1.R --mode=gate` must pass before fold-fork code begins.
+7. Commit the approved freeze targets and record that full commit in the
+   evidence manifest.
+8. Record the exact, sorted SHA-256 freeze set in
+   `evidence/frozen_hashes.csv`.
+9. `check_stage2.R --mode=gate` must pass before fold-fork code begins.
+
+Frozen inputs are UTF-8 or ASCII text. SHA-256 is computed after normalizing
+CRLF and bare CR endings to LF, while preserving all other bytes and the final
+newline. Paths are sorted bytewise with radix ordering. Any hash generator and
+the gate checker must apply those same rules so checkout line endings cannot
+change the freeze identity.
+
+The clean-workspace guard intentionally rejects an in-place line-ending
+rewrite even when normalized content would hash identically. Make such changes
+through a reviewed commit before recording the Stage 2 evidence commit.
 
 If an expected answer changes later, preserve the prior file or commit, record
 the rationale and approver, increment the witness-specification version, and
@@ -82,9 +108,19 @@ mutations that:
 - omit a required transform or cache dependency.
 
 The mutations test the checker, not a second execution implementation.
+Executable reference calculations and mutation scripts must be registered in
+`evidence/preprototype_code.csv`; any other executable file under this
+workspace closes the gate.
 
-## Stage 1 Completion
+The extension and filename scan is a tripwire for common executable or
+code-bearing files, including R, SQL, shell, command, profile, Makefile, and
+text-script forms. It is not a content classifier. The frozen commit, clean
+workspace requirement, exact hash set, and independent reviewer diff remain
+the guarantees against disguised prototype code.
 
-Stage 1 is complete only when W01-W31 are approved in the registry, every
+## Stage 2 Completion
+
+Stage 2 is complete only when W01-W31 are approved in the registry, every
 referenced fixture and expected table exists, the policy status is maintainer
-approved, and the gate script exits successfully.
+approved, every frozen hash verifies, the freeze commit is recorded, no
+prototype code exists, and the gate script exits successfully.

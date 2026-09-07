@@ -1,6 +1,6 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Workspace initialized. Stage 1 witness evidence is not frozen or
+**Status:** Workspace initialized. Stage 2 witness evidence is not frozen or
 approved. Prototype implementation must not start.
 
 **Branch:** `spike/asset-availability-pit-universes`.
@@ -34,24 +34,27 @@ result.
 
 ## Current Gate
 
-Only workspace setup is complete. The Stage 1 gate remains closed until:
+Charter clarification and freeze completed at package base commit `1f42cf7`.
+Only the Stage 2 workspace setup is complete. The Stage 2 gate remains closed
+until:
 
 1. `initial_policy_config.md` is maintainer approved.
 2. W01-W31 each have exact fixture manifests and expected-output tables.
 3. Expected arithmetic and temporal reasoning are independently reviewed.
 4. `witness_registry.csv` marks every row approved and reviewed.
-5. `check_stage1.R --mode=gate` exits successfully.
+5. Every frozen input matches `evidence/frozen_hashes.csv`.
+6. `check_stage2.R --mode=gate` exits successfully before prototype code exists.
 
 Run the setup check from the repository root:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage1.R --mode=setup
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=setup
 ```
 
-The gate command is intentionally expected to fail until Stage 1 is complete:
+The gate command is intentionally expected to fail until Stage 2 is complete:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage1.R --mode=gate
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage2.R --mode=gate
 ```
 
 ## Workspace
@@ -60,23 +63,27 @@ The gate command is intentionally expected to fail until Stage 1 is complete:
 | --- | --- |
 | `witness_spec.md` | Exact input/output schema and freeze protocol |
 | `witness_registry.csv` | Machine-readable W01-W31 status and artifact paths |
-| `initial_policy_config.md` | One proposed comparison policy awaiting approval |
+| `initial_policy_config.md` | Proposed comparison policy awaiting approval |
 | `fixtures/` | Small deterministic input manifests and source tables |
 | `expected/` | Independently calculated expected-output tables |
 | `evidence/` | Branch-tracked manifests, environment records, and conclusions |
+| `references/` | Registered independent reference calculations |
 | `scratch/` | Ignored local logs, profiles, and replaceable scratch output |
-| `check_stage1.R` | Stage 1 structural gate; no prototype semantics |
+| `check_stage2.R` | Stage 2 structural and evidence-freeze gate |
 
-Later code, if Stage 1 passes, stays below this directory. It must not modify
-`R/`, `src/`, `tests/testthat/`, `NAMESPACE`, or `DESCRIPTION`.
+Later code, if Stage 2 passes, stays below this directory. It must not modify
+`R/`, `src/`, `tests/testthat/`, `NAMESPACE`, `DESCRIPTION`, or `man/`.
+`scratch/` may not contain executable or code-bearing files before the gate;
+being ignored by Git does not exempt a file from the tripwire scan.
 
 ## Planned Execution
 
-1. Freeze exact witness evidence and the initial policy.
-2. Build the disposable fork and one reference provider.
-3. Prove dense parity and checker mutation sensitivity.
-4. Add remaining providers and run the user and usability checks.
-5. Measure only semantic survivors and record a green, red, or inconclusive
+1. Preserve the already frozen charter revision.
+2. Freeze exact witness evidence and the initial policy.
+3. Build the disposable fork and one reference provider.
+4. Prove dense parity and checker mutation sensitivity.
+5. Add remaining providers and run the user and usability checks.
+6. Measure only semantic survivors and record a green, red, or inconclusive
    result.
 
 No timing produced before the conformance gate is architecture evidence.
