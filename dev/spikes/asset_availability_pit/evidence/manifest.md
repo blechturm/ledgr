@@ -14,8 +14,7 @@ anchors recorded; final Stage 3 gate pending.
   Windows `HOME` lifetime defect in the checker; expected answers were
   unchanged in witness specification v2).
 - Stage 2 gate-record commit: `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`.
-- Active Stage 2 evidence commit:
-  `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
+- Active Stage 2 evidence commit: `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
 - Correction record: `stage2_correction_v3.md`.
 - Final immutable spike commit or archive reference: pending.
 - Prototype change inventory: `stage3_change_inventory.md`.
