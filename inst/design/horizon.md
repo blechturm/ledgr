@@ -215,10 +215,13 @@ unpriced states, run/sweep/cache/chunking parity, sample-retention diagnostics,
 and runtime/memory profiles. Fold-fitted transforms remain train-local model
 artifacts rather than snapshot-seal repair.
 
-**Status update (2026-09-07):** The RFC cycle is now in flight at non-binding
-Seed v1:
-`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`.
-Response-stage adversarial review by a different author is next. The three
+**Status update (2026-09-07):** The RFC cycle is now in flight at the
+non-binding response stage. Seed v1
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`)
+was answered the same day by the Stage 3 adversarial response
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md`).
+Stage 4 response review was accepted the same day. The bounded comparative
+architecture spike is next, followed by Seed v2. The three
 research files remain evidence inputs rather than architecture authority, and
 the Seed v1 proposal requires comparative architecture evidence before a
 synthesis may select storage, state-plane, or public-context shapes. Neither
