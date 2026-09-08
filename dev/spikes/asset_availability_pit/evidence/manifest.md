@@ -18,7 +18,8 @@ outcome on 2026-09-08.
 - Stage 2 gate-record commit: `9d957a30d13f2fd42b6a09bbad1b1d65ddb528b5`.
 - Active Stage 2 evidence commit: `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
 - Correction record: `stage2_correction_v3.md`.
-- Final immutable spike commit or archive reference: pending.
+- Reviewed terminal-report commit:
+  `f80472ab755fad95b18e338ffcf7d693064b1d20`.
 - Prototype change inventory: `stage3_change_inventory.md`.
 - Stage 3 code registry: `stage3_code.csv`; every executable first appears at
   `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.

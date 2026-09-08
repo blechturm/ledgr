@@ -50,7 +50,8 @@ The comparison remained bound to:
 - Stage 3 gate-record commit `093e946`; and
 - redirected Stage 4 commit `1f7c24a`.
 
-The final immutable spike commit is pending this report's independent review.
+The reviewed terminal report is anchored at
+`f80472ab755fad95b18e338ffcf7d693064b1d20`.
 No package runtime, package test, public API, manual page, or `inst/design`
 file changed after the package base commit.
 
