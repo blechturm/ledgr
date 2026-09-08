@@ -1,8 +1,10 @@
 # Asset Availability And PIT Universe Spike
 
-**Status:** Stage 3 is independently reviewed and gate-complete. The prior v2
-evidence remains at `b818d761891516cea5c1afd2a4b05724cca84fd6`; witness v3
-and the reviewed implementation are anchored at `d7a1fd3`.
+**Status:** Stage 3 is independently reviewed and gate-complete. The redirected
+Stage 4 provider comparison is complete after independent review.
+The prior v2 evidence remains at
+`b818d761891516cea5c1afd2a4b05724cca84fd6`; witness v3 and the reviewed Stage 3
+implementation are anchored at `d7a1fd3`.
 
 **Branch:** `spike/asset-availability-pit-universes`.
 
@@ -50,26 +52,31 @@ Stage 3 closes only after:
    `evidence/stage3_code.csv`, then `check_stage3.R --mode=gate` passes.
 
 All six conditions are satisfied. The final gate passed at `093e946` on
-2026-09-07. Stage 4 is the next spike phase.
+2026-09-07.
 
-The Stage 2 commands remain available only for inspecting the frozen packet
-before prototype work. Run the Stage 3 review check from the repository root:
+## Stage 4 Review
+
+Stage 4 sends all W01-W31 records through one `stage4_run_case()` fork behind
+three provider representations. Ten witnesses are executable conformance
+checks; 21 remain visible as `policy_example` records because this fork cannot
+independently fail them. M1-M5 are each rejected once through the fork. W20
+covers direct, serialized-restore, and PSOCK execution. Timing is prohibited.
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/run_stage3.R
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check_stage3.R --mode=review
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/run_stage4.R
+& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/spikes/asset_availability_pit/check.R
 ```
 
-The Stage 3 gate command is intentionally expected to fail until witness v3
-and the reviewed code are committed and the first-appearance registry is
-added.
+Stage 2 and Stage 3 remain committed evidence. Stage 4 does not rerun their
+gates or reproduce their provenance machinery.
 
 ## Workspace
 
 | Path | Purpose |
 | --- | --- |
 | `witness_spec.md` | Exact input/output schema and freeze protocol |
-| `witness_registry.csv` | Machine-readable W01-W31 status and artifact paths |
+| `witness_registry.csv` | Frozen W01-W31 approvals and artifact paths |
+| `stage4/fixtures.R` | Stage 4-owned executable/example classification |
 | `initial_policy_config.md` | Maintainer-approved v4 comparison policy |
 | `fixtures/` | Self-contained fixture manifests with embedded source tables |
 | `expected/` | Independently calculated expected-output tables |
@@ -77,6 +84,8 @@ added.
 | `evidence/` | Branch-tracked manifests, environment records, and conclusions |
 | `scratch/` | Ignored local logs, profiles, and replaceable scratch output |
 | `check_stage2.R` | Stage 2 structural, review, and evidence-freeze gate |
+| `stage3/`, `run_stage3.R`, `check_stage3.R` | Reviewed shared-fork control and Stage 3 gate |
+| `stage4/`, `run_stage4.R`, `check.R` | Shared-fork provider comparison and reproducibility check |
 
 Later code, if Stage 2 passes, stays below this directory. It must not modify
 `R/`, `src/`, `tests/testthat/`, `NAMESPACE`, `DESCRIPTION`, or `man/`.

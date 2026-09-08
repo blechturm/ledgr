@@ -1,6 +1,8 @@
 # Spike Evidence Manifest
 
 **Status:** Stage 3 independently reviewed and gate-complete on 2026-09-07.
+The redirected Stage 4 shared-fork comparison completed independent review on
+2026-09-08.
 
 ## Repository
 
@@ -21,6 +23,7 @@
   `d7a1fd36d2ab62227e5bba6a86e9fb9672e049ca`.
 - Stage 3 gate-record commit:
   `093e946a631cddedc32b0c241c176df7d9c4b518`.
+- Stage 4 change inventory: `stage4_change_inventory.md`.
 
 ## Roles
 
@@ -28,6 +31,10 @@
 - Stage 3 spike executor: Codex, by maintainer substitution.
 - Stage 3 independent conformance reviewer: Claude; changes required in the
   first review and corrected implementation accepted on re-review.
+- Stage 4 spike executor: Codex, by maintainer substitution.
+- Stage 4 independent shared-fork reviewer: Claude; three Medium corrections
+  required initially and accepted on re-review with no remaining High or
+  Medium findings.
 - Terminal-outcome reviewer: pending.
 
 ## Frozen Inputs
@@ -53,9 +60,11 @@
 
 - Stage 3 dense control and checker-baseline tables: `stage3_results/`.
 - Checker mutation results: `stage3_results/checker_mutations.csv`.
+- Stage 4 conformance, one-pass mutation, policy-example, and provider-memory
+  evidence: `stage4_results/`.
 - Measurement bundles: pending.
-- Comprehension-check record: pending.
 - Failure and repair inventory: `stage3_change_inventory.md`.
+- Stage 4 failure and repair inventory: `stage4_change_inventory.md`.
 - Reviewed terminal outcome: pending.
 
 Stage 2 may change this status to `Stage 2 frozen` only after the policy,
@@ -74,7 +83,3 @@ prototype work only after `check_stage2.R --mode=gate` passed with no
 undeclared code present. A reviewed correction does not rerun or weaken that
 pre-prototype gate; the Stage 3 gate anchors the corrected set to its later
 active evidence commit.
-
-A later-stage checker must record the first-appearance commit for every
-prototype executable and verify that each commit descends from the recorded
-Stage 2 gate-record commit.
