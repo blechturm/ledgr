@@ -25,7 +25,9 @@ For any non-trivial change, read in this order:
    authorization.
 4. For RFC-cycle work, read `rfc_cycle.md` before drafting or reviewing a seed,
    response, synthesis, final review, or horizon entry.
-5. Only the architecture, RFC, audit, or spike documents relevant to the active
+5. For spike or prototype work, read `spike_protocol.md` before writing a
+   probe, charter, or harness.
+6. Only the architecture, RFC, audit, or spike documents relevant to the active
    ticket.
 
 Historical spec packets are records, not current instructions, unless a task
@@ -367,6 +369,9 @@ branch for merge/tag.
 - `ledgr_roadmap.md` - milestone arc and active horizon.
 - `rfc_cycle.md` - RFC-stage process reference for seed, response,
   synthesis, final review, and horizon-entry workflows.
+- `spike_protocol.md` - binding protocol for spikes, prototypes, and
+  comparative experiments: probe first, runnable core before expected
+  tables, size budgets, executor evidence, and the review contract.
 - `ledgr_design_document.md` - foundational design document.
 - `ledgr_design_philosophy.md` - product and design philosophy.
 - `model_routing.md` - model/task routing guidance.

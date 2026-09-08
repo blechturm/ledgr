@@ -19,6 +19,12 @@ the execution contracts in `inst/design/contracts.md`.
   `coverage.html`, `tests/testthat/Rplots.pdf`.
 - Use UTF-8 or ASCII encoding only. Do not introduce other encodings in R
   source, test, or design files.
+- Spikes, prototypes, and comparative experiments follow
+  `inst/design/spike_protocol.md`: probe the package by execution before
+  writing design prose, build the smallest runnable core before any expected
+  table, keep provenance in the product rather than the harness, and deliver
+  a runner, a diff-based checker, and a gut demonstration. Size budgets in
+  that document are stop signals, not targets.
 
 ## Design Documents
 
@@ -28,6 +34,7 @@ Read before implementing any non-trivial change:
 - Execution contracts (authoritative): `inst/design/contracts.md`
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
+- Spike protocol (binding for spikes and prototypes): `inst/design/spike_protocol.md`
 - ADRs: `inst/design/adr/`
 
 Current planning context (active v0.1.9.7 packet):
