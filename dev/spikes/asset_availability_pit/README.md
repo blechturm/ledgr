@@ -1,7 +1,8 @@
 # Asset Availability And PIT Universe Spike
 
 **Status:** Stage 3 is independently reviewed and gate-complete. The redirected
-Stage 4 provider comparison is complete after independent review.
+Stage 4 provider comparison is complete after independent review. Stage 5 is
+complete after independent review with an inconclusive terminal outcome.
 The prior v2 evidence remains at
 `b818d761891516cea5c1afd2a4b05724cca84fd6`; witness v3 and the reviewed Stage 3
 implementation are anchored at `d7a1fd3`.
@@ -82,6 +83,7 @@ gates or reproduce their provenance machinery.
 | `expected/` | Independently calculated expected-output tables |
 | `references/` | Registered independent reference calculations |
 | `evidence/` | Branch-tracked manifests, environment records, and conclusions |
+| `evidence/stage5_terminal_report.md` | Reviewed inconclusive terminal report and Seed v2 handoff |
 | `scratch/` | Ignored local logs, profiles, and replaceable scratch output |
 | `check_stage2.R` | Stage 2 structural, review, and evidence-freeze gate |
 | `stage3/`, `run_stage3.R`, `check_stage3.R` | Reviewed shared-fork control and Stage 3 gate |
@@ -98,8 +100,10 @@ being ignored by Git does not exempt a file from the tripwire scan.
 2. Freeze exact witness evidence and the initial policy.
 3. Build the disposable fork and one reference provider.
 4. Prove dense parity and checker mutation sensitivity.
-5. Add remaining providers and run the user and usability checks.
+5. Add remaining providers. The redirected stage omitted the chartered user
+   journeys and usability checks.
 6. Measure only semantic survivors and record a green, red, or inconclusive
-   result.
+   result. The redirected Stage 4 left no provider eligible for charter-valid
+   timing, so Stage 5 recorded an inconclusive result without measurements.
 
 No timing produced before the conformance gate is architecture evidence.

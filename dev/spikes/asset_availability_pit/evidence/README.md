@@ -11,8 +11,13 @@ the spike:
 - conformance and checker-mutation tables;
 - Stage 4 shared-fork conformance, one-pass checker mutations, and structural
   provider memory accounting;
-- measurement summaries and failure attribution; and
-- the reviewed green, red, or inconclusive report.
+- `stage5_terminal_report.md`, which records why no provider was eligible for
+  charter-valid timing and records the reviewed inconclusive terminal
+  outcome; and
+- measurement summaries when eligible measurements exist.
+
+The current Stage 5 result contains no measurement bundle. Small-fixture
+provider object sizes are retained as structural accounting only.
 
 The Stage 2 freeze and Stage 3 review records remain committed history. The
 frozen witness registry is unchanged. Stage 4 owns its executable versus

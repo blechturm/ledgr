@@ -2,7 +2,8 @@
 
 **Status:** Stage 3 independently reviewed and gate-complete on 2026-09-07.
 The redirected Stage 4 shared-fork comparison completed independent review on
-2026-09-08.
+2026-09-08. Stage 5 reached an independently reviewed inconclusive terminal
+outcome on 2026-09-08.
 
 ## Repository
 
@@ -24,6 +25,7 @@ The redirected Stage 4 shared-fork comparison completed independent review on
 - Stage 3 gate-record commit:
   `093e946a631cddedc32b0c241c176df7d9c4b518`.
 - Stage 4 change inventory: `stage4_change_inventory.md`.
+- Reviewed Stage 5 terminal report: `stage5_terminal_report.md`.
 
 ## Roles
 
@@ -35,7 +37,9 @@ The redirected Stage 4 shared-fork comparison completed independent review on
 - Stage 4 independent shared-fork reviewer: Claude; three Medium corrections
   required initially and accepted on re-review with no remaining High or
   Medium findings.
-- Terminal-outcome reviewer: pending.
+- Terminal-outcome reviewer: Claude, who did not execute Stage 3 or Stage 4;
+  the review confirmed the inconclusive classification and required only four
+  Low wording and provenance corrections, all applied before commit.
 
 ## Frozen Inputs
 
@@ -62,10 +66,12 @@ The redirected Stage 4 shared-fork comparison completed independent review on
 - Checker mutation results: `stage3_results/checker_mutations.csv`.
 - Stage 4 conformance, one-pass mutation, policy-example, and provider-memory
   evidence: `stage4_results/`.
-- Measurement bundles: pending.
+- Measurement bundles: not produced. The redirected Stage 4 executed 10 of 31
+  frozen witnesses and did not leave a provider eligible for charter-valid
+  timing. Small-fixture object sizes are structural accounting only.
 - Failure and repair inventory: `stage3_change_inventory.md`.
 - Stage 4 failure and repair inventory: `stage4_change_inventory.md`.
-- Reviewed terminal outcome: pending.
+- Reviewed terminal outcome: inconclusive.
 
 Stage 2 may change this status to `Stage 2 frozen` only after the policy,
 witness specification, fixtures, expected tables, and permitted reference or
