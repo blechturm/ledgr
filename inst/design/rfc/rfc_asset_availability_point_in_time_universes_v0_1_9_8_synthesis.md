@@ -3,7 +3,10 @@
 **Status:** Accepted by the maintainer on 2026-09-08 after Codex final review
 and three in-place final-review patch sets. Binding for the first
 asset-availability implementation until superseded by a spec packet, contract,
-ADR, or architecture note.
+ADR, or architecture note. A same-day post-acceptance review correction
+requires an observation-independent expected-session clock in every
+availability-aware run and distinguishes structural input invalidity from
+retained, runtime-resolved status conflicts.
 **Date:** 2026-09-08
 **Author:** Claude (synthesis), under `../rfc_cycle.md` role rotation: Codex
 wrote Seed v1 and the accepted Seed v2, Claude wrote the response, Codex
@@ -54,6 +57,9 @@ What this synthesis binds:
 - effective time versus knowledge time, with the bar-timestamp convention
   for observations and evidenced or assumed knowledge time for the other
   families;
+- a complete, declared expected-session clock independent of observed bars
+  for every availability-aware run; the observation-derived pulse axis remains
+  a dense-mode convention only;
 - one activation rule, "availability policy active", defined once in
   Section 3, with per-family gates and canonical omission for dense mode;
 - one fold core, one full-target strategy contract, and a public axis of
@@ -99,6 +105,7 @@ touchpoints instead of discovering them. Line numbers are as of `e2a7a05`.
 | Seed v2 statement | Current code or contract | Disposition |
 | --- | --- | --- |
 | Public axis is members union held, pulse-dependent | `ledgr_execution_spec()` fixes `instrument_ids` once (`R/execution-spec.R:45-57`); the fold sets `ctx$universe = instrument_ids` every pulse (`R/fold-engine.R:162, 327`) | Binding change: the execution object carries the bounded superset; the pulse context receives the pulse axis (Section 5) |
+| Availability-aware clocks are independent of observed bars | Current pulses are distinct `snapshot_bars.ts_utc` values (`R/backtest-runner.R:832-838, 1498-1537`), so a whole-feed outage creates no pulse and cannot age valuation or expose an expected-session feature gap | Binding change: `sessions` is required and complete over the requested range in availability-aware mode; only dense mode retains the observation-derived pulse axis (Sections 3, 4.1, and 14 gate 24) |
 | Empty axis still invokes the strategy | `ledgr_validate_strategy_targets()` rejects an empty universe (`R/strategy-contracts.R:36`); `ledgr_signal_strategy()` requires a non-empty universe (`R/signal-strategy.R:56`) | Binding change in active mode only (Section 6.6); dense mode keeps the non-empty rule |
 | Opening state, `ledgr_lot_state_asof()`, initial positions use the axis | `ledgr_experiment_validate_opening()` rejects positions outside `universe` (`R/experiment.R:502-507`), repeated at `R/config-validate.R:99-103`; the runner builds `initial_positions` over `instrument_ids` (`R/backtest-runner.R:1041-1046`); walk-forward carry calls `ledgr_lot_state_asof(..., exp$universe, ...)` with the static universe (`R/walk-forward.R:852`) | Binding change: validate against the opening-pulse axis (members plus carried holdings), Section 5.4 |
 | Risk receives an accepted valuation mark separate from the close | `ledgr_apply_risk_step_max_weight()` reads `ctx$vec$close` and `ctx$equity` (`R/risk-model.R:416-446`); the fold values positions from the current close (`R/fold-engine.R:300-309`); `ledgr_state_asof()` yields `NA` equity for a held ID without a bar (`R/backtest-runner.R:1810-1817`) | Binding change: a valuation plane feeds risk and valuation in active mode (Section 7.3); dense mode unchanged |
@@ -132,6 +139,16 @@ A run is **availability-aware** when either condition holds:
    `membership`, `sessions`, `trading_status`, or `lifetime`; or
 2. the experiment declares a `valuation_policy`.
 
+Every availability-aware run requires both a declared `sessions` family and
+a declared `valuation_policy`. The session calendar must establish complete
+coverage over the requested run range under the selected calendar contract,
+and each session used by a decision must be knowable by that session. A
+non-session fact family or valuation policy with no session family fails
+experiment validation with `ledgr_sessions_required`; incomplete range
+coverage or a session not knowable by its opening fails
+`ledgr_sessions_incomplete`. There is no weakened availability-aware mode
+whose expected-session clock is inferred from observed bars.
+
 Otherwise the run is **dense** and behaves exactly as today. Dense is the
 absence of every availability declaration. There is no mode field, no
 default-valued flag, and no string that names dense mode in any canonical
@@ -158,7 +175,7 @@ Per-family gates stay distinct:
 | Family declared | Effect when declared | Effect when omitted |
 | --- | --- | --- |
 | `membership` | available for selection by `ledgr_universe_members(universe_id)`; when selected, `ctx$members` is the knowable point-in-time membership at each decision pulse and the axis is members union holdings; a fixed basket ignores it | `ledgr_universe_members()` fails closed; a fixed basket is the only universe shape |
-| `sessions` | the declared venue calendar creates the pulse axis; expected sessions drive feature windows and venue open sessions drive stale age; observed rows never add pulses | pulses are the distinct bar timestamps, today's convention; every bar timestamp is an expected session |
+| `sessions` | required in availability-aware mode; the complete declared venue calendar creates the pulse axis; expected sessions drive feature windows and venue open sessions drive stale age; observed rows never add or remove pulses | valid only in dense mode, where pulses remain the distinct bar timestamps under today's convention; any other availability declaration fails `ledgr_sessions_required` |
 | `trading_status` | status is resolved at decision and execution time from knowable facts; missing per-ID status is `status_unknown`, a typed no-fill; conflict is `status_unknown_or_conflicting` | status checks are disabled; an accepted execution bar retains dense eligibility; the effective plan discloses "status checks: not declared" |
 | `lifetime` | `unknown` restricts nothing and removes no expected session; `known_inactive` effective at a pulse restricts targets at decision, blocks fills at execution, and removes its sessions from feature and classification expectation while the valuation clock keeps counting venue open sessions; an accepted terminal assertion on a held ID stops with `terminal_settlement_unsupported`, otherwise a held `known_inactive` position exhausts its stale horizon and stops with `valuation_horizon_exhausted` | lifetime is `unknown` everywhere, restricts nothing, and the full venue calendar is expected |
 | `valuation_policy` (experiment) | held IDs without an accepted current close carry a permitted stale mark up to the declared horizon, then exhaust | required whenever a fact family is declared (Section 7.3); irrelevant in dense mode |
@@ -196,10 +213,13 @@ instrument. Families for the first implementation:
 | `membership` | instrument | `universe_id`, `member` (logical) | intervals or dated complete snapshots (Section 4.3); several `universe_id` values may coexist |
 | `trading_status` | instrument | `status` (`active`, `halted`, `quotation_only`), `source`, `precedence` | resolved by effective interval, source precedence, supersession |
 | `lifetime` | instrument | `assertion` (`known_active`, `known_inactive`, `unknown`), `terminal_event` (optional label) | vendor labels stay labels; no accounting event is derived |
-| `sessions` | venue | `session_open`, `session_close`, `status` (`open`, `closed`) | one venue calendar per snapshot in v1 (Section 12) |
+| `sessions` | venue | `session_open`, `session_close`, `status` (`open`, `closed`) | one complete venue calendar per availability-aware snapshot in v1 (Sections 3 and 12) |
 
 Venue-to-instrument applicability in v1: the snapshot's single venue
-calendar applies to every instrument. Two session sets are derived from it.
+calendar applies to every instrument. In availability-aware mode its declared
+coverage must determine every open session and closure in the requested run
+range independently of observation presence. A whole-feed outage therefore
+removes no pulse. Two session sets are derived from the calendar.
 Venue open sessions are every declared session with status `open`; declared
 closures are never in either set. An instrument's expected sessions, which
 drive feature windows and observation classification, are the venue open
@@ -273,6 +293,16 @@ the IDs present in a frame.
 
 `unknown` is stored as `unknown`. Consumers act conservatively per predicate;
 an independent plane may still establish held or observed state.
+
+Status-source conflict is not structural invalidity. Individually valid
+assertions from distinct sources may overlap and disagree. Precedence and
+supersession resolve them when possible. If distinct assertions remain tied at
+the highest applicable precedence, both are retained and hashed as accepted
+evidence; the runtime resolver returns `status_unknown_or_conflicting` at each
+affected cutoff. In contrast, malformed status values or intervals, duplicate
+canonical fact identities with incompatible payloads, invalid precedence, and
+invalid supersession relationships are structural errors and prevent sealing.
+Reopening preserves the retained assertions and the same runtime resolution.
 
 ---
 
@@ -595,8 +625,10 @@ candidate. Incomplete candidates are never promoted as complete performance.
   requires the `n` most recent expected sessions for that instrument to carry
   accepted observations. A missing or invalid required observation makes the
   feature `NA` at that pulse; it is never skipped, carried, imputed, or
-  replaced by a valuation mark. Availability recovers only after a complete
-  required window.
+  replaced by a valuation mark. A whole-feed outage leaves the declared
+  session pulses in place, so an observation before and after the outage can
+  never masquerade as a complete adjacent-session window. Availability
+  recovers only after a complete required window.
 - Scalar `fn`, `series_fn` precomputation, and cached paths must agree
   exactly under strict gaps; this is a gate (Section 14).
 - Indicators without a declarable required window, or whose `series_fn`
@@ -730,21 +762,26 @@ implies dense semantics by itself.
 ### 10.3 Pre-seal validation and report
 
 `ledgr_facts_validate()` returns a `ledgr_facts_report` whose print lists
-accepted, rejected, quarantined, and unresolved facts with reasons: unknown
-IDs, overlapping intervals, contradictions, malformed intervals, membership
-completeness, knowledge-time treatment, and observation validity. Sealing
-refuses unresolved contradictions; a user never fabricates evidence to
-complete a table.
+accepted facts, accepted runtime conflicts, rejected facts, quarantined rows,
+and audit-only facts with reasons: unknown IDs, overlapping intervals,
+malformed intervals, membership and session completeness, knowledge-time
+treatment, and observation validity. Sealing refuses structural invalidity and
+unresolved referential contradictions. It does not reject individually valid
+status assertions merely because distinct sources remain tied at the highest
+applicable precedence; those assertions are retained for the conservative
+runtime resolution in Section 4.4. A user never fabricates evidence to complete
+a table.
 
 ### 10.4 The connected journey
 
 The acceptance journey that a provider-shaped, redistributable fixture must
 support end to end:
 
-1. build facts from bars, stable IDs, and a dated membership table with
-   evidenced knowledge time or a disclosed assumption;
-2. `ledgr_facts_validate()` and inspect every rejected, contradictory, or
-   unresolved fact;
+1. build facts from bars, stable IDs, a complete venue-session calendar, and a
+   dated membership table with evidenced knowledge time or a disclosed
+   assumption;
+2. `ledgr_facts_validate()` and inspect every rejected fact, structural error,
+   retained runtime conflict, quarantine row, or audit-only fact;
 3. `ledgr_snapshot_from_df(..., facts = )` and seal;
 4. `ledgr_experiment()` with `ledgr_universe_members()` and a declared
    valuation policy; `ledgr_experiment_plan()` shows declared families,
@@ -874,8 +911,13 @@ Each gate is a mechanical test the spec packet names before tickets are cut.
     decision view.
 16. Status family gate: with `trading_status` omitted, an accepted execution
     bar fills and the effective plan discloses the disabled check; with it
-    declared, a missing per-ID status is `status_unknown` and a conflict is
-    `status_unknown_or_conflicting`, both typed no-fills.
+    declared, a missing per-ID status is `status_unknown`, a typed no-fill.
+    Two individually valid, distinct-source assertions that remain tied at
+    the highest precedence survive ingestion and sealing as a retained runtime
+    conflict; execution produces `status_unknown_or_conflicting`, no fill, and
+    reopening reproduces the same evidence and resolution. Malformed status
+    input and incompatible duplicate canonical fact identities fail before
+    sealing.
 17. Target and post-risk closure: restricted IDs admit only current quantity
     or zero; non-member increases and sign reversals fail typed; post-risk
     accepts zero or same-sign no-larger targets and rejects anything else
@@ -910,6 +952,16 @@ Each gate is a mechanical test the spec packet names before tickets are cut.
     when the ID is neither member nor held and re-initialized on re-entry;
     portfolio-level state is preserved across membership changes; a
     positional index cached across pulses is not honored.
+24. Complete-feed outage: an availability-aware fixture declares Monday
+    through Thursday as open sessions but supplies observations only on Monday
+    and Thursday. Tuesday and Wednesday remain pulses. With
+    `max_sessions = 1L`, a held position stops on Wednesday with
+    `valuation_horizon_exhausted`; in a non-exhausting feature fixture, a
+    two-session feature stays `NA` through Thursday rather than treating
+    Monday and Thursday as adjacent complete sessions. Omitting `sessions`
+    from either active fixture fails `ledgr_sessions_required`; omitting a day
+    from the declared calendar coverage or making it knowable only after its
+    opening fails `ledgr_sessions_incomplete`.
 
 ### 14.2 Disposition of the approved witnesses
 
@@ -965,8 +1017,10 @@ named gate on the implementation rather than by the spike's prototype form.
 - Alias facts and per-observation revision facts as v1-optional families;
   gate 2 and witnesses W16 and W29 follow that decision.
 - Exact API shape of the `asset_state` element and its lifecycle hook.
-- The `ledgr_facts_sessions()` input format and holiday closure encoding for
-  one venue.
+- The `ledgr_facts_sessions()` input format, holiday closure encoding, and
+  mechanical proof of complete, knowable calendar coverage over the requested
+  range for one venue. The requirement for an observation-independent clock is
+  not open.
 - Reason-code enum finalization beyond the codes named in Sections 6 and 7.
 - Scale optimization, only after a probe under `../spike_protocol.md` with
   one question and a production-shaped path.
@@ -1014,6 +1068,13 @@ Disagreements, none reversing an accepted decision:
 
 Decisions Seed v2 left open and this synthesis binds:
 
+- Every availability-aware run requires a complete, knowable `sessions`
+  family. The observation-derived pulse axis remains dense-only because it
+  cannot expose a whole-feed outage or support venue-session staleness and
+  expected-session feature claims.
+- Individually valid competing status-source assertions may survive sealing
+  and resolve conservatively at runtime; structural status invalidity prevents
+  sealing (Sections 4.4, 10.3, and gate 16).
 - Membership is frozen at decision time; execution does not re-evaluate it
   (Section 7.2). The alternative, a membership gate at execution, was
   rejected because membership is not a trading restriction and the
@@ -1033,8 +1094,9 @@ Decisions Seed v2 left open and this synthesis binds:
 
 The accepted synthesis binds the first implementation of point-in-time
 universes: one activation rule, one fold core, a members-union-held axis,
-policy v4 semantics, strict feature gaps, and a required declared valuation
-horizon. "v1" means the first implementation of this feature.
+policy v4 semantics, strict feature gaps, a required observation-independent
+session calendar, and a required declared valuation horizon. "v1" means the
+first implementation of this feature.
 
 Deferred themes: accounting-critical events (dividends, delistings,
 terminal economics) -> accounting sibling RFC; OMS and order lifetimes ->
@@ -1100,3 +1162,12 @@ This entry does not authorize any of the above; it records the direction.
   maintainer accepted the synthesis; the post-synthesis horizon entry and
   governance indexes were updated. No spec packet or implementation was
   opened by acceptance.
+- **2026-09-08** -- post-acceptance methodological review correction: every
+  availability-aware run now requires a complete, knowable `sessions` family;
+  the bar-derived pulse axis remains dense-only, and gate 24 covers a
+  whole-feed outage (1-4, 8, 10, 14, 15, 17, 18). Structural status invalidity
+  is distinguished from valid competing source assertions retained for
+  conservative runtime resolution, with ingestion-to-reopen coverage added to
+  gate 16 (4.4, 10.3, 14, 17). The architecture and inconclusive spike verdict
+  are unchanged; no new RFC cycle, spec packet, ticket, or implementation is
+  opened.

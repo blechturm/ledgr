@@ -1904,8 +1904,12 @@ plus survivorship-bias teaching precede implementation. The synthesis at
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
 was accepted by the maintainer after Codex final review on 2026-09-08. It
 binds the first-implementation direction and Section 14 gate matrix while
-leaving the physical and schema choices in Section 15 for spec cut. No spec
-packet, tickets, or implementation are open yet.
+leaving the physical and schema choices in Section 15 for spec cut. A
+same-day post-acceptance correction requires an observation-independent
+session calendar for every availability-aware run and distinguishes
+seal-blocking structural status invalidity from valid competing status-source
+assertions retained for conservative runtime resolution. Gates 24 and 16 bind
+those cases. No spec packet, tickets, or implementation are open yet.
 
 ### v0.2.x Corporate Actions And Instrument Master
 

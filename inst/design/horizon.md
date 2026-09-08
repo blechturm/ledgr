@@ -93,8 +93,14 @@ The accepted synthesis at
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
 binds the first implementation of point-in-time universes: one activation
 rule, one fold core, a members-union-held axis, policy v4 semantics, strict
-feature gaps, and a required declared valuation horizon. "v1" means the first
-implementation of this feature.
+feature gaps, a required observation-independent session calendar, and a
+required declared valuation horizon. "v1" means the first implementation of
+this feature. A same-day post-acceptance review correction makes the session
+family mandatory whenever availability-aware behavior is active; only dense
+mode may derive pulses from observed bars. It also separates structural status
+input invalidity, which prevents sealing, from individually valid competing
+source assertions, which remain hashed evidence and resolve conservatively at
+runtime. Gates 24 and 16 respectively carry those obligations into spec cut.
 
 Deferred themes: accounting-critical events (dividends, delistings, terminal
 economics) -> accounting sibling RFC; OMS and order lifetimes -> OMS RFC;
