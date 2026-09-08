@@ -87,6 +87,33 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-08 [data] Asset availability post-v0.1.9.8 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+binds the first implementation of point-in-time universes: one activation
+rule, one fold core, a members-union-held axis, policy v4 semantics, strict
+feature gaps, and a required declared valuation horizon. "v1" means the first
+implementation of this feature.
+
+Deferred themes: accounting-critical events (dividends, delistings, terminal
+economics) -> accounting sibling RFC; OMS and order lifetimes -> OMS RFC;
+fitted preprocessing, imputation, and the ML lifecycle -> preprocessing RFC;
+multi-venue scheduling -> calendar RFC; representation measurement -> a
+`spike_protocol.md` probe with one question.
+
+Promoted roadmap hooks: accounting-critical events (v0.2.x); OMS (v0.3.0);
+preprocessing and ML (v0.2.x after PIT ships); multi-venue (v0.3.x); aliases
+and revision facts (v0.2.x spec-cut candidates).
+
+Immediate cross-cycle obligations: the PIT spec packet edits the Snapshot,
+Context, Strategy, Result, and Persistence contracts listed in Section 2 of
+the synthesis; the accounting sibling consumes the lifetime family and the
+`terminal_settlement_unsupported` stop as its entry point.
+
+This entry records accepted direction. It does not authorize a spec packet,
+tickets, or implementation by itself.
+
 ### 2026-09-06 [infrastructure] CI critical-path and release-gate runtime hardening
 
 The v0.1.9.7 release CI was profiled after branch, main, and tag runs of the
@@ -240,9 +267,13 @@ encoding unselected, and adds a binding usability direction:
 users provide source facts through validated adapters while ledgr derives its
 internal availability planes. A provider-shaped fixture, pre-seal validation,
 an unresolved-evidence report, and a broader survivorship-bias teaching
-article are gates before implementation scope. Claude synthesis is next. The
-research, spike, and Seed v2 remain non-binding and authorize no schema,
-runtime, imputation, accounting, public API, specification, or tickets.
+article are gates before implementation scope. The synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+was accepted by the maintainer after Codex final review on 2026-09-08. It
+binds the first-implementation direction while leaving Section 15 questions
+for spec cut; no spec packet or implementation is open yet. The research,
+spike, and Seed v2 remain historical inputs rather than implementation
+authority.
 
 ### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
 

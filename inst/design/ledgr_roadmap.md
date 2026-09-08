@@ -1900,8 +1900,12 @@ was independently reviewed and maintainer-accepted for synthesis on
 presenting the spike as a storage decision, and adds an ingestion-usability
 gate: provider adapters normalize source facts, ledgr derives internal state
 planes, unresolved evidence remains visible, and a provider-shaped fixture
-plus survivorship-bias teaching precede implementation. Claude synthesis is
-next. The RFC remains non-binding and authorizes no implementation.
+plus survivorship-bias teaching precede implementation. The synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+was accepted by the maintainer after Codex final review on 2026-09-08. It
+binds the first-implementation direction and Section 14 gate matrix while
+leaving the physical and schema choices in Section 15 for spec cut. No spec
+packet, tickets, or implementation are open yet.
 
 ### v0.2.x Corporate Actions And Instrument Master
 
