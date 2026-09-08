@@ -223,14 +223,25 @@ was answered the same day by the Stage 3 adversarial response
 Stage 4 response review was accepted the same day. A follow-up methodological,
 API, and UX review is recorded in
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`.
-The bounded comparative architecture spike is chartered in
+The bounded comparative architecture spike chartered in
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`
-and is the next stage, followed by Seed v2. The three
-research files remain evidence inputs rather than architecture authority, and
-the Seed v1 proposal requires comparative architecture evidence before a
-synthesis may select storage, state-plane, or public-context shapes. Neither
-the research nor Seed v1 authorizes a schema, runtime, imputation, accounting,
-or public API change.
+closed inconclusive on 2026-09-08. Its shared provider boundary preserved the
+accepted semantics for the ten implemented witnesses across three physical
+representations, but 21 witnesses and the empirical workload remained unrun;
+it produced no representation, timing, or memory winner. The independently
+reviewed terminal report is on `spike/asset-availability-pit-universes` at
+`d59259f`; that disposable branch must not merge.
+
+Seed v2 is now drafted at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
+for independent review. It carries the logical semantic boundary forward,
+keeps physical encoding unselected, and adds a binding usability direction:
+users provide source facts through validated adapters while ledgr derives its
+internal availability planes. A provider-shaped fixture, pre-seal validation,
+an unresolved-evidence report, and a broader survivorship-bias teaching
+article are gates before implementation scope. The research, spike, and Seed
+v2 remain non-binding and authorize no schema, runtime, imputation,
+accounting, public API, specification, or tickets.
 
 ### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
 

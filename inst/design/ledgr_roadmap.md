@@ -1885,12 +1885,22 @@ follow-up review addendum and semantic spike charter are recorded at
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`
 and
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`.
-The comparative architecture spike is chartered but not started and is next,
-followed by Seed v2. The seed
-verifies load-bearing source claims and the handoff's empirical provenance,
-preserves the empirical synthesis's explicit non-conclusions, and requires a
-comparative architecture spike before synthesis selects a schema, runtime
-state encoding, imputation boundary, or strategy-facing API. It authorizes no
+The comparative architecture spike closed inconclusive on 2026-09-08. The
+three physical representations preserved the accepted semantics for the ten
+implemented witnesses, but 21 witnesses and the empirical workload remained
+unrun, so no representation or performance winner was recorded. Its reviewed
+terminal report is on the disposable
+`spike/asset-availability-pit-universes` branch at `d59259f`, which must not
+merge.
+
+Seed v2 is drafted at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
+and awaits independent review. It recommends the representation-neutral
+logical contract without presenting the spike as a storage decision, and it
+adds an ingestion-usability gate: provider adapters normalize source facts,
+ledgr derives internal state planes, unresolved evidence remains visible, and
+a provider-shaped end-to-end fixture plus survivorship-bias teaching must
+precede implementation scope. The RFC remains non-binding and authorizes no
 implementation.
 
 ### v0.2.x Corporate Actions And Instrument Master
