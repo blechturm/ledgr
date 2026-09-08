@@ -1893,15 +1893,15 @@ terminal report is on the disposable
 `spike/asset-availability-pit-universes` branch at `d59259f`, which must not
 merge.
 
-Seed v2 is drafted at
+Seed v2 at
 `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
-and awaits independent review. It recommends the representation-neutral
-logical contract without presenting the spike as a storage decision, and it
-adds an ingestion-usability gate: provider adapters normalize source facts,
-ledgr derives internal state planes, unresolved evidence remains visible, and
-a provider-shaped end-to-end fixture plus survivorship-bias teaching must
-precede implementation scope. The RFC remains non-binding and authorizes no
-implementation.
+was independently reviewed and maintainer-accepted for synthesis on
+2026-09-08. It recommends the representation-neutral logical contract without
+presenting the spike as a storage decision, and adds an ingestion-usability
+gate: provider adapters normalize source facts, ledgr derives internal state
+planes, unresolved evidence remains visible, and a provider-shaped fixture
+plus survivorship-bias teaching precede implementation. Claude synthesis is
+next. The RFC remains non-binding and authorizes no implementation.
 
 ### v0.2.x Corporate Actions And Instrument Master
 
