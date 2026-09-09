@@ -2,13 +2,12 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.9.6`.
-**Current active packet:** `v0.1.9.7`.
-**Current active packet path:** `inst/design/ledgr_v0_1_9_7_spec_packet/`.
-**Draft next packet:** [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md),
-combining accepted API hardening and asset availability; awaiting spec review and ticket cut.
-The development branch/package are already `v0.2.0.0`; active implementation pointers move
-when the new packet is accepted and its tickets are cut.
+**Latest completed release packet:** `v0.1.9.7`.
+**Current active packet:** `v0.2.0.0`.
+**Current active packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
+The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
+combines API/representation hardening with the first asset-availability
+implementation. Tickets are cut; Batch 0 awaits review.
 The completed `inst/design/ledgr_v0_1_9_6_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
 v0.1.9.6 release gate.
@@ -178,7 +177,7 @@ default changes remain non-scope.
   `audits/v0_1_9_6_intraday_readiness_audit.md`, and
   `ledgr_v0_1_9_6_spec_packet/peer_benchmark_redo_preflight.md`.
 
-The v0.1.9.7 packet is active. Its implemented validation-arc scope is
+The v0.1.9.7 packet is complete. Its implemented validation-arc scope is
 business-objective eligibility and validation polish: seven classed/hashable
 business-objective criteria plus diagnostic thresholds, evidence-only
 all-candidates filtering, closed-trade retention, a strict-lattice
@@ -200,20 +199,25 @@ criteria, first-class intraday runtime, and paper/live work remain non-scope.
   `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md` and
   `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`.
 
-The API and representation-boundary hardening cycle is scheduled as a future
-v0.1.9.x RFC candidate after the active v0.1.9.7 packet. Read the 2026-09-04
-`[infrastructure]` and `[docs]` entries in `horizon.md`, the planned roadmap
-row, and the RFC pipeline row before opening that cycle. The local
-post-v0.1.9.6 code-review and all-vignette-review findings can be fixed
-independently if they block active work, but namespace tiering,
-representation-boundary invariant ownership, behavior-neutral file moves,
-`ledgr_run_fold()` phase extraction, API golden-path work, and public accessor
-gaps should be designed together.
+The v0.2.0.0 packet is active. It consumes the accepted API/representation
+hardening and asset-availability syntheses. The ordered implementation first
+corrects API and evidence boundaries, then extracts coordinator stages without
+moving effects, and only then adds point-in-time facts, expected-session gaps,
+availability-aware fold economics, durable incomplete outcomes, and the
+survivorship-bias teaching path.
 
-The verified all-vignette review findings are parked in `horizon.md` rather
-than folded wholesale into v0.1.9.7. The active packet consumes only the
-Selection Integrity-specific portion through LDG-2671; broader stale-fact and
-navigation cleanup waits for a later documentation freshness pass.
+- Spec: `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`.
+- Tickets: `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_2_0_0_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_2_0_0_spec_packet/batch_plan.md`.
+- Primary syntheses:
+  `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md` and
+  `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`.
+
+The verified all-vignette review findings were not folded wholesale into
+v0.1.9.7; that packet consumed only the Selection Integrity-specific portion
+through LDG-2671. The active hardening work owns the specifically verified
+stale examples and useful documentation locks, not a broad rewrite.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
 artifact-topology guidance, Quarto installed-vignette migration, README and
@@ -240,12 +244,12 @@ deferred to the horizon for a later RFC/spec cycle.
 - Primary synthesis:
   `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`.
 
-Public cost/liquidity APIs, OMS work, live data logs, point-in-time
+Public liquidity APIs, OMS work, live data logs, external point-in-time
 regressors, public benchmark dashboards, purging/embargo/CPCV, Triple Penance,
 objective-filtered walk-forward identity, first-class intraday runtime, and
 broad collapse adoption remain deferred unless a later active packet explicitly
-scopes a bounded subset. The active v0.1.9.7 packet scopes only the
-business-objective eligibility and validation-polish work described above.
+scopes a bounded subset. The active v0.2.0.0 packet scopes only the bounded API
+hardening and asset-availability work described above.
 Auditr-report bugfix intake is also deferred until a future packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
@@ -730,8 +734,8 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| active v0.1.9.7 packet | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `audits/v0_1_9_6_intraday_readiness_audit.md`, `vignette_styleguide.md`, `contracts.md`, `ledgr_roadmap.md` |
-| Future API / representation-boundary hardening RFC | `horizon.md` 2026-09-04 `[infrastructure]` entry, `ledgr_roadmap.md` planned v0.1.9.x hardening row, `rfc/README.md` pipeline row, `contracts.md`, `tests/testthat/test-api-exports.R`, `R/backtest-runner.R`, `R/backtest.R`, `R/sweep.R` |
+| active v0.2.0.0 packet | `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `ledgr_v0_2_0_0_spec_packet/tickets.yml`, `ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `audits/v0_2_0_test_suite_audit.md`, `spike_protocol.md`, `vignette_styleguide.md`, `release_ci_playbook.md`, `contracts.md`, `ledgr_roadmap.md` |
+| v0.1.9.7 release record | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | Accepted asset-availability / point-in-time-universe RFC | `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, historical), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md` (reviewed response), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md` (maintainer accepted; synthesis input), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md` (accepted 2026-09-08; binding first-implementation direction), inconclusive terminal spike report on `spike/asset-availability-pit-universes` at `d59259f`, `horizon.md` 2026-05-28, 2026-09-06, and 2026-09-08 `[data]` entries, `ledgr_roadmap.md` v0.2.x ragged-universe section, `rfc/README.md` pipeline row, `research/Sharadar-Empirical-Evidence.md`, `research/ledgr_ragged_universe_prior_art_review.md`, `research/rfc-evidence-handoff.md`, `research/Cross-Asset-Accounting-Critical-Events.md`, `contracts.md` |
 | Target risk release record | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |
 | Walk-forward release record | `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `ledgr_v0_1_9_4_spec_packet/tickets.yml`, `ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (with Amendment 1 in Section 14, Amendment 2 in Section 16, ticket-cut gates in Section 17), `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md` (closure update section), `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `contracts.md` |

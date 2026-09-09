@@ -1,13 +1,14 @@
 # ledgr v0.2.0.0 Spec
 
-**Status:** Draft for maintainer and adversarial spec review; no tickets cut.
+**Status:** Accepted 2026-09-09; tickets cut for implementation.
 **Date:** 2026-09-09.
 **Author:** ChatGPT Astra.
 **Target branch and development version:** `v0.2.0.0`, package `0.2.0.0`.
 **Baseline:** `048b925e5411b7c1a7500d4163163aed72039062`.
 **Scope:** API and representation hardening, then the first asset-availability implementation.
-**Authority:** Proposed implementation choices under two accepted syntheses. Acceptance binds
-this packet; drafting it does not mark its tests passed or authorize release publication.
+**Authority:** Binding implementation packet under two accepted syntheses and the maintainer's
+2026-09-09 acceptance. Ticket cut does not mark implementation tests passed or authorize release
+publication.
 
 The maintainer moved development from `v0.1.9.8` and opened `0.2.0.0` in DESCRIPTION and NEWS.
 Historical RFC filenames and baseline citations remain unchanged. No further version bump is
@@ -38,9 +39,9 @@ Evidence and packet precedents:
 Statements below prescribe implementation unless explicitly labelled **Source** or **Executed**.
 New filenames, columns, and choices are proposals, not claims about shipped surfaces.
 H and U remain normative where incorporated by reference. No new performance evidence is claimed.
-The first spec review identified two unresolved scope contradictions. Sections 2.4 and 2.7
-propose explicit amendments to U's quarantine and unrestricted-member rules; they require
-maintainer acceptance with this spec and are not attributed to the accepted RFC as settled facts.
+The first spec review identified two unresolved scope contradictions. The maintainer's 2026-09-09
+acceptance adopts Sections 2.4 and 2.7 as explicit amendments to U's quarantine and
+unrestricted-member rules; they are packet decisions, not claims about the earlier RFC decision.
 
 ## 1. Thesis And Release Outcome
 
@@ -55,7 +56,8 @@ changes applies to its workstream. U explicitly authorizes its own later APIs an
 
 This release does not promise complete corporate-action or delisting economics. Unsupported
 terminal settlement produces an explicit incomplete result. It does not ship portfolio optimizers,
-imputation, ML fitting, short-account financing, OMS, live data, or representation optimization.
+imputation, or ML fitting. It does not claim support for short-account financing, OMS, live data,
+or representation optimization.
 
 ## 2. Product Shape And Spec-Cut Decisions
 
@@ -402,10 +404,10 @@ price, or a performance observation. Take the distinct affected IDs named by the
 their held quantities after all accepted earlier events, excluding discarded pulse work. Its
 timestamp is the stop's resolution cutoff: execution time for an execution-stage stop, decision
 time otherwise. For each nonzero quantity, use the latest accepted observed close knowable and
-admissible at that cutoff, even when its age now exceeds the valuation horizon. Compute
-`affected_exposure = sum(abs(quantity_at_stop * reference_close))` in the run's accounting units;
-no FX conversion is introduced. Deduplicate IDs before summing. Intended/rejected targets are
-recorded separately and never substituted for held quantities.
+accepted as an observation at that cutoff, even when its age now exceeds the valuation horizon.
+Compute `affected_exposure = sum(abs(quantity_at_stop * reference_close))` in the run's accounting
+units; no FX conversion is introduced. Deduplicate IDs before summing. Intended/rejected targets
+are recorded separately and never substituted for held quantities.
 
 Each affected-ID detail records quantity, reference price, source timestamp, venue-open-session age,
 whether that reference is still a permissible valuation mark, and its absolute contribution.
@@ -658,15 +660,13 @@ rewrite old packets or rename historical RFCs to match the new development branc
 
 ## 8. Review Decisions, Ticket Cut, And Explicit Deferrals
 
-This draft resolves H Section 11 and U Section 15 as concrete proposals above. Review must accept
-or amend:
+The maintainer accepted this packet's resolutions of H Section 11 and U Section 15 on 2026-09-09:
 (1) phase-specific failure handling, terminal idempotency, and finalization-only recovery;
 (2) table/hash/migration, acknowledged quarantine, and EOD calendar encoding; (3) mandatory
 committed decision trace and diagnostic gross-exposure definition; (4) finite-window indicator
-declaration and state/index boundary; (5) the active short-exposure guard. Acceptance must record
-the quarantine exception and account-scope restriction as amendments to U Sections 4.4/10.3 and
-6.3, respectively; neither is silently imported as an earlier maintainer decision. An unresolved
-choice blocks only its affected tickets, not unrelated H fixes.
+declaration and state/index boundary; (5) the active short-exposure guard. The quarantine exception
+and account-scope restriction amend U Sections 4.4/10.3 and 6.3, respectively; neither is silently
+attributed to the earlier maintainer decision.
 Exact private helper signatures, SQL index choices, and test fixture factoring may be refined in
 tickets without changing these contracts. They are not another architecture cycle.
 
@@ -678,11 +678,15 @@ live recovery, broad adapter catalog, portfolio optimization, or new benchmark c
 Carry P12's general negative-target and financing questions to the shorting seed. This packet binds
 only its active-mode exposure guard; dense enforcement/defaulting and financing remain deferred.
 
-After review, cut the conventional `v0_2_0_0_tickets.md`, `tickets.yml`, and `batch_plan.md`,
-plus packet README and eventual closeout. Keep Markdown/YAML statuses synchronized. Ticket IDs
-come from the repository's current allocation at cut time; this spec reserves none.
-The two RFC pipeline rows may link this draft now but must retain its unaccepted status. On spec
-acceptance, update both rows to the accepted packet and its ticket-cut state with the design index.
+The accepted cut creates `v0_2_0_0_tickets.md`, `tickets.yml`, `batch_plan.md`, and the packet
+README, allocating LDG-2672 through LDG-2703. Keep Markdown/YAML statuses synchronized and add the
+eventual closeout only at the release gate. The two RFC pipeline rows and design index identify
+this accepted packet and its ticket-cut state without claiming implementation gates have passed.
+
+The ticket-cut baseline is `048b925e5411b7c1a7500d4163163aed72039062` under R 4.5.2 ucrt on
+`x86_64-w64-mingw32`, with duckdb 1.4.3 and dplyr 1.1.4. No named maintainer-owned store inventory
+was supplied at cut. LDG-2684 must inventory those stores and affected wide artifacts before its
+first shape edit and must not promise migration for an unnamed artifact.
 
 ## 9. Review Focus
 
@@ -703,6 +707,11 @@ acceptance, update both rows to the accepted packet and its ticket-cut state wit
   exceptions, achieved terminal return/finalization recovery, and diagnostic gross exposure. Add
   detecting fixtures and reviews at batches 8-9. Link the draft from both RFC rows without claiming
   acceptance. Documentation-only changes; no new R execution. Awaiting maintainer/spec review.
+- 2026-09-09 -- maintainer accepted the reviewed packet, including the quarantine and active
+  short-exposure amendments. The accepted wording also distinguishes unsupported short-account
+  financing from shipped non-goals and defines affected exposure from observations accepted at the
+  cutoff. Cut LDG-2672 through LDG-2703 and aligned active governance pointers. No implementation
+  gate is claimed passed by ticket cut.
 
 [hardening]: ../rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md
 [availability]: ../rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md

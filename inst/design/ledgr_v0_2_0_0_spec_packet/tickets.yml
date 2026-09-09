@@ -1,0 +1,556 @@
+version: "0.2.0.0"
+source: "v0_2_0_0_tickets.md"
+generated_from: "v0_2_0_0_spec.md"
+tickets:
+  - id: "LDG-2672"
+    title: "Packet alignment and ticket cut"
+    status: "review_pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "planning"
+      surface: "design-packet"
+      scope: "packet-alignment"
+    tests:
+      - "Manual spec-to-ticket coverage review"
+      - "Ticket ID and dependency DAG validation"
+      - "YAML parse and cross-artifact consistency"
+      - "Verified R/platform/package baseline record"
+      - "LDG-2684 maintainer-store inventory handoff"
+      - "Documentation-contract tests"
+
+  - id: "LDG-2673"
+    title: "Reversal fee projection correction"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2672"]
+    classification:
+      type: "correctness"
+      surface: "fills-accounting"
+      scope: "pro-rata-reversal-fees"
+    tests:
+      - "H1 per-event fee conservation"
+      - "H2 two-direction pro-rata allocation"
+      - "Independent cash, basis, PnL, and trade assertions"
+
+  - id: "LDG-2674"
+    title: "Eager fills API simplification"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2672"]
+    classification:
+      type: "api"
+      surface: "run-fills"
+      scope: "eager-reader"
+    tests:
+      - "H3 one-formal API test"
+      - "Empty and populated full-schema tibble tests"
+      - "Removed-argument fail-before-read tests"
+
+  - id: "LDG-2675"
+    title: "Sweep review lineage correction"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2672"]
+    classification:
+      type: "correctness"
+      surface: "sweep-review"
+      scope: "ranked-lineage"
+    tests:
+      - "H4 reopened nondefault-risk review-to-promotion journey"
+      - "Candidate identity and selection-order assertions"
+      - "Presentation-only top-table rejection"
+
+  - id: "LDG-2676"
+    title: "Sweep risk restoration correction"
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2672"]
+    classification:
+      type: "correctness"
+      surface: "sweep-persistence"
+      scope: "risk-provenance-restoration"
+    tests:
+      - "H5 explicit absent-risk-field restoration"
+      - "Base-subset metadata preservation"
+      - "Downstream candidate identity regression"
+
+  - id: "LDG-2677"
+    title: "Recorded run risk identity inspection"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2673", "LDG-2674", "LDG-2675", "LDG-2676"]
+    classification:
+      type: "api"
+      surface: "run-info"
+      scope: "risk-chain-hash"
+    tests:
+      - "H6 direct and promoted recorded-risk equality"
+      - "Legacy absent-risk NA test"
+      - "Read-only persistence check"
+
+  - id: "LDG-2678"
+    title: "Durable run-handle lifecycle and workflow teaching"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2673", "LDG-2674", "LDG-2675", "LDG-2676"]
+    classification:
+      type: "documentation"
+      surface: "run-workflow"
+      scope: "locator-and-target-teaching"
+    tests:
+      - "H7 close/read/resource-release/new-session lifecycle"
+      - "H8 executable target and promotion workflow"
+      - "Installed README example"
+      - "Scoped stale-example review"
+
+  - id: "LDG-2679"
+    title: "Mechanical backtest ownership split"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2677", "LDG-2678"]
+    classification:
+      type: "refactor"
+      surface: "backtest-modules"
+      scope: "ownership-split"
+    tests:
+      - "H11 full suite after each move"
+      - "API export and S3 registration review"
+      - "No behavior or formal changes"
+
+  - id: "LDG-2680"
+    title: "Coordinator stages 1 and 2 extraction"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2679"]
+    classification:
+      type: "refactor"
+      surface: "run-coordinator"
+      scope: "prepare-and-snapshot-stages"
+    tests:
+      - "H11 full suite after each stage commit"
+      - "Runner resume regression net"
+      - "Snapshot guard and acceptance regressions"
+      - "Clock, seed, status, and transaction placement review"
+
+  - id: "LDG-2681"
+    title: "Finalization failure and recovery correction"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2680"]
+    classification:
+      type: "correctness"
+      surface: "run-finalization"
+      scope: "post-fold-failure-recovery"
+    tests:
+      - "H12 injected finalization failure"
+      - "Fresh-connection FAILED and original-message assertions"
+      - "Committed-fold preservation"
+      - "Clean-versus-resumed equality without duplicates"
+
+  - id: "LDG-2682"
+    title: "Feature causality regression gate"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2680"]
+    classification:
+      type: "correctness"
+      surface: "features"
+      scope: "lookahead-detection"
+    tests:
+      - "H9 causal control and leaking-feature rejection"
+      - "Gutted-checker negative control"
+      - "Future-only perturbation prefix invariance"
+
+  - id: "LDG-2683"
+    title: "RNG lifecycle and documentation boundary hygiene"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2680"]
+    classification:
+      type: "correctness"
+      surface: "integration-boundaries"
+      scope: "rng-cleanup-doc-locks"
+    tests:
+      - "H10 caller RNG state and next-draw preservation"
+      - "H7 explicit resource cleanup and expected warnings"
+      - "H10 selective documentation-lock replacements"
+
+  - id: "LDG-2684"
+    title: "Reversible wide-projection name escaping"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2682", "LDG-2683"]
+    classification:
+      type: "correctness"
+      surface: "sweep-retention"
+      scope: "wide-name-collisions"
+    tests:
+      - "H10 structural-column collision fixture"
+      - "Reversible original-ID mapping"
+      - "Long/matrix/candidate identity parity"
+      - "Pre-edit maintainer-store and wide-artifact inventory"
+
+  - id: "LDG-2685"
+    title: "Coordinator stage 3 finalization extraction"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2681", "LDG-2682", "LDG-2683", "LDG-2684"]
+    classification:
+      type: "refactor"
+      surface: "run-coordinator"
+      scope: "finalization-stage"
+    tests:
+      - "H11 full suite after extraction"
+      - "H12 finalization-failure regression"
+      - "Second FIFO lot-pass preservation"
+      - "Clean/resumed equality"
+
+  - id: "LDG-2686"
+    title: "Coordinator stage 4 registration and resume extraction"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2685"]
+    classification:
+      type: "refactor"
+      surface: "run-coordinator"
+      scope: "registration-resume-stage"
+    tests:
+      - "H11 full suite after extraction"
+      - "H12 failure and recovery regression"
+      - "Handler-dependent resume and tail-cleanup tests"
+      - "DONE shortcut and identity guards"
+
+  - id: "LDG-2687"
+    title: "Point-in-time fact constructors and validation report"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2686"]
+    classification:
+      type: "feature"
+      surface: "availability-facts"
+      scope: "constructors-and-validation"
+    tests:
+      - "U14 complete/partial/empty membership semantics"
+      - "U15 knowledge-time assumption and audit-only behavior"
+      - "U16 status conflict and malformed-fact classification"
+      - "U21 lifetime omission and inactivity resolution"
+
+  - id: "LDG-2688"
+    title: "Complete session calendar and EOD mapping"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2686"]
+    classification:
+      type: "feature"
+      surface: "availability-calendar"
+      scope: "expected-session-clock"
+    tests:
+      - "U24 whole-feed outage pulse retention"
+      - "Missing and late calendar coverage failures"
+      - "Timezone and close-label normalization"
+      - "No inferred holidays or terminal extra session"
+
+  - id: "LDG-2689"
+    title: "Availability snapshot schema hash and quarantine"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2687", "LDG-2688"]
+    classification:
+      type: "persistence"
+      surface: "snapshot-store"
+      scope: "facts-hash-quarantine-migration"
+    tests:
+      - "Store schema 113 and saved-sweep schema 4 migration"
+      - "Transactional rollback and marker-last validation"
+      - "Hash rule 1 dense identity and rule 2 fact identity"
+      - "U10 future-fact identity change"
+      - "U16 retained status-conflict reopen"
+      - "Strict-error and acknowledged-quarantine lifecycle"
+      - "Quarantine tamper and fresh-reopen verification"
+
+  - id: "LDG-2690"
+    title: "Availability activation and public policy surface"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2689"]
+    classification:
+      type: "api"
+      surface: "availability-policy"
+      scope: "activation-universe-valuation-plan"
+    tests:
+      - "U4 same strategy in dense and active modes"
+      - "U20 selected-member and sizing behavior"
+      - "Canonical omission and effective-plan disclosure"
+      - "Required sessions and valuation policy validation"
+
+  - id: "LDG-2691"
+    title: "Availability provider pulse axis and stable-key state"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2690"]
+    classification:
+      type: "feature"
+      surface: "availability-provider"
+      scope: "axis-context-state"
+    tests:
+      - "U2 future-fact perturbation causality"
+      - "U6 empty-axis callback and state preservation"
+      - "U23 exit/re-entry and asset-state lifecycle"
+      - "Axis ordering and dense-context parity"
+
+  - id: "LDG-2692"
+    title: "Strict expected-session feature semantics"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2691"]
+    classification:
+      type: "feature"
+      surface: "availability-features"
+      scope: "strict-gap-cache"
+    tests:
+      - "U3 scalar series and cache equality"
+      - "Unsupported indicator fail-before-strategy"
+      - "U24 whole-feed outage breaks windows"
+      - "Future-fact/cache prefix invariance"
+
+  - id: "LDG-2693"
+    title: "Availability target restrictions and helper safety"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2692"]
+    classification:
+      type: "correctness"
+      surface: "strategy-targets"
+      scope: "active-admissibility-short-guard"
+    tests:
+      - "U5 held former-member persistence"
+      - "U8 blocked-exit retry semantics"
+      - "U17 strategy and post-risk closure"
+      - "U20 unavailable-sizing behavior"
+      - "Active short-exposure rejection and cover cases"
+
+  - id: "LDG-2694"
+    title: "Stale valuation risk marks and affected exposure"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2692"]
+    classification:
+      type: "correctness"
+      surface: "valuation"
+      scope: "stale-marks-and-exposure"
+    tests:
+      - "U7 stale mark never prices execution"
+      - "U19 horizon zero and max-plus-one"
+      - "U21 inactive holding mark aging"
+      - "U24 whole-feed-outage valuation clock"
+      - "Gross affected-exposure independent fixture"
+      - "Missing expired and later-known reference cases"
+
+  - id: "LDG-2695"
+    title: "Bounded affordability and execution reconciliation"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2693", "LDG-2694"]
+    classification:
+      type: "correctness"
+      surface: "execution-affordability"
+      scope: "virtual-ledger-policy"
+    tests:
+      - "U13 decision-frozen membership transition"
+      - "U18 reserve funding ordering and cash tolerance"
+      - "Rejected-sale and target-order permutations"
+      - "No short-proceeds financing"
+      - "Final cash/exposure reconciliation"
+
+  - id: "LDG-2696"
+    title: "Controlled stops completion and direct diagnostics"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2693", "LDG-2694", "LDG-2695"]
+    classification:
+      type: "persistence"
+      surface: "run-completion"
+      scope: "incomplete-prefix-diagnostics"
+    tests:
+      - "Controlled-prefix commit versus fold exception rollback"
+      - "U19 last-valued and last-executed boundaries"
+      - "U22 unsupported terminal settlement"
+      - "Deterministic direct-run diagnostic sequencing"
+      - "Completion and diagnostic schema validation"
+
+  - id: "LDG-2697"
+    title: "Terminal finalization reopen and idempotent recovery"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2696"]
+    classification:
+      type: "correctness"
+      surface: "run-recovery"
+      scope: "terminal-incomplete-finalization"
+    tests:
+      - "Achieved INCOMPLETE same-ID zero-callback shortcut"
+      - "DONE and INCOMPLETE finalization-only recovery"
+      - "U19 valuation-horizon terminal recovery"
+      - "U22 unsupported-settlement terminal recovery"
+      - "Mismatched identity rejection"
+      - "Fresh-session reopen without strategy execution"
+
+  - id: "LDG-2698"
+    title: "Sweep and parallel incomplete-evidence propagation"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2697"]
+    classification:
+      type: "feature"
+      surface: "sweep-parallel"
+      scope: "incomplete-evidence"
+    tests:
+      - "U9 visible but ineligible incomplete candidates"
+      - "U11 direct sweep reopen and parallel parity"
+      - "Saved-sweep schema 4 round trip"
+      - "Selection and promotion rejection"
+
+  - id: "LDG-2699"
+    title: "Walk-forward incomplete-evidence propagation"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2698"]
+    classification:
+      type: "feature"
+      surface: "walk-forward"
+      scope: "incomplete-fold-propagation"
+    tests:
+      - "U9 incomplete training exclusion"
+      - "U11 direct and walk-forward parity"
+      - "U23 walk-forward asset-state lifecycle"
+      - "PARTIAL carry-state chain stop"
+      - "No invented later opening state"
+
+  - id: "LDG-2700"
+    title: "Durable explanation views and cross-path parity"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2697", "LDG-2698", "LDG-2699"]
+    classification:
+      type: "api"
+      surface: "availability-results"
+      scope: "explain-reopen-parity"
+    tests:
+      - "U1 version-qualified dense parity"
+      - "U4 same-strategy dense and active parity"
+      - "U11 run sweep parallel and walk-forward evidence parity"
+      - "U12 connected explain/reopen journey"
+      - "No inspection-time strategy execution or reconstruction"
+
+  - id: "LDG-2701"
+    title: "Survivorship-bias article and connected workflow"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-2700"]
+    classification:
+      type: "documentation"
+      surface: "availability-teaching"
+      scope: "survivorship-bias-workflow"
+    tests:
+      - "H8 executable public target and promotion workflow"
+      - "Executed ingest-run-explain-reopen vignette"
+      - "Quarantine and incomplete-result teaching variants"
+      - "Documentation-contract and anti-overclaim tests"
+      - "Quarto render and local pkgdown preview"
+
+  - id: "LDG-2702"
+    title: "Reference surfaces audit dispositions and closeout"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-2701"]
+    classification:
+      type: "documentation"
+      surface: "release-surfaces"
+      scope: "help-manual-audit-deferrals"
+    tests:
+      - "Generated help and NAMESPACE review"
+      - "Maintainer manual implementation-trace review"
+      - "Documentation-contract tests"
+      - "Audit and horizon disposition review"
+      - "pkgdown build"
+
+  - id: "LDG-2703"
+    title: "v0.2.0.0 release gate"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2672"
+      - "LDG-2673"
+      - "LDG-2674"
+      - "LDG-2675"
+      - "LDG-2676"
+      - "LDG-2677"
+      - "LDG-2678"
+      - "LDG-2679"
+      - "LDG-2680"
+      - "LDG-2681"
+      - "LDG-2682"
+      - "LDG-2683"
+      - "LDG-2684"
+      - "LDG-2685"
+      - "LDG-2686"
+      - "LDG-2687"
+      - "LDG-2688"
+      - "LDG-2689"
+      - "LDG-2690"
+      - "LDG-2691"
+      - "LDG-2692"
+      - "LDG-2693"
+      - "LDG-2694"
+      - "LDG-2695"
+      - "LDG-2696"
+      - "LDG-2697"
+      - "LDG-2698"
+      - "LDG-2699"
+      - "LDG-2700"
+      - "LDG-2701"
+      - "LDG-2702"
+    classification:
+      type: "release"
+      surface: "release-gate"
+      scope: "v0.2.0.0-closeout"
+    tests:
+      - "Release CI playbook"
+      - "Full local suite and installed README"
+      - "R CMD build and check"
+      - "Coverage at or above 80 percent"
+      - "pkgdown and Linux persistence/documentation gates"
+      - "Branch main and tag CI evidence"

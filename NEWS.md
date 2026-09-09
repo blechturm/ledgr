@@ -1,9 +1,10 @@
 # ledgr 0.2.0.0
 
-- Development version opened for the v0.2.0 hardening window. No user-facing
-  changes have shipped yet. The planned scope is recorded in the accepted
-  API and representation-boundary hardening synthesis at
-  `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`.
+- Development version opened for the accepted v0.2.0.0 packet. No user-facing
+  changes have shipped yet. The ordered scope first hardens API,
+  representation, provenance, and run-coordinator boundaries, then implements
+  the first point-in-time asset-availability path on the shared fold. The
+  packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batch 0 awaits review.
 
 # ledgr 0.1.9.7
 

@@ -26,9 +26,16 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-06):** v0.1.9.6 and v0.1.9.7 have closed. No
-versioned packet is active. Horizon entries below remain non-binding unless a
-future active packet, roadmap, contracts, or an accepted RFC promotes them.
+**Current packet note (2026-09-09):** v0.1.9.7 is complete. The accepted
+v0.2.0.0 packet is active with tickets cut for API/representation hardening
+followed by the first asset-availability implementation. Horizon entries below
+remain non-binding unless that packet, the roadmap, contracts, or an accepted
+RFC promotes them.
+
+The active packet consumes only verified API-golden-path and stale-example
+findings in Batches 2 and 10. The remaining 2026-09-04 all-vignette review
+findings, including unrelated editorial and long-article navigation work, stay
+parked for a later documentation-freshness pass.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet

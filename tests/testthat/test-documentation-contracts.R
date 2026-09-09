@@ -460,18 +460,19 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_6_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** v0.1.9.7 business-objective eligibility and validation", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_7_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** v0.2.0.0 API/representation hardening", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.5 | Done | Documentation", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.7 | Active | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.2.0.0 | Active | Correct known API", fixed = TRUE)
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.6`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.7`", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.7`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** `v0.2.0.0`", fixed = TRUE)
   testthat::expect_match(design_index, "ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
@@ -481,7 +482,8 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.5 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.6 packet is complete", fixed = TRUE)
-  testthat::expect_match(design_index, "The v0.1.9.7 packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.1.9.7 packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.2.0.0 packet is active", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -2260,8 +2262,8 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   }
 
   testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
-  testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Active | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(docs$design_index, "Current active packet:** `v0.1.9.7`", fixed = TRUE)
+  testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** `v0.2.0.0`", fixed = TRUE)
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
@@ -2337,7 +2339,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
 
   testthat::expect_match(
     docs$roadmap,
-    "| v0.1.9.7 | Active | Business-objective eligibility",
+    "| v0.1.9.7 | Done | Business-objective eligibility",
     fixed = TRUE
   )
   testthat::expect_match(docs$roadmap, "native K-Ratio", fixed = TRUE)
@@ -2358,8 +2360,8 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-06)", fixed = TRUE)
-  testthat::expect_match(docs$horizon, "No\\s+versioned packet is active")
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-09)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "v0\\.2\\.0\\.0 packet is active")
   testthat::expect_match(
     docs$horizon,
     "Objective-filtered walk-forward identity (synthesis D4)",
@@ -2397,4 +2399,41 @@ testthat::test_that("vignette styleguide binds methodological diagnostic teachin
   testthat::expect_match(doc, "Worked example:", fixed = TRUE)
   testthat::expect_match(doc, "must execute", fixed = TRUE)
   testthat::expect_match(doc, "Do not add\\s+vacuous tests")
+})
+
+testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim implementation", {
+  root <- testthat::test_path("..", "..")
+  packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_0_spec_packet")
+  paths <- file.path(packet, c(
+    "README.md", "v0_2_0_0_spec.md", "v0_2_0_0_tickets.md",
+    "tickets.yml", "batch_plan.md"
+  ))
+  testthat::expect_true(all(file.exists(paths)))
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
+
+  testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-09; tickets cut", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Total Tickets: 32", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2672 - Packet Alignment", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2703 - v0.2.0.0 Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "hand the required pre-edit inventory explicitly to LDG-2684", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| H7 | LDG-2678, LDG-2683 |", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| U24 | LDG-2688, LDG-2692, LDG-2694 |", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2672\"", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2703\"", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Review Pending.", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
+  testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
+  testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `048b925", fixed = TRUE)
+
+  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(roadmap, "| v0.2.0.0 | Active | Correct known API", fixed = TRUE)
+  testthat::expect_match(horizon, "v0.2.0.0 packet is active", fixed = TRUE)
+  testthat::expect_match(horizon, "stay\\s+parked for a later documentation-freshness pass")
 })
