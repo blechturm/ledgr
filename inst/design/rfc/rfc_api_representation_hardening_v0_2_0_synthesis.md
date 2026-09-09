@@ -1,6 +1,6 @@
 # RFC Synthesis: Public API And Representation-Boundary Hardening
 
-**Status:** Draft synthesis awaiting final review
+**Status:** Final-review patches applied; awaiting maintainer acceptance
 
 **Date:** 2026-09-09
 
@@ -11,7 +11,8 @@ This synthesis consumes those records and claims no independent R execution.
 **Baseline:** `v0.1.9.8` at `27a95f20324e6514d33e34c93cb83a3b545b3970`, package `0.1.9.7`.
 The next release is `v0.2.0`. This document changes no package, schema, or hash-rule version.
 
-**Accepted inputs and citation keys:** documents below were read from Git at that baseline.
+**Accepted inputs and citation keys:** S through U and process records use that baseline.
+Final-review evidence F was added at `173603b2e7ae7c094d95fea6de80e1dcce2d4d18`.
 
 - S: [Original seed][seed], historical proposal; dispositions below supersede its rejected parts.
 - R: [Accepted response][response], including Section 10 decisions and the patched Section 5 map.
@@ -21,8 +22,10 @@ The next release is `v0.2.0`. This document changes no package, schema, or hash-
 - C: [Contracts][contracts]; N: [Naming synthesis][naming];
   U: [Availability synthesis][availability].
 - [RFC cycle][cycle], [spike protocol][protocol], [horizon][horizon], and [styleguide][styleguide].
+- F: [Synthesis review][final-review] and its [recorded rollback gut][rollback-gut].
+  Section 6 corrects F H-1's finalization transaction description against baseline source.
 
-Evidence labels follow R: *executed* means P's recorded observations, not a new run here;
+Evidence labels follow R: *executed* means P's or F's recorded observations, not a new run here;
 *contract* means a cited existing contract or accepted maintainer decision; *source* means a
 cited source observation without execution; *proposal* marks this synthesis's prescribed changes,
 tests, or resolutions. Prescriptions become binding on acceptance; they are not shipped behavior.
@@ -66,6 +69,8 @@ restore-list fixes into two commits. Sections 3 and 13 give the operational mean
 | *executed*, P12; *source*, `R/backtest.R:1413-1426` in R6 | Seven events produce thirteen rows, fees `13.045` versus `6.775`; six events duplicate fees | Correct projection, with conservation and allocation tested separately |
 | *contract*, N7.6 | The earlier naming cycle retained streaming | This synthesis supersedes that retention clause for the hardening packet only |
 | *source*, R5 and V M-1 | Every coordinator block has effects; cleanup and handler dependencies cross blocks | Preserve the effect-aware map and runtime order in Section 5 |
+| *executed*, F scenario A | Mid-fold failure after a periodic flush leaves FAILED and zero ledger/state/equity rows | A buffer drain is not a durable checkpoint; replace the original failure fixture |
+| *source*, `R/backtest-runner.R:1458-1485` | Finalization has separate feature and equity/DONE transactions, outside the fold error handler | Test interruption between those transactions; resolve status/error semantics at spec-cut |
 
 *source* -- A's T-2, RNG, wide-collision, cleanup, and interrupted-persistence leads remain
 unexecuted in P. A7 supersedes older uncertainty only for the observations it actually records.
@@ -141,14 +146,17 @@ retained evidence follows the selected candidate IDs. The input object and saved
 # Same public code before and after; the correction is retained lineage.
 review <- ledgr_sweep_review(sweep, rank_by = -final_equity)
 candidate <- ledgr_candidate(review$ranked, 1)
-bt <- ledgr_promote(exp, candidate)
+bt <- ledgr_promote(exp, candidate, run_id = "promoted_from_review")
 ledgr_promotion_context(bt)$source_sweep$sweep_id
 # Before: NULL in P6. After: the input sweep's ID.
 ```
 
-*proposal* -- `top` remains a presentation table. Teach candidate extraction from `ranked`;
-do not add a promotable class to `top` without its full payload. Its promotion completeness is
-not established by P6. This resolves R10's open choice without broadening the helper's role.
+*source*, F L-1 -- `ledgr_sweep_review_top_cols()` (`R/sweep-review.R:120-126`) omits
+`provenance`, which `ledgr_candidate()` requires (`R/sweep.R:391`). Thus `top` cannot be a
+candidate input at this baseline.
+
+*proposal* -- Keep `top` as a presentation table and teach candidate extraction from `ranked`.
+Do not add a promotable class to `top` without its full payload. This resolves R10's open choice.
 Keep `issues`, explicit `rank_by`, and `n`; the helper never selects or promotes automatically.
 Compatible plain-table inputs do not acquire invented source-sweep metadata. P3's successful
 row-provenance reconstruction remains valid; missing parent lineage is a separate question.
@@ -216,7 +224,7 @@ without dumping config JSON into the ordinary path. Teach target idioms in
 `vignettes/strategy-authoring-tools.qmd` and the existing `ledgr_target()` help.
 
 *contract*, C Documentation/Result and styleguide -- State the outcome first, show visible setup,
-use the base pipe, and keep numeric data unformatted. Register cleanup when acquiring resources;
+and keep numeric data unformatted. Register cleanup when acquiring resources;
 explain which operation reads, writes, or returns a replacement object. Show statuses and issues
 with useful next steps. Hash detail belongs in inspection. Do not silently omit incomplete evidence.
 
@@ -277,42 +285,63 @@ baseline. Production-derived expected values do not establish independent econom
 
 ### Coordinator failure injection: fixture, fault, and three assertions
 
-*proposal*, implementing R5 stage 4 -- Extend `tests/testthat/test-runner.R`, with the comparison
-pattern in `tests/testthat/test-acceptance-v0.1.0.R:291-362`. Use two isolated stores with the same
-sealed snapshot ID/hash and eight daily pulses, extending P's small dense input shape. At every
+*executed*, F -- On its initially empty stores, the review gut recorded:
+
+| Scenario | Status | Ledger rows | Strategy-state rows | Equity rows |
+| --- | --- | --- | --- | --- |
+| Error at pulse 4 after a periodic flush at pulse 2 | FAILED | 0 | 0 | 0 |
+| Partial run, `max_pulses = 3` | RUNNING | 3 | 0 | 0 |
+| Clean full run | DONE | 7 | 0 | 8 |
+
+*source* -- Three persistence seams must be distinguished:
+
+1. `R/fold-engine.R:595` runs the whole pulse loop through the handler transaction
+   (`R/backtest-runner.R:291-293`). Periodic flushes at `R/fold-engine.R:571-575` drain buffers
+   inside it. `checkpoint_every` is that cadence (`R/backtest-runner.R:605-611`), exposed by
+   `ledgr_backtest()` (`R/backtest.R:101`), not a periodic durability guarantee.
+2. A normal partial return commits the processed fold, then returns RUNNING
+   (`R/backtest-runner.R:1296-1303`). Keep `test-runner.R:110` and
+   `test-acceptance-v0.1.0.R:291-362` as the existing partial-run/resume net.
+3. Finalization follows the committed full fold. Features use one transaction
+   (`R/backtest-runner.R:1458-1476`); equity replacement and DONE use another (1479-1485).
+   Both are outside the fold's `tryCatch` (1275-1290). Interruption between them leaves committed
+   fold/features, unfinished equity finalization, RUNNING status, and no recorded error message.
+
+*source* -- Seam 3 corrects F H-1's autocommit claim: the DELETE/append pairs are transactional.
+There is no transaction spanning both finalization groups. An error after the equity DELETE
+would roll back that transaction, not leave a partially deleted equity table. F executed the
+fold rollback and partial return; it did not execute finalization failure or recovery.
+
+*proposal*, correcting R5 stage 4's fixture -- Extend `tests/testthat/test-runner.R`, using the
+comparison in `tests/testthat/test-acceptance-v0.1.0.R:291-362`. Use two isolated stores with the
+same sealed snapshot ID/hash and eight daily pulses, extending P's small dense input shape. At every
 pulse, AAA has OHLC 100 and BBB has OHLC 50, with positive volume. Initial cash is 10000 and
 positions are zero. The full named target sets BBB to zero and AAA, by pulse, to
 `10, 20, 10, 0, 15, 5, 0, 0`. Persist a pulse counter as strategy state and a two-session
 moving-average feature. Use `ledgr_cost_notional_bps_fee(10)`, `ledgr_risk_max_weight(0.4)`,
 seed 1, and the same next-open/config assumptions in both stores. No short or financing is needed.
-Set the existing periodic checkpoint cadence to two decisions. The test must demonstrate two
-nonempty periodic flushes before finalization; their actual binding is the Section 11 question.
+Run both through the full fold, without an early-stop control. One completes cleanly. In the
+other, inject one exception after the feature transaction commits and before the equity/DONE
+transaction begins. At that seam, capture the committed ordered ledger, strategy state, and
+features. Require nonempty state and feature evidence; this fixture extends the stateless gut.
+The hook must demonstrate it was reached exactly once. Spec-cut names its test-local binding;
+do not mock transaction, status, or resume outcomes or introduce a public injection API.
 
-Run one copy cleanly. In the other, let the first nonempty periodic flush complete and record
-checkpoint K: its accepted strategy-state cutoff, durable event sequence, and table contents.
-K is a logical resumable boundary, not the later DuckDB file `CHECKPOINT` on disconnect.
+The single scenario has three assertions, inspected through fresh connections after cleanup:
 
-On the second nonempty periodic flush (`n = 2`), inject one exception after its first persistent
-economic write and before the remaining writes/checkpoint advancement. Run the real coordinator,
-handler transaction/error path, failure recording, and cleanup; do not stub their outcomes.
-Remove the injection before resuming. A fault before all writes cannot establish mid-write safety.
-
-The single scenario has three assertions, inspected through fresh connections:
-
-1. The interrupted run records `FAILED` and the injected failure is observable.
-2. Before resume, no economic/state tail beyond K survives: ledger rows, strategy state, persisted
-   features, and equity evidence equal their recorded checkpoint prefix, with no partial append
-   or advanced checkpoint. Status/error/telemetry writes describing failure are allowed.
-   Use each table's decision/execution cutoff; a next-open fill need not share a decision timestamp.
-3. With injection removed, resuming the same logical run yields the clean run's ordered ledger,
+1. Before resume, the full fold's ledger and strategy-state rows are committed and unchanged
+   from the seam capture and clean run. The feature transaction is complete; equity has not
+   been finalized in this fresh store. Do not demand rollback of already committed fold rows.
+2. The injected exception is observable, and `runs$status` and `runs$error_msg` match the
+   explicit Section 11.2 decision. Baseline source predicts RUNNING with no stored error;
+   requiring FAILED and a recorded error would be a separate correction, not extraction.
+3. With injection removed, resume the same run ID and config. Match the clean run's ordered ledger,
    features, strategy state, equity, fills, and trade results, with contiguous event sequences
-   and no duplication. Exclude store-local IDs and wall-clock telemetry from economic comparison.
+   and no duplication, ending DONE. Exclude store-local IDs and wall-clock telemetry.
 
-*source* -- R5/V identify the missing coordinator test; existing lower-level writer atomicity is
-not its substitute. The exact checkpoint cadence, injection binding, and table-cutoff mapping are
-not established by the twelve observations. Spec-cut must name those existing seams and prove
-that the fixture reaches the mid-write fault. This test has not run or passed. A failing baseline
-requires an explicit correction before stages 3-4, not an order-changing extraction workaround.
+*proposal* -- This finalization test has not run or passed. Bind Section 11.2 before cutting its
+ticket. A failing recovery assertion requires a separate correction before stages 3-4; neither
+mechanical extraction nor the existing partial-run net substitutes for this scenario.
 
 ### Complete disposition of S Section 6
 
@@ -429,7 +458,7 @@ necessary assertions; additional existing release checks remain mandatory under 
 | G9 Causality | One causal/leaking feature scenario plus a future-only data perturbation: correct rejection and unchanged eligible prefixes; disabling the checker defeats the negative assertion | `tests/testthat/test-features.R` | Slice 4 |
 | G10 Boundary corrections and fixture hygiene | `Rscript -e "testthat::test_local('.', filter = '^(rng|sweep-retention|walk-forward-orchestrator|backtest-audit-log-equivalence|documentation-contracts)$', reporter = 'summary')"` verifies the Section 6 assertions | `tests/testthat/test-rng.R`, `test-sweep-retention.R`, `test-walk-forward-orchestrator.R`, `test-backtest-audit-log-equivalence.R`, `test-documentation-contracts.R` | Slice 4 |
 | G11 Mechanical preservation | `Rscript -e "testthat::test_local('.', reporter = 'summary')"` after each mechanical/extraction commit; snapshot guards, resume/DONE paths, event order, and corrected economic/identity outputs remain covered | `tests/testthat/test-runner.R`, `test-runner-snapshots.R`, `test-acceptance-v0.1.0.R` | Slices 3 and 5 |
-| G12 Mid-write failure | One Section 6 fixture reaches the second nonempty flush after a confirmed checkpoint and passes all three assertions: FAILED, no tail, clean/resumed equality | `tests/testthat/test-runner.R` | Slice 4; before stages 3-4 |
+| G12 Finalization failure | One Section 6 fixture fails between committed features and equity/DONE, then verifies committed fold rows unchanged, status/error per Section 11.2, and clean/resumed equality | `tests/testthat/test-runner.R` | Slice 4; before stages 3-4 |
 
 *proposal* -- G10/G11 use the existing `testthat::test_local()` runner convention. A setup error,
 unexecuted conditional, skip, or unrelated failure does not demonstrate fault detection. Report
@@ -443,10 +472,14 @@ These are bounded packet decisions, not reasons to restart the four maintainer d
 1. Exact internal file destinations, especially config, and helper input/return records are
    **not established**. Bind them to Section 5's source owners and preserved effects; verify the
    four coordinator cuts fit their commit budget. A necessary budget exception returns to Max.
-2. The checkpoint cadence and precise injectable existing write seam for Section 6 are
-   **not established** by P. Name the hook, per-table checkpoint cutoffs, and the command that
-   demonstrates the fault is reached. Immediate post-failure prefix preservation remains required;
-   checking only after resume does not close it. Route a failing baseline to a separate correction.
+2. **Finalization failure status and test binding.** At ticket cut, choose FAILED with the
+   injected message recorded, or RUNNING as resumable, and bind the exact `error_msg` expectation.
+   Current source leaves RUNNING with no recorded message; the chosen status/error contract is
+   **not established** by the four decisions. Name the test-local hook between the committed
+   feature transaction and equity/DONE, and the command demonstrating it is reached. Ticket cut
+   requires these choices; slice 4 closes only when all three G12 assertions pass. Any changed
+   failure recording or recovery is a separate correction before mechanical extraction. The
+   fold transaction, partial-run commit, and buffer-drain cadence are established, not open.
 3. Collision escaping syntax, mapping placement, and affected maintainer-owned wide artifacts are
    **not established**. Choose a deterministic reversible mapping, preserve structural columns and
    original IDs, and record artifact disposition before that shape correction. No generic registry.
@@ -474,16 +507,20 @@ track. Neither is required to finish hardening or begin the accepted availabilit
 | S questions reads after close | R decision 3 makes locator semantics explicit; remove immediate reopen ceremony, retain genuine new-session teaching |
 | S suggests a broad ownership/file map | R5 narrows implementation to `backtest.R` and four coordinator stages; defer broad `sweep.R` moves |
 | R calls its corrections-first sequence a reorder | V confirms S already put corrections first; R specifies the order and nets more precisely |
-| R4 proposes restoring both `top` and `ranked`; R10 leaves `top` open | *proposal*: restore `ranked`; retain `top` as presentation-only. Do not imply promotion completeness not established by P |
+| R4 proposes restoring both `top` and `ranked`; R10 leaves `top` open | *proposal*: restore `ranked`; retain `top` as presentation-only. *source*, F L-1: `top` omits required provenance and cannot be candidate input |
 | R10 leaves the run-info payload open | *proposal*: add only `risk_chain_hash`; retain detailed config inspection, report absent historical identity as unknown |
 | R10 leaves correction grouping open | *proposal*: separate review-lineage and risk-restore commits because one fixes observed loss and the other explicit ownership |
 | S overstates loss on arbitrary coercion; R6 overgeneralizes supported preservation | P establishes its tested cases: row provenance can support promotion without parent attributes; neither result proves every external transformation safe |
-| M-1, L-1, L-2 | Carry patched effects, remove both arguments, and say no new export/entry point rather than no changed public surface |
+| V M-1, L-1, L-2 | Carry patched effects, remove both arguments, and say no new export/entry point rather than no changed public surface |
+| R5 stage 4 and original synthesis Section 6 assume periodic durable checkpoints | F H-1's executed rollback disproves that premise. Replace the fixture and G12 with finalization interruption; retain decision 4's stages and test prerequisite |
+| F H-1 describes finalization writes as autocommit | Baseline source has separate feature and equity/DONE transactions. Section 6 tests their intervening seam outside the fold error handler; no claim of nontransactional DELETE/append pairs |
+| F M-1, L-1, L-2 | Supply promotion's required `run_id`; cite `top`'s missing provenance; remove the nonexistent styleguide pipe rule |
 
-*proposal* -- Section 6's explicit mid-write point and three observations operationalize decision
-4; they do not claim current rollback behavior is verified. Section 10 distinguishes packet-open
+*proposal* -- Section 6's finalization fault and three assertions operationalize decision 4.
+F's recorded runs are executed evidence; finalization recovery is not. Section 11.2 adds the
+bounded failure-status question required by F. Section 10 distinguishes packet-open
 test ownership from implementation pass deadlines to avoid circular authorization.
-No other decision beyond the accepted inputs is introduced.
+No failure-status choice or other new implementation decision is silently bound by these patches.
 
 ## 14. Proposed Post-Synthesis Horizon Entry
 
@@ -551,10 +588,19 @@ direction and routes each concern; final review and concrete spec packets remain
   historical. A second seed is skipped because the accepted response and decisions supply the
   resolutions directly. Final review and horizon acceptance remain pending; no implementation,
   R execution, package/schema bump, or release authorization is claimed.
+- **2026-09-09, final-review patches** -- Applied F H-1, M-1, L-1, and L-2 from `173603b`.
+  Removed the fictional periodic checkpoint; replaced the fixture, G12, and Section 11.2 with
+  finalization interruption and an explicit status/error choice. Corrected F H-1's autocommit
+  description using the two source transactions. Added required promotion `run_id`, the source
+  reason `top` cannot supply candidates, and corrected teaching attribution. Decisions 1-4 and
+  the historical response/reviews remain unchanged. F's executed gut is cited, not rerun here.
+  Patches are complete; maintainer acceptance and the accepted horizon append remain pending.
 
 [seed]: rfc_api_representation_hardening_v0_2_0_seed.md
 [response]: rfc_api_representation_hardening_v0_2_0_response.md
 [review]: rfc_api_representation_hardening_v0_2_0_response_review.md
+[final-review]: rfc_api_representation_hardening_v0_2_0_synthesis_review.md
+[rollback-gut]: ../../../dev/spikes/api-representation-hardening/review_gut_fold_rollback.R
 [probe]: ../../../dev/spikes/api-representation-hardening/probe_findings.md
 [audit]: ../audits/v0_2_0_test_suite_audit.md
 [contracts]: ../contracts.md
@@ -574,5 +620,5 @@ Final reviewer: verify these ten claims against the code first.
 6. `c(target)` preserves names; named indexing works without removing the target class.
 7. Close frees resources; reads preserve durable evidence and release owned connections.
 8. Extraction preserves runtime order, seeding, status writes, cleanup, and handler dependencies.
-9. The real mid-write failure yields FAILED, no checkpoint tail, and clean/resumed equality.
+9. Finalization failure preserves fold rows, meets chosen status/error, and resumes cleanly.
 10. The second lot pass and snapshot guards survive; availability contracts stay untouched.
