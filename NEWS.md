@@ -1,3 +1,10 @@
+# ledgr 0.2.0.0
+
+- Development version opened for the v0.2.0 hardening window. No user-facing
+  changes have shipped yet. The planned scope is recorded in the accepted
+  API and representation-boundary hardening synthesis at
+  `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`.
+
 # ledgr 0.1.9.7
 
 - Added `ledgr_return_panel()` as the public return-panel entry point for

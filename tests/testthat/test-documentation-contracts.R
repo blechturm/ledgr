@@ -2293,7 +2293,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
 
-  testthat::expect_match(docs$description, "Version: 0.1.9.7", fixed = TRUE)
+  testthat::expect_match(docs$description, "Version: 0.2.0.0", fixed = TRUE)
   for (term in c(
     "# ledgr 0.1.9.7",
     "ledgr_return_panel()",
