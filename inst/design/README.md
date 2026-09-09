@@ -605,6 +605,7 @@ defaults or named ticket-cut gates or both must land.
 
 ## Audits And Spikes
 
+- `audits/v0_2_0_test_suite_audit.md` - initial test-suite audit for planned v0.2.0 API and fold hardening: source findings, pinned CI evidence, invariant-to-test map, and pending fault-injection follow-up.
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
 - `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.
 - `audits/v0_1_9_4_deep_code_review_audit.md` - v0.1.9.4-close deep code review of engine core, accounting, identity, and persistence; findings tracked for the next release cycle via the 2026-06-11 horizon audit entry.
