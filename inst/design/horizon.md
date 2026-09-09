@@ -87,6 +87,88 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-09 [infrastructure] API hardening post-v0.2.0 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`
+binds corrections, a simpler fills reader, explicit inspection lineage, and
+effect-preserving coordinator extraction for v0.2.0: pro rata reversal fee
+allocation, `ledgr_run_fills(bt)` with the cursor and its arguments removed,
+run handles as durable locators, and `ledgr_run_fold()` extracted in four
+risk-ordered stages behind named tests. Here "v1" means its first hardening
+implementation, not ledgr v1.0.0. The following themes record later work;
+current packet tests and the accepted availability handoff stay in the
+immediate plan.
+
+**Accounting and shorting**
+
+- Executed, probe finding 12: the reversal probe accepted negative targets
+  without a settled shorting contract. Pass this observed contract and
+  enforcement gap to the shorting/leverage seed.
+- Contract, `contracts.md` Strategy and the availability synthesis Section 16:
+  algebraic reversal coverage authorizes no borrowing, margin, or terminal
+  settlement; accounting-critical events and financing own those economics.
+
+**Availability extensions**
+
+- The accepted availability synthesis owns current availability semantics;
+  multi-venue and subdaily calendars require later scoping.
+- Live degradation and broad provider adaptation need their own evidence and
+  source contracts.
+
+**Features and model research**
+
+- Fitted preprocessing and imputation must define causal fit/use boundaries
+  and estimation populations.
+- Native-missingness consumers and cross-sectional cache families belong to
+  that later ML work.
+
+**Resources and performance**
+
+- Revisit streaming only after measured memory pressure and a proposed public
+  consumption contract.
+- Revisit wider sweep/module cuts and representation optimization only after
+  a concrete problem; no small-fixture structure count establishes a
+  performance winner.
+
+**Tooling and teaching**
+
+- September 6 CI parallelism and duplicate-work proposals remain separate;
+  retain release evidence.
+- Keep documentation executable and freshness repairs local; no new
+  documentation registry.
+
+#### Promoted roadmap hooks
+
+- Shorting/leverage RFC: v0.2.x, before claiming supported negative-target
+  economics.
+- Accounting-critical events RFC: v0.2.x, before corporate/terminal settlement
+  or accrual costs.
+- Fitted preprocessing/ML RFC: later v0.2.x research window, after
+  availability semantics land.
+- Multi-venue/subdaily scheduling RFC: later v0.2.x-v0.3.0, when a concrete
+  dataset requires it.
+- OMS lifecycle RFC follow-through: v0.2.x-v0.3.0, before persistent or
+  partially filled orders.
+- Explicit streaming contract RFC: later window, triggered only if eager reads
+  become limiting.
+
+#### Immediate cross-cycle obligations
+
+- The hardening packet owns the five slices, twelve gates, and the Section 11
+  spec-cut mappings of the synthesis, including the finalization failure
+  status decision.
+- Availability consumes corrected fee projection, eager readers, and explicit
+  risk restoration.
+- Preserve the availability synthesis Section 14 acceptance obligations and
+  Section 15 open choices without creating another registry.
+- The shorting seed receives probe finding 12, distinguishing accepted
+  execution from supported semantics.
+
+This entry authorizes none of the deferred capabilities and commits no
+release date. It records direction and routes each concern; concrete spec
+packets remain separate actions.
+
 ### 2026-09-08 [data] Asset availability post-v0.1.9.8 direction
 
 The accepted synthesis at

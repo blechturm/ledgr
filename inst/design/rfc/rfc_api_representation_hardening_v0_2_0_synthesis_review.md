@@ -5,8 +5,9 @@ wrote the response, ChatGPT Astra wrote the synthesis. **Date:** 2026-09-09.
 **Under review:** `rfc_api_representation_hardening_v0_2_0_synthesis.md` at `87ef0d8` on
 `origin/rfc/api-hardening-synthesis-v0.2.0` (578 lines, ASCII, no long lines), baseline
 `27a95f2`. Line numbers below without a file are lines of the synthesis.
-**Status:** Verification complete. Four patches required before acceptance, one High.
-No design is reopened; maintainer decisions 1-4 stand.
+**Status:** Verification complete. Four patches were required, one High; all four are
+applied and verified on branch commit `68195be`. No design is reopened; maintainer
+decisions 1-4 stand. The synthesis is ready for maintainer acceptance.
 
 ## What ran
 
@@ -54,16 +55,18 @@ and it is buffer-drain cadence, not durability. The baseline has three real seam
 2. the partial-run commit (`full_run = FALSE`, status RUNNING,
    `R/backtest-runner.R:1296-1303`), scenario B, already pinned by `test-runner.R:110` and
    AT8 (`test-acceptance-v0.1.0.R:291`);
-3. finalization (`R/backtest-runner.R:1306-1497`): the features and equity-curve
-   `DELETE` plus append pairs (1453-1472, 1480-1483) and the DONE write (1484) are autocommit
-   statements outside any transaction (`run_transaction` has no other caller), and the
-   coordinator `tryCatch` covers only the fold call (1275-1290). A failure there leaves a
-   committed full fold, a partial finalization, status RUNNING, and no error message.
-   Verification: source.
+3. finalization (`R/backtest-runner.R:1306-1497`): the features `DELETE` plus append run
+   in one transaction (1458-1476) and the equity-curve `DELETE`, append, and DONE write in
+   a second (1479-1485); neither is inside the fold transaction, and the coordinator
+   `tryCatch` covers only the fold call (1275-1290). A failure between the two leaves a
+   committed full fold and features, no equity finalization, status RUNNING, and no error
+   message. Verification: source. Corrected after the synthesis patch: the first version
+   of this review called these writes autocommit; the resume tail cleanup at 955-964 is a
+   transaction as well.
 
 Seam 3 is the interrupted-persistence scenario worth the new test. *Patch:* rewrite the
-Section 6 fixture around seam 3 (full fold; inject between the features and equity writes
-or after the equity `DELETE`; spec-cut names the hook), with assertions (1) fold rows
+Section 6 fixture around seam 3 (full fold; inject between the two finalization
+transactions; spec-cut names the hook), with assertions (1) fold rows
 committed and unchanged, (2) status and error fields as decided in a new Section 11
 question (record FAILED on finalization failure, or keep RUNNING as resumable), (3) resume
 yields the clean run's outputs; keep seam 2 as the existing net; delete "checkpoint K" and
@@ -98,6 +101,16 @@ removed arguments by matching; `-final_equity` is a valid `rank_by`
 
 ## Decision
 
-Patches required before acceptance: H-1, M-1, L-1, L-2. After they land, accept the
-synthesis and append its Section 14 horizon entry; no further review round is needed for
-the patches themselves.
+Patches required before acceptance: H-1, M-1, L-1, L-2. Verified on `68195be`: the
+fixture, G12, and Section 11.2 now target the gap between the two finalization
+transactions with an explicit status and error decision; the promotion snippet carries
+`run_id`; the `top` sentence cites the missing `provenance` column; the pipe clause is
+gone; no "checkpoint K" or periodic-flush language remains; twelve gates; 624 lines, ASCII,
+no long lines. Accept the synthesis and append its Section 14 horizon entry.
+
+## Revision History
+
+- **2026-09-09** -- Initial review at `173603b`.
+- **2026-09-09** -- After branch patch `68195be`: seam 3 corrected to the two finalization
+  transactions (the synthesis author caught the autocommit error), the four patches
+  verified against the code, decision updated to ready for acceptance.

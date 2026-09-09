@@ -1,6 +1,8 @@
 # RFC Synthesis: Public API And Representation-Boundary Hardening
 
-**Status:** Final-review patches applied; awaiting maintainer acceptance
+**Status:** Accepted by the maintainer on 2026-09-09 after Claude final review and one
+in-place patch set. Binding for the v0.2.0 hardening packet until superseded by a spec
+packet, contract, ADR, or architecture note.
 
 **Date:** 2026-09-09
 
@@ -522,10 +524,10 @@ bounded failure-status question required by F. Section 10 distinguishes packet-o
 test ownership from implementation pass deadlines to avoid circular authorization.
 No failure-status choice or other new implementation decision is silently bound by these patches.
 
-## 14. Proposed Post-Synthesis Horizon Entry
+## 14. Accepted Post-Synthesis Horizon Entry
 
-This entry is *proposal* until final review and synthesis acceptance.
-Do not append it as accepted yet.
+Appended to `../horizon.md` on acceptance, 2026-09-09, with the citation keys P, C, and U
+expanded to document names and a leading sentence naming this file.
 
 ### 2026-09-09 [infrastructure] API hardening post-v0.2.0 direction
 
@@ -595,6 +597,9 @@ direction and routes each concern; final review and concrete spec packets remain
   reason `top` cannot supply candidates, and corrected teaching attribution. Decisions 1-4 and
   the historical response/reviews remain unchanged. F's executed gut is cited, not rerun here.
   Patches are complete; maintainer acceptance and the accepted horizon append remain pending.
+- **2026-09-09, acceptance** -- Accepted by the maintainer after the final reviewer verified
+  the four patches on `68195be` and corrected the review's own finalization description to
+  the two source transactions. Section 14 appended to `../horizon.md`. Status line updated.
 
 [seed]: rfc_api_representation_hardening_v0_2_0_seed.md
 [response]: rfc_api_representation_hardening_v0_2_0_response.md
