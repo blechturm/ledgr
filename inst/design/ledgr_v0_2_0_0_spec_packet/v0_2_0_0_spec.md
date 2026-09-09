@@ -38,6 +38,9 @@ Evidence and packet precedents:
 Statements below prescribe implementation unless explicitly labelled **Source** or **Executed**.
 New filenames, columns, and choices are proposals, not claims about shipped surfaces.
 H and U remain normative where incorporated by reference. No new performance evidence is claimed.
+The first spec review identified two unresolved scope contradictions. Sections 2.4 and 2.7
+propose explicit amendments to U's quarantine and unrestricted-member rules; they require
+maintainer acceptance with this spec and are not attributed to the accepted RFC as settled facts.
 
 ## 1. Thesis And Release Outcome
 
@@ -135,6 +138,10 @@ Add U's six fact/bundle constructors, `ledgr_facts_validate()`, `ledgr_universe_
 `ledgr_valuation_stale()`, and `ledgr_run_explain()`. Extend `ledgr_experiment_plan()`, snapshot
 creation with `facts = NULL`, experiment construction with `valuation_policy = NULL`, and the
 existing result dispatch with `diagnostics` and `availability`. Do not add a mode selector.
+Add `invalid_observations = "error"` to the dataframe snapshot constructor and facts dry-run
+report, with the explicit `"quarantine"` alternative defined in Section 2.4. This controls row
+disposition, not execution mode. Other adapters retain strict rejection until they forward this
+same contract explicitly; no adapter silently enables quarantine.
 
 The fact report distinguishes structural errors, accepted runtime conflicts, quarantine, and
 audit-only rows. Knowledge assumptions are explicit, hashed, and visible in the effective plan
@@ -167,9 +174,35 @@ Proposed tables, all scoped to an existing `snapshot_id`:
 Fact IDs identify assertions, not instruments or execution events. Normalize supplied source IDs
 within their family/source scope; otherwise derive them from canonical assertion payloads.
 Exact repeated assertions are idempotent; the same canonical identity with incompatible payloads
-is an error. Unknown referenced instruments, malformed intervals, and malformed supersession
-fail sealing. Quarantined observation references may be invalid and therefore have no instrument
+is an error. Unknown instrument references in facts, malformed intervals, and malformed
+supersession fail sealing. Quarantined observation references may be invalid and have no instrument
 foreign-key requirement. Valid bars keep their existing non-null OHLC schema and primary key.
+
+**Resolve quarantine lifecycle:** choose explicitly acknowledged exclusion of invalid observation
+rows. With `invalid_observations = "error"`, any such row blocks snapshot creation/sealing; the
+error carries the dry-run report and no SEALED snapshot or hash is produced. A dry run never
+writes. To continue, the user corrects input or explicitly submits the same input with
+`invalid_observations = "quarantine"` and a facts bundle declaring sessions. No interactive prompt
+or implicit acknowledgement is added. Dense input without those facts retains strict rejection.
+
+The explicit alternative partitions rows before bar import: admissible rows enter `snapshot_bars`;
+individually invalid observations enter quarantine with original payload, reasons, and provenance.
+The sealed quarantine-family metadata records the exclusion policy. Its rows and metadata enter
+hash rule 2; exclusion counts appear in the validation report and snapshot summary. The remaining
+bars and all facts must pass structural validation. Missing required columns, an invalid instrument
+master, malformed facts/calendar, duplicate bar keys, and unresolvable input shape
+still block sealing under either policy. Quarantine cannot select between competing valid records.
+Retain the existing nonempty-bar/instrument requirement; excluding every bar does not produce a
+runnable snapshot. An excluded bar leaves an absence for the declared session; it creates no
+observation, imputation, valuation price, fill, or extra pulse.
+
+The lower-level seal step verifies both valid runtime tables and a well-formed, explicitly
+acknowledged quarantine family; merely moving bad rows to another table cannot bypass validation.
+Persist the accepted partition and its acknowledgement before the seal transaction, then seal
+atomically. A seal failure leaves no partial SEALED state or accepted hash. Acknowledgement never
+repairs the rejected row and applies only to this input invocation. This is a proposed exception
+to U Section 10.3's blanket structural-invalidity wording, reconciling its Section 4.4 hashed audit
+requirement. Valid runtime bars remain strictly validated. Update the Snapshot Contract on approval.
 
 For membership snapshots, input groups use `effective_from`, `knowledge_time`, and `instrument_id`;
 an explicit row with missing instrument ID denotes an empty group header, never a member. The
@@ -277,11 +310,33 @@ under U's active fingerprint; dense calculation remains untouched. Do not claim 
 
 ### 2.7 Fold economics, controlled stops, and evidence
 
-Implement U Sections 6-7 unchanged: literal zeros, preserved held nonmembers, reduction-only
-nonmember targets, restricted hold-or-zero targets, post-risk closure, and residual marked-NAV
-sizing. Preserve whole-share flooring in the target helper; the affordability step never floors
-or scales a proposed fill. Freeze membership eligibility at decision; recheck status, lifetime,
-execution price, and affordability at execution. Record membership changes as information only.
+Implement U Sections 6-7 with the account-scope guard below: literal zeros, preserved held
+nonmembers, reduction-only nonmember targets, restricted hold-or-zero targets, post-risk closure,
+and residual marked-NAV sizing. Preserve whole-share flooring in the target helper; affordability
+never floors or scales a proposed fill. Freeze membership eligibility at decision; recheck status,
+lifetime, execution price, and affordability at execution. Record membership changes as information
+only.
+
+**Active short-exposure guard:** after U's strategy and risk checks, but before fill proposals,
+require each effective target `q` to satisfy `q >= min(q_held, 0)`. Use the quantity held at that
+check. Apply the same condition to each resolved fill's resulting quantity before any virtual-cash
+credit or acceptance. An unrestricted member cannot open a short, reverse a long into a short,
+or enlarge an inherited
+short. An inherited negative holding may remain unchanged or move toward zero; a member may cover
+and then go long when the existing admissibility and cash rules permit it. Restricted/nonmember
+rules remain stricter and take precedence. Check quantities exactly; cash tolerance is not a
+permitted quantity tolerance. Fail the candidate with `ledgr_short_exposure_unsupported`, a
+`ledgr_invalid_strategy_result` subclass carrying reason `short_exposure_unsupported`, before
+accepting or emitting any fill from that pulse. Do not partially finance unrelated purchases.
+
+The guard applies with or without a risk chain. A negative strategy target reduced to zero by
+an explicitly selected `ledgr_risk_long_only()` passes if its effective quantity passes; do not
+insert that risk step, change risk identity, or alter dense target validation. Cash-generating
+sale credits in active mode are limited to reducing an existing positive holding. Existing short
+holdings remain algebraically representable; covers consume cash and no new spendable cash is
+inferred from their origin. Borrow, collateral, restricted proceeds, and financing remain deferred.
+This proposed account-scope restriction qualifies U Section 6.3's unrestricted-member row and
+closes P12's active-path consequence without defining a general short-accounting contract.
 
 Keep `cash_tolerance = 1e-8` as an internal identity-bound constant, not a parameter. Evaluate
 resolved cash-generating fills first, then consuming fills in stable-ID order; emit accepted
@@ -302,28 +357,65 @@ state/events until feasibility and reconciliation succeed; discard only unaccept
 Retain events already accepted from earlier decisions, including their later execution timestamps.
 The separate last-executed timestamp must not be replaced by the last-valued timestamp.
 
-Unexpected exceptions remain FAILED and retain the existing fold-wide rollback behavior. Record
-structured rejection/error diagnostics outside the rolled-back transaction without fabricating
-a committed economic prefix. A deliberate `max_pulses` interruption remains RUNNING and resumable.
-INCOMPLETE is terminal for the same sealed inputs; reopening inspects it, and rerunning that ID
-does not skip the stop. Changed facts/policies require a new identity and run.
+Unexpected exceptions thrown during fold execution remain FAILED and roll back that fold
+transaction, preserving any prefix committed by an earlier invocation. Record structured
+rejection/error diagnostics outside the rolled-back transaction without fabricating newly committed
+economics. Exceptions after the fold commits follow Section 2.2 and preserve that fold evidence;
+they cannot roll it back. A deliberate `max_pulses` interruption remains RUNNING and resumable.
+
+An achieved INCOMPLETE run is terminal and idempotent. An execution call with the same run ID and
+matching identity returns its persisted handle with INCOMPLETE status and the same completion
+evidence. It performs no strategy/risk/fill work, resume-tail cleanup, status change, or projection
+rewrite. Verify the snapshot and recorded identity before taking this shortcut; a mismatch fails
+through existing guards. `ledgr_run_open()` inspects the same evidence without executing strategy.
+Changed facts/policies require a new identity and run. Do not repeatedly replay a known stop.
 
 Finalize INCOMPLETE prefix projections with the same error-safe path as DONE, then expose the
 handle. Extend `ledgr_run_open()` to DONE or INCOMPLETE only in the availability workstream.
 A failed attempt to finalize either outcome is FAILED and must recover the intended outcome on
-resume. Persist the intended terminal outcome before projection finalization so recovery cannot
-mistake an incomplete prefix for a full run. No inspection call executes strategy code.
+resume. Persist the intended terminal outcome and prefix boundaries in `run_completion` in the
+same transaction that commits the terminal fold result, before projection finalization. RUNNING
+or FAILED with a durable terminal completion record takes a finalization-only recovery path.
+Verify identity and committed evidence, rebuild missing projections idempotently, clear the error,
+and commit the recorded DONE or INCOMPLETE outcome. Never resume its pulse loop or apply resume-tail
+cleanup.
+Without that record, use ordinary execution recovery; no recorded intent alone proves an achieved
+terminal status. Missing rows or inconsistent bounds referenced by a terminal completion record
+fail closed. No inspection call executes strategy code. Hardening's original recovery test remains;
+availability adds both terminal outcomes.
 
 Add `run_completion` keyed by `run_id`: UTC intended/achieved start and end timestamps, TEXT
 intended terminal status and stop reason, DOUBLE affected exposure, UTC last fully valued and
 last executed timestamps, and BOOLEAN `complete_performance`. Store affected IDs and quantities
-in the corresponding stop diagnostic. Reuse this completion payload in sweep candidate and
-walk-forward score evidence, with new status support in the owning schema validators.
+in the corresponding stop diagnostic. Add nullable UTC `affected_exposure_ts_utc` and TEXT
+`affected_exposure_basis`; use the fixed basis `last_accepted_close_gross` for this release.
+Reuse this completion payload in sweep candidate and walk-forward score evidence, with new status
+support in the owning schema validators.
 Use nullable canonical `completion_json` columns on `sweep_candidates` and `walk_forward_scores`;
 their statuses admit INCOMPLETE. Use the existing fold PARTIAL status for a stopped carry-state
 chain and disclose it in session summaries. Candidate/session identity schemas do not change.
 Unknown legacy completion metadata stays unknown; do not synthesize an observed horizon from
 unavailable evidence.
+
+**Affected exposure:** this is a diagnostic gross amount, not NAV, net exposure, an execution
+price, or a performance observation. Take the distinct affected IDs named by the stop reason and
+their held quantities after all accepted earlier events, excluding discarded pulse work. Its
+timestamp is the stop's resolution cutoff: execution time for an execution-stage stop, decision
+time otherwise. For each nonzero quantity, use the latest accepted observed close knowable and
+admissible at that cutoff, even when its age now exceeds the valuation horizon. Compute
+`affected_exposure = sum(abs(quantity_at_stop * reference_close))` in the run's accounting units;
+no FX conversion is introduced. Deduplicate IDs before summing. Intended/rejected targets are
+recorded separately and never substituted for held quantities.
+
+Each affected-ID detail records quantity, reference price, source timestamp, venue-open-session age,
+whether that reference is still a permissible valuation mark, and its absolute contribution.
+An expired reference is labelled diagnostic-only and never revives equity, risk, or execution.
+A zero quantity contributes zero without a price. If any nonzero holding lacks a reference, the
+aggregate is NULL/NA, not a partial sum; retain known per-ID contributions and identify missing
+ones. An unspecified affected set is likewise NULL/NA, never inferred to be zero. Empty specified
+sets sum to zero. No last fully valued timestamp is required for this diagnostic, and a reference
+known only after the cutoff is forbidden. Persist the same payload for runs, sweeps, and fold
+scores.
 
 Add `run_diagnostics` keyed by `(run_id, diagnostic_seq)`, with U9.3's columns and nullable
 `decision_ts_utc`, `execution_ts_utc`, `event_seq`, `target_before_risk`, `target_after_risk`,
@@ -347,9 +439,10 @@ it from complete-performance comparisons. Walk-forward shows excluded training c
 stops a carry-state chain on an incomplete test fold instead of inventing later opening state.
 Reject selection and promotion of INCOMPLETE candidates even through `allow_failed` paths.
 
-Use U's reason-code spellings and precedence unchanged. Add only structural input codes for
+Use U's reason-code spellings and precedence unchanged. Add structural input codes for
 invalid fact/calendar/state shapes, `final_pulse_no_execution` for the active final-pulse no-fill,
-and `decision_recorded` for the ordinary trace. Errors remain classed; diagnostics remain data.
+`decision_recorded` for the ordinary trace, and the account-scope reason above. Errors remain
+classed; diagnostics remain data. Quarantine uses U's existing `observation_invalid` reason.
 Use `fact_invalid`, `session_invalid`, and `asset_state_invalid` for those structural reasons,
 with `ledgr_`-prefixed condition classes; preserve the already-bound more specific U errors.
 The code table in the generated reference help must map every emitted reason to stage and action.
@@ -416,9 +509,13 @@ and obtains identical explanations. No hand-built availability planes, internal 
 hidden preparation functions, or private provider fields appear in the user path.
 
 Use small variants for missing-session validation, an empty complete membership set, a status
-conflict, and valuation exhaustion. The example must print the intended and achieved horizon,
-reason and next action, assumptions, and disabled checks. Teach that missing membership is not
-a halt, stale valuation is not executable data, and no terminal cash settlement is fabricated.
+conflict, valuation exhaustion, and explicit quarantine. Show strict rejection first, then the
+same input with `invalid_observations = "quarantine"`; print excluded counts and the resulting
+missing session. An expired exposure reference is labelled diagnostic-only. Re-running an achieved
+INCOMPLETE ID returns the same evidence without another callback. The example must print the
+intended and achieved horizon, reason and next action, assumptions, and disabled checks. Teach
+that missing membership is not a halt, stale valuation is not executable data, and no terminal
+cash settlement is fabricated.
 Reopening an incomplete run must teach inspection of the prefix, never portray it as DONE.
 
 Draft the walkthrough and fixture shape before the availability implementation batch; execute
@@ -445,6 +542,11 @@ H's bounded extraction commits; a necessary stage-budget amendment goes to the m
 | 9 | U durable explanation, INCOMPLETE reopen, sweep/save/parallel/walk-forward propagation | U9, U11-U12; failure/fresh-connection tests and dense parity U1 |
 | 10 | Finish and execute survivorship journey, help/pkgdown and maintainer traces; reconcile scoped audit and horizon items | U12, H8; no private data or overstated PIT/completeness claims |
 | 11 | Full release gates, compatibility/identity report, packet closeout and deferral routing | Section 7; release playbook and review |
+
+Batch 8 requires review of independent economics, short-scope, and controlled-prefix tests before
+Batch 9 starts. Batch 9 requires review of terminal recovery, idempotency, fresh-session inspection,
+and cross-path completion evidence before its work can be accepted. Passing parity alone closes
+neither stop. These are reviews at existing batch boundaries, not additional RFC cycles.
 
 Batch 6 schema tests may use normalized facts before runtime exists; no availability strategy is
 advertised until the connected implementation passes. No separate optimization spike is required.
@@ -504,6 +606,17 @@ hashing under input reorder; INCOMPLETE reopening; controlled-prefix commit vers
 fold rollback; interruption after completion evidence but before final projections. Inspect through
 new connections. Wrong-source hashes, skipped bodies, or setup failures do not close a gate.
 
+The first spec review adds these concrete regressions to the named owners; the 36 inherited RFC
+gates remain required. These are packet tests, not another gate registry.
+
+| Finding | Detecting fixture and assertion | Test owner and batch |
+| --- | --- | --- |
+| Short financing | Two eligible members, no risk chain, cash 50, both opens 100, zero costs, and targets -1/+1: typed rejection and no accepted fills or cash credit, in either target order. Also reject increased inherited short and long-to-short reversal; permit affordable cover/hold and an explicit long-only risk reduction to zero. Dense behavior is unchanged. | `new: test-availability-affordability.R`, batch 8; `R/fold-engine.R` and `R/strategy-contracts.R` |
+| Quarantine lifecycle | One valid series plus one invalid OHLC row and one unknown-ID row: default rejects with no SEALED hash; explicit quarantine seals only valid bars, reopens the excluded originals, and passes hash verification. The known ID's expected session stays absent and cannot price a fill; the unknown ID never extends the axis. Changing an excluded payload changes the new snapshot hash; tampering fails verification. Malformed facts and conflicting duplicate bar keys still prevent sealing with quarantine enabled. | `new: test-availability-facts.R`, `test-schema-snapshots.R`, batch 6, connected runtime assertion batch 8; `R/snapshot_adapters.R` and `R/snapshots-seal.R` |
+| Exception phase | Inject within the fold, then after fold commit but before the final projection/status commit using the same fixture. The former rolls back only the current fold transaction; the latter preserves committed ledger/state/completion. Both record FAILED and the original error. Retain H12's clean-versus-resumed equality. | `test-runner.R`, `new: test-availability-parity.R`, batches 4/9; `R/run-finalize.R` and `R/fold-engine.R` |
+| Terminal idempotency | Finalize INCOMPLETE, then repeat the same-ID execution with a callback spy: zero invocations and identical stored rows/status. A mismatched identity fails. Separately fail projection finalization after an INCOMPLETE intent commits; recovery calls no strategy, preserves prefix rows, finalizes INCOMPLETE once, and its next invocation takes the terminal shortcut. Repeat with intended DONE. | `test-runner.R`, `test-persistence-fresh-connection.R`, batch 9; `R/run-registration.R`, `R/run-resume.R`, `R/run-finalize.R` |
+| Affected exposure | At one stop, held quantities 10 and -4 and reference closes 100 and 50 yield gross 1200, not net 800. Use an expired first reference and verify its diagnostic label without a new equity row. A missing nonzero reference yields aggregate NA; duplicate reasons do not double-count; a zero quantity needs no mark; a later-known close is excluded. Reopened, sweep, and fold-score payloads agree. The negative holding is an algebraic diagnostic fixture, not a financed short trade. | `new: test-availability-valuation.R`, `new: test-availability-parity.R`, batches 8/9; `R/availability-results.R` and the shared fold's stop construction |
+
 | Audit or horizon obligation | Disposition and detection |
 | --- | --- |
 | A T-1 | Batch 1, fills owner; H1 conservation separate from H2 allocation/economics |
@@ -547,9 +660,13 @@ rewrite old packets or rename historical RFCs to match the new development branc
 
 This draft resolves H Section 11 and U Section 15 as concrete proposals above. Review must accept
 or amend:
-(1) FAILED finalization and terminal INCOMPLETE recovery; (2) table/hash/migration and EOD calendar
-encoding; (3) mandatory committed decision trace; (4) finite-window indicator declaration and
-state/index boundary. An unresolved choice blocks only its affected tickets, not unrelated H fixes.
+(1) phase-specific failure handling, terminal idempotency, and finalization-only recovery;
+(2) table/hash/migration, acknowledged quarantine, and EOD calendar encoding; (3) mandatory
+committed decision trace and diagnostic gross-exposure definition; (4) finite-window indicator
+declaration and state/index boundary; (5) the active short-exposure guard. Acceptance must record
+the quarantine exception and account-scope restriction as amendments to U Sections 4.4/10.3 and
+6.3, respectively; neither is silently imported as an earlier maintainer decision. An unresolved
+choice blocks only its affected tickets, not unrelated H fixes.
 Exact private helper signatures, SQL index choices, and test fixture factoring may be refined in
 tickets without changing these contracts. They are not another architecture cycle.
 
@@ -558,11 +675,14 @@ Keep cash tolerance constant and defer configurable retention tiers and dynamic-
 No generalized stale-index instrumentation, imputation/materialization graph, fitted preprocessing,
 cross-sectional cache, calendar expansion, corporate-action settlement, shorting/borrow, OMS,
 live recovery, broad adapter catalog, portfolio optimization, or new benchmark claim enters scope.
-Carry P12's negative-target enforcement observation to the shorting seed; it is not authorized here.
+Carry P12's general negative-target and financing questions to the shorting seed. This packet binds
+only its active-mode exposure guard; dense enforcement/defaulting and financing remain deferred.
 
 After review, cut the conventional `v0_2_0_0_tickets.md`, `tickets.yml`, and `batch_plan.md`,
 plus packet README and eventual closeout. Keep Markdown/YAML statuses synchronized. Ticket IDs
 come from the repository's current allocation at cut time; this spec reserves none.
+The two RFC pipeline rows may link this draft now but must retain its unaccepted status. On spec
+acceptance, update both rows to the accepted packet and its ticket-cut state with the design index.
 
 ## 9. Review Focus
 
@@ -571,9 +691,18 @@ come from the repository's current allocation at cut time; this spec reserves no
 - Can the public ingest/run/explain/reopen journey work without hidden joins or strategy replay?
 - Are all H/U gates and audit obligations owned, without weakening dense behavior or test gates?
 - Are corrections, extraction, availability, teaching, and deferred optimization clearly separated?
+- Do the explicit quarantine and short-scope amendments close the review findings without implying
+  that invalid rows are tradable or that general short financing is supported?
 
-**Revision history:** 2026-09-09 -- initial spec draft at `048b925`; no implementation or new R
-execution. Final-review evidence is attributed to its recorded authors. Awaiting spec review.
+**Revision history:**
+
+- 2026-09-09 -- initial draft at `048b925`, published as `8153f7d`; no implementation or new R
+  execution. Final-review evidence is attributed to its recorded authors.
+- 2026-09-09 -- address the first spec review's two High and three Medium findings: propose the
+  active short-exposure guard and acknowledged quarantine lifecycle; distinguish fold/finalization
+  exceptions, achieved terminal return/finalization recovery, and diagnostic gross exposure. Add
+  detecting fixtures and reviews at batches 8-9. Link the draft from both RFC rows without claiming
+  acceptance. Documentation-only changes; no new R execution. Awaiting maintainer/spec review.
 
 [hardening]: ../rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md
 [availability]: ../rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md
