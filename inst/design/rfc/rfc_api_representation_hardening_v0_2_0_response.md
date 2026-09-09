@@ -21,19 +21,18 @@ documented public workflow already provides the access needed for safe
 selection and promotion. Every supported row operation, the saved-sweep
 round trip, and promotion from a reopened subset carried a nondefault risk
 chain through to a committed run whose final equity equals the sweep row to
-the last printed digit (*executed*, findings 1-4). No new public surface is
-needed, and the proposed `ledgr_target_values()` is rejected on evidence.
+the last printed digit (*executed*, findings 1-4). No new public export or
+entry point is needed; the proposed `ledgr_target_values()` is rejected.
 
 The seed is right about direction and wrong about center of gravity. Its
-retained workflow, tier documentation, no-registry stance, and mechanical
-moves before phase extraction are accepted. But the probe found four defects
-next to the path that the seed treats as background, and none of them lives
-in `ledgr_run_fold()`: the research-workflow vignette's own selection step
-drops sweep lineage, the fills reader validates after it returns, the fills
-return type depends on data rather than arguments, and reversal rows double
-the fee. The recommended packet is the seed's Alternative B reordered: the
-four evidenced corrections first, then the coordinator extraction in four
-risk-ordered stages, each behind a named test (Section 5).
+workflow, tiers, no-registry stance, and moves-before-extraction order are
+accepted. But the probe found four defects next to the path that the seed
+treats as background, none of them in `ledgr_run_fold()`: the research-workflow
+vignette's own selection step drops sweep lineage, the fills reader validates
+after it returns, the fills return type depends on data rather than arguments,
+and reversal rows double the fee. The recommended packet is the seed's
+Alternative B reordered: the four evidenced corrections first, then the
+coordinator extraction in four risk-ordered stages, each behind a named test.
 
 **Version direction (confirmed):** the next release jumps from `0.1.9.7` to
 `v0.2.0`. Historical RFC filenames keep their windows; `DESCRIPTION`, schema
@@ -64,7 +63,7 @@ temporary names, wide-projection collisions, interrupted persistence, T-4 cleanu
 | --- | --- | --- |
 | 1-2 Problem, inputs, scope | Accept, amend | Add `spike_protocol.md` size budgets as binding on the packet |
 | 3 API shape: workflow, tiers, retain table | Accept | Tiers are documentation placement; no runtime mode |
-| 3 `ledgr_run_fills` row | Amend | Validate before the count query; cursor and `stream_threshold` removed (Section 7) |
+| 3 `ledgr_run_fills` row | Amend | Validate before the count query; cursor and the `lazy` and `stream_threshold` arguments removed (Section 7) |
 | 3 `ledgr_target_values(x)` | Reject | Base R suffices; fix the vignette example (Section 4) |
 | 3 promotion readers | Accept, amend | Name where a committed run's risk identity is read (Section 4) |
 | 4 Usability contract | Accept, amend | Add the review-helper lineage fix; state the close contract once decided |
@@ -80,12 +79,12 @@ temporary names, wide-projection collisions, interrupted persistence, T-4 cleanu
 **Does the first path reduce user decisions?** Yes, and it already exists.
 The quickstart and research-workflow sequence (snapshot, experiment, run,
 sweep, review, candidate, promote, reopen) needed no field access beyond
-documented columns (*executed*). The decision the seed should remove is not an
-accessor but a trap: `ledgr_sweep_review()` builds `ranked` from
-`tibble::as_tibble(sweep)` (`R/sweep-review.R:34`, *source*), so the vignette's
-`ledgr_candidate(ranked, 1)` warns that sweep metadata is unavailable and the
-promoted run records no source sweep (*executed*, finding 6). The helper meant
-to keep the ranking rule visible discards the lineage it should protect.
+documented columns (*executed*). What the seed should remove is a trap, not an
+accessor: `ledgr_sweep_review()` builds `ranked` from `tibble::as_tibble(sweep)`
+(`R/sweep-review.R:34`, *source*), so the vignette's `ledgr_candidate(ranked, 1)`
+warns that sweep metadata is unavailable and the promoted run records no
+source sweep (*executed*, finding 6). The helper meant to keep the ranking
+rule visible discards the lineage it should protect.
 
 *Proposal:* `ledgr_sweep_review()` returns `ranked` and `top` as
 `ledgr_sweep_results` views restored from the input, exactly as `filter()`
@@ -106,8 +105,7 @@ page. A getter for what `c()` already does fails the naming bar for exports.
 38 fields and none of them is risk-related; the identity sits in `config_json`
 and `bt$config$risk_chain$risk_chain_hash`, and for promoted runs in
 `ledgr_promotion_context()` (*executed*, findings 4-5). *Proposal:* add
-`risk_chain_hash` beside `config_hash` and `feature_set_hash` in the
-`ledgr_run_info()` row, recorded as "change" in the packet's export table.
+`risk_chain_hash` beside `config_hash` in the `ledgr_run_info()` row, a "change".
 
 **Errors and print output.** Accept, with one executed counterexample:
 `stream_threshold = Inf` fails with the base message "missing value where
@@ -124,12 +122,12 @@ sequenced on its own evidence, read from the function (*source*):
 
 | Block of `ledgr_run_fold()` (`R/backtest-runner.R`) | Lines | Side effects |
 | --- | --- | --- |
-| Config and control normalization | 574-626 | none |
+| Config and control normalization | 574-625 | clock read (598), `set.seed()` (623) |
 | Store open, schema, `on.exit` checkpoint and disconnect | 626-640 | connection lifetime |
-| Registration, resume detection, DONE shortcut, handler, opening events | 641-773 | writes `runs` and ledger |
-| Sealed-snapshot guard and TEMP VIEWs | 774-876 | session views |
-| Calendar and resume tail cleanup | 877-970 | deletes tail rows |
-| Preparation: state, bars cache, feature matrix, projection, risk plan, execution spec | 970-1274 | feature cache |
+| Registration, resume detection, DONE shortcut, handler | 641-773 | writes `runs` |
+| Sealed-snapshot guard, TEMP VIEWs, run-row snapshot update | 774-876 | session views, writes `runs` (875) |
+| Calendar, resume tail cleanup, opening-position events | 877-982 | deletes tail rows, writes ledger (973) |
+| Preparation: control, `RUNNING` status (994), state, bars cache, feature matrix, projection, risk plan, execution spec | 983-1274 | status write, feature cache (1193) |
 | Fold call with failure recording and partial-run return | 1275-1305 | status writes |
 | Finalization: event replay, second lot pass, equity curve, DONE, telemetry | 1306-1497 | writes tables |
 
@@ -137,19 +135,20 @@ The body has 113 top-level locals; 50 cross a block boundary and 22 assigned
 before the fold call are read in finalization. Three hazards fix the order:
 the `on.exit` at line 629 is function-scoped, so a helper that opens the store
 must return a closer; the resume block calls the handler's `abort_run`, so
-handler construction precedes it; finalization replays events through a
-second lot pass (line 1396) to derive the equity curve, and its owner inherits
-that reconciliation unchanged.
+handler construction precedes it; finalization replays events through a second
+lot pass (line 1396), and its owner inherits that reconciliation unchanged.
+No block is pure. Stage numbers below are extraction and commit order only;
+runtime call order, status writes, and `set.seed()` placement do not move.
 
 Tests already pin resume (`test-runner.R:110`, `146`, `168`), clean-versus-
 resumed output equality (`test-acceptance-v0.1.0.R:291`), and the FAILED
-status write; none injects a failure during a write sequence or exercises the
-`on.exit` path on error. *Proposal, accepted 2026-09-09:* extract in four
-stages, each its own commit under the 500-line budget, each behind a named net.
+status write; none injects a failure through the coordinator's write sequence.
+*Accepted 2026-09-09:* four stages, one commit each under the 500-line budget.
 
-1. **Pure blocks, existing suite as the net:** the preparation block and the
-   config and control normalization; delete the trivial wrappers
-   `ledgr_backtest_run()` and `ledgr_backtest_run_internal()`.
+1. **Lowest-effect blocks, existing suite as the net:** the preparation block
+   with the `RUNNING` write left in the coordinator, and the config and
+   control normalization with `set.seed()` left in place; delete the trivial
+   wrappers `ledgr_backtest_run()` and `ledgr_backtest_run_internal()`.
 2. **Snapshot guard,** already delimited and covered by the snapshot tests;
    it returns the stored hash and the calendar.
 3. **Finalization,** with clean-versus-resumed equality as the net.
@@ -186,8 +185,7 @@ are checked by the existing suite, never by equality of the number under repair.
   that `ledgr_sweep_results_restore()` omits (`R/sweep-retention.R:1245-1268`,
   *source*), and `ledgr_candidate_risk_identity()` (`R/sweep.R:815`) rebuilds
   the chain from row provenance regardless. Add `risk_chain_hash` and
-  `risk_plan_json` to the restore list, assert them after base `[`, and stop
-  calling this a hardening campaign.
+  `risk_plan_json` to the restore list and assert them after base `[`.
 - **Threshold validation.** Confirmed (*executed*, finding 9). Owner: fills
   reader. Assertions: a bad threshold errors with `ledgr_invalid_args` on an
   empty run; `Inf` errors with that class; `-1` and `1.5` are rejected; `0`
@@ -199,8 +197,7 @@ are checked by the existing suite, never by equality of the number under repair.
 ## 7. Compatibility, Streaming, And Saved Artifacts (Seed Question 4)
 
 **Are compatibility costs understandable from public examples?** The seed
-prices compatibility as if consumers existed; ledgr is pre-release with none,
-and prior cycles treat that as license to break contracts deliberately.
+prices compatibility as if consumers existed; ledgr is pre-release with none.
 *Proposal:* the packet's retain/add/change/remove table is the only
 compatibility record, a change needs a before/after example rather than a
 migration guarantee, and the additive saved-sweep migration is the precedent.
@@ -212,16 +209,16 @@ validation runs after the empty shortcut. The naming synthesis retained the
 cursor contract without a consumer. Two forms were offered: keep the cursor
 with `close()` and `print()` methods, a documented consumer, and a threshold
 that errors instead of switching type; or remove the cursor and
-`stream_threshold` and keep the eager tibble. *Decided 2026-09-09:* remove.
+`lazy` and `stream_threshold` arguments and keep the eager tibble. *Decided
+2026-09-09:* remove; `ledgr_run_fills(bt)` keeps only `bt`.
 Empty results stay full-schema tibbles; `nrow()` distinguishes them.
 
 **Handle ownership.** `close(bt)` releases a connection; every later read
 reopens a temporary one by path (*executed*, finding 11; `R/backtest.R:627-660`,
 *source*). *Decided 2026-09-09:* that is the contract. A run handle is a
-durable locator, `close()` only releases a held connection, the vignette's
+durable locator, `close()` only releases a held connection, and the vignette's
 `close()` then `ledgr_run_open()` sequence teaches a new session rather than
-a closed handle, and the removed cursor was the only reader that needed the
-handle to stay open.
+a closed handle. The removed cursor was the only reader that needed the handle.
 
 **Saved artifacts.** Save, reopen, subset, candidate, promote, and reopen kept
 identity intact (*executed*, findings 2-4); teach the round trip, do not harden it.
@@ -244,8 +241,8 @@ fill projection) and the fills-reader return-type rule (the `availability`
 result view will be read the same way). The restore-list fix must land before
 availability adds fields to sweep identity, or the new fields inherit the same
 omission. Accepted from the seed unchanged: no dense-assumption wrapper or
-validator, legacy requirements qualified by activation, and no future
-identifiers or execution evidence in strategy context through a new accessor.
+validator, legacy requirements qualified by activation, no future identifiers
+or execution evidence in strategy context through a new accessor.
 
 ## 9. Bounded Scope And Dependency Order
 
@@ -275,17 +272,17 @@ Maintainer decisions recorded 2026-09-09 after a walkthrough of the four
 judgment questions:
 
 1. **Reversal fee allocation:** pro rata by quantity across the split rows.
-2. **Fills cursor:** remove it and `stream_threshold`; eager tibble only.
+2. **Fills cursor:** remove it with the `lazy` and `stream_threshold`
+   arguments; `ledgr_run_fills(bt)` returns the eager tibble only.
 3. **Reads after `close(bt)`:** contract. A run handle is a durable locator;
    `close()` only releases a held connection. Teach it; drop the reopen
    ceremony from the vignette.
 4. **`ledgr_run_fold()`:** the four-stage extraction in Section 5, replacing
    the response's first-draft deferral.
 
-Resolvable in synthesis: whether `ledgr_sweep_review()` restores the class on
-`top` as well as `ranked`; the `ledgr_run_info()` field name for risk identity
-and whether `risk_plan_json` joins it; one correction commit or two for the
-review-helper and restore-list fixes.
+Resolvable in synthesis: whether `top` gets its class back as well as
+`ranked`; the `ledgr_run_info()` risk field name and whether `risk_plan_json`
+joins it; one commit or two for the review-helper and restore-list fixes.
 
 Routed elsewhere: the engine accepted negative targets in the reversal run
 while the shorting and leverage contract is still a gate without seed
@@ -298,3 +295,6 @@ while the shorting and leverage contract is still a gate without seed
 - **2026-09-09** -- Maintainer walkthrough: decisions 1-3 accepted as
   recommended; question 4's deferral replaced by the four-stage coordinator
   extraction after a block and test census of `ledgr_run_fold()` (1, 5, 9, 10).
+- **2026-09-09** -- Response review (Codex) patched in place: effect-aware
+  phase map, no block called pure, stages are extraction order only (M-1);
+  `lazy` removed with the cursor (L-1); "no new export or entry point" (L-2).
