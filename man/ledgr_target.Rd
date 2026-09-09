@@ -28,6 +28,8 @@ Strategy helper pipelines:
 }
 
 \examples{
-ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+target <- ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+target[["AAA"]]
+c(target)
 
 }

@@ -82,7 +82,7 @@ tickets:
 
   - id: "LDG-2677"
     title: "Recorded run risk identity inspection"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2673", "LDG-2674", "LDG-2675", "LDG-2676"]
@@ -97,7 +97,7 @@ tickets:
 
   - id: "LDG-2678"
     title: "Durable run-handle lifecycle and workflow teaching"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2673", "LDG-2674", "LDG-2675", "LDG-2676"]

@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-1 complete after review. Batches 2-11 are pending.
+Status: Batches 0-2 complete after review. Batches 3-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -146,7 +146,7 @@ Implementation evidence:
 
 ## Batch 2 - Inspection And Workflow Hardening
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -171,6 +171,23 @@ Exit criteria:
 
 - H6-H8 and installed README execution pass;
 - lifecycle and teaching assertions remain useful through later file moves.
+
+Implementation notes:
+
+- `ledgr_run_info()` now projects `risk_chain_hash` from committed
+  `config_json`; direct, promoted, no-op, historical-absence, read-only, and
+  no-strategy-execution behavior is covered without adding a top-level
+  `risk_plan_json` field.
+- Durable-handle lifecycle coverage now closes an explicitly opened handle,
+  reads through it afterward, reopens the snapshot and run as fresh objects,
+  and verifies unchanged evidence, locator fields, full table contents, and strategy
+  call count.
+- README source/render and strategy-authoring help now teach ordinary target
+  indexing, `c(target)`, explicit extraction from `review$ranked`, promotion,
+  resource cleanup, and new-session reopen through public APIs.
+- Review follow-up replaced row-count-only read-side checks with deterministic
+  full-table comparisons, printed the extracted target vector in the vignette,
+  and locked the complete `target[[id]]` teaching expression.
 
 ## Batch 3 - Mechanical Ownership And Coordinator Stages 1-2
 

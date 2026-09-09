@@ -2428,8 +2428,8 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$yaml, "id: \"LDG-2672\"", fixed = TRUE)
   testthat::expect_match(docs$yaml, "id: \"LDG-2703\"", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
-  testthat::expect_match(docs$batches, "Status: Batches 0-1 complete after review.", fixed = TRUE)
-  testthat::expect_match(docs$readme, "Status: Batches 0-1 complete after review.", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Batches 0-2 complete after review.", fixed = TRUE)
+  testthat::expect_match(docs$readme, "Status: Batches 0-2 complete after review.", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
   testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
@@ -2489,6 +2489,103 @@ testthat::test_that("v0.2.0.0 hardening corrections are contract-bound and recor
   testthat::expect_no_match(
     news,
     "No user-facing changes have shipped yet",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("v0.2.0.0 inspection and workflow teaching is contract-bound", {
+  root <- testthat::test_path("..", "..")
+  paths <- file.path(
+    root,
+    c(
+      "inst/design/contracts.md",
+      "README.Rmd",
+      "README.md",
+      "vignettes/strategy-authoring-tools.qmd",
+      "vignettes/strategy-authoring-tools.md",
+      "R/run-store.R",
+      "NAMESPACE"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source workflow documentation unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c(
+    "contracts", "readme_rmd", "readme", "strategy_qmd",
+    "strategy", "run_store", "namespace"
+  )
+
+  testthat::expect_match(
+    docs$contracts,
+    "A durable `ledgr_backtest` handle is a locator",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$contracts,
+    "Historical configs without that field return\\s+`NA_character_`"
+  )
+  testthat::expect_match(
+    docs$contracts,
+    paste0(
+      "must not infer a no-op plan, substitute current\\s+",
+      "experiment state, add a top-level `risk_plan_json` field"
+    )
+  )
+  testthat::expect_match(
+    docs$contracts,
+    "`target[[instrument_id]]` extracts one named quantity",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$run_store,
+    "`strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "review <- ledgr_sweep_review(sweep, rank_by = -final_equity, n = 2L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "snapshot <- ledgr_snapshot_open(store_path, snapshot_id, verify = TRUE)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy_qmd,
+    "target_values <- c(target)\ntarget_values",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy,
+    "target_values <- c(target)\ntarget_values\n#> DEMO_01 DEMO_02",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy_qmd,
+    "c(pre_floor = raw_qty, target_qty = target[[\"DEMO_01\"]])",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(docs$readme_rmd, docs$readme, docs$strategy_qmd, docs$strategy, sep = "\n"),
+    "unclass(target)",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(docs$run_store, docs$namespace, sep = "\n"),
+    "ledgr_target_values",
     fixed = TRUE
   )
 })

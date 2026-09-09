@@ -292,3 +292,141 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   testthat::expect_equal(as.integer(state_rows), 1L)
   testthat::expect_equal(as.integer(fill_rows), 1L)
 })
+
+testthat::test_that("run info projects recorded risk identity without side effects", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    instrument_id = "AAA",
+    open = 100:105,
+    high = 101:106,
+    low = 99:104,
+    close = 100:105,
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  strategy <- function(ctx, params) {
+    calls$n <- calls$n + 1L
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  risk <- ledgr_risk_chain(
+    ledgr_risk_long_only(),
+    ledgr_risk_max_weight(0.50)
+  )
+  risk_hash <- ledgr:::ledgr_risk_chain_hash(risk)
+  no_risk_hash <- ledgr:::ledgr_risk_chain_hash(ledgr_risk_none())
+
+  direct_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  direct <- ledgr_run(
+    direct_exp,
+    params = list(qty = 1),
+    run_id = "risk-info-direct"
+  )
+  on.exit(close(direct), add = TRUE)
+
+  no_risk_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = ledgr_risk_none(),
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  no_risk <- ledgr_run(
+    no_risk_exp,
+    params = list(qty = 1),
+    run_id = "risk-info-none"
+  )
+  on.exit(close(no_risk), add = TRUE)
+
+  sweep <- ledgr_sweep(
+    direct_exp,
+    ledgr_param_grid(low = list(qty = 1), high = list(qty = 2)),
+    seed = 123L
+  )
+  review <- ledgr_sweep_review(sweep, rank_by = -final_equity)
+  candidate <- ledgr_candidate(review$ranked, 1L)
+  promoted <- ledgr_promote(
+    no_risk_exp,
+    candidate,
+    run_id = "risk-info-promoted"
+  )
+  on.exit(close(promoted), add = TRUE)
+  calls_after_runs <- calls$n
+
+  store_contents <- function() {
+    opened <- ledgr:::ledgr_run_store_open(db_path)
+    on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+    tables <- DBI::dbGetQuery(
+      opened$con,
+      paste(
+        "SELECT table_name FROM information_schema.tables",
+        "WHERE table_schema = 'main' AND table_type = 'BASE TABLE'",
+        "ORDER BY table_name"
+      )
+    )$table_name
+    stats::setNames(
+      lapply(
+        tables,
+        function(table) {
+          sql <- paste(
+            "SELECT * FROM",
+            DBI::dbQuoteIdentifier(opened$con, table),
+            "ORDER BY ALL"
+          )
+          DBI::dbGetQuery(opened$con, sql)
+        }
+      ),
+      tables
+    )
+  }
+
+  before <- store_contents()
+  direct_info <- ledgr_run_info(snapshot, "risk-info-direct")
+  no_risk_info <- ledgr_run_info(snapshot, "risk-info-none")
+  promoted_info <- ledgr_run_info(snapshot, "risk-info-promoted")
+  after <- store_contents()
+
+  testthat::expect_identical(direct_info$risk_chain_hash, risk_hash)
+  testthat::expect_identical(promoted_info$risk_chain_hash, risk_hash)
+  testthat::expect_identical(no_risk_info$risk_chain_hash, no_risk_hash)
+  testthat::expect_type(direct_info$risk_chain_hash, "character")
+  testthat::expect_false("risk_plan_json" %in% names(direct_info))
+  testthat::expect_identical(after, before)
+  testthat::expect_identical(calls$n, calls_after_runs)
+  testthat::expect_output(print(direct_info), risk_hash, fixed = TRUE)
+
+  opened <- ledgr:::ledgr_run_store_open(db_path)
+  config_json <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT config_json FROM runs WHERE run_id = 'risk-info-direct'"
+  )$config_json[[1]]
+  legacy_config <- ledgr:::ledgr_json_read_config(config_json)
+  legacy_config$risk_chain <- NULL
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE runs SET config_json = ? WHERE run_id = 'risk-info-direct'",
+    params = list(as.character(canonical_json(legacy_config)))
+  )
+  ledgr:::ledgr_run_store_close(opened)
+
+  legacy_before <- store_contents()
+  legacy_info <- ledgr_run_info(snapshot, "risk-info-direct")
+  legacy_after <- store_contents()
+  testthat::expect_identical(legacy_info$risk_chain_hash, NA_character_)
+  testthat::expect_identical(legacy_after, legacy_before)
+  testthat::expect_identical(calls$n, calls_after_runs)
+})

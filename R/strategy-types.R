@@ -206,7 +206,9 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
 #' @param origin Optional helper/source label for printing.
 #' @return A `ledgr_target` object.
 #' @examples
-#' ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+#' target <- ledgr_target(c(AAA = 1, BBB = 0), universe = c("AAA", "BBB"))
+#' target[["AAA"]]
+#' c(target)
 #'
 #' @section Articles:
 #' Strategy helper pipelines:

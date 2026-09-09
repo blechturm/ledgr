@@ -389,7 +389,7 @@ scope: risk-provenance-restoration
 Priority: P1
 Effort: S
 Dependencies: LDG-2673, LDG-2674, LDG-2675, LDG-2676
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -411,8 +411,16 @@ adding another reader or writing during inspection.
 ### Verification
 
 - `test-runner.R`
-- Fresh-connection read-only row-count check
+- Fresh-connection read-only full-table-content check
 - `tools::checkRd()`
+
+### Implementation Notes
+
+- Added a read-time `risk_chain_hash` projection from the committed run config
+  to `ledgr_run_info()` and its curated print surface.
+- H6 covers direct, promoted, no-op, and historical-absence records, verifies
+  no top-level plan field is added, and checks fresh-connection table contents
+  and strategy calls across inspection.
 
 ### Source Reference
 
@@ -432,7 +440,7 @@ scope: risk-chain-hash
 Priority: P1
 Effort: M
 Dependencies: LDG-2673, LDG-2674, LDG-2675, LDG-2676
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -459,6 +467,20 @@ and repair the public review/promotion/new-session workflow.
 - `test-documentation-contracts.R`
 - `tools/check-readme-example.R`
 - Affected vignette/example checks
+
+### Implementation Notes
+
+- H7 now treats `ledgr_backtest` as a stable `run_id` plus `db_path` locator:
+  explicit close releases owned resources while later reads and a fresh
+  snapshot/run reopen return unchanged evidence without writes or strategy
+  execution.
+- README source/render and the installed-package checker execute ordinary
+  target access, ranked-review candidate extraction, explicit promotion, and
+  new-session reopen. The strategy-authoring surface and target help use the
+  same names-preserving vector operations.
+- Review follow-up strengthened the no-write check to compare complete ordered
+  table contents, prints the extracted target vector in the vignette, and
+  locks the complete `target[[id]]` expression in the documentation contract.
 
 ### Source Reference
 

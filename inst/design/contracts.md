@@ -291,6 +291,12 @@ The strategy preflight boundary originated in
   tools for long sessions and explicit opens; documentation must not frame them
   as data-loss prevention. Public result readers are eager and do not require a
   cursor cleanup lifecycle.
+- A durable `ledgr_backtest` handle is a locator identified by its `run_id` and
+  `db_path`. `close(bt)` releases resources owned by that handle without
+  deleting evidence or changing locator identity. Later reads may use the
+  closed handle, or a new session may reopen the snapshot and completed run
+  with `ledgr_snapshot_open()` and `ledgr_run_open()` without executing the
+  strategy, recomputing fills, or writing persistent rows.
 - User-facing metadata mutations such as run labels, archives, and tags promise
   immediate fresh-connection visibility. They must use strict checkpointing or
   an equivalent durable-read guarantee before returning.
@@ -306,6 +312,11 @@ The strategy preflight boundary originated in
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. They must tolerate legacy/pre-provenance stores and treat
   missing telemetry as missing/`NA`, not as corruption.
+- `ledgr_run_info()` exposes the committed run's `risk_chain_hash` by reading
+  recorded config identity. Historical configs without that field return
+  `NA_character_`; inspection must not infer a no-op plan, substitute current
+  experiment state, add a top-level `risk_plan_json` field, execute recovered
+  strategy code, or write persistent rows.
 - Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
   `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
   and feature-cache hit/miss counts. Detailed per-component telemetry remains
@@ -353,6 +364,9 @@ The strategy preflight boundary originated in
 - Target values are desired instrument quantities after the next fill, not
   portfolio weights, order sizes, or signals. `ledgr_target` is a thin wrapper
   around those same target quantities and is unwrapped before execution.
+- Ordinary target inspection uses the numeric-vector contract:
+  `target[[instrument_id]]` extracts one named quantity and `c(target)` returns
+  the full named numeric vector. No separate target-values reader is required.
 - Strategy helper pipelines may use `ledgr_signal`, `ledgr_selection`, and
   `ledgr_weights` as intermediate value types, but those objects are invalid
   direct strategy outputs. Helper pipelines must terminate in `ledgr_target` or

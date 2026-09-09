@@ -8,11 +8,19 @@
 - Restored source and risk lineage on ranked sweep-review results so explicit
   candidate extraction and promotion work after review and reopen. The compact
   `review$top` table remains presentation-only and carries no sweep lineage.
+- Added the committed `risk_chain_hash` to `ledgr_run_info()`. Historical runs
+  without recorded risk identity report `NA` rather than an inferred no-op
+  plan; inspection remains read-only and does not expose the full risk plan.
+- Locked durable run handles as resource-owning locators: `close(bt)` releases
+  resources without deleting evidence, and completed runs remain readable from
+  the closed handle or through `ledgr_run_open()` in a later session. Public
+  examples now use ordinary target indexing and an explicit
+  review-to-promotion workflow.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-1
-  are complete after review.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-2
+  are complete after review and Batch 3 is next.
 
 # ledgr 0.1.9.7
 

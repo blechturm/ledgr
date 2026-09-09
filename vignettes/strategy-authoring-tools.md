@@ -234,10 +234,18 @@ allocated to the one selected instrument:
 
 ``` r
 raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
-c(pre_floor = raw_qty, target_qty = unclass(target)[["DEMO_01"]])
+target_values <- c(target)
+target_values
+#> DEMO_01 DEMO_02
+#>      93       0
+c(pre_floor = raw_qty, target_qty = target[["DEMO_01"]])
 #>  pre_floor target_qty
 #>   93.89208   93.00000
 ```
+
+Use ordinary vector operations to inspect a target:
+`target[["DEMO_01"]]` extracts one named quantity, while `c(target)`
+returns the complete named numeric vector in `target_values`.
 
 The general weighted sizing formula is:
 

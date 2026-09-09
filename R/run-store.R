@@ -305,6 +305,24 @@ ledgr_run_store_config_feature_set_hash <- function(config_json) {
   NA_character_
 }
 
+ledgr_run_store_config_risk_chain_hash <- function(config_json) {
+  # Read-time projection from the committed config; historical configs may
+  # predate risk identity and must remain visibly absent.
+  if (is.null(config_json) || length(config_json) != 1L ||
+      is.na(config_json) || !nzchar(config_json)) {
+    return(NA_character_)
+  }
+  cfg <- tryCatch(
+    ledgr_json_read_config(config_json),
+    error = function(e) NULL
+  )
+  value <- cfg$risk_chain$risk_chain_hash
+  if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value)) {
+    return(value)
+  }
+  NA_character_
+}
+
 ledgr_run_store_format_ts <- function(x) {
   if (is.null(x) || length(x) != 1L || is.na(x)) return(NA_character_)
   ledgr_normalize_ts_utc(x)
@@ -619,6 +637,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
     rlang::abort("`row` must contain exactly one run.", class = "ledgr_internal_error")
   }
   info <- as.list(row[1, , drop = TRUE])
+  info$risk_chain_hash <- ledgr_run_store_config_risk_chain_hash(info$config_json)
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
     info[c("elapsed_sec", "persist_features", "feature_cache_hits", "feature_cache_misses")],
@@ -853,7 +872,7 @@ print.ledgr_run_list <- function(x, ...) {
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object. Important fields include `run_id`,
 #'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
-#'   `strategy_params_hash`, `feature_set_hash`, `config_hash`,
+#'   `strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`,
 #'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
 #'   `persist_features`, feature-cache counts, `promotion_context` for runs
 #'   created with [ledgr_promote()], and `error_msg` for failed runs. See
@@ -918,6 +937,7 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
   cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
   cat("Feature Set Hash: ", value("feature_set_hash"), "\n", sep = "")
+  cat("Risk Chain Hash:  ", value("risk_chain_hash"), "\n", sep = "")
   cat("Config Hash:     ", value("config_hash"), "\n", sep = "")
   cat("Strategy Hash:   ", value("strategy_source_hash"), "\n", sep = "")
   cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")

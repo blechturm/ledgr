@@ -168,6 +168,85 @@ Hash verification proves stored-text identity, not code safety. Use
 `trust = TRUE` only when you already trust the store and intentionally
 want to recover a function object.
 
+## Review, Promote, And Reopen
+
+`ledgr_target` is a thin wrapper around the named numeric quantities the
+fold consumes. Inspect one quantity with ordinary `[[` indexing, or
+recover the full named numeric vector with `c()`.
+
+``` r
+target <- ledgr_target(
+  c(DEMO_01 = 10, DEMO_02 = 0),
+  universe = c("DEMO_01", "DEMO_02")
+)
+target[["DEMO_01"]]
+#> [1] 10
+target_values <- c(target)
+target_values
+#> DEMO_01 DEMO_02
+#>      10       0
+```
+
+An exploratory sweep remains evidence, not a decision. Name the ranking
+rule, inspect its presentation table, then extract a candidate from the
+full ranked table before promotion.
+
+``` r
+grid <- ledgr_grid_cross(
+  features = ledgr_feature_grid(
+    fast_n = c(10L, 20L),
+    slow_n = 40L
+  ),
+  strategy = ledgr_strategy_grid(
+    qty = c(5, 10),
+    threshold = 0
+  )
+)
+
+sweep <- ledgr_sweep(exp, grid, seed = 2026L)
+review <- ledgr_sweep_review(sweep, rank_by = -final_equity, n = 2L)
+review$top
+#> # A tibble: 2 x 12
+#>    rank candidate_id           candidate_row status final_equity total_return sharpe_ratio
+#>   <int> <chr>                          <int> <chr>         <dbl>        <dbl>        <dbl>
+#> 1     1 feature_9f9d160d8a33/~             4 DONE         10109.       0.0109         1.39
+#> 2     2 feature_fa560ccbec9f/~             2 DONE         10107.       0.0107         1.35
+#> # i 5 more variables: max_drawdown <dbl>, n_trades <int>, execution_seed <int>,
+#> #   params <list>, feature_params <list>
+
+candidate <- ledgr_candidate(review$ranked, 1L)
+promoted <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "readme_promoted_candidate"
+)
+```
+
+The run handle is a locator for durable evidence. Closing it releases
+owned resources; it does not delete the run. Keep the store path and
+stable IDs, then reopen the snapshot and completed run in a later session
+without executing the strategy again.
+
+``` r
+store_path <- snapshot$db_path
+snapshot_id <- snapshot$snapshot_id
+promoted_run_id <- promoted$run_id
+
+close(bt)
+close(promoted)
+ledgr_snapshot_close(snapshot)
+
+snapshot <- ledgr_snapshot_open(store_path, snapshot_id, verify = TRUE)
+bt <- ledgr_run_open(snapshot, promoted_run_id)
+head(ledgr_results(bt, what = "equity"), 3)
+#> # A tibble: 3 x 6
+#>   ts_utc     equity  cash positions_value running_max drawdown
+#>   <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-01-01  10000 10000               0       10000        0
+#> 2 2019-01-02  10000 10000               0       10000        0
+#> 3 2019-01-03  10000 10000               0       10000        0
+```
+
 ## Where To Go Next
 
 | Question | Article |

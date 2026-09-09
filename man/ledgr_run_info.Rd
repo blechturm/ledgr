@@ -16,7 +16,7 @@ DuckDB file in a new R session.}
 \value{
 A \code{ledgr_run_info} object. Important fields include \code{run_id},
 \code{status}, \code{snapshot_id}, \code{snapshot_hash}, \code{strategy_source_hash},
-\code{strategy_params_hash}, \code{feature_set_hash}, \code{config_hash},
+\code{strategy_params_hash}, \code{feature_set_hash}, \code{risk_chain_hash}, \code{config_hash},
 \code{reproducibility_level}, \code{execution_mode}, \code{elapsed_sec}, \code{pulse_count},
 \code{persist_features}, feature-cache counts, \code{promotion_context} for runs
 created with \code{\link[=ledgr_promote]{ledgr_promote()}}, and \code{error_msg} for failed runs. See
