@@ -314,3 +314,24 @@ separate deferred work named by the accepted synthesis.
 
 **Audit completion remains open** until the prioritized execution probes,
 test-strengthening dispositions, and resulting hardening scope are recorded.
+
+## 7. Measured Evidence (2026-09-09, `c78ab4f`)
+
+Appended by the response author after running
+`dev/spikes/api-representation-hardening/probe.R` (R 4.5.2 ucrt, Windows 11,
+ledgr 0.1.9.7 via `pkgload::load_all()`, duckdb 1.4.3, dplyr 1.1.4). Ten
+cases on a synthetic two-instrument, eight-bar sealed snapshot; full output
+is summarized in the probe's `probe_findings.md`. These rows update the
+Section 5 table; they do not close the audit.
+
+| Section 5 probe | Measured result | Effect on the finding |
+| --- | --- | --- |
+| Nonzero reversal fee | `ledgr_cost_notional_bps_fee(10)` with a long/short flip: 7 fill events, 13 derived rows, derived fee total 13.045 against source 6.775; six of seven events carry the full fee on both `CLOSE` and `OPEN` rows | T-1 confirmed by execution; conservation assertion per `event_seq` is the detecting check; allocation rule is a maintainer decision |
+| Lost risk metadata | `filter()`, `arrange()`, `slice_head()`, base `[`, and `ledgr_sweep_save()` / `ledgr_sweep_open()` all kept `risk_chain_hash` as attribute, column, and row provenance; candidates from a plain tibble and from an attribute-stripped data frame reconstructed the chain and promoted | T-3 is latent, not observed: dplyr and vctrs copy the attributes the restore list omits; fix is the two missing fields plus one assertion after base `[` |
+| Wide-name and threshold boundaries (threshold half) | With fills: `Inf` untyped base error after a coercion warning; `NA` and `"100"` typed `ledgr_invalid_args`; `-1`, `0`, `1.5` accepted and return a cursor with `lazy = FALSE`. Without fills: every value returns an empty tibble | Validation-after-shortcut confirmed; the `ts_utc` wide-name half was not run |
+| Not in Section 5: review helper lineage | `ledgr_sweep_review()$ranked` is a plain tibble; its candidate has zero `sweep_meta` fields and promotes with `source_sweep$sweep_id = NULL` | New finding; the research-workflow vignette's documented selection path loses lineage |
+| Not in Section 5: reads after close | `close(bt)` then `ledgr_run_fills()` and `summary()` reopen by path and succeed | Contract or accident; routed to the response's open questions |
+
+Unrun and unchanged by this appendix: disabled no-lookahead checker, caller
+RNG hygiene, the `ts_utc` wide-name probe, public future-data perturbation,
+interrupted persistence, and test cleanup.
