@@ -18,7 +18,7 @@ The input object, invisibly.
 Releases any open DuckDB connection held by a \code{ledgr_backtest} object and
 checkpoints a durable run file when possible. Completed run artifacts are
 already durable when \code{ledgr_run()} returns; \code{close(bt)} is resource
-management for explicit opens, lazy result cursors, tests, and long sessions.
+management for explicit opens, tests, and long sessions.
 The underlying DuckDB file is not deleted.
 }
 \examples{

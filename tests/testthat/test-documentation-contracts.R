@@ -2408,6 +2408,10 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
     "README.md", "v0_2_0_0_spec.md", "v0_2_0_0_tickets.md",
     "tickets.yml", "batch_plan.md"
   ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source v0.2.0.0 packet unavailable during installed-package tests"
+  )
   testthat::expect_true(all(file.exists(paths)))
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
@@ -2424,7 +2428,8 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$yaml, "id: \"LDG-2672\"", fixed = TRUE)
   testthat::expect_match(docs$yaml, "id: \"LDG-2703\"", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
-  testthat::expect_match(docs$batches, "Status: Review Pending.", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Batches 0-1 complete after review.", fixed = TRUE)
+  testthat::expect_match(docs$readme, "Status: Batches 0-1 complete after review.", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
   testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
@@ -2436,4 +2441,54 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(roadmap, "| v0.2.0.0 | Active | Correct known API", fixed = TRUE)
   testthat::expect_match(horizon, "v0.2.0.0 packet is active", fixed = TRUE)
   testthat::expect_match(horizon, "stay\\s+parked for a later documentation-freshness pass")
+})
+
+testthat::test_that("v0.2.0.0 hardening corrections are contract-bound and recorded", {
+  root <- testthat::test_path("..", "..")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  news_path <- file.path(root, "NEWS.md")
+  testthat::skip_if_not(
+    file.exists(contracts_path) && file.exists(news_path),
+    "source contracts and NEWS unavailable during installed-package tests"
+  )
+
+  contracts <- paste(readLines(contracts_path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(news_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_no_match(contracts, "lazy cursors", fixed = TRUE)
+  testthat::expect_match(
+    contracts,
+    "`ledgr_run_fills(bt)` has exactly one public formal and eagerly returns",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "derived fees for that event must sum to its source fee in\\s+",
+      "durable, reconstructed, memory-backed, and compiled spot-FIFO projections"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "`review$top` is a lineage-free presentation table",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "preserves their historical absence as `NULL`"
+  )
+  testthat::expect_match(
+    news,
+    "Corrected reversal-fill projections so derived CLOSE and OPEN fees are"
+  )
+  testthat::expect_match(
+    news,
+    "Simplified `ledgr_run_fills()` to one eager `bt` argument",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    news,
+    "No user-facing changes have shipped yet",
+    fixed = TRUE
+  )
 })

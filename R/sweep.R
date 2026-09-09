@@ -1707,6 +1707,11 @@ ledgr_memory_output_handler <- function(run_id) {
     i <- state$event_count
     set_event_value("event_realized", i, as.numeric(lot_state$realized_pnl))
     set_event_value("event_cost_basis", i, as.numeric(lot_state$total_cost_basis))
+    leg_fees <- ledgr_fill_leg_fees(
+      write_res$row$fee,
+      lot_res$close_qty,
+      lot_res$open_qty
+    )
     if (isTRUE(lot_res$close_qty > 0)) {
       ledgr_fill_row_buffer_add(
         state$inline_fills,
@@ -1716,7 +1721,7 @@ ledgr_memory_output_handler <- function(run_id) {
         write_res$row$side,
         lot_res$close_qty,
         write_res$row$price,
-        write_res$row$fee,
+        leg_fees[["close"]],
         lot_res$realized_close,
         "CLOSE"
       )
@@ -1730,7 +1735,7 @@ ledgr_memory_output_handler <- function(run_id) {
         write_res$row$side,
         lot_res$open_qty,
         write_res$row$price,
-        write_res$row$fee,
+        leg_fees[["open"]],
         0,
         "OPEN"
       )

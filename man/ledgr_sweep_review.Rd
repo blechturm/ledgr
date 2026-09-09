@@ -17,7 +17,9 @@ Use \code{desc(metric)} or \code{-metric} for descending numeric rankings.}
 }
 \value{
 A \code{ledgr_sweep_review} list with \code{ranked}, \code{top}, \code{issues},
-\code{rank_by}, and \code{n}.
+\code{rank_by}, and \code{n}. For classed sweep input, \code{ranked} retains the source
+sweep lineage needed for explicit candidate extraction; \code{top} is always a
+lineage-free presentation table.
 }
 \description{
 \code{ledgr_sweep_review()} packages the common sweep-inspection shape into a

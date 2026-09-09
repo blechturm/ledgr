@@ -366,6 +366,7 @@ ledgr_fills_from_events <- function(events) {
     close_qty <- lot_res$close_qty
     open_qty <- lot_res$open_qty
     realized_close <- lot_res$realized_close
+    leg_fees <- ledgr_fill_leg_fees(fee, close_qty, open_qty)
     lot_state <- lot_res$state
 
     # A single event can close an existing lot and open the opposite side. The
@@ -373,14 +374,14 @@ ledgr_fills_from_events <- function(events) {
     if (close_qty > 0) {
       ledgr_fill_row_buffer_add(
         fill_rows,
-        event_seq_col[[i]], ts_utc_col[[i]], inst, side, close_qty, price, fee,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, close_qty, price, leg_fees[["close"]],
         realized_close, "CLOSE"
       )
     }
     if (open_qty > 0) {
       ledgr_fill_row_buffer_add(
         fill_rows,
-        event_seq_col[[i]], ts_utc_col[[i]], inst, side, open_qty, price, fee,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, open_qty, price, leg_fees[["open"]],
         0, "OPEN"
       )
     }
@@ -527,11 +528,15 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
         add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
         next
       }
+      leg_fees <- ledgr_fill_leg_fees(fee, lot_res$close_qty, lot_res$open_qty)
       if (isTRUE(lot_res$close_qty > 0)) {
-        add_fill_row(i, inst, side, lot_res$close_qty, price, fee, lot_res$realized_close, "CLOSE")
+        add_fill_row(
+          i, inst, side, lot_res$close_qty, price, leg_fees[["close"]],
+          lot_res$realized_close, "CLOSE"
+        )
       }
       if (isTRUE(lot_res$open_qty > 0)) {
-        add_fill_row(i, inst, side, lot_res$open_qty, price, fee, 0, "OPEN")
+        add_fill_row(i, inst, side, lot_res$open_qty, price, leg_fees[["open"]], 0, "OPEN")
       }
     }
   }

@@ -446,6 +446,26 @@ testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", 
   r_path <- ledgr_compiled_spot_fifo_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_test_run("spot_fifo")
 
+  expect_reversal_fees <- function(path) {
+    for (fills in list(path$inline_summary$fills, path$reconstructed$fills)) {
+      testthat::expect_identical(fills$event_seq, c(2L, 2L, 3L, 3L))
+      testthat::expect_identical(fills$action, c("CLOSE", "OPEN", "CLOSE", "OPEN"))
+      testthat::expect_equal(fills$qty, c(2, 1, 1, 1))
+      testthat::expect_equal(
+        fills$fee,
+        c(1 / 6, 1 / 12, 1 / 8, 1 / 8),
+        tolerance = 1e-12
+      )
+      testthat::expect_equal(
+        unname(vapply(split(fills$fee, fills$event_seq), sum, numeric(1))),
+        c(0.25, 0.25),
+        tolerance = 1e-12
+      )
+    }
+  }
+  expect_reversal_fees(r_path)
+  expect_reversal_fees(compiled_path)
+
   testthat::expect_equal(
     as.data.frame(compiled_path$events),
     as.data.frame(r_path$events),

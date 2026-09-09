@@ -36,6 +36,21 @@ ledgr_lot_dust_tolerance <- function(...) {
   .Machine$double.eps * max(c(1, values))
 }
 
+ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
+  total_qty <- as.numeric(close_qty) + as.numeric(open_qty)
+  if (!is.finite(total_qty) || total_qty <= 0) {
+    return(c(close = 0, open = 0))
+  }
+
+  close_fee <- if (close_qty > 0) {
+    as.numeric(fee) * as.numeric(close_qty) / total_qty
+  } else {
+    0
+  }
+  open_fee <- if (open_qty > 0) as.numeric(fee) - close_fee else 0
+  c(close = close_fee, open = open_fee)
+}
+
 ledgr_lot_set <- function(state, instrument_id, lots) {
   if (is.null(state$lots[[instrument_id]])) {
     state$lots[[instrument_id]] <- list()

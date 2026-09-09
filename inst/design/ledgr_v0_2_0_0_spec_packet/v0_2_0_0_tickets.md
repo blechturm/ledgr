@@ -102,7 +102,7 @@ Batch 8 and Batch 9 independent review stops are mandatory.
 Priority: P0
 Effort: M
 Dependencies: None
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -140,6 +140,14 @@ and promote the packet into active governance without claiming implementation.
 - Documentation-contract tests.
 - `git diff --check` and ASCII scan.
 
+### Implementation Notes
+
+- Packet artifacts and active governance were committed in `fa31c11` after
+  independent review accepted the ticket cut.
+- A Batch 1 package-check follow-up made the packet documentation-contract test
+  skip cleanly when source-only packet files are unavailable from an installed
+  package test context; source-tree execution still asserts the full contract.
+
 ### Source Reference
 
 - `v0_2_0_0_spec.md` Sections 5-9
@@ -158,7 +166,7 @@ scope: packet-alignment
 Priority: P0
 Effort: M
 Dependencies: LDG-2672
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -185,6 +193,18 @@ preserving event-level economics.
 - `test-accounting-consistency.R`
 - Targeted fills/trades/result regressions
 
+### Implementation Notes
+
+- Added independent two-direction unequal-leg allocation and event-level fee
+  conservation assertions before correcting the projection.
+- One internal pro-rata helper now supplies derived fees to the durable reader,
+  event reconstruction, memory-backed sweep, and compiled spot-FIFO paths.
+- Cash, terminal position and basis, realized PnL, and trade metrics retain
+  independently asserted values.
+- Review follow-up added absolute reversal-fee and event-total assertions for
+  memory-backed and reconstructed output on both R and compiled fold paths,
+  and bound the projection rule in the Result Contract and NEWS.
+
 ### Source Reference
 
 - Spec Section 2.1 and gates H1-H2
@@ -203,7 +223,7 @@ scope: pro-rata-reversal-fees
 Priority: P1
 Effort: M
 Dependencies: LDG-2672
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -229,6 +249,20 @@ Make `ledgr_run_fills(bt)` an eager, schema-stable reader and remove the cursor,
 - API export/S3 review
 - `tools::checkRd()`
 
+### Implementation Notes
+
+- Reduced the public API to the single `bt` formal and removed cursor,
+  threshold-switching, and lazy-result code without aliases.
+- Empty, populated, borrowed-connection, and 220-row reads now return the same
+  eager full-schema tibble shape; removed arguments fail before reads.
+- Updated generated help, README source/render, and the experiment-store
+  vignette source/render to remove the deleted cursor contract.
+- Source build without vignette rebuilding and installed-package check pass;
+  the check reports only the existing vignette-output warnings and long-path
+  note.
+- Review follow-up bound the one-formal eager-reader contract and recorded the
+  user-facing removal in NEWS.
+
 ### Source Reference
 
 - Spec Section 2.1 and gate H3
@@ -247,7 +281,7 @@ scope: eager-reader
 Priority: P0
 Effort: M
 Dependencies: LDG-2672
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -273,6 +307,16 @@ extraction and promotion retain source lineage.
 - `test-promotion-context.R`
 - Targeted sweep-review/candidate/promotion tests
 
+### Implementation Notes
+
+- Restored `review$ranked` from classed sweep inputs at the existing sweep-view
+  restoration boundary while leaving compatible plain tables unclassed.
+- Added a reopened nondefault-risk review-to-promotion journey that asserts
+  source sweep ID, candidate identity, risk identity, ranking order, unchanged
+  input bytes, and rejection of candidate extraction from `top`.
+- Review follow-up made `review$top` explicitly lineage-free and added
+  detecting assertions for its source and risk attributes.
+
 ### Source Reference
 
 - Spec Section 2.1 and gate H4
@@ -291,7 +335,7 @@ scope: ranked-lineage
 Priority: P0
 Effort: S
 Dependencies: LDG-2672
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -316,6 +360,16 @@ are reconstructed or subset.
 
 - `test-sweep-persistence-roundtrip.R`
 - Reopened-sweep and candidate identity tests
+
+### Implementation Notes
+
+- Added `risk_chain_hash` and `risk_plan_json` to explicit sweep-result
+  restoration.
+- The detecting fixture strips both output-side attributes before restoration,
+  then checks direct restoration, base and dplyr subsets, reopened evidence,
+  and downstream candidate metadata under a nondefault risk chain.
+- Review follow-up bound present and historically absent risk provenance in the
+  Result Contract.
 
 ### Source Reference
 

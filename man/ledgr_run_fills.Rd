@@ -4,17 +4,13 @@
 \alias{ledgr_run_fills}
 \title{Extract fill events from a backtest}
 \usage{
-ledgr_run_fills(bt, lazy = FALSE, stream_threshold = 100000L)
+ledgr_run_fills(bt)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object.}
-
-\item{lazy}{If \code{TRUE}, return a streaming cursor instead of materializing all rows.}
-
-\item{stream_threshold}{Number of fill rows above which lazy mode is forced.}
 }
 \value{
-A tibble of fill rows, or a \code{ledgr_fills_cursor} when \code{lazy = TRUE}.
+A tibble of fill rows.
 }
 \description{
 Extract fill events from a backtest

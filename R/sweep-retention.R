@@ -1250,6 +1250,7 @@ ledgr_sweep_results_restore <- function(out, template) {
     "feature_union", "feature_union_hash", "feature_engine_version",
     "candidate_features", "metric_context", "metric_context_hash",
     "metric_context_version", "cost_model_hash", "cost_plan_json",
+    "risk_chain_hash", "risk_plan_json",
     "sweep_retention", "execution_assumptions", "saved_sweep"
   )
   for (name in attr_names) {

@@ -27,6 +27,8 @@ testthat::test_that("ledgr_sweep_review ranks completed rows and separates issue
   testthat::expect_identical(review$issues$candidate_id, c("high", "failed"))
   testthat::expect_true("warnings" %in% names(review$issues))
   testthat::expect_false(inherits(review, "ledgr_sweep_candidate"))
+  testthat::expect_false(inherits(review$ranked, "ledgr_sweep_results"))
+  testthat::expect_null(attr(review$ranked, "sweep_id", exact = TRUE))
 
   printed <- utils::capture.output(print(review, n = 1))
   testthat::expect_true(any(grepl("ledgr sweep review", printed, fixed = TRUE)))

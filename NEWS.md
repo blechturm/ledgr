@@ -1,10 +1,18 @@
 # ledgr 0.2.0.0
 
-- Development version opened for the accepted v0.2.0.0 packet. No user-facing
-  changes have shipped yet. The ordered scope first hardens API,
-  representation, provenance, and run-coordinator boundaries, then implements
-  the first point-in-time asset-availability path on the shared fold. The
-  packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batch 0 awaits review.
+- Corrected reversal-fill projections so derived CLOSE and OPEN fees are
+  allocated pro rata and sum to the source event fee without changing cash,
+  lot state, realized PnL, or trade metrics.
+- Simplified `ledgr_run_fills()` to one eager `bt` argument with a stable tibble
+  result; the cursor, lazy-read, and threshold-switching modes were removed.
+- Restored source and risk lineage on ranked sweep-review results so explicit
+  candidate extraction and promotion work after review and reopen. The compact
+  `review$top` table remains presentation-only and carries no sweep lineage.
+- Development continues under the accepted v0.2.0.0 packet. The ordered scope
+  next hardens representation, provenance, and run-coordinator boundaries,
+  then implements the first point-in-time asset-availability path on the shared
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-1
+  are complete after review.
 
 # ledgr 0.1.9.7
 

@@ -518,8 +518,8 @@ aliases.
 artifacts. The artifacts are already durable when a run completes, and
 ordinary result inspection opens and closes read connections per
 operation. Use `close(bt)` as explicit resource cleanup in long
-sessions, tests, explicit-open workflows, and lazy result cursors. Close
-snapshot handles when the workflow is finished.
+sessions, tests, and explicit-open workflows. Close snapshot handles when
+the workflow is finished.
 
 ## Task Intent Map
 

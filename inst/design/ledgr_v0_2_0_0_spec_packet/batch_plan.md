@@ -1,7 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batch 0 implementation complete and awaiting review. Batches 1-11 are
-pending.
+Status: Batches 0-1 complete after review. Batches 2-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -55,7 +54,7 @@ Batch 11 starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Batch 0 - Packet Alignment And Ticket Cut
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -92,7 +91,7 @@ Exit criteria:
 
 ## Batch 1 - Hardening Corrections
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -120,6 +119,30 @@ Exit criteria:
 - H1-H5 pass;
 - each correction is independently reviewable and committed separately;
 - corrected outputs become the mechanical-refactor baseline.
+
+Implementation evidence:
+
+- H1-H2 assert pro-rata reversal-fee allocation and source-event conservation
+  on the durable reader. The same allocation helper or algorithm is applied in
+  event reconstruction, memory-backed sweep, and compiled spot-FIFO paths; the
+  existing compiled parity fixture now pins the absolute fee splits and totals
+  for both memory and reconstructed projections.
+- H3 removes the cursor, `lazy`, and `stream_threshold` branches; empty,
+  populated, borrowed-connection, and 220-row reads return eager full-schema
+  tibbles through the one-formal public API.
+- H4 restores `review$ranked` as a sweep result with source and risk lineage,
+  preserves ranking order into promotion, and keeps `top` presentation-only.
+- H5 restores both risk attributes explicitly and verifies direct restoration,
+  base/dplyr subsetting, reopened persistence, and candidate identity.
+- The focused hardening and contract tests, all 142 Rd files, and the full
+  local suite pass; the full suite has one expected missing-package-path skip.
+- `R CMD build --no-build-vignettes` succeeds and `R CMD check --no-manual
+  --no-build-vignettes` completes with the two existing missing-`inst/doc`
+  vignette warnings and one existing long-path note. A standard source build
+  remains blocked by the repository's existing Quarto weave-output issue.
+- Review follow-up bound the four corrections in `contracts.md` and NEWS,
+  stripped sweep lineage from `review$top`, and added detecting reversal-fee
+  assertions to the compiled parity fixture.
 
 ## Batch 2 - Inspection And Workflow Hardening
 

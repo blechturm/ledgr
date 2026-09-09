@@ -288,8 +288,9 @@ The strategy preflight boundary originated in
   silently recreate durable tables.
 - Completed run artifacts are durable when `ledgr_run()` returns. User-facing
   `close(bt)` and `ledgr_snapshot_close(snapshot)` calls are resource-management
-  tools for long sessions, explicit opens, and lazy cursors; documentation must
-  not frame them as data-loss prevention.
+  tools for long sessions and explicit opens; documentation must not frame them
+  as data-loss prevention. Public result readers are eager and do not require a
+  cursor cleanup lifecycle.
 - User-facing metadata mutations such as run labels, archives, and tags promise
   immediate fresh-connection visibility. They must use strict checkpointing or
   an equivalent durable-read guarantee before returning.
@@ -626,6 +627,23 @@ The strategy preflight boundary originated in
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+- `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
+  full fills-schema tibble for empty and populated runs. It has no public
+  cursor, lazy-read, or row-threshold mode.
+- When one source fill reverses a position and projects to derived CLOSE and
+  OPEN rows, its fee is allocated pro rata by the non-negative absolute leg
+  quantities. The derived fees for that event must sum to its source fee in
+  durable, reconstructed, memory-backed, and compiled spot-FIFO projections.
+  This projection rule must not change cash, lot state, realized PnL, or closed
+  trade metrics.
+- For classed sweep input, `ledgr_sweep_review()` restores `review$ranked` as a
+  `ledgr_sweep_results` view with applicable source and risk lineage, including
+  `risk_chain_hash` and `risk_plan_json`. Compatible plain input must not gain
+  invented lineage. `review$top` is a lineage-free presentation table, not a
+  promotion-ready candidate surface.
+- Sweep-result restoration preserves `risk_chain_hash` and `risk_plan_json`
+  when present and preserves their historical absence as `NULL` rather than
+  synthesizing provenance.
 - Public standard metrics use the equity rows returned by
   `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
   `ledgr_results(bt, what = "trades")`.

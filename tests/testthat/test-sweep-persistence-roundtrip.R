@@ -11,13 +11,18 @@ ledgr_sweep_roundtrip_bars <- function() {
   )
 }
 
-ledgr_sweep_roundtrip_experiment <- function(snapshot) {
+ledgr_sweep_roundtrip_experiment <- function(snapshot, risk_chain = ledgr_risk_none()) {
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     targets["AAA"] <- params$qty
     targets
   }
-  ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk_chain,
+    cost_model = ledgr_cost_zero()
+  )
 }
 
 ledgr_sweep_roundtrip_sweep <- function(exp) {
@@ -311,17 +316,40 @@ testthat::test_that("schema-2 saved sweeps fail closed on provenance risk drift"
 })
 
 testthat::test_that("reopened sweeps survive dplyr and base row operations", {
-  testthat::skip_if_not_installed("dplyr")
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
     db_path = tempfile(fileext = ".duckdb"),
     snapshot_id = "survivability_snapshot"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_sweep_roundtrip_experiment(snapshot)
+  risk <- ledgr_risk_long_only()
+  exp <- ledgr_sweep_roundtrip_experiment(snapshot, risk_chain = risk)
   sweep <- ledgr_sweep_roundtrip_sweep(exp)
   ledgr_sweep_save(sweep, snapshot, sweep_id = "survive_saved")
   reopened <- ledgr_sweep_open(snapshot, "survive_saved")
+
+  stripped <- tibble::as_tibble(reopened[2L, ])
+  attr(stripped, "risk_chain_hash") <- NULL
+  attr(stripped, "risk_plan_json") <- NULL
+  restored <- ledgr:::ledgr_sweep_results_restore(stripped, reopened)
+  testthat::expect_identical(
+    attr(restored, "risk_chain_hash", exact = TRUE),
+    attr(reopened, "risk_chain_hash", exact = TRUE)
+  )
+  testthat::expect_identical(
+    attr(restored, "risk_plan_json", exact = TRUE),
+    attr(reopened, "risk_plan_json", exact = TRUE)
+  )
+
+  historical <- reopened
+  attr(historical, "risk_chain_hash") <- NULL
+  attr(historical, "risk_plan_json") <- NULL
+  restored_historical <- ledgr:::ledgr_sweep_results_restore(
+    tibble::as_tibble(historical[2L, ]),
+    historical
+  )
+  testthat::expect_null(attr(restored_historical, "risk_chain_hash", exact = TRUE))
+  testthat::expect_null(attr(restored_historical, "risk_plan_json", exact = TRUE))
 
   filtered <- dplyr::filter(reopened, candidate_id == "b")
   testthat::expect_s3_class(filtered, "ledgr_sweep_results")
@@ -332,6 +360,14 @@ testthat::test_that("reopened sweeps survive dplyr and base row operations", {
   testthat::expect_identical(candidate$candidate_row, 2L)
   testthat::expect_identical(candidate$sweep_meta$sweep_id, "survive_saved")
   testthat::expect_identical(candidate$selection_view$candidate_id, "b")
+  testthat::expect_identical(
+    candidate$sweep_meta$risk_chain_hash,
+    ledgr:::ledgr_risk_chain_hash(risk)
+  )
+  testthat::expect_identical(
+    candidate$sweep_meta$risk_plan_json,
+    ledgr:::ledgr_risk_plan_json(risk)
+  )
 
   arranged <- dplyr::arrange(reopened, dplyr::desc(total_return))
   arranged_candidate <- ledgr_candidate(arranged, 1L)
@@ -357,6 +393,17 @@ testthat::test_that("reopened sweeps survive dplyr and base row operations", {
   )
   testthat::expect_identical(ledgr_sweep_info(in_memory_subset)$grid$candidate_rows, 2L)
   testthat::expect_identical(unique(ledgr_sweep_returns(in_memory_subset)$candidate_id), "b")
+
+  for (view in list(filtered, arranged, sliced, base_subset, in_memory_subset)) {
+    testthat::expect_identical(
+      attr(view, "risk_chain_hash", exact = TRUE),
+      ledgr:::ledgr_risk_chain_hash(risk)
+    )
+    testthat::expect_identical(
+      attr(view, "risk_plan_json", exact = TRUE),
+      ledgr:::ledgr_risk_plan_json(risk)
+    )
+  }
 })
 
 testthat::test_that("promotion from reopened sweeps re-executes committed run artifacts", {

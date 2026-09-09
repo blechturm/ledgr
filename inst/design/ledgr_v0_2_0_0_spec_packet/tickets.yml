@@ -4,7 +4,7 @@ generated_from: "v0_2_0_0_spec.md"
 tickets:
   - id: "LDG-2672"
     title: "Packet alignment and ticket cut"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -22,7 +22,7 @@ tickets:
 
   - id: "LDG-2673"
     title: "Reversal fee projection correction"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2672"]
@@ -37,7 +37,7 @@ tickets:
 
   - id: "LDG-2674"
     title: "Eager fills API simplification"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2672"]
@@ -52,7 +52,7 @@ tickets:
 
   - id: "LDG-2675"
     title: "Sweep review lineage correction"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2672"]
@@ -67,7 +67,7 @@ tickets:
 
   - id: "LDG-2676"
     title: "Sweep risk restoration correction"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2672"]

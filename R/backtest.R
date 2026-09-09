@@ -664,7 +664,7 @@ ledgr_backtest_read_connection <- function(bt) {
 #' Releases any open DuckDB connection held by a `ledgr_backtest` object and
 #' checkpoints a durable run file when possible. Completed run artifacts are
 #' already durable when `ledgr_run()` returns; `close(bt)` is resource
-#' management for explicit opens, lazy result cursors, tests, and long sessions.
+#' management for explicit opens, tests, and long sessions.
 #' The underlying DuckDB file is not deleted.
 #'
 #' @param con A `ledgr_backtest` object.
@@ -703,52 +703,6 @@ close.ledgr_backtest <- function(con, ...) {
   }, add = TRUE)
   ledgr_backtest_checkpoint_state(state, strict = TRUE)
   invisible(con)
-}
-
-# Internal helper for cleaning up lazy fill streaming results.
-ledgr_fills_close <- function(res, con = NULL) {
-  if (is.null(res)) return(invisible(TRUE))
-  if (inherits(res, "ledgr_fills_cursor")) {
-    state <- res$.state
-    return(ledgr_fills_close(state$res, con = state$con))
-  }
-  if (!inherits(res, "DBIResult")) {
-    rlang::abort("`res` must be a DBIResult from ledgr_run_fills(lazy = TRUE).", class = "ledgr_invalid_args")
-  }
-
-  temp_table <- attr(res, "ledgr_temp_table", exact = TRUE)
-
-  if (DBI::dbIsValid(res)) {
-    DBI::dbClearResult(res)
-  }
-  if (!is.null(con) && !is.null(temp_table)) {
-    DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
-  }
-  invisible(TRUE)
-}
-
-new_ledgr_fills_cursor <- function(res, temp_table, con) {
-  state <- new.env(parent = emptyenv())
-  state$res <- res
-  state$con <- con
-  state$temp_table <- temp_table
-  attr(res, "ledgr_temp_table") <- temp_table
-
-  reg.finalizer(
-    state,
-    function(env) {
-      if (!is.null(env$res) && DBI::dbIsValid(env$res)) {
-        suppressWarnings(try(DBI::dbClearResult(env$res), silent = TRUE))
-      }
-      if (!is.null(env$con) && !is.null(env$temp_table)) {
-        suppressWarnings(try(DBI::dbExecute(env$con, sprintf("DROP TABLE IF EXISTS %s", env$temp_table)), silent = TRUE))
-      }
-      invisible(TRUE)
-    },
-    onexit = TRUE
-  )
-
-  structure(list(res = res, .state = state), class = "ledgr_fills_cursor")
 }
 
 ledgr_backtest_config <- function(start, end, initial_cash = 100000) {
@@ -1158,9 +1112,7 @@ ledgr_empty_equity_curve <- function() {
 #' Extract fill events from a backtest
 #'
 #' @param bt A `ledgr_backtest` object.
-#' @param lazy If `TRUE`, return a streaming cursor instead of materializing all rows.
-#' @param stream_threshold Number of fill rows above which lazy mode is forced.
-#' @return A tibble of fill rows, or a `ledgr_fills_cursor` when `lazy = TRUE`.
+#' @return A tibble of fill rows.
 #' @details Fill rows describe execution events and may include both opening and
 #'   closing actions. Closed trades are exposed by `ledgr_results(bt, what =
 #'   "trades")`.
@@ -1183,21 +1135,14 @@ ledgr_empty_equity_curve <- function() {
 #' ledgr_run_fills(bt)
 #' close(bt)
 #' @export
-ledgr_run_fills <- function(bt, lazy = FALSE, stream_threshold = 100000L) {
-  ledgr_extract_fills_impl(bt, lazy = lazy, stream_threshold = stream_threshold)
+ledgr_run_fills <- function(bt) {
+  ledgr_extract_fills_impl(bt)
 }
 
-ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000L, con = NULL) {
-  requested_lazy <- isTRUE(lazy)
-  owns_connection <- FALSE
+ledgr_extract_fills_impl <- function(bt, con = NULL) {
   if (is.null(con)) {
-    opened <- if (requested_lazy) {
-      list(con = get_connection(bt), close = function() invisible(FALSE))
-    } else {
-      ledgr_backtest_read_connection(bt)
-    }
+    opened <- ledgr_backtest_read_connection(bt)
     con <- opened$con
-    owns_connection <- TRUE
     on.exit(opened$close(), add = TRUE)
   }
   total_rows <- DBI::dbGetQuery(
@@ -1212,25 +1157,6 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
   total_rows <- as.integer(total_rows)
   if (is.na(total_rows) || total_rows < 1L) {
     return(ledgr_empty_fills_table())
-  }
-
-  if (!is.numeric(stream_threshold) || length(stream_threshold) != 1 || is.na(stream_threshold)) {
-    rlang::abort("`stream_threshold` must be a finite numeric scalar.", class = "ledgr_invalid_args")
-  }
-  stream_threshold <- as.integer(stream_threshold)
-
-  if (!isTRUE(owns_connection) && isTRUE(lazy)) {
-    lazy <- FALSE
-  }
-
-  if (total_rows > stream_threshold) {
-    if (isTRUE(owns_connection)) {
-      lazy <- TRUE
-    }
-    if (!requested_lazy && isTRUE(owns_connection)) {
-      opened$close()
-      return(ledgr_run_fills(bt, lazy = TRUE, stream_threshold = stream_threshold))
-    }
   }
 
   # Temp-table accumulation handles dynamic sizing; no R-side caps needed.
@@ -1256,10 +1182,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     )
   )
 
-  if (!is.logical(lazy) || length(lazy) != 1 || is.na(lazy)) {
-    rlang::abort("`lazy` must be TRUE or FALSE.", class = "ledgr_invalid_args")
-  }
-  if (!lazy && !(exists("opened", inherits = FALSE) && isTRUE(opened$temporary))) {
+  if (!(exists("opened", inherits = FALSE) && isTRUE(opened$temporary))) {
     on.exit(DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table)), add = TRUE)
   }
 
@@ -1382,6 +1305,7 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
       close_qty <- lot_res$close_qty
       open_qty <- lot_res$open_qty
       realized_close <- lot_res$realized_close
+      leg_fees <- ledgr_fill_leg_fees(fee, close_qty, open_qty)
 
       if (!is.null(meta_raw) &&
         !(is.atomic(meta_raw) && length(meta_raw) == 1 && is.na(meta_raw)) &&
@@ -1413,14 +1337,14 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
       if (close_qty > 0) {
         ledgr_fill_row_buffer_add(
           fill_rows,
-          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, close_qty, price, fee,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, close_qty, price, leg_fees[["close"]],
           realized_close, "CLOSE"
         )
       }
       if (open_qty > 0) {
         ledgr_fill_row_buffer_add(
           fill_rows,
-          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, open_qty, price, fee,
+          rows$event_seq[[i]], rows$ts_utc[[i]], inst, side, open_qty, price, leg_fees[["open"]],
           0, "OPEN"
         )
       }
@@ -1429,15 +1353,6 @@ ledgr_extract_fills_impl <- function(bt, lazy = FALSE, stream_threshold = 100000
     if (fill_rows$n > 0L) {
       DBI::dbAppendTable(con, temp_table, ledgr_fill_row_buffer_data_frame(fill_rows))
     }
-  }
-
-  if (isTRUE(lazy)) {
-    fills_res <- DBI::dbSendQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table))
-    return(new_ledgr_fills_cursor(fills_res, temp_table, con))
-  }
-
-  if (total_rows > stream_threshold && isTRUE(owns_connection)) {
-    warning("Large fill set materialized (N > threshold). Consider lazy = TRUE for performance.", call. = FALSE)
   }
 
   tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))

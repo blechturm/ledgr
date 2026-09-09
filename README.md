@@ -243,7 +243,7 @@ requirements.
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes
 its own read connection; explicit `close(bt)` is resource cleanup for
-long sessions, explicit opens, and lazy result cursors.
+long sessions and explicit opens.
 
 ## Pre-CRAN Compatibility
 
