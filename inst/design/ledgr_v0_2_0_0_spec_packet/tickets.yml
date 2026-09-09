@@ -113,7 +113,7 @@ tickets:
 
   - id: "LDG-2679"
     title: "Mechanical backtest ownership split"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2677", "LDG-2678"]
@@ -128,7 +128,7 @@ tickets:
 
   - id: "LDG-2680"
     title: "Coordinator stages 1 and 2 extraction"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2679"]
@@ -553,4 +553,5 @@ tickets:
       - "R CMD build and check"
       - "Coverage at or above 80 percent"
       - "pkgdown and Linux persistence/documentation gates"
+      - "Rendered-vignette DuckDB startup-noise scan"
       - "Branch main and tag CI evidence"

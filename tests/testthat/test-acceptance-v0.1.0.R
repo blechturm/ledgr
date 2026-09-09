@@ -32,7 +32,7 @@ testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at2_snapshot")
 
   run_id <- "at2-run-1"
-  out <- ledgr_backtest_run(cfg, run_id = run_id)
+  out <- ledgr_run_config(cfg, run_id = run_id)
   testthat::expect_identical(out$run_id, run_id)
 
   gc()
@@ -82,8 +82,8 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
 
   run_a <- "at3-a"
   run_b <- "at3-b"
-  out_a <- ledgr_backtest_run(cfg, run_id = run_a)
-  out_b <- ledgr_backtest_run(cfg, run_id = run_b)
+  out_a <- ledgr_run_config(cfg, run_id = run_a)
+  out_b <- ledgr_run_config(cfg, run_id = run_b)
   testthat::expect_identical(out_a$run_id, run_a)
   testthat::expect_identical(out_b$run_id, run_b)
 
@@ -245,7 +245,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at567_snapshot")
 
   run_id <- "at6-run-1"
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
 
   gc()
   Sys.sleep(0.05)
@@ -312,10 +312,10 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars, "at8_snapshot")
 
   run_id <- "at8-run-1"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
-  testthat::expect_warning(ledgr_backtest_run(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_warning(ledgr_run_config(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   gc()
   Sys.sleep(0.05)
@@ -339,7 +339,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   cfg_clean <- cfg
   cfg_clean$db_path <- db_clean
   cfg_clean <- ledgr_test_snapshot_backed_config(cfg_clean, bars, "at8_snapshot_clean")
-  testthat::expect_warning(ledgr_backtest_run(cfg_clean, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_warning(ledgr_run_config(cfg_clean, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   gc()
   Sys.sleep(0.05)
@@ -394,7 +394,7 @@ testthat::test_that("last-bar policy warns and produces no fill event", {
 
   run_id <- "lastbar-1"
   testthat::expect_warning(
-    ledgr_backtest_run(cfg, run_id = run_id),
+    ledgr_run_config(cfg, run_id = run_id),
     "LEDGR_LAST_BAR_NO_FILL",
     fixed = TRUE
   )
@@ -432,7 +432,7 @@ testthat::test_that("AT12: raw bars configs fail before fold and OHLC violations
   raw_cfg <- ledgr_test_modernize_config(raw_cfg)
 
   testthat::expect_error(
-    ledgr_backtest_run(raw_cfg, run_id = "at12-raw-bars"),
+    ledgr_run_config(raw_cfg, run_id = "at12-raw-bars"),
     class = "ledgr_snapshot_required"
   )
 

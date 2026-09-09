@@ -500,7 +500,7 @@ scope: locator-and-target-teaching
 Priority: P0
 Effort: L
 Dependencies: LDG-2677, LDG-2678
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -528,6 +528,20 @@ without changing behavior, formals, effects, or public names.
 - API/S3/NAMESPACE comparison
 - `git diff --check`
 
+### Implementation Notes
+
+- Moved the config, handle, fills, and result ownership groups into the four
+  accepted files while leaving public construction and orchestration in
+  `R/backtest.R`.
+- Parsed-expression comparison against the pre-batch `R/backtest.R` confirms
+  all 56 relocated assignments are unchanged. `ledgr_run_config()` is the sole
+  deliberate caller change required by LDG-2680.
+- H11 passed after the ownership move. NAMESPACE, DESCRIPTION, public exports,
+  S3 registrations, and generated Rd files are unchanged.
+- Review follow-up corrected the relocation count, removed inherited trailing
+  whitespace from the moved result source, and updated the manual's obsolete
+  wrapper call path without expanding into its LDG-2702 line-anchor audit.
+
 ### Source Reference
 
 - Spec Sections 2.1 and 3; gate H11
@@ -546,7 +560,7 @@ scope: ownership-split
 Priority: P0
 Effort: L
 Dependencies: LDG-2679
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -574,6 +588,20 @@ the first two coordinator stages without rescheduling effects.
 - `test-runner.R`
 - `test-runner-snapshots.R`
 - `test-acceptance-v0.1.1.R`
+
+### Implementation Notes
+
+- Deleted `ledgr_backtest_run()` and `ledgr_backtest_run_internal()` and
+  retargeted package and test callers without changing the public entry point.
+- Stage 1 returns named config, engine, control, and telemetry records from
+  `R/run-prepare.R`; clock, seed, RUNNING status, and telemetry-validation
+  effects remain at their prior coordinator positions.
+- Stage 2 returns the verified snapshot hash and pulse calendar from
+  `R/run-snapshot.R`; guard and TEMP-view work stays after handler creation,
+  and calendar work stays after strategy preflight.
+- Coordinator-owned cleanup and explicit connection/handler dependencies are
+  unchanged. Focused runner, snapshot, API, wrapper, experiment, and acceptance
+  tests pass, and H11 passed after each stage.
 
 ### Source Reference
 
@@ -1676,6 +1704,9 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Read `inst/design/release_ci_playbook.md` before execution.
 - Run full tests, installed README, source build/check, coverage, pkgdown, and
   Linux persistence/executable-documentation gates.
+- Suppress DuckDB temporary-home startup chatter across every rendered
+  vignette without globally hiding ledgr warnings, errors, or meaningful
+  example output.
 - Record versions, commands, skips, failures, reruns, and exact commits.
 - Confirm every ticket is complete after review or explicitly deferred by a
   dated maintainer amendment.
@@ -1688,6 +1719,8 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Coverage remains at least 80 percent and ordinary parallel tests run outside
   covr.
 - Contracts, schemas, identities, NEWS, docs, and packet records agree.
+- Rendered vignettes contain no repeated DuckDB temporary-directory startup
+  notices, while intended diagnostic and example output remains visible.
 - Branch is ready for remote branch CI; main and tag CI remain later evidence.
 
 ### Verification
@@ -1697,6 +1730,7 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Installed README check
 - `R CMD build` and `R CMD check --no-manual --no-build-vignettes`
 - Coverage, pkgdown, and Linux gates
+- Rendered-HTML scan for DuckDB temporary-home startup messages
 - Git status/generated-artifact review
 
 ### Source Reference

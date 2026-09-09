@@ -59,7 +59,7 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
-  out <- ledgr_backtest_run(cfg)
+  out <- ledgr_run_config(cfg)
   testthat::expect_true(is.list(out))
   testthat::expect_true(nzchar(out$run_id))
   testthat::expect_identical(out$db_path, db_path)
@@ -100,7 +100,7 @@ testthat::test_that("low-level runner rejects opening positions outside the univ
   )
 
   testthat::expect_error(
-    ledgr_backtest_run(cfg),
+    ledgr_run_config(cfg),
     "opening.positions contains instruments outside universe.instrument_ids",
     fixed = TRUE,
     class = "ledgr_invalid_config"
@@ -122,7 +122,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
   )
 
   run_id <- "run-resume-1"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
 
@@ -133,7 +133,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
   before <- DBI::dbGetQuery(con, "SELECT event_seq, ts_utc FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(run_id))
   testthat::expect_equal(nrow(before), 1L)
 
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
 
   after <- DBI::dbGetQuery(con, "SELECT event_seq, ts_utc FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(run_id))
   testthat::expect_equal(nrow(after), 2L)
@@ -148,7 +148,7 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
   run_id <- "run-mismatch-1"
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
   gc()
   Sys.sleep(0.05)
 
@@ -160,7 +160,7 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   )
 
   testthat::expect_error(
-    ledgr_backtest_run(cfg2, run_id = run_id),
+    ledgr_run_config(cfg2, run_id = run_id),
     class = "ledgr_run_hash_mismatch"
   )
 })
@@ -222,7 +222,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars)
 
   run_id <- "run-state-prev"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 2L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 2L))
   gc()
   Sys.sleep(0.05)
 
@@ -231,7 +231,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
-  testthat::expect_warning(ledgr_backtest_run(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_warning(ledgr_run_config(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   states <- DBI::dbGetQuery(
     con,
@@ -277,7 +277,7 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   )
 
   run_id <- "run-db-live-state-order"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   testthat::expect_false(saw_state_before_fill)
   gc()
   Sys.sleep(0.05)

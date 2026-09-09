@@ -2428,11 +2428,29 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$yaml, "id: \"LDG-2672\"", fixed = TRUE)
   testthat::expect_match(docs$yaml, "id: \"LDG-2703\"", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
-  testthat::expect_match(docs$batches, "Status: Batches 0-2 complete after review.", fixed = TRUE)
-  testthat::expect_match(docs$readme, "Status: Batches 0-2 complete after review.", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Status: Batches 0-3 complete after review.",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "Status: Batches 0-3 complete after review.",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
   testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets,
+    "Suppress DuckDB temporary-home startup chatter",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$yaml,
+    "Rendered-vignette DuckDB startup-noise scan",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `048b925", fixed = TRUE)
 

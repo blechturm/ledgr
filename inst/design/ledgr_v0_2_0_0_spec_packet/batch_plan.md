@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-2 complete after review. Batches 3-11 are pending.
+Status: Batches 0-3 complete after review. Batches 4-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -191,7 +191,7 @@ Implementation notes:
 
 ## Batch 3 - Mechanical Ownership And Coordinator Stages 1-2
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -217,6 +217,34 @@ Exit criteria:
 
 - full suite is green after each bounded commit;
 - snapshot, resume, event-order, and acceptance regression nets are unchanged.
+
+Implementation notes:
+
+- `R/backtest.R` now retains public construction and orchestration while the
+  accepted config, handle, fills, and result ownership groups live in their
+  four named files. A parsed-expression comparison found all 56 relocated
+  assignments parse-identical; `ledgr_run_config()` is the sole
+  deliberate caller change.
+- Stage 1 now returns explicit config, engine, control, and telemetry records
+  from `R/run-prepare.R`. The obsolete internal run wrappers are deleted and
+  callers target `ledgr_run_config()` or `ledgr_run_fold()` directly; clock,
+  seed, RUNNING status, and telemetry-validation positions are preserved.
+- Stage 2 now returns the verified snapshot hash and pulse-calendar records
+  from `R/run-snapshot.R`. Snapshot guards and TEMP-view setup remain after
+  handler construction, while calendar materialization remains after strategy
+  preflight rather than being hoisted.
+- Store connection cleanup remains coordinator-scoped and the persistent
+  handler is constructed before snapshot and resume failure paths. No shared
+  mutable coordinator environment, registry, or second execution path was
+  introduced.
+- H11 passed after the ownership move, Stage 1, and Stage 2. The final focused
+  runner/snapshot/API/acceptance set and full local suite are green with one
+  expected optional-package-path skip; all 142 Rd files pass `checkRd()`, and
+  NAMESPACE and DESCRIPTION are unchanged.
+- Review follow-up corrected the relocation count, removed one inherited
+  trailing-space line from the new result file, and updated the manual's
+  deleted-wrapper call path. The broader manual line-anchor audit remains with
+  LDG-2702.
 
 ## Batch 4 - Failure And Boundary Corrections
 
@@ -442,16 +470,22 @@ Scope:
 - read and follow the release CI playbook;
 - run full local, installed-example, build/check, coverage, pkgdown, and Linux
   persistence/documentation gates;
+- suppress repeated DuckDB temporary-home startup chatter in every rendered
+  vignette without hiding meaningful ledgr diagnostics or example output;
 - prepare closeout evidence for remote CI, merge, and tag.
 
 Review focus:
 
 - every ticket is complete after review or explicitly deferred by maintainer
   amendment;
+- rendered vignette HTML is free of DuckDB temporary-directory startup notices
+  without broad message or warning suppression;
 - no generated local artifact or disposable spike implementation is committed;
 - branch, main, and tag CI remain separate evidence.
 
 Exit criteria:
 
 - release checks pass or exceptions are explicitly documented and accepted;
+- the full pkgdown render and an HTML text scan confirm the DuckDB startup
+  notice is absent from every vignette;
 - packet closeout is complete and the branch is ready for remote release work.
