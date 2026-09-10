@@ -321,6 +321,16 @@ The strategy preflight boundary originated in
   `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
   and feature-cache hit/miss counts. Detailed per-component telemetry remains
   session-scoped through `ledgr_backtest_bench()`.
+- A failure after the fold has committed but before equity and `DONE`
+  finalization records `FAILED` with the original error and preserves committed
+  ledger, strategy-state, and feature evidence. Resuming the same run identity
+  after that failure performs finalization only: it must not delete or duplicate
+  committed fold rows, and its ordered economic evidence must equal a clean run.
+  Best-effort failed telemetry must not mask the original error; successful
+  `DONE` finalization precedes non-transactional telemetry persistence.
+- Infrastructure-owned temporary names used by snapshot ingestion and eager
+  result reads must preserve the caller's `.Random.seed`, including its
+  absence, and must not change the caller's next random draw.
 - `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
   `DONE` runs. Opening a run must not execute strategy code, recompute fills,
   or mutate persistent run artifacts.
@@ -733,6 +743,13 @@ The strategy preflight boundary originated in
   walk-forward identity. Optional package projections such as `xts` are
   external evidence only and must remain `Suggests`-only with no `NAMESPACE`
   imports.
+- `ledgr_sweep_returns_wide()` reserves `ts_utc` as its structural timestamp
+  column. A candidate ID equal to `ts_utc` or beginning with
+  `..ledgr_candidate_` is represented by that prefix followed by the lowercase
+  hexadecimal form of its UTF-8 bytes. The column name is intrinsically
+  reversible without a persisted mapping registry. Long, matrix, panel, and
+  candidate-extraction surfaces retain the original candidate ID, and this
+  presentation encoding participates in no execution or artifact identity.
 - Retained sweep closed-trade evidence is derived at sweep time from
   `ledgr_closed_trade_rows()` / `ledgr_results(bt, what = "trades")` and is
   exposed through `ledgr_sweep_trades()`. It is opt-in via

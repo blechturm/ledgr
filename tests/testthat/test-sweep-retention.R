@@ -561,3 +561,70 @@ testthat::test_that("ledgr_sweep rejects invalid retain arguments before executi
     class = "ledgr_invalid_sweep_retention"
   )
 })
+
+testthat::test_that("wide return projections reversibly escape reserved candidate ids", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[["AAA"]] <- params$qty
+    targets
+  }
+  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  reserved_prefix_id <- "..ledgr_candidate_6162"
+  utf8_reserved_id <- paste0("..ledgr_candidate_", intToUtf8(233L))
+  grid <- do.call(
+    ledgr_param_grid,
+    stats::setNames(
+      list(list(qty = 1), list(qty = 2), list(qty = 3), list(qty = 4)),
+      c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
+    )
+  )
+  sweep <- ledgr_sweep(
+    exp,
+    grid,
+    seed = 123L,
+    retain = ledgr_sweep_retention("completed")
+  )
+  long <- ledgr_sweep_returns(sweep)
+  wide <- ledgr_sweep_returns_wide(sweep)
+  encoded_ts <- ledgr:::ledgr_sweep_wide_candidate_name("ts_utc")
+  encoded_prefix <- ledgr:::ledgr_sweep_wide_candidate_name(reserved_prefix_id)
+  encoded_utf8 <- ledgr:::ledgr_sweep_wide_candidate_name(utf8_reserved_id)
+
+  testthat::expect_identical(
+    names(wide),
+    c("ts_utc", encoded_ts, encoded_prefix, encoded_utf8, "plain")
+  )
+  testthat::expect_identical(wide$ts_utc, unique(as.POSIXct(long$ts_utc, tz = "UTC")))
+  for (pair in list(
+    c("ts_utc", encoded_ts),
+    c(reserved_prefix_id, encoded_prefix),
+    c(utf8_reserved_id, encoded_utf8),
+    c("plain", "plain")
+  )) {
+    rows <- long[long$candidate_id == pair[[1]], , drop = FALSE]
+    testthat::expect_equal(wide[[pair[[2]]]], rows$period_return, tolerance = 1e-12)
+    testthat::expect_identical(ledgr:::ledgr_sweep_wide_candidate_id(pair[[2]]), pair[[1]])
+  }
+  testthat::expect_identical(
+    colnames(ledgr_sweep_returns_matrix(sweep)),
+    c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
+  )
+  testthat::expect_identical(
+    unique(long$candidate_id),
+    c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
+  )
+  testthat::expect_identical(ledgr_candidate(sweep, "ts_utc")$candidate_id, "ts_utc")
+  ledgr_sweep_save(sweep, snapshot, sweep_id = "reserved-wide-roundtrip")
+  reopened <- ledgr_sweep_open(snapshot, "reserved-wide-roundtrip")
+  testthat::expect_identical(ledgr_sweep_returns_wide(reopened), wide)
+  testthat::expect_identical(
+    unique(ledgr_sweep_returns(reopened)$candidate_id),
+    c("ts_utc", reserved_prefix_id, utf8_reserved_id, "plain")
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_sweep_wide_candidate_id("..ledgr_candidate_not-hex"),
+    class = "ledgr_invalid_sweep_projection"
+  )
+})

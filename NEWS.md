@@ -21,11 +21,19 @@
   stages as explicit preparation and snapshot records. Runtime effect order,
   snapshot guards, cleanup ownership, public exports, and execution behavior
   remain unchanged.
+- Corrected post-fold failure handling so committed ledger, strategy-state,
+  and feature evidence survives a failed finalization and the same run can
+  resume finalization without duplicate rows. Added detecting feature
+  causality, caller-RNG preservation, and resource-cleanup regression gates.
+- Protected the structural `ts_utc` column in retained wide sweep projections
+  with a reversible reserved-name encoding. Original candidate IDs remain
+  unchanged in long, matrix, panel, and candidate-extraction surfaces; no
+  persisted mapping or identity input was added.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
   fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-3
-  are complete after review and Batch 4 is next.
+  are complete after review, and Batch 4 is implemented and awaiting review.
 
 # ledgr 0.1.9.7
 

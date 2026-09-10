@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-3 complete after review. Batches 4-11 are pending.
+Status: Batches 0-3 complete after review. Batch 4 implementation is complete
+and awaiting review. Batches 5-11 are pending.
 
 This packet scopes v0.2.0.0 as an ordered hardening-and-availability release.
 It first corrects known API and representation boundaries, then extracts the
@@ -22,6 +23,7 @@ Authoritative files:
 - `v0_2_0_0_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
+- `wide_projection_store_inventory.md`
 
 Binding design inputs:
 

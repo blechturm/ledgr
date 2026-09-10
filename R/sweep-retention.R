@@ -258,7 +258,9 @@ ledgr_sweep_trades <- function(x, candidates = NULL) {
 #' @describeIn ledgr_sweep_returns Return retained sweep return or equity
 #'   series in wide form. Use the long form when you want candidate metadata
 #'   beside each row; use the wide form when an external metric package expects
-#'   one return/equity column per candidate.
+#'   one return/equity column per candidate. Candidate IDs that collide with the
+#'   structural `ts_utc` column or the reserved `..ledgr_candidate_` prefix are
+#'   represented by that prefix followed by their lowercase UTF-8 hex bytes.
 #' @param value Value to widen. `"returns"` uses `period_return`; `"equity"`
 #'   uses `equity`.
 #' @export
@@ -280,9 +282,43 @@ ledgr_sweep_returns_wide <- function(x,
     values <- rep(NA_real_, length(ts_utc))
     idx <- match(as.POSIXct(rows$ts_utc, tz = "UTC"), ts_utc)
     values[idx] <- as.numeric(rows[[value_col]])
-    out[[id]] <- values
+    out[[ledgr_sweep_wide_candidate_name(id)]] <- values
   }
   out
+}
+
+ledgr_sweep_wide_candidate_prefix <- function() {
+  "..ledgr_candidate_"
+}
+
+ledgr_sweep_wide_candidate_name <- function(candidate_id) {
+  prefix <- ledgr_sweep_wide_candidate_prefix()
+  if (!identical(candidate_id, "ts_utc") && !startsWith(candidate_id, prefix)) {
+    return(candidate_id)
+  }
+  bytes <- charToRaw(enc2utf8(candidate_id))
+  paste0(prefix, paste(sprintf("%02x", as.integer(bytes)), collapse = ""))
+}
+
+ledgr_sweep_wide_candidate_id <- function(column_name) {
+  prefix <- ledgr_sweep_wide_candidate_prefix()
+  if (!startsWith(column_name, prefix)) {
+    return(column_name)
+  }
+  encoded <- substring(column_name, nchar(prefix) + 1L)
+  valid <- nzchar(encoded) && nchar(encoded) %% 2L == 0L &&
+    grepl("^[0-9a-f]+$", encoded)
+  if (!isTRUE(valid)) {
+    rlang::abort(
+      "Invalid reserved candidate column encoding.",
+      class = c("ledgr_invalid_sweep_projection", "ledgr_invalid_args")
+    )
+  }
+  starts <- seq.int(1L, nchar(encoded), by = 2L)
+  bytes <- as.raw(strtoi(substring(encoded, starts, starts + 1L), base = 16L))
+  candidate_id <- rawToChar(bytes)
+  Encoding(candidate_id) <- "UTF-8"
+  candidate_id
 }
 
 #' Return panel evidence

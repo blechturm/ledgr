@@ -326,7 +326,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   inst_db$meta_json <- if (is.null(meta_updates)) rep(NA_character_, nrow(inst_db)) else meta_updates
 
   bulk_copy_parquet <- function(df, table, select_sql) {
-    reg_name <- paste0("ledgr_ingest_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
+    reg_name <- basename(tempfile(pattern = "ledgr_ingest_"))
     tmp_path <- normalizePath(tempfile(pattern = "ledgr_ingest_", fileext = ".parquet"), winslash = "/", mustWork = FALSE)
     duckdb::duckdb_register(con, reg_name, df)
     on.exit(duckdb::duckdb_unregister(con, reg_name), add = TRUE)

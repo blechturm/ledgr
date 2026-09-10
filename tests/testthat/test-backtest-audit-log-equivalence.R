@@ -17,6 +17,7 @@ testthat::test_that("audit_log matches db_live results", {
   )
 
   snap <- ledgr_snapshot_from_df(df)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
   ledgr_snapshot_seal(snap)
 
   strategy <- function(ctx, params) {
@@ -27,7 +28,21 @@ testthat::test_that("audit_log matches db_live results", {
   }
 
   end_ts <- df$ts_utc[[n_rows - 1L]]
-  bt_audit <- suppressWarnings(ledgr_backtest(
+  expected_last_bar_warning <- function(code) {
+    seen <- FALSE
+    value <- withCallingHandlers(
+      force(code),
+      warning = function(w) {
+        if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
+          seen <<- TRUE
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+    testthat::expect_true(seen)
+    value
+  }
+  bt_audit <- expected_last_bar_warning(ledgr_backtest(
     snapshot = snap,
     strategy = strategy,
     universe = "BTC",
@@ -36,7 +51,8 @@ testthat::test_that("audit_log matches db_live results", {
     persist_features = FALSE,
   cost_model = ledgr_cost_zero()
   ))
-  bt_db <- suppressWarnings(ledgr_backtest(
+  on.exit(close(bt_audit), add = TRUE)
+  bt_db <- expected_last_bar_warning(ledgr_backtest(
     snapshot = snap,
     strategy = strategy,
     universe = "BTC",
@@ -45,6 +61,7 @@ testthat::test_that("audit_log matches db_live results", {
     persist_features = FALSE,
   cost_model = ledgr_cost_zero()
   ))
+  on.exit(close(bt_db), add = TRUE)
 
   fills_a <- ledgr_run_fills(bt_audit)
   fills_b <- ledgr_run_fills(bt_db)

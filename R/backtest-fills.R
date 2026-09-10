@@ -42,6 +42,19 @@ ledgr_run_fills <- function(bt) {
 }
 
 ledgr_extract_fills_impl <- function(bt, con = NULL) {
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  old_seed <- if (had_seed) {
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  } else {
+    NULL
+  }
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
   if (is.null(con)) {
     opened <- ledgr_backtest_read_connection(bt)
     con <- opened$con
@@ -62,7 +75,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL) {
   }
 
   # Temp-table accumulation handles dynamic sizing; no R-side caps needed.
-  temp_table <- paste0("temp_fills_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
+  temp_table <- basename(tempfile(pattern = "temp_fills_"))
   DBI::dbExecute(con, sprintf("DROP TABLE IF EXISTS %s", temp_table))
   DBI::dbExecute(
     con,

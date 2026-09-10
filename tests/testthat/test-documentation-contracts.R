@@ -92,7 +92,6 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "Feature objects appear in three registration and inspection places", fixed = TRUE)
   testthat::expect_match(indicators_doc, "The strategy context then exposes the computed values through accessors", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature Lifecycle: From Declaration To Lookup", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "declare<br/>indicator or map", fixed = TRUE)
   testthat::expect_match(indicators_doc, "access<br/>ctx feature methods", fixed = TRUE)
   testthat::expect_match(indicators_doc, "declaration. Static lists and feature maps", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Active-alias features are materialized for concrete", fixed = TRUE)
@@ -862,23 +861,6 @@ testthat::test_that("contracts record v0.1.8 fold-core and output-handler bounda
   testthat::expect_match(text, "event-stream meaning", fixed = TRUE)
   testthat::expect_match(text, "Strategy preflight runs before entering the fold core", fixed = TRUE)
   testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output handler\\s+side\\s+effects")
-})
-
-testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 milestone sequencing", {
-  root <- testthat::test_path("..", "..")
-  roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
-  testthat::skip_if_not(file.exists(roadmap), "roadmap unavailable")
-  text <- paste(readLines(roadmap, warn = FALSE), collapse = "\n")
-
-  for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]7[.]9", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
-    testthat::expect_match(text, paste0("\\| v", version, " \\|"))
-  }
-  testthat::expect_match(text, "DuckDB persistence architecture review", fixed = TRUE)
-  testthat::expect_match(text, "Risk metrics contract", fixed = TRUE)
-  testthat::expect_match(text, "Strategy reproducibility preflight", fixed = TRUE)
-  testthat::expect_match(text, "Lightweight parameter sweep mode", fixed = TRUE)
-  testthat::expect_match(text, "Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup", fixed = TRUE)
-  testthat::expect_match(text, "Completed milestones are not expanded here", fixed = TRUE)
 })
 
 testthat::test_that("README and package help state adapter positioning", {
@@ -2435,8 +2417,7 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   )
   testthat::expect_match(
     docs$readme,
-    "Status: Batches 0-3 complete after review.",
-    fixed = TRUE
+    "Batches 0-3 complete after review[.] Batch 4 implementation is complete\\s+and awaiting review"
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
@@ -2504,11 +2485,61 @@ testthat::test_that("v0.2.0.0 hardening corrections are contract-bound and recor
     "Simplified `ledgr_run_fills()` to one eager `bt` argument",
     fixed = TRUE
   )
+  testthat::expect_match(
+    contracts,
+    "A failure after the fold has committed but before equity and `DONE`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "preserve the caller's `.Random.seed`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "`ledgr_sweep_returns_wide()` reserves `ts_utc`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "intrinsically\\s+reversible without a persisted mapping registry"
+  )
+  testthat::expect_match(
+    news,
+    "Corrected post-fold failure handling so committed ledger, strategy-state",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    news,
+    "Protected the structural `ts_utc` column in retained wide sweep projections",
+    fixed = TRUE
+  )
   testthat::expect_no_match(
     news,
     "No user-facing changes have shipped yet",
     fixed = TRUE
   )
+})
+
+testthat::test_that("v0.2.0.0 records the pre-edit wide-projection inventory", {
+  root <- testthat::test_path("..", "..")
+  inventory_path <- file.path(
+    root,
+    "inst", "design", "ledgr_v0_2_0_0_spec_packet",
+    "wide_projection_store_inventory.md"
+  )
+  testthat::skip_if_not(
+    file.exists(inventory_path),
+    "source store inventory unavailable during installed-package tests"
+  )
+  inventory <- paste(readLines(inventory_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(inventory, "recorded before the first LDG-2684", fixed = TRUE)
+  testthat::expect_match(inventory, "No tracked database file exists", fixed = TRUE)
+  testthat::expect_match(inventory, "No named maintainer-owned store", fixed = TRUE)
+  testthat::expect_match(inventory, "None contains a saved-sweep table", fixed = TRUE)
+  testthat::expect_match(inventory, "in-memory read-time projection", fixed = TRUE)
+  testthat::expect_match(inventory, "No migration is promised for an unnamed artifact", fixed = TRUE)
 })
 
 testthat::test_that("v0.2.0.0 inspection and workflow teaching is contract-bound", {

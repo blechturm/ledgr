@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-3 complete after review. Batches 4-11 are pending.
+Status: Batches 0-3 complete after review. Batch 4 implementation is complete
+and awaiting review. Batches 5-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -248,7 +249,7 @@ Implementation notes:
 
 ## Batch 4 - Failure And Boundary Corrections
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -279,6 +280,30 @@ Exit criteria:
 
 - H9-H10 and H12 pass with their negative controls;
 - the finalization correction is complete before coordinator stages 3-4.
+
+Implementation evidence:
+
+- H12 injects at the final equity/DONE transaction after committed feature
+  finalization, observes the original FAILED message from a fresh connection,
+  and proves clean-versus-resumed equality for ordered ledger, state, features,
+  and equity with contiguous event sequence values.
+- Review follow-up wraps best-effort FAILED telemetry so a telemetry-sink error
+  cannot mask the original finalization condition; H12 injects that secondary
+  failure and still observes the original message.
+- H9 uses causal and leaking `series_fn` controls, a gutted-checker tripwire,
+  and a separate future-only bar perturbation whose eligible feature prefix is
+  unchanged while snapshot identity and the affected tail differ.
+- H7/H10 replace RNG-consuming temporary-name behavior, preserve present and
+  absent caller RNG state through ingestion and nonempty fill reads, close the
+  named walk-forward/audit-log fixtures explicitly, muffle only the expected
+  final-bar warning, and remove only the two audited editorial locks.
+- The pre-edit inventory is recorded in
+  `wide_projection_store_inventory.md`. H10 covers `ts_utc`, reserved-prefix,
+  and UTF-8 IDs, intrinsic reversal, reopen parity, and unchanged IDs on long,
+  matrix, and candidate surfaces without a registry or identity change.
+- All 112 local test files pass with one expected optional adapter-path skip;
+  all 142 Rd files pass `tools::checkRd()`, ticket YAML parses, and NAMESPACE,
+  DESCRIPTION, persistence schemas, and identity paths are unchanged.
 
 ## Batch 5 - Coordinator Stages 3-4
 

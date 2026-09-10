@@ -621,7 +621,7 @@ scope: prepare-and-snapshot-stages
 Priority: P0
 Effort: L
 Dependencies: LDG-2680
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -649,6 +649,16 @@ record FAILED while preserving committed fold/features for clean recovery.
 - Existing partial-run/resume tests
 - Full local suite before coordinator stages 3-4
 
+### Implementation Notes
+
+- Finalization errors are trapped after the fold boundary, recorded as FAILED
+  without masking the original condition, and leave committed fold evidence
+  intact.
+- The H12 transaction-seam fixture proves fresh-connection failure evidence and
+  finalization-only resume equality against a clean run without duplicate rows.
+- Review follow-up wraps best-effort FAILED telemetry and injects a telemetry
+  failure in H12, proving it cannot replace the original finalization error.
+
 ### Source Reference
 
 - Spec Section 2.2 and gate H12
@@ -667,7 +677,7 @@ scope: post-fold-failure-recovery
 Priority: P0
 Effort: M
 Dependencies: LDG-2680
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -694,6 +704,13 @@ feature regression with a future-only perturbation control.
 - `test-precompute-features.R`
 - Targeted cache/fingerprint tests
 
+### Implementation Notes
+
+- H9 now pairs a causal and deliberately leaking `series_fn`, and its gutted
+  checker control fails when detection is bypassed.
+- A future-only bar perturbation changes snapshot identity and the affected
+  feature tail while preserving the eligible earlier prefix.
+
 ### Source Reference
 
 - Spec Section 2.1 and gate H9
@@ -712,7 +729,7 @@ scope: lookahead-detection
 Priority: P1
 Effort: M
 Dependencies: LDG-2680
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -742,6 +759,15 @@ findings without broad test or CI redesign.
 - `test-backtest-lifecycle.R`
 - `test-documentation-contracts.R`
 
+### Implementation Notes
+
+- Snapshot ingestion and nonempty eager fill reads preserve caller RNG state,
+  the next draw, and an initially absent `.Random.seed`.
+- The named walk-forward and audit-log fixtures close owned resources and the
+  audit-log parity fixture muffles only `LEDGR_LAST_BAR_NO_FILL`.
+- Only the audited Mermaid-label and historical-roadmap editorial locks were
+  removed; API, schema, disclosure, and installed-example locks remain.
+
 ### Source Reference
 
 - Spec Section 2.1 and gates H7/H10
@@ -760,7 +786,7 @@ scope: rng-cleanup-doc-locks
 Priority: P0
 Effort: M
 Dependencies: LDG-2682, LDG-2683
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -790,6 +816,18 @@ preserving source-neutral candidate identity.
 - `test-sweep-retention.R`
 - Return-panel projection tests
 - Reopened-sweep/candidate identity tests
+
+### Implementation Notes
+
+- The required pre-edit inventory is recorded in
+  `wide_projection_store_inventory.md`; no tracked or named maintainer store
+  requires migration, and the five ignored benchmark stores contain no sweep
+  tables.
+- Reserved IDs use the bound prefix plus lowercase UTF-8 hex encoding. Tests
+  cover structural `ts_utc`, reserved-prefix, UTF-8, invalid encoding, reopen,
+  and unchanged long/matrix/candidate identities without a mapping registry.
+- The full 112-file local suite is green with one expected optional
+  adapter-path skip, and all 142 Rd files pass `tools::checkRd()`.
 
 ### Source Reference
 

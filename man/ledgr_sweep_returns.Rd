@@ -84,7 +84,9 @@ closed trade rows and is not reconstructed from saved fills.
 \item \code{ledgr_sweep_returns_wide()}: Return retained sweep return or equity
 series in wide form. Use the long form when you want candidate metadata
 beside each row; use the wide form when an external metric package expects
-one return/equity column per candidate.
+one return/equity column per candidate. Candidate IDs that collide with the
+structural \code{ts_utc} column or the reserved \code{..ledgr_candidate_} prefix are
+represented by that prefix followed by their lowercase UTF-8 hex bytes.
 
 \item \code{ledgr_sweep_returns_panel()}: Return a normalized retained-return panel.
 For \code{value = "returns"}, the structural first timestamp is dropped after

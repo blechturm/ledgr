@@ -769,6 +769,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   resume_iso <- pulses_iso[[1]]
   resume_exec_posix <- pulses_posix[[2]]
   start_idx <- 1L
+  finalization_only_resume <- FALSE
 
   if (is_resume) {
     last_state <- DBI::dbGetQuery(
@@ -801,6 +802,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         resume_iso <- pulses_iso[[start_idx]]
         resume_exec_posix <- if (start_idx < length(pulses_posix)) pulses_posix[[start_idx + 1L]] else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
       } else {
+        finalization_only_resume <- TRUE
         resume_exec_posix <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
       }
     } else {
@@ -811,6 +813,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     }
 
     # Resume cleanup: remove any previously written tail rows to avoid alternate-reality outputs.
+    # A post-fold failure has no uncommitted fold tail to remove.
+    if (!isTRUE(finalization_only_resume)) {
       DBI::dbWithTransaction(con, {
         if (!is.na(resume_exec_posix)) {
           DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_exec_posix))
@@ -821,6 +825,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
         DBI::dbExecute(con, "DELETE FROM strategy_state WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_iso))
       })
+    }
   }
 
   next_event_seq <- DBI::dbGetQuery(
@@ -1151,6 +1156,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     )
     return(list(run_id = run_id, db_path = db_path))
   }
+  finalization_error <- tryCatch({
   post_start <- ledgr_time_now()
   events_df <- DBI::dbGetQuery(
     con,
@@ -1332,6 +1338,22 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     }
     output_handler$record_run_status("DONE", NA_character_)
   })
+  NULL
+  }, error = function(e) e)
+  if (!is.null(finalization_error)) {
+    try(output_handler$record_failure(conditionMessage(finalization_error)), silent = TRUE)
+    try(
+      ledgr_finalize_fold_telemetry(
+        output_handler = output_handler,
+        status = "FAILED",
+        telemetry = telemetry,
+        processed = processed,
+        strict = FALSE
+      ),
+      silent = TRUE
+    )
+    rlang::cnd_signal(finalization_error)
+  }
   telemetry$t_post <- ledgr_time_elapsed(post_start, ledgr_time_now())
 
   ledgr_finalize_fold_telemetry(
