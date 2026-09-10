@@ -1,7 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-3 complete after review. Batch 4 implementation is complete
-and awaiting review. Batches 5-11 are pending.
+Status: Batches 0-4 complete after review. Batch 5 Stage 3 implementation is
+complete; Stage 4 and Batches 6-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -249,7 +249,7 @@ Implementation notes:
 
 ## Batch 4 - Failure And Boundary Corrections
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -307,7 +307,7 @@ Implementation evidence:
 
 ## Batch 5 - Coordinator Stages 3-4
 
-Status: Pending.
+Status: In Progress. Stage 3 is implemented; Stage 4 is pending.
 
 Tickets:
 
@@ -330,6 +330,16 @@ Exit criteria:
 
 - H11-H12 and existing partial-run/resume tests pass after both stages;
 - API hardening is complete before availability schema work begins.
+
+Implementation evidence:
+
+- Stage 3 moved the complete finalization block into `R/run-finalize.R` behind
+  explicit run, calendar, projection, and fold records. Its second FIFO lot
+  pass, feature transaction, equity/DONE transaction, error handling, and
+  telemetry order remain intact.
+- The focused runner, acceptance, accounting, FIFO, and fills nets pass. H11
+  then passed across all 112 local test files with one expected optional
+  adapter-path skip before any Stage 4 edit.
 
 ## Batch 6 - Facts Calendar Snapshot Schema And Quarantine
 

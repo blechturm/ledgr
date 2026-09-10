@@ -621,7 +621,7 @@ scope: prepare-and-snapshot-stages
 Priority: P0
 Effort: L
 Dependencies: LDG-2680
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -677,7 +677,7 @@ scope: post-fold-failure-recovery
 Priority: P0
 Effort: M
 Dependencies: LDG-2680
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -729,7 +729,7 @@ scope: lookahead-detection
 Priority: P1
 Effort: M
 Dependencies: LDG-2680
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -786,7 +786,7 @@ scope: rng-cleanup-doc-locks
 Priority: P0
 Effort: M
 Dependencies: LDG-2682, LDG-2683
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -847,7 +847,7 @@ scope: wide-name-collisions
 Priority: P0
 Effort: L
 Dependencies: LDG-2681, LDG-2682, LDG-2683, LDG-2684
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -873,6 +873,15 @@ separate projection/status transactions, after the corrected failure gate.
 - `test-runner.R`
 - `test-acceptance-v0.1.0.R`
 - Accounting/fills regressions
+
+### Implementation Notes
+
+- The complete finalization block moved to `R/run-finalize.R` behind explicit
+  run, calendar, projection, and fold records. The second FIFO lot pass and
+  separate feature and equity/DONE transactions retain their runtime order.
+- H12 and the focused runner, acceptance, accounting, FIFO, and fills nets
+  pass unchanged. H11 then passed across all 112 local test files with one
+  expected optional adapter-path skip before Stage 4 began.
 
 ### Source Reference
 

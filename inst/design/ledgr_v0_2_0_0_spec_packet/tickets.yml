@@ -144,7 +144,7 @@ tickets:
 
   - id: "LDG-2681"
     title: "Finalization failure and recovery correction"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2680"]
@@ -160,7 +160,7 @@ tickets:
 
   - id: "LDG-2682"
     title: "Feature causality regression gate"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2680"]
@@ -175,7 +175,7 @@ tickets:
 
   - id: "LDG-2683"
     title: "RNG lifecycle and documentation boundary hygiene"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2680"]
@@ -190,7 +190,7 @@ tickets:
 
   - id: "LDG-2684"
     title: "Reversible wide-projection name escaping"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2682", "LDG-2683"]
@@ -206,7 +206,7 @@ tickets:
 
   - id: "LDG-2685"
     title: "Coordinator stage 3 finalization extraction"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2681", "LDG-2682", "LDG-2683", "LDG-2684"]

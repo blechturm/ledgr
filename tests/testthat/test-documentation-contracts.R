@@ -2412,12 +2412,12 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    "Status: Batches 0-3 complete after review.",
+    "Status: Batches 0-4 complete after review.",
     fixed = TRUE
   )
   testthat::expect_match(
     docs$readme,
-    "Batches 0-3 complete after review[.] Batch 4 implementation is complete\\s+and awaiting review"
+    "Batches 0-4 complete after review[.] Batch 5 Stage 3 implementation is\\s+complete"
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
