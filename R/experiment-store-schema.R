@@ -1,5 +1,5 @@
-ledgr_experiment_store_schema_version <- 112L
-ledgr_saved_sweep_schema_version <- 3L
+ledgr_experiment_store_schema_version <- 113L
+ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -37,6 +37,13 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "snapshots",
     "snapshot_bars",
     "snapshot_instruments",
+    "snapshot_fact_families",
+    "snapshot_membership_sets",
+    "snapshot_membership",
+    "snapshot_trading_status",
+    "snapshot_lifetime",
+    "snapshot_sessions",
+    "snapshot_observation_quarantine",
     "run_provenance",
     "run_telemetry",
     "run_tags",
@@ -344,6 +351,7 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
   ledgr_experiment_store_ensure_sweep_tables(con)
   ledgr_experiment_store_ensure_walk_forward_tables(con)
+  ledgr_experiment_store_ensure_availability_tables(con)
   invisible(list(schema_version = ledgr_experiment_store_schema_version, is_legacy = FALSE))
 }
 
@@ -461,6 +469,7 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
 
     ledgr_experiment_store_ensure_sweep_tables(con)
     ledgr_experiment_store_ensure_walk_forward_tables(con)
+    ledgr_experiment_store_ensure_availability_tables(con)
 
     if (ledgr_experiment_store_table_exists(con, "runs")) {
       DBI::dbExecute(

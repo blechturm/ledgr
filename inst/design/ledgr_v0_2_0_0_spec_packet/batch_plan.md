@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-5 complete after review. Batches 6-11 are pending.
+Status: Batches 0-6 complete after review. Batches 7-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -352,7 +352,7 @@ Implementation evidence:
 
 ## Batch 6 - Facts Calendar Snapshot Schema And Quarantine
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -380,6 +380,32 @@ Exit criteria:
 - fact/calendar/schema/hash/quarantine tests pass through fresh connections;
 - no availability strategy is advertised before the connected path exists.
 
+Implementation evidence:
+
+- Added classed membership-interval, membership-snapshot, trading-status,
+  lifetime, and session constructors, a canonical fact bundle, and a read-only
+  validation report that distinguishes accepted, runtime-conflict, audit-only,
+  rejected, and quarantine-candidate evidence.
+- Complete venue calendars retain open-session pulses independently of bar
+  presence, validate local civil dates across DST boundaries, and map daily
+  vendor labels to declared closes without inferring holidays or terminal
+  sessions.
+- Store schema 113 and saved-sweep schema 4 add normalized fact and quarantine
+  tables under marker-last transactional migration. Fact-free snapshots keep
+  hash rule 1; fact-bearing snapshots use rule 2 and reopen with canonical
+  order-independent identity.
+- Strict invalid observations create no snapshot. Explicit dataframe
+  quarantine requires sessions, persists original excluded payloads as hashed
+  audit evidence, and rejects duplicate valid keys or an empty valid partition.
+- Added the design-only walkthrough fixture shape without claiming a connected
+  availability strategy or result workflow.
+- Review follow-up made status-conflict reporting interval-aware and limited it
+  to ties at the highest applicable precedence. Detecting fixtures cover both
+  fully shadowed and partially shadowed lower-precedence disagreements.
+- The classifier correctly applies facts only after both effective and
+  knowledge time. A detecting fixture that separates those clocks is routed to
+  LDG-2691, which owns provider cutoff causality.
+
 ## Batch 7 - Activation Provider State And Strict Features
 
 Status: Pending.
@@ -401,6 +427,9 @@ Scope:
 Review focus:
 
 - U2-U4, U6, U10, U20, U23, and the feature part of U24 pass;
+- status precedence is tested where a higher-precedence fact is effective
+  before it becomes knowable, so the lower tie remains unresolved until the
+  knowledge cutoff;
 - provider code contains no economic policy;
 - compiled availability fails closed while dense compiled behavior remains.
 

@@ -959,7 +959,7 @@ scope: registration-resume-stage
 Priority: P0
 Effort: L
 Dependencies: LDG-2686
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1001,12 +1001,30 @@ surface: availability-facts
 scope: constructors-and-validation
 ```
 
+### Implementation Notes
+
+- Added classed constructors for membership intervals and snapshots, trading
+  status, lifetime, and sessions plus a canonical bundle and read-only
+  validation report.
+- U14-U16/U21 fixtures distinguish complete and partial membership, empty
+  complete states, assumption-backed and audit-only facts, retained tied status
+  conflicts, structural contradictions, and tamper rejection.
+- Family and bundle hashes cover normalized evidence and metadata without
+  writing during dry-run validation.
+- Review follow-up replaced pairwise status-conflict classification with
+  interval-aware highest-applicable-precedence resolution. A full higher-level
+  cover suppresses the lower tie; partial coverage preserves the unresolved
+  lower conflict outside the covered interval.
+- Review confirmed that applicability uses the later of effective and knowledge
+  time. A detecting fixture that separates those clocks is routed to LDG-2691,
+  which owns provider cutoff causality.
+
 ## LDG-2688 - Complete Session Calendar And EOD Mapping
 
 Priority: P0
 Effort: M
 Dependencies: LDG-2686
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1047,12 +1065,22 @@ surface: availability-calendar
 scope: expected-session-clock
 ```
 
+### Implementation Notes
+
+- Added a complete civil-date venue calendar with explicit open/closed states,
+  IANA timezone validation, knowledge bounds, and local-midnight DST handling.
+- Daily vendor dates map to declared session closes; missing or late coverage
+  fails closed, while valid explicit off-calendar observations remain available
+  for later cutoff classification.
+- U24 fixtures retain open-session pulses during whole-feed gaps and keep dense
+  timestamp behavior unchanged when facts are omitted.
+
 ## LDG-2689 - Availability Snapshot Schema Hash And Quarantine
 
 Priority: P0
 Effort: L
 Dependencies: LDG-2687, LDG-2688
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1101,6 +1129,24 @@ type: persistence
 surface: snapshot-store
 scope: facts-hash-quarantine-migration
 ```
+
+### Implementation Notes
+
+- Added normalized fact-family, membership, status, lifetime, session, and
+  quarantine tables plus validators and indexes under store schema 113 and
+  saved-sweep schema 4.
+- Marker-last transactional migration rolls back fully on failure. Existing
+  sealed stores reopen with their original hash, no rule marker, and rule-1
+  interpretation rather than being resealed or migrated by hash.
+- Fact-free snapshots retain their prior hash bytes. Fact-bearing snapshots use
+  rule 2 over canonical headers, rows, assumptions, and acknowledged quarantine
+  evidence; row/family order does not affect identity and tampering fails
+  verification after reopen.
+- Strict invalid input creates no snapshot. Explicit dataframe quarantine
+  requires declared sessions, excludes rejected rows from runtime bars, and
+  persists their original payload and reasons as hashed audit evidence.
+- Added a design-only walkthrough fixture shape for later connected teaching;
+  this batch advertises no availability strategy runtime.
 
 ## LDG-2690 - Availability Activation And Public Policy Surface
 
@@ -1171,6 +1217,9 @@ context planes, and stable-ID asset-state lifecycle without economic policy.
 - Add accepted context fields and deterministic restriction-reason ordering.
 - Normalize `ctx$state_prev$asset_state`, clean exited IDs, initialize re-entry,
   and preserve portfolio-level state.
+- Add a status-precedence cutoff fixture where a higher-precedence fact is
+  effective before it is knowable; the lower tied assertions remain unresolved
+  until that knowledge cutoff.
 - Reject explicit compiled availability before execution.
 
 ### Acceptance Criteria
@@ -1183,6 +1232,7 @@ context planes, and stable-ID asset-state lifecycle without economic policy.
 ### Verification
 
 - `test-availability-causality.R`
+- Effective-time versus knowledge-time status-precedence cutoff fixture
 - `test-availability-state.R`
 - `test-availability-workflow.R`
 - Dense context/axis parity tests

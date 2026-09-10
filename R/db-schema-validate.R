@@ -371,6 +371,7 @@ ledgr_validate_schema <- function(con) {
         created_at_utc = "TIMESTAMP",
         sealed_at_utc = "TIMESTAMP",
         snapshot_hash = "TEXT",
+        hash_rule_version = "INTEGER",
         meta_json = "TEXT",
         error_msg = "TEXT"
       ),
@@ -404,6 +405,86 @@ ledgr_validate_schema <- function(con) {
       ),
       pk = c("snapshot_id", "instrument_id", "ts_utc"),
       not_null = c("snapshot_id", "instrument_id", "ts_utc", "open", "high", "low", "close")
+    ),
+    snapshot_fact_families = list(
+      columns = c(
+        snapshot_id = "TEXT", family = "TEXT", scope_id = "TEXT",
+        family_schema_version = "INTEGER", metadata_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "family", "scope_id"),
+      not_null = c("snapshot_id", "family", "scope_id", "family_schema_version", "metadata_json")
+    ),
+    snapshot_membership_sets = list(
+      columns = c(
+        snapshot_id = "TEXT", universe_id = "TEXT", set_id = "TEXT",
+        effective_from = "TIMESTAMP", knowledge_time = "TIMESTAMP",
+        complete = "BOOLEAN", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "universe_id", "set_id"),
+      not_null = c("snapshot_id", "universe_id", "set_id", "effective_from", "complete", "provenance_json")
+    ),
+    snapshot_membership = list(
+      columns = c(
+        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
+        universe_id = "TEXT", set_id = "TEXT", effective_from = "TIMESTAMP",
+        effective_to = "TIMESTAMP", knowledge_time = "TIMESTAMP",
+        member = "BOOLEAN", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "fact_id"),
+      not_null = c(
+        "snapshot_id", "fact_id", "instrument_id", "universe_id",
+        "effective_from", "member", "provenance_json"
+      )
+    ),
+    snapshot_trading_status = list(
+      columns = c(
+        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
+        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
+        knowledge_time = "TIMESTAMP", status = "TEXT", source = "TEXT",
+        precedence = "INTEGER", revision_id = "TEXT",
+        supersedes_fact_id = "TEXT", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "fact_id"),
+      not_null = c(
+        "snapshot_id", "fact_id", "instrument_id", "effective_from",
+        "status", "source", "precedence", "provenance_json"
+      )
+    ),
+    snapshot_lifetime = list(
+      columns = c(
+        snapshot_id = "TEXT", fact_id = "TEXT", instrument_id = "TEXT",
+        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
+        knowledge_time = "TIMESTAMP", assertion = "TEXT",
+        terminal_event = "TEXT", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "fact_id"),
+      not_null = c(
+        "snapshot_id", "fact_id", "instrument_id", "effective_from",
+        "assertion", "provenance_json"
+      )
+    ),
+    snapshot_sessions = list(
+      columns = c(
+        snapshot_id = "TEXT", venue_id = "TEXT", session_date = "DATE",
+        effective_from = "TIMESTAMP", effective_to = "TIMESTAMP",
+        knowledge_time = "TIMESTAMP", status = "TEXT",
+        session_open = "TIMESTAMP", session_close = "TIMESTAMP",
+        provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "venue_id", "session_date"),
+      not_null = c(
+        "snapshot_id", "venue_id", "session_date", "effective_from",
+        "effective_to", "status", "provenance_json"
+      )
+    ),
+    snapshot_observation_quarantine = list(
+      columns = c(
+        snapshot_id = "TEXT", quarantine_id = "TEXT",
+        supplied_instrument_id = "TEXT", supplied_ts_utc = "TIMESTAMP",
+        reason = "TEXT", original_row_json = "TEXT", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "quarantine_id"),
+      not_null = c("snapshot_id", "quarantine_id", "reason", "original_row_json", "provenance_json")
     )
   )
 
@@ -478,7 +559,7 @@ ledgr_validate_schema <- function(con) {
     split(out$column_name, out$constraint_name)
   }
 
-  check_status_constraint_metadata <- function(table_name, expected_values, label) {
+  check_enum_constraint_metadata <- function(table_name, column_name, expected_values, label) {
     checks <- tryCatch(
       DBI::dbGetQuery(
         con,
@@ -493,7 +574,8 @@ ledgr_validate_schema <- function(con) {
       error = function(e) data.frame(expression = character())
     )
     expressions <- as.character(checks$expression)
-    status_expr <- expressions[grepl("\\bstatus\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
+    enum_pattern <- sprintf('"?%s"?\\s+IN\\s*\\(', column_name)
+    status_expr <- expressions[grepl(enum_pattern, expressions, ignore.case = TRUE)]
     if (length(status_expr) == 0L) {
       stop(
         sprintf("%s must enforce status values (%s).", label, paste(expected_values, collapse = ", ")),
@@ -517,8 +599,9 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_runs_status_constraint <- function() {
-    check_status_constraint_metadata(
+    check_enum_constraint_metadata(
       "runs",
+      "status",
       c("CREATED", "RUNNING", "DONE", "FAILED"),
       "runs.status"
     )
@@ -526,8 +609,9 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_snapshots_status_constraint <- function() {
-    check_status_constraint_metadata(
+    check_enum_constraint_metadata(
       "snapshots",
+      "status",
       c("CREATED", "SEALED", "FAILED"),
       "snapshots.status"
     )
@@ -535,8 +619,9 @@ ledgr_validate_schema <- function(con) {
   }
 
   check_sweep_candidates_status_constraint <- function() {
-    check_status_constraint_metadata(
+    check_enum_constraint_metadata(
       "sweep_candidates",
+      "status",
       c("DONE", "FAILED"),
       "sweep_candidates.status"
     )
@@ -637,6 +722,24 @@ ledgr_validate_schema <- function(con) {
   check_runs_status_constraint()
   check_snapshots_status_constraint()
   check_sweep_candidates_status_constraint()
+  check_enum_constraint_metadata(
+    "snapshot_trading_status",
+    "status",
+    c("active", "halted", "quotation_only"),
+    "snapshot_trading_status.status"
+  )
+  check_enum_constraint_metadata(
+    "snapshot_lifetime",
+    "assertion",
+    c("known_active", "known_inactive", "unknown"),
+    "snapshot_lifetime.assertion"
+  )
+  check_enum_constraint_metadata(
+    "snapshot_sessions",
+    "status",
+    c("open", "closed"),
+    "snapshot_sessions.status"
+  )
 
   invisible(TRUE)
 }

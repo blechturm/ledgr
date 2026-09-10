@@ -29,11 +29,20 @@
   with a reversible reserved-name encoding. Original candidate IDs remain
   unchanged in long, matrix, panel, and candidate-extraction surfaces; no
   persisted mapping or identity input was added.
+- Added classed point-in-time fact constructors and a read-only pre-seal
+  validation report for membership, trading status, lifetime, and complete
+  venue-session calendars. Daily vendor dates map explicitly to declared
+  session closes; observed bars never define the expected-session clock.
+- Added experiment-store schema 113, saved-sweep schema 4, and snapshot hash
+  rule 2 for normalized fact families and explicitly acknowledged observation
+  quarantine. Fact-free snapshots retain hash rule 1 unchanged, legacy sealed
+  snapshots are never rehashed, and quarantined rows remain hashed audit
+  evidence rather than runtime bars.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-5
-  are complete after review.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-6
+  are complete after review and Batches 7-11 are pending.
 
 # ledgr 0.1.9.7
 

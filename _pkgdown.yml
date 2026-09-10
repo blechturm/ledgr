@@ -162,6 +162,8 @@ reference:
   - title: Snapshots
     contents:
       - starts_with("ledgr_snapshot")
+      - ledgr_facts
+      - ledgr_facts_validate
       - print.ledgr_snapshot
       - summary.ledgr_snapshot
       - close.ledgr_snapshot

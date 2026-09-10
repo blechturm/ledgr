@@ -1499,6 +1499,30 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_no_match(doc, "not evaluated during\\s+package vignette builds")
 })
 
+testthat::test_that("availability snapshot identity and quarantine contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(path), "design contracts unavailable")
+  contract <- paste(readLines(path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    contract,
+    "Snapshot hash rule 1 covers normalized bars and instruments only and remains\\s+byte-identical",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Snapshot hash rule 2 covers the rule-1 bars and instruments plus every\\s+normalized point-in-time fact-family header and row",
+    perl = TRUE
+  )
+  testthat::expect_match(contract, "missing rule marker on a legacy snapshot means rule 1", fixed = TRUE)
+  testthat::expect_match(contract, "expected-session clock is independent of observation presence", fixed = TRUE)
+  testthat::expect_match(contract, 'invalid_observations = "quarantine"', fixed = TRUE)
+  testthat::expect_match(contract, "never runtime bars", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 113 and saved-sweep schema 4", fixed = TRUE)
+  testthat::expect_match(contract, "never resealed or rehash-migrated", fixed = TRUE)
+})
+
 testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
   data_doc <- paste(readLines(ledgr_test_source_vignette("data-input-and-snapshots.qmd"), warn = FALSE), collapse = "\n")
   store_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
@@ -2412,12 +2436,12 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    "Status: Batches 0-5 complete after review.",
+    "Status: Batches 0-6 complete after review. Batches 7-11 are pending.",
     fixed = TRUE
   )
   testthat::expect_match(
     docs$readme,
-    "Batches 0-5 complete after review[.] Batches 6-11 are pending"
+    "Batches 0-6 complete after review[.] Batches 7-11 are pending"
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
@@ -2434,6 +2458,37 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `048b925", fixed = TRUE)
+  testthat::expect_match(docs$batches, "## Batch 6 - Facts Calendar Snapshot Schema And Quarantine", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2687 - Point-In-Time Fact Constructors", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Family and bundle hashes cover normalized evidence", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2688 - Complete Session Calendar And EOD Mapping", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "whole-feed gaps", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2689 - Availability Snapshot Schema Hash And Quarantine", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "advertises no availability strategy runtime", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2689"[[:space:]]+title: "Availability snapshot schema hash and quarantine"[[:space:]]+status: "complete_after_review"'
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "Effective-time versus knowledge-time status-precedence cutoff fixture",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$yaml,
+    "Knowledge-time versus effective-time status precedence cutoff",
+    fixed = TRUE
+  )
+
+  fixture <- paste(
+    readLines(file.path(packet, "availability_walkthrough_fixture.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(fixture, "Status: Shape only", fixed = TRUE)
+  testthat::expect_match(fixture, "records no expected engine output", fixed = TRUE)
+  testthat::expect_match(fixture, "Every civil date appears", fixed = TRUE)
+  testthat::expect_match(fixture, "Until those runtime[[:space:]]+surfaces land")
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")

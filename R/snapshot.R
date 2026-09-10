@@ -182,6 +182,10 @@ print.ledgr_snapshot <- function(x, ...) {
   cat("Bars:        ", if (is.null(n_bars)) NA else n_bars, "\n")
   cat("Instruments: ", if (is.null(n_instruments)) NA else n_instruments, "\n")
   cat("Date Range:  ", if (is.null(start_date)) NA else start_date, "to", if (is.null(end_date)) NA else end_date, "\n")
+  if (!is.null(meta$fact_family_count)) {
+    cat("Fact families:", meta$fact_family_count, "\n")
+    cat("Quarantined: ", meta$quarantined_observation_count %||% 0L, "\n")
+  }
   cat("Database:    ", x$db_path, "\n")
   cat("Snapshot ID: ", paste0(substr(x$snapshot_id, 1, 32), if (nchar(x$snapshot_id) > 32) "..." else ""), "\n")
 

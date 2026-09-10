@@ -238,7 +238,7 @@ tickets:
 
   - id: "LDG-2687"
     title: "Point-in-time fact constructors and validation report"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2686"]
@@ -254,7 +254,7 @@ tickets:
 
   - id: "LDG-2688"
     title: "Complete session calendar and EOD mapping"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2686"]
@@ -270,7 +270,7 @@ tickets:
 
   - id: "LDG-2689"
     title: "Availability snapshot schema hash and quarantine"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2687", "LDG-2688"]
@@ -315,6 +315,7 @@ tickets:
       scope: "axis-context-state"
     tests:
       - "U2 future-fact perturbation causality"
+      - "Knowledge-time versus effective-time status precedence cutoff"
       - "U6 empty-axis callback and state preservation"
       - "U23 exit/re-entry and asset-state lifecycle"
       - "Axis ordering and dense-context parity"

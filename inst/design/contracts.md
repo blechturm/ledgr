@@ -236,13 +236,29 @@ The strategy preflight boundary originated in
 ## Snapshot Contract
 
 - Backtests run against sealed snapshots.
-- Snapshot hashes cover normalized bars and instruments only; metadata and
-  snapshot IDs do not alter artifact hashes.
+- Snapshot hash rule 1 covers normalized bars and instruments only and remains
+  byte-identical for snapshots with no declared availability facts. Snapshot
+  IDs and envelope metadata do not alter artifact hashes.
+- Snapshot hash rule 2 covers the rule-1 bars and instruments plus every
+  normalized point-in-time fact-family header and row, its recorded knowledge
+  assumption and completeness/coverage metadata, and every explicitly
+  acknowledged observation-quarantine row. Store-local snapshot IDs remain
+  excluded. A missing rule marker on a legacy snapshot means rule 1.
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
   snapshot hash or transitioning to `SEALED`.
+- Point-in-time fact intervals are half-open and knowledge-bounded. Session
+  facts form a complete venue calendar with one open/closed row per civil date;
+  daily vendor labels are mapped explicitly to declared session closes. The
+  expected-session clock is independent of observation presence.
+- Invalid observations fail snapshot creation by default. The dataframe adapter
+  may exclude them only through explicit
+  `invalid_observations = "quarantine"` with declared sessions. Excluded rows,
+  reasons, original payloads, provenance, and the acknowledgement are hashed,
+  reopenable audit evidence and never runtime bars. Structural duplicates,
+  malformed facts, and an empty valid partition still fail closed.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
 - `ledgr_snapshot_open(db_path, snapshot_id)` may reopen an existing sealed
@@ -282,6 +298,10 @@ The strategy preflight boundary originated in
   not prove constraints by writing invalid probe rows into ledgr tables.
   Constraint enforcement belongs in isolated tests with disposable database
   connections.
+- Experiment-store schema 113 and saved-sweep schema 4 add normalized
+  point-in-time fact and quarantine evidence. Migration is transactional and
+  writes its version marker last. Existing sealed snapshots retain their stored
+  hashes and are never resealed or rehash-migrated.
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or

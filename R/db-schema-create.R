@@ -236,6 +236,7 @@ ledgr_create_schema <- function(con) {
       created_at_utc TIMESTAMP NOT NULL,
       sealed_at_utc TIMESTAMP,
       snapshot_hash TEXT,
+      hash_rule_version INTEGER,
       meta_json TEXT,
       error_msg TEXT
     )
