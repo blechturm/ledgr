@@ -32,8 +32,8 @@
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-4
-  are complete after review, and Batch 5 is implemented and awaiting review.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-5
+  are complete after review.
 
 # ledgr 0.1.9.7
 

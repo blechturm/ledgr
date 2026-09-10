@@ -1,7 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-4 complete after review. Batch 5 implementation is complete
-and awaiting review. Batches 6-11 are pending.
+Status: Batches 0-5 complete after review. Batches 6-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -307,7 +306,7 @@ Implementation evidence:
 
 ## Batch 5 - Coordinator Stages 3-4
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 

@@ -206,7 +206,7 @@ tickets:
 
   - id: "LDG-2685"
     title: "Coordinator stage 3 finalization extraction"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2681", "LDG-2682", "LDG-2683", "LDG-2684"]
@@ -222,7 +222,7 @@ tickets:
 
   - id: "LDG-2686"
     title: "Coordinator stage 4 registration and resume extraction"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2685"]

@@ -847,7 +847,7 @@ scope: wide-name-collisions
 Priority: P0
 Effort: L
 Dependencies: LDG-2681, LDG-2682, LDG-2683, LDG-2684
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -901,7 +901,7 @@ scope: finalization-stage
 Priority: P0
 Effort: L
 Dependencies: LDG-2685
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
