@@ -222,7 +222,7 @@ tickets:
 
   - id: "LDG-2686"
     title: "Coordinator stage 4 registration and resume extraction"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2685"]

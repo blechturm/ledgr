@@ -901,7 +901,7 @@ scope: finalization-stage
 Priority: P0
 Effort: L
 Dependencies: LDG-2685
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -928,6 +928,18 @@ cleanup without changing runtime order or handler dependencies.
 - `test-runner.R`
 - `test-runner-snapshots.R`
 - Partial-run/clean-resumed acceptance tests
+
+### Implementation Notes
+
+- Registration, lookup, identity checks, insert verification, and the DONE
+  shortcut moved to `R/run-registration.R`. Provenance receives the existing
+  connection and persistent handler explicitly at its original runtime point.
+- Resume preflight, tail cleanup, finalization-only recovery detection, event
+  sequencing, and opening events moved to `R/run-resume.R`. The coordinator
+  still owns store opening and function-scoped cleanup.
+- Focused runner, snapshot, partial/resume, fresh-connection, and metadata nets
+  pass. H11 passed across all 112 local test files with one expected optional
+  adapter-path skip after extraction.
 
 ### Source Reference
 

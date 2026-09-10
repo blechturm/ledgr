@@ -2417,7 +2417,7 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   )
   testthat::expect_match(
     docs$readme,
-    "Batches 0-4 complete after review[.] Batch 5 Stage 3 implementation is\\s+complete"
+    "Batches 0-4 complete after review[.] Batch 5 implementation is complete\\s+and awaiting review"
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)

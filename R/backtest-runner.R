@@ -574,116 +574,19 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   ledgr_create_schema(con)
   ledgr_validate_schema(con)
 
-  config_json <- canonical_json(cfg)
-  cfg_hash <- config_hash(cfg)
-
-  if (is.null(run_id)) {
-    if (!is.null(cfg$run_id) && is.character(cfg$run_id) && length(cfg$run_id) == 1 && nzchar(cfg$run_id) && !is.na(cfg$run_id)) {
-      run_id <- cfg$run_id
-    } else {
-      run_id <- paste0(
-        "run_",
-        substr(digest::digest(paste0(cfg_hash, ":", if (is.null(seed)) "NULL" else seed), algo = "sha256"), 1, 16)
-      )
-    }
-  }
-
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  engine_version <- as.character(utils::packageVersion("ledgr"))
-  metric_context <- ledgr_metric_context_resolve(metric_context)
-  metric_context_storage <- ledgr_metric_context_storage(metric_context)
-
-  run_row <- DBI::dbGetQuery(
-    con,
-    "SELECT run_id, status, config_hash, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
-    params = list(run_id)
+  registration <- ledgr_run_registration(
+    con = con,
+    cfg = cfg,
+    run_id = run_id,
+    seed = seed,
+    snapshot_id = snapshot_id,
+    metric_context = metric_context
   )
-  if (nrow(run_row) > 0) {
-    found_run_ids <- as.character(run_row$run_id)
-    if (length(found_run_ids) != 1L || !identical(found_run_ids[[1]], run_id)) {
-      rlang::abort(
-        sprintf(
-          "Run lookup returned unexpected run_id. Requested %s, got %s.",
-          run_id,
-          paste(found_run_ids, collapse = ", ")
-        ),
-        class = "ledgr_run_lookup_mismatch"
-      )
-    }
-  }
-
-  is_resume <- nrow(run_row) > 0
-
-  if (!is_resume) {
-    run_created_at_utc <- as.POSIXct(Sys.time(), tz = "UTC")
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO runs (
-        run_id,
-        created_at_utc,
-        engine_version,
-        config_json,
-        config_hash,
-        snapshot_id,
-        metric_context_json,
-        metric_context_hash,
-        metric_context_version,
-        status,
-        error_msg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ",
-      params = list(
-        run_id,
-        run_created_at_utc,
-        engine_version,
-        config_json,
-        cfg_hash,
-        snapshot_id,
-        metric_context_storage$json,
-        metric_context_storage$hash,
-        metric_context_storage$version,
-        "CREATED",
-        NA_character_
-      )
-    )
-    inserted_run <- DBI::dbGetQuery(
-      con,
-      "SELECT run_id FROM runs WHERE run_id = ?",
-      params = list(run_id)
-    )
-    if (nrow(inserted_run) != 1L || !identical(as.character(inserted_run$run_id[[1]]), run_id)) {
-      rlang::abort(
-        sprintf("Run registration verification failed for run_id=%s.", run_id),
-        class = "ledgr_run_registration_failed"
-      )
-    }
-  } else {
-    stored_cfg_hash <- run_row$config_hash[[1]]
-    if (!identical(stored_cfg_hash, cfg_hash)) {
-      rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
-    }
-    stored_snapshot_id <- run_row$snapshot_id[[1]]
-    stored_metric_context_hash <- run_row$metric_context_hash[[1]]
-    # Metric context is not execution identity, but a resume call that supplies a
-    # conflicting context is ambiguous. Fail loudly rather than silently ignoring it.
-    if (is.character(stored_metric_context_hash) && length(stored_metric_context_hash) == 1L &&
-      !is.na(stored_metric_context_hash) && nzchar(stored_metric_context_hash) &&
-      !identical(stored_metric_context_hash, metric_context_storage$hash)) {
-      rlang::abort("Refusing to resume: metric_context_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
-    }
-    if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
-      rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
-    }
-    if (!identical(stored_snapshot_id, snapshot_id)) {
-      rlang::abort("Refusing to resume: snapshot_id does not match stored run.", class = "ledgr_run_hash_mismatch")
-    }
-    if (identical(run_row$status[[1]], "DONE")) {
-      return(list(run_id = run_id, db_path = db_path))
-    }
+  run_id <- registration$run_id
+  is_resume <- registration$is_resume
+  metric_context <- registration$metric_context
+  if (isTRUE(registration$is_done)) {
+    return(list(run_id = run_id, db_path = db_path))
   }
 
   output_handler <- ledgr_persistent_output_handler(
@@ -695,19 +598,13 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   )
   fail_run <- output_handler$abort_run
 
-  if (!is_resume) {
-    run_created_at <- DBI::dbGetQuery(
-      con,
-      "SELECT created_at_utc FROM runs WHERE run_id = ?",
-      params = list(run_id)
-    )$created_at_utc[[1]]
-    tryCatch(
-      ledgr_write_strategy_provenance(con, run_id, cfg, created_at_utc = run_created_at),
-      error = function(e) {
-        fail_run(conditionMessage(e), class = "ledgr_run_provenance_failed")
-      }
-    )
-  }
+  ledgr_run_registration_provenance(
+    con = con,
+    output_handler = output_handler,
+    run_id = run_id,
+    cfg = cfg,
+    is_resume = is_resume
+  )
 
   # Snapshot integration:
   # - verify snapshot status SEALED
@@ -751,9 +648,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   strategy_params <- strategy$params
   strategy_call_signature <- strategy$signature
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
-  if (is_resume) {
-    ledgr_abort_strategy_ambient_rng_for_resume(strategy_preflight)
-  }
+  ledgr_run_resume_preflight(is_resume, strategy_preflight)
 
   calendar <- ledgr_run_snapshot_calendar(
     con,
@@ -765,85 +660,21 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   pulses_posix <- calendar$pulses_posix
   pulses_iso <- calendar$pulses_iso
 
-  resume_posix <- pulses_posix[[1]]
-  resume_iso <- pulses_iso[[1]]
-  resume_exec_posix <- pulses_posix[[2]]
-  start_idx <- 1L
-  finalization_only_resume <- FALSE
-
-  if (is_resume) {
-    last_state <- DBI::dbGetQuery(
-      con,
-      "SELECT MAX(ts_utc) AS ts_utc FROM strategy_state WHERE run_id = ?",
-      params = list(run_id)
-    )$ts_utc[[1]]
-
-    if (length(last_state) == 1 && !is.na(last_state)) {
-      last_posix <- NULL
-      if (inherits(last_state, "POSIXt")) {
-        last_posix <- as.POSIXct(last_state, tz = "UTC")
-      } else if (is.numeric(last_state)) {
-        last_posix <- as.POSIXct(last_state, origin = "1970-01-01", tz = "UTC")
-      } else if (is.character(last_state) && nzchar(last_state)) {
-        last_posix <- as.POSIXct(last_state, tz = "UTC", tryFormats = c("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"))
-      }
-      if (is.null(last_posix) || is.na(last_posix)) {
-        fail_run("Invalid strategy_state.ts_utc encountered; cannot resume deterministically.")
-      }
-
-      last_idx <- max(which(pulses_posix <= last_posix))
-      if (!is.finite(last_idx) || is.na(last_idx) || last_idx < 1) {
-        fail_run("strategy_state contains a timestamp not present in pulse calendar; cannot resume deterministically.")
-      }
-
-      start_idx <- as.integer(last_idx) + 1L
-      if (start_idx <= length(pulses)) {
-        resume_posix <- pulses_posix[[start_idx]]
-        resume_iso <- pulses_iso[[start_idx]]
-        resume_exec_posix <- if (start_idx < length(pulses_posix)) pulses_posix[[start_idx + 1L]] else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-      } else {
-        finalization_only_resume <- TRUE
-        resume_exec_posix <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-      }
-    } else {
-      start_idx <- 1L
-      resume_posix <- pulses_posix[[1]]
-      resume_iso <- pulses_iso[[1]]
-      resume_exec_posix <- if (length(pulses_posix) >= 2) pulses_posix[[2]] else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-    }
-
-    # Resume cleanup: remove any previously written tail rows to avoid alternate-reality outputs.
-    # A post-fold failure has no uncommitted fold tail to remove.
-    if (!isTRUE(finalization_only_resume)) {
-      DBI::dbWithTransaction(con, {
-        if (!is.na(resume_exec_posix)) {
-          DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_exec_posix))
-        }
-        if (isTRUE(persist_features)) {
-          DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
-        }
-        DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
-        DBI::dbExecute(con, "DELETE FROM strategy_state WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_iso))
-      })
-    }
-  }
-
-  next_event_seq <- DBI::dbGetQuery(
-    con,
-    "SELECT COALESCE(MAX(event_seq), 0) + 1 AS next_seq FROM ledger_events WHERE run_id = ?",
-    params = list(run_id)
-  )$next_seq[[1]]
-  next_event_seq <- as.integer(next_event_seq)
-  if (!is_resume && length(opening_positions) > 0L) {
-    next_event_seq <- ledgr_write_opening_position_events(
-      con = con,
-      run_id = run_id,
-      ts_utc = start_ts_utc,
-      positions = opening_positions,
-      cost_basis = opening_cost_basis,
-      event_seq_start = next_event_seq
-    )
-  }
+  resume <- ledgr_run_resume(
+    con = con,
+    output_handler = output_handler,
+    run_id = run_id,
+    is_resume = is_resume,
+    calendar = calendar,
+    persist_features = persist_features,
+    start_ts_utc = start_ts_utc,
+    opening_positions = opening_positions,
+    opening_cost_basis = opening_cost_basis
+  )
+  resume_posix <- resume$resume_posix
+  resume_iso <- resume$resume_iso
+  start_idx <- resume$start_idx
+  next_event_seq <- resume$next_event_seq
 
   prepared_control <- ledgr_run_prepare_control(control)
   fast_context <- prepared_control$fast_context

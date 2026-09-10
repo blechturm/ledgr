@@ -1,7 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-4 complete after review. Batch 5 Stage 3 implementation is
-complete; Stage 4 and Batches 6-11 are pending.
+Status: Batches 0-4 complete after review. Batch 5 implementation is complete
+and awaiting review. Batches 6-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -307,7 +307,7 @@ Implementation evidence:
 
 ## Batch 5 - Coordinator Stages 3-4
 
-Status: In Progress. Stage 3 is implemented; Stage 4 is pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -340,6 +340,16 @@ Implementation evidence:
 - The focused runner, acceptance, accounting, FIFO, and fills nets pass. H11
   then passed across all 112 local test files with one expected optional
   adapter-path skip before any Stage 4 edit.
+- Stage 4 moved run registration, lookup, identity checks, and the DONE
+  shortcut into `R/run-registration.R`; provenance still runs only after the
+  coordinator constructs the persistent handler.
+- Resume preflight, deterministic tail cleanup, finalization-only detection,
+  next event sequencing, and opening-position events moved to `R/run-resume.R`.
+  Both helpers receive the existing connection or handler explicitly, while
+  store cleanup remains registered in the coordinator's scope.
+- The focused runner, snapshot, partial/resume, fresh-connection, and metadata
+  nets pass. H11 passed again across all 112 local test files with one expected
+  optional adapter-path skip after Stage 4.
 
 ## Batch 6 - Facts Calendar Snapshot Schema And Quarantine
 

@@ -17,10 +17,10 @@
   examples now use ordinary target indexing and an explicit
   review-to-promotion workflow.
 - Split the backtest implementation into its accepted config, handle, fills,
-  and result ownership files, and extracted the first three run-coordinator
-  stages as explicit preparation, snapshot, and finalization records. Runtime
-  effect order, snapshot guards, cleanup ownership, public exports, and
-  execution behavior remain unchanged.
+  and result ownership files, and extracted all four run-coordinator stages as
+  explicit preparation, snapshot, finalization, registration, and resume
+  records. Runtime effect order, snapshot guards, cleanup ownership, public
+  exports, and execution behavior remain unchanged.
 - Corrected post-fold failure handling so committed ledger, strategy-state,
   and feature evidence survives a failed finalization and the same run can
   resume finalization without duplicate rows. Added detecting feature
@@ -33,7 +33,7 @@
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
   fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-4
-  are complete after review, and Batch 5 Stage 3 is implemented.
+  are complete after review, and Batch 5 is implemented and awaiting review.
 
 # ledgr 0.1.9.7
 
