@@ -6,7 +6,8 @@ ledgr_run_snapshot_guard <- function(con,
                                      start_ts_utc,
                                      end_ts_utc,
                                      run_id,
-                                     fail_run) {
+                                     fail_run,
+                                     availability_active = FALSE) {
   tryCatch(
     ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, db_path),
     error = function(e) {
@@ -112,7 +113,7 @@ ledgr_run_snapshot_guard <- function(con,
       class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
     )
   }
-  if (length(pulses) < 2L) {
+  if (!isTRUE(availability_active) && length(pulses) < 2L) {
     fail_run(
       paste0(
         "Execution window must contain at least two pulses for next-bar ",
@@ -134,8 +135,9 @@ ledgr_run_snapshot_guard <- function(con,
     ),
     params = list(snapshot_id, start_str, end_str)
   )
-  if (nrow(coverage) != length(instrument_ids) ||
-    any(as.integer(coverage$n) < length(pulses))) {
+  if (!isTRUE(availability_active) &&
+      (nrow(coverage) != length(instrument_ids) ||
+       any(as.integer(coverage$n) < length(pulses)))) {
     missing_ids <- setdiff(
       instrument_ids,
       as.character(coverage$instrument_id)

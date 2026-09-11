@@ -404,6 +404,12 @@ ledgr_run_experiment <- function(exp,
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  if (isTRUE(exp$availability$active) && identical(compiled_accounting_model, "spot_fifo")) {
+    rlang::abort(
+      "Compiled spot-FIFO execution is not supported for availability-aware experiments.",
+      class = c("ledgr_compiled_availability_unsupported", "ledgr_invalid_args")
+    )
+  }
   if (identical(compiled_accounting_model, "spot_fifo")) {
     ledgr_compiled_spot_fifo_unavailable_error(
       paste0(
@@ -460,7 +466,10 @@ ledgr_run_experiment <- function(exp,
     run_id = run_id,
     opening = exp$opening,
     seed = seed,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability = exp$availability,
+    universe_rule = exp$universe_rule,
+    valuation_policy = exp$valuation_policy
   )
 
   result <- ledgr_run_config(config, metric_context = exp$metric_context)

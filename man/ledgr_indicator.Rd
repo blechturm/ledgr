@@ -11,7 +11,8 @@ ledgr_indicator(
   params = list(),
   stable_after = requires_bars,
   series_fn = NULL,
-  source = "custom"
+  source = "custom",
+  gap_contract = NULL
 )
 }
 \arguments{
@@ -31,6 +32,9 @@ function(bars, params) -> numeric vector aligned to \code{bars}.}
 \item{source}{Indicator source label. Built-in ledgr indicators use
 \code{"ledgr"}, TTR-backed indicators use \code{"TTR"}, and user/adapted indicators
 use \code{"custom"}.}
+
+\item{gap_contract}{Optional availability-aware gap contract. Version 1
+supports only \code{"strict_window"}.}
 }
 \value{
 A \code{ledgr_indicator} object.

@@ -31,16 +31,17 @@ ledgr_unwrap_strategy_target <- function(targets) {
   targets
 }
 
-ledgr_validate_strategy_targets <- function(targets, universe) {
-  if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
-    rlang::abort("`universe` must be a non-empty character vector.", class = "ledgr_invalid_strategy_result")
+ledgr_validate_strategy_targets <- function(targets, universe, allow_empty = FALSE) {
+  if (!is.character(universe) || (!isTRUE(allow_empty) && length(universe) < 1L) ||
+      anyNA(universe) || any(!nzchar(universe))) {
+    rlang::abort("`universe` must be a character vector.", class = "ledgr_invalid_strategy_result")
   }
   if (anyDuplicated(universe)) {
     rlang::abort("`universe` must not contain duplicates.", class = "ledgr_invalid_strategy_result")
   }
 
   targets <- ledgr_unwrap_strategy_target(targets)
-  if (!is.numeric(targets) || length(targets) < 1) {
+  if (!is.numeric(targets) || (!isTRUE(allow_empty) && length(targets) < 1L)) {
     rlang::abort(
       sprintf(
         "`targets` must be %s; got %s.",
@@ -52,6 +53,10 @@ ledgr_validate_strategy_targets <- function(targets, universe) {
   }
 
   target_names <- names(targets)
+  if (isTRUE(allow_empty) && length(universe) == 0L && length(targets) == 0L &&
+      is.character(target_names) && length(target_names) == 0L) {
+    return(targets)
+  }
   if (is.null(target_names) ||
       length(target_names) != length(targets) ||
       anyNA(target_names) ||

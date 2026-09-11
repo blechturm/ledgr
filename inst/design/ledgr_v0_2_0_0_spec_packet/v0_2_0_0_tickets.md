@@ -1153,7 +1153,7 @@ scope: facts-hash-quarantine-migration
 Priority: P0
 Effort: L
 Dependencies: LDG-2689
-Status: Pending
+Status: Complete after review
 
 ### Description
 
@@ -1183,6 +1183,14 @@ constructors, snapshot fact ingestion, and effective-plan disclosure.
 - Experiment/config/hash tests
 - API exports and `tools::checkRd()`
 
+### Implementation Notes
+
+- Added classed membership-universe and stale-valuation policy constructors,
+  presence-driven activation, and `ledgr_experiment_plan()` disclosure.
+- Active experiments require complete declared sessions and an explicit
+  valuation policy. Fixed baskets remain fixed, canonical omission preserves
+  the dense config shape, and active compiled requests fail before execution.
+
 ### Source Reference
 
 - Spec Sections 2.3 and 2.5; gates U4/U20
@@ -1201,7 +1209,7 @@ scope: activation-universe-valuation-plan
 Priority: P0
 Effort: L
 Dependencies: LDG-2690
-Status: Pending
+Status: Complete after review
 
 ### Description
 
@@ -1237,6 +1245,20 @@ context planes, and stable-ID asset-state lifecycle without economic policy.
 - `test-availability-workflow.R`
 - Dense context/axis parity tests
 
+### Implementation Notes
+
+- Added one provider with fact, decision, execution, history, and identity
+  operations plus the complete session axis used by the runner.
+- Dynamic contexts expose the accepted decision-time planes and preserve
+  stable-ID `asset_state`; exited state is cleaned, re-entry starts empty, and
+  an empty public axis still invokes the strategy.
+- The routed later-knowledge fixture detects that an effective but not yet
+  knowable higher-precedence status row cannot shadow a lower-precedence tie.
+- Provider code introduces no valuation, affordability, risk, or fill policy.
+- Review follow-up normalizes interval- and snapshot-sourced members in
+  C-locale stable-ID order and adds detecting tests for asset-state pruning,
+  empty re-entry, typed invalid-state failures, and nonzero mark age.
+
 ### Source Reference
 
 - Spec Section 2.6; gates U2/U4/U6/U10/U23
@@ -1255,7 +1277,7 @@ scope: axis-context-state
 Priority: P0
 Effort: L
 Dependencies: LDG-2691
-Status: Pending
+Status: Complete after review
 
 ### Description
 
@@ -1285,6 +1307,18 @@ availability-aware indicators.
 - `test-precompute-features.R`
 - `test-availability-features.R`
 - Cache identity and future-perturbation tests
+
+### Implementation Notes
+
+- Added the `strict_window` indicator gap declaration and certified the native
+  SMA and returns indicators across scalar, series, and cache paths.
+- Active feature windows use the complete expected-session axis, never stale
+  valuation marks. Missing required observations yield `NA_real_`, including
+  whole-feed outages; unsupported indicators fail before strategy use.
+- Active feature identity records strict-gap semantics while dense indicator
+  and feature-engine identities remain unchanged.
+- Review follow-up omits `gap_contract` from dense feature definitions and
+  directly compares dense annotated and unannotated indicator config hashes.
 
 ### Source Reference
 

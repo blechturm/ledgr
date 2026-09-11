@@ -74,6 +74,9 @@ reference:
     contents:
       - ledgr_experiment
       - print.ledgr_experiment
+      - ledgr_universe_members
+      - ledgr_valuation_stale
+      - ledgr_experiment_plan
       - ledgr_opening
       - print.ledgr_opening
       - ledgr_opening_from_broker

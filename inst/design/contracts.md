@@ -284,6 +284,54 @@ The strategy preflight boundary originated in
   explicit selector bounds; run/resume and snapshot adapters must not rehash
   run-window bar values.
 
+## Availability Contract
+
+- Availability-aware execution activates when a snapshot declares membership,
+  sessions, trading-status, or lifetime facts, or when an experiment declares a
+  valuation policy. There is no mode flag. Canonical omission preserves the
+  dense experiment, config, execution-spec, context, and feature-identity
+  payloads.
+- Every availability-aware experiment requires a complete declared session
+  calendar and an explicit `ledgr_valuation_stale(max_sessions)` policy. The
+  package supplies no default stale horizon. `max_sessions = 0` means that only
+  a current-session mark is permissible.
+- A character-vector universe remains a fixed basket even when it consumes
+  session, trading-status, or lifetime facts. Dynamic membership is explicit
+  through `ledgr_universe_members(universe_id)` and must name a membership
+  universe declared by the snapshot.
+- `ledgr_experiment_plan()` is read-only disclosure of effective availability,
+  universe, valuation, and fact-family checks. It distinguishes disabled,
+  omitted, declared, and assumption-backed families without executing a
+  strategy or writing evidence.
+- Availability-aware execution uses one internal provider with `facts`,
+  `decision_view`, `execution_view`, `history`, and `identity` operations. Its
+  decision axis preserves declared member order for character-vector universes.
+  For membership-rule universes, members are ordered by C-locale stable ID;
+  nonzero held nonmembers then follow in the same stable-ID order. The provider
+  resolves point-in-time evidence and shapes context only; target enforcement,
+  risk, valuation economics, affordability, fills, and writes remain in the
+  shared fold and its output handlers.
+- Facts become applicable only after both effective time and knowledge time.
+  A higher-precedence assertion that is effective but not yet knowable cannot
+  shadow a lower-precedence tie. Future facts may change snapshot and descendant
+  identity but must not rewrite earlier context, errors, features, or supported
+  telemetry.
+- Availability-aware contexts expose `ctx$members` and universe-aligned
+  `ctx$vec$member`, `held`, `target_restricted`,
+  `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.
+  An empty decision axis still invokes the strategy and accepts a named numeric
+  zero-length target while preserving portfolio-level state.
+- Asset-scoped strategy state lives at `ctx$state_prev$asset_state` as a named
+  list keyed by stable instrument ID. Entries outside the current axis are
+  removed before callback, newly visible and re-entering IDs receive `list()`,
+  returned keys outside the current axis fail closed with
+  `ledgr_invalid_strategy_state`, and non-asset portfolio state remains under
+  the existing replacement semantics.
+- Availability-aware execution is canonical R only in v0.2.0.0. An explicit
+  compiled spot-FIFO request fails before execution with
+  `ledgr_compiled_availability_unsupported`; dense compiled behavior is
+  unchanged.
+
 ## Persistence Contract
 
 - Runner-owned DuckDB write connections must issue `CHECKPOINT` before
@@ -537,6 +585,10 @@ The strategy preflight boundary originated in
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
   `positions`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one engine feature ID.
+- Availability-aware pulse contexts restrict bars, feature tables, scalar
+  feature access, vector feature access, positions, and errors to the current
+  decision axis. Dense contexts retain the existing fixed-universe fields and
+  shape.
 - `ctx$positions` remains a public pulse-start snapshot. `ctx$vec$positions`
   is the aligned vector view of the same pulse-known state. Strategies must
   treat both as read-only; mutating them is outside the strategy contract and
@@ -581,6 +633,20 @@ The strategy preflight boundary originated in
   Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
 - Indicator fingerprints include `series_fn` when present. Changing `fn`,
   `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- Availability-aware indicators declare `gap_contract = "strict_window"` on
+  the existing indicator definition. The declaration commits the definition to
+  a finite window with no internal carry or imputation. Omission fails with
+  `ledgr_indicator_gap_unsupported` before strategy execution; v0.2.0.0
+  initially certifies only built-in SMA and returns.
+- Strict feature windows count expected sessions. Any missing required
+  observation makes the affected window `NA_real_`; valuation marks never enter
+  feature computation. Scalar `fn` and the terminal value from `series_fn`
+  receive the same bounded fully observed window and must agree on certification
+  fixtures.
+- Active feature fingerprints and cache keys include strict expected-session
+  and cutoff-causal history semantics. Future-known facts cannot rewrite cached
+  earlier feature values. Dense indicator fingerprints and feature-engine
+  identity omit the availability declaration and remain unchanged.
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
   params. Only `params$args` are forwarded to TTR; metadata fields are identity

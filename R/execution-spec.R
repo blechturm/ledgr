@@ -70,7 +70,8 @@ ledgr_execution_spec <- function(run_id,
                                  seed = NULL,
                                  event_mode = c("live", "buffered"),
                                  use_fast_context = FALSE,
-                                 compiled_accounting_model = NULL) {
+                                 compiled_accounting_model = NULL,
+                                 availability_provider = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -107,6 +108,9 @@ ledgr_execution_spec <- function(run_id,
     use_fast_context = isTRUE(use_fast_context),
     compiled_accounting_model = compiled_accounting_model
   )
+  if (!is.null(availability_provider)) {
+    spec$availability_provider <- availability_provider
+  }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
 }
@@ -206,6 +210,11 @@ ledgr_validate_execution_spec <- function(spec) {
   ledgr_execution_spec_check(
     is.null(spec$static_feature_views) || is.list(spec$static_feature_views),
     "`execution$static_feature_views` must be NULL or a list."
+  )
+  ledgr_execution_spec_check(
+    is.null(spec$availability_provider) ||
+      inherits(spec$availability_provider, "ledgr_availability_provider"),
+    "`execution$availability_provider` must be NULL or a ledgr availability provider."
   )
   ledgr_execution_spec_check(
     is.list(spec$feature_defs),

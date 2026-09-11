@@ -27,6 +27,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_indicator_remove",
     "ledgr_demo_sma_crossover_strategy",
     "ledgr_experiment",
+    "ledgr_experiment_plan",
     "ledgr_run_strategy",
     "ledgr_run_fills",
     "ledgr_feature_contract_check",
@@ -141,9 +142,11 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_target",
     "ledgr_timing_next_open",
     "ledgr_temp_store",
+    "ledgr_universe_members",
     "ledgr_ind_ttr_warmup_rules",
     "ledgr_utc",
     "ledgr_validate_schema",
+    "ledgr_valuation_stale",
     "ledgr_walk_forward",
     "ledgr_walk_forward_folds",
     "ledgr_walk_forward_open",
@@ -157,6 +160,9 @@ testthat::test_that("exported API surface is locked", {
   ))
 
   testthat::expect_identical(exports, expected)
+  testthat::expect_identical(names(formals(ledgr_universe_members)), "universe_id")
+  testthat::expect_identical(names(formals(ledgr_valuation_stale)), "max_sessions")
+  testthat::expect_identical(names(formals(ledgr_experiment_plan)), c("x", "..."))
   testthat::expect_false("ledgr_snapshot_hash" %in% exports)
   testthat::expect_false("ledgr_run_fold" %in% exports)
   testthat::expect_false("ledgr_next_open_fill_proposal" %in% exports)

@@ -38,11 +38,24 @@
   quarantine. Fact-free snapshots retain hash rule 1 unchanged, legacy sealed
   snapshots are never rehashed, and quarantined rows remain hashed audit
   evidence rather than runtime bars.
+- Added explicit availability activation with public membership-universe and
+  stale-valuation policies plus effective-plan inspection. Availability-aware
+  experiments require a complete declared session calendar and valuation
+  policy; canonical omission keeps the dense path unchanged.
+- Added the internal point-in-time availability provider, dynamic public pulse
+  axes, decision-time context planes, and stable-ID asset state. Facts are
+  resolved only after both effective and knowledge time, while provider code
+  remains free of valuation, affordability, risk, and fill policy.
+- Added strict expected-session feature semantics for the built-in SMA and
+  returns indicators. Whole-feed outages remain visible, missing required
+  observations invalidate affected windows, and unsupported gap behavior fails
+  before strategy use. Availability-aware compiled spot-FIFO requests also
+  fail before execution; dense compiled behavior is unchanged.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-6
-  are complete after review and Batches 7-11 are pending.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-7
+  are complete after review, and Batches 8-11 are pending.
 
 # ledgr 0.1.9.7
 

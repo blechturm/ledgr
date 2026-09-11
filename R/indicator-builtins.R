@@ -30,7 +30,8 @@ ledgr_ind_sma <- function(n) {
     requires_bars = as.integer(n),
     stable_after = as.integer(n),
     params = list(n = n),
-    source = "ledgr"
+    source = "ledgr",
+    gap_contract = "strict_window"
   )
 }
 
@@ -165,6 +166,7 @@ ledgr_ind_returns <- function(n = 1L) {
     requires_bars = as.integer(n + 1),
     stable_after = as.integer(n + 1),
     params = list(n = n),
-    source = "ledgr"
+    source = "ledgr",
+    gap_contract = "strict_window"
   )
 }

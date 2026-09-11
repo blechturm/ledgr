@@ -15,6 +15,15 @@
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
 \alias{ledgr_snapshot_hash_invalid_timestamp}
+\alias{ledgr_invalid_valuation_policy}
+\alias{ledgr_availability_inactive}
+\alias{ledgr_availability_sessions_required}
+\alias{ledgr_valuation_policy_required}
+\alias{ledgr_membership_universe_not_found}
+\alias{ledgr_compiled_availability_unsupported}
+\alias{ledgr_indicator_gap_unsupported}
+\alias{ledgr_indicator_gap_parity}
+\alias{ledgr_invalid_strategy_state}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -149,6 +158,35 @@ fails closed because the ledger event stream and lot state must not diverge.
 \code{ledgr_snapshot_hash_invalid_timestamp} is raised when snapshot hashing sees
 a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
 timestamp representation drift instead of silently re-keying sealed data.
+}
+
+\section{Availability classes}{
+
+\code{ledgr_invalid_valuation_policy} is raised for malformed stale-valuation
+policies or constructor arguments.
+
+\code{ledgr_availability_inactive} is raised when a membership-universe rule is
+requested without the fact families needed to activate availability-aware
+execution.
+
+\code{ledgr_availability_sessions_required} and
+\code{ledgr_valuation_policy_required} are raised when availability-aware
+execution lacks a complete session calendar or an explicit valuation
+policy, respectively.
+
+\code{ledgr_membership_universe_not_found} is raised when a membership-universe
+rule names a universe that is not declared by the snapshot.
+
+\code{ledgr_compiled_availability_unsupported} is raised before execution when
+availability-aware execution is combined with the compiled spot-FIFO path.
+
+\code{ledgr_indicator_gap_unsupported} is raised before strategy use when an
+availability-aware feature does not declare the supported strict-window gap
+contract. \code{ledgr_indicator_gap_parity} is raised when the scalar and series
+implementations disagree at the end of a finite strict window.
+
+\code{ledgr_invalid_strategy_state} is raised when availability-aware asset state
+is not a named list keyed only by instruments on the current public axis.
 }
 
 \section{Saved sweep classes}{

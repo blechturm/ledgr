@@ -163,6 +163,98 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "ledgr_feature_id", fixed = TRUE)
 })
 
+testthat::test_that("availability runtime and strict-feature contracts stay bound", {
+  root <- testthat::test_path("..", "..")
+  contracts <- paste(
+    readLines(file.path(root, "inst", "design", "contracts.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(
+    contracts,
+    "Availability-aware execution activates when a snapshot declares membership"
+  )
+  testthat::expect_match(contracts, "There is no mode flag", fixed = TRUE)
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "complete declared session\\s+calendar and an explicit ",
+      "`ledgr_valuation_stale\\(max_sessions\\)` policy"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "character-vector universe remains a fixed basket",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "`facts`,\\s+`decision_view`, `execution_view`, `history`, and `identity` operations"
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "decision axis preserves declared member order for character-vector universes[.]",
+      "\\s+For membership-rule universes, members are ordered by C-locale stable ID"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "effective but not yet knowable cannot\\s+shadow a lower-precedence tie"
+  )
+  testthat::expect_match(
+    contracts,
+    "`ctx\\$members` and universe-aligned\\s+`ctx\\$vec\\$member`, `held`, `target_restricted`"
+  )
+  testthat::expect_match(
+    contracts,
+    "`ctx\\$state_prev\\$asset_state` as a named\\s+list keyed by stable instrument ID"
+  )
+  testthat::expect_match(
+    contracts,
+    "returned keys outside the current axis fail closed with\\s+`ledgr_invalid_strategy_state`"
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "compiled spot-FIFO request fails before execution with\\s+",
+      "`ledgr_compiled_availability_unsupported`"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "`gap_contract = \"strict_window\"`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "Any missing required\\s+observation makes the affected window `NA_real_`"
+  )
+  testthat::expect_match(
+    contracts,
+    "Dense indicator fingerprints and feature-engine\\s+identity omit the availability declaration"
+  )
+
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  availability_classes <- c(
+    "ledgr_invalid_valuation_policy",
+    "ledgr_availability_inactive",
+    "ledgr_availability_sessions_required",
+    "ledgr_valuation_policy_required",
+    "ledgr_membership_universe_not_found",
+    "ledgr_compiled_availability_unsupported",
+    "ledgr_indicator_gap_unsupported",
+    "ledgr_indicator_gap_parity",
+    "ledgr_invalid_strategy_state"
+  )
+  for (class in availability_classes) {
+    testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(condition_doc, class, fixed = TRUE)
+  }
+})
+
 testthat::test_that("helper docs state composition and whole-share target flooring", {
   strategy_development_doc <- paste(readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE), collapse = "\n")
   strategy_authoring_doc <- paste(readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE), collapse = "\n")
@@ -2436,12 +2528,17 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    "Status: Batches 0-6 complete after review. Batches 7-11 are pending.",
-    fixed = TRUE
+    paste0(
+      "Status: Batches 0-7 complete after review[.]",
+      "[[:space:]]+Batches 8-11 are pending[.]"
+    )
   )
   testthat::expect_match(
     docs$readme,
-    "Batches 0-6 complete after review[.] Batches 7-11 are pending"
+    paste0(
+      "Batches 0-7 complete after review[.]",
+      "[[:space:]]+Batches 8-11 are pending"
+    )
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
@@ -2480,6 +2577,21 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
     "Knowledge-time versus effective-time status precedence cutoff",
     fixed = TRUE
   )
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 7 - Activation Provider State And Strict Features",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$batches, "Status: Complete after review.", fixed = TRUE)
+  for (id in c("LDG-2690", "LDG-2691", "LDG-2692")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
 
   fixture <- paste(
     readLines(file.path(packet, "availability_walkthrough_fixture.md"), warn = FALSE),

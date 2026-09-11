@@ -1,6 +1,6 @@
 .ledgr_feature_cache_registry <- new.env(parent = emptyenv())
 
-ledgr_feature_engine_version <- function() {
+ledgr_feature_engine_version <- function(availability_active = FALSE) {
   # Cache correctness depends on this payload. MUST include every feature-engine
   # helper whose semantics can change cached feature values.
   payload <- list(
@@ -26,7 +26,36 @@ ledgr_feature_engine_version <- function() {
       label = "`ledgr_call_feature_fn()`"
     )
   )
+  if (isTRUE(availability_active)) {
+    payload$availability <- list(
+      semantics = "strict_expected_session_window_v1",
+      compute = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict()`"
+      ),
+      fingerprint = ledgr_function_fingerprint(
+        ledgr_active_feature_fingerprint,
+        include_captures = FALSE,
+        label = "`ledgr_active_feature_fingerprint()`"
+      )
+    )
+  }
   digest::digest(canonical_json(payload), algo = "sha256")
+}
+
+ledgr_active_feature_fingerprint <- function(feature_def) {
+  base <- feature_def$fingerprint
+  if (is.null(base)) base <- ledgr_feature_def_fingerprint(feature_def)
+  digest::digest(
+    canonical_json(list(
+      schema = "ledgr_active_feature_v1",
+      base_fingerprint = as.character(base),
+      gap_contract = feature_def$gap_contract %||% NULL,
+      history_semantics = "expected_sessions_cutoff_causal"
+    )),
+    algo = "sha256"
+  )
 }
 
 #' Clear the session feature cache

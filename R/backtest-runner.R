@@ -423,6 +423,10 @@ ledgr_persistent_output_handler <- function(con,
     as.integer(state$pending_idx)
   }
 
+  handler$pending_state_count <- function() {
+    as.integer(state$pending_states_idx)
+  }
+
   handler$buffer_strategy_state <- function(ts_utc, state_json) {
     state$pending_states_idx <- state$pending_states_idx + 1L
     if (state$pending_states_idx > length(state$pending_states)) {
@@ -548,6 +552,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   opening_cost_basis <- prepared$opening_cost_basis
   seed <- prepared$seed
   compiled_accounting_model <- prepared$compiled_accounting_model
+  availability_active <- ledgr_availability_config_active(cfg)
   run_wall_start <- ledgr_time_now()
 
   engine <- ledgr_run_prepare_engine(cfg, db_path)
@@ -620,9 +625,15 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     start_ts_utc = start_ts_utc,
     end_ts_utc = end_ts_utc,
     run_id = run_id,
-    fail_run = fail_run
+    fail_run = fail_run,
+    availability_active = availability_active
   )
   snapshot_hash_for_features <- snapshot$snapshot_hash
+  availability_provider <- ledgr_availability_provider(
+    con,
+    cfg,
+    snapshot_hash_for_features
+  )
 
   feature_defs <- ledgr_feature_defs_from_config(cfg)
   active_alias_map <- ledgr_alias_map_from_config(cfg)
@@ -650,12 +661,16 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
   ledgr_run_resume_preflight(is_resume, strategy_preflight)
 
-  calendar <- ledgr_run_snapshot_calendar(
-    con,
-    instrument_ids,
-    start_ts_utc,
-    end_ts_utc
-  )
+  calendar <- if (availability_active) {
+    ledgr_availability_calendar(availability_provider, start_ts_utc, end_ts_utc)
+  } else {
+    ledgr_run_snapshot_calendar(
+      con,
+      instrument_ids,
+      start_ts_utc,
+      end_ts_utc
+    )
+  }
   pulses <- calendar$pulses
   pulses_posix <- calendar$pulses_posix
   pulses_iso <- calendar$pulses_iso
@@ -771,7 +786,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     is_synthetic = 9L
   )
   use_bars_cache <- TRUE
-  use_fast_context <- TRUE
+  use_fast_context <- !availability_active
   if (isTRUE(use_bars_cache)) {
     start_iso <- ledgr_normalize_ts_utc(start_ts_utc)
     end_iso <- ledgr_normalize_ts_utc(end_ts_utc)
@@ -793,14 +808,34 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       fail_run("No bars found for feature hydration.", class = "ledgr_missing_bars")
     }
 
-    bars_by_id <- split(bars_all, as.character(bars_all$instrument_id))
+    raw_bars_by_id <- split(bars_all, as.character(bars_all$instrument_id))
+    bars_by_id <- list()
     for (instrument_id in instrument_ids) {
-      b <- bars_by_id[[instrument_id]]
-      if (is.null(b) || nrow(b) == 0) {
+      b <- raw_bars_by_id[[instrument_id]]
+      if (!availability_active && (is.null(b) || nrow(b) == 0)) {
         fail_run(sprintf("Missing bars for instrument_id=%s during feature hydration.", instrument_id), class = "ledgr_missing_bars")
       }
-      b <- b[order(b$ts_utc), , drop = FALSE]
-      if (nrow(b) != length(pulses)) {
+      if (availability_active) {
+        aligned <- data.frame(
+          instrument_id = rep(instrument_id, length(pulses_posix)),
+          ts_utc = pulses_posix,
+          open = NA_real_, high = NA_real_, low = NA_real_, close = NA_real_,
+          volume = NA_real_,
+          gap_type = rep("MISSING_EXPECTED_SESSION", length(pulses_posix)),
+          is_synthetic = rep(FALSE, length(pulses_posix)),
+          stringsAsFactors = FALSE
+        )
+        if (!is.null(b) && nrow(b) > 0L) {
+          b <- b[order(b$ts_utc), , drop = FALSE]
+          matched <- match(as.POSIXct(b$ts_utc, tz = "UTC"), pulses_posix)
+          keep <- !is.na(matched)
+          aligned[matched[keep], names(b)] <- b[keep, names(b), drop = FALSE]
+          aligned$instrument_id <- rep(instrument_id, nrow(aligned))
+          aligned$ts_utc <- pulses_posix
+        }
+        b <- aligned
+      }
+      if (!availability_active && nrow(b) != length(pulses)) {
         fail_run("Feature hydration requires complete per-instrument coverage.", class = "ledgr_missing_bars")
       }
       ts_match <- as.POSIXct(b$ts_utc, tz = "UTC")
@@ -854,7 +889,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     )
   }
 
-  feature_engine_version <- ledgr_feature_engine_version()
+  feature_engine_version <- ledgr_feature_engine_version(availability_active)
   if (length(feature_defs) > 0) {
     feature_fingerprints <- vapply(feature_defs, ledgr_feature_def_fingerprint, character(1))
     run_feature_series <- list()
@@ -874,7 +909,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         )
         values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
         if (is.null(values)) {
-          values <- ledgr_compute_feature_series(b, def)
+          values <- if (availability_active) {
+            ledgr_compute_feature_series_strict(b, def)
+          } else {
+            ledgr_compute_feature_series(b, def)
+          }
           ledgr_feature_cache_set(cache_key, values)
           if (!is.null(cache_key)) telemetry$feature_cache_misses <- telemetry$feature_cache_misses + 1L
         } else {
@@ -953,7 +992,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     seed = seed,
     event_mode = if (identical(execution_mode, "db_live")) "live" else "buffered",
     use_fast_context = use_fast_context,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability_provider = availability_provider
   )
 
   fold_result <- tryCatch(
@@ -1395,6 +1435,12 @@ ledgr_feature_defs_from_config <- function(cfg) {
     rlang::abort("features.enabled is TRUE but features.defs is missing/empty.", class = "ledgr_invalid_config")
   }
 
+  availability_active <- ledgr_availability_config_active(cfg)
+  add_def <- function(def, stored) {
+    def$gap_contract <- stored$gap_contract %||% def$gap_contract
+    def$fingerprint <- stored$fingerprint %||% ledgr_feature_def_fingerprint(def)
+    def
+  }
   out <- list()
     for (d in defs) {
       if (!is.list(d)) {
@@ -1408,13 +1454,13 @@ ledgr_feature_defs_from_config <- function(cfg) {
     }
 
     if (identical(id, "return_1")) {
-      out[[length(out) + 1L]] <- ledgr_feature_return_1()
+      out[[length(out) + 1L]] <- add_def(ledgr_feature_return_1(), d)
       next
     }
 
     if (grepl("^sma_\\d+$", id)) {
       n <- as.integer(sub("^sma_", "", id))
-      out[[length(out) + 1L]] <- ledgr_feature_sma_n(n)
+      out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(n), d)
       next
     }
 
@@ -1423,7 +1469,7 @@ ledgr_feature_defs_from_config <- function(cfg) {
       if (!is.numeric(n) || length(n) != 1 || is.na(n) || !is.finite(n) || n < 1 || (n %% 1) != 0) {
         rlang::abort("features.defs entry 'sma_n' requires params$n as an integer >= 1.", class = "ledgr_invalid_config")
       }
-      out[[length(out) + 1L]] <- ledgr_feature_sma_n(as.integer(n))
+      out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(as.integer(n)), d)
       next
     }
 
@@ -1431,6 +1477,12 @@ ledgr_feature_defs_from_config <- function(cfg) {
       ind <- tryCatch(ledgr_indicator_get(id), error = function(e) NULL)
       if (inherits(ind, "ledgr_indicator")) {
         current_fingerprint <- ledgr_indicator_fingerprint(ind)
+        if (availability_active) {
+          current_fingerprint <- ledgr_active_feature_fingerprint(list(
+            fingerprint = current_fingerprint,
+            gap_contract = ind$gap_contract
+          ))
+        }
         if (!is.null(d$fingerprint) && !identical(d$fingerprint, current_fingerprint)) {
           rlang::abort(
             sprintf("Registered indicator '%s' no longer matches the fingerprint stored in the run config.", id),
@@ -1444,7 +1496,8 @@ ledgr_feature_defs_from_config <- function(cfg) {
           requires_bars = ind$requires_bars,
           stable_after = if (is.null(d$stable_after)) ind$stable_after else d$stable_after,
           params = if (is.null(d$params)) ind$params else d$params,
-          fingerprint = current_fingerprint
+          fingerprint = current_fingerprint,
+          gap_contract = d$gap_contract %||% ind$gap_contract
         )
         next
       }

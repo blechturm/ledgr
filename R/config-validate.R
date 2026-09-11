@@ -79,6 +79,43 @@ validate_ledgr_config <- function(config) {
   }
   ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
+  if (!is.null(config$availability)) {
+    availability <- config$availability
+    allowed_families <- c("membership", "sessions", "trading_status", "lifetime")
+    if (!is.list(availability) || !isTRUE(availability$active) ||
+        !is.character(availability$declared_families) ||
+        anyNA(availability$declared_families) ||
+        anyDuplicated(availability$declared_families) ||
+        !all(availability$declared_families %in% allowed_families) ||
+        !"sessions" %in% availability$declared_families ||
+        !is.list(availability$valuation_policy) ||
+        !identical(availability$provider_version, ledgr_availability_provider_version())) {
+      rlang::abort(
+        "Config field availability must contain an active, session-backed availability plan.",
+        class = "ledgr_invalid_config"
+      )
+    }
+    ledgr_validate_valuation_policy(
+      structure(availability$valuation_policy, class = c("ledgr_valuation_policy", "list"))
+    )
+    rule <- availability$universe_rule
+    if (!is.null(rule) &&
+        (!is.list(rule) || !identical(rule$type_id, "membership_universe") ||
+         !is.character(rule$universe_id) || length(rule$universe_id) != 1L ||
+         is.na(rule$universe_id) || !nzchar(rule$universe_id))) {
+      rlang::abort(
+        "Config field availability.universe_rule must be a membership-universe rule or NULL.",
+        class = "ledgr_invalid_config"
+      )
+    }
+    if (identical(config$engine$compiled_accounting_model, "spot_fifo")) {
+      rlang::abort(
+        "Compiled spot-FIFO execution is not supported for availability-aware experiments.",
+        class = c("ledgr_compiled_availability_unsupported", "ledgr_invalid_config")
+      )
+    }
+  }
+
   tz <- cfg_get(c("engine", "tz"))
   assert_scalar_chr(tz, "engine.tz")
   if (!identical(tz, "UTC")) {

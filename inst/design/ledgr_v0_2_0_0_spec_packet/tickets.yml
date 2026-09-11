@@ -289,7 +289,7 @@ tickets:
 
   - id: "LDG-2690"
     title: "Availability activation and public policy surface"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2689"]
@@ -302,10 +302,18 @@ tickets:
       - "U20 selected-member and sizing behavior"
       - "Canonical omission and effective-plan disclosure"
       - "Required sessions and valuation policy validation"
+    implementation_notes:
+      - >-
+        Added public universe and valuation policies, presence-driven
+        activation, and effective-plan disclosure.
+      - >-
+        Active runs require sessions and valuation; fixed baskets and dense
+        config omission remain unchanged.
+      - "Availability-aware compiled requests fail before execution."
 
   - id: "LDG-2691"
     title: "Availability provider pulse axis and stable-key state"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2690"]
@@ -319,10 +327,21 @@ tickets:
       - "U6 empty-axis callback and state preservation"
       - "U23 exit/re-entry and asset-state lifecycle"
       - "Axis ordering and dense-context parity"
+    implementation_notes:
+      - >-
+        Added the internal provider, dynamic decision axes, context planes, and
+        stable-key asset state.
+      - >-
+        The later-knowledge status fixture detects effective-time versus
+        knowledge-time precedence.
+      - "Provider code contains no valuation, affordability, risk, or fill policy."
+      - >-
+        Review follow-up normalizes both membership representations in stable-ID
+        order and detects asset-state pruning, re-entry, invalid keys, and mark age.
 
   - id: "LDG-2692"
     title: "Strict expected-session feature semantics"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2691"]
@@ -335,6 +354,17 @@ tickets:
       - "Unsupported indicator fail-before-strategy"
       - "U24 whole-feed outage breaks windows"
       - "Future-fact/cache prefix invariance"
+    implementation_notes:
+      - >-
+        Added strict expected-session windows for SMA and returns across
+        scalar, series, and cache paths.
+      - >-
+        Whole-feed gaps invalidate affected windows and unsupported indicators
+        fail before strategy use.
+      - "Strict-gap semantics enter active feature identity while dense identity remains unchanged."
+      - >-
+        Review follow-up omits gap_contract from dense feature definitions and
+        compares annotated and unannotated dense config hashes.
 
   - id: "LDG-2693"
     title: "Availability target restrictions and helper safety"

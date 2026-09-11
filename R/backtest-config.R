@@ -86,9 +86,12 @@ ledgr_config <- function(snapshot,
                          db_path = NULL,
                          control = list(),
                          run_id = NULL,
-                         opening = NULL,
-                         seed = NULL,
-                         compiled_accounting_model = NULL) {
+                          opening = NULL,
+                          seed = NULL,
+                          compiled_accounting_model = NULL,
+                          availability = NULL,
+                          universe_rule = NULL,
+                          valuation_policy = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -194,13 +197,36 @@ ledgr_config <- function(snapshot,
       defs <- lapply(features, function(feat) {
         if (inherits(feat, "ledgr_indicator")) {
           ledgr_indicator_register(feat)
-          return(list(
+          if (isTRUE(availability$active) &&
+              !identical(feat$gap_contract, "strict_window")) {
+            rlang::abort(
+              sprintf(
+                paste0(
+                  "Availability-aware execution does not support indicator '%s' ",
+                  "without `gap_contract = \"strict_window\"`."
+                ),
+                feat$id
+              ),
+              class = c(
+                "ledgr_indicator_gap_unsupported",
+                "ledgr_invalid_experiment_features",
+                "ledgr_invalid_experiment"
+              ),
+              indicator_ids = feat$id
+            )
+          }
+          def <- list(
             id = feat$id,
             params = feat$params,
             requires_bars = feat$requires_bars,
             stable_after = feat$stable_after,
             fingerprint = ledgr_indicator_fingerprint(feat)
-          ))
+          )
+          if (isTRUE(availability$active)) {
+            if (!is.null(feat$gap_contract)) def$gap_contract <- feat$gap_contract
+            def$fingerprint <- ledgr_active_feature_fingerprint(def)
+          }
+          return(def)
         }
         feat
       })
@@ -241,6 +267,16 @@ ledgr_config <- function(snapshot,
       snapshot_db_path = snapshot$db_path
     )
   )
+
+  if (isTRUE(availability$active)) {
+    config$availability <- list(
+      active = TRUE,
+      declared_families = as.character(availability$declared_families),
+      universe_rule = if (is.null(universe_rule)) NULL else unclass(universe_rule),
+      valuation_policy = unclass(valuation_policy),
+      provider_version = ledgr_availability_provider_version()
+    )
+  }
 
   if (!is.null(run_id)) config$run_id <- run_id
 

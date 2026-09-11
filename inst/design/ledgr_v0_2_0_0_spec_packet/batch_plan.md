@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-6 complete after review. Batches 7-11 are pending.
+Status: Batches 0-7 complete after review. Batches 8-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -408,7 +408,7 @@ Implementation evidence:
 
 ## Batch 7 - Activation Provider State And Strict Features
 
-Status: Pending.
+Status: Complete after review.
 
 Tickets:
 
@@ -437,6 +437,32 @@ Exit criteria:
 
 - the same ordinary strategy reaches dense and active contexts;
 - no shared-fold affordability, valuation, or fill policy is implemented here.
+
+Implementation notes:
+
+- Added presence-driven activation, public membership-universe and stale-mark
+  valuation policies, and effective-plan disclosure. Active experiments require
+  complete sessions and an explicit valuation policy; fixed baskets remain
+  fixed, and canonical omission preserves the dense config shape.
+- Added one internal provider with fact, decision, execution, history, and
+  identity operations. The public axis is ordered members followed by held
+  nonmembers in C-locale stable-ID order; context planes and stable-key
+  `asset_state` are derived without adding economics to the provider.
+- The routed Batch 6 coverage gap now has a detecting provider fixture: a
+  higher-precedence status assertion that is effective before it is knowable
+  does not shadow a lower-precedence tie until the knowledge cutoff.
+- Added strict expected-session feature windows and active-only feature-engine
+  identity. SMA and returns are certified; whole-feed gaps invalidate affected
+  windows, and unsupported indicators fail before strategy use.
+- Availability-aware compiled spot-FIFO requests fail before execution with
+  `ledgr_compiled_availability_unsupported`; dense compiled behavior is
+  unchanged.
+- Review follow-up keeps `gap_contract` out of dense feature definitions and
+  proves that annotated and unannotated dense indicators retain one
+  `config_hash`. Both membership representations now normalize members in
+  C-locale stable-ID order before appending stable held nonmembers.
+- Detecting tests pin asset-state exit cleanup, empty re-entry state, typed
+  `ledgr_invalid_strategy_state` failures, and nonzero session-based mark age.
 
 ## Batch 8 - Shared-Fold Availability Economics
 

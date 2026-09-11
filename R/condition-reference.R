@@ -49,6 +49,33 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
+#' @section Availability classes:
+#' `ledgr_invalid_valuation_policy` is raised for malformed stale-valuation
+#' policies or constructor arguments.
+#'
+#' `ledgr_availability_inactive` is raised when a membership-universe rule is
+#' requested without the fact families needed to activate availability-aware
+#' execution.
+#'
+#' `ledgr_availability_sessions_required` and
+#' `ledgr_valuation_policy_required` are raised when availability-aware
+#' execution lacks a complete session calendar or an explicit valuation
+#' policy, respectively.
+#'
+#' `ledgr_membership_universe_not_found` is raised when a membership-universe
+#' rule names a universe that is not declared by the snapshot.
+#'
+#' `ledgr_compiled_availability_unsupported` is raised before execution when
+#' availability-aware execution is combined with the compiled spot-FIFO path.
+#'
+#' `ledgr_indicator_gap_unsupported` is raised before strategy use when an
+#' availability-aware feature does not declare the supported strict-window gap
+#' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
+#' implementations disagree at the end of a finite strict window.
+#'
+#' `ledgr_invalid_strategy_state` is raised when availability-aware asset state
+#' is not a named list keyed only by instruments on the current public axis.
+#'
 #' @section Saved sweep classes:
 #' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
 #' non-whitespace ASCII character scalar of at most 256 bytes.
@@ -301,6 +328,12 @@
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
+#' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
+#' @aliases ledgr_availability_sessions_required ledgr_valuation_policy_required
+#' @aliases ledgr_membership_universe_not_found
+#' @aliases ledgr_compiled_availability_unsupported
+#' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
+#' @aliases ledgr_invalid_strategy_state
 #' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch

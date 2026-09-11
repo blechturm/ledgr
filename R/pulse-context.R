@@ -333,7 +333,8 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                feature_ids = NULL,
                                                features_wide = NULL,
                                                active_alias_map = NULL,
-                                               id_to_idx = NULL) {
+                                               id_to_idx = NULL,
+                                               availability = NULL) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
   ctx <- ledgr_attach_feature_helpers(
     ctx,
@@ -345,7 +346,41 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     features_wide = features_wide,
     active_alias_map = active_alias_map
   )
-  ledgr_refresh_pulse_context_lookup(ctx, bars = bars, positions = positions, universe = universe, id_to_idx = id_to_idx)
+  ledgr_refresh_pulse_context_lookup(
+    ctx,
+    bars = bars,
+    positions = positions,
+    universe = universe,
+    id_to_idx = id_to_idx,
+    availability = availability
+  )
+}
+
+ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe) {
+  universe <- as.character(universe)
+  private_universe <- as.character(private_universe)
+  feature <- ctx$feature
+  ctx$feature <- function(instrument_id, feature_name, default = NA_real_) {
+    if (!instrument_id %in% universe) {
+      rlang::abort(
+        sprintf(
+          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
+          instrument_id,
+          ledgr_pulse_context_universe_message(universe)
+        ),
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+    feature(instrument_id, feature_name, default = default)
+  }
+  feature_vector <- ctx$.feature_vector
+  context_index <- match(universe, private_universe)
+  ctx$.feature_vector <- function(feature_name, default = NA_real_) {
+    feature_vector(feature_name, default = default)[context_index]
+  }
+  ctx$.pulse_lookup$feature_vector <- ctx$.feature_vector
+  ctx$vec <- ledgr_pulse_context_vec(ctx$.pulse_lookup)
+  ctx
 }
 
 ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = NULL, active_alias_map = NULL) {
@@ -481,7 +516,8 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
                                                bars = ctx$bars,
                                                positions = ctx$positions,
                                                universe = ctx$universe,
-                                               id_to_idx = NULL) {
+                                               id_to_idx = NULL,
+                                               availability = NULL) {
   lookup <- ctx$.pulse_lookup
   if (!is.environment(lookup)) {
     rlang::abort("Pulse context accessors have not been initialized.", class = "ledgr_invalid_pulse_context")
@@ -494,6 +530,7 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
   lookup$id_to_idx <- ledgr_pulse_context_id_to_idx(universe, id_to_idx)
   lookup$feature_vector <- ctx$.feature_vector
   lookup$bar_index <- ledgr_pulse_context_bar_index(bars, universe)
+  lookup$availability <- availability
   ctx$vec <- ledgr_pulse_context_vec(lookup)
 
   if (is.environment(ctx)) {
@@ -584,7 +621,7 @@ ledgr_pulse_context_vec <- function(lookup) {
     feature_vector(feature_id)
   }
 
-  list(
+  out <- list(
     id = as.character(lookup$universe %||% character()),
     open = ledgr_pulse_context_vector_field(lookup, "open"),
     high = ledgr_pulse_context_vector_field(lookup, "high"),
@@ -594,6 +631,23 @@ ledgr_pulse_context_vec <- function(lookup) {
     positions = ledgr_pulse_context_vector_positions(lookup),
     feature = feature
   )
+  availability <- lookup$availability
+  if (is.list(availability)) {
+    ids <- out$id
+    take <- function(name, default) {
+      value <- availability[[name]]
+      if (is.null(value)) return(rep(default, length(ids)))
+      unname(value[ids])
+    }
+    out$member <- as.logical(take("member", FALSE))
+    out$held <- as.logical(take("held", FALSE))
+    out$target_restricted <- as.logical(take("target_restricted", FALSE))
+    out$target_restriction_reason <- as.character(take("target_restriction_reason", ""))
+    out$admissible <- out$member & !out$target_restricted
+    out$priced <- as.logical(take("priced", FALSE))
+    out$mark_age <- as.integer(take("mark_age", NA_integer_))
+  }
+  out
 }
 
 ledgr_pulse_context_bar_index <- function(bars, universe) {
@@ -818,8 +872,13 @@ ledgr_validate_pulse_context <- function(ctx) {
 
   ctx$ts_utc <- ledgr_normalize_ts_utc(ctx$ts_utc)
 
-  if (!is.character(ctx$universe) || length(ctx$universe) < 1 || anyNA(ctx$universe) || any(!nzchar(ctx$universe))) {
-    rlang::abort("PulseContext `universe` must be a non-empty character vector of non-empty strings.", class = "ledgr_invalid_pulse_context")
+  allow_empty <- isTRUE(ctx$availability_active)
+  if (!is.character(ctx$universe) || (!allow_empty && length(ctx$universe) < 1) ||
+      anyNA(ctx$universe) || any(!nzchar(ctx$universe))) {
+    rlang::abort(
+      "PulseContext `universe` must be a character vector of non-empty strings.",
+      class = "ledgr_invalid_pulse_context"
+    )
   }
   if (anyDuplicated(ctx$universe)) {
     rlang::abort("PulseContext `universe` must not contain duplicate instrument_ids.", class = "ledgr_invalid_pulse_context")

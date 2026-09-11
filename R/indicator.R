@@ -10,6 +10,8 @@
 #' @param source Indicator source label. Built-in ledgr indicators use
 #'   `"ledgr"`, TTR-backed indicators use `"TTR"`, and user/adapted indicators
 #'   use `"custom"`.
+#' @param gap_contract Optional availability-aware gap contract. Version 1
+#'   supports only `"strict_window"`.
 #'
 #' @return A `ledgr_indicator` object.
 #' @examples
@@ -26,7 +28,8 @@ ledgr_indicator <- function(id,
                             params = list(),
                             stable_after = requires_bars,
                             series_fn = NULL,
-                            source = "custom") {
+                            source = "custom",
+                            gap_contract = NULL) {
   ledgr_assert_no_param_refs(
     list(id = id, requires_bars = requires_bars, params = params, stable_after = stable_after),
     "ledgr_indicator()"
@@ -64,6 +67,14 @@ ledgr_indicator <- function(id,
   if (!is.character(source) || length(source) != 1L || is.na(source) || !(source %in% c("ledgr", "TTR", "custom"))) {
     rlang::abort("`source` must be one of 'ledgr', 'TTR', or 'custom'.", class = "ledgr_invalid_args")
   }
+  if (!is.null(gap_contract) &&
+      (!is.character(gap_contract) || length(gap_contract) != 1L ||
+       is.na(gap_contract) || !identical(gap_contract, "strict_window"))) {
+    rlang::abort(
+      "`gap_contract` must be NULL or \"strict_window\".",
+      class = "ledgr_invalid_args"
+    )
+  }
   ledgr_assert_indicator_fn_pure(fn)
   ledgr_assert_indicator_safe(fn)
   if (!is.null(series_fn)) {
@@ -82,7 +93,8 @@ ledgr_indicator <- function(id,
       requires_bars = as.integer(requires_bars),
       stable_after = as.integer(stable_after),
       params = params,
-      source = source
+      source = source,
+      gap_contract = gap_contract
     ),
     class = "ledgr_indicator"
   )

@@ -153,8 +153,10 @@ print.ledgr_opening <- function(x, ...) {
 #'   `ledgr_feature_map()` with `ledgr_param()`, `ledgr_feature_grid()`,
 #'   `ledgr_strategy_grid()`, and `ledgr_grid_cross()`.
 #' @param opening A `ledgr_opening` object.
-#' @param universe Character vector of instrument IDs, or `NULL` for all
-#'   instruments in the snapshot.
+#' @param universe Character vector of instrument IDs, `NULL` for all
+#'   instruments in the snapshot, or a rule from [ledgr_universe_members()].
+#' @param valuation_policy Optional policy from [ledgr_valuation_stale()]. It is
+#'   required whenever availability facts or a membership rule are active.
 #' @param timing_model Timing model object. Defaults to
 #'   `ledgr_timing_next_open()`. The timing model proposes fills; cost models
 #'   resolve fill prices and explicit fees.
@@ -210,6 +212,7 @@ ledgr_experiment <- function(snapshot,
                              features = list(),
                              opening = ledgr_opening(cash = 100000),
                              universe = NULL,
+                             valuation_policy = NULL,
                              timing_model = ledgr_timing_next_open(),
                              cost_model,
                              risk_chain = ledgr_risk_none(),
@@ -235,10 +238,23 @@ ledgr_experiment <- function(snapshot,
   ledgr_experiment_validate_snapshot(snapshot)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
-  universe <- ledgr_experiment_normalize_universe(universe, universe_all)
+  availability <- ledgr_availability_validate_experiment(
+    snapshot,
+    universe,
+    valuation_policy
+  )
+  universe_rule <- availability$universe_rule
+  execution_universe <- if (is.null(universe_rule)) {
+    ledgr_experiment_normalize_universe(universe, universe_all)
+  } else {
+    universe_all
+  }
   ledgr_experiment_validate_strategy(strategy)
   features_mode <- ledgr_experiment_validate_features(features)
   features <- ledgr_experiment_copy_features(features, features_mode)
+  if (isTRUE(availability$active)) {
+    ledgr_availability_validate_features(features, features_mode)
+  }
 
   if (!is.null(fill_model)) {
     ledgr_legacy_fill_model_abort()
@@ -249,7 +265,7 @@ ledgr_experiment <- function(snapshot,
   if (!inherits(opening, "ledgr_opening")) {
     rlang::abort("`opening` must be a ledgr_opening object.", class = "ledgr_invalid_experiment")
   }
-  ledgr_experiment_validate_opening(opening, universe)
+  ledgr_experiment_validate_opening(opening, execution_universe)
 
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
@@ -273,14 +289,13 @@ ledgr_experiment <- function(snapshot,
     rlang::abort("`execution_mode` must be \"audit_log\" or \"db_live\".", class = "ledgr_invalid_experiment")
   }
 
-  structure(
-    list(
+  out <- list(
       snapshot = snapshot,
       strategy = strategy,
       features = features,
       features_mode = features_mode,
       opening = opening,
-      universe = universe,
+      universe = execution_universe,
       timing_model = timing_model,
       cost_model = cost_model,
       cost_model_hash = cost_identity$cost_model_hash,
@@ -291,9 +306,17 @@ ledgr_experiment <- function(snapshot,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
       metric_context = metric_context
-    ),
-    class = "ledgr_experiment"
-  )
+    )
+  if (isTRUE(availability$active)) {
+    out$availability <- list(
+      active = TRUE,
+      declared_families = availability$declared_families,
+      headers = availability$headers
+    )
+    out$universe_rule <- universe_rule
+    out$valuation_policy <- valuation_policy
+  }
+  structure(out, class = "ledgr_experiment")
 }
 
 ledgr_experiment_validate_snapshot <- function(snapshot) {

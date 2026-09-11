@@ -1794,6 +1794,7 @@ ledgr_memory_output_handler <- function(run_id) {
     )
   }
   handler$pending_event_count <- function() 0L
+  handler$pending_state_count <- function() 0L
   handler$flush_pending <- function() invisible(TRUE)
   handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
     write_res <- ledgr_fill_event_payload(

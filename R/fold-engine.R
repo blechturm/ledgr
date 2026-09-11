@@ -60,6 +60,56 @@ ledgr_fold_positions_snapshot <- function(position_vec, instrument_ids) {
   stats::setNames(as.numeric(position_vec), instrument_ids)
 }
 
+ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FALSE) {
+  if (is.null(state_value)) state_value <- list()
+  if (!is.list(state_value)) {
+    rlang::abort(
+      "Availability-aware strategy state must be a list.",
+      class = "ledgr_invalid_strategy_state"
+    )
+  }
+  asset_state <- state_value$asset_state
+  if (is.null(asset_state)) asset_state <- list()
+  if (!is.list(asset_state)) {
+    rlang::abort(
+      "`state_update$asset_state` must be a named list.",
+      class = "ledgr_invalid_strategy_state"
+    )
+  }
+  if (length(asset_state) > 0L &&
+      (is.null(names(asset_state)) || anyNA(names(asset_state)) ||
+       any(!nzchar(names(asset_state))) || anyDuplicated(names(asset_state)))) {
+    rlang::abort(
+      "`state_update$asset_state` must use unique non-empty stable instrument IDs.",
+      class = "ledgr_invalid_strategy_state"
+    )
+  }
+  extra <- setdiff(names(asset_state), axis)
+  if (length(extra) > 0L && !isTRUE(drop_exited)) {
+    rlang::abort(
+      sprintf(
+        "`state_update$asset_state` contains IDs outside the current axis: %s.",
+        paste(extra, collapse = ", ")
+      ),
+      class = "ledgr_invalid_strategy_state"
+    )
+  }
+  normalized <- stats::setNames(vector("list", length(axis)), axis)
+  for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+  state_value$asset_state <- normalized
+  state_value
+}
+
+ledgr_fold_availability_mark_age <- function(bars_mat, instrument_ids, axis, pulse_idx) {
+  out <- stats::setNames(rep(NA_integer_, length(axis)), axis)
+  for (id in axis) {
+    row <- match(id, instrument_ids)
+    observed <- which(is.finite(bars_mat$close[row, seq_len(pulse_idx)]))
+    if (length(observed) > 0L) out[[id]] <- as.integer(pulse_idx - utils::tail(observed, 1L))
+  }
+  out
+}
+
 ledgr_fold_warn_final_bar_no_fill <- function(fill) {
   if (is.character(fill$warn_code) &&
       identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
@@ -196,6 +246,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
     execution$compiled_accounting_model
   )
   use_compiled_spot_fifo <- identical(compiled_accounting_model, "spot_fifo")
+  availability_provider <- execution$availability_provider
+  availability_active <- !is.null(availability_provider)
   if (use_compiled_spot_fifo) {
     ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
   }
@@ -289,6 +341,43 @@ ledgr_execute_fold <- function(execution, output_handler) {
       if (!is.data.frame(features_wide_current)) {
         features_wide_current <- empty_df
       }
+
+      availability_view <- NULL
+      context_ids <- instrument_ids
+      if (availability_active) {
+        full_positions <- ledgr_fold_positions_snapshot(state$positions, instrument_ids)
+        availability_view <- availability_provider$decision_view(ts, full_positions)
+        context_ids <- as.character(availability_view$axis)
+        keep_bars <- match(context_ids, as.character(bars_current$instrument_id), nomatch = 0L)
+        bars_current <- bars_current[keep_bars[keep_bars > 0L], , drop = FALSE]
+        if (nrow(features_current) > 0L) {
+          features_current <- features_current[
+            as.character(features_current$instrument_id) %in% context_ids,
+            ,
+            drop = FALSE
+          ]
+        }
+        if (nrow(features_wide_current) > 0L && "instrument_id" %in% names(features_wide_current)) {
+          features_wide_current <- features_wide_current[
+            as.character(features_wide_current$instrument_id) %in% context_ids,
+            ,
+            drop = FALSE
+          ]
+        }
+        current_close <- bars_mat$close[match(context_ids, instrument_ids), i]
+        availability_view$priced <- stats::setNames(is.finite(current_close), context_ids)
+        availability_view$mark_age <- ledgr_fold_availability_mark_age(
+          bars_mat,
+          instrument_ids,
+          context_ids,
+          i
+        )
+        state_prev_mem <- ledgr_fold_asset_state_normalize(
+          state_prev_mem,
+          context_ids,
+          drop_exited = TRUE
+        )
+      }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
         t_feats <- ledgr_time_elapsed(sample_start, sample_now)
@@ -320,11 +409,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
       # The pulse context is the only strategy-visible boundary in the fold.
       # Everything below this point must preserve no-lookahead: bars/features are
       # the current pulse view, while fills are resolved against the next bar.
-      positions_snapshot <- ledgr_fold_positions_snapshot(state$positions, instrument_ids)
+      context_position_idx <- match(context_ids, instrument_ids)
+      positions_snapshot <- ledgr_fold_positions_snapshot(
+        state$positions[context_position_idx],
+        context_ids
+      )
       ctx <- list(
         run_id = run_id,
         ts_utc = ts_iso,
-        universe = instrument_ids,
+        universe = context_ids,
         bars = bars_current,
         feature_table = features_current,
         positions = positions_snapshot,
@@ -335,8 +428,12 @@ ledgr_execute_fold <- function(execution, output_handler) {
         state_prev = state_prev_mem,
         safety_state = "GREEN"
       )
+      if (availability_active) {
+        ctx$availability_active <- TRUE
+        ctx$members <- as.character(availability_view$members)
+      }
       class(ctx) <- "ledgr_pulse_context"
-      ctx <- if (!is.null(fast_context)) {
+      ctx <- if (!is.null(fast_context) && !availability_active) {
         ledgr_update_fast_pulse_context_helpers(
           ctx,
           fast_context = fast_context,
@@ -354,15 +451,19 @@ ledgr_execute_fold <- function(execution, output_handler) {
           ctx,
           bars = bars_current,
           features = features_current,
-          positions = state$positions,
-          universe = instrument_ids,
+          positions = positions_snapshot,
+          universe = context_ids,
           projection = runtime_projection,
           pulse_idx = i,
           feature_ids = def_ids,
           features_wide = features_wide_current,
           active_alias_map = active_alias_map,
-          id_to_idx = id_to_idx
+          id_to_idx = if (availability_active) NULL else id_to_idx,
+          availability = availability_view
         )
+      }
+      if (availability_active) {
+        ctx <- ledgr_filter_pulse_context_features(ctx, context_ids, instrument_ids)
       }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
@@ -408,10 +509,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
       targets <- ledgr_validate_strategy_targets(
         result$targets,
-        instrument_ids
+        context_ids,
+        allow_empty = availability_active
       )
-      targets <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
-      targets <- ledgr_validate_post_risk_targets(targets, instrument_ids)
+      if (length(targets) > 0L) {
+        targets <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
+        targets <- ledgr_validate_post_risk_targets(targets, context_ids)
+      }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
         t_target <- t_target + ledgr_time_elapsed(sample_start, sample_now)
@@ -535,6 +639,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
         }
       }
 
+      if (availability_active) {
+        if (is.null(result$state_update)) {
+          result$state_update <- state_prev_mem
+        }
+        result$state_update <- ledgr_fold_asset_state_normalize(
+          result$state_update,
+          context_ids
+        )
+      }
       if (is.list(result) && !is.null(result$state_update)) {
         if (sample_telemetry) sample_start <- ledgr_time_now()
         state_json <- canonical_json(result$state_update)
@@ -571,7 +684,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
       if (checkpoint_every > 0L &&
           processed %% checkpoint_every == 0L &&
           !identical(event_mode, "live") &&
-          output_handler$pending_event_count() > 0L) {
+          (output_handler$pending_event_count() > 0L ||
+           output_handler$pending_state_count() > 0L)) {
         output_handler$flush_pending()
       }
 
@@ -585,7 +699,9 @@ ledgr_execute_fold <- function(execution, output_handler) {
       }
     }
 
-    if (!identical(event_mode, "live") && output_handler$pending_event_count() > 0L) {
+    if (!identical(event_mode, "live") &&
+        (output_handler$pending_event_count() > 0L ||
+         output_handler$pending_state_count() > 0L)) {
       output_handler$flush_pending()
     }
     invisible(NULL)
