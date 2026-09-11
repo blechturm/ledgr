@@ -43,7 +43,10 @@ testthat::test_that("provider resolves facts only after effective and knowledge 
   )
   testthat::expect_named(
     provider,
-    c("facts", "decision_view", "execution_view", "history", "identity", "sessions")
+    c(
+      "facts", "decision_view", "execution_view", "history", "identity",
+      "sessions", "valuation_policy"
+    )
   )
   testthat::expect_identical(
     unname(provider$facts(as.POSIXct("2020-01-02", tz = "UTC"))$status),

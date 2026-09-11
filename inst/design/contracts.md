@@ -331,6 +331,42 @@ The strategy preflight boundary originated in
   compiled spot-FIFO request fails before execution with
   `ledgr_compiled_availability_unsupported`; dense compiled behavior is
   unchanged.
+- Availability-aware strategy targets may hold or exit a restricted ID.
+  Unrestricted held nonmembers may also reduce without reversing sign.
+  Post-risk targets must be zero or preserve the strategy target's sign while
+  not increasing its magnitude. New or enlarged short exposure fails before
+  any fill from that pulse is accepted; existing short quantities remain
+  algebraically holdable and coverable without defining short financing.
+- Availability-aware rebalance helpers initialize held nonmembers at their
+  current quantity, reserve their absolute marked exposure, and size only
+  current members from accepted current closes. Missing sizing evidence fails
+  with `ledgr_target_sizing_unavailable`; the dense warn-and-zero path is
+  unchanged. Raw full named numeric target vectors remain literal.
+- Fresh and policy-permitted stale closes may value holdings and feed target
+  risk through the separate risk-mark plane. Stale marks never become observed
+  closes or execution prices. Held marks age on the declared venue-open-session
+  clock, including during known inactivity, and an exhausted mark stops before
+  a new decision.
+- Active affordability evaluates accepted cash-generating reductions first,
+  then cash-consuming fills in C-locale stable-ID order against the fixed
+  `1e-8` tolerance. Rejected sales fund nothing. Accepted fills remain emitted
+  in decision-axis order, and recorded cash must reconcile with the virtual
+  ledger without implying an intrapulse cash floor.
+- The durable availability reason-code vocabulary is closed for this schema.
+  Decision evidence uses `decision_recorded` and `empty_public_domain`.
+  Restrictions use `trading_halted`, `quotation_only`, `status_unknown`,
+  `status_unknown_or_conflicting`, and `lifetime_inactive`. Risk evidence uses
+  `stale_mark_reduction`, `stale_mark_pass_through`, and
+  `risk_mark_unavailable`. Classed target and risk failures use
+  `restricted_target`, `nonmember_exposure_increase`,
+  `post_risk_inadmissible`, and `short_exposure_unsupported`. Execution
+  evidence uses `insufficient_cash`, `execution_bar_missing`,
+  `membership_changed_before_execution`, and `final_pulse_no_execution`.
+  Reconciliation uses `affordability_reconciled` and
+  `affordability_reconciliation_failed`. Terminal stops use
+  `valuation_horizon_exhausted` and `terminal_settlement_unsupported`.
+  Unexpected unclassed fold errors use `fold_exception`; an uncomplicated
+  accepted fill has an empty reason code.
 
 ## Persistence Contract
 
@@ -350,6 +386,16 @@ The strategy preflight boundary originated in
   point-in-time fact and quarantine evidence. Migration is transactional and
   writes its version marker last. Existing sealed snapshots retain their stored
   hashes and are never resealed or rehash-migrated.
+- Experiment-store schema 114 adds `run_completion` and `run_diagnostics`.
+  Availability-aware direct runs persist one decision trace row per invoked
+  axis ID plus ordered risk, execution, reconciliation, and stop evidence.
+  Expected valuation exhaustion, unavailable risk marks, unsupported terminal
+  settlement, and reconciliation stops return through the normal fold
+  transaction and finalize as `INCOMPLETE`, preserving only accepted prefix
+  economics. Unexpected fold exceptions remain `FAILED`, roll back the fold
+  transaction, and record error diagnostics only after that rollback.
+  Deliberately interrupted `RUNNING` invocations retain their decision trace;
+  resumed invocations append rather than replace those diagnostic rows.
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or

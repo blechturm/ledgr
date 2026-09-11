@@ -247,7 +247,13 @@ testthat::test_that("availability runtime and strict-feature contracts stay boun
     "ledgr_compiled_availability_unsupported",
     "ledgr_indicator_gap_unsupported",
     "ledgr_indicator_gap_parity",
-    "ledgr_invalid_strategy_state"
+    "ledgr_invalid_strategy_state",
+    "ledgr_target_sizing_unavailable",
+    "ledgr_restricted_target",
+    "ledgr_nonmember_exposure_increase",
+    "ledgr_post_risk_inadmissible",
+    "ledgr_short_exposure_unsupported",
+    "ledgr_affordability_reconciliation_failed"
   )
   for (class in availability_classes) {
     testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
@@ -1615,6 +1621,41 @@ testthat::test_that("availability snapshot identity and quarantine contracts are
   testthat::expect_match(contract, "never resealed or rehash-migrated", fixed = TRUE)
 })
 
+testthat::test_that("availability economics and controlled-stop contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(path), "design contracts unavailable")
+  contract <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(contract, "Unrestricted held nonmembers may also reduce", fixed = TRUE)
+  testthat::expect_match(contract, "New or enlarged short exposure fails before", fixed = TRUE)
+  testthat::expect_match(contract, "reserve their absolute marked exposure", fixed = TRUE)
+  testthat::expect_match(contract, "Stale marks never become observed", fixed = TRUE)
+  testthat::expect_match(contract, "Rejected sales fund nothing", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 114", fixed = TRUE)
+  testthat::expect_match(contract, "finalize as `INCOMPLETE`", fixed = TRUE)
+  testthat::expect_match(contract, "record error diagnostics only after that rollback", fixed = TRUE)
+  testthat::expect_match(contract, "resumed invocations append rather than replace", fixed = TRUE)
+  reason_codes <- c(
+    "decision_recorded", "empty_public_domain", "trading_halted",
+    "quotation_only", "status_unknown", "status_unknown_or_conflicting",
+    "lifetime_inactive", "stale_mark_reduction", "stale_mark_pass_through",
+    "restricted_target", "nonmember_exposure_increase",
+    "post_risk_inadmissible", "short_exposure_unsupported",
+    "insufficient_cash", "execution_bar_missing",
+    "membership_changed_before_execution", "final_pulse_no_execution",
+    "affordability_reconciled", "valuation_horizon_exhausted",
+    "terminal_settlement_unsupported", "risk_mark_unavailable",
+    "affordability_reconciliation_failed", "fold_exception"
+  )
+  for (code in reason_codes) {
+    testthat::expect_match(contract, code, fixed = TRUE)
+  }
+  testthat::expect_match(news, "`status_halted` to `trading_halted`", fixed = TRUE)
+  testthat::expect_match(news, "`status_quotation_only` to `quotation_only`", fixed = TRUE)
+})
+
 testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
   data_doc <- paste(readLines(ledgr_test_source_vignette("data-input-and-snapshots.qmd"), warn = FALSE), collapse = "\n")
   store_doc <- paste(readLines(ledgr_test_source_vignette("experiment-store.qmd"), warn = FALSE), collapse = "\n")
@@ -2529,18 +2570,28 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(
     docs$batches,
     paste0(
-      "Status: Batches 0-7 complete after review[.]",
-      "[[:space:]]+Batches 8-11 are pending[.]"
+      "Status: Batches 0-8 complete after review[.]",
+      "[[:space:]]+Batches 9-11 are pending[.]"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
-      "Batches 0-7 complete after review[.]",
-      "[[:space:]]+Batches 8-11 are pending"
+      "Batches 0-8 complete after review[.]",
+      "[[:space:]]+Batches 9-11 are pending"
     )
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
+  for (id in c("LDG-2693", "LDG-2694", "LDG-2695", "LDG-2696")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
   testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
   testthat::expect_match(

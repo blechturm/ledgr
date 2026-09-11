@@ -112,7 +112,7 @@ ledgr_create_schema <- function(con) {
       gregexpr("'[^']+'", status_expr)
     )))
     values <- gsub("^'|'$", "", values)
-    setequal(values, c("CREATED", "RUNNING", "DONE", "FAILED"))
+    setequal(values, c("CREATED", "RUNNING", "DONE", "INCOMPLETE", "FAILED"))
   }
 
   runs_is_compliant <- function() {
@@ -141,7 +141,7 @@ ledgr_create_schema <- function(con) {
       config_json TEXT,
       config_hash TEXT,
       snapshot_id TEXT,
-      status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','FAILED')),
+      status TEXT NOT NULL CHECK (status IN ('CREATED','RUNNING','DONE','INCOMPLETE','FAILED')),
       error_msg TEXT,
       label TEXT,
       archived BOOLEAN NOT NULL DEFAULT FALSE,
@@ -292,13 +292,16 @@ ledgr_create_schema <- function(con) {
         }
         if (col == "created_at_utc") return("CURRENT_TIMESTAMP")
         if (col == "status") return("'CREATED'")
+        if (col == "archived") return("FALSE")
+        if (col == "schema_version") return(as.character(ledgr_experiment_store_schema_version))
         "NULL"
       }
 
       target_cols <- c(
         "run_id", "created_at_utc", "engine_version", "config_json", "config_hash",
-        "snapshot_id", "status", "error_msg", "metric_context_json",
-        "metric_context_hash", "metric_context_version"
+        "snapshot_id", "status", "error_msg", "label", "archived",
+        "archived_at_utc", "archive_reason", "execution_mode", "schema_version",
+        "metric_context_json", "metric_context_hash", "metric_context_version"
       )
       insert_sql <- sprintf(
         "INSERT INTO runs_new (%s) SELECT %s FROM runs",

@@ -24,6 +24,12 @@
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_strategy_state}
+\alias{ledgr_target_sizing_unavailable}
+\alias{ledgr_restricted_target}
+\alias{ledgr_nonmember_exposure_increase}
+\alias{ledgr_post_risk_inadmissible}
+\alias{ledgr_short_exposure_unsupported}
+\alias{ledgr_affordability_reconciliation_failed}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -187,6 +193,25 @@ implementations disagree at the end of a finite strict window.
 
 \code{ledgr_invalid_strategy_state} is raised when availability-aware asset state
 is not a named list keyed only by instruments on the current public axis.
+
+\code{ledgr_target_sizing_unavailable} is raised when an availability-aware
+rebalance helper cannot obtain a positive accepted current close or a
+permissible mark needed to reserve held nonmember exposure.
+
+\code{ledgr_restricted_target} and \code{ledgr_nonmember_exposure_increase} are raised
+when availability-aware strategy output violates the decision-time target
+contract. \code{ledgr_post_risk_inadmissible} is raised when a risk step does not
+preserve or reduce the strategy target. These conditions carry the affected
+instrument IDs.
+
+\code{ledgr_short_exposure_unsupported} is raised before fill acceptance when an
+availability-aware target would open or enlarge short exposure. Existing
+short quantities may be held or reduced; this does not define short-account
+financing.
+
+\code{ledgr_affordability_reconciliation_failed} is raised when recorded active
+cash diverges from the bounded-affordability virtual ledger beyond the
+engine's fixed tolerance.
 }
 
 \section{Saved sweep classes}{

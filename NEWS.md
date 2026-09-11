@@ -51,11 +51,26 @@
   observations invalidate affected windows, and unsupported gap behavior fails
   before strategy use. Availability-aware compiled spot-FIFO requests also
   fail before execution; dense compiled behavior is unchanged.
+- Added availability-aware target restrictions and helper-safe sizing. Held
+  nonmembers are preserved and reserved by default, unavailable sizing data
+  fails closed, post-risk targets cannot enlarge strategy exposure, and new or
+  enlarged shorts are rejected before any fill can finance another purchase.
+  The pre-release restriction vocabulary is finalized by renaming
+  `status_halted` to `trading_halted` and
+  `status_quotation_only` to `quotation_only`.
+- Added separate fresh/stale valuation and risk marks plus bounded
+  affordability. Accepted reductions fund purchases through a deterministic
+  virtual cash ledger, rejected sales fund nothing, stale marks never price
+  execution, and final cash is reconciled without imposing an intrapulse floor.
+- Added experiment-store schema 114 with direct-run completion and diagnostic
+  evidence. Expected valuation, risk-mark, settlement, and reconciliation
+  stops preserve accepted prefixes as `INCOMPLETE`; unexpected fold errors
+  remain `FAILED` and retain only post-rollback error diagnostics.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-7
-  are complete after review, and Batches 8-11 are pending.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-8
+  are complete after review and Batches 9-11 are pending.
 
 # ledgr 0.1.9.7
 

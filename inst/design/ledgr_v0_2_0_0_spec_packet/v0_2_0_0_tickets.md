@@ -1338,7 +1338,7 @@ scope: strict-gap-cache
 Priority: P0
 Effort: L
 Dependencies: LDG-2692
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1370,6 +1370,19 @@ behavior, post-risk closure, and availability-only short-exposure guard.
 - `test-availability-workflow.R`
 - First-review short-financing fixture
 
+### Implementation Notes
+
+- The shared fold enforces restricted-ID hold/zero, nonmember
+  reduction-only, post-risk closure, and the active short-exposure floor before
+  fill acceptance.
+- Active rebalance sizing preserves held nonmembers, reserves their marked
+  gross exposure, and fails on unavailable current closes. Dense warn-and-zero
+  behavior remains unchanged.
+- Detecting tests cover rejected short financing, explicit `long_only`
+  clipping, existing-short hold/cover algebra, and literal target failures.
+- Review follow-up added an exact near-zero quantity assertion so the short
+  guard cannot acquire the cash tolerance as a quantity tolerance.
+
 ### Source Reference
 
 - Spec Section 2.7 and short-financing regression row
@@ -1388,7 +1401,7 @@ scope: active-admissibility-short-guard
 Priority: P0
 Effort: L
 Dependencies: LDG-2692
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1420,6 +1433,17 @@ stale marks on venue sessions and compute the bound diagnostic gross exposure.
 - U24 whole-feed-outage valuation assertions
 - Risk-hash invariance and fresh-connection checks
 
+### Implementation Notes
+
+- A fold-owned valuation plane resolves current and policy-permitted stale
+  marks on the venue-session clock and supplies risk without changing risk
+  identity or execution prices.
+- Expected mark exhaustion, unavailable new-exposure risk marks, and terminal
+  assertions return typed incomplete outcomes before forbidden work.
+- Gross affected exposure deduplicates IDs, preserves expired references as
+  diagnostic-only evidence, returns unknown for missing nonzero references,
+  and treats specified empty sets and zero quantities explicitly.
+
 ### Source Reference
 
 - Spec Section 2.7; gates U7/U19/U21/U24 and affected-exposure regression row
@@ -1438,7 +1462,7 @@ scope: stale-marks-and-exposure
 Priority: P0
 Effort: L
 Dependencies: LDG-2693, LDG-2694
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1469,6 +1493,18 @@ axis-order events and final-pulse reconciliation.
 - `test-availability-fold.R`
 - Cost/risk/accounting regression tests
 
+### Implementation Notes
+
+- Active proposals resolve costs before a virtual cash ledger credits accepted
+  reductions and evaluates consumers in C-locale stable-ID order against the
+  fixed `1e-8` tolerance.
+- Accepted fills remain in decision-axis order. Rejected sales fund nothing,
+  membership changes are diagnostic-only, and all applicable gate reasons are
+  retained in their fixed order.
+- A reconciliation row records virtual and actual cash plus intended,
+  post-risk, and actual marked gross exposure; mismatches stop before current
+  pulse economics are applied.
+
 ### Source Reference
 
 - Spec Section 2.7; gates U13/U18 and short regression
@@ -1487,7 +1523,7 @@ scope: virtual-ledger-policy
 Priority: P0
 Effort: L
 Dependencies: LDG-2693, LDG-2694, LDG-2695
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1518,6 +1554,21 @@ with durable completion and ordered diagnostic evidence on direct runs.
 - `test-availability-fold.R`
 - `test-availability-parity.R`
 - First-review exception-phase and affected-exposure fixtures
+
+### Implementation Notes
+
+- Experiment-store schema 114 adds keyed `run_completion` and
+  `run_diagnostics` tables with direct-run writers and fresh-connection
+  validation.
+- Availability-aware direct runs retain deterministic decision, risk,
+  execution, reconciliation, and stop rows. Deliberate interruptions retain
+  their invoked-pulse trace and resume appends to it. Last-valued and
+  last-executed timestamps remain separate.
+- Expected stops return normally and commit accepted prefixes as
+  `INCOMPLETE`. Unexpected fold exceptions remain `FAILED`, roll back fold
+  economics, and add an error diagnostic only after rollback.
+- Review follow-up bound the complete durable reason-code vocabulary and added
+  all six Batch 8 conditions to the generated-help contract lock.
 
 ### Source Reference
 
@@ -1798,6 +1849,9 @@ release surfaces, and explicit audit/horizon dispositions for implemented work.
 - Update `contracts.md`, NEWS, README, generated help/NAMESPACE, `_pkgdown.yml`,
   affected vignettes, and maintainer manual implementation traces.
 - Publish the reason-code table with stage/action mappings.
+- Make condition-class prose locks structurally distinct from alias locks and
+  match durable reason-code vocabulary as exact tokens, including
+  `status_unknown` versus `status_unknown_or_conflicting`.
 - Update identity reference for schema/hash/availability choices.
 - Record every scoped audit outcome and preserve all explicit deferrals.
 - Remove active-pointer claims only when implementation/release status warrants.
@@ -1808,6 +1862,8 @@ release surfaces, and explicit audit/horizon dispositions for implemented work.
 - No surface claims short financing, settlement, arbitrary PIT completeness,
   performance superiority, or a second execution engine.
 - Audit and horizon entries are closed or routed with reasons.
+- Documentation-contract tests fail when a condition's prose entry is removed
+  or one durable reason token is satisfied only as another token's substring.
 
 ### Verification
 

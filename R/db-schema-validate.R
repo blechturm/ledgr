@@ -83,6 +83,32 @@ ledgr_validate_schema <- function(con) {
       pk = c("run_id"),
       not_null = c("run_id")
     ),
+    run_completion = list(
+      columns = c(
+        run_id = "TEXT", intended_start_utc = "TIMESTAMP", intended_end_utc = "TIMESTAMP",
+        achieved_start_utc = "TIMESTAMP", achieved_end_utc = "TIMESTAMP",
+        intended_terminal_status = "TEXT", stop_reason = "TEXT",
+        affected_exposure = "DOUBLE", affected_exposure_ts_utc = "TIMESTAMP",
+        affected_exposure_basis = "TEXT", last_fully_valued_ts_utc = "TIMESTAMP",
+        last_executed_ts_utc = "TIMESTAMP", complete_performance = "BOOLEAN"
+      ),
+      pk = c("run_id"),
+      not_null = c("run_id", "intended_start_utc", "intended_end_utc", "intended_terminal_status", "complete_performance")
+    ),
+    run_diagnostics = list(
+      columns = c(
+        run_id = "TEXT", diagnostic_seq = "INTEGER", ts_utc = "TIMESTAMP",
+        instrument_id = "TEXT", stage = "TEXT", outcome = "TEXT",
+        reason_code = "TEXT", reasons = "TEXT", target = "DOUBLE", quantity = "DOUBLE",
+        price = "DOUBLE", mark_source = "TEXT", mark_age = "INTEGER",
+        decision_ts_utc = "TIMESTAMP", execution_ts_utc = "TIMESTAMP", event_seq = "INTEGER",
+        target_before_risk = "DOUBLE", target_after_risk = "DOUBLE",
+        position_before = "DOUBLE", position_after = "DOUBLE",
+        feature_identity_json = "TEXT", detail_json = "TEXT"
+      ),
+      pk = c("run_id", "diagnostic_seq"),
+      not_null = c("run_id", "diagnostic_seq", "ts_utc", "instrument_id", "stage", "outcome", "reason_code", "reasons", "detail_json")
+    ),
     run_tags = list(
       columns = c(
         run_id = "TEXT",
@@ -602,7 +628,7 @@ ledgr_validate_schema <- function(con) {
     check_enum_constraint_metadata(
       "runs",
       "status",
-      c("CREATED", "RUNNING", "DONE", "FAILED"),
+      c("CREATED", "RUNNING", "DONE", "INCOMPLETE", "FAILED"),
       "runs.status"
     )
     invisible(TRUE)

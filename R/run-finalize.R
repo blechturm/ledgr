@@ -16,6 +16,9 @@ ledgr_run_finalize <- function(con,
   runtime_projection <- projection$runtime_projection
   telemetry <- fold$telemetry
   processed <- fold$processed
+  terminal_status <- fold$status %||% "DONE"
+  fold_equity <- fold$equity_facts %||% list()
+  use_fold_equity <- length(fold_equity) > 0L
 
   finalization_error <- tryCatch({
     post_start <- ledgr_time_now()
@@ -30,7 +33,11 @@ ledgr_run_finalize <- function(con,
       params = list(run_id)
     )
 
-    pulses_posix <- as.POSIXct(pulses, tz = "UTC")
+    pulses_posix <- if (use_fold_equity) {
+      as.POSIXct(vapply(fold_equity, function(x) as.numeric(x$ts_utc), numeric(1)), origin = "1970-01-01", tz = "UTC")
+    } else {
+      as.POSIXct(pulses, tz = "UTC")
+    }
     close_mat <- NULL
     if (!is.null(bars_mat)) {
       close_mat <- bars_mat$close
@@ -84,9 +91,13 @@ ledgr_run_finalize <- function(con,
 
     idx <- findInterval(pulse_ts_num, event_ts_num)
     cash_cum <- if (n_events > 0) cumsum(cash_delta) else numeric(0)
-    cash_at <- rep(as.numeric(initial_cash), length(idx))
+    cash_at <- if (use_fold_equity) {
+      vapply(fold_equity, `[[`, numeric(1), "cash")
+    } else {
+      rep(as.numeric(initial_cash), length(idx))
+    }
     has_event <- idx > 0
-    if (any(has_event)) {
+    if (!use_fold_equity && any(has_event)) {
       cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
     }
 
@@ -107,7 +118,13 @@ ledgr_run_finalize <- function(con,
       }
     }
 
-    positions_value <- if (n_pulses > 0) colSums(positions_mat * close_mat) else numeric(0)
+    positions_value <- if (use_fold_equity) {
+      vapply(fold_equity, `[[`, numeric(1), "positions_value")
+    } else if (n_pulses > 0) {
+      colSums(positions_mat * close_mat)
+    } else {
+      numeric(0)
+    }
 
     reconstruction_lots <- ledgr_lot_state(instrument_ids)
     event_realized <- numeric(n_events)
@@ -133,9 +150,17 @@ ledgr_run_finalize <- function(con,
       }
     }
 
-    realized_at <- numeric(length(idx))
-    cost_basis_at <- numeric(length(idx))
-    if (any(has_event)) {
+    realized_at <- if (use_fold_equity) {
+      vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
+    } else {
+      numeric(length(idx))
+    }
+    cost_basis_at <- if (use_fold_equity) {
+      vapply(fold_equity, `[[`, numeric(1), "cost_basis")
+    } else {
+      numeric(length(idx))
+    }
+    if (!use_fold_equity && any(has_event)) {
       realized_at[has_event] <- event_realized[idx[has_event]]
       cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
     }
@@ -197,7 +222,7 @@ ledgr_run_finalize <- function(con,
       if (nrow(eq_df) > 0) {
         DBI::dbAppendTable(con, "equity_curve", eq_df)
       }
-      output_handler$record_run_status("DONE", NA_character_)
+      output_handler$record_run_status(terminal_status, NA_character_)
     })
     NULL
   }, error = function(e) e)
@@ -219,13 +244,13 @@ ledgr_run_finalize <- function(con,
 
   ledgr_finalize_fold_telemetry(
     output_handler = output_handler,
-    status = "DONE",
+    status = terminal_status,
     telemetry = telemetry,
     processed = processed
   )
 
   list(
-    status = "DONE",
+    status = terminal_status,
     telemetry = telemetry
   )
 }

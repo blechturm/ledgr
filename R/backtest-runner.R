@@ -423,6 +423,40 @@ ledgr_persistent_output_handler <- function(con,
     as.integer(state$pending_idx)
   }
 
+  handler$write_run_diagnostics <- function(diagnostics) {
+    if (!is.null(diagnostics) && nrow(diagnostics) > 0L) {
+      next_seq <- DBI::dbGetQuery(
+        con,
+        "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq FROM run_diagnostics WHERE run_id = ?",
+        params = list(run_id)
+      )$next_seq[[1L]]
+      diagnostics$diagnostic_seq <- seq.int(
+        from = as.integer(next_seq),
+        length.out = nrow(diagnostics)
+      )
+      DBI::dbAppendTable(con, "run_diagnostics", diagnostics)
+    }
+    invisible(TRUE)
+  }
+
+  handler$write_run_evidence <- function(completion, diagnostics) {
+    DBI::dbExecute(con, "DELETE FROM run_completion WHERE run_id = ?", params = list(run_id))
+    DBI::dbAppendTable(con, "run_completion", completion)
+    handler$write_run_diagnostics(diagnostics)
+    invisible(TRUE)
+  }
+
+  handler$write_exception_diagnostic <- function(diagnostic) {
+    next_seq <- DBI::dbGetQuery(
+      con,
+      "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq FROM run_diagnostics WHERE run_id = ?",
+      params = list(run_id)
+    )$next_seq[[1L]]
+    diagnostic$diagnostic_seq <- as.integer(next_seq)
+    DBI::dbAppendTable(con, "run_diagnostics", diagnostic)
+    invisible(TRUE)
+  }
+
   handler$pending_state_count <- function() {
     as.integer(state$pending_states_idx)
   }
@@ -1046,7 +1080,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     ),
     fold = list(
       telemetry = telemetry,
-      processed = processed
+      processed = processed,
+      status = fold_result$status,
+      equity_facts = fold_result$equity_facts
     )
   )
   telemetry <- finalized$telemetry

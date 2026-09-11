@@ -1420,6 +1420,8 @@ ledgr_memory_output_handler <- function(run_id) {
   state$event_max_capacity <- .Machine$integer.max
   state$event_cols <- NULL
   state$status <- "RUNNING"
+  state$completion <- NULL
+  state$diagnostics <- NULL
   handler <- list()
 
   init_event_cols <- function(capacity) {
@@ -1792,6 +1794,36 @@ ledgr_memory_output_handler <- function(run_id) {
       metrics = metrics,
       final_equity = equity$equity[[nrow(equity)]]
     )
+  }
+  handler$write_run_diagnostics <- function(diagnostics) {
+    if (is.null(diagnostics) || nrow(diagnostics) == 0L) {
+      return(invisible(TRUE))
+    }
+    current <- state$diagnostics
+    next_seq <- if (is.null(current) || nrow(current) == 0L) {
+      1L
+    } else {
+      max(as.integer(current$diagnostic_seq)) + 1L
+    }
+    diagnostics$diagnostic_seq <- seq.int(from = next_seq, length.out = nrow(diagnostics))
+    state$diagnostics <- if (is.null(current)) diagnostics else rbind(current, diagnostics)
+    invisible(TRUE)
+  }
+  handler$write_run_evidence <- function(completion, diagnostics) {
+    state$completion <- completion
+    handler$write_run_diagnostics(diagnostics)
+    invisible(TRUE)
+  }
+  handler$write_exception_diagnostic <- function(diagnostic) {
+    current <- state$diagnostics
+    next_seq <- if (is.null(current) || nrow(current) == 0L) {
+      1L
+    } else {
+      max(as.integer(current$diagnostic_seq)) + 1L
+    }
+    diagnostic$diagnostic_seq <- next_seq
+    state$diagnostics <- if (is.null(current)) diagnostic else rbind(current, diagnostic)
+    invisible(TRUE)
   }
   handler$pending_event_count <- function() 0L
   handler$pending_state_count <- function() 0L

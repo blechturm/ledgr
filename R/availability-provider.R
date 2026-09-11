@@ -134,27 +134,49 @@ ledgr_availability_lifetime_at <- function(rows, ids, cutoff) {
   out
 }
 
+ledgr_availability_terminal_event_at <- function(rows, ids, cutoff) {
+  out <- stats::setNames(rep("", length(ids)), ids)
+  if (nrow(rows) == 0L || length(ids) == 0L) return(out)
+  for (id in ids) {
+    current <- rows[rows$instrument_id == id, , drop = FALSE]
+    current <- current[ledgr_availability_applicable(current, cutoff), , drop = FALSE]
+    if (nrow(current) > 0L) {
+      current <- current[order(current$effective_from, current$knowledge_time), , drop = FALSE]
+      value <- as.character(current$terminal_event[[nrow(current)]])
+      if (!is.na(value) && nzchar(value)) out[[id]] <- value
+    }
+  }
+  out
+}
+
 ledgr_availability_restrictions <- function(status, lifetime, status_declared, lifetime_declared) {
   ids <- names(status)
   restricted <- stats::setNames(rep(FALSE, length(ids)), ids)
   reason <- stats::setNames(rep("", length(ids)), ids)
+  reasons <- stats::setNames(rep("", length(ids)), ids)
   if (isTRUE(status_declared)) {
     map <- c(
-      halted = "status_halted",
-      quotation_only = "status_quotation_only",
+      halted = "trading_halted",
+      quotation_only = "quotation_only",
       unknown = "status_unknown",
       conflicting = "status_unknown_or_conflicting"
     )
     hit <- status %in% names(map)
     restricted[hit] <- TRUE
     reason[hit] <- unname(map[status[hit]])
+    reasons[hit] <- reason[hit]
   }
   if (isTRUE(lifetime_declared)) {
     hit <- lifetime == "known_inactive"
     restricted[hit] <- TRUE
     reason[hit & !nzchar(reason)] <- "lifetime_inactive"
+    reasons[hit] <- ifelse(
+      nzchar(reasons[hit]),
+      paste(reasons[hit], "lifetime_inactive", sep = "|"),
+      "lifetime_inactive"
+    )
   }
-  list(restricted = restricted, reason = reason)
+  list(restricted = restricted, reason = reason, reasons = reasons)
 }
 
 ledgr_availability_provider <- function(con, config, snapshot_hash) {
@@ -173,6 +195,7 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
     list(
       status = status,
       lifetime = lifetime,
+      terminal_event = ledgr_availability_terminal_event_at(data$lifetime, ids, cutoff),
       cutoff = cutoff
     )
   }
@@ -202,20 +225,32 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
       held = stats::setNames(axis %in% held, axis),
       target_restricted = restrictions$restricted,
       target_restriction_reason = restrictions$reason,
+      target_restriction_reasons = restrictions$reasons,
       status = resolved$status,
-      lifetime = resolved$lifetime
+      lifetime = resolved$lifetime,
+      terminal_event = resolved$terminal_event
     )
   }
 
   execution_view <- function(cutoff, ids) {
     resolved <- facts(cutoff, ids)
+    members <- ledgr_availability_members_at(
+      data,
+      universe_rule,
+      config$universe$instrument_ids,
+      as.POSIXct(cutoff, tz = "UTC")
+    )
     restrictions <- ledgr_availability_restrictions(
       resolved$status,
       resolved$lifetime,
       "trading_status" %in% families,
       "lifetime" %in% families
     )
-    c(resolved, restrictions)
+    c(
+      resolved,
+      list(member = stats::setNames(ids %in% members, ids)),
+      restrictions
+    )
   }
 
   history <- function(instrument_id, cutoff, sessions = NULL) {
@@ -248,7 +283,8 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
       execution_view = execution_view,
       history = history,
       identity = identity,
-      sessions = data$sessions
+      sessions = data$sessions,
+      valuation_policy = config$availability$valuation_policy
     ),
     class = c("ledgr_availability_provider", "list")
   )

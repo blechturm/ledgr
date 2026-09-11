@@ -368,7 +368,7 @@ tickets:
 
   - id: "LDG-2693"
     title: "Availability target restrictions and helper safety"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2692"]
@@ -382,10 +382,23 @@ tickets:
       - "U17 strategy and post-risk closure"
       - "U20 unavailable-sizing behavior"
       - "Active short-exposure rejection and cover cases"
+    implementation_notes:
+      - >-
+        Enforced restricted-ID, held-nonmember, post-risk, and active
+        short-exposure target bounds in the shared fold.
+      - >-
+        Active rebalance sizing preserves and reserves held nonmembers and
+        fails on unavailable current closes without changing dense behavior.
+      - >-
+        Tests cover rejected short financing, explicit long-only clipping,
+        existing-short hold/cover algebra, and literal target failures.
+      - >-
+        Review follow-up added an exact near-zero quantity assertion so cash
+        tolerance cannot become a quantity tolerance.
 
   - id: "LDG-2694"
     title: "Stale valuation risk marks and affected exposure"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2692"]
@@ -400,10 +413,20 @@ tickets:
       - "U24 whole-feed-outage valuation clock"
       - "Gross affected-exposure independent fixture"
       - "Missing expired and later-known reference cases"
+    implementation_notes:
+      - >-
+        Added fold-owned current and stale valuation marks on the declared
+        venue-session clock without changing risk identity or fill prices.
+      - >-
+        Mark exhaustion, unavailable new-exposure risk marks, and terminal
+        assertions now produce controlled incomplete outcomes.
+      - >-
+        Gross affected exposure deduplicates IDs and represents expired,
+        missing, zero-quantity, and specified-empty evidence explicitly.
 
   - id: "LDG-2695"
     title: "Bounded affordability and execution reconciliation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2693", "LDG-2694"]
@@ -417,10 +440,20 @@ tickets:
       - "Rejected-sale and target-order permutations"
       - "No short-proceeds financing"
       - "Final cash/exposure reconciliation"
+    implementation_notes:
+      - >-
+        Added cost-resolved virtual-ledger affordability with accepted
+        reductions first and consumers evaluated in stable-ID order.
+      - >-
+        Accepted fills retain axis order, rejected sales fund nothing, and
+        diagnostics preserve all applicable ordered gate reasons.
+      - >-
+        Reconciliation records virtual and actual cash plus intended,
+        post-risk, and actual marked gross exposure before mutation.
 
   - id: "LDG-2696"
     title: "Controlled stops completion and direct diagnostics"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2693", "LDG-2694", "LDG-2695"]
@@ -434,6 +467,20 @@ tickets:
       - "U22 unsupported terminal settlement"
       - "Deterministic direct-run diagnostic sequencing"
       - "Completion and diagnostic schema validation"
+    implementation_notes:
+      - >-
+        Added experiment-store schema 114 with keyed direct-run completion and
+        diagnostic evidence.
+      - >-
+        Expected stops commit accepted prefixes as INCOMPLETE with separate
+        last-valued and last-executed timestamps.
+      - >-
+        Deliberate interruptions retain their invoked-pulse trace and resume
+        appends to it; unexpected fold exceptions remain FAILED, roll back
+        fold economics, and write one error diagnostic after rollback.
+      - >-
+        Review follow-up bound the complete durable reason vocabulary and
+        added all six Batch 8 conditions to the generated-help contract lock.
 
   - id: "LDG-2697"
     title: "Terminal finalization reopen and idempotent recovery"
@@ -534,6 +581,7 @@ tickets:
       - "Generated help and NAMESPACE review"
       - "Maintainer manual implementation-trace review"
       - "Documentation-contract tests"
+      - "Exact condition-prose and durable-reason token locks"
       - "Audit and horizon disposition review"
       - "pkgdown build"
 

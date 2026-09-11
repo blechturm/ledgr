@@ -1,9 +1,9 @@
-testthat::test_that("schema 113 creates normalized availability tables", {
+testthat::test_that("current schema retains normalized availability tables", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
 
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 113L)
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 114L)
   testthat::expect_identical(ledgr:::ledgr_saved_sweep_schema_version, 4L)
   tables <- DBI::dbGetQuery(
     con,
@@ -14,7 +14,7 @@ testthat::test_that("schema 113 creates normalized availability tables", {
   testthat::expect_invisible(ledgr_validate_schema(con))
 })
 
-testthat::test_that("schema 113 migration is transactional and writes its marker last", {
+testthat::test_that("availability migration is transactional and writes its marker last", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   DBI::dbExecute(
@@ -55,7 +55,7 @@ testthat::test_that("schema 113 migration is transactional and writes its marker
   testthat::expect_false(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
 
   testthat::expect_true(ledgr:::ledgr_experiment_store_migrate(con, 112L, inform = FALSE))
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 113L)
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 114L)
   testthat::expect_true("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
   testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
 })

@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 113L
+ledgr_experiment_store_schema_version <- 114L
 ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
@@ -46,6 +46,8 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "snapshot_observation_quarantine",
     "run_provenance",
     "run_telemetry",
+    "run_completion",
+    "run_diagnostics",
     "run_tags",
     "run_promotion_context",
     "sweeps",
@@ -95,6 +97,60 @@ ledgr_experiment_store_ensure_run_telemetry_columns <- function(con) {
     return(invisible(FALSE))
   }
   ledgr_experiment_store_add_column(con, "run_telemetry", "persist_features", "BOOLEAN")
+  invisible(TRUE)
+}
+
+ledgr_experiment_store_ensure_availability_run_tables <- function(con) {
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS run_completion (
+      run_id TEXT NOT NULL PRIMARY KEY,
+      intended_start_utc TIMESTAMP NOT NULL,
+      intended_end_utc TIMESTAMP NOT NULL,
+      achieved_start_utc TIMESTAMP,
+      achieved_end_utc TIMESTAMP,
+      intended_terminal_status TEXT NOT NULL CHECK (intended_terminal_status IN ('DONE','INCOMPLETE')),
+      stop_reason TEXT,
+      affected_exposure DOUBLE,
+      affected_exposure_ts_utc TIMESTAMP,
+      affected_exposure_basis TEXT,
+      last_fully_valued_ts_utc TIMESTAMP,
+      last_executed_ts_utc TIMESTAMP,
+      complete_performance BOOLEAN NOT NULL
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS run_diagnostics (
+      run_id TEXT NOT NULL,
+      diagnostic_seq INTEGER NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      instrument_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      outcome TEXT NOT NULL,
+      reason_code TEXT NOT NULL,
+      reasons TEXT NOT NULL,
+      target DOUBLE,
+      quantity DOUBLE,
+      price DOUBLE,
+      mark_source TEXT,
+      mark_age INTEGER,
+      decision_ts_utc TIMESTAMP,
+      execution_ts_utc TIMESTAMP,
+      event_seq INTEGER,
+      target_before_risk DOUBLE,
+      target_after_risk DOUBLE,
+      position_before DOUBLE,
+      position_after DOUBLE,
+      feature_identity_json TEXT,
+      detail_json TEXT NOT NULL,
+      PRIMARY KEY (run_id, diagnostic_seq)
+    )
+    "
+  )
   invisible(TRUE)
 }
 
@@ -349,6 +405,7 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
     ledgr_experiment_store_migrate(con, from_version = version, inform = inform)
   }
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
+  ledgr_experiment_store_ensure_availability_run_tables(con)
   ledgr_experiment_store_ensure_sweep_tables(con)
   ledgr_experiment_store_ensure_walk_forward_tables(con)
   ledgr_experiment_store_ensure_availability_tables(con)
@@ -470,6 +527,7 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
     ledgr_experiment_store_ensure_sweep_tables(con)
     ledgr_experiment_store_ensure_walk_forward_tables(con)
     ledgr_experiment_store_ensure_availability_tables(con)
+    ledgr_experiment_store_ensure_availability_run_tables(con)
 
     if (ledgr_experiment_store_table_exists(con, "runs")) {
       DBI::dbExecute(

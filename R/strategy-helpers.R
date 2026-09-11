@@ -87,7 +87,15 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
       numeric(1)
     )
   }
-  ledgr_signal(stats::setNames(as.numeric(values), universe), universe = universe, origin = feature_id)
+  values <- stats::setNames(as.numeric(values), universe)
+  if (isTRUE(ctx$availability_active)) {
+    members <- as.character(ctx$members %||% character())
+    values <- values[members]
+    admissible <- as.logical(ctx$vec$admissible[match(members, universe)])
+    values[!admissible] <- NA_real_
+    universe <- members
+  }
+  ledgr_signal(values, universe = universe, origin = feature_id)
 }
 
 #' Select the top instruments from a signal
@@ -190,6 +198,9 @@ ledgr_weight_equal <- function(selection) {
 #' Warning and error classes:
 #' - `ledgr_invalid_target_price` when a selected instrument has missing,
 #'   non-finite, or non-positive close price;
+#' - `ledgr_target_sizing_unavailable` for the same condition when
+#'   availability-aware execution is active; unlike the dense warning path,
+#'   this is an error and never creates an unintended zero target;
 #' - `ledgr_negative_weights` for negative weights;
 #' - `ledgr_levered_weights` when `sum(abs(weights)) > 1`.
 #'
@@ -220,10 +231,14 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
   equity <- ledgr_strategy_helper_context_equity(ctx)
   equity_fraction <- ledgr_strategy_helper_validate_equity_fraction(equity_fraction)
 
-  extra <- setdiff(names(weights), universe)
+  availability_active <- isTRUE(ctx$availability_active)
+  members <- if (availability_active) as.character(ctx$members %||% character()) else universe
+  allowed_weight_ids <- members
+
+  extra <- setdiff(names(weights), allowed_weight_ids)
   if (length(extra) > 0L) {
     rlang::abort(
-      sprintf("`weights` contains instruments outside `ctx$universe`: %s.", paste(extra, collapse = ", ")),
+      sprintf("`weights` contains instruments outside the current member set: %s.", paste(extra, collapse = ", ")),
       class = "ledgr_invalid_strategy_helper"
     )
   }
@@ -234,7 +249,28 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
     rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
   }
 
-  target <- stats::setNames(rep(0, length(universe)), universe)
+  target <- if (availability_active) {
+    stats::setNames(as.numeric(ctx$vec$positions), universe)
+  } else {
+    stats::setNames(rep(0, length(universe)), universe)
+  }
+  if (availability_active && length(members) > 0L) target[members] <- 0
+  allocation_equity <- equity
+  if (availability_active) {
+    held_nonmembers <- setdiff(universe[as.numeric(ctx$vec$positions) != 0], members)
+    if (length(held_nonmembers) > 0L) {
+      idx <- match(held_nonmembers, universe)
+      marks <- as.numeric(ctx$vec$risk_mark[idx])
+      quantities <- as.numeric(ctx$vec$positions[idx])
+      if (any(!is.finite(marks))) {
+        rlang::abort(
+          "Cannot reserve held nonmember exposure without a permissible valuation mark.",
+          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper")
+        )
+      }
+      allocation_equity <- max(0, equity - sum(abs(quantities * marks)))
+    }
+  }
   if (length(weights) == 0L || equity_fraction == 0 || equity == 0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
   }
@@ -251,13 +287,20 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
       as.numeric(ctx$close(id))
     }
     if (length(price) != 1L || is.na(price) || !is.finite(price) || price <= 0) {
+      if (availability_active) {
+        rlang::abort(
+          sprintf("Cannot size target for `%s`: no positive accepted current close is available.", id),
+          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
+          instrument_id = id
+        )
+      }
       rlang::warn(
         sprintf("Cannot size target for `%s`: close price is missing, non-finite, or non-positive. Targeting 0.", id),
         class = "ledgr_invalid_target_price"
       )
       target[[id]] <- 0
     } else {
-      target[[id]] <- floor((as.numeric(weights[[id]]) * equity_fraction * equity) / price)
+      target[[id]] <- floor((as.numeric(weights[[id]]) * equity_fraction * allocation_equity) / price)
     }
   }
 

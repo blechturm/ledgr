@@ -646,6 +646,8 @@ ledgr_pulse_context_vec <- function(lookup) {
     out$admissible <- out$member & !out$target_restricted
     out$priced <- as.logical(take("priced", FALSE))
     out$mark_age <- as.integer(take("mark_age", NA_integer_))
+    out$risk_mark <- as.numeric(take("risk_mark", NA_real_))
+    out$mark_source <- as.character(take("mark_source", ""))
   }
   out
 }

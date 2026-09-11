@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-7 complete after review. Batches 8-11 are pending.
+Status: Batches 0-8 complete after review. Batches 9-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -466,7 +466,7 @@ Implementation notes:
 
 ## Batch 8 - Shared-Fold Availability Economics
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -495,6 +495,33 @@ Exit criteria:
 
 - targeted economics and controlled-prefix suites pass;
 - independent review accepts this boundary before Batch 9 starts.
+
+Implementation notes:
+
+- The shared fold now enforces decision-time target restrictions, post-risk
+  closure, and the availability-only short-exposure floor. Rebalance helpers
+  preserve and reserve held nonmembers while dense helper behavior is
+  unchanged.
+- Fresh and stale marks value holdings and feed target risk without becoming
+  execution prices. Exhaustion, missing risk marks, and unsupported terminal
+  settlement return committed `INCOMPLETE` prefixes with diagnostic gross
+  exposure.
+- Active affordability evaluates accepted reductions before purchases in
+  stable-ID order, emits accepted fills in axis order, retains all applicable
+  gate reasons, and reconciles recorded cash against the virtual ledger.
+- Experiment-store schema 114 adds direct `run_completion` and ordered
+  `run_diagnostics` evidence. Deliberate interruptions retain their invoked
+  pulse trace and resume appends to it. Unexpected fold errors roll back
+  economics and write a single error diagnostic after rollback; expected
+  stops use the normal transaction return path.
+- The full 119-file local suite completed with no failures or errors and one
+  expected snapshot-adapter skip in the implementation environment. Missing
+  optional packages can raise that count to eight without skipping Batch 8
+  coverage. All 146 generated Rd files pass `tools::checkRd()`;
+  `NAMESPACE` and `DESCRIPTION` are unchanged.
+- Review follow-up extended the condition-class documentation lock, bound the
+  complete durable reason-code vocabulary and restriction-code rename, and
+  added an exact near-zero quantity test for the active short guard.
 
 ## Batch 9 - Terminal And Cross-Path Evidence
 
@@ -540,6 +567,8 @@ Scope:
 
 - ship the Survivorship Bias article and connected public workflow;
 - generate help, pkgdown, condition/reason reference, and maintainer traces;
+- harden the generated-help and reason-vocabulary contract locks so condition
+  prose is distinct from aliases and reason codes match exact tokens;
 - update contracts, NEWS, roadmap, horizon, active indexes, and audit
   dispositions without overstated point-in-time or completeness claims.
 
