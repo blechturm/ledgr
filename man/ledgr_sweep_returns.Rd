@@ -57,7 +57,7 @@ candidate to share the same timestamp grid after first-row handling.}
 }
 \value{
 \code{ledgr_sweep_returns()} returns a tibble with \code{sweep_id},
-\code{candidate_id}, \code{ts_utc}, \code{equity}, and \code{period_return}.
+\code{candidate_id}, \code{status}, \code{ts_utc}, \code{equity}, and \code{period_return}.
 \code{ledgr_sweep_trades()} returns retained closed-trade evidence with
 \code{sweep_id}, \code{candidate_id}, \code{candidate_row}, \code{trade_seq}, \code{close_ts_utc},
 \code{realized_pnl}, and \code{win_loss}.
@@ -71,7 +71,9 @@ adapter-shaped projections over that normalized panel.
 }
 \description{
 \code{ledgr_sweep_returns()} returns the retained long net portfolio equity and
-adjacent-period return series for completed sweep candidates. Retained
+adjacent-period return series for completed and explicitly labelled
+incomplete sweep candidates. Complete-performance panel projections exclude
+incomplete candidates.
 returns are net strategy returns only; they are not benchmark-relative
 returns and they do not include gross-vs-net attribution.
 }

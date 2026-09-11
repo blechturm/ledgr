@@ -30,6 +30,8 @@
 \alias{ledgr_post_risk_inadmissible}
 \alias{ledgr_short_exposure_unsupported}
 \alias{ledgr_affordability_reconciliation_failed}
+\alias{ledgr_run_terminal_evidence_invalid}
+\alias{ledgr_run_explanation_unavailable}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -46,6 +48,8 @@
 \alias{ledgr_sweep_trades_candidate_not_found}
 \alias{ledgr_sweep_trades_candidate_not_completed}
 \alias{ledgr_sweep_trades_candidate_not_retained}
+\alias{ledgr_incomplete_sweep_candidate}
+\alias{ledgr_promote_incomplete_candidate}
 \alias{ledgr_validation_pbo_incomplete_panel}
 \alias{ledgr_missing_package}
 \alias{ledgr_validation_pbo_invalid_s}
@@ -212,6 +216,14 @@ financing.
 \code{ledgr_affordability_reconciliation_failed} is raised when recorded active
 cash diverges from the bounded-affordability virtual ledger beyond the
 engine's fixed tolerance.
+
+\code{ledgr_run_terminal_evidence_invalid} is raised when persisted terminal
+completion evidence is malformed, disagrees with the run calendar or stored
+status, or does not match the finalized equity prefix and stop diagnostic.
+
+\code{ledgr_run_explanation_unavailable} is raised when a run has no retained
+decision trace for the requested instrument and timestamp. ledgr does not
+infer the missing intent from current strategy code or other artifacts.
 }
 
 \section{Saved sweep classes}{
@@ -269,6 +281,11 @@ are requested for a failed candidate.
 
 \code{ledgr_sweep_trades_candidate_not_retained} is raised when retained trades
 are missing for a completed candidate that reports closed trades.
+
+\code{ledgr_incomplete_sweep_candidate} is raised when candidate extraction is
+requested for an \code{INCOMPLETE} sweep row. \code{ledgr_promote_incomplete_candidate}
+is raised when promotion receives an incomplete candidate. Incomplete
+prefixes remain evidence and never become executable candidates.
 
 \code{ledgr_validation_pbo_invalid_s} is raised when a PBO/CSCV request supplies
 an invalid \code{S} subset count.

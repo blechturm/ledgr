@@ -91,7 +91,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
   testthat::expect_identical(
     names(out),
     c(
-      "candidate_id", "candidate_row", "status", "final_equity", "total_return",
+      "candidate_id", "candidate_row", "status", "completion_json", "final_equity", "total_return",
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",
@@ -154,7 +154,10 @@ testthat::test_that("completed retention exposes long and wide return series", {
   long <- ledgr_sweep_returns(out)
 
   testthat::expect_s3_class(long, "tbl_df")
-  testthat::expect_identical(names(long), c("sweep_id", "candidate_id", "ts_utc", "equity", "period_return"))
+  testthat::expect_identical(
+    names(long),
+    c("sweep_id", "candidate_id", "status", "ts_utc", "equity", "period_return")
+  )
   testthat::expect_identical(unique(long$sweep_id), attr(out, "sweep_id"))
   testthat::expect_identical(unique(long$candidate_id), c("a", "b"))
   testthat::expect_identical(nrow(long), length(unique(long$ts_utc)) * 2L)
@@ -173,6 +176,13 @@ testthat::test_that("completed retention exposes long and wide return series", {
 
   only_b <- ledgr_sweep_returns(out, candidates = "b")
   testthat::expect_identical(unique(only_b$candidate_id), "b")
+
+  legacy <- out
+  legacy_returns <- attr(legacy, "sweep_returns", exact = TRUE)
+  legacy_returns$status <- NULL
+  attr(legacy, "sweep_returns") <- legacy_returns
+  legacy_long <- ledgr_sweep_returns(legacy)
+  testthat::expect_identical(unique(legacy_long$status), "DONE")
 
   wide_returns <- ledgr_sweep_returns_wide(out, candidates = c("b", "a"))
   testthat::expect_identical(names(wide_returns), c("ts_utc", "b", "a"))

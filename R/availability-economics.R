@@ -350,6 +350,39 @@ ledgr_availability_completion_row <- function(run_id,
   )
 }
 
+ledgr_completion_record <- function(completion) {
+  if (is.null(completion) || !is.data.frame(completion) || nrow(completion) != 1L) {
+    return(NULL)
+  }
+  time_value <- function(name) {
+    value <- completion[[name]][[1L]]
+    if (is.na(value)) NULL else ledgr_normalize_ts_utc(value)
+  }
+  scalar <- function(name) {
+    value <- completion[[name]][[1L]]
+    if (length(value) != 1L || is.na(value)) NULL else value
+  }
+  list(
+    intended_start_utc = time_value("intended_start_utc"),
+    intended_end_utc = time_value("intended_end_utc"),
+    achieved_start_utc = time_value("achieved_start_utc"),
+    achieved_end_utc = time_value("achieved_end_utc"),
+    intended_terminal_status = as.character(completion$intended_terminal_status[[1L]]),
+    stop_reason = scalar("stop_reason"),
+    affected_exposure = scalar("affected_exposure"),
+    affected_exposure_ts_utc = time_value("affected_exposure_ts_utc"),
+    affected_exposure_basis = scalar("affected_exposure_basis"),
+    last_fully_valued_ts_utc = time_value("last_fully_valued_ts_utc"),
+    last_executed_ts_utc = time_value("last_executed_ts_utc"),
+    complete_performance = isTRUE(completion$complete_performance[[1L]])
+  )
+}
+
+ledgr_completion_json <- function(completion) {
+  record <- ledgr_completion_record(completion)
+  if (is.null(record)) NA_character_ else as.character(canonical_json(record))
+}
+
 ledgr_availability_diagnostic_row <- function(run_id,
                                               diagnostic_seq,
                                               ts_utc,

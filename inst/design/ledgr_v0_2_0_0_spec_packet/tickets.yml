@@ -484,7 +484,7 @@ tickets:
 
   - id: "LDG-2697"
     title: "Terminal finalization reopen and idempotent recovery"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2696"]
@@ -499,10 +499,23 @@ tickets:
       - "U22 unsupported-settlement terminal recovery"
       - "Mismatched identity rejection"
       - "Fresh-session reopen without strategy execution"
+    implementation_notes:
+      - >-
+        Valid completion evidence is checked against the stored calendar;
+        achieved INCOMPLETE runs also validate the exact equity prefix and
+        stopped diagnostic, and failed terminal finalization recovers without
+        strategy or fold replay.
+      - >-
+        Fresh-session open accepts validated DONE and availability-aware
+        INCOMPLETE runs, while malformed completion bounds fail closed.
+      - >-
+        Review follow-up added direct detecting tests for incomplete
+        performance, off-calendar intended bounds, and missing stop reasons,
+        and bound ledgr_run_terminal_evidence_invalid across public docs.
 
   - id: "LDG-2698"
     title: "Sweep and parallel incomplete-evidence propagation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2697"]
@@ -515,10 +528,25 @@ tickets:
       - "U11 direct sweep reopen and parallel parity"
       - "Saved-sweep schema 4 round trip"
       - "Selection and promotion rejection"
+    implementation_notes:
+      - >-
+        Experiment-store schema 115 adds canonical nullable completion payloads
+        through a transactional row/key-preserving migration without changing
+        saved-sweep schema 4 or candidate identity formats.
+      - >-
+        Direct, sequential, parallel, and reopened evidence agrees; incomplete
+        prefixes stay labelled and cannot enter complete-performance surfaces,
+        including through explicit candidate requests.
+      - >-
+        Historical retained-return evidence without a status column normalizes
+        to DONE, while current parity tests require the explicit status column.
+      - >-
+        Review follow-up documented and locked incomplete-candidate extraction
+        and promotion failure classes.
 
   - id: "LDG-2699"
     title: "Walk-forward incomplete-evidence propagation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2698"]
@@ -532,10 +560,24 @@ tickets:
       - "U23 walk-forward asset-state lifecycle"
       - "PARTIAL carry-state chain stop"
       - "No invented later opening state"
+    implementation_notes:
+      - >-
+        INCOMPLETE score rows retain canonical completion evidence and remain
+        ineligible for training selection.
+      - >-
+        An incomplete test run records a PARTIAL fold and session, then ends
+        the carry-state chain without fabricating another opening or fold;
+        metric-derivation failure preserves the INCOMPLETE status.
+      - >-
+        Review follow-up aligned window hydration to the sealed session
+        calendar and availability-aware carry reconstruction to finalized
+        equity plus ledger and lot evidence; heterogeneous per-instrument gaps
+        now pass direct, sweep, and two walk-forward folds, with the second
+        opening pinned to the first fold's finalized evidence.
 
   - id: "LDG-2700"
     title: "Durable explanation views and cross-path parity"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2697", "LDG-2698", "LDG-2699"]
@@ -549,6 +591,17 @@ tickets:
       - "U11 run sweep parallel and walk-forward evidence parity"
       - "U12 connected explain/reopen journey"
       - "No inspection-time strategy execution or reconstruction"
+    implementation_notes:
+      - >-
+        diagnostics and availability delegate through the result-table path;
+        ledgr_run_explain consumes those tables and joins committed traces,
+        ledger holdings, and sealed-fact/bar evidence only.
+      - >-
+        Direct and reopened views agree, inspection is read-only, and missing
+        traces fail ledgr_run_explanation_unavailable.
+      - >-
+        Review follow-up added value-level member, held, priced, mark-source,
+        and mark-age assertions and locked the missing-trace condition alias.
 
   - id: "LDG-2701"
     title: "Survivorship-bias article and connected workflow"

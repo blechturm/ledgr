@@ -95,6 +95,14 @@
 #' cash diverges from the bounded-affordability virtual ledger beyond the
 #' engine's fixed tolerance.
 #'
+#' `ledgr_run_terminal_evidence_invalid` is raised when persisted terminal
+#' completion evidence is malformed, disagrees with the run calendar or stored
+#' status, or does not match the finalized equity prefix and stop diagnostic.
+#'
+#' `ledgr_run_explanation_unavailable` is raised when a run has no retained
+#' decision trace for the requested instrument and timestamp. ledgr does not
+#' infer the missing intent from current strategy code or other artifacts.
+#'
 #' @section Saved sweep classes:
 #' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
 #' non-whitespace ASCII character scalar of at most 256 bytes.
@@ -149,6 +157,11 @@
 #'
 #' `ledgr_sweep_trades_candidate_not_retained` is raised when retained trades
 #' are missing for a completed candidate that reports closed trades.
+#'
+#' `ledgr_incomplete_sweep_candidate` is raised when candidate extraction is
+#' requested for an `INCOMPLETE` sweep row. `ledgr_promote_incomplete_candidate`
+#' is raised when promotion receives an incomplete candidate. Incomplete
+#' prefixes remain evidence and never become executable candidates.
 #'
 #' `ledgr_validation_pbo_invalid_s` is raised when a PBO/CSCV request supplies
 #' an invalid `S` subset count.
@@ -357,6 +370,7 @@
 #' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible
 #' @aliases ledgr_short_exposure_unsupported
 #' @aliases ledgr_affordability_reconciliation_failed
+#' @aliases ledgr_run_terminal_evidence_invalid ledgr_run_explanation_unavailable
 #' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch
@@ -370,6 +384,7 @@
 #' @aliases ledgr_sweep_trades_candidate_not_found
 #' @aliases ledgr_sweep_trades_candidate_not_completed
 #' @aliases ledgr_sweep_trades_candidate_not_retained
+#' @aliases ledgr_incomplete_sweep_candidate ledgr_promote_incomplete_candidate
 #' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
 #' @aliases ledgr_validation_pbo_invalid_s
 #' @aliases ledgr_validation_pbo_too_few_candidates

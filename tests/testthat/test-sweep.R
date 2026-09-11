@@ -484,7 +484,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
   testthat::expect_identical(
     names(seeded),
     c(
-      "candidate_id", "candidate_row", "status", "final_equity", "total_return",
+      "candidate_id", "candidate_row", "status", "completion_json", "final_equity", "total_return",
       "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
       "n_trades", "win_rate", "avg_trade", "time_in_market",
       "execution_seed", "error_class", "error_msg", "params",

@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-8 complete after review. Batches 9-11 are pending.
+Status: Batches 0-9 complete after review. Batches 10-11 are pending.
 
 This packet scopes v0.2.0.0 as an ordered hardening-and-availability release.
 It first corrects known API and representation boundaries, then extracts the

@@ -599,8 +599,34 @@ ledgr_experiment_window_validate_pulses <- function(exp, window) {
     ledgr_walk_forward_iso(window$scoring_end_utc)
   )
   bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
-  ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
-  n_pulses <- nrow(bars_by_id[[exp$universe[[1L]]]])
+  if (isTRUE(exp$availability$active)) {
+    opened <- ledgr_run_store_open(exp$snapshot$db_path)
+    on.exit(ledgr_run_store_close(opened), add = TRUE)
+    availability_data <- ledgr_availability_provider_data(
+      opened$con,
+      exp$snapshot$snapshot_id
+    )
+    provider <- ledgr_availability_provider_portable(
+      availability_data,
+      ledgr_sweep_availability_config(exp),
+      ledgr_precompute_snapshot_meta(exp$snapshot)$snapshot_hash,
+      bars_by_id
+    )
+    calendar <- ledgr_availability_calendar(
+      provider,
+      window$scoring_start_utc,
+      window$scoring_end_utc
+    )
+    bars_by_id <- ledgr_sweep_align_availability_bars(
+      bars_by_id,
+      exp$universe,
+      calendar$pulses_posix
+    )
+    n_pulses <- length(calendar$pulses_posix)
+  } else {
+    ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
+    n_pulses <- nrow(bars_by_id[[exp$universe[[1L]]]])
+  }
   if (n_pulses < 2L) {
     rlang::abort(
       "Experiment windows must contain at least two scoring pulses.",

@@ -4,13 +4,17 @@
 \alias{ledgr_results}
 \title{Extract ledgr result tables}
 \usage{
-ledgr_results(bt, what = c("equity", "returns", "fills", "trades", "ledger"))
+ledgr_results(
+  bt,
+  what = c("equity", "returns", "fills", "trades", "ledger", "diagnostics",
+    "availability")
+)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object.}
 
 \item{what}{Result table to extract: \code{"equity"}, \code{"returns"}, \code{"fills"},
-\code{"trades"}, or \code{"ledger"}.}
+\code{"trades"}, \code{"ledger"}, \code{"diagnostics"}, or \code{"availability"}.}
 }
 \value{
 A ledgr result table, which is a classed tibble with the requested
@@ -44,6 +48,13 @@ final equity used by prints and comparisons is the last row of this table.
 columns \code{ts_utc}, \code{equity}, and \code{period_return}. The first period return is
 \code{NA_real_}; later rows use the same adjacent-equity return formula as
 ledgr-owned metrics and retained sweep returns.
+
+\code{what = "diagnostics"} returns the ordered durable decision, risk,
+execution, reconciliation, and stop evidence recorded by an
+availability-aware run. Dense runs return the same typed zero-row schema.
+\code{what = "availability"} reconstructs the per-pulse availability plane from
+sealed facts, the effective plan, and ledger holdings. It does not execute
+strategy code or invent targets.
 
 \code{ledgr_results()} does not support \code{what = "metrics"}. Metrics are derived
 from the public result tables; use \code{summary(bt)} for printed interpretation

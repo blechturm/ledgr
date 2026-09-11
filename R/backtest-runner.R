@@ -669,6 +669,49 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     snapshot_hash_for_features
   )
 
+  calendar <- if (availability_active) {
+    ledgr_availability_calendar(availability_provider, start_ts_utc, end_ts_utc)
+  } else {
+    ledgr_run_snapshot_calendar(
+      con,
+      instrument_ids,
+      start_ts_utc,
+      end_ts_utc
+    )
+  }
+  pulses <- calendar$pulses
+  pulses_posix <- calendar$pulses_posix
+  pulses_iso <- calendar$pulses_iso
+
+  terminal_completion <- if (availability_active && is_resume) {
+    ledgr_run_completion_read(
+      con,
+      run_id,
+      required = identical(registration$status, "INCOMPLETE")
+    )
+  } else {
+    NULL
+  }
+  if (!is.null(terminal_completion)) {
+    terminal_completion <- ledgr_run_completion_validate(
+      terminal_completion,
+      run_id,
+      calendar,
+      stored_status = registration$status
+    )
+  }
+  if (identical(registration$status, "INCOMPLETE")) {
+    ledgr_run_completion_validate_finalized(
+      con,
+      terminal_completion,
+      run_id,
+      calendar
+    )
+    return(list(run_id = run_id, db_path = db_path))
+  }
+  terminal_recovery <- !is.null(terminal_completion) &&
+    registration$status %in% c("RUNNING", "FAILED")
+
   feature_defs <- ledgr_feature_defs_from_config(cfg)
   active_alias_map <- ledgr_alias_map_from_config(cfg)
   run_feature_matrix <- list()
@@ -684,42 +727,26 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     rlang::abort("engine.checkpoint_every must be an integer >= 1.", class = "ledgr_invalid_config")
   }
 
-  strategy <- ledgr_strategy_from_config(cfg)
-  strategy_fn <- strategy$fn
-  strategy_is_functional <- TRUE
-  if (!is.function(strategy_fn)) {
-    rlang::abort("Strategy is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
-  }
-  strategy_params <- strategy$params
-  strategy_call_signature <- strategy$signature
-  strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
-  ledgr_run_resume_preflight(is_resume, strategy_preflight)
-
-  calendar <- if (availability_active) {
-    ledgr_availability_calendar(availability_provider, start_ts_utc, end_ts_utc)
+  resume <- if (isTRUE(terminal_recovery)) {
+    list(
+      resume_posix = pulses_posix[[1L]],
+      resume_iso = pulses_iso[[1L]],
+      start_idx = length(pulses_posix) + 1L,
+      next_event_seq = NA_integer_
+    )
   } else {
-    ledgr_run_snapshot_calendar(
-      con,
-      instrument_ids,
-      start_ts_utc,
-      end_ts_utc
+    ledgr_run_resume(
+      con = con,
+      output_handler = output_handler,
+      run_id = run_id,
+      is_resume = is_resume,
+      calendar = calendar,
+      persist_features = persist_features,
+      start_ts_utc = start_ts_utc,
+      opening_positions = opening_positions,
+      opening_cost_basis = opening_cost_basis
     )
   }
-  pulses <- calendar$pulses
-  pulses_posix <- calendar$pulses_posix
-  pulses_iso <- calendar$pulses_iso
-
-  resume <- ledgr_run_resume(
-    con = con,
-    output_handler = output_handler,
-    run_id = run_id,
-    is_resume = is_resume,
-    calendar = calendar,
-    persist_features = persist_features,
-    start_ts_utc = start_ts_utc,
-    opening_positions = opening_positions,
-    opening_cost_basis = opening_cost_basis
-  )
   resume_posix <- resume$resume_posix
   resume_iso <- resume$resume_iso
   start_idx <- resume$start_idx
@@ -729,8 +756,6 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   fast_context <- prepared_control$fast_context
   max_pulses <- prepared_control$max_pulses
   cost_resolver <- ledgr_cost_resolver_from_plan_json(cfg$cost_model$cost_plan_json)
-
-  output_handler$record_run_status("RUNNING", NA_character_)
 
   processed <- 0L
   total_pulses <- length(pulses) - start_idx + 1L
@@ -783,7 +808,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
-  if (is_resume && length(pulses) > 0) {
+  if (is_resume && !isTRUE(terminal_recovery) && length(pulses) > 0) {
     resume_state <- ledgr_state_asof(con, run_id, initial_cash, resume_posix, instrument_ids = instrument_ids)
     if (identical(execution_mode, "audit_log")) {
       pos_vec <- rep(0, length(instrument_ids))
@@ -982,6 +1007,56 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     alias_index = NULL
   )
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
+
+  if (isTRUE(terminal_recovery)) {
+    recovery_equity <- ledgr_run_terminal_recovery_equity(
+      con = con,
+      run_id = run_id,
+      completion = terminal_completion,
+      calendar = calendar,
+      bars_mat = bars_mat,
+      instrument_ids = instrument_ids,
+      initial_cash = initial_cash,
+      availability_provider = availability_provider
+    )
+    ledgr_run_finalize(
+      con = con,
+      output_handler = output_handler,
+      run = list(
+        run_id = run_id,
+        start_ts_utc = start_ts_utc,
+        end_ts_utc = end_ts_utc,
+        instrument_ids = instrument_ids,
+        initial_cash = initial_cash
+      ),
+      calendar = calendar,
+      projection = list(
+        bars_mat = bars_mat,
+        persist_features = persist_features,
+        feature_defs = feature_defs,
+        runtime_projection = runtime_projection
+      ),
+      fold = list(
+        telemetry = telemetry,
+        processed = length(recovery_equity),
+        status = as.character(terminal_completion$intended_terminal_status[[1L]]),
+        equity_facts = recovery_equity
+      )
+    )
+    return(list(run_id = run_id, db_path = db_path))
+  }
+
+  strategy <- ledgr_strategy_from_config(cfg)
+  strategy_fn <- strategy$fn
+  strategy_is_functional <- TRUE
+  if (!is.function(strategy_fn)) {
+    rlang::abort("Strategy is not a function; check strategy configuration.", class = "ledgr_invalid_strategy")
+  }
+  strategy_params <- strategy$params
+  strategy_call_signature <- strategy$signature
+  strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
+  ledgr_run_resume_preflight(is_resume, strategy_preflight)
+  output_handler$record_run_status("RUNNING", NA_character_)
 
   state_prev_mem <- NULL
   if (is_resume) {

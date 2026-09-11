@@ -125,6 +125,10 @@ ledgr_walk_forward <- function(exp,
         )
         break
       }
+    } else if (identical(result$status, "PARTIAL")) {
+      terminal_status <- "PARTIAL"
+      terminal_error <- NULL
+      break
     } else {
       terminal_status <- "FAILED"
       terminal_error <- result$error
@@ -134,6 +138,15 @@ ledgr_walk_forward <- function(exp,
 
   fold_table <- ledgr_walk_forward_bind_rows(fold_rows)
   score_table <- ledgr_walk_forward_bind_rows(score_rows)
+  if (nrow(score_table) > 0L) {
+    score_table <- score_table[order(
+      score_table$fold_seq,
+      score_table$window,
+      score_table$candidate_key,
+      score_table$metric_name
+    ), , drop = FALSE]
+    rownames(score_table) <- NULL
+  }
   session_row <- ledgr_walk_forward_session_row(
     identity = session_identity,
     master_seed = seed,
@@ -492,6 +505,31 @@ ledgr_walk_forward_eval_fold <- function(exp,
     scores = test_scores,
     identities = test_identity
   )
+  if (identical(as.character(test_scores$status[[1]]), "INCOMPLETE")) {
+    return(list(
+      status = "PARTIAL",
+      error = NULL,
+      fold_row = ledgr_walk_forward_fold_row(
+        session_id = session_id,
+        fold = fold,
+        train_window = train_window,
+        test_window = test_window,
+        opening_state_policy = opening_state_policy,
+        selected_candidate_key = selected_train_identity$candidate_key[[1]],
+        selected_at_utc = selected_at,
+        test_run_id = test_run_id,
+        status = "PARTIAL"
+      ),
+      score_rows = rbind(train_score_rows, test_score_rows),
+      selected = tibble::as_tibble(cbind(
+        fold_seq = fold$fold_seq,
+        selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE],
+        test_run_id = test_run_id
+      )),
+      test_run = test_run,
+      carried_opening = NULL
+    ))
+  }
   if (identical(as.character(test_scores$status[[1]]), "FAILED")) {
     err <- rlang::catch_cnd(
       rlang::abort(
@@ -578,14 +616,16 @@ ledgr_walk_forward_na_time <- function() {
 }
 
 ledgr_walk_forward_test_score_wide <- function(test_run) {
+  terminal <- ledgr_backtest_terminal_evidence(test_run)
   metric_result <- tryCatch(
     list(metrics = ledgr_compute_metrics(test_run), equity = ledgr_results(test_run, "equity")),
     error = function(e) e
   )
   if (inherits(metric_result, "condition")) {
+    status <- if (identical(terminal$status, "INCOMPLETE")) "INCOMPLETE" else "FAILED"
     return(tibble::tibble(
       candidate_id = test_run$run_id,
-      status = "FAILED",
+      status = status,
       final_equity = NA_real_,
       total_return = NA_real_,
       annualized_return = NA_real_,
@@ -597,16 +637,18 @@ ledgr_walk_forward_test_score_wide <- function(test_run) {
       avg_trade = NA_real_,
       time_in_market = NA_real_,
       error_class = ledgr_condition_class(metric_result),
-      error_msg = conditionMessage(metric_result)
+      error_msg = conditionMessage(metric_result),
+      completion_json = terminal$completion_json
     ))
   }
   metrics <- metric_result$metrics
   equity <- metric_result$equity
   final_equity <- if (nrow(equity) > 0L) as.numeric(equity$equity[[nrow(equity)]]) else NA_real_
   if (!is.finite(final_equity)) {
+    status <- if (identical(terminal$status, "INCOMPLETE")) "INCOMPLETE" else "FAILED"
     return(tibble::tibble(
       candidate_id = test_run$run_id,
-      status = "FAILED",
+      status = status,
       final_equity = final_equity,
       total_return = NA_real_,
       annualized_return = NA_real_,
@@ -618,12 +660,13 @@ ledgr_walk_forward_test_score_wide <- function(test_run) {
       avg_trade = NA_real_,
       time_in_market = NA_real_,
       error_class = "ledgr_walk_forward_test_run_failed",
-      error_msg = "Selected test run produced no usable final equity row."
+      error_msg = "Selected test run produced no usable final equity row.",
+      completion_json = terminal$completion_json
     ))
   }
   tibble::tibble(
     candidate_id = test_run$run_id,
-    status = "DONE",
+    status = terminal$status,
     final_equity = final_equity,
     total_return = as.numeric(metrics$total_return %||% NA_real_),
     annualized_return = as.numeric(metrics$annualized_return %||% NA_real_),
@@ -635,7 +678,8 @@ ledgr_walk_forward_test_score_wide <- function(test_run) {
     avg_trade = as.numeric(metrics$avg_trade %||% NA_real_),
     time_in_market = as.numeric(metrics$time_in_market %||% NA_real_),
     error_class = NA_character_,
-    error_msg = NA_character_
+    error_msg = NA_character_,
+    completion_json = terminal$completion_json
   )
 }
 
@@ -674,6 +718,9 @@ ledgr_walk_forward_score_rows <- function(session_id,
         metric_value = as.numeric(ledgr_walk_forward_score_value(scores, metric, i, NA_real_)),
         n_trades = as.integer(ledgr_walk_forward_score_value(scores, "n_trades", i, NA_integer_)),
         status = as.character(ledgr_walk_forward_score_value(scores, "status", i, "DONE")),
+        completion_json = as.character(
+          ledgr_walk_forward_score_value(scores, "completion_json", i, NA_character_)
+        ),
         error_class = as.character(ledgr_walk_forward_score_value(scores, "error_class", i, NA_character_)),
         error_msg = as.character(ledgr_walk_forward_score_value(scores, "error_msg", i, NA_character_)),
         execution_seed = as.integer(identity$execution_seed[[1]]),
@@ -718,7 +765,7 @@ ledgr_walk_forward_fold_row <- function(session_id,
     test_scoring_start_utc = test_window$scoring_start_utc,
     opening_state_policy = opening_state_policy,
     selected_candidate_key = selected_candidate_key,
-    selected_at_utc = selected_at_utc,
+    selected_at_utc = as.POSIXct(selected_at_utc, tz = "UTC"),
     test_run_id = test_run_id,
     status = status,
     stringsAsFactors = FALSE
@@ -829,15 +876,25 @@ ledgr_walk_forward_run_exists <- function(exp, run_id) {
 ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
   opened <- ledgr_run_store_open(exp$snapshot$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  state <- ledgr_state_reconstruct(run_id, opened$con)
-  equity <- state$equity_curve
+  state <- NULL
+  if (isTRUE(exp$availability$active)) {
+    equity <- ledgr_backtest_equity(opened$con, run_id)
+  } else {
+    state <- ledgr_state_reconstruct(run_id, opened$con)
+    equity <- state$equity_curve
+  }
   if (nrow(equity) < 1L) {
     return(exp$opening)
   }
   final_cash <- as.numeric(equity$cash[[nrow(equity)]])
-  positions <- state$positions
-  held <- positions$qty
-  names(held) <- positions$instrument_id
+  final_ts <- as.POSIXct(equity$ts_utc[[nrow(equity)]], tz = "UTC")
+  if (isTRUE(exp$availability$active)) {
+    held <- ledgr_availability_positions_asof(opened$con, run_id, final_ts)
+  } else {
+    positions <- state$positions
+    held <- positions$qty
+    names(held) <- positions$instrument_id
+  }
   held <- held[is.finite(held) & abs(held) > 1e-12]
   if (length(held) < 1L) {
     return(ledgr_opening(cash = final_cash))
@@ -848,7 +905,6 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
       class = "ledgr_walk_forward_invalid_opening_state"
     )
   }
-  final_ts <- as.POSIXct(equity$ts_utc[[nrow(equity)]], tz = "UTC")
   lot_state <- ledgr_lot_state_asof(opened$con, run_id, exp$universe, final_ts)
   total_basis <- lot_state$cost_basis_by_inst[names(held)]
   cost_basis <- as.numeric(total_basis) / as.numeric(held)

@@ -85,6 +85,7 @@ ledgr_sweep_empty_returns <- function(include_sweep_id = TRUE) {
   out <- tibble::tibble(
     candidate_id = character(),
     candidate_row = integer(),
+    status = character(),
     ts_utc = as.POSIXct(character(), tz = "UTC"),
     equity = numeric(),
     period_return = numeric()
@@ -113,7 +114,13 @@ ledgr_sweep_retained_returns_from_equity <- function(equity,
 }
 
 ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
-  retained <- lapply(results, `[[`, "retained_returns")
+  retained <- lapply(results, function(result) {
+    rows <- result$retained_returns
+    if (!is.null(rows) && nrow(rows) > 0L) {
+      rows$status <- as.character(result$row$status[[1L]])
+    }
+    rows
+  })
   retained <- retained[!vapply(retained, is.null, logical(1))]
   retained <- retained[vapply(retained, nrow, integer(1)) > 0L]
   if (length(retained) == 0L) {
@@ -124,6 +131,7 @@ ledgr_sweep_collect_retained_returns <- function(results, sweep_id) {
     sweep_id = rep(as.character(sweep_id), nrow(out)),
     candidate_id = as.character(out$candidate_id),
     candidate_row = as.integer(out$candidate_row),
+    status = as.character(out$status),
     ts_utc = as.POSIXct(out$ts_utc, tz = "UTC"),
     equity = as.numeric(out$equity),
     period_return = as.numeric(out$period_return)
@@ -199,14 +207,16 @@ ledgr_sweep_collect_retained_trades <- function(results, sweep_id) {
 #' Retained sweep return series
 #'
 #' `ledgr_sweep_returns()` returns the retained long net portfolio equity and
-#' adjacent-period return series for completed sweep candidates. Retained
+#' adjacent-period return series for completed and explicitly labelled
+#' incomplete sweep candidates. Complete-performance panel projections exclude
+#' incomplete candidates.
 #' returns are net strategy returns only; they are not benchmark-relative
 #' returns and they do not include gross-vs-net attribution.
 #'
 #' @param x A `ledgr_sweep_results` object.
 #' @param candidates Optional character vector of `candidate_id` values.
 #' @return `ledgr_sweep_returns()` returns a tibble with `sweep_id`,
-#'   `candidate_id`, `ts_utc`, `equity`, and `period_return`.
+#'   `candidate_id`, `status`, `ts_utc`, `equity`, and `period_return`.
 #'   `ledgr_sweep_trades()` returns retained closed-trade evidence with
 #'   `sweep_id`, `candidate_id`, `candidate_row`, `trade_seq`, `close_ts_utc`,
 #'   `realized_pnl`, and `win_loss`.
@@ -268,7 +278,7 @@ ledgr_sweep_returns_wide <- function(x,
                                      candidates = NULL,
                                      value = c("returns", "equity")) {
   value <- match.arg(value)
-  long <- ledgr_sweep_returns_resolve(x, candidates = candidates)
+  long <- ledgr_sweep_returns_resolve(x, candidates = candidates, require_completed = TRUE)
   ids <- if (is.null(candidates)) {
     unique(as.character(long$candidate_id))
   } else {
@@ -393,10 +403,40 @@ ledgr_sweep_returns_panel <- function(x,
   value <- match.arg(value)
   ledgr_sweep_returns_validate_complete(complete)
   requested <- ledgr_sweep_returns_requested_candidates(x, candidates)
-  long <- ledgr_sweep_returns_resolve(x, candidates = candidates)
   completed <- ledgr_sweep_returns_completed_candidates(x)
+  if (length(requested) == 0L) {
+    rlang::abort(
+      "No completed candidates are available for a return-panel projection.",
+      class = c(
+        "ledgr_sweep_returns_incomplete_panel",
+        "ledgr_validation_pbo_incomplete_panel",
+        "ledgr_invalid_args"
+      ),
+      candidate_ids = as.character(x$candidate_id),
+      completed_candidate_ids = completed,
+      excluded_candidate_ids = as.character(x$candidate_id)
+    )
+  }
+  long <- ledgr_sweep_returns_resolve(
+    x,
+    candidates = requested,
+    require_completed = TRUE
+  )
   used <- requested[requested %in% unique(as.character(long$candidate_id))]
   excluded <- setdiff(as.character(x$candidate_id), used)
+  if (length(used) == 0L) {
+    rlang::abort(
+      "No completed candidates are available for a return-panel projection.",
+      class = c(
+        "ledgr_sweep_returns_incomplete_panel",
+        "ledgr_validation_pbo_incomplete_panel",
+        "ledgr_invalid_args"
+      ),
+      candidate_ids = as.character(x$candidate_id),
+      completed_candidate_ids = completed,
+      excluded_candidate_ids = excluded
+    )
+  }
   drop_first <- identical(value, "returns")
   value_col <- if (identical(value, "returns")) "period_return" else "equity"
 
@@ -942,7 +982,7 @@ ledgr_return_panel_scalar_attr <- function(x, name) {
   NA_character_
 }
 
-ledgr_sweep_returns_resolve <- function(x, candidates = NULL) {
+ledgr_sweep_returns_resolve <- function(x, candidates = NULL, require_completed = FALSE) {
   if (!inherits(x, "ledgr_sweep_results")) {
     rlang::abort("`x` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
   }
@@ -961,7 +1001,12 @@ ledgr_sweep_returns_resolve <- function(x, candidates = NULL) {
     candidates_scope <- unique(as.character(x$candidate_id))
     returns <- ledgr_sweep_returns_filter_and_order(returns, candidates_scope)
   } else {
-    ledgr_sweep_returns_validate_candidates(x, returns, candidates)
+    ledgr_sweep_returns_validate_candidates(
+      x,
+      returns,
+      candidates,
+      require_completed = require_completed
+    )
     returns <- ledgr_sweep_returns_filter_and_order(returns, candidates)
   }
   ledgr_sweep_returns_public_columns(returns)
@@ -979,7 +1024,12 @@ ledgr_sweep_returns_filter_and_order <- function(returns, candidates) {
 
 ledgr_sweep_returns_public_columns <- function(returns) {
   out <- tibble::as_tibble(returns)
-  out <- out[, c("sweep_id", "candidate_id", "ts_utc", "equity", "period_return"), drop = FALSE]
+  if (!"status" %in% names(out)) {
+    out$status <- rep("DONE", nrow(out))
+  }
+  columns <- c("sweep_id", "candidate_id", "status", "ts_utc", "equity", "period_return")
+  out <- out[, columns, drop = FALSE]
+  out$status <- as.character(out$status)
   out$ts_utc <- as.POSIXct(out$ts_utc, tz = "UTC")
   out$equity <- as.numeric(out$equity)
   out$period_return <- as.numeric(out$period_return)
@@ -1048,7 +1098,7 @@ ledgr_sweep_returns_requested_candidates <- function(x, candidates) {
     rlang::abort("`x` must be a ledgr_sweep_results object.", class = "ledgr_invalid_args")
   }
   if (is.null(candidates)) {
-    return(unique(as.character(x$candidate_id)))
+    return(ledgr_sweep_returns_completed_candidates(x))
   }
   ledgr_sweep_returns_normalize_candidates(candidates)
 }
@@ -1190,7 +1240,10 @@ ledgr_sweep_returns_normalize_candidates <- function(candidates) {
   as.character(candidates)
 }
 
-ledgr_sweep_returns_validate_candidates <- function(x, returns, candidates) {
+ledgr_sweep_returns_validate_candidates <- function(x,
+                                                     returns,
+                                                     candidates,
+                                                     require_completed = FALSE) {
   known <- as.character(x$candidate_id)
   missing <- setdiff(candidates, known)
   if (length(missing) > 0L) {
@@ -1200,7 +1253,11 @@ ledgr_sweep_returns_validate_candidates <- function(x, returns, candidates) {
     )
   }
   status <- stats::setNames(as.character(x$status), known)
-  not_completed <- candidates[status[candidates] != "DONE"]
+  not_completed <- if (isTRUE(require_completed)) {
+    candidates[status[candidates] != "DONE"]
+  } else {
+    candidates[!status[candidates] %in% c("DONE", "INCOMPLETE")]
+  }
   if (length(not_completed) > 0L) {
     rlang::abort(
       sprintf("Retained returns are available only for completed candidates: %s.", paste(not_completed, collapse = ", ")),

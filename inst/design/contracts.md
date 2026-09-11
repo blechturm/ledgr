@@ -396,6 +396,20 @@ The strategy preflight boundary originated in
   transaction, and record error diagnostics only after that rollback.
   Deliberately interrupted `RUNNING` invocations retain their decision trace;
   resumed invocations append rather than replace those diagnostic rows.
+- Experiment-store schema 115 adds nullable canonical `completion_json` to
+  sweep-candidate and walk-forward score evidence and admits `INCOMPLETE` on
+  those rows. Migration rebuilds the two constrained tables transactionally,
+  preserves existing rows and keys, and leaves saved-sweep schema 4 and all
+  candidate, sweep, run, and walk-forward identity formats unchanged.
+- Availability-aware `DONE` and `INCOMPLETE` completion rows are terminal
+  evidence. Repeating an achieved `INCOMPLETE` run ID verifies identity and
+  validates the exact stored equity timestamp prefix and recorded stop
+  diagnostic before returning without invoking strategy code, deleting a
+  tail, changing status, or rewriting projections. A `RUNNING` or `FAILED`
+  row with valid committed completion evidence performs finalization only and
+  commits the intended terminal status without replaying the fold or
+  duplicating evidence. Malformed or inconsistent terminal evidence fails
+  closed with `ledgr_run_terminal_evidence_invalid`.
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or
@@ -445,9 +459,10 @@ The strategy preflight boundary originated in
 - Infrastructure-owned temporary names used by snapshot ingestion and eager
   result reads must preserve the caller's `.Random.seed`, including its
   absence, and must not change the caller's next random draw.
-- `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
-  `DONE` runs. Opening a run must not execute strategy code, recompute fills,
-  or mutate persistent run artifacts.
+- `ledgr_run_open()` returns a `ledgr_backtest` handle for terminal `DONE` and
+  availability-aware `INCOMPLETE` runs. Opening validates incomplete bounds
+  and must not execute strategy code, recompute fills, or mutate persistent
+  run artifacts.
 - `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
@@ -751,13 +766,26 @@ The strategy preflight boundary originated in
   per-operation read connections where practical so inspecting results does not
   leave a DuckDB connection open and block a later write in the same session.
 - `tibble::as_tibble(bt, what = ...)` supports the closed result set:
-  `equity`, `returns`, `fills`, `trades`, and `ledger`.
+  `equity`, `returns`, `fills`, `trades`, `ledger`, `diagnostics`, and
+  `availability`.
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
   same result path. It must delegate to `tibble::as_tibble()` and must not
   duplicate reconstruction logic.
 - `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
   display. That subclass must remain tibble-compatible, and
   `tibble::as_tibble()` must expose the raw result table.
+- `diagnostics` is the ordered durable trace recorded by availability-aware
+  runs; dense runs return its typed zero-row schema. `availability` is derived
+  from sealed facts, the stored effective plan, and ledger holdings. Neither
+  view executes strategy code, reconstructs a strategy target, writes durable
+  rows, or changes run identity.
+- `ledgr_run_explain(bt, instrument_id, ts_utc)` joins one retained decision
+  trace to its availability, execution, valuation, feature-identity, position,
+  and terminal evidence. It consumes `diagnostics` and `availability` through
+  the same `tibble::as_tibble()` result-table path and returns the same row
+  after close/reopen. Missing decision trace fails
+  `ledgr_run_explanation_unavailable`; the function must not invent an intent
+  from positions, facts, or current strategy code.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
@@ -875,6 +903,19 @@ The strategy preflight boundary originated in
   walk-forward identity. Optional package projections such as `xts` are
   external evidence only and must remain `Suggests`-only with no `NAMESPACE`
   imports.
+- Retained return rows carry their candidate terminal status. Achieved
+  `INCOMPLETE` prefixes may remain visible as explicitly incomplete evidence,
+  but complete-panel projections, selection, candidate extraction, and
+  promotion exclude or reject them even through `allow_failed` paths.
+  Candidate extraction fails with `ledgr_incomplete_sweep_candidate`, and
+  promotion fails with `ledgr_promote_incomplete_candidate`.
+  Sequential and parallel sweeps carry the same canonical completion payload;
+  the parent remains the only parallel persistence owner.
+- Walk-forward training selection admits only `DONE` candidates. An
+  `INCOMPLETE` selected test run records its canonical completion payload,
+  marks the fold and session `PARTIAL`, preserves the achieved evidence, and
+  ends a carry-state chain without constructing a later opening state or fold.
+  Candidate and session identity formats remain unchanged.
 - `ledgr_sweep_returns_wide()` reserves `ts_utc` as its structural timestamp
   column. A candidate ID equal to `ts_utc` or beginning with
   `..ledgr_candidate_` is represented by that prefix followed by the lowercase

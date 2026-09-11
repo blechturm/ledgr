@@ -66,11 +66,28 @@
   evidence. Expected valuation, risk-mark, settlement, and reconciliation
   stops preserve accepted prefixes as `INCOMPLETE`; unexpected fold errors
   remain `FAILED` and retain only post-rollback error diagnostics.
+- Added terminal recovery for availability-aware `DONE` and `INCOMPLETE` runs.
+  Achieved incomplete run IDs return idempotently, while failed finalization
+  resumes from committed terminal evidence without rerunning strategy code or
+  duplicating fold rows. `ledgr_run_open()` now opens either terminal status;
+  malformed evidence fails with `ledgr_run_terminal_evidence_invalid`.
+- Added experiment-store schema 115 completion evidence for sweep candidates
+  and walk-forward scores. Incomplete prefixes stay visibly labelled but are
+  excluded from complete panels, selection, candidate extraction, and
+  promotion; an incomplete test fold ends a carry-state walk-forward session
+  as `PARTIAL` without inventing a later opening state. Extraction and
+  promotion reject incomplete candidates with `ledgr_incomplete_sweep_candidate`
+  and `ledgr_promote_incomplete_candidate`, respectively.
+- Added `diagnostics` and `availability` result tables plus
+  `ledgr_run_explain()`. These read durable traces and reconstruct availability
+  from sealed facts without executing strategy code; missing traces fail
+  with `ledgr_run_explanation_unavailable` rather than producing an inferred
+  decision.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-8
-  are complete after review and Batches 9-11 are pending.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-9
+  are complete after review and Batches 10-11 are pending.
 
 # ledgr 0.1.9.7
 

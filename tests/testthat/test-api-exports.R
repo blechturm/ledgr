@@ -97,6 +97,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_run_label",
     "ledgr_run_list",
     "ledgr_run_open",
+    "ledgr_run_explain",
     "ledgr_run_promotion_context",
     "ledgr_run_tag",
     "ledgr_run_tags",

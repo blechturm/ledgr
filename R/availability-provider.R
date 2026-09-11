@@ -183,6 +183,40 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
   if (!ledgr_availability_config_active(config)) return(NULL)
   snapshot_id <- as.character(config$data$snapshot_id)
   data <- ledgr_availability_provider_data(con, snapshot_id)
+  history <- function(instrument_id, cutoff, sessions = NULL) {
+    cutoff <- as.POSIXct(cutoff, tz = "UTC")
+    rows <- DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT instrument_id, ts_utc, open, high, low, close, volume",
+        "FROM snapshot_bars WHERE snapshot_id = ? AND instrument_id = ?",
+        "AND ts_utc <= ? ORDER BY ts_utc"
+      ),
+      params = list(snapshot_id, instrument_id, cutoff)
+    )
+    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
+    rows
+  }
+  ledgr_availability_provider_build(data, config, snapshot_hash, history)
+}
+
+ledgr_availability_provider_portable <- function(data,
+                                                 config,
+                                                 snapshot_hash,
+                                                 bars_by_id) {
+  history <- function(instrument_id, cutoff, sessions = NULL) {
+    rows <- bars_by_id[[instrument_id]]
+    if (is.null(rows)) rows <- data.frame()
+    if (nrow(rows) > 0L) {
+      rows <- rows[as.POSIXct(rows$ts_utc, tz = "UTC") <= as.POSIXct(cutoff, tz = "UTC"), , drop = FALSE]
+    }
+    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
+    rows
+  }
+  ledgr_availability_provider_build(data, config, snapshot_hash, history)
+}
+
+ledgr_availability_provider_build <- function(data, config, snapshot_hash, history) {
   family_order <- c("membership", "sessions", "trading_status", "lifetime")
   families <- family_order[family_order %in% as.character(data$families$family)]
   universe_rule <- config$availability$universe_rule
@@ -251,21 +285,6 @@ ledgr_availability_provider <- function(con, config, snapshot_hash) {
       list(member = stats::setNames(ids %in% members, ids)),
       restrictions
     )
-  }
-
-  history <- function(instrument_id, cutoff, sessions = NULL) {
-    cutoff <- as.POSIXct(cutoff, tz = "UTC")
-    rows <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT instrument_id, ts_utc, open, high, low, close, volume",
-        "FROM snapshot_bars WHERE snapshot_id = ? AND instrument_id = ?",
-        "AND ts_utc <= ? ORDER BY ts_utc"
-      ),
-      params = list(snapshot_id, instrument_id, cutoff)
-    )
-    if (!is.null(sessions)) rows <- utils::tail(rows, as.integer(sessions))
-    rows
   }
 
   identity <- function() {

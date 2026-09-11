@@ -1,6 +1,6 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-8 complete after review. Batches 9-11 are pending.
+Status: Batches 0-9 complete after review. Batches 10-11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -525,7 +525,7 @@ Implementation notes:
 
 ## Batch 9 - Terminal And Cross-Path Evidence
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -553,6 +553,49 @@ Exit criteria:
 
 - U1, U9, U11-U12 and fresh-connection recovery tests pass;
 - independent review accepts terminal and cross-path semantics before Batch 10.
+
+Implementation notes:
+
+- Terminal completion is validated against the stored calendar before an
+  achieved `INCOMPLETE` shortcut or finalization-only recovery. Finalized
+  incomplete runs also validate the exact equity timestamp prefix and stopped
+  diagnostic. Both `DONE` and `INCOMPLETE` recovery avoid strategy replay and
+  duplicate evidence.
+- Experiment-store schema 115 adds nullable canonical completion evidence to
+  sweep candidates and walk-forward scores. Transactional migration preserves
+  rows and keys and rolls back its marker on failure, while saved-sweep schema
+  4 and all candidate/session identity formats remain unchanged.
+- Direct, sequential, parallel, and reopened sweep completion payloads agree.
+  Incomplete retained prefixes are labelled and rejected by complete panels,
+  including explicit candidate requests, candidate extraction, selection, and
+  promotion.
+- An incomplete selected test run records a `PARTIAL` fold/session and ends
+  the carry-state chain without creating a later opening or fold. Failure to
+  derive a finite metric from that prefix preserves `INCOMPLETE` rather than
+  relabelling the evidence `FAILED`.
+- `diagnostics` and `availability` result tables plus `ledgr_run_explain()`
+  share the public result-table path and read durable evidence only.
+  Availability replays holdings from the ledger and resolves marks from sealed
+  bars rather than trace-only values. Direct and reopened views match,
+  inspection writes no table content, and missing decision traces fail
+  explicitly.
+- Legacy retained-return evidence without a terminal-status column normalizes
+  to `DONE`; current persistence parity and schema tests pin the new status
+  column and experiment-store version 115.
+- The full 120-file local suite completed with no failures or errors and one
+  expected snapshot-adapter skip. All 147 generated Rd files pass
+  `tools::checkRd()`; `DESCRIPTION` is unchanged and `NAMESPACE` adds only
+  `ledgr_run_explain()`.
+- Review follow-up aligned availability-aware walk-forward hydration to the
+  sealed session calendar and made availability-aware carry-state
+  reconstruction consume finalized equity plus ledger/lot evidence. A
+  two-instrument heterogeneous-gap journey now completes through direct, sweep,
+  and two walk-forward folds; the second fold's opening cash, positions, and
+  cost basis are pinned to the first fold's finalized evidence.
+- Review follow-up documented and locked the terminal, incomplete-candidate,
+  incomplete-promotion, and missing-explanation conditions. Direct terminal
+  bound tests and value-level availability-plane assertions make both internal
+  validators detecting.
 
 ## Batch 10 - Teaching Reference And Deferral Closeout
 

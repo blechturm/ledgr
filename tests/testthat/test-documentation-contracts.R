@@ -253,7 +253,11 @@ testthat::test_that("availability runtime and strict-feature contracts stay boun
     "ledgr_nonmember_exposure_increase",
     "ledgr_post_risk_inadmissible",
     "ledgr_short_exposure_unsupported",
-    "ledgr_affordability_reconciliation_failed"
+    "ledgr_affordability_reconciliation_failed",
+    "ledgr_run_terminal_evidence_invalid",
+    "ledgr_incomplete_sweep_candidate",
+    "ledgr_promote_incomplete_candidate",
+    "ledgr_run_explanation_unavailable"
   )
   for (class in availability_classes) {
     testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
@@ -752,7 +756,7 @@ testthat::test_that("contracts record the closed backtest result set", {
 
   testthat::expect_match(
     text,
-    "`equity`, `returns`, `fills`, `trades`, and `ledger`",
+    "`equity`, `returns`, `fills`, `trades`, `ledger`, `diagnostics`, and",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -1637,6 +1641,23 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(contract, "finalize as `INCOMPLETE`", fixed = TRUE)
   testthat::expect_match(contract, "record error diagnostics only after that rollback", fixed = TRUE)
   testthat::expect_match(contract, "resumed invocations append rather than replace", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 115", fixed = TRUE)
+  testthat::expect_match(contract, "Repeating an achieved `INCOMPLETE` run ID", fixed = TRUE)
+  testthat::expect_match(contract, "exact stored equity timestamp prefix", fixed = TRUE)
+  testthat::expect_match(contract, "recorded stop", fixed = TRUE)
+  testthat::expect_match(contract, "performs finalization only", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_terminal_evidence_invalid`", fixed = TRUE)
+  testthat::expect_match(contract, "prefixes may remain visible as explicitly incomplete evidence", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
+  testthat::expect_match(contract, "marks the fold and session `PARTIAL`", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_explain(bt, instrument_id, ts_utc)`", fixed = TRUE)
+  testthat::expect_match(contract, "same `tibble::as_tibble()` result-table path", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_terminal_evidence_invalid`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
   reason_codes <- c(
     "decision_recorded", "empty_public_domain", "trading_halted",
     "quotation_only", "status_unknown", "status_unknown_or_conflicting",
@@ -2570,15 +2591,15 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
   testthat::expect_match(
     docs$batches,
     paste0(
-      "Status: Batches 0-8 complete after review[.]",
-      "[[:space:]]+Batches 9-11 are pending[.]"
+      "Status: Batches 0-9 complete after review[.]",
+      "[[:space:]]+Batches 10-11 are pending[.]"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
-      "Batches 0-8 complete after review[.]",
-      "[[:space:]]+Batches 9-11 are pending"
+      "Batches 0-9 complete after review[.]",
+      "[[:space:]]+Batches 10-11 are pending"
     )
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
@@ -2593,6 +2614,15 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
     )
   }
   testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
+  for (id in c("LDG-2697", "LDG-2698", "LDG-2699", "LDG-2700")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
   testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
   testthat::expect_match(
     docs$tickets,

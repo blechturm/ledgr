@@ -240,8 +240,9 @@ a final-pulse target. A valid off-calendar row is retained for cutoff classifica
 
 ### 2.5 Identity, schema versions, and compatibility
 
-**Source:** `R/experiment-store-schema.R:1-2` declares store schema 112 and saved-sweep schema 3.
-Implement store schema 113 and saved-sweep schema 4 for the new evidence/status fields. Snapshot
+**Source:** At ticket cut, `R/experiment-store-schema.R:1-2` declared store schema 112 and
+saved-sweep schema 3. The staged implementation advances the store through schemas 113-115 and
+the saved-sweep schema to 4 for the new evidence/status fields. Snapshot
 hash rule 2 covers normalized instruments/bars plus every declared fact-family header and row,
 including quarantine. Rule 1 remains the exact existing hash computation when facts are absent.
 Persist the rule identifier for fact-bearing snapshots; absence on legacy snapshots means rule 1.

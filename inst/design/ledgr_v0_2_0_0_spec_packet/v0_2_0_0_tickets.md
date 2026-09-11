@@ -1588,7 +1588,7 @@ scope: incomplete-prefix-diagnostics
 Priority: P0
 Effort: L
 Dependencies: LDG-2696
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1621,6 +1621,18 @@ shortcut for achieved terminals and finalization-only recovery after failure.
 - U19 valuation-horizon and U22 terminal-settlement recovery cases
 - First-review terminal-idempotency fixture
 
+### Implementation Notes
+
+- Valid terminal evidence is checked against the stored session calendar.
+  Achieved `INCOMPLETE` IDs also validate the exact equity timestamp prefix
+  and stopped diagnostic before returning without mutation; failed `DONE` or
+  `INCOMPLETE` finalization resumes without invoking the strategy or fold.
+- Fresh-session opening accepts validated `DONE` and availability-aware
+  `INCOMPLETE` runs; malformed completion bounds fail closed.
+- Review follow-up added direct detecting tests for incomplete-performance,
+  off-calendar intended bounds, and missing incomplete stop reasons, and bound
+  `ledgr_run_terminal_evidence_invalid` in contracts, NEWS, and generated help.
+
 ### Source Reference
 
 - Spec Sections 2.2 and 2.7; gates U19/U22 and terminal-idempotency regression row
@@ -1639,7 +1651,7 @@ scope: terminal-incomplete-finalization
 Priority: P0
 Effort: L
 Dependencies: LDG-2697
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1668,6 +1680,21 @@ and parallel candidates while excluding incomplete performance from selection.
 - `test-availability-parity.R`
 - Candidate/promotion rejection tests
 
+### Implementation Notes
+
+- Experiment-store schema 115 carries nullable canonical completion payloads
+  on candidate rows. Its transactional migration preserves existing rows and
+  keys and rolls back its marker on failure, while saved-sweep schema 4 and
+  identity formats remain unchanged.
+- Sequential, parallel, direct, and reopened completion evidence agrees.
+  Incomplete retained prefixes stay visible with status but cannot enter a
+  complete panel even through an explicit candidate request, candidate
+  extraction, selection, or promotion.
+- Historical retained-return evidence without a status column normalizes to
+  `DONE`, while current parity tests require the explicit status column.
+- Review follow-up documented and locked the extraction and promotion failure
+  classes for incomplete candidates.
+
 ### Source Reference
 
 - Spec Section 2.7; gates U9/U11
@@ -1686,7 +1713,7 @@ scope: incomplete-evidence
 Priority: P0
 Effort: L
 Dependencies: LDG-2698
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1716,6 +1743,22 @@ without inventing selection eligibility or later opening state.
 - U23 walk-forward asset-state lifecycle assertions
 - Saved/reopened walk-forward tests
 
+### Implementation Notes
+
+- Score rows admit `INCOMPLETE` with canonical completion evidence, while
+  training selection continues to admit only `DONE` candidates.
+- An incomplete test run records a `PARTIAL` fold/session and ends the
+  carry-state chain without fabricating the next fold or opening state.
+  A degenerate prefix whose metric cannot be derived remains `INCOMPLETE`
+  rather than becoming `FAILED`; saved and reopened fold/score evidence
+  agrees.
+- Review follow-up made availability-aware window validation use the sealed
+  session calendar and made availability-aware carry-state reconstruction read
+  finalized equity, ledger holdings, and lot evidence. A two-instrument fixture
+  with different missing sessions completes through direct, sweep, and two
+  walk-forward folds; fold-two opening cash, positions, and cost basis equal
+  fold one's finalized evidence.
+
 ### Source Reference
 
 - Spec Section 2.7; gates U9/U11/U23
@@ -1734,7 +1777,7 @@ scope: incomplete-fold-propagation
 Priority: P0
 Effort: L
 Dependencies: LDG-2697, LDG-2698, LDG-2699
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1766,6 +1809,20 @@ over recorded evidence, then verify dense and active behavior across all paths.
 - U4 same-strategy dense/active parity
 - Result delegation and fresh-connection tests
 - `tools::checkRd()` and export review
+
+### Implementation Notes
+
+- Added delegated `diagnostics` and `availability` result tables plus
+  `ledgr_run_explain()`, which consumes those same result tables. Targets and
+  execution outcomes come only from the committed decision trace;
+  availability holdings come from ledger replay and marks from sealed bars,
+  never from trace-only position or mark fields.
+- Live and reopened views/explanations are identical, inspection leaves table
+  contents unchanged, dense diagnostics are typed empty evidence, and missing
+  traces raise `ledgr_run_explanation_unavailable`.
+- Review follow-up pins member, held, priced, mark-source, and mark-age values
+  on the durable availability view and includes the missing-trace class in the
+  generated condition-reference lock.
 
 ### Source Reference
 

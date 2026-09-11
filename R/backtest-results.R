@@ -930,6 +930,8 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
     returns = ledgr_backtest_returns(con, x$run_id),
     fills = ledgr_extract_fills_impl(x, con = con),
     trades = ledgr_extract_trades(x, con = con),
+    diagnostics = ledgr_backtest_diagnostics(con, x$run_id),
+    availability = ledgr_backtest_availability(x, con),
     ledger = tibble::as_tibble(
       DBI::dbGetQuery(
         con,
@@ -974,6 +976,13 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' `NA_real_`; later rows use the same adjacent-equity return formula as
 #' ledgr-owned metrics and retained sweep returns.
 #'
+#' `what = "diagnostics"` returns the ordered durable decision, risk,
+#' execution, reconciliation, and stop evidence recorded by an
+#' availability-aware run. Dense runs return the same typed zero-row schema.
+#' `what = "availability"` reconstructs the per-pulse availability plane from
+#' sealed facts, the effective plan, and ledger holdings. It does not execute
+#' strategy code or invent targets.
+#'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
@@ -988,7 +997,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,
-#'   `"trades"`, or `"ledger"`.
+#'   `"trades"`, `"ledger"`, `"diagnostics"`, or `"availability"`.
 #' @return A ledgr result table, which is a classed tibble with the requested
 #'   result columns.
 #' @examples
@@ -1011,18 +1020,23 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' ledgr_results(bt, what = "returns")
 #' close(bt)
 #' @export
-ledgr_results <- function(bt, what = c("equity", "returns", "fills", "trades", "ledger")) {
+ledgr_results <- function(bt, what = c(
+    "equity", "returns", "fills", "trades", "ledger", "diagnostics", "availability"
+)) {
   what <- ledgr_match_result_table(what)
   ledgr_result_table(tibble::as_tibble(bt, what = what), what = what)
 }
 
 ledgr_match_result_table <- function(what) {
-  choices <- c("equity", "returns", "fills", "trades", "ledger")
+  choices <- c("equity", "returns", "fills", "trades", "ledger", "diagnostics", "availability")
   if (length(what) > 1L) {
     return(match.arg(what, choices))
   }
   if (!is.character(what) || length(what) != 1L || is.na(what) || !nzchar(what)) {
-    rlang::abort("`what` must be one of: equity, returns, fills, trades, ledger.", class = "ledgr_invalid_result_table")
+    rlang::abort(
+      "`what` must be one of: equity, returns, fills, trades, ledger, diagnostics, availability.",
+      class = "ledgr_invalid_result_table"
+    )
   }
   if (identical(what, "metrics")) {
     rlang::abort(

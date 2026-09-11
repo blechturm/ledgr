@@ -133,6 +133,7 @@ reference:
       - summary.ledgr_backtest
       - as_tibble.ledgr_backtest
       - ledgr_results
+      - ledgr_run_explain
       - as_tibble.ledgr_result_table
       - print.ledgr_result_table
       - close.ledgr_backtest

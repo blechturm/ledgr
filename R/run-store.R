@@ -956,15 +956,17 @@ print.ledgr_run_info <- function(x, ...) {
   invisible(x)
 }
 
-#' Reopen a completed run from a ledgr experiment store
+#' Reopen a terminal run from a ledgr experiment store
 #'
-#' Returns a `ledgr_backtest`-compatible handle over an existing completed run.
-#' The run is not recomputed and strategy code is not executed.
+#' Returns a `ledgr_backtest`-compatible handle over an existing `DONE` or
+#' `INCOMPLETE` run. The run is not recomputed and strategy code is not
+#' executed. `INCOMPLETE` runs retain only their achieved evidence prefix.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
 #'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
-#' @param run_id Run identifier. The run must have status `DONE`.
+#' @param run_id Run identifier. The run must have status `DONE` or
+#'   `INCOMPLETE`.
 #' @return A `ledgr_backtest` object.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
@@ -998,7 +1000,7 @@ ledgr_run_open <- function(snapshot, run_id) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
   status <- row$status[[1]]
-  if (!identical(status, "DONE")) {
+  if (!status %in% c("DONE", "INCOMPLETE")) {
     rlang::abort(
       sprintf("Run '%s' has status %s and cannot be opened as a completed backtest. Use ledgr_run_info() for diagnostics.", run_id, status),
       class = "ledgr_run_not_complete"
@@ -1044,6 +1046,41 @@ ledgr_run_open <- function(snapshot, run_id) {
       rlang::abort(sprintf("Run '%s' has invalid config_json and cannot be reopened.", run_id), class = "ledgr_invalid_run", parent = e)
     }
   )
+  if (identical(status, "INCOMPLETE")) {
+    if (!ledgr_availability_config_active(cfg)) {
+      ledgr_run_terminal_evidence_abort(
+        sprintf("Run '%s' is INCOMPLETE without an availability-aware terminal contract.", run_id)
+      )
+    }
+    snapshot_opened <- ledgr_snapshot_connection(snapshot)
+    if (isTRUE(snapshot_opened$opened_new)) {
+      on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+    }
+    snapshot_info <- ledgr_snapshot_info(snapshot_opened$con, snapshot_id)
+    provider <- ledgr_availability_provider(
+      snapshot_opened$con,
+      cfg,
+      as.character(snapshot_info$snapshot_hash[[1L]])
+    )
+    calendar <- ledgr_availability_calendar(
+      provider,
+      cfg$backtest$start_ts_utc,
+      cfg$backtest$end_ts_utc
+    )
+    completion <- ledgr_run_completion_read(opened$con, run_id, required = TRUE)
+    completion <- ledgr_run_completion_validate(
+      completion,
+      run_id,
+      calendar,
+      stored_status = status
+    )
+    ledgr_run_completion_validate_finalized(
+      opened$con,
+      completion,
+      run_id,
+      calendar
+    )
+  }
   new_ledgr_backtest(run_id = run_id, db_path = db_path, config = cfg)
 }
 

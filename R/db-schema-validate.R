@@ -175,6 +175,7 @@ ledgr_validate_schema <- function(con) {
         candidate_id = "TEXT",
         candidate_row = "INTEGER",
         status = "TEXT",
+        completion_json = "TEXT",
         final_equity = "DOUBLE",
         metrics_json = "TEXT",
         total_return = "DOUBLE",
@@ -306,6 +307,7 @@ ledgr_validate_schema <- function(con) {
         metric_value = "DOUBLE",
         n_trades = "INTEGER",
         status = "TEXT",
+        completion_json = "TEXT",
         error_class = "TEXT",
         error_msg = "TEXT",
         execution_seed = "INTEGER"
@@ -648,7 +650,7 @@ ledgr_validate_schema <- function(con) {
     check_enum_constraint_metadata(
       "sweep_candidates",
       "status",
-      c("DONE", "FAILED"),
+      c("DONE", "INCOMPLETE", "FAILED"),
       "sweep_candidates.status"
     )
     invisible(TRUE)
@@ -748,6 +750,12 @@ ledgr_validate_schema <- function(con) {
   check_runs_status_constraint()
   check_snapshots_status_constraint()
   check_sweep_candidates_status_constraint()
+  check_enum_constraint_metadata(
+    "walk_forward_scores",
+    "status",
+    c("DONE", "INCOMPLETE", "FAILED"),
+    "walk_forward_scores.status"
+  )
   check_enum_constraint_metadata(
     "snapshot_trading_status",
     "status",
