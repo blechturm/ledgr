@@ -648,6 +648,31 @@ Implementation notes:
 - Review follow-up documented all `ledgr_run_explain()` return fields and its
   non-durable `no_action` / `no_target_change` defaults, then added a bounded
   `max_sessions` exercise to the Survivorship Bias article.
+- Second review follow-up semantically re-anchored the maintainer traces after
+  the coordinator extraction moved code between files, moved the executable
+  quarantine tutorial to `data-input-and-snapshots`, showed the full experiment
+  constructor before the comparison wrapper, and replaced the walk-forward
+  creation-time source guard with a behavioural test. A structural line check
+  cannot detect an in-range anchor pointing at the wrong block; two successive
+  reviews found drift that such a check reported as clean, so acceptance for
+  this work is independent inspection of what each cited line does, not a
+  passing range check.
+- `performance_arc_v0_1_8_x.qmd` is a historical arc record. Its anchors
+  describe the tree at `v0.1.8.10` and were deliberately left unchanged rather
+  than silently re-pointed at current code; the article now states that scope
+  in its own header so a reader following a link is not misled.
+
+Routed forward, not closed here:
+
+- The Survivorship Bias article's fill-clock explanation accurately describes
+  close-stamped runtime behaviour and conflicts with the accepted amendment's
+  opening-timestamp correction. It belongs to that amendment's timing ticket
+  and must change with the implementation, not before it.
+- `docs/pkgdown.yml` records whichever pkgdown built the site. A version
+  difference between build machines is honest metadata, not a file defect.
+- Nothing enforces that GFM rendering follows a pkgdown build, which can delete
+  `vignettes/*_files/`. Routed to the Batch 11 release gate as an ordering and
+  image-target check.
 
 ## Batch 11 - Release Gate
 

@@ -1856,7 +1856,11 @@ one executable public ingest-run-explain-close-reopen journey.
 - Show membership entry/removal, a retained holding, blocked and retried exit,
   valuation age, completion state, and reopened explanation.
 - Show strict invalid-observation rejection before explicit quarantine and the
-  resulting missing session.
+  resulting missing session. Accepted relocation: the executable tutorial now
+  lives in `vignettes/data-input-and-snapshots.qmd`, where sealing and data
+  input are taught, because quarantine requires a declared session calendar.
+  The survivorship article states the rule and links there rather than
+  repeating the demonstration.
 - Teach assumptions, omitted checks, incomplete evidence, and unsupported
   terminal economics without overclaiming point-in-time completeness.
 
@@ -1881,8 +1885,11 @@ one executable public ingest-run-explain-close-reopen journey.
   synthetic venue, complete session calendar, and membership changes.
 - The public-only journey shows a retained former member, a blocked exit, no
   hidden standing order, an explicit retry, valuation age, close/reopen
-  explanation parity, strict invalid-observation rejection, quarantine, and
-  an `INCOMPLETE` valuation-horizon variant.
+  explanation parity, and an `INCOMPLETE` valuation-horizon variant.
+- Strict invalid-observation rejection and explicit quarantine are stated and
+  cross-linked in the survivorship article; the executable demonstration lives
+  in `vignettes/data-input-and-snapshots.qmd`, because quarantine requires a
+  declared session calendar and belongs where sealing is taught.
 - The article names disabled checks and assumptions, uses primary references,
   and preserves the settlement, short-financing, OMS, imputation, and
   point-in-time-completeness limits.

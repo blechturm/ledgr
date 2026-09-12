@@ -588,7 +588,7 @@ No separate gate registry, witness framework, or copied spike expected-output le
 | U9 | Incomplete prefixes visible and ineligible across selection, save/reopen, and promotion | `test-sweep-persistence-roundtrip.R`, `test-walk-forward-orchestrator.R`, `new: test-availability-parity.R` | 9 |
 | U10 | Future facts change snapshot/descendant identities without changing prior economic outputs | `new: test-availability-causality.R` | 7-9 |
 | U11 | Direct/reopened/sweep/parallel/walk-forward parity including carried former member and FIFO basis | `test-sweep-parallel.R`, `test-walk-forward-orchestrator.R`, `new: test-availability-parity.R` | 9 |
-| U12 | Section 4 public journey and identical reopened explanations without strategy execution | `new: test-availability-workflow.R` | 9-10 |
+| U12 | Section 4 public journey and identical reopened explanations without strategy execution | `new: test-availability-workflow.R`, `new: test-availability-parity.R` | 9-10 |
 | U13 | Removal known after decision does not block purchase; informational flag and subsequent reduction-only holding | `new: test-availability-fold.R` | 8 |
 | U14 | Complete omission is nonmembership; partial omission unknown; empty complete set survives sealing | `new: test-availability-facts.R` | 6 |
 | U15 | Knowledge assumption hashes and labels; no-time/no-assumption row remains audit-only | `new: test-availability-facts.R` | 6-7 |
