@@ -7,6 +7,9 @@
 **Current active packet path:** `inst/design/ledgr_v0_1_9_7_spec_packet/`.
 **Draft next packet:** [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md),
 combining accepted API hardening and asset availability; awaiting spec review and ticket cut.
+**Proposed workflow amendment:** [inspectable availability workflow](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed.md)
+adds preparation and inspection APIs, a bounded qlcal adapter, timing reconciliation, and teaching
+acceptance criteria. Pending maintainer/adversarial review; not accepted implementation scope.
 The development branch/package are already `v0.2.0.0`; active implementation pointers move
 when the new packet is accepted and its tickets are cut.
 The completed `inst/design/ledgr_v0_1_9_6_spec_packet/` is an archival release
