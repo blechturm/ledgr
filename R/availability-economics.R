@@ -207,7 +207,7 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
                                                      delta_vec,
                                                      actionable_idx,
                                                      pulse_idx,
-                                                     pulses_posix,
+                                                     execution_opportunities_posix,
                                                      bars_mat,
                                                      cost_resolver,
                                                      ts_signal_utc,
@@ -216,8 +216,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
                                                      cash) {
   entries <- list()
   rejected <- list()
-  execution_ts <- if (pulse_idx < length(pulses_posix)) {
-    as.POSIXct(pulses_posix[[pulse_idx + 1L]], tz = "UTC")
+  execution_ts <- if (pulse_idx <= length(execution_opportunities_posix)) {
+    as.POSIXct(execution_opportunities_posix[[pulse_idx]], tz = "UTC")
   } else {
     as.POSIXct(NA, tz = "UTC")
   }

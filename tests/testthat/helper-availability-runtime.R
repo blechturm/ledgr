@@ -2,14 +2,16 @@ availability_runtime_fixture <- function(days = 5L,
                                          bar_days = seq_len(days),
                                          membership = NULL,
                                          status = NULL,
-                                         lifetime = NULL) {
+                                         lifetime = NULL,
+                                         session_open = "09:30:00",
+                                         session_close = "16:00:00") {
   dates <- as.Date("2020-01-01") + seq_len(days) - 1L
   session_family <- ledgr_facts_sessions(
     data.frame(
       session_date = dates,
       status = "open",
-      session_open = "09:30:00",
-      session_close = "16:00:00",
+      session_open = session_open,
+      session_close = session_close,
       knowledge_time = as.POSIXct(dates, tz = "UTC") - 1,
       stringsAsFactors = FALSE
     ),
@@ -20,7 +22,7 @@ availability_runtime_fixture <- function(days = 5L,
   if (!is.null(status)) families <- c(families, list(status))
   if (!is.null(lifetime)) families <- c(families, list(lifetime))
   facts <- do.call(ledgr_facts, families)
-  ts <- as.POSIXct(paste(dates[bar_days], "16:00:00"), tz = "UTC")
+  ts <- as.POSIXct(paste(dates[bar_days], session_close), tz = "UTC")
   bars <- data.frame(
     ts_utc = ts,
     instrument_id = "AAA",

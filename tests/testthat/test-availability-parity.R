@@ -348,6 +348,57 @@ testthat::test_that("parallel availability sweeps return the same compact termin
   testthat::expect_identical(sequential$completion_json[[1L]], direct_terminal$completion_json)
 })
 
+testthat::test_that("direct and sweep paths both apply the opening-time status cutoff", {
+  halt <- ledgr_facts_trading_status(data.frame(
+    instrument_id = c("AAA", "AAA"),
+    effective_from = as.POSIXct(
+      c("2020-01-01 00:00:00", "2020-01-02 12:00:00"),
+      tz = "UTC"
+    ),
+    effective_to = as.POSIXct(c(NA_character_, "2020-01-02 16:00:00"), tz = "UTC"),
+    knowledge_time = as.POSIXct(
+      c("2019-12-31 00:00:00", "2020-01-01 20:00:00"),
+      tz = "UTC"
+    ),
+    status = c("active", "halted"),
+    source = c("baseline", "exchange"),
+    precedence = c(1L, 2L),
+    stringsAsFactors = FALSE
+  ))
+  snapshot <- availability_runtime_fixture(
+    days = 3L,
+    status = halt,
+    session_open = "14:30:00",
+    session_close = "21:00:00"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2020-01-01T21:00:00Z")) {
+      c(AAA = params$qty)
+    } else {
+      ctx$flat()
+    }
+  }
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+
+  direct <- ledgr_run(exp, params = list(qty = 1), run_id = "opening-cutoff-direct")
+  on.exit(close(direct), add = TRUE)
+  sweep <- ledgr_sweep(exp, ledgr_param_grid(one = list(qty = 1)), seed = 99L)
+
+  testthat::expect_equal(nrow(ledgr_results(direct, "fills")), 0L)
+  testthat::expect_identical(sweep$status, "DONE")
+  testthat::expect_identical(sweep$n_trades, 0L)
+  testthat::expect_equal(
+    sweep$final_equity,
+    utils::tail(ledgr_results(direct, "equity")$equity, 1L)
+  )
+})
+
 testthat::test_that("availability result views and explanations are durable read-only evidence", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

@@ -235,6 +235,13 @@ testthat::test_that("run window bounds keep their time of day", {
     max(full$pulses),
     as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
   )
+  testthat::expect_equal(
+    full$execution_opportunities_posix,
+    as.POSIXct(
+      paste(as.Date("2020-01-14") + 0:3, "14:30:00"),
+      tz = "UTC"
+    )
+  )
 
   # An intraday start bound after a session's close excludes that session.
   early <- availability_window_fixture(
@@ -250,6 +257,13 @@ testthat::test_that("run window bounds keep their time of day", {
   testthat::expect_equal(
     min(trimmed$pulses),
     as.POSIXct("2020-01-14 14:00:00", tz = "UTC")
+  )
+  testthat::expect_equal(
+    trimmed$execution_opportunities_posix,
+    as.POSIXct(
+      paste(as.Date("2020-01-15") + 0:2, "09:30:00"),
+      tz = "UTC"
+    )
   )
 })
 
@@ -312,11 +326,11 @@ testthat::test_that("a target on the last decision fills at the final session op
 
   fills <- ledgr_results(bt, "fills")
   testthat::expect_equal(nrow(fills), 1L)
-  # Priced at the 17 Jan open, recorded at the 17 Jan close pulse.
+  # Priced and recorded at the declared 17 Jan opening.
   testthat::expect_equal(fills$price[[1L]], 59)
   testthat::expect_equal(
     fills$ts_utc[[1L]],
-    as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
+    as.POSIXct("2020-01-17 14:30:00", tz = "UTC")
   )
 })
 

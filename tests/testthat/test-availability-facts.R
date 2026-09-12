@@ -224,7 +224,13 @@ testthat::test_that("EOD labels map explicitly and the clock retains feed outage
       "2024-01-04T21:00:00Z", "2024-01-05T21:00:00Z")
   )
   testthat::expect_identical(
-    format(ledgr:::ledgr_session_execution_opportunities(facts), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    format(
+      ledgr:::ledgr_session_execution_opportunities(
+        ledgr:::ledgr_session_open_rows(facts)
+      ),
+      "%Y-%m-%dT%H:%M:%SZ",
+      tz = "UTC"
+    ),
     c("2024-01-02T14:30:00Z", "2024-01-03T14:30:00Z", "2024-01-04T14:30:00Z",
       "2024-01-05T14:30:00Z")
   )

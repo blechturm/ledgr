@@ -994,8 +994,9 @@ ledgr_session_decision_pulses <- function(facts) {
   as.POSIXct(rows$session_close, tz = "UTC")
 }
 
-ledgr_session_execution_opportunities <- function(facts) {
-  rows <- ledgr_session_open_rows(facts)
-  if (is.null(rows) || nrow(rows) < 2L) return(as.POSIXct(character(), tz = "UTC"))
-  as.POSIXct(rows$session_open[-1L], tz = "UTC")
+ledgr_session_execution_opportunities <- function(session_rows) {
+  if (is.null(session_rows) || nrow(session_rows) < 2L) {
+    return(as.POSIXct(character(), tz = "UTC"))
+  }
+  as.POSIXct(session_rows$session_open[-1L], tz = "UTC")
 }

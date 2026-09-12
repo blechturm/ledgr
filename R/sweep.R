@@ -221,6 +221,7 @@ ledgr_sweep_impl <- function(exp,
   bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
   availability_data <- NULL
   availability_config <- NULL
+  execution_opportunities_posix <- NULL
   if (availability_active) {
     opened <- ledgr_run_store_open(exp$snapshot$db_path)
     on.exit(ledgr_run_store_close(opened), add = TRUE)
@@ -235,6 +236,7 @@ ledgr_sweep_impl <- function(exp,
     calendar <- ledgr_availability_calendar(provider, range$warmup_start, range$scoring_end)
     pulses_posix <- calendar$pulses_posix
     pulses_iso <- calendar$pulses_iso
+    execution_opportunities_posix <- calendar$execution_opportunities_posix
     bars_by_id <- ledgr_sweep_align_availability_bars(
       bars_by_id,
       exp$universe,
@@ -317,7 +319,8 @@ ledgr_sweep_impl <- function(exp,
     compiled_accounting_model = compiled_accounting_model,
     execution_seed_override = execution_seed_override,
     availability_data = availability_data,
-    availability_config = availability_config
+    availability_config = availability_config,
+    execution_opportunities_posix = execution_opportunities_posix
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -1010,7 +1013,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         compiled_accounting_model = NULL,
                                         execution_seed_override = NULL,
                                         availability_data = NULL,
-                                        availability_config = NULL) {
+                                        availability_config = NULL,
+                                        execution_opportunities_posix = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   execution_seed_override <- ledgr_sweep_validate_execution_seed_override(
@@ -1053,7 +1057,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
       master_seed = seed,
       compiled_accounting_model = compiled_accounting_model,
       availability_data = availability_data,
-      availability_config = availability_config
+      availability_config = availability_config,
+      execution_opportunities_posix = execution_opportunities_posix
     )
   }
   tasks
@@ -1193,7 +1198,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         retain = task$retain,
         compiled_accounting_model = task$compiled_accounting_model,
         availability_data = task$availability_data,
-        availability_config = task$availability_config
+        availability_config = task$availability_config,
+        execution_opportunities_posix = task$execution_opportunities_posix
       ),
       warning = function(w) {
         warnings <<- c(warnings, list(w))
@@ -1331,7 +1337,8 @@ ledgr_sweep_run_candidate <- function(exp,
                                       retain,
                                       compiled_accounting_model = NULL,
                                       availability_data = NULL,
-                                      availability_config = NULL) {
+                                      availability_config = NULL,
+                                      execution_opportunities_posix = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (is.null(runtime_projection)) {
@@ -1406,7 +1413,8 @@ ledgr_sweep_run_candidate <- function(exp,
     event_mode = "buffered",
     use_fast_context = TRUE,
     compiled_accounting_model = compiled_accounting_model,
-    availability_provider = availability_provider
+    availability_provider = availability_provider,
+    execution_opportunities_posix = execution_opportunities_posix
   )
   engine_start <- ledgr_time_now()
   fold_result <- ledgr_execute_fold(execution, output_handler)

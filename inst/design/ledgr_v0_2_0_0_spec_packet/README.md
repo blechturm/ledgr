@@ -1,9 +1,10 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-10 complete after review. Batches 11-14 are pending. They
-implement the accepted inspectable availability workflow amendment
-(`v0_2_0_0_workflow_amendment_proposed_v2.md`) as LDG-2704 through LDG-2711,
-then close the release gate.
+Status: Batches 0-10 complete after review. Batch 11 is in progress: LDG-2704
+is complete after review, while LDG-2705 and LDG-2706 remain pending.
+Batches 12-14 remain pending. They implement the accepted inspectable
+availability workflow amendment (`v0_2_0_0_workflow_amendment_proposed_v2.md`)
+as LDG-2704 through LDG-2711, then close the release gate.
 
 This packet scopes v0.2.0.0 as an ordered hardening-and-availability release.
 It first corrects known API and representation boundaries, then extracts the

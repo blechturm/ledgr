@@ -316,6 +316,11 @@ The strategy preflight boundary originated in
   shadow a lower-precedence tie. Future facts may change snapshot and descendant
   identity but must not rewrite earlier context, errors, features, or supported
   telemetry.
+- Availability-aware decisions occur at declared session closes. Each
+  non-terminal decision resolves execution-time facts and records accepted
+  fills and events at the next declared session opening. Membership remains
+  frozen from the decision; the terminal decision has no execution opportunity.
+  Dense execution declares no independent opening clock and is unchanged.
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.

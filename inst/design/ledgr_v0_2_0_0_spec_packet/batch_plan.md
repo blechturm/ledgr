@@ -1,8 +1,9 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-10 complete after review. Batches 11-14 are pending; they
-implement the accepted inspectable availability workflow amendment and then
-close the release gate.
+Status: Batches 0-10 complete after review. Batch 11 is in progress: LDG-2704
+is complete after review, while LDG-2705 and LDG-2706 remain pending.
+Batches 12-14 remain pending; they implement the accepted inspectable
+availability workflow amendment and then close the release gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -686,7 +687,7 @@ Routed forward, not closed here:
 
 ## Batch 11 - Economic Execution Timing Correction
 
-Status: Pending.
+Status: In Progress. LDG-2704 Complete After Review; LDG-2705 and LDG-2706 Pending.
 
 Tickets:
 
@@ -719,6 +720,25 @@ Exit criteria:
 - clean, reopened, and replayed evidence agree within a version;
 - a version-1 and version-2 pair is explicitly ineligible for fill equivalence
   while summary metrics remain available.
+
+Implementation notes:
+
+- LDG-2704 derives one opening-time opportunity for every non-terminal
+  availability pulse and carries it through direct and sweep execution specs;
+- execution-time facts, accepted event timestamps, diagnostics, and
+  `last_executed_ts_utc` now use that declared opening, while price selection
+  remains the next bar's open and decision membership remains frozen;
+- tests cover the four 14:30 halt/knowledge cases, an opening-time lifetime
+  restriction, opening-vector alignment, terminal no-opportunity behavior, and
+  direct/sweep parity. Dense execution rejects and omits an independent opening
+  clock. The full 120-file suite, 147-file Rd check, YAML parse, and diff
+  hygiene checks pass.
+- Review follow-up made `ledgr_session_execution_opportunities()` the sole
+  implementation of the opening-vector rule used by the live calendar and
+  added detecting wrong-type and correct-length `NA` execution-spec cases. The
+  four post-follow-up focused files pass 316 expectations.
+- Independent review accepted the opening-time behavior, dense neutrality,
+  helper consolidation, and detecting validation cases with no findings.
 
 ## Batch 12 - Inspectable Evidence Preparation
 

@@ -1102,7 +1102,12 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     event_mode = if (identical(execution_mode, "db_live")) "live" else "buffered",
     use_fast_context = use_fast_context,
     compiled_accounting_model = compiled_accounting_model,
-    availability_provider = availability_provider
+    availability_provider = availability_provider,
+    execution_opportunities_posix = if (availability_active) {
+      calendar$execution_opportunities_posix
+    } else {
+      NULL
+    }
   )
 
   fold_result <- tryCatch(

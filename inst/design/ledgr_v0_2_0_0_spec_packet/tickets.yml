@@ -674,7 +674,7 @@ tickets:
 
   - id: "LDG-2704"
     title: "Opening-time execution correction"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -688,6 +688,32 @@ tickets:
       - "Availability parity tests"
       - "Halt-window cases spanning the opening and the close"
       - "Independent expected dates and economics"
+      - "Execution-spec and availability-calendar alignment tests"
+    implementation_notes:
+      - >-
+        Derived one opening-time execution opportunity for each non-terminal
+        availability decision pulse and carried it through direct and sweep
+        execution specs.
+      - >-
+        Execution-time facts, accepted event timestamps, diagnostics, and
+        last_executed_ts_utc now use the declared opening while next-open price
+        evidence, decision-frozen membership, and the terminal no-opportunity
+        rule remain intact.
+      - >-
+        Added the four 14:30 halt and knowledge cases, an opening-time lifetime
+        restriction, terminal and direct/sweep coverage, and opening-vector
+        validation; dense specs omit and reject an independent opening clock.
+        The full 120-file suite, 147-file Rd check, YAML parse, and diff hygiene
+        checks pass.
+      - >-
+        Review follow-up routed the live calendar through the existing
+        ledgr_session_execution_opportunities helper and added detecting
+        correct-length NA and wrong-type execution-spec cases. The four
+        post-follow-up focused files pass 316 expectations.
+      - >-
+        Independent review accepted the opening-time behavior, dense
+        neutrality, helper consolidation, and detecting validation cases with
+        no findings.
 
   - id: "LDG-2705"
     title: "Fill and read-side timestamp alignment"

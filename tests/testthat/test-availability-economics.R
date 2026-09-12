@@ -3,14 +3,16 @@ availability_economics_snapshot <- function(ids,
                                               bars = NULL,
                                               membership = NULL,
                                               status = NULL,
-                                              lifetime = NULL) {
+                                              lifetime = NULL,
+                                              session_open = "09:30:00",
+                                              session_close = "16:00:00") {
   dates <- as.Date("2020-01-01") + seq_len(days) - 1L
   sessions <- ledgr_facts_sessions(
     data.frame(
       session_date = dates,
       status = "open",
-      session_open = "09:30:00",
-      session_close = "16:00:00",
+      session_open = session_open,
+      session_close = session_close,
       knowledge_time = as.POSIXct(dates, tz = "UTC") - 1
     ),
     venue_id = "XNYS"
@@ -23,7 +25,7 @@ availability_economics_snapshot <- function(ids,
       stringsAsFactors = FALSE
     )
     bars <- data.frame(
-      ts_utc = as.POSIXct(paste(dates[grid$day], "16:00:00"), tz = "UTC"),
+      ts_utc = as.POSIXct(paste(dates[grid$day], session_close), tz = "UTC"),
       instrument_id = grid$instrument_id,
       open = 100,
       high = 101,
@@ -53,6 +55,177 @@ availability_economics_tables <- function(bt) {
     events = DBI::dbGetQuery(opened$con, "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(bt$run_id))
   )
 }
+
+testthat::test_that("execution facts resolve at the declared next opening", {
+  opening <- as.POSIXct("2020-01-02 14:30:00", tz = "UTC")
+  cases <- list(
+    known_at_open = list(
+      from = "2020-01-02 12:00:00",
+      to = "2020-01-02 16:00:00",
+      known = "2020-01-01 20:00:00",
+      fills = 0L,
+      reason = "trading_halted"
+    ),
+    later_effective = list(
+      from = "2020-01-02 18:00:00",
+      to = "2020-01-02 23:00:00",
+      known = "2020-01-01 20:00:00",
+      fills = 1L,
+      reason = ""
+    ),
+    ended_before_open = list(
+      from = "2020-01-02 12:00:00",
+      to = "2020-01-02 14:29:00",
+      known = "2020-01-01 20:00:00",
+      fills = 1L,
+      reason = ""
+    ),
+    later_known = list(
+      from = "2020-01-02 12:00:00",
+      to = "2020-01-02 23:00:00",
+      known = "2020-01-02 15:00:00",
+      fills = 1L,
+      reason = ""
+    )
+  )
+
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    status <- ledgr_facts_trading_status(data.frame(
+      instrument_id = c("AAA", "AAA"),
+      effective_from = as.POSIXct(c("2020-01-01 00:00:00", case$from), tz = "UTC"),
+      effective_to = as.POSIXct(c(NA_character_, case$to), tz = "UTC"),
+      knowledge_time = as.POSIXct(c("2019-12-31 00:00:00", case$known), tz = "UTC"),
+      status = c("active", "halted"),
+      source = c("baseline", "exchange"),
+      precedence = c(1L, 2L),
+      stringsAsFactors = FALSE
+    ))
+    dates <- as.Date("2020-01-01") + 0:2
+    bars <- data.frame(
+      ts_utc = as.POSIXct(paste(dates, "21:00:00"), tz = "UTC"),
+      instrument_id = "AAA",
+      open = c(100, 111, 120),
+      high = c(101, 112, 121),
+      low = c(99, 110, 119),
+      close = c(100, 111, 120),
+      volume = 1000,
+      stringsAsFactors = FALSE
+    )
+    snapshot <- availability_economics_snapshot(
+      "AAA",
+      days = 3L,
+      bars = bars,
+      status = status,
+      session_open = "14:30:00",
+      session_close = "21:00:00"
+    )
+    strategy <- function(ctx, params) {
+      if (identical(ctx$ts_utc, "2020-01-01T21:00:00Z")) c(AAA = 1) else ctx$hold()
+    }
+    bt <- ledgr_run(
+      ledgr_experiment(
+        snapshot,
+        strategy,
+        valuation_policy = ledgr_valuation_stale(1),
+        cost_model = ledgr_cost_zero()
+      ),
+      run_id = paste0("opening-cutoff-", name)
+    )
+    stored <- availability_economics_tables(bt)
+    fill_rows <- stored$events[stored$events$event_type == "FILL", , drop = FALSE]
+    execution <- stored$diagnostics[
+      stored$diagnostics$stage == "execution" & stored$diagnostics$instrument_id == "AAA",
+      ,
+      drop = FALSE
+    ][1L, ]
+
+    testthat::expect_equal(nrow(fill_rows), case$fills, info = name)
+    testthat::expect_identical(execution$reason_code[[1L]], case$reason, info = name)
+    testthat::expect_equal(
+      as.POSIXct(execution$execution_ts_utc[[1L]], tz = "UTC"),
+      opening,
+      info = name
+    )
+    if (case$fills == 1L) {
+      testthat::expect_equal(fill_rows$price[[1L]], 111, info = name)
+      testthat::expect_equal(
+        as.POSIXct(fill_rows$ts_utc[[1L]], tz = "UTC"),
+        opening,
+        info = name
+      )
+    }
+    close(bt)
+    ledgr_snapshot_close(snapshot)
+  }
+})
+
+testthat::test_that("lifetime restrictions also resolve at the declared opening", {
+  lifetime <- ledgr_facts_lifetime(data.frame(
+    instrument_id = "AAA",
+    effective_from = as.POSIXct("2020-01-02 12:00:00", tz = "UTC"),
+    knowledge_time = as.POSIXct("2020-01-01 20:00:00", tz = "UTC"),
+    assertion = "known_inactive"
+  ))
+  snapshot <- availability_economics_snapshot(
+    "AAA",
+    days = 3L,
+    lifetime = lifetime,
+    session_open = "14:30:00",
+    session_close = "21:00:00"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      if (identical(ctx$ts_utc, "2020-01-01T21:00:00Z")) c(AAA = 1) else ctx$hold()
+    },
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_run(exp, run_id = "opening-cutoff-lifetime")
+  on.exit(close(bt), add = TRUE)
+  stored <- availability_economics_tables(bt)
+  row <- stored$diagnostics[
+    stored$diagnostics$stage == "execution" &
+      stored$diagnostics$instrument_id == "AAA",
+    ,
+    drop = FALSE
+  ][1L, ]
+
+  testthat::expect_equal(nrow(stored$events[stored$events$event_type == "FILL", ]), 0L)
+  testthat::expect_identical(row$reason_code[[1L]], "lifetime_inactive")
+  testthat::expect_equal(
+    as.POSIXct(row$execution_ts_utc[[1L]], tz = "UTC"),
+    as.POSIXct("2020-01-02 14:30:00", tz = "UTC")
+  )
+})
+
+testthat::test_that("the terminal availability decision has no execution opportunity", {
+  snapshot <- availability_economics_snapshot("AAA", days = 3L)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) c(AAA = 1) else ctx$flat()
+    },
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_run(exp, run_id = "terminal-no-opening")
+  on.exit(close(bt), add = TRUE)
+  stored <- availability_economics_tables(bt)
+  final_row <- stored$diagnostics[
+    stored$diagnostics$stage == "execution" &
+      stored$diagnostics$reason_code == "final_pulse_no_execution",
+    ,
+    drop = FALSE
+  ]
+
+  testthat::expect_equal(nrow(stored$events[stored$events$event_type == "FILL", ]), 0L)
+  testthat::expect_equal(nrow(final_row), 1L)
+  testthat::expect_true(is.na(final_row$execution_ts_utc[[1L]]))
+})
 
 testthat::test_that("availability target rules and post-risk closure fail closed", {
   view <- list(
@@ -432,7 +605,7 @@ testthat::test_that("valuation exhaustion commits an incomplete direct-run prefi
   )
   testthat::expect_identical(
     as.POSIXct(stored$completion$last_executed_ts_utc, tz = "UTC"),
-    as.POSIXct("2020-01-02 16:00:00", tz = "UTC")
+    as.POSIXct("2020-01-02 09:30:00", tz = "UTC")
   )
   testthat::expect_true(any(stored$events$event_type == "FILL"))
   stop_row <- stored$diagnostics[stored$diagnostics$outcome == "stopped", , drop = FALSE]
@@ -496,11 +669,12 @@ testthat::test_that("affected exposure is gross and missing references fail clos
 
 testthat::test_that("a rejected sale never funds an unrelated purchase", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
+  openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
   status <- ledgr_facts_trading_status(data.frame(
     instrument_id = c("SELL", "SELL", "BUY"),
-    effective_from = c(dates[[1L]], dates[[2L]], dates[[1L]]),
-    effective_to = c(dates[[2L]], as.POSIXct(NA, tz = "UTC"), as.POSIXct(NA, tz = "UTC")),
-    knowledge_time = c(dates[[1L]] - 1, dates[[2L]] - 1, dates[[1L]] - 1),
+    effective_from = c(openings[[1L]], openings[[2L]], openings[[1L]]),
+    effective_to = c(openings[[2L]], as.POSIXct(NA, tz = "UTC"), as.POSIXct(NA, tz = "UTC")),
+    knowledge_time = c(openings[[1L]] - 1, openings[[2L]] - 1, openings[[1L]] - 1),
     status = c("active", "halted", "active"),
     source = "exchange",
     precedence = 1L
@@ -528,11 +702,12 @@ testthat::test_that("a rejected sale never funds an unrelated purchase", {
 
 testthat::test_that("a blocked exit executes only after a new zero target", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:3, "16:00:00"), tz = "UTC")
+  openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
   status <- ledgr_facts_trading_status(data.frame(
     instrument_id = rep("AAA", 3L),
-    effective_from = dates[1:3],
-    effective_to = c(dates[[2L]], dates[[3L]], as.POSIXct(NA, tz = "UTC")),
-    knowledge_time = dates[1:3] - 1,
+    effective_from = openings[1:3],
+    effective_to = c(openings[[2L]], openings[[3L]], as.POSIXct(NA, tz = "UTC")),
+    knowledge_time = openings[1:3] - 1,
     status = c("active", "halted", "active"),
     source = "exchange",
     precedence = 1L
@@ -555,16 +730,17 @@ testthat::test_that("a blocked exit executes only after a new zero target", {
   fill <- stored$events[stored$events$event_type == "FILL", , drop = FALSE]
   testthat::expect_equal(nrow(fill), 1L)
   testthat::expect_equal(fill$qty, 2)
-  testthat::expect_identical(fill$ts_utc, dates[[3L]])
+  testthat::expect_identical(fill$ts_utc, openings[[3L]])
 })
 
 testthat::test_that("execution diagnostics retain ordered gate reasons", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
+  openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
   status <- ledgr_facts_trading_status(data.frame(
     instrument_id = c("AAA", "AAA"),
-    effective_from = dates[1:2],
-    effective_to = c(dates[[2L]], as.POSIXct(NA, tz = "UTC")),
-    knowledge_time = dates[1:2] - 1,
+    effective_from = openings[1:2],
+    effective_to = c(openings[[2L]], as.POSIXct(NA, tz = "UTC")),
+    knowledge_time = openings[1:2] - 1,
     status = c("active", "halted"),
     source = "exchange",
     precedence = 1L
@@ -602,11 +778,12 @@ testthat::test_that("execution diagnostics retain ordered gate reasons", {
 
 testthat::test_that("execution-time membership changes are diagnostic only", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
+  openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
   membership <- ledgr_facts_membership_snapshots(
     data.frame(
       instrument_id = c("AAA", NA_character_),
-      effective_from = dates[1:2],
-      knowledge_time = dates[1:2] - 1
+      effective_from = c(dates[[1L]], openings[[2L]]),
+      knowledge_time = c(dates[[1L]] - 1, openings[[2L]] - 1)
     ),
     universe_id = "changing",
     complete = TRUE

@@ -248,6 +248,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   use_compiled_spot_fifo <- identical(compiled_accounting_model, "spot_fifo")
   availability_provider <- execution$availability_provider
   availability_active <- !is.null(availability_provider)
+  execution_opportunities_posix <- execution$execution_opportunities_posix
   max_stale_sessions <- if (availability_active) {
     as.integer(availability_provider$valuation_policy$max_sessions)
   } else {
@@ -765,7 +766,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           delta_vec = delta_vec,
           actionable_idx = actionable_idx,
           pulse_idx = i,
-          pulses_posix = pulses_posix,
+          execution_opportunities_posix = execution_opportunities_posix,
           bars_mat = bars_mat,
           cost_resolver = cost_resolver,
           ts_signal_utc = ts_iso,

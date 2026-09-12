@@ -1990,7 +1990,7 @@ scope: help-manual-audit-deferrals
 Priority: P0
 Effort: L
 Dependencies: LDG-2702
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2024,6 +2024,28 @@ execution-time fact cutoff as well as the timestamp.
 
 - Availability economics and parity tests
 - Independent expected dates and economics, not only cross-path parity
+- Execution-spec and availability-calendar alignment tests
+
+### Implementation Notes
+
+- Derived one declared opening-time execution opportunity for each
+  non-terminal availability decision pulse and carried it through direct and
+  sweep execution specs.
+- Execution-time fact resolution, accepted event timestamps, diagnostics, and
+  `last_executed_ts_utc` now use the opening instant. Price evidence remains
+  the next bar's open, membership remains decision-frozen, and the terminal
+  pulse still has no execution opportunity.
+- Added detecting 14:30 cases for a known halt spanning the opening, a
+  later-effective halt, a halt ending before the opening, a later-known halt,
+  and an opening-time lifetime restriction, plus terminal and direct/sweep
+  coverage. Dense specs omit and reject an independent opening clock. The full
+  120-file suite, 147-file Rd check, YAML parse, and diff hygiene checks pass.
+- Review follow-up routed the live calendar through the existing
+  `ledgr_session_execution_opportunities()` helper and added detecting
+  correct-length `NA` and wrong-type execution-spec cases. The four
+  post-follow-up focused files pass 316 expectations.
+- Independent review accepted the opening-time behavior, dense neutrality,
+  helper consolidation, and detecting validation cases with no findings.
 
 ### Classification
 

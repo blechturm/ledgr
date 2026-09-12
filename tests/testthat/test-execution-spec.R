@@ -410,6 +410,50 @@ testthat::test_that("execution specs validate before fold entry", {
   )
 })
 
+testthat::test_that("availability execution specs require aligned opening opportunities", {
+  provider <- structure(
+    list(valuation_policy = list(max_sessions = 1L)),
+    class = c("ledgr_availability_provider", "list")
+  )
+  opening <- as.POSIXct("2024-01-01 12:00:00", tz = "UTC")
+  spec <- ledgr_test_execution_spec(
+    availability_provider = provider,
+    execution_opportunities_posix = opening
+  )
+
+  testthat::expect_identical(spec$execution_opportunities_posix, opening)
+  testthat::expect_error(
+    ledgr_test_execution_spec(availability_provider = provider),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = c(opening, opening + 1)
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = as.POSIXct(NA_character_, tz = "UTC")
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = "2024-01-01T12:00:00Z"
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(execution_opportunities_posix = opening),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_false("execution_opportunities_posix" %in% names(ledgr_test_execution_spec()))
+})
+
 testthat::test_that("compiled accounting model enum fails closed", {
   testthat::expect_null(ledgr_test_execution_spec()$compiled_accounting_model)
   testthat::expect_null(ledgr_test_execution_spec(compiled_accounting_model = NULL)$compiled_accounting_model)

@@ -55,6 +55,10 @@
   axes, decision-time context planes, and stable-ID asset state. Facts are
   resolved only after both effective and knowledge time, while provider code
   remains free of valuation, affordability, risk, and fill policy.
+- Corrected availability-aware execution so a close-time decision resolves
+  execution facts and records an accepted fill at the next declared session
+  opening. Decision-frozen membership and the terminal no-opportunity rule are
+  preserved, while dense execution remains unchanged.
 - Added strict expected-session feature semantics for the built-in SMA and
   returns indicators. Whole-feed outages remain visible, missing required
   observations invalidate affected windows, and unsupported gap behavior fails
@@ -100,8 +104,8 @@
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-9
-  are complete after review, Batch 10 awaits review, and Batch 11 is pending.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-10
+  are complete after review and Batch 11 is in progress.
 
 # ledgr 0.1.9.7
 

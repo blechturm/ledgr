@@ -572,7 +572,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
   testthat::expect_match(
     roadmap,
-    "| v0.2.0.0 | Active; Batch 10 review pending | Correct known API",
+    "| v0.2.0.0 | Active; Batch 11 in progress | Correct known API",
     fixed = TRUE
   )
 
@@ -1644,6 +1644,21 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(contract, "New or enlarged short exposure fails before", fixed = TRUE)
   testthat::expect_match(contract, "reserve their absolute marked exposure", fixed = TRUE)
   testthat::expect_match(contract, "Stale marks never become observed", fixed = TRUE)
+  testthat::expect_match(contract, "decisions occur at declared session closes", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    paste0(
+      "resolves execution-time facts and records accepted[[:space:]]+",
+      "fills and events at the next declared session opening"
+    )
+  )
+  testthat::expect_match(contract, "Membership remains", fixed = TRUE)
+  testthat::expect_match(contract, "terminal decision has no execution opportunity", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "Dense execution declares no independent opening clock and is unchanged.",
+    fixed = TRUE
+  )
   testthat::expect_match(contract, "Rejected sales fund nothing", fixed = TRUE)
   testthat::expect_match(contract, "Experiment-store schema 114", fixed = TRUE)
   testthat::expect_match(contract, "finalize as `INCOMPLETE`", fixed = TRUE)
@@ -2609,6 +2624,10 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
+  ticket_lines <- readLines(paths[[3L]], warn = FALSE)
+  ticket_start <- grep("^## LDG-2704 ", ticket_lines)[[1L]]
+  ticket_end <- grep("^## LDG-2705 ", ticket_lines)[[1L]] - 1L
+  ticket_2704 <- paste(ticket_lines[ticket_start:ticket_end], collapse = "\n")
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-09; tickets cut", fixed = TRUE)
   testthat::expect_match(docs$tickets, "Total Tickets: 40", fixed = TRUE)
@@ -2625,16 +2644,16 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     docs$batches,
     paste0(
       "Status: Batches 0-10 complete after review[.]",
-      "[[:space:]]+Batches 11-14 are pending; they",
-      "[[:space:]]+implement the accepted inspectable availability workflow amendment"
+      "[[:space:]]+Batch 11 is in progress: LDG-2704",
+      "[[:space:]]+is complete after review"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
       "Batches 0-10 complete after review[.]",
-      "[[:space:]]+Batches 11-14 are pending[.] They",
-      "[[:space:]]+implement the accepted inspectable availability workflow amendment"
+      "[[:space:]]+Batch 11 is in progress: LDG-2704",
+      "[[:space:]]+is complete after review"
     )
   )
   # The amendment slice must stay discoverable from every packet artifact.
@@ -2647,6 +2666,16 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(docs$yaml, "id: \"LDG-2711\"", fixed = TRUE)
   testthat::expect_match(
     docs$batches, "Batch 11 - Economic Execution Timing Correction", fixed = TRUE)
+  testthat::expect_match(ticket_2704, "Status: Complete After Review", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2704"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
+  )
+  testthat::expect_match(
+    docs$batches,
+    "Status: In Progress. LDG-2704 Complete After Review; LDG-2705 and LDG-2706 Pending.",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$batches, "Batch 14 - Release Gate", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
@@ -2733,7 +2762,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
   testthat::expect_match(
     roadmap,
-    "| v0.2.0.0 | Active; Batch 10 review pending | Correct known API",
+    "| v0.2.0.0 | Active; Batch 11 in progress | Correct known API",
     fixed = TRUE
   )
   testthat::expect_match(horizon, "v0.2.0.0 packet is active", fixed = TRUE)

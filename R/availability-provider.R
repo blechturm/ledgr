@@ -343,9 +343,11 @@ ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {
       class = c("ledgr_run_window_too_short", "ledgr_invalid_config")
     )
   }
+  execution_opportunities_posix <- ledgr_session_execution_opportunities(sessions)
   list(
     pulses = pulses_posix,
     pulses_posix = pulses_posix,
-    pulses_iso = format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    pulses_iso = format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    execution_opportunities_posix = execution_opportunities_posix
   )
 }
