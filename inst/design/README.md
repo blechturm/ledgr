@@ -9,6 +9,9 @@ The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
 implementation. Batches 0-9 are complete after review; Batch 10 implementation
 is complete and awaiting review, and the release gate remains pending.
+**Proposed workflow amendment:** [inspectable availability workflow](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed.md)
+adds preparation and inspection APIs, a bounded qlcal adapter, timing reconciliation, and teaching
+acceptance criteria. Pending maintainer/adversarial review; not accepted implementation scope.
 The completed `inst/design/ledgr_v0_1_9_6_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
 v0.1.9.6 release gate.
