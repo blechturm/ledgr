@@ -671,9 +671,18 @@ Routed forward, not closed here:
   and must change with the implementation, not before it.
 - `docs/pkgdown.yml` records whichever pkgdown built the site. A version
   difference between build machines is honest metadata, not a file defect.
-- Nothing enforces that GFM rendering follows a pkgdown build, which can delete
-  `vignettes/*_files/`. Routed to the Batch 14 release gate as an ordering and
-  image-target check.
+  Maintainer decision: never hand-edit it. `dev/build-site.R` now enforces a
+  pkgdown compatibility floor, and Batch 14 rebuilds `docs/` once at or above
+  that floor and records the version actually used in the closeout.
+- Nothing enforced that GFM rendering follows a pkgdown build, which can delete
+  `vignettes/*_files/`. Maintainer decision: assert the artifact rather than the
+  order. LDG-2703 gains a check that every relative local vignette image target
+  exists, which holds however the two renders are sequenced.
+- Line-number source anchors drift silently whenever code moves between files.
+  Maintainer decision: the token-pairing fix is directionally right but the
+  roughly 265-anchor migration is not release-gate work. Scheduled on the
+  roadmap as a post-v0.2.0.0 documentation-hardening chore with its own
+  reviewed ticket.
 
 ## Batch 11 - Economic Execution Timing Correction
 
@@ -799,6 +808,9 @@ Scope:
   persistence/documentation gates;
 - suppress repeated DuckDB temporary-home startup chatter in every rendered
   vignette without hiding meaningful ledgr diagnostics or example output;
+- rebuild `docs/` once at or above the build script's pkgdown compatibility
+  floor and commit generated metadata as produced;
+- check that every relative local vignette image target exists;
 - prepare closeout evidence for remote CI, merge, and tag.
 
 Review focus:
@@ -807,6 +819,10 @@ Review focus:
   amendment;
 - rendered vignette HTML is free of DuckDB temporary-directory startup notices
   without broad message or warning suppression;
+- the image check asserts the artifact rather than prescribing a render order,
+  so it holds however a site build and a GFM render are sequenced;
+- the pkgdown floor is a compatibility minimum, not an exact toolchain pin, and
+  `docs/pkgdown.yml` is never hand-edited;
 - no generated local artifact or disposable spike implementation is committed;
 - branch, main, and tag CI remain separate evidence.
 

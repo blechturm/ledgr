@@ -124,6 +124,7 @@ versioned packet.
 | v0.2.x | Planned | Benchmark context and active metrics after benchmark/reference substrate. | Future packet |
 | v0.2.x | Planned | OMS semantics, snapshot lineage, and roll-forward data sources. | Future packets |
 | v0.2.x | Planned | Reference strategy templates as executable contract demonstrations. | Future packet |
+| v0.2.x | Planned | Documentation-hardening chore: symbol-qualified source citations in the maintainer manuals, with statement-level anchors pairing a line number to a short expected token, and a mechanical check that the file exists, the line exists, and the cited line contains that token. Migrate active manuals deliberately; leave explicitly version-scoped historical articles unchanged. Scoped as its own reviewed ticket because the migration footprint is real; it changes documentation maintenance convention, not product architecture. | Future packet |
 | v0.3.0 | Planned | Paper trading adapter and reconciliation. | Future packet |
 | v0.4.0 | Planned | Observability and operations. | Future packet |
 | v1.0.0 | Planned | Small-scale live trading. | Future packet |

@@ -77,6 +77,24 @@ if (!have_pkgdown) {
   stop("pkgdown not on .libPaths(); run with an R >= 4.5 that has pkgdown installed.")
 }
 
+# Compatibility floor, not an exact pin. `docs/pkgdown.yml` records whichever
+# pkgdown produced the site, so a build from an older machine silently rewrites
+# that metadata downward. Any pkgdown at or above the floor is acceptable; the
+# release closeout records the version actually used.
+pkgdown_floor <- "2.2.1"
+pkgdown_version <- utils::packageVersion("pkgdown")
+cat("  pkgdown v:", as.character(pkgdown_version), "(floor", pkgdown_floor, ")\n")
+if (pkgdown_version < pkgdown_floor) {
+  stop(sprintf(
+    paste0(
+      "pkgdown %s is below the %s compatibility floor. Committing a site built ",
+      "here would downgrade the recorded toolchain in docs/pkgdown.yml. ",
+      "Install a newer pkgdown with install.packages(\"pkgdown\")."
+    ),
+    as.character(pkgdown_version), pkgdown_floor
+  ))
+}
+
 if (check_only) {
   cat("--check: toolchain OK, skipping build.\n")
   quit(status = 0)

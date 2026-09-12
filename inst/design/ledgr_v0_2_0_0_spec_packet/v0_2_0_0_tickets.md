@@ -2385,6 +2385,12 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Record versions, commands, skips, failures, reruns, and exact commits.
 - Confirm every ticket is complete after review or explicitly deferred by a
   dated maintainer amendment.
+- Rebuild `docs/` once with a pkgdown at or above the build script's
+  compatibility floor and commit exactly what pkgdown produces; record the
+  version actually used in the closeout rather than hand-editing metadata.
+- Add a contract check that every relative local image referenced by
+  `vignettes/*.md` resolves to an existing file, ignoring absolute URLs, data
+  URIs, and pure anchors.
 - Remove generated local artifacts and write the release closeout.
 
 ### Acceptance Criteria
@@ -2396,6 +2402,11 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Contracts, schemas, identities, NEWS, docs, and packet records agree.
 - Rendered vignettes contain no repeated DuckDB temporary-directory startup
   notices, while intended diagnostic and example output remains visible.
+- Every local vignette image target exists, so a site build that removes
+  rendered figure directories cannot ship dead image links regardless of the
+  order in which rendering ran.
+- `docs/pkgdown.yml` records a pkgdown at or above the floor, and the closeout
+  names that version.
 - Branch is ready for remote branch CI; main and tag CI remain later evidence.
 
 ### Verification
@@ -2406,6 +2417,7 @@ remote CI, merge, and tag without conflating those evidence stages.
 - `R CMD build` and `R CMD check --no-manual --no-build-vignettes`
 - Coverage, pkgdown, and Linux gates
 - Rendered-HTML scan for DuckDB temporary-home startup messages
+- Vignette local-image resolution check
 - Git status/generated-artifact review
 
 ### Source Reference
