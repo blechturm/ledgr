@@ -59,6 +59,13 @@
   execution facts and records an accepted fill at the next declared session
   opening. Decision-frozen membership and the terminal no-opportunity rule are
   preserved, while dense execution remains unchanged.
+- Added read-side fill alignment and explicit timing provenance. Public fill
+  timestamps remain economic execution times, while
+  `recording_pulse_ts_utc` derives the associated execution-session close for
+  grouped equity alignment without adding a persisted column. New active runs
+  record timing version 2 in identity; retained version-1 runs reopen read-only,
+  and mixed or unknown timing conventions are marked ineligible for fill-level
+  equivalence without hiding their summary metrics.
 - Added strict expected-session feature semantics for the built-in SMA and
   returns indicators. Whole-feed outages remain visible, missing required
   observations invalidate affected windows, and unsupported gap behavior fails

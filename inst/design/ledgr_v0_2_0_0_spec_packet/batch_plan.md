@@ -1,7 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-10 complete after review. Batch 11 is in progress: LDG-2704
-is complete after review, while LDG-2705 and LDG-2706 remain pending.
+Status: Batches 0-10 complete after review. Batch 11 implementation is complete
+and awaiting review for LDG-2705 and LDG-2706; LDG-2704 is complete after review.
 Batches 12-14 remain pending; they implement the accepted inspectable
 availability workflow amendment and then close the release gate.
 
@@ -687,7 +687,7 @@ Routed forward, not closed here:
 
 ## Batch 11 - Economic Execution Timing Correction
 
-Status: In Progress. LDG-2704 Complete After Review; LDG-2705 and LDG-2706 Pending.
+Status: Review Pending. LDG-2704 Complete After Review; LDG-2705 and LDG-2706 Review Pending.
 
 Tickets:
 
@@ -739,6 +739,26 @@ Implementation notes:
   four post-follow-up focused files pass 316 expectations.
 - Independent review accepted the opening-time behavior, dense neutrality,
   helper consolidation, and detecting validation cases with no findings.
+- LDG-2705 keeps public fill time at the economic execution instant and adds
+  `recording_pulse_ts_utc` as a read-only derivation from recorded fill
+  association and sealed sessions. Direct, reopened, and reconstructed
+  projections agree; missing or ambiguous evidence stays unavailable, no
+  persistence schema changes, and the help example groups before joining to
+  equity.
+- Review follow-up added a detecting live-candidate assertion for the sweep
+  recording-pulse remap and routed standalone event reconstruction through the
+  same opportunity mapper with an explicit pulse axis. Removing the candidate
+  remap produces exactly one failure at the new `09:30` versus `16:00` check.
+- LDG-2706 records active timing version 2 in config and descendant identity,
+  preserves dense omission, infers recognized pre-version active configs as
+  read-only version 1, and reports unknown evidence without promoting it to
+  version 2. Run information, summaries, and comparison metadata expose the
+  convention without filtering historical metrics.
+- The timing-specific test file passes 56 expectations. The pre-follow-up full
+  120-file suite was green with zero failures or errors and one expected
+  snapshot-adapter skip; the post-follow-up sweep, parity, and execution-spec
+  regression net is green. Rd, YAML, export, schema, and diff hygiene checks
+  also pass.
 
 ## Batch 12 - Inspectable Evidence Preparation
 

@@ -290,6 +290,7 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash, histo
   identity <- function() {
     list(
       provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = config$availability$execution_timing_version %||% NULL,
       snapshot_hash = snapshot_hash,
       declared_families = families
     )

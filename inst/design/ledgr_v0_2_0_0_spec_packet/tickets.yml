@@ -717,7 +717,7 @@ tickets:
 
   - id: "LDG-2705"
     title: "Fill and read-side timestamp alignment"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -731,10 +731,26 @@ tickets:
       - "Parity and persistence tests"
       - "Grouped fills-to-equity join cardinality"
       - "Reopen without strategy replay"
+    implementation_notes:
+      - >-
+        Added recording_pulse_ts_utc as a read-only derivation from recorded
+        fill association and sealed session facts. Economic fill timestamps
+        stay at the opening, equity stays at the execution-session close, and
+        no persistence schema gains another timestamp.
+      - >-
+        Direct, reopened, and reconstructed fill projections agree without
+        strategy replay; missing or ambiguous associations return NA, and an
+        executed help example groups fills before matching them to equity.
+      - >-
+        Review follow-up added a detecting assertion over fills passed from a
+        live sweep candidate into retention and routed standalone event
+        reconstruction through the shared opportunity mapper with an explicit
+        pulse axis. Removing the candidate remap produces exactly one 09:30
+        versus 16:00 failure at the new assertion.
 
   - id: "LDG-2706"
     title: "Historical timing compatibility and identity"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -749,6 +765,22 @@ tickets:
       - "Persistence and comparison tests"
       - "Legacy classification is read-only and fail-closed"
       - "Corrected run cannot resume a pre-correction identity"
+    implementation_notes:
+      - >-
+        Recorded active timing version 2 in canonical config, sweep/candidate,
+        provider, and walk-forward descendant identity while preserving dense
+        canonical omission.
+      - >-
+        Added read-only legacy version-1 inference, unknown-evidence handling,
+        run-info and summary provenance, and selected-set comparison metadata
+        that leaves historical metrics available while refusing cross-version
+        fill equivalence.
+      - >-
+        Timing-specific tests pass 56 expectations. The pre-follow-up full
+        120-file suite was green with zero failures or errors and one expected
+        snapshot-adapter skip; the post-follow-up sweep, parity, and
+        execution-spec regression net is green. Rd, YAML, export, schema, and
+        diff hygiene checks also pass.
 
   - id: "LDG-2707"
     title: "Shared local-time ambiguity validation"

@@ -170,7 +170,7 @@ ledgr_expect_memory_reconstruction_matches_run <- function(bt, bars, initial_cas
     tolerance = ledgr_parity_accounting_tolerance()
   )
 
-  memory_fills <- ledgr:::ledgr_fills_from_events(events)
+  memory_fills <- ledgr:::ledgr_fills_from_events(events, pulses)
   persistent_fills <- ledgr_results(bt, "fills")
   testthat::expect_equal(
     ledgr_parity_normalize_table(memory_fills),

@@ -37,7 +37,11 @@ counts closed trade rows, not open-only fill rows; \code{win_rate} and
 \code{avg_trade} are computed over those closed trade rows. \code{final_equity} is
 read from the last stored equity row. \code{sharpe_ratio} uses the comparison
 metric context; the table has exactly one metric context, available through
-\code{ledgr_metric_context(comparison)}. Use \code{as.data.frame(comparison)} or
+\code{ledgr_metric_context(comparison)}. Each row reports its fill-timing
+convention. The comparison attributes \code{fill_timing_comparable} and
+\code{fill_timing_comparability_reason} describe whether the selected run set
+can support a fill-equivalence claim; they never filter or alter metrics.
+Use \code{as.data.frame(comparison)} or
 tibble operations when exporting report-ready numeric columns.
 }
 \description{

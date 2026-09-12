@@ -371,6 +371,11 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
+    execution_timing_version = if (availability_active) {
+      ledgr_availability_execution_timing_version()
+    } else {
+      NULL
+    },
     cost_model_hash = exp$cost_model_hash %||% NULL,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
@@ -1439,7 +1444,18 @@ ledgr_sweep_run_candidate <- function(exp,
       initial_cash = exp$opening$cash,
       instrument_ids = exp$universe,
       run_id = run_id,
-      metric_kernel = metric_kernel
+      metric_kernel = metric_kernel,
+      execution_opportunities_posix = execution_opportunities_posix
+    )
+  }
+  if (nrow(summary$fills) > 0L) {
+    summary$fills <- ledgr_fills_add_recording_pulse(
+      summary$fills,
+      ledgr_fill_recording_pulses_from_opportunities(
+        summary$fills,
+        pulses_posix,
+        execution_opportunities_posix
+      )
     )
   }
   telemetry$t_results <- ledgr_time_elapsed(results_start, ledgr_time_now())
@@ -1843,6 +1859,7 @@ ledgr_memory_output_handler <- function(run_id) {
     if (state$equity_fact_n == 0L) {
       equity <- ledgr_empty_equity_curve()
       fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+      fills <- ledgr_fills_add_recording_pulse(fills, fills$ts_utc)
       metrics <- ledgr_metrics_from_equity_fills(
         equity = equity,
         fills = fills,
@@ -1867,6 +1884,7 @@ ledgr_memory_output_handler <- function(run_id) {
       stringsAsFactors = FALSE
     )
     fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+    fills <- ledgr_fills_add_recording_pulse(fills, fills$ts_utc)
     metrics <- ledgr_metrics_from_equity_fills(
       equity = equity,
       fills = fills,
@@ -2182,7 +2200,9 @@ ledgr_sweep_availability_config <- function(exp) {
       active = TRUE,
       declared_families = exp$availability$declared_families,
       universe_rule = if (is.null(exp$universe_rule)) NULL else unclass(exp$universe_rule),
-      valuation_policy = unclass(exp$valuation_policy)
+      valuation_policy = unclass(exp$valuation_policy),
+      provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = ledgr_availability_execution_timing_version()
     )
   )
 }

@@ -552,6 +552,18 @@ ledgr_compare_runs_select <- function(rows,
                                       metric_stats = NULL,
                                       metric_context = NULL) {
   out <- rows
+  timing <- lapply(out$config_json, ledgr_execution_timing_from_json)
+  out$execution_timing_version <- vapply(
+    timing,
+    function(x) as.integer(x$execution_timing_version),
+    integer(1)
+  )
+  out$execution_timing_convention <- vapply(
+    timing,
+    function(x) as.character(x$execution_timing_convention),
+    character(1)
+  )
+  timing_comparison <- ledgr_fill_timing_comparison(timing)
   out$n_trades <- NULL
   fill_idx <- match(out$run_id, fill_stats$run_id)
   out$n_trades <- fill_stats$n_trades[fill_idx]
@@ -582,6 +594,8 @@ ledgr_compare_runs_select <- function(rows,
     "win_rate",
     "avg_trade",
     "time_in_market",
+    "execution_timing_version",
+    "execution_timing_convention",
     "execution_mode",
     "elapsed_sec",
     "reproducibility_level",
@@ -597,6 +611,8 @@ ledgr_compare_runs_select <- function(rows,
     attrs$metric_context_hash <- ledgr_metric_context_hash(metric_context)
     attrs$metric_context_version <- as.integer(metric_context$metric_context_version)
   }
+  attrs$fill_timing_comparable <- isTRUE(timing_comparison$comparable)
+  attrs$fill_timing_comparability_reason <- as.character(timing_comparison$reason)
   ledgr_classed_tibble(out, "ledgr_comparison", attrs = attrs)
 }
 
@@ -638,6 +654,10 @@ ledgr_run_info_from_row <- function(row, db_path) {
   }
   info <- as.list(row[1, , drop = TRUE])
   info$risk_chain_hash <- ledgr_run_store_config_risk_chain_hash(info$config_json)
+  timing <- ledgr_execution_timing_from_json(info$config_json)
+  info$execution_timing_version <- timing$execution_timing_version
+  info$execution_timing_convention <- timing$execution_timing_convention
+  info$execution_timing_source <- timing$execution_timing_source
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
     info[c("elapsed_sec", "persist_features", "feature_cache_hits", "feature_cache_misses")],
@@ -673,7 +693,11 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   `avg_trade` are computed over those closed trade rows. `final_equity` is
 #'   read from the last stored equity row. `sharpe_ratio` uses the comparison
 #'   metric context; the table has exactly one metric context, available through
-#'   `ledgr_metric_context(comparison)`. Use `as.data.frame(comparison)` or
+#'   `ledgr_metric_context(comparison)`. Each row reports its fill-timing
+#'   convention. The comparison attributes `fill_timing_comparable` and
+#'   `fill_timing_comparability_reason` describe whether the selected run set
+#'   can support a fill-equivalence claim; they never filter or alter metrics.
+#'   Use `as.data.frame(comparison)` or
 #'   tibble operations when exporting report-ready numeric columns.
 #' @section Articles:
 #' Durable experiment stores:
@@ -783,6 +807,9 @@ ledgr_run_compare <- function(snapshot,
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_comparison <- function(x, ...) {
+  comparable <- attr(x, "fill_timing_comparable", exact = TRUE)
+  comparable_label <- if (isTRUE(comparable)) "yes" else "no"
+  comparability_reason <- attr(x, "fill_timing_comparability_reason", exact = TRUE) %||% "unknown"
   ledgr_print_curated_tibble(
     "# ledgr comparison",
     x,
@@ -792,6 +819,11 @@ print.ledgr_comparison <- function(x, ...) {
       "reproducibility_level"
     ),
     footer = c(
+      sprintf(
+        "Fill timing comparable: %s (%s).",
+        comparable_label,
+        comparability_reason
+      ),
       "Full identity and telemetry columns remain available on this tibble.",
       "Inspect one run with ledgr_run_info(snapshot, run_id)."
     ),
@@ -873,6 +905,7 @@ print.ledgr_run_list <- function(x, ...) {
 #' @return A `ledgr_run_info` object. Important fields include `run_id`,
 #'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
 #'   `strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`,
+#'   `execution_timing_version`, `execution_timing_convention`,
 #'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
 #'   `persist_features`, feature-cache counts, `promotion_context` for runs
 #'   created with [ledgr_promote()], and `error_msg` for failed runs. See
@@ -943,6 +976,8 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
   cat("Reproducibility: ", value("reproducibility_level"), "\n", sep = "")
   cat("Execution Mode:  ", value("execution_mode"), "\n", sep = "")
+  cat("Fill Timing:     ", value("execution_timing_convention"), "\n", sep = "")
+  cat("Timing Version:  ", value("execution_timing_version", "N/A"), "\n", sep = "")
   cat("Elapsed Sec:     ", value("elapsed_sec"), "\n", sep = "")
   cat("Persist Features:", value("persist_features"), "\n", sep = "")
   cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")

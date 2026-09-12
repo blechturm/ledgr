@@ -321,6 +321,17 @@ The strategy preflight boundary originated in
   fills and events at the next declared session opening. Membership remains
   frozen from the decision; the terminal decision has no execution opportunity.
   Dense execution declares no independent opening clock and is unchanged.
+- New availability-aware configs record `execution_timing_version = 2L` in the
+  availability payload. It participates in canonical config identity,
+  walk-forward descendant identity, sweep execution assumptions, and candidate
+  reproduction keys. Dense configs omit the field and retain their recorded
+  dense timing model.
+- A stored active config with the recognized availability-provider version and
+  no execution-timing version is inferred read-only as
+  `availability_close_v1`. Explicit version 2 is `availability_open_v2`;
+  inconsistent or unrecognized evidence is `unknown`. Legacy or unknown active
+  configs cannot resume under current execution semantics and require a new
+  run identity.
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.
@@ -817,6 +828,13 @@ The strategy preflight boundary originated in
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
   from closed trade rows, so open-only fills do not count as trades until
   quantity is closed.
+- Public fill `ts_utc` is economic execution time. Availability-aware version-2
+  fills use the next declared session opening, while equity remains stamped at
+  the close pulse. The read-only `recording_pulse_ts_utc` column is derived from
+  recorded fill association and sealed session facts; it is not persisted and
+  remains `NA` when the association is missing or ambiguous. Dense alignment is
+  the existing fill timestamp. Align fills to equity only after grouping fills
+  by recording pulse, so multiple fills cannot duplicate equity rows.
 - Timestamp display options are print-only. `options(ledgr.print_ts_utc =
   "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
   print paths, but returned and stored `ts_utc` values remain POSIXct UTC.
@@ -826,6 +844,12 @@ The strategy preflight boundary originated in
 - `ledgr_run_compare()` returns raw numeric metric columns for ranking and
   filtering. Percentage formatting is a print-only concern; users must not need
   to parse display strings such as `"+5.2%"` to rank runs.
+- Run information, reopened summaries, and comparisons expose timing version
+  and convention provenance. Comparison metadata reports selected-set-wide
+  `fill_timing_comparable` and `fill_timing_comparability_reason` without
+  filtering or changing historical metrics. Differing or unknown conventions
+  cannot support fill equivalence; matching conventions establish timing
+  compatibility only, not economic equivalence.
 - `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
   stored artifacts, comparison semantics, or strategy provenance.
@@ -837,6 +861,11 @@ The strategy preflight boundary originated in
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+- Historical runs retain their recorded config, hashes, events, diagnostics,
+  projections, completion evidence, and fill timestamps byte for byte. Reads
+  may classify timing provenance and derive unambiguous pulse alignment, but
+  must not write it back, replay strategy code, recompute fill eligibility, or
+  restamp historical events.
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
   cursor, lazy-read, or row-threshold mode.

@@ -846,7 +846,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
             position_after = entry$current_qty
           ))
         }
-        for (entry in pulse_plan$fills) {
+        for (fill_idx in seq_along(pulse_plan$fills)) {
+          entry <- pulse_plan$fills[[fill_idx]]
           informational <- ledgr_availability_reason_values(
             entry$informational_reasons
           )
@@ -864,6 +865,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             price = entry$fill$fill_price,
             decision_ts_utc = ts,
             execution_ts_utc = entry$execution_ts_utc,
+            event_seq = event_seq + fill_idx - 1L,
             target_before_risk = strategy_targets[[entry$instrument_id]],
             target_after_risk = targets[[entry$instrument_id]],
             position_before = entry$current_qty,

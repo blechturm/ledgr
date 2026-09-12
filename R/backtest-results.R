@@ -637,6 +637,13 @@ summary.ledgr_backtest <- function(object,
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
 
+  timing <- ledgr_execution_timing_provenance(object$config)
+  cat("Execution Evidence:\n")
+  cat(sprintf("  Fill Timing:         %s\n", timing$execution_timing_convention))
+  timing_version <- timing$execution_timing_version
+  timing_version <- if (is.null(timing_version) || is.na(timing_version)) "N/A" else as.character(timing_version)
+  cat(sprintf("  Timing Version:      %s\n\n", timing_version))
+
   cat("Performance Metrics:\n")
   cat(sprintf("  Total Return:        %.2f%%\n", computed$total_return * 100))
   cat(sprintf("  Annualized Return:   %.2f%%\n", computed$annualized_return * 100))

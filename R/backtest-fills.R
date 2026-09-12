@@ -2,6 +2,7 @@ ledgr_empty_fills_table <- function() {
   tibble::tibble(
     event_seq = integer(),
     ts_utc = as.POSIXct(character(), tz = "UTC"),
+    recording_pulse_ts_utc = as.POSIXct(character(), tz = "UTC"),
     instrument_id = character(),
     side = character(),
     qty = numeric(),
@@ -14,10 +15,15 @@ ledgr_empty_fills_table <- function() {
 #' Extract fill events from a backtest
 #'
 #' @param bt A `ledgr_backtest` object.
-#' @return A tibble of fill rows.
+#' @return A tibble of fill rows. `ts_utc` is the economic execution time.
+#'   `recording_pulse_ts_utc` is the close of the uniquely associated execution
+#'   session and is `NA` when that association is unavailable or ambiguous.
 #' @details Fill rows describe execution events and may include both opening and
 #'   closing actions. Closed trades are exposed by `ledgr_results(bt, what =
-#'   "trades")`.
+#'   "trades")`. To align fills with close-stamped equity, first aggregate fills
+#'   by `recording_pulse_ts_utc`, then match or join that one-row-per-pulse table
+#'   to equity `ts_utc`. A raw equality join on fill `ts_utc` is not session
+#'   alignment, and joining unaggregated fills can duplicate equity rows.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -34,7 +40,18 @@ ledgr_empty_fills_table <- function() {
 #'   targets
 #' }
 #' bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
-#' ledgr_run_fills(bt)
+#' fills <- ledgr_run_fills(bt)
+#' equity <- ledgr_results(bt, "equity")
+#' fills_by_pulse <- stats::aggregate(
+#'   qty ~ recording_pulse_ts_utc,
+#'   data = as.data.frame(fills),
+#'   FUN = sum
+#' )
+#' equity$fill_qty <- fills_by_pulse$qty[match(
+#'   equity$ts_utc,
+#'   fills_by_pulse$recording_pulse_ts_utc
+#' )]
+#' nrow(equity)
 #' close(bt)
 #' @export
 ledgr_run_fills <- function(bt) {
@@ -270,7 +287,11 @@ ledgr_extract_fills_impl <- function(bt, con = NULL) {
     }
   }
 
-  tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))
+  out <- tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))
+  ledgr_fills_add_recording_pulse(
+    out,
+    ledgr_run_fill_recording_pulses(bt, out, con)
+  )
 }
 
 ledgr_closed_trade_rows <- function(fills) {

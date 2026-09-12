@@ -98,6 +98,15 @@ validate_ledgr_config <- function(config) {
     ledgr_validate_valuation_policy(
       structure(availability$valuation_policy, class = c("ledgr_valuation_policy", "list"))
     )
+    timing_version <- availability$execution_timing_version
+    if (!is.null(timing_version) &&
+        (!is.numeric(timing_version) || length(timing_version) != 1L ||
+         is.na(timing_version) || !is.finite(timing_version) || timing_version != 2)) {
+      rlang::abort(
+        "Config field availability.execution_timing_version must be 2 when recorded.",
+        class = "ledgr_invalid_config"
+      )
+    }
     rule <- availability$universe_rule
     if (!is.null(rule) &&
         (!is.list(rule) || !identical(rule$type_id, "membership_universe") ||

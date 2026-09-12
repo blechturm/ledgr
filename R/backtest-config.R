@@ -274,7 +274,8 @@ ledgr_config <- function(snapshot,
       declared_families = as.character(availability$declared_families),
       universe_rule = if (is.null(universe_rule)) NULL else unclass(universe_rule),
       valuation_policy = unclass(valuation_policy),
-      provider_version = ledgr_availability_provider_version()
+      provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = ledgr_availability_execution_timing_version()
     )
   }
 

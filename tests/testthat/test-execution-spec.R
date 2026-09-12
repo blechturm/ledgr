@@ -188,6 +188,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
   list(
     fold = fold,
     handler = handler,
+    pulses_posix = pulses_posix,
     events = handler$events(),
     typed_events = handler$typed_events(),
     inline_summary = handler$inline_summary("compiled-spot-fifo-parity", metric_kernel),
@@ -527,8 +528,8 @@ testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", 
     )
   }
   testthat::expect_equal(
-    ledgr:::ledgr_fills_from_events(compiled_path$typed_events),
-    ledgr:::ledgr_fills_from_events(r_path$typed_events)
+    ledgr:::ledgr_fills_from_events(compiled_path$typed_events, compiled_path$pulses_posix),
+    ledgr:::ledgr_fills_from_events(r_path$typed_events, r_path$pulses_posix)
   )
   testthat::expect_equal(compiled_path$inline_summary, r_path$inline_summary)
   testthat::expect_equal(compiled_path$reconstructed, r_path$reconstructed)

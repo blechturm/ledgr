@@ -2060,7 +2060,7 @@ scope: opening-time-execution
 Priority: P0
 Effort: M
 Dependencies: LDG-2704
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -2093,6 +2093,24 @@ alignment as a derived read-side value rather than a fourth stored column.
 - Fills, results, parity, and persistence tests
 - Documented join example executed in a vignette or help page
 
+### Implementation Notes
+
+- Public fill timestamps remain the recorded economic execution instant. The
+  new `recording_pulse_ts_utc` result column derives the close of the execution
+  session from fill association and sealed session facts; no persistence
+  schema or event row gained another timestamp.
+- Filled diagnostics now retain their existing ledger `event_seq` association.
+  Missing or ambiguous evidence returns `NA` rather than guessing, while dense
+  projections use their existing fill timestamp as the alignment pulse.
+- Direct, reopened, and reconstructed fills agree without strategy replay. An
+  executed help example groups fills before matching them to close-stamped
+  equity, and tests pin unchanged equity cardinality.
+- Review follow-up added a detecting assertion over the fills passed from a
+  live sweep candidate into retention, so deleting the candidate remap fails.
+  Standalone event reconstruction now takes an explicit pulse axis and routes
+  recording-time derivation through the shared opportunity mapper. The remap
+  gut produces exactly one `09:30` versus `16:00` failure at the new assertion.
+
 ### Classification
 
 ```yaml
@@ -2106,7 +2124,7 @@ scope: fill-timestamp-alignment
 Priority: P0
 Effort: L
 Dependencies: LDG-2704, LDG-2705
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -2141,6 +2159,25 @@ runs read-only, and forbid cross-version fill equivalence claims.
 
 - Persistence and comparison tests against a retained version-1 fixture
 - Compatibility tested independently of time-alignment and economic parity
+
+### Implementation Notes
+
+- New active configs record execution timing version 2 in canonical config,
+  sweep/candidate reproduction, provider, and walk-forward descendant identity.
+  Dense config and identity retain canonical omission.
+- Read-side provenance classifies recognized active configs without a version
+  as `availability_close_v1`, explicit version 2 as
+  `availability_open_v2`, and insufficient or inconsistent evidence as
+  `unknown`. Legacy active configs remain inspectable but cannot execute or
+  resume under corrected timing semantics.
+- Run information, summaries, and comparisons expose timing provenance.
+  Comparison metadata is selected-set-wide, leaves historical metrics intact,
+  and rejects differing or unknown conventions as fill-timing comparable.
+- The timing-specific file passes 56 expectations. The pre-follow-up full
+  120-file suite was green with zero failures or errors and one expected
+  snapshot-adapter skip; the post-follow-up sweep, parity, and execution-spec
+  regression net is green. Rd, YAML, export, schema, and diff hygiene checks
+  also pass.
 
 ### Classification
 

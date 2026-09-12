@@ -13,6 +13,7 @@ ledgr_run_prepare_config <- function(config) {
     )
   }
   cfg <- ledgr_config_normalize_risk_identity(cfg)
+  ledgr_execution_timing_require_current(cfg)
 
   opening_positions <- ledgr_config_opening_positions(cfg)
   list(

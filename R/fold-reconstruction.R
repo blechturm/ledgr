@@ -285,7 +285,9 @@ ledgr_fill_row_buffer_tibble <- function(buffer) {
   tibble::as_tibble(ledgr_fill_row_buffer_data_frame(buffer))
 }
 
-ledgr_fills_from_events <- function(events) {
+ledgr_fills_from_events <- function(events,
+                                    pulses_posix,
+                                    execution_opportunities_posix = NULL) {
   if (is.null(events) || nrow(events) == 0L) {
     return(ledgr_empty_fills_table())
   }
@@ -390,7 +392,15 @@ ledgr_fills_from_events <- function(events) {
   if (fill_rows$n == 0L) {
     return(ledgr_empty_fills_table())
   }
-  ledgr_fill_row_buffer_tibble(fill_rows)
+  out <- ledgr_fill_row_buffer_tibble(fill_rows)
+  ledgr_fills_add_recording_pulse(
+    out,
+    ledgr_fill_recording_pulses_from_opportunities(
+      out,
+      pulses_posix,
+      execution_opportunities_posix
+    )
+  )
 }
 
 ledgr_assert_events_in_fold_order <- function(events) {
@@ -413,7 +423,8 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
                                                     initial_cash,
                                                     instrument_ids,
                                                     run_id,
-                                                    metric_kernel) {
+                                                    metric_kernel,
+                                                    execution_opportunities_posix = NULL) {
   n_pulses <- length(pulses_posix)
   if (n_pulses == 0L) {
     equity <- ledgr_empty_equity_curve()
@@ -594,6 +605,16 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
       fee = fill_fee[seq_len(fill_idx)],
       realized_pnl = fill_realized_pnl[seq_len(fill_idx)],
       action = fill_action[seq_len(fill_idx)]
+    )
+  }
+  if (nrow(fills) > 0L) {
+    fills <- ledgr_fills_add_recording_pulse(
+      fills,
+      ledgr_fill_recording_pulses_from_opportunities(
+        fills,
+        pulses_posix,
+        execution_opportunities_posix
+      )
     )
   }
   metrics <- ledgr_metrics_from_equity_fills(

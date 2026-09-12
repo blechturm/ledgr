@@ -58,9 +58,10 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   testthat::expect_identical(events$event_type, c("CASHFLOW", "FILL"))
   testthat::expect_s3_class(typed_events, "ledgr_memory_events")
   testthat::expect_true(is.na(typed_events$meta_json[[2L]]))
+  pulses <- as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC")
   testthat::expect_equal(
-    ledgr:::ledgr_fills_from_events(typed_events),
-    ledgr:::ledgr_fills_from_events(events)
+    ledgr:::ledgr_fills_from_events(typed_events, pulses),
+    ledgr:::ledgr_fills_from_events(events, pulses)
   )
 })
 
@@ -165,7 +166,7 @@ testthat::test_that("single-pass sweep summary matches separate reconstruction h
     instrument_ids = "AAA",
     run_id = "single-pass-summary"
   )
-  fills <- ledgr:::ledgr_fills_from_events(events)
+  fills <- ledgr:::ledgr_fills_from_events(events, pulses)
   metrics <- ledgr:::ledgr_metrics_from_equity_fills(
     equity = equity,
     fills = fills,
@@ -427,11 +428,12 @@ testthat::test_that("fills reconstruction is invariant under hostile collapse se
     stringsAsFactors = FALSE
   )
 
-  expected <- ledgr:::ledgr_fills_from_events(events)
+  pulses <- as.POSIXct(events$ts_utc, tz = "UTC")
+  expected <- ledgr:::ledgr_fills_from_events(events, pulses)
   old <- collapse::set_collapse()
   on.exit(do.call(collapse::set_collapse, old), add = TRUE)
   collapse::set_collapse(nthreads = 2L, na.rm = TRUE, sort = FALSE, stable.algo = FALSE)
-  hostile <- ledgr:::ledgr_fills_from_events(events)
+  hostile <- ledgr:::ledgr_fills_from_events(events, pulses)
 
   testthat::expect_equal(hostile, expected)
 })

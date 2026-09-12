@@ -21,6 +21,8 @@
 \alias{ledgr_valuation_policy_required}
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
+\alias{ledgr_execution_timing_version_mismatch}
+\alias{ledgr_fill_timing_not_comparable}
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_strategy_state}
@@ -189,6 +191,13 @@ rule names a universe that is not declared by the snapshot.
 
 \code{ledgr_compiled_availability_unsupported} is raised before execution when
 availability-aware execution is combined with the compiled spot-FIFO path.
+
+\code{ledgr_execution_timing_version_mismatch} is raised when an active legacy or
+unknown timing config is submitted for current execution. Historical runs
+remain inspectable, but they cannot resume under corrected timing semantics.
+
+\code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
+when selected runs have differing or unknown execution-timing conventions.
 
 \code{ledgr_indicator_gap_unsupported} is raised before strategy use when an
 availability-aware feature does not declare the supported strict-window gap

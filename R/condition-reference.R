@@ -68,6 +68,13 @@
 #' `ledgr_compiled_availability_unsupported` is raised before execution when
 #' availability-aware execution is combined with the compiled spot-FIFO path.
 #'
+#' `ledgr_execution_timing_version_mismatch` is raised when an active legacy or
+#' unknown timing config is submitted for current execution. Historical runs
+#' remain inspectable, but they cannot resume under corrected timing semantics.
+#'
+#' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
+#' when selected runs have differing or unknown execution-timing conventions.
+#'
 #' `ledgr_indicator_gap_unsupported` is raised before strategy use when an
 #' availability-aware feature does not declare the supported strict-window gap
 #' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
@@ -398,6 +405,8 @@
 #' @aliases ledgr_availability_sessions_required ledgr_valuation_policy_required
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
+#' @aliases ledgr_execution_timing_version_mismatch
+#' @aliases ledgr_fill_timing_not_comparable
 #' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
 #' @aliases ledgr_invalid_strategy_state
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target

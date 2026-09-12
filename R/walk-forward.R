@@ -275,7 +275,10 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     run_id = NULL,
     opening = exp$opening,
     seed = NULL,
-    compiled_accounting_model = NULL
+    compiled_accounting_model = NULL,
+    availability = exp$availability,
+    universe_rule = exp$universe_rule,
+    valuation_policy = exp$valuation_policy
   )
 }
 

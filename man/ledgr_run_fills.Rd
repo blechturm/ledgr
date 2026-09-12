@@ -10,14 +10,19 @@ ledgr_run_fills(bt)
 \item{bt}{A \code{ledgr_backtest} object.}
 }
 \value{
-A tibble of fill rows.
+A tibble of fill rows. \code{ts_utc} is the economic execution time.
+\code{recording_pulse_ts_utc} is the close of the uniquely associated execution
+session and is \code{NA} when that association is unavailable or ambiguous.
 }
 \description{
 Extract fill events from a backtest
 }
 \details{
 Fill rows describe execution events and may include both opening and
-closing actions. Closed trades are exposed by \code{ledgr_results(bt, what = "trades")}.
+closing actions. Closed trades are exposed by \code{ledgr_results(bt, what = "trades")}. To align fills with close-stamped equity, first aggregate fills
+by \code{recording_pulse_ts_utc}, then match or join that one-row-per-pulse table
+to equity \code{ts_utc}. A raw equality join on fill \code{ts_utc} is not session
+alignment, and joining unaggregated fills can duplicate equity rows.
 }
 \examples{
 bars <- data.frame(
@@ -35,6 +40,17 @@ strategy <- function(ctx, params) {
   targets
 }
 bt <- ledgr_backtest(data = bars, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero())
-ledgr_run_fills(bt)
+fills <- ledgr_run_fills(bt)
+equity <- ledgr_results(bt, "equity")
+fills_by_pulse <- stats::aggregate(
+  qty ~ recording_pulse_ts_utc,
+  data = as.data.frame(fills),
+  FUN = sum
+)
+equity$fill_qty <- fills_by_pulse$qty[match(
+  equity$ts_utc,
+  fills_by_pulse$recording_pulse_ts_utc
+)]
+nrow(equity)
 close(bt)
 }
