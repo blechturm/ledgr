@@ -131,3 +131,36 @@ testthat::test_that("walk-forward schema stores compact identity rows without pl
   testthat::expect_false(any(all_columns %in% c("cost_plan_json", "risk_plan_json")))
   testthat::expect_true(ledgr_validate_schema(con))
 })
+
+testthat::test_that("session provenance keeps the creation time of day", {
+  # `ledgr_normalize_ts_utc()` emits ISO8601 with `T`/`Z`. Parsing that back
+  # without an explicit format falls through to `%Y-%m-%d` and silently
+  # truncates the recorded instant to midnight. Exercise the real creation
+  # path, not the parser, so the regression cannot return unnoticed.
+  fixed <- as.POSIXct("2020-01-17 21:34:56", tz = "UTC")
+  testthat::local_mocked_bindings(Sys.time = function() fixed, .package = "base")
+
+  row <- ledgr:::ledgr_walk_forward_session_row(
+    identity = list(
+      session_id = "session-provenance",
+      snapshot_hash = digest::digest("snapshot", algo = "sha256"),
+      experiment_hash = digest::digest("experiment", algo = "sha256"),
+      param_grid_hash = digest::digest("grid", algo = "sha256"),
+      fold_list_hash = digest::digest("fold-list", algo = "sha256"),
+      selection_rule_hash = digest::digest("selection", algo = "sha256"),
+      metric_context_hash = digest::digest("metric", algo = "sha256"),
+      cost_model_hash = digest::digest("cost", algo = "sha256"),
+      risk_chain_hash = digest::digest("risk", algo = "sha256")
+    ),
+    master_seed = 12L,
+    opening_state_policy = "carry_test_state",
+    cold_start_distorted = FALSE
+  )
+
+  testthat::expect_s3_class(row$created_at_utc, "POSIXct")
+  testthat::expect_equal(row$created_at_utc, fixed)
+  testthat::expect_identical(
+    format(row$created_at_utc, "%H:%M:%S", tz = "UTC"),
+    "21:34:56"
+  )
+})
