@@ -14,10 +14,32 @@ ledgr_run_explain(bt, instrument_id, ts_utc)
 \item{ts_utc}{One decision timestamp coercible to POSIXct UTC.}
 }
 \value{
-A one-row tibble describing the recorded decision and outcome.
+A one-row tibble with:
+\itemize{
+\item identifiers: \code{run_id}, \code{ts_utc}, and \code{instrument_id};
+\item availability: \code{member}, \code{held}, \code{target_restricted},
+\code{target_restriction_reason}, and \code{target_restriction_reasons};
+\item decision evidence: \code{feature_identity_json}, \code{quantity},
+\code{target_before_risk}, and \code{target_after_risk};
+\item execution evidence: \code{execution_outcome}, \code{execution_reason},
+\code{execution_reasons}, and \code{resulting_position};
+\item valuation evidence: \code{mark_source} and \code{mark_age}; and
+\item terminal evidence: \code{completion_status} and \code{complete_performance}.
+}
+
+When no execution diagnostic exists for an unchanged target,
+\code{execution_outcome} is \code{"no_action"} and the two execution-reason fields
+are \code{"no_target_change"}. These are explain-time values, not durable
+diagnostic reason codes.
 }
 \description{
 Joins the durable decision trace, execution diagnostics, completion evidence,
 and the availability plane reconstructed from sealed facts. Strategy code is
 never executed. Runs without a retained decision trace fail explicitly.
+}
+\section{Articles}{
+
+Point-in-time universe workflow:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }

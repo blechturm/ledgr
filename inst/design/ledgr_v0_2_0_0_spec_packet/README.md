@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-9 complete after review. Batches 10-11 are pending.
+Status: Batches 0-9 complete after review. Batch 10 implementation is complete
+and awaiting review. Batch 11 is pending.
 
 This packet scopes v0.2.0.0 as an ordered hardening-and-availability release.
 It first corrects known API and representation boundaries, then extracts the
@@ -23,7 +24,7 @@ Authoritative files:
 - `tickets.yml`
 - `batch_plan.md`
 - `wide_projection_store_inventory.md`
-- `availability_walkthrough_fixture.md` (design-only fixture shape; not runtime evidence)
+- `availability_walkthrough_fixture.md` (input shape implemented by the executed article)
 
 Binding design inputs:
 

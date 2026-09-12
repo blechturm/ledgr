@@ -467,8 +467,9 @@ whose scalar score hides a bad path.
 
 They do not make the sweep statistically valid. If you selected the candidate
 from the same sample, the retained path is still in-sample evidence. Generalized
-validation belongs to a held-out evaluation, walk-forward analysis, or later
-selection-integrity diagnostics.
+validation belongs to a held-out evaluation, walk-forward analysis, or the
+selection-integrity diagnostics taught in
+`vignette("selection-integrity", package = "ledgr")`.
 
 ::: {.ledgr-callout .ledgr-callout-warning}
 **Return paths are not validation by themselves**

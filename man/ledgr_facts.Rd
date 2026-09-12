@@ -90,6 +90,13 @@ classes are \code{ledgr_fact_invalid_shape}, \code{ledgr_fact_invalid_interval},
 \code{ledgr_fact_invalid_supersession}, and \code{ledgr_session_invalid}.
 }
 
+\section{Articles}{
+
+Point-in-time universe workflow:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
+}
+
 \examples{
 membership <- ledgr_facts_membership_snapshots(
   data.frame(

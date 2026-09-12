@@ -24,7 +24,7 @@ The useful reading order is:
 
 <div class="ledgr-diagram ledgr-accounting-hierarchy">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   ledger["ledger events<br/>source of truth"]
@@ -70,12 +70,15 @@ Use the narrowest inspection surface that answers the question:
 | What are the standard metrics? | `summary(bt)` | printed interpretation; returns `bt` invisibly |
 | What metric values can code consume? | `ledgr_compute_metrics(bt)` | list-like `ledgr_metrics` object with raw numeric values |
 | What rows value the portfolio? | `ledgr_results(bt, what = "equity")` | classed tibble |
+| What adjacent-period returns produced the metrics? | `ledgr_results(bt, what = "returns")` | classed tibble |
 | What executed? | `ledgr_results(bt, what = "fills")` | classed tibble |
 | What closed quantity? | `ledgr_results(bt, what = "trades")` | classed tibble |
 | What did the event ledger record? | `ledgr_results(bt, what = "ledger")` | classed tibble |
 | How do stored runs compare? | `ledgr_run_compare(snapshot, run_ids = ...)` | classed comparison tibble |
 | What did a sweep candidate summarize? | `ledgr_sweep()` result rows | classed sweep tibble |
 | What context was stored by promotion? | `ledgr_promotion_context(bt)` or `ledgr_run_promotion_context()` | nested list |
+| Why was an availability-aware action blocked or stopped? | `ledgr_results(bt, what = "diagnostics")` | classed tibble |
+| What could an availability-aware strategy see? | `ledgr_results(bt, what = "availability")` | classed tibble |
 
 The result-table helpers return structured objects. Their print methods
 may format timestamps for readability, but `as_tibble()` gives raw
@@ -187,17 +190,16 @@ ledgr_cost_steps(example_cost_model)
 ledgr_cost_describe(example_cost_model)
 ```
 
-<div class="ledgr-callout ledgr-callout-important">
+> [!IMPORTANT]
+>
+> ### What costs do not model
+>
+> Cost models are deterministic research assumptions over accepted fill
+> proposals. They do not implement liquidity or capacity limits,
+> financing, transaction-cost analysis, taxes, OMS lifecycle behavior, or
+> broker reconciliation. Those are separate future layers, not hidden
+> behavior in the cost API.
 
-**What costs do not model**
-
-Cost models are deterministic research assumptions over accepted fill
-proposals. They do not implement liquidity or capacity limits,
-financing, transaction-cost analysis, taxes, OMS lifecycle behavior, or
-broker reconciliation. Those are separate future layers, not hidden
-behavior in the cost API.
-
-</div>
 
 ## Ledger Events
 
@@ -358,14 +360,13 @@ snaps common cadences, such as daily and weekly, to standard
 annualization constants. Use the detected value if you need an external
 calculation to match ledgr exactly on non-daily data.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change `bars_per_year` in the recompute chunk from `252` to `365`. Which
+> metrics change? Why does `total_return` stay the same?
 
-**Try it**
-
-Change `bars_per_year` in the recompute chunk from `252` to `365`. Which
-metrics change? Why does `total_return` stay the same?
-
-</div>
 
 ## Zero Trades Can Be Correct
 
@@ -492,5 +493,8 @@ close(final_bar_bt)
 - `vignette("execution-semantics", package = "ledgr")` explains why
   fills happen on the next bar and why the final decision bar cannot
   fill.
+- `vignette("survivorship-bias", package = "ledgr")` connects
+  point-in-time facts, missing sessions, diagnostics, and durable
+  explanations.
 - `?ledgr_cost_spread_bps` and `?ledgr_cost_fixed_fee` describe public
   transaction-cost model declarations.

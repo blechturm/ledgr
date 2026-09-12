@@ -1,7 +1,8 @@
 # Quickstart
 
 
-You want the smallest useful ledgr loop before reading the tool chapters.
+You want the smallest useful ledgr loop before reading the tool
+chapters.
 
 This quickstart creates a sealed snapshot, runs one strategy, sweeps a
 small grid, and extracts one candidate for review. It is not a
@@ -136,7 +137,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_011dd398bf9e0a3d
+#> # ledgr sweep -- sweep_e0965e41593f2a27
 #> # A tibble: 8 x 4
 #>   candidate_id                               status sharpe_ratio total_return
 #>   <chr>                                      <chr>         <dbl> <chr>
@@ -151,11 +152,13 @@ sweep |>
 #>
 #> # i 8 combinations: 8 done, 0 failed.
 #> # i Retention returns: none.
+#> # i Retention trades: none.
 #> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
 #> # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
 #> # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
 #> # i Saved artifact: not saved.
 #> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+#> # i Hidden columns (0):
 ```
 
 The sweep table is evidence, not an automatic recommendation. If you

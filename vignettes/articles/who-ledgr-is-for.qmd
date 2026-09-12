@@ -106,8 +106,8 @@ SLA. If you need those, you need a different category of tool.
 **People who want a one-line backtest with no setup.** ledgr's
 correctness-first design means there is some setup: a snapshot has to be
 sealed, an experiment has to be configured, and a strategy contract has to be
-followed. The first backtest takes minutes, not seconds. If you want the
-fastest possible path to a rough number, simpler frameworks such as
+followed. Small examples run quickly, but the setup is deliberately visible.
+If you want the fastest possible path to a rough number, simpler frameworks such as
 `backtesting.py` or `bt` may fit better.
 
 ## What ledgr competes with

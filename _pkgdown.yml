@@ -29,6 +29,7 @@ articles:
       - quickstart
       - research-workflow
       - leakage
+      - survivorship-bias
       - reproducibility
   - title: Core Workflow
     navbar: Core Workflow

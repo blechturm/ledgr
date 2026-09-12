@@ -605,7 +605,7 @@ tickets:
 
   - id: "LDG-2701"
     title: "Survivorship-bias article and connected workflow"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-2700"]
@@ -619,10 +619,24 @@ tickets:
       - "Quarantine and incomplete-result teaching variants"
       - "Documentation-contract and anti-overclaim tests"
       - "Quarto render and local pkgdown preview"
+    implementation_notes:
+      - >-
+        Added and executed the public-only Survivorship Bias journey over the
+        approved synthetic session and membership fixture.
+      - >-
+        The article shows retained former membership, blocked and retried
+        exits, no standing order, valuation age, reopen parity, strict reject,
+        quarantine, and an honestly INCOMPLETE valuation-horizon result.
+      - >-
+        Disabled checks, assumptions, real references, and the settlement,
+        short-financing, OMS, imputation, and completeness limits stay visible.
+      - >-
+        Review follow-up added a bounded max_sessions exercise that contrasts
+        a current-mark-only stop with one permitted stale session.
 
   - id: "LDG-2702"
     title: "Reference surfaces audit dispositions and closeout"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-2701"]
@@ -637,6 +651,26 @@ tickets:
       - "Exact condition-prose and durable-reason token locks"
       - "Audit and horizon disposition review"
       - "pkgdown build"
+    implementation_notes:
+      - >-
+        Linked the article from package, README, pkgdown, result, snapshot,
+        fact, policy, plan, and explanation surfaces and regenerated help.
+      - >-
+        Replaced the reason prose with an exact-token stage/action table and
+        separated condition prose locks structurally from alias locks.
+      - >-
+        Updated the affected maintainer traces, corrected scoped stale
+        examples, and kept broader editorial and navigation work parked.
+      - >-
+        Verification rendered the public article and maintainer mirrors,
+        passed 66 documentation-contract tests with 2,078 expectations,
+        checked all 147 Rd files, passed the API-export lock, and completed
+        the full pkgdown build; the fold trace now identifies the runner-owned
+        availability calendar and dense-only snapshot-calendar branch.
+      - >-
+        Review follow-up documented every ledgr_run_explain result field and
+        labelled no_action and no_target_change as non-durable explain-time
+        values, with documentation-contract coverage.
 
   - id: "LDG-2703"
     title: "v0.2.0.0 release gate"

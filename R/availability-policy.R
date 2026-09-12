@@ -10,6 +10,10 @@
 #'   prior accepted close remains a permissible valuation mark.
 #'
 #' @return A classed universe rule or valuation policy.
+#' @section Articles:
+#' Point-in-time universe workflow:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @name ledgr_availability_policy
 NULL
 
@@ -203,6 +207,10 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #' @param ... Unused.
 #'
 #' @return A `ledgr_experiment_plan` object.
+#' @section Articles:
+#' Point-in-time universe workflow:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @export
 ledgr_experiment_plan <- function(x, ...) {
   if (!inherits(x, "ledgr_experiment")) {

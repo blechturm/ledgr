@@ -335,8 +335,13 @@ interactive pulse inspection.
 #| label: ttr-pulse-snapshot
 #| eval: false
 
+ttr_snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = "ttr-pulse-inspection"
+)
+
 ttr_pulse <- ledgr_pulse_snapshot(
-  snapshot,
+  ttr_snapshot,
   universe = c("DEMO_01", "DEMO_02"),
   ts_utc = ledgr_utc("2019-06-03"),
   features = ttr_features
@@ -344,6 +349,7 @@ ttr_pulse <- ledgr_pulse_snapshot(
 
 ledgr_pulse_features(ttr_pulse, ttr_features)
 close(ttr_pulse)
+ledgr_snapshot_close(ttr_snapshot)
 ```
 
 ## TTR Warmup Verification

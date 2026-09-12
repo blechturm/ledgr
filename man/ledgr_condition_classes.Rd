@@ -466,6 +466,42 @@ safely.
 walk-forward fold does not contain a completed selected candidate.
 }
 
+\section{Availability reason codes}{
+
+Availability-aware diagnostics use this closed vocabulary. An accepted fill
+without a complication uses an empty reason code.\tabular{lll}{
+   Exact token \tab Stage \tab Action / interpretation \cr
+   \code{decision_recorded} \tab decision \tab unrestricted decision recorded \cr
+   \code{empty_public_domain} \tab decision \tab empty axis; no targets emitted \cr
+   \code{trading_halted} \tab restriction \tab hold or exit only \cr
+   \code{quotation_only} \tab restriction \tab hold or exit only \cr
+   \code{status_unknown} \tab restriction \tab hold or exit only \cr
+   \code{status_unknown_or_conflicting} \tab restriction \tab hold or exit only \cr
+   \code{lifetime_inactive} \tab restriction / terminal \tab hold or exit; no fabricated settlement \cr
+   \code{stale_mark_reduction} \tab risk \tab reducing target accepted with a stale mark \cr
+   \code{stale_mark_pass_through} \tab risk \tab unchanged target accepted with a stale mark \cr
+   \code{risk_mark_unavailable} \tab risk stop \tab accepted prefix finalized incomplete \cr
+   \code{restricted_target} \tab target validation \tab classed strategy-result failure \cr
+   \code{nonmember_exposure_increase} \tab target validation \tab classed strategy-result failure \cr
+   \code{post_risk_inadmissible} \tab post-risk validation \tab classed risk failure \cr
+   \code{short_exposure_unsupported} \tab target validation \tab classed strategy-result failure \cr
+   \code{insufficient_cash} \tab execution \tab cash-consuming fill rejected \cr
+   \code{execution_bar_missing} \tab execution \tab no fill; no standing order \cr
+   \code{membership_changed_before_execution} \tab execution diagnostic \tab report only; never an execution gate \cr
+   \code{final_pulse_no_execution} \tab execution \tab no fill without a later pulse \cr
+   \code{affordability_reconciled} \tab reconciliation \tab accepted fills applied and reconciled \cr
+   \code{affordability_reconciliation_failed} \tab reconciliation stop \tab accepted prefix finalized incomplete \cr
+   \code{valuation_horizon_exhausted} \tab valuation stop \tab accepted prefix finalized incomplete \cr
+   \code{terminal_settlement_unsupported} \tab valuation stop \tab holding preserved; no fabricated settlement \cr
+   \code{fold_exception} \tab error \tab failed after transaction rollback \cr
+}
+
+
+For the connected workflow and interpretation, see
+\code{vignette("survivorship-bias", package = "ledgr")} and
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}.
+}
+
 \section{Related existing classes}{
 
 \code{ledgr_run_not_found} is raised when run-store inspection helpers cannot

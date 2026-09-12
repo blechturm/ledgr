@@ -1,8 +1,8 @@
 # Availability Walkthrough Fixture Draft
 
-Status: Shape only. The connected availability runtime and teaching article do
-not exist yet. This file records no expected engine output and authorizes no
-runtime claim.
+Status: Implemented by the executed public workflow in
+`vignettes/survivorship-bias.qmd`. This file remains the design-time input
+shape, not an expected-output ledger or a separate test harness.
 
 ## Purpose
 
@@ -70,7 +70,7 @@ cannot fill. On decision 4 it returns AAA's current quantity; the missing fill
 does not become a standing exit. On decision 5 it explicitly returns zero
 again, allowing execution at session 6 when evidence is present.
 
-The later connected article must use public constructors and accessors only:
+The connected article uses public constructors and accessors only:
 ingest, validate, seal, run, explain the retained holding and both exit
-attempts, close, reopen, and recover the same explanation. Until those runtime
-surfaces land, this file is only the input and narrative shape.
+attempts, close, reopen, and recover the same explanation. Runtime truth stays
+in the package and its detecting tests; this file remains narrative input.

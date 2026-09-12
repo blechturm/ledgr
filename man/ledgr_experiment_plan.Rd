@@ -22,3 +22,9 @@ Reports whether point-in-time availability is active and which fact-family
 checks are declared, omitted, assumption-backed, or disabled. Inspection is
 read-only and does not execute the strategy.
 }
+\section{Articles}{
+
+Point-in-time universe workflow:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
+}

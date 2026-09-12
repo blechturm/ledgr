@@ -169,6 +169,8 @@ Snapshot data lives in these tables:
 | `snapshots` | `R/db-schema-create.R:232` | `snapshot_id` primary key; `status` constrained to `CREATED`, `SEALED`, or `FAILED`; stores `sealed_at_utc`, `snapshot_hash`, and `meta_json`. |
 | `snapshot_instruments` | `R/db-schema-create.R:244` | primary key `(snapshot_id, instrument_id)`; stores symbol, currency, asset class, multiplier, tick size, and metadata JSON. |
 | `snapshot_bars` | `R/db-schema-create.R:258` | primary key `(snapshot_id, instrument_id, ts_utc)`; OHLC columns are `DOUBLE NOT NULL`; volume is nullable. |
+| `snapshot_fact_families` and family tables | `R/availability-schema.R:9-108` | normalized membership, status, lifetime, and complete-session evidence with effective and knowledge times. |
+| `snapshot_observation_quarantine` | `R/availability-schema.R:110` | acknowledged invalid source rows and reason/provenance evidence; never a runtime bar input. |
 
 Run artifacts live in these tables:
 
@@ -179,6 +181,8 @@ Run artifacts live in these tables:
 | `equity_curve` | `R/db-schema-create.R:210` | primary key `(run_id, ts_utc)`; stores cash, positions value, equity, and realized/unrealized P&L. |
 | `features` | `R/db-schema-create.R:182` | primary key `(run_id, instrument_id, ts_utc, feature_name)`. |
 | `strategy_state` | `R/db-schema-create.R:223` | primary key `(run_id, ts_utc)` with canonical JSON state payload. |
+| `run_completion` | `R/experiment-store-schema.R:107` | one terminal `DONE` or `INCOMPLETE` evidence row per availability-aware run. |
+| `run_diagnostics` | `R/experiment-store-schema.R:127` | ordered decision, risk, execution, reconciliation, and stop evidence. |
 
 There are no separately named `CREATE INDEX` statements in this schema.
 The current index/constraint surface is the primary keys, the
@@ -196,6 +200,8 @@ immutability when trigger support is absent.
 | Yahoo adapter | `R/snapshot_adapters.R:556` fetches with quantmod and delegates to `ledgr_snapshot_from_df()` at `R/snapshot_adapters.R:592`. |
 | Seal transition | `R/snapshots-seal.R:57` begins sealing; `R/snapshots-seal.R:117` validates for seal; `R/snapshots-seal.R:147` computes the hash; `R/snapshots-seal.R:159` writes `SEALED`. |
 | Snapshot hash | `R/snapshots-hash.R:1` computes artifact identity; row format and ordering are at `R/snapshots-hash.R:145`. |
+| Availability ingest | `R/availability-ingest.R:1` validates fact and observation inputs; `R/availability-persistence.R` writes normalized sealed evidence. |
+| Availability hash rule 2 | `R/snapshots-hash.R:190` selects the rule; `R/availability-persistence.R:198` builds the fact and quarantine payload. |
 | Explicit reopen verification | `R/snapshots-list.R:175` loads a snapshot; `R/snapshots-list.R:220` recomputes the hash when `verify = TRUE`. |
 | Committed-run fold guard | `R/backtest-runner.R:784` prepares source tables; `R/backtest-runner.R:803` checks `SEALED`; `R/backtest-runner.R:814` recomputes and compares. |
 | Sweep sealed-handle guard | `R/precompute-features.R:193` validates snapshot metadata and requires a stored hash. |
@@ -222,6 +228,13 @@ numbers to eight decimal places, uses `|`-separated lines ending in
 excluded so identical artifacts can have the same hash across snapshot
 IDs; see `R/snapshots-hash.R:145`.
 
+Hash rule 2 extends the artifact with normalized fact-family,
+membership, status, lifetime, session, and quarantine rows. Invalid
+observations accepted under explicit quarantine are excluded from
+`snapshot_bars` and retained only as hashed quarantine evidence.
+Reopening verifies the rule recorded by the sealed snapshot; migration
+never reseals historical artifacts.
+
 Canonical JSON byte-format v2 still matters around snapshots because
 metadata, run config, feature keys, and strategy state use it. Its fixed
 yyjsonr writer options are at `R/config-canonical-json.R:21`, and its
@@ -229,13 +242,13 @@ canonicalization entry point is `R/config-canonical-json.R:72`.
 
 Committed runs and sweeps intentionally dispatch differently. Committed
 `ledgr_run()` builds the config through `ledgr_run_experiment()`, then
-`ledgr_run_config()` enters `ledgr_run_fold()` and its snapshot guard. The
-guard prepares source tables, requires `SEALED`, requires a stored hash,
-recomputes `ledgr_snapshot_hash()`, and fails the run if the recomputed
-value differs. Sweeps call `ledgr_precompute_snapshot_meta()`, validate
-the sealed snapshot handle and stored hash, then carry that hash through
-candidate tasks, failure rows, success rows, result attributes, and
-promotion checks.
+`ledgr_run_config()` enters `ledgr_run_fold()` and its snapshot guard.
+The guard prepares source tables, requires `SEALED`, requires a stored
+hash, recomputes `ledgr_snapshot_hash()`, and fails the run if the
+recomputed value differs. Sweeps call
+`ledgr_precompute_snapshot_meta()`, validate the sealed snapshot handle
+and stored hash, then carry that hash through candidate tasks, failure
+rows, success rows, result attributes, and promotion checks.
 
 ### Edge Cases
 

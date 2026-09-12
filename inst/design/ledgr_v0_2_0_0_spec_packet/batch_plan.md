@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-9 complete after review. Batches 10-11 are pending.
+Status: Batches 0-9 complete after review. Batch 10 implementation is complete
+and awaiting review. Batch 11 is pending.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -599,7 +600,7 @@ Implementation notes:
 
 ## Batch 10 - Teaching Reference And Deferral Closeout
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -627,6 +628,26 @@ Exit criteria:
 
 - U12, H8, generated documentation, pkgdown, and doc-contract checks pass;
 - every scoped audit item is closed or explicitly routed.
+
+Implementation notes:
+
+- The executed Survivorship Bias article follows the approved fixture through
+  public fact construction, validation, seal, run, explanation, close, reopen,
+  strict rejection, explicit quarantine, and an incomplete terminal result.
+- Reference surfaces now link the workflow; contracts bind exact reason tokens
+  to stage/action meanings; condition locks distinguish aliases from prose;
+  and affected maintainer traces describe the v0.2.0.0 implementation.
+- Scoped September 4 stale examples were corrected. Indicator-order,
+  catch-all-topic, dense-panel onboarding, and navigation work remain parked
+  with reasons instead of being absorbed into this release.
+- Verification rendered the public article and all maintainer mirrors, passed
+  66 documentation-contract tests with 2,078 expectations, checked all 147 Rd
+  files, passed the API-export lock, and completed the full pkgdown build. The
+  source audit also corrected the manual trace so the availability calendar is
+  owned by the runner and `ledgr_run_snapshot_calendar()` remains dense-only.
+- Review follow-up documented all `ledgr_run_explain()` return fields and its
+  non-durable `no_action` / `no_target_change` defaults, then added a bounded
+  `max_sessions` exercise to the Survivorship Bias article.
 
 ## Batch 11 - Release Gate
 

@@ -308,7 +308,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_2d7523b3f06815ec
+    # ledgr sweep -- sweep_94bda54deb4d6670
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -332,12 +332,13 @@ sweep
 
     # i 16 combinations: 16 done, 0 failed.
     # i Retention returns: none.
+    # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
     # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
     # i Saved artifact: not saved.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (17): final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
+    # i Hidden columns (18): completion_json, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 The table contains candidate summaries. It is not a full artifact store
 and it does not write durable candidate ledgers, equity curves, feature
@@ -382,14 +383,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_0c0fe4e55966a016 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -470,11 +471,11 @@ ledgr_sweep_list(snapshot)
 ```
 
     # ledgr saved sweep list
-    # A tibble: 1 x 7
+    # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-06-16 12:56:59                    2           16          16
-    # i 2 more variables: retention_returns <chr>, note <chr>
+    1 sma_retained_sweep 2026-09-11 16:35:08                    4           16          16
+    # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
 
@@ -494,14 +495,15 @@ ledgr_sweep_info(reopened_sweep)
     Completed:         16
     Failed:            0
     Retention returns: completed
+    Retention trades:  none
     Cost Model Hash:   4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0
     Metric Hash:       794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-06-16 12:56:59.798034
-    Schema Version:    2
-    Engine Version:    0.1.9.6
+    Created At:        2026-09-11 16:35:08.40739
+    Schema Version:    4
+    Engine Version:    0.2.0.0
     Note:              Exploratory SMA sweep with retained return series.
 
 Reopened sweeps behave like sweep result objects for candidate
@@ -517,14 +519,14 @@ ledgr_sweep_returns(reopened_sweep) |>
   slice_head(n = 5)
 ```
 
-    # A tibble: 5 x 5
-      sweep_id           candidate_id                 ts_utc              equity period_return
-      <chr>              <chr>                        <dttm>               <dbl>         <dbl>
-    1 sma_retained_sweep feature_9a29b31dae19/strate~ 2019-01-01 00:00:00 100000            NA
-    2 sma_retained_sweep feature_9a29b31dae19/strate~ 2019-01-02 00:00:00 100000             0
-    3 sma_retained_sweep feature_9a29b31dae19/strate~ 2019-01-03 00:00:00 100000             0
-    4 sma_retained_sweep feature_9a29b31dae19/strate~ 2019-01-04 00:00:00 100000             0
-    5 sma_retained_sweep feature_9a29b31dae19/strate~ 2019-01-07 00:00:00 100000             0
+    # A tibble: 5 x 6
+      sweep_id           candidate_id          status ts_utc              equity period_return
+      <chr>              <chr>                 <chr>  <dttm>               <dbl>         <dbl>
+    1 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-01 00:00:00 100000            NA
+    2 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-02 00:00:00 100000             0
+    3 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-03 00:00:00 100000             0
+    4 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-04 00:00:00 100000             0
+    5 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-07 00:00:00 100000             0
 
 ## Three Evidence Tiers
 
@@ -556,7 +558,8 @@ behavior, and candidates whose scalar score hides a bad path.
 They do not make the sweep statistically valid. If you selected the
 candidate from the same sample, the retained path is still in-sample
 evidence. Generalized validation belongs to a held-out evaluation,
-walk-forward analysis, or later selection-integrity diagnostics.
+walk-forward analysis, or the selection-integrity diagnostics taught in
+`vignette("selection-integrity", package = "ledgr")`.
 
 > [!WARNING]
 >
@@ -740,7 +743,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_af448ff31887e498
+    # ledgr sweep -- sweep_4490fd0f606ec22d
     # A tibble: 2 x 3
       candidate_id          candidate_row status
       <chr>                         <int> <chr>
@@ -749,6 +752,7 @@ failed_sweep |>
 
     # i 2 combinations: 1 done, 1 failed.
     # i Retention returns: none.
+    # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
     # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.

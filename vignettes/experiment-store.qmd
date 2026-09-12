@@ -472,3 +472,5 @@ ledgr_snapshot_close(snapshot)
   authoring.
 - `vignette("reproducibility", package = "ledgr")` covers strategy source,
   preflight tiers, and trust boundaries.
+- `vignette("survivorship-bias", package = "ledgr")` reopens an
+  availability-aware run and recovers the same recorded explanation.

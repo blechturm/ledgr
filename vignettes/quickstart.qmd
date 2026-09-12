@@ -188,5 +188,6 @@ test-window evaluation.
 #| label: cleanup
 #| include: false
 
+close(single_run)
 ledgr_snapshot_close(snapshot)
 ```

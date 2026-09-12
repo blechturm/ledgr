@@ -245,7 +245,25 @@ ledgr_backtest_availability <- function(bt, con) {
 #' @param bt A `ledgr_backtest` object.
 #' @param instrument_id One stable instrument identifier.
 #' @param ts_utc One decision timestamp coercible to POSIXct UTC.
-#' @return A one-row tibble describing the recorded decision and outcome.
+#' @return A one-row tibble with:
+#' - identifiers: `run_id`, `ts_utc`, and `instrument_id`;
+#' - availability: `member`, `held`, `target_restricted`,
+#'   `target_restriction_reason`, and `target_restriction_reasons`;
+#' - decision evidence: `feature_identity_json`, `quantity`,
+#'   `target_before_risk`, and `target_after_risk`;
+#' - execution evidence: `execution_outcome`, `execution_reason`,
+#'   `execution_reasons`, and `resulting_position`;
+#' - valuation evidence: `mark_source` and `mark_age`; and
+#' - terminal evidence: `completion_status` and `complete_performance`.
+#'
+#' When no execution diagnostic exists for an unchanged target,
+#' `execution_outcome` is `"no_action"` and the two execution-reason fields
+#' are `"no_target_change"`. These are explain-time values, not durable
+#' diagnostic reason codes.
+#' @section Articles:
+#' Point-in-time universe workflow:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @export
 ledgr_run_explain <- function(bt, instrument_id, ts_utc) {
   if (!inherits(bt, "ledgr_backtest")) {

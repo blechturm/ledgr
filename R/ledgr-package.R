@@ -21,6 +21,8 @@
 #' - `system.file("doc", "research-workflow.html", package = "ledgr")`
 #' - `vignette("data-input-and-snapshots", package = "ledgr")`
 #' - `system.file("doc", "data-input-and-snapshots.html", package = "ledgr")`
+#' - `vignette("survivorship-bias", package = "ledgr")`
+#' - `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' - `vignette("strategy-development", package = "ledgr")`
 #' - `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' - `vignette("strategy-authoring-tools", package = "ledgr")`

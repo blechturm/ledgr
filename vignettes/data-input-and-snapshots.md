@@ -5,27 +5,25 @@ This article focuses on bringing data into ledgr and sealing it into a
 snapshot. Runs, labels, reopening, and recovery evidence live in
 `vignette("experiment-store", package = "ledgr")`.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> This article is evaluated when rendered. It writes to temporary DuckDB
+> stores so package builds and local previews do not leave project
+> artifacts behind. In real work, use a project-local path such as
+> `artifacts/ledgr_store.duckdb`.
 
-**Running this yourself**
 
-This article is evaluated when rendered. It writes to temporary DuckDB
-stores so package builds and local previews do not leave project
-artifacts behind. In real work, use a project-local path such as
-`artifacts/ledgr_store.duckdb`.
+> [!WARNING]
+>
+> ### Pre-CRAN compatibility
+>
+> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
+> experimental APIs may change before the first CRAN release. Treat stores
+> created with pre-CRAN ledgr as research artifacts for the version that
+> produced them, and expect to rerun experiments after upgrading.
 
-</div>
-
-<div class="ledgr-callout ledgr-callout-warning">
-
-**Pre-CRAN compatibility**
-
-ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
-experimental APIs may change before the first CRAN release. Treat stores
-created with pre-CRAN ledgr as research artifacts for the version that
-produced them, and expect to rerun experiments after upgrading.
-
-</div>
 
 The examples use `dplyr` for data preparation and compact display. It is
 a suggested package used by the vignettes, not part of the
@@ -138,22 +136,21 @@ step: on a snapshot handle it returns an invisible structured list with
 metadata; snapshot identity comes from normalized bars and instruments,
 not from human descriptions.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Yahoo data boundary
+>
+> Yahoo support is a convenience adapter, not a data-vendor guarantee. It
+> uses `quantmod::getSymbols()` and therefore requires the suggested
+> `quantmod` package and network access. Package startup or S3
+> method-overwrite messages printed while quantmod loads are not ledgr
+> snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
+> `.Close`, and `.Volume` columns as returned by quantmod; it does not
+> rewrite OHLC values from Yahoo’s adjusted-close column. If your research
+> requires split/dividend-adjusted OHLC bars, prepare those bars
+> explicitly and seal them with `ledgr_snapshot_from_df()` or
+> `ledgr_snapshot_from_csv()`.
 
-**Yahoo data boundary**
-
-Yahoo support is a convenience adapter, not a data-vendor guarantee. It
-uses `quantmod::getSymbols()` and therefore requires the suggested
-`quantmod` package and network access. Package startup or S3
-method-overwrite messages printed while quantmod loads are not ledgr
-snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
-`.Close`, and `.Volume` columns as returned by quantmod; it does not
-rewrite OHLC values from Yahoo’s adjusted-close column. If your research
-requires split/dividend-adjusted OHLC bars, prepare those bars
-explicitly and seal them with `ledgr_snapshot_from_df()` or
-`ledgr_snapshot_from_csv()`.
-
-</div>
 
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
@@ -183,27 +180,26 @@ code.
 The store is an ordinary DuckDB file. Back it up when no ledgr process
 has it open.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Back up closed stores
+>
+> Close run and snapshot handles, then copy or sync the closed store file.
+> A simple project pattern is:
+>
+> ``` r
+> dir.create("backups", showWarnings = FALSE)
+> file.copy(
+>   "artifacts/ledgr_store.duckdb",
+>   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+>   overwrite = TRUE
+> )
+> ```
+>
+> For larger projects, use the same closed-file rule with your normal
+> backup or sync tool. Do not rely on the phrase “ordinary backup
+> discipline” without a specific copy/sync pattern for the store file.
 
-**Back up closed stores**
-
-Close run and snapshot handles, then copy or sync the closed store file.
-A simple project pattern is:
-
-``` r
-dir.create("backups", showWarnings = FALSE)
-file.copy(
-  "artifacts/ledgr_store.duckdb",
-  file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
-  overwrite = TRUE
-)
-```
-
-For larger projects, use the same closed-file rule with your normal
-backup or sync tool. Do not rely on the phrase “ordinary backup
-discipline” without a specific copy/sync pattern for the store file.
-
-</div>
 
 ## Cleanup
 
@@ -213,6 +209,9 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("survivorship-bias", package = "ledgr")` shows how
+  membership, sessions, invalid-observation quarantine, and stable
+  instrument identity become one point-in-time workflow.
 - `vignette("experiment-store", package = "ledgr")` shows how sealed
   snapshots are used by committed runs and recovery workflows.
 - `vignette("research-workflow", package = "ledgr")` puts snapshots in

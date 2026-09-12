@@ -33,7 +33,7 @@ decision time.
 
 <div class="ledgr-diagram ledgr-execution-diagram">
 
-``` mermaid
+```mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 22, "rankSpacing": 24, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "22px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b"}}}%%
 
 flowchart LR
@@ -219,17 +219,16 @@ a paired entry/exit trade table.
 
 ## Try It
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> In the momentum comparison above, replace `lead(close)` and `lead(open)`
+> with a two-bar lead (`lead(close, 2)`, `lead(open, 2)`). Does the
+> next-open win rate stay near a coin flip? Then change the signal to
+> `close < open` (hold on down bars). Does the same-bar rule still win 100
+> percent of the time, and why?
 
-**Try it**
-
-In the momentum comparison above, replace `lead(close)` and `lead(open)`
-with a two-bar lead (`lead(close, 2)`, `lead(open, 2)`). Does the
-next-open win rate stay near a coin flip? Then change the signal to
-`close < open` (hold on down bars). Does the same-bar rule still win 100
-percent of the time, and why?
-
-</div>
 
 ## Where Next
 
@@ -238,6 +237,9 @@ percent of the time, and why?
   `vignette("strategy-development", package = "ledgr")`.
 - For the cost and risk policy applied at the fill, read
   `vignette("risk-and-cost", package = "ledgr")`.
+- For dynamic membership, retained nonmembers, stale valuation, and
+  blocked execution, read
+  `vignette("survivorship-bias", package = "ledgr")`.
 - For ledger, fills, trades, equity, and metrics, read
   `vignette("metrics-and-accounting", package = "ledgr")`.
 - For why same-bar information is unsafe to trade on, read

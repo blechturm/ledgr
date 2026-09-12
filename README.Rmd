@@ -204,6 +204,7 @@ head(ledgr_results(bt, what = "equity"), 3)
 | I want the shortest runnable path through the package. | [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html) |
 | I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
 | I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
+| I want point-in-time universes, missing-session handling, and durable explanations. | [Survivorship Bias](https://blechturm.github.io/ledgr/articles/survivorship-bias.html) |
 | I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
 | I want return-panel evidence, PBO/CSCV, MinTRL, K-Ratio, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
 | I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |

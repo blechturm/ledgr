@@ -199,12 +199,16 @@ experiment construction:
 experiment <- ledgr_experiment(
   snapshot,
   strategy = sma_strategy,
-  params = list(window = 20, quantity = 10),
   timing_model = ledgr_timing_next_open(),
   cost_model = ledgr_cost_chain(
     ledgr_cost_spread_bps(5),
     ledgr_cost_fixed_fee(1)
   )
+)
+
+run <- ledgr_run(
+  experiment,
+  params = list(window = 20, quantity = 10)
 )
 ```
 

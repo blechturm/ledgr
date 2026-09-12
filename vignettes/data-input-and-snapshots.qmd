@@ -251,6 +251,9 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("survivorship-bias", package = "ledgr")` shows how membership,
+  sessions, invalid-observation quarantine, and stable instrument identity
+  become one point-in-time workflow.
 - `vignette("experiment-store", package = "ledgr")` shows how sealed
   snapshots are used by committed runs and recovery workflows.
 - `vignette("research-workflow", package = "ledgr")` puts snapshots in the

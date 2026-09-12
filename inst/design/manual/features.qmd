@@ -219,6 +219,24 @@ sources.
 The cache is process-local. It is a reuse optimization and does not replace
 snapshot hashing, feature fingerprinting, or precomputed-feature validation.
 
+### Availability And Strict Gaps
+
+Availability-aware indicators must declare `gap_contract = "strict_window"`.
+Their windows advance on the declared expected-session calendar. Any missing
+required observation makes the affected window unavailable; ledgr does not
+compress the window to the last observed rows or impute a value. Scalar,
+precomputed, cached, and resumed paths share that rule.
+
+`ledgr_feature_engine_version(availability_active = TRUE)` adds the strict-gap
+engine declaration to cache identity. Dense feature identity uses canonical
+omission and remains unchanged. Indicators that cannot declare a bounded
+window, or that hide carry or imputation inside their implementation, fail
+before availability-aware strategy execution.
+
+Implementation anchors are `R/availability-policy.R:159` for experiment-time
+validation, `R/feature-cache.R:3` for active engine identity, and
+`R/features-engine.R` for strict-window evaluation.
+
 ### Alias Map Dispatch
 
 `ledgr_feature_lookup_map()` has three modes:

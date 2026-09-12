@@ -29,6 +29,13 @@ Produces a source-aware dry-run report. Accepted rows, retained runtime
 conflicts, rejected rows, quarantine candidates, and audit-only facts stay
 distinct. This function never creates or modifies a snapshot.
 }
+\section{Articles}{
+
+Point-in-time universe workflow:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
+}
+
 \section{Errors}{
 
 Invalid or mutated bundles raise \code{ledgr_invalid_facts}. Snapshot creation

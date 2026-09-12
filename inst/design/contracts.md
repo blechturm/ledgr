@@ -353,20 +353,35 @@ The strategy preflight boundary originated in
   in decision-axis order, and recorded cash must reconcile with the virtual
   ledger without implying an intrapulse cash floor.
 - The durable availability reason-code vocabulary is closed for this schema.
-  Decision evidence uses `decision_recorded` and `empty_public_domain`.
-  Restrictions use `trading_halted`, `quotation_only`, `status_unknown`,
-  `status_unknown_or_conflicting`, and `lifetime_inactive`. Risk evidence uses
-  `stale_mark_reduction`, `stale_mark_pass_through`, and
-  `risk_mark_unavailable`. Classed target and risk failures use
-  `restricted_target`, `nonmember_exposure_increase`,
-  `post_risk_inadmissible`, and `short_exposure_unsupported`. Execution
-  evidence uses `insufficient_cash`, `execution_bar_missing`,
-  `membership_changed_before_execution`, and `final_pulse_no_execution`.
-  Reconciliation uses `affordability_reconciled` and
-  `affordability_reconciliation_failed`. Terminal stops use
-  `valuation_horizon_exhausted` and `terminal_settlement_unsupported`.
-  Unexpected unclassed fold errors use `fold_exception`; an uncomplicated
-  accepted fill has an empty reason code.
+  The table binds each exact token to its stage and public interpretation:
+
+  | Exact reason token | Stage | Action / interpretation |
+  | --- | --- | --- |
+  | `decision_recorded` | decision | record an unrestricted decision |
+  | `empty_public_domain` | decision | invoke the strategy on an empty axis; emit no targets |
+  | `trading_halted` | decision restriction | allow hold or exit only |
+  | `quotation_only` | decision restriction | allow hold or exit only |
+  | `status_unknown` | decision restriction | allow hold or exit only |
+  | `status_unknown_or_conflicting` | decision restriction | allow hold or exit only |
+  | `lifetime_inactive` | decision restriction / terminal detail | allow hold or exit; never fabricate settlement |
+  | `stale_mark_reduction` | risk | accept a reducing target evaluated with a permissible stale mark |
+  | `stale_mark_pass_through` | risk | accept an unchanged target evaluated with a permissible stale mark |
+  | `risk_mark_unavailable` | risk stop | preserve the accepted prefix and finalize incomplete |
+  | `restricted_target` | target validation | raise the classed strategy-result failure |
+  | `nonmember_exposure_increase` | target validation | raise the classed strategy-result failure |
+  | `post_risk_inadmissible` | post-risk validation | raise the classed risk failure |
+  | `short_exposure_unsupported` | target validation | raise the classed strategy-result failure |
+  | `insufficient_cash` | execution | reject the cash-consuming fill |
+  | `execution_bar_missing` | execution | record no fill; never carry a standing order |
+  | `membership_changed_before_execution` | execution diagnostic | report the change without making membership an execution gate |
+  | `final_pulse_no_execution` | execution | record no fill because no later execution pulse exists |
+  | `affordability_reconciled` | reconciliation | apply accepted fills and record reconciliation |
+  | `affordability_reconciliation_failed` | reconciliation stop | preserve the accepted prefix and finalize incomplete |
+  | `valuation_horizon_exhausted` | valuation stop | preserve the accepted prefix and finalize incomplete |
+  | `terminal_settlement_unsupported` | valuation stop | preserve the holding; never fabricate cash settlement |
+  | `fold_exception` | error | finalize failed after the fold transaction rolls back |
+
+  An uncomplicated accepted fill has an empty reason code.
 
 ## Persistence Contract
 
@@ -786,6 +801,12 @@ The strategy preflight boundary originated in
   after close/reopen. Missing decision trace fails
   `ledgr_run_explanation_unavailable`; the function must not invent an intent
   from positions, facts, or current strategy code.
+- The explanation row exposes its run, decision, availability, target,
+  execution, valuation, resulting-position, and completion fields directly.
+  When an unchanged target has no execution diagnostic, `execution_outcome`
+  is `no_action` and `execution_reason` plus `execution_reasons` are
+  `no_target_change`. Those values are explain-time defaults, not durable
+  diagnostic reason codes, and are never persisted.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed

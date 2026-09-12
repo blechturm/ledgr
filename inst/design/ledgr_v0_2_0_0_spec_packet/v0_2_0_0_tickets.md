@@ -1842,7 +1842,7 @@ scope: explain-reopen-parity
 Priority: P1
 Effort: L
 Dependencies: LDG-2700
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -1875,6 +1875,20 @@ one executable public ingest-run-explain-close-reopen journey.
 - Local pkgdown article inspection
 - Overclaim and stale-API scan
 
+### Implementation Notes
+
+- Added and executed `vignettes/survivorship-bias.qmd` with the approved
+  synthetic venue, complete session calendar, and membership changes.
+- The public-only journey shows a retained former member, a blocked exit, no
+  hidden standing order, an explicit retry, valuation age, close/reopen
+  explanation parity, strict invalid-observation rejection, quarantine, and
+  an `INCOMPLETE` valuation-horizon variant.
+- The article names disabled checks and assumptions, uses primary references,
+  and preserves the settlement, short-financing, OMS, imputation, and
+  point-in-time-completeness limits.
+- Review follow-up added a bounded `max_sessions` exercise contrasting a
+  current-mark-only stop with one permitted stale session.
+
 ### Source Reference
 
 - Spec Section 4; gates H8/U12
@@ -1894,7 +1908,7 @@ scope: survivorship-bias-workflow
 Priority: P1
 Effort: L
 Dependencies: LDG-2701
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -1929,6 +1943,24 @@ release surfaces, and explicit audit/horizon dispositions for implemented work.
 - NAMESPACE/API/reference index review
 - Full pkgdown build
 - Manual audit/deferral ledger review
+
+### Implementation Notes
+
+- Added article links to package, README, pkgdown, result, snapshot, facts,
+  policy, plan, and explanation surfaces; regenerated affected help.
+- Replaced the reason-code prose list with an exact-token stage/action table
+  and made condition prose locks structurally distinct from alias locks.
+- Updated snapshot, feature, fold, identity, and walk-forward maintainer traces;
+  corrected the scoped September 4 stale examples and explicitly retained the
+  broader editorial/navigation work in the horizon.
+- Verification rendered the public article and maintainer mirrors, passed 66
+  documentation-contract tests with 2,078 expectations, checked all 147 Rd
+  files, passed the API-export lock, and completed the full pkgdown build. The
+  fold trace now identifies the runner-owned availability calendar and the
+  dense-only `ledgr_run_snapshot_calendar()` branch precisely.
+- Review follow-up documented every `ledgr_run_explain()` result field and
+  labelled `no_action` and `no_target_change` as non-durable explain-time
+  values, with documentation-contract coverage.
 
 ### Source Reference
 

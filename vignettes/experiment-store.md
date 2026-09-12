@@ -6,27 +6,25 @@ comparison surfaces, recovery metadata, and reopened results. For
 snapshot creation and data-input boundaries, read
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> This article is evaluated when rendered. It writes to temporary DuckDB
+> stores so package builds and local previews do not leave project
+> artifacts behind. In real work, use a project-local path such as
+> `artifacts/ledgr_store.duckdb`.
 
-**Running this yourself**
 
-This article is evaluated when rendered. It writes to temporary DuckDB
-stores so package builds and local previews do not leave project
-artifacts behind. In real work, use a project-local path such as
-`artifacts/ledgr_store.duckdb`.
+> [!WARNING]
+>
+> ### Pre-CRAN compatibility
+>
+> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
+> experimental APIs may change before the first CRAN release. Treat stores
+> created with pre-CRAN ledgr as research artifacts for the version that
+> produced them, and expect to rerun experiments after upgrading.
 
-</div>
-
-<div class="ledgr-callout ledgr-callout-warning">
-
-**Pre-CRAN compatibility**
-
-ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
-experimental APIs may change before the first CRAN release. Treat stores
-created with pre-CRAN ledgr as research artifacts for the version that
-produced them, and expect to rerun experiments after upgrading.
-
-</div>
 
 The examples use `dplyr` for data preparation and compact display. It is
 a suggested package used by the vignettes, not part of the
@@ -174,12 +172,13 @@ info
     Snapshot:        store_demo_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
+    Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
     Config Hash:     b190e633e8578f0878db276141700b747fd58e9107d76f9f8f1835377b1f4ca7
     Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
     Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.06
+    Elapsed Sec:     1.28
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -518,8 +517,8 @@ aliases.
 artifacts. The artifacts are already durable when a run completes, and
 ordinary result inspection opens and closes read connections per
 operation. Use `close(bt)` as explicit resource cleanup in long
-sessions, tests, and explicit-open workflows. Close snapshot handles when
-the workflow is finished.
+sessions, tests, and explicit-open workflows. Close snapshot handles
+when the workflow is finished.
 
 ## Task Intent Map
 
@@ -549,3 +548,5 @@ reproducibility boundary.
   authoring.
 - `vignette("reproducibility", package = "ledgr")` covers strategy
   source, preflight tiers, and trust boundaries.
+- `vignette("survivorship-bias", package = "ledgr")` reopens an
+  availability-aware run and recovers the same recorded explanation.

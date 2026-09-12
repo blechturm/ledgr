@@ -595,6 +595,9 @@ print.ledgr_backtest <- function(x, ...) {
 #' Metrics and accounting:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' Availability and durable explanations:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -890,6 +893,9 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' Metrics and accounting:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' Availability and durable explanations:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -994,6 +1000,9 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
 #' Metrics and accounting:
 #' `vignette("metrics-and-accounting", package = "ledgr")`
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
+#' Availability and durable explanations:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,

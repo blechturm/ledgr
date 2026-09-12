@@ -35,3 +35,9 @@ semantics without adding an execution-mode flag. A membership rule selects
 one declared membership universe. A stale-valuation policy supplies the
 explicit session horizon required by every availability-aware experiment.
 }
+\section{Articles}{
+
+Point-in-time universe workflow:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
+}

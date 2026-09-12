@@ -13,16 +13,15 @@ This article explains the reproducibility model behind that question. It
 is about provenance and replay boundaries, not whether a strategy has
 predictive edge.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Evidence is not validation
+>
+> Provenance records what ran. It does not prove that a selected strategy
+> will generalize. A promoted candidate, a verified strategy hash, and a
+> sealed snapshot are evidence-capture tools, not statistical validation
+> of the selection rule.
 
-**Evidence is not validation**
-
-Provenance records what ran. It does not prove that a selected strategy
-will generalize. A promoted candidate, a verified strategy hash, and a
-sealed snapshot are evidence-capture tools, not statistical validation
-of the selection rule.
-
-</div>
 
 ## Setup
 
@@ -149,12 +148,13 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot:        research_snapshot
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
+    Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
     Config Hash:     fb58d65c64da7b3edf848910dcc52d7cb42d03e8516d6d80c5213756b6dea4b1
     Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
     Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.01
+    Elapsed Sec:     1.28
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -229,15 +229,14 @@ strategies before execution.
 
 ### Tier 1: Self-Contained
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Definition
+>
+> Tier 1 means ledgr can inspect the strategy from stored source and
+> explicit parameters under its static preflight rules. The strategy
+> depends only on ledgr, base/recommended R, and declared run inputs.
 
-**Definition**
-
-Tier 1 means ledgr can inspect the strategy from stored source and
-explicit parameters under its static preflight rules. The strategy
-depends only on ledgr, base/recommended R, and declared run inputs.
-
-</div>
 
 Tier 1 is self-contained under ledgr’s static preflight rules. The
 strategy can be understood from stored source and explicit parameters,
@@ -267,16 +266,15 @@ ledgr_strategy_preflight(tier_1_strategy)
 
 ### Tier 2: Inspectable With User-Managed Environment
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Definition
+>
+> Tier 2 means ledgr can inspect and run the strategy, but full replay
+> also depends on environment details outside ledgr’s store, such as
+> package installation, package versions, system libraries, or immutable
+> captured values.
 
-**Definition**
-
-Tier 2 means ledgr can inspect and run the strategy, but full replay
-also depends on environment details outside ledgr’s store, such as
-package installation, package versions, system libraries, or immutable
-captured values.
-
-</div>
 
 Tier 2 is inspectable but needs environment management outside ledgr.
 Examples include package-qualified calls outside the active R
@@ -323,7 +321,7 @@ value into `params` or freeze it before running.
 
 #### What ledgr Preserves And What You Own
 
-Tier 2 is allowed for ordinary runs and future sweep mode. It is not
+Tier 2 is allowed for ordinary runs and sequential sweeps. It is not
 fully reproducible by ledgr alone. Users own package installation,
 package version parity, system libraries, and any other runtime
 environment needed by their strategy.
@@ -337,15 +335,14 @@ must preserve the surrounding environment.
 
 ### Tier 3: Rejected External State
 
-<div class="ledgr-callout ledgr-callout-important">
+> [!IMPORTANT]
+>
+> ### Definition
+>
+> Tier 3 means the strategy depends on external state ledgr cannot recover
+> or execute safely. The run is rejected before execution; there is no
+> `force = TRUE` override.
 
-**Definition**
-
-Tier 3 means the strategy depends on external state ledgr cannot recover
-or execute safely. The run is rejected before execution; there is no
-`force = TRUE` override.
-
-</div>
 
 Tier 3 is external state ledgr cannot recover or execute safely. Common
 examples are unqualified helper functions from the interactive session,
@@ -443,7 +440,7 @@ artifacts.
 
 Reproducibility in ledgr is a chain:
 
-``` mermaid
+```mermaid
 flowchart LR
   A[Sealed snapshot] --> B[Experiment inputs]
   B --> C[Preflight tier]
@@ -457,15 +454,14 @@ Tier 1 is the cleanest path. Tier 2 is allowed but requires user-managed
 environment parity. Tier 3 fails because ledgr cannot recover what the
 strategy depended on.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Write a strategy that calls `Sys.time()` and run
+> `ledgr_strategy_preflight()`. What tier does ledgr assign, and what
+> dependency did the preflight reject?
 
-**Try it**
-
-Write a strategy that calls `Sys.time()` and run
-`ledgr_strategy_preflight()`. What tier does ledgr assign, and what
-dependency did the preflight reject?
-
-</div>
 
 ## Where Next
 

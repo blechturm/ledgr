@@ -26,10 +26,11 @@ There is no walk-forward fold core. The train window uses the same sweep
 candidate identity machinery as ordinary sweeps. The test window uses the same
 run execution semantics as ordinary backtests.
 
-The v1 surface is scalar-selection only. It does not provide PBO/CSCV/CPCV,
-deflated Sharpe ratio, purging/embargo, randomized folds, benchmark-relative
-diagnostics, candidate clustering, all-candidate test retention, or production
-promotion policy. Those belong to later validation-toolkit work.
+The walk-forward selector remains scalar-selection only. PBO/CSCV, MinTRL,
+K-Ratio, DSR, and effective-trial clustering now exist as separate
+selection-integrity evidence; they are not automatic fold-selection or
+promotion policy. Purging/embargo, CPCV, benchmark-relative diagnostics,
+all-candidate test retention, and production promotion policy remain deferred.
 
 Candidate extraction is now routed through `ledgr_candidate()`. Live and
 reopened walk-forward result objects carry durable locator attributes:
@@ -48,11 +49,19 @@ candidate. It does not store live DBI handles on the result object.
 | Persistence | `R/walk-forward.R`: session write helpers and compact table writes |
 | Inspection | `R/walk-forward-inspection.R`: reopened results, scores, folds, degradation table, and `ledgr_candidate.ledgr_walk_forward_results()` |
 | Sweep and run execution | `R/sweep.R` and `R/backtest.R` remain the execution surfaces used inside each fold |
+| Availability carry state | `R/walk-forward.R:876` rebuilds the next opening from finalized equity plus ledger and lot evidence |
 
 The orchestrator creates fold plans, executes a train sweep, records the
 selected candidate, then executes the selected test run. It persists enough
 metadata to inspect scores, selected candidates, test runs, and degradation. It
 does not persist all candidate test runs.
+
+Availability-aware folds use the sealed session calendar and the same provider
+and shared fold as direct execution. An `INCOMPLETE` train candidate is excluded
+from selection. An incomplete test fold marks the session `PARTIAL` and stops a
+carry-state chain instead of inventing the next opening. Completed carry-state
+folds derive cash from finalized equity, positions from ledger replay, and cost
+basis from lot evidence.
 
 Locator verification is part of the inspection contract. A reopened object can
 extract a candidate only if the stored locator resolves to a snapshot whose id
@@ -69,8 +78,7 @@ Before changing this area:
 - keep scalar-selection failures classed and early;
 - keep locator attributes as durable strings, never live handles;
 - verify snapshot id and hash at candidate extraction time;
-- do not claim validation-toolkit statistics until that packet implements and
-  tests them.
+- keep selection-integrity diagnostics separate from automatic fold selection.
 
 ## Source Links
 

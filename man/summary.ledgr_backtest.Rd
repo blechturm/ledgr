@@ -65,6 +65,9 @@ feature ID, instrument ID, required bars, and available bars.
 Metrics and accounting:
 \code{vignette("metrics-and-accounting", package = "ledgr")}
 \code{system.file("doc", "metrics-and-accounting.html", package = "ledgr")}
+Availability and durable explanations:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
 
 \examples{

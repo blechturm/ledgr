@@ -1,21 +1,24 @@
+
+
 # Identity Contract
 
-**Status:** Maintainer reference for v0.1.9.1 identity surfaces.
+**Status:** Maintainer reference updated through v0.2.0.0.
 
 **Audience:** maintainers and coding agents.
 
-**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1 spec packet,
-and implementation traces. Binding decisions remain in those artifacts.
+**Authority:** Synthesis of `../contracts.md`, the v0.1.9.1-v0.1.9.5
+spec packets, and implementation traces. Binding decisions remain in
+those artifacts.
 
-ledgr uses several identity fields because no single hash can answer every
-question. Some fields identify concrete execution inputs. Some identify
-authoring declarations. Some are JSON payloads used for replay or audit. Keep
-those layers separate.
+ledgr uses several identity fields because no single hash can answer
+every question. Some fields identify concrete execution inputs. Some
+identify authoring declarations. Some are JSON payloads used for replay
+or audit. Keep those layers separate.
 
 ## Field Map
 
 | Field | Purpose | Canonical source |
-| --- | --- | --- |
+|----|----|----|
 | `config_hash` | Execution-config identity after removing store-local and run-local fields. | `config_hash_payload()` then `canonical_json()` and SHA-256. |
 | `feature_set_hash` | Resolved concrete feature-set identity. | Sorted unique feature fingerprints through `ledgr_feature_set_hash()`. |
 | `feature_params_hash` | User-supplied feature-parameter input identity. | Canonical JSON over the feature parameter list. |
@@ -24,10 +27,17 @@ those layers separate.
 | `alias_map_order` | Declaration-order diagnostic. | Original alias declaration order; not part of `config_hash`. |
 | `cost_plan_json` | Canonical cost-model plan. | `ledgr_cost_plan_json()`. |
 | `cost_model_hash` | Cost-model identity. | SHA-256 over `cost_plan_json`. |
+| `risk_plan_json` | Canonical target-risk plan. | `ledgr_risk_plan_json()`. |
+| `risk_chain_hash` | Target-risk chain identity. | SHA-256 over `risk_plan_json`. |
+| `snapshot_hash` rule 2 | Sealed bars, instruments, point-in-time facts, and quarantine evidence. | `ledgr_snapshot_availability_hash_payload()`. |
+| availability config | Universe rule, valuation policy, declared families, and provider version. | Canonical omission for dense configs; `config_hash_payload()` otherwise. |
+| `candidate_key` | Walk-forward fold/window candidate identity. | Canonical JSON over strategy/feature/metric/cost/risk identity plus fold/window seed inputs. |
+| `session_id` | Walk-forward session identity. | Canonical JSON over snapshot, experiment, grid, fold-list, selection-rule, metric-context, cost, risk, seed, and opening-state policy identity. |
+| `db_path`, `snapshot_id`, `snapshot_hash` result attributes | Walk-forward recovery and resolve-at-call verification locators. | `ledgr_walk_forward_results` attributes; not identity bytes. |
 
 ## Config Hash
 
-`config_hash` answers: "Is this the same logical execution config?"
+`config_hash` answers: “Is this the same logical execution config?”
 
 It excludes:
 
@@ -38,49 +48,51 @@ It excludes:
 
 It remains sensitive to true execution identity, including snapshot ID,
 universe, strategy identity, strategy params, feature params, resolved
-features, timing model, cost identity, opening state, execution seed, and
-execution mode.
+features, timing model, cost identity, opening state, execution seed,
+and execution mode.
 
-Feature definitions are sorted by feature ID before hashing so declaration
-order alone does not change the hash. If a malformed feature definition lacks
-an ID, the implementation preserves original order rather than guessing.
+Feature definitions are sorted by feature ID before hashing so
+declaration order alone does not change the hash. If a malformed feature
+definition lacks an ID, the implementation preserves original order
+rather than guessing.
 
 ## Feature Identity
 
 `feature_params_hash` and `feature_set_hash` answer different questions.
 
 `feature_params_hash` records the parameter list supplied by the user.
-`feature_set_hash` records the concrete feature definitions that resulted
-after parameterized feature declarations were resolved. Two runs can share a
-feature-parameter hash and still differ in feature definitions if the feature
-map changes. Two runs can share an alias-map hash and differ in
-`feature_set_hash` if the same parameterized declaration is resolved with
-different concrete values.
+`feature_set_hash` records the concrete feature definitions that
+resulted after parameterized feature declarations were resolved. Two
+runs can share a feature-parameter hash and still differ in feature
+definitions if the feature map changes. Two runs can share an alias-map
+hash and differ in `feature_set_hash` if the same parameterized
+declaration is resolved with different concrete values.
 
 For committed runs, `feature_set_hash` is stored in
-`config$features$feature_set_hash` and is exposed through `ledgr_run_info()`
-and `ledgr_run_list()`. For sweep candidates, it is stored in candidate
-provenance and reproduction keys.
+`config$features$feature_set_hash` and is exposed through
+`ledgr_run_info()` and `ledgr_run_list()`. For sweep candidates, it is
+stored in candidate provenance and reproduction keys.
 
 Stored runs created before v0.1.9.1 Batch 4 show `NA_character_` for
-`feature_set_hash` because the field was not written. New runs always have a
-deterministic value, including for empty feature sets.
+`feature_set_hash` because the field was not written. New runs always
+have a deterministic value, including for empty feature sets.
 
 ## Alias Identity
 
 The active alias map has two layers:
 
-- runtime lookup: alias name -> concrete feature ID;
-- declaration identity: alias name -> declaration-level identity.
+- runtime lookup: alias name -\> concrete feature ID;
+- declaration identity: alias name -\> declaration-level identity.
 
 `alias_map_json` stores enough to recover the runtime lookup map. When
-declaration identity is available, it also includes identity mappings for
-audit. `alias_map_hash` hashes the declaration identity layer. It is sensitive
-to alias names and feature-declaration semantics, but not to concrete feature
-parameter values. Concrete parameter values belong to `feature_set_hash`.
+declaration identity is available, it also includes identity mappings
+for audit. `alias_map_hash` hashes the declaration identity layer. It is
+sensitive to alias names and feature-declaration semantics, but not to
+concrete feature parameter values. Concrete parameter values belong to
+`feature_set_hash`.
 
-`alias_map_order` is kept for diagnostics and display. It is deliberately
-excluded from `config_hash`.
+`alias_map_order` is kept for diagnostics and display. It is
+deliberately excluded from `config_hash`.
 
 ## Cost Identity
 
@@ -89,16 +101,108 @@ The public cost API stores cost identity as:
 - `cost_plan_json`: canonical serialized cost plan;
 - `cost_model_hash`: SHA-256 over that plan.
 
-These fields are execution identity for runs and sweep candidates. They are
-also forward dependencies for walk-forward candidate identity. They do not
-implement walk-forward or cost-grid selection by themselves.
+These fields are execution identity for runs and sweep candidates. In
+walk-forward they also enter both `candidate_key` and `session_id`, so
+changing the cost model changes the selected-candidate and session
+identity even when the strategy and fold list are unchanged. They do not
+implement cost-grid selection by themselves.
+
+## Risk Identity
+
+The public target-risk API stores risk identity as:
+
+- `risk_plan_json`: canonical serialized risk-chain plan;
+- `risk_chain_hash`: SHA-256 over that plan.
+
+These fields are execution identity for runs, sweep candidates, promoted
+runs, and walk-forward sessions. In walk-forward they enter both
+`candidate_key` and `session_id`, preserving the v0.1.9.3 risk-chain
+handoff into the v0.1.9.4 walk-forward evidence model.
+
+## Walk-Forward Identity
+
+Walk-forward adds two identity layers over existing run and sweep
+identity:
+
+- `candidate_key`: deterministic per fold, per window, and per
+  candidate. It includes strategy parameter identity, feature parameter
+  identity, strategy/feature/alias identity, metric-context identity,
+  `cost_model_hash`, `risk_chain_hash`, the master seed, `fold_seq`, and
+  the window role (`"train"` or `"test"`).
+- `session_id`: deterministic per walk-forward session. It includes
+  snapshot, experiment, parameter-grid, fold-list, selection-rule,
+  metric-context, `cost_model_hash`, `risk_chain_hash`, master seed, and
+  opening-state policy identity.
+
+These fields identify the walk-forward evidence envelope. They do not
+make scalar train-window selection statistically sound;
+selection-integrity diagnostics remain a separate future layer.
+
+## Availability Identity
+
+Availability facts and acknowledged quarantine rows are sealed evidence,
+so they enter `snapshot_hash` under hash rule 2. The selected membership
+universe, valuation policy, declared family set, and provider version
+affect execution and enter `config_hash`. Walk-forward `experiment_hash`
+and `session_id` inherit those inputs through their existing snapshot
+and experiment payloads; `candidate_key` remains candidate-recipe
+identity and gains no availability field of its own.
+
+Dense inputs use canonical omission. With no availability facts,
+membership rule, or valuation policy, the dense snapshot hash rule and
+config payload stay unchanged. Store paths, snapshot handles,
+reconstructed availability views, and diagnostic rows are provenance or
+result evidence, not new execution identity.
+
+## Locator Metadata
+
+Walk-forward result objects may carry three string locator attributes:
+
+- `db_path`;
+- `snapshot_id`;
+- `snapshot_hash`.
+
+These attributes let `ledgr_candidate()` resolve a snapshot at call time
+after a session is reopened or moved. They are verification metadata,
+not evidence identity. They do not enter `config_hash`, `candidate_key`,
+or `session_id`, and they must not store live DBI connections, snapshot
+handles, environments, or other process-local objects.
+
+The default resolve path reopens `db_path` and verifies that the
+reopened snapshot still matches `snapshot_hash`. An override snapshot
+may come from a different `db_path`, but its `snapshot_id` and
+`snapshot_hash` must match the stored locator.
+
+## Naming Supersession
+
+v0.1.9.5 consolidates candidate extraction on the `ledgr_candidate()`
+generic. Sweep and walk-forward result objects should teach the same
+generic surface instead of family-specific candidate extraction helpers.
+Durable reopen helpers use `open` (`ledgr_run_open()`,
+`ledgr_sweep_open()`, `ledgr_walk_forward_open()`), preserving the
+family-first naming grammar while keeping durable-evidence lookup
+distinct from interactive inspection.
 
 ## Implementation Trace
 
 - `R/config-hash.R`: `config_hash()` and `config_hash_payload()`.
 - `R/backtest.R`: config construction and `features$feature_set_hash`.
-- `R/feature-alias-map.R`: alias lookup and declaration identity storage.
+- `R/feature-alias-map.R`: alias lookup and declaration identity
+  storage.
 - `R/precompute-features.R`: feature-set hash helper and sweep candidate
   feature identity.
 - `R/run-store.R`: run list/info projection from stored `config_json`.
 - `R/cost-model.R`: cost plan JSON and cost-model hash.
+- `R/risk-model.R`: risk plan JSON and risk-chain hash.
+- `R/walk-forward-identity.R`: walk-forward `candidate_key` and
+  `session_id` byte assembly, including the two-step unseeded-key -\>
+  execution-seed -\> final-key candidate recipe.
+- `R/walk-forward.R`: walk-forward orchestrator that consumes the
+  identity helpers.
+- `R/walk-forward-inspection.R`: walk-forward locator attachment,
+  resolve-at-call verification, and candidate extraction over reopened
+  results.
+- `R/availability-persistence.R` and `R/snapshots-hash.R`: normalized
+  fact and quarantine rows in snapshot hash rule 2.
+- `R/backtest-config.R` and `R/availability-policy.R`:
+  canonical-omission availability config and effective-plan disclosure.

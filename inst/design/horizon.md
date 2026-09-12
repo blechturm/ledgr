@@ -33,9 +33,10 @@ remain non-binding unless that packet, the roadmap, contracts, or an accepted
 RFC promotes them.
 
 The active packet consumes only verified API-golden-path and stale-example
-findings in Batches 2 and 10. The remaining 2026-09-04 all-vignette review
-findings, including unrelated editorial and long-article navigation work, stay
-parked for a later documentation-freshness pass.
+findings in Batches 2 and 10. Batch 10 closes those scoped repairs. The
+remaining 2026-09-04 all-vignette findings, including article-order,
+catch-all-topic, and long-article navigation work, stay parked for a later
+documentation-freshness pass.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
@@ -500,6 +501,23 @@ hardening RFC candidate:
 This entry authorizes no vignette rewrite, API change, or performance claim by
 itself. It is source memory for a later documentation freshness packet and for
 the scheduled API hardening RFC.
+
+**2026-09-11 active-packet disposition.** v0.2.0.0 Batches 2 and 10 consumed
+the executable public-workflow and factual-drift subset. The target-vector and
+promotion journey now executes through the public API; run handles are cleaned
+up or deliberately reopened; `future sweep mode`, the omitted returns table,
+the unshipped selection-diagnostics claims, the misplaced experiment `params`,
+the undefined TTR pulse snapshot, and the first-run timing overstatement were
+corrected. The new Survivorship Bias article owns the point-in-time facts,
+missing-session, quarantine, incomplete-result, and durable-explanation path.
+
+The indicator article's preferred-order rewrite, the metric-context article's
+topic split, broader navigation work, and fuller dense-panel onboarding remain
+parked. Quickstart keeps its current non-executed promotion sketch because the
+same public promotion journey executes in Research Workflow; converting every
+small shape sketch into another durable run would add noise rather than close a
+factual gap. These items need a later documentation-freshness cut, not hidden
+scope in the v0.2.0.0 release gate.
 
 ### 2026-06-26 [evaluation] Business-objective completion and robustness arc (deferred from v0.1.9.7)
 

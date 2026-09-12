@@ -335,6 +335,40 @@
 #' `ledgr_walk_forward_candidate_not_found` is raised when a requested
 #' walk-forward fold does not contain a completed selected candidate.
 #'
+#' @section Availability reason codes:
+#' Availability-aware diagnostics use this closed vocabulary. An accepted fill
+#' without a complication uses an empty reason code.
+#'
+#' | Exact token | Stage | Action / interpretation |
+#' | --- | --- | --- |
+#' | `decision_recorded` | decision | unrestricted decision recorded |
+#' | `empty_public_domain` | decision | empty axis; no targets emitted |
+#' | `trading_halted` | restriction | hold or exit only |
+#' | `quotation_only` | restriction | hold or exit only |
+#' | `status_unknown` | restriction | hold or exit only |
+#' | `status_unknown_or_conflicting` | restriction | hold or exit only |
+#' | `lifetime_inactive` | restriction / terminal | hold or exit; no fabricated settlement |
+#' | `stale_mark_reduction` | risk | reducing target accepted with a stale mark |
+#' | `stale_mark_pass_through` | risk | unchanged target accepted with a stale mark |
+#' | `risk_mark_unavailable` | risk stop | accepted prefix finalized incomplete |
+#' | `restricted_target` | target validation | classed strategy-result failure |
+#' | `nonmember_exposure_increase` | target validation | classed strategy-result failure |
+#' | `post_risk_inadmissible` | post-risk validation | classed risk failure |
+#' | `short_exposure_unsupported` | target validation | classed strategy-result failure |
+#' | `insufficient_cash` | execution | cash-consuming fill rejected |
+#' | `execution_bar_missing` | execution | no fill; no standing order |
+#' | `membership_changed_before_execution` | execution diagnostic | report only; never an execution gate |
+#' | `final_pulse_no_execution` | execution | no fill without a later pulse |
+#' | `affordability_reconciled` | reconciliation | accepted fills applied and reconciled |
+#' | `affordability_reconciliation_failed` | reconciliation stop | accepted prefix finalized incomplete |
+#' | `valuation_horizon_exhausted` | valuation stop | accepted prefix finalized incomplete |
+#' | `terminal_settlement_unsupported` | valuation stop | holding preserved; no fabricated settlement |
+#' | `fold_exception` | error | failed after transaction rollback |
+#'
+#' For the connected workflow and interpretation, see
+#' `vignette("survivorship-bias", package = "ledgr")` and
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers

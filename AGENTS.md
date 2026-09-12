@@ -300,6 +300,8 @@ Current planning context (active v0.2.0.0 packet):
   Hardening corrections and bounded coordinator extraction must finish before
   availability implementation. Batch 8 economics and Batch 9 terminal/cross-
   path evidence each require independent review before downstream work.
+  Batches 0-9 are complete after review. Batch 10 teaching/reference work is
+  implemented and awaiting review; Batch 11 remains the release gate.
   No second engine, general short financing, settlement economics, OMS,
   imputation framework, or representation optimization is authorized.
 

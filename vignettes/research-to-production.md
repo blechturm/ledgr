@@ -13,7 +13,7 @@ event-sourced model enables it, and where v0.1.x sits on that path.
 
 <div class="ledgr-diagram ledgr-research-production-arc">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   research["research"]
@@ -43,7 +43,7 @@ ledger after the fact.
 
 <div class="ledgr-diagram ledgr-ledger-bridge">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   data["data"]
@@ -177,12 +177,16 @@ parts of experiment construction:
 experiment <- ledgr_experiment(
   snapshot,
   strategy = sma_strategy,
-  params = list(window = 20, quantity = 10),
   timing_model = ledgr_timing_next_open(),
   cost_model = ledgr_cost_chain(
     ledgr_cost_spread_bps(5),
     ledgr_cost_fixed_fee(1)
   )
+)
+
+run <- ledgr_run(
+  experiment,
+  params = list(window = 20, quantity = 10)
 )
 ```
 

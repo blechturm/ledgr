@@ -45,6 +45,10 @@ ledgr_fact_schema_version <- 1L
 #' `ledgr_fact_invalid_supersession`, and `ledgr_session_invalid`.
 #'
 #' @return A classed fact-family object, or a `ledgr_facts` bundle.
+#' @section Articles:
+#' Point-in-time universe workflow:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' membership <- ledgr_facts_membership_snapshots(
 #'   data.frame(
@@ -467,6 +471,10 @@ ledgr_facts <- function(...) {
 #' @param invalid_observations Either `"error"` or `"quarantine"`.
 #' @return A `ledgr_facts_report` object with `summary`, `facts`, and
 #'   `observations` tibbles plus a logical `can_seal` field.
+#' @section Articles:
+#' Point-in-time universe workflow:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @section Errors:
 #' Invalid or mutated bundles raise `ledgr_invalid_facts`. Snapshot creation
 #' raises `ledgr_availability_validation_failed` with this report attached when

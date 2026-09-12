@@ -354,8 +354,11 @@ universe semantics it evaluates.
 Reproducibility and selection integrity are orthogonal. Walk-forward records
 what was selected and tested; it does not prove that the search space, metric,
 or selection procedure was statistically sound. Scalar scores are not PBO,
-CSCV, CPCV, DSR, benchmark diagnostics, or a multiple-testing correction. For
-what provenance does and does not prove, see
+CSCV, CPCV, DSR, benchmark diagnostics, or a multiple-testing correction.
+ledgr ships PBO/CSCV, MinTRL, K-Ratio, DSR, and effective-trial diagnostics as
+separate evidence surfaces; see
+`vignette("selection-integrity", package = "ledgr")`. For what provenance does
+and does not prove, see
 `vignette("reproducibility", package = "ledgr")`.
 :::
 
@@ -392,8 +395,8 @@ and re-run. Do the short-test-window warning flags go away?
 
 ledgr does not yet implement paper/live walk-forward, OMS behavior,
 cross-snapshot walk-forward, benchmark-relative metrics, gross-vs-net
-attribution, signal decay, implementation/cost decay, or selection-integrity
-diagnostics. Those require later surfaces over the stable session and candidate
+attribution, signal decay, implementation/cost decay, or per-fold
+selection-integrity diagnostics. Those require later surfaces over the stable session and candidate
 identity introduced here.
 :::
 

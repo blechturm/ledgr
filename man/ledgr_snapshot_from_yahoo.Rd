@@ -45,6 +45,9 @@ warnings. Data availability and content still depend on Yahoo Finance.
 Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
+Point-in-time facts and quarantine:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
 
 \examples{

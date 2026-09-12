@@ -31,15 +31,14 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> The code writes to a temporary DuckDB store, so the article leaves no
+> project files behind. The demo-data window and fold sizes are kept small
+> so the vignette runs quickly; they are not a statistical recommendation.
 
-**Running this yourself**
-
-The code writes to a temporary DuckDB store, so the article leaves no
-project files behind. The demo-data window and fold sizes are kept small
-so the vignette runs quickly; they are not a statistical recommendation.
-
-</div>
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -152,7 +151,7 @@ wf
 #> 2        2 sharpe_ratio                   2.08             3.64             1.56
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: cec372f89579c986591a58aa9fb3f6d440433146691dad35a7dbe92659d09a5a
+#> Session: b0366de684834ad4749de056d1a49a07a6e73d0910f430c0d020f4321ae00563
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 2
@@ -221,31 +220,32 @@ tell you.
 Walk-forward evidence is only as survivorship-safe as the sealed
 snapshot and universe semantics it evaluates.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Selection integrity is a separate question
+>
+> Reproducibility and selection integrity are orthogonal. Walk-forward
+> records what was selected and tested; it does not prove that the search
+> space, metric, or selection procedure was statistically sound. Scalar
+> scores are not PBO, CSCV, CPCV, DSR, benchmark diagnostics, or a
+> multiple-testing correction. ledgr ships PBO/CSCV, MinTRL, K-Ratio, DSR,
+> and effective-trial diagnostics as separate evidence surfaces; see
+> `vignette("selection-integrity", package = "ledgr")`. For what
+> provenance does and does not prove, see
+> `vignette("reproducibility", package = "ledgr")`.
 
-**Selection integrity is a separate question**
 
-Reproducibility and selection integrity are orthogonal. Walk-forward
-records what was selected and tested; it does not prove that the search
-space, metric, or selection procedure was statistically sound. Scalar
-scores are not PBO, CSCV, CPCV, DSR, benchmark diagnostics, or a
-multiple-testing correction. For what provenance does and does not
-prove, see `vignette("reproducibility", package = "ledgr")`.
+> [!WARNING]
+>
+> ### Test folds are not independent
+>
+> The default `opening_state_policy = "carry_test_state"` is
+> path-dependent. Each completed selected test run may seed the next test
+> opening state, so per-fold test metrics are not independent
+> observations. The explicit `opening_state_policy = "flat_test_state"`
+> opt-in starts every test window from the original experiment opening
+> state and marks the result as `cold_start_distorted`.
 
-</div>
-
-<div class="ledgr-callout ledgr-callout-warning">
-
-**Test folds are not independent**
-
-The default `opening_state_policy = "carry_test_state"` is
-path-dependent. Each completed selected test run may seed the next test
-opening state, so per-fold test metrics are not independent
-observations. The explicit `opening_state_policy = "flat_test_state"`
-opt-in starts every test window from the original experiment opening
-state and marks the result as `cold_start_distorted`.
-
-</div>
 
 Anchored folds grow their train window over time. That is useful for
 some research workflows, but later folds can cost more to compute than
@@ -254,31 +254,29 @@ sets.
 
 ## Try It
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Re-run `ledgr_walk_forward()` with
+> `opening_state_policy = "flat_test_state"`. How does the degradation
+> table change, and why does `cold_start_distorted` appear? Then widen the
+> `test_window` in `ledgr_folds_rolling()` to `"2 months"` and re-run. Do
+> the short-test-window warning flags go away?
 
-**Try it**
-
-Re-run `ledgr_walk_forward()` with
-`opening_state_policy = "flat_test_state"`. How does the degradation
-table change, and why does `cold_start_distorted` appear? Then widen the
-`test_window` in `ledgr_folds_rolling()` to `"2 months"` and re-run. Do
-the short-test-window warning flags go away?
-
-</div>
 
 ## What This Does Not Do
 
-<div class="ledgr-callout ledgr-callout-important">
+> [!IMPORTANT]
+>
+> ### Outside this surface
+>
+> ledgr does not yet implement paper/live walk-forward, OMS behavior,
+> cross-snapshot walk-forward, benchmark-relative metrics, gross-vs-net
+> attribution, signal decay, implementation/cost decay, or per-fold
+> selection-integrity diagnostics. Those require later surfaces over the
+> stable session and candidate identity introduced here.
 
-**Outside this surface**
-
-ledgr does not yet implement paper/live walk-forward, OMS behavior,
-cross-snapshot walk-forward, benchmark-relative metrics, gross-vs-net
-attribution, signal decay, implementation/cost decay, or
-selection-integrity diagnostics. Those require later surfaces over the
-stable session and candidate identity introduced here.
-
-</div>
 
 ## Where Next
 

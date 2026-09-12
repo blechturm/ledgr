@@ -340,6 +340,33 @@ pending buffer flush at `R/backtest-runner.R:511`. Sweeps implement
 and only serialize `meta_json` when callers materialize rows at
 `R/sweep.R:1117`.
 
+### Availability Path
+
+Availability does not introduce another fold. `R/backtest-runner.R:653-680`
+verifies the snapshot, constructs the internal provider, and chooses the
+declared availability calendar before `ledgr_execute_fold()` receives them in
+the normal execution specification. `ledgr_run_snapshot_calendar()` remains
+the dense-only branch. The fold obtains each dynamic decision axis and
+point-in-time view from `R/availability-provider.R`, then keeps target rules,
+risk, valuation, affordability, and event emission in the shared fold.
+
+| Boundary | Current anchor |
+| --- | --- |
+| Point-in-time provider and calendar | `R/availability-provider.R:182-340` |
+| Target, post-risk, and short checks | `R/availability-economics.R:75-136` |
+| Stale valuation and affected exposure | `R/availability-economics.R:3-73` |
+| Affordability and reconciliation | `R/availability-economics.R:138-318` |
+| Completion and diagnostic rows | `R/availability-economics.R:320-420` |
+| Shared fold integration | `R/fold-engine.R:209-1128` |
+| Durable diagnostic writes | `R/backtest-runner.R:426-460` |
+| Terminal validation and finalization | `R/run-finalize.R:8-280` |
+| Public explanation reconstruction | `R/availability-results.R:239-335` |
+
+Expected valuation exhaustion and unsupported terminal settlement preserve
+accepted prefix economics and finalize `INCOMPLETE`. Unexpected fold errors
+remain `FAILED`. Neither path fabricates an execution price or terminal cash
+flow, and result inspection never invokes the strategy.
+
 ### Edge Cases
 
 Fold-entry snapshot failures are loud before execution. A missing source row,
