@@ -217,6 +217,111 @@ Seal metadata inside `meta_json` may use internal names such as `n_bars` and
 `n_instruments`. The structured columns from `ledgr_snapshot_info()` are
 `bar_count` and `instrument_count`; use those names in programmatic code.
 
+## Invalid Observations: Refuse First, Quarantine Deliberately
+
+A malformed bar is not a data gap. ledgr refuses to seal one by default rather
+than guess what it meant. The alternative is available, but you have to ask for
+it by name.
+
+This example corrupts one bar so its high sits below its open.
+
+```{r}
+#| label: invalid-bars
+
+session_dates <- as.Date("2019-01-01") + 0:4
+
+invalid_bars <- tibble(
+  instrument_id = "DEMO_01",
+  ts_utc = session_dates,
+  open = 100:104,
+  high = 101:105,
+  low = 99:103,
+  close = 100:104,
+  volume = 1000
+)
+invalid_bars$high[[3]] <- invalid_bars$open[[3]] - 5
+
+invalid_bars
+```
+
+Quarantine is a decision about an *expected* observation, so it requires a
+declared session calendar. Without one there is no assertion that the session
+happened, and a dropped row would be indistinguishable from a date that never
+existed.
+
+```{r}
+#| label: quarantine-sessions
+
+session_facts <- ledgr_facts_sessions(
+  tibble(
+    session_date = session_dates,
+    status = "open",
+    session_open = "14:30:00",
+    session_close = "21:00:00",
+    knowledge_time = ledgr_utc("2018-12-01")
+  ),
+  venue_id = "DEMO",
+  timezone = "UTC"
+)
+```
+
+The default refuses the entire seal:
+
+```{r}
+#| label: strict-refusal
+
+strict <- tryCatch(
+  ledgr_snapshot_from_df(
+    invalid_bars,
+    instruments_df = tibble(instrument_id = "DEMO_01"),
+    facts = ledgr_facts(session_facts),
+    db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict_demo.duckdb")),
+    snapshot_id = "strict_demo"
+  ),
+  error = function(e) e
+)
+
+class(strict)[1:2]
+conditionMessage(strict)
+```
+
+Nothing was sealed. One bad row stopped the whole snapshot, which is the point:
+you find out before the evidence is frozen, not afterwards. To proceed you must
+say so explicitly.
+
+```{r}
+#| label: quarantine-seal
+
+quarantined <- ledgr_snapshot_from_df(
+  invalid_bars,
+  instruments_df = tibble(instrument_id = "DEMO_01"),
+  facts = ledgr_facts(session_facts),
+  db_path = ledgr_temp_store(
+    file.path(tempdir(), "ledgr_quarantine_demo.duckdb")
+  ),
+  snapshot_id = "quarantine_demo",
+  invalid_observations = "quarantine"
+)
+
+ledgr_snapshot_info(quarantined, "quarantine_demo")$bar_count
+```
+
+Four bars of five reached runtime. The fifth was not deleted: it is hashed as
+part of the sealed evidence, so the snapshot still records what the source
+actually supplied. The expected session stays on the calendar, which is what
+keeps the gap visible instead of silently shortening the history.
+
+Quarantine is a statement about one observation, not a repair. It interpolates
+no price and asserts nothing about whether the instrument was tradeable.
+Correcting the data means a new snapshot, as it does for every other change to
+sealed evidence.
+
+```{r}
+#| label: quarantine-cleanup
+
+ledgr_snapshot_close(quarantined)
+```
+
 ## Backup Conventions
 
 The store is an ordinary DuckDB file. Back it up when no ledgr process has it
@@ -252,8 +357,7 @@ ledgr_snapshot_close(snapshot)
 ## Where Next
 
 - `vignette("survivorship-bias", package = "ledgr")` shows how membership,
-  sessions, invalid-observation quarantine, and stable instrument identity
-  become one point-in-time workflow.
+  sessions, and stable instrument identity become one point-in-time workflow.
 - `vignette("experiment-store", package = "ledgr")` shows how sealed
   snapshots are used by committed runs and recovery workflows.
 - `vignette("research-workflow", package = "ledgr")` puts snapshots in the

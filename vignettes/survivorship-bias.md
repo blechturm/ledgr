@@ -481,6 +481,9 @@ Now the comparison the opening promised, run properly. Same snapshot,
 same strategy, same valuation policy, same starting cash. The only
 difference is which universe is declared.
 
+Seal the evidence first. After this point the inputs are frozen and
+identified by a hash.
+
 ``` r
 store_path <- ledgr_temp_store(
   file.path(tempdir(), "ledgr_survivorship_bias.duckdb")
@@ -493,19 +496,30 @@ snapshot <- ledgr_snapshot_from_df(
   db_path = store_path,
   snapshot_id = "survivorship-demo"
 )
+```
 
-declare <- function(universe) {
-  ledgr_experiment(
-    snapshot,
-    equal_weight_once,
-    universe = universe,
-    valuation_policy = ledgr_valuation_stale(max_sessions = 2),
-    cost_model = ledgr_cost_zero(),
-    opening = ledgr_opening(cash = 10000)
-  )
-}
+An experiment is the sealed snapshot plus every choice you are making
+about it. Here is the whole thing, written out once:
 
-point_in_time_experiment <- declare(ledgr_universe_members("demo_members"))
+``` r
+point_in_time_experiment <- ledgr_experiment(
+  snapshot,
+  equal_weight_once,
+  universe = ledgr_universe_members("demo_members"),
+  valuation_policy = ledgr_valuation_stale(max_sessions = 2),
+  cost_model = ledgr_cost_zero(),
+  opening = ledgr_opening(cash = 10000)
+)
+```
+
+Read those arguments as four separate decisions. `universe` selects the
+membership history you declared, rather than a fixed list.
+`valuation_policy` says how long a stale mark may be carried before the
+run must stop. `cost_model` and `opening` fix the trading frictions and
+the starting account. Only the first of them differs between the two
+runs below, so the comparison isolates the universe.
+
+``` r
 ledgr_experiment_plan(point_in_time_experiment)
 #> ledgr experiment plan
 #> Availability: active
@@ -528,6 +542,19 @@ listed. It means no such check ran, which is why ledgr never learns that
 feed gap.
 
 ``` r
+# The survivor experiment repeats every argument above and changes one, so
+# wrap the shared choices rather than retyping them.
+declare <- function(universe) {
+  ledgr_experiment(
+    snapshot,
+    equal_weight_once,
+    universe = universe,
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2),
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 10000)
+  )
+}
+
 point_in_time <- ledgr_run(
   point_in_time_experiment, params = list(invested = 0.9), run_id = "pit-universe"
 )

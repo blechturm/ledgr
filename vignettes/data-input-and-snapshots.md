@@ -5,25 +5,27 @@ This article focuses on bringing data into ledgr and sealing it into a
 snapshot. Runs, labels, reopening, and recovery evidence live in
 `vignette("experiment-store", package = "ledgr")`.
 
-> [!NOTE]
->
-> ### Running this yourself
->
-> This article is evaluated when rendered. It writes to temporary DuckDB
-> stores so package builds and local previews do not leave project
-> artifacts behind. In real work, use a project-local path such as
-> `artifacts/ledgr_store.duckdb`.
+<div class="ledgr-callout ledgr-callout-note">
 
+**Running this yourself**
 
-> [!WARNING]
->
-> ### Pre-CRAN compatibility
->
-> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
-> experimental APIs may change before the first CRAN release. Treat stores
-> created with pre-CRAN ledgr as research artifacts for the version that
-> produced them, and expect to rerun experiments after upgrading.
+This article is evaluated when rendered. It writes to temporary DuckDB
+stores so package builds and local previews do not leave project
+artifacts behind. In real work, use a project-local path such as
+`artifacts/ledgr_store.duckdb`.
 
+</div>
+
+<div class="ledgr-callout ledgr-callout-warning">
+
+**Pre-CRAN compatibility**
+
+ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
+experimental APIs may change before the first CRAN release. Treat stores
+created with pre-CRAN ledgr as research artifacts for the version that
+produced them, and expect to rerun experiments after upgrading.
+
+</div>
 
 The examples use `dplyr` for data preparation and compact display. It is
 a suggested package used by the vignettes, not part of the
@@ -136,21 +138,22 @@ step: on a snapshot handle it returns an invisible structured list with
 metadata; snapshot identity comes from normalized bars and instruments,
 not from human descriptions.
 
-> [!WARNING]
->
-> ### Yahoo data boundary
->
-> Yahoo support is a convenience adapter, not a data-vendor guarantee. It
-> uses `quantmod::getSymbols()` and therefore requires the suggested
-> `quantmod` package and network access. Package startup or S3
-> method-overwrite messages printed while quantmod loads are not ledgr
-> snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
-> `.Close`, and `.Volume` columns as returned by quantmod; it does not
-> rewrite OHLC values from Yahoo’s adjusted-close column. If your research
-> requires split/dividend-adjusted OHLC bars, prepare those bars
-> explicitly and seal them with `ledgr_snapshot_from_df()` or
-> `ledgr_snapshot_from_csv()`.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Yahoo data boundary**
+
+Yahoo support is a convenience adapter, not a data-vendor guarantee. It
+uses `quantmod::getSymbols()` and therefore requires the suggested
+`quantmod` package and network access. Package startup or S3
+method-overwrite messages printed while quantmod loads are not ledgr
+snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
+`.Close`, and `.Volume` columns as returned by quantmod; it does not
+rewrite OHLC values from Yahoo’s adjusted-close column. If your research
+requires split/dividend-adjusted OHLC bars, prepare those bars
+explicitly and seal them with `ledgr_snapshot_from_df()` or
+`ledgr_snapshot_from_csv()`.
+
+</div>
 
 ``` r
 yahoo_info <- ledgr_snapshot_info(snapshot)
@@ -175,31 +178,146 @@ and `n_instruments`. The structured columns from `ledgr_snapshot_info()`
 are `bar_count` and `instrument_count`; use those names in programmatic
 code.
 
+## Invalid Observations: Refuse First, Quarantine Deliberately
+
+A malformed bar is not a data gap. ledgr refuses to seal one by default
+rather than guess what it meant. The alternative is available, but you
+have to ask for it by name.
+
+This example corrupts one bar so its high sits below its open.
+
+``` r
+session_dates <- as.Date("2019-01-01") + 0:4
+
+invalid_bars <- tibble(
+  instrument_id = "DEMO_01",
+  ts_utc = session_dates,
+  open = 100:104,
+  high = 101:105,
+  low = 99:103,
+  close = 100:104,
+  volume = 1000
+)
+invalid_bars$high[[3]] <- invalid_bars$open[[3]] - 5
+
+invalid_bars
+```
+
+    # A tibble: 5 x 7
+      instrument_id ts_utc      open  high   low close volume
+      <chr>         <date>     <int> <dbl> <int> <int>  <dbl>
+    1 DEMO_01       2019-01-01   100   101    99   100   1000
+    2 DEMO_01       2019-01-02   101   102   100   101   1000
+    3 DEMO_01       2019-01-03   102    97   101   102   1000
+    4 DEMO_01       2019-01-04   103   104   102   103   1000
+    5 DEMO_01       2019-01-05   104   105   103   104   1000
+
+Quarantine is a decision about an *expected* observation, so it requires
+a declared session calendar. Without one there is no assertion that the
+session happened, and a dropped row would be indistinguishable from a
+date that never existed.
+
+``` r
+session_facts <- ledgr_facts_sessions(
+  tibble(
+    session_date = session_dates,
+    status = "open",
+    session_open = "14:30:00",
+    session_close = "21:00:00",
+    knowledge_time = ledgr_utc("2018-12-01")
+  ),
+  venue_id = "DEMO",
+  timezone = "UTC"
+)
+```
+
+The default refuses the entire seal:
+
+``` r
+strict <- tryCatch(
+  ledgr_snapshot_from_df(
+    invalid_bars,
+    instruments_df = tibble(instrument_id = "DEMO_01"),
+    facts = ledgr_facts(session_facts),
+    db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict_demo.duckdb")),
+    snapshot_id = "strict_demo"
+  ),
+  error = function(e) e
+)
+
+class(strict)[1:2]
+```
+
+    [1] "ledgr_availability_validation_failed" "ledgr_invalid_args"
+
+``` r
+conditionMessage(strict)
+```
+
+    [1] "Availability input cannot be sealed: ohlc_invalid."
+
+Nothing was sealed. One bad row stopped the whole snapshot, which is the
+point: you find out before the evidence is frozen, not afterwards. To
+proceed you must say so explicitly.
+
+``` r
+quarantined <- ledgr_snapshot_from_df(
+  invalid_bars,
+  instruments_df = tibble(instrument_id = "DEMO_01"),
+  facts = ledgr_facts(session_facts),
+  db_path = ledgr_temp_store(
+    file.path(tempdir(), "ledgr_quarantine_demo.duckdb")
+  ),
+  snapshot_id = "quarantine_demo",
+  invalid_observations = "quarantine"
+)
+
+ledgr_snapshot_info(quarantined, "quarantine_demo")$bar_count
+```
+
+    [1] 4
+
+Four bars of five reached runtime. The fifth was not deleted: it is
+hashed as part of the sealed evidence, so the snapshot still records
+what the source actually supplied. The expected session stays on the
+calendar, which is what keeps the gap visible instead of silently
+shortening the history.
+
+Quarantine is a statement about one observation, not a repair. It
+interpolates no price and asserts nothing about whether the instrument
+was tradeable. Correcting the data means a new snapshot, as it does for
+every other change to sealed evidence.
+
+``` r
+ledgr_snapshot_close(quarantined)
+```
+
 ## Backup Conventions
 
 The store is an ordinary DuckDB file. Back it up when no ledgr process
 has it open.
 
-> [!WARNING]
->
-> ### Back up closed stores
->
-> Close run and snapshot handles, then copy or sync the closed store file.
-> A simple project pattern is:
->
-> ``` r
-> dir.create("backups", showWarnings = FALSE)
-> file.copy(
->   "artifacts/ledgr_store.duckdb",
->   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
->   overwrite = TRUE
-> )
-> ```
->
-> For larger projects, use the same closed-file rule with your normal
-> backup or sync tool. Do not rely on the phrase “ordinary backup
-> discipline” without a specific copy/sync pattern for the store file.
+<div class="ledgr-callout ledgr-callout-warning">
 
+**Back up closed stores**
+
+Close run and snapshot handles, then copy or sync the closed store file.
+A simple project pattern is:
+
+``` r
+dir.create("backups", showWarnings = FALSE)
+file.copy(
+  "artifacts/ledgr_store.duckdb",
+  file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+  overwrite = TRUE
+)
+```
+
+For larger projects, use the same closed-file rule with your normal
+backup or sync tool. Do not rely on the phrase “ordinary backup
+discipline” without a specific copy/sync pattern for the store file.
+
+</div>
 
 ## Cleanup
 
@@ -210,8 +328,8 @@ ledgr_snapshot_close(snapshot)
 ## Where Next
 
 - `vignette("survivorship-bias", package = "ledgr")` shows how
-  membership, sessions, invalid-observation quarantine, and stable
-  instrument identity become one point-in-time workflow.
+  membership, sessions, and stable instrument identity become one
+  point-in-time workflow.
 - `vignette("experiment-store", package = "ledgr")` shows how sealed
   snapshots are used by committed runs and recovery workflows.
 - `vignette("research-workflow", package = "ledgr")` puts snapshots in
