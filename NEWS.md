@@ -42,6 +42,17 @@
   validation report for membership, trading status, lifetime, and complete
   venue-session calendars. Daily vendor dates map explicitly to declared
   session closes; observed bars never define the expected-session clock.
+- Added read-only fact history and cutoff resolution over in-memory facts or
+  sealed snapshots. Resolution preserves explicit true, false, and unknown
+  membership states without exposing future-known evidence or widening the
+  strategy context.
+- Added constituent-list membership input and an optional qlcal session
+  preparation adapter. Equivalent row/list membership evidence hashes
+  identically; generated schedules retain provider, calendar, hours, override,
+  and assumption provenance without persisting a calendar object.
+- Session construction now rejects ambiguous fall-back and nonexistent
+  spring-forward local wall times consistently while preserving explicit
+  POSIXct instants.
 - Added experiment-store schema 113, saved-sweep schema 4, and snapshot hash
   rule 2 for normalized fact families and explicitly acknowledged observation
   quarantine. Fact-free snapshots retain hash rule 1 unchanged, legacy sealed

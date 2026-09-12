@@ -717,7 +717,7 @@ tickets:
 
   - id: "LDG-2705"
     title: "Fill and read-side timestamp alignment"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies:
@@ -747,10 +747,13 @@ tickets:
         reconstruction through the shared opportunity mapper with an explicit
         pulse axis. Removing the candidate remap produces exactly one 09:30
         versus 16:00 failure at the new assertion.
+      - >-
+        Independent review accepted the live sweep remap and shared
+        reconstruction rule with no findings after the follow-up patches.
 
   - id: "LDG-2706"
     title: "Historical timing compatibility and identity"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies:
@@ -781,10 +784,14 @@ tickets:
         snapshot-adapter skip; the post-follow-up sweep, parity, and
         execution-spec regression net is green. Rd, YAML, export, schema, and
         diff hygiene checks also pass.
+      - >-
+        Independent review accepted the timing identity, legacy
+        classification, and comparison boundary with no findings after the
+        follow-up patches.
 
   - id: "LDG-2707"
     title: "Shared local-time ambiguity validation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -797,10 +804,17 @@ tickets:
       - "test-availability-facts.R"
       - "Ambiguous fall-back and nonexistent spring-forward rejection"
       - "Operating-system gates"
+    implementation_notes:
+      - >-
+        Local wall-time parsing now enumerates candidate timezone offsets and
+        round-trips each UTC candidate through the declared IANA timezone.
+        Ambiguous and nonexistent values fail with distinct classes, while
+        ordinary conversions and explicit POSIXct instants retain their
+        existing behavior.
 
   - id: "LDG-2708"
     title: "Facts history and cutoff resolution"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -814,10 +828,21 @@ tickets:
       - "Workflow and persistence tests"
       - "Fresh-process sealed-snapshot resolution"
       - "No callback, persistent write, or RNG change"
+    implementation_notes:
+      - >-
+        Added separate eager history and cutoff-resolution results over
+        normalized facts and sealed snapshots. Membership resolution shares
+        the runtime algorithm, retains false and unknown identifiers, and
+        cites complete-set omission without fabricating negative evidence.
+      - >-
+        Snapshot inspection verifies SEALED state and the current hash on
+        every call, closes only connections it opened, and changes neither
+        stored evidence nor RNG state. Fresh-process snapshot-only resolution
+        passes.
 
   - id: "LDG-2709"
     title: "Constituent-list membership input"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -830,10 +855,16 @@ tickets:
       - "test-availability-facts.R"
       - "List and row forms produce identical facts and hashes"
       - "Empty complete list and partial assertions"
+    implementation_notes:
+      - >-
+        Membership snapshots now accept a members list-column and normalize it
+        through existing set headers and member rows. Equivalent row and list
+        inputs with identical provenance produce identical canonical facts
+        and hashes; empty complete lists and partial assertions stay distinct.
 
   - id: "LDG-2710"
     title: "Optional qlcal session adapter"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -847,6 +878,28 @@ tickets:
       - "Focused adapter tests with qlcal in Suggests"
       - "Materialized snapshot runs without qlcal"
       - "Identity and assumption-label regressions"
+    implementation_notes:
+      - >-
+        Added the optional qlcal adapter with qlcal in Suggests and no namespace
+        import. It materializes inclusive civil-date rows from an explicit
+        calendar, delegates validation to ledgr_facts_sessions, and retains no
+        pointer or generation wall time.
+      - >-
+        Complete overrides, provider metadata, hours, and assumptions enter
+        canonical family and snapshot identity. The full 123-file suite passes
+        with one expected skip, and all 149 Rd files pass tools::checkRd().
+      - >-
+        A fresh process reopens, inspects, and runs a materialized snapshot
+        without loading qlcal. Source build succeeds; structural package check
+        is clean apart from the existing two missing-inst/doc warnings and
+        long-path note. The full built-package check retains the known four
+        source-document lookup failures while the source-tree suite is green.
+      - >-
+        Independent review reproduced 858 tests and 8,644 expectations with
+        no failures or errors and found no defect across the four Batch 12
+        tickets. The reviewer lacked qlcal; all 29 adapter expectations and
+        the fresh-process namespace test passed in the implementation
+        environment.
 
   - id: "LDG-2711"
     title: "Inspectable workflow teaching and completion reporting"

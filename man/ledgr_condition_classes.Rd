@@ -23,6 +23,16 @@
 \alias{ledgr_compiled_availability_unsupported}
 \alias{ledgr_execution_timing_version_mismatch}
 \alias{ledgr_fill_timing_not_comparable}
+\alias{ledgr_session_time_ambiguous}
+\alias{ledgr_session_time_nonexistent}
+\alias{ledgr_fact_ambiguous_membership_shape}
+\alias{ledgr_fact_invalid_membership_list}
+\alias{ledgr_facts_inspection_invalid_args}
+\alias{ledgr_facts_scope_not_found}
+\alias{ledgr_facts_snapshot_not_sealed}
+\alias{ledgr_facts_snapshot_hash_mismatch}
+\alias{ledgr_session_adapter_invalid}
+\alias{ledgr_session_override_invalid}
 \alias{ledgr_indicator_gap_unsupported}
 \alias{ledgr_indicator_gap_parity}
 \alias{ledgr_invalid_strategy_state}
@@ -198,6 +208,25 @@ remain inspectable, but they cannot resume under corrected timing semantics.
 
 \code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
 when selected runs have differing or unknown execution-timing conventions.
+
+\code{ledgr_session_time_ambiguous} and \code{ledgr_session_time_nonexistent} are
+raised when a local session wall time resolves to multiple UTC instants or
+no UTC instant. Supply an explicit POSIXct instant to disambiguate a real
+fall-back time.
+
+\code{ledgr_fact_ambiguous_membership_shape} and
+\code{ledgr_fact_invalid_membership_list} are raised for mixed row/list
+membership input or malformed constituent lists.
+
+\code{ledgr_facts_inspection_invalid_args} is raised for incompatible history or
+resolution arguments. \code{ledgr_facts_scope_not_found} is raised when the
+requested family and scope are not declared. Snapshot inspection raises
+\code{ledgr_facts_snapshot_not_sealed} or
+\code{ledgr_facts_snapshot_hash_mismatch} before returning evidence from an
+unsealed or corrupted artifact.
+
+\code{ledgr_session_adapter_invalid} and \code{ledgr_session_override_invalid} are
+raised for malformed qlcal adapter inputs or replacement rows.
 
 \code{ledgr_indicator_gap_unsupported} is raised before strategy use when an
 availability-aware feature does not declare the supported strict-window gap

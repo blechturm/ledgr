@@ -41,6 +41,7 @@ Suggests:
     nanotime,
     PerformanceAnalytics,
     pkgload,
+    qlcal,
     quarto,
     rmarkdown,
     testthat (>= 3.0.0),

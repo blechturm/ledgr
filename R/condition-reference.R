@@ -75,6 +75,25 @@
 #' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
 #' when selected runs have differing or unknown execution-timing conventions.
 #'
+#' `ledgr_session_time_ambiguous` and `ledgr_session_time_nonexistent` are
+#' raised when a local session wall time resolves to multiple UTC instants or
+#' no UTC instant. Supply an explicit POSIXct instant to disambiguate a real
+#' fall-back time.
+#'
+#' `ledgr_fact_ambiguous_membership_shape` and
+#' `ledgr_fact_invalid_membership_list` are raised for mixed row/list
+#' membership input or malformed constituent lists.
+#'
+#' `ledgr_facts_inspection_invalid_args` is raised for incompatible history or
+#' resolution arguments. `ledgr_facts_scope_not_found` is raised when the
+#' requested family and scope are not declared. Snapshot inspection raises
+#' `ledgr_facts_snapshot_not_sealed` or
+#' `ledgr_facts_snapshot_hash_mismatch` before returning evidence from an
+#' unsealed or corrupted artifact.
+#'
+#' `ledgr_session_adapter_invalid` and `ledgr_session_override_invalid` are
+#' raised for malformed qlcal adapter inputs or replacement rows.
+#'
 #' `ledgr_indicator_gap_unsupported` is raised before strategy use when an
 #' availability-aware feature does not declare the supported strict-window gap
 #' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
@@ -407,6 +426,11 @@
 #' @aliases ledgr_compiled_availability_unsupported
 #' @aliases ledgr_execution_timing_version_mismatch
 #' @aliases ledgr_fill_timing_not_comparable
+#' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
+#' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list
+#' @aliases ledgr_facts_inspection_invalid_args ledgr_facts_scope_not_found
+#' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
+#' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
 #' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
 #' @aliases ledgr_invalid_strategy_state
 #' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target

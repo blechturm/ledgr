@@ -1631,6 +1631,66 @@ testthat::test_that("availability snapshot identity and quarantine contracts are
   testthat::expect_match(contract, "never resealed or rehash-migrated", fixed = TRUE)
 })
 
+testthat::test_that("facts inspection and preparation contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  contract_path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contract_path), "design contracts unavailable")
+  contract <- paste(readLines(contract_path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  description <- read.dcf(file.path(root, "DESCRIPTION"))
+  namespace <- paste(readLines(file.path(root, "NAMESPACE"), warn = FALSE), collapse = "\n")
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+
+  testthat::expect_match(
+    contract,
+    "Local session wall times must resolve to exactly one UTC instant",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Ambiguous[[:space:]]+fall-back and nonexistent spring-forward labels fail closed"
+  )
+  testthat::expect_match(contract, "accepts either row-per-member evidence", fixed = TRUE)
+  testthat::expect_match(contract, "Both shapes normalize to the same set", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_facts_history()` is a retrospective audit", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "`ledgr_facts_resolve()` is a separate decision-cutoff",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "true, false, and unknown states", fixed = TRUE)
+  testthat::expect_match(contract, "Complete-set omission cites the set header", fixed = TRUE)
+  testthat::expect_match(contract, "Neither result is a strategy context", fixed = TRUE)
+  testthat::expect_match(contract, "optional preparation adapter over an", fixed = TRUE)
+  testthat::expect_match(contract, "no generation time or external pointer", fixed = TRUE)
+  testthat::expect_match(contract, "assumption_reasons", fixed = TRUE)
+  testthat::expect_match(news, "Added read-only fact history and cutoff resolution", fixed = TRUE)
+  testthat::expect_match(news, "Added constituent-list membership input", fixed = TRUE)
+  testthat::expect_match(news, "rejects ambiguous fall-back and nonexistent", fixed = TRUE)
+
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
+  testthat::expect_true("qlcal" %in% suggests)
+  testthat::expect_no_match(namespace, "importFrom\\(qlcal")
+  r_files <- list.files(file.path(root, "R"), pattern = "\\.R$", full.names = TRUE)
+  qlcal_users <- basename(r_files[vapply(r_files, function(path) {
+    any(grepl("qlcal::", readLines(path, warn = FALSE), fixed = TRUE))
+  }, logical(1))])
+  testthat::expect_identical(qlcal_users, "availability-facts.R")
+  for (class in c(
+    "ledgr_session_time_ambiguous", "ledgr_session_time_nonexistent",
+    "ledgr_fact_ambiguous_membership_shape", "ledgr_fact_invalid_membership_list",
+    "ledgr_facts_inspection_invalid_args", "ledgr_facts_scope_not_found",
+    "ledgr_facts_snapshot_not_sealed", "ledgr_facts_snapshot_hash_mismatch",
+    "ledgr_session_adapter_invalid", "ledgr_session_override_invalid"
+  )) {
+    testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", class, "}"), fixed = TRUE)
+  }
+})
+
 testthat::test_that("availability economics and controlled-stop contracts are locked", {
   root <- testthat::test_path("..", "..")
   path <- file.path(root, "inst", "design", "contracts.md")
@@ -2651,17 +2711,15 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(
     docs$batches,
     paste0(
-      "Status: Batches 0-10 complete after review[.]",
-      "[[:space:]]+Batch 11 implementation is complete[[:space:]]+and awaiting review",
-      "[[:space:]]+for LDG-2705 and LDG-2706"
+      "Status: Batches 0-12 complete after review[.]",
+      "[[:space:]]+Batches 13-14 remain pending"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
-      "Batches 0-10 complete after review[.]",
-      "[[:space:]]+Batch 11 implementation is complete[[:space:]]+and awaiting review",
-      "[[:space:]]+for LDG-2705 and LDG-2706"
+      "Batches 0-12 complete after review[.]",
+      "[[:space:]]+Batches 13-14 remain pending"
     )
   )
   # The amendment slice must stay discoverable from every packet artifact.
@@ -2675,8 +2733,8 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(
     docs$batches, "Batch 11 - Economic Execution Timing Correction", fixed = TRUE)
   testthat::expect_match(ticket_2704, "Status: Complete After Review", fixed = TRUE)
-  testthat::expect_match(ticket_2705, "Status: Review Pending", fixed = TRUE)
-  testthat::expect_match(ticket_2706, "Status: Review Pending", fixed = TRUE)
+  testthat::expect_match(ticket_2705, "Status: Complete After Review", fixed = TRUE)
+  testthat::expect_match(ticket_2706, "Status: Complete After Review", fixed = TRUE)
   testthat::expect_match(
     docs$yaml,
     'id: "LDG-2704"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
@@ -2684,15 +2742,32 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   for (id in c("LDG-2705", "LDG-2706")) {
     testthat::expect_match(
       docs$yaml,
-      paste0('id: "', id, '"[[:space:]]+title: .+[[:space:]]+status: "review_pending"')
+      paste0('id: "', id, '"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"')
     )
   }
   testthat::expect_match(
     docs$batches,
+    "## Batch 11 - Economic Execution Timing Correction[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$batches,
     paste0(
-      "Status: Review Pending. LDG-2704 Complete After Review; ",
-      "LDG-2705 and LDG-2706 Review Pending."
-    ),
+      "## Batch 12 - Inspectable Evidence Preparation[[:space:]]+",
+      "Status: Complete After Review[.]"
+    )
+  )
+  for (id in c("LDG-2707", "LDG-2708", "LDG-2709", "LDG-2710")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+  testthat::expect_match(
+    docs$batches,
+    "All 11 availability test files and the full 123-file suite pass",
     fixed = TRUE
   )
   testthat::expect_match(docs$batches, "Batch 14 - Release Gate", fixed = TRUE)

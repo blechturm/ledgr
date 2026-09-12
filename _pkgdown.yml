@@ -168,6 +168,8 @@ reference:
     contents:
       - starts_with("ledgr_snapshot")
       - ledgr_facts
+      - ledgr_facts_inspection
+      - ledgr_facts_sessions_qlcal
       - ledgr_facts_validate
       - print.ledgr_snapshot
       - summary.ledgr_snapshot

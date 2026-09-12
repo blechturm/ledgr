@@ -66,7 +66,9 @@ excluded. Missing knowledge time remains audit-only unless
 \details{
 Membership intervals require \code{instrument_id}, \code{effective_from}, and
 \code{member}; \code{effective_to} and \code{knowledge_time} are optional. Membership
-snapshots require \code{effective_from} and \code{instrument_id}; an \code{NA}
+snapshots require \code{effective_from} plus either row-wise \code{instrument_id} or
+a \code{members} list-column. \code{character(0)} records an empty set without a dummy
+instrument; the two input shapes cannot be mixed. An \code{NA} row-wise
 \code{instrument_id} records an empty set header. Trading-status rows require
 \code{instrument_id}, \code{effective_from}, \code{status}, and \code{source}. Status is one of
 \code{active}, \code{halted}, or \code{quotation_only}; optional columns are
@@ -87,7 +89,8 @@ and close times.
 Structural input failures inherit from \code{ledgr_invalid_args}. The primary
 classes are \code{ledgr_fact_invalid_shape}, \code{ledgr_fact_invalid_interval},
 \code{ledgr_fact_identity_conflict}, \code{ledgr_fact_structural_conflict},
-\code{ledgr_fact_invalid_supersession}, and \code{ledgr_session_invalid}.
+\code{ledgr_fact_invalid_supersession}, \code{ledgr_session_invalid},
+\code{ledgr_session_time_ambiguous}, and \code{ledgr_session_time_nonexistent}.
 }
 
 \section{Articles}{

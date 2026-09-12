@@ -208,6 +208,100 @@ testthat::test_that("session calendars are complete, knowledge-bounded, and DST-
     ledgr_facts_sessions(late, "XNYS", timezone = "America/New_York"),
     class = "ledgr_session_knowledge_late"
   )
+
+  ambiguous <- data.frame(
+    session_date = as.Date("2024-11-03"),
+    status = "open",
+    session_open = "01:30:00",
+    session_close = "03:00:00",
+    knowledge_time = as.POSIXct("2024-01-01", tz = "UTC")
+  )
+  testthat::expect_error(
+    ledgr_facts_sessions(ambiguous, "XNYS", timezone = "America/New_York"),
+    class = "ledgr_session_time_ambiguous"
+  )
+  nonexistent <- ambiguous
+  nonexistent$session_date <- as.Date("2024-03-10")
+  nonexistent$session_open <- "02:30:00"
+  nonexistent$session_close <- "04:00:00"
+  testthat::expect_error(
+    ledgr_facts_sessions(nonexistent, "XNYS", timezone = "America/New_York"),
+    class = "ledgr_session_time_nonexistent"
+  )
+  explicit <- ambiguous
+  explicit$session_open <- as.POSIXct("2024-11-03 05:30:00", tz = "UTC")
+  explicit$session_close <- as.POSIXct("2024-11-03 08:00:00", tz = "UTC")
+  explicit_family <- ledgr_facts_sessions(explicit, "XNYS", timezone = "America/New_York")
+  testthat::expect_identical(
+    explicit_family$rows$session_open,
+    as.POSIXct("2024-11-03 05:30:00", tz = "UTC")
+  )
+})
+
+testthat::test_that("constituent lists normalize to canonical membership sets", {
+  effective <- as.POSIXct(c("2024-01-01", "2024-02-01"), tz = "UTC")
+  knowledge <- effective - 86400
+  row_form <- data.frame(
+    effective_from = c(effective[[1L]], effective[[1L]], effective[[2L]]),
+    knowledge_time = c(knowledge[[1L]], knowledge[[1L]], knowledge[[2L]]),
+    instrument_id = c("AAA", "BBB", "BBB"),
+    source = "vendor",
+    stringsAsFactors = FALSE
+  )
+  list_form <- data.frame(
+    effective_from = effective,
+    knowledge_time = knowledge,
+    source = "vendor",
+    stringsAsFactors = FALSE
+  )
+  list_form$members <- list(c("AAA", "BBB"), "BBB")
+  list_form$provenance <- list(list(dataset = "constituents"), list(dataset = "constituents"))
+  row_form$provenance <- list(
+    list(dataset = "constituents"),
+    list(dataset = "constituents"),
+    list(dataset = "constituents")
+  )
+  from_rows <- ledgr_facts_membership_snapshots(row_form, "research", complete = TRUE)
+  from_lists <- ledgr_facts_membership_snapshots(list_form, "research", complete = TRUE)
+  testthat::expect_identical(from_lists$headers, from_rows$headers)
+  testthat::expect_identical(from_lists$rows, from_rows$rows)
+  testthat::expect_identical(from_lists$fact_hash, from_rows$fact_hash)
+  testthat::expect_output(print(from_lists), "complete replacement lists", fixed = TRUE)
+
+  empty <- list_form[1L, , drop = FALSE]
+  empty$members <- list(character())
+  empty_family <- ledgr_facts_membership_snapshots(empty, "empty", complete = TRUE)
+  testthat::expect_equal(nrow(empty_family$headers), 1L)
+  testthat::expect_equal(nrow(empty_family$rows), 0L)
+
+  partial <- ledgr_facts_membership_snapshots(
+    list_form[1L, , drop = FALSE],
+    "partial",
+    complete = FALSE
+  )
+  testthat::expect_output(print(partial), "partial assertions", fixed = TRUE)
+  testthat::expect_false(partial$headers$complete[[1L]])
+  testthat::expect_true(all(partial$rows$member))
+
+  mixed <- list_form
+  mixed$instrument_id <- c("AAA", "BBB")
+  testthat::expect_error(
+    ledgr_facts_membership_snapshots(mixed, "mixed"),
+    class = "ledgr_fact_ambiguous_membership_shape"
+  )
+  invalid <- list_form[1L, , drop = FALSE]
+  invalid$members <- list(c("AAA", "AAA"))
+  testthat::expect_error(
+    ledgr_facts_membership_snapshots(invalid, "invalid"),
+    class = "ledgr_fact_invalid_membership_list"
+  )
+  inconsistent <- list_form
+  inconsistent$effective_from[[2L]] <- inconsistent$effective_from[[1L]]
+  inconsistent$knowledge_time[[2L]] <- inconsistent$knowledge_time[[1L]]
+  testthat::expect_error(
+    ledgr_facts_membership_snapshots(inconsistent, "inconsistent", complete = c(TRUE, FALSE)),
+    class = "ledgr_fact_invalid_complete"
+  )
 })
 
 testthat::test_that("EOD labels map explicitly and the clock retains feed outages", {

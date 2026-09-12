@@ -58,7 +58,17 @@ ledgr_availability_applicable <- function(rows, cutoff) {
 
 ledgr_availability_members_at <- function(data, universe_rule, fixed_ids, cutoff) {
   if (is.null(universe_rule)) return(as.character(fixed_ids))
-  universe_id <- as.character(universe_rule$universe_id)
+  ledgr_membership_resolve_at(
+    data,
+    universe_id = as.character(universe_rule$universe_id),
+    cutoff = cutoff
+  )$members
+}
+
+ledgr_membership_resolve_at <- function(data,
+                                        universe_id,
+                                        cutoff,
+                                        instruments = NULL) {
   headers <- data$membership_sets
   headers <- headers[headers$universe_id == universe_id, , drop = FALSE]
   if (nrow(headers) > 0L) {
@@ -66,7 +76,10 @@ ledgr_availability_members_at <- function(data, universe_rule, fixed_ids, cutoff
       !is.na(headers$knowledge_time) & headers$knowledge_time <= cutoff
     headers <- headers[eligible, , drop = FALSE]
   }
-  members <- character()
+  state <- logical()
+  reason <- character()
+  support <- list()
+  last_complete <- NULL
   if (nrow(headers) > 0L) {
     header_order <- order(
       headers$effective_from,
@@ -76,11 +89,33 @@ ledgr_availability_members_at <- function(data, universe_rule, fixed_ids, cutoff
     headers <- headers[header_order, , drop = FALSE]
     rows <- data$membership
     for (i in seq_len(nrow(headers))) {
-      set_ids <- as.character(rows$instrument_id[
-        rows$universe_id == universe_id & rows$set_id == headers$set_id[[i]]
-      ])
-      if (isTRUE(headers$complete[[i]])) members <- character()
-      members <- unique(c(members, set_ids))
+      set_rows <- rows[
+        rows$universe_id == universe_id & rows$set_id == headers$set_id[[i]],
+        ,
+        drop = FALSE
+      ]
+      set_ids <- as.character(set_rows$instrument_id)
+      header_ref <- paste0("set:", headers$set_id[[i]])
+      if (isTRUE(headers$complete[[i]])) {
+        if (length(state) > 0L) {
+          state[] <- FALSE
+          reason[] <- "omitted_from_complete_set"
+          support <- stats::setNames(
+            rep(list(header_ref), length(state)),
+            names(state)
+          )
+        }
+        last_complete <- list(
+          header = headers[i, , drop = FALSE],
+          reference = header_ref
+        )
+      }
+      for (id in set_ids) {
+        state[[id]] <- TRUE
+        reason[[id]] <- "member_asserted"
+        fact_ref <- paste0("fact:", set_rows$fact_id[set_rows$instrument_id == id][[1L]])
+        support[[id]] <- c(header_ref, fact_ref)
+      }
     }
   }
   rows <- data$membership
@@ -91,13 +126,62 @@ ledgr_availability_members_at <- function(data, universe_rule, fixed_ids, cutoff
     for (i in seq_len(nrow(rows))) {
       id <- as.character(rows$instrument_id[[i]])
       if (isTRUE(rows$member[[i]])) {
-        members <- unique(c(members, id))
+        state[[id]] <- TRUE
+        reason[[id]] <- "member_asserted"
       } else {
-        members <- setdiff(members, id)
+        state[[id]] <- FALSE
+        reason[[id]] <- "nonmember_asserted"
       }
+      support[[id]] <- paste0("fact:", rows$fact_id[[i]])
     }
   }
-  ledgr_availability_stable_ids(members)
+  members <- ledgr_availability_stable_ids(names(state)[state])
+  requested <- if (is.null(instruments)) {
+    members
+  } else {
+    unique(as.character(instruments))
+  }
+  resolved <- lapply(requested, function(id) {
+    if (id %in% names(state)) {
+      return(list(
+        instrument_id = id,
+        member = unname(state[[id]]),
+        reason = unname(reason[[id]]),
+        evidence_ids = support[[id]] %||% character()
+      ))
+    }
+    if (!is.null(last_complete)) {
+      return(list(
+        instrument_id = id,
+        member = FALSE,
+        reason = "omitted_from_complete_set",
+        evidence_ids = last_complete$reference
+      ))
+    }
+    list(
+      instrument_id = id,
+      member = NA,
+      reason = "unknown_no_usable_evidence",
+      evidence_ids = character()
+    )
+  })
+  resolution_rows <- data.frame(
+    instrument_id = vapply(resolved, `[[`, character(1), "instrument_id"),
+    member = vapply(resolved, function(x) x$member, logical(1)),
+    reason = vapply(resolved, `[[`, character(1), "reason"),
+    evidence_ids = vapply(
+      resolved,
+      function(x) paste(x$evidence_ids, collapse = "|"),
+      character(1)
+    ),
+    stringsAsFactors = FALSE
+  )
+  list(
+    members = members,
+    rows = resolution_rows,
+    applicable_headers = headers,
+    applicable_rows = rows
+  )
 }
 
 ledgr_availability_status_at <- function(rows, ids, cutoff) {

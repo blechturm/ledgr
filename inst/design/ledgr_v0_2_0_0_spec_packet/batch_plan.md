@@ -1,9 +1,8 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-10 complete after review. Batch 11 implementation is complete
-and awaiting review for LDG-2705 and LDG-2706; LDG-2704 is complete after review.
-Batches 12-14 remain pending; they implement the accepted inspectable
-availability workflow amendment and then close the release gate.
+Status: Batches 0-12 complete after review. Batches 13-14 remain pending; they
+complete the accepted inspectable availability workflow amendment and then
+close the release gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -687,7 +686,7 @@ Routed forward, not closed here:
 
 ## Batch 11 - Economic Execution Timing Correction
 
-Status: Review Pending. LDG-2704 Complete After Review; LDG-2705 and LDG-2706 Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -759,10 +758,13 @@ Implementation notes:
   snapshot-adapter skip; the post-follow-up sweep, parity, and execution-spec
   regression net is green. Rd, YAML, export, schema, and diff hygiene checks
   also pass.
+- Independent review accepted the live sweep remap, shared reconstruction rule,
+  timing identity, legacy classification, and comparison boundary with no
+  findings after the follow-up patches.
 
 ## Batch 12 - Inspectable Evidence Preparation
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -800,6 +802,40 @@ Exit criteria:
 - a materialized snapshot runs, reopens, and inspects without qlcal installed;
 - explicitly requested unknown and false identifiers survive, and default
   resolution enumerates no future member.
+
+Implementation notes:
+
+- LDG-2707 resolves local wall times by enumerating timezone offsets and
+  round-tripping candidate UTC instants. Ambiguous fall-back and nonexistent
+  spring-forward times fail with distinct classes; explicit POSIXct instants
+  remain accepted.
+- LDG-2708 adds separate eager history and cutoff-resolution results over fact
+  families, bundles, and sealed snapshots. Membership resolution shares the
+  runtime resolver, preserves false and unknown requests, cites complete-set
+  omission without fabricating evidence, verifies snapshot hashes on every
+  call, and leaves caller-owned connections and RNG state unchanged.
+- LDG-2709 normalizes list-column constituent snapshots through the existing
+  set-header and member-row representation. Equivalent list and row inputs,
+  including provenance, produce identical canonical facts and hashes; empty
+  complete lists and partial assertions retain distinct semantics.
+- LDG-2710 materializes every civil date from an explicit qlcal object,
+  delegates validation to `ledgr_facts_sessions()`, applies complete per-date
+  overrides, and retains only canonical schedule metadata. Provider version,
+  hours, overrides, and knowledge assumptions alter snapshot identity while
+  generation wall time and the external pointer do not enter evidence.
+- All 11 availability test files and the full 123-file suite pass with no
+  failures and one expected snapshot-adapter skip. All 149 Rd files pass
+  `tools::checkRd()`; export, dependency, identity-scope, and diff hygiene
+  checks pass.
+- `R CMD build --no-build-vignettes` succeeds. A structural package check is
+  clean for installation, namespace, code analysis, Rd, and examples, with the
+  repository's existing two missing-`inst/doc` warnings and long-path note.
+  The full built-package check reaches the known four source-document lookup
+  failures; the complete source-tree suite remains green.
+- Independent review reproduced the full source-tree suite at 858 tests and
+  8,644 expectations with no failures or errors and found no defects across
+  LDG-2707 through LDG-2710. The reviewer lacked `qlcal`; the 29 focused
+  adapter expectations and fresh-process namespace test passed locally.
 
 ## Batch 13 - Inspectable Workflow Teaching And Completion
 

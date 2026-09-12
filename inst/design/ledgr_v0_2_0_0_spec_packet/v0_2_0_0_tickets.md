@@ -2060,7 +2060,7 @@ scope: opening-time-execution
 Priority: P0
 Effort: M
 Dependencies: LDG-2704
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2110,6 +2110,8 @@ alignment as a derived read-side value rather than a fourth stored column.
   Standalone event reconstruction now takes an explicit pulse axis and routes
   recording-time derivation through the shared opportunity mapper. The remap
   gut produces exactly one `09:30` versus `16:00` failure at the new assertion.
+- Independent review accepted the live sweep remap and shared reconstruction
+  rule with no findings after the follow-up patches.
 
 ### Classification
 
@@ -2124,7 +2126,7 @@ scope: fill-timestamp-alignment
 Priority: P0
 Effort: L
 Dependencies: LDG-2704, LDG-2705
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2178,6 +2180,8 @@ runs read-only, and forbid cross-version fill equivalence claims.
   snapshot-adapter skip; the post-follow-up sweep, parity, and execution-spec
   regression net is green. Rd, YAML, export, schema, and diff hygiene checks
   also pass.
+- Independent review accepted the timing identity, legacy classification, and
+  comparison boundary with no findings after the follow-up patches.
 
 ### Classification
 
@@ -2192,7 +2196,7 @@ scope: execution-timing-version
 Priority: P1
 Effort: S
 Dependencies: LDG-2702
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2220,6 +2224,13 @@ helper, so every calendar path inherits the same rule.
 - `test-availability-facts.R`
 - Operating-system gates
 
+### Implementation Notes
+
+- Local wall-time parsing now enumerates candidate timezone offsets and
+  round-trips each UTC candidate through the declared IANA timezone.
+  Ambiguous and nonexistent values fail with distinct classes, while ordinary
+  conversions and explicit POSIXct instants retain their existing behavior.
+
 ### Classification
 
 ```yaml
@@ -2233,7 +2244,7 @@ scope: local-time-validation
 Priority: P1
 Effort: L
 Dependencies: LDG-2702
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2272,6 +2283,16 @@ portfolio accounting exists.
 
 - Facts, causality, workflow, and persistence tests
 
+### Implementation Notes
+
+- Added separate eager history and cutoff-resolution results over normalized
+  facts and sealed snapshots. The resolver shares the runtime membership
+  algorithm, retains requested false and unknown identifiers, and cites
+  complete-set omission without fabricating a negative assertion.
+- Snapshot inspection verifies SEALED state and the current snapshot hash on
+  every call, closes only connections it opened, and changes neither stored
+  evidence nor RNG state. A fresh-process snapshot-only resolution test passes.
+
 ### Classification
 
 ```yaml
@@ -2285,7 +2306,7 @@ scope: history-and-resolution
 Priority: P1
 Effort: M
 Dependencies: LDG-2708
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2314,6 +2335,14 @@ form, so familiar vendor shapes are valid input.
 - `test-availability-facts.R`
 - Hash-equivalence regressions
 
+### Implementation Notes
+
+- Membership snapshots now accept a `members` list-column and normalize it
+  through the existing set-header and member-row representation. Equivalent
+  row and list inputs with identical provenance produce identical canonical
+  facts and hashes; empty complete lists and partial assertions remain
+  semantically distinct.
+
 ### Classification
 
 ```yaml
@@ -2327,7 +2356,7 @@ scope: constituent-list-input
 Priority: P1
 Effort: M
 Dependencies: LDG-2707, LDG-2709
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2362,6 +2391,23 @@ explicit narrow exception to the calendar-expansion deferral.
 
 - Focused adapter tests with `qlcal` in `Suggests`
 - Identity and assumption-label regressions
+
+### Implementation Notes
+
+- Added the optional qlcal adapter with qlcal in Suggests and no namespace
+  import. It materializes inclusive civil-date rows from an explicit calendar,
+  delegates validation to `ledgr_facts_sessions()`, and retains no pointer or
+  generation wall time.
+- Complete overrides, provider metadata, hours, and knowledge assumptions enter
+  canonical family and snapshot identity. Generated-with-assumed and
+  generated-with-evidenced plans report separate assumption reasons. All 11
+  availability files and the full 123-file suite pass; all 149 Rd files pass
+  `tools::checkRd()`.
+- A fresh process reopens, inspects, and runs a materialized snapshot without
+  loading the qlcal namespace. Source build succeeds; structural package check
+  is clean apart from the existing two missing-`inst/doc` warnings and
+  long-path note. The full built-package check retains the known four
+  source-document lookup failures while the source-tree suite is green.
 
 ### Classification
 

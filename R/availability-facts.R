@@ -22,7 +22,9 @@ ledgr_fact_schema_version <- 1L
 #' @details
 #' Membership intervals require `instrument_id`, `effective_from`, and
 #' `member`; `effective_to` and `knowledge_time` are optional. Membership
-#' snapshots require `effective_from` and `instrument_id`; an `NA`
+#' snapshots require `effective_from` plus either row-wise `instrument_id` or
+#' a `members` list-column. `character(0)` records an empty set without a dummy
+#' instrument; the two input shapes cannot be mixed. An `NA` row-wise
 #' `instrument_id` records an empty set header. Trading-status rows require
 #' `instrument_id`, `effective_from`, `status`, and `source`. Status is one of
 #' `active`, `halted`, or `quotation_only`; optional columns are
@@ -42,7 +44,8 @@ ledgr_fact_schema_version <- 1L
 #' Structural input failures inherit from `ledgr_invalid_args`. The primary
 #' classes are `ledgr_fact_invalid_shape`, `ledgr_fact_invalid_interval`,
 #' `ledgr_fact_identity_conflict`, `ledgr_fact_structural_conflict`,
-#' `ledgr_fact_invalid_supersession`, and `ledgr_session_invalid`.
+#' `ledgr_fact_invalid_supersession`, `ledgr_session_invalid`,
+#' `ledgr_session_time_ambiguous`, and `ledgr_session_time_nonexistent`.
 #'
 #' @return A classed fact-family object, or a `ledgr_facts` bundle.
 #' @section Articles:
@@ -129,6 +132,9 @@ ledgr_facts_membership_snapshots <- function(df,
     )
   }
   complete <- rep(complete, length.out = nrow(df))
+  normalized <- ledgr_membership_snapshot_input(df, complete)
+  df <- normalized$df
+  complete <- normalized$complete
   ledgr_fact_require_columns(df, c("instrument_id", "effective_from"), "membership snapshots")
   effective_from <- ledgr_fact_time(df$effective_from, "effective_from", allow_missing = FALSE)
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
@@ -379,10 +385,18 @@ ledgr_facts_sessions <- function(df,
   if (any(is_open & session_open >= session_close, na.rm = TRUE)) {
     rlang::abort("Every session open must precede its close.", class = c("ledgr_session_invalid", "ledgr_invalid_args"))
   }
-  day_start <- as.POSIXct(paste(session_date, "00:00:00"), tz = timezone)
-  next_day_start <- as.POSIXct(paste(session_date + 1, "00:00:00"), tz = timezone)
-  effective_from <- as.POSIXct(day_start, tz = "UTC")
-  effective_to <- as.POSIXct(next_day_start, tz = "UTC")
+  effective_from <- ledgr_session_times(
+    rep("00:00:00", length(session_date)),
+    session_date,
+    timezone,
+    "session_date boundary"
+  )
+  effective_to <- ledgr_session_times(
+    rep("00:00:00", length(session_date)),
+    session_date + 1,
+    timezone,
+    "next session_date boundary"
+  )
   knowledge_time <- ledgr_fact_knowledge_time(df, effective_from, knowledge)
   late <- ifelse(is_open, knowledge_time > session_open, knowledge_time > effective_from)
   late[is.na(late)] <- TRUE
@@ -419,6 +433,169 @@ ledgr_facts_sessions <- function(df,
       coverage_start = as.character(min(session_date)),
       coverage_end = as.character(max(session_date))
     ), ledgr_fact_knowledge_metadata(knowledge))
+  )
+}
+
+#' Build session facts from an explicit qlcal calendar
+#'
+#' Materializes an inclusive civil-date schedule from an explicit qlcal
+#' calendar object, then delegates normalization and local-time validation to
+#' [ledgr_facts_sessions()]. The qlcal object is never retained.
+#'
+#' @param calendar An explicit calendar object returned by
+#'   `qlcal::getCalendar()`.
+#' @param from,to Inclusive civil `Date` bounds.
+#' @param venue_id A non-empty venue identifier.
+#' @param timezone An IANA timezone for the declared session hours.
+#' @param session_open,session_close Local `HH:MM:SS` times used on business
+#'   days.
+#' @param knowledge Either `"evidenced"` or `"assume_effective"`.
+#' @param knowledge_time An optional full UTC instant applied to generated
+#'   rows. It is required with evidenced knowledge.
+#' @param overrides Optional complete replacement rows with `session_date`,
+#'   `status`, `session_open`, and `session_close`.
+#' @param provenance Optional named list recorded in hashed family metadata and
+#'   row provenance. Evidenced schedules require a non-empty `source` member.
+#'
+#' @return A `ledgr_facts_sessions` fact-family object whose materialized rows
+#'   no longer depend on qlcal.
+#' @section Errors:
+#' Missing qlcal raises `ledgr_missing_package`. Invalid calendar objects or
+#' overrides raise `ledgr_session_adapter_invalid`.
+#' @export
+ledgr_facts_sessions_qlcal <- function(calendar,
+                                       from,
+                                       to,
+                                       venue_id,
+                                       timezone,
+                                       session_open,
+                                       session_close,
+                                       knowledge = c("assume_effective", "evidenced"),
+                                       knowledge_time = NULL,
+                                       overrides = NULL,
+                                       provenance = NULL) {
+  knowledge <- match.arg(knowledge)
+  if (!requireNamespace("qlcal", quietly = TRUE)) {
+    rlang::abort(
+      "Package `qlcal` is required; install it with install.packages(\"qlcal\").",
+      class = c("ledgr_missing_package", "ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  if (is.character(calendar) || !inherits(calendar, "qlcalendar")) {
+    rlang::abort(
+      "`calendar` must be an explicit object returned by `qlcal::getCalendar()`.",
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  from <- ledgr_fact_date_scalar(from, "from")
+  to <- ledgr_fact_date_scalar(to, "to")
+  if (to < from) {
+    rlang::abort(
+      "`to` must be on or after `from`.",
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  venue_id <- ledgr_fact_scalar_id(venue_id, "venue_id")
+  timezone <- ledgr_fact_timezone(timezone)
+  session_open <- ledgr_session_hour(session_open, "session_open")
+  session_close <- ledgr_session_hour(session_close, "session_close")
+  provenance <- ledgr_session_adapter_provenance(provenance)
+  source <- provenance$source %||% "qlcal"
+  if (!is.character(source) || length(source) != 1L || is.na(source) || !nzchar(source)) {
+    rlang::abort(
+      "`provenance$source` must be one non-empty string when supplied.",
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  if (identical(knowledge, "evidenced") &&
+      (is.null(provenance$source) || !nzchar(provenance$source))) {
+    rlang::abort(
+      "Evidenced generated schedules require `provenance$source`.",
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  if (is.null(knowledge_time)) {
+    if (identical(knowledge, "evidenced")) {
+      rlang::abort(
+        "Evidenced generated schedules require `knowledge_time`.",
+        class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+      )
+    }
+    knowledge_value <- NULL
+  } else {
+    knowledge_value <- ledgr_fact_time(knowledge_time, "knowledge_time", allow_missing = FALSE)
+    if (length(knowledge_value) != 1L) {
+      rlang::abort(
+        "`knowledge_time` must be NULL or one full UTC instant.",
+        class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+      )
+    }
+  }
+
+  dates <- seq(from, to, by = "day")
+  business <- tryCatch(
+    qlcal::isBusinessDay(dates, xp = calendar),
+    error = function(error) {
+      rlang::abort(
+        "`calendar` is not a usable qlcal calendar object.",
+        class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args"),
+        parent = error
+      )
+    }
+  )
+  rows <- data.frame(
+    session_date = dates,
+    status = ifelse(business, "open", "closed"),
+    session_open = ifelse(business, session_open, NA_character_),
+    session_close = ifelse(business, session_close, NA_character_),
+    knowledge_time = as.POSIXct(
+      rep(if (is.null(knowledge_value)) NA_real_ else as.numeric(knowledge_value), length(dates)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    ),
+    source = rep(source, length(dates)),
+    stringsAsFactors = FALSE
+  )
+  rows$provenance <- rep(list(provenance), length(dates))
+
+  normalized_overrides <- ledgr_session_adapter_overrides(
+    overrides,
+    dates,
+    knowledge_value,
+    source,
+    provenance
+  )
+  if (nrow(normalized_overrides) > 0L) {
+    replace_at <- match(normalized_overrides$session_date, rows$session_date)
+    for (field in intersect(names(rows), names(normalized_overrides))) {
+      rows[[field]][replace_at] <- normalized_overrides[[field]]
+    }
+  }
+
+  family <- ledgr_facts_sessions(
+    rows,
+    venue_id = venue_id,
+    knowledge = knowledge,
+    timezone = timezone
+  )
+  metadata <- c(family$metadata, list(
+    schedule_basis = "generated",
+    provider = "qlcal",
+    provider_version = as.character(utils::packageVersion("qlcal")),
+    calendar_id = as.character(qlcal::getId(xp = calendar)),
+    calendar_name = as.character(qlcal::getName(xp = calendar)),
+    adapter_normalization_version = 1L,
+    declared_session_open = session_open,
+    declared_session_close = session_close,
+    overrides = ledgr_session_adapter_override_payload(normalized_overrides),
+    provenance = provenance
+  ))
+  ledgr_new_fact_family(
+    family$family,
+    family$scope_id,
+    family$rows,
+    family$headers,
+    metadata
   )
 }
 
@@ -514,6 +691,16 @@ print.ledgr_fact_family <- function(x, ...) {
   cat("Family: ", x$family, "\n", sep = "")
   cat("Scope:  ", x$scope_id, "\n", sep = "")
   cat("Rows:   ", nrow(x$rows), "\n", sep = "")
+  if (identical(x$family, "membership") && nrow(x$headers) > 0L) {
+    composition <- if (all(x$headers$complete)) {
+      "complete replacement lists"
+    } else if (!any(x$headers$complete)) {
+      "partial assertions"
+    } else {
+      "mixed complete replacements and partial assertions"
+    }
+    cat("Sets:   ", composition, "\n", sep = "")
+  }
   invisible(x)
 }
 
@@ -821,9 +1008,248 @@ ledgr_session_times <- function(x, session_date, timezone, field) {
     if (!all(valid)) {
       rlang::abort(sprintf("`%s` must use HH:MM:SS local times.", field), class = c("ledgr_session_invalid", "ledgr_invalid_args"))
     }
-    out[keep] <- as.POSIXct(paste(session_date[keep], raw[keep]), tz = timezone, format = "%Y-%m-%d %H:%M:%S")
+    labels <- paste(session_date[keep], raw[keep])
+    resolved <- lapply(labels, ledgr_local_time_resolve, timezone = timezone)
+    counts <- vapply(resolved, length, integer(1))
+    if (any(counts == 0L)) {
+      rlang::abort(
+        sprintf("`%s` contains a nonexistent local wall time.", field),
+        class = c("ledgr_session_time_nonexistent", "ledgr_session_invalid", "ledgr_invalid_args")
+      )
+    }
+    if (any(counts > 1L)) {
+      rlang::abort(
+        sprintf(
+          "`%s` contains an ambiguous local wall time; supply an explicit POSIXct instant.",
+          field
+        ),
+        class = c("ledgr_session_time_ambiguous", "ledgr_session_invalid", "ledgr_invalid_args")
+      )
+    }
+    out[keep] <- as.POSIXct(
+      vapply(resolved, function(value) as.numeric(value[[1L]]), numeric(1)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
   }
   as.POSIXct(out, tz = "UTC")
+}
+
+ledgr_local_time_resolve <- function(label, timezone) {
+  wall <- as.POSIXct(label, tz = "UTC", format = "%Y-%m-%d %H:%M:%S")
+  probes <- wall + seq.int(-2L, 2L) * 86400
+  offsets <- unique(format(probes, "%z", tz = timezone))
+  offset_seconds <- vapply(offsets, ledgr_utc_offset_seconds, numeric(1))
+  candidates <- as.POSIXct(
+    as.numeric(wall) - offset_seconds,
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  roundtrip <- format(candidates, "%Y-%m-%d %H:%M:%S", tz = timezone)
+  unique(candidates[roundtrip == label])
+}
+
+ledgr_utc_offset_seconds <- function(x) {
+  normalized <- gsub(":", "", x, fixed = TRUE)
+  if (!grepl("^[+-][0-9]{4}$", normalized)) {
+    rlang::abort(
+      "Timezone offset could not be normalized.",
+      class = c("ledgr_session_invalid_timezone", "ledgr_invalid_args")
+    )
+  }
+  sign <- if (substr(normalized, 1L, 1L) == "-") -1 else 1
+  hours <- as.integer(substr(normalized, 2L, 3L))
+  minutes <- as.integer(substr(normalized, 4L, 5L))
+  sign * (hours * 3600 + minutes * 60)
+}
+
+ledgr_membership_snapshot_input <- function(df, complete) {
+  has_rows <- "instrument_id" %in% names(df)
+  has_lists <- "members" %in% names(df)
+  if (has_rows && has_lists) {
+    rlang::abort(
+      paste(
+        "Membership snapshots must use either `instrument_id` rows or a",
+        "`members` list-column, not both."
+      ),
+      class = c(
+        "ledgr_fact_ambiguous_membership_shape",
+        "ledgr_fact_invalid_shape",
+        "ledgr_invalid_args"
+      )
+    )
+  }
+  if (!has_lists) return(list(df = df, complete = complete))
+  if (!is.list(df$members)) {
+    rlang::abort(
+      "Membership snapshot `members` must be a list-column of character vectors.",
+      class = c(
+        "ledgr_fact_invalid_membership_list",
+        "ledgr_fact_invalid_shape",
+        "ledgr_invalid_args"
+      )
+    )
+  }
+  valid <- vapply(df$members, function(ids) {
+    is.character(ids) && !anyNA(ids) && all(nzchar(trimws(ids))) && !anyDuplicated(ids)
+  }, logical(1))
+  if (!all(valid)) {
+    rlang::abort(
+      paste(
+        "Every `members` value must be a unique character vector without",
+        "missing or empty identifiers."
+      ),
+      class = c(
+        "ledgr_fact_invalid_membership_list",
+        "ledgr_fact_invalid_shape",
+        "ledgr_invalid_args"
+      )
+    )
+  }
+  counts <- pmax(lengths(df$members), 1L)
+  index <- rep(seq_len(nrow(df)), counts)
+  expanded <- df[index, setdiff(names(df), "members"), drop = FALSE]
+  expanded$instrument_id <- unlist(lapply(df$members, function(ids) {
+    if (length(ids) == 0L) NA_character_ else ids
+  }), use.names = FALSE)
+  rownames(expanded) <- NULL
+  list(df = expanded, complete = complete[index])
+}
+
+ledgr_fact_date_scalar <- function(x, arg) {
+  if (length(x) != 1L || inherits(x, "POSIXt")) {
+    rlang::abort(
+      sprintf("`%s` must be one ISO civil Date.", arg),
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  raw <- as.character(x)
+  value <- as.Date(raw, format = "%Y-%m-%d")
+  if (is.na(value) || !identical(format(value, "%Y-%m-%d"), raw)) {
+    rlang::abort(
+      sprintf("`%s` must be one ISO civil Date.", arg),
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  value
+}
+
+ledgr_session_hour <- function(x, arg) {
+  if (!is.character(x) || length(x) != 1L || is.na(x) ||
+      !grepl("^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$", x)) {
+    rlang::abort(
+      sprintf("`%s` must be one local HH:MM:SS time.", arg),
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  x
+}
+
+ledgr_session_adapter_provenance <- function(x) {
+  if (is.null(x)) return(list())
+  if (!is.list(x) || is.null(names(x)) || any(!nzchar(names(x)))) {
+    rlang::abort(
+      "`provenance` must be NULL or a named list.",
+      class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args")
+    )
+  }
+  tryCatch(
+    ledgr_json_read_nested(as.character(canonical_json(x))),
+    error = function(error) {
+      rlang::abort(
+        "`provenance` must contain canonically serializable values.",
+        class = c("ledgr_session_adapter_invalid", "ledgr_invalid_args"),
+        parent = error
+      )
+    }
+  )
+}
+
+ledgr_session_adapter_overrides <- function(overrides,
+                                            dates,
+                                            knowledge_time,
+                                            source,
+                                            provenance) {
+  if (is.null(overrides)) return(data.frame())
+  overrides <- as.data.frame(overrides, stringsAsFactors = FALSE)
+  required <- c("session_date", "status", "session_open", "session_close")
+  missing <- setdiff(required, names(overrides))
+  if (nrow(overrides) == 0L || length(missing) > 0L) {
+    rlang::abort(
+      sprintf(
+        "`overrides` must contain complete replacement rows with: %s.",
+        paste(required, collapse = ", ")
+      ),
+      class = c(
+        "ledgr_session_override_invalid",
+        "ledgr_session_adapter_invalid",
+        "ledgr_invalid_args"
+      ),
+      missing_columns = missing
+    )
+  }
+  overrides$session_date <- ledgr_fact_dates(overrides$session_date)
+  if (anyDuplicated(overrides$session_date)) {
+    rlang::abort(
+      "`overrides` contains duplicate session dates.",
+      class = c(
+        "ledgr_session_override_invalid",
+        "ledgr_session_adapter_invalid",
+        "ledgr_invalid_args"
+      )
+    )
+  }
+  outside <- !overrides$session_date %in% dates
+  if (any(outside)) {
+    rlang::abort(
+      "`overrides` contains a session date outside the requested range.",
+      class = c(
+        "ledgr_session_override_invalid",
+        "ledgr_session_adapter_invalid",
+        "ledgr_invalid_args"
+      ),
+      session_dates = as.character(overrides$session_date[outside])
+    )
+  }
+  if (!"source" %in% names(overrides)) overrides$source <- source
+  if ("knowledge_time" %in% names(overrides)) {
+    overrides$knowledge_time <- ledgr_fact_time(
+      overrides$knowledge_time,
+      "knowledge_time",
+      allow_missing = TRUE
+    )
+  }
+  if (!"knowledge_time" %in% names(overrides) && !is.null(knowledge_time)) {
+    overrides$knowledge_time <- rep(knowledge_time, nrow(overrides))
+  }
+  if (!"provenance" %in% names(overrides)) {
+    overrides$provenance <- rep(list(provenance), nrow(overrides))
+  } else if (!is.list(overrides$provenance)) {
+    rlang::abort(
+      "Override `provenance` must be a list-column.",
+      class = c(
+        "ledgr_session_override_invalid",
+        "ledgr_session_adapter_invalid",
+        "ledgr_invalid_args"
+      )
+    )
+  }
+  overrides
+}
+
+ledgr_session_adapter_override_payload <- function(overrides) {
+  if (nrow(overrides) == 0L) return(list())
+  lapply(seq_len(nrow(overrides)), function(i) {
+    row <- overrides[i, , drop = FALSE]
+    lapply(row, function(column) {
+      value <- column[[1L]]
+      if (inherits(value, "POSIXt")) return(ledgr_fact_time_token(value))
+      if (inherits(value, "Date")) return(as.character(value))
+      if (is.list(value)) return(value)
+      if (length(value) == 0L || is.na(value)) return(NULL)
+      unname(value)
+    })
+  })
 }
 
 ledgr_empty_membership_sets <- function() {

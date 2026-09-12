@@ -206,7 +206,9 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #' @param x A `ledgr_experiment`.
 #' @param ... Unused.
 #'
-#' @return A `ledgr_experiment_plan` object.
+#' @return A `ledgr_experiment_plan` object. Its `checks` tibble reports each
+#'   family status and keeps generated-schedule and assumed-knowledge reasons
+#'   separate in `assumption_reasons`.
 #' @section Articles:
 #' Point-in-time universe workflow:
 #' `vignette("survivorship-bias", package = "ledgr")`
@@ -220,11 +222,25 @@ ledgr_experiment_plan <- function(x, ...) {
   declared <- as.character(x$availability$declared_families %||% character())
   headers <- x$availability$headers %||% data.frame()
   assumption_backed <- character()
+  assumption_reasons <- stats::setNames(vector("list", 4L), c(
+    "membership", "sessions", "trading_status", "lifetime"
+  ))
   if (nrow(headers) > 0L) {
-    assumed <- vapply(headers$metadata_json, function(json) {
-      identical(ledgr_json_read_nested(json)$knowledge, "assume_effective")
+    parsed_metadata <- lapply(headers$metadata_json, ledgr_json_read_nested)
+    assumed <- vapply(parsed_metadata, function(metadata) {
+      identical(metadata$knowledge, "assume_effective") ||
+        identical(metadata$schedule_basis, "generated")
     }, logical(1))
     assumption_backed <- unique(as.character(headers$family[assumed]))
+    for (i in seq_len(nrow(headers))) {
+      metadata <- parsed_metadata[[i]]
+      reasons <- c(
+        if (identical(metadata$knowledge, "assume_effective")) "knowledge_assume_effective",
+        if (identical(metadata$schedule_basis, "generated")) "generated_schedule"
+      )
+      family <- as.character(headers$family[[i]])
+      assumption_reasons[[family]] <- unique(c(assumption_reasons[[family]], reasons))
+    }
   }
   checks <- data.frame(
     family = c("membership", "sessions", "trading_status", "lifetime"),
@@ -236,6 +252,11 @@ ledgr_experiment_plan <- function(x, ...) {
         if (family %in% assumption_backed) return("assumption_backed")
         "declared"
       },
+      character(1)
+    ),
+    assumption_reasons = vapply(
+      c("membership", "sessions", "trading_status", "lifetime"),
+      function(family) paste(assumption_reasons[[family]], collapse = "|"),
       character(1)
     ),
     stringsAsFactors = FALSE

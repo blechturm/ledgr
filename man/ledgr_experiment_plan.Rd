@@ -15,7 +15,9 @@ ledgr_experiment_plan(x, ...)
 \item{...}{Unused.}
 }
 \value{
-A \code{ledgr_experiment_plan} object.
+A \code{ledgr_experiment_plan} object. Its \code{checks} tibble reports each
+family status and keeps generated-schedule and assumed-knowledge reasons
+separate in \code{assumption_reasons}.
 }
 \description{
 Reports whether point-in-time availability is active and which fact-family

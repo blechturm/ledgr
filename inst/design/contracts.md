@@ -253,6 +253,14 @@ The strategy preflight boundary originated in
   facts form a complete venue calendar with one open/closed row per civil date;
   daily vendor labels are mapped explicitly to declared session closes. The
   expected-session clock is independent of observation presence.
+- Local session wall times must resolve to exactly one UTC instant. Ambiguous
+  fall-back and nonexistent spring-forward labels fail closed; an explicit
+  POSIXct instant is already disambiguated and remains valid.
+- `ledgr_facts_membership_snapshots()` accepts either row-per-member evidence
+  or a `members` list-column, never both. Both shapes normalize to the same set
+  headers and member assertions before hashing. `character(0)` is an empty set;
+  complete sets establish omission for their knowable effective state, while
+  partial sets never fabricate negative assertions.
 - Invalid observations fail snapshot creation by default. The dataframe adapter
   may exclude them only through explicit
   `invalid_observations = "quarantine"` with declared sessions. Excluded rows,
@@ -302,7 +310,26 @@ The strategy preflight boundary originated in
 - `ledgr_experiment_plan()` is read-only disclosure of effective availability,
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
-  strategy or writing evidence.
+  strategy or writing evidence. Its `assumption_reasons` keep assumed
+  knowledge time separate from generated schedule content.
+- `ledgr_facts_history()` is a retrospective audit of supplied membership or
+  session assertions. `ledgr_facts_resolve()` is a separate decision-cutoff
+  view using only evidence both effective and knowable at its required `at`.
+  Both accept normalized facts or a sealed snapshot and return eager classed
+  lists with `rows`, supporting `evidence`, and serializable `metadata`.
+  Snapshot calls verify sealed state and artifact hash on every call, close
+  only connections they opened, perform no persistent write, and invoke no
+  callback. Explicit membership IDs retain true, false, and unknown states in
+  request order; default resolution enumerates current members only and never
+  discovers future members. Complete-set omission cites the set header rather
+  than fabricating a negative fact. Neither result is a strategy context.
+- `ledgr_facts_sessions_qlcal()` is an optional preparation adapter over an
+  explicit qlcal calendar object. It materializes every civil date, applies
+  complete per-date replacements, then delegates to
+  `ledgr_facts_sessions()`. Hashed metadata records generated schedule basis,
+  provider and version, calendar ID, declared hours, canonical overrides, and
+  provenance, but no generation time or external pointer. qlcal remains in
+  `Suggests`; materialized snapshots run, reopen, and inspect without it.
 - Availability-aware execution uses one internal provider with `facts`,
   `decision_view`, `execution_view`, `history`, and `identity` operations. Its
   decision axis preserves declared member order for character-vector universes.
