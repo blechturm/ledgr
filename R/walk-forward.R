@@ -790,7 +790,11 @@ ledgr_walk_forward_session_row <- function(identity,
     risk_chain_hash = identity$risk_chain_hash,
     master_seed = as.integer(master_seed %||% NA_integer_),
     opening_state_policy = opening_state_policy,
-    created_at_utc = as.POSIXct(ledgr_normalize_ts_utc(Sys.time()), tz = "UTC"),
+    created_at_utc = as.POSIXct(
+      ledgr_normalize_ts_utc(Sys.time()),
+      tz = "UTC",
+      format = "%Y-%m-%dT%H:%M:%SZ"
+    ),
     ledgr_version = as.character(utils::packageVersion("ledgr")),
     meta_json = as.character(canonical_json(list(
       status = status,

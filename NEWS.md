@@ -29,6 +29,15 @@
   with a reversible reserved-name encoding. Original candidate IDs remain
   unchanged in long, matrix, panel, and candidate-extraction surfaces; no
   persisted mapping or identity input was added.
+- Corrected the availability run window so declared session-calendar bounds
+  keep their time of day. The bounds are ISO8601 strings, and parsing them
+  without an explicit format truncated both to midnight, which silently
+  dropped the final open session from the decision axis and left a target
+  decided on the last remaining pulse unfilled even though its next open was
+  present in the snapshot. Runs over declared session calendars now cover one
+  more session, so equity curves, pulse counts, and run identity hashes change
+  for affected configurations. The same truncation is corrected for the
+  walk-forward `created_at_utc` record.
 - Added classed point-in-time fact constructors and a read-only pre-seal
   validation report for membership, trading status, lifetime, and complete
   venue-session calendars. Daily vendor dates map explicitly to declared
@@ -83,11 +92,16 @@
   from sealed facts without executing strategy code; missing traces fail
   with `ledgr_run_explanation_unavailable` rather than producing an inferred
   decision.
+- Added the executed Survivorship Bias article. Its public workflow builds
+  dated membership and session facts, seals and runs an ordinary strategy,
+  explains a blocked exit and retained holding, reopens the same evidence, and
+  contrasts strict invalid-observation rejection with explicit quarantine and
+  an honestly incomplete valuation horizon.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
   fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-9
-  are complete after review and Batches 10-11 are pending.
+  are complete after review, Batch 10 awaits review, and Batch 11 is pending.
 
 # ledgr 0.1.9.7
 

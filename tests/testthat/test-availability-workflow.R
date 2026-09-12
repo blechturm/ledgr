@@ -199,3 +199,142 @@ testthat::test_that(
   )
   }
 )
+
+# Regression: the run window bounds are ISO8601 strings with `T`/`Z`. Parsing
+# them without an explicit format silently truncates to midnight, which drops
+# the final session close from the decision axis and strands the last target.
+availability_window_fixture <- function(session_open = "14:30:00",
+                                        session_close = "21:00:00") {
+  dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15", "2020-01-16", "2020-01-17"))
+  ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_open = session_open,
+      session_close = session_close,
+      knowledge_time = as.POSIXct("2020-01-01", tz = "UTC"),
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "DEMO",
+    timezone = "UTC"
+  )
+}
+
+testthat::test_that("run window bounds keep their time of day", {
+  sessions <- availability_window_fixture()
+  provider <- list(sessions = sessions$rows)
+
+  # The last session closes at 21:00 on the end date and must be a pulse.
+  full <- ledgr_availability_calendar(
+    provider,
+    "2020-01-13T21:00:00Z",
+    "2020-01-17T21:00:00Z"
+  )
+  testthat::expect_length(full$pulses, 5L)
+  testthat::expect_equal(
+    max(full$pulses),
+    as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
+  )
+
+  # An intraday start bound after a session's close excludes that session.
+  early <- availability_window_fixture(
+    session_open = "09:30:00",
+    session_close = "14:00:00"
+  )
+  trimmed <- ledgr_availability_calendar(
+    list(sessions = early$rows),
+    "2020-01-13T21:00:00Z",
+    "2020-01-17T21:00:00Z"
+  )
+  testthat::expect_length(trimmed$pulses, 4L)
+  testthat::expect_equal(
+    min(trimmed$pulses),
+    as.POSIXct("2020-01-14 14:00:00", tz = "UTC")
+  )
+})
+
+testthat::test_that("a target on the last decision fills at the final session open", {
+  sessions <- availability_window_fixture()
+  open_dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15", "2020-01-16", "2020-01-17"))
+  bars <- data.frame(
+    ts_utc = open_dates,
+    instrument_id = "BBB",
+    open = c(50, 51, 52, 53, 59),
+    high = c(51, 52, 53, 54, 60),
+    low = c(49, 50, 51, 52, 58),
+    close = c(50, 51, 52, 53, 59),
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  membership <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = as.POSIXct("2020-01-13", tz = "UTC"),
+      knowledge_time = as.POSIXct("2020-01-01", tz = "UTC"),
+      instrument_id = "BBB",
+      source = "synthetic",
+      stringsAsFactors = FALSE
+    ),
+    universe_id = "demo",
+    complete = TRUE
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = "BBB"),
+    facts = ledgr_facts(sessions, membership)
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  # Buy on 16 Jan, the last session that still has a next open to fill against.
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    if (substr(ctx$ts_utc, 1, 10) == "2020-01-16") target[["BBB"]] <- 10
+    target
+  }
+  bt <- ledgr_run(
+    ledgr_experiment(
+      snapshot,
+      strategy,
+      universe = ledgr_universe_members("demo"),
+      valuation_policy = ledgr_valuation_stale(2),
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 10000)
+    ),
+    run_id = "final-session-fill"
+  )
+  on.exit(close(bt), add = TRUE)
+
+  equity <- ledgr_results(bt, "equity")
+  testthat::expect_equal(nrow(equity), 5L)
+  testthat::expect_equal(
+    max(equity$ts_utc),
+    as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
+  )
+
+  fills <- ledgr_results(bt, "fills")
+  testthat::expect_equal(nrow(fills), 1L)
+  # Priced at the 17 Jan open, recorded at the 17 Jan close pulse.
+  testthat::expect_equal(fills$price[[1L]], 59)
+  testthat::expect_equal(
+    fills$ts_utc[[1L]],
+    as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
+  )
+})
+
+testthat::test_that("normalized timestamps are never parsed without an explicit format", {
+  sources <- list.files("../../R", pattern = "[.]R$", full.names = TRUE)
+  if (length(sources) == 0L) testthat::skip("package sources not available")
+  offenders <- character()
+  for (path in sources) {
+    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+    pattern <- paste0("as", "\\.", "POSIXct", "\\(", "\\s*", "ledgr_normalize_ts_utc", "\\(")
+    starts <- gregexpr(pattern, text)[[1L]]
+    if (starts[[1L]] == -1L) next
+    for (start in starts) {
+      window <- substr(text, start, start + 200L)
+      if (!grepl("%Y-%m-%dT%H:%M:%SZ", window, fixed = TRUE)) {
+        offenders <- c(offenders, basename(path))
+      }
+    }
+  }
+  testthat::expect_equal(offenders, character())
+})

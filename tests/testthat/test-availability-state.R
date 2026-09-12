@@ -53,9 +53,16 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
   on.exit(close(bt), add = TRUE)
   final_state <- availability_last_state(bt)
   seen <- final_state$history
-  testthat::expect_identical(lapply(seen, `[[`, "universe"), list("AAA", list(), "AAA"))
-  testthat::expect_identical(lapply(seen, `[[`, "members"), list("AAA", list(), "AAA"))
-  testthat::expect_identical(final_state$step, 3L)
+  # The fixture declares four membership states, ending with a second removal.
+  testthat::expect_identical(
+    lapply(seen, `[[`, "universe"),
+    list("AAA", list(), "AAA", list())
+  )
+  testthat::expect_identical(
+    lapply(seen, `[[`, "members"),
+    list("AAA", list(), "AAA", list())
+  )
+  testthat::expect_identical(final_state$step, 4L)
   testthat::expect_identical(seen[[2L]]$portfolio, "kept")
   testthat::expect_true(seen[[3L]]$asset_empty)
   testthat::expect_identical(
@@ -65,7 +72,7 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
       "admissible", "priced", "mark_age"
     )
   )
-  testthat::expect_equal(nrow(availability_state_rows(bt)), 3L)
+  testthat::expect_equal(nrow(availability_state_rows(bt)), 4L)
 })
 
 testthat::test_that("provider orders members before stable held nonmembers", {

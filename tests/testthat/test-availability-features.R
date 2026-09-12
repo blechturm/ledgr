@@ -22,8 +22,11 @@ testthat::test_that("strict features expose whole-feed gaps and recover by windo
   on.exit(close(bt), add = TRUE)
   encoded <- do.call(rbind, availability_last_state(bt)$history)
   values <- apply(encoded, 2L, function(x) suppressWarnings(as.numeric(x)))
-  testthat::expect_equal(values[, "sma"], c(NA, 101.5, NA, NA))
-  testthat::expect_equal(values[, "ret"], c(NA, 1 / 101, NA, NA))
+  # Day 3 has no bar, so the strict window stays unmet on days 3 and 4. The
+  # fifth session restores a complete two-bar window (104, 105) and both
+  # features recover.
+  testthat::expect_equal(values[, "sma"], c(NA, 101.5, NA, NA, 104.5))
+  testthat::expect_equal(values[, "ret"], c(NA, 1 / 101, NA, NA, 1 / 104))
   cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
   testthat::expect_length(cache_keys, 2L)
 

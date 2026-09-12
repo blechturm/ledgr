@@ -312,8 +312,19 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash, histo
 ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {
   sessions <- provider$sessions
   sessions <- sessions[sessions$status == "open", , drop = FALSE]
-  start <- as.POSIXct(ledgr_normalize_ts_utc(start_ts_utc), tz = "UTC")
-  end <- as.POSIXct(ledgr_normalize_ts_utc(end_ts_utc), tz = "UTC")
+  # `ledgr_normalize_ts_utc()` emits ISO8601 with `T`/`Z`, which base `as.POSIXct`
+  # cannot parse without an explicit format: it falls back to `%Y-%m-%d` and
+  # silently truncates the bound to midnight, dropping the final session close.
+  start <- as.POSIXct(
+    ledgr_normalize_ts_utc(start_ts_utc),
+    tz = "UTC",
+    format = "%Y-%m-%dT%H:%M:%SZ"
+  )
+  end <- as.POSIXct(
+    ledgr_normalize_ts_utc(end_ts_utc),
+    tz = "UTC",
+    format = "%Y-%m-%dT%H:%M:%SZ"
+  )
   sessions <- sessions[
     !is.na(sessions$session_close) &
       sessions$session_close >= start &

@@ -264,7 +264,11 @@ testthat::test_that("stale valuation marks feed max-weight without pricing execu
       }
     },
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 5), cost_basis = c(AAA = 100)),
-    valuation_policy = ledgr_valuation_stale(2),
+    # AAA is priced only on the first of four sessions, so its mark ages by one
+    # per session. The horizon must span all four for this test to stay about
+    # stale marks feeding max-weight; at 2 the run would stop on horizon
+    # exhaustion instead, which is covered separately below.
+    valuation_policy = ledgr_valuation_stale(3),
     cost_model = ledgr_cost_zero(),
     risk_chain = ledgr_risk_chain(ledgr_risk_max_weight(0.2))
   )
