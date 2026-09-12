@@ -261,7 +261,7 @@ testthat::test_that("availability runtime and strict-feature contracts stay boun
   )
   for (class in availability_classes) {
     testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
-    testthat::expect_match(condition_doc, class, fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", class, "}"), fixed = TRUE)
   }
 })
 
@@ -570,7 +570,11 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(roadmap, "| v0.1.9.5 | Done | Documentation", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.2.0.0 | Active | Correct known API", fixed = TRUE)
+  testthat::expect_match(
+    roadmap,
+    "| v0.2.0.0 | Active; Batch 10 review pending | Correct known API",
+    fixed = TRUE
+  )
 
   testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.7`", fixed = TRUE)
   testthat::expect_match(design_index, "Current active packet:** `v0.2.0.0`", fixed = TRUE)
@@ -1631,6 +1635,10 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::skip_if_not(file.exists(path), "design contracts unavailable")
   contract <- paste(readLines(path, warn = FALSE), collapse = "\n")
   news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
 
   testthat::expect_match(contract, "Unrestricted held nonmembers may also reduce", fixed = TRUE)
   testthat::expect_match(contract, "New or enlarged short exposure fails before", fixed = TRUE)
@@ -1654,6 +1662,26 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(contract, "`ledgr_run_explain(bt, instrument_id, ts_utc)`", fixed = TRUE)
   testthat::expect_match(contract, "same `tibble::as_tibble()` result-table path", fixed = TRUE)
   testthat::expect_match(contract, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(contract, "Those values are explain-time defaults, not durable", fixed = TRUE)
+  testthat::expect_match(contract, "and are never persisted", fixed = TRUE)
+  explain_help <- paste(
+    readLines(file.path(root, "man", "ledgr_run_explain.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  explain_fields <- c(
+    "run_id", "ts_utc", "instrument_id", "member", "held",
+    "target_restricted", "target_restriction_reason",
+    "target_restriction_reasons", "feature_identity_json", "quantity",
+    "target_before_risk", "target_after_risk", "execution_outcome",
+    "execution_reason", "execution_reasons", "resulting_position",
+    "mark_source", "mark_age", "completion_status", "complete_performance"
+  )
+  for (field in explain_fields) {
+    testthat::expect_match(explain_help, paste0("\\code{", field, "}"), fixed = TRUE)
+  }
+  testthat::expect_match(explain_help, "\\code{\"no_action\"}", fixed = TRUE)
+  testthat::expect_match(explain_help, "\\code{\"no_target_change\"}", fixed = TRUE)
+  testthat::expect_match(explain_help, "explain-time values, not durable", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_run_terminal_evidence_invalid`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
@@ -1671,7 +1699,8 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
     "affordability_reconciliation_failed", "fold_exception"
   )
   for (code in reason_codes) {
-    testthat::expect_match(contract, code, fixed = TRUE)
+    testthat::expect_match(contract, paste0("`", code, "`"), fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", code, "}"), fixed = TRUE)
   }
   testthat::expect_match(news, "`status_halted` to `trading_halted`", fixed = TRUE)
   testthat::expect_match(news, "`status_quotation_only` to `quotation_only`", fixed = TRUE)
@@ -2142,7 +2171,11 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
     testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed\\s+snapshot and\\s+universe semantics it evaluates\\.")
     testthat::expect_match(doc, "Reproducibility and selection integrity are orthogonal.", fixed = TRUE)
     testthat::expect_match(doc, "not PBO", fixed = TRUE)
-    testthat::expect_match(doc, "not independent\\s+observations")
+    testthat::expect_match(
+      doc,
+      "not independent\\s+(?:>\\s*)?observations",
+      perl = TRUE
+    )
     testthat::expect_match(doc, "Anchored folds grow their train window over time.", fixed = TRUE)
   }
 
@@ -2561,7 +2594,7 @@ testthat::test_that("vignette styleguide binds methodological diagnostic teachin
   testthat::expect_match(doc, "Do not add\\s+vacuous tests")
 })
 
-testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim implementation", {
+testthat::test_that("v0.2.0.0 implementation status and packet history are discoverable", {
   root <- testthat::test_path("..", "..")
   packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_0_spec_packet")
   paths <- file.path(packet, c(
@@ -2592,14 +2625,16 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
     docs$batches,
     paste0(
       "Status: Batches 0-9 complete after review[.]",
-      "[[:space:]]+Batches 10-11 are pending[.]"
+      "[[:space:]]+Batch 10 implementation is complete",
+      "[[:space:]]+and awaiting review[.] Batch 11 is pending[.]"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
       "Batches 0-9 complete after review[.]",
-      "[[:space:]]+Batches 10-11 are pending"
+      "[[:space:]]+Batch 10 implementation is complete",
+      "[[:space:]]+and awaiting review[.] Batch 11 is pending"
     )
   )
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
@@ -2678,16 +2713,23 @@ testthat::test_that("v0.2.0.0 packet cut is discoverable and does not claim impl
     readLines(file.path(packet, "availability_walkthrough_fixture.md"), warn = FALSE),
     collapse = "\n"
   )
-  testthat::expect_match(fixture, "Status: Shape only", fixed = TRUE)
-  testthat::expect_match(fixture, "records no expected engine output", fixed = TRUE)
+  testthat::expect_match(fixture, "Status: Implemented by the executed public workflow", fixed = TRUE)
+  testthat::expect_match(fixture, "not an expected-output ledger", fixed = TRUE)
   testthat::expect_match(fixture, "Every civil date appears", fixed = TRUE)
-  testthat::expect_match(fixture, "Until those runtime[[:space:]]+surfaces land")
+  testthat::expect_match(fixture, "ingest, validate, seal, run, explain", fixed = TRUE)
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
-  testthat::expect_match(roadmap, "| v0.2.0.0 | Active | Correct known API", fixed = TRUE)
+  testthat::expect_match(
+    roadmap,
+    "| v0.2.0.0 | Active; Batch 10 review pending | Correct known API",
+    fixed = TRUE
+  )
   testthat::expect_match(horizon, "v0.2.0.0 packet is active", fixed = TRUE)
-  testthat::expect_match(horizon, "stay\\s+parked for a later documentation-freshness pass")
+  testthat::expect_match(
+    horizon,
+    "stay\\s+parked for a later\\s+documentation-freshness pass"
+  )
 })
 
 testthat::test_that("v0.2.0.0 hardening corrections are contract-bound and recorded", {
@@ -2884,5 +2926,50 @@ testthat::test_that("v0.2.0.0 inspection and workflow teaching is contract-bound
     paste(docs$run_store, docs$namespace, sep = "\n"),
     "ledgr_target_values",
     fixed = TRUE
+  )
+})
+
+testthat::test_that("survivorship article executes the public availability journey", {
+  root <- testthat::test_path("..", "..")
+  qmd_path <- file.path(root, "vignettes", "survivorship-bias.qmd")
+  md_path <- file.path(root, "vignettes", "survivorship-bias.md")
+  testthat::expect_true(file.exists(qmd_path))
+  testthat::expect_true(file.exists(md_path))
+
+  qmd <- paste(readLines(qmd_path, warn = FALSE), collapse = "\n")
+  md <- paste(readLines(md_path, warn = FALSE), collapse = "\n")
+  public_calls <- c(
+    "ledgr_facts_sessions", "ledgr_facts_membership_snapshots",
+    "ledgr_facts_validate", "ledgr_snapshot_from_df", "ledgr_experiment_plan",
+    "ledgr_run", "ledgr_results", "ledgr_run_explain",
+    "ledgr_snapshot_open", "ledgr_run_open"
+  )
+  for (call in public_calls) {
+    testthat::expect_match(qmd, call, fixed = TRUE)
+  }
+
+  testthat::expect_no_match(qmd, "#\\| eval: false")
+  testthat::expect_no_match(qmd, "ledgr:::", fixed = TRUE)
+  testthat::expect_no_match(qmd, "DBI::", fixed = TRUE)
+  testthat::expect_no_match(qmd, "availability_provider", fixed = TRUE)
+  testthat::expect_match(qmd, "invalid_observations = \"quarantine\"", fixed = TRUE)
+  testthat::expect_match(qmd, "Survivorship Bias in Performance Studies", fixed = TRUE)
+  testthat::expect_match(qmd, "The Delisting Bias in CRSP Data", fixed = TRUE)
+  testthat::expect_match(qmd, "::: {.ledgr-callout .ledgr-callout-tip}", fixed = TRUE)
+  testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
+  testthat::expect_match(qmd, "Change `max_sessions = 2` to `max_sessions = 1`", fixed = TRUE)
+
+  rendered_evidence <- c(
+    "execution_bar_missing", "no_target_change", "stale_close",
+    "valuation_horizon_exhausted", "INCOMPLETE", "#> [1] TRUE"
+  )
+  for (evidence in rendered_evidence) {
+    testthat::expect_match(md, evidence, fixed = TRUE)
+  }
+  testthat::expect_match(md, "ledgr_availability_validation_failed", fixed = TRUE)
+  # Rendered Markdown rewraps prose, so every space must tolerate a line break.
+  testthat::expect_match(
+    md,
+    "Inspect\\s+the\\s+prefix,\\s+correct\\s+evidence\\s+or\\s+policy"
   )
 })
