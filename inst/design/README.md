@@ -10,9 +10,10 @@ combines API/representation hardening with the first asset-availability
 implementation. Batches 0-9 are complete after review; Batch 10 implementation
 is complete and awaiting review, and the release gate remains pending.
 **Proposed workflow amendment v2:** [inspectable availability workflow](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed_v2.md)
-incorporates the first amendment review against the merged implementation: separate fact history
-and resolution, a bounded qlcal adapter, opening-time execution, and remaining teaching criteria.
-Experiment preview is deferred. Pending maintainer/adversarial review; not accepted scope.
+incorporates the initial review and N1-N3 re-review corrections: facts or sealed-snapshot
+inspection, a bounded qlcal adapter, opening-time execution, historical timing compatibility,
+and remaining teaching criteria. Experiment preview is deferred. Pending maintainer acceptance;
+not accepted implementation scope.
 [Amendment v1](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed.md) remains the historical review input.
 The completed `inst/design/ledgr_v0_1_9_6_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the

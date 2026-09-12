@@ -8,7 +8,7 @@
 
 The implementation and vignette are now published. The merged design index correctly records an accepted spec, reviewed batches 0–9, Batch 10 implementation awaiting review, and a pending release gate. This proposal extends that packet; it does not reopen completed batches wholesale or replace their acceptance records.
 
-This revision responds to Claude's F1–F9 review and reads the merged implementation. Source inspection is distinguished from the reviewer's executed probes. No R tests were executed while drafting this revision.
+This revision responds to Claude's F1–F9 review and the N1–N3 re-review of `ae52867`, and reads the merged implementation. The re-review disposition was accept with specific changes; this document incorporates those changes while remaining proposed scope pending maintainer acceptance. Source inspection is distinguished from the reviewer's executed probes. No R tests were executed while drafting these revisions.
 
 ## 1. Scope and release outcome
 
@@ -32,7 +32,25 @@ The minimum new scope is three public functions: assertion history, cutoff resol
 
 ## 2. Separate assertion history from cutoff resolution
 
-Both functions accept a normalized fact family or bundle, initially for `membership` and `sessions`. `scope_id` identifies a universe or venue. They need no bars, database, strategy, opening positions or run. Cross-input structural validation remains `ledgr_facts_validate()`'s job. Both return a small classed list with public eager-tibble `rows` and `evidence` components and serializable `metadata`; no cursors or durable inspection artifact.
+Both functions accept either a normalized fact family/bundle or a sealed `ledgr_snapshot` handle as their first argument `facts`, initially for `membership` and `sessions`. `scope_id` identifies a universe or venue. In-memory inspection needs no database; snapshot-backed inspection reads the existing store. Neither path requires a strategy, opening positions, experiment or run. Cross-input structural validation remains `ledgr_facts_validate()`'s job. Both return a small classed list with public eager-tibble `rows` and `evidence` components and serializable `metadata`; no cursors or durable inspection artifact.
+
+For a snapshot input, reuse existing snapshot connections, sealed-state/hash verification and the canonical fact-table reader; do not construct an experiment merely to use the provider. Preserve family metadata, empty set headers, audit-only rows, knowledge assumptions and provenance. Dispatch both inputs into the same normalization/resolution code and return identical semantic rows/evidence for the same facts. Snapshot metadata additionally records `snapshot_id`, `snapshot_hash` and hash-rule version. Reject an unsealed/corrupt snapshot or an absent requested family/scope explicitly; an omitted family is not an empty declared family.
+
+The read path performs no migration, reseal, metadata write or durable table creation. Release connections it opened on success/error and leave caller-owned connections usable. A public `ledgr_snapshot_open(db_path, snapshot_id)` handle is sufficient; no raw SQL or separately exported facts accessor is required.
+
+The fresh-session acceptance journey is explicit:
+
+```r
+snapshot <- ledgr_snapshot_open(store_path, snapshot_id)
+membership_at_cutoff <- ledgr_facts_resolve(
+  snapshot, family = "membership", scope_id = "demo_members",
+  at = ledgr_utc("2020-01-13T21:00:00Z"),
+  instruments = c("AAA", "BBB")
+)
+ledgr_snapshot_close(snapshot)
+```
+
+This example runs in a new R process with only the store locator and snapshot ID supplied, without an in-memory facts object. The same handle also supports retrospective history inspection.
 
 ### Assertion history
 
@@ -78,7 +96,7 @@ Neither function invokes callbacks, changes caller RNG, repairs inputs or writes
 
 ## 3. Connect inspection to the existing experiment workflow
 
-The normal journey is: construct facts, inspect history, resolve a chosen cutoff, validate inputs, seal, configure, inspect the plan, run and explain. Show those operations directly before comparison wrappers.
+The normal journey is: construct facts, inspect history, resolve a chosen cutoff, validate inputs, seal, configure, inspect the plan, run and explain. Show those operations directly before comparison wrappers. After closing the session, reopen the sealed snapshot and repeat history/resolution without reconstructing inputs. Deferring experiment preview does not defer this sealed-evidence audit workflow.
 
 `ledgr_facts_resolve()` answers what the named evidence says. The experiment's selector determines whether that history is used: `ledgr_universe_members("u")` selects it; a fixed basket stays fixed even when another membership family is present. A standalone membership resolution is not an experiment preview or an affordability check.
 
@@ -129,7 +147,7 @@ Materialize every date, including closures, then delegate to `ledgr_facts_sessio
 
 ### Time and overrides
 
-Delegate date-specific local-time conversion, coverage and knowledge validation to the shared constructor. Existing per-date conversion already handles ordinary DST changes. Strengthen `ledgr_session_times()` to reject ambiguous and nonexistent local wall times consistently across supported operating systems instead of silently selecting an offset. Explicit `POSIXct` instants are already disambiguated and remain valid. Add no second parser in the adapter and no overnight/split-session runtime scope.
+Delegate date-specific local-time conversion, coverage and knowledge validation to the shared constructor. Existing per-date conversion already handles ordinary DST changes, and the reviewer observed rejection of nonexistent spring-forward times on their platform. The demonstrated gap is silent offset selection for ambiguous fall-back times. Close that gap in `ledgr_session_times()` and preserve/verify nonexistent-time rejection consistently across supported operating systems. Explicit `POSIXct` instants are already disambiguated and remain valid. Add no second parser in the adapter and no overnight/split-session runtime scope.
 
 Overrides provide a complete replacement row for a civil date, with explicit status, local opening/closing times, knowledge treatment and provenance. Reject duplicate/out-of-range overrides; validate them through the same constructor. They replace rows in one schedule, not a versioned calendar engine. The adapter supplies date classification with user-declared hours and exceptions; do not claim authoritative early-close coverage or archived historical announcements.
 
@@ -165,9 +183,25 @@ Recheck status/lifetime and other execution-time facts at the opening cutoff. A 
 
 Dense conventions remain unchanged because that path has no independent declared opening clock. Do not fabricate one to make shapes appear symmetric. For dense fills, derived pulse alignment equals the existing fill timestamp and carries no new economic-time claim.
 
-Expose `recording_pulse_ts_utc` as a read-side derivation from recorded fill association and sealed session facts, not another persisted column. It must survive reopening without strategy replay. Missing or ambiguous associations remain explicitly unavailable; never guess from a truncated UTC date. Preserve historical stored event timestamps rather than silently rewriting old runs. Do not relabel a historical close stamp as a newly evidenced opening. Capture the semantic change in the execution fingerprint/version machinery already governing run identity, with a documented compatibility disposition.
+Expose `recording_pulse_ts_utc` as a read-side derivation from recorded fill association and sealed session facts, not another persisted column. It must survive reopening without strategy replay. Missing or ambiguous associations remain explicitly unavailable; never guess from a truncated UTC date. Preserve historical stored event timestamps rather than silently rewriting old runs. Do not relabel a historical close stamp as a newly evidenced opening. The compatibility default below binds the execution identity and read behavior.
 
 Document a fills-to-equity example: group fills by `recording_pulse_ts_utc`, aggregate the desired measures, then join that table to equity `ts_utc`. A raw equality join on economic `fills$ts_utc` is not session alignment; multiple fills must not duplicate equity rows. Verify that current results, reopened results, replay/projections, stop boundaries and last-executed metadata all agree under the opening convention.
+
+### Historical timing compatibility
+
+New active configs record `availability$execution_timing_version = 2L`, denoting opening-time execution and execution-fact cutoff. The field enters the existing canonical config/experiment-descendant identity and appropriate execution fingerprint inputs. Dense configs gain no availability field. No public option runs the corrected engine with the old cutoff.
+
+For inspection, a stored active config with `provider_version = 1L` and no timing-version field is classified as legacy timing version 1: close-stamped events and close-cutoff execution checks, as implemented at `ce5095f`. Report that classification as a legacy-config inference, not a field retrospectively recorded in the store. An explicit version 2 is the corrected convention; inconsistent, insufficient or unrecognized evidence is unknown/unsupported and never silently classified as version 2.
+
+`ledgr_run_info()`, reopened run summaries and comparison provenance expose `execution_timing_version` and a convention label: `availability_close_v1`, `availability_open_v2`, `dense_bar_timestamp`, or unknown. Dense timing version is not applicable; its recorded dense timing model remains authoritative.
+
+Historical runs retain their original configs, hashes, event rows, diagnostics, projections, completion status and returned fill timestamps. Reads may format recorded evidence and derive unambiguous session alignment; they must not recompute old fill eligibility, restamp events, or regenerate affected projections under the corrected convention. If an explanation would require unavailable old semantics rather than recorded evidence, report it unavailable using the existing explanation-unavailable contract. No silent current-engine replay or strategy invocation occurs on reopen. Old RUNNING/FAILED execution is not resumed under version 2; require a new run identity after upgrade. Same-ID attempts with corrected identity fail existing identity guards before economic work.
+
+Version 1 and version 2 active runs are **not eligible for fill-level equivalence**, even after grouping to the same close pulse: the cutoff fix can change which fills exist. A matching version establishes only timing-convention compatibility, not full economic equivalence. Unknown or differing conventions likewise cannot establish fill equivalence.
+
+`ledgr_run_compare()` currently returns summary metrics, not matched fill rows. Keep that descriptive comparison available. Add each row's timing provenance and a comparison-wide `fill_timing_comparable` flag in metadata; it is false for differing or unknown conventions and printed with the reason. This flag applies to the selected set, is recomputed when constructing a comparison, and does not filter or alter its historical metrics. Fill-equivalence validation must reject a cross-version claim before aligning rows. Do not introduce a new public fill-comparison API or claim to control arbitrary user joins.
+
+Acceptance pairs a retained version-1 fixture with a corrected version-2 run: fresh-session inspection reports both conventions, old persistent rows/hashes remain byte-equivalent, returned old fill times remain at close, and the comparison reports `fill_timing_comparable = FALSE`. Corrected execution cannot resume the old ID. Test the compatibility decision independently from time-alignment and economic parity fixtures.
 
 ### Already integrated UTC bounds fix
 
@@ -201,12 +235,13 @@ Add synchronized tickets and batch-plan entries only after acceptance. Use the a
 
 | Work / owner | Detecting acceptance evidence |
 | --- | --- |
-| Facts history/resolution; `R/availability-facts.R`, provider/read-side owners; facts/causality/workflow tests | Typed outputs and all argument combinations; raw history includes supplied future/audit-only evidence; cutoff path excludes not-yet-known metadata; explicit unknown/false IDs retained; empty complete sets and known future-effective changes correct; no callback/write/RNG change. |
+| Facts history/resolution; `R/availability-facts.R`, provider/read-side owners; facts/causality/workflow and persistence tests | Typed outputs and all argument combinations; raw history includes supplied future/audit-only evidence; cutoff path excludes not-yet-known metadata; explicit unknown/false IDs retained; empty complete sets and known future-effective changes correct. Fresh-process sealed-snapshot queries need no facts object and match in-memory semantic evidence; unsealed/corrupt/undeclared-scope cases fail; no callback/write/RNG change or caller-connection closure. |
 | Membership list input; facts owner | Equivalent list/row forms with identical provenance give identical facts/hashes; empty list and partial assertions preserve existing semantics; no fake instrument/header row in user input. |
 | qlcal adapter; facts owner and focused adapter tests | Inclusive calendar coverage, known closure and explicit early-close override; no global mutation; invalid overrides fail; materialized snapshot works without qlcal; metadata changes alter new identity; generated/evidenced and generated/assumed cases both label their distinct assumptions correctly. |
 | Shared session-time validation; `ledgr_session_times()`, `test-availability-facts.R` | Ordinary constructor rejects ambiguous fall-back and nonexistent spring-forward local times on supported OSs; explicit instants accepted; normal DST conversion preserved, without qlcal involvement. |
-| Opening-time execution; economics/provider/fold owners, economics/parity tests | Decision at close fills at next declared open and uses that open price; status changing between open and close does not change earlier fill, while pre-open restriction blocks it; selected-window alignment and final no-opportunity behavior correct; dense unchanged. |
-| Fill/read-side alignment; fills/results owners, parity/persistence tests | Public `fills$ts_utc` is opening time; pulse field derives to the correct close; grouped fills-to-equity join preserves equity cardinality; economic order, clean/reopened/replayed projections, completion and fingerprints reconcile; no historical restamping. |
+| Opening-time execution; economics/provider/fold owners, economics/parity tests | At Jan 7 open 14:30, known halt 12:00–16:00 blocks the fill, known halt 18:00–23:00 does not, and a halt ending before 14:30 does not. Hold knowledge cutoffs explicit and test a later-known assertion separately. Fill uses the opening timestamp and price; selected-window alignment/final no-opportunity behavior correct; dense unchanged. |
+| Fill/read-side alignment; fills/results owners, parity/persistence tests | Corrected public `fills$ts_utc` is opening time; pulse field derives to the correct close; grouped fills-to-equity join preserves equity cardinality; within-version economic order, clean/reopened/replayed projections, completion and fingerprints reconcile; no historical restamping. |
+| Historical timing compatibility; config/run-store/result owners, persistence and comparison tests | New active identity records version 2; legacy version-1 inference is read-only and visible on reopen; retained original rows/hashes/fill times unchanged; old IDs cannot resume under corrected semantics; mixed/unknown timing comparison is explicitly ineligible for fill equivalence, while summary metrics remain available. |
 | Remaining creation-time regression; walk-forward owner | Actual creation path retains a controlled non-midnight timestamp; source guard is not the only evidence. Keep integrated window regressions. |
 | Completion UX and teaching; existing result/vignette owners | Public preparation/resolution requires no artificial holdings; full constructor precedes wrapper; correct common-window comparison and no extrapolation; completion/stop evidence agrees on reopen; tests assert behavior rather than exact prose or plot style. |
 
@@ -226,7 +261,13 @@ Use independent dates/economics in addition to shared-resolver and cross-path pa
 | F8 | Record integrated corrections and published article; retain the behavioral creation-time check and unfinished teaching work. |
 | F9 | Specify default session inspection and distinguish not-yet-known evidence from already-known future-effective announcements. |
 
-Preserve deferrals for broad adapters, multi-venue/calendar runtime, imputation, optimization, OMS, financing, terminal settlement and new performance claims. This revision remains a proposal pending review; concrete defaults describe what acceptance would bind, not a claim that the maintainer has already accepted them.
+| Re-review finding | Specific change incorporated |
+| --- | --- |
+| N1 | Both inspection functions accept sealed snapshot handles, with fresh-process parity and read-only lifecycle acceptance. Experiment preview stays deferred; sealed-evidence audit does not. |
+| N2 | §6 binds version-1 preservation, version-2 identity, no cross-version resume/replay, visible legacy classification and exclusion from fill-equivalence claims. Summary comparison remains descriptive with a compatibility flag. |
+| N3 | §5 distinguishes the demonstrated ambiguity defect from already-observed nonexistent-time rejection; cross-platform preservation remains required. |
+
+Preserve deferrals for broad adapters, multi-venue/calendar runtime, imputation, optimization, OMS, financing, terminal settlement and new performance claims. This revision remains a proposal pending maintainer acceptance; concrete defaults describe what acceptance would bind, not a claim that the maintainer has already accepted them.
 
 ## Sources and revision record
 
@@ -235,4 +276,5 @@ Preserve deferrals for broad adapters, multi-venue/calendar runtime, imputation,
 - [Availability workflow regressions](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/tests/testthat/test-availability-workflow.R), [walk-forward creation](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/R/walk-forward.R), [published vignette](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/vignettes/survivorship-bias.qmd).
 - [Accepted availability synthesis](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md), [contracts](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/inst/design/contracts.md), [RFC-cycle guidance](https://github.com/blechturm/ledgr/blob/ce5095fbbec45dfb807847cfc2fe27ff22971033/inst/design/rfc_cycle.md).
 - Claude's maintainer-supplied F1–F9 review: local execution evidence before the implementation was pushed. qlcal was not installed for that review; this revision likewise claims no executed adapter test.
-- 2026-09-12: v1 committed as `dd5df5d`; implementation and docs merged at `ce5095f`; v2 incorporates review dispositions above. V1 remains historical rather than being rewritten in place.
+- 2026-09-12: v1 committed as `dd5df5d`; implementation and docs merged at `ce5095f`; v2 committed as `ae52867` incorporates F1–F9. V1 remains historical rather than being rewritten in place.
+- 2026-09-12: in-place re-review correction to v2 incorporates N1–N3: sealed-snapshot inspection, an explicit historical timing-compatibility contract, corrected DST wording and the reviewer's halt-window witnesses. Reviewed `R/snapshot.R`, `R/run-snapshot.R`, `R/run-store.R` and `R/backtest-config.R` at `ae52867` to ground input, identity and comparison ownership. These are proposal-only changes; no runtime execution or implementation is claimed.
