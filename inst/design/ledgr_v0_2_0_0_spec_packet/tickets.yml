@@ -605,7 +605,7 @@ tickets:
 
   - id: "LDG-2701"
     title: "Survivorship-bias article and connected workflow"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-2700"]
@@ -636,7 +636,7 @@ tickets:
 
   - id: "LDG-2702"
     title: "Reference surfaces audit dispositions and closeout"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-2701"]
@@ -671,6 +671,142 @@ tickets:
         Review follow-up documented every ledgr_run_explain result field and
         labelled no_action and no_target_change as non-durable explain-time
         values, with documentation-contract coverage.
+
+  - id: "LDG-2704"
+    title: "Opening-time execution correction"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2702"
+    classification:
+      type: "correctness"
+      surface: "fold-economics"
+      scope: "opening-time-execution"
+    tests:
+      - "Availability economics tests"
+      - "Availability parity tests"
+      - "Halt-window cases spanning the opening and the close"
+      - "Independent expected dates and economics"
+
+  - id: "LDG-2705"
+    title: "Fill and read-side timestamp alignment"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies:
+      - "LDG-2704"
+    classification:
+      type: "correctness"
+      surface: "results-read-side"
+      scope: "fill-timestamp-alignment"
+    tests:
+      - "Fills and results tests"
+      - "Parity and persistence tests"
+      - "Grouped fills-to-equity join cardinality"
+      - "Reopen without strategy replay"
+
+  - id: "LDG-2706"
+    title: "Historical timing compatibility and identity"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2704"
+      - "LDG-2705"
+    classification:
+      type: "compatibility"
+      surface: "run-identity"
+      scope: "execution-timing-version"
+    tests:
+      - "Retained version-1 fixture against a corrected version-2 run"
+      - "Persistence and comparison tests"
+      - "Legacy classification is read-only and fail-closed"
+      - "Corrected run cannot resume a pre-correction identity"
+
+  - id: "LDG-2707"
+    title: "Shared local-time ambiguity validation"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2702"
+    classification:
+      type: "correctness"
+      surface: "facts-sessions"
+      scope: "local-time-validation"
+    tests:
+      - "test-availability-facts.R"
+      - "Ambiguous fall-back and nonexistent spring-forward rejection"
+      - "Operating-system gates"
+
+  - id: "LDG-2708"
+    title: "Facts history and cutoff resolution"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2702"
+    classification:
+      type: "feature"
+      surface: "facts-inspection"
+      scope: "history-and-resolution"
+    tests:
+      - "Facts and causality tests"
+      - "Workflow and persistence tests"
+      - "Fresh-process sealed-snapshot resolution"
+      - "No callback, persistent write, or RNG change"
+
+  - id: "LDG-2709"
+    title: "Constituent-list membership input"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2708"
+    classification:
+      type: "feature"
+      surface: "facts-membership"
+      scope: "constituent-list-input"
+    tests:
+      - "test-availability-facts.R"
+      - "List and row forms produce identical facts and hashes"
+      - "Empty complete list and partial assertions"
+
+  - id: "LDG-2710"
+    title: "Optional qlcal session adapter"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2707"
+      - "LDG-2709"
+    classification:
+      type: "feature"
+      surface: "facts-sessions"
+      scope: "qlcal-adapter"
+    tests:
+      - "Focused adapter tests with qlcal in Suggests"
+      - "Materialized snapshot runs without qlcal"
+      - "Identity and assumption-label regressions"
+
+  - id: "LDG-2711"
+    title: "Inspectable workflow teaching and completion reporting"
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies:
+      - "LDG-2705"
+      - "LDG-2708"
+      - "LDG-2710"
+    classification:
+      type: "documentation"
+      surface: "teaching-workflow"
+      scope: "inspection-and-completion"
+    tests:
+      - "Documentation-contract tests"
+      - "Workflow and completion tests"
+      - "Rendered article and pkgdown build"
 
   - id: "LDG-2703"
     title: "v0.2.0.0 release gate"
@@ -709,6 +845,14 @@ tickets:
       - "LDG-2700"
       - "LDG-2701"
       - "LDG-2702"
+      - "LDG-2704"
+      - "LDG-2705"
+      - "LDG-2706"
+      - "LDG-2707"
+      - "LDG-2708"
+      - "LDG-2709"
+      - "LDG-2710"
+      - "LDG-2711"
     classification:
       type: "release"
       surface: "release-gate"

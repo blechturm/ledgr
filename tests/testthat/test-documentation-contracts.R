@@ -2611,7 +2611,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-09; tickets cut", fixed = TRUE)
-  testthat::expect_match(docs$tickets, "Total Tickets: 32", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Total Tickets: 40", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2672 - Packet Alignment", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2703 - v0.2.0.0 Release Gate", fixed = TRUE)
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
@@ -2624,19 +2624,30 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(
     docs$batches,
     paste0(
-      "Status: Batches 0-9 complete after review[.]",
-      "[[:space:]]+Batch 10 implementation is complete",
-      "[[:space:]]+and awaiting review[.] Batch 11 is pending[.]"
+      "Status: Batches 0-10 complete after review[.]",
+      "[[:space:]]+Batches 11-14 are pending; they",
+      "[[:space:]]+implement the accepted inspectable availability workflow amendment"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
-      "Batches 0-9 complete after review[.]",
-      "[[:space:]]+Batch 10 implementation is complete",
-      "[[:space:]]+and awaiting review[.] Batch 11 is pending"
+      "Batches 0-10 complete after review[.]",
+      "[[:space:]]+Batches 11-14 are pending[.] They",
+      "[[:space:]]+implement the accepted inspectable availability workflow amendment"
     )
   )
+  # The amendment slice must stay discoverable from every packet artifact.
+  testthat::expect_match(
+    docs$tickets, "LDG-2704 - Opening-Time Execution Correction", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets,
+    "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
+    fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2711\"", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches, "Batch 11 - Economic Execution Timing Correction", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 14 - Release Gate", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
   for (id in c("LDG-2693", "LDG-2694", "LDG-2695", "LDG-2696")) {

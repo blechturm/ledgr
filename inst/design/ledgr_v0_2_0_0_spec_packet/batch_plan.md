@@ -1,7 +1,8 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-9 complete after review. Batch 10 implementation is complete
-and awaiting review. Batch 11 is pending.
+Status: Batches 0-10 complete after review. Batches 11-14 are pending; they
+implement the accepted inspectable availability workflow amendment and then
+close the release gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -30,7 +31,7 @@ evidence require independent review before Batch 9. Batch 9 likewise requires
 terminal recovery, idempotency, fresh-session inspection, and cross-path
 completion review before Batch 10.
 
-Batch 11 starts by reading `inst/design/release_ci_playbook.md`.
+Batch 14 starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Ticket-Cut Decisions
 
@@ -600,7 +601,7 @@ Implementation notes:
 
 ## Batch 10 - Teaching Reference And Deferral Closeout
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -671,10 +672,119 @@ Routed forward, not closed here:
 - `docs/pkgdown.yml` records whichever pkgdown built the site. A version
   difference between build machines is honest metadata, not a file defect.
 - Nothing enforces that GFM rendering follows a pkgdown build, which can delete
-  `vignettes/*_files/`. Routed to the Batch 11 release gate as an ordering and
+  `vignettes/*_files/`. Routed to the Batch 14 release gate as an ordering and
   image-target check.
 
-## Batch 11 - Release Gate
+## Batch 11 - Economic Execution Timing Correction
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2704
+- LDG-2705
+- LDG-2706
+
+Scope:
+
+- execute active fills at the next declared session opening and take
+  execution-time facts at that same cutoff;
+- return the opening instant as the public fill timestamp and derive session
+  alignment on the read side instead of storing a fourth timestamp;
+- record the corrected convention in identity, classify pre-correction runs
+  read-only, and refuse cross-version fill-equivalence claims.
+
+Review focus:
+
+- the correction changes fills and returns, not only presentation;
+- dense conventions are unchanged and gain no fabricated opening clock;
+- historical rows, hashes, and returned fill times stay byte-identical;
+- rebaselined expectations are explained by the corrected cutoff rather than
+  accepted as snapshots.
+
+Exit criteria:
+
+- halt windows spanning the opening and the close resolve in opposite
+  directions from the current behavior, each with independent expected
+  economics;
+- clean, reopened, and replayed evidence agree within a version;
+- a version-1 and version-2 pair is explicitly ineligible for fill equivalence
+  while summary metrics remain available.
+
+## Batch 12 - Inspectable Evidence Preparation
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2707
+- LDG-2708
+- LDG-2709
+- LDG-2710
+
+Scope:
+
+- reject ambiguous and nonexistent local wall times in the shared session-time
+  helper so every calendar path inherits one rule;
+- add assertion history and cutoff resolution as separate public functions over
+  facts or a sealed snapshot;
+- accept constituent lists as membership input alongside the row-per-member
+  form;
+- add one optional qlcal preparation adapter that delegates to the existing
+  session constructor.
+
+Review focus:
+
+- history and resolution stay structurally separate, so a retrospective view
+  cannot leak into a decision-time answer;
+- neither function is a strategy context, and callback visibility is unchanged;
+- the adapter adds no second parser, no global calendar mutation, and no
+  provider registry;
+- generated schedule content is recorded as provenance rather than as a new
+  knowledge mode.
+
+Exit criteria:
+
+- a fresh process resolves membership from a sealed snapshot with no facts
+  object in scope;
+- equivalent list and row inputs produce identical canonical facts and hashes;
+- a materialized snapshot runs, reopens, and inspects without qlcal installed;
+- explicitly requested unknown and false identifiers survive, and default
+  resolution enumerates no future member.
+
+## Batch 13 - Inspectable Workflow Teaching And Completion
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2711
+
+Scope:
+
+- replace the artificial holdings and do-nothing runs currently needed to
+  inspect membership with the new resolver;
+- teach delayed knowledge and already-known future-effective replacement as
+  executable cutoff queries;
+- update the fill-clock explanation to the corrected opening convention and
+  regenerate timing-sensitive outputs;
+- confirm completion reporting exposes the requested and achieved window,
+  status, stop reason, and affected identifiers.
+
+Review focus:
+
+- public preparation and inspection require no artificial portfolio state;
+- the full experiment constructor precedes any comparison wrapper;
+- comparisons are computed from outputs, with no retained numeric result and
+  no extrapolation past a real endpoint.
+
+Exit criteria:
+
+- documentation-contract, workflow, and completion tests pass;
+- the article renders and the pkgdown build completes;
+- tests assert behavior and causal evidence rather than prose or plot styling.
+
+## Batch 14 - Release Gate
 
 Status: Pending.
 

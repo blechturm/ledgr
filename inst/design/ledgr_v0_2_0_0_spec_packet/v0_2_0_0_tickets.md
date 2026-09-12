@@ -2,7 +2,7 @@
 
 Version: v0.2.0.0
 Date: 2026-09-09
-Total Tickets: 32
+Total Tickets: 40
 
 ## Ticket Organization
 
@@ -27,6 +27,9 @@ LDG-2672 packet alignment
   -> LDG-2693..2696 shared-fold economics and controlled stops
   -> LDG-2697..2700 terminal and cross-path evidence
   -> LDG-2701..2702 teaching and release surfaces
+  -> LDG-2704..2706 economic execution timing correction
+  -> LDG-2707..2710 inspectable evidence preparation
+  -> LDG-2711 inspectable workflow teaching and completion
   -> LDG-2703 release gate
 ```
 
@@ -1842,7 +1845,7 @@ scope: explain-reopen-parity
 Priority: P1
 Effort: L
 Dependencies: LDG-2700
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1915,7 +1918,7 @@ scope: survivorship-bias-workflow
 Priority: P1
 Effort: L
 Dependencies: LDG-2701
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1982,11 +1985,388 @@ surface: release-surfaces
 scope: help-manual-audit-deferrals
 ```
 
+## LDG-2704 - Opening-Time Execution Correction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2702
+Status: Pending
+
+### Description
+
+Execute active-mode fills at the next declared session opening, as Section 2.4
+requires, instead of at the following close. The correction covers the
+execution-time fact cutoff as well as the timestamp.
+
+### Tasks
+
+- Derive execution opportunities from declared next-session openings and use
+  that instant as the execution timestamp for active events.
+- Recheck trading-status, lifetime, and other execution-time facts at the
+  opening cutoff rather than the close.
+- Preserve decision-frozen membership eligibility, the permitted next-open
+  price evidence boundary, and the terminal no-fill rule.
+- Leave dense conventions unchanged; that path declares no independent opening
+  clock and must not gain a fabricated one.
+
+### Acceptance Criteria
+
+- A decision at a session close fills at the next declared opening and uses
+  that opening's price.
+- With a 14:30 opening: a halt effective and knowable 12:00-16:00 blocks the
+  fill; a halt 18:00-23:00 does not; a halt ending before 14:30 does not.
+- Knowledge cutoffs are explicit, and a later-known assertion is tested
+  separately from a later-effective one.
+- Selected-window alignment and final no-opportunity behavior are unchanged.
+- No future OHLCV becomes visible to the strategy.
+
+### Verification
+
+- Availability economics and parity tests
+- Independent expected dates and economics, not only cross-path parity
+
+### Classification
+
+```yaml
+type: correctness
+surface: fold-economics
+scope: opening-time-execution
+```
+
+## LDG-2705 - Fill And Read-Side Timestamp Alignment
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2704
+Status: Pending
+
+### Description
+
+Align the public fill surface with economic execution time and expose session
+alignment as a derived read-side value rather than a fourth stored column.
+
+### Tasks
+
+- Return the opening instant as public `fills$ts_utc` and as the ledger fill
+  event timestamp.
+- Derive `recording_pulse_ts_utc` from recorded fill association and sealed
+  session facts; do not persist it.
+- Keep equity rows stamped at their existing close pulse.
+- Document the grouped fills-to-equity join and why an equality join on
+  economic fill time is not session alignment.
+
+### Acceptance Criteria
+
+- Public `fills$ts_utc` is the opening instant; the derived pulse field
+  resolves to the correct close.
+- The derived value survives reopening without strategy replay, and stays
+  explicitly unavailable when the association is missing or ambiguous.
+- A grouped fills-to-equity join preserves equity row cardinality.
+- Within-version event order, clean, reopened, and replayed projections,
+  completion evidence, and fingerprints reconcile.
+- No historical stored event timestamp is rewritten.
+
+### Verification
+
+- Fills, results, parity, and persistence tests
+- Documented join example executed in a vignette or help page
+
+### Classification
+
+```yaml
+type: correctness
+surface: results-read-side
+scope: fill-timestamp-alignment
+```
+
+## LDG-2706 - Historical Timing Compatibility And Identity
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2704, LDG-2705
+Status: Pending
+
+### Description
+
+Record the corrected execution convention in identity, classify pre-correction
+runs read-only, and forbid cross-version fill equivalence claims.
+
+### Tasks
+
+- Record `availability$execution_timing_version = 2L` in new active configs and
+  admit it to canonical config identity and execution fingerprint inputs.
+- Classify a stored active config carrying the provider sentinel and no timing
+  version as legacy version 1, as a read-time inference rather than a field
+  written back into the store.
+- Expose the version and a convention label through `ledgr_run_info()`,
+  reopened summaries, and comparison provenance.
+- Add a `fill_timing_comparable` flag to comparison metadata without filtering
+  or altering historical metrics.
+
+### Acceptance Criteria
+
+- New active identity records version 2; dense configs gain no availability
+  timing field.
+- Legacy inference is visible on reopen and never silently classified as
+  version 2 from inconsistent or unrecognized evidence.
+- Retained version-1 rows, hashes, and returned fill timestamps are unchanged
+  byte for byte.
+- A version-1 and version-2 pair reports `fill_timing_comparable = FALSE` with
+  its reason, while summary metrics stay available.
+- A corrected run cannot resume a pre-correction run identity.
+
+### Verification
+
+- Persistence and comparison tests against a retained version-1 fixture
+- Compatibility tested independently of time-alignment and economic parity
+
+### Classification
+
+```yaml
+type: compatibility
+surface: run-identity
+scope: execution-timing-version
+```
+
+## LDG-2707 - Shared Local-Time Ambiguity Validation
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2702
+Status: Pending
+
+### Description
+
+Reject ambiguous and nonexistent local wall times in the shared session-time
+helper, so every calendar path inherits the same rule.
+
+### Tasks
+
+- Reject ambiguous fall-back local times in `ledgr_session_times()` instead of
+  silently selecting one offset.
+- Preserve and verify nonexistent spring-forward rejection consistently across
+  supported operating systems.
+- Keep ordinary per-date conversion and explicit `POSIXct` instants working
+  unchanged.
+
+### Acceptance Criteria
+
+- The ordinary constructor rejects an ambiguous fall-back time and a
+  nonexistent spring-forward time on supported systems.
+- Normal daylight-saving conversion is preserved, with no adapter involved.
+- Explicit instants remain valid.
+
+### Verification
+
+- `test-availability-facts.R`
+- Operating-system gates
+
+### Classification
+
+```yaml
+type: correctness
+surface: facts-sessions
+scope: local-time-validation
+```
+
+## LDG-2708 - Facts History And Cutoff Resolution
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2702
+Status: Pending
+
+### Description
+
+Add `ledgr_facts_history()` and `ledgr_facts_resolve()` so a user can inspect
+supplied assertions and resolve membership at a decision cutoff before any
+portfolio accounting exists.
+
+### Tasks
+
+- Accept either a normalized fact family or bundle, or a sealed snapshot
+  handle, and dispatch both into the same normalization and resolution code.
+- Return classed results with eager-tibble `rows` and `evidence` and
+  serializable `metadata`; no cursors and no durable inspection artifact.
+- Keep the retrospective history view separate from cutoff resolution, with no
+  `at = NULL` mode and no range argument on the resolver.
+- Preserve false versus unknown membership, cite complete-set headers for
+  omission, and never fabricate a negative member assertion.
+- Verify sealed state and hash on the snapshot path, release connections the
+  call opened, and leave caller-owned connections usable.
+
+### Acceptance Criteria
+
+- Typed outputs across all argument combinations; invalid combinations fail
+  with a classed error.
+- History includes supplied future-effective, future-known, and audit-only
+  evidence; resolution excludes not-yet-known evidence, its identifiers, and
+  its provenance.
+- Explicitly requested unknown and false identifiers are retained in request
+  order; default resolution does not enumerate future members.
+- A fresh process resolves from a sealed snapshot with no facts object in
+  scope and matches in-memory semantic evidence.
+- Unsealed, corrupt, and undeclared-scope inputs fail; no callback, persistent
+  write, RNG change, or caller-connection closure occurs.
+
+### Verification
+
+- Facts, causality, workflow, and persistence tests
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-inspection
+scope: history-and-resolution
+```
+
+## LDG-2709 - Constituent-List Membership Input
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2708
+Status: Pending
+
+### Description
+
+Accept a list-column constituent table in
+`ledgr_facts_membership_snapshots()` alongside the existing row-per-member
+form, so familiar vendor shapes are valid input.
+
+### Tasks
+
+- Normalize the list-column path through existing set headers and member rows.
+- Represent an empty set as `character(0)` without a dummy instrument.
+- Reject mixed input shapes and inconsistent group headers.
+- Retain `complete` and its current default, and spell out complete
+  replacement lists versus partial assertions in printing.
+
+### Acceptance Criteria
+
+- Equivalent list and row forms with identical provenance produce identical
+  canonical facts and hashes.
+- An empty complete list seals; partial assertions keep existing semantics and
+  do not become explicit false assertions.
+- No fabricated instrument or header row enters user input.
+
+### Verification
+
+- `test-availability-facts.R`
+- Hash-equivalence regressions
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-membership
+scope: constituent-list-input
+```
+
+## LDG-2710 - Optional qlcal Session Adapter
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2707, LDG-2709
+Status: Pending
+
+### Description
+
+Add one bounded `ledgr_facts_sessions_qlcal()` preparation adapter as an
+explicit narrow exception to the calendar-expansion deferral.
+
+### Tasks
+
+- Materialize every civil date, including closures, and delegate to
+  `ledgr_facts_sessions()` for conversion, coverage, and knowledge validation.
+- Use an explicit qlcal calendar object, never the global calendar, and never
+  persist its external pointer.
+- Apply explicit per-date overrides as complete replacement rows validated
+  through the same constructor.
+- Keep the existing two-value `knowledge` vocabulary and record generated
+  schedule content as `schedule_basis = "generated"` in hashed family metadata.
+- Extend the plan's assumption predicate to treat a generated schedule as
+  assumption-backed while preserving the two reasons separately.
+
+### Acceptance Criteria
+
+- Inclusive coverage, a known closure, and an explicit early-close override all
+  materialize correctly; invalid or out-of-range overrides fail.
+- No global calendar mutation occurs, and a materialized snapshot runs,
+  reopens, and inspects without qlcal installed.
+- Provider version, hours, overrides, and assumptions change new snapshot
+  identity; generation wall time does not.
+- Generated-with-evidenced and generated-with-assumed cases each report their
+  distinct assumption correctly.
+
+### Verification
+
+- Focused adapter tests with `qlcal` in `Suggests`
+- Identity and assumption-label regressions
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-sessions
+scope: qlcal-adapter
+```
+
+## LDG-2711 - Inspectable Workflow Teaching And Completion Reporting
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2705, LDG-2708, LDG-2710
+Status: Pending
+
+### Description
+
+Teach the inspectable workflow against the published article and close the
+remaining completion-reporting gaps.
+
+### Tasks
+
+- Replace the artificial opening positions and do-nothing runs used solely for
+  membership inspection with the new resolver.
+- Teach delayed knowledge and already-known future-effective replacement
+  through executable cutoff queries.
+- Update the fill-clock explanation to the corrected opening convention and
+  regenerate every timing-sensitive output.
+- Inspect a closed date and a venue-wide feed outage, and keep the separate
+  questions for observation, membership, holding, admissibility, and valuation.
+- Confirm the existing run info and summary expose requested and achieved
+  window, status, stop reason, last fully valued and executed time, the
+  incomplete label, and affected identifiers.
+
+### Acceptance Criteria
+
+- Public preparation and resolution require no artificial holdings.
+- The full experiment constructor precedes the comparison wrapper.
+- The common-window comparison is computed from outputs with no extrapolation,
+  and no numeric result is retained by assumption.
+- Completion and stop evidence agree on reopen; unknown legacy evidence stays
+  unknown.
+- Tests assert behavior and causal evidence, not exact prose or plot styling.
+
+### Verification
+
+- Documentation-contract tests
+- Workflow and completion tests
+- Rendered article and pkgdown build
+
+### Classification
+
+```yaml
+type: documentation
+surface: teaching-workflow
+scope: inspection-and-completion
+```
+
 ## LDG-2703 - v0.2.0.0 Release Gate
 
 Priority: P0
 Effort: L
-Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702
+Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711
 Status: Pending
 
 ### Description

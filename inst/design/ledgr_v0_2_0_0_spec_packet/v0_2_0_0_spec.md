@@ -544,7 +544,10 @@ H's bounded extraction commits; a necessary stage-budget amendment goes to the m
 | 8 | U shared-fold economics, valuation, affordability, typed stops and diagnostics | U5, U7-U8, U13, U17-U19, U21-U22, U24 |
 | 9 | U durable explanation, INCOMPLETE reopen, sweep/save/parallel/walk-forward propagation | U9, U11-U12; failure/fresh-connection tests and dense parity U1 |
 | 10 | Finish and execute survivorship journey, help/pkgdown and maintainer traces; reconcile scoped audit and horizon items | U12, H8; no private data or overstated PIT/completeness claims |
-| 11 | Full release gates, compatibility/identity report, packet closeout and deferral routing | Section 7; release playbook and review |
+| 11 | Amendment slice 1: opening-time execution and fact cutoff, fill/read-side alignment, historical timing compatibility | Halt windows spanning open and close; within-version parity; version-1 rows unchanged |
+| 12 | Amendment slice 2: shared local-time validation, facts history and cutoff resolution, constituent-list input, optional qlcal adapter | Fresh-process sealed-snapshot resolution; list/row hash equivalence; snapshot works without qlcal |
+| 13 | Amendment slice 3: inspectable workflow teaching and completion reporting | No artificial holdings; constructor before wrapper; regenerated timing-sensitive outputs |
+| 14 | Full release gates, compatibility/identity report, packet closeout and deferral routing | Section 7; release playbook and review |
 
 Batch 8 requires review of independent economics, short-scope, and controlled-prefix tests before
 Batch 9 starts. Batch 9 requires review of terminal recovery, idempotency, fresh-session inspection,
