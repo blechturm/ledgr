@@ -8,6 +8,12 @@ title: "Performance Arc v0.1.8.7 To v0.1.8.10"
 the versioned spec packets, release closeouts, benchmark records, RFCs, ADRs,
 and contracts linked below.
 
+**Anchor scope:** every `R/...:line` reference in this article resolves against
+the tree at tag `v0.1.8.10`, the end of the arc it documents. Later refactors,
+including the v0.2.0.0 run-coordinator extraction, moved much of this code
+between files. Read these anchors as a record of that release, not as a map of
+the current tree; use `git show v0.1.8.10:<path>` to follow them.
+
 You need to explain what changed across the v0.1.8.7 to v0.1.8.10 performance
 arc without overstating a benchmark. This article gives you the maintainer
 version of that story: what was measured, what each release actually changed,

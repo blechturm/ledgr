@@ -51,7 +51,7 @@ result object.
 | Persistence | `R/walk-forward.R`: session write helpers and compact table writes |
 | Inspection | `R/walk-forward-inspection.R`: reopened results, scores, folds, degradation table, and `ledgr_candidate.ledgr_walk_forward_results()` |
 | Sweep and run execution | `R/sweep.R` and `R/backtest.R` remain the execution surfaces used inside each fold |
-| Availability carry state | `R/walk-forward.R:876` rebuilds the next opening from finalized equity plus ledger and lot evidence |
+| Availability carry state | `R/walk-forward.R:880` rebuilds the next opening from finalized equity plus ledger and lot evidence |
 
 The orchestrator creates fold plans, executes a train sweep, records the
 selected candidate, then executes the selected test run. It persists

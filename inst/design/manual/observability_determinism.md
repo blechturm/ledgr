@@ -45,7 +45,7 @@ trusted later.
 
 ## Evidence Surfaces
 
-```mermaid
+``` mermaid
 flowchart LR
   DATA[Sealed snapshot] --> CONFIG[Execution config]
   CODE[Strategy and feature logic] --> FP[Fingerprints]
@@ -187,17 +187,17 @@ caches, or parallel execution. This enumeration is adapted from
 
 | Environment | Source | Runtime shape | Sweep risk from review |
 |----|----|----|----|
-| `.ledgr_telemetry_registry` | `R/backtest-runner.R:32`, writes at `R/backtest-runner.R:230` | key `run_id` -\> telemetry object for diagnostic read-back | Highest risk if shared workers write the same process-global registry; keep worker results message-passed or process-local. |
-| `.ledgr_preflight_registry` | `R/backtest-runner.R:33`, slots at `R/backtest-runner.R:129` | single `start` timing slot consumed and removed by `ledgr_take_preflight_start()` | Timing-only, but still process-global. |
-| `.ledgr_feature_cache_registry` | `R/feature-cache.R:1`, clear at `R/feature-cache.R:42` | session cache key -\> feature series | Useful for sequential reuse; unsafe as a shared mutable write target across workers. |
-| `ledgr_strategy_registry` | `R/strategy-fn.R:2`, writes at `R/strategy-fn.R:4` | strategy fingerprint -\> function object | Low risk during execution; registration is before run/sweep use. |
-| `.ledgr_backtest_lifecycle_registry` | `R/backtest.R:415`, writes at `R/backtest.R:491` | `auto_checkpoint_message_emitted` -\> `TRUE` | Console-message rate limiter only. |
+| `.ledgr_telemetry_registry` | `R/backtest-runner.R:1`, writes at `R/backtest-runner.R:194` | key `run_id` -\> telemetry object for diagnostic read-back | Highest risk if shared workers write the same process-global registry; keep worker results message-passed or process-local. |
+| `.ledgr_preflight_registry` | `R/backtest-runner.R:2`, slots at `R/backtest-runner.R:92` | single `start` timing slot consumed and removed by `ledgr_take_preflight_start()` | Timing-only, but still process-global. |
+| `.ledgr_feature_cache_registry` | `R/feature-cache.R:1`, clear at `R/feature-cache.R:74` | session cache key -\> feature series | Useful for sequential reuse; unsafe as a shared mutable write target across workers. |
+| `ledgr_strategy_registry` | `R/strategy-fn.R:2`, writes at `R/strategy-fn.R:12` | strategy fingerprint -\> function object | Low risk during execution; registration is before run/sweep use. |
+| `.ledgr_backtest_lifecycle_registry` | `R/backtest-handle.R:1`, writes at `R/backtest-handle.R:83` | `auto_checkpoint_message_emitted` -\> `TRUE` | Console-message rate limiter only. |
 
 The strategy-visible per-pulse object is the fold context. The context
 stores `run_id`, `ts_utc`, `universe`, current `bars`, current
 `feature_table`, positions, cash/equity, `seed`, `pulse_seed`, previous
-strategy state, and `safety_state` at `R/fold-engine.R:223`.
-`ctx$pulse_seed` is assigned at `R/fold-engine.R:237`.
+strategy state, and `safety_state` at `R/fold-engine.R:510`.
+`ctx$pulse_seed` is assigned at `R/fold-engine.R:520`.
 
 ### Code Anchors
 
@@ -207,13 +207,13 @@ strategy state, and `safety_state` at `R/fold-engine.R:223`.
 | Canonical JSON byte format v2 | `R/config-canonical-json.R:21` fixes yyjsonr write options; `R/config-canonical-json.R:72` canonicalizes and writes. |
 | Closure/function fingerprint | `R/determinism.R:119` builds a function payload; captures use `codetools::findGlobals()` at `R/determinism.R:135`; hashing happens at `R/determinism.R:151`. |
 | Stable capture rejection | `R/determinism.R:63` rejects Date/POSIXt captures; `R/determinism.R:71` rejects environments, external pointers, and connections. |
-| Strategy registry keying | `R/strategy-fn.R:4` registers by `ledgr_function_fingerprint(..., include_captures = TRUE, allow_rng = TRUE)`. |
+| Strategy registry keying | `R/strategy-fn.R:10` keys by `ledgr_function_fingerprint(..., include_captures = include_captures, allow_rng = TRUE)`; `R/strategy-fn.R:12` assigns into the registry. |
 | Strategy preflight tiering | `R/strategy-preflight.R:94` starts Tier 3 failure classification; `R/strategy-preflight.R:126` assigns Tier 2; `R/strategy-preflight.R:153` assigns Tier 1. |
 | Ambient RNG detection | `R/strategy-preflight.R:202` calls `codetools::findGlobals()`; ambient RNG symbols are collected at `R/strategy-preflight.R:216`. |
-| Resume RNG enforcement | `R/backtest-runner.R:904` runs preflight; `R/backtest-runner.R:906` aborts ambient-RNG resume. |
-| Parallel RNG enforcement | `R/sweep.R:96` runs preflight; `R/sweep.R:100` aborts ambient-RNG parallel sweeps. |
+| Resume RNG enforcement | `R/run-resume.R:1` guards the resume path; `R/run-resume.R:3` aborts ambient-RNG resume. |
+| Parallel RNG enforcement | `R/sweep.R:176` runs preflight; `R/sweep.R:181` aborts ambient-RNG parallel sweeps. |
 | Pulse seed derivation | `R/rng.R:21` derives deterministic seeds; `R/rng.R:33` derives per-pulse seeds. |
-| Strategy state serialization | `R/fold-engine.R:529` serializes `state_update` through `canonical_json()`. |
+| Strategy state serialization | `R/fold-engine.R:1025` serializes `state_update` through `canonical_json()`. |
 
 ### Lookup And Dispatch Mechanisms
 
@@ -266,8 +266,8 @@ dependency setup, and run metadata construction. These operations may
 inspect source, globals, captures, or JSON payloads.
 
 Hot-path execution happens after those checks. The fold builds one
-context per pulse at `R/fold-engine.R:223`, derives `ctx$pulse_seed` at
-`R/fold-engine.R:237`, validates strategy targets, resolves fills,
+context per pulse at `R/fold-engine.R:510`, derives `ctx$pulse_seed` at
+`R/fold-engine.R:520`, validates strategy targets, resolves fills,
 updates state, and emits events. It should not repeat config hashing or
 closure fingerprinting inside the per-pulse loop.
 

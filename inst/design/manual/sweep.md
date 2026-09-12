@@ -176,17 +176,17 @@ basis, and metadata.
 |----|----|
 | Parameter-grid validation and label handling | `R/param-grid.R:35-78` |
 | Auto candidate label hash from canonical JSON | `R/param-grid.R:80-82` |
-| Sweep entry, preflight, worker setup, feature validation, dispatch | `R/sweep.R:75-238` |
-| Sweep ID derivation | `R/sweep.R:632-640` |
-| Candidate task creation and execution-seed derivation | `R/sweep.R:642-691` |
-| Candidate-local failure row vs fail-fast handling | `R/sweep.R:703-788` |
-| Parallel worker dispatch and interrupt discard-all path | `R/sweep.R:790-845` |
-| Candidate execution spec and fold call | `R/sweep.R:852-988` |
-| Memory output handler and inline summaries | `R/sweep.R:990-1385` |
-| Sweep result row and compact provenance fields | `R/sweep.R:1421-1565` |
-| Candidate selection and promotion | `R/sweep.R:431-479` |
-| Fold entry and B2 dispatch gate | `R/fold-engine.R:63-110` |
-| B2 spot-FIFO batch accounting path | `R/fold-engine.R:337-422` |
+| Sweep entry, preflight, worker setup, feature validation, dispatch | `R/sweep.R:84-415` |
+| Sweep ID derivation | `R/sweep.R:985-994` |
+| Candidate task creation and execution-seed derivation | `R/sweep.R:995-1109` |
+| Candidate-local failure row vs fail-fast handling | `R/sweep.R:1128-1248` |
+| Parallel worker dispatch and interrupt discard-all path | `R/sweep.R:1249-1310` |
+| Candidate execution spec and fold call | `R/sweep.R:1311-1491` |
+| Memory output handler and inline summaries | `R/sweep.R:1492-1929` |
+| Sweep result row and compact provenance fields | `R/sweep.R:1963-2060` |
+| Candidate selection and promotion | `R/sweep.R:416-750` |
+| Fold entry and B2 dispatch gate | `R/fold-engine.R:210-260` |
+| B2 spot-FIFO batch accounting path | `R/fold-engine.R:878-910` |
 | B2 model selector and fail-closed support guard | `R/compiled-spot-fifo.R:1-90` |
 | C++ spot-FIFO batch bridge | `R/compiled-spot-fifo.R:139-210` |
 

@@ -157,24 +157,24 @@ SHA-256. The original alias order is kept separately for user-facing order.
 | Alias validation for feature maps | `R/feature-map.R:129-160` |
 | Feature-map parameterization and resolution | `R/feature-map.R:162-175` |
 | Feature-map object validation | `R/feature-map.R:177-239` |
-| Experiment feature validation | `R/experiment.R:350-368` |
-| Experiment feature materialization and alias storage | `R/experiment.R:388-426` |
-| Feature-factory grid guard | `R/experiment.R:435-464` |
+| Experiment feature validation | `R/experiment.R:402-425` |
+| Experiment feature materialization and alias storage | `R/experiment.R:443-486` |
+| Feature-factory grid guard | `R/experiment.R:494-509` |
 | Feature engine definition validation and built-ins | `R/features-engine.R:1-170` |
 | Feature engine version and feature cache keys | `R/feature-cache.R:1-132` |
-| Feature cache get/set | `R/feature-cache.R:153-168` |
+| Feature cache get/set | `R/feature-cache.R:182-205` |
 | Precompute object construction | `R/precompute-features.R:41-85` |
 | Precompute validation | `R/precompute-features.R:107-182` |
-| Candidate feature resolution and alias provenance | `R/precompute-features.R:283-374` |
-| Feature-set hash | `R/precompute-features.R:400-409` |
-| Feature definitions from indicators | `R/precompute-features.R:420-457` |
-| Payload, projection, and warmup assembly | `R/precompute-features.R:470-532` |
-| Alias-map canonical JSON and SHA-256 hash | `R/feature-alias-map.R:26-52` |
-| Alias-map restoration from config JSON | `R/feature-alias-map.R:56-87` |
-| Runtime alias lookup map | `R/feature-alias-map.R:90-110` |
+| Candidate feature resolution and alias provenance | `R/precompute-features.R:337-425` |
+| Feature-set hash | `R/precompute-features.R:455-465` |
+| Feature definitions from indicators | `R/precompute-features.R:475-501` |
+| Payload, projection, and warmup assembly | `R/precompute-features.R:538-580` |
+| Alias-map canonical JSON and SHA-256 hash | `R/feature-alias-map.R:92-142` |
+| Alias-map restoration from config JSON | `R/feature-alias-map.R:143-176` |
+| Runtime alias lookup map | `R/feature-alias-map.R:177-204` |
 | Pulse-context scalar and bundle accessors | `R/pulse-context.R:54-137` |
 | Feature helper attachment and projection-backed fast path | `R/pulse-context.R:262-324` |
-| Fast context-state helper reuse | `R/pulse-context.R:351-414` |
+| Fast context-state helper reuse | `R/pulse-context.R:386-410` |
 | Projection-backed bundle lookup | `R/runtime-projection.R:437-512` |
 | Pulse inspection rows and active alias maps | `R/feature-inspection.R:271-380` |
 | TTR adapter construction and normalization | `R/indicator-ttr.R:110-240`, `R/indicator-ttr.R:459-496` |
@@ -233,7 +233,7 @@ omission and remains unchanged. Indicators that cannot declare a bounded
 window, or that hide carry or imputation inside their implementation, fail
 before availability-aware strategy execution.
 
-Implementation anchors are `R/availability-policy.R:159` for experiment-time
+Implementation anchors are `R/availability-policy.R:163` for experiment-time
 validation, `R/feature-cache.R:3` for active engine identity, and
 `R/features-engine.R` for strict-window evaluation.
 
