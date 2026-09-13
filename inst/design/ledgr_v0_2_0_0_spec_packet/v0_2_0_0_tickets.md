@@ -2,7 +2,7 @@
 
 Version: v0.2.0.0
 Date: 2026-09-09
-Total Tickets: 40
+Total Tickets: 44
 
 ## Ticket Organization
 
@@ -30,6 +30,7 @@ LDG-2672 packet alignment
   -> LDG-2704..2706 economic execution timing correction
   -> LDG-2707..2710 inspectable evidence preparation
   -> LDG-2711 inspectable workflow teaching and completion
+  -> LDG-2712..2715 honest reporting defaults
   -> LDG-2703 release gate
 ```
 
@@ -2422,7 +2423,7 @@ scope: qlcal-adapter
 Priority: P1
 Effort: L
 Dependencies: LDG-2705, LDG-2708, LDG-2710
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2492,11 +2493,208 @@ surface: teaching-workflow
 scope: inspection-and-completion
 ```
 
+## LDG-2712 - Curated Fact Inspection Printing
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2711
+Status: Pending
+
+### Description
+
+Print fact history and resolution results by family and operation, so the
+columns that carry point-in-time meaning are visible without reshaping.
+
+### Tasks
+
+- Select printed columns by family and operation rather than printing every
+  stored column.
+- Membership history prints `evidence_type`, `instrument_id`, `member`,
+  `effective_from`, `knowledge_time`, `complete`.
+- Membership resolution prints `instrument_id`, `member`, `reason`, and the
+  cutoff already carried in metadata.
+- Session history prints `session_date`, `status`, `session_open`,
+  `session_close`, `knowledge_time`.
+- Session resolution prints `session_date`, `status`, `session_open`,
+  `session_close`, `reason`, and a `knowledge_time` derived only from
+  applicable supporting evidence.
+- Disclose omitted columns and the full row count.
+
+### Acceptance Criteria
+
+- Membership history print shows `knowledge_time` and `complete` without
+  truncation and retains `evidence_type`, so a set-header row is never an
+  unexplained `NA` member.
+- Session resolution print shows `reason`, so an `NA` status distinguishes
+  missing coverage from evidence not yet knowable at the cutoff.
+- A derived session-resolution `knowledge_time` comes only from applicable
+  supporting evidence and is typed missing when none applies; excluded future
+  evidence is never inspected to populate it.
+- `$rows` and `$evidence` are unchanged for every family and operation.
+- Omitted columns and the full row count are disclosed in the print.
+
+### Verification
+
+- `test-availability-inspection.R`
+- Documentation-contract tests
+
+### Classification
+
+```yaml
+type: documentation
+surface: facts-inspection
+scope: curated-printing
+```
+
+## LDG-2713 - Completion-Aware Run Inventory
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2711
+Status: Pending
+
+### Description
+
+Project recorded completion evidence onto `ledgr_run_list()`, so a listing
+cannot present an incomplete run's prefix return as a peer of a complete run's.
+
+### Tasks
+
+- Append these eleven fields, in this order, after the existing columns:
+  `completion_evidence_available`, `completion_status`, `requested_start_utc`,
+  `requested_end_utc`, `achieved_start_utc`, `achieved_end_utc`, `stop_reason`,
+  `last_fully_valued_ts_utc`, `last_executed_ts_utc`, `complete_performance`,
+  `affected_instrument_ids`.
+- Project recorded evidence whenever it exists, including for `FAILED` runs;
+  status does not gate the projection.
+- Use typed missing values only when completion evidence is genuinely absent.
+- Keep timestamps as `POSIXct` and `affected_instrument_ids` as a list-column
+  distinguishing unavailable, known-empty, and known sets.
+- Mark an incomplete row's metrics as describing only its achieved prefix, in
+  the curated print and in the help.
+- Implement the projection at `ledgr_run_list()` without widening the shared
+  low-level fetch.
+
+### Acceptance Criteria
+
+- `DONE`, `INCOMPLETE`, dense-without-completion, `FAILED`, and legacy rows
+  produce one stable schema with the eleven fields appended in the bound order.
+- A finalization-failed run that retains a `run_completion` row reports that
+  evidence, and the inventory agrees with `ledgr_run_info()` on it.
+- Absence is typed unknown and never inferred.
+- `affected_instrument_ids` distinguishes unavailable, known-empty, and known
+  sets.
+- The print marks an incomplete row's metrics as prefix-only.
+- Reopen parity holds; no strategy executes and no stored row changes.
+
+### Verification
+
+- `test-run-store.R`
+- `test-availability-parity.R`
+- Documentation-contract tests
+
+### Classification
+
+```yaml
+type: feature
+surface: run-inventory
+scope: completion-projection
+```
+
+## LDG-2714 - Incomplete-Comparison Prohibition
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2713
+Status: Pending
+
+### Description
+
+Bind the existing refusal to rank incomplete runs as a forbidden behaviour with
+its own tests, rather than leaving it an implementation detail that a later
+change could relax.
+
+### Tasks
+
+- Record both selection modes in the contract: explicit `run_ids` reject a
+  non-`DONE` run, and omitted `run_ids` exclude non-`DONE` rows.
+- Add a test for each mode.
+- Document the completion-aware inventory as the supported way to see runs of
+  different horizons together.
+
+### Acceptance Criteria
+
+- Naming a non-`DONE` run explicitly raises `ledgr_run_not_complete`.
+- Omitting `run_ids` excludes non-`DONE` rows without raising, so surveying a
+  store does not fail because it holds an incomplete run.
+- Both runs still appear in the inventory with their horizon difference
+  visible.
+- The contract records why the refusal exists: an incomplete horizon changes
+  what return, Sharpe and drawdown mean, rather than merely qualifying them.
+
+### Verification
+
+- `test-run-store.R`
+- Documentation-contract tests
+
+### Classification
+
+```yaml
+type: contract
+surface: run-comparison
+scope: incomplete-prohibition
+```
+
+## LDG-2715 - Reporting UX Article Corrections
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2712, LDG-2713, LDG-2714
+Status: Pending
+
+### Description
+
+Rewrite the Survivorship Bias article against the corrected surfaces so no
+canonical workflow defines a helper to display recorded evidence.
+
+### Tasks
+
+- Remove the session-inspection wrapper and its output block; teach the
+  difference between an open-session feed outage and a closed date from the
+  already printed calendar and observation tables.
+- Remove the hand-built common-window calculation and the hand-built horizon
+  table; take the horizon comparison from the completion-aware inventory.
+- Retain the four-scenario membership counterfactual, visibly labelled as
+  article-specific analysis, with its fixture construction folded.
+- Regenerate rendered output and figures from current execution.
+
+### Acceptance Criteria
+
+- No user-defined reporting wrapper remains in the canonical workflow.
+- The outage versus closed-date distinction is still taught.
+- The counterfactual block reads as article-specific analysis and not as part
+  of the ingestion-to-run path.
+- Rendered Markdown and figures regenerate from current execution, and no
+  numeric result is retained by prose assumption.
+
+### Verification
+
+- Documentation-contract tests
+- GFM render and pkgdown build
+
+### Classification
+
+```yaml
+type: documentation
+surface: teaching-workflow
+scope: reporting-ux
+```
+
 ## LDG-2703 - v0.2.0.0 Release Gate
 
 Priority: P0
 Effort: L
-Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711
+Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711, LDG-2712, LDG-2713, LDG-2714, LDG-2715
 Status: Pending
 
 ### Description

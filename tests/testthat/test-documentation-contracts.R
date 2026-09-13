@@ -2711,7 +2711,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   ticket_2706 <- paste(ticket_lines[ticket_2706_start:ticket_2706_end], collapse = "\n")
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-09; tickets cut", fixed = TRUE)
-  testthat::expect_match(docs$tickets, "Total Tickets: 40", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Total Tickets: 44", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2672 - Packet Alignment", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2703 - v0.2.0.0 Release Gate", fixed = TRUE)
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
@@ -2724,17 +2724,17 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(
     docs$batches,
     paste0(
-      "Status: Batches 0-12 complete after review[.]",
-      "[[:space:]]+Batch 13 implementation is complete",
-      "[[:space:]]+and awaiting review; Batch 14 remains pending"
+      "Status: Batches 0-13 complete after review[.]",
+      "[[:space:]]+Batch 14 implements the accepted",
+      "[[:space:]]+honest-reporting-defaults amendment"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
-      "Batches 0-12 complete after review[.]",
-      "[[:space:]]+Batch 13 implementation is",
-      "[[:space:]]+complete and awaiting review; Batch 14 remains pending"
+      "Batches 0-13 complete after review[.]",
+      "[[:space:]]+Batch 14 implements the accepted",
+      "[[:space:]]+honest-reporting-defaults amendment"
     )
   )
   # The amendment slice must stay discoverable from every packet artifact.
@@ -2747,7 +2747,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(docs$yaml, "id: \"LDG-2711\"", fixed = TRUE)
   testthat::expect_match(
     docs$yaml,
-    'id: "LDG-2711"[[:space:]]+title: .+[[:space:]]+status: "review_pending"'
+    'id: "LDG-2711"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
   )
   testthat::expect_match(
     docs$tickets,
@@ -2755,7 +2755,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
       "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
       "[[:space:]]+Priority: P1[[:space:]]+Effort: L[[:space:]]+",
       "Dependencies: LDG-2705, LDG-2708, LDG-2710[[:space:]]+",
-      "Status: Review Pending"
+      "Status: Complete After Review"
     )
   )
   testthat::expect_match(
@@ -2805,7 +2805,15 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     "All 11 availability test files and the full 123-file suite pass",
     fixed = TRUE
   )
-  testthat::expect_match(docs$batches, "Batch 14 - Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
+  # The accepted reporting-UX slice must stay discoverable from every artifact.
+  testthat::expect_match(
+    docs$batches, "Batch 14 - Honest Reporting Defaults", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2712 - Curated Fact Inspection Printing", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2715 - Reporting UX Article Corrections", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2715\"", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
   for (id in c("LDG-2693", "LDG-2694", "LDG-2695", "LDG-2696")) {

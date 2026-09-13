@@ -1,7 +1,8 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-12 complete after review. Batch 13 implementation is complete
-and awaiting review; Batch 14 remains pending as the release gate.
+Status: Batches 0-13 complete after review. Batch 14 implements the accepted
+honest-reporting-defaults amendment; Batch 15 remains pending as the release
+gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -30,7 +31,7 @@ evidence require independent review before Batch 9. Batch 9 likewise requires
 terminal recovery, idempotency, fresh-session inspection, and cross-path
 completion review before Batch 10.
 
-Batch 14 starts by reading `inst/design/release_ci_playbook.md`.
+Batch 15 starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Ticket-Cut Decisions
 
@@ -892,7 +893,62 @@ Implementation notes:
   It pins the affected-ID set to `AAA`; changing the read-side query from
   stopped diagnostics to filled diagnostics now fails exactly that test.
 
-## Batch 14 - Release Gate
+## Batch 14 - Honest Reporting Defaults
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2712
+- LDG-2713
+- LDG-2714
+- LDG-2715
+
+Scope:
+
+- print fact history and resolution by family and operation, so point-in-time
+  columns are visible without reshaping;
+- project recorded completion evidence onto the run inventory with a bound
+  result shape;
+- record the existing refusal to rank incomplete runs as a forbidden behaviour
+  with tests for both selection modes;
+- rewrite the Survivorship Bias article against those surfaces.
+
+Review focus:
+
+- printing is a presentation boundary and never filters what programmatic
+  callers receive;
+- completion evidence is projected wherever it exists, including for a
+  finalization-failed run that retains its `run_completion` row;
+- absence stays typed unknown and is never inferred;
+- no canonical documented workflow defines a helper to display recorded
+  evidence.
+
+Exit criteria:
+
+- one stable inventory schema across `DONE`, `INCOMPLETE`, dense, `FAILED` and
+  legacy rows, with inventory and `ledgr_run_info()` agreeing;
+- both comparison modes tested, and neither relaxed;
+- rendered article regenerates from current execution with no numeric result
+  retained by prose;
+- no strategy executes and no stored row changes.
+
+Packet-open gate:
+
+- the run-inventory result shape is approved before implementation begins,
+  because it widens a public returned tibble and changes its default print.
+
+Implementation notes:
+
+- Accepted from the honest-reporting-defaults amendment
+  (`v0_2_0_0_reporting_ux_amendment_proposed.md`), baseline `c50e5eb`, after
+  two adversarial reviews.
+- A common-endpoint return helper was proposed twice and rejected twice on
+  executed evidence; the amendment records why so it is not proposed again.
+- Vectorized fixed-evidence resolution, general common-window comparison, and
+  a snapshot coverage accessor are named roadmap follow-ups, not release work.
+
+## Batch 15 - Release Gate
 
 Status: Pending.
 

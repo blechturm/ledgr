@@ -547,7 +547,8 @@ H's bounded extraction commits; a necessary stage-budget amendment goes to the m
 | 11 | Amendment slice 1: opening-time execution and fact cutoff, fill/read-side alignment, historical timing compatibility | Halt windows spanning open and close; within-version parity; version-1 rows unchanged |
 | 12 | Amendment slice 2: shared local-time validation, facts history and cutoff resolution, constituent-list input, optional qlcal adapter | Fresh-process sealed-snapshot resolution; list/row hash equivalence; snapshot works without qlcal |
 | 13 | Amendment slice 3: inspectable workflow teaching and completion reporting | No artificial holdings; constructor before wrapper; regenerated timing-sensitive outputs |
-| 14 | Full release gates, compatibility/identity report, packet closeout and deferral routing | Section 7; release playbook and review |
+| 14 | Honest reporting defaults: curated fact printing, completion-aware run inventory, incomplete-comparison prohibition, article rewrite | One stable inventory schema across statuses; both comparison modes tested; no documented workflow builds its own reporting helper |
+| 15 | Full release gates, compatibility/identity report, packet closeout and deferral routing | Section 7; release playbook and review |
 
 Batch 8 requires review of independent economics, short-scope, and controlled-prefix tests before
 Batch 9 starts. Batch 9 requires review of terminal recovery, idempotency, fresh-session inspection,

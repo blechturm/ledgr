@@ -1,7 +1,7 @@
 # Proposed amendment: honest reporting defaults
 
 **Target:** accepted ledgr v0.2.0.0 spec.
-**Status:** Proposal for maintainer review. No implementation tickets are allocated or marked accepted by this document.
+**Status:** Accepted by the maintainer 2026-09-13. Cut as LDG-2712 through LDG-2715 in Batch 14.
 **Date:** 2026-09-13.
 **Baseline:** [c50e5eb](https://github.com/blechturm/ledgr/commit/c50e5eb2a0b2ce4fa10a0d357662cf752924747e), the reviewed closure of Batch 13 and LDG-2711.
 **Related:** the [inspectable availability workflow amendment v2](v0_2_0_0_workflow_amendment_proposed_v2.md), whose surfaces this amendment corrects rather than reopens.

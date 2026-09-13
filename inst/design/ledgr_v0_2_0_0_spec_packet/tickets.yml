@@ -903,7 +903,7 @@ tickets:
 
   - id: "LDG-2711"
     title: "Inspectable workflow teaching and completion reporting"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "L"
     dependencies:
@@ -942,6 +942,75 @@ tickets:
         alone stops and BBB has fill evidence. The affected set is exactly AAA;
         changing the read query from stopped to filled diagnostics fails
         exactly that test.
+
+  - id: "LDG-2712"
+    title: "Curated fact inspection printing"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2711"
+    classification:
+      type: "documentation"
+      surface: "facts-inspection"
+      scope: "curated-printing"
+    tests:
+      - "test-availability-inspection.R"
+      - "Membership history retains evidence_type and shows knowledge_time"
+      - "Session resolution shows reason and derived knowledge_time"
+      - "$rows and $evidence unchanged for every family and operation"
+
+  - id: "LDG-2713"
+    title: "Completion-aware run inventory"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2711"
+    classification:
+      type: "feature"
+      surface: "run-inventory"
+      scope: "completion-projection"
+    tests:
+      - "test-run-store.R"
+      - "test-availability-parity.R"
+      - "Eleven appended fields in bound order across all statuses"
+      - "Finalization-failed run reports retained completion evidence"
+      - "affected_instrument_ids distinguishes unavailable, empty, known"
+
+  - id: "LDG-2714"
+    title: "Incomplete-comparison prohibition"
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2713"
+    classification:
+      type: "contract"
+      surface: "run-comparison"
+      scope: "incomplete-prohibition"
+    tests:
+      - "test-run-store.R"
+      - "Explicit run_ids raise ledgr_run_not_complete"
+      - "Omitted run_ids exclude non-DONE rows without raising"
+
+  - id: "LDG-2715"
+    title: "Reporting UX article corrections"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2712"
+      - "LDG-2713"
+      - "LDG-2714"
+    classification:
+      type: "documentation"
+      surface: "teaching-workflow"
+      scope: "reporting-ux"
+    tests:
+      - "Documentation-contract tests"
+      - "GFM render and pkgdown build"
+      - "No user-defined reporting wrapper in the canonical workflow"
 
   - id: "LDG-2703"
     title: "v0.2.0.0 release gate"
@@ -988,6 +1057,10 @@ tickets:
       - "LDG-2709"
       - "LDG-2710"
       - "LDG-2711"
+      - "LDG-2712"
+      - "LDG-2713"
+      - "LDG-2714"
+      - "LDG-2715"
     classification:
       type: "release"
       surface: "release-gate"
