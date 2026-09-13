@@ -95,6 +95,20 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-13 [research] Minimum evidence for annualized summary metrics
+
+Batch 15 of v0.2.0.0 withholds annualized return, annualized volatility, and
+Sharpe when recorded completion evidence says a run covers only an achieved
+prefix. A separate question remains for complete but very short runs: complete
+status establishes that the requested window finished, not that annualization
+is statistically meaningful.
+
+A future metrics-policy review should define the minimum evidence required to
+print annualized summary statistics, including whether the surface should
+withhold, warn, or disclose the observed period count and annualization factor.
+That decision must remain separate from completion status and metric-context
+cadence. It is not part of the v0.2.0.0 print-honesty correction.
+
 ### 2026-09-09 [infrastructure] API hardening post-v0.2.0 direction
 
 The accepted synthesis at

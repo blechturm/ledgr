@@ -1,8 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-13 complete after review. Batch 14 implements the accepted
-honest-reporting-defaults amendment; Batch 15 remains pending as the release
-gate.
+Status: Batches 0-15 complete after review. Batch 16 remains pending as the
+release gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -31,7 +30,7 @@ evidence require independent review before Batch 9. Batch 9 likewise requires
 terminal recovery, idempotency, fresh-session inspection, and cross-path
 completion review before Batch 10.
 
-Batch 15 starts by reading `inst/design/release_ci_playbook.md`.
+Batch 16 starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Ticket-Cut Decisions
 
@@ -672,7 +671,7 @@ Routed forward, not closed here:
 - `docs/pkgdown.yml` records whichever pkgdown built the site. A version
   difference between build machines is honest metadata, not a file defect.
   Maintainer decision: never hand-edit it. `dev/build-site.R` now enforces a
-  pkgdown compatibility floor, and Batch 14 rebuilds `docs/` once at or above
+  pkgdown compatibility floor, and LDG-2703 rebuilds `docs/` once at or above
   that floor and records the version actually used in the closeout.
 - Nothing enforced that GFM rendering follows a pkgdown build, which can delete
   `vignettes/*_files/`. Maintainer decision: assert the artifact rather than the
@@ -839,7 +838,7 @@ Implementation notes:
 
 ## Batch 13 - Inspectable Workflow Teaching And Completion
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -895,7 +894,7 @@ Implementation notes:
 
 ## Batch 14 - Honest Reporting Defaults
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -947,8 +946,106 @@ Implementation notes:
   executed evidence; the amendment records why so it is not proposed again.
 - Vectorized fixed-evidence resolution, general common-window comparison, and
   a snapshot coverage accessor are named roadmap follow-ups, not release work.
+- Fact-history and fact-resolution printing now uses family-specific curated
+  columns while preserving and disclosing the complete stored rows. Session
+  resolution derives `knowledge_time` only from applicable supporting
+  evidence and returns a typed missing value when none applies.
+- `ledgr_run_list()` appends the bound eleven completion fields in order. Its
+  batch read preserves typed absence, the three-state affected-ID list column,
+  finalization-failed completion evidence, reopen parity, and read-only store
+  behavior; the print marks incomplete metrics as achieved-prefix evidence.
+- The comparison contract now locks both modes: explicit incomplete run IDs
+  raise `ledgr_run_not_complete`, while omitted IDs exclude non-`DONE` runs.
+- The Survivorship Bias article now uses public fact printing and run inventory
+  directly, keeps its four-scenario membership exercise visibly
+  article-specific, and removes hand-built reporting and common-window code.
+  Its GFM output and comparison figure were regenerated from current execution.
+- All targeted tests and the full 123-file source suite pass with no failures,
+  errors, or attributed warnings. The full suite has five environment skips:
+  four optional `qlcal` cases and the installed-`quantmod` adapter branch. All
+  Rd files pass `tools::checkRd()`, and the complete pkgdown 2.2.1 site build
+  succeeds.
+- Review follow-up made the article's `bars_input` construction visible,
+  removed the orphaned 26.1-point prose figure, disclosed that resolution
+  `knowledge_time` is derived from `$evidence` rather than stored in `$rows`,
+  and added detecting tests against unsupported and future-evidence leakage.
 
-## Batch 15 - Release Gate
+## Batch 15 - Print Honesty
+
+Status: Complete After Review.
+
+Tickets:
+
+- LDG-2716
+- LDG-2717
+- LDG-2718
+
+Scope:
+
+- stop annualizing metrics for a run whose recorded completion evidence says
+  its performance is incomplete;
+- print completion evidence before identity hashes when inspecting one run;
+- name the trade statistic for what it counts.
+
+Review focus:
+
+- suppression follows recorded completion evidence rather than run status, so
+  a `FAILED` run that retains evidence is treated by that evidence;
+- raw prefix metrics stay visible, because they describe what happened rather
+  than extrapolating it;
+- reordering removes no field from the printed record;
+- a complete run's summary is unchanged.
+
+Exit criteria:
+
+- no annualized figure is printed for an incomplete performance, and the
+  reason appears in its place;
+- `DONE` output is byte-identical to today;
+- the article shows the completion story once rather than twice;
+- printed label and help agree on what the trade count measures.
+
+Implementation notes:
+
+- Cut from the external review of the rendered Survivorship Bias article,
+  2026-09-13, after the four confirmed article defects were folded into
+  LDG-2715. These three change public print surfaces, so they could not ride
+  in that ticket.
+- The annualization defect is the same class the honest-reporting-defaults
+  amendment exists to remove: a surface that records incompleteness and then
+  reports a figure that assumes completeness.
+- Implementation keys suppression to recorded `complete_performance` evidence,
+  names the achieved window, preserves raw prefix return and drawdown, and
+  explains why annualized return, annualized volatility, and Sharpe are
+  withheld. A detecting helper test proves run status does not control it.
+- `print.ledgr_run_info()` now places completion directly after status metadata
+  and before hashes and telemetry without dropping fields. The article uses one
+  `summary()` block to demonstrate completion-aware withholding and is rerendered.
+- The summary label is `Closed Trades`; the `n_trades` computation is unchanged
+  and the generated help uses the same term.
+- Detecting tests failed against each reverted defect: status-based suppression
+  failed the three-case helper test, disabling prefix mode failed six assertions
+  in the incomplete-run test, restoring the old run-info order failed its line-
+  order assertion, restoring `Total Trades` failed the exact complete summary,
+  and restoring the article's second summary failed its single-story lock.
+- R 4.6.1 verification passes: 862 test blocks, 8,943 expectations, 8,941
+  passing, no failures, errors, or test-attributed warnings, and the two expected
+  structural skips. All 149 Rd files pass `tools::checkRd()`; the GFM render and
+  full pkgdown 2.2.1 site build succeed. Process-level DuckDB home notices remain
+  visible and are already owned by the Batch 16 vignette-noise chore.
+- Review follow-up regenerates every stale public Markdown summary after the
+  `Closed Trades` rename, corrects the metric-context source prose, and adds a
+  non-vacuous public-document guard against the old label. The Survivorship
+  Bias article now visibly demonstrates achieved-prefix metrics and withheld
+  annualized figures exactly once. Its move from Start Here to Core Workflow is
+  intentional and locked: the article is a full workflow treatment, not an
+  onboarding prerequisite. The separate policy question for complete but very
+  short runs is parked in `inst/design/horizon.md`.
+- Follow-up verification passes the four affected test files, all 149 Rd files,
+  the nine-article GFM render, and the full pkgdown 2.2.1 site build. A public-
+  document scan finds no remaining `Total Trades` text in tracked README or
+  vignette sources and Markdown.
+
+## Batch 16 - Release Gate
 
 Status: Pending.
 

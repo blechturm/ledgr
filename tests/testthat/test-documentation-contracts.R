@@ -1224,9 +1224,11 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
+  testthat::expect_no_match(start_block, "- survivorship-bias", fixed = TRUE)
 
   core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
   testthat::expect_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
+  testthat::expect_match(core_block, "- survivorship-bias", fixed = TRUE)
   testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
   testthat::expect_match(core_block, "- indicators", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
@@ -1251,6 +1253,7 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_no_match(text, "Sweep and tune APIs are reserved for later versions", fixed = TRUE)
   testthat::expect_no_match(text, "v0.1.8 is the experiment-first research API", fixed = TRUE)
   testthat::expect_no_match(text, "no DISPLAY variable", fixed = TRUE)
+  testthat::expect_no_match(text, "Total Trades", fixed = TRUE)
   testthat::expect_false(file.exists(file.path(root, "Rprof.out")))
   testthat::expect_match(paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"), "Rprof.out", fixed = TRUE)
 })
@@ -1664,12 +1667,21 @@ testthat::test_that("facts inspection and preparation contracts are locked", {
   testthat::expect_match(contract, "true, false, and unknown states", fixed = TRUE)
   testthat::expect_match(contract, "Complete-set omission cites the set header", fixed = TRUE)
   testthat::expect_match(contract, "Neither result is a strategy context", fixed = TRUE)
+  testthat::expect_match(contract, "Default fact-inspection prints are curated", fixed = TRUE)
+  testthat::expect_match(contract, "session fields plus reason and a knowledge time", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "disclosed as coming from `$evidence`, not as a value stored in `$rows`",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "names omitted[[:space:]]+stored columns")
   testthat::expect_match(contract, "optional preparation adapter over an", fixed = TRUE)
   testthat::expect_match(contract, "no generation time or external pointer", fixed = TRUE)
   testthat::expect_match(contract, "assumption_reasons", fixed = TRUE)
   testthat::expect_match(news, "Added read-only fact history and cutoff resolution", fixed = TRUE)
   testthat::expect_match(news, "Added constituent-list membership input", fixed = TRUE)
   testthat::expect_match(news, "rejects ambiguous fall-back and nonexistent", fixed = TRUE)
+  testthat::expect_match(news, "Curated fact-history and resolution printing", fixed = TRUE)
 
   suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
   testthat::expect_true("qlcal" %in% suggests)
@@ -1750,6 +1762,34 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
     contract,
     "Dense and historical runs without that evidence[[:space:]]+report it as unknown"
   )
+  testthat::expect_match(
+    contract,
+    "`ledgr_run_list()` appends the recorded completion projection",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "Status does not gate real completion evidence", fixed = TRUE)
+  testthat::expect_match(contract, "known-empty", fixed = TRUE)
+  testthat::expect_match(contract, "achieved-prefix evidence only", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "follows recorded completion evidence rather than[[:space:]]+run status"
+  )
+  testthat::expect_match(
+    contract,
+    "annualized return, annualized volatility, and[[:space:]]+Sharpe ratio are withheld"
+  )
+  testthat::expect_match(
+    contract,
+    "status and any recorded completion evidence[[:space:]]+before identity and telemetry"
+  )
+  testthat::expect_match(contract, "labels `n_trades` as `Closed Trades`", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "With explicit `run_ids`, `ledgr_run_compare()` rejects every non-`DONE` run",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "Without `run_ids`, it silently excludes", fixed = TRUE)
+  testthat::expect_match(contract, "changes the meaning of return, Sharpe", fixed = TRUE)
   explain_help <- paste(
     readLines(file.path(root, "man", "ledgr_run_explain.Rd"), warn = FALSE),
     collapse = "\n"
@@ -1772,6 +1812,21 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(news, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_list()` now appends recorded completion", fixed = TRUE)
+  testthat::expect_match(news, "Backtest summaries now follow recorded completion", fixed = TRUE)
+  testthat::expect_match(news, "Run-info printing presents completion", fixed = TRUE)
+  testthat::expect_match(news, "label `n_trades` as `Closed Trades`", fixed = TRUE)
+  summary_help <- paste(
+    readLines(file.path(root, "man", "summary.ledgr_backtest.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(summary_help, "\\item Closed Trades:", fixed = TRUE)
+  testthat::expect_match(
+    summary_help,
+    "annualized return, annualized volatility, and Sharpe ratio",
+    fixed = TRUE
+  )
+  testthat::expect_match(news, "explicitly named non-`DONE` runs", fixed = TRUE)
   testthat::expect_match(
     news,
     "`ledgr_run_info\\(\\)` and `summary\\(\\)`[[:space:]]+now expose recorded completion bounds"
@@ -2723,19 +2778,13 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    paste0(
-      "Status: Batches 0-13 complete after review[.]",
-      "[[:space:]]+Batch 14 implements the accepted",
-      "[[:space:]]+honest-reporting-defaults amendment"
-    )
+    "Status: Batches 0-15 complete after review[.]",
+    perl = TRUE
   )
   testthat::expect_match(
     docs$readme,
-    paste0(
-      "Batches 0-13 complete after review[.]",
-      "[[:space:]]+Batch 14 implements the accepted",
-      "[[:space:]]+honest-reporting-defaults amendment"
-    )
+    "Batches 0-15 complete after review[.]",
+    perl = TRUE
   )
   # The amendment slice must stay discoverable from every packet artifact.
   testthat::expect_match(
@@ -2762,7 +2811,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     docs$batches,
     paste0(
       "## Batch 13 - Inspectable Workflow Teaching And Completion",
-      "[[:space:]]+Status: Review Pending[.]"
+      "[[:space:]]+Status: Complete After Review[.]"
     )
   )
   testthat::expect_match(
@@ -2805,7 +2854,28 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     "All 11 availability test files and the full 123-file suite pass",
     fixed = TRUE
   )
-  testthat::expect_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 16 - Release Gate", fixed = TRUE)
+  testthat::expect_no_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
+  # The print-honesty follow-up must stay discoverable from every artifact.
+  testthat::expect_match(docs$batches, "Batch 15 - Print Honesty", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2716 - Completion-Aware Run Summary", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2717 - Run Info Print Ordering", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2718 - Closed-Trade Statistics Label", fixed = TRUE)
+  for (id in c("LDG-2716", "LDG-2717", "LDG-2718")) {
+    testthat::expect_match(docs$yaml, sprintf("id: \"%s\"", id), fixed = TRUE)
+  }
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 15 - Print Honesty[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$readme,
+    "Batch 15 implements the reviewed print-honesty follow-up",
+    fixed = TRUE
+  )
   # The accepted reporting-UX slice must stay discoverable from every artifact.
   testthat::expect_match(
     docs$batches, "Batch 14 - Honest Reporting Defaults", fixed = TRUE)
@@ -2814,6 +2884,19 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(
     docs$tickets, "LDG-2715 - Reporting UX Article Corrections", fixed = TRUE)
   testthat::expect_match(docs$yaml, "id: \"LDG-2715\"", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 14 - Honest Reporting Defaults[[:space:]]+Status: Complete After Review[.]"
+  )
+  for (id in sprintf("LDG-%d", 2712:2718)) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
   testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
   testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
   for (id in c("LDG-2693", "LDG-2694", "LDG-2695", "LDG-2696")) {
@@ -3145,7 +3228,7 @@ testthat::test_that("survivorship article executes the public availability journ
     "ledgr_facts_sessions", "ledgr_facts_membership_snapshots",
     "ledgr_facts_validate", "ledgr_facts_history", "ledgr_facts_resolve",
     "ledgr_snapshot_from_df", "ledgr_experiment_plan", "ledgr_run",
-    "ledgr_results", "ledgr_run_explain", "ledgr_run_info",
+    "ledgr_results", "ledgr_run_explain", "ledgr_run_info", "ledgr_run_list",
     "ledgr_snapshot_open", "ledgr_run_open"
   )
   for (call in public_calls) {
@@ -3161,15 +3244,46 @@ testthat::test_that("survivorship article executes the public availability journ
   testthat::expect_match(qmd, "The Delisting Bias in CRSP Data", fixed = TRUE)
   testthat::expect_match(qmd, "::: {.ledgr-callout .ledgr-callout-tip}", fixed = TRUE)
   testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
-  testthat::expect_match(qmd, "Change `max_sessions = 2` to `max_sessions = 1`", fixed = TRUE)
+  testthat::expect_match(
+    qmd,
+    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1)`",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(qmd, "max_sessions = 1` in `declare()`", fixed = TRUE)
+  testthat::expect_match(
+    qmd,
+    "Rerun the survivor experiment with `params = list(invested = 1)`",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    qmd,
+    "Rerun `point_in_time` with `params = list(invested = 1)`",
+    fixed = TRUE
+  )
+  resolve_line <- grep("#| label: knowledge-resolve", qmd_lines, fixed = TRUE)[[1L]]
+  history_line <- grep("#| label: knowledge-history", qmd_lines, fixed = TRUE)[[1L]]
+  testthat::expect_lt(resolve_line, history_line)
+  direct_resolution <- paste(
+    qmd_lines[resolve_line:(history_line - 1L)],
+    collapse = "\n"
+  )
+  testthat::expect_match(direct_resolution, "ledgr_facts_resolve(", fixed = TRUE)
+  testthat::expect_match(direct_resolution, 'instruments = c("AAA", "BBB")', fixed = TRUE)
+  testthat::expect_no_match(qmd, "The one answer that is always wrong", fixed = TRUE)
+  testthat::expect_match(qmd, "receipt, not historical publication", fixed = TRUE)
 
-  knowledge_start <- grep("^#\\| label: knowledge-counterfactual$", qmd_lines)[[1L]]
-  knowledge_end <- grep("^## Two Universes, One Everything Else$", qmd_lines)[[1L]] - 1L
+  knowledge_start <- grep("^#\\| label: knowledge-history$", qmd_lines)[[1L]]
+  compare_heading <- grep("^## Comparing Survivor and Point-in-Time Universes$",
+                          qmd_lines)
+  testthat::expect_length(compare_heading, 1L)
+  knowledge_end <- compare_heading[[1L]] - 1L
   knowledge_section <- paste(qmd_lines[knowledge_start:knowledge_end], collapse = "\n")
   testthat::expect_match(knowledge_section, "ledgr_facts_history(", fixed = TRUE)
   testthat::expect_match(knowledge_section, "ledgr_facts_resolve(", fixed = TRUE)
   testthat::expect_no_match(knowledge_section, "ledgr_opening(", fixed = TRUE)
   testthat::expect_no_match(knowledge_section, "ledgr_run(", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "article-specific sensitivity analysis", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "#| code-fold: true", fixed = TRUE)
 
   experiment_line <- grep(
     "point_in_time_experiment <- ledgr_experiment(", qmd_lines, fixed = TRUE
@@ -3186,11 +3300,21 @@ testthat::test_that("survivorship article executes the public availability journ
     'by = c("ts_utc" = "recording_pulse_ts_utc")',
     fixed = TRUE
   )
-  testthat::expect_match(
+  testthat::expect_match(qmd, "run_inventory <- ledgr_run_list(snapshot)", fixed = TRUE)
+  testthat::expect_match(qmd, "bars_input <- bars_from(prices)", fixed = TRUE)
+  testthat::expect_match(md, "bars_input <- bars_from(prices)", fixed = TRUE)
+  testthat::expect_no_match(
     qmd,
-    "last_common <- min(max(pit_equity$ts_utc), max(survivor_equity$ts_utc))",
-    fixed = TRUE
+    "#\\| label: bars-input[[:space:]]+#\\| include: false"
   )
+  testthat::expect_no_match(qmd, "26.1-point gap", fixed = TRUE)
+  testthat::expect_no_match(md, "26.1-point gap", fixed = TRUE)
+  for (forbidden in c(
+    "inspect_session <-", "return_at <-", "common_window <-", "run_horizons <-",
+    "last_common <-"
+  )) {
+    testthat::expect_no_match(qmd, forbidden, fixed = TRUE)
+  }
   for (field in c(
     "requested_start_utc", "requested_end_utc", "achieved_start_utc",
     "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
@@ -3207,8 +3331,11 @@ testthat::test_that("survivorship article executes the public availability journ
   for (evidence in rendered_evidence) {
     testthat::expect_match(md, evidence, fixed = TRUE)
   }
-  testthat::expect_match(md, "2020-01-09\\s+open\\s+0")
-  testthat::expect_match(md, "2020-01-11\\s+closed\\s+0")
+  testthat::expect_match(md, "AAA\\s+FALSE\\s+omitted_from_complete_set")
+  testthat::expect_match(md, "BBB\\s+TRUE\\s+member_asserted")
+  testthat::expect_match(md, "2020-01-09\\s+NA\\s+NA")
+  testthat::expect_match(md, "2020-01-09\\s+open\\s+14:30:00")
+  testthat::expect_match(md, "2020-01-11\\s+closed\\s+<NA>")
   testthat::expect_match(md, "known early, not effective.+TRUE")
   testthat::expect_match(md, "effective and knowable.+FALSE")
   testthat::expect_match(md, "effective, not knowable.+TRUE")
@@ -3217,9 +3344,22 @@ testthat::test_that("survivorship article executes the public availability journ
     md,
     "2020-01-07 14:30:00\\s+2020-01-07 21:00:00"
   )
-  testthat::expect_match(md, "survivor-universe\\s+DONE.+TRUE")
-  testthat::expect_match(md, "pit-universe\\s+INCOMPLETE.+FALSE")
+  testthat::expect_match(md, "survivor-universe[^\\n]+DONE[^\\n]+TRUE")
+  testthat::expect_match(md, "pit-universe[^\\n]+INCOMPLETE[^\\n]+FALSE")
   testthat::expect_match(md, "Completion Evidence:", fixed = TRUE)
+  completion_blocks <- gregexpr("Completion Evidence:", md, fixed = TRUE)[[1L]]
+  testthat::expect_identical(sum(completion_blocks > 0L), 1L)
+  point_in_time_summaries <- gregexpr("summary(point_in_time)", qmd, fixed = TRUE)[[1L]]
+  testthat::expect_identical(sum(point_in_time_summaries > 0L), 1L)
+  testthat::expect_match(md, "Achieved-Prefix Metrics (", fixed = TRUE)
+  testthat::expect_match(md, "Total Return (prefix):", fixed = TRUE)
+  testthat::expect_match(md, "Max Drawdown (prefix):", fixed = TRUE)
+  testthat::expect_match(
+    md,
+    "Annualized Return:        withheld (achieved window is shorter than requested)",
+    fixed = TRUE
+  )
+  testthat::expect_match(md, "Closed Trades:", fixed = TRUE)
   testthat::expect_match(md, "Affected IDs:      AAA", fixed = TRUE)
   reopen_true <- gregexpr("#> [1] TRUE", md, fixed = TRUE)[[1L]]
   testthat::expect_gte(sum(reopen_true > 0L), 2L)

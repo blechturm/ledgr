@@ -66,6 +66,36 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
   testthat::expect_s3_class(first_info$last_executed_ts_utc, "POSIXct")
   testthat::expect_false(first_info$complete_performance)
   testthat::expect_identical(first_info$affected_instrument_ids, "AAA")
+  calls_before_inventory <- calls$n
+  store_before_inventory <- availability_store_contents(path, first$run_id)
+  inventory <- ledgr_run_list(fixture$snapshot)
+  inventory_row <- inventory[inventory$run_id == first$run_id, , drop = FALSE]
+  testthat::expect_identical(nrow(inventory_row), 1L)
+  testthat::expect_true(inventory_row$completion_evidence_available[[1L]])
+  testthat::expect_identical(inventory_row$completion_status[[1L]], "INCOMPLETE")
+  for (field in c(
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
+    "last_executed_ts_utc", "complete_performance"
+  )) {
+    testthat::expect_identical(inventory_row[[field]][[1L]], first_info[[field]])
+  }
+  testthat::expect_identical(inventory_row$affected_instrument_ids[[1L]], "AAA")
+  testthat::expect_identical(calls$n, calls_before_inventory)
+  testthat::expect_identical(
+    availability_store_contents(path, first$run_id),
+    store_before_inventory
+  )
+  inventory_output <- utils::capture.output(print(inventory_row))
+  testthat::expect_true(any(grepl("INCOMPLETE", inventory_output, fixed = TRUE)))
+  testthat::expect_true(any(grepl("prefix only", inventory_output, fixed = TRUE)))
+  testthat::expect_error(
+    ledgr_run_compare(fixture$snapshot, run_ids = first$run_id),
+    class = "ledgr_run_not_complete"
+  )
+  default_comparison <- ledgr_run_compare(fixture$snapshot)
+  testthat::expect_false(first$run_id %in% default_comparison$run_id)
+  testthat::expect_true(first$run_id %in% inventory$run_id)
   summary_output <- utils::capture.output(summary(first))
   for (label in c(
     "Completion Evidence", "Status:           INCOMPLETE",
@@ -75,9 +105,42 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
   )) {
     testthat::expect_true(any(grepl(label, summary_output, fixed = TRUE)))
   }
+  expected_prefix_heading <- sprintf(
+    "Achieved-Prefix Metrics (%s to %s):",
+    ledgr:::ledgr_completion_time_label(first_info$achieved_start_utc),
+    ledgr:::ledgr_completion_time_label(first_info$achieved_end_utc)
+  )
+  testthat::expect_true(any(grepl(
+    expected_prefix_heading,
+    summary_output,
+    fixed = TRUE
+  )))
+  for (line in c(
+    "Total Return (prefix):",
+    "Max Drawdown (prefix):",
+    "Annualized Return:        withheld (achieved window is shorter than requested)",
+    "Volatility (annual): withheld (achieved window is shorter than requested)",
+    "Sharpe Ratio:        withheld (achieved window is shorter than requested)"
+  )) {
+    testthat::expect_true(any(grepl(line, summary_output, fixed = TRUE)))
+  }
+  testthat::expect_false(any(grepl("Annualized Return:   -", summary_output, fixed = TRUE)))
+  testthat::expect_false(any(grepl("Volatility (annual): 9", summary_output, fixed = TRUE)))
   info_output <- utils::capture.output(print(first_info))
   testthat::expect_true(any(grepl("Completion Evidence", info_output, fixed = TRUE)))
   testthat::expect_false(any(grepl("Diagnostics: NA", info_output, fixed = TRUE)))
+  completion_line <- grep("Completion Evidence:", info_output, fixed = TRUE)[[1L]]
+  snapshot_line <- grep("Snapshot:", info_output, fixed = TRUE)[[1L]]
+  testthat::expect_lt(completion_line, snapshot_line)
+  for (label in c(
+    "Run ID:", "Label:", "Status:", "Archived:", "Tags:", "Snapshot:",
+    "Snapshot Hash:", "Feature Set Hash:", "Risk Chain Hash:",
+    "Config Hash:", "Strategy Hash:", "Params Hash:", "Reproducibility:",
+    "Execution Mode:", "Fill Timing:", "Timing Version:", "Elapsed Sec:",
+    "Persist Features:", "Cache Hits:", "Cache Misses:"
+  )) {
+    testthat::expect_true(any(grepl(label, info_output, fixed = TRUE)))
+  }
   calls_after_first <- calls$n
   before <- availability_store_contents(path, first$run_id)
 
@@ -107,6 +170,13 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
   testthat::expect_identical(
     reopened_info[completion_fields],
     first_info[completion_fields]
+  )
+  reopened_inventory <- ledgr_run_list(fixture$snapshot)
+  reopened_row <- reopened_inventory[reopened_inventory$run_id == first$run_id, , drop = FALSE]
+  testthat::expect_identical(reopened_row$affected_instrument_ids[[1L]], "AAA")
+  testthat::expect_identical(
+    reopened_row$achieved_end_utc[[1L]],
+    first_info$achieved_end_utc
   )
   testthat::expect_identical(calls$n, calls_after_first)
 })
@@ -175,6 +245,11 @@ testthat::test_that("completion affected IDs come only from stopped diagnostics"
     ledgr_run_info(snapshot, bt$run_id)$affected_instrument_ids,
     "AAA"
   )
+  inventory <- ledgr_run_list(snapshot)
+  testthat::expect_identical(
+    inventory$affected_instrument_ids[[match(bt$run_id, inventory$run_id)]],
+    "AAA"
+  )
 })
 
 testthat::test_that("terminal completion recovers projections without strategy replay", {
@@ -220,6 +295,20 @@ testthat::test_that("terminal completion recovers projections without strategy r
   testthat::expect_identical(failed$runs$status, "FAILED")
   testthat::expect_identical(nrow(failed$run_completion), 1L)
   testthat::expect_identical(nrow(failed$equity_curve), 0L)
+  failed_inventory <- ledgr_run_list(fixture$snapshot)
+  failed_row <- failed_inventory[failed_inventory$run_id == "terminal-recovery", , drop = FALSE]
+  failed_info <- ledgr_run_info(fixture$snapshot, "terminal-recovery")
+  testthat::expect_identical(failed_row$status[[1L]], "FAILED")
+  testthat::expect_true(failed_row$completion_evidence_available[[1L]])
+  testthat::expect_identical(failed_row$completion_status[[1L]], "INCOMPLETE")
+  testthat::expect_identical(
+    failed_row$achieved_end_utc[[1L]],
+    failed_info$achieved_end_utc
+  )
+  testthat::expect_identical(
+    failed_row$affected_instrument_ids[[1L]],
+    failed_info$affected_instrument_ids
+  )
   calls_after_failure <- calls$n
 
   recovered <- ledgr_run(fixture$experiment, run_id = "terminal-recovery")
@@ -272,6 +361,13 @@ testthat::test_that("complete availability runs recover finalization without str
   testthat::expect_true(seam$fired)
   testthat::expect_identical(failed$runs$status, "FAILED")
   testthat::expect_identical(failed$run_completion$intended_terminal_status, "DONE")
+  failed_inventory <- ledgr_run_list(snapshot)
+  failed_row <- failed_inventory[
+    failed_inventory$run_id == "complete-terminal-recovery", , drop = FALSE
+  ]
+  testthat::expect_true(failed_row$completion_evidence_available[[1L]])
+  testthat::expect_identical(failed_row$completion_status[[1L]], "DONE")
+  testthat::expect_identical(failed_row$affected_instrument_ids[[1L]], character())
   calls_after_failure <- calls$n
 
   recovered <- ledgr_run(exp, run_id = "complete-terminal-recovery")

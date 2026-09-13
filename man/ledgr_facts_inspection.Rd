@@ -54,6 +54,11 @@ serializable \code{metadata}.
 \code{ledgr_facts_resolve()} returns only the state supported at one decision
 cutoff. Both functions accept an in-memory fact family or bundle, or a
 sealed snapshot. Results are eager and read-only.
+Default prints show the columns needed to interpret the selected family and
+operation, disclose omitted stored columns, and leave the complete \verb{$rows}
+and \verb{$evidence} members unchanged. Session-resolution
+\code{knowledge_time} is a presentation value derived from applicable
+\verb{$evidence}; it is not stored in \verb{$rows}.
 }
 \section{Information boundary}{
 

@@ -680,7 +680,9 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   DuckDB file in a new R session.
 #' @param run_ids Optional character vector of run IDs. If supplied, output
 #'   preserves this order, including duplicates, and may include archived
-#'   completed runs. If `NULL`, compares all non-archived completed runs.
+#'   completed runs. A named non-completed run raises
+#'   `ledgr_run_not_complete`. If `NULL`, compares all non-archived completed
+#'   runs and silently excludes other statuses.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported.
 #' @param metric_context Optional metric context for this comparison table.
@@ -697,6 +699,9 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   convention. The comparison attributes `fill_timing_comparable` and
 #'   `fill_timing_comparability_reason` describe whether the selected run set
 #'   can support a fill-equivalence claim; they never filter or alter metrics.
+#'   Incomplete runs remain visible through [ledgr_run_list()] and
+#'   [ledgr_run_info()], but cannot enter this ranking surface because a shorter
+#'   horizon changes what return, Sharpe ratio, and drawdown mean.
 #'   Use `as.data.frame(comparison)` or
 #'   tibble operations when exporting report-ready numeric columns.
 #' @section Articles:
@@ -842,8 +847,11 @@ print.ledgr_comparison <- function(x, ...) {
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
 #' @return A `ledgr_run_list` object, which is a classed tibble with run
 #'   identity, including `feature_set_hash`, provenance, status, telemetry
-#'   summary, and basic result summary columns. See [ledgr_identity_fields]
-#'   for hash-field semantics.
+#'   summary, and basic result summary columns. Eleven appended completion
+#'   columns distinguish requested and achieved windows, completion status,
+#'   prefix-only performance, and affected instruments. Typed missing values
+#'   mean that completion evidence is unavailable, as for dense or historical
+#'   runs. See [ledgr_identity_fields] for hash-field semantics.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
@@ -864,7 +872,33 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   out <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
   detail_cols <- c("config_json", "dependency_versions_json", "strategy_params_json")
-  ledgr_classed_tibble(out[setdiff(names(out), detail_cols)], "ledgr_run_list")
+  out <- out[setdiff(names(out), detail_cols)]
+  completion <- ledgr_run_completion_info_many(opened$con, out$run_id)
+  out$completion_evidence_available <- vapply(
+    completion, `[[`, logical(1), "completion_evidence_available"
+  )
+  out$completion_status <- vapply(completion, `[[`, character(1), "completion_status")
+  for (name in c(
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc"
+  )) {
+    out[[name]] <- as.POSIXct(
+      vapply(completion, function(info) as.numeric(info[[name]]), numeric(1)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+  }
+  out$stop_reason <- vapply(completion, `[[`, character(1), "stop_reason")
+  for (name in c("last_fully_valued_ts_utc", "last_executed_ts_utc")) {
+    out[[name]] <- as.POSIXct(
+      vapply(completion, function(info) as.numeric(info[[name]]), numeric(1)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+  }
+  out$complete_performance <- vapply(completion, `[[`, logical(1), "complete_performance")
+  out$affected_instrument_ids <- unname(lapply(completion, `[[`, "affected_instrument_ids"))
+  ledgr_classed_tibble(out, "ledgr_run_list")
 }
 
 #' Print a run list
@@ -876,21 +910,30 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
 print.ledgr_run_list <- function(x, ...) {
   cols <- c(
     "run_id", "label", "tags", "status", "final_equity",
-    "total_return", "execution_mode", "reproducibility_level"
+    "total_return", "complete_performance", "achieved_end_utc",
+    "execution_mode", "reproducibility_level"
   )
   if ("archived" %in% names(x) && any(as.logical(x$archived), na.rm = TRUE)) {
-    cols <- c("run_id", "label", "archived", "tags", "status", "final_equity", "total_return", "execution_mode")
+    cols <- c(
+      "run_id", "label", "archived", "tags", "status", "final_equity",
+      "total_return", "complete_performance", "achieved_end_utc", "execution_mode"
+    )
   }
-  ledgr_print_curated_tibble(
-    "# ledgr run list",
-    x,
-    cols = cols,
-    footer = c(
-      "Full identity and telemetry columns remain available on this tibble.",
-      "Inspect one run with ledgr_run_info(snapshot, run_id)."
+  args <- c(
+    list(
+      title = "# ledgr run list",
+      x = x,
+      cols = cols,
+      footer = c(
+        "INCOMPLETE metrics describe the achieved prefix only.",
+        "Full identity and telemetry columns remain available on this tibble.",
+        "Inspect one run with ledgr_run_info(snapshot, run_id)."
+      )
     ),
-    ...
+    list(...)
   )
+  if (is.null(args$width)) args$width <- Inf
+  do.call(ledgr_print_curated_tibble, args)
 }
 
 #' Inspect one run in a ledgr experiment store
@@ -973,6 +1016,10 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Status:          ", value("status"), "\n", sep = "")
   cat("Archived:        ", value("archived", "FALSE"), "\n", sep = "")
   cat("Tags:            ", value("tags"), "\n", sep = "")
+  if (isTRUE(x$completion_evidence_available)) {
+    cat("\n")
+    ledgr_print_completion_info(x)
+  }
   cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
   cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
   cat("Feature Set Hash: ", value("feature_set_hash"), "\n", sep = "")
@@ -988,10 +1035,6 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Persist Features:", value("persist_features"), "\n", sep = "")
   cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
   cat("Cache Misses:    ", value("feature_cache_misses"), "\n", sep = "")
-  if (isTRUE(x$completion_evidence_available)) {
-    cat("\n")
-    ledgr_print_completion_info(x)
-  }
   if (isTRUE(x$legacy_pre_provenance)) {
     cat("\nLegacy/pre-provenance run: strategy provenance is incomplete.\n")
   }

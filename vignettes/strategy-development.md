@@ -143,7 +143,7 @@ The pulse loop is the contract in motion:
 
 <div class="ledgr-diagram ledgr-pulse-loop">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   state_t["pulse t state<br/>bars through t<br/>positions, cash, equity"]
@@ -224,22 +224,21 @@ against current holdings and fills the gap.
 
 That distinction keeps strategies free from execution-state bookkeeping.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Affordability is not automatic
+>
+> Raw target vectors are desired holdings. ledgr does not check
+> affordability before filling them; if a target requires more cash than
+> the simulated portfolio has, the run can fill anyway and cash can go
+> negative. Use `ledgr_target_rebalance(equity_fraction = ...)` or size
+> directly from `ctx$cash` and `ctx$equity` when you need capital-aware
+> targets. A `risk_chain` can transform validated targets before fill
+> timing and cost resolution – for example `ledgr_risk_long_only()` can
+> clip short targets and `ledgr_risk_max_weight()` can cap per-instrument
+> target exposure. It is not a cash-affordability, margin, liquidity, or
+> broker-risk engine.
 
-**Affordability is not automatic**
-
-Raw target vectors are desired holdings. ledgr does not check
-affordability before filling them; if a target requires more cash than
-the simulated portfolio has, the run can fill anyway and cash can go
-negative. Use `ledgr_target_rebalance(equity_fraction = ...)` or size
-directly from `ctx$cash` and `ctx$equity` when you need capital-aware
-targets. A `risk_chain` can transform validated targets before fill
-timing and cost resolution – for example `ledgr_risk_long_only()` can
-clip short targets and `ledgr_risk_max_weight()` can cap per-instrument
-target exposure. It is not a cash-affordability, margin, liquidity, or
-broker-risk engine.
-
-</div>
 
 ## A First Trading Rule
 
@@ -278,15 +277,14 @@ the economic idea is clear, ledgr strategies are usually easier to read
 when they use helper functions that operate on the whole universe at
 once. The later sections make that transition.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change `buy_if_up()` so it starts from `ctx$hold()` instead of
+> `ctx$flat()`. Which positions would persist after a down bar, and why
+> does that change the economic meaning of the strategy?
 
-**Try it**
-
-Change `buy_if_up()` so it starts from `ctx$hold()` instead of
-`ctx$flat()`. Which positions would persist after a down bar, and why
-does that change the economic meaning of the strategy?
-
-</div>
 
 ## Why `params` Exists
 
@@ -386,6 +384,9 @@ summary(bt_top_1)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
 #> Performance Metrics:
 #>   Total Return:        0.45%
 #>   Annualized Return:   0.89%
@@ -398,7 +399,7 @@ summary(bt_top_1)
 #>   Sharpe Ratio:        0.450
 #>
 #> Trade Statistics:
-#>   Total Trades:        24
+#>   Closed Trades:       24
 #>   Win Rate:            45.83%
 #>   Avg Trade:           $2.15
 #>
@@ -426,20 +427,21 @@ Inspecting trades shows the actions produced by the target decisions.
 
 ``` r
 ledgr_results(bt_top_1, what = "trades")
-#> # A tibble: 24 x 9
-#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         3 2019-01-14 DEMO_02       SELL     13  72.8     0       -22.5  CLOSE
-#>  2         4 2019-01-18 DEMO_01       SELL     11  86.2     0       -19.0  CLOSE
-#>  3         7 2019-01-21 DEMO_02       SELL     13  70.2     0       -31.5  CLOSE
-#>  4         8 2019-01-25 DEMO_01       SELL      1  90.7     0         3.37 CLOSE
-#>  5         9 2019-02-08 DEMO_01       SELL     10  92.6     0        52.8  CLOSE
-#>  6        13 2019-02-13 DEMO_02       SELL     15  66.2     0       -14.0  CLOSE
-#>  7        14 2019-02-20 DEMO_01       SELL     10  96.9     0        30.4  CLOSE
-#>  8        17 2019-02-25 DEMO_02       SELL     14  67.5     0       -24.5  CLOSE
-#>  9        18 2019-02-27 DEMO_01       SELL      1 100.      0         2.52 CLOSE
-#> 10        19 2019-03-11 DEMO_01       SELL      9 106.      0        77.7  CLOSE
+#> # A tibble: 24 x 10
+#>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#>  1         3 2019-01-14 2019-01-14 00:00:00    DEMO_02       SELL     13  72.8     0
+#>  2         4 2019-01-18 2019-01-18 00:00:00    DEMO_01       SELL     11  86.2     0
+#>  3         7 2019-01-21 2019-01-21 00:00:00    DEMO_02       SELL     13  70.2     0
+#>  4         8 2019-01-25 2019-01-25 00:00:00    DEMO_01       SELL      1  90.7     0
+#>  5         9 2019-02-08 2019-02-08 00:00:00    DEMO_01       SELL     10  92.6     0
+#>  6        13 2019-02-13 2019-02-13 00:00:00    DEMO_02       SELL     15  66.2     0
+#>  7        14 2019-02-20 2019-02-20 00:00:00    DEMO_01       SELL     10  96.9     0
+#>  8        17 2019-02-25 2019-02-25 00:00:00    DEMO_02       SELL     14  67.5     0
+#>  9        18 2019-02-27 2019-02-27 00:00:00    DEMO_01       SELL      1 100.      0
+#> 10        19 2019-03-11 2019-03-11 00:00:00    DEMO_01       SELL      9 106.      0
 #> # i 14 more rows
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 The trade table only includes closed round trips. Small one-share rows
@@ -452,20 +454,21 @@ happened:
 
 ``` r
 ledgr_results(bt_top_1, what = "fills")
-#> # A tibble: 50 x 9
-#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-09 DEMO_02       BUY      13  74.6     0         0    OPEN
-#>  2         2 2019-01-14 DEMO_01       BUY      11  87.9     0         0    OPEN
-#>  3         3 2019-01-14 DEMO_02       SELL     13  72.8     0       -22.5  CLOSE
-#>  4         4 2019-01-18 DEMO_01       SELL     11  86.2     0       -19.0  CLOSE
-#>  5         5 2019-01-18 DEMO_02       BUY      13  72.6     0         0    OPEN
-#>  6         6 2019-01-21 DEMO_01       BUY      11  87.4     0         0    OPEN
-#>  7         7 2019-01-21 DEMO_02       SELL     13  70.2     0       -31.5  CLOSE
-#>  8         8 2019-01-25 DEMO_01       SELL      1  90.7     0         3.37 CLOSE
-#>  9         9 2019-02-08 DEMO_01       SELL     10  92.6     0        52.8  CLOSE
-#> 10        10 2019-02-08 DEMO_02       BUY      14  67.2     0         0    OPEN
+#> # A tibble: 50 x 10
+#>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#>  1         1 2019-01-09 2019-01-09 00:00:00    DEMO_02       BUY      13  74.6     0
+#>  2         2 2019-01-14 2019-01-14 00:00:00    DEMO_01       BUY      11  87.9     0
+#>  3         3 2019-01-14 2019-01-14 00:00:00    DEMO_02       SELL     13  72.8     0
+#>  4         4 2019-01-18 2019-01-18 00:00:00    DEMO_01       SELL     11  86.2     0
+#>  5         5 2019-01-18 2019-01-18 00:00:00    DEMO_02       BUY      13  72.6     0
+#>  6         6 2019-01-21 2019-01-21 00:00:00    DEMO_01       BUY      11  87.4     0
+#>  7         7 2019-01-21 2019-01-21 00:00:00    DEMO_02       SELL     13  70.2     0
+#>  8         8 2019-01-25 2019-01-25 00:00:00    DEMO_01       SELL      1  90.7     0
+#>  9         9 2019-02-08 2019-02-08 00:00:00    DEMO_01       SELL     10  92.6     0
+#> 10        10 2019-02-08 2019-02-08 00:00:00    DEMO_02       BUY      14  67.2     0
 #> # i 40 more rows
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 Zero fills means no execution occurred. Non-empty fills with zero trades

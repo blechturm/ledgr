@@ -47,14 +47,14 @@ multiplied by \code{sqrt(bars_per_year)};
 \item Sharpe ratio: annualized ratio of average period excess return to
 excess-return standard deviation, using the metric context's scalar annual
 risk-free rate converted to a per-period return;
-\item total trades: number of closed trade rows, not number of fill rows;
+\item Closed Trades: number of closed trade rows, not number of fill rows;
 \item win rate: share of closed trade rows with strict \code{realized_pnl > 0};
 \item average trade: mean \code{realized_pnl} across closed trade rows;
 \item time in market: share of equity rows with absolute
 \code{positions_value > 1e-6}.
 }
 
-If there are no closed trade rows, total trades is zero and win rate and
+If there are no closed trade rows, Closed Trades is zero and win rate and
 average trade are printed as not available. If registered features cannot
 become usable because an instrument has fewer bars than the feature contract
 requires, the summary prints a compact Warmup Diagnostics section naming the
@@ -62,6 +62,10 @@ feature ID, instrument ID, required bars, and available bars.
 Availability-aware runs also print their recorded completion evidence:
 requested and achieved windows, stop reason, last fully valued and executed
 times, complete or incomplete performance, and affected identifiers.
+When that evidence says performance is incomplete, the achieved-window block
+keeps prefix total return and maximum drawdown visible, but withholds
+annualized return, annualized volatility, and Sharpe ratio with an explicit
+explanation.
 }
 \section{Articles}{
 

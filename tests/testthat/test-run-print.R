@@ -31,8 +31,38 @@ testthat::test_that("ledgr_run_list prints curated view while preserving tibble 
   printed <- utils::capture.output(print(runs))
   testthat::expect_true(any(grepl("# ledgr run list", printed, fixed = TRUE)))
   testthat::expect_true(any(grepl("%", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("complete_performance", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("achieved_end_utc", printed, fixed = TRUE)))
+  testthat::expect_false(any(grepl("more variable", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl(
+    "INCOMPLETE metrics describe the achieved prefix only.",
+    printed,
+    fixed = TRUE
+  )))
   testthat::expect_true(any(grepl("Full identity and telemetry columns", printed, fixed = TRUE)))
   testthat::expect_s3_class(tibble::as_tibble(runs), "tbl_df")
+})
+
+testthat::test_that("summary prefix suppression follows completion evidence", {
+  incomplete <- list(
+    status = "FAILED",
+    completion_evidence_available = TRUE,
+    complete_performance = FALSE
+  )
+  complete <- list(
+    status = "INCOMPLETE",
+    completion_evidence_available = TRUE,
+    complete_performance = TRUE
+  )
+  unavailable <- list(
+    status = "INCOMPLETE",
+    completion_evidence_available = FALSE,
+    complete_performance = FALSE
+  )
+
+  testthat::expect_true(ledgr:::ledgr_summary_prefix_only(incomplete))
+  testthat::expect_false(ledgr:::ledgr_summary_prefix_only(complete))
+  testthat::expect_false(ledgr:::ledgr_summary_prefix_only(unavailable))
 })
 
 testthat::test_that("ledgr_run_compare prints curated view while preserving numeric metrics", {

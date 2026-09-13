@@ -551,6 +551,11 @@ print.ledgr_backtest <- function(x, ...) {
   invisible(x)
 }
 
+ledgr_summary_prefix_only <- function(completion) {
+  isTRUE(completion$completion_evidence_available) &&
+    identical(completion$complete_performance, FALSE)
+}
+
 #' Summarize a backtest result
 #'
 #' Prints standard performance, risk, trade, and exposure metrics.
@@ -579,13 +584,13 @@ print.ledgr_backtest <- function(x, ...) {
 #' - Sharpe ratio: annualized ratio of average period excess return to
 #'   excess-return standard deviation, using the metric context's scalar annual
 #'   risk-free rate converted to a per-period return;
-#' - total trades: number of closed trade rows, not number of fill rows;
+#' - Closed Trades: number of closed trade rows, not number of fill rows;
 #' - win rate: share of closed trade rows with strict `realized_pnl > 0`;
 #' - average trade: mean `realized_pnl` across closed trade rows;
 #' - time in market: share of equity rows with absolute
 #'   `positions_value > 1e-6`.
 #'
-#' If there are no closed trade rows, total trades is zero and win rate and
+#' If there are no closed trade rows, Closed Trades is zero and win rate and
 #' average trade are printed as not available. If registered features cannot
 #' become usable because an instrument has fewer bars than the feature contract
 #' requires, the summary prints a compact Warmup Diagnostics section naming the
@@ -593,6 +598,10 @@ print.ledgr_backtest <- function(x, ...) {
 #' Availability-aware runs also print their recorded completion evidence:
 #' requested and achieved windows, stop reason, last fully valued and executed
 #' times, complete or incomplete performance, and affected identifiers.
+#' When that evidence says performance is incomplete, the achieved-window block
+#' keeps prefix total return and maximum drawdown visible, but withholds
+#' annualized return, annualized volatility, and Sharpe ratio with an explicit
+#' explanation.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -650,20 +659,43 @@ summary.ledgr_backtest <- function(object,
   completion <- ledgr_backtest_completion_info(object)
   ledgr_print_completion_info(completion)
 
-  cat("Performance Metrics:\n")
-  cat(sprintf("  Total Return:        %.2f%%\n", computed$total_return * 100))
-  cat(sprintf("  Annualized Return:   %.2f%%\n", computed$annualized_return * 100))
-  cat(sprintf("  Max Drawdown:        %.2f%%\n", computed$max_drawdown * 100))
+  prefix_only <- ledgr_summary_prefix_only(completion)
+  withheld_reason <- "withheld (achieved window is shorter than requested)"
+  if (prefix_only) {
+    achieved_window <- sprintf(
+      "%s to %s",
+      ledgr_completion_time_label(completion$achieved_start_utc),
+      ledgr_completion_time_label(completion$achieved_end_utc)
+    )
+    cat(sprintf("Achieved-Prefix Metrics (%s):\n", achieved_window))
+    cat(sprintf("  Total Return (prefix):    %.2f%%\n", computed$total_return * 100))
+    cat(sprintf("  Annualized Return:        %s\n", withheld_reason))
+    cat(sprintf("  Max Drawdown (prefix):    %.2f%%\n", computed$max_drawdown * 100))
+  } else {
+    cat("Performance Metrics:\n")
+    cat(sprintf("  Total Return:        %.2f%%\n", computed$total_return * 100))
+    cat(sprintf("  Annualized Return:   %.2f%%\n", computed$annualized_return * 100))
+    cat(sprintf("  Max Drawdown:        %.2f%%\n", computed$max_drawdown * 100))
+  }
 
   cat("\nRisk Metrics:\n")
   cat(sprintf("  Risk-Free Rate:      %s\n", ledgr_metric_summary_risk_free_display(computed_context)))
   cat(sprintf("  Annualization:       %s\n", ledgr_metric_summary_annualization_display(computed_context)))
-  cat(sprintf("  Volatility (annual): %.2f%%\n", computed$volatility * 100))
-  sharpe_label <- if (is.finite(computed$sharpe_ratio)) sprintf("%.3f", computed$sharpe_ratio) else "N/A"
-  cat(sprintf("  Sharpe Ratio:        %s\n", sharpe_label))
+  if (prefix_only) {
+    cat(sprintf("  Volatility (annual): %s\n", withheld_reason))
+    cat(sprintf("  Sharpe Ratio:        %s\n", withheld_reason))
+  } else {
+    cat(sprintf("  Volatility (annual): %.2f%%\n", computed$volatility * 100))
+    sharpe_label <- if (is.finite(computed$sharpe_ratio)) {
+      sprintf("%.3f", computed$sharpe_ratio)
+    } else {
+      "N/A"
+    }
+    cat(sprintf("  Sharpe Ratio:        %s\n", sharpe_label))
+  }
 
   cat("\nTrade Statistics:\n")
-  cat(sprintf("  Total Trades:        %d\n", computed$n_trades))
+  cat(sprintf("  Closed Trades:       %d\n", computed$n_trades))
   if (computed$n_trades > 0) {
     cat(sprintf("  Win Rate:            %.2f%%\n", computed$win_rate * 100))
     cat(sprintf("  Avg Trade:           $%.2f\n", computed$avg_trade))

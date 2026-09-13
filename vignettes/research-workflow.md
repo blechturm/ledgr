@@ -41,7 +41,7 @@ The loop is deliberately short:
 
 <div class="ledgr-diagram ledgr-workflow-diagram">
 
-``` mermaid
+```mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
 
 flowchart TB
@@ -95,27 +95,25 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> This article is evaluated when it is rendered. To keep package builds
+> and local previews disposable, the code writes to a temporary DuckDB
+> store. In a real project, replace `store_path` with a durable path such
+> as `artifacts/ledgr_store.duckdb`.
 
-**Running this yourself**
 
-This article is evaluated when it is rendered. To keep package builds
-and local previews disposable, the code writes to a temporary DuckDB
-store. In a real project, replace `store_path` with a durable path such
-as `artifacts/ledgr_store.duckdb`.
+> [!NOTE]
+>
+> ### About the demo data
+>
+> `DEMO_01` and `DEMO_02` are package-owned demo instruments. Real
+> research should use a sealed snapshot of the market data you intend to
+> study. The point here is the shape of the workflow, not the realism of
+> the data.
 
-</div>
-
-<div class="ledgr-callout ledgr-callout-note">
-
-**About the demo data**
-
-`DEMO_01` and `DEMO_02` are package-owned demo instruments. Real
-research should use a sealed snapshot of the market data you intend to
-study. The point here is the shape of the workflow, not the realism of
-the data.
-
-</div>
 
 ## Project Topology
 
@@ -288,6 +286,10 @@ summary(single_run)
     ledgr Backtest Summary
     ======================
 
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+      Timing Version:      N/A
+
     Performance Metrics:
       Total Return:        1.07%
       Annualized Return:   2.11%
@@ -300,7 +302,7 @@ summary(single_run)
       Sharpe Ratio:        1.349
 
     Trade Statistics:
-      Total Trades:        2
+      Closed Trades:       2
       Win Rate:            100.00%
       Avg Trade:           $53.41
 
@@ -311,11 +313,12 @@ summary(single_run)
 ledgr_results(single_run, what = "trades")
 ```
 
-    # A tibble: 2 × 9
-      event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-          <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-    1         3 2019-04-23 DEMO_01       SELL     10 102.      0         27.4 CLOSE
-    2         4 2019-06-13 DEMO_02       SELL     10  76.5     0         79.4 CLOSE
+    # A tibble: 2 × 10
+      event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+          <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+    1         3 2019-04-23 2019-04-23 00:00:00    DEMO_01       SELL     10 102.      0
+    2         4 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
+    # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
 
 ``` r
 head(ledgr_results(single_run, what = "equity"), 3)
@@ -381,14 +384,13 @@ candidate pays the durable-materialization cost.
 winner for you. That choice belongs in the next step, where you inspect
 the table and make the ranking rule visible.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Add a third value to `fast_n` and `slow_n`. How many candidates does the
+> `.filter` keep? How many would exist without the filter?
 
-**Try it**
-
-Add a third value to `fast_n` and `slow_n`. How many candidates does the
-`.filter` keep? How many would exist without the filter?
-
-</div>
 
 ## Inspect Before You Promote
 
@@ -438,15 +440,14 @@ candidates failed, warned, or produced diagnostics that should change
 how you read the sweep. The full completed-candidate table remains in
 `review$ranked`.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Sort by `total_return` instead of `sharpe_ratio`. Does the first
+> candidate change? If it does, your “best” candidate depends on the
+> metric, not only on the strategy.
 
-**Try it**
-
-Sort by `total_return` instead of `sharpe_ratio`. Does the first
-candidate change? If it does, your “best” candidate depends on the
-metric, not only on the strategy.
-
-</div>
 
 ## Commit The Selection With A Note
 
@@ -470,6 +471,10 @@ summary(promoted)
     ledgr Backtest Summary
     ======================
 
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+      Timing Version:      N/A
+
     Performance Metrics:
       Total Return:        2.25%
       Annualized Return:   4.48%
@@ -482,7 +487,7 @@ summary(promoted)
       Sharpe Ratio:        3.084
 
     Trade Statistics:
-      Total Trades:        3
+      Closed Trades:       3
       Win Rate:            100.00%
       Avg Trade:           $75.05
 
@@ -515,12 +520,17 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 2 × 8
-      run_id label tags  status final_equity total_return execution_mode reproducibility_level
-      <chr>  <chr> <lgl> <chr>         <dbl> <chr>        <chr>          <chr>
-    1 workf… <NA>  NA    DONE         10107. +1.1%        audit_log      tier_1
-    2 workf… <NA>  NA    DONE         10225. +2.3%        audit_log      tier_1
+    # A tibble: 2 × 10
+      run_id                      label tags  status final_equity total_return
+      <chr>                       <chr> <lgl> <chr>         <dbl> <chr>
+    1 workflow_single_run         <NA>  NA    DONE         10107. +1.1%
+    2 workflow_promoted_candidate <NA>  NA    DONE         10225. +2.3%
+      complete_performance achieved_end_utc execution_mode reproducibility_level
+      <lgl>                <dttm>           <chr>          <chr>
+    1 NA                   NA               audit_log      tier_1
+    2 NA                   NA               audit_log      tier_1
 
+    # i INCOMPLETE metrics describe the achieved prefix only.
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
@@ -540,12 +550,15 @@ info
     Snapshot:        demo_2019_h1
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 523c01fdf7e56d6ac24271057fd702deb70c0618d6c1533f97ed6798fe377f31
+    Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
     Config Hash:     5f94feac98056d84bb9d55053990f945d10373c67702405a7f4b5d8905dd4d67
     Strategy Hash:   1bf04a8ccca8bbaa85f33b05cf3047a11751467ab7a9ca85d02d243c9487788b
     Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
     Reproducibility: tier_1
     Execution Mode:  audit_log
-    Elapsed Sec:     1.19
+    Fill Timing:     dense_bar_timestamp
+    Timing Version:  N/A
+    Elapsed Sec:     1.2
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4
@@ -557,6 +570,10 @@ summary(reopened)
 
     ledgr Backtest Summary
     ======================
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+      Timing Version:      N/A
 
     Performance Metrics:
       Total Return:        2.25%
@@ -570,7 +587,7 @@ summary(reopened)
       Sharpe Ratio:        3.084
 
     Trade Statistics:
-      Total Trades:        3
+      Closed Trades:       3
       Win Rate:            100.00%
       Avg Trade:           $75.05
 
@@ -586,16 +603,15 @@ behind the promoted run. Today that recovery uses two public surfaces:
 - `ledgr_run_info()` and `ledgr_run_open()` for the stored run;
 - `ledgr_run_strategy()` for strategy source and parameter provenance.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### API gap
+>
+> The next few lines are intentionally lower-level. They show what ledgr
+> records for a promoted run. A future promotion-review helper may
+> summarize this “what caused this result?” record without asking users to
+> inspect nested promotion-context fields directly.
 
-**API gap**
-
-The next few lines are intentionally lower-level. They show what ledgr
-records for a promoted run. A future promotion-review helper may
-summarize this “what caused this result?” record without asking users to
-inspect nested promotion-context fields directly.
-
-</div>
 
 ``` r
 promotion <- info$promotion_context
@@ -656,18 +672,17 @@ candidate was selected, which strategy parameters and feature parameters
 produced it, what note justified the promotion, and which strategy
 source metadata was captured.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### What recovery means
+>
+> Recovery is provenance, not magic. Tier 1 strategy source can usually be
+> inspected, hash-checked, and optionally evaluated with `trust = TRUE`.
+> Tier 2 strategies may depend on external functions or package state, so
+> ledgr records the source text, hashes, parameters, dependency metadata,
+> and warnings that explain what was captured and what remains outside the
+> run artifact.
 
-**What recovery means**
-
-Recovery is provenance, not magic. Tier 1 strategy source can usually be
-inspected, hash-checked, and optionally evaluated with `trust = TRUE`.
-Tier 2 strategies may depend on external functions or package state, so
-ledgr records the source text, hashes, parameters, dependency metadata,
-and warnings that explain what was captured and what remains outside the
-run artifact.
-
-</div>
 
 ## What Promotion Does Not Prove
 
@@ -688,7 +703,7 @@ sample-specific luck to look like skill.
 
 <div class="ledgr-diagram ledgr-validation-diagram">
 
-``` mermaid
+```mermaid
 %%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "secondaryColor": "#eef2ff", "secondaryTextColor": "#1f2937", "secondaryBorderColor": "#64748b", "tertiaryColor": "#fff7ed", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#fb923c"}}}%%
 
 flowchart TB
@@ -705,16 +720,15 @@ Use the promotion note to record the human choice. Treat walk-forward
 and out-of-sample evaluation as the next conceptual layer when the
 question becomes selection quality rather than artifact reproducibility.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Write one sentence explaining why you promoted the candidate and one
+> sentence explaining why that promotion is not validation. If the second
+> sentence feels hard to write, the selection rule probably needs more
+> work.
 
-**Try it**
-
-Write one sentence explaining why you promoted the candidate and one
-sentence explaining why that promotion is not validation. If the second
-sentence feels hard to write, the selection rule probably needs more
-work.
-
-</div>
 
 ## Plot The Promoted Evidence
 

@@ -24,6 +24,30 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   out_summary <- capture.output(summary(bt))
   testthat::expect_true(any(grepl("ledgr Backtest Summary", out_summary)))
   testthat::expect_true(any(grepl("Total Return", out_summary)))
+  testthat::expect_identical(
+    out_summary,
+    c(
+      "ledgr Backtest Summary", "======================", "",
+      "Execution Evidence:",
+      "  Fill Timing:         dense_bar_timestamp",
+      "  Timing Version:      N/A", "",
+      "Performance Metrics:",
+      "  Total Return:        -0.14%",
+      "  Annualized Return:   -2.44%",
+      "  Max Drawdown:        -0.62%", "",
+      "Risk Metrics:",
+      "  Risk-Free Rate:      0.00% annual",
+      "  Annualization:       252 periods/year (US equity daily)",
+      "  Volatility (annual): 2.82%",
+      "  Sharpe Ratio:        -0.863", "",
+      "Trade Statistics:",
+      "  Closed Trades:       0",
+      "  Win Rate:            N/A (no trades)",
+      "  Avg Trade:           N/A (no trades)", "",
+      "Exposure:",
+      "  Time in Market:      93.33%"
+    )
+  )
 
   eq <- as_tibble(bt, "equity")
   testthat::expect_s3_class(eq, "tbl_df")

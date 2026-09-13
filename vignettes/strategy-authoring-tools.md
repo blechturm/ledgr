@@ -419,6 +419,9 @@ summary(bt_mapped)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
 #> Performance Metrics:
 #>   Total Return:        0.64%
 #>   Annualized Return:   1.26%
@@ -431,7 +434,7 @@ summary(bt_mapped)
 #>   Sharpe Ratio:        1.523
 #>
 #> Trade Statistics:
-#>   Total Trades:        19
+#>   Closed Trades:       19
 #>   Win Rate:            31.58%
 #>   Avg Trade:           $3.69
 #>
@@ -475,7 +478,7 @@ The helper pipeline is only an authoring layer:
 
 <div class="ledgr-diagram ledgr-helper-pipeline">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   signal["ledgr_signal"]
@@ -578,16 +581,15 @@ tutorial-style signal functions. It explicitly maps an inner signal
 function to target quantities. For the full tier model, read
 `vignette("reproducibility", package = "ledgr")`.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Definition
+>
+> A preflight tier is ledgr’s static reproducibility classification for a
+> strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
+> user-managed environment parity, and Tier 3 is rejected before
+> execution.
 
-**Definition**
-
-A preflight tier is ledgr’s static reproducibility classification for a
-strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
-user-managed environment parity, and Tier 3 is rejected before
-execution.
-
-</div>
 
 A compact Tier 3 hard-failure example is an unresolved helper reference:
 

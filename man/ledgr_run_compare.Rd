@@ -19,7 +19,9 @@ DuckDB file in a new R session.}
 
 \item{run_ids}{Optional character vector of run IDs. If supplied, output
 preserves this order, including duplicates, and may include archived
-completed runs. If \code{NULL}, compares all non-archived completed runs.}
+completed runs. A named non-completed run raises
+\code{ledgr_run_not_complete}. If \code{NULL}, compares all non-archived completed
+runs and silently excludes other statuses.}
 
 \item{include_archived}{Logical scalar. Used only when \code{run_ids = NULL}.}
 
@@ -41,6 +43,9 @@ metric context; the table has exactly one metric context, available through
 convention. The comparison attributes \code{fill_timing_comparable} and
 \code{fill_timing_comparability_reason} describe whether the selected run set
 can support a fill-equivalence claim; they never filter or alter metrics.
+Incomplete runs remain visible through \code{\link[=ledgr_run_list]{ledgr_run_list()}} and
+\code{\link[=ledgr_run_info]{ledgr_run_info()}}, but cannot enter this ranking surface because a shorter
+horizon changes what return, Sharpe ratio, and drawdown mean.
 Use \code{as.data.frame(comparison)} or
 tibble operations when exporting report-ready numeric columns.
 }

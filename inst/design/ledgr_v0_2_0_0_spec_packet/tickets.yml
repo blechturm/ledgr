@@ -945,7 +945,7 @@ tickets:
 
   - id: "LDG-2712"
     title: "Curated fact inspection printing"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -959,10 +959,21 @@ tickets:
       - "Membership history retains evidence_type and shows knowledge_time"
       - "Session resolution shows reason and derived knowledge_time"
       - "$rows and $evidence unchanged for every family and operation"
+    implementation_notes:
+      - >-
+        Printing now selects family- and operation-specific columns, reports
+        full row counts and omitted columns, and leaves rows and evidence
+        unchanged.
+      - >-
+        Session-resolution knowledge time is derived only from applicable
+        supporting evidence; no support produces a typed missing timestamp.
+      - >-
+        Review follow-up labels the value as derived from evidence rather than
+        stored rows and adds detecting unsupported- and future-evidence tests.
 
   - id: "LDG-2713"
     title: "Completion-aware run inventory"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -977,10 +988,18 @@ tickets:
       - "Eleven appended fields in bound order across all statuses"
       - "Finalization-failed run reports retained completion evidence"
       - "affected_instrument_ids distinguishes unavailable, empty, known"
+    implementation_notes:
+      - >-
+        ledgr_run_list appends the eleven bound completion fields through a
+        batched read without widening the shared low-level fetch.
+      - >-
+        Tests cover typed absence, all three affected-ID states, retained
+        completion evidence on failure, reopen parity, no replay, and
+        full-table read-only behavior.
 
   - id: "LDG-2714"
     title: "Incomplete-comparison prohibition"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "S"
     dependencies:
@@ -993,10 +1012,17 @@ tickets:
       - "test-run-store.R"
       - "Explicit run_ids raise ledgr_run_not_complete"
       - "Omitted run_ids exclude non-DONE rows without raising"
+    implementation_notes:
+      - >-
+        Contracts, help, and tests lock explicit non-DONE rejection and silent
+        non-DONE exclusion when run IDs are omitted.
+      - >-
+        Completion-aware inventory is the supported surface for inspecting
+        runs with different achieved horizons together.
 
   - id: "LDG-2715"
     title: "Reporting UX article corrections"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies:
@@ -1011,6 +1037,107 @@ tickets:
       - "Documentation-contract tests"
       - "GFM render and pkgdown build"
       - "No user-defined reporting wrapper in the canonical workflow"
+    implementation_notes:
+      - >-
+        The article now uses public fact and run-inventory outputs, removes
+        hand-built reporting and common-window code, and keeps the folded
+        membership exercise explicitly article-specific.
+      - >-
+        Current execution regenerated the GFM output and figure; targeted and
+        full tests, checkRd, and the pkgdown 2.2.1 site build pass.
+      - >-
+        Review follow-up exposes bars_input construction and removes the
+        unsupported 26.1-point prose figure before rerendering.
+
+  - id: "LDG-2716"
+    title: "Completion-aware run summary"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies:
+      - "LDG-2713"
+    classification:
+      type: "contract"
+      surface: "run-summary"
+      scope: "prefix-only-metrics"
+    tests:
+      - "test-run-print.R"
+      - "test-availability-parity.R"
+      - "Incomplete performance suppresses annualized figures"
+      - "Complete runs keep every metric unchanged"
+    implementation_notes:
+      - >-
+        Suppression follows recorded complete_performance evidence rather than
+        run status; the achieved-window heading keeps raw prefix metrics visible
+        and explains why annualized figures are withheld.
+      - >-
+        A byte-for-byte complete-run print assertion permits only LDG-2718's
+        label correction.
+      - >-
+        Reverting suppression to status-based logic fails both evidence cases;
+        forcing prefix mode off fails the achieved-window and withholding tests.
+
+  - id: "LDG-2717"
+    title: "Run info print ordering"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2713"
+    classification:
+      type: "documentation"
+      surface: "run-inspection"
+      scope: "print-ordering"
+    tests:
+      - "test-run-print.R"
+      - "Completion evidence precedes identity hashes"
+      - "No field is dropped from the printed record"
+    implementation_notes:
+      - >-
+        Completion evidence now follows status metadata and precedes identity
+        and telemetry fields, with every prior printed field retained.
+      - >-
+        The article uses one summary block to demonstrate completion-aware
+        withholding without repeating completion evidence and is rerendered.
+      - >-
+        Restoring the old field order or the second article summary fails its
+        dedicated ordering or documentation-contract assertion.
+      - >-
+        Review follow-up keeps one article summary call as the visible
+        completion-aware demonstration and locks its intentional placement in
+        Core Workflow.
+      - >-
+        Follow-up GFM and pkgdown renders expose the achieved-prefix heading and
+        all three withholding messages in the checked-in and built article.
+
+  - id: "LDG-2718"
+    title: "Closed-trade statistics label"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "S"
+    dependencies:
+      - "LDG-2716"
+    classification:
+      type: "documentation"
+      surface: "run-summary"
+      scope: "trade-label"
+    tests:
+      - "test-run-print.R"
+      - "Summary names closed trades, not total trades"
+      - "Open-only fills remain excluded from the count"
+    implementation_notes:
+      - >-
+        The printed label and help now say Closed Trades while the value remains
+        computed n_trades, so no accounting or metric computation changed.
+      - >-
+        Restoring the old printed label fails the byte-for-byte complete summary
+        assertion.
+      - >-
+        Review follow-up regenerates all affected public Markdown and locks the
+        public documentation against the stale Total Trades label.
+      - >-
+        The README, eight other affected vignette siblings, and the Survivorship
+        Bias article now agree with the generated help and built site.
 
   - id: "LDG-2703"
     title: "v0.2.0.0 release gate"
@@ -1061,6 +1188,9 @@ tickets:
       - "LDG-2713"
       - "LDG-2714"
       - "LDG-2715"
+      - "LDG-2716"
+      - "LDG-2717"
+      - "LDG-2718"
     classification:
       type: "release"
       surface: "release-gate"

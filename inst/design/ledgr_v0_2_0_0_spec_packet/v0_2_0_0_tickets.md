@@ -2498,7 +2498,7 @@ scope: inspection-and-completion
 Priority: P1
 Effort: M
 Dependencies: LDG-2711
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2538,6 +2538,18 @@ columns that carry point-in-time meaning are visible without reshaping.
 - `test-availability-inspection.R`
 - Documentation-contract tests
 
+### Implementation Notes
+
+- Printing now selects family- and operation-specific columns, reports the
+  full row count and omitted columns, and leaves `$rows` and `$evidence`
+  unchanged.
+- Session-resolution knowledge time is derived only from applicable supporting
+  evidence; excluded future evidence cannot populate it, and no supporting
+  evidence produces a typed missing timestamp.
+- Review follow-up labels that value as derived from `$evidence`, not stored in
+  `$rows`, and adds detecting tests for both unsupported evidence and excluded
+  future evidence.
+
 ### Classification
 
 ```yaml
@@ -2551,7 +2563,7 @@ scope: curated-printing
 Priority: P1
 Effort: M
 Dependencies: LDG-2711
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2593,6 +2605,14 @@ cannot present an incomplete run's prefix return as a peer of a complete run's.
 - `test-availability-parity.R`
 - Documentation-contract tests
 
+### Implementation Notes
+
+- `ledgr_run_list()` appends the eleven completion fields in their bound order
+  using a batched read that leaves the shared low-level fetch unchanged.
+- Tests cover dense and legacy absence, incomplete and failed completion
+  evidence, the affected-ID tri-state, reopen parity, no strategy replay, and
+  full-table read-only store behavior.
+
 ### Classification
 
 ```yaml
@@ -2606,7 +2626,7 @@ scope: completion-projection
 Priority: P1
 Effort: S
 Dependencies: LDG-2713
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2637,6 +2657,14 @@ change could relax.
 - `test-run-store.R`
 - Documentation-contract tests
 
+### Implementation Notes
+
+- Contracts, help, and tests preserve both comparison modes: explicit
+  non-`DONE` IDs fail with `ledgr_run_not_complete`, while omitted IDs exclude
+  non-`DONE` rows without failing the store survey.
+- The completion-aware inventory remains the supported surface for inspecting
+  runs with different achieved horizons together.
+
 ### Classification
 
 ```yaml
@@ -2650,7 +2678,7 @@ scope: incomplete-prohibition
 Priority: P1
 Effort: M
 Dependencies: LDG-2712, LDG-2713, LDG-2714
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -2682,6 +2710,18 @@ canonical workflow defines a helper to display recorded evidence.
 - Documentation-contract tests
 - GFM render and pkgdown build
 
+### Implementation Notes
+
+- The article now teaches fact history, fact resolution, and completion
+  evidence through public outputs rather than local reporting helpers.
+- The common-window calculation and hand-built horizon table are gone. The
+  four-scenario membership exercise remains as folded, labelled sensitivity
+  analysis, and current execution regenerated the GFM output and figure.
+- Targeted tests and the full source suite pass; `tools::checkRd()` is clean,
+  and the full pkgdown 2.2.1 site build succeeds.
+- Review follow-up exposes the previously hidden `bars_input` construction and
+  removes the unsupported 26.1-point prose figure before rerendering.
+
 ### Classification
 
 ```yaml
@@ -2690,11 +2730,174 @@ surface: teaching-workflow
 scope: reporting-ux
 ```
 
+## LDG-2716 - Completion-Aware Run Summary
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2713
+Status: Complete After Review
+
+### Description
+
+`summary()` prints `Status: INCOMPLETE` and `Performance: incomplete`, then
+reports an annualized return, annualized volatility, and a Sharpe ratio derived
+from the achieved prefix. Annualizing a truncated horizon extrapolates evidence
+the run does not have.
+
+### Tasks
+
+- Withhold annualized return, annualized volatility, and Sharpe ratio whenever
+  recorded completion evidence says performance is incomplete, and say why in
+  their place rather than printing a blank.
+- Head the metrics block so a reader cannot mistake prefix-derived figures for
+  the requested horizon, naming the achieved window.
+- Leave raw prefix metrics such as total return and maximum drawdown visible
+  and unchanged; they describe what happened, not an extrapolation of it.
+- Leave complete runs byte-identical.
+
+### Acceptance Criteria
+
+- An `INCOMPLETE` run's summary reports no annualized figure, and states that
+  the achieved window is shorter than the requested one.
+- A `DONE` run's summary is unchanged in content and order.
+- A `FAILED` run that retains completion evidence follows the completion
+  evidence, not the status.
+- Raw prefix metrics remain visible and are labelled as prefix-only.
+
+### Verification
+
+- `test-run-print.R`
+- `test-availability-parity.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- Suppression follows recorded `complete_performance` evidence rather than run
+  status. The achieved-window heading and explicit withholding text replace
+  extrapolated annualized figures while raw prefix metrics remain visible.
+- A byte-for-byte complete-run print assertion permits only LDG-2718's label
+  correction.
+- Reverting the helper to key on status fails both discriminating evidence
+  assertions; forcing prefix mode off fails the achieved-window and withholding
+  assertions in the incomplete-run test.
+
+### Classification
+
+```yaml
+type: contract
+surface: run-summary
+scope: prefix-only-metrics
+```
+
+## LDG-2717 - Run Info Print Ordering
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2713
+
+Status: Complete After Review
+
+### Description
+
+`print.ledgr_run_info()` emits six full-length hashes before completion
+evidence, so a reader reaches identity metadata before learning why a run
+stopped.
+
+### Tasks
+
+- Print status and completion evidence before identity and telemetry fields.
+- Keep every field that is printed today; this reorders, it does not remove.
+- Update the Survivorship Bias article so the completion block is not shown
+  twice in immediate succession by `ledgr_run_info()` and `summary()`.
+
+### Acceptance Criteria
+
+- Completion evidence precedes the identity hashes in the printed record.
+- No field present before the change is absent after it.
+- The article shows the completion story once, not twice.
+
+### Verification
+
+- `test-run-print.R`
+- Documentation-contract tests
+- GFM render
+
+### Implementation Notes
+
+- Completion evidence now follows the status metadata and precedes all identity
+  and telemetry fields. Tests retain an assertion for every prior field.
+- The article prints `ledgr_run_info()` once and no longer immediately repeats
+  the same completion evidence through `summary()`.
+- Restoring the prior print order fails the completion-before-snapshot assertion;
+  restoring the second article summary fails the documentation-contract lock.
+- Review follow-up keeps one article `summary()` call as the visible
+  completion-aware demonstration while retaining exactly one completion block.
+  The article's Core Workflow placement is intentional and contract-locked.
+- The follow-up GFM and pkgdown renders expose the achieved-prefix heading and
+  all three withholding messages in the checked-in and built article.
+
+### Classification
+
+```yaml
+type: documentation
+surface: run-inspection
+scope: print-ordering
+```
+
+## LDG-2718 - Closed-Trade Statistics Label
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2716
+
+Status: Complete After Review
+
+### Description
+
+The summary prints `Total Trades: 0` for a run whose fills the same article
+has just displayed. The count is correct, because `n_trades` counts closed
+trade rows, but only the help says so.
+
+### Tasks
+
+- Name the statistic for what it counts in the printed summary.
+- Keep the computation unchanged; open-only fills still do not count.
+- Keep the help and the printed label in agreement.
+
+### Acceptance Criteria
+
+- The summary label states that the count is of closed trades.
+- The value is unchanged for every run.
+- Help text and printed output use the same term.
+
+### Verification
+
+- `test-run-print.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- The printed label and help now say `Closed Trades`; the value remains
+  `computed$n_trades`, so no accounting or metric computation changed.
+- Restoring the old printed label fails the byte-for-byte complete summary test.
+- Review follow-up regenerates all affected public Markdown and locks the public
+  documentation against the stale `Total Trades:` label.
+- The README, eight other affected vignette siblings, and the Survivorship Bias
+  article now agree with the generated help and built site.
+
+### Classification
+
+```yaml
+type: documentation
+surface: run-summary
+scope: trade-label
+```
+
 ## LDG-2703 - v0.2.0.0 Release Gate
 
 Priority: P0
 Effort: L
-Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711, LDG-2712, LDG-2713, LDG-2714, LDG-2715
+Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711, LDG-2712, LDG-2713, LDG-2714, LDG-2715, LDG-2716, LDG-2717, LDG-2718
 Status: Pending
 
 ### Description
@@ -2719,6 +2922,11 @@ remote CI, merge, and tag without conflating those evidence stages.
 - Add a contract check that every relative local image referenced by
   `vignettes/*.md` resolves to an existing file, ignoring absolute URLs, data
   URIs, and pure anchors.
+- Declare every CRAN-available package a gated test requires, so no test can
+  be skipped for a dependency `DESCRIPTION` never names. `pbo` is on CRAN and
+  belongs in `Suggests`; `quantstrat` is not, so either record it under
+  `Additional_repositories` or convert that cross-check into a documented
+  manual procedure rather than a permanently skipped test.
 - Remove generated local artifacts and write the release closeout.
 
 ### Acceptance Criteria
@@ -2735,6 +2943,10 @@ remote CI, merge, and tag without conflating those evidence stages.
   order in which rendering ran.
 - `docs/pkgdown.yml` records a pkgdown at or above the floor, and the closeout
   names that version.
+- No test is skipped for a package absent from `DESCRIPTION`, and the skip
+  inventory in the closeout names the R version and the optional packages
+  installed when it was produced, because a skip count without them is not
+  reproducible evidence.
 - Branch is ready for remote branch CI; main and tag CI remain later evidence.
 
 ### Verification

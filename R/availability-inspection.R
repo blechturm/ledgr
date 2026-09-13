@@ -4,6 +4,11 @@
 #' `ledgr_facts_resolve()` returns only the state supported at one decision
 #' cutoff. Both functions accept an in-memory fact family or bundle, or a
 #' sealed snapshot. Results are eager and read-only.
+#' Default prints show the columns needed to interpret the selected family and
+#' operation, disclose omitted stored columns, and leave the complete `$rows`
+#' and `$evidence` members unchanged. Session-resolution `knowledge_time` is a
+#' presentation value derived from applicable `$evidence`; it is not stored in
+#' `$rows`.
 #'
 #' @param facts A fact-family object, a `ledgr_facts` bundle, or a sealed
 #'   `ledgr_snapshot`.
@@ -144,8 +149,10 @@ print.ledgr_facts_history <- function(x, ...) {
   cat("ledgr facts history\n")
   cat("Family: ", x$metadata$family, " [", x$metadata$scope_id, "]\n", sep = "")
   cat("Rows:   ", nrow(x$rows), "\n", sep = "")
-  print(utils::head(x$rows, 10L))
+  view <- ledgr_facts_inspection_print_view(x)
+  print(utils::head(view, 10L), width = Inf)
   if (nrow(x$rows) > 10L) cat("# ... with ", nrow(x$rows) - 10L, " more row(s)\n", sep = "")
+  ledgr_facts_inspection_print_disclosure(x, view)
   invisible(x)
 }
 
@@ -155,7 +162,63 @@ print.ledgr_facts_resolution <- function(x, ...) {
   cat("ledgr facts resolution\n")
   cat("Family: ", x$metadata$family, " [", x$metadata$scope_id, "]\n", sep = "")
   cat("At:     ", x$metadata$at, "\n", sep = "")
-  print(x$rows)
+  cat("Rows:   ", nrow(x$rows), "\n", sep = "")
+  view <- ledgr_facts_inspection_print_view(x)
+  print(view, width = Inf)
+  ledgr_facts_inspection_print_disclosure(x, view)
+  invisible(x)
+}
+
+ledgr_facts_inspection_print_view <- function(x) {
+  family <- x$metadata$family
+  operation <- x$metadata$operation
+  columns <- if (identical(family, "membership") && identical(operation, "history")) {
+    c(
+      "evidence_type", "instrument_id", "member", "effective_from",
+      "knowledge_time", "complete"
+    )
+  } else if (identical(family, "membership")) {
+    c("instrument_id", "member", "reason")
+  } else if (identical(operation, "history")) {
+    c("session_date", "status", "session_open", "session_close", "knowledge_time")
+  } else {
+    c("session_date", "status", "session_open", "session_close", "reason")
+  }
+  view <- tibble::as_tibble(x$rows[, intersect(columns, names(x$rows)), drop = FALSE])
+  if (identical(family, "sessions") && identical(operation, "resolve")) {
+    view$knowledge_time <- ledgr_facts_resolution_knowledge_time(x)
+  }
+  view
+}
+
+ledgr_facts_resolution_knowledge_time <- function(x) {
+  missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  out <- rep(missing_time, nrow(x$rows))
+  if (
+    nrow(x$rows) == 0L || nrow(x$evidence) == 0L ||
+      !all(c("evidence_ids") %in% names(x$rows)) ||
+      !all(c("evidence_id", "knowledge_time") %in% names(x$evidence))
+  ) {
+    return(out)
+  }
+  for (row in seq_len(nrow(x$rows))) {
+    ids <- strsplit(as.character(x$rows$evidence_ids[[row]]), "\\|", fixed = FALSE)[[1L]]
+    ids <- ids[nzchar(ids)]
+    supported <- x$evidence$knowledge_time[x$evidence$evidence_id %in% ids]
+    supported <- supported[!is.na(supported)]
+    if (length(supported) > 0L) out[[row]] <- max(supported)
+  }
+  out
+}
+
+ledgr_facts_inspection_print_disclosure <- function(x, view) {
+  omitted <- setdiff(names(x$rows), names(view))
+  label <- if (length(omitted) == 0L) "none" else paste(omitted, collapse = ", ")
+  cat("# i Omitted stored columns: ", label, ".\n", sep = "")
+  if ("knowledge_time" %in% setdiff(names(view), names(x$rows))) {
+    cat("# i knowledge_time is derived from $evidence; it is not stored in $rows.\n")
+  }
+  cat("# i Full rows remain in $rows; supporting evidence remains in $evidence.\n")
   invisible(x)
 }
 

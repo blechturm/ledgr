@@ -56,9 +56,6 @@ ledgr_run_completion_info <- function(con, run_id) {
   if (is.null(completion) || nrow(completion) == 0L) {
     return(ledgr_run_completion_info_empty())
   }
-  time_value <- function(name) {
-    as.POSIXct(completion[[name]][[1L]], tz = "UTC")
-  }
   affected_ids <- character()
   if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
     stopped <- DBI::dbGetQuery(
@@ -71,6 +68,13 @@ ledgr_run_completion_info <- function(con, run_id) {
     )
     affected_ids <- unique(as.character(stopped$instrument_id))
     affected_ids <- affected_ids[!is.na(affected_ids) & nzchar(affected_ids)]
+  }
+  ledgr_run_completion_info_from_rows(completion, affected_ids)
+}
+
+ledgr_run_completion_info_from_rows <- function(completion, affected_ids = character()) {
+  time_value <- function(name) {
+    as.POSIXct(completion[[name]][[1L]], tz = "UTC")
   }
   list(
     completion_evidence_available = TRUE,
@@ -85,6 +89,49 @@ ledgr_run_completion_info <- function(con, run_id) {
     complete_performance = isTRUE(completion$complete_performance[[1L]]),
     affected_instrument_ids = affected_ids
   )
+}
+
+ledgr_run_completion_info_many <- function(con, run_ids) {
+  run_ids <- as.character(run_ids)
+  out <- setNames(lapply(run_ids, function(run_id) ledgr_run_completion_info_empty()), run_ids)
+  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "run_completion")) {
+    return(out)
+  }
+  quoted_ids <- paste(DBI::dbQuoteString(con, unique(run_ids)), collapse = ", ")
+  completion <- DBI::dbGetQuery(
+    con,
+    sprintf(
+      "SELECT * FROM run_completion WHERE run_id IN (%s) ORDER BY run_id",
+      quoted_ids
+    )
+  )
+  stopped <- data.frame(run_id = character(), instrument_id = character())
+  if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
+    stopped <- DBI::dbGetQuery(
+      con,
+      sprintf(
+        paste(
+          "SELECT run_id, instrument_id FROM run_diagnostics",
+          "WHERE run_id IN (%s) AND outcome = 'stopped'",
+          "ORDER BY run_id, diagnostic_seq"
+        ),
+        quoted_ids
+      )
+    )
+  }
+  for (run_id in unique(run_ids)) {
+    row <- completion[completion$run_id == run_id, , drop = FALSE]
+    if (nrow(row) == 0L) next
+    if (nrow(row) != 1L) {
+      ledgr_run_terminal_evidence_abort(
+        sprintf("Run '%s' has ambiguous completion evidence.", run_id)
+      )
+    }
+    affected <- unique(as.character(stopped$instrument_id[stopped$run_id == run_id]))
+    affected <- affected[!is.na(affected) & nzchar(affected)]
+    out[[run_id]] <- ledgr_run_completion_info_from_rows(row, affected)
+  }
+  out
 }
 
 ledgr_backtest_completion_info <- function(bt) {

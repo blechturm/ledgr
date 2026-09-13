@@ -102,7 +102,7 @@ summary(bt)
 #>   Sharpe Ratio:        1.349
 #>
 #> Trade Statistics:
-#>   Total Trades:        2
+#>   Closed Trades:       2
 #>   Win Rate:            100.00%
 #>   Avg Trade:           $53.41
 #>

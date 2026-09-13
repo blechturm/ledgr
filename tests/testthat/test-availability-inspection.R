@@ -165,6 +165,99 @@ testthat::test_that("session history and resolution retain civil-time semantics"
   )
 })
 
+testthat::test_that("fact inspection prints curated causal evidence without mutation", {
+  membership <- availability_inspection_membership()
+  membership_history <- ledgr_facts_history(membership, "membership", "research")
+  membership_resolution <- ledgr_facts_resolve(
+    membership,
+    "membership",
+    "research",
+    "2024-01-15T00:00:00Z",
+    c("AAA", "CCC")
+  )
+  sessions <- ledgr_facts_sessions(
+    availability_inspection_sessions(as.Date("2024-01-02"), 2L),
+    "XNYS",
+    timezone = "America/New_York"
+  )
+  session_history <- ledgr_facts_history(sessions, "sessions", "XNYS")
+  session_resolution <- ledgr_facts_resolve(
+    sessions, "sessions", "XNYS", "2024-01-02T17:00:00Z"
+  )
+  future_rows <- data.frame(
+    session_date = as.Date("2024-01-02"),
+    status = "open",
+    session_open = "09:30:00",
+    session_close = "16:00:00",
+    knowledge_time = as.POSIXct("2024-01-02 08:00:00", tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  future_sessions <- ledgr_facts_sessions(
+    future_rows, "XNYS", timezone = "UTC"
+  )
+  future_resolution <- ledgr_facts_resolve(
+    future_sessions, "sessions", "XNYS", "2024-01-02T07:00:00Z"
+  )
+  testthat::expect_identical(nrow(future_resolution$evidence), 0L)
+  results <- list(
+    membership_history, membership_resolution, session_history,
+    session_resolution, future_resolution
+  )
+  before <- lapply(results, serialize, connection = NULL)
+  output <- lapply(results, function(result) utils::capture.output(print(result)))
+  after <- lapply(results, serialize, connection = NULL)
+
+  testthat::expect_identical(after, before)
+  testthat::expect_match(
+    paste(output[[1L]], collapse = "\n"),
+    "evidence_type.+instrument_id.+member.+effective_from.+knowledge_time.+complete"
+  )
+  testthat::expect_match(
+    paste(output[[2L]], collapse = "\n"),
+    "instrument_id.+member.+reason"
+  )
+  testthat::expect_match(
+    paste(output[[3L]], collapse = "\n"),
+    "session_date.+status.+session_open.+session_close.+knowledge_time"
+  )
+  testthat::expect_match(
+    paste(output[[4L]], collapse = "\n"),
+    "session_date.+status.+session_open.+session_close.+reason.+knowledge_time"
+  )
+  testthat::expect_match(paste(output[[4L]], collapse = "\n"), "2023-12-01")
+  testthat::expect_match(
+    paste(output[[4L]], collapse = "\n"),
+    "knowledge_time is derived from $evidence; it is not stored in $rows.",
+    fixed = TRUE
+  )
+  testthat::expect_match(paste(output[[5L]], collapse = "\n"), "not_yet_knowable")
+  testthat::expect_match(paste(output[[5L]], collapse = "\n"), "NA")
+  testthat::expect_no_match(paste(output[[5L]], collapse = "\n"), "2024-01-02 08:00")
+  for (printed in output) {
+    text <- paste(printed, collapse = "\n")
+    testthat::expect_match(text, "Rows:", fixed = TRUE)
+    testthat::expect_match(text, "Omitted stored columns:", fixed = TRUE)
+    testthat::expect_match(text, "Full rows remain in $rows", fixed = TRUE)
+  }
+})
+
+testthat::test_that("resolution knowledge time ignores unsupported evidence", {
+  supporting_time <- as.POSIXct("2024-01-01 08:00:00", tz = "UTC")
+  unsupported_time <- as.POSIXct("2024-01-02 08:00:00", tz = "UTC")
+  result <- list(
+    rows = tibble::tibble(evidence_ids = "session:XNYS:2024-01-02"),
+    evidence = tibble::tibble(
+      evidence_id = c("session:XNYS:2024-01-02", "future:unsupported"),
+      knowledge_time = c(supporting_time, unsupported_time)
+    )
+  )
+
+  testthat::expect_identical(
+    ledgr_facts_resolution_knowledge_time(result),
+    supporting_time
+  )
+})
+
 testthat::test_that("inspection argument combinations fail with typed errors", {
   membership <- availability_inspection_membership()
   testthat::expect_error(

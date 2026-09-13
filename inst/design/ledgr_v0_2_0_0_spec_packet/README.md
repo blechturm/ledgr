@@ -1,9 +1,10 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-13 complete after review. Batch 14 implements the accepted
+Status: Batches 0-15 complete after review. Batch 14 implements the accepted
 honest-reporting-defaults amendment
-(`v0_2_0_0_reporting_ux_amendment_proposed.md`) as LDG-2712 through LDG-2715;
-Batch 15 remains pending as the release gate.
+(`v0_2_0_0_reporting_ux_amendment_proposed.md`) as LDG-2712 through LDG-2715.
+Batch 15 implements the reviewed print-honesty follow-up as LDG-2716 through
+LDG-2718. Batch 16 remains pending as the release gate.
 They implement the accepted inspectable availability workflow amendment
 (`v0_2_0_0_workflow_amendment_proposed_v2.md`) as LDG-2704 through LDG-2711,
 then close the release gate.

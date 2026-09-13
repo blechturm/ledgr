@@ -29,7 +29,6 @@ articles:
       - quickstart
       - research-workflow
       - leakage
-      - survivorship-bias
       - reproducibility
   - title: Core Workflow
     navbar: Core Workflow
@@ -39,6 +38,7 @@ articles:
       and walk-forward over candidates.
     contents:
       - data-input-and-snapshots
+      - survivorship-bias
       - strategy-development
       - indicators
       - metrics-and-accounting

@@ -19,18 +19,17 @@ Your strategy was never offered the chance to lose money on them. You
 didn’t choose to exclude them. The data did, using information from the
 end of your sample.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Survivorship bias
+>
+> Selection on what remained observable. When a sample is truncated by
+> survival, the surviving history can show returns the strategy could not
+> have earned. Brown, Goetzmann, Ibbotson, and Ross (1992) measured the
+> effect on performance studies. Shumway (1997) documented the related
+> delisting bias that appears when large negative delisting returns are
+> missing from equity data.
 
-**Survivorship bias**
-
-Selection on what remained observable. When a sample is truncated by
-survival, the surviving history can show returns the strategy could not
-have earned. Brown, Goetzmann, Ibbotson, and Ross (1992) measured the
-effect on performance studies. Shumway (1997) documented the related
-delisting bias that appears when large negative delisting returns are
-missing from equity data.
-
-</div>
 
 By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
@@ -88,17 +87,16 @@ entire feed is absent on January 9 even though the venue was open. Both
 instruments resume on January 10, but `AAA` stops printing prices after
 that session while `BBB` continues.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### A missing price is not a reason
+>
+> Nothing in this table says *why* an observation is absent. A delisting,
+> a trading halt, and a vendor feed gap all look identical here. This
+> example declares no lifetime or trading-status facts, so ledgr is never
+> told which one occurred. The prose below supplies that story; the data
+> does not.
 
-**A missing price is not a reason**
-
-Nothing in this table says *why* an observation is absent. A delisting,
-a trading halt, and a vendor feed gap all look identical here. This
-example declares no lifetime or trading-status facts, so ledgr is never
-told which one occurred. The prose below supplies that story; the data
-does not.
-
-</div>
 
 ## The Selection Problem
 
@@ -230,7 +228,7 @@ Read the columns as four separate assertions:
 | Column | What you are asserting |
 |----|----|
 | `session_date` | This calendar day existed at the venue. |
-| `status` | Whether it was `open` or `closed`. Closed days are supplied too — that is how a weekend is distinguished from a missing file. |
+| `status` | Whether it was `open` or `closed`. Closed days are supplied too: that is how a weekend is distinguished from a missing file. |
 | `session_open` | That session’s economic execution time and price cutoff. |
 | `session_close` | The decision pulse and the accounting row to which that session’s fills align. |
 
@@ -239,7 +237,7 @@ days, a holiday and a failed download would look identical. Here they do
 not.
 
 In production this table comes from the venue or an exchange-calendar
-package, covering the whole period you intend to run — not from the
+package, covering the whole period you intend to run, not from the
 instrument rows you happen to hold.
 
 ``` r
@@ -251,46 +249,23 @@ session_facts <- ledgr_facts_sessions(
 ```
 
 `venue_id` names the venue these sessions belong to. `knowledge_time`
-says the calendar was published in advance, on January 1 — a calendar is
-known before the period it describes, which is what makes it usable for
-decisions inside it.
+says the calendar was published in advance, on January 1, so it was
+already usable for decisions inside the period it covers. Real calendars
+can also change inside that period, which is why knowledge time is
+recorded per assertion rather than inferred from the dates a calendar
+spans.
 
 January 9 is now a real session with no observations, rather than a date
-that never happened. Inspect it beside Saturday January 11, when the
-venue was actually closed:
+that never happened. The printed `prices` table has an explicit January
+9 row with missing observations, while the printed calendar labels that
+date `open`. Saturday January 11 has no observation row and the calendar
+labels it `closed`. January 9 is therefore an open-session feed outage,
+so it stays on the pulse and valuation clocks. January 11 is not a pulse
+and does not age a stale mark.
 
 ``` r
 bars_input <- bars_from(prices)
-
-inspect_session <- function(at) {
-  resolved <- ledgr_facts_resolve(
-    session_facts,
-    family = "sessions",
-    scope_id = "DEMO",
-    at = at
-  )$rows
-  resolved |>
-    transmute(
-      session_date,
-      session_status = status,
-      observed_rows = sum(as.Date(bars_input$ts_utc) == session_date)
-    )
-}
-
-bind_rows(
-  inspect_session("2020-01-09T21:00:00Z"),
-  inspect_session("2020-01-11T21:00:00Z")
-)
-#> # A tibble: 2 x 3
-#>   session_date session_status observed_rows
-#>   <date>       <chr>                  <int>
-#> 1 2020-01-09   open                       0
-#> 2 2020-01-11   closed                     0
 ```
-
-Both dates have zero observations. January 9 is an open-session feed
-outage, so it stays on the pulse and valuation clocks. January 11 is
-closed, so it is not a pulse and does not age a stale mark.
 
 ### Which companies belonged, and when was that knowable?
 
@@ -325,30 +300,33 @@ hand.
 
 The two dates answer two different questions:
 
-- **`effective_from`** — when does this membership apply?
-- **`knowledge_time`** — when could a strategy first have known it?
+- **`effective_from`**: when does this membership apply?
+- **`knowledge_time`**: when could a strategy first have known it?
 
 Those clocks are usually different in real data. An index change is
 decided, announced, and takes effect on three separate days. A
 downloaded constituent list carries neither timestamp, which is why it
 leaks.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Which timestamp goes in `knowledge_time`?
+>
+> Record when the assertion became available to the research process you
+> are modelling:
+>
+> - The provider timestamps the announcement: use that.
+> - The file has a publication or delivery date: use that.
+> - You only know when you downloaded it: use the download time. It
+>   establishes receipt, not historical publication, so disclose it as the
+>   assumption it is.
+>
+> The two timestamps may legitimately coincide when the evidence supports
+> it, as the January 13 removal does here: it was announced the day it
+> took effect. What you cannot do is copy `effective_from` as a default,
+> because that asserts every change was knowable the instant it took
+> effect, which is exactly the assumption survivorship bias hides behind.
 
-**Which timestamp goes in `knowledge_time`?**
-
-Use the earliest moment you can defend as “we could have read this”:
-
-- The provider timestamps the announcement — use that.
-- The file has a publication or delivery date — use that.
-- You only know when you downloaded it — use the download time. It is
-  later than the truth, which makes the run more conservative, not less.
-
-The one answer that is always wrong is copying `effective_from`. That
-asserts every change was knowable the instant it took effect, which is
-exactly the assumption survivorship bias hides behind.
-
-</div>
 
 ``` r
 membership_facts <- ledgr_facts_membership_snapshots(
@@ -389,26 +367,71 @@ relevant fact.
 
 ### What the knowledge clock actually changes
 
-First inspect the named history you supplied. History is retrospective:
-it shows all assertions, including ones that were not usable at an
-earlier decision cutoff.
+Start with the question a decision actually asks: who was a member at
+this cutoff, and why?
+
+``` r
+ledgr_facts_resolve(
+  membership_facts,
+  family = "membership",
+  scope_id = "demo_members",
+  at = "2020-01-13T21:00:00Z",
+  instruments = c("AAA", "BBB")
+)
+#> ledgr facts resolution
+#> Family: membership [demo_members]
+#> At:     2020-01-13T21:00:00Z
+#> Rows:   2
+#> # A tibble: 2 x 3
+#>   instrument_id member reason
+#>   <chr>         <lgl>  <chr>
+#> 1 AAA           FALSE  omitted_from_complete_set
+#> 2 BBB           TRUE   member_asserted
+#> # i Omitted stored columns: evidence_ids.
+#> # i Full rows remain in $rows; supporting evidence remains in $evidence.
+```
+
+`AAA` is not a member at that cutoff, and `reason` records why: the
+applicable list is a complete set and `AAA` is absent from it. `BBB` is
+a member on an explicit assertion. This is the operation a strategy
+performs at every pulse, and it reports only what was knowable at the
+cutoff you asked about.
+
+History is the audit view behind that answer. It is retrospective: it
+shows all assertions, including ones that were not usable at an earlier
+decision cutoff.
 
 ``` r
 ledgr_facts_history(
   membership_facts,
   family = "membership",
   scope_id = "demo_members"
-)$rows |>
-  select(evidence_type, instrument_id, effective_from, knowledge_time, complete)
-#> # A tibble: 5 x 5
-#>   evidence_type        instrument_id effective_from      knowledge_time      complete
-#>   <chr>                <chr>         <dttm>              <dttm>              <lgl>
-#> 1 membership_assertion AAA           2020-01-06 00:00:00 2020-01-01 00:00:00 NA
-#> 2 membership_assertion BBB           2020-01-06 00:00:00 2020-01-01 00:00:00 NA
-#> 3 set_header           <NA>          2020-01-06 00:00:00 2020-01-01 00:00:00 TRUE
-#> 4 membership_assertion BBB           2020-01-13 00:00:00 2020-01-13 00:00:00 NA
-#> 5 set_header           <NA>          2020-01-13 00:00:00 2020-01-13 00:00:00 TRUE
+)
+#> ledgr facts history
+#> Family: membership [demo_members]
+#> Rows:   5
+#> # A tibble: 5 x 6
+#>   evidence_type        instrument_id member effective_from      knowledge_time      complete
+#>   <chr>                <chr>         <lgl>  <dttm>              <dttm>              <lgl>
+#> 1 membership_assertion AAA           TRUE   2020-01-06 00:00:00 2020-01-01 00:00:00 NA
+#> 2 membership_assertion BBB           TRUE   2020-01-06 00:00:00 2020-01-01 00:00:00 NA
+#> 3 set_header           <NA>          NA     2020-01-06 00:00:00 2020-01-01 00:00:00 TRUE
+#> 4 membership_assertion BBB           TRUE   2020-01-13 00:00:00 2020-01-13 00:00:00 NA
+#> 5 set_header           <NA>          NA     2020-01-13 00:00:00 2020-01-13 00:00:00 TRUE
+#> # i Omitted stored columns: evidence_id, set_id, effective_to, source.
+#> # i Full rows remain in $rows; supporting evidence remains in $evidence.
+```
 
+The next block is article-specific sensitivity analysis, not part of the
+canonical ingestion-to-run workflow. It deliberately rewrites the
+synthetic vendor’s `knowledge_time` to isolate what that clock changes.
+The mechanical fixture construction is folded because ordinary analysis
+should resolve the facts as supplied, not re-author vendor timestamps.
+
+<details class="code-fold">
+<summary>Show article-specific sensitivity fixture</summary>
+
+``` r
 late_membership <- ledgr_facts_membership_snapshots(
   membership_lists |>
     mutate(
@@ -445,7 +468,11 @@ resolve_aaa <- function(member_facts, scenario, at) {
   )$rows |>
     transmute(scenario, cutoff = at, member, reason)
 }
+```
 
+</details>
+
+``` r
 bind_rows(
   resolve_aaa(
     early_membership, "known early, not effective", "2020-01-10T21:00:00Z"
@@ -518,7 +545,7 @@ held former member stays visible. The rebalance helper creates one
 full-axis target; execution and valuation then decide independently what
 can fill and what can be marked.
 
-## Two Universes, One Everything Else
+## Comparing Survivor and Point-in-Time Universes
 
 Now the comparison the opening promised, run properly. Same snapshot,
 same strategy, same valuation policy, same starting cash. The only
@@ -624,22 +651,21 @@ the January 7 open, when the economic execution happened. Their
 read-only `recording_pulse_ts_utc` points to the January 7 close where
 the resulting account state appears on the equity curve.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Two clocks in one fill row
+>
+> - `ts_utc` and `price` identify the **open** of the next session. That
+>   is where execution happened.
+> - `recording_pulse_ts_utc` is that session’s **close**, the accounting
+>   pulse to which the fill belongs.
+>
+> A target decided at session *t* is evaluated and priced at session
+> *t+1*’s open. Strategy code still sees only decision-time evidence. To
+> align fills with equity, aggregate fills by recording pulse first;
+> joining raw economic timestamps to close-stamped equity is not session
+> alignment.
 
-**Two clocks in one fill row**
-
-- `ts_utc` and `price` identify the **open** of the next session. That
-  is where execution happened.
-- `recording_pulse_ts_utc` is that session’s **close**, the accounting
-  pulse to which the fill belongs.
-
-A target decided at session *t* is evaluated and priced at session
-*t+1*’s open. Strategy code still sees only decision-time evidence. To
-align fills with equity, aggregate fills by recording pulse first;
-joining raw economic timestamps to close-stamped equity is not session
-alignment.
-
-</div>
 
 ``` r
 fills_by_pulse <- ledgr_results(point_in_time, "fills") |>
@@ -672,57 +698,33 @@ pit_equity_for_join |>
 The aggregation preserves one row per equity pulse even when several
 instruments fill at the same opening.
 
-### Compare only what covers the same period
+### Check completion before comparing results
 
 ``` r
-pit_equity <- ledgr_results(point_in_time, "equity")
-survivor_equity <- ledgr_results(survivor, "equity")
-
-last_common <- min(max(pit_equity$ts_utc), max(survivor_equity$ts_utc))
-return_at <- function(equity, ts) equity$equity[equity$ts_utc == ts] / 10000 - 1
-
-common_window <- tibble(
-  universe = c("Survivor list (BBB only)", "Point-in-time (AAA and BBB)"),
-  return_to_common_session = c(
-    return_at(survivor_equity, last_common),
-    return_at(pit_equity, last_common)
-  )
-)
-
-common_window
-#> # A tibble: 2 x 2
-#>   universe                    return_to_common_session
-#>   <chr>                                          <dbl>
-#> 1 Survivor list (BBB only)                    0.090000
-#> 2 Point-in-time (AAA and BBB)                -0.171
-
-run_horizons <- bind_rows(lapply(
-  c(survivor$run_id, point_in_time$run_id),
-  function(id) {
-    info <- ledgr_run_info(snapshot, id)
-    tibble(
-      run_id = id,
-      status = info$status,
-      requested_end = info$requested_end_utc,
-      achieved_end = info$achieved_end_utc,
-      complete_performance = info$complete_performance
-    )
-  }
-))
-
-run_horizons
-#> # A tibble: 2 x 5
-#>   run_id            status     requested_end       achieved_end        complete_performance
-#>   <chr>             <chr>      <dttm>              <dttm>              <lgl>
-#> 1 survivor-universe DONE       2020-01-17 21:00:00 2020-01-17 21:00:00 TRUE
-#> 2 pit-universe      INCOMPLETE 2020-01-17 21:00:00 2020-01-14 21:00:00 FALSE
+run_inventory <- ledgr_run_list(snapshot)
+run_inventory
+#> # ledgr run list
+#> # A tibble: 2 x 10
+#>   run_id            label tags  status     final_equity total_return complete_performance
+#>   <chr>             <chr> <lgl> <chr>             <dbl> <chr>        <lgl>
+#> 1 pit-universe      <NA>  NA    INCOMPLETE         8290 -17.1%       FALSE
+#> 2 survivor-universe <NA>  NA    DONE              11440 +14.4%       TRUE
+#>   achieved_end_utc    execution_mode reproducibility_level
+#>   <dttm>              <chr>          <chr>
+#> 1 2020-01-14 21:00:00 audit_log      tier_1
+#> 2 2020-01-17 21:00:00 audit_log      tier_1
+#>
+#> # i INCOMPLETE metrics describe the achieved prefix only.
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-`common_window` computes the comparison at the last session both runs
-actually value; it does not extend either curve or retain a number
-supplied by prose. `run_horizons` reports the full-horizon outcomes
-separately. The survivor run finishes, while the point-in-time run ends
-early. Their terminal returns are therefore not comparable.
+The inventory puts completion beside the raw metrics. The survivor run
+reaches its requested end; the point-in-time run ends early. Its return
+describes only the achieved prefix, so the two terminal returns are not
+comparable and `ledgr_run_compare()` will not rank them together. Read
+the size of the effect from the figure below, where both paths are drawn
+against the same clock and the point-in-time evidence visibly stops.
 
 <div id="fig-comparison">
 
@@ -775,20 +777,19 @@ questions:
 | `priced` | Can the valuation policy assign it a permissible mark? |
 
 January 13 is the row worth studying. `AAA` is outside the universe,
-still owned, and still valued — using a mark that is one session old.
+still owned, and still valued, using a mark that is one session old.
 Membership, ownership, and the ability to value a position are three
 separate things, and a survivor-filtered file cannot represent any of
 them, because the instrument is simply absent.
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### `priced = TRUE` is not a tradable price
+>
+> A permissible mark values a holding on the equity curve. It says nothing
+> about whether an executable price exists. Fills come only from observed
+> bars.
 
-**`priced = TRUE` is not a tradable price**
-
-A permissible mark values a holding on the equity curve. It says nothing
-about whether an executable price exists. Fills come only from observed
-bars.
-
-</div>
 
 <div id="fig-timeline">
 
@@ -815,26 +816,6 @@ ledgr_results(point_in_time, "diagnostics") |>
 #>   <dttm>              <chr>     <chr>   <chr>                       <chr>            <int>
 #> 1 2020-01-15 21:00:00 valuation stopped valuation_horizon_exhausted AAA                  3
 
-pit_info <- ledgr_run_info(snapshot, point_in_time$run_id)
-tibble(
-  status = pit_info$status,
-  requested_start = pit_info$requested_start_utc,
-  requested_end = pit_info$requested_end_utc,
-  achieved_start = pit_info$achieved_start_utc,
-  achieved_end = pit_info$achieved_end_utc,
-  stop_reason = pit_info$stop_reason,
-  last_fully_valued = pit_info$last_fully_valued_ts_utc,
-  last_executed = pit_info$last_executed_ts_utc,
-  complete_performance = pit_info$complete_performance,
-  affected_ids = paste(pit_info$affected_instrument_ids, collapse = ", ")
-)
-#> # A tibble: 1 x 10
-#>   status     requested_start     requested_end       achieved_start      achieved_end
-#>   <chr>      <dttm>              <dttm>              <dttm>              <dttm>
-#> 1 INCOMPLETE 2020-01-06 21:00:00 2020-01-17 21:00:00 2020-01-06 21:00:00 2020-01-14 21:00:00
-#> # i 5 more variables: stop_reason <chr>, last_fully_valued <dttm>, last_executed <dttm>,
-#> #   complete_performance <lgl>, affected_ids <chr>
-
 summary(point_in_time)
 #> ledgr Backtest Summary
 #> ======================
@@ -842,7 +823,6 @@ summary(point_in_time)
 #> Execution Evidence:
 #>   Fill Timing:         availability_open_v2
 #>   Timing Version:      2
-#>
 #> Completion Evidence:
 #>   Status:           INCOMPLETE
 #>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
@@ -853,19 +833,19 @@ summary(point_in_time)
 #>   Performance:       incomplete
 #>   Affected IDs:      AAA
 #>
-#> Performance Metrics:
-#>   Total Return:        -17.10%
-#>   Annualized Return:   -99.96%
-#>   Max Drawdown:        -18.90%
+#> Achieved-Prefix Metrics (2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z):
+#>   Total Return (prefix):    -17.10%
+#>   Annualized Return:        withheld (achieved window is shorter than requested)
+#>   Max Drawdown (prefix):    -18.90%
 #>
 #> Risk Metrics:
 #>   Risk-Free Rate:      0.00% annual
 #>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 96.41%
-#>   Sharpe Ratio:        -7.608
+#>   Volatility (annual): withheld (achieved window is shorter than requested)
+#>   Sharpe Ratio:        withheld (achieved window is shorter than requested)
 #>
 #> Trade Statistics:
-#>   Total Trades:        0
+#>   Closed Trades:       0
 #>   Win Rate:            N/A (no trades)
 #>   Avg Trade:           N/A (no trades)
 #>
@@ -884,18 +864,17 @@ Corporate actions, delisting cash flows, borrow and short financing,
 order-management behaviour, and general imputation are outside this
 first availability surface.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it: move the valuation boundary
+>
+> Rebuild `point_in_time_experiment` with
+> `ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
+> it. Predict first: does the run stop earlier, later, or on the same
+> session? Then compare `achieved_end` and the `mark_age` on the stop row.
+> One fewer permitted stale session moves the boundary. It does not change
+> when `AAA` was delisted.
 
-**Try it: move the valuation boundary**
-
-Change `max_sessions = 2` to `max_sessions = 1` in `declare()`, use a
-new `run_id`, and rerun the point-in-time universe. Predict first: does
-the run stop earlier, later, or on the same session? Then compare
-`achieved_end` and the `mark_age` on the stop row. One fewer permitted
-stale session moves the boundary. It does not change when `AAA` was
-delisted.
-
-</div>
 
 ## When The Bar You Need Is Not There
 
@@ -1007,17 +986,22 @@ bars while the expected session stays on the calendar. For that
 workflow, read
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it: spend the whole account
+>
+> Rerun the survivor experiment with `params = list(invested = 1)` and a
+> new `run_id`. Predict first: does its single target fill? Sizing uses
+> the January 6 close of 50, so the whole account asks for 200 shares, but
+> execution happens at the January 7 open where `BBB` costs 51 and those
+> shares now cost 10,200. Check `ledgr_results(run, "diagnostics")` for
+> the execution row and its reason code.
+>
+> Then try the same on `point_in_time`. Its two targets cost 9,700 at that
+> same opening and both fill, because `AAA` fell overnight while `BBB`
+> rose. Full allocation is not what rejects an order; the overnight move
+> against you is.
 
-**Try it: spend the whole account**
-
-Rerun `point_in_time` with `params = list(invested = 1)` and a new
-`run_id`. Predict first: which fills still happen? Sizing uses the
-January 6 close, but execution happens at the January 7 open, where
-`BBB` costs 51 rather than 50. Check `ledgr_results(run, "diagnostics")`
-for the execution rows and find the reason code.
-
-</div>
 
 ## What This Does And Does Not Establish
 
@@ -1039,7 +1023,7 @@ disappear because membership ended or observations stopped.
 Nor does sealing certify your source. If membership knowledge time is
 assumed from effective time, `ledgr_experiment_plan()` labels the family
 `assumption_backed`. If trading-status or lifetime facts are omitted,
-their checks remain omitted. The 26.1-point gap belongs to one synthetic
+their checks remain omitted. The gap shown here belongs to one synthetic
 fixture chosen to make the mechanism legible; it is not an estimate of
 survivorship bias in any real index.
 

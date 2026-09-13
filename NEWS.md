@@ -102,6 +102,25 @@
   resumes from committed terminal evidence without rerunning strategy code or
   duplicating fold rows. `ledgr_run_open()` now opens either terminal status;
   malformed evidence fails with `ledgr_run_terminal_evidence_invalid`.
+- Curated fact-history and resolution printing now keeps effective and
+  knowledge times, completeness, and resolution reasons visible while naming
+  omitted stored columns and preserving the full evidence objects unchanged.
+- `ledgr_run_list()` now appends recorded completion evidence and puts achieved
+  horizons beside raw metrics in its default print. Incomplete metrics are
+  explicitly labelled as prefix-only; dense and historical runs retain typed
+  unknown completion fields.
+- Backtest summaries now follow recorded completion evidence: when performance
+  is incomplete they retain prefix total return and maximum drawdown, name the
+  achieved window, and withhold annualized return, annualized volatility, and
+  Sharpe ratio with an explanation. Run-info printing presents completion
+  before identity and telemetry fields.
+- Backtest summaries now label `n_trades` as `Closed Trades`, matching its
+  closed-trade-row computation without changing the value.
+- Bound the completed-run comparison rule: explicitly named non-`DONE` runs
+  fail with `ledgr_run_not_complete`, while inventory-style comparison without
+  IDs excludes them. The Survivorship Bias article now uses the public fact
+  prints and completion-aware inventory rather than article-defined reporting
+  helpers.
 - Added experiment-store schema 115 completion evidence for sweep candidates
   and walk-forward scores. Incomplete prefixes stay visibly labelled but are
   excluded from complete panels, selection, candidate extraction, and

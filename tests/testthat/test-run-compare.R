@@ -313,6 +313,8 @@ testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules
     "Use ledgr_run_info()",
     class = "ledgr_run_not_complete"
   )
+  default_comparison <- ledgr_run_compare(snapshot)
+  testthat::expect_false("compare-failed" %in% default_comparison$run_id)
   testthat::expect_error(
     ledgr_run_compare(snapshot, run_ids = "missing-run"),
     class = "ledgr_run_not_found"

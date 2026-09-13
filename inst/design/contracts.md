@@ -323,6 +323,16 @@ The strategy preflight boundary originated in
   request order; default resolution enumerates current members only and never
   discovers future members. Complete-set omission cites the set header rather
   than fabricating a negative fact. Neither result is a strategy context.
+- Default fact-inspection prints are curated by family and operation while the
+  complete programmatic evidence remains unchanged in `$rows` and `$evidence`.
+  Membership history exposes evidence type, membership state, effective time,
+  knowledge time, and completeness; membership resolution exposes state and
+  reason at the printed cutoff. Session history exposes its civil date, state,
+  opening, close, and knowledge time. Session resolution exposes the same
+  session fields plus reason and a knowledge time derived only from applicable
+  supporting evidence. That derived knowledge time is presentation-only and is
+  disclosed as coming from `$evidence`, not as a value stored in `$rows`. Every
+  print states the full row count and names omitted stored columns.
 - `ledgr_facts_sessions_qlcal()` is an optional preparation adapter over an
   explicit qlcal calendar object. It materializes every civil date, applies
   complete per-date replacements, then delegates to
@@ -498,6 +508,28 @@ The strategy preflight boundary originated in
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. They must tolerate legacy/pre-provenance stores and treat
   missing telemetry as missing/`NA`, not as corruption.
+- `ledgr_run_list()` appends the recorded completion projection in this order:
+  `completion_evidence_available`, `completion_status`,
+  `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,
+  `achieved_end_utc`, `stop_reason`, `last_fully_valued_ts_utc`,
+  `last_executed_ts_utc`, `complete_performance`, and
+  `affected_instrument_ids`. Status does not gate real completion evidence,
+  including evidence retained by a `FAILED` run. Missing evidence stays typed
+  unknown. The affected-ID list column distinguishes unavailable, known-empty,
+  and known sets. Inventory printing places completion beside raw metrics and
+  labels an `INCOMPLETE` row's metrics as achieved-prefix evidence only.
+- `summary.ledgr_backtest()` follows recorded completion evidence rather than
+  run status. When complete performance is false, the metrics heading names
+  the achieved window, total return and maximum drawdown remain visible as
+  prefix-only evidence, and annualized return, annualized volatility, and
+  Sharpe ratio are withheld with an explanation. Complete performance keeps
+  the established metric content and order.
+- `print.ledgr_run_info()` presents status and any recorded completion evidence
+  before identity and telemetry fields without removing any field from the
+  record.
+- The backtest summary labels `n_trades` as `Closed Trades`, because that
+  statistic counts closed trade rows rather than fill rows. The computation is
+  unchanged.
 - `ledgr_run_info()` exposes the committed run's `risk_chain_hash` by reading
   recorded config identity. Historical configs without that field return
   `NA_character_`; inspection must not infer a no-op plan, substitute current
@@ -874,6 +906,12 @@ The strategy preflight boundary originated in
 - `ledgr_run_compare()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
+- With explicit `run_ids`, `ledgr_run_compare()` rejects every non-`DONE` run
+  with `ledgr_run_not_complete`. Without `run_ids`, it silently excludes
+  non-`DONE` rows. An incomplete horizon changes the meaning of return, Sharpe,
+  and drawdown rather than merely qualifying those metrics. The completion-aware
+  run inventory is the supported side-by-side view of runs with different
+  horizons.
 - `ledgr_run_compare()` returns raw numeric metric columns for ranking and
   filtering. Percentage formatting is a print-only concern; users must not need
   to parse display strings such as `"+5.2%"` to rank runs.

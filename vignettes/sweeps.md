@@ -308,7 +308,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_94bda54deb4d6670
+    # ledgr sweep -- sweep_3f7b098b3f726cfa
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -383,14 +383,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_f940b5dbbc90819a feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_1813edb71ceb6916 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -474,7 +474,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-11 16:35:08                    4           16          16
+    1 sma_retained_sweep 2026-09-13 16:42:18                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -501,7 +501,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-11 16:35:08.40739
+    Created At:        2026-09-13 16:42:18.779912
     Schema Version:    4
     Engine Version:    0.2.0.0
     Note:              Exploratory SMA sweep with retained return series.
@@ -678,6 +678,10 @@ summary(promoted_run)
     ledgr Backtest Summary
     ======================
 
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+      Timing Version:      N/A
+
     Performance Metrics:
       Total Return:        0.23%
       Annualized Return:   0.44%
@@ -690,7 +694,7 @@ summary(promoted_run)
       Sharpe Ratio:        3.075
 
     Trade Statistics:
-      Total Trades:        3
+      Closed Trades:       3
       Win Rate:            100.00%
       Avg Trade:           $75.05
 
@@ -743,7 +747,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_4490fd0f606ec22d
+    # ledgr sweep -- sweep_fbb2620be98a7cb5
     # A tibble: 2 x 3
       candidate_id          candidate_row status
       <chr>                         <int> <chr>
