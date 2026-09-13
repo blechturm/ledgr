@@ -2,18 +2,17 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.1.9.7`.
-**Current active packet:** `v0.2.0.0`.
-**Current active packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
+**Latest completed release packet:** `v0.2.0.0`.
+**Current active packet:** none; no successor packet has been cut.
+**Latest packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
-implementation. Batches 0-9 are complete after review; Batch 10 implementation
-is complete and awaiting review, and the release gate remains pending.
-**Proposed workflow amendment v2:** [inspectable availability workflow](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed_v2.md)
+implementation. All 16 batches are complete after review and local release
+gates passed.
+**Accepted workflow amendment v2:** [inspectable availability workflow](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed_v2.md)
 incorporates the initial review and N1-N3 re-review corrections: facts or sealed-snapshot
 inspection, a bounded qlcal adapter, opening-time execution, historical timing compatibility,
-and remaining teaching criteria. Experiment preview is deferred. Pending maintainer acceptance;
-not accepted implementation scope.
+and remaining teaching criteria. Experiment preview remains deferred.
 [Amendment v1](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_workflow_amendment_proposed.md) remains the historical review input.
 The completed `inst/design/ledgr_v0_1_9_6_spec_packet/` is an archival release
 record. Do not treat it as authorization for new implementation work after the
@@ -206,24 +205,27 @@ criteria, first-class intraday runtime, and paper/live work remain non-scope.
   `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md` and
   `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`.
 
-The v0.2.0.0 packet is active. It consumes the accepted API/representation
+The v0.2.0.0 packet is complete. It consumes the accepted API/representation
 hardening and asset-availability syntheses. The ordered implementation first
 corrects API and evidence boundaries, then extracts coordinator stages without
 moving effects, and only then adds point-in-time facts, expected-session gaps,
 availability-aware fold economics, durable incomplete outcomes, and the
-survivorship-bias teaching path.
+survivorship-bias teaching path. All 16 batches are complete after review and
+local release gates passed.
 
 - Spec: `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`.
 - Tickets: `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_2_0_0_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_2_0_0_spec_packet/batch_plan.md`.
+- Local release closeout:
+  `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`.
 - Primary syntheses:
   `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md` and
   `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`.
 
 The verified all-vignette review findings were not folded wholesale into
 v0.1.9.7; that packet consumed only the Selection Integrity-specific portion
-through LDG-2671. The active hardening work owns the specifically verified
+through LDG-2671. The completed hardening work owns the specifically verified
 stale examples and useful documentation locks, not a broad rewrite.
 
 The v0.1.8.5 packet is complete. It delivered the canonical research workflow,
@@ -255,8 +257,8 @@ Public liquidity APIs, OMS work, live data logs, external point-in-time
 regressors, public benchmark dashboards, purging/embargo/CPCV, Triple Penance,
 objective-filtered walk-forward identity, first-class intraday runtime, and
 broad collapse adoption remain deferred unless a later active packet explicitly
-scopes a bounded subset. The active v0.2.0.0 packet scopes only the bounded API
-hardening and asset-availability work described above.
+scopes a bounded subset. The completed v0.2.0.0 packet scoped only the bounded
+API hardening and asset-availability work described above.
 Auditr-report bugfix intake is also deferred until a future packet routes it.
 
 The v0.1.8.7 packet is complete. It shipped Optimization Round 2 and explicit
@@ -741,7 +743,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| active v0.2.0.0 packet | `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `ledgr_v0_2_0_0_spec_packet/tickets.yml`, `ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `audits/v0_2_0_test_suite_audit.md`, `spike_protocol.md`, `vignette_styleguide.md`, `release_ci_playbook.md`, `contracts.md`, `ledgr_roadmap.md` |
+| v0.2.0.0 release record | `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `ledgr_v0_2_0_0_spec_packet/tickets.yml`, `ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `audits/v0_2_0_test_suite_audit.md`, `spike_protocol.md`, `vignette_styleguide.md`, `release_ci_playbook.md`, `contracts.md`, `ledgr_roadmap.md` |
 | v0.1.9.7 release record | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | Accepted asset-availability / point-in-time-universe RFC | `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, historical), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md` (reviewed response), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md` (maintainer accepted; synthesis input), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md` (accepted 2026-09-08; binding first-implementation direction), inconclusive terminal spike report on `spike/asset-availability-pit-universes` at `d59259f`, `horizon.md` 2026-05-28, 2026-09-06, and 2026-09-08 `[data]` entries, `ledgr_roadmap.md` v0.2.x ragged-universe section, `rfc/README.md` pipeline row, `research/Sharadar-Empirical-Evidence.md`, `research/ledgr_ragged_universe_prior_art_review.md`, `research/rfc-evidence-handoff.md`, `research/Cross-Asset-Accounting-Critical-Events.md`, `contracts.md` |
 | Target risk release record | `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `contracts.md` |

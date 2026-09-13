@@ -165,8 +165,13 @@ testthat::test_that("indicator docs include compact multi-output ID references",
 
 testthat::test_that("availability runtime and strict-feature contracts stay bound", {
   root <- testthat::test_path("..", "..")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(
+    file.exists(contracts_path),
+    "availability contracts unavailable during installed-package tests"
+  )
   contracts <- paste(
-    readLines(file.path(root, "inst", "design", "contracts.md"), warn = FALSE),
+    readLines(contracts_path, warn = FALSE),
     collapse = "\n"
   )
   testthat::expect_match(
@@ -563,8 +568,8 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_7_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** v0.2.0.0 API/representation hardening", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** none; no successor packet has been cut", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
@@ -574,12 +579,12 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
   testthat::expect_match(
     roadmap,
-    "| v0.2.0.0 | Active; Batch 11 awaiting review | Correct known API",
+    "| v0.2.0.0 | Done | Correct known API",
     fixed = TRUE
   )
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.7`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** `v0.2.0.0`", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.2.0.0`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** none", fixed = TRUE)
   testthat::expect_match(design_index, "ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
@@ -590,7 +595,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(design_index, "The v0.1.9.5 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.6 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.7 packet is complete", fixed = TRUE)
-  testthat::expect_match(design_index, "The v0.2.0.0 packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.2.0.0 packet is complete", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -1256,6 +1261,138 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_no_match(text, "Total Trades", fixed = TRUE)
   testthat::expect_false(file.exists(file.path(root, "Rprof.out")))
   testthat::expect_match(paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"), "Rprof.out", fixed = TRUE)
+  testthat::expect_match(
+    paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"),
+    "/tests/testthat/Rplots.pdf",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("rendered vignette artifacts are complete and quiet", {
+  root <- testthat::test_path("..", "..")
+  vignette_dir <- file.path(root, "vignettes")
+  markdown <- list.files(vignette_dir, pattern = "[.]md$", full.names = TRUE)
+  testthat::skip_if_not(length(markdown) > 0L, "rendered vignette Markdown unavailable")
+
+  capture_targets <- function(pattern, text) {
+    matches <- regmatches(text, gregexpr(pattern, text, perl = TRUE))[[1L]]
+    if (length(matches) == 1L && identical(matches, "")) {
+      return(character())
+    }
+    sub(pattern, "\\1", matches, perl = TRUE)
+  }
+
+  image_rows <- lapply(markdown, function(path) {
+    text <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    markdown_targets <- capture_targets(
+      "!\\[[^]]*\\]\\(<?([^[:space:])>]+)>?[^)]*\\)",
+      text
+    )
+    html_targets <- capture_targets(
+      "<img\\b[^>]*\\bsrc\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
+      text
+    )
+    targets <- c(markdown_targets, html_targets)
+    targets <- targets[!grepl("^(?:[[:alpha:]][[:alnum:]+.-]*:|//|#|/)", targets, perl = TRUE)]
+    if (length(targets) == 0L) {
+      return(NULL)
+    }
+    data.frame(source = path, target = targets, stringsAsFactors = FALSE)
+  })
+  image_rows <- image_rows[!vapply(image_rows, is.null, logical(1))]
+  images <- do.call(rbind, image_rows)
+  testthat::expect_gte(nrow(images), 7L)
+
+  resolved <- mapply(
+    function(source, target) {
+      target <- utils::URLdecode(sub("[?#].*$", "", target))
+      file.path(dirname(source), target)
+    },
+    images$source,
+    images$target,
+    USE.NAMES = FALSE
+  )
+  missing <- resolved[!file.exists(resolved)]
+  testthat::expect_identical(missing, character())
+
+  rendered_text <- paste(unlist(lapply(markdown, readLines, warn = FALSE)), collapse = "\n")
+  testthat::expect_no_match(
+    rendered_text,
+    "duckdb is storing downloaded extensions and secrets",
+    fixed = TRUE
+  )
+
+  html <- list.files(file.path(root, "docs", "articles"), pattern = "[.]html$", full.names = TRUE)
+  if (length(html) > 0L) {
+    html_text <- paste(unlist(lapply(html, readLines, warn = FALSE)), collapse = "\n")
+    testthat::expect_no_match(
+      html_text,
+      "duckdb is storing downloaded extensions and secrets",
+      fixed = TRUE
+    )
+  }
+})
+
+testthat::test_that("release checks declare optional numerical references", {
+  root <- testthat::test_path("..", "..")
+  description_path <- file.path(root, "DESCRIPTION")
+  dsr_test_path <- file.path(root, "tests", "testthat", "test-validation-dsr.R")
+  manual_path <- file.path(root, "dev", "manual", "verify-dsr-quantstrat.R")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  render_path <- file.path(root, "tools", "render-vignettes-gfm.R")
+  site_path <- file.path(root, "dev", "build-site.R")
+  testthat::skip_if_not(
+    all(file.exists(c(
+      description_path, dsr_test_path, manual_path, contracts_path,
+      render_path, site_path
+    ))),
+    "release-check sources unavailable during installed-package tests"
+  )
+
+  description <- read.dcf(description_path)
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
+  dsr_test <- paste(readLines(dsr_test_path, warn = FALSE), collapse = "\n")
+  manual <- paste(readLines(manual_path, warn = FALSE), collapse = "\n")
+  contracts <- paste(readLines(contracts_path, warn = FALSE), collapse = "\n")
+  render <- paste(readLines(render_path, warn = FALSE), collapse = "\n")
+  site <- paste(readLines(site_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true("pbo" %in% suggests)
+  testthat::expect_false("quantstrat" %in% suggests)
+  testthat::expect_no_match(dsr_test, 'skip_if_not_installed("quantstrat")', fixed = TRUE)
+  testthat::expect_match(manual, 'getFromNamespace(".deflatedSharpe", "quantstrat")', fixed = TRUE)
+  testthat::expect_match(contracts, "dev/manual/verify-dsr-quantstrat.R", fixed = TRUE)
+  testthat::expect_match(render, 'check_only <- "--check" %in% args', fixed = TRUE)
+  testthat::expect_match(render, "normalize_for_freshness", fixed = TRUE)
+  testthat::expect_match(site, "duckdb_notice", fixed = TRUE)
+  testthat::expect_match(site, "Rendered articles contain DuckDB", fixed = TRUE)
+})
+
+testthat::test_that("ledgr-owned DuckDB drivers choose session-local storage", {
+  root <- testthat::test_path("..", "..")
+  public_api <- file.path(root, "R", "public-api.R")
+  adapters <- file.path(root, "R", "snapshot_adapters.R")
+  testthat::skip_if_not(
+    file.exists(public_api) && file.exists(adapters),
+    "DuckDB driver sources unavailable during installed-package tests"
+  )
+
+  public_text <- paste(readLines(public_api, warn = FALSE), collapse = "\n")
+  adapter_text <- paste(readLines(adapters, warn = FALSE), collapse = "\n")
+  testthat::expect_match(
+    public_text,
+    '"shared_home" %in% names(formals(duckdb::duckdb))',
+    fixed = TRUE
+  )
+  testthat::expect_match(public_text, "list(shared_home = FALSE)", fixed = TRUE)
+  testthat::expect_match(public_text, "do.call(duckdb::duckdb, args)", fixed = TRUE)
+  testthat::expect_match(public_text, "drv <- ledgr_duckdb_driver()", fixed = TRUE)
+  testthat::expect_match(adapter_text, "drv <- ledgr_duckdb_driver()", fixed = TRUE)
+  testthat::expect_no_match(
+    paste(public_text, adapter_text, sep = "\n"),
+    "suppressMessages",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("package help exposes an installed-documentation spine", {
@@ -2601,7 +2738,7 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
 
   testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
   testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(docs$design_index, "Current active packet:** `v0.2.0.0`", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** none", fixed = TRUE)
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
@@ -2698,8 +2835,11 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-09)", fixed = TRUE)
-  testthat::expect_match(docs$horizon, "v0\\.2\\.0\\.0 packet is active")
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-13)", fixed = TRUE)
+  testthat::expect_match(
+    docs$horizon,
+    "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
+  )
   testthat::expect_match(
     docs$horizon,
     "Objective-filtered walk-forward identity (synthesis D4)",
@@ -2765,8 +2905,12 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   ticket_2706_end <- grep("^## LDG-2707 ", ticket_lines)[[1L]] - 1L
   ticket_2706 <- paste(ticket_lines[ticket_2706_start:ticket_2706_end], collapse = "\n")
 
-  testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-09; tickets cut", fixed = TRUE)
-  testthat::expect_match(docs$tickets, "Total Tickets: 44", fixed = TRUE)
+  testthat::expect_match(
+    docs$spec,
+    "Status:** Implementation complete after maintainer review 2026-09-13",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$tickets, "Total Tickets: 47", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2672 - Packet Alignment", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2703 - v0.2.0.0 Release Gate", fixed = TRUE)
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
@@ -2778,12 +2922,12 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    "Status: Batches 0-15 complete after review[.]",
+    "Status: All batches complete after review[.]",
     perl = TRUE
   )
   testthat::expect_match(
     docs$readme,
-    "Batches 0-15 complete after review[.]",
+    "Status: All batches complete after review[.]",
     perl = TRUE
   )
   # The amendment slice must stay discoverable from every packet artifact.
@@ -2855,6 +2999,14 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     fixed = TRUE
   )
   testthat::expect_match(docs$batches, "Batch 16 - Release Gate", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Batch 16 - Release Gate[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2703"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
+  )
   testthat::expect_no_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
   # The print-honesty follow-up must stay discoverable from every artifact.
   testthat::expect_match(docs$batches, "Batch 15 - Print Honesty", fixed = TRUE)
@@ -2980,12 +3132,35 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  design_index <- paste(
+    readLines(file.path(root, "inst", "design", "README.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  agents <- paste(readLines(file.path(root, "AGENTS.md"), warn = FALSE), collapse = "\n")
   testthat::expect_match(
     roadmap,
-    "| v0.2.0.0 | Active; Batch 11 awaiting review | Correct known API",
+    "| v0.2.0.0 | Done | Correct known API",
     fixed = TRUE
   )
-  testthat::expect_match(horizon, "v0.2.0.0 packet is active", fixed = TRUE)
+  testthat::expect_match(
+    horizon,
+    "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
+  )
+  testthat::expect_match(
+    design_index,
+    "Latest completed release packet:** `v0.2.0.0`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    agents,
+    "completed v0.2.0.0 packet; no successor packet cut",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(roadmap, horizon, design_index, agents, sep = "\n"),
+    "Active; Batch 11 awaiting review",
+    fixed = TRUE
+  )
   testthat::expect_match(
     horizon,
     "stay\\s+parked for a later\\s+documentation-freshness pass"
@@ -3218,6 +3393,10 @@ testthat::test_that("survivorship article executes the public availability journ
   root <- testthat::test_path("..", "..")
   qmd_path <- file.path(root, "vignettes", "survivorship-bias.qmd")
   md_path <- file.path(root, "vignettes", "survivorship-bias.md")
+  testthat::skip_if_not(
+    file.exists(qmd_path) && file.exists(md_path),
+    "survivorship article sources unavailable during installed-package tests"
+  )
   testthat::expect_true(file.exists(qmd_path))
   testthat::expect_true(file.exists(md_path))
 

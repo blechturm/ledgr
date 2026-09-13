@@ -372,16 +372,24 @@ testthat::test_that("snapshot resolution works in a fresh process without a fact
   ledgr_snapshot_close(snapshot)
   script <- tempfile(fileext = ".R")
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  installed_root <- normalizePath(system.file(package = "ledgr"), winslash = "/")
   writeLines(c(
     "args <- commandArgs(trailingOnly = TRUE)",
-    "pkgload::load_all(args[[1L]], quiet = TRUE)",
+    "if (identical(Sys.getenv('R_COVR'), 'true')) {",
+    "  library(ledgr, lib.loc = dirname(args[[4L]]))",
+    "} else {",
+    "  pkgload::load_all(args[[1L]], quiet = TRUE)",
+    "}",
     "snapshot <- ledgr_snapshot_open(args[[2L]], args[[3L]], verify = FALSE)",
     "result <- ledgr_facts_resolve(snapshot, 'membership', 'research', '2024-01-15T00:00:00Z')",
     "cat(paste(result$rows$instrument_id, collapse = ','))"
   ), script)
   output <- system2(
     file.path(R.home("bin"), "Rscript"),
-    c(shQuote(script), shQuote(root), shQuote(db_path), shQuote(snapshot_id)),
+    c(
+      shQuote(script), shQuote(root), shQuote(db_path), shQuote(snapshot_id),
+      shQuote(installed_root)
+    ),
     stdout = TRUE,
     stderr = TRUE
   )

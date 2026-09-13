@@ -1,10 +1,11 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-15 complete after review. Batch 14 implements the accepted
+Status: All batches complete after review. Local release gates passed; the
+branch is ready for remote CI. Batch 14 implements the accepted
 honest-reporting-defaults amendment
 (`v0_2_0_0_reporting_ux_amendment_proposed.md`) as LDG-2712 through LDG-2715.
 Batch 15 implements the reviewed print-honesty follow-up as LDG-2716 through
-LDG-2718. Batch 16 remains pending as the release gate.
+LDG-2718.
 They implement the accepted inspectable availability workflow amendment
 (`v0_2_0_0_workflow_amendment_proposed_v2.md`) as LDG-2704 through LDG-2711,
 then close the release gate.
@@ -31,6 +32,7 @@ Authoritative files:
 - `batch_plan.md`
 - `wide_projection_store_inventory.md`
 - `availability_walkthrough_fixture.md` (input shape implemented by the executed article)
+- `v0_2_0_0_release_closeout.md` (local gate evidence; remote evidence pending)
 
 Binding design inputs:
 

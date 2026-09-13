@@ -558,7 +558,7 @@ info
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     1.2
+    Elapsed Sec:     1.17
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    4

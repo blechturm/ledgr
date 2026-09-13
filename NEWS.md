@@ -1,5 +1,10 @@
 # ledgr 0.2.0.0
 
+- Made ledgr-owned DuckDB drivers use session-local extension and secret
+  storage, removing repeated DuckDB home notices from tests and rendered
+  articles without suppressing ledgr diagnostics. Release checks now verify
+  GFM freshness and local image targets, and the non-CRAN quantstrat DSR oracle
+  is a documented manual check while CRAN `pbo` is declared in `Suggests`.
 - Corrected reversal-fill projections so derived CLOSE and OPEN fees are
   allocated pro rata and sum to the source event fee without changing cash,
   lot state, realized PnL, or trade metrics.

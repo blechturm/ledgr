@@ -1,10 +1,19 @@
+ledgr_duckdb_driver <- function() {
+  args <- if ("shared_home" %in% names(formals(duckdb::duckdb))) {
+    list(shared_home = FALSE)
+  } else {
+    list()
+  }
+  do.call(duckdb::duckdb, args)
+}
+
 ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05) {
   attempts <- as.integer(attempts)
   if (attempts < 1L) attempts <- 1L
 
   last_err <- NULL
   for (i in seq_len(attempts)) {
-    drv <- duckdb::duckdb()
+    drv <- ledgr_duckdb_driver()
     out <- tryCatch(
       {
         con <- DBI::dbConnect(drv, dbdir = db_path)

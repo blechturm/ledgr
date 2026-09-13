@@ -109,4 +109,21 @@ if (length(stale)) {
 
 # --- Build ------------------------------------------------------------------
 pkgdown::build_site(new_process = FALSE, preview = FALSE)
+
+article_html <- list.files(
+  file.path(root, "docs", "articles"),
+  pattern = "[.]html$",
+  full.names = TRUE
+)
+duckdb_notice <- "duckdb is storing downloaded extensions and secrets"
+noisy_articles <- article_html[vapply(article_html, function(path) {
+  any(grepl(duckdb_notice, readLines(path, warn = FALSE), fixed = TRUE))
+}, logical(1))]
+if (length(noisy_articles) > 0L) {
+  stop(
+    "Rendered articles contain DuckDB storage-location notices: ",
+    paste(basename(noisy_articles), collapse = ", ")
+  )
+}
+cat("  DuckDB notices: none across", length(article_html), "rendered articles\n")
 cat("=== build_site DONE ===\n")

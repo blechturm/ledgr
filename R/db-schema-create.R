@@ -6,7 +6,7 @@
 #' @return Invisibly returns `TRUE` on success.
 #' @examples
 #' db_path <- tempfile(fileext = ".duckdb")
-#' con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+#' con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), dbdir = db_path)
 #' ledgr_create_schema(con)
 #' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @noRd

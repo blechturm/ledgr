@@ -422,6 +422,7 @@ summary(bt_mapped)
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
 #>   Timing Version:      N/A
+#>
 #> Performance Metrics:
 #>   Total Return:        0.64%
 #>   Annualized Return:   1.26%

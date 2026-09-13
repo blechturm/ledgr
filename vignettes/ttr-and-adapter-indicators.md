@@ -178,25 +178,26 @@ rsi_bt <- ledgr_run(
 )
 
 ledgr_results(rsi_bt, what = "fills")
-#> # A tibble: 16 × 9
-#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-22 DEMO_01       BUY      10  87.2     0         0    OPEN
-#>  2         2 2019-01-23 DEMO_02       BUY      10  69.1     0         0    OPEN
-#>  3         3 2019-01-24 DEMO_01       SELL     10  89.0     0        17.9  CLOSE
-#>  4         4 2019-01-25 DEMO_02       SELL     10  69.9     0         7.59 CLOSE
-#>  5         5 2019-02-07 DEMO_02       BUY      10  67.9     0         0    OPEN
-#>  6         6 2019-02-08 DEMO_02       SELL     10  67.2     0        -6.26 CLOSE
-#>  7         7 2019-02-14 DEMO_02       BUY      10  66.5     0         0    OPEN
-#>  8         8 2019-02-18 DEMO_02       SELL     10  67.2     0         7.00 CLOSE
-#>  9         9 2019-05-01 DEMO_01       BUY      10  98.7     0         0    OPEN
-#> 10        10 2019-05-03 DEMO_01       SELL     10  99.9     0        12.6  CLOSE
-#> 11        11 2019-05-30 DEMO_01       BUY      10  94.2     0         0    OPEN
-#> 12        12 2019-06-12 DEMO_02       BUY      10  75.3     0         0    OPEN
-#> 13        13 2019-06-13 DEMO_02       SELL     10  76.5     0        12.1  CLOSE
-#> 14        14 2019-06-18 DEMO_01       SELL     10  87.7     0       -65.1  CLOSE
-#> 15        15 2019-06-19 DEMO_01       BUY      10  87.3     0         0    OPEN
-#> 16        16 2019-06-28 DEMO_01       SELL     10  87.7     0         4.23 CLOSE
+#> # A tibble: 16 × 10
+#>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#>  1         1 2019-01-22 2019-01-22 00:00:00    DEMO_01       BUY      10  87.2     0
+#>  2         2 2019-01-23 2019-01-23 00:00:00    DEMO_02       BUY      10  69.1     0
+#>  3         3 2019-01-24 2019-01-24 00:00:00    DEMO_01       SELL     10  89.0     0
+#>  4         4 2019-01-25 2019-01-25 00:00:00    DEMO_02       SELL     10  69.9     0
+#>  5         5 2019-02-07 2019-02-07 00:00:00    DEMO_02       BUY      10  67.9     0
+#>  6         6 2019-02-08 2019-02-08 00:00:00    DEMO_02       SELL     10  67.2     0
+#>  7         7 2019-02-14 2019-02-14 00:00:00    DEMO_02       BUY      10  66.5     0
+#>  8         8 2019-02-18 2019-02-18 00:00:00    DEMO_02       SELL     10  67.2     0
+#>  9         9 2019-05-01 2019-05-01 00:00:00    DEMO_01       BUY      10  98.7     0
+#> 10        10 2019-05-03 2019-05-03 00:00:00    DEMO_01       SELL     10  99.9     0
+#> 11        11 2019-05-30 2019-05-30 00:00:00    DEMO_01       BUY      10  94.2     0
+#> 12        12 2019-06-12 2019-06-12 00:00:00    DEMO_02       BUY      10  75.3     0
+#> 13        13 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
+#> 14        14 2019-06-18 2019-06-18 00:00:00    DEMO_01       SELL     10  87.7     0
+#> 15        15 2019-06-19 2019-06-19 00:00:00    DEMO_01       BUY      10  87.3     0
+#> 16        16 2019-06-28 2019-06-28 00:00:00    DEMO_01       SELL     10  87.7     0
+#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
 close(rsi_bt)
 ledgr_snapshot_close(rsi_snapshot)
 ```

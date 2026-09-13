@@ -438,6 +438,11 @@ The strategy preflight boundary originated in
 
 ## Persistence Contract
 
+- ledgr-owned DuckDB drivers explicitly use session-local extension and secret
+  storage when the installed DuckDB exposes that control. This avoids shared-home
+  startup notices on affected versions without suppressing package messages,
+  warnings, errors, or rendered example output. Older DuckDB versions retain their
+  native driver behavior.
 - Runner-owned DuckDB write connections must issue `CHECKPOINT` before
   disconnect/shutdown when a later fresh connection is expected to read the
   same database file.
@@ -1103,8 +1108,9 @@ The strategy preflight boundary originated in
   count comes from `ledgr_effective_trials()`. DSR is independent of PBO/CSCV
   and remains evidence only: it must not select, promote, filter candidates
   through a business objective, mutate sweep artifacts, or change walk-forward
-  identity. quantstrat may be used only as optional reference evidence, never
-  as a required runtime dependency.
+  identity. quantstrat may be used only as optional reference evidence through
+  `dev/manual/verify-dsr-quantstrat.R`, never as an automated-test or runtime
+  dependency.
 - `ledgr_business_objective()` composes an ordered, non-empty set of
   ledgr-owned `ledgr_objective_*()` criterion steps with one v1 rule: all
   criteria must pass. Criterion steps are classed, hashed, canonically

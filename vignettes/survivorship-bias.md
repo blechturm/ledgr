@@ -823,6 +823,7 @@ summary(point_in_time)
 #> Execution Evidence:
 #>   Fill Timing:         availability_open_v2
 #>   Timing Version:      2
+#>
 #> Completion Evidence:
 #>   Status:           INCOMPLETE
 #>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z

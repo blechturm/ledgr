@@ -86,6 +86,7 @@ summary(single_run)
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
 #>   Timing Version:      N/A
+#>
 #> Performance Metrics:
 #>   Total Return:        0.24%
 #>   Annualized Return:   0.47%
@@ -141,7 +142,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_749006665f514fe8
+#> # ledgr sweep -- sweep_1df74db8e898124d
 #> # A tibble: 8 x 4
 #>   candidate_id                               status sharpe_ratio total_return
 #>   <chr>                                      <chr>         <dbl> <chr>

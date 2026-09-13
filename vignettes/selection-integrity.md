@@ -26,16 +26,15 @@ multiple-testing pressure. You will then see how those diagnostics can
 inform explicit eligibility requirements without becoming a
 winner-selection rule.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Evidence is not selection
+>
+> These diagnostics can challenge a result that looks persuasive. They do
+> not choose a candidate, promote one, or prove future profitability. A
+> low-risk diagnostic result is a reason to continue the research process,
+> not permission to stop it.
 
-**Evidence is not selection**
-
-These diagnostics can challenge a result that looks persuasive. They do
-not choose a candidate, promote one, or prove future profitability. A
-low-risk diagnostic result is a reason to continue the research process,
-not permission to stop it.
-
-</div>
 
 ## Start With The Evidence
 
@@ -667,16 +666,15 @@ plus sweep identity fields. Those fields are evidence provenance, not
 execution or selection identity: they make the decision reproducible
 without changing the run or choosing a candidate.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Rerun the DSR contrast with four effective trials. Then change the
+> clustering distance threshold. If your interpretation changes, what
+> trial-count policy would you be prepared to state before seeing the
+> candidate returns?
 
-**Try it**
-
-Rerun the DSR contrast with four effective trials. Then change the
-clustering distance threshold. If your interpretation changes, what
-trial-count policy would you be prepared to state before seeing the
-candidate returns?
-
-</div>
 
 ## Primary References
 

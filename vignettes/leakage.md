@@ -29,24 +29,22 @@ reflect a deliberate choice to make common leakage patterns structurally
 difficult – not just documented as bad practice. This article explains
 where that protection applies and where your responsibility begins.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Leakage breaks the question
+>
+> A leaky backtest can have correct arithmetic and still answer the wrong
+> research question. ledgr narrows common leakage paths, but it cannot
+> certify your data availability or research process.
 
-**Leakage breaks the question**
 
-A leaky backtest can have correct arithmetic and still answer the wrong
-research question. ledgr narrows common leakage paths, but it cannot
-certify your data availability or research process.
+> [!NOTE]
+>
+> ### Definition
+>
+> Leakage is any path by which a decision uses information that was not
+> knowable at the simulated decision time.
 
-</div>
-
-<div class="ledgr-callout ledgr-callout-note">
-
-**Definition**
-
-Leakage is any path by which a decision uses information that was not
-knowable at the simulated decision time.
-
-</div>
 
 ## The Obvious Leak
 
@@ -132,7 +130,7 @@ backtest’s apparent edge.
 
 <div class="ledgr-diagram ledgr-leakage-boundary">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   data["sealed data"]
@@ -234,14 +232,13 @@ causally clean.
 - Did parameter choices survive out-of-sample or regime checks?
 - Can the run be reopened and explained from stored provenance?
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Write down one dataset in your workflow that does not come from price
+> bars. What timestamp says when a strategy was allowed to know it?
 
-**Try it**
-
-Write down one dataset in your workflow that does not come from price
-bars. What timestamp says when a strategy was allowed to know it?
-
-</div>
 
 ## What To Remember
 

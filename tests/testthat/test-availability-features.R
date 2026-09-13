@@ -13,7 +13,7 @@ testthat::test_that("strict features expose whole-feed gaps and recover by windo
   exp <- ledgr_experiment(
     snapshot,
     strategy,
-    features = list(ledgr_ind_sma(2), ledgr_ind_returns(1)),
+    features = list(ledgr_ind_sma(2), ledgr_indicator_get("return_1")),
     valuation_policy = ledgr_valuation_stale(1),
     cost_model = ledgr_cost_zero()
   )

@@ -321,7 +321,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   )
 
   if (identical(db_path, ":memory:") || !file.exists(db_path)) {
-    drv <- duckdb::duckdb()
+    drv <- ledgr_duckdb_driver()
     con <- DBI::dbConnect(drv, dbdir = db_path)
     attr(con, "ledgr_duckdb_drv") <- drv
     ledgr_create_schema(con)

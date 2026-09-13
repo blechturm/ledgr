@@ -93,7 +93,10 @@ ledgr_run_completion_info_from_rows <- function(completion, affected_ids = chara
 
 ledgr_run_completion_info_many <- function(con, run_ids) {
   run_ids <- as.character(run_ids)
-  out <- setNames(lapply(run_ids, function(run_id) ledgr_run_completion_info_empty()), run_ids)
+  out <- stats::setNames(
+    lapply(run_ids, function(run_id) ledgr_run_completion_info_empty()),
+    run_ids
+  )
   if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "run_completion")) {
     return(out)
   }

@@ -2,9 +2,9 @@
 
 
 You could bury transaction costs and position limits inside your
-strategy function: compute a spread, deduct a fee, clamp a position size.
-ledgr does not make that the supported path, and that refusal is the
-point.
+strategy function: compute a spread, deduct a fee, clamp a position
+size. ledgr does not make that the supported path, and that refusal is
+the point.
 
 Two things go wrong when execution policy hides inside signal code.
 First, you stop being able to trust your own numbers: a return that
@@ -117,21 +117,20 @@ Risk steps chain with `ledgr_risk_chain()`:
 absence. They say “no cost” and “no constraint” on the record, where a
 later reader can see them.
 
-<div class="ledgr-callout ledgr-callout-important">
+> [!IMPORTANT]
+>
+> ### More steps are planned
+>
+> Later releases add more cost and risk steps, including richer fee and
+> exposure models. The chain interface does not change: you compose new
+> steps the same way you compose these.
 
-**More steps are planned**
-
-Later releases add more cost and risk steps, including richer fee and
-exposure models. The chain interface does not change: you compose new
-steps the same way you compose these.
-
-</div>
 
 ## What Risk Does
 
 The cleanest way to see a layer is to swap it and hold everything else
-fixed. The strategy below is deliberately aggressive, written to give the
-risk chain something to correct.
+fixed. The strategy below is deliberately aggressive, written to give
+the risk chain something to correct.
 
 ``` r
 greedy <- function(ctx, params) {
@@ -148,12 +147,12 @@ greedy <- function(ctx, params) {
 ```
 
 Each target line turns a fraction of current equity into a whole-share
-count at the instrument's price: the first is about 90 percent of equity
+count at the instrument’s price: the first is about 90 percent of equity
 held long, the second about 20 percent held short. Together that is
-roughly 110 percent gross exposure -- a concentrated, slightly levered
+roughly 110 percent gross exposure – a concentrated, slightly levered
 long-short bet. Both sides are past the limits declared above. The 90
-percent long exceeds the 50 percent cap, and a short is not long-only, so
-the risk chain has two separate things to fix.
+percent long exceeds the 50 percent cap, and a short is not long-only,
+so the risk chain has two separate things to fix.
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -186,17 +185,16 @@ run_policy <- function(cost, risk, run_id) {
 }
 ```
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> The runs below write to a temporary DuckDB store, so the article leaves
+> no project files behind. The greedy strategy re-targets on every bar, so
+> the final bar logs a `LEDGR_LAST_BAR_NO_FILL` notice. That is expected
+> next-open behavior; see
+> `vignette("execution-semantics", package = "ledgr")`.
 
-**Running this yourself**
-
-The runs below write to a temporary DuckDB store, so the article leaves
-no project files behind. The greedy strategy re-targets on every bar, so
-the final bar logs a `LEDGR_LAST_BAR_NO_FILL` notice. That is expected
-next-open behavior; see
-`vignette("execution-semantics", package = "ledgr")`.
-
-</div>
 
 Run the strategy with no risk chain, then with the chain from above, and
 compare the opening-day fills.
@@ -229,12 +227,12 @@ long in the first instrument and a short in the second. With `long_only`
 and `max_weight(0.5)`, the short is gone and the long is clamped to half
 of equity. The strategy code did not change. The policy did.
 
-The clamped quantity is fractional -- 54.632 shares -- because
-`max_weight` scales the target to hit exactly 50 percent of equity at the
-decision price, rather than flooring to a whole share. ledgr target
-quantities are continuous at this layer; if your venue trades whole lots,
-add a lot-size or rounding policy rather than hiding rounding inside the
-strategy.
+The clamped quantity is fractional – 54.632 shares – because
+`max_weight` scales the target to hit exactly 50 percent of equity at
+the decision price, rather than flooring to a whole share. ledgr target
+quantities are continuous at this layer; if your venue trades whole
+lots, add a lot-size or rounding policy rather than hiding rounding
+inside the strategy.
 
 ## What Cost Does
 
@@ -274,10 +272,10 @@ brokers, or act as an OMS.
 ## Identity
 
 The cost model and risk chain you chose are part of the run’s identity.
-ledgr hashes them, so two runs are only like-for-like comparable when their
-policy matches. You can still compare different policies deliberately, as
-the no-cost versus cost contrast above does; you just should not read
-them as sharing the same execution assumptions.
+ledgr hashes them, so two runs are only like-for-like comparable when
+their policy matches. You can still compare different policies
+deliberately, as the no-cost versus cost contrast above does; you just
+should not read them as sharing the same execution assumptions.
 
 ``` r
 with_cost$config$cost_model$cost_model_hash
@@ -296,36 +294,33 @@ does not rewrite them. For the full identity model, see
 The four layers are deliberately narrow. Each refuses work that belongs
 to a different kind of system.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Risk is not portfolio optimization
+>
+> `ledgr_risk_max_weight()` is a small deterministic target transform, not
+> a solver. It clamps quantities you already chose; it does not search for
+> an allocation.
 
-**Risk is not portfolio optimization**
 
-`ledgr_risk_max_weight()` is a small deterministic target transform, not
-a solver. It clamps quantities you already chose; it does not search for
-an allocation.
+> [!WARNING]
+>
+> ### Cost is not liquidity or capacity
+>
+> A cost model adds spread and fees. It does not decide whether volume is
+> sufficient, whether an order should be refused, or how a large order
+> moves the market.
 
-</div>
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!IMPORTANT]
+>
+> ### The research engine is not a broker
+>
+> Paper trading, order lifecycle, partial fills, cancellation, broker
+> reconciliation, financing, taxes, and live restart safety are separate
+> future layers. ledgr answers what a sealed snapshot and your declared
+> policy can determine; it does not stand in for a live venue.
 
-**Cost is not liquidity or capacity**
-
-A cost model adds spread and fees. It does not decide whether volume is
-sufficient, whether an order should be refused, or how a large order
-moves the market.
-
-</div>
-
-<div class="ledgr-callout ledgr-callout-important">
-
-**The research engine is not a broker**
-
-Paper trading, order lifecycle, partial fills, cancellation, broker
-reconciliation, financing, taxes, and live restart safety are separate
-future layers. ledgr answers what a sealed snapshot and your declared
-policy can determine; it does not stand in for a live venue.
-
-</div>
 
 These are not gaps to patch inside a strategy. They are questions a
 sealed backtest cannot answer, kept outside the execution contract on
@@ -333,16 +328,15 @@ purpose.
 
 ## Try It
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Lower the cap to `ledgr_risk_max_weight(0.3)` and rerun the risk
+> comparison. Which opening fill changes, and by how much? Then add a
+> `ledgr_cost_fixed_fee()` step to the cost chain and watch the fee column
+> in the opening fill.
 
-**Try it**
-
-Lower the cap to `ledgr_risk_max_weight(0.3)` and rerun the risk
-comparison. Which opening fill changes, and by how much? Then add a
-`ledgr_cost_fixed_fee()` step to the cost chain and watch the fee column
-in the opening fill.
-
-</div>
 
 ## Where Next
 

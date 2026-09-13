@@ -154,6 +154,8 @@ ledgr_run_info(snapshot, "qty_10")
     Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility: tier_1
     Execution Mode:  audit_log
+    Fill Timing:     dense_bar_timestamp
+    Timing Version:  N/A
     Elapsed Sec:     1.28
     Persist Features:TRUE
     Cache Hits:      0

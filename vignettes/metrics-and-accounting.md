@@ -230,11 +230,12 @@ and closing fills both appear here.
 ``` r
 fills <- ledgr_results(bt, what = "fills")
 fills
-#> # A tibble: 2 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-02 AAA           BUY       1   101     0            0 OPEN
-#> 2         2 2020-01-03 AAA           SELL      1   105     0            4 CLOSE
+#> # A tibble: 2 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2020-01-02 2020-01-02 00:00:00    AAA           BUY       1   101     0
+#> 2         2 2020-01-03 2020-01-03 00:00:00    AAA           SELL      1   105     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 The important columns are:
@@ -254,10 +255,11 @@ by `n_trades`, `win_rate`, and `avg_trade`.
 ``` r
 trades <- ledgr_results(bt, what = "trades")
 trades
-#> # A tibble: 1 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         2 2020-01-03 AAA           SELL      1   105     0            4 CLOSE
+#> # A tibble: 1 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         2 2020-01-03 2020-01-03 00:00:00    AAA           SELL      1   105     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 This run has two fill rows but one closed trade row. Counting fills as
@@ -386,13 +388,15 @@ flat_bt <- ledgr_backtest(
 )
 
 ledgr_results(flat_bt, what = "fills")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_results(flat_bt, what = "trades")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_compute_metrics(flat_bt)[c("n_trades", "win_rate", "avg_trade")]
 #> $n_trades
 #> [1] 0
@@ -430,14 +434,16 @@ open_bt <- ledgr_backtest(
 )
 
 ledgr_results(open_bt, what = "fills")
-#> # A tibble: 1 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-02 AAA           BUY       1   101     0            0 OPEN
+#> # A tibble: 1 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2020-01-02 2020-01-02 00:00:00    AAA           BUY       1   101     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ledgr_results(open_bt, what = "trades")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_compute_metrics(open_bt)[c("n_trades", "win_rate", "avg_trade")]
 #> $n_trades
 #> [1] 0
@@ -472,9 +478,10 @@ final_bar_bt <- ledgr_backtest(
 )
 
 ledgr_results(final_bar_bt, what = "fills")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ```
 
 ## Cleanup

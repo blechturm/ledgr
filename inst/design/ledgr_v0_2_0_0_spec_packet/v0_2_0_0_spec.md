@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Spec
 
-**Status:** Accepted 2026-09-09; tickets cut for implementation.
+**Status:** Implementation complete after maintainer review 2026-09-13; local
+release gates passed.
 **Date:** 2026-09-09.
 **Author:** ChatGPT Astra.
 **Target branch and development version:** `v0.2.0.0`, package `0.2.0.0`.
