@@ -1,6 +1,7 @@
 # ledgr v0.2.0.0 Spec Packet
 
-Status: Batches 0-12 complete after review. Batches 13-14 remain pending.
+Status: Batches 0-12 complete after review. Batch 13 implementation is
+complete and awaiting review; Batch 14 remains pending.
 They implement the accepted inspectable availability workflow amendment
 (`v0_2_0_0_workflow_amendment_proposed_v2.md`) as LDG-2704 through LDG-2711,
 then close the release gate.

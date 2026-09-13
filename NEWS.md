@@ -119,11 +119,16 @@
   explains a blocked exit and retained holding, reopens the same evidence, and
   contrasts strict invalid-observation rejection with explicit quarantine and
   an honestly incomplete valuation horizon.
+- Rebuilt that workflow around public fact-history and cutoff-resolution
+  queries, an explicit whole-feed outage, opening-time fill evidence, and a
+  result-derived common comparison window. `ledgr_run_info()` and `summary()`
+  now expose recorded completion bounds, stop evidence, and affected
+  instruments without reconstructing historical evidence.
 - Development continues under the accepted v0.2.0.0 packet. The ordered scope
   next hardens representation, provenance, and run-coordinator boundaries,
   then implements the first point-in-time asset-availability path on the shared
-  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-10
-  are complete after review and Batch 11 is in progress.
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-12
+  are complete after review and Batch 13 is awaiting review.
 
 # ledgr 0.1.9.7
 

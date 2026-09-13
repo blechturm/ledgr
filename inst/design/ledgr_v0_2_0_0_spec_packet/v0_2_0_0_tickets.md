@@ -2422,7 +2422,7 @@ scope: qlcal-adapter
 Priority: P1
 Effort: L
 Dependencies: LDG-2705, LDG-2708, LDG-2710
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -2458,6 +2458,31 @@ remaining completion-reporting gaps.
 - Documentation-contract tests
 - Workflow and completion tests
 - Rendered article and pkgdown build
+
+### Implementation Notes
+
+- Replaced the membership-inspection workaround with public history and cutoff
+  resolution. The executed article distinguishes delayed knowledge from an
+  already-known future-effective replacement and compares a venue-wide outage
+  with a closed date without artificial portfolio state.
+- Rebuilt the run comparison around a fully shown experiment, opening-time
+  fills, recording-pulse aggregation, and an endpoint computed from the actual
+  result curves rather than a retained prose value.
+- Extended `ledgr_run_info()` and `summary()` with read-only terminal completion
+  evidence. Availability-aware runs report requested and achieved windows,
+  status and stop reason, last valued and executed timestamps, completeness,
+  and affected IDs; absent historical or dense evidence remains typed unknown.
+- Added detecting workflow, completion, reopen, and documentation-contract
+  assertions. The rendered article carries the regenerated timing-sensitive
+  output and verifies both explanation and completion evidence after reopen.
+- The workflow/completion net and full 123-file source suite pass without
+  failure, error, or attributed warning; the full run has one expected adapter
+  skip. All 149 Rd files pass `tools::checkRd()`, the article renders to GFM,
+  and the complete pkgdown 2.2.1 site build succeeds.
+- Review follow-up added a two-instrument detecting fixture: `AAA` supplies the
+  only stopped diagnostic while `BBB` supplies ordinary fill evidence. The
+  affected set is exactly `AAA`, and changing the production filter from
+  `stopped` to `filled` fails exactly this test.
 
 ### Classification
 

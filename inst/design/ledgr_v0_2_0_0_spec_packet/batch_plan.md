@@ -1,8 +1,7 @@
 # ledgr v0.2.0.0 Batch Plan
 
-Status: Batches 0-12 complete after review. Batches 13-14 remain pending; they
-complete the accepted inspectable availability workflow amendment and then
-close the release gate.
+Status: Batches 0-12 complete after review. Batch 13 implementation is complete
+and awaiting review; Batch 14 remains pending as the release gate.
 
 Spec: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`
@@ -839,7 +838,7 @@ Implementation notes:
 
 ## Batch 13 - Inspectable Workflow Teaching And Completion
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -868,6 +867,30 @@ Exit criteria:
 - documentation-contract, workflow, and completion tests pass;
 - the article renders and the pkgdown build completes;
 - tests assert behavior and causal evidence rather than prose or plot styling.
+
+Implementation notes:
+
+- The Survivorship Bias article now inspects public session and membership
+  facts directly. It contrasts a closed date with a venue-wide feed outage and
+  demonstrates both delayed knowledge and a future-effective replacement
+  without constructing artificial holdings or running a strategy.
+- The complete point-in-time experiment is shown before the comparison helper.
+  Fill output distinguishes economic opening time from the close recording
+  pulse, and the equity join aggregates fills by that recording pulse first.
+- The comparison endpoint is computed from the two result curves. Public run
+  info and summaries now project recorded requested and achieved windows,
+  terminal status and reason, valuation and execution endpoints, completeness,
+  and affected IDs; the article verifies that explanation and completion
+  evidence survive close and reopen unchanged.
+- The seven-file workflow/completion net, documentation contracts, and full
+  123-file source suite pass with no failures, errors, or attributed warnings;
+  the full suite has the one expected snapshot-adapter skip. All 149 Rd files
+  pass `tools::checkRd()`, the GFM article render succeeds, and the complete
+  pkgdown 2.2.1 site build finishes successfully.
+- Review follow-up added a two-instrument completion fixture in which `AAA`
+  alone produces the terminal stop while `BBB` has ordinary fill evidence.
+  It pins the affected-ID set to `AAA`; changing the read-side query from
+  stopped diagnostics to filled diagnostics now fails exactly that test.
 
 ## Batch 14 - Release Gate
 

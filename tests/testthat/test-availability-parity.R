@@ -47,7 +47,37 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
 
   first <- ledgr_run(fixture$experiment, run_id = "terminal-incomplete")
   on.exit(close(first), add = TRUE)
-  testthat::expect_identical(ledgr_run_info(fixture$snapshot, first$run_id)$status, "INCOMPLETE")
+  first_info <- ledgr_run_info(fixture$snapshot, first$run_id)
+  testthat::expect_identical(first_info$status, "INCOMPLETE")
+  testthat::expect_true(first_info$completion_evidence_available)
+  testthat::expect_identical(first_info$completion_status, "INCOMPLETE")
+  testthat::expect_s3_class(first_info$requested_start_utc, "POSIXct")
+  testthat::expect_s3_class(first_info$requested_end_utc, "POSIXct")
+  testthat::expect_s3_class(first_info$achieved_start_utc, "POSIXct")
+  testthat::expect_s3_class(first_info$achieved_end_utc, "POSIXct")
+  testthat::expect_identical(
+    first_info$stop_reason,
+    "valuation_horizon_exhausted"
+  )
+  testthat::expect_identical(
+    first_info$last_fully_valued_ts_utc,
+    first_info$achieved_end_utc
+  )
+  testthat::expect_s3_class(first_info$last_executed_ts_utc, "POSIXct")
+  testthat::expect_false(first_info$complete_performance)
+  testthat::expect_identical(first_info$affected_instrument_ids, "AAA")
+  summary_output <- utils::capture.output(summary(first))
+  for (label in c(
+    "Completion Evidence", "Status:           INCOMPLETE",
+    "Requested Window", "Achieved Window",
+    "Stop Reason", "Last Fully Valued", "Last Executed",
+    "Performance:       incomplete", "Affected IDs:      AAA"
+  )) {
+    testthat::expect_true(any(grepl(label, summary_output, fixed = TRUE)))
+  }
+  info_output <- utils::capture.output(print(first_info))
+  testthat::expect_true(any(grepl("Completion Evidence", info_output, fixed = TRUE)))
+  testthat::expect_false(any(grepl("Diagnostics: NA", info_output, fixed = TRUE)))
   calls_after_first <- calls$n
   before <- availability_store_contents(path, first$run_id)
 
@@ -66,7 +96,85 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
     ledgr_results(reopened, "equity"),
     ledgr_results(first, "equity")
   )
+  reopened_info <- ledgr_run_info(fixture$snapshot, reopened$run_id)
+  completion_fields <- c(
+    "completion_evidence_available", "completion_status",
+    "requested_start_utc", "requested_end_utc",
+    "achieved_start_utc", "achieved_end_utc", "stop_reason",
+    "last_fully_valued_ts_utc", "last_executed_ts_utc",
+    "complete_performance", "affected_instrument_ids"
+  )
+  testthat::expect_identical(
+    reopened_info[completion_fields],
+    first_info[completion_fields]
+  )
   testthat::expect_identical(calls$n, calls_after_first)
+})
+
+testthat::test_that("completion affected IDs come only from stopped diagnostics", {
+  dates <- as.Date("2020-01-01") + 0:3
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = as.POSIXct(dates, tz = "UTC") - 1,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  bars <- expand.grid(
+    date_idx = seq_along(dates),
+    instrument_id = c("AAA", "BBB"),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bars <- bars[!(bars$instrument_id == "AAA" & bars$date_idx == 3L), ]
+  close <- 100 + bars$date_idx + ifelse(bars$instrument_id == "BBB", 20, 0)
+  bars <- data.frame(
+    ts_utc = as.POSIXct(paste(dates[bars$date_idx], "16:00:00"), tz = "UTC"),
+    instrument_id = bars$instrument_id,
+    open = close,
+    high = close + 1,
+    low = close - 1,
+    close = close,
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+    facts = ledgr_facts(sessions)
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    target[c("AAA", "BBB")] <- 1
+    target
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    universe = c("AAA", "BBB"),
+    valuation_policy = ledgr_valuation_stale(0),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_run(experiment, run_id = "affected-id-source")
+  on.exit(close(bt), add = TRUE)
+
+  diagnostics <- ledgr_results(bt, "diagnostics")
+  testthat::expect_true(any(
+    diagnostics$outcome == "filled" & diagnostics$instrument_id == "BBB"
+  ))
+  testthat::expect_identical(
+    unique(diagnostics$instrument_id[diagnostics$outcome == "stopped"]),
+    "AAA"
+  )
+  testthat::expect_identical(
+    ledgr_run_info(snapshot, bt$run_id)$affected_instrument_ids,
+    "AAA"
+  )
 })
 
 testthat::test_that("terminal completion recovers projections without strategy replay", {

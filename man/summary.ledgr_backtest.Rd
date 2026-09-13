@@ -59,6 +59,9 @@ average trade are printed as not available. If registered features cannot
 become usable because an instrument has fewer bars than the feature contract
 requires, the summary prints a compact Warmup Diagnostics section naming the
 feature ID, instrument ID, required bars, and available bars.
+Availability-aware runs also print their recorded completion evidence:
+requested and achieved windows, stop reason, last fully valued and executed
+times, complete or incomplete performance, and affected identifiers.
 }
 \section{Articles}{
 

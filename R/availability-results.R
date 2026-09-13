@@ -31,6 +31,116 @@ ledgr_backtest_diagnostics <- function(con, run_id) {
   ))
 }
 
+ledgr_run_completion_info_empty <- function() {
+  missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  list(
+    completion_evidence_available = FALSE,
+    completion_status = NA_character_,
+    requested_start_utc = missing_time,
+    requested_end_utc = missing_time,
+    achieved_start_utc = missing_time,
+    achieved_end_utc = missing_time,
+    stop_reason = NA_character_,
+    last_fully_valued_ts_utc = missing_time,
+    last_executed_ts_utc = missing_time,
+    complete_performance = NA,
+    affected_instrument_ids = NA_character_
+  )
+}
+
+ledgr_run_completion_info <- function(con, run_id) {
+  if (!ledgr_experiment_store_table_exists(con, "run_completion")) {
+    return(ledgr_run_completion_info_empty())
+  }
+  completion <- ledgr_run_completion_read(con, run_id, required = FALSE)
+  if (is.null(completion) || nrow(completion) == 0L) {
+    return(ledgr_run_completion_info_empty())
+  }
+  time_value <- function(name) {
+    as.POSIXct(completion[[name]][[1L]], tz = "UTC")
+  }
+  affected_ids <- character()
+  if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
+    stopped <- DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT instrument_id FROM run_diagnostics",
+        "WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq"
+      ),
+      params = list(run_id)
+    )
+    affected_ids <- unique(as.character(stopped$instrument_id))
+    affected_ids <- affected_ids[!is.na(affected_ids) & nzchar(affected_ids)]
+  }
+  list(
+    completion_evidence_available = TRUE,
+    completion_status = as.character(completion$intended_terminal_status[[1L]]),
+    requested_start_utc = time_value("intended_start_utc"),
+    requested_end_utc = time_value("intended_end_utc"),
+    achieved_start_utc = time_value("achieved_start_utc"),
+    achieved_end_utc = time_value("achieved_end_utc"),
+    stop_reason = as.character(completion$stop_reason[[1L]]),
+    last_fully_valued_ts_utc = time_value("last_fully_valued_ts_utc"),
+    last_executed_ts_utc = time_value("last_executed_ts_utc"),
+    complete_performance = isTRUE(completion$complete_performance[[1L]]),
+    affected_instrument_ids = affected_ids
+  )
+}
+
+ledgr_backtest_completion_info <- function(bt) {
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  ledgr_run_completion_info(opened$con, bt$run_id)
+}
+
+ledgr_completion_time_label <- function(x) {
+  if (length(x) != 1L || is.na(x)) return("unknown")
+  format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+}
+
+ledgr_print_completion_info <- function(info) {
+  if (!isTRUE(info$completion_evidence_available)) return(invisible(FALSE))
+  requested <- paste(
+    ledgr_completion_time_label(info$requested_start_utc),
+    ledgr_completion_time_label(info$requested_end_utc),
+    sep = " to "
+  )
+  achieved <- paste(
+    ledgr_completion_time_label(info$achieved_start_utc),
+    ledgr_completion_time_label(info$achieved_end_utc),
+    sep = " to "
+  )
+  stop_reason <- info$stop_reason
+  if (length(stop_reason) != 1L || is.na(stop_reason) || !nzchar(stop_reason)) {
+    stop_reason <- "none"
+  }
+  affected <- info$affected_instrument_ids
+  affected <- affected[!is.na(affected) & nzchar(affected)]
+  affected <- if (length(affected) == 0L) "none recorded" else paste(affected, collapse = ", ")
+  performance <- if (isTRUE(info$complete_performance)) "complete" else "incomplete"
+
+  cat("Completion Evidence:\n")
+  cat("  Status:           ", info$completion_status, "\n", sep = "")
+  cat("  Requested Window: ", requested, "\n", sep = "")
+  cat("  Achieved Window:  ", achieved, "\n", sep = "")
+  cat("  Stop Reason:      ", stop_reason, "\n", sep = "")
+  cat(
+    "  Last Fully Valued: ",
+    ledgr_completion_time_label(info$last_fully_valued_ts_utc),
+    "\n",
+    sep = ""
+  )
+  cat(
+    "  Last Executed:    ",
+    ledgr_completion_time_label(info$last_executed_ts_utc),
+    "\n",
+    sep = ""
+  )
+  cat("  Performance:       ", performance, "\n", sep = "")
+  cat("  Affected IDs:      ", affected, "\n\n", sep = "")
+  invisible(TRUE)
+}
+
 ledgr_availability_result_empty <- function() {
   tibble::tibble(
     ts_utc = as.POSIXct(character(), tz = "UTC"),

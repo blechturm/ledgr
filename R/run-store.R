@@ -908,8 +908,12 @@ print.ledgr_run_list <- function(x, ...) {
 #'   `execution_timing_version`, `execution_timing_convention`,
 #'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
 #'   `persist_features`, feature-cache counts, `promotion_context` for runs
-#'   created with [ledgr_promote()], and `error_msg` for failed runs. See
-#'   [ledgr_identity_fields] for hash-field semantics.
+#'   created with [ledgr_promote()], and `error_msg` for failed runs. When
+#'   terminal completion evidence exists, the object also reports requested
+#'   and achieved windows, stop reason, last fully valued and executed times,
+#'   whether performance is complete, and affected instrument identifiers.
+#'   Historical or dense runs without that evidence report those fields as
+#'   unknown. See [ledgr_identity_fields] for hash-field semantics.
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -940,6 +944,8 @@ ledgr_run_info <- function(snapshot, run_id) {
 
   info <- ledgr_run_info_from_row(row, db_path)
   info$promotion_context <- ledgr_fetch_promotion_context(opened$con, run_id)
+  completion <- ledgr_run_completion_info(opened$con, run_id)
+  info[names(completion)] <- completion
   info
 }
 
@@ -982,11 +988,19 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Persist Features:", value("persist_features"), "\n", sep = "")
   cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
   cat("Cache Misses:    ", value("feature_cache_misses"), "\n", sep = "")
+  if (isTRUE(x$completion_evidence_available)) {
+    cat("\n")
+    ledgr_print_completion_info(x)
+  }
   if (isTRUE(x$legacy_pre_provenance)) {
     cat("\nLegacy/pre-provenance run: strategy provenance is incomplete.\n")
   }
-  if (!identical(value("status"), "DONE")) {
-    cat("\nDiagnostics: ", value("error_msg"), "\n", sep = "")
+  error_msg <- x$error_msg
+  if (
+    length(error_msg) == 1L && !is.na(error_msg) &&
+      is.character(error_msg) && nzchar(error_msg)
+  ) {
+    cat("\nDiagnostics: ", error_msg, "\n", sep = "")
   }
   invisible(x)
 }

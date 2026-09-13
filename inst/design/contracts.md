@@ -850,6 +850,12 @@ The strategy preflight boundary originated in
   is `no_action` and `execution_reason` plus `execution_reasons` are
   `no_target_change`. Those values are explain-time defaults, not durable
   diagnostic reason codes, and are never persisted.
+- `ledgr_run_info()` and `summary()` project existing terminal completion
+  evidence read-only. Availability-aware runs expose requested and achieved
+  windows, terminal status and stop reason, last fully valued and executed
+  times, complete or incomplete performance, and affected instrument IDs from
+  recorded stop diagnostics. Dense and historical runs without that evidence
+  report it as unknown; inspection must not reconstruct or persist it.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed

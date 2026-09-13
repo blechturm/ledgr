@@ -98,6 +98,12 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   info <- ledgr_run_info(snapshot, "info-run")
+  testthat::expect_false(info$completion_evidence_available)
+  testthat::expect_true(is.na(info$completion_status))
+  testthat::expect_true(is.na(info$requested_start_utc))
+  testthat::expect_true(is.na(info$requested_end_utc))
+  testthat::expect_true(is.na(info$complete_performance))
+  testthat::expect_identical(info$affected_instrument_ids, NA_character_)
   testthat::expect_s3_class(info, "ledgr_run_info")
   testthat::expect_identical(info$run_id, "info-run")
   testthat::expect_identical(info$status, "DONE")

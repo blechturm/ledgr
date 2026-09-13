@@ -590,6 +590,9 @@ print.ledgr_backtest <- function(x, ...) {
 #' become usable because an instrument has fewer bars than the feature contract
 #' requires, the summary prints a compact Warmup Diagnostics section naming the
 #' feature ID, instrument ID, required bars, and available bars.
+#' Availability-aware runs also print their recorded completion evidence:
+#' requested and achieved windows, stop reason, last fully valued and executed
+#' times, complete or incomplete performance, and affected identifiers.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -643,6 +646,9 @@ summary.ledgr_backtest <- function(object,
   timing_version <- timing$execution_timing_version
   timing_version <- if (is.null(timing_version) || is.na(timing_version)) "N/A" else as.character(timing_version)
   cat(sprintf("  Timing Version:      %s\n\n", timing_version))
+
+  completion <- ledgr_backtest_completion_info(object)
+  ledgr_print_completion_info(completion)
 
   cat("Performance Metrics:\n")
   cat(sprintf("  Total Return:        %.2f%%\n", computed$total_return * 100))

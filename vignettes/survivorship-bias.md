@@ -53,7 +53,7 @@ open_dates <- session_dates[open_day]
 
 prices <- tibble(
   date = open_dates,
-  AAA = c(100, 92, 78, 61, 44, NA, NA, NA, NA, NA),
+  AAA = c(100, 92, 78, NA, 44, NA, NA, NA, NA, NA),
   BBB = c(50, 51, 52, NA, 54, 55, 56, 57, 58, 59)
 )
 
@@ -64,7 +64,7 @@ prices
 #>  1 2020-01-06   100    50
 #>  2 2020-01-07    92    51
 #>  3 2020-01-08    78    52
-#>  4 2020-01-09    61    NA
+#>  4 2020-01-09    NA    NA
 #>  5 2020-01-10    44    54
 #>  6 2020-01-13    NA    55
 #>  7 2020-01-14    NA    56
@@ -77,15 +77,16 @@ prices
 
 <img src="survivorship-bias_files/figure-commonmark/fig-prices-1.png"
 id="fig-prices"
-data-fig-alt="Observed closes. AAA falls from 100 to 44 and its line ends there. BBB rises from 50 to 59 with a visible break at the missing 9 January session." />
+data-fig-alt="Observed closes. Both lines break on the 9 January feed outage. AAA falls from 100 to 44 and ends on 10 January; BBB resumes and rises to 59." />
 
 Figure 1
 
 </div>
 
-Two holes matter later, and they are not the same kind of hole. `AAA`
-stops printing prices after January 10. `BBB` is missing a single
-session on January 9 and then resumes.
+Two holes matter later, and they are not the same kind of hole. The
+entire feed is absent on January 9 even though the venue was open. Both
+instruments resume on January 10, but `AAA` stops printing prices after
+that session while `BBB` continues.
 
 <div class="ledgr-callout ledgr-callout-note">
 
@@ -230,8 +231,8 @@ Read the columns as four separate assertions:
 |----|----|
 | `session_date` | This calendar day existed at the venue. |
 | `status` | Whether it was `open` or `closed`. Closed days are supplied too — that is how a weekend is distinguished from a missing file. |
-| `session_open` | The time execution prices are taken from. Fills are priced at the next session’s open. |
-| `session_close` | The time decisions are made, and the pulse each fill is booked on. |
+| `session_open` | That session’s economic execution time and price cutoff. |
+| `session_close` | The decision pulse and the accounting row to which that session’s fills align. |
 
 Supplying the closed days matters. Had you listed only the ten open
 days, a holiday and a failed download would look identical. Here they do
@@ -254,8 +255,42 @@ says the calendar was published in advance, on January 1 — a calendar is
 known before the period it describes, which is what makes it usable for
 decisions inside it.
 
-January 9 is now a real session on which `BBB` had no observation,
-rather than a date that never happened.
+January 9 is now a real session with no observations, rather than a date
+that never happened. Inspect it beside Saturday January 11, when the
+venue was actually closed:
+
+``` r
+bars_input <- bars_from(prices)
+
+inspect_session <- function(at) {
+  resolved <- ledgr_facts_resolve(
+    session_facts,
+    family = "sessions",
+    scope_id = "DEMO",
+    at = at
+  )$rows
+  resolved |>
+    transmute(
+      session_date,
+      session_status = status,
+      observed_rows = sum(as.Date(bars_input$ts_utc) == session_date)
+    )
+}
+
+bind_rows(
+  inspect_session("2020-01-09T21:00:00Z"),
+  inspect_session("2020-01-11T21:00:00Z")
+)
+#> # A tibble: 2 x 3
+#>   session_date session_status observed_rows
+#>   <date>       <chr>                  <int>
+#> 1 2020-01-09   open                       0
+#> 2 2020-01-11   closed                     0
+```
+
+Both dates have zero observations. January 9 is an open-session feed
+outage, so it stays on the pulse and valuation clocks. January 11 is
+closed, so it is not a pulse and does not age a stale mark.
 
 ### Which companies belonged, and when was that knowable?
 
@@ -264,39 +299,29 @@ a date. Here there are two. On January 6 the universe was both
 companies; from January 13, after `AAA` was removed, it was `BBB` alone.
 
 ``` r
-members_from_06 <- c("AAA", "BBB")
-members_from_13 <- c("BBB")
+membership_lists <- tibble(
+  effective_from = ledgr_utc(c("2020-01-06", "2020-01-13")),
+  knowledge_time = ledgr_utc(c("2020-01-01", "2020-01-13")),
+  members = list(c("AAA", "BBB"), "BBB"),
+  source = "synthetic_membership"
+)
+
+membership_lists
+#> # A tibble: 2 x 4
+#>   effective_from      knowledge_time      members   source
+#>   <dttm>              <dttm>              <list>    <chr>
+#> 1 2020-01-06 00:00:00 2020-01-01 00:00:00 <chr [2]> synthetic_membership
+#> 2 2020-01-13 00:00:00 2020-01-13 00:00:00 <chr [1]> synthetic_membership
 ```
 
 Each list also needs a second date: when that list became *knowable*.
 The January 6 list was published with the calendar on January 1. The
 removal was announced on January 13, the day it took effect.
 
-Two lists become three rows — one row per member per list:
-
-``` r
-membership_rows <- bind_rows(
-  tibble(
-    effective_from = ledgr_utc("2020-01-06"),
-    knowledge_time = ledgr_utc("2020-01-01"),
-    instrument_id = members_from_06
-  ),
-  tibble(
-    effective_from = ledgr_utc("2020-01-13"),
-    knowledge_time = ledgr_utc("2020-01-13"),
-    instrument_id = members_from_13
-  )
-) |>
-  mutate(source = "synthetic_membership")
-
-membership_rows
-#> # A tibble: 3 x 4
-#>   effective_from      knowledge_time      instrument_id source
-#>   <dttm>              <dttm>              <chr>         <chr>
-#> 1 2020-01-06 00:00:00 2020-01-01 00:00:00 AAA           synthetic_membership
-#> 2 2020-01-06 00:00:00 2020-01-01 00:00:00 BBB           synthetic_membership
-#> 3 2020-01-13 00:00:00 2020-01-13 00:00:00 BBB           synthetic_membership
-```
+The `members` list-column keeps each provider list intact. The
+constructor normalizes it to the member rows and complete-set evidence
+that ledgr hashes and resolves; users do not need to expand the list by
+hand.
 
 The two dates answer two different questions:
 
@@ -327,7 +352,7 @@ exactly the assumption survivorship bias hides behind.
 
 ``` r
 membership_facts <- ledgr_facts_membership_snapshots(
-  membership_rows,
+  membership_lists,
   universe_id = "demo_members",
   complete = TRUE
 )
@@ -343,7 +368,7 @@ never leave.
 ``` r
 instruments <- tibble(instrument_id = c("AAA", "BBB"))
 facts <- ledgr_facts(session_facts, membership_facts)
-ledgr_facts_validate(facts, bars_from(prices), instruments)
+ledgr_facts_validate(facts, bars_input, instruments)
 #> ledgr facts validation
 #> Can seal: yes
 #> # A tibble: 7 x 2
@@ -353,7 +378,7 @@ ledgr_facts_validate(facts, bars_from(prices), instruments)
 #> 2 facts_runtime_conflict                0
 #> 3 facts_audit_only                      0
 #> 4 facts_rejected                        0
-#> 5 observations_accepted                14
+#> 5 observations_accepted                13
 #> 6 observations_quarantine_candidate     0
 #> 7 observations_rejected                 0
 ```
@@ -364,13 +389,28 @@ relevant fact.
 
 ### What the knowledge clock actually changes
 
-This is worth seeing rather than asserting. Build the same membership
-with the removal knowable one day later, and ask what the strategy can
-see at the January 13 decision.
+First inspect the named history you supplied. History is retrospective:
+it shows all assertions, including ones that were not usable at an
+earlier decision cutoff.
 
 ``` r
+ledgr_facts_history(
+  membership_facts,
+  family = "membership",
+  scope_id = "demo_members"
+)$rows |>
+  select(evidence_type, instrument_id, effective_from, knowledge_time, complete)
+#> # A tibble: 5 x 5
+#>   evidence_type        instrument_id effective_from      knowledge_time      complete
+#>   <chr>                <chr>         <dttm>              <dttm>              <lgl>
+#> 1 membership_assertion AAA           2020-01-06 00:00:00 2020-01-01 00:00:00 NA
+#> 2 membership_assertion BBB           2020-01-06 00:00:00 2020-01-01 00:00:00 NA
+#> 3 set_header           <NA>          2020-01-06 00:00:00 2020-01-01 00:00:00 TRUE
+#> 4 membership_assertion BBB           2020-01-13 00:00:00 2020-01-13 00:00:00 NA
+#> 5 set_header           <NA>          2020-01-13 00:00:00 2020-01-13 00:00:00 TRUE
+
 late_membership <- ledgr_facts_membership_snapshots(
-  membership_rows |>
+  membership_lists |>
     mutate(
       knowledge_time = if_else(
         effective_from == ledgr_utc("2020-01-13"),
@@ -382,62 +422,58 @@ late_membership <- ledgr_facts_membership_snapshots(
   complete = TRUE
 )
 
-visible_membership <- function(member_facts, label) {
-  snap <- ledgr_snapshot_from_df(
-    bars_from(prices),
-    instruments_df = instruments,
-    facts = ledgr_facts(session_facts, member_facts),
-    db_path = ledgr_temp_store(),
-    snapshot_id = paste0("knowledge-", label)
-  )
-  on.exit(ledgr_snapshot_close(snap), add = TRUE)
-  run <- ledgr_run(
-    ledgr_experiment(
-      snap,
-      function(ctx, params) ctx$hold(),
-      universe = ledgr_universe_members("demo_members"),
-      valuation_policy = ledgr_valuation_stale(max_sessions = 2),
-      cost_model = ledgr_cost_zero(),
-      # Hold both companies so each one stays on the decision axis even after
-      # it leaves the universe. Otherwise there is no row to compare.
-      opening = ledgr_opening(
-        cash = 10000,
-        positions = c(AAA = 1, BBB = 1),
-        cost_basis = c(AAA = 100, BBB = 50)
+early_membership <- ledgr_facts_membership_snapshots(
+  membership_lists |>
+    mutate(
+      knowledge_time = if_else(
+        effective_from == ledgr_utc("2020-01-13"),
+        ledgr_utc("2020-01-10"),
+        knowledge_time
       )
     ),
-    run_id = paste0("knowledge-", label)
-  )
-  on.exit(close(run), add = TRUE)
-  ledgr_results(run, "availability") |>
-    filter(instrument_id == "AAA", as.Date(ts_utc) == as.Date("2020-01-13")) |>
-    transmute(decision = ts_utc, removal_knowable = label, member)
+  universe_id = "demo_members",
+  complete = TRUE
+)
+
+resolve_aaa <- function(member_facts, scenario, at) {
+  ledgr_facts_resolve(
+    member_facts,
+    family = "membership",
+    scope_id = "demo_members",
+    at = at,
+    instruments = "AAA"
+  )$rows |>
+    transmute(scenario, cutoff = at, member, reason)
 }
 
 bind_rows(
-  visible_membership(membership_facts, "13 January"),
-  visible_membership(late_membership, "14 January")
+  resolve_aaa(
+    early_membership, "known early, not effective", "2020-01-10T21:00:00Z"
+  ),
+  resolve_aaa(
+    membership_facts, "effective and knowable", "2020-01-13T21:00:00Z"
+  ),
+  resolve_aaa(
+    late_membership, "effective, not knowable", "2020-01-13T21:00:00Z"
+  ),
+  resolve_aaa(
+    late_membership, "effective and now knowable", "2020-01-14T21:00:00Z"
+  )
 )
-#> # A tibble: 2 x 3
-#>   decision            removal_knowable member
-#>   <dttm>              <chr>            <lgl>
-#> 1 2020-01-13 21:00:00 13 January       FALSE
-#> 2 2020-01-13 21:00:00 14 January       TRUE
+#> # A tibble: 4 x 4
+#>   scenario                   cutoff               member reason
+#>   <chr>                      <chr>                <lgl>  <chr>
+#> 1 known early, not effective 2020-01-10T21:00:00Z TRUE   member_asserted
+#> 2 effective and knowable     2020-01-13T21:00:00Z FALSE  omitted_from_complete_set
+#> 3 effective, not knowable    2020-01-13T21:00:00Z TRUE   member_asserted
+#> 4 effective and now knowable 2020-01-14T21:00:00Z FALSE  omitted_from_complete_set
 ```
 
-Same effective date, same prices, different answer. When the removal is
-knowable on the 13th, `AAA` is already outside the universe at that
-decision. When the same change only becomes knowable on the 14th, `AAA`
-is still a member on the 13th, because that is all the strategy could
-have known. Moving one timestamp changes the opportunity set.
-
-Note how much machinery that answer cost: a snapshot, an experiment, and
-a full run, to read back which instruments were members on one date.
-There is currently no lighter way to ask. `ledgr_experiment_plan()`
-reports which fact families *participate*, not what they *resolve to* on
-a given day. Until an inspection helper exists, running a holding
-strategy and reading the `availability` evidence is the supported way to
-check your facts say what you think they say.
+The first row proves that knowing about a future replacement does not
+activate it early. The middle rows hold the effective date fixed and
+move only the knowledge time: `AAA` remains a member until the removal
+is both effective and knowable. No strategy, opening position, or run is
+needed to inspect that decision-time answer.
 
 ## What A Strategy Returns
 
@@ -460,7 +496,7 @@ equal_weight_once <- function(ctx, params) {
   if (substr(ctx$ts_utc, 1, 10) != "2020-01-06") {
     return(ctx$hold())
   }
-  ids <- ctx$universe
+  ids <- ctx$members
   weights <- ledgr_weights(
     stats::setNames(rep(1 / length(ids), length(ids)), ids),
     universe = ids
@@ -474,6 +510,13 @@ decision price, but the fill happens at the next session’s open, so the
 cash a target actually requires is not yet known when you ask for it.
 Leaving headroom is a research choice, and the exercise at the end of
 this article shows what happens without it.
+
+The path is explicit. `ledgr_universe_members("demo_members")` selects
+the named history. At each decision, its cutoff resolution becomes
+`ctx$members`. `ctx$universe` is the members-plus-holdings axis, so a
+held former member stays visible. The rebalance helper creates one
+full-axis target; execution and valuation then decide independently what
+can fill and what can be marked.
 
 ## Two Universes, One Everything Else
 
@@ -490,7 +533,7 @@ store_path <- ledgr_temp_store(
 )
 
 snapshot <- ledgr_snapshot_from_df(
-  bars_from(prices),
+  bars_input,
   instruments_df = instruments,
   facts = facts,
   db_path = store_path,
@@ -525,13 +568,13 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> Availability: active
 #> Universe:     membership
 #> Checks:
-#> # A tibble: 4 x 2
-#>   family         status
-#>   <chr>          <chr>
-#> 1 membership     declared
-#> 2 sessions       declared
-#> 3 trading_status omitted
-#> 4 lifetime       omitted
+#> # A tibble: 4 x 3
+#>   family         status   assumption_reasons
+#>   <chr>          <chr>    <chr>
+#> 1 membership     declared ""
+#> 2 sessions       declared ""
+#> 3 trading_status omitted  ""
+#> 4 lifetime       omitted  ""
 ```
 
 The plan states which checks actually participate. Membership and
@@ -568,32 +611,66 @@ saw one.
 
 ``` r
 ledgr_results(point_in_time, "fills") |>
-  select(ts_utc, instrument_id, side, qty, price)
-#> # A tibble: 2 x 5
-#>   ts_utc              instrument_id side    qty price
-#>   <dttm>              <chr>         <chr> <dbl> <dbl>
-#> 1 2020-01-07 21:00:00 AAA           BUY      45    92
-#> 2 2020-01-07 21:00:00 BBB           BUY      90    51
+  select(ts_utc, recording_pulse_ts_utc, instrument_id, side, qty, price)
+#> # A tibble: 2 x 6
+#>   ts_utc              recording_pulse_ts_utc instrument_id side    qty price
+#>   <dttm>              <dttm>                 <chr>         <chr> <dbl> <dbl>
+#> 1 2020-01-07 14:30:00 2020-01-07 21:00:00    AAA           BUY      45    92
+#> 2 2020-01-07 14:30:00 2020-01-07 21:00:00    BBB           BUY      90    51
 ```
 
-The decision was made on January 6, but the fills are stamped January 7
-at 21:00 — the session *close*. That is not the moment of execution, and
-the two are worth separating.
+The decision was made at the January 6 close. The fills are stamped at
+the January 7 open, when the economic execution happened. Their
+read-only `recording_pulse_ts_utc` points to the January 7 close where
+the resulting account state appears on the equity curve.
 
 <div class="ledgr-callout ledgr-callout-note">
 
 **Two clocks in one fill row**
 
-- `price` is the **open** of the next session. That is where execution
-  happened.
-- `ts_utc` is that session’s **close** — the pulse at which the fill is
-  recorded and first visible to the strategy.
+- `ts_utc` and `price` identify the **open** of the next session. That
+  is where execution happened.
+- `recording_pulse_ts_utc` is that session’s **close**, the accounting
+  pulse to which the fill belongs.
 
-A target decided at session *t* is priced at session *t+1*’s open and
-booked on session *t+1*’s pulse. `ts_utc` answers “which pulse does this
-belong to”, not “what time did the trade print”.
+A target decided at session *t* is evaluated and priced at session
+*t+1*’s open. Strategy code still sees only decision-time evidence. To
+align fills with equity, aggregate fills by recording pulse first;
+joining raw economic timestamps to close-stamped equity is not session
+alignment.
 
 </div>
+
+``` r
+fills_by_pulse <- ledgr_results(point_in_time, "fills") |>
+  group_by(recording_pulse_ts_utc) |>
+  summarise(
+    fill_count = n(),
+    filled_notional = sum(qty * price),
+    .groups = "drop"
+  )
+
+pit_equity_for_join <- ledgr_results(point_in_time, "equity")
+pit_equity_for_join |>
+  left_join(
+    fills_by_pulse,
+    by = c("ts_utc" = "recording_pulse_ts_utc")
+  ) |>
+  select(ts_utc, equity, fill_count, filled_notional)
+#> # A tibble: 7 x 4
+#>   ts_utc              equity fill_count filled_notional
+#>   <dttm>               <dbl>      <int>           <dbl>
+#> 1 2020-01-06 21:00:00  10000         NA              NA
+#> 2 2020-01-07 21:00:00  10000          2            8730
+#> 3 2020-01-08 21:00:00   9460         NA              NA
+#> 4 2020-01-09 21:00:00   9460         NA              NA
+#> 5 2020-01-10 21:00:00   8110         NA              NA
+#> 6 2020-01-13 21:00:00   8200         NA              NA
+#> 7 2020-01-14 21:00:00   8290         NA              NA
+```
+
+The aggregation preserves one row per equity pulse even when several
+instruments fill at the same opening.
 
 ### Compare only what covers the same period
 
@@ -601,38 +678,51 @@ belong to”, not “what time did the trade print”.
 pit_equity <- ledgr_results(point_in_time, "equity")
 survivor_equity <- ledgr_results(survivor, "equity")
 
-last_common <- max(pit_equity$ts_utc)
+last_common <- min(max(pit_equity$ts_utc), max(survivor_equity$ts_utc))
 return_at <- function(equity, ts) equity$equity[equity$ts_utc == ts] / 10000 - 1
 
-tibble(
+common_window <- tibble(
   universe = c("Survivor list (BBB only)", "Point-in-time (AAA and BBB)"),
   return_to_common_session = c(
     return_at(survivor_equity, last_common),
     return_at(pit_equity, last_common)
   )
 )
+
+common_window
 #> # A tibble: 2 x 2
 #>   universe                    return_to_common_session
 #>   <chr>                                          <dbl>
 #> 1 Survivor list (BBB only)                    0.090000
 #> 2 Point-in-time (AAA and BBB)                -0.171
 
-ledgr_run_info(snapshot, survivor$run_id)$status
-#> [1] "DONE"
-ledgr_run_info(snapshot, point_in_time$run_id)$status
-#> [1] "INCOMPLETE"
+run_horizons <- bind_rows(lapply(
+  c(survivor$run_id, point_in_time$run_id),
+  function(id) {
+    info <- ledgr_run_info(snapshot, id)
+    tibble(
+      run_id = id,
+      status = info$status,
+      requested_end = info$requested_end_utc,
+      achieved_end = info$achieved_end_utc,
+      complete_performance = info$complete_performance
+    )
+  }
+))
+
+run_horizons
+#> # A tibble: 2 x 5
+#>   run_id            status     requested_end       achieved_end        complete_performance
+#>   <chr>             <chr>      <dttm>              <dttm>              <lgl>
+#> 1 survivor-universe DONE       2020-01-17 21:00:00 2020-01-17 21:00:00 TRUE
+#> 2 pit-universe      INCOMPLETE 2020-01-17 21:00:00 2020-01-14 21:00:00 FALSE
 ```
 
-At the last session both runs cover, January 14, the survivor universe
-reports **+9.0%** and the point-in-time universe **−17.1%**: a gap of
-**26.1 percentage points**, produced by nothing but the universe
-declaration.
-
-The two runs do not cover the same horizon. The survivor run finishes
-and reports `DONE`, reaching January 17 at +14.4%. The point-in-time run
-ends early and reports `INCOMPLETE`. Those full-horizon figures are not
-comparable to each other, which is why the number above is taken at the
-last session they share.
+`common_window` computes the comparison at the last session both runs
+actually value; it does not extend either curve or retain a number
+supplied by prose. `run_horizons` reports the full-horizon outcomes
+separately. The survivor run finishes, while the point-in-time run ends
+early. Their terminal returns are therefore not comparable.
 
 <div id="fig-comparison">
 
@@ -667,7 +757,7 @@ availability |>
 #> 1 2020-01-06 21:00:00 TRUE   FALSE TRUE       TRUE   current_close        0
 #> 2 2020-01-07 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
 #> 3 2020-01-08 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
-#> 4 2020-01-09 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
+#> 4 2020-01-09 21:00:00 TRUE   TRUE  TRUE       TRUE   stale_close          1
 #> 5 2020-01-10 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
 #> 6 2020-01-13 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          1
 #> 7 2020-01-14 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          2
@@ -725,14 +815,62 @@ ledgr_results(point_in_time, "diagnostics") |>
 #>   <dttm>              <chr>     <chr>   <chr>                       <chr>            <int>
 #> 1 2020-01-15 21:00:00 valuation stopped valuation_horizon_exhausted AAA                  3
 
+pit_info <- ledgr_run_info(snapshot, point_in_time$run_id)
 tibble(
-  intended_end = ledgr_utc("2020-01-17 21:00:00"),
-  achieved_end = max(pit_equity$ts_utc)
+  status = pit_info$status,
+  requested_start = pit_info$requested_start_utc,
+  requested_end = pit_info$requested_end_utc,
+  achieved_start = pit_info$achieved_start_utc,
+  achieved_end = pit_info$achieved_end_utc,
+  stop_reason = pit_info$stop_reason,
+  last_fully_valued = pit_info$last_fully_valued_ts_utc,
+  last_executed = pit_info$last_executed_ts_utc,
+  complete_performance = pit_info$complete_performance,
+  affected_ids = paste(pit_info$affected_instrument_ids, collapse = ", ")
 )
-#> # A tibble: 1 x 2
-#>   intended_end        achieved_end
-#>   <dttm>              <dttm>
-#> 1 2020-01-17 21:00:00 2020-01-14 21:00:00
+#> # A tibble: 1 x 10
+#>   status     requested_start     requested_end       achieved_start      achieved_end
+#>   <chr>      <dttm>              <dttm>              <dttm>              <dttm>
+#> 1 INCOMPLETE 2020-01-06 21:00:00 2020-01-17 21:00:00 2020-01-06 21:00:00 2020-01-14 21:00:00
+#> # i 5 more variables: stop_reason <chr>, last_fully_valued <dttm>, last_executed <dttm>,
+#> #   complete_performance <lgl>, affected_ids <chr>
+
+summary(point_in_time)
+#> ledgr Backtest Summary
+#> ======================
+#>
+#> Execution Evidence:
+#>   Fill Timing:         availability_open_v2
+#>   Timing Version:      2
+#>
+#> Completion Evidence:
+#>   Status:           INCOMPLETE
+#>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#>   Achieved Window:  2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z
+#>   Stop Reason:      valuation_horizon_exhausted
+#>   Last Fully Valued: 2020-01-14T21:00:00Z
+#>   Last Executed:    2020-01-07T14:30:00Z
+#>   Performance:       incomplete
+#>   Affected IDs:      AAA
+#>
+#> Performance Metrics:
+#>   Total Return:        -17.10%
+#>   Annualized Return:   -99.96%
+#>   Max Drawdown:        -18.90%
+#>
+#> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
+#>   Volatility (annual): 96.41%
+#>   Sharpe Ratio:        -7.608
+#>
+#> Trade Statistics:
+#>   Total Trades:        0
+#>   Win Rate:            N/A (no trades)
+#>   Avg Trade:           N/A (no trades)
+#>
+#> Exposure:
+#>   Time in Market:      85.71%
 ```
 
 This is the hand calculation’s quiet assumption coming due. Earlier,
@@ -761,9 +899,9 @@ delisted.
 
 ## When The Bar You Need Is Not There
 
-`BBB`’s missing January 9 session teaches a different lesson, so give it
-its own small run: ask to halve the `BBB` position on January 8, and
-again on January 10.
+The January 9 feed outage teaches a different lesson, so give `BBB` its
+own small run: ask to halve the position on January 8, and again on
+January 10.
 
 ``` r
 trim_twice <- function(ctx, params) {
@@ -823,6 +961,13 @@ recorded.
 ``` r
 pit_run_id <- point_in_time$run_id
 expected <- ledgr_run_explain(point_in_time, "AAA", ledgr_utc("2020-01-13 21:00:00"))
+completion_fields <- c(
+  "status", "requested_start_utc", "requested_end_utc",
+  "achieved_start_utc", "achieved_end_utc", "stop_reason",
+  "last_fully_valued_ts_utc", "last_executed_ts_utc",
+  "complete_performance", "affected_instrument_ids"
+)
+expected_completion <- ledgr_run_info(snapshot, pit_run_id)[completion_fields]
 
 close(point_in_time)
 close(survivor)
@@ -839,10 +984,16 @@ identical(
   expected
 )
 #> [1] TRUE
+
+identical(
+  ledgr_run_info(reopened_snapshot, pit_run_id)[completion_fields],
+  expected_completion
+)
+#> [1] TRUE
 ```
 
-The same recorded decision comes back from a fresh handle, without
-running the strategy again.
+The same recorded decision and completion boundary come back from a
+fresh handle, without running the strategy again.
 
 ## Invalid Observations Are Refused By Default
 

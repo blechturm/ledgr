@@ -1741,6 +1741,15 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(contract, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
   testthat::expect_match(contract, "Those values are explain-time defaults, not durable", fixed = TRUE)
   testthat::expect_match(contract, "and are never persisted", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "`ledgr_run_info()` and `summary()` project existing terminal completion",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Dense and historical runs without that evidence[[:space:]]+report it as unknown"
+  )
   explain_help <- paste(
     readLines(file.path(root, "man", "ledgr_run_explain.Rd"), warn = FALSE),
     collapse = "\n"
@@ -1763,6 +1772,10 @@ testthat::test_that("availability economics and controlled-stop contracts are lo
   testthat::expect_match(news, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
   testthat::expect_match(news, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(
+    news,
+    "`ledgr_run_info\\(\\)` and `summary\\(\\)`[[:space:]]+now expose recorded completion bounds"
+  )
   reason_codes <- c(
     "decision_recorded", "empty_public_domain", "trading_halted",
     "quotation_only", "status_unknown", "status_unknown_or_conflicting",
@@ -2712,14 +2725,16 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     docs$batches,
     paste0(
       "Status: Batches 0-12 complete after review[.]",
-      "[[:space:]]+Batches 13-14 remain pending"
+      "[[:space:]]+Batch 13 implementation is complete",
+      "[[:space:]]+and awaiting review; Batch 14 remains pending"
     )
   )
   testthat::expect_match(
     docs$readme,
     paste0(
       "Batches 0-12 complete after review[.]",
-      "[[:space:]]+Batches 13-14 remain pending"
+      "[[:space:]]+Batch 13 implementation is",
+      "[[:space:]]+complete and awaiting review; Batch 14 remains pending"
     )
   )
   # The amendment slice must stay discoverable from every packet artifact.
@@ -2730,6 +2745,26 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
     "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
     fixed = TRUE)
   testthat::expect_match(docs$yaml, "id: \"LDG-2711\"", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2711"[[:space:]]+title: .+[[:space:]]+status: "review_pending"'
+  )
+  testthat::expect_match(
+    docs$tickets,
+    paste0(
+      "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
+      "[[:space:]]+Priority: P1[[:space:]]+Effort: L[[:space:]]+",
+      "Dependencies: LDG-2705, LDG-2708, LDG-2710[[:space:]]+",
+      "Status: Review Pending"
+    )
+  )
+  testthat::expect_match(
+    docs$batches,
+    paste0(
+      "## Batch 13 - Inspectable Workflow Teaching And Completion",
+      "[[:space:]]+Status: Review Pending[.]"
+    )
+  )
   testthat::expect_match(
     docs$batches, "Batch 11 - Economic Execution Timing Correction", fixed = TRUE)
   testthat::expect_match(ticket_2704, "Status: Complete After Review", fixed = TRUE)
@@ -3095,12 +3130,14 @@ testthat::test_that("survivorship article executes the public availability journ
   testthat::expect_true(file.exists(qmd_path))
   testthat::expect_true(file.exists(md_path))
 
-  qmd <- paste(readLines(qmd_path, warn = FALSE), collapse = "\n")
+  qmd_lines <- readLines(qmd_path, warn = FALSE)
+  qmd <- paste(qmd_lines, collapse = "\n")
   md <- paste(readLines(md_path, warn = FALSE), collapse = "\n")
   public_calls <- c(
     "ledgr_facts_sessions", "ledgr_facts_membership_snapshots",
-    "ledgr_facts_validate", "ledgr_snapshot_from_df", "ledgr_experiment_plan",
-    "ledgr_run", "ledgr_results", "ledgr_run_explain",
+    "ledgr_facts_validate", "ledgr_facts_history", "ledgr_facts_resolve",
+    "ledgr_snapshot_from_df", "ledgr_experiment_plan", "ledgr_run",
+    "ledgr_results", "ledgr_run_explain", "ledgr_run_info",
     "ledgr_snapshot_open", "ledgr_run_open"
   )
   for (call in public_calls) {
@@ -3118,6 +3155,43 @@ testthat::test_that("survivorship article executes the public availability journ
   testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
   testthat::expect_match(qmd, "Change `max_sessions = 2` to `max_sessions = 1`", fixed = TRUE)
 
+  knowledge_start <- grep("^#\\| label: knowledge-counterfactual$", qmd_lines)[[1L]]
+  knowledge_end <- grep("^## Two Universes, One Everything Else$", qmd_lines)[[1L]] - 1L
+  knowledge_section <- paste(qmd_lines[knowledge_start:knowledge_end], collapse = "\n")
+  testthat::expect_match(knowledge_section, "ledgr_facts_history(", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "ledgr_facts_resolve(", fixed = TRUE)
+  testthat::expect_no_match(knowledge_section, "ledgr_opening(", fixed = TRUE)
+  testthat::expect_no_match(knowledge_section, "ledgr_run(", fixed = TRUE)
+
+  experiment_line <- grep(
+    "point_in_time_experiment <- ledgr_experiment(", qmd_lines, fixed = TRUE
+  )[[1L]]
+  wrapper_line <- grep("declare <- function(universe)", qmd_lines, fixed = TRUE)[[1L]]
+  testthat::expect_lt(experiment_line, wrapper_line)
+  testthat::expect_match(
+    qmd,
+    "group_by(recording_pulse_ts_utc)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    qmd,
+    'by = c("ts_utc" = "recording_pulse_ts_utc")',
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    qmd,
+    "last_common <- min(max(pit_equity$ts_utc), max(survivor_equity$ts_utc))",
+    fixed = TRUE
+  )
+  for (field in c(
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
+    "last_executed_ts_utc", "complete_performance",
+    "affected_instrument_ids"
+  )) {
+    testthat::expect_match(qmd, field, fixed = TRUE)
+  }
+
   rendered_evidence <- c(
     "execution_bar_missing", "no_target_change", "stale_close",
     "valuation_horizon_exhausted", "INCOMPLETE", "#> [1] TRUE"
@@ -3125,6 +3199,22 @@ testthat::test_that("survivorship article executes the public availability journ
   for (evidence in rendered_evidence) {
     testthat::expect_match(md, evidence, fixed = TRUE)
   }
+  testthat::expect_match(md, "2020-01-09\\s+open\\s+0")
+  testthat::expect_match(md, "2020-01-11\\s+closed\\s+0")
+  testthat::expect_match(md, "known early, not effective.+TRUE")
+  testthat::expect_match(md, "effective and knowable.+FALSE")
+  testthat::expect_match(md, "effective, not knowable.+TRUE")
+  testthat::expect_match(md, "effective and now knowable.+FALSE")
+  testthat::expect_match(
+    md,
+    "2020-01-07 14:30:00\\s+2020-01-07 21:00:00"
+  )
+  testthat::expect_match(md, "survivor-universe\\s+DONE.+TRUE")
+  testthat::expect_match(md, "pit-universe\\s+INCOMPLETE.+FALSE")
+  testthat::expect_match(md, "Completion Evidence:", fixed = TRUE)
+  testthat::expect_match(md, "Affected IDs:      AAA", fixed = TRUE)
+  reopen_true <- gregexpr("#> [1] TRUE", md, fixed = TRUE)[[1L]]
+  testthat::expect_gte(sum(reopen_true > 0L), 2L)
   testthat::expect_match(md, "ledgr_availability_validation_failed", fixed = TRUE)
   # Rendered Markdown rewraps prose, so every space must tolerate a line break.
   testthat::expect_match(
