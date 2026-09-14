@@ -27,6 +27,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_indicator_remove",
     "ledgr_demo_sma_crossover_strategy",
     "ledgr_experiment",
+    "ledgr_experiment_plan",
     "ledgr_run_strategy",
     "ledgr_run_fills",
     "ledgr_feature_contract_check",
@@ -34,6 +35,16 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_feature_grid",
     "ledgr_feature_id",
     "ledgr_feature_map",
+    "ledgr_facts",
+    "ledgr_facts_history",
+    "ledgr_facts_lifetime",
+    "ledgr_facts_membership_intervals",
+    "ledgr_facts_membership_snapshots",
+    "ledgr_facts_sessions",
+    "ledgr_facts_sessions_qlcal",
+    "ledgr_facts_trading_status",
+    "ledgr_facts_resolve",
+    "ledgr_facts_validate",
     "ledgr_fold",
     "ledgr_folds_anchored",
     "ledgr_folds_rolling",
@@ -89,6 +100,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_run_label",
     "ledgr_run_list",
     "ledgr_run_open",
+    "ledgr_run_explain",
     "ledgr_run_promotion_context",
     "ledgr_run_tag",
     "ledgr_run_tags",
@@ -134,9 +146,11 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_target",
     "ledgr_timing_next_open",
     "ledgr_temp_store",
+    "ledgr_universe_members",
     "ledgr_ind_ttr_warmup_rules",
     "ledgr_utc",
     "ledgr_validate_schema",
+    "ledgr_valuation_stale",
     "ledgr_walk_forward",
     "ledgr_walk_forward_folds",
     "ledgr_walk_forward_open",
@@ -150,6 +164,9 @@ testthat::test_that("exported API surface is locked", {
   ))
 
   testthat::expect_identical(exports, expected)
+  testthat::expect_identical(names(formals(ledgr_universe_members)), "universe_id")
+  testthat::expect_identical(names(formals(ledgr_valuation_stale)), "max_sessions")
+  testthat::expect_identical(names(formals(ledgr_experiment_plan)), c("x", "..."))
   testthat::expect_false("ledgr_snapshot_hash" %in% exports)
   testthat::expect_false("ledgr_run_fold" %in% exports)
   testthat::expect_false("ledgr_next_open_fill_proposal" %in% exports)
@@ -163,10 +180,33 @@ testthat::test_that("exported API surface is locked", {
   testthat::expect_false("ledgr_create_schema" %in% exports)
   testthat::expect_false("ledgr_metric_context_resolve" %in% exports)
   testthat::expect_false(paste0("ledgr_walk_forward_", "extract_candidate") %in% exports)
-  testthat::expect_true(exists("ledgr_run_fold", envir = asNamespace("ledgr"), inherits = FALSE))
-  testthat::expect_true(exists("ledgr_execute_fold", envir = asNamespace("ledgr"), inherits = FALSE))
-  testthat::expect_true(exists("ledgr_execution_spec", envir = asNamespace("ledgr"), inherits = FALSE))
-  testthat::expect_true(exists("ledgr_snapshot_connection", envir = asNamespace("ledgr"), inherits = FALSE))
-  testthat::expect_identical(names(formals(get("ledgr_snapshot_open", envir = asNamespace("ledgr")))[1]), "db_path")
+  ns <- asNamespace("ledgr")
+  testthat::expect_false(
+    exists("ledgr_backtest_run", envir = ns, inherits = FALSE)
+  )
+  testthat::expect_false(
+    exists("ledgr_backtest_run_internal", envir = ns, inherits = FALSE)
+  )
+  internal_boundaries <- c(
+    "ledgr_run_fold",
+    "ledgr_run_prepare_config",
+    "ledgr_run_prepare_engine",
+    "ledgr_run_prepare_control",
+    "ledgr_run_prepare_telemetry_stride",
+    "ledgr_run_snapshot_guard",
+    "ledgr_run_snapshot_calendar",
+    "ledgr_execute_fold",
+    "ledgr_execution_spec",
+    "ledgr_snapshot_connection"
+  )
+  testthat::expect_true(all(vapply(
+    internal_boundaries,
+    exists,
+    logical(1),
+    envir = ns,
+    inherits = FALSE
+  )))
+  snapshot_open <- get("ledgr_snapshot_open", envir = ns)
+  testthat::expect_identical(names(formals(snapshot_open)[1]), "db_path")
 })
 

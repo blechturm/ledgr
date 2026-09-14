@@ -92,7 +92,6 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(indicators_doc, "Feature objects appear in three registration and inspection places", fixed = TRUE)
   testthat::expect_match(indicators_doc, "The strategy context then exposes the computed values through accessors", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Feature Lifecycle: From Declaration To Lookup", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "declare<br/>indicator or map", fixed = TRUE)
   testthat::expect_match(indicators_doc, "access<br/>ctx feature methods", fixed = TRUE)
   testthat::expect_match(indicators_doc, "declaration. Static lists and feature maps", fixed = TRUE)
   testthat::expect_match(indicators_doc, "Active-alias features are materialized for concrete", fixed = TRUE)
@@ -162,6 +161,115 @@ testthat::test_that("indicator docs include compact multi-output ID references",
   testthat::expect_match(ttr_outputs_help, "vignette(\"indicators\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(ttr_help, "requires the suggested \\code{TTR} package", fixed = TRUE)
   testthat::expect_match(indicators_doc, "ledgr_feature_id", fixed = TRUE)
+})
+
+testthat::test_that("availability runtime and strict-feature contracts stay bound", {
+  root <- testthat::test_path("..", "..")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(
+    file.exists(contracts_path),
+    "availability contracts unavailable during installed-package tests"
+  )
+  contracts <- paste(
+    readLines(contracts_path, warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(
+    contracts,
+    "Availability-aware execution activates when a snapshot declares membership"
+  )
+  testthat::expect_match(contracts, "There is no mode flag", fixed = TRUE)
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "complete declared session\\s+calendar and an explicit ",
+      "`ledgr_valuation_stale\\(max_sessions\\)` policy"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "character-vector universe remains a fixed basket",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "`facts`,\\s+`decision_view`, `execution_view`, `history`, and `identity` operations"
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "decision axis preserves declared member order for character-vector universes[.]",
+      "\\s+For membership-rule universes, members are ordered by C-locale stable ID"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "effective but not yet knowable cannot\\s+shadow a lower-precedence tie"
+  )
+  testthat::expect_match(
+    contracts,
+    "`ctx\\$members` and universe-aligned\\s+`ctx\\$vec\\$member`, `held`, `target_restricted`"
+  )
+  testthat::expect_match(
+    contracts,
+    "`ctx\\$state_prev\\$asset_state` as a named\\s+list keyed by stable instrument ID"
+  )
+  testthat::expect_match(
+    contracts,
+    "returned keys outside the current axis fail closed with\\s+`ledgr_invalid_strategy_state`"
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "compiled spot-FIFO request fails before execution with\\s+",
+      "`ledgr_compiled_availability_unsupported`"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "`gap_contract = \"strict_window\"`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "Any missing required\\s+observation makes the affected window `NA_real_`"
+  )
+  testthat::expect_match(
+    contracts,
+    "Dense indicator fingerprints and feature-engine\\s+identity omit the availability declaration"
+  )
+
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  availability_classes <- c(
+    "ledgr_invalid_valuation_policy",
+    "ledgr_availability_inactive",
+    "ledgr_availability_sessions_required",
+    "ledgr_valuation_policy_required",
+    "ledgr_membership_universe_not_found",
+    "ledgr_compiled_availability_unsupported",
+    "ledgr_execution_timing_version_mismatch",
+    "ledgr_fill_timing_not_comparable",
+    "ledgr_indicator_gap_unsupported",
+    "ledgr_indicator_gap_parity",
+    "ledgr_invalid_strategy_state",
+    "ledgr_target_sizing_unavailable",
+    "ledgr_restricted_target",
+    "ledgr_nonmember_exposure_increase",
+    "ledgr_post_risk_inadmissible",
+    "ledgr_short_exposure_unsupported",
+    "ledgr_affordability_reconciliation_failed",
+    "ledgr_run_terminal_evidence_invalid",
+    "ledgr_incomplete_sweep_candidate",
+    "ledgr_promote_incomplete_candidate",
+    "ledgr_run_explanation_unavailable"
+  )
+  for (class in availability_classes) {
+    testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", class, "}"), fixed = TRUE)
+  }
 })
 
 testthat::test_that("helper docs state composition and whole-share target flooring", {
@@ -460,18 +568,23 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   }
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
-  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_1_9_6_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** v0.1.9.7 business-objective eligibility and validation", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** none; no successor packet has been cut", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.4 | Done | Walk-forward", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.5 | Done | Documentation", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
-  testthat::expect_match(roadmap, "| v0.1.9.7 | Active | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(
+    roadmap,
+    "| v0.2.0.0 | Done | Correct known API",
+    fixed = TRUE
+  )
 
-  testthat::expect_match(design_index, "Latest completed release packet:** `v0.1.9.6`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** `v0.1.9.7`", fixed = TRUE)
+  testthat::expect_match(design_index, "Latest completed release packet:** `v0.2.0.0`", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** none", fixed = TRUE)
   testthat::expect_match(design_index, "ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
@@ -481,7 +594,8 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(design_index, "v0.1.9.4 walk-forward packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.5 packet is complete", fixed = TRUE)
   testthat::expect_match(design_index, "The v0.1.9.6 packet is complete", fixed = TRUE)
-  testthat::expect_match(design_index, "The v0.1.9.7 packet is active", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.1.9.7 packet is complete", fixed = TRUE)
+  testthat::expect_match(design_index, "The v0.2.0.0 packet is complete", fixed = TRUE)
 
   testthat::expect_match(rfc_index, "v0.1.9.1 implements the first public transaction-cost API", fixed = TRUE)
   testthat::expect_match(rfc_index, "../manual/identity_contract.qmd", fixed = TRUE)
@@ -653,7 +767,7 @@ testthat::test_that("contracts record the closed backtest result set", {
 
   testthat::expect_match(
     text,
-    "`equity`, `returns`, `fills`, `trades`, and `ledger`",
+    "`equity`, `returns`, `fills`, `trades`, `ledger`, `diagnostics`, and",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -860,23 +974,6 @@ testthat::test_that("contracts record v0.1.8 fold-core and output-handler bounda
   testthat::expect_match(text, "event-stream meaning", fixed = TRUE)
   testthat::expect_match(text, "Strategy preflight runs before entering the fold core", fixed = TRUE)
   testthat::expect_match(text, "Tier 3 strategies must stop before any fold execution or output handler\\s+side\\s+effects")
-})
-
-testthat::test_that("roadmap preserves v0.1.7.6 to v0.1.8 milestone sequencing", {
-  root <- testthat::test_path("..", "..")
-  roadmap <- file.path(root, "inst", "design", "ledgr_roadmap.md")
-  testthat::skip_if_not(file.exists(roadmap), "roadmap unavailable")
-  text <- paste(readLines(roadmap, warn = FALSE), collapse = "\n")
-
-  for (version in c("0[.]1[.]7[.]6", "0[.]1[.]7[.]7", "0[.]1[.]7[.]8", "0[.]1[.]7[.]9", "0[.]1[.]8", "0[.]1[.]8[.]1")) {
-    testthat::expect_match(text, paste0("\\| v", version, " \\|"))
-  }
-  testthat::expect_match(text, "DuckDB persistence architecture review", fixed = TRUE)
-  testthat::expect_match(text, "Risk metrics contract", fixed = TRUE)
-  testthat::expect_match(text, "Strategy reproducibility preflight", fixed = TRUE)
-  testthat::expect_match(text, "Lightweight parameter sweep mode", fixed = TRUE)
-  testthat::expect_match(text, "Metric context, risk-free-rate, and indicator codebase Phase 2 cleanup", fixed = TRUE)
-  testthat::expect_match(text, "Completed milestones are not expanded here", fixed = TRUE)
 })
 
 testthat::test_that("README and package help state adapter positioning", {
@@ -1132,9 +1229,11 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
   testthat::expect_match(start_block, "- leakage", fixed = TRUE)
   testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
+  testthat::expect_no_match(start_block, "- survivorship-bias", fixed = TRUE)
 
   core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
   testthat::expect_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
+  testthat::expect_match(core_block, "- survivorship-bias", fixed = TRUE)
   testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
   testthat::expect_match(core_block, "- indicators", fixed = TRUE)
   testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
@@ -1159,8 +1258,141 @@ testthat::test_that("public site polish avoids stale public artifacts", {
   testthat::expect_no_match(text, "Sweep and tune APIs are reserved for later versions", fixed = TRUE)
   testthat::expect_no_match(text, "v0.1.8 is the experiment-first research API", fixed = TRUE)
   testthat::expect_no_match(text, "no DISPLAY variable", fixed = TRUE)
+  testthat::expect_no_match(text, "Total Trades", fixed = TRUE)
   testthat::expect_false(file.exists(file.path(root, "Rprof.out")))
   testthat::expect_match(paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"), "Rprof.out", fixed = TRUE)
+  testthat::expect_match(
+    paste(readLines(file.path(root, ".gitignore"), warn = FALSE), collapse = "\n"),
+    "/tests/testthat/Rplots.pdf",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("rendered vignette artifacts are complete and quiet", {
+  root <- testthat::test_path("..", "..")
+  vignette_dir <- file.path(root, "vignettes")
+  markdown <- list.files(vignette_dir, pattern = "[.]md$", full.names = TRUE)
+  testthat::skip_if_not(length(markdown) > 0L, "rendered vignette Markdown unavailable")
+
+  capture_targets <- function(pattern, text) {
+    matches <- regmatches(text, gregexpr(pattern, text, perl = TRUE))[[1L]]
+    if (length(matches) == 1L && identical(matches, "")) {
+      return(character())
+    }
+    sub(pattern, "\\1", matches, perl = TRUE)
+  }
+
+  image_rows <- lapply(markdown, function(path) {
+    text <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    markdown_targets <- capture_targets(
+      "!\\[[^]]*\\]\\(<?([^[:space:])>]+)>?[^)]*\\)",
+      text
+    )
+    html_targets <- capture_targets(
+      "<img\\b[^>]*\\bsrc\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
+      text
+    )
+    targets <- c(markdown_targets, html_targets)
+    targets <- targets[!grepl("^(?:[[:alpha:]][[:alnum:]+.-]*:|//|#|/)", targets, perl = TRUE)]
+    if (length(targets) == 0L) {
+      return(NULL)
+    }
+    data.frame(source = path, target = targets, stringsAsFactors = FALSE)
+  })
+  image_rows <- image_rows[!vapply(image_rows, is.null, logical(1))]
+  images <- do.call(rbind, image_rows)
+  testthat::expect_gte(nrow(images), 7L)
+
+  resolved <- mapply(
+    function(source, target) {
+      target <- utils::URLdecode(sub("[?#].*$", "", target))
+      file.path(dirname(source), target)
+    },
+    images$source,
+    images$target,
+    USE.NAMES = FALSE
+  )
+  missing <- resolved[!file.exists(resolved)]
+  testthat::expect_identical(missing, character())
+
+  rendered_text <- paste(unlist(lapply(markdown, readLines, warn = FALSE)), collapse = "\n")
+  testthat::expect_no_match(
+    rendered_text,
+    "duckdb is storing downloaded extensions and secrets",
+    fixed = TRUE
+  )
+
+  html <- list.files(file.path(root, "docs", "articles"), pattern = "[.]html$", full.names = TRUE)
+  if (length(html) > 0L) {
+    html_text <- paste(unlist(lapply(html, readLines, warn = FALSE)), collapse = "\n")
+    testthat::expect_no_match(
+      html_text,
+      "duckdb is storing downloaded extensions and secrets",
+      fixed = TRUE
+    )
+  }
+})
+
+testthat::test_that("release checks declare optional numerical references", {
+  root <- testthat::test_path("..", "..")
+  description_path <- file.path(root, "DESCRIPTION")
+  dsr_test_path <- file.path(root, "tests", "testthat", "test-validation-dsr.R")
+  manual_path <- file.path(root, "dev", "manual", "verify-dsr-quantstrat.R")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  render_path <- file.path(root, "tools", "render-vignettes-gfm.R")
+  site_path <- file.path(root, "dev", "build-site.R")
+  testthat::skip_if_not(
+    all(file.exists(c(
+      description_path, dsr_test_path, manual_path, contracts_path,
+      render_path, site_path
+    ))),
+    "release-check sources unavailable during installed-package tests"
+  )
+
+  description <- read.dcf(description_path)
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
+  dsr_test <- paste(readLines(dsr_test_path, warn = FALSE), collapse = "\n")
+  manual <- paste(readLines(manual_path, warn = FALSE), collapse = "\n")
+  contracts <- paste(readLines(contracts_path, warn = FALSE), collapse = "\n")
+  render <- paste(readLines(render_path, warn = FALSE), collapse = "\n")
+  site <- paste(readLines(site_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_true("pbo" %in% suggests)
+  testthat::expect_false("quantstrat" %in% suggests)
+  testthat::expect_no_match(dsr_test, 'skip_if_not_installed("quantstrat")', fixed = TRUE)
+  testthat::expect_match(manual, 'getFromNamespace(".deflatedSharpe", "quantstrat")', fixed = TRUE)
+  testthat::expect_match(contracts, "dev/manual/verify-dsr-quantstrat.R", fixed = TRUE)
+  testthat::expect_match(render, 'check_only <- "--check" %in% args', fixed = TRUE)
+  testthat::expect_match(render, "normalize_for_freshness", fixed = TRUE)
+  testthat::expect_match(site, "duckdb_notice", fixed = TRUE)
+  testthat::expect_match(site, "Rendered articles contain DuckDB", fixed = TRUE)
+})
+
+testthat::test_that("ledgr-owned DuckDB drivers choose session-local storage", {
+  root <- testthat::test_path("..", "..")
+  public_api <- file.path(root, "R", "public-api.R")
+  adapters <- file.path(root, "R", "snapshot_adapters.R")
+  testthat::skip_if_not(
+    file.exists(public_api) && file.exists(adapters),
+    "DuckDB driver sources unavailable during installed-package tests"
+  )
+
+  public_text <- paste(readLines(public_api, warn = FALSE), collapse = "\n")
+  adapter_text <- paste(readLines(adapters, warn = FALSE), collapse = "\n")
+  testthat::expect_match(
+    public_text,
+    '"shared_home" %in% names(formals(duckdb::duckdb))',
+    fixed = TRUE
+  )
+  testthat::expect_match(public_text, "list(shared_home = FALSE)", fixed = TRUE)
+  testthat::expect_match(public_text, "do.call(duckdb::duckdb, args)", fixed = TRUE)
+  testthat::expect_match(public_text, "drv <- ledgr_duckdb_driver()", fixed = TRUE)
+  testthat::expect_match(adapter_text, "drv <- ledgr_duckdb_driver()", fixed = TRUE)
+  testthat::expect_no_match(
+    paste(public_text, adapter_text, sep = "\n"),
+    "suppressMessages",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("package help exposes an installed-documentation spine", {
@@ -1513,6 +1745,247 @@ testthat::test_that("research workflow article pins canonical workflow and valid
   testthat::expect_no_match(doc, "dplyr::filter", fixed = TRUE)
   testthat::expect_match(doc, "vignette(\"sweeps\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_no_match(doc, "not evaluated during\\s+package vignette builds")
+})
+
+testthat::test_that("availability snapshot identity and quarantine contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(path), "design contracts unavailable")
+  contract <- paste(readLines(path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    contract,
+    "Snapshot hash rule 1 covers normalized bars and instruments only and remains\\s+byte-identical",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Snapshot hash rule 2 covers the rule-1 bars and instruments plus every\\s+normalized point-in-time fact-family header and row",
+    perl = TRUE
+  )
+  testthat::expect_match(contract, "missing rule marker on a legacy snapshot means rule 1", fixed = TRUE)
+  testthat::expect_match(contract, "expected-session clock is independent of observation presence", fixed = TRUE)
+  testthat::expect_match(contract, 'invalid_observations = "quarantine"', fixed = TRUE)
+  testthat::expect_match(contract, "never runtime bars", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 113 and saved-sweep schema 4", fixed = TRUE)
+  testthat::expect_match(contract, "never resealed or rehash-migrated", fixed = TRUE)
+})
+
+testthat::test_that("facts inspection and preparation contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  contract_path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(contract_path), "design contracts unavailable")
+  contract <- paste(readLines(contract_path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  description <- read.dcf(file.path(root, "DESCRIPTION"))
+  namespace <- paste(readLines(file.path(root, "NAMESPACE"), warn = FALSE), collapse = "\n")
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+
+  testthat::expect_match(
+    contract,
+    "Local session wall times must resolve to exactly one UTC instant",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Ambiguous[[:space:]]+fall-back and nonexistent spring-forward labels fail closed"
+  )
+  testthat::expect_match(contract, "accepts either row-per-member evidence", fixed = TRUE)
+  testthat::expect_match(contract, "Both shapes normalize to the same set", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_facts_history()` is a retrospective audit", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "`ledgr_facts_resolve()` is a separate decision-cutoff",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "true, false, and unknown states", fixed = TRUE)
+  testthat::expect_match(contract, "Complete-set omission cites the set header", fixed = TRUE)
+  testthat::expect_match(contract, "Neither result is a strategy context", fixed = TRUE)
+  testthat::expect_match(contract, "Default fact-inspection prints are curated", fixed = TRUE)
+  testthat::expect_match(contract, "session fields plus reason and a knowledge time", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "disclosed as coming from `$evidence`, not as a value stored in `$rows`",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "names omitted[[:space:]]+stored columns")
+  testthat::expect_match(contract, "optional preparation adapter over an", fixed = TRUE)
+  testthat::expect_match(contract, "no generation time or external pointer", fixed = TRUE)
+  testthat::expect_match(contract, "assumption_reasons", fixed = TRUE)
+  testthat::expect_match(news, "Added read-only fact history and cutoff resolution", fixed = TRUE)
+  testthat::expect_match(news, "Added constituent-list membership input", fixed = TRUE)
+  testthat::expect_match(news, "rejects ambiguous fall-back and nonexistent", fixed = TRUE)
+  testthat::expect_match(news, "Curated fact-history and resolution printing", fixed = TRUE)
+
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
+  testthat::expect_true("qlcal" %in% suggests)
+  testthat::expect_no_match(namespace, "importFrom\\(qlcal")
+  r_files <- list.files(file.path(root, "R"), pattern = "\\.R$", full.names = TRUE)
+  qlcal_users <- basename(r_files[vapply(r_files, function(path) {
+    any(grepl("qlcal::", readLines(path, warn = FALSE), fixed = TRUE))
+  }, logical(1))])
+  testthat::expect_identical(qlcal_users, "availability-facts.R")
+  for (class in c(
+    "ledgr_session_time_ambiguous", "ledgr_session_time_nonexistent",
+    "ledgr_fact_ambiguous_membership_shape", "ledgr_fact_invalid_membership_list",
+    "ledgr_facts_inspection_invalid_args", "ledgr_facts_scope_not_found",
+    "ledgr_facts_snapshot_not_sealed", "ledgr_facts_snapshot_hash_mismatch",
+    "ledgr_session_adapter_invalid", "ledgr_session_override_invalid"
+  )) {
+    testthat::expect_match(condition_doc, paste0("\\alias{", class, "}"), fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", class, "}"), fixed = TRUE)
+  }
+})
+
+testthat::test_that("availability economics and controlled-stop contracts are locked", {
+  root <- testthat::test_path("..", "..")
+  path <- file.path(root, "inst", "design", "contracts.md")
+  testthat::skip_if_not(file.exists(path), "design contracts unavailable")
+  contract <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(file.path(root, "NEWS.md"), warn = FALSE), collapse = "\n")
+  condition_doc <- paste(
+    readLines(file.path(root, "man", "ledgr_condition_classes.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+
+  testthat::expect_match(contract, "Unrestricted held nonmembers may also reduce", fixed = TRUE)
+  testthat::expect_match(contract, "New or enlarged short exposure fails before", fixed = TRUE)
+  testthat::expect_match(contract, "reserve their absolute marked exposure", fixed = TRUE)
+  testthat::expect_match(contract, "Stale marks never become observed", fixed = TRUE)
+  testthat::expect_match(contract, "decisions occur at declared session closes", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    paste0(
+      "resolves execution-time facts and records accepted[[:space:]]+",
+      "fills and events at the next declared session opening"
+    )
+  )
+  testthat::expect_match(contract, "Membership remains", fixed = TRUE)
+  testthat::expect_match(contract, "terminal decision has no execution opportunity", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "Dense execution declares no independent opening clock and is unchanged.",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "Rejected sales fund nothing", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 114", fixed = TRUE)
+  testthat::expect_match(contract, "finalize as `INCOMPLETE`", fixed = TRUE)
+  testthat::expect_match(contract, "record error diagnostics only after that rollback", fixed = TRUE)
+  testthat::expect_match(contract, "resumed invocations append rather than replace", fixed = TRUE)
+  testthat::expect_match(contract, "Experiment-store schema 115", fixed = TRUE)
+  testthat::expect_match(contract, "Repeating an achieved `INCOMPLETE` run ID", fixed = TRUE)
+  testthat::expect_match(contract, "exact stored equity timestamp prefix", fixed = TRUE)
+  testthat::expect_match(contract, "recorded stop", fixed = TRUE)
+  testthat::expect_match(contract, "performs finalization only", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_terminal_evidence_invalid`", fixed = TRUE)
+  testthat::expect_match(contract, "prefixes may remain visible as explicitly incomplete evidence", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
+  testthat::expect_match(contract, "marks the fold and session `PARTIAL`", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_explain(bt, instrument_id, ts_utc)`", fixed = TRUE)
+  testthat::expect_match(contract, "same `tibble::as_tibble()` result-table path", fixed = TRUE)
+  testthat::expect_match(contract, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(contract, "Those values are explain-time defaults, not durable", fixed = TRUE)
+  testthat::expect_match(contract, "and are never persisted", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "`ledgr_run_info()` and `summary()` project existing terminal completion",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contract,
+    "Dense and historical runs without that evidence[[:space:]]+report it as unknown"
+  )
+  testthat::expect_match(
+    contract,
+    "`ledgr_run_list()` appends the recorded completion projection",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "Status does not gate real completion evidence", fixed = TRUE)
+  testthat::expect_match(contract, "known-empty", fixed = TRUE)
+  testthat::expect_match(contract, "achieved-prefix evidence only", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "follows recorded completion evidence rather than[[:space:]]+run status"
+  )
+  testthat::expect_match(
+    contract,
+    "annualized return, annualized volatility, and[[:space:]]+Sharpe ratio are withheld"
+  )
+  testthat::expect_match(
+    contract,
+    "status and any recorded completion evidence[[:space:]]+before identity and telemetry"
+  )
+  testthat::expect_match(contract, "labels `n_trades` as `Closed Trades`", fixed = TRUE)
+  testthat::expect_match(
+    contract,
+    "With explicit `run_ids`, `ledgr_run_compare()` rejects every non-`DONE` run",
+    fixed = TRUE
+  )
+  testthat::expect_match(contract, "Without `run_ids`, it silently excludes", fixed = TRUE)
+  testthat::expect_match(contract, "changes the meaning of return, Sharpe", fixed = TRUE)
+  explain_help <- paste(
+    readLines(file.path(root, "man", "ledgr_run_explain.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  explain_fields <- c(
+    "run_id", "ts_utc", "instrument_id", "member", "held",
+    "target_restricted", "target_restriction_reason",
+    "target_restriction_reasons", "feature_identity_json", "quantity",
+    "target_before_risk", "target_after_risk", "execution_outcome",
+    "execution_reason", "execution_reasons", "resulting_position",
+    "mark_source", "mark_age", "completion_status", "complete_performance"
+  )
+  for (field in explain_fields) {
+    testthat::expect_match(explain_help, paste0("\\code{", field, "}"), fixed = TRUE)
+  }
+  testthat::expect_match(explain_help, "\\code{\"no_action\"}", fixed = TRUE)
+  testthat::expect_match(explain_help, "\\code{\"no_target_change\"}", fixed = TRUE)
+  testthat::expect_match(explain_help, "explain-time values, not durable", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_terminal_evidence_invalid`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_incomplete_sweep_candidate`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_promote_incomplete_candidate`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_explanation_unavailable`", fixed = TRUE)
+  testthat::expect_match(news, "`ledgr_run_list()` now appends recorded completion", fixed = TRUE)
+  testthat::expect_match(news, "Backtest summaries now follow recorded completion", fixed = TRUE)
+  testthat::expect_match(news, "Run-info printing presents completion", fixed = TRUE)
+  testthat::expect_match(news, "label `n_trades` as `Closed Trades`", fixed = TRUE)
+  summary_help <- paste(
+    readLines(file.path(root, "man", "summary.ledgr_backtest.Rd"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(summary_help, "\\item Closed Trades:", fixed = TRUE)
+  testthat::expect_match(
+    summary_help,
+    "annualized return, annualized volatility, and Sharpe ratio",
+    fixed = TRUE
+  )
+  testthat::expect_match(news, "explicitly named non-`DONE` runs", fixed = TRUE)
+  testthat::expect_match(
+    news,
+    "`ledgr_run_info\\(\\)` and `summary\\(\\)`[[:space:]]+now expose recorded completion bounds"
+  )
+  reason_codes <- c(
+    "decision_recorded", "empty_public_domain", "trading_halted",
+    "quotation_only", "status_unknown", "status_unknown_or_conflicting",
+    "lifetime_inactive", "stale_mark_reduction", "stale_mark_pass_through",
+    "restricted_target", "nonmember_exposure_increase",
+    "post_risk_inadmissible", "short_exposure_unsupported",
+    "insufficient_cash", "execution_bar_missing",
+    "membership_changed_before_execution", "final_pulse_no_execution",
+    "affordability_reconciled", "valuation_horizon_exhausted",
+    "terminal_settlement_unsupported", "risk_mark_unavailable",
+    "affordability_reconciliation_failed", "fold_exception"
+  )
+  for (code in reason_codes) {
+    testthat::expect_match(contract, paste0("`", code, "`"), fixed = TRUE)
+    testthat::expect_match(condition_doc, paste0("\\code{", code, "}"), fixed = TRUE)
+  }
+  testthat::expect_match(news, "`status_halted` to `trading_halted`", fixed = TRUE)
+  testthat::expect_match(news, "`status_quotation_only` to `quotation_only`", fixed = TRUE)
 })
 
 testthat::test_that("experiment-store routes low-level CSV bridge to roxygen", {
@@ -1980,7 +2453,11 @@ testthat::test_that("walk-forward docs state MVP workflow and caveats", {
     testthat::expect_match(doc, "Walk-forward evidence is only as survivorship-safe as the sealed\\s+snapshot and\\s+universe semantics it evaluates\\.")
     testthat::expect_match(doc, "Reproducibility and selection integrity are orthogonal.", fixed = TRUE)
     testthat::expect_match(doc, "not PBO", fixed = TRUE)
-    testthat::expect_match(doc, "not independent\\s+observations")
+    testthat::expect_match(
+      doc,
+      "not independent\\s+(?:>\\s*)?observations",
+      perl = TRUE
+    )
     testthat::expect_match(doc, "Anchored folds grow their train window over time.", fixed = TRUE)
   }
 
@@ -2260,8 +2737,8 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
   }
 
   testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
-  testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Active | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(docs$design_index, "Current active packet:** `v0.1.9.7`", fixed = TRUE)
+  testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** none", fixed = TRUE)
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
@@ -2293,7 +2770,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
 
-  testthat::expect_match(docs$description, "Version: 0.1.9.7", fixed = TRUE)
+  testthat::expect_match(docs$description, "Version: 0.2.0.0", fixed = TRUE)
   for (term in c(
     "# ledgr 0.1.9.7",
     "ledgr_return_panel()",
@@ -2337,7 +2814,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
 
   testthat::expect_match(
     docs$roadmap,
-    "| v0.1.9.7 | Active | Business-objective eligibility",
+    "| v0.1.9.7 | Done | Business-objective eligibility",
     fixed = TRUE
   )
   testthat::expect_match(docs$roadmap, "native K-Ratio", fixed = TRUE)
@@ -2358,7 +2835,11 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-05)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-13)", fixed = TRUE)
+  testthat::expect_match(
+    docs$horizon,
+    "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
+  )
   testthat::expect_match(
     docs$horizon,
     "Objective-filtered walk-forward identity (synthesis D4)",
@@ -2396,4 +2877,675 @@ testthat::test_that("vignette styleguide binds methodological diagnostic teachin
   testthat::expect_match(doc, "Worked example:", fixed = TRUE)
   testthat::expect_match(doc, "must execute", fixed = TRUE)
   testthat::expect_match(doc, "Do not add\\s+vacuous tests")
+})
+
+testthat::test_that("v0.2.0.0 implementation status and packet history are discoverable", {
+  root <- testthat::test_path("..", "..")
+  packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_0_spec_packet")
+  paths <- file.path(packet, c(
+    "README.md", "v0_2_0_0_spec.md", "v0_2_0_0_tickets.md",
+    "tickets.yml", "batch_plan.md"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source v0.2.0.0 packet unavailable during installed-package tests"
+  )
+  testthat::expect_true(all(file.exists(paths)))
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
+  ticket_lines <- readLines(paths[[3L]], warn = FALSE)
+  ticket_start <- grep("^## LDG-2704 ", ticket_lines)[[1L]]
+  ticket_end <- grep("^## LDG-2705 ", ticket_lines)[[1L]] - 1L
+  ticket_2704 <- paste(ticket_lines[ticket_start:ticket_end], collapse = "\n")
+  ticket_2705_start <- grep("^## LDG-2705 ", ticket_lines)[[1L]]
+  ticket_2705_end <- grep("^## LDG-2706 ", ticket_lines)[[1L]] - 1L
+  ticket_2705 <- paste(ticket_lines[ticket_2705_start:ticket_2705_end], collapse = "\n")
+  ticket_2706_start <- grep("^## LDG-2706 ", ticket_lines)[[1L]]
+  ticket_2706_end <- grep("^## LDG-2707 ", ticket_lines)[[1L]] - 1L
+  ticket_2706 <- paste(ticket_lines[ticket_2706_start:ticket_2706_end], collapse = "\n")
+
+  testthat::expect_match(
+    docs$spec,
+    "Status:** Implementation complete after maintainer review 2026-09-13",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$tickets, "Total Tickets: 47", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2672 - Packet Alignment", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2703 - v0.2.0.0 Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "hand the required pre-edit inventory explicitly to LDG-2684", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| H7 | LDG-2678, LDG-2683 |", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| U24 | LDG-2688, LDG-2692, LDG-2694 |", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2672\"", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2703\"", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Status: All batches complete after review[.]",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "Status: All batches complete after review[.]",
+    perl = TRUE
+  )
+  # The amendment slice must stay discoverable from every packet artifact.
+  testthat::expect_match(
+    docs$tickets, "LDG-2704 - Opening-Time Execution Correction", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets,
+    "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
+    fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2711\"", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2711"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
+  )
+  testthat::expect_match(
+    docs$tickets,
+    paste0(
+      "LDG-2711 - Inspectable Workflow Teaching And Completion Reporting",
+      "[[:space:]]+Priority: P1[[:space:]]+Effort: L[[:space:]]+",
+      "Dependencies: LDG-2705, LDG-2708, LDG-2710[[:space:]]+",
+      "Status: Complete After Review"
+    )
+  )
+  testthat::expect_match(
+    docs$batches,
+    paste0(
+      "## Batch 13 - Inspectable Workflow Teaching And Completion",
+      "[[:space:]]+Status: Complete After Review[.]"
+    )
+  )
+  testthat::expect_match(
+    docs$batches, "Batch 11 - Economic Execution Timing Correction", fixed = TRUE)
+  testthat::expect_match(ticket_2704, "Status: Complete After Review", fixed = TRUE)
+  testthat::expect_match(ticket_2705, "Status: Complete After Review", fixed = TRUE)
+  testthat::expect_match(ticket_2706, "Status: Complete After Review", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2704"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
+  )
+  for (id in c("LDG-2705", "LDG-2706")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0('id: "', id, '"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"')
+    )
+  }
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 11 - Economic Execution Timing Correction[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$batches,
+    paste0(
+      "## Batch 12 - Inspectable Evidence Preparation[[:space:]]+",
+      "Status: Complete After Review[.]"
+    )
+  )
+  for (id in c("LDG-2707", "LDG-2708", "LDG-2709", "LDG-2710")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+  testthat::expect_match(
+    docs$batches,
+    "All 11 availability test files and the full 123-file suite pass",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$batches, "Batch 16 - Release Gate", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Batch 16 - Release Gate[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2703"[[:space:]]+title: .+[[:space:]]+status: "complete_after_review"'
+  )
+  testthat::expect_no_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
+  # The print-honesty follow-up must stay discoverable from every artifact.
+  testthat::expect_match(docs$batches, "Batch 15 - Print Honesty", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2716 - Completion-Aware Run Summary", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2717 - Run Info Print Ordering", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2718 - Closed-Trade Statistics Label", fixed = TRUE)
+  for (id in c("LDG-2716", "LDG-2717", "LDG-2718")) {
+    testthat::expect_match(docs$yaml, sprintf("id: \"%s\"", id), fixed = TRUE)
+  }
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 15 - Print Honesty[[:space:]]+Status: Complete After Review[.]"
+  )
+  testthat::expect_match(
+    docs$readme,
+    "Batch 15 implements the reviewed print-honesty follow-up",
+    fixed = TRUE
+  )
+  # The accepted reporting-UX slice must stay discoverable from every artifact.
+  testthat::expect_match(
+    docs$batches, "Batch 14 - Honest Reporting Defaults", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2712 - Curated Fact Inspection Printing", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets, "LDG-2715 - Reporting UX Article Corrections", fixed = TRUE)
+  testthat::expect_match(docs$yaml, "id: \"LDG-2715\"", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 14 - Honest Reporting Defaults[[:space:]]+Status: Complete After Review[.]"
+  )
+  for (id in sprintf("LDG-%d", 2712:2718)) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+  testthat::expect_match(docs$batches, "Batch 8 - Shared-Fold Availability Economics", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
+  for (id in c("LDG-2693", "LDG-2694", "LDG-2695", "LDG-2696")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+  testthat::expect_match(docs$batches, "Batch 9 - Terminal And Cross-Path Evidence", fixed = TRUE)
+  for (id in c("LDG-2697", "LDG-2698", "LDG-2699", "LDG-2700")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+  testthat::expect_match(docs$batches, "inventory stores and wide artifacts before editing", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets,
+    "Suppress DuckDB temporary-home startup chatter",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$yaml,
+    "Rendered-vignette DuckDB startup-noise scan",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `048b925", fixed = TRUE)
+  testthat::expect_match(docs$batches, "## Batch 6 - Facts Calendar Snapshot Schema And Quarantine", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Complete After Review.", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2687 - Point-In-Time Fact Constructors", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Family and bundle hashes cover normalized evidence", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2688 - Complete Session Calendar And EOD Mapping", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "whole-feed gaps", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "## LDG-2689 - Availability Snapshot Schema Hash And Quarantine", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "advertises no availability strategy runtime", fixed = TRUE)
+  testthat::expect_match(
+    docs$yaml,
+    'id: "LDG-2689"[[:space:]]+title: "Availability snapshot schema hash and quarantine"[[:space:]]+status: "complete_after_review"'
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "Effective-time versus knowledge-time status-precedence cutoff fixture",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$yaml,
+    "Knowledge-time versus effective-time status precedence cutoff",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batches,
+    "## Batch 7 - Activation Provider State And Strict Features",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$batches, "Status: Complete after review.", fixed = TRUE)
+  for (id in c("LDG-2690", "LDG-2691", "LDG-2692")) {
+    testthat::expect_match(
+      docs$yaml,
+      paste0(
+        'id: "', id, '"[[:space:]]+title: .+[[:space:]]+',
+        'status: "complete_after_review"'
+      )
+    )
+  }
+
+  fixture <- paste(
+    readLines(file.path(packet, "availability_walkthrough_fixture.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(fixture, "Status: Implemented by the executed public workflow", fixed = TRUE)
+  testthat::expect_match(fixture, "not an expected-output ledger", fixed = TRUE)
+  testthat::expect_match(fixture, "Every civil date appears", fixed = TRUE)
+  testthat::expect_match(fixture, "ingest, validate, seal, run, explain", fixed = TRUE)
+
+  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  design_index <- paste(
+    readLines(file.path(root, "inst", "design", "README.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  agents <- paste(readLines(file.path(root, "AGENTS.md"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(
+    roadmap,
+    "| v0.2.0.0 | Done | Correct known API",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    horizon,
+    "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
+  )
+  testthat::expect_match(
+    design_index,
+    "Latest completed release packet:** `v0.2.0.0`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    agents,
+    "completed v0.2.0.0 packet; no successor packet cut",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(roadmap, horizon, design_index, agents, sep = "\n"),
+    "Active; Batch 11 awaiting review",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    horizon,
+    "stay\\s+parked for a later\\s+documentation-freshness pass"
+  )
+})
+
+testthat::test_that("v0.2.0.0 hardening corrections are contract-bound and recorded", {
+  root <- testthat::test_path("..", "..")
+  contracts_path <- file.path(root, "inst", "design", "contracts.md")
+  news_path <- file.path(root, "NEWS.md")
+  testthat::skip_if_not(
+    file.exists(contracts_path) && file.exists(news_path),
+    "source contracts and NEWS unavailable during installed-package tests"
+  )
+
+  contracts <- paste(readLines(contracts_path, warn = FALSE), collapse = "\n")
+  news <- paste(readLines(news_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_no_match(contracts, "lazy cursors", fixed = TRUE)
+  testthat::expect_match(
+    contracts,
+    "`ledgr_run_fills(bt)` has exactly one public formal and eagerly returns",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    paste0(
+      "derived fees for that event must sum to its source fee in\\s+",
+      "durable, reconstructed, memory-backed, and compiled spot-FIFO projections"
+    )
+  )
+  testthat::expect_match(
+    contracts,
+    "`review$top` is a lineage-free presentation table",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "preserves their historical absence as `NULL`"
+  )
+  testthat::expect_match(
+    news,
+    "Corrected reversal-fill projections so derived CLOSE and OPEN fees are"
+  )
+  testthat::expect_match(
+    news,
+    "Simplified `ledgr_run_fills()` to one eager `bt` argument",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "A failure after the fold has committed but before equity and `DONE`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "preserve the caller's `.Random.seed`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "`ledgr_sweep_returns_wide()` reserves `ts_utc`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "intrinsically\\s+reversible without a persisted mapping registry"
+  )
+  testthat::expect_match(
+    news,
+    "Corrected post-fold failure handling so committed ledger, strategy-state",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    news,
+    "Protected the structural `ts_utc` column in retained wide sweep projections",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    news,
+    "No user-facing changes have shipped yet",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "Public fill `ts_utc` is economic execution time.",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "The read-only `recording_pulse_ts_utc` column is derived",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "Comparison metadata reports selected-set-wide",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    contracts,
+    "Historical runs retain their recorded config, hashes, events, diagnostics",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    news,
+    "Added read-side fill alignment and explicit timing provenance.",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("v0.2.0.0 records the pre-edit wide-projection inventory", {
+  root <- testthat::test_path("..", "..")
+  inventory_path <- file.path(
+    root,
+    "inst", "design", "ledgr_v0_2_0_0_spec_packet",
+    "wide_projection_store_inventory.md"
+  )
+  testthat::skip_if_not(
+    file.exists(inventory_path),
+    "source store inventory unavailable during installed-package tests"
+  )
+  inventory <- paste(readLines(inventory_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(inventory, "recorded before the first LDG-2684", fixed = TRUE)
+  testthat::expect_match(inventory, "No tracked database file exists", fixed = TRUE)
+  testthat::expect_match(inventory, "No named maintainer-owned store", fixed = TRUE)
+  testthat::expect_match(inventory, "None contains a saved-sweep table", fixed = TRUE)
+  testthat::expect_match(inventory, "in-memory read-time projection", fixed = TRUE)
+  testthat::expect_match(inventory, "No migration is promised for an unnamed artifact", fixed = TRUE)
+})
+
+testthat::test_that("v0.2.0.0 inspection and workflow teaching is contract-bound", {
+  root <- testthat::test_path("..", "..")
+  paths <- file.path(
+    root,
+    c(
+      "inst/design/contracts.md",
+      "README.Rmd",
+      "README.md",
+      "vignettes/strategy-authoring-tools.qmd",
+      "vignettes/strategy-authoring-tools.md",
+      "R/run-store.R",
+      "NAMESPACE"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source workflow documentation unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c(
+    "contracts", "readme_rmd", "readme", "strategy_qmd",
+    "strategy", "run_store", "namespace"
+  )
+
+  testthat::expect_match(
+    docs$contracts,
+    "A durable `ledgr_backtest` handle is a locator",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$contracts,
+    "Historical configs without that field return\\s+`NA_character_`"
+  )
+  testthat::expect_match(
+    docs$contracts,
+    paste0(
+      "must not infer a no-op plan, substitute current\\s+",
+      "experiment state, add a top-level `risk_plan_json` field"
+    )
+  )
+  testthat::expect_match(
+    docs$contracts,
+    "`target[[instrument_id]]` extracts one named quantity",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$run_store,
+    "`strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "review <- ledgr_sweep_review(sweep, rank_by = -final_equity, n = 2L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme_rmd,
+    "snapshot <- ledgr_snapshot_open(store_path, snapshot_id, verify = TRUE)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy_qmd,
+    "target_values <- c(target)\ntarget_values",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy,
+    "target_values <- c(target)\ntarget_values\n#> DEMO_01 DEMO_02",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$strategy_qmd,
+    "c(pre_floor = raw_qty, target_qty = target[[\"DEMO_01\"]])",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(docs$readme_rmd, docs$readme, docs$strategy_qmd, docs$strategy, sep = "\n"),
+    "unclass(target)",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    paste(docs$run_store, docs$namespace, sep = "\n"),
+    "ledgr_target_values",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("survivorship article executes the public availability journey", {
+  root <- testthat::test_path("..", "..")
+  qmd_path <- file.path(root, "vignettes", "survivorship-bias.qmd")
+  md_path <- file.path(root, "vignettes", "survivorship-bias.md")
+  testthat::skip_if_not(
+    file.exists(qmd_path) && file.exists(md_path),
+    "survivorship article sources unavailable during installed-package tests"
+  )
+  testthat::expect_true(file.exists(qmd_path))
+  testthat::expect_true(file.exists(md_path))
+
+  qmd_lines <- readLines(qmd_path, warn = FALSE)
+  qmd <- paste(qmd_lines, collapse = "\n")
+  md <- paste(readLines(md_path, warn = FALSE), collapse = "\n")
+  public_calls <- c(
+    "ledgr_facts_sessions", "ledgr_facts_membership_snapshots",
+    "ledgr_facts_validate", "ledgr_facts_history", "ledgr_facts_resolve",
+    "ledgr_snapshot_from_df", "ledgr_experiment_plan", "ledgr_run",
+    "ledgr_results", "ledgr_run_explain", "ledgr_run_info", "ledgr_run_list",
+    "ledgr_snapshot_open", "ledgr_run_open"
+  )
+  for (call in public_calls) {
+    testthat::expect_match(qmd, call, fixed = TRUE)
+  }
+
+  testthat::expect_no_match(qmd, "#\\| eval: false")
+  testthat::expect_no_match(qmd, "ledgr:::", fixed = TRUE)
+  testthat::expect_no_match(qmd, "DBI::", fixed = TRUE)
+  testthat::expect_no_match(qmd, "availability_provider", fixed = TRUE)
+  testthat::expect_match(qmd, "invalid_observations = \"quarantine\"", fixed = TRUE)
+  testthat::expect_match(qmd, "Survivorship Bias in Performance Studies", fixed = TRUE)
+  testthat::expect_match(qmd, "The Delisting Bias in CRSP Data", fixed = TRUE)
+  testthat::expect_match(qmd, "::: {.ledgr-callout .ledgr-callout-tip}", fixed = TRUE)
+  testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
+  testthat::expect_match(
+    qmd,
+    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1)`",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(qmd, "max_sessions = 1` in `declare()`", fixed = TRUE)
+  testthat::expect_match(
+    qmd,
+    "Rerun the survivor experiment with `params = list(invested = 1)`",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    qmd,
+    "Rerun `point_in_time` with `params = list(invested = 1)`",
+    fixed = TRUE
+  )
+  resolve_line <- grep("#| label: knowledge-resolve", qmd_lines, fixed = TRUE)[[1L]]
+  history_line <- grep("#| label: knowledge-history", qmd_lines, fixed = TRUE)[[1L]]
+  testthat::expect_lt(resolve_line, history_line)
+  direct_resolution <- paste(
+    qmd_lines[resolve_line:(history_line - 1L)],
+    collapse = "\n"
+  )
+  testthat::expect_match(direct_resolution, "ledgr_facts_resolve(", fixed = TRUE)
+  testthat::expect_match(direct_resolution, 'instruments = c("AAA", "BBB")', fixed = TRUE)
+  testthat::expect_no_match(qmd, "The one answer that is always wrong", fixed = TRUE)
+  testthat::expect_match(qmd, "receipt, not historical publication", fixed = TRUE)
+
+  knowledge_start <- grep("^#\\| label: knowledge-history$", qmd_lines)[[1L]]
+  compare_heading <- grep("^## Comparing Survivor and Point-in-Time Universes$",
+                          qmd_lines)
+  testthat::expect_length(compare_heading, 1L)
+  knowledge_end <- compare_heading[[1L]] - 1L
+  knowledge_section <- paste(qmd_lines[knowledge_start:knowledge_end], collapse = "\n")
+  testthat::expect_match(knowledge_section, "ledgr_facts_history(", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "ledgr_facts_resolve(", fixed = TRUE)
+  testthat::expect_no_match(knowledge_section, "ledgr_opening(", fixed = TRUE)
+  testthat::expect_no_match(knowledge_section, "ledgr_run(", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "article-specific sensitivity analysis", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "#| code-fold: true", fixed = TRUE)
+
+  experiment_line <- grep(
+    "point_in_time_experiment <- ledgr_experiment(", qmd_lines, fixed = TRUE
+  )[[1L]]
+  wrapper_line <- grep("declare <- function(universe)", qmd_lines, fixed = TRUE)[[1L]]
+  testthat::expect_lt(experiment_line, wrapper_line)
+  testthat::expect_match(
+    qmd,
+    "group_by(recording_pulse_ts_utc)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    qmd,
+    'by = c("ts_utc" = "recording_pulse_ts_utc")',
+    fixed = TRUE
+  )
+  testthat::expect_match(qmd, "run_inventory <- ledgr_run_list(snapshot)", fixed = TRUE)
+  testthat::expect_match(qmd, "bars_input <- bars_from(prices)", fixed = TRUE)
+  testthat::expect_match(md, "bars_input <- bars_from(prices)", fixed = TRUE)
+  testthat::expect_no_match(
+    qmd,
+    "#\\| label: bars-input[[:space:]]+#\\| include: false"
+  )
+  testthat::expect_no_match(qmd, "26.1-point gap", fixed = TRUE)
+  testthat::expect_no_match(md, "26.1-point gap", fixed = TRUE)
+  for (forbidden in c(
+    "inspect_session <-", "return_at <-", "common_window <-", "run_horizons <-",
+    "last_common <-"
+  )) {
+    testthat::expect_no_match(qmd, forbidden, fixed = TRUE)
+  }
+  for (field in c(
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
+    "last_executed_ts_utc", "complete_performance",
+    "affected_instrument_ids"
+  )) {
+    testthat::expect_match(qmd, field, fixed = TRUE)
+  }
+
+  rendered_evidence <- c(
+    "execution_bar_missing", "no_target_change", "stale_close",
+    "valuation_horizon_exhausted", "INCOMPLETE", "#> [1] TRUE"
+  )
+  for (evidence in rendered_evidence) {
+    testthat::expect_match(md, evidence, fixed = TRUE)
+  }
+  testthat::expect_match(md, "AAA\\s+FALSE\\s+omitted_from_complete_set")
+  testthat::expect_match(md, "BBB\\s+TRUE\\s+member_asserted")
+  testthat::expect_match(md, "2020-01-09\\s+NA\\s+NA")
+  testthat::expect_match(md, "2020-01-09\\s+open\\s+14:30:00")
+  testthat::expect_match(md, "2020-01-11\\s+closed\\s+<NA>")
+  testthat::expect_match(md, "known early, not effective.+TRUE")
+  testthat::expect_match(md, "effective and knowable.+FALSE")
+  testthat::expect_match(md, "effective, not knowable.+TRUE")
+  testthat::expect_match(md, "effective and now knowable.+FALSE")
+  testthat::expect_match(
+    md,
+    "2020-01-07 14:30:00\\s+2020-01-07 21:00:00"
+  )
+  testthat::expect_match(md, "survivor-universe[^\\n]+DONE[^\\n]+TRUE")
+  testthat::expect_match(md, "pit-universe[^\\n]+INCOMPLETE[^\\n]+FALSE")
+  testthat::expect_match(md, "Completion Evidence:", fixed = TRUE)
+  completion_blocks <- gregexpr("Completion Evidence:", md, fixed = TRUE)[[1L]]
+  testthat::expect_identical(sum(completion_blocks > 0L), 1L)
+  point_in_time_summaries <- gregexpr("summary(point_in_time)", qmd, fixed = TRUE)[[1L]]
+  testthat::expect_identical(sum(point_in_time_summaries > 0L), 1L)
+  testthat::expect_match(md, "Achieved-Prefix Metrics (", fixed = TRUE)
+  testthat::expect_match(md, "Total Return (prefix):", fixed = TRUE)
+  testthat::expect_match(md, "Max Drawdown (prefix):", fixed = TRUE)
+  testthat::expect_match(
+    md,
+    "Annualized Return:        withheld (achieved window is shorter than requested)",
+    fixed = TRUE
+  )
+  testthat::expect_match(md, "Closed Trades:", fixed = TRUE)
+  testthat::expect_match(md, "Affected IDs:      AAA", fixed = TRUE)
+  reopen_true <- gregexpr("#> [1] TRUE", md, fixed = TRUE)[[1L]]
+  testthat::expect_gte(sum(reopen_true > 0L), 2L)
+  testthat::expect_match(md, "ledgr_availability_validation_failed", fixed = TRUE)
+  # Rendered Markdown rewraps prose, so every space must tolerate a line break.
+  testthat::expect_match(
+    md,
+    "Inspect\\s+the\\s+prefix,\\s+correct\\s+evidence\\s+or\\s+policy"
+  )
 })

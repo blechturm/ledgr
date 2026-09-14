@@ -156,6 +156,9 @@ ledgr_selection_rule_select <- function(rule, scores) {
   }
   values <- as.numeric(scores[[metric]])
   eligible <- is.finite(values)
+  if ("status" %in% names(scores)) {
+    eligible <- eligible & as.character(scores$status) == "DONE"
+  }
   if (!any(eligible)) {
     rlang::abort(
       sprintf("No finite eligible value exists for metric `%s`.", metric),

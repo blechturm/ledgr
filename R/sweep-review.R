@@ -11,7 +11,9 @@
 #'   Use `desc(metric)` or `-metric` for descending numeric rankings.
 #' @param n Number of top completed candidates to keep in `top`.
 #' @return A `ledgr_sweep_review` list with `ranked`, `top`, `issues`,
-#'   `rank_by`, and `n`.
+#'   `rank_by`, and `n`. For classed sweep input, `ranked` retains the source
+#'   sweep lineage needed for explicit candidate extraction; `top` is always a
+#'   lineage-free presentation table.
 #' @examples
 #' \dontrun{
 #' review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)
@@ -44,8 +46,14 @@ ledgr_sweep_review <- function(sweep, rank_by, n = 5L) {
   rank_expr <- substitute(rank_by)
   completed <- view[as.character(view$status) == "DONE" & !is.na(view$status), , drop = FALSE]
   ranked <- ledgr_sweep_review_rank(completed, rank_expr, parent.frame())
+  if (inherits(sweep, "ledgr_sweep_results")) {
+    ranked <- ledgr_sweep_results_restore(ranked, sweep)
+  }
   top_cols <- unique(c(ledgr_sweep_review_top_cols(), all.vars(rank_expr)))
-  top <- ranked[seq_len(min(n, nrow(ranked))), intersect(top_cols, names(ranked)), drop = FALSE]
+  top_data <- lapply(names(ranked), function(name) ranked[[name]])
+  names(top_data) <- names(ranked)
+  top_view <- tibble::as_tibble(top_data)
+  top <- top_view[seq_len(min(n, nrow(top_view))), intersect(top_cols, names(top_view)), drop = FALSE]
   issues <- ledgr_sweep_review_issue_rows(view)
 
   out <- list(

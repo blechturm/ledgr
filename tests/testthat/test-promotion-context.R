@@ -63,6 +63,73 @@ testthat::test_that("promoted runs write and read durable promotion context", {
   testthat::expect_identical(info$promotion_context$source_sweep$sweep_id, attr(results, "sweep_id"))
 })
 
+testthat::test_that("ranked reopened sweeps retain lineage through promotion", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_promotion_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  risk <- ledgr_risk_max_weight(0.20)
+  sweep_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero()
+  )
+  results <- ledgr_sweep(
+    sweep_exp,
+    ledgr_param_grid(low = list(qty = 1), high = list(qty = 2)),
+    seed = 123L
+  )
+  ledgr_sweep_save(results, snapshot, sweep_id = "review_lineage_saved")
+  reopened <- ledgr_sweep_open(snapshot, "review_lineage_saved")
+  before <- serialize(reopened, NULL)
+
+  review <- ledgr_sweep_review(reopened, rank_by = -candidate_row, n = 1L)
+
+  testthat::expect_s3_class(review$ranked, "ledgr_sweep_results")
+  testthat::expect_false(inherits(review$top, "ledgr_sweep_results"))
+  testthat::expect_null(attr(review$top, "sweep_id", exact = TRUE))
+  testthat::expect_null(attr(review$top, "risk_chain_hash", exact = TRUE))
+  testthat::expect_null(attr(review$top, "risk_plan_json", exact = TRUE))
+  testthat::expect_identical(review$ranked$candidate_id, c("high", "low"))
+  testthat::expect_identical(attr(review$ranked, "sweep_id", exact = TRUE), "review_lineage_saved")
+  testthat::expect_identical(
+    attr(review$ranked, "risk_chain_hash", exact = TRUE),
+    ledgr:::ledgr_risk_chain_hash(risk)
+  )
+  testthat::expect_identical(serialize(reopened, NULL), before)
+  testthat::expect_error(
+    ledgr_candidate(review$top, 1L),
+    class = "ledgr_invalid_sweep_candidate_input"
+  )
+
+  candidate <- ledgr_candidate(review$ranked, 1L)
+  promote_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = ledgr_risk_none(),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_promote(promote_exp, candidate, run_id = "review-lineage-promotion")
+  on.exit(close(bt), add = TRUE)
+
+  context <- ledgr_promotion_context(bt)
+  testthat::expect_identical(context$source_sweep$sweep_id, "review_lineage_saved")
+  testthat::expect_identical(context$selected_candidate$candidate_id, "high")
+  testthat::expect_identical(
+    vapply(context$candidate_summary, `[[`, character(1), "candidate_id"),
+    c("high", "low")
+  )
+  testthat::expect_identical(
+    context$selected_candidate$risk_chain_hash,
+    ledgr:::ledgr_risk_chain_hash(risk)
+  )
+})
+
 testthat::test_that("direct runs return NULL promotion context without executing strategy", {
   snapshot <- ledgr_snapshot_from_df(ledgr_promotion_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

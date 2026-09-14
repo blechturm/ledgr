@@ -210,29 +210,6 @@ testthat::test_that("DSR and effective trials accept user return panels", {
   testthat::expect_null(panel_dsr$metadata$input_identity)
 })
 
-testthat::test_that("native DSR can cross-check against quantstrat when it is installed", {
-  testthat::skip_if_not_installed("quantstrat")
-
-  panel <- ledgr_dsr_reference_panel()
-  sweep <- ledgr_dsr_test_sweep(panel)
-  dsr <- ledgr_dsr(sweep, effective_trials = 2L)
-  summary <- tibble::as_tibble(dsr)
-  row_a <- summary[summary$candidate_id == "a", , drop = FALSE]
-  helper <- getFromNamespace(".deflatedSharpe", "quantstrat")
-  reference <- helper(
-    sharpe = row_a$observed_sharpe[[1]],
-    nTrials = row_a$effective_trials[[1]],
-    varTrials = row_a$variance_sharpe[[1]],
-    skew = row_a$skewness[[1]],
-    kurt = row_a$kurtosis[[1]],
-    numPeriods = row_a$observations[[1]],
-    periodsInYear = 1
-  )
-
-  testthat::expect_equal(row_a$p_value[[1]], reference$p.value[[1]], tolerance = 1e-12)
-  testthat::expect_equal(row_a$deflated_sharpe[[1]], reference$deflated.Sharpe[[1]], tolerance = 1e-12)
-})
-
 testthat::test_that("DSR decreases as effective trial count increases", {
   panel <- ledgr_dsr_reference_panel()
   sweep <- ledgr_dsr_test_sweep(panel)

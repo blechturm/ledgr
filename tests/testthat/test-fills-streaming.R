@@ -1,11 +1,11 @@
-testthat::test_that("ledgr_run_fills returns handle when above threshold", {
+testthat::test_that("ledgr_run_fills is an eager one-argument reader", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)
 
-  run_id <- "run_streaming_handle"
-  n <- 6
+  run_id <- "run_eager_fills"
+  n <- 6L
   rows <- data.frame(
-    event_id = sprintf("ev_stream_%02d", seq_len(n)),
+    event_id = sprintf("ev_eager_%02d", seq_len(n)),
     run_id = run_id,
     ts_utc = as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC") + seq_len(n),
     event_type = rep("FILL", n),
@@ -23,19 +23,41 @@ testthat::test_that("ledgr_run_fills returns handle when above threshold", {
   bt <- ledgr:::new_ledgr_backtest(
     run_id = run_id,
     db_path = test_con$db_path,
-    config = list(data = list(snapshot_id = "snap_streaming"))
+    config = list(data = list(snapshot_id = "snap_eager"))
   )
 
-  res <- ledgr:::ledgr_run_fills(bt, stream_threshold = 1L)
-  on.exit(ledgr:::ledgr_fills_close(res), add = TRUE)
-  testthat::expect_true(inherits(res, "ledgr_fills_cursor"))
+  testthat::expect_identical(names(formals(ledgr_run_fills)), "bt")
+  res <- ledgr_run_fills(bt)
+  testthat::expect_s3_class(res, "tbl_df")
+  testthat::expect_identical(names(res), names(ledgr:::ledgr_empty_fills_table()))
+  testthat::expect_identical(nrow(res), n)
+  testthat::expect_identical(res$event_seq, seq_len(n))
+
+  unreadable <- structure(list(), class = "ledgr_not_a_backtest")
+  testthat::expect_error(
+    ledgr_run_fills(unreadable, lazy = TRUE),
+    "unused argument"
+  )
+  testthat::expect_error(
+    ledgr_run_fills(unreadable, stream_threshold = 1L),
+    "unused argument"
+  )
 })
 
-testthat::test_that("borrowed fill extraction stays eager above threshold", {
+testthat::test_that("fill extraction is eager for empty and borrowed reads", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)
 
-  run_id <- "run_streaming_borrowed_eager"
+  empty_bt <- ledgr:::new_ledgr_backtest(
+    run_id = "run_eager_empty",
+    db_path = test_con$db_path,
+    config = list(data = list(snapshot_id = "snap_eager_empty"))
+  )
+  empty <- ledgr_run_fills(empty_bt)
+  testthat::expect_s3_class(empty, "tbl_df")
+  testthat::expect_identical(empty, ledgr:::ledgr_empty_fills_table())
+
+  run_id <- "run_eager_borrowed"
   n <- 6L
   rows <- data.frame(
     event_id = sprintf("ev_borrowed_%02d", seq_len(n)),
@@ -56,23 +78,13 @@ testthat::test_that("borrowed fill extraction stays eager above threshold", {
   bt <- ledgr:::new_ledgr_backtest(
     run_id = run_id,
     db_path = test_con$db_path,
-    config = list(data = list(snapshot_id = "snap_streaming_borrowed"))
+    config = list(data = list(snapshot_id = "snap_eager_borrowed"))
   )
 
-  res <- ledgr:::ledgr_extract_fills_impl(bt, con = test_con$con, stream_threshold = 1L)
-  testthat::expect_false(inherits(res, "ledgr_fills_cursor"))
+  res <- ledgr:::ledgr_extract_fills_impl(bt, con = test_con$con)
   testthat::expect_s3_class(res, "tbl_df")
   testthat::expect_identical(nrow(res), n)
   testthat::expect_identical(res$event_seq, seq_len(n))
-
-  requested_lazy <- ledgr:::ledgr_extract_fills_impl(
-    bt,
-    lazy = TRUE,
-    con = test_con$con,
-    stream_threshold = 1L
-  )
-  testthat::expect_false(inherits(requested_lazy, "ledgr_fills_cursor"))
-  testthat::expect_identical(nrow(requested_lazy), n)
 })
 
 testthat::test_that("fill row buffer preserves full schema across growth", {
@@ -116,53 +128,7 @@ testthat::test_that("fill row buffer preserves full schema across growth", {
   testthat::expect_identical(out$action, expected$action)
 })
 
-testthat::test_that("materialized and lazy fill extraction return identical rows", {
-  test_con <- get_test_connection()
-  on.exit(close_test_connection(test_con), add = TRUE)
-
-  run_id <- "run_streaming_materialized_parity"
-  base_ts <- as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC")
-  rows <- data.frame(
-    event_id = sprintf("ev_stream_parity_%02d", 1:6),
-    run_id = run_id,
-    ts_utc = base_ts + seq_len(6),
-    event_type = rep("FILL", 6),
-    instrument_id = c("AAA", "AAA", "AAA", "BBB", "BBB", "BBB"),
-    side = c("BUY", "SELL", "BUY", "BUY", "SELL", "BUY"),
-    qty = c(10, 4, 3, 2, 1, 4),
-    price = c(100, 110, 105, 50, 55, 53),
-    fee = c(0, 0.5, 0, 0, 0.25, 0),
-    meta_json = rep(NA_character_, 6),
-    event_seq = seq_len(6),
-    stringsAsFactors = FALSE
-  )
-  DBI::dbAppendTable(test_con$con, "ledger_events", rows)
-
-  bt <- ledgr:::new_ledgr_backtest(
-    run_id = run_id,
-    db_path = test_con$db_path,
-    config = list(data = list(snapshot_id = "snap_streaming_parity"))
-  )
-
-  materialized <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100000L)
-  cursor <- ledgr:::ledgr_run_fills(bt, stream_threshold = 1L)
-  on.exit(ledgr:::ledgr_fills_close(cursor), add = TRUE)
-  lazy <- tibble::as_tibble(DBI::dbFetch(cursor$res))
-
-  testthat::expect_identical(names(lazy), names(materialized))
-  testthat::expect_identical(nrow(lazy), nrow(materialized))
-  testthat::expect_identical(lazy$event_seq, materialized$event_seq)
-  testthat::expect_equal(lazy$ts_utc, materialized$ts_utc)
-  testthat::expect_identical(lazy$instrument_id, materialized$instrument_id)
-  testthat::expect_identical(lazy$side, materialized$side)
-  testthat::expect_equal(lazy$qty, materialized$qty)
-  testthat::expect_equal(lazy$price, materialized$price)
-  testthat::expect_equal(lazy$fee, materialized$fee)
-  testthat::expect_equal(lazy$realized_pnl, materialized$realized_pnl)
-  testthat::expect_identical(lazy$action, materialized$action)
-})
-
-testthat::test_that("fill extraction stays correct above a non-trivial stream threshold", {
+testthat::test_that("large fill extraction remains eager and ordered", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)
 
@@ -191,20 +157,11 @@ testthat::test_that("fill extraction stays correct above a non-trivial stream th
     config = list(data = list(snapshot_id = "snap_streaming_threshold"))
   )
 
-  materialized <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100000L)
-  cursor <- ledgr:::ledgr_run_fills(bt, stream_threshold = 100L)
-  on.exit(ledgr:::ledgr_fills_close(cursor), add = TRUE)
-  lazy <- tibble::as_tibble(DBI::dbFetch(cursor$res))
+  out <- ledgr_run_fills(bt)
 
-  testthat::expect_true(inherits(cursor, "ledgr_fills_cursor"))
-  testthat::expect_identical(nrow(lazy), nrow(materialized))
-  testthat::expect_identical(lazy$event_seq, materialized$event_seq)
-  testthat::expect_equal(lazy$ts_utc, materialized$ts_utc)
-  testthat::expect_identical(lazy$instrument_id, materialized$instrument_id)
-  testthat::expect_identical(lazy$side, materialized$side)
-  testthat::expect_equal(lazy$qty, materialized$qty)
-  testthat::expect_equal(lazy$price, materialized$price)
-  testthat::expect_equal(lazy$fee, materialized$fee)
-  testthat::expect_equal(lazy$realized_pnl, materialized$realized_pnl)
-  testthat::expect_identical(lazy$action, materialized$action)
+  testthat::expect_s3_class(out, "tbl_df")
+  testthat::expect_identical(names(out), names(ledgr:::ledgr_empty_fills_table()))
+  testthat::expect_identical(nrow(out), n)
+  testthat::expect_identical(out$event_seq, seq_len(n))
+  testthat::expect_equal(out$fee, rep(0, n))
 })

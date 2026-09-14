@@ -1,5 +1,5 @@
-ledgr_experiment_store_schema_version <- 112L
-ledgr_saved_sweep_schema_version <- 3L
+ledgr_experiment_store_schema_version <- 115L
+ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
   DBI::dbGetQuery(
@@ -37,8 +37,17 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "snapshots",
     "snapshot_bars",
     "snapshot_instruments",
+    "snapshot_fact_families",
+    "snapshot_membership_sets",
+    "snapshot_membership",
+    "snapshot_trading_status",
+    "snapshot_lifetime",
+    "snapshot_sessions",
+    "snapshot_observation_quarantine",
     "run_provenance",
     "run_telemetry",
+    "run_completion",
+    "run_diagnostics",
     "run_tags",
     "run_promotion_context",
     "sweeps",
@@ -91,7 +100,179 @@ ledgr_experiment_store_ensure_run_telemetry_columns <- function(con) {
   invisible(TRUE)
 }
 
+ledgr_experiment_store_ensure_availability_run_tables <- function(con) {
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS run_completion (
+      run_id TEXT NOT NULL PRIMARY KEY,
+      intended_start_utc TIMESTAMP NOT NULL,
+      intended_end_utc TIMESTAMP NOT NULL,
+      achieved_start_utc TIMESTAMP,
+      achieved_end_utc TIMESTAMP,
+      intended_terminal_status TEXT NOT NULL CHECK (intended_terminal_status IN ('DONE','INCOMPLETE')),
+      stop_reason TEXT,
+      affected_exposure DOUBLE,
+      affected_exposure_ts_utc TIMESTAMP,
+      affected_exposure_basis TEXT,
+      last_fully_valued_ts_utc TIMESTAMP,
+      last_executed_ts_utc TIMESTAMP,
+      complete_performance BOOLEAN NOT NULL
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE IF NOT EXISTS run_diagnostics (
+      run_id TEXT NOT NULL,
+      diagnostic_seq INTEGER NOT NULL,
+      ts_utc TIMESTAMP NOT NULL,
+      instrument_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      outcome TEXT NOT NULL,
+      reason_code TEXT NOT NULL,
+      reasons TEXT NOT NULL,
+      target DOUBLE,
+      quantity DOUBLE,
+      price DOUBLE,
+      mark_source TEXT,
+      mark_age INTEGER,
+      decision_ts_utc TIMESTAMP,
+      execution_ts_utc TIMESTAMP,
+      event_seq INTEGER,
+      target_before_risk DOUBLE,
+      target_after_risk DOUBLE,
+      position_before DOUBLE,
+      position_after DOUBLE,
+      feature_identity_json TEXT,
+      detail_json TEXT NOT NULL,
+      PRIMARY KEY (run_id, diagnostic_seq)
+    )
+    "
+  )
+  invisible(TRUE)
+}
+
+ledgr_experiment_store_upgrade_sweep_candidates <- function(con) {
+  if (!ledgr_experiment_store_table_exists(con, "sweep_candidates") ||
+      "completion_json" %in% ledgr_experiment_store_columns(con, "sweep_candidates")) {
+    return(invisible(FALSE))
+  }
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS sweep_candidates_v115")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE sweep_candidates_v115 (
+      sweep_id TEXT NOT NULL,
+      candidate_id TEXT NOT NULL,
+      candidate_row INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('DONE','INCOMPLETE','FAILED')),
+      completion_json TEXT,
+      final_equity DOUBLE,
+      metrics_json TEXT NOT NULL,
+      total_return DOUBLE,
+      annualized_return DOUBLE,
+      volatility DOUBLE,
+      sharpe_ratio DOUBLE,
+      max_drawdown DOUBLE,
+      n_trades INTEGER,
+      win_rate DOUBLE,
+      avg_trade DOUBLE,
+      time_in_market DOUBLE,
+      execution_seed INTEGER,
+      error_class TEXT,
+      error_msg TEXT,
+      params_json TEXT NOT NULL,
+      feature_params_json TEXT NOT NULL,
+      warnings_json TEXT NOT NULL,
+      feature_set_hash TEXT NOT NULL,
+      feature_fingerprints_json TEXT NOT NULL,
+      provenance_json TEXT NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      risk_chain_hash TEXT,
+      risk_plan_json TEXT,
+      PRIMARY KEY (sweep_id, candidate_row),
+      UNIQUE (sweep_id, candidate_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO sweep_candidates_v115
+    SELECT
+      sweep_id, candidate_id, candidate_row, status, NULL, final_equity,
+      metrics_json, total_return, annualized_return, volatility, sharpe_ratio,
+      max_drawdown, n_trades, win_rate, avg_trade, time_in_market,
+      execution_seed, error_class, error_msg, params_json, feature_params_json,
+      warnings_json, feature_set_hash, feature_fingerprints_json,
+      provenance_json, cost_model_hash, metric_context_hash, risk_chain_hash,
+      risk_plan_json
+    FROM sweep_candidates
+    "
+  )
+  DBI::dbExecute(con, "DROP TABLE sweep_candidates")
+  DBI::dbExecute(con, "ALTER TABLE sweep_candidates_v115 RENAME TO sweep_candidates")
+  invisible(TRUE)
+}
+
+ledgr_experiment_store_upgrade_walk_forward_scores <- function(con) {
+  if (!ledgr_experiment_store_table_exists(con, "walk_forward_scores") ||
+      "completion_json" %in% ledgr_experiment_store_columns(con, "walk_forward_scores")) {
+    return(invisible(FALSE))
+  }
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS walk_forward_scores_v115")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE walk_forward_scores_v115 (
+      session_id TEXT NOT NULL,
+      fold_id TEXT NOT NULL,
+      fold_seq INTEGER NOT NULL,
+      candidate_key TEXT NOT NULL,
+      candidate_label TEXT,
+      params_hash TEXT NOT NULL,
+      feature_params_hash TEXT NOT NULL,
+      feature_set_hash TEXT NOT NULL,
+      alias_map_hash TEXT NOT NULL,
+      metric_context_hash TEXT NOT NULL,
+      cost_model_hash TEXT NOT NULL,
+      risk_chain_hash TEXT NOT NULL,
+      \"window\" TEXT NOT NULL CHECK (\"window\" IN ('train','test')),
+      metric_name TEXT NOT NULL,
+      metric_value DOUBLE,
+      n_trades INTEGER,
+      status TEXT NOT NULL CHECK (status IN ('DONE','INCOMPLETE','FAILED')),
+      completion_json TEXT,
+      error_class TEXT,
+      error_msg TEXT,
+      execution_seed INTEGER,
+      PRIMARY KEY (session_id, fold_seq, \"window\", candidate_key, metric_name)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO walk_forward_scores_v115
+    SELECT
+      session_id, fold_id, fold_seq, candidate_key, candidate_label,
+      params_hash, feature_params_hash, feature_set_hash, alias_map_hash,
+      metric_context_hash, cost_model_hash, risk_chain_hash, \"window\",
+      metric_name, metric_value, n_trades, status, NULL, error_class,
+      error_msg, execution_seed
+    FROM walk_forward_scores
+    "
+  )
+  DBI::dbExecute(con, "DROP TABLE walk_forward_scores")
+  DBI::dbExecute(con, "ALTER TABLE walk_forward_scores_v115 RENAME TO walk_forward_scores")
+  invisible(TRUE)
+}
+
 ledgr_experiment_store_ensure_sweep_tables <- function(con) {
+  ledgr_experiment_store_upgrade_sweep_candidates(con)
   DBI::dbExecute(
     con,
     "
@@ -126,7 +307,8 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
       sweep_id TEXT NOT NULL,
       candidate_id TEXT NOT NULL,
       candidate_row INTEGER NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED')),
+      status TEXT NOT NULL CHECK (status IN ('DONE','INCOMPLETE','FAILED')),
+      completion_json TEXT,
       final_equity DOUBLE,
       metrics_json TEXT NOT NULL,
       total_return DOUBLE,
@@ -206,6 +388,7 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
 }
 
 ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
+  ledgr_experiment_store_upgrade_walk_forward_scores(con)
   DBI::dbExecute(
     con,
     "
@@ -272,7 +455,8 @@ ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
       metric_name TEXT NOT NULL,
       metric_value DOUBLE,
       n_trades INTEGER,
-      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED')),
+      status TEXT NOT NULL CHECK (status IN ('DONE','INCOMPLETE','FAILED')),
+      completion_json TEXT,
       error_class TEXT,
       error_msg TEXT,
       execution_seed INTEGER,
@@ -342,8 +526,10 @@ ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FAL
     ledgr_experiment_store_migrate(con, from_version = version, inform = inform)
   }
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
+  ledgr_experiment_store_ensure_availability_run_tables(con)
   ledgr_experiment_store_ensure_sweep_tables(con)
   ledgr_experiment_store_ensure_walk_forward_tables(con)
+  ledgr_experiment_store_ensure_availability_tables(con)
   invisible(list(schema_version = ledgr_experiment_store_schema_version, is_legacy = FALSE))
 }
 
@@ -461,6 +647,8 @@ ledgr_experiment_store_migrate <- function(con, from_version = NULL, simulate_fa
 
     ledgr_experiment_store_ensure_sweep_tables(con)
     ledgr_experiment_store_ensure_walk_forward_tables(con)
+    ledgr_experiment_store_ensure_availability_tables(con)
+    ledgr_experiment_store_ensure_availability_run_tables(con)
 
     if (ledgr_experiment_store_table_exists(con, "runs")) {
       DBI::dbExecute(

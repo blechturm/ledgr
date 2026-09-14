@@ -33,7 +33,7 @@ ledgr_walk_forward_open <- function(snapshot, session_id) {
       test_runs = as.list(as.character(data$folds$test_run_id[
         !is.na(data$folds$test_run_id) &
           nzchar(as.character(data$folds$test_run_id)) &
-          as.character(data$folds$status) == "DONE"
+          as.character(data$folds$status) %in% c("DONE", "PARTIAL")
       ]))
     ),
     class = c("ledgr_walk_forward_results", "list")
@@ -370,8 +370,8 @@ ledgr_walk_forward_read_run_config <- function(con, snapshot, run_id) {
   if (nrow(row) != 1L) {
     rlang::abort(sprintf("Linked walk-forward run not found: %s", run_id), class = "ledgr_walk_forward_invalid_session")
   }
-  if (!identical(as.character(row$status[[1]]), "DONE")) {
-    rlang::abort(sprintf("Linked walk-forward run '%s' is not complete.", run_id), class = "ledgr_walk_forward_invalid_session")
+  if (!as.character(row$status[[1]]) %in% c("DONE", "INCOMPLETE")) {
+    rlang::abort(sprintf("Linked walk-forward run '%s' is not terminal.", run_id), class = "ledgr_walk_forward_invalid_session")
   }
   cfg <- tryCatch(
     ledgr_json_read_config(row$config_json[[1]]),
@@ -404,7 +404,7 @@ ledgr_walk_forward_verify_linked_runs <- function(con, snapshot, session, folds)
   test_runs <- folds$test_run_id[
     !is.na(folds$test_run_id) &
       nzchar(as.character(folds$test_run_id)) &
-      as.character(folds$status) == "DONE"
+      as.character(folds$status) %in% c("DONE", "PARTIAL")
   ]
   for (run_id in unique(as.character(test_runs))) {
     run <- ledgr_walk_forward_read_run_config(con, snapshot, run_id)

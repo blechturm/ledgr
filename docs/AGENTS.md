@@ -25,6 +25,13 @@ preserve the execution contracts in `inst/design/contracts.md`.
   `coverage.html`, `tests/testthat/Rplots.pdf`.
 - Use UTF-8 or ASCII encoding only. Do not introduce other encodings in
   R source, test, or design files.
+- Spikes, prototypes, and comparative experiments follow
+  `inst/design/spike_protocol.md`: probe the package by execution before
+  writing design prose, build the smallest runnable core before any
+  expected table, keep provenance in the product rather than the
+  harness, and deliver a runner, a diff-based checker, and a gut
+  demonstration. Size budgets in that document are stop signals, not
+  targets.
 
 ## Design Documents
 
@@ -34,9 +41,11 @@ Read before implementing any non-trivial change:
 - Execution contracts (authoritative): `inst/design/contracts.md`
 - Milestone roadmap: `inst/design/ledgr_roadmap.md`
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
+- Spike protocol (binding for spikes and prototypes):
+  `inst/design/spike_protocol.md`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.1.9.7 packet):
+Current planning context (active v0.2.0.0 packet):
 
 - The completed v0.1.8.2 packet is an archival release record.
 - The completed v0.1.8.3 packet is an archival release record:
@@ -281,8 +290,8 @@ Current planning context (active v0.1.9.7 packet):
   filtering, purging/embargo/CPCV, K-Ratio, Triple Penance, intraday
   runtime support, public benchmark claims, and compiled spot-FIFO
   default changes remained non-scope at closeout.
-- The active v0.1.9.7 packet is a business-objective eligibility and
-  validation-polish release:
+- The completed v0.1.9.7 packet is an archival business-objective
+  eligibility and validation-polish release:
   `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`,
   `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`,
   `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`,
@@ -301,8 +310,23 @@ Current planning context (active v0.1.9.7 packet):
   non-lattice robustness criteria, first-class intraday runtime,
   paper/live work, OMS, and liquidity/capacity work remain non-scope.
   The 2026-09-04 all-vignette review is parked in
-  `inst/design/horizon.md`; this packet consumes only its Selection
+  `inst/design/horizon.md`; v0.1.9.7 consumed only its Selection
   Integrity-specific findings through LDG-2671.
+- The active v0.2.0.0 packet combines API/representation hardening with
+  the first point-in-time asset-availability implementation:
+  `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`,
+  `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`,
+  `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, and
+  `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`. It consumes
+  the accepted API-hardening and asset-availability syntheses. Hardening
+  corrections and bounded coordinator extraction must finish before
+  availability implementation. Batch 8 economics and Batch 9
+  terminal/cross- path evidence each require independent review before
+  downstream work. Batches 0-9 are complete after review. Batch 10
+  teaching/reference work is implemented and awaiting review; Batch 11
+  remains the release gate. No second engine, general short financing,
+  settlement economics, OMS, imputation framework, or representation
+  optimization is authorized.
 
 ## Active Design Entry Points
 
@@ -313,7 +337,8 @@ work.
 
 | Area | Read |
 |----|----|
-| active v0.1.9.7 packet | `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`, `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`, `inst/design/vignette_styleguide.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| active v0.2.0.0 packet | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| v0.1.9.7 release record | `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md` |
 | v0.1.9.4 release record | `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
 | v0.1.9.3 release record | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` |
 | v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |

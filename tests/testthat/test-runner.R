@@ -59,7 +59,7 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
-  out <- ledgr_backtest_run(cfg)
+  out <- ledgr_run_config(cfg)
   testthat::expect_true(is.list(out))
   testthat::expect_true(nzchar(out$run_id))
   testthat::expect_identical(out$db_path, db_path)
@@ -100,7 +100,7 @@ testthat::test_that("low-level runner rejects opening positions outside the univ
   )
 
   testthat::expect_error(
-    ledgr_backtest_run(cfg),
+    ledgr_run_config(cfg),
     "opening.positions contains instruments outside universe.instrument_ids",
     fixed = TRUE,
     class = "ledgr_invalid_config"
@@ -122,7 +122,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
   )
 
   run_id <- "run-resume-1"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
 
@@ -133,7 +133,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
   before <- DBI::dbGetQuery(con, "SELECT event_seq, ts_utc FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(run_id))
   testthat::expect_equal(nrow(before), 1L)
 
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
 
   after <- DBI::dbGetQuery(con, "SELECT event_seq, ts_utc FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(run_id))
   testthat::expect_equal(nrow(after), 2L)
@@ -148,7 +148,7 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
 
   run_id <- "run-mismatch-1"
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
   gc()
   Sys.sleep(0.05)
 
@@ -160,7 +160,7 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   )
 
   testthat::expect_error(
-    ledgr_backtest_run(cfg2, run_id = run_id),
+    ledgr_run_config(cfg2, run_id = run_id),
     class = "ledgr_run_hash_mismatch"
   )
 })
@@ -222,7 +222,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   cfg <- ledgr_test_snapshot_backed_config(cfg, bars)
 
   run_id <- "run-state-prev"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 2L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 2L))
   gc()
   Sys.sleep(0.05)
 
@@ -231,7 +231,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
-  testthat::expect_warning(ledgr_backtest_run(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_warning(ledgr_run_config(cfg, run_id = run_id), "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
 
   states <- DBI::dbGetQuery(
     con,
@@ -277,7 +277,7 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   )
 
   run_id <- "run-db-live-state-order"
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   testthat::expect_false(saw_state_before_fill)
   gc()
   Sys.sleep(0.05)
@@ -291,4 +291,311 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   fill_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
   testthat::expect_equal(as.integer(state_rows), 1L)
   testthat::expect_equal(as.integer(fill_rows), 1L)
+})
+
+testthat::test_that("post-fold failure preserves evidence and resumes finalization", {
+  make_config <- function(path) {
+    bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
+    cost <- ledgr_cost_notional_bps_fee(10)
+    risk <- ledgr_risk_max_weight(0.4)
+    timing <- ledgr_timing_next_open()
+    cfg <- list(
+      db_path = path,
+      engine = list(seed = 1L, tz = "UTC"),
+      universe = list(instrument_ids = c("AAA", "BBB")),
+      backtest = list(
+        start_ts_utc = "2020-01-01T00:00:00Z",
+        end_ts_utc = "2020-01-08T00:00:00Z",
+        pulse = "EOD",
+        initial_cash = 10000
+      ),
+      timing_model = list(
+        timing_schema_version = timing$timing_schema_version,
+        type_id = timing$type_id,
+        version = timing$version,
+        args = timing$args
+      ),
+      cost_model = list(
+        cost_model_hash = ledgr:::ledgr_cost_model_hash(cost),
+        cost_plan_json = ledgr:::ledgr_cost_plan_json(cost)
+      ),
+      risk_chain = list(
+        risk_chain_hash = ledgr:::ledgr_risk_chain_hash(risk),
+        risk_plan_json = ledgr:::ledgr_risk_plan_json(risk)
+      ),
+      features = list(enabled = TRUE, defs = list(list(id = "sma_2"))),
+      strategy = list(id = "state_prev", params = list())
+    )
+    ledgr_test_snapshot_backed_config(cfg, bars, "finalization-recovery-snapshot")
+  }
+  read_artifacts <- function(path, run_id) {
+    opened <- ledgr:::ledgr_run_store_open(path)
+    on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+    bt <- ledgr:::new_ledgr_backtest(run_id, path, config = list())
+    fills <- ledgr:::ledgr_extract_fills_impl(bt, con = opened$con)
+    close(bt)
+    queries <- list(
+      ledger = "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+      state = "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+      features = paste(
+        "SELECT * FROM features WHERE run_id = ?",
+        "ORDER BY instrument_id, ts_utc, feature_name"
+      ),
+      equity = "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc"
+    )
+    c(
+      lapply(queries, function(sql) {
+        DBI::dbGetQuery(opened$con, sql, params = list(run_id))
+      }),
+      list(
+        fills = fills,
+        trades = ledgr:::ledgr_closed_trade_rows(fills),
+        status = DBI::dbGetQuery(
+          opened$con,
+          "SELECT status, error_msg FROM runs WHERE run_id = ?",
+          params = list(run_id)
+        )
+      )
+    )
+  }
+  run_without_last_bar_warning <- function(code) {
+    withCallingHandlers(
+      force(code),
+      warning = function(w) {
+        if (grepl("LEDGR_LAST_BAR_NO_FILL", conditionMessage(w), fixed = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+  }
+
+  clean_path <- tempfile(fileext = ".duckdb")
+  resumed_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(clean_path, resumed_path)), add = TRUE)
+  clean_cfg <- make_config(clean_path)
+  resumed_cfg <- make_config(resumed_path)
+  run_id <- "post-fold-finalization-recovery"
+  clean <- run_without_last_bar_warning(ledgr_run_config(clean_cfg, run_id = run_id))
+  clean_rows <- read_artifacts(clean_path, run_id)
+
+  seam <- new.env(parent = emptyenv())
+  seam$fired <- FALSE
+  seam$telemetry_fired <- FALSE
+  original_transaction <- DBI::dbWithTransaction
+  original_finalize_telemetry <- ledgr:::ledgr_finalize_fold_telemetry
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_finalize_fold_telemetry = function(..., status) {
+        if (identical(status, "FAILED")) {
+          seam$telemetry_fired <- TRUE
+          stop("injected telemetry failure", call. = FALSE)
+        }
+        original_finalize_telemetry(..., status = status)
+      },
+      .package = "ledgr"
+    )
+    testthat::local_mocked_bindings(
+      dbWithTransaction = function(conn, code, ...) {
+        expression <- paste(deparse(substitute(code)), collapse = "\n")
+        if (!seam$fired && grepl("DELETE FROM equity_curve", expression, fixed = TRUE)) {
+          seam$fired <- TRUE
+          seam$ledger <- DBI::dbGetQuery(
+            conn,
+            "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+            params = list(run_id)
+          )
+          seam$state <- DBI::dbGetQuery(
+            conn,
+            "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+            params = list(run_id)
+          )
+          seam$features <- DBI::dbGetQuery(
+            conn,
+            paste(
+              "SELECT * FROM features WHERE run_id = ?",
+              "ORDER BY instrument_id, ts_utc, feature_name"
+            ),
+            params = list(run_id)
+          )
+          stop("injected finalization failure", call. = FALSE)
+        }
+        original_transaction(conn, code, ...)
+      },
+      .package = "DBI"
+    )
+    testthat::expect_error(
+      run_without_last_bar_warning(ledgr_run_config(resumed_cfg, run_id = run_id)),
+      "injected finalization failure",
+      fixed = TRUE
+    )
+  })
+
+  testthat::expect_true(seam$fired)
+  testthat::expect_true(seam$telemetry_fired)
+  failed_rows <- read_artifacts(resumed_path, run_id)
+  testthat::expect_identical(failed_rows$status$status, "FAILED")
+  testthat::expect_identical(failed_rows$status$error_msg, "injected finalization failure")
+  testthat::expect_identical(failed_rows$ledger, seam$ledger)
+  testthat::expect_identical(failed_rows$state, seam$state)
+  testthat::expect_identical(failed_rows$features, seam$features)
+  testthat::expect_identical(nrow(failed_rows$equity), 0L)
+  testthat::expect_identical(failed_rows$ledger, clean_rows$ledger)
+  testthat::expect_identical(failed_rows$state, clean_rows$state)
+  testthat::expect_identical(failed_rows$features, clean_rows$features)
+  testthat::expect_identical(failed_rows$fills, clean_rows$fills)
+  testthat::expect_identical(failed_rows$trades, clean_rows$trades)
+
+  resumed <- run_without_last_bar_warning(ledgr_run_config(resumed_cfg, run_id = run_id))
+  resumed_rows <- read_artifacts(resumed_path, run_id)
+  testthat::expect_identical(resumed$run_id, clean$run_id)
+  testthat::expect_identical(resumed_rows$status$status, "DONE")
+  testthat::expect_true(is.na(resumed_rows$status$error_msg))
+  testthat::expect_identical(resumed_rows$ledger, clean_rows$ledger)
+  testthat::expect_identical(resumed_rows$state, clean_rows$state)
+  testthat::expect_identical(resumed_rows$features, clean_rows$features)
+  testthat::expect_identical(resumed_rows$equity, clean_rows$equity)
+  testthat::expect_identical(resumed_rows$fills, clean_rows$fills)
+  testthat::expect_identical(resumed_rows$trades, clean_rows$trades)
+  testthat::expect_identical(
+    as.integer(resumed_rows$ledger$event_seq),
+    seq_len(nrow(resumed_rows$ledger))
+  )
+})
+
+testthat::test_that("run info projects recorded risk identity without side effects", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    instrument_id = "AAA",
+    open = 100:105,
+    high = 101:106,
+    low = 99:104,
+    close = 100:105,
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  strategy <- function(ctx, params) {
+    calls$n <- calls$n + 1L
+    targets <- ctx$flat()
+    targets["AAA"] <- params$qty
+    targets
+  }
+  risk <- ledgr_risk_chain(
+    ledgr_risk_long_only(),
+    ledgr_risk_max_weight(0.50)
+  )
+  risk_hash <- ledgr:::ledgr_risk_chain_hash(risk)
+  no_risk_hash <- ledgr:::ledgr_risk_chain_hash(ledgr_risk_none())
+
+  direct_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = risk,
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  direct <- ledgr_run(
+    direct_exp,
+    params = list(qty = 1),
+    run_id = "risk-info-direct"
+  )
+  on.exit(close(direct), add = TRUE)
+
+  no_risk_exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    risk_chain = ledgr_risk_none(),
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  no_risk <- ledgr_run(
+    no_risk_exp,
+    params = list(qty = 1),
+    run_id = "risk-info-none"
+  )
+  on.exit(close(no_risk), add = TRUE)
+
+  sweep <- ledgr_sweep(
+    direct_exp,
+    ledgr_param_grid(low = list(qty = 1), high = list(qty = 2)),
+    seed = 123L
+  )
+  review <- ledgr_sweep_review(sweep, rank_by = -final_equity)
+  candidate <- ledgr_candidate(review$ranked, 1L)
+  promoted <- ledgr_promote(
+    no_risk_exp,
+    candidate,
+    run_id = "risk-info-promoted"
+  )
+  on.exit(close(promoted), add = TRUE)
+  calls_after_runs <- calls$n
+
+  store_contents <- function() {
+    opened <- ledgr:::ledgr_run_store_open(db_path)
+    on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
+    tables <- DBI::dbGetQuery(
+      opened$con,
+      paste(
+        "SELECT table_name FROM information_schema.tables",
+        "WHERE table_schema = 'main' AND table_type = 'BASE TABLE'",
+        "ORDER BY table_name"
+      )
+    )$table_name
+    stats::setNames(
+      lapply(
+        tables,
+        function(table) {
+          sql <- paste(
+            "SELECT * FROM",
+            DBI::dbQuoteIdentifier(opened$con, table),
+            "ORDER BY ALL"
+          )
+          DBI::dbGetQuery(opened$con, sql)
+        }
+      ),
+      tables
+    )
+  }
+
+  before <- store_contents()
+  direct_info <- ledgr_run_info(snapshot, "risk-info-direct")
+  no_risk_info <- ledgr_run_info(snapshot, "risk-info-none")
+  promoted_info <- ledgr_run_info(snapshot, "risk-info-promoted")
+  after <- store_contents()
+
+  testthat::expect_identical(direct_info$risk_chain_hash, risk_hash)
+  testthat::expect_identical(promoted_info$risk_chain_hash, risk_hash)
+  testthat::expect_identical(no_risk_info$risk_chain_hash, no_risk_hash)
+  testthat::expect_type(direct_info$risk_chain_hash, "character")
+  testthat::expect_false("risk_plan_json" %in% names(direct_info))
+  testthat::expect_identical(after, before)
+  testthat::expect_identical(calls$n, calls_after_runs)
+  testthat::expect_output(print(direct_info), risk_hash, fixed = TRUE)
+
+  opened <- ledgr:::ledgr_run_store_open(db_path)
+  config_json <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT config_json FROM runs WHERE run_id = 'risk-info-direct'"
+  )$config_json[[1]]
+  legacy_config <- ledgr:::ledgr_json_read_config(config_json)
+  legacy_config$risk_chain <- NULL
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE runs SET config_json = ? WHERE run_id = 'risk-info-direct'",
+    params = list(as.character(canonical_json(legacy_config)))
+  )
+  ledgr:::ledgr_run_store_close(opened)
+
+  legacy_before <- store_contents()
+  legacy_info <- ledgr_run_info(snapshot, "risk-info-direct")
+  legacy_after <- store_contents()
+  testthat::expect_identical(legacy_info$risk_chain_hash, NA_character_)
+  testthat::expect_identical(legacy_after, legacy_before)
+  testthat::expect_identical(calls$n, calls_after_runs)
 })

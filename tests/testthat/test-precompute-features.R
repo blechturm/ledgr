@@ -413,3 +413,36 @@ testthat::test_that("feature set hashes are normalized by sorted candidate finge
     class = "ledgr_invalid_args"
   )
 })
+
+testthat::test_that("future-only bar changes preserve eligible feature prefixes", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
+  changed <- bars
+  future_rows <- 7:8
+  changed[future_rows, c("open", "high", "low", "close")] <-
+    changed[future_rows, c("open", "high", "low", "close")] + 100
+
+  make_precomputed <- function(input, path, snapshot_id) {
+    snapshot <- ledgr_snapshot_from_df(input, db_path = path, snapshot_id = snapshot_id)
+    on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+    exp <- ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$flat(),
+      features = list(ledgr_ind_sma(3)),
+      cost_model = ledgr_cost_zero()
+    )
+    ledgr_precompute_features(exp, ledgr_param_grid(only = list(qty = 0)))
+  }
+
+  first_path <- tempfile(fileext = ".duckdb")
+  second_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(first_path, second_path)), add = TRUE)
+  first <- make_precomputed(bars, first_path, "causal-prefix-a")
+  second <- make_precomputed(changed, second_path, "causal-prefix-b")
+  feature_id <- ledgr_feature_id(ledgr_ind_sma(3))
+  first_values <- first$projection$feature_values[[feature_id]]["AAA", ]
+  second_values <- second$projection$feature_values[[feature_id]]["AAA", ]
+
+  testthat::expect_false(identical(first$snapshot_hash, second$snapshot_hash))
+  testthat::expect_identical(first_values[1:6], second_values[1:6])
+  testthat::expect_false(identical(first_values[7:8], second_values[7:8]))
+})

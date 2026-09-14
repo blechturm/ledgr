@@ -15,6 +15,35 @@
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
 \alias{ledgr_snapshot_hash_invalid_timestamp}
+\alias{ledgr_invalid_valuation_policy}
+\alias{ledgr_availability_inactive}
+\alias{ledgr_availability_sessions_required}
+\alias{ledgr_valuation_policy_required}
+\alias{ledgr_membership_universe_not_found}
+\alias{ledgr_compiled_availability_unsupported}
+\alias{ledgr_execution_timing_version_mismatch}
+\alias{ledgr_fill_timing_not_comparable}
+\alias{ledgr_session_time_ambiguous}
+\alias{ledgr_session_time_nonexistent}
+\alias{ledgr_fact_ambiguous_membership_shape}
+\alias{ledgr_fact_invalid_membership_list}
+\alias{ledgr_facts_inspection_invalid_args}
+\alias{ledgr_facts_scope_not_found}
+\alias{ledgr_facts_snapshot_not_sealed}
+\alias{ledgr_facts_snapshot_hash_mismatch}
+\alias{ledgr_session_adapter_invalid}
+\alias{ledgr_session_override_invalid}
+\alias{ledgr_indicator_gap_unsupported}
+\alias{ledgr_indicator_gap_parity}
+\alias{ledgr_invalid_strategy_state}
+\alias{ledgr_target_sizing_unavailable}
+\alias{ledgr_restricted_target}
+\alias{ledgr_nonmember_exposure_increase}
+\alias{ledgr_post_risk_inadmissible}
+\alias{ledgr_short_exposure_unsupported}
+\alias{ledgr_affordability_reconciliation_failed}
+\alias{ledgr_run_terminal_evidence_invalid}
+\alias{ledgr_run_explanation_unavailable}
 \alias{ledgr_invalid_sweep_id}
 \alias{ledgr_sweep_id_exists}
 \alias{ledgr_sweep_not_found}
@@ -31,6 +60,8 @@
 \alias{ledgr_sweep_trades_candidate_not_found}
 \alias{ledgr_sweep_trades_candidate_not_completed}
 \alias{ledgr_sweep_trades_candidate_not_retained}
+\alias{ledgr_incomplete_sweep_candidate}
+\alias{ledgr_promote_incomplete_candidate}
 \alias{ledgr_validation_pbo_incomplete_panel}
 \alias{ledgr_missing_package}
 \alias{ledgr_validation_pbo_invalid_s}
@@ -151,6 +182,88 @@ a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on drive
 timestamp representation drift instead of silently re-keying sealed data.
 }
 
+\section{Availability classes}{
+
+\code{ledgr_invalid_valuation_policy} is raised for malformed stale-valuation
+policies or constructor arguments.
+
+\code{ledgr_availability_inactive} is raised when a membership-universe rule is
+requested without the fact families needed to activate availability-aware
+execution.
+
+\code{ledgr_availability_sessions_required} and
+\code{ledgr_valuation_policy_required} are raised when availability-aware
+execution lacks a complete session calendar or an explicit valuation
+policy, respectively.
+
+\code{ledgr_membership_universe_not_found} is raised when a membership-universe
+rule names a universe that is not declared by the snapshot.
+
+\code{ledgr_compiled_availability_unsupported} is raised before execution when
+availability-aware execution is combined with the compiled spot-FIFO path.
+
+\code{ledgr_execution_timing_version_mismatch} is raised when an active legacy or
+unknown timing config is submitted for current execution. Historical runs
+remain inspectable, but they cannot resume under corrected timing semantics.
+
+\code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
+when selected runs have differing or unknown execution-timing conventions.
+
+\code{ledgr_session_time_ambiguous} and \code{ledgr_session_time_nonexistent} are
+raised when a local session wall time resolves to multiple UTC instants or
+no UTC instant. Supply an explicit POSIXct instant to disambiguate a real
+fall-back time.
+
+\code{ledgr_fact_ambiguous_membership_shape} and
+\code{ledgr_fact_invalid_membership_list} are raised for mixed row/list
+membership input or malformed constituent lists.
+
+\code{ledgr_facts_inspection_invalid_args} is raised for incompatible history or
+resolution arguments. \code{ledgr_facts_scope_not_found} is raised when the
+requested family and scope are not declared. Snapshot inspection raises
+\code{ledgr_facts_snapshot_not_sealed} or
+\code{ledgr_facts_snapshot_hash_mismatch} before returning evidence from an
+unsealed or corrupted artifact.
+
+\code{ledgr_session_adapter_invalid} and \code{ledgr_session_override_invalid} are
+raised for malformed qlcal adapter inputs or replacement rows.
+
+\code{ledgr_indicator_gap_unsupported} is raised before strategy use when an
+availability-aware feature does not declare the supported strict-window gap
+contract. \code{ledgr_indicator_gap_parity} is raised when the scalar and series
+implementations disagree at the end of a finite strict window.
+
+\code{ledgr_invalid_strategy_state} is raised when availability-aware asset state
+is not a named list keyed only by instruments on the current public axis.
+
+\code{ledgr_target_sizing_unavailable} is raised when an availability-aware
+rebalance helper cannot obtain a positive accepted current close or a
+permissible mark needed to reserve held nonmember exposure.
+
+\code{ledgr_restricted_target} and \code{ledgr_nonmember_exposure_increase} are raised
+when availability-aware strategy output violates the decision-time target
+contract. \code{ledgr_post_risk_inadmissible} is raised when a risk step does not
+preserve or reduce the strategy target. These conditions carry the affected
+instrument IDs.
+
+\code{ledgr_short_exposure_unsupported} is raised before fill acceptance when an
+availability-aware target would open or enlarge short exposure. Existing
+short quantities may be held or reduced; this does not define short-account
+financing.
+
+\code{ledgr_affordability_reconciliation_failed} is raised when recorded active
+cash diverges from the bounded-affordability virtual ledger beyond the
+engine's fixed tolerance.
+
+\code{ledgr_run_terminal_evidence_invalid} is raised when persisted terminal
+completion evidence is malformed, disagrees with the run calendar or stored
+status, or does not match the finalized equity prefix and stop diagnostic.
+
+\code{ledgr_run_explanation_unavailable} is raised when a run has no retained
+decision trace for the requested instrument and timestamp. ledgr does not
+infer the missing intent from current strategy code or other artifacts.
+}
+
 \section{Saved sweep classes}{
 
 \code{ledgr_invalid_sweep_id} is raised when a saved sweep id is not a non-empty,
@@ -206,6 +319,11 @@ are requested for a failed candidate.
 
 \code{ledgr_sweep_trades_candidate_not_retained} is raised when retained trades
 are missing for a completed candidate that reports closed trades.
+
+\code{ledgr_incomplete_sweep_candidate} is raised when candidate extraction is
+requested for an \code{INCOMPLETE} sweep row. \code{ledgr_promote_incomplete_candidate}
+is raised when promotion receives an incomplete candidate. Incomplete
+prefixes remain evidence and never become executable candidates.
 
 \code{ledgr_validation_pbo_invalid_s} is raised when a PBO/CSCV request supplies
 an invalid \code{S} subset count.
@@ -384,6 +502,42 @@ safely.
 
 \code{ledgr_walk_forward_candidate_not_found} is raised when a requested
 walk-forward fold does not contain a completed selected candidate.
+}
+
+\section{Availability reason codes}{
+
+Availability-aware diagnostics use this closed vocabulary. An accepted fill
+without a complication uses an empty reason code.\tabular{lll}{
+   Exact token \tab Stage \tab Action / interpretation \cr
+   \code{decision_recorded} \tab decision \tab unrestricted decision recorded \cr
+   \code{empty_public_domain} \tab decision \tab empty axis; no targets emitted \cr
+   \code{trading_halted} \tab restriction \tab hold or exit only \cr
+   \code{quotation_only} \tab restriction \tab hold or exit only \cr
+   \code{status_unknown} \tab restriction \tab hold or exit only \cr
+   \code{status_unknown_or_conflicting} \tab restriction \tab hold or exit only \cr
+   \code{lifetime_inactive} \tab restriction / terminal \tab hold or exit; no fabricated settlement \cr
+   \code{stale_mark_reduction} \tab risk \tab reducing target accepted with a stale mark \cr
+   \code{stale_mark_pass_through} \tab risk \tab unchanged target accepted with a stale mark \cr
+   \code{risk_mark_unavailable} \tab risk stop \tab accepted prefix finalized incomplete \cr
+   \code{restricted_target} \tab target validation \tab classed strategy-result failure \cr
+   \code{nonmember_exposure_increase} \tab target validation \tab classed strategy-result failure \cr
+   \code{post_risk_inadmissible} \tab post-risk validation \tab classed risk failure \cr
+   \code{short_exposure_unsupported} \tab target validation \tab classed strategy-result failure \cr
+   \code{insufficient_cash} \tab execution \tab cash-consuming fill rejected \cr
+   \code{execution_bar_missing} \tab execution \tab no fill; no standing order \cr
+   \code{membership_changed_before_execution} \tab execution diagnostic \tab report only; never an execution gate \cr
+   \code{final_pulse_no_execution} \tab execution \tab no fill without a later pulse \cr
+   \code{affordability_reconciled} \tab reconciliation \tab accepted fills applied and reconciled \cr
+   \code{affordability_reconciliation_failed} \tab reconciliation stop \tab accepted prefix finalized incomplete \cr
+   \code{valuation_horizon_exhausted} \tab valuation stop \tab accepted prefix finalized incomplete \cr
+   \code{terminal_settlement_unsupported} \tab valuation stop \tab holding preserved; no fabricated settlement \cr
+   \code{fold_exception} \tab error \tab failed after transaction rollback \cr
+}
+
+
+For the connected workflow and interpretation, see
+\code{vignette("survivorship-bias", package = "ledgr")} and
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}.
 }
 
 \section{Related existing classes}{

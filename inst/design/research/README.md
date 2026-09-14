@@ -1,18 +1,34 @@
 # Research inputs to RFC seeds
 
-This directory holds deep-research LLM outputs that were fed to RFC seeds as design-space context. Each file corresponds to one RFC cycle.
+This directory holds non-binding research inputs that are fed to RFC seeds as
+design-space or empirical context. Most files are deep-research LLM outputs.
+Project-authored empirical syntheses and companion evidence handoffs may also
+be preserved here when an external, private, or licensed research workflow has
+produced durable, non-reconstructive input for an upstream RFC. Each file
+belongs to a named RFC cycle or parked RFC direction.
 
-**Status:** non-binding inputs. Preserve indefinitely as audit trail. Do not promote to a user-facing docs surface.
+**Status:** non-binding inputs. Preserve indefinitely as audit trail. Do not
+promote to a user-facing docs surface.
 
 ---
 
-## What these files are
+## Empirical evidence inputs
+
+| File | Evidence source | Intended RFC use |
+|---|---|---|
+| `Sharadar-Empirical-Evidence.md` | Sharadar Data MVP and Evidence Promotion v0.1.0, private authoritative source commit `e53bda3b108e51ad44720b9812c8072624b8820e` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, non-binding) |
+
+The Sharadar synthesis contains only non-reconstructive aggregates and
+conclusions. It is not vendor data, a canonical schema, or a binding ledgr
+decision. The private evidence artifacts remain authoritative for exact audit.
+
+## What the deep-research files are
 
 For each RFC cycle that needed broad prior-art coverage, the maintainer prompted a deep-research LLM (typically ChatGPT Deep Research) with a structured request: literature foundations, competitor implementations, design-pattern survey, ledgr-specific design questions, plus a "strongest single influence" verdict. The model produced a single dense markdown document. That document is what lives here.
 
 These artifacts informed the seed RFC. The seed cites the file by path. The synthesis lifts whichever framings and references it found load-bearing.
 
-## What these files are NOT
+## What the deep-research files are NOT
 
 - **Not canonical literature reviews.** One model's pass through the literature, with citation precision that varies. Some treatments are cursory; some are misattributed in subtle ways; cross-check against primary sources before quoting in a binding artifact.
 - **Not authoritative.** A different deep-research run (different model, different prompt, different day) would produce overlapping but not identical output.
@@ -40,6 +56,8 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | `Reproducible-Leakage-Safe-ML.md` | Informs the 2026-06-14 horizon entry "General ML-strategy preparedness (QRF ranking as the motivating spike)"; the dedicated ML-architecture RFC is parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycle to seed the architectural requirements; synthesis deferred to v0.2.x). |
 | `Stable-Parameter-Region-Detection.md` | Ad-hoc input resolving the `ledgr_objective_stable_region()` detector methodology that `rfc_validation_toolkit_v0_1_9_x_synthesis.md` section 4.1 left as a spec-cut open question (not a new RFC cycle). | Pending (the v0.1.9.7 spec packet's `stable_region` detector spike). |
 | `Cross-Asset-Accounting-Critical-Events.md` | Informs the 2026-06-28 horizon entry "Cross-asset accounting-critical economic events"; the corporate-actions / instrument-master and explicit accounting-critical event-types RFCs are parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycles after vendor-ingestion work surfaced LFB-001; synthesis deferred to v0.2.x). |
+| `ledgr_ragged_universe_prior_art_review.md` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (source-based prior-art input; load-bearing claims rechecked rather than adopted wholesale). | Pending (Seed v1 opened; response-stage adversarial review and comparative architecture evidence precede synthesis). |
+| `rfc-evidence-handoff.md` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (compact empirical routing memo; the expanded Sharadar synthesis controls if they differ). | Pending (evidence handoff only; Seed v1 is non-binding and synthesis is not written). |
 
 `Reproducible-Leakage-Safe-ML.md` was conducted ahead of its RFC cycle to inform the parked horizon seed rather than at stage 1 of an open cycle; when the v0.2.x ML-architecture RFC opens, its seed should cite this file by path per the normal convention.
 
@@ -52,6 +70,17 @@ corporate-actions / instrument-master and explicit accounting-critical
 event-types work; the binding artifact will be the future accepted synthesis,
 not this file. Per this directory's policy the file is preserved indefinitely
 and is not promoted to a user-facing surface.
+
+`Sharadar-Empirical-Evidence.md`,
+`ledgr_ragged_universe_prior_art_review.md`, and `rfc-evidence-handoff.md` are
+the three staged inputs to
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`.
+They serve different roles: reviewed non-reconstructive empirical synthesis,
+external prior-art research, and compact empirical routing memo. None is
+accepted architecture. The Seed v1 is also non-binding; its response stage and
+comparative architecture gate must preserve the empirical limits and current
+strict dense behavior as the parity oracle unless a later accepted synthesis
+explicitly changes that rule.
 
 When the next deep-research-informed RFC cycle opens, add a new file here and a new row to the table.
 

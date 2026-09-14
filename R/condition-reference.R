@@ -49,6 +49,86 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
+#' @section Availability classes:
+#' `ledgr_invalid_valuation_policy` is raised for malformed stale-valuation
+#' policies or constructor arguments.
+#'
+#' `ledgr_availability_inactive` is raised when a membership-universe rule is
+#' requested without the fact families needed to activate availability-aware
+#' execution.
+#'
+#' `ledgr_availability_sessions_required` and
+#' `ledgr_valuation_policy_required` are raised when availability-aware
+#' execution lacks a complete session calendar or an explicit valuation
+#' policy, respectively.
+#'
+#' `ledgr_membership_universe_not_found` is raised when a membership-universe
+#' rule names a universe that is not declared by the snapshot.
+#'
+#' `ledgr_compiled_availability_unsupported` is raised before execution when
+#' availability-aware execution is combined with the compiled spot-FIFO path.
+#'
+#' `ledgr_execution_timing_version_mismatch` is raised when an active legacy or
+#' unknown timing config is submitted for current execution. Historical runs
+#' remain inspectable, but they cannot resume under corrected timing semantics.
+#'
+#' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
+#' when selected runs have differing or unknown execution-timing conventions.
+#'
+#' `ledgr_session_time_ambiguous` and `ledgr_session_time_nonexistent` are
+#' raised when a local session wall time resolves to multiple UTC instants or
+#' no UTC instant. Supply an explicit POSIXct instant to disambiguate a real
+#' fall-back time.
+#'
+#' `ledgr_fact_ambiguous_membership_shape` and
+#' `ledgr_fact_invalid_membership_list` are raised for mixed row/list
+#' membership input or malformed constituent lists.
+#'
+#' `ledgr_facts_inspection_invalid_args` is raised for incompatible history or
+#' resolution arguments. `ledgr_facts_scope_not_found` is raised when the
+#' requested family and scope are not declared. Snapshot inspection raises
+#' `ledgr_facts_snapshot_not_sealed` or
+#' `ledgr_facts_snapshot_hash_mismatch` before returning evidence from an
+#' unsealed or corrupted artifact.
+#'
+#' `ledgr_session_adapter_invalid` and `ledgr_session_override_invalid` are
+#' raised for malformed qlcal adapter inputs or replacement rows.
+#'
+#' `ledgr_indicator_gap_unsupported` is raised before strategy use when an
+#' availability-aware feature does not declare the supported strict-window gap
+#' contract. `ledgr_indicator_gap_parity` is raised when the scalar and series
+#' implementations disagree at the end of a finite strict window.
+#'
+#' `ledgr_invalid_strategy_state` is raised when availability-aware asset state
+#' is not a named list keyed only by instruments on the current public axis.
+#'
+#' `ledgr_target_sizing_unavailable` is raised when an availability-aware
+#' rebalance helper cannot obtain a positive accepted current close or a
+#' permissible mark needed to reserve held nonmember exposure.
+#'
+#' `ledgr_restricted_target` and `ledgr_nonmember_exposure_increase` are raised
+#' when availability-aware strategy output violates the decision-time target
+#' contract. `ledgr_post_risk_inadmissible` is raised when a risk step does not
+#' preserve or reduce the strategy target. These conditions carry the affected
+#' instrument IDs.
+#'
+#' `ledgr_short_exposure_unsupported` is raised before fill acceptance when an
+#' availability-aware target would open or enlarge short exposure. Existing
+#' short quantities may be held or reduced; this does not define short-account
+#' financing.
+#'
+#' `ledgr_affordability_reconciliation_failed` is raised when recorded active
+#' cash diverges from the bounded-affordability virtual ledger beyond the
+#' engine's fixed tolerance.
+#'
+#' `ledgr_run_terminal_evidence_invalid` is raised when persisted terminal
+#' completion evidence is malformed, disagrees with the run calendar or stored
+#' status, or does not match the finalized equity prefix and stop diagnostic.
+#'
+#' `ledgr_run_explanation_unavailable` is raised when a run has no retained
+#' decision trace for the requested instrument and timestamp. ledgr does not
+#' infer the missing intent from current strategy code or other artifacts.
+#'
 #' @section Saved sweep classes:
 #' `ledgr_invalid_sweep_id` is raised when a saved sweep id is not a non-empty,
 #' non-whitespace ASCII character scalar of at most 256 bytes.
@@ -103,6 +183,11 @@
 #'
 #' `ledgr_sweep_trades_candidate_not_retained` is raised when retained trades
 #' are missing for a completed candidate that reports closed trades.
+#'
+#' `ledgr_incomplete_sweep_candidate` is raised when candidate extraction is
+#' requested for an `INCOMPLETE` sweep row. `ledgr_promote_incomplete_candidate`
+#' is raised when promotion receives an incomplete candidate. Incomplete
+#' prefixes remain evidence and never become executable candidates.
 #'
 #' `ledgr_validation_pbo_invalid_s` is raised when a PBO/CSCV request supplies
 #' an invalid `S` subset count.
@@ -276,6 +361,40 @@
 #' `ledgr_walk_forward_candidate_not_found` is raised when a requested
 #' walk-forward fold does not contain a completed selected candidate.
 #'
+#' @section Availability reason codes:
+#' Availability-aware diagnostics use this closed vocabulary. An accepted fill
+#' without a complication uses an empty reason code.
+#'
+#' | Exact token | Stage | Action / interpretation |
+#' | --- | --- | --- |
+#' | `decision_recorded` | decision | unrestricted decision recorded |
+#' | `empty_public_domain` | decision | empty axis; no targets emitted |
+#' | `trading_halted` | restriction | hold or exit only |
+#' | `quotation_only` | restriction | hold or exit only |
+#' | `status_unknown` | restriction | hold or exit only |
+#' | `status_unknown_or_conflicting` | restriction | hold or exit only |
+#' | `lifetime_inactive` | restriction / terminal | hold or exit; no fabricated settlement |
+#' | `stale_mark_reduction` | risk | reducing target accepted with a stale mark |
+#' | `stale_mark_pass_through` | risk | unchanged target accepted with a stale mark |
+#' | `risk_mark_unavailable` | risk stop | accepted prefix finalized incomplete |
+#' | `restricted_target` | target validation | classed strategy-result failure |
+#' | `nonmember_exposure_increase` | target validation | classed strategy-result failure |
+#' | `post_risk_inadmissible` | post-risk validation | classed risk failure |
+#' | `short_exposure_unsupported` | target validation | classed strategy-result failure |
+#' | `insufficient_cash` | execution | cash-consuming fill rejected |
+#' | `execution_bar_missing` | execution | no fill; no standing order |
+#' | `membership_changed_before_execution` | execution diagnostic | report only; never an execution gate |
+#' | `final_pulse_no_execution` | execution | no fill without a later pulse |
+#' | `affordability_reconciled` | reconciliation | accepted fills applied and reconciled |
+#' | `affordability_reconciliation_failed` | reconciliation stop | accepted prefix finalized incomplete |
+#' | `valuation_horizon_exhausted` | valuation stop | accepted prefix finalized incomplete |
+#' | `terminal_settlement_unsupported` | valuation stop | holding preserved; no fabricated settlement |
+#' | `fold_exception` | error | failed after transaction rollback |
+#'
+#' For the connected workflow and interpretation, see
+#' `vignette("survivorship-bias", package = "ledgr")` and
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers
@@ -301,6 +420,24 @@
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
+#' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
+#' @aliases ledgr_availability_sessions_required ledgr_valuation_policy_required
+#' @aliases ledgr_membership_universe_not_found
+#' @aliases ledgr_compiled_availability_unsupported
+#' @aliases ledgr_execution_timing_version_mismatch
+#' @aliases ledgr_fill_timing_not_comparable
+#' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
+#' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list
+#' @aliases ledgr_facts_inspection_invalid_args ledgr_facts_scope_not_found
+#' @aliases ledgr_facts_snapshot_not_sealed ledgr_facts_snapshot_hash_mismatch
+#' @aliases ledgr_session_adapter_invalid ledgr_session_override_invalid
+#' @aliases ledgr_indicator_gap_unsupported ledgr_indicator_gap_parity
+#' @aliases ledgr_invalid_strategy_state
+#' @aliases ledgr_target_sizing_unavailable ledgr_restricted_target
+#' @aliases ledgr_nonmember_exposure_increase ledgr_post_risk_inadmissible
+#' @aliases ledgr_short_exposure_unsupported
+#' @aliases ledgr_affordability_reconciliation_failed
+#' @aliases ledgr_run_terminal_evidence_invalid ledgr_run_explanation_unavailable
 #' @aliases ledgr_invalid_sweep_id ledgr_sweep_id_exists
 #' @aliases ledgr_sweep_not_found
 #' @aliases ledgr_sweep_snapshot_not_found ledgr_sweep_snapshot_hash_mismatch
@@ -314,6 +451,7 @@
 #' @aliases ledgr_sweep_trades_candidate_not_found
 #' @aliases ledgr_sweep_trades_candidate_not_completed
 #' @aliases ledgr_sweep_trades_candidate_not_retained
+#' @aliases ledgr_incomplete_sweep_candidate ledgr_promote_incomplete_candidate
 #' @aliases ledgr_validation_pbo_incomplete_panel ledgr_missing_package
 #' @aliases ledgr_validation_pbo_invalid_s
 #' @aliases ledgr_validation_pbo_too_few_candidates

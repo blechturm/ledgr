@@ -273,7 +273,7 @@ testthat::test_that("AT7: Tamper detection on load (runner)", {
   Sys.sleep(0.05)
 
   cfg <- v011_make_runner_cfg(db_path, snapshot_id, universe_ids = c("AAA"), start_ts_utc = "2020-01-01T00:00:00Z", end_ts_utc = "2020-01-02T00:00:00Z")
-  testthat::expect_error(ledgr_backtest_run(cfg, run_id = "run-v011-tamper"), class = "LEDGR_SNAPSHOT_CORRUPTED")
+  testthat::expect_error(ledgr_run_config(cfg, run_id = "run-v011-tamper"), class = "LEDGR_SNAPSHOT_CORRUPTED")
 })
 
 testthat::test_that("AT8: Subset universe allowed", {
@@ -302,7 +302,7 @@ testthat::test_that("AT8: Subset universe allowed", {
   Sys.sleep(0.05)
 
   cfg <- v011_make_runner_cfg(db_path, snapshot_id, universe_ids = c("AAA", "CCC"), start_ts_utc = "2020-01-01T00:00:00Z", end_ts_utc = "2020-01-02T00:00:00Z")
-  out <- ledgr_backtest_run(cfg, run_id = "run-v011-subset")
+  out <- ledgr_run_config(cfg, run_id = "run-v011-subset")
   testthat::expect_identical(out$run_id, "run-v011-subset")
 })
 
@@ -347,7 +347,7 @@ testthat::test_that("AT9: Per-instrument coverage validation fails on ragged cov
   Sys.sleep(0.05)
 
   cfg <- v011_make_runner_cfg(db_path, snapshot_id, universe_ids = c("AAA", "BBB"), start_ts_utc = "2020-01-01T00:00:00Z", end_ts_utc = "2023-01-01T00:00:00Z")
-  testthat::expect_error(ledgr_backtest_run(cfg, run_id = "run-v011-coverage"), class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
+  testthat::expect_error(ledgr_run_config(cfg, run_id = "run-v011-coverage"), class = "LEDGR_SNAPSHOT_COVERAGE_ERROR")
 })
 
 testthat::test_that("AT10: Snapshot discovery APIs (list + info)", {

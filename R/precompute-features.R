@@ -430,6 +430,12 @@ ledgr_resolve_candidate_features <- function(exp, params, candidate_label = NULL
     feature_params = ledgr_grid_candidate_feature_params(params)
   )
   feature_defs <- ledgr_precompute_feature_defs_from_indicators(feature_result$features)
+  if (isTRUE(exp$availability$active)) {
+    feature_defs <- lapply(feature_defs, function(def) {
+      def$fingerprint <- ledgr_active_feature_fingerprint(def)
+      def
+    })
+  }
   fingerprints <- unname(vapply(feature_defs, ledgr_feature_def_fingerprint, character(1)))
   feature_ids <- unname(vapply(feature_defs, function(def) def$id, character(1)))
   list(
@@ -529,11 +535,17 @@ ledgr_precompute_feature_union <- function(unique_defs) {
   out[order(out$feature_id, out$fingerprint), , drop = FALSE]
 }
 
-ledgr_precompute_payload <- function(unique_defs, bars_by_id) {
+ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_active = FALSE) {
   out <- list()
   for (fingerprint in names(unique_defs)) {
     def <- unique_defs[[fingerprint]]
-    values <- lapply(bars_by_id, function(bars) ledgr_compute_feature_series(bars, def))
+    values <- lapply(bars_by_id, function(bars) {
+      if (isTRUE(availability_active)) {
+        ledgr_compute_feature_series_strict(bars, def)
+      } else {
+        ledgr_compute_feature_series(bars, def)
+      }
+    })
     out[[fingerprint]] <- list(
       feature_id = def$id,
       fingerprint = fingerprint,

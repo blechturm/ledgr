@@ -231,6 +231,19 @@ The prompts that worked best had three properties:
 
 ---
 
+## Spikes inside a cycle
+
+A seed may propose a spike; it may not charter one. The charter is written
+after the probe in `spike_protocol.md` section 1 and is returned unread if it
+fails the smell test in section 8. The seed author does not write the
+charter. Earlier spikes ran 50 to 3,100 lines of markdown in one to thirteen
+files; the asset-availability spike (v0.1.9.8) ran a 690-line charter, a
+927-line seed, a 1,351-line response, 5,082 harness lines, and 938
+pre-authored expected rows, and closed inconclusive. The budgets in
+`spike_protocol.md` exist because of it.
+
+---
+
 ## When to skip stages
 
 - **Skip the research input** when prior art is already well-covered in the RFC corpus (e.g., a follow-up RFC to an accepted synthesis where the parent synthesis cited the literature).
@@ -259,3 +272,4 @@ Deviations should be visible. If a cycle deviates from this pattern, the synthes
 - **2026-05-27** -- initial version. Three completed cycles informed the patterns: OMS RFC (seed/response/synthesis), walk-forward RFC (seed/response/review/v2/synthesis), public transaction-cost API RFC (seed/response/review/v2/maintainer-decisions/synthesis/final-review). Revise after the next cycle.
 - **2026-06-04** -- walk-forward RFC closed the cycle with a final-review artifact (`rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) and Amendment 1 to the synthesis (Section 14). Walk-forward stage list updated above to 1, 2, 3, 4, 5, 7, 8, 9. Pattern: post-synthesis findings route via final_review + maintainer amendment (authorized by synthesis Section 13) when they correct bound text, constrain open spec-cut questions, or augment Minimum Scope / Future Obligations; new RFC chains are reserved for findings that re-deliberate architecture.
 - **2026-06-04 (same day)** -- walk-forward RFC closure strengthened with Amendment 2 (synthesis Section 16) and Section 17 ticket-cut gates after a post-Amendment-1 review (Claude online, then Codex) identified that Amendment 1's Sections 14.2 and 14.3 bound procedural constraints ("must justify", "must address", "visually unavoidable") rather than substantive defaults, and that no ticket-cut enforcement mechanism gated the obligations. Amendment 2 replaced the four procedural routings with substantive defaults (carry_test_state, fail-closed metric classification, no-default extraction with rationale arg, operational print data contract). Section 17 added a two-gate enforcement matrix (packet-open and release-gate). Pattern refined: an amendment that routes findings to procedural constraints alone is insufficient closure. A post-synthesis amendment must either (a) bind a substantive default, operational contract, or forbidden-list; or (b) name a ticket-cut gate matrix that enforces the procedural constraint at named lifecycle points; or both. Procedural-only routings ("the spec-cut writer must justify X") fail closed at the cycle-discipline level because they delegate the substantive decision back to the moment the amendment was meant to constrain. The walk-forward closure is the first cycle to apply this refinement; future cycles' final-review patches should follow it.
+- **2026-09-08** -- added "Spikes inside a cycle" and the binding `spike_protocol.md` after the asset-availability spike (v0.1.9.8) closed inconclusive: probe before prose, runnable core before expected tables, size budgets as stop signals, provenance in the product not the harness, and a three-action review contract.

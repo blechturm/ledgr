@@ -285,7 +285,9 @@ ledgr_fill_row_buffer_tibble <- function(buffer) {
   tibble::as_tibble(ledgr_fill_row_buffer_data_frame(buffer))
 }
 
-ledgr_fills_from_events <- function(events) {
+ledgr_fills_from_events <- function(events,
+                                    pulses_posix,
+                                    execution_opportunities_posix = NULL) {
   if (is.null(events) || nrow(events) == 0L) {
     return(ledgr_empty_fills_table())
   }
@@ -366,6 +368,7 @@ ledgr_fills_from_events <- function(events) {
     close_qty <- lot_res$close_qty
     open_qty <- lot_res$open_qty
     realized_close <- lot_res$realized_close
+    leg_fees <- ledgr_fill_leg_fees(fee, close_qty, open_qty)
     lot_state <- lot_res$state
 
     # A single event can close an existing lot and open the opposite side. The
@@ -373,14 +376,14 @@ ledgr_fills_from_events <- function(events) {
     if (close_qty > 0) {
       ledgr_fill_row_buffer_add(
         fill_rows,
-        event_seq_col[[i]], ts_utc_col[[i]], inst, side, close_qty, price, fee,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, close_qty, price, leg_fees[["close"]],
         realized_close, "CLOSE"
       )
     }
     if (open_qty > 0) {
       ledgr_fill_row_buffer_add(
         fill_rows,
-        event_seq_col[[i]], ts_utc_col[[i]], inst, side, open_qty, price, fee,
+        event_seq_col[[i]], ts_utc_col[[i]], inst, side, open_qty, price, leg_fees[["open"]],
         0, "OPEN"
       )
     }
@@ -389,7 +392,15 @@ ledgr_fills_from_events <- function(events) {
   if (fill_rows$n == 0L) {
     return(ledgr_empty_fills_table())
   }
-  ledgr_fill_row_buffer_tibble(fill_rows)
+  out <- ledgr_fill_row_buffer_tibble(fill_rows)
+  ledgr_fills_add_recording_pulse(
+    out,
+    ledgr_fill_recording_pulses_from_opportunities(
+      out,
+      pulses_posix,
+      execution_opportunities_posix
+    )
+  )
 }
 
 ledgr_assert_events_in_fold_order <- function(events) {
@@ -412,7 +423,8 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
                                                     initial_cash,
                                                     instrument_ids,
                                                     run_id,
-                                                    metric_kernel) {
+                                                    metric_kernel,
+                                                    execution_opportunities_posix = NULL) {
   n_pulses <- length(pulses_posix)
   if (n_pulses == 0L) {
     equity <- ledgr_empty_equity_curve()
@@ -527,11 +539,15 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
         add_fill_row(i, inst, side, qty, price, fee, NA_real_, NA_character_)
         next
       }
+      leg_fees <- ledgr_fill_leg_fees(fee, lot_res$close_qty, lot_res$open_qty)
       if (isTRUE(lot_res$close_qty > 0)) {
-        add_fill_row(i, inst, side, lot_res$close_qty, price, fee, lot_res$realized_close, "CLOSE")
+        add_fill_row(
+          i, inst, side, lot_res$close_qty, price, leg_fees[["close"]],
+          lot_res$realized_close, "CLOSE"
+        )
       }
       if (isTRUE(lot_res$open_qty > 0)) {
-        add_fill_row(i, inst, side, lot_res$open_qty, price, fee, 0, "OPEN")
+        add_fill_row(i, inst, side, lot_res$open_qty, price, leg_fees[["open"]], 0, "OPEN")
       }
     }
   }
@@ -589,6 +605,16 @@ ledgr_sweep_summary_from_ordered_events <- function(events,
       fee = fill_fee[seq_len(fill_idx)],
       realized_pnl = fill_realized_pnl[seq_len(fill_idx)],
       action = fill_action[seq_len(fill_idx)]
+    )
+  }
+  if (nrow(fills) > 0L) {
+    fills <- ledgr_fills_add_recording_pulse(
+      fills,
+      ledgr_fill_recording_pulses_from_opportunities(
+        fills,
+        pulses_posix,
+        execution_opportunities_posix
+      )
     )
   }
   metrics <- ledgr_metrics_from_equity_fills(

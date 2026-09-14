@@ -156,6 +156,19 @@ ledgr_sweep_impl <- function(exp,
   workers <- ledgr_parallel_workers_normalize(workers)
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  availability_active <- isTRUE(exp$availability$active)
+  if (availability_active && identical(compiled_accounting_model, "spot_fifo")) {
+    rlang::abort(
+      "Compiled spot-FIFO execution is unavailable for availability-aware sweeps.",
+      class = c("ledgr_compiled_availability_unsupported", "ledgr_invalid_args")
+    )
+  }
+  if (availability_active && !is.null(precomputed_features)) {
+    rlang::abort(
+      "Availability-aware sweeps do not accept a dense precomputed feature payload.",
+      class = c("ledgr_precomputed_feature_mismatch", "ledgr_invalid_args")
+    )
+  }
   if (!is.null(execution_seed_resolver) && !is.function(execution_seed_resolver)) {
     rlang::abort("`execution_seed_resolver` must be NULL or a function.", class = "ledgr_invalid_args")
   }
@@ -206,10 +219,35 @@ ledgr_sweep_impl <- function(exp,
     range$scoring_end
   )
   bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
-  ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
+  availability_data <- NULL
+  availability_config <- NULL
+  execution_opportunities_posix <- NULL
+  if (availability_active) {
+    opened <- ledgr_run_store_open(exp$snapshot$db_path)
+    on.exit(ledgr_run_store_close(opened), add = TRUE)
+    availability_data <- ledgr_availability_provider_data(opened$con, exp$snapshot$snapshot_id)
+    availability_config <- ledgr_sweep_availability_config(exp)
+    provider <- ledgr_availability_provider_portable(
+      availability_data,
+      availability_config,
+      meta$snapshot_hash,
+      bars_by_id
+    )
+    calendar <- ledgr_availability_calendar(provider, range$warmup_start, range$scoring_end)
+    pulses_posix <- calendar$pulses_posix
+    pulses_iso <- calendar$pulses_iso
+    execution_opportunities_posix <- calendar$execution_opportunities_posix
+    bars_by_id <- ledgr_sweep_align_availability_bars(
+      bars_by_id,
+      exp$universe,
+      pulses_posix
+    )
+  } else {
+    ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
+    pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
+    pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  }
   bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
-  pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
-  pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   static_bars_views <- ledgr_bars_pulse_views(
     bars_mat = bars_mat,
     instrument_ids = exp$universe,
@@ -223,11 +261,12 @@ ledgr_sweep_impl <- function(exp,
     runtime_projection <- ledgr_projection_from_payload(
       payload = ledgr_precompute_payload(
         ledgr_precompute_unique_feature_defs(resolved$candidates),
-        bars_by_id
+        bars_by_id,
+        availability_active = availability_active
       ),
       universe = exp$universe,
       pulses_posix = pulses_posix,
-      feature_engine_version = ledgr_feature_engine_version(),
+      feature_engine_version = ledgr_feature_engine_version(availability_active),
       alias_index = NULL
     )
   } else {
@@ -278,7 +317,10 @@ ledgr_sweep_impl <- function(exp,
     snapshot_hash = meta$snapshot_hash,
     strategy_hash = strategy_hash,
     compiled_accounting_model = compiled_accounting_model,
-    execution_seed_override = execution_seed_override
+    execution_seed_override = execution_seed_override,
+    availability_data = availability_data,
+    availability_config = availability_config,
+    execution_opportunities_posix = execution_opportunities_posix
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -329,6 +371,11 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "execution_assumptions") <- list(
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
+    execution_timing_version = if (availability_active) {
+      ledgr_availability_execution_timing_version()
+    } else {
+      NULL
+    },
     cost_model_hash = exp$cost_model_hash %||% NULL,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
@@ -405,6 +452,12 @@ ledgr_candidate.default <- function(results, which = 1L, allow_failed = FALSE, .
   row_idx <- ledgr_candidate_row_index(view, which)
   row <- view[row_idx, , drop = FALSE]
   status <- if ("status" %in% names(row)) as.character(row$status[[1]]) else NA_character_
+  if (identical(status, "INCOMPLETE")) {
+    rlang::abort(
+      sprintf("Candidate '%s' is INCOMPLETE and cannot be selected.", row$candidate_id[[1]]),
+      class = "ledgr_incomplete_sweep_candidate"
+    )
+  }
   if (!isTRUE(allow_failed) && identical(status, "FAILED")) {
     rlang::abort(
       sprintf("Candidate '%s' has status FAILED. Use `allow_failed = TRUE` for diagnostic extraction.", row$candidate_id[[1]]),
@@ -587,6 +640,12 @@ ledgr_promote <- function(exp,
   }
   if (!is.logical(require_same_snapshot) || length(require_same_snapshot) != 1L || is.na(require_same_snapshot)) {
     rlang::abort("`require_same_snapshot` must be TRUE or FALSE.", class = "ledgr_invalid_args")
+  }
+  if (identical(candidate$status, "INCOMPLETE")) {
+    rlang::abort(
+      sprintf("Cannot promote incomplete candidate '%s'.", candidate$candidate_id),
+      class = "ledgr_promote_incomplete_candidate"
+    )
   }
   if (identical(candidate$status, "FAILED")) {
     rlang::abort(
@@ -957,7 +1016,10 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         snapshot_hash,
                                         strategy_hash,
                                         compiled_accounting_model = NULL,
-                                        execution_seed_override = NULL) {
+                                        execution_seed_override = NULL,
+                                        availability_data = NULL,
+                                        availability_config = NULL,
+                                        execution_opportunities_posix = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   execution_seed_override <- ledgr_sweep_validate_execution_seed_override(
@@ -998,7 +1060,10 @@ ledgr_sweep_candidate_tasks <- function(exp,
       snapshot_hash = snapshot_hash,
       strategy_hash = strategy_hash,
       master_seed = seed,
-      compiled_accounting_model = compiled_accounting_model
+      compiled_accounting_model = compiled_accounting_model,
+      availability_data = availability_data,
+      availability_config = availability_config,
+      execution_opportunities_posix = execution_opportunities_posix
     )
   }
   tasks
@@ -1063,7 +1128,10 @@ ledgr_sweep_exp_payload <- function(exp) {
     cost_plan_json = exp$cost_plan_json %||% NULL,
     risk_chain = risk_chain,
     risk_chain_hash = exp$risk_chain_hash %||% ledgr_risk_chain_hash(risk_chain),
-    risk_plan_json = exp$risk_plan_json %||% ledgr_risk_plan_json(risk_chain)
+    risk_plan_json = exp$risk_plan_json %||% ledgr_risk_plan_json(risk_chain),
+    availability = exp$availability %||% NULL,
+    universe_rule = exp$universe_rule %||% NULL,
+    valuation_policy = exp$valuation_policy %||% NULL
   )
 }
 
@@ -1133,7 +1201,10 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         strategy_hash = task$strategy_hash,
         master_seed = task$master_seed,
         retain = task$retain,
-        compiled_accounting_model = task$compiled_accounting_model
+        compiled_accounting_model = task$compiled_accounting_model,
+        availability_data = task$availability_data,
+        availability_config = task$availability_config,
+        execution_opportunities_posix = task$execution_opportunities_posix
       ),
       warning = function(w) {
         warnings <<- c(warnings, list(w))
@@ -1269,7 +1340,10 @@ ledgr_sweep_run_candidate <- function(exp,
                                       candidate_id,
                                       candidate_row,
                                       retain,
-                                      compiled_accounting_model = NULL) {
+                                      compiled_accounting_model = NULL,
+                                      availability_data = NULL,
+                                      availability_config = NULL,
+                                      execution_opportunities_posix = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (is.null(runtime_projection)) {
@@ -1277,6 +1351,16 @@ ledgr_sweep_run_candidate <- function(exp,
   }
 
   output_handler <- ledgr_memory_output_handler(run_id)
+  availability_provider <- if (isTRUE(exp$availability$active)) {
+    ledgr_availability_provider_portable(
+      availability_data,
+      availability_config,
+      snapshot_hash,
+      bars_by_id
+    )
+  } else {
+    NULL
+  }
   opening_positions <- exp$opening$positions
   opening_cost_basis <- exp$opening$cost_basis
   if (is.null(opening_cost_basis) && length(opening_positions) > 0L) {
@@ -1333,10 +1417,12 @@ ledgr_sweep_run_candidate <- function(exp,
     seed = if (is.na(execution_seed)) NULL else execution_seed,
     event_mode = "buffered",
     use_fast_context = TRUE,
-    compiled_accounting_model = compiled_accounting_model
+    compiled_accounting_model = compiled_accounting_model,
+    availability_provider = availability_provider,
+    execution_opportunities_posix = execution_opportunities_posix
   )
   engine_start <- ledgr_time_now()
-  ledgr_execute_fold(execution, output_handler)
+  fold_result <- ledgr_execute_fold(execution, output_handler)
   telemetry$t_engine <- ledgr_time_elapsed(engine_start, ledgr_time_now())
 
   results_start <- ledgr_time_now()
@@ -1358,12 +1444,24 @@ ledgr_sweep_run_candidate <- function(exp,
       initial_cash = exp$opening$cash,
       instrument_ids = exp$universe,
       run_id = run_id,
-      metric_kernel = metric_kernel
+      metric_kernel = metric_kernel,
+      execution_opportunities_posix = execution_opportunities_posix
+    )
+  }
+  if (nrow(summary$fills) > 0L) {
+    summary$fills <- ledgr_fills_add_recording_pulse(
+      summary$fills,
+      ledgr_fill_recording_pulses_from_opportunities(
+        summary$fills,
+        pulses_posix,
+        execution_opportunities_posix
+      )
     )
   }
   telemetry$t_results <- ledgr_time_elapsed(results_start, ledgr_time_now())
   telemetry$t_fills_extract <- 0
 
+  completion <- output_handler$completion()
   row <- ledgr_sweep_success_row(
     candidate_id = candidate_id,
     candidate_row = candidate_row,
@@ -1390,7 +1488,9 @@ ledgr_sweep_run_candidate <- function(exp,
     t_engine = telemetry$t_engine,
     t_results = telemetry$t_results,
     t_fills_extract = telemetry$t_fills_extract,
-    warnings = list()
+    warnings = list(),
+    status = fold_result$status,
+    completion_json = ledgr_completion_json(completion)
   )
   retained_returns <- if (identical(retain$returns, "completed")) {
     ledgr_sweep_retained_returns_from_equity(
@@ -1420,6 +1520,8 @@ ledgr_memory_output_handler <- function(run_id) {
   state$event_max_capacity <- .Machine$integer.max
   state$event_cols <- NULL
   state$status <- "RUNNING"
+  state$completion <- NULL
+  state$diagnostics <- NULL
   handler <- list()
 
   init_event_cols <- function(capacity) {
@@ -1707,6 +1809,11 @@ ledgr_memory_output_handler <- function(run_id) {
     i <- state$event_count
     set_event_value("event_realized", i, as.numeric(lot_state$realized_pnl))
     set_event_value("event_cost_basis", i, as.numeric(lot_state$total_cost_basis))
+    leg_fees <- ledgr_fill_leg_fees(
+      write_res$row$fee,
+      lot_res$close_qty,
+      lot_res$open_qty
+    )
     if (isTRUE(lot_res$close_qty > 0)) {
       ledgr_fill_row_buffer_add(
         state$inline_fills,
@@ -1716,7 +1823,7 @@ ledgr_memory_output_handler <- function(run_id) {
         write_res$row$side,
         lot_res$close_qty,
         write_res$row$price,
-        write_res$row$fee,
+        leg_fees[["close"]],
         lot_res$realized_close,
         "CLOSE"
       )
@@ -1730,7 +1837,7 @@ ledgr_memory_output_handler <- function(run_id) {
         write_res$row$side,
         lot_res$open_qty,
         write_res$row$price,
-        write_res$row$fee,
+        leg_fees[["open"]],
         0,
         "OPEN"
       )
@@ -1752,6 +1859,7 @@ ledgr_memory_output_handler <- function(run_id) {
     if (state$equity_fact_n == 0L) {
       equity <- ledgr_empty_equity_curve()
       fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+      fills <- ledgr_fills_add_recording_pulse(fills, fills$ts_utc)
       metrics <- ledgr_metrics_from_equity_fills(
         equity = equity,
         fills = fills,
@@ -1776,6 +1884,7 @@ ledgr_memory_output_handler <- function(run_id) {
       stringsAsFactors = FALSE
     )
     fills <- ledgr_fill_row_buffer_tibble(state$inline_fills)
+    fills <- ledgr_fills_add_recording_pulse(fills, fills$ts_utc)
     metrics <- ledgr_metrics_from_equity_fills(
       equity = equity,
       fills = fills,
@@ -1788,7 +1897,40 @@ ledgr_memory_output_handler <- function(run_id) {
       final_equity = equity$equity[[nrow(equity)]]
     )
   }
+  handler$write_run_diagnostics <- function(diagnostics) {
+    if (is.null(diagnostics) || nrow(diagnostics) == 0L) {
+      return(invisible(TRUE))
+    }
+    current <- state$diagnostics
+    next_seq <- if (is.null(current) || nrow(current) == 0L) {
+      1L
+    } else {
+      max(as.integer(current$diagnostic_seq)) + 1L
+    }
+    diagnostics$diagnostic_seq <- seq.int(from = next_seq, length.out = nrow(diagnostics))
+    state$diagnostics <- if (is.null(current)) diagnostics else rbind(current, diagnostics)
+    invisible(TRUE)
+  }
+  handler$write_run_evidence <- function(completion, diagnostics) {
+    state$completion <- completion
+    handler$write_run_diagnostics(diagnostics)
+    invisible(TRUE)
+  }
+  handler$completion <- function() state$completion
+  handler$diagnostics <- function() state$diagnostics
+  handler$write_exception_diagnostic <- function(diagnostic) {
+    current <- state$diagnostics
+    next_seq <- if (is.null(current) || nrow(current) == 0L) {
+      1L
+    } else {
+      max(as.integer(current$diagnostic_seq)) + 1L
+    }
+    diagnostic$diagnostic_seq <- next_seq
+    state$diagnostics <- if (is.null(current)) diagnostic else rbind(current, diagnostic)
+    invisible(TRUE)
+  }
   handler$pending_event_count <- function() 0L
+  handler$pending_state_count <- function() 0L
   handler$flush_pending <- function() invisible(TRUE)
   handler$write_fill_events <- function(fill_intent, event_seq, use_transaction = FALSE) {
     write_res <- ledgr_fill_event_payload(
@@ -1855,13 +1997,16 @@ ledgr_sweep_success_row <- function(candidate_id,
                                     risk_chain_hash,
                                     provenance,
                                     warnings,
+                                    status = "DONE",
+                                    completion_json = NA_character_,
                                     t_engine = NA_real_,
                                     t_results = NA_real_,
                                     t_fills_extract = NA_real_) {
   ledgr_sweep_row(
     candidate_id = candidate_id,
     candidate_row = candidate_row,
-    status = "DONE",
+    status = status,
+    completion_json = completion_json,
     final_equity = final_equity,
     total_return = metrics$total_return,
     annualized_return = metrics$annualized_return,
@@ -1902,6 +2047,7 @@ ledgr_sweep_failure_row <- function(candidate_id,
     candidate_id = candidate_id,
     candidate_row = candidate_row,
     status = "FAILED",
+    completion_json = NA_character_,
     final_equity = NA_real_,
     total_return = NA_real_,
     annualized_return = NA_real_,
@@ -1930,6 +2076,7 @@ ledgr_sweep_failure_row <- function(candidate_id,
 ledgr_sweep_row <- function(candidate_id,
                             candidate_row,
                             status,
+                            completion_json,
                             final_equity,
                             total_return,
                             annualized_return,
@@ -1956,6 +2103,7 @@ ledgr_sweep_row <- function(candidate_id,
     candidate_id = candidate_id,
     candidate_row = as.integer(candidate_row),
     status = status,
+    completion_json = as.character(completion_json),
     final_equity = final_equity,
     total_return = total_return,
     annualized_return = annualized_return,
@@ -2042,6 +2190,51 @@ ledgr_sweep_telemetry_env <- function() {
   telemetry$feature_cache_hits <- 0L
   telemetry$feature_cache_misses <- 0L
   telemetry
+}
+
+ledgr_sweep_availability_config <- function(exp) {
+  list(
+    data = list(snapshot_id = exp$snapshot$snapshot_id),
+    universe = list(instrument_ids = exp$universe),
+    availability = list(
+      active = TRUE,
+      declared_families = exp$availability$declared_families,
+      universe_rule = if (is.null(exp$universe_rule)) NULL else unclass(exp$universe_rule),
+      valuation_policy = unclass(exp$valuation_policy),
+      provider_version = ledgr_availability_provider_version(),
+      execution_timing_version = ledgr_availability_execution_timing_version()
+    )
+  )
+}
+
+ledgr_sweep_align_availability_bars <- function(bars_by_id, universe, pulses_posix) {
+  out <- vector("list", length(universe))
+  names(out) <- universe
+  for (id in universe) {
+    bars <- bars_by_id[[id]]
+    aligned <- data.frame(
+      instrument_id = rep(id, length(pulses_posix)),
+      ts_utc = as.POSIXct(pulses_posix, tz = "UTC"),
+      open = NA_real_,
+      high = NA_real_,
+      low = NA_real_,
+      close = NA_real_,
+      volume = NA_real_,
+      gap_type = rep("MISSING_EXPECTED_SESSION", length(pulses_posix)),
+      is_synthetic = rep(FALSE, length(pulses_posix)),
+      stringsAsFactors = FALSE
+    )
+    if (!is.null(bars) && nrow(bars) > 0L) {
+      bars <- bars[order(bars$ts_utc), , drop = FALSE]
+      matched <- match(as.POSIXct(bars$ts_utc, tz = "UTC"), pulses_posix)
+      keep <- !is.na(matched)
+      aligned[matched[keep], names(bars)] <- bars[keep, names(bars), drop = FALSE]
+      aligned$instrument_id <- rep(id, nrow(aligned))
+      aligned$ts_utc <- as.POSIXct(pulses_posix, tz = "UTC")
+    }
+    out[[id]] <- aligned
+  }
+  out
 }
 
 ledgr_sweep_normalize_bars_by_id <- function(bars_by_id, universe) {

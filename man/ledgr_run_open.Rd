@@ -2,7 +2,7 @@
 % Please edit documentation in R/run-store.R
 \name{ledgr_run_open}
 \alias{ledgr_run_open}
-\title{Reopen a completed run from a ledgr experiment store}
+\title{Reopen a terminal run from a ledgr experiment store}
 \usage{
 ledgr_run_open(snapshot, run_id)
 }
@@ -11,14 +11,16 @@ ledgr_run_open(snapshot, run_id)
 \code{ledgr_snapshot_open(db_path, snapshot_id)} to resume from a durable
 DuckDB file in a new R session.}
 
-\item{run_id}{Run identifier. The run must have status \code{DONE}.}
+\item{run_id}{Run identifier. The run must have status \code{DONE} or
+\code{INCOMPLETE}.}
 }
 \value{
 A \code{ledgr_backtest} object.
 }
 \description{
-Returns a \code{ledgr_backtest}-compatible handle over an existing completed run.
-The run is not recomputed and strategy code is not executed.
+Returns a \code{ledgr_backtest}-compatible handle over an existing \code{DONE} or
+\code{INCOMPLETE} run. The run is not recomputed and strategy code is not
+executed. \code{INCOMPLETE} runs retain only their achieved evidence prefix.
 }
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")

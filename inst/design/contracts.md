@@ -236,13 +236,37 @@ The strategy preflight boundary originated in
 ## Snapshot Contract
 
 - Backtests run against sealed snapshots.
-- Snapshot hashes cover normalized bars and instruments only; metadata and
-  snapshot IDs do not alter artifact hashes.
+- Snapshot hash rule 1 covers normalized bars and instruments only and remains
+  byte-identical for snapshots with no declared availability facts. Snapshot
+  IDs and envelope metadata do not alter artifact hashes.
+- Snapshot hash rule 2 covers the rule-1 bars and instruments plus every
+  normalized point-in-time fact-family header and row, its recorded knowledge
+  assumption and completeness/coverage metadata, and every explicitly
+  acknowledged observation-quarantine row. Store-local snapshot IDs remain
+  excluded. A missing rule marker on a legacy snapshot means rule 1.
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
   snapshot hash or transitioning to `SEALED`.
+- Point-in-time fact intervals are half-open and knowledge-bounded. Session
+  facts form a complete venue calendar with one open/closed row per civil date;
+  daily vendor labels are mapped explicitly to declared session closes. The
+  expected-session clock is independent of observation presence.
+- Local session wall times must resolve to exactly one UTC instant. Ambiguous
+  fall-back and nonexistent spring-forward labels fail closed; an explicit
+  POSIXct instant is already disambiguated and remains valid.
+- `ledgr_facts_membership_snapshots()` accepts either row-per-member evidence
+  or a `members` list-column, never both. Both shapes normalize to the same set
+  headers and member assertions before hashing. `character(0)` is an empty set;
+  complete sets establish omission for their knowable effective state, while
+  partial sets never fabricate negative assertions.
+- Invalid observations fail snapshot creation by default. The dataframe adapter
+  may exclude them only through explicit
+  `invalid_observations = "quarantine"` with declared sessions. Excluded rows,
+  reasons, original payloads, provenance, and the acknowledgement are hashed,
+  reopenable audit evidence and never runtime bars. Structural duplicates,
+  malformed facts, and an empty valid partition still fail closed.
 - Split snapshot/run DB mode must verify the source snapshot hash from the
   snapshot DB while writing run artifacts to the run DB.
 - `ledgr_snapshot_open(db_path, snapshot_id)` may reopen an existing sealed
@@ -268,8 +292,157 @@ The strategy preflight boundary originated in
   explicit selector bounds; run/resume and snapshot adapters must not rehash
   run-window bar values.
 
+## Availability Contract
+
+- Availability-aware execution activates when a snapshot declares membership,
+  sessions, trading-status, or lifetime facts, or when an experiment declares a
+  valuation policy. There is no mode flag. Canonical omission preserves the
+  dense experiment, config, execution-spec, context, and feature-identity
+  payloads.
+- Every availability-aware experiment requires a complete declared session
+  calendar and an explicit `ledgr_valuation_stale(max_sessions)` policy. The
+  package supplies no default stale horizon. `max_sessions = 0` means that only
+  a current-session mark is permissible.
+- A character-vector universe remains a fixed basket even when it consumes
+  session, trading-status, or lifetime facts. Dynamic membership is explicit
+  through `ledgr_universe_members(universe_id)` and must name a membership
+  universe declared by the snapshot.
+- `ledgr_experiment_plan()` is read-only disclosure of effective availability,
+  universe, valuation, and fact-family checks. It distinguishes disabled,
+  omitted, declared, and assumption-backed families without executing a
+  strategy or writing evidence. Its `assumption_reasons` keep assumed
+  knowledge time separate from generated schedule content.
+- `ledgr_facts_history()` is a retrospective audit of supplied membership or
+  session assertions. `ledgr_facts_resolve()` is a separate decision-cutoff
+  view using only evidence both effective and knowable at its required `at`.
+  Both accept normalized facts or a sealed snapshot and return eager classed
+  lists with `rows`, supporting `evidence`, and serializable `metadata`.
+  Snapshot calls verify sealed state and artifact hash on every call, close
+  only connections they opened, perform no persistent write, and invoke no
+  callback. Explicit membership IDs retain true, false, and unknown states in
+  request order; default resolution enumerates current members only and never
+  discovers future members. Complete-set omission cites the set header rather
+  than fabricating a negative fact. Neither result is a strategy context.
+- Default fact-inspection prints are curated by family and operation while the
+  complete programmatic evidence remains unchanged in `$rows` and `$evidence`.
+  Membership history exposes evidence type, membership state, effective time,
+  knowledge time, and completeness; membership resolution exposes state and
+  reason at the printed cutoff. Session history exposes its civil date, state,
+  opening, close, and knowledge time. Session resolution exposes the same
+  session fields plus reason and a knowledge time derived only from applicable
+  supporting evidence. That derived knowledge time is presentation-only and is
+  disclosed as coming from `$evidence`, not as a value stored in `$rows`. Every
+  print states the full row count and names omitted stored columns.
+- `ledgr_facts_sessions_qlcal()` is an optional preparation adapter over an
+  explicit qlcal calendar object. It materializes every civil date, applies
+  complete per-date replacements, then delegates to
+  `ledgr_facts_sessions()`. Hashed metadata records generated schedule basis,
+  provider and version, calendar ID, declared hours, canonical overrides, and
+  provenance, but no generation time or external pointer. qlcal remains in
+  `Suggests`; materialized snapshots run, reopen, and inspect without it.
+- Availability-aware execution uses one internal provider with `facts`,
+  `decision_view`, `execution_view`, `history`, and `identity` operations. Its
+  decision axis preserves declared member order for character-vector universes.
+  For membership-rule universes, members are ordered by C-locale stable ID;
+  nonzero held nonmembers then follow in the same stable-ID order. The provider
+  resolves point-in-time evidence and shapes context only; target enforcement,
+  risk, valuation economics, affordability, fills, and writes remain in the
+  shared fold and its output handlers.
+- Facts become applicable only after both effective time and knowledge time.
+  A higher-precedence assertion that is effective but not yet knowable cannot
+  shadow a lower-precedence tie. Future facts may change snapshot and descendant
+  identity but must not rewrite earlier context, errors, features, or supported
+  telemetry.
+- Availability-aware decisions occur at declared session closes. Each
+  non-terminal decision resolves execution-time facts and records accepted
+  fills and events at the next declared session opening. Membership remains
+  frozen from the decision; the terminal decision has no execution opportunity.
+  Dense execution declares no independent opening clock and is unchanged.
+- New availability-aware configs record `execution_timing_version = 2L` in the
+  availability payload. It participates in canonical config identity,
+  walk-forward descendant identity, sweep execution assumptions, and candidate
+  reproduction keys. Dense configs omit the field and retain their recorded
+  dense timing model.
+- A stored active config with the recognized availability-provider version and
+  no execution-timing version is inferred read-only as
+  `availability_close_v1`. Explicit version 2 is `availability_open_v2`;
+  inconsistent or unrecognized evidence is `unknown`. Legacy or unknown active
+  configs cannot resume under current execution semantics and require a new
+  run identity.
+- Availability-aware contexts expose `ctx$members` and universe-aligned
+  `ctx$vec$member`, `held`, `target_restricted`,
+  `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.
+  An empty decision axis still invokes the strategy and accepts a named numeric
+  zero-length target while preserving portfolio-level state.
+- Asset-scoped strategy state lives at `ctx$state_prev$asset_state` as a named
+  list keyed by stable instrument ID. Entries outside the current axis are
+  removed before callback, newly visible and re-entering IDs receive `list()`,
+  returned keys outside the current axis fail closed with
+  `ledgr_invalid_strategy_state`, and non-asset portfolio state remains under
+  the existing replacement semantics.
+- Availability-aware execution is canonical R only in v0.2.0.0. An explicit
+  compiled spot-FIFO request fails before execution with
+  `ledgr_compiled_availability_unsupported`; dense compiled behavior is
+  unchanged.
+- Availability-aware strategy targets may hold or exit a restricted ID.
+  Unrestricted held nonmembers may also reduce without reversing sign.
+  Post-risk targets must be zero or preserve the strategy target's sign while
+  not increasing its magnitude. New or enlarged short exposure fails before
+  any fill from that pulse is accepted; existing short quantities remain
+  algebraically holdable and coverable without defining short financing.
+- Availability-aware rebalance helpers initialize held nonmembers at their
+  current quantity, reserve their absolute marked exposure, and size only
+  current members from accepted current closes. Missing sizing evidence fails
+  with `ledgr_target_sizing_unavailable`; the dense warn-and-zero path is
+  unchanged. Raw full named numeric target vectors remain literal.
+- Fresh and policy-permitted stale closes may value holdings and feed target
+  risk through the separate risk-mark plane. Stale marks never become observed
+  closes or execution prices. Held marks age on the declared venue-open-session
+  clock, including during known inactivity, and an exhausted mark stops before
+  a new decision.
+- Active affordability evaluates accepted cash-generating reductions first,
+  then cash-consuming fills in C-locale stable-ID order against the fixed
+  `1e-8` tolerance. Rejected sales fund nothing. Accepted fills remain emitted
+  in decision-axis order, and recorded cash must reconcile with the virtual
+  ledger without implying an intrapulse cash floor.
+- The durable availability reason-code vocabulary is closed for this schema.
+  The table binds each exact token to its stage and public interpretation:
+
+  | Exact reason token | Stage | Action / interpretation |
+  | --- | --- | --- |
+  | `decision_recorded` | decision | record an unrestricted decision |
+  | `empty_public_domain` | decision | invoke the strategy on an empty axis; emit no targets |
+  | `trading_halted` | decision restriction | allow hold or exit only |
+  | `quotation_only` | decision restriction | allow hold or exit only |
+  | `status_unknown` | decision restriction | allow hold or exit only |
+  | `status_unknown_or_conflicting` | decision restriction | allow hold or exit only |
+  | `lifetime_inactive` | decision restriction / terminal detail | allow hold or exit; never fabricate settlement |
+  | `stale_mark_reduction` | risk | accept a reducing target evaluated with a permissible stale mark |
+  | `stale_mark_pass_through` | risk | accept an unchanged target evaluated with a permissible stale mark |
+  | `risk_mark_unavailable` | risk stop | preserve the accepted prefix and finalize incomplete |
+  | `restricted_target` | target validation | raise the classed strategy-result failure |
+  | `nonmember_exposure_increase` | target validation | raise the classed strategy-result failure |
+  | `post_risk_inadmissible` | post-risk validation | raise the classed risk failure |
+  | `short_exposure_unsupported` | target validation | raise the classed strategy-result failure |
+  | `insufficient_cash` | execution | reject the cash-consuming fill |
+  | `execution_bar_missing` | execution | record no fill; never carry a standing order |
+  | `membership_changed_before_execution` | execution diagnostic | report the change without making membership an execution gate |
+  | `final_pulse_no_execution` | execution | record no fill because no later execution pulse exists |
+  | `affordability_reconciled` | reconciliation | apply accepted fills and record reconciliation |
+  | `affordability_reconciliation_failed` | reconciliation stop | preserve the accepted prefix and finalize incomplete |
+  | `valuation_horizon_exhausted` | valuation stop | preserve the accepted prefix and finalize incomplete |
+  | `terminal_settlement_unsupported` | valuation stop | preserve the holding; never fabricate cash settlement |
+  | `fold_exception` | error | finalize failed after the fold transaction rolls back |
+
+  An uncomplicated accepted fill has an empty reason code.
+
 ## Persistence Contract
 
+- ledgr-owned DuckDB drivers explicitly use session-local extension and secret
+  storage when the installed DuckDB exposes that control. This avoids shared-home
+  startup notices on affected versions without suppressing package messages,
+  warnings, errors, or rendered example output. Older DuckDB versions retain their
+  native driver behavior.
 - Runner-owned DuckDB write connections must issue `CHECKPOINT` before
   disconnect/shutdown when a later fresh connection is expected to read the
   same database file.
@@ -282,14 +455,49 @@ The strategy preflight boundary originated in
   not prove constraints by writing invalid probe rows into ledgr tables.
   Constraint enforcement belongs in isolated tests with disposable database
   connections.
+- Experiment-store schema 113 and saved-sweep schema 4 add normalized
+  point-in-time fact and quarantine evidence. Migration is transactional and
+  writes its version marker last. Existing sealed snapshots retain their stored
+  hashes and are never resealed or rehash-migrated.
+- Experiment-store schema 114 adds `run_completion` and `run_diagnostics`.
+  Availability-aware direct runs persist one decision trace row per invoked
+  axis ID plus ordered risk, execution, reconciliation, and stop evidence.
+  Expected valuation exhaustion, unavailable risk marks, unsupported terminal
+  settlement, and reconciliation stops return through the normal fold
+  transaction and finalize as `INCOMPLETE`, preserving only accepted prefix
+  economics. Unexpected fold exceptions remain `FAILED`, roll back the fold
+  transaction, and record error diagnostics only after that rollback.
+  Deliberately interrupted `RUNNING` invocations retain their decision trace;
+  resumed invocations append rather than replace those diagnostic rows.
+- Experiment-store schema 115 adds nullable canonical `completion_json` to
+  sweep-candidate and walk-forward score evidence and admits `INCOMPLETE` on
+  those rows. Migration rebuilds the two constrained tables transactionally,
+  preserves existing rows and keys, and leaves saved-sweep schema 4 and all
+  candidate, sweep, run, and walk-forward identity formats unchanged.
+- Availability-aware `DONE` and `INCOMPLETE` completion rows are terminal
+  evidence. Repeating an achieved `INCOMPLETE` run ID verifies identity and
+  validates the exact stored equity timestamp prefix and recorded stop
+  diagnostic before returning without invoking strategy code, deleting a
+  tail, changing status, or rewriting projections. A `RUNNING` or `FAILED`
+  row with valid committed completion evidence performs finalization only and
+  commits the intended terminal status without replaying the fold or
+  duplicating evidence. Malformed or inconsistent terminal evidence fails
+  closed with `ledgr_run_terminal_evidence_invalid`.
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or
   silently recreate durable tables.
 - Completed run artifacts are durable when `ledgr_run()` returns. User-facing
   `close(bt)` and `ledgr_snapshot_close(snapshot)` calls are resource-management
-  tools for long sessions, explicit opens, and lazy cursors; documentation must
-  not frame them as data-loss prevention.
+  tools for long sessions and explicit opens; documentation must not frame them
+  as data-loss prevention. Public result readers are eager and do not require a
+  cursor cleanup lifecycle.
+- A durable `ledgr_backtest` handle is a locator identified by its `run_id` and
+  `db_path`. `close(bt)` releases resources owned by that handle without
+  deleting evidence or changing locator identity. Later reads may use the
+  closed handle, or a new session may reopen the snapshot and completed run
+  with `ledgr_snapshot_open()` and `ledgr_run_open()` without executing the
+  strategy, recomputing fills, or writing persistent rows.
 - User-facing metadata mutations such as run labels, archives, and tags promise
   immediate fresh-connection visibility. They must use strict checkpointing or
   an equivalent durable-read guarantee before returning.
@@ -305,13 +513,51 @@ The strategy preflight boundary originated in
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
   discovery APIs. They must tolerate legacy/pre-provenance stores and treat
   missing telemetry as missing/`NA`, not as corruption.
+- `ledgr_run_list()` appends the recorded completion projection in this order:
+  `completion_evidence_available`, `completion_status`,
+  `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,
+  `achieved_end_utc`, `stop_reason`, `last_fully_valued_ts_utc`,
+  `last_executed_ts_utc`, `complete_performance`, and
+  `affected_instrument_ids`. Status does not gate real completion evidence,
+  including evidence retained by a `FAILED` run. Missing evidence stays typed
+  unknown. The affected-ID list column distinguishes unavailable, known-empty,
+  and known sets. Inventory printing places completion beside raw metrics and
+  labels an `INCOMPLETE` row's metrics as achieved-prefix evidence only.
+- `summary.ledgr_backtest()` follows recorded completion evidence rather than
+  run status. When complete performance is false, the metrics heading names
+  the achieved window, total return and maximum drawdown remain visible as
+  prefix-only evidence, and annualized return, annualized volatility, and
+  Sharpe ratio are withheld with an explanation. Complete performance keeps
+  the established metric content and order.
+- `print.ledgr_run_info()` presents status and any recorded completion evidence
+  before identity and telemetry fields without removing any field from the
+  record.
+- The backtest summary labels `n_trades` as `Closed Trades`, because that
+  statistic counts closed trade rows rather than fill rows. The computation is
+  unchanged.
+- `ledgr_run_info()` exposes the committed run's `risk_chain_hash` by reading
+  recorded config identity. Historical configs without that field return
+  `NA_character_`; inspection must not infer a no-op plan, substitute current
+  experiment state, add a top-level `risk_plan_json` field, execute recovered
+  strategy code, or write persistent rows.
 - Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
   `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
   and feature-cache hit/miss counts. Detailed per-component telemetry remains
   session-scoped through `ledgr_backtest_bench()`.
-- `ledgr_run_open()` returns a `ledgr_backtest` handle only for completed
-  `DONE` runs. Opening a run must not execute strategy code, recompute fills,
-  or mutate persistent run artifacts.
+- A failure after the fold has committed but before equity and `DONE`
+  finalization records `FAILED` with the original error and preserves committed
+  ledger, strategy-state, and feature evidence. Resuming the same run identity
+  after that failure performs finalization only: it must not delete or duplicate
+  committed fold rows, and its ordered economic evidence must equal a clean run.
+  Best-effort failed telemetry must not mask the original error; successful
+  `DONE` finalization precedes non-transactional telemetry persistence.
+- Infrastructure-owned temporary names used by snapshot ingestion and eager
+  result reads must preserve the caller's `.Random.seed`, including its
+  absence, and must not change the caller's next random draw.
+- `ledgr_run_open()` returns a `ledgr_backtest` handle for terminal `DONE` and
+  availability-aware `INCOMPLETE` runs. Opening validates incomplete bounds
+  and must not execute strategy code, recompute fills, or mutate persistent
+  run artifacts.
 - `ledgr_run_label()` and `ledgr_run_archive()` mutate only run metadata.
   They must never rename `run_id`, delete artifacts, or change experiment
   identity hashes. Archive is non-destructive and idempotent.
@@ -352,6 +598,9 @@ The strategy preflight boundary originated in
 - Target values are desired instrument quantities after the next fill, not
   portfolio weights, order sizes, or signals. `ledgr_target` is a thin wrapper
   around those same target quantities and is unwrapped before execution.
+- Ordinary target inspection uses the numeric-vector contract:
+  `target[[instrument_id]]` extracts one named quantity and `c(target)` returns
+  the full named numeric vector. No separate target-values reader is required.
 - Strategy helper pipelines may use `ledgr_signal`, `ledgr_selection`, and
   `ledgr_weights` as intermediate value types, but those objects are invalid
   direct strategy outputs. Helper pipelines must terminate in `ledgr_target` or
@@ -492,6 +741,10 @@ The strategy preflight boundary originated in
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
   `positions`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one engine feature ID.
+- Availability-aware pulse contexts restrict bars, feature tables, scalar
+  feature access, vector feature access, positions, and errors to the current
+  decision axis. Dense contexts retain the existing fixed-universe fields and
+  shape.
 - `ctx$positions` remains a public pulse-start snapshot. `ctx$vec$positions`
   is the aligned vector view of the same pulse-known state. Strategies must
   treat both as read-only; mutating them is outside the strategy contract and
@@ -536,6 +789,20 @@ The strategy preflight boundary originated in
   Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
 - Indicator fingerprints include `series_fn` when present. Changing `fn`,
   `series_fn`, parameters, or warmup requirements changes the fingerprint.
+- Availability-aware indicators declare `gap_contract = "strict_window"` on
+  the existing indicator definition. The declaration commits the definition to
+  a finite window with no internal carry or imputation. Omission fails with
+  `ledgr_indicator_gap_unsupported` before strategy execution; v0.2.0.0
+  initially certifies only built-in SMA and returns.
+- Strict feature windows count expected sessions. Any missing required
+  observation makes the affected window `NA_real_`; valuation marks never enter
+  feature computation. Scalar `fn` and the terminal value from `series_fn`
+  receive the same bounded fully observed window and must agree on certification
+  fixtures.
+- Active feature fingerprints and cache keys include strict expected-session
+  and cutoff-causal history semantics. Future-known facts cannot rewrite cached
+  earlier feature values. Dense indicator fingerprints and feature-engine
+  identity omit the availability declaration and remain unchanged.
 - TTR indicators created by `ledgr_ind_ttr()` store TTR function name, TTR
   version, input shape, output column, and forwarded TTR arguments in indicator
   params. Only `params$args` are forwarded to TTR; metadata fields are identity
@@ -594,27 +861,71 @@ The strategy preflight boundary originated in
   per-operation read connections where practical so inspecting results does not
   leave a DuckDB connection open and block a later write in the same session.
 - `tibble::as_tibble(bt, what = ...)` supports the closed result set:
-  `equity`, `returns`, `fills`, `trades`, and `ledger`.
+  `equity`, `returns`, `fills`, `trades`, `ledger`, `diagnostics`, and
+  `availability`.
 - `ledgr_results(bt, what = ...)` is the package-prefixed wrapper over that
   same result path. It must delegate to `tibble::as_tibble()` and must not
   duplicate reconstruction logic.
 - `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
   display. That subclass must remain tibble-compatible, and
   `tibble::as_tibble()` must expose the raw result table.
+- `diagnostics` is the ordered durable trace recorded by availability-aware
+  runs; dense runs return its typed zero-row schema. `availability` is derived
+  from sealed facts, the stored effective plan, and ledger holdings. Neither
+  view executes strategy code, reconstructs a strategy target, writes durable
+  rows, or changes run identity.
+- `ledgr_run_explain(bt, instrument_id, ts_utc)` joins one retained decision
+  trace to its availability, execution, valuation, feature-identity, position,
+  and terminal evidence. It consumes `diagnostics` and `availability` through
+  the same `tibble::as_tibble()` result-table path and returns the same row
+  after close/reopen. Missing decision trace fails
+  `ledgr_run_explanation_unavailable`; the function must not invent an intent
+  from positions, facts, or current strategy code.
+- The explanation row exposes its run, decision, availability, target,
+  execution, valuation, resulting-position, and completion fields directly.
+  When an unchanged target has no execution diagnostic, `execution_outcome`
+  is `no_action` and `execution_reason` plus `execution_reasons` are
+  `no_target_change`. Those values are explain-time defaults, not durable
+  diagnostic reason codes, and are never persisted.
+- `ledgr_run_info()` and `summary()` project existing terminal completion
+  evidence read-only. Availability-aware runs expose requested and achieved
+  windows, terminal status and stop reason, last fully valued and executed
+  times, complete or incomplete performance, and affected instrument IDs from
+  recorded stop diagnostics. Dense and historical runs without that evidence
+  report it as unknown; inspection must not reconstruct or persist it.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
   from closed trade rows, so open-only fills do not count as trades until
   quantity is closed.
+- Public fill `ts_utc` is economic execution time. Availability-aware version-2
+  fills use the next declared session opening, while equity remains stamped at
+  the close pulse. The read-only `recording_pulse_ts_utc` column is derived from
+  recorded fill association and sealed session facts; it is not persisted and
+  remains `NA` when the association is missing or ambiguous. Dense alignment is
+  the existing fill timestamp. Align fills to equity only after grouping fills
+  by recording pulse, so multiple fills cannot duplicate equity rows.
 - Timestamp display options are print-only. `options(ledgr.print_ts_utc =
   "auto")` may compact all-midnight UTC timestamps to dates in ledgr-owned
   print paths, but returned and stored `ts_utc` values remain POSIXct UTC.
 - `ledgr_run_compare()` reads stored completed-run artifacts only. It must not
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
+- With explicit `run_ids`, `ledgr_run_compare()` rejects every non-`DONE` run
+  with `ledgr_run_not_complete`. Without `run_ids`, it silently excludes
+  non-`DONE` rows. An incomplete horizon changes the meaning of return, Sharpe,
+  and drawdown rather than merely qualifying those metrics. The completion-aware
+  run inventory is the supported side-by-side view of runs with different
+  horizons.
 - `ledgr_run_compare()` returns raw numeric metric columns for ranking and
   filtering. Percentage formatting is a print-only concern; users must not need
   to parse display strings such as `"+5.2%"` to rank runs.
+- Run information, reopened summaries, and comparisons expose timing version
+  and convention provenance. Comparison metadata reports selected-set-wide
+  `fill_timing_comparable` and `fill_timing_comparability_reason` without
+  filtering or changing historical metrics. Differing or unknown conventions
+  cannot support fill equivalence; matching conventions establish timing
+  compatibility only, not economic equivalence.
 - `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
   stored artifacts, comparison semantics, or strategy provenance.
@@ -626,6 +937,28 @@ The strategy preflight boundary originated in
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
+- Historical runs retain their recorded config, hashes, events, diagnostics,
+  projections, completion evidence, and fill timestamps byte for byte. Reads
+  may classify timing provenance and derive unambiguous pulse alignment, but
+  must not write it back, replay strategy code, recompute fill eligibility, or
+  restamp historical events.
+- `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
+  full fills-schema tibble for empty and populated runs. It has no public
+  cursor, lazy-read, or row-threshold mode.
+- When one source fill reverses a position and projects to derived CLOSE and
+  OPEN rows, its fee is allocated pro rata by the non-negative absolute leg
+  quantities. The derived fees for that event must sum to its source fee in
+  durable, reconstructed, memory-backed, and compiled spot-FIFO projections.
+  This projection rule must not change cash, lot state, realized PnL, or closed
+  trade metrics.
+- For classed sweep input, `ledgr_sweep_review()` restores `review$ranked` as a
+  `ledgr_sweep_results` view with applicable source and risk lineage, including
+  `risk_chain_hash` and `risk_plan_json`. Compatible plain input must not gain
+  invented lineage. `review$top` is a lineage-free presentation table, not a
+  promotion-ready candidate surface.
+- Sweep-result restoration preserves `risk_chain_hash` and `risk_plan_json`
+  when present and preserves their historical absence as `NULL` rather than
+  synthesizing provenance.
 - Public standard metrics use the equity rows returned by
   `ledgr_results(bt, what = "equity")` and the closed trade rows returned by
   `ledgr_results(bt, what = "trades")`.
@@ -701,6 +1034,26 @@ The strategy preflight boundary originated in
   walk-forward identity. Optional package projections such as `xts` are
   external evidence only and must remain `Suggests`-only with no `NAMESPACE`
   imports.
+- Retained return rows carry their candidate terminal status. Achieved
+  `INCOMPLETE` prefixes may remain visible as explicitly incomplete evidence,
+  but complete-panel projections, selection, candidate extraction, and
+  promotion exclude or reject them even through `allow_failed` paths.
+  Candidate extraction fails with `ledgr_incomplete_sweep_candidate`, and
+  promotion fails with `ledgr_promote_incomplete_candidate`.
+  Sequential and parallel sweeps carry the same canonical completion payload;
+  the parent remains the only parallel persistence owner.
+- Walk-forward training selection admits only `DONE` candidates. An
+  `INCOMPLETE` selected test run records its canonical completion payload,
+  marks the fold and session `PARTIAL`, preserves the achieved evidence, and
+  ends a carry-state chain without constructing a later opening state or fold.
+  Candidate and session identity formats remain unchanged.
+- `ledgr_sweep_returns_wide()` reserves `ts_utc` as its structural timestamp
+  column. A candidate ID equal to `ts_utc` or beginning with
+  `..ledgr_candidate_` is represented by that prefix followed by the lowercase
+  hexadecimal form of its UTF-8 bytes. The column name is intrinsically
+  reversible without a persisted mapping registry. Long, matrix, panel, and
+  candidate-extraction surfaces retain the original candidate ID, and this
+  presentation encoding participates in no execution or artifact identity.
 - Retained sweep closed-trade evidence is derived at sweep time from
   `ledgr_closed_trade_rows()` / `ledgr_results(bt, what = "trades")` and is
   exposed through `ledgr_sweep_trades()`. It is opt-in via
@@ -755,8 +1108,9 @@ The strategy preflight boundary originated in
   count comes from `ledgr_effective_trials()`. DSR is independent of PBO/CSCV
   and remains evidence only: it must not select, promote, filter candidates
   through a business objective, mutate sweep artifacts, or change walk-forward
-  identity. quantstrat may be used only as optional reference evidence, never
-  as a required runtime dependency.
+  identity. quantstrat may be used only as optional reference evidence through
+  `dev/manual/verify-dsr-quantstrat.R`, never as an automated-test or runtime
+  dependency.
 - `ledgr_business_objective()` composes an ordered, non-empty set of
   ledgr-owned `ledgr_objective_*()` criterion steps with one v1 rule: all
   criteria must pass. Criterion steps are classed, hashed, canonically

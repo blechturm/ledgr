@@ -23,9 +23,13 @@ testthat::test_that("metrics handle zero-trade backtests", {
   testthat::expect_equal(nrow(fills), 0L)
   testthat::expect_identical(
     names(fills),
-    c("event_seq", "ts_utc", "instrument_id", "side", "qty", "price", "fee", "realized_pnl", "action")
+    c(
+      "event_seq", "ts_utc", "recording_pulse_ts_utc", "instrument_id",
+      "side", "qty", "price", "fee", "realized_pnl", "action"
+    )
   )
   testthat::expect_s3_class(fills$ts_utc, "POSIXct")
+  testthat::expect_s3_class(fills$recording_pulse_ts_utc, "POSIXct")
 
   trades <- ledgr_results(bt, what = "trades")
   testthat::expect_equal(nrow(trades), 0L)

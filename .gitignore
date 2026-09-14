@@ -32,6 +32,7 @@
 # Profiling artifacts
 Rprof.out
 *.Rprof
+/tests/testthat/Rplots.pdf
 
 # RStudio files
 .Rproj.user/
@@ -44,6 +45,26 @@ vignettes/**/*_files/
 !vignettes/walk-forward_files/
 !vignettes/walk-forward_files/figure-commonmark/
 !vignettes/walk-forward_files/figure-commonmark/fold-timeline-1.png
+!vignettes/metrics-and-accounting_files/
+!vignettes/metrics-and-accounting_files/figure-commonmark/
+vignettes/metrics-and-accounting_files/figure-commonmark/*
+!vignettes/metrics-and-accounting_files/figure-commonmark/equity-curve-plot-1.png
+!vignettes/research-workflow_files/
+!vignettes/research-workflow_files/figure-commonmark/
+vignettes/research-workflow_files/figure-commonmark/*
+!vignettes/research-workflow_files/figure-commonmark/promoted-equity-plot-1.png
+!vignettes/selection-integrity_files/
+!vignettes/selection-integrity_files/figure-commonmark/
+vignettes/selection-integrity_files/figure-commonmark/*
+!vignettes/selection-integrity_files/figure-commonmark/dsr-correlation-map-1.png
+!vignettes/survivorship-bias_files/
+!vignettes/survivorship-bias_files/figure-commonmark/
+!vignettes/survivorship-bias_files/figure-commonmark/fig-prices-1.png
+!vignettes/survivorship-bias_files/figure-commonmark/fig-timeline-1.png
+!vignettes/survivorship-bias_files/figure-commonmark/fig-comparison-1.png
+# HTML-render leftovers are iteration artifacts, never shipped evidence.
+vignettes/**/figure-html/
+vignettes/**/libs/
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth

@@ -26,11 +26,16 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-05):** v0.1.9.6 has closed. v0.1.9.7 is active
-at `inst/design/ledgr_v0_1_9_7_spec_packet/`; its implementation scope and
-local release gate are complete after review, with remote CI still pending.
-Horizon entries below remain non-binding unless a future active packet,
-roadmap, contracts, or an accepted RFC promotes them.
+**Current packet note (2026-09-13):** v0.2.0.0 is complete after maintainer
+review and local release gates. No successor packet has been cut. Horizon
+entries below remain non-binding unless a future packet, the roadmap,
+contracts, or an accepted RFC promotes them.
+
+The completed packet consumed only verified API-golden-path and stale-example
+findings in Batches 2 and 10. Batch 10 closed those scoped repairs. The
+remaining 2026-09-04 all-vignette findings, including article-order,
+catch-all-topic, and long-article navigation work, stay parked for a later
+documentation-freshness pass.
 
 **Promotion index (horizon → roadmap).** Where open entries have a planned
 milestone. Entries not listed are pure direction with no committed home yet
@@ -73,8 +78,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   temporal-CV / embargo machinery and needing a dedicated RFC (see the
   2026-06-14 entry).
 - **v0.2.x to v0.3.0** -- live bad-data resilience, ragged-universe
-  (asset-lifetime) handling, and sim-to-real backtest fidelity (direction B;
-  needs a dedicated RFC).
+  (asset-lifetime) handling, and sim-to-real backtest fidelity. Keep the
+  offline research-validity substrate distinct from the later live runtime;
+  both need dedicated RFC treatment (see the 2026-05-28 and 2026-09-06
+  `[data]` entries).
 - **Post-K1 / B2 gates** -- compiled fold core (`ledgrcore` sister
   package) functionally parked. The K1 measurement spike completed and
   the scoped v0.1.8.10 B2 spot-FIFO accelerator shipped with
@@ -86,6 +93,296 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-13 [research] Minimum evidence for annualized summary metrics
+
+Batch 15 of v0.2.0.0 withholds annualized return, annualized volatility, and
+Sharpe when recorded completion evidence says a run covers only an achieved
+prefix. A separate question remains for complete but very short runs: complete
+status establishes that the requested window finished, not that annualization
+is statistically meaningful.
+
+A future metrics-policy review should define the minimum evidence required to
+print annualized summary statistics, including whether the surface should
+withhold, warn, or disclose the observed period count and annualization factor.
+That decision must remain separate from completion status and metric-context
+cadence. It is not part of the v0.2.0.0 print-honesty correction.
+
+### 2026-09-09 [infrastructure] API hardening post-v0.2.0 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`
+binds corrections, a simpler fills reader, explicit inspection lineage, and
+effect-preserving coordinator extraction for v0.2.0: pro rata reversal fee
+allocation, `ledgr_run_fills(bt)` with the cursor and its arguments removed,
+run handles as durable locators, and `ledgr_run_fold()` extracted in four
+risk-ordered stages behind named tests. Here "v1" means its first hardening
+implementation, not ledgr v1.0.0. The following themes record later work;
+current packet tests and the accepted availability handoff stay in the
+immediate plan.
+
+**Accounting and shorting**
+
+- Executed, probe finding 12: the reversal probe accepted negative targets
+  without a settled shorting contract. Pass this observed contract and
+  enforcement gap to the shorting/leverage seed.
+- Contract, `contracts.md` Strategy and the availability synthesis Section 16:
+  algebraic reversal coverage authorizes no borrowing, margin, or terminal
+  settlement; accounting-critical events and financing own those economics.
+
+**Availability extensions**
+
+- The accepted availability synthesis owns current availability semantics;
+  multi-venue and subdaily calendars require later scoping.
+- Live degradation and broad provider adaptation need their own evidence and
+  source contracts.
+
+**Features and model research**
+
+- Fitted preprocessing and imputation must define causal fit/use boundaries
+  and estimation populations.
+- Native-missingness consumers and cross-sectional cache families belong to
+  that later ML work.
+
+**Resources and performance**
+
+- Revisit streaming only after measured memory pressure and a proposed public
+  consumption contract.
+- Revisit wider sweep/module cuts and representation optimization only after
+  a concrete problem; no small-fixture structure count establishes a
+  performance winner.
+
+**Tooling and teaching**
+
+- September 6 CI parallelism and duplicate-work proposals remain separate;
+  retain release evidence.
+- Keep documentation executable and freshness repairs local; no new
+  documentation registry.
+
+#### Promoted roadmap hooks
+
+- Shorting/leverage RFC: v0.2.x, before claiming supported negative-target
+  economics.
+- Accounting-critical events RFC: v0.2.x, before corporate/terminal settlement
+  or accrual costs.
+- Fitted preprocessing/ML RFC: later v0.2.x research window, after
+  availability semantics land.
+- Multi-venue/subdaily scheduling RFC: later v0.2.x-v0.3.0, when a concrete
+  dataset requires it.
+- OMS lifecycle RFC follow-through: v0.2.x-v0.3.0, before persistent or
+  partially filled orders.
+- Explicit streaming contract RFC: later window, triggered only if eager reads
+  become limiting.
+
+#### Immediate cross-cycle obligations
+
+- The hardening packet owns the five slices, twelve gates, and the Section 11
+  spec-cut mappings of the synthesis, including the finalization failure
+  status decision.
+- Availability consumes corrected fee projection, eager readers, and explicit
+  risk restoration.
+- Preserve the availability synthesis Section 14 acceptance obligations and
+  Section 15 open choices without creating another registry.
+- The shorting seed receives probe finding 12, distinguishing accepted
+  execution from supported semantics.
+
+This entry authorizes none of the deferred capabilities and commits no
+release date. It records direction and routes each concern; concrete spec
+packets remain separate actions.
+
+### 2026-09-08 [data] Asset availability post-v0.1.9.8 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+binds the first implementation of point-in-time universes: one activation
+rule, one fold core, a members-union-held axis, policy v4 semantics, strict
+feature gaps, a required observation-independent session calendar, and a
+required declared valuation horizon. "v1" means the first implementation of
+this feature. A same-day post-acceptance review correction makes the session
+family mandatory whenever availability-aware behavior is active; only dense
+mode may derive pulses from observed bars. It also separates structural status
+input invalidity, which prevents sealing, from individually valid competing
+source assertions, which remain hashed evidence and resolve conservatively at
+runtime. Gates 24 and 16 respectively carry those obligations into spec cut.
+
+Deferred themes: accounting-critical events (dividends, delistings, terminal
+economics) -> accounting sibling RFC; OMS and order lifetimes -> OMS RFC;
+fitted preprocessing, imputation, and the ML lifecycle -> preprocessing RFC;
+multi-venue scheduling -> calendar RFC; representation measurement -> a
+`spike_protocol.md` probe with one question.
+
+Promoted roadmap hooks: accounting-critical events (v0.2.x); OMS (v0.3.0);
+preprocessing and ML (v0.2.x after PIT ships); multi-venue (v0.3.x); aliases
+and revision facts (v0.2.x spec-cut candidates).
+
+Immediate cross-cycle obligations: the PIT spec packet edits the Snapshot,
+Context, Strategy, Result, and Persistence contracts listed in Section 2 of
+the synthesis; the accounting sibling consumes the lifetime family and the
+`terminal_settlement_unsupported` stop as its entry point.
+
+This entry records accepted direction. It does not authorize a spec packet,
+tickets, or implementation by itself.
+
+### 2026-09-06 [infrastructure] CI critical-path and release-gate runtime hardening
+
+The v0.1.9.7 release CI was profiled after branch, main, and tag runs of the
+same release SHA. The long wait is primarily a workflow-shape problem, not a
+large v0.1.9.7 code or test regression.
+
+Measured GitHub Actions baseline:
+
+- Branch checks took 48.8 minutes on Ubuntu and 31.1 minutes on Windows.
+- Main checks took 47.4 minutes on Ubuntu and 30.4 minutes on Windows. Main
+  also ran the separate pkgdown workflow for 10.2 minutes.
+- Tag checks took 48.1 minutes on Ubuntu and 24.9 minutes on Windows.
+- Running the same SHA through branch, main, and tag consumed about 144.3
+  minutes on the serial critical path and about 241 runner-minutes in total.
+- Comparable v0.1.9.6 Ubuntu runs took 44.4 to 45.9 minutes. v0.1.9.7 added
+  roughly two to three minutes, about six percent, to an already-long
+  baseline; it did not create the underlying CI cost.
+
+The Ubuntu job is the critical path because it serializes independent gates.
+On the tag run, the acceptance preflight took about 0.6 minutes, R CMD check
+about 22.5 minutes, pkgdown about 6.9 minutes, and coverage about 16.2 minutes.
+The full test suite runs inside R CMD check and again under coverage. Main also
+builds pkgdown once inside `R-CMD-check.yaml` and again in the dedicated
+`pkgdown.yaml` workflow.
+
+The R CMD check timing contains two separate vignette costs. The source-build
+phase spent about four minutes creating vignettes because
+`rcmdcheck::rcmdcheck()` receives `--no-build-vignettes` as a check argument
+but receives no corresponding `build_args`. The subsequent package check still
+spent about 1.9 minutes running vignette code. Package tests were the largest
+check subphase at about 14.1 minutes.
+
+Local profiling confirms broad integration cost rather than one pathological
+test file. The full 112-file suite took about 12.3 minutes; the five slowest
+files represented about 31 percent and the ten slowest about 44 percent of
+recorded test time. The suite repeatedly creates snapshots, databases, runs,
+sweeps, and walk-forward sessions, so optimization must preserve isolation and
+must not replace realistic fixtures with shared mutable state merely for speed.
+
+The profile also exposed a resource-lifecycle hardening lead. A walk-forward
+orchestrator test creates a walk-forward result without explicitly closing its
+`test_runs`, unlike neighboring tests. Focused runs emitted an automatic
+checkpoint-on-finalization warning, and isolated timings moved substantially
+between runs. Audit explicit close discipline across integration fixtures before
+treating individual file timings as stable evidence.
+
+Recommended future hardening sequence:
+
+- Split R CMD check, coverage, and pkgdown into parallel jobs with independent
+  required statuses. This preserves all current evidence while reducing one
+  run's estimated critical path from about 48 minutes toward 25 to 30 minutes,
+  subject to setup and cache measurements.
+- Give main one pkgdown build owner. Prefer the dedicated pkgdown/deploy
+  workflow rather than rebuilding the same site inside the Linux check job.
+- Add concurrency cancellation for superseded branch or pull-request runs, but
+  never cancel main or tag release evidence.
+- Make test resource cleanup explicit, starting with unclosed walk-forward test
+  runs, then re-profile before considering test sharding or fixture redesign.
+- Spike `build_args = "--no-build-vignettes"` for routine branch CI while
+  retaining one full source-vignette build on the release path. Do not silently
+  remove source-package vignette verification from every path.
+- Publish a small per-job and per-gate timing artifact so future release deltas
+  are visible without reconstructing timestamps from action logs.
+
+Reducing coverage scope, moving integration tests to nightly-only execution, or
+weakening release checks is not the first route. Parallelism and duplicate-work
+removal offer the larger low-risk gain. The branch-to-main-to-tag repetition is
+currently deliberate independent release evidence; consolidating those stages
+would be a release-playbook decision, not an incidental CI edit. This entry
+authorizes no workflow or release-playbook change by itself.
+
+### 2026-09-06 [data] Ragged-universe prior art and RFC evidence handoff
+
+Three non-binding inputs sharpened the then-parked ragged-universe /
+asset-lifetime direction:
+
+- `inst/design/research/ledgr_ragged_universe_prior_art_review.md` compares
+  LEAN, zipline-reloaded, NautilusTrader, vectorbt, Qlib, and the quantstrat
+  stack, then surveys missing-data, point-in-time, terminal-event, and
+  fold-safe preprocessing concerns.
+- `inst/design/research/rfc-evidence-handoff.md` records the empirical handoff
+  from the separate vendor-ingestion and strategy-testing work. It is a
+  concise evidence memo, not an RFC seed or architecture decision.
+- `inst/design/research/Sharadar-Empirical-Evidence.md` is the reviewed,
+  non-reconstructive empirical synthesis from the Sharadar Data MVP and
+  Evidence Promotion v0.1.0 cycle. Private evidence artifacts at source commit
+  `e53bda3b108e51ad44720b9812c8072624b8820e` remain authoritative for exact
+  audit.
+
+The prior-art result supports an evolutionary direction rather than permissive
+NA handling. Preserve the strict complete-panel mode as a migration and parity
+oracle. A future ragged mode must distinguish instrument lifetime,
+point-in-time membership, expected observation, observed fact, quality state,
+valuation eligibility, feature validity, and execution eligibility. Carried,
+imputed, or otherwise synthetic values must not silently become execution
+evidence, and terminal economic outcomes must not disappear when a price row
+does.
+
+The empirical synthesis records a concrete pressure result over the complete
+supported 2019-2021 XNYS reference population: 757 expected sessions, 563
+point-in-time members, and 382,288 expected member/session rows. ledgr could
+seal the available bars, but its static instrument input could not preserve the
+membership stream without distortion. This establishes changing membership;
+it does not independently establish that ordinary expected-session bar gaps
+occurred, because the tracked Gate 4 evidence did not separate that predicate.
+A frozen 5-by-20 dense control sealed, reopened, and reconciled, which confirms
+the present dense/static plumbing without establishing historical-universe
+validity. Vendor lineage remained in a hash-bound sidecar, and current
+accounting still could not support dividend-inclusive or terminal-event
+performance claims.
+
+Routing consequence: separate the offline research-validity problem from the
+later streaming/live bad-data problem. The offline ragged-universe substrate
+should not wait automatically for OMS or the live data log, although it must
+coordinate with point-in-time tables, corporate actions / instrument master,
+and accounting-critical event types. Seed v1 uses one umbrella architecture
+RFC and leaves smaller implementation packets or coordinated sibling RFCs to
+later accepted decisions.
+
+Before choosing storage layout, mask granularity, or strategy-facing API, run
+the proposed real-data spike across strict dense, dense-plus-masks, sparse
+event, and sparse-storage / fold-local-dense prototypes. Required evidence
+includes current dense parity, no fills on carried or imputed prices, pre-event
+invariance under future-listing or revision perturbation, explicit stale and
+unpriced states, run/sweep/cache/chunking parity, sample-retention diagnostics,
+and runtime/memory profiles. Fold-fitted transforms remain train-local model
+artifacts rather than snapshot-seal repair.
+
+**Status update (2026-09-07):** The RFC cycle is now in flight at the
+non-binding response stage. Seed v1
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`)
+was answered the same day by the Stage 3 adversarial response
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md`).
+Stage 4 response review was accepted the same day. A follow-up methodological,
+API, and UX review is recorded in
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`.
+The bounded comparative architecture spike chartered in
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`
+closed inconclusive on 2026-09-08. Its shared provider boundary preserved the
+accepted semantics for the ten implemented witnesses across three physical
+representations, but 21 witnesses and the empirical workload remained unrun;
+it produced no representation, timing, or memory winner. The independently
+reviewed terminal report is on `spike/asset-availability-pit-universes` at
+`d59259f`; that disposable branch must not merge.
+
+Seed v2 at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
+was independently reviewed and maintainer-accepted for synthesis on
+2026-09-08. It carries the logical semantic boundary forward, keeps physical
+encoding unselected, and adds a binding usability direction:
+users provide source facts through validated adapters while ledgr derives its
+internal availability planes. A provider-shaped fixture, pre-seal validation,
+an unresolved-evidence report, and a broader survivorship-bias teaching
+article are gates before implementation scope. The synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+was accepted by the maintainer after Codex final review on 2026-09-08. It
+binds the first-implementation direction while leaving Section 15 questions
+for spec cut; no spec packet or implementation is open yet. The research,
+spike, and Seed v2 remain historical inputs rather than implementation
+authority.
 
 ### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
 
@@ -217,6 +514,23 @@ hardening RFC candidate:
 This entry authorizes no vignette rewrite, API change, or performance claim by
 itself. It is source memory for a later documentation freshness packet and for
 the scheduled API hardening RFC.
+
+**2026-09-11 active-packet disposition.** v0.2.0.0 Batches 2 and 10 consumed
+the executable public-workflow and factual-drift subset. The target-vector and
+promotion journey now executes through the public API; run handles are cleaned
+up or deliberately reopened; `future sweep mode`, the omitted returns table,
+the unshipped selection-diagnostics claims, the misplaced experiment `params`,
+the undefined TTR pulse snapshot, and the first-run timing overstatement were
+corrected. The new Survivorship Bias article owns the point-in-time facts,
+missing-session, quarantine, incomplete-result, and durable-explanation path.
+
+The indicator article's preferred-order rewrite, the metric-context article's
+topic split, broader navigation work, and fuller dense-panel onboarding remain
+parked. Quickstart keeps its current non-executed promotion sketch because the
+same public promotion journey executes in Research Workflow; converting every
+small shape sketch into another durable run would add noise rather than close a
+factual gap. These items need a later documentation-freshness cut, not hidden
+scope in the v0.2.0.0 release gate.
 
 ### 2026-06-26 [evaluation] Business-objective completion and robustness arc (deferred from v0.1.9.7)
 

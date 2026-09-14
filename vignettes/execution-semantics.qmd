@@ -252,6 +252,8 @@ down bars). Does the same-bar rule still win 100 percent of the time, and why?
   `vignette("strategy-development", package = "ledgr")`.
 - For the cost and risk policy applied at the fill, read
   `vignette("risk-and-cost", package = "ledgr")`.
+- For dynamic membership, retained nonmembers, stale valuation, and blocked
+  execution, read `vignette("survivorship-bias", package = "ledgr")`.
 - For ledger, fills, trades, equity, and metrics, read
   `vignette("metrics-and-accounting", package = "ledgr")`.
 - For why same-bar information is unsafe to trade on, read

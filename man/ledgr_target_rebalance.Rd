@@ -29,6 +29,9 @@ Warning and error classes:
 \itemize{
 \item \code{ledgr_invalid_target_price} when a selected instrument has missing,
 non-finite, or non-positive close price;
+\item \code{ledgr_target_sizing_unavailable} for the same condition when
+availability-aware execution is active; unlike the dense warning path,
+this is an error and never creates an unintended zero target;
 \item \code{ledgr_negative_weights} for negative weights;
 \item \code{ledgr_levered_weights} when \code{sum(abs(weights)) > 1}.
 }

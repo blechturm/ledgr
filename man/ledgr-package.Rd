@@ -29,6 +29,8 @@ Core installed articles:
 \item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
 \item \code{vignette("data-input-and-snapshots", package = "ledgr")}
 \item \code{system.file("doc", "data-input-and-snapshots.html", package = "ledgr")}
+\item \code{vignette("survivorship-bias", package = "ledgr")}
+\item \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 \item \code{vignette("strategy-development", package = "ledgr")}
 \item \code{system.file("doc", "strategy-development.html", package = "ledgr")}
 \item \code{vignette("strategy-authoring-tools", package = "ledgr")}

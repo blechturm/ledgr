@@ -115,6 +115,7 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   }
 
   ledgr_snapshot_validate_for_seal(con, snapshot_id)
+  ledgr_snapshot_validate_availability_for_seal(con, snapshot_id)
   metadata <- ledgr_snapshot_metadata_for_seal(con, snapshot_id)
   meta_json <- as.character(canonical_json(metadata))
 
@@ -248,6 +249,22 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
   metadata <- put_if_missing(metadata, "n_instruments", as.integer(instrument_count))
   metadata <- put_if_missing(metadata, "start_date", ledgr_normalize_ts_utc(bar_stats$start_date[[1]]))
   metadata <- put_if_missing(metadata, "end_date", ledgr_normalize_ts_utc(bar_stats$end_date[[1]]))
+
+  hash_rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
+  if (identical(hash_rule, 2L)) {
+    availability <- ledgr_snapshot_availability_read(con, snapshot_id)
+    metadata <- put_if_missing(metadata, "snapshot_hash_rule_version", hash_rule)
+    metadata <- put_if_missing(
+      metadata,
+      "fact_family_count",
+      as.integer(nrow(availability$snapshot_fact_families))
+    )
+    metadata <- put_if_missing(
+      metadata,
+      "quarantined_observation_count",
+      as.integer(nrow(availability$snapshot_observation_quarantine))
+    )
+  }
 
   metadata
 }

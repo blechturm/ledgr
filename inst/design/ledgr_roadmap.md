@@ -3,10 +3,8 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_1_9_6_spec_packet/`.
-**Active packet:** v0.1.9.7 business-objective eligibility and validation
-polish.
-**Active packet path:** `inst/design/ledgr_v0_1_9_7_spec_packet/`.
+**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
+**Active packet:** none; no successor packet has been cut.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -112,19 +110,19 @@ versioned packet.
 | v0.1.9.4 | Done | Walk-forward culmination: consumes cost identity from v0.1.9.1, sweep retention infrastructure from v0.1.9.2, and risk-chain identity from v0.1.9.3; Section 17 gates fire here. | `inst/design/ledgr_v0_1_9_4_spec_packet/` |
 | v0.1.9.5 | Done | Documentation, teaching, contracts audit, and entropy management release after the v0.1.9.x feature arc closed; public naming cleanup, candidate generic, vignette refocus, teaching surfaces, and the promoted vignette-audit helpers. | `inst/design/ledgr_v0_1_9_5_spec_packet/` |
 | v0.1.9.6 | Done | Validation toolkit substrate and gated diagnostics packet (accepted 2026-06-12 synthesis, maintainer-amended 2026-06-14): canonical single-run return stream (`ledgr_results(bt, what = "returns")`), retained-return panel-hygiene bridge, adapter-shaped return projections, native PBO/CSCV after a green spike, native MinTRL, native DSR with deterministic effective-trial clustering, and the Selection Integrity teaching surface. The packet also carried an audit-only intraday-readiness review and an internal peer-benchmark redo on the current cost/risk surface. Business-objective filtering, purging/embargo/CPCV, K-Ratio, Triple Penance, intraday runtime implementation, public benchmark claims, and the compiled spot-FIFO default decision remained deferred at closeout. | `inst/design/ledgr_v0_1_9_6_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` (accepted 2026-06-12; amended 2026-06-14); `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md` |
-| v0.1.9.7 | Active | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates sweep filtering, opt-in closed-trade retention, the strict-lattice stable-region criterion, native K-Ratio, a warning-only intraday metric-context guardrail, the public source-neutral return-panel entry point, and the Selection Integrity vignette rebuild. Automatic selection or promotion, objective-filtered walk-forward identity, scored objective composition, broader non-lattice robustness criteria, first-class intraday runtime, and paper/live work remain non-scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` (amended 2026-06-26 and 2026-06-28); `inst/design/horizon.md` |
+| v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
-| v0.1.9.x | Planned | API and representation-boundary hardening RFC: classify the public namespace into workflow / construction / advanced-inspection / infrastructure tiers, add representation-boundary invariant tests, make provenance and retention schemas more declarative, and plan behavior-neutral file moves plus `ledgr_run_fold()` phase extraction. Local post-v0.1.9.6 code-review and all-vignette-review findings may be routed through tickets and fixed independently if they block active work. | Future RFC and packet; `inst/design/horizon.md` 2026-09-04 `[infrastructure]` and `[docs]` entries |
-| v0.1.9.x | Planned | Documentation freshness pass after v0.1.9.7: consume the verified post-v0.1.9.6 all-vignette review findings, fix stale claims/examples, improve long-article navigation where it helps, and coordinate API-golden-path issues with the hardening RFC. Selection Integrity-specific findings are consumed earlier by LDG-2671. | Future packet or hardening RFC adjunct; `inst/design/horizon.md` 2026-09-04 `[docs]` entry |
+| v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
 | v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
-| v0.2.x | Planned | Point-in-time data tables for external observations and reference data. | Future packet |
+| v0.2.x | Planned | External point-in-time regressors and reference-data families beyond the membership, sessions, status, and lifetime facts scoped in v0.2.0.0. | Future packet |
 | v0.2.x | Planned | Corporate actions and instrument master for serious equity data. | Future packet |
 | v0.2.x | Planned | Explicit accounting-critical event types RFC coordinated with corporate actions and instrument master. | Future packet |
 | v0.2.x | Planned | Benchmark context and active metrics after benchmark/reference substrate. | Future packet |
 | v0.2.x | Planned | OMS semantics, snapshot lineage, and roll-forward data sources. | Future packets |
 | v0.2.x | Planned | Reference strategy templates as executable contract demonstrations. | Future packet |
+| v0.2.x | Planned | Documentation-hardening chore: symbol-qualified source citations in the maintainer manuals, with statement-level anchors pairing a line number to a short expected token, and a mechanical check that the file exists, the line exists, and the cited line contains that token. Migrate active manuals deliberately; leave explicitly version-scoped historical articles unchanged. Scoped as its own reviewed ticket because the migration footprint is real; it changes documentation maintenance convention, not product architecture. | Future packet |
 | v0.3.0 | Planned | Paper trading adapter and reconciliation. | Future packet |
 | v0.4.0 | Planned | Observability and operations. | Future packet |
 | v1.0.0 | Planned | Small-scale live trading. | Future packet |
@@ -1831,6 +1829,85 @@ Constraints:
   before they affect execution or metrics;
 - feature beta, universe-derived benchmarks, and fundamental/factor features
   depend on this layer.
+
+### v0.2.x Ragged Universe And Asset Lifetime RFC
+
+Intent:
+
+- preserve the current strict complete-panel mode as the dense/static baseline
+  and parity oracle;
+- represent point-in-time instrument lifetime, universe membership, expected
+  observation, observed fact, quality, valuation eligibility, feature
+  validity, and execution eligibility without collapsing them into one NA
+  state;
+- support historically valid broad-equity research without survivor filtering,
+  date intersection, silent price filling, or fabricated rows;
+- evaluate sparse storage with fold-local dense values and masks alongside
+  strict dense and other candidate representations before selecting an
+  architecture.
+
+Constraints:
+
+- permissive NA handling is not the target, and carried, imputed, stale, or
+  synthetic values must not silently become execution evidence;
+- terminal events, censored labels, valuation fallback, and order behavior
+  through an observation gap require explicit, separately auditable policy;
+- transformations fitted from data remain train-fold-local artifacts with
+  identity and caching distinct from deterministic as-of materialization;
+- preserve the shared run/sweep semantic kernel and require parity across
+  cache state, chunking, and parallel dispatch;
+- coordinate with point-in-time tables, corporate actions / instrument master,
+  and explicit accounting-critical event types, but do not make the offline
+  research-validity substrate wait automatically for OMS or the live data log;
+- keep first-class live bad-data handling and paper-trading stream simulation
+  in their later runtime RFC.
+
+Source material:
+
+- `inst/design/research/Sharadar-Empirical-Evidence.md` records the reviewed,
+  non-reconstructive empirical evidence from the private Sharadar cycle;
+  private source artifacts remain authoritative for exact audit;
+- `inst/design/research/ledgr_ragged_universe_prior_art_review.md` records the
+  external prior-art and methodology review;
+- `inst/design/research/rfc-evidence-handoff.md` records the empirical
+  vendor-ingestion / strategy-testing handoff and unresolved RFC questions;
+- `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` supplies the
+  adjacent terminal-event and cross-asset accounting context.
+
+The RFC cycle opened on 2026-09-07 at non-binding Seed v1:
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`.
+The Stage 3 adversarial response
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md`)
+was drafted and accepted at Stage 4 response review the same day. The
+follow-up review addendum and semantic spike charter are recorded at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`
+and
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`.
+The comparative architecture spike closed inconclusive on 2026-09-08. The
+three physical representations preserved the accepted semantics for the ten
+implemented witnesses, but 21 witnesses and the empirical workload remained
+unrun, so no representation or performance winner was recorded. Its reviewed
+terminal report is on the disposable
+`spike/asset-availability-pit-universes` branch at `d59259f`, which must not
+merge.
+
+Seed v2 at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
+was independently reviewed and maintainer-accepted for synthesis on
+2026-09-08. It recommends the representation-neutral logical contract without
+presenting the spike as a storage decision, and adds an ingestion-usability
+gate: provider adapters normalize source facts, ledgr derives internal state
+planes, unresolved evidence remains visible, and a provider-shaped fixture
+plus survivorship-bias teaching precede implementation. The synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+was accepted by the maintainer after Codex final review on 2026-09-08. It
+binds the first-implementation direction and Section 14 gate matrix while
+leaving the physical and schema choices in Section 15 for spec cut. A
+same-day post-acceptance correction requires an observation-independent
+session calendar for every availability-aware run and distinguishes
+seal-blocking structural status invalidity from valid competing status-source
+assertions retained for conservative runtime resolution. Gates 24 and 16 bind
+those cases. No spec packet, tickets, or implementation are open yet.
 
 ### v0.2.x Corporate Actions And Instrument Master
 

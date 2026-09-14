@@ -49,6 +49,23 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   testthat::expect_false("config_json" %in% names(runs))
   testthat::expect_false("dependency_versions_json" %in% names(runs))
   testthat::expect_false("strategy_params_json" %in% names(runs))
+  completion_fields <- c(
+    "completion_evidence_available", "completion_status",
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
+    "last_executed_ts_utc", "complete_performance", "affected_instrument_ids"
+  )
+  testthat::expect_identical(utils::tail(names(runs), 11L), completion_fields)
+  testthat::expect_false(any(runs$completion_evidence_available))
+  testthat::expect_s3_class(runs$requested_start_utc, "POSIXct")
+  testthat::expect_s3_class(runs$achieved_end_utc, "POSIXct")
+  testthat::expect_type(runs$complete_performance, "logical")
+  testthat::expect_type(runs$affected_instrument_ids, "list")
+  testthat::expect_true(all(vapply(
+    runs$affected_instrument_ids,
+    function(ids) identical(ids, NA_character_),
+    logical(1)
+  )))
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)
@@ -98,6 +115,12 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   info <- ledgr_run_info(snapshot, "info-run")
+  testthat::expect_false(info$completion_evidence_available)
+  testthat::expect_true(is.na(info$completion_status))
+  testthat::expect_true(is.na(info$requested_start_utc))
+  testthat::expect_true(is.na(info$requested_end_utc))
+  testthat::expect_true(is.na(info$complete_performance))
+  testthat::expect_identical(info$affected_instrument_ids, NA_character_)
   testthat::expect_s3_class(info, "ledgr_run_info")
   testthat::expect_identical(info$run_id, "info-run")
   testthat::expect_identical(info$status, "DONE")
@@ -378,6 +401,9 @@ testthat::test_that("ledgr_run_list reads legacy stores without mutating them", 
   runs <- ledgr_run_list(snapshot)
   testthat::expect_true("legacy-run" %in% runs$run_id)
   testthat::expect_identical(runs$reproducibility_level[runs$run_id == "legacy-run"], "legacy")
+  testthat::expect_false(runs$completion_evidence_available[[1L]])
+  testthat::expect_true(is.na(runs$requested_start_utc[[1L]]))
+  testthat::expect_identical(runs$affected_instrument_ids[[1L]], NA_character_)
   testthat::expect_error(
     ledgr_run_open(snapshot, "legacy-run"),
     class = "ledgr_invalid_run"

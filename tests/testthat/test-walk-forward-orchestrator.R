@@ -533,6 +533,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
     selection_rule = ledgr_select_argmax("sharpe_ratio"),
     seed = 41L
   )
+  on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)
   opened <- ledgr:::ledgr_run_store_open(fx$snapshot$db_path)
   counts_before <- DBI::dbGetQuery(opened$con, "
     SELECT
@@ -628,6 +629,7 @@ testthat::test_that("ledgr_candidate extracts walk-forward candidates through lo
     selection_rule = ledgr_select_argmax("sharpe_ratio"),
     seed = 45L
   )
+  on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)
 
   testthat::expect_error(
     ledgr_candidate(wf),

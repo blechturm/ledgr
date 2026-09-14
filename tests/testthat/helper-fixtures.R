@@ -1,3 +1,12 @@
+ledgr_test_duckdb_args <- if ("shared_home" %in% names(formals(duckdb::duckdb))) {
+  list(shared_home = FALSE)
+} else {
+  list()
+}
+ledgr_test_duckdb_driver <- do.call(duckdb::duckdb, ledgr_test_duckdb_args)
+duckdb::duckdb_shutdown(ledgr_test_duckdb_driver)
+rm(ledgr_test_duckdb_args, ledgr_test_duckdb_driver)
+
 ledgr_test_open_duckdb <- function(db_path, attempts = 50L, sleep_s = 0.05) {
   ledgr_open_duckdb_with_retry(db_path, attempts = attempts, sleep_s = sleep_s)
 }

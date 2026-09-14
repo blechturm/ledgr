@@ -338,7 +338,7 @@ no closed round trips were recorded.
 
 Use this checklist before changing the strategy:
 
-1. Start with `summary(bt)`. If `Total Trades` is zero, `win_rate` and
+1. Start with `summary(bt)`. If `Closed Trades` is zero, `win_rate` and
    `avg_trade` should be `NA`, not zero. If a registered feature can never
    become usable because the sample is too short, `summary(bt)` also prints a
    `Warmup Diagnostics` note with the feature ID, instrument ID, required bars,

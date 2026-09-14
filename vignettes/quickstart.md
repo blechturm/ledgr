@@ -1,7 +1,8 @@
 # Quickstart
 
 
-You want the smallest useful ledgr loop before reading the tool chapters.
+You want the smallest useful ledgr loop before reading the tool
+chapters.
 
 This quickstart creates a sealed snapshot, runs one strategy, sweeps a
 small grid, and extracts one candidate for review. It is not a
@@ -82,6 +83,10 @@ summary(single_run)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
+#>
 #> Performance Metrics:
 #>   Total Return:        0.24%
 #>   Annualized Return:   0.47%
@@ -94,19 +99,20 @@ summary(single_run)
 #>   Sharpe Ratio:        0.546
 #>
 #> Trade Statistics:
-#>   Total Trades:        6
+#>   Closed Trades:       6
 #>   Win Rate:            33.33%
 #>   Avg Trade:           $4.01
 #>
 #> Exposure:
 #>   Time in Market:      67.44%
 head(ledgr_results(single_run, what = "fills"), 3)
-#> # A tibble: 3 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2019-01-29 DEMO_01       BUY       5  91.9     0          0   OPEN
-#> 2         2 2019-02-22 DEMO_02       BUY       5  69.5     0          0   OPEN
-#> 3         3 2019-02-28 DEMO_02       SELL      5  67.3     0        -11.1 CLOSE
+#> # A tibble: 3 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2019-01-29 2019-01-29 00:00:00    DEMO_01       BUY       5  91.9     0
+#> 2         2 2019-02-22 2019-02-22 00:00:00    DEMO_02       BUY       5  69.5     0
+#> 3         3 2019-02-28 2019-02-28 00:00:00    DEMO_02       SELL      5  67.3     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 If this run has no fills, impossible prices, or surprising exposure,
@@ -136,7 +142,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_011dd398bf9e0a3d
+#> # ledgr sweep -- sweep_1df74db8e898124d
 #> # A tibble: 8 x 4
 #>   candidate_id                               status sharpe_ratio total_return
 #>   <chr>                                      <chr>         <dbl> <chr>
@@ -151,11 +157,13 @@ sweep |>
 #>
 #> # i 8 combinations: 8 done, 0 failed.
 #> # i Retention returns: none.
+#> # i Retention trades: none.
 #> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
 #> # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
 #> # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
 #> # i Saved artifact: not saved.
 #> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+#> # i Hidden columns (0):
 ```
 
 The sweep table is evidence, not an automatic recommendation. If you

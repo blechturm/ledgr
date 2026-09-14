@@ -24,7 +24,7 @@ The useful reading order is:
 
 <div class="ledgr-diagram ledgr-accounting-hierarchy">
 
-``` mermaid
+```mermaid
 
 flowchart TB
   ledger["ledger events<br/>source of truth"]
@@ -70,12 +70,15 @@ Use the narrowest inspection surface that answers the question:
 | What are the standard metrics? | `summary(bt)` | printed interpretation; returns `bt` invisibly |
 | What metric values can code consume? | `ledgr_compute_metrics(bt)` | list-like `ledgr_metrics` object with raw numeric values |
 | What rows value the portfolio? | `ledgr_results(bt, what = "equity")` | classed tibble |
+| What adjacent-period returns produced the metrics? | `ledgr_results(bt, what = "returns")` | classed tibble |
 | What executed? | `ledgr_results(bt, what = "fills")` | classed tibble |
 | What closed quantity? | `ledgr_results(bt, what = "trades")` | classed tibble |
 | What did the event ledger record? | `ledgr_results(bt, what = "ledger")` | classed tibble |
 | How do stored runs compare? | `ledgr_run_compare(snapshot, run_ids = ...)` | classed comparison tibble |
 | What did a sweep candidate summarize? | `ledgr_sweep()` result rows | classed sweep tibble |
 | What context was stored by promotion? | `ledgr_promotion_context(bt)` or `ledgr_run_promotion_context()` | nested list |
+| Why was an availability-aware action blocked or stopped? | `ledgr_results(bt, what = "diagnostics")` | classed tibble |
+| What could an availability-aware strategy see? | `ledgr_results(bt, what = "availability")` | classed tibble |
 
 The result-table helpers return structured objects. Their print methods
 may format timestamps for readability, but `as_tibble()` gives raw
@@ -187,17 +190,16 @@ ledgr_cost_steps(example_cost_model)
 ledgr_cost_describe(example_cost_model)
 ```
 
-<div class="ledgr-callout ledgr-callout-important">
+> [!IMPORTANT]
+>
+> ### What costs do not model
+>
+> Cost models are deterministic research assumptions over accepted fill
+> proposals. They do not implement liquidity or capacity limits,
+> financing, transaction-cost analysis, taxes, OMS lifecycle behavior, or
+> broker reconciliation. Those are separate future layers, not hidden
+> behavior in the cost API.
 
-**What costs do not model**
-
-Cost models are deterministic research assumptions over accepted fill
-proposals. They do not implement liquidity or capacity limits,
-financing, transaction-cost analysis, taxes, OMS lifecycle behavior, or
-broker reconciliation. Those are separate future layers, not hidden
-behavior in the cost API.
-
-</div>
 
 ## Ledger Events
 
@@ -228,11 +230,12 @@ and closing fills both appear here.
 ``` r
 fills <- ledgr_results(bt, what = "fills")
 fills
-#> # A tibble: 2 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-02 AAA           BUY       1   101     0            0 OPEN
-#> 2         2 2020-01-03 AAA           SELL      1   105     0            4 CLOSE
+#> # A tibble: 2 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2020-01-02 2020-01-02 00:00:00    AAA           BUY       1   101     0
+#> 2         2 2020-01-03 2020-01-03 00:00:00    AAA           SELL      1   105     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 The important columns are:
@@ -252,10 +255,11 @@ by `n_trades`, `win_rate`, and `avg_trade`.
 ``` r
 trades <- ledgr_results(bt, what = "trades")
 trades
-#> # A tibble: 1 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         2 2020-01-03 AAA           SELL      1   105     0            4 CLOSE
+#> # A tibble: 1 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         2 2020-01-03 2020-01-03 00:00:00    AAA           SELL      1   105     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 This run has two fill rows but one closed trade row. Counting fills as
@@ -358,14 +362,13 @@ snaps common cadences, such as daily and weekly, to standard
 annualization constants. Use the detected value if you need an external
 calculation to match ledgr exactly on non-daily data.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change `bars_per_year` in the recompute chunk from `252` to `365`. Which
+> metrics change? Why does `total_return` stay the same?
 
-**Try it**
-
-Change `bars_per_year` in the recompute chunk from `252` to `365`. Which
-metrics change? Why does `total_return` stay the same?
-
-</div>
 
 ## Zero Trades Can Be Correct
 
@@ -385,13 +388,15 @@ flat_bt <- ledgr_backtest(
 )
 
 ledgr_results(flat_bt, what = "fills")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_results(flat_bt, what = "trades")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_compute_metrics(flat_bt)[c("n_trades", "win_rate", "avg_trade")]
 #> $n_trades
 #> [1] 0
@@ -429,14 +434,16 @@ open_bt <- ledgr_backtest(
 )
 
 ledgr_results(open_bt, what = "fills")
-#> # A tibble: 1 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2020-01-02 AAA           BUY       1   101     0            0 OPEN
+#> # A tibble: 1 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2020-01-02 2020-01-02 00:00:00    AAA           BUY       1   101     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ledgr_results(open_bt, what = "trades")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ledgr_compute_metrics(open_bt)[c("n_trades", "win_rate", "avg_trade")]
 #> $n_trades
 #> [1] 0
@@ -471,9 +478,10 @@ final_bar_bt <- ledgr_backtest(
 )
 
 ledgr_results(final_bar_bt, what = "fills")
-#> # A tibble: 0 x 9
-#> # i 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 x 10
+#> # i 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ```
 
 ## Cleanup
@@ -492,5 +500,8 @@ close(final_bar_bt)
 - `vignette("execution-semantics", package = "ledgr")` explains why
   fills happen on the next bar and why the final decision bar cannot
   fill.
+- `vignette("survivorship-bias", package = "ledgr")` connects
+  point-in-time facts, missing sessions, diagnostics, and durable
+  explanations.
 - `?ledgr_cost_spread_bps` and `?ledgr_cost_fixed_fee` describe public
   transaction-cost model declarations.

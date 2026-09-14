@@ -188,6 +188,7 @@ ledgr_compiled_spot_fifo_test_run <- function(compiled_accounting_model = NULL) 
   list(
     fold = fold,
     handler = handler,
+    pulses_posix = pulses_posix,
     events = handler$events(),
     typed_events = handler$typed_events(),
     inline_summary = handler$inline_summary("compiled-spot-fifo-parity", metric_kernel),
@@ -410,6 +411,50 @@ testthat::test_that("execution specs validate before fold entry", {
   )
 })
 
+testthat::test_that("availability execution specs require aligned opening opportunities", {
+  provider <- structure(
+    list(valuation_policy = list(max_sessions = 1L)),
+    class = c("ledgr_availability_provider", "list")
+  )
+  opening <- as.POSIXct("2024-01-01 12:00:00", tz = "UTC")
+  spec <- ledgr_test_execution_spec(
+    availability_provider = provider,
+    execution_opportunities_posix = opening
+  )
+
+  testthat::expect_identical(spec$execution_opportunities_posix, opening)
+  testthat::expect_error(
+    ledgr_test_execution_spec(availability_provider = provider),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = c(opening, opening + 1)
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = as.POSIXct(NA_character_, tz = "UTC")
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(
+      availability_provider = provider,
+      execution_opportunities_posix = "2024-01-01T12:00:00Z"
+    ),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_error(
+    ledgr_test_execution_spec(execution_opportunities_posix = opening),
+    class = "ledgr_invalid_execution_spec"
+  )
+  testthat::expect_false("execution_opportunities_posix" %in% names(ledgr_test_execution_spec()))
+})
+
 testthat::test_that("compiled accounting model enum fails closed", {
   testthat::expect_null(ledgr_test_execution_spec()$compiled_accounting_model)
   testthat::expect_null(ledgr_test_execution_spec(compiled_accounting_model = NULL)$compiled_accounting_model)
@@ -446,6 +491,26 @@ testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", 
   r_path <- ledgr_compiled_spot_fifo_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_test_run("spot_fifo")
 
+  expect_reversal_fees <- function(path) {
+    for (fills in list(path$inline_summary$fills, path$reconstructed$fills)) {
+      testthat::expect_identical(fills$event_seq, c(2L, 2L, 3L, 3L))
+      testthat::expect_identical(fills$action, c("CLOSE", "OPEN", "CLOSE", "OPEN"))
+      testthat::expect_equal(fills$qty, c(2, 1, 1, 1))
+      testthat::expect_equal(
+        fills$fee,
+        c(1 / 6, 1 / 12, 1 / 8, 1 / 8),
+        tolerance = 1e-12
+      )
+      testthat::expect_equal(
+        unname(vapply(split(fills$fee, fills$event_seq), sum, numeric(1))),
+        c(0.25, 0.25),
+        tolerance = 1e-12
+      )
+    }
+  }
+  expect_reversal_fees(r_path)
+  expect_reversal_fees(compiled_path)
+
   testthat::expect_equal(
     as.data.frame(compiled_path$events),
     as.data.frame(r_path$events),
@@ -463,8 +528,8 @@ testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", 
     )
   }
   testthat::expect_equal(
-    ledgr:::ledgr_fills_from_events(compiled_path$typed_events),
-    ledgr:::ledgr_fills_from_events(r_path$typed_events)
+    ledgr:::ledgr_fills_from_events(compiled_path$typed_events, compiled_path$pulses_posix),
+    ledgr:::ledgr_fills_from_events(r_path$typed_events, r_path$pulses_posix)
   )
   testthat::expect_equal(compiled_path$inline_summary, r_path$inline_summary)
   testthat::expect_equal(compiled_path$reconstructed, r_path$reconstructed)

@@ -64,6 +64,38 @@ if (!inherits(bt, "ledgr_backtest")) {
   stop("README `bt` object is not a ledgr_backtest handle.", call. = FALSE)
 }
 
+for (name in c("target", "target_values", "review", "candidate", "promoted_run_id")) {
+  if (!exists(name, envir = env, inherits = FALSE)) {
+    stop(sprintf("README did not create the expected `%s` object.", name), call. = FALSE)
+  }
+}
+
+target <- get("target", envir = env, inherits = FALSE)
+target_values <- get("target_values", envir = env, inherits = FALSE)
+if (!inherits(target, "ledgr_target") ||
+    !identical(target[["DEMO_01"]], 10) ||
+    !identical(target_values, c(DEMO_01 = 10, DEMO_02 = 0))) {
+  stop("README target extraction did not preserve named quantities.", call. = FALSE)
+}
+
+review <- get("review", envir = env, inherits = FALSE)
+candidate <- get("candidate", envir = env, inherits = FALSE)
+if (!inherits(review$ranked, "ledgr_sweep_results") ||
+    inherits(review$top, "ledgr_sweep_results")) {
+  stop(
+    "README review did not preserve ranked lineage and presentation-only top output.",
+    call. = FALSE
+  )
+}
+if (!identical(candidate$candidate_id[[1]], review$ranked$candidate_id[[1]])) {
+  stop("README candidate was not extracted from the first ranked row.", call. = FALSE)
+}
+
+promoted_run_id <- get("promoted_run_id", envir = env, inherits = FALSE)
+if (!identical(bt$run_id, promoted_run_id)) {
+  stop("README did not reopen the promoted run by its durable locator.", call. = FALSE)
+}
+
 for (what in c("ledger", "equity", "trades")) {
   out <- ledgr::ledgr_results(bt, what = what)
   if (!is.data.frame(out)) {

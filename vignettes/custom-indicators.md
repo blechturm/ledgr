@@ -16,15 +16,14 @@ keep a strategy pulse-safe, or it can hide future information in an
 ordinary-looking feature value. This article explains the authoring
 contract.
 
-<div class="ledgr-callout ledgr-callout-warning">
+> [!WARNING]
+>
+> ### Custom features are a leakage boundary
+>
+> ledgr can validate shape, warmup, fingerprints, and registration. It
+> cannot prove that externally authored feature logic avoided future
+> information.
 
-**Custom features are a leakage boundary**
-
-ledgr can validate shape, warmup, fingerprints, and registration. It
-cannot prove that externally authored feature logic avoided future
-information.
-
-</div>
 
 ## The Indicator Object
 
@@ -48,7 +47,7 @@ session objects when the value should be part of the feature definition.
 
 <div class="ledgr-diagram ledgr-custom-indicator-path">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   declare["declare<br/>indicator"]
@@ -288,6 +287,10 @@ summary(custom_bt)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
+#>
 #> Performance Metrics:
 #>   Total Return:        0.49%
 #>   Annualized Return:   2.96%
@@ -300,36 +303,37 @@ summary(custom_bt)
 #>   Sharpe Ratio:        1.305
 #>
 #> Trade Statistics:
-#>   Total Trades:        0
+#>   Closed Trades:       0
 #>   Win Rate:            N/A (no trades)
 #>   Avg Trade:           N/A (no trades)
 #>
 #> Exposure:
 #>   Time in Market:      93.02%
 ledgr_results(custom_bt, what = "fills")
-#> # A tibble: 2 × 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         1 2019-01-04 DEMO_01       BUY      10  90.7     0            0 OPEN
-#> 2         2 2019-01-04 DEMO_02       BUY      10  74.7     0            0 OPEN
+#> # A tibble: 2 × 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         1 2019-01-04 2019-01-04 00:00:00    DEMO_01       BUY      10  90.7     0
+#> 2         2 2019-01-04 2019-01-04 00:00:00    DEMO_02       BUY      10  74.7     0
+#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
 ledgr_results(custom_bt, what = "trades")
-#> # A tibble: 0 × 9
-#> # ℹ 9 variables: event_seq <int>, ts_utc <date>, instrument_id <chr>, side <chr>,
-#> #   qty <dbl>, price <dbl>, fee <dbl>, realized_pnl <dbl>, action <chr>
+#> # A tibble: 0 × 10
+#> # ℹ 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
+#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
+#> #   realized_pnl <dbl>, action <chr>
 ```
 
 The custom feature only changes how pulse-known values are computed. It
 does not change the strategy return contract, fill model, ledger, result
 tables, or metric workflow.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change `max_range` from `5` to `2` in the run params. Which fills
+> disappear, and why does the custom indicator ID stay the same?
 
-**Try it**
-
-Change `max_range` from `5` to `2` in the run params. Which fills
-disappear, and why does the custom indicator ID stay the same?
-
-</div>
 
 ## What To Remember
 

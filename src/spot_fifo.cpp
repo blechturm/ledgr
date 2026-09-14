@@ -283,6 +283,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     event_realized_vec.push_back(realized_pnl);
     event_cost_basis_vec.push_back(total_cost_basis);
 
+    double total_fill_qty = close_qty + open_qty;
+    double close_fee = close_qty > 0 ? fee * close_qty / total_fill_qty : 0.0;
+    double open_fee = open_qty > 0 ? fee - close_fee : 0.0;
+
     if (close_qty > 0) {
       fill_event_seq.push_back(event_seq);
       fill_ts_utc.push_back(ts);
@@ -290,7 +294,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
       fill_side.push_back(side);
       fill_qty.push_back(close_qty);
       fill_price.push_back(price);
-      fill_fee.push_back(fee);
+      fill_fee.push_back(close_fee);
       fill_realized_pnl.push_back(realized_close);
       fill_action.push_back("CLOSE");
     }
@@ -301,7 +305,7 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
       fill_side.push_back(side);
       fill_qty.push_back(open_qty);
       fill_price.push_back(price);
-      fill_fee.push_back(fee);
+      fill_fee.push_back(open_fee);
       fill_realized_pnl.push_back(0.0);
       fill_action.push_back("OPEN");
     }

@@ -81,7 +81,7 @@ testthat::test_that("runner can use a SEALED snapshot and a subset universe; run
   fx <- make_snapshot_runner_db(status = "SEALED")
   cfg <- runner_snapshot_config(fx$path, fx$snapshot_id, universe_ids = c("AAA"))
 
-  out <- ledgr_backtest_run(cfg, run_id = "run-snapshot-1")
+  out <- ledgr_run_config(cfg, run_id = "run-snapshot-1")
   testthat::expect_identical(out$run_id, "run-snapshot-1")
   gc()
   Sys.sleep(0.05)
@@ -107,7 +107,7 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
     snapshot_db_path = fx$path
   )
 
-  out <- ledgr_backtest_run(cfg, run_id = "run-snapshot-split-db")
+  out <- ledgr_run_config(cfg, run_id = "run-snapshot-split-db")
   testthat::expect_identical(out$db_path, run_path)
   gc()
   Sys.sleep(0.05)
@@ -151,7 +151,7 @@ testthat::test_that("tamper detection fails loud when SEALED snapshot is mutated
 
   cfg <- runner_snapshot_config(fx$path, fx$snapshot_id, universe_ids = c("AAA"))
   testthat::expect_error(
-    ledgr_backtest_run(cfg, run_id = "run-snapshot-tamper"),
+    ledgr_run_config(cfg, run_id = "run-snapshot-tamper"),
     class = "LEDGR_SNAPSHOT_CORRUPTED"
   )
   gc()
@@ -217,7 +217,7 @@ testthat::test_that("coverage validation fails loud for ragged per-instrument co
 
   cfg <- runner_snapshot_config(path, snapshot_id, universe_ids = c("AAA", "BBB"))
   testthat::expect_error(
-    ledgr_backtest_run(cfg, run_id = "run-snapshot-coverage"),
+    ledgr_run_config(cfg, run_id = "run-snapshot-coverage"),
     class = "LEDGR_SNAPSHOT_COVERAGE_ERROR"
   )
 })
@@ -227,7 +227,7 @@ testthat::test_that("runner rejects non-SEALED snapshots", {
   cfg <- runner_snapshot_config(fx$path, fx$snapshot_id, universe_ids = c("AAA"))
 
   testthat::expect_error(
-    ledgr_backtest_run(cfg, run_id = "run-snapshot-not-sealed"),
+    ledgr_run_config(cfg, run_id = "run-snapshot-not-sealed"),
     class = "LEDGR_SNAPSHOT_NOT_SEALED"
   )
 })

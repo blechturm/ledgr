@@ -181,6 +181,7 @@ ledgr_sweep_info <- function(x) {
     snapshot_hash = attr(x, "snapshot_hash", exact = TRUE),
     n_candidates = nrow(x),
     n_completed = sum(status == "DONE", na.rm = TRUE),
+    n_incomplete = sum(status == "INCOMPLETE", na.rm = TRUE),
     n_failed = sum(status == "FAILED", na.rm = TRUE),
     retention = retention,
     retention_returns = if (inherits(retention, "ledgr_sweep_retention")) retention$returns else NA_character_,
@@ -325,6 +326,7 @@ ledgr_sweep_assert_schema_compatible <- function(con, write = FALSE) {
   if (isTRUE(write)) {
     required$sweeps <- c(required$sweeps, "risk_chain_hash", "risk_plan_json")
     required$sweep_candidates <- c(required$sweep_candidates, "risk_chain_hash", "risk_plan_json")
+    required$sweep_candidates <- c(required$sweep_candidates, "completion_json")
     required$sweep_trades <- c(
       "sweep_id", "candidate_row", "trade_seq", "close_ts_utc",
       "realized_pnl", "win_loss"
@@ -440,7 +442,7 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
   returns <- DBI::dbGetQuery(
     con,
     "
-    SELECT r.*, c.candidate_id
+    SELECT r.*, c.candidate_id, c.status
     FROM sweep_returns r
     INNER JOIN sweep_candidates c
       ON r.sweep_id = c.sweep_id
@@ -457,6 +459,7 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
     sweep_id = as.character(returns$sweep_id),
     candidate_id = as.character(returns$candidate_id),
     candidate_row = as.integer(returns$candidate_row),
+    status = as.character(returns$status),
     ts_utc = as.POSIXct(returns$ts_utc, tz = "UTC"),
     equity = as.numeric(returns$equity),
     period_return = as.numeric(returns$period_return)
@@ -516,6 +519,11 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     candidate_id = as.character(candidates$candidate_id),
     candidate_row = as.integer(candidates$candidate_row),
     status = as.character(candidates$status),
+    completion_json = if ("completion_json" %in% names(candidates)) {
+      as.character(candidates$completion_json)
+    } else {
+      rep(NA_character_, nrow(candidates))
+    },
     final_equity = as.numeric(candidates$final_equity),
     total_return = as.numeric(candidates$total_return),
     annualized_return = as.numeric(candidates$annualized_return),

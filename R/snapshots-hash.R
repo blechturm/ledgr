@@ -183,7 +183,17 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
     }
   )
 
-  digest::digest(paste0(c(inst_chunk_hashes, bars_chunk_hashes), collapse = ""), algo = "sha256")
+  base_hash <- digest::digest(
+    paste0(c(inst_chunk_hashes, bars_chunk_hashes), collapse = ""),
+    algo = "sha256"
+  )
+  rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
+  if (identical(rule, 1L)) return(base_hash)
+
+  fact_payload <- as.character(canonical_json(
+    ledgr_snapshot_availability_hash_payload(con, snapshot_id)
+  ))
+  digest::digest(paste0(base_hash, fact_payload), algo = "sha256")
 }
 
 ledgr_snapshot_validate <- function(snapshot) {

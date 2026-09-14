@@ -105,6 +105,7 @@ ledgr_sweep_persistence_expected_returns <- function(equity, sweep_id, candidate
   tibble::tibble(
     sweep_id = rep(as.character(sweep_id), length(equity_values)),
     candidate_id = rep(as.character(candidate_id), length(equity_values)),
+    status = rep("DONE", length(equity_values)),
     ts_utc = as.POSIXct(equity$ts_utc, tz = "UTC"),
     equity = equity_values,
     period_return = c(NA_real_, ledgr:::compute_period_returns(equity_values))

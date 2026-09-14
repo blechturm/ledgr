@@ -207,13 +207,13 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
   )
 
-  suppressWarnings(ledgr_backtest_run(cfg_clean, run_id = "pulse-seed-clean"))
-  ledgr:::ledgr_backtest_run_internal(
+  suppressWarnings(ledgr_run_config(cfg_clean, run_id = "pulse-seed-clean"))
+  ledgr:::ledgr_run_fold(
     cfg_resume,
     run_id = "pulse-seed-resume",
     control = list(max_pulses = 2L)
   )
-  suppressWarnings(ledgr_backtest_run(cfg_resume, run_id = "pulse-seed-resume"))
+  suppressWarnings(ledgr_run_config(cfg_resume, run_id = "pulse-seed-resume"))
 
   clean <- ledgr:::new_ledgr_backtest("pulse-seed-clean", db_clean, cfg_clean)
   resumed <- ledgr:::new_ledgr_backtest("pulse-seed-resume", db_resume, cfg_resume)
@@ -263,14 +263,14 @@ testthat::test_that("ambient RNG strategies fail loudly on resume", {
     cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero())
   )
 
-  ledgr:::ledgr_backtest_run_internal(
+  ledgr:::ledgr_run_fold(
     cfg,
     run_id = "ambient-rng-resume",
     control = list(max_pulses = 2L)
   )
 
   err <- testthat::capture_error(
-    ledgr_backtest_run(cfg, run_id = "ambient-rng-resume")
+    ledgr_run_config(cfg, run_id = "ambient-rng-resume")
   )
   testthat::expect_s3_class(err, "ledgr_strategy_ambient_rng_resume")
   testthat::expect_match(conditionMessage(err), "runif", fixed = TRUE)

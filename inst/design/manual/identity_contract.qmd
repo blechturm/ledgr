@@ -1,6 +1,6 @@
 # Identity Contract
 
-**Status:** Maintainer reference for v0.1.9.5 identity surfaces.
+**Status:** Maintainer reference updated through v0.2.0.0.
 
 **Audience:** maintainers and coding agents.
 
@@ -27,6 +27,8 @@ those layers separate.
 | `cost_model_hash` | Cost-model identity. | SHA-256 over `cost_plan_json`. |
 | `risk_plan_json` | Canonical target-risk plan. | `ledgr_risk_plan_json()`. |
 | `risk_chain_hash` | Target-risk chain identity. | SHA-256 over `risk_plan_json`. |
+| `snapshot_hash` rule 2 | Sealed bars, instruments, point-in-time facts, and quarantine evidence. | `ledgr_snapshot_availability_hash_payload()`. |
+| availability config | Universe rule, valuation policy, declared families, and provider version. | Canonical omission for dense configs; `config_hash_payload()` otherwise. |
 | `candidate_key` | Walk-forward fold/window candidate identity. | Canonical JSON over strategy/feature/metric/cost/risk identity plus fold/window seed inputs. |
 | `session_id` | Walk-forward session identity. | Canonical JSON over snapshot, experiment, grid, fold-list, selection-rule, metric-context, cost, risk, seed, and opening-state policy identity. |
 | `db_path`, `snapshot_id`, `snapshot_hash` result attributes | Walk-forward recovery and resolve-at-call verification locators. | `ledgr_walk_forward_results` attributes; not identity bytes. |
@@ -131,6 +133,21 @@ These fields identify the walk-forward evidence envelope. They do not make
 scalar train-window selection statistically sound; selection-integrity
 diagnostics remain a separate future layer.
 
+## Availability Identity
+
+Availability facts and acknowledged quarantine rows are sealed evidence, so
+they enter `snapshot_hash` under hash rule 2. The selected membership universe,
+valuation policy, declared family set, and provider version affect execution
+and enter `config_hash`. Walk-forward `experiment_hash` and `session_id`
+inherit those inputs through their existing snapshot and experiment payloads;
+`candidate_key` remains candidate-recipe identity and gains no availability
+field of its own.
+
+Dense inputs use canonical omission. With no availability facts, membership
+rule, or valuation policy, the dense snapshot hash rule and config payload stay
+unchanged. Store paths, snapshot handles, reconstructed availability views, and
+diagnostic rows are provenance or result evidence, not new execution identity.
+
 ## Locator Metadata
 
 Walk-forward result objects may carry three string locator attributes:
@@ -176,3 +193,7 @@ keeping durable-evidence lookup distinct from interactive inspection.
   helpers.
 - `R/walk-forward-inspection.R`: walk-forward locator attachment, resolve-at-call
   verification, and candidate extraction over reopened results.
+- `R/availability-persistence.R` and `R/snapshots-hash.R`: normalized fact and
+  quarantine rows in snapshot hash rule 2.
+- `R/backtest-config.R` and `R/availability-policy.R`: canonical-omission
+  availability config and effective-plan disclosure.

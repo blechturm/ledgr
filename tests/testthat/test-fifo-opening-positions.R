@@ -116,10 +116,10 @@ testthat::test_that("resume after partial opening-position liquidation does not 
     opening = ledgr_opening(cash = 10000, positions = c(AAA = 100), cost_basis = c(AAA = 50))
   )
 
-  ledgr:::ledgr_backtest_run_internal(cfg, run_id = run_id, control = list(max_pulses = 1L))
+  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
   gc()
   Sys.sleep(0.05)
-  ledgr_backtest_run(cfg, run_id = run_id)
+  ledgr_run_config(cfg, run_id = run_id)
 
   bt <- ledgr:::new_ledgr_backtest(run_id, setup$db_path, cfg)
   on.exit(close(bt), add = TRUE)

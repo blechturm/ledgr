@@ -38,6 +38,7 @@ articles:
       and walk-forward over candidates.
     contents:
       - data-input-and-snapshots
+      - survivorship-bias
       - strategy-development
       - indicators
       - metrics-and-accounting
@@ -74,6 +75,9 @@ reference:
     contents:
       - ledgr_experiment
       - print.ledgr_experiment
+      - ledgr_universe_members
+      - ledgr_valuation_stale
+      - ledgr_experiment_plan
       - ledgr_opening
       - print.ledgr_opening
       - ledgr_opening_from_broker
@@ -130,6 +134,7 @@ reference:
       - summary.ledgr_backtest
       - as_tibble.ledgr_backtest
       - ledgr_results
+      - ledgr_run_explain
       - as_tibble.ledgr_result_table
       - print.ledgr_result_table
       - close.ledgr_backtest
@@ -162,6 +167,10 @@ reference:
   - title: Snapshots
     contents:
       - starts_with("ledgr_snapshot")
+      - ledgr_facts
+      - ledgr_facts_inspection
+      - ledgr_facts_sessions_qlcal
+      - ledgr_facts_validate
       - print.ledgr_snapshot
       - summary.ledgr_snapshot
       - close.ledgr_snapshot

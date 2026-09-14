@@ -88,7 +88,7 @@ The feature path has five steps:
 
 <div class="ledgr-diagram ledgr-feature-lifecycle">
 
-``` mermaid
+```mermaid
 
 flowchart LR
   declare["declare<br/>indicator or map"]
@@ -280,14 +280,13 @@ ledgr_passed_warmup(x)
 produce a usable value. A warmup `NA` is not an unknown feature; it is a
 known feature that is not ready yet.
 
-<div class="ledgr-callout ledgr-callout-tip">
+> [!TIP]
+>
+> ### Try it
+>
+> Change the scalar accessor to `pulse$feature("DEMO_01", "returns_5")`.
+> Why does that fail while `ids[["ret_5"]]` works?
 
-**Try it**
-
-Change the scalar accessor to `pulse$feature("DEMO_01", "returns_5")`.
-Why does that fail while `ids[["ret_5"]]` works?
-
-</div>
 
 Inside a strategy, loop over `ctx$universe` so the rule works for every
 instrument in the run.
@@ -342,20 +341,21 @@ bt <- exp |>
   ledgr_run(params = list(min_return = 0, qty = 10), run_id = run_id)
 
 ledgr_results(bt, what = "fills")
-#> # A tibble: 39 × 9
-#>    event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>        <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#>  1         1 2019-01-23 DEMO_01       BUY      10  88.0     0         0    OPEN
-#>  2         2 2019-01-30 DEMO_02       BUY      10  71.1     0         0    OPEN
-#>  3         3 2019-02-01 DEMO_02       SELL     10  69.3     0       -17.9  CLOSE
-#>  4         4 2019-02-06 DEMO_01       SELL     10  92.9     0        49.3  CLOSE
-#>  5         5 2019-02-13 DEMO_01       BUY      10  93.9     0         0    OPEN
-#>  6         6 2019-02-19 DEMO_02       BUY      10  68.7     0         0    OPEN
-#>  7         7 2019-02-25 DEMO_02       SELL     10  67.5     0       -12.2  CLOSE
-#>  8         8 2019-03-08 DEMO_02       BUY      10  68.9     0         0    OPEN
-#>  9         9 2019-03-11 DEMO_01       SELL     10 106.      0       123.   CLOSE
-#> 10        10 2019-03-11 DEMO_02       SELL     10  68.0     0        -9.18 CLOSE
+#> # A tibble: 39 × 10
+#>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#>  1         1 2019-01-23 2019-01-23 00:00:00    DEMO_01       BUY      10  88.0     0
+#>  2         2 2019-01-30 2019-01-30 00:00:00    DEMO_02       BUY      10  71.1     0
+#>  3         3 2019-02-01 2019-02-01 00:00:00    DEMO_02       SELL     10  69.3     0
+#>  4         4 2019-02-06 2019-02-06 00:00:00    DEMO_01       SELL     10  92.9     0
+#>  5         5 2019-02-13 2019-02-13 00:00:00    DEMO_01       BUY      10  93.9     0
+#>  6         6 2019-02-19 2019-02-19 00:00:00    DEMO_02       BUY      10  68.7     0
+#>  7         7 2019-02-25 2019-02-25 00:00:00    DEMO_02       SELL     10  67.5     0
+#>  8         8 2019-03-08 2019-03-08 00:00:00    DEMO_02       BUY      10  68.9     0
+#>  9         9 2019-03-11 2019-03-11 00:00:00    DEMO_01       SELL     10 106.      0
+#> 10        10 2019-03-11 2019-03-11 00:00:00    DEMO_02       SELL     10  68.0     0
 #> # ℹ 29 more rows
+#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
 
 close(pulse)
 close(bt)

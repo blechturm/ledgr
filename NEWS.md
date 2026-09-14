@@ -1,3 +1,159 @@
+# ledgr 0.2.0.0
+
+- Made ledgr-owned DuckDB drivers use session-local extension and secret
+  storage, removing repeated DuckDB home notices from tests and rendered
+  articles without suppressing ledgr diagnostics. Release checks now verify
+  GFM freshness and local image targets, and the non-CRAN quantstrat DSR oracle
+  is a documented manual check while CRAN `pbo` is declared in `Suggests`.
+- Corrected reversal-fill projections so derived CLOSE and OPEN fees are
+  allocated pro rata and sum to the source event fee without changing cash,
+  lot state, realized PnL, or trade metrics.
+- Simplified `ledgr_run_fills()` to one eager `bt` argument with a stable tibble
+  result; the cursor, lazy-read, and threshold-switching modes were removed.
+- Restored source and risk lineage on ranked sweep-review results so explicit
+  candidate extraction and promotion work after review and reopen. The compact
+  `review$top` table remains presentation-only and carries no sweep lineage.
+- Added the committed `risk_chain_hash` to `ledgr_run_info()`. Historical runs
+  without recorded risk identity report `NA` rather than an inferred no-op
+  plan; inspection remains read-only and does not expose the full risk plan.
+- Locked durable run handles as resource-owning locators: `close(bt)` releases
+  resources without deleting evidence, and completed runs remain readable from
+  the closed handle or through `ledgr_run_open()` in a later session. Public
+  examples now use ordinary target indexing and an explicit
+  review-to-promotion workflow.
+- Split the backtest implementation into its accepted config, handle, fills,
+  and result ownership files, and extracted all four run-coordinator stages as
+  explicit preparation, snapshot, finalization, registration, and resume
+  records. Runtime effect order, snapshot guards, cleanup ownership, public
+  exports, and execution behavior remain unchanged.
+- Corrected post-fold failure handling so committed ledger, strategy-state,
+  and feature evidence survives a failed finalization and the same run can
+  resume finalization without duplicate rows. Added detecting feature
+  causality, caller-RNG preservation, and resource-cleanup regression gates.
+- Protected the structural `ts_utc` column in retained wide sweep projections
+  with a reversible reserved-name encoding. Original candidate IDs remain
+  unchanged in long, matrix, panel, and candidate-extraction surfaces; no
+  persisted mapping or identity input was added.
+- Corrected the availability run window so declared session-calendar bounds
+  keep their time of day. The bounds are ISO8601 strings, and parsing them
+  without an explicit format truncated both to midnight, which silently
+  dropped the final open session from the decision axis and left a target
+  decided on the last remaining pulse unfilled even though its next open was
+  present in the snapshot. Runs over declared session calendars now cover one
+  more session, so equity curves, pulse counts, and run identity hashes change
+  for affected configurations. The same truncation is corrected for the
+  walk-forward `created_at_utc` record.
+- Added classed point-in-time fact constructors and a read-only pre-seal
+  validation report for membership, trading status, lifetime, and complete
+  venue-session calendars. Daily vendor dates map explicitly to declared
+  session closes; observed bars never define the expected-session clock.
+- Added read-only fact history and cutoff resolution over in-memory facts or
+  sealed snapshots. Resolution preserves explicit true, false, and unknown
+  membership states without exposing future-known evidence or widening the
+  strategy context.
+- Added constituent-list membership input and an optional qlcal session
+  preparation adapter. Equivalent row/list membership evidence hashes
+  identically; generated schedules retain provider, calendar, hours, override,
+  and assumption provenance without persisting a calendar object.
+- Session construction now rejects ambiguous fall-back and nonexistent
+  spring-forward local wall times consistently while preserving explicit
+  POSIXct instants.
+- Added experiment-store schema 113, saved-sweep schema 4, and snapshot hash
+  rule 2 for normalized fact families and explicitly acknowledged observation
+  quarantine. Fact-free snapshots retain hash rule 1 unchanged, legacy sealed
+  snapshots are never rehashed, and quarantined rows remain hashed audit
+  evidence rather than runtime bars.
+- Added explicit availability activation with public membership-universe and
+  stale-valuation policies plus effective-plan inspection. Availability-aware
+  experiments require a complete declared session calendar and valuation
+  policy; canonical omission keeps the dense path unchanged.
+- Added the internal point-in-time availability provider, dynamic public pulse
+  axes, decision-time context planes, and stable-ID asset state. Facts are
+  resolved only after both effective and knowledge time, while provider code
+  remains free of valuation, affordability, risk, and fill policy.
+- Corrected availability-aware execution so a close-time decision resolves
+  execution facts and records an accepted fill at the next declared session
+  opening. Decision-frozen membership and the terminal no-opportunity rule are
+  preserved, while dense execution remains unchanged.
+- Added read-side fill alignment and explicit timing provenance. Public fill
+  timestamps remain economic execution times, while
+  `recording_pulse_ts_utc` derives the associated execution-session close for
+  grouped equity alignment without adding a persisted column. New active runs
+  record timing version 2 in identity; retained version-1 runs reopen read-only,
+  and mixed or unknown timing conventions are marked ineligible for fill-level
+  equivalence without hiding their summary metrics.
+- Added strict expected-session feature semantics for the built-in SMA and
+  returns indicators. Whole-feed outages remain visible, missing required
+  observations invalidate affected windows, and unsupported gap behavior fails
+  before strategy use. Availability-aware compiled spot-FIFO requests also
+  fail before execution; dense compiled behavior is unchanged.
+- Added availability-aware target restrictions and helper-safe sizing. Held
+  nonmembers are preserved and reserved by default, unavailable sizing data
+  fails closed, post-risk targets cannot enlarge strategy exposure, and new or
+  enlarged shorts are rejected before any fill can finance another purchase.
+  The pre-release restriction vocabulary is finalized by renaming
+  `status_halted` to `trading_halted` and
+  `status_quotation_only` to `quotation_only`.
+- Added separate fresh/stale valuation and risk marks plus bounded
+  affordability. Accepted reductions fund purchases through a deterministic
+  virtual cash ledger, rejected sales fund nothing, stale marks never price
+  execution, and final cash is reconciled without imposing an intrapulse floor.
+- Added experiment-store schema 114 with direct-run completion and diagnostic
+  evidence. Expected valuation, risk-mark, settlement, and reconciliation
+  stops preserve accepted prefixes as `INCOMPLETE`; unexpected fold errors
+  remain `FAILED` and retain only post-rollback error diagnostics.
+- Added terminal recovery for availability-aware `DONE` and `INCOMPLETE` runs.
+  Achieved incomplete run IDs return idempotently, while failed finalization
+  resumes from committed terminal evidence without rerunning strategy code or
+  duplicating fold rows. `ledgr_run_open()` now opens either terminal status;
+  malformed evidence fails with `ledgr_run_terminal_evidence_invalid`.
+- Curated fact-history and resolution printing now keeps effective and
+  knowledge times, completeness, and resolution reasons visible while naming
+  omitted stored columns and preserving the full evidence objects unchanged.
+- `ledgr_run_list()` now appends recorded completion evidence and puts achieved
+  horizons beside raw metrics in its default print. Incomplete metrics are
+  explicitly labelled as prefix-only; dense and historical runs retain typed
+  unknown completion fields.
+- Backtest summaries now follow recorded completion evidence: when performance
+  is incomplete they retain prefix total return and maximum drawdown, name the
+  achieved window, and withhold annualized return, annualized volatility, and
+  Sharpe ratio with an explanation. Run-info printing presents completion
+  before identity and telemetry fields.
+- Backtest summaries now label `n_trades` as `Closed Trades`, matching its
+  closed-trade-row computation without changing the value.
+- Bound the completed-run comparison rule: explicitly named non-`DONE` runs
+  fail with `ledgr_run_not_complete`, while inventory-style comparison without
+  IDs excludes them. The Survivorship Bias article now uses the public fact
+  prints and completion-aware inventory rather than article-defined reporting
+  helpers.
+- Added experiment-store schema 115 completion evidence for sweep candidates
+  and walk-forward scores. Incomplete prefixes stay visibly labelled but are
+  excluded from complete panels, selection, candidate extraction, and
+  promotion; an incomplete test fold ends a carry-state walk-forward session
+  as `PARTIAL` without inventing a later opening state. Extraction and
+  promotion reject incomplete candidates with `ledgr_incomplete_sweep_candidate`
+  and `ledgr_promote_incomplete_candidate`, respectively.
+- Added `diagnostics` and `availability` result tables plus
+  `ledgr_run_explain()`. These read durable traces and reconstruct availability
+  from sealed facts without executing strategy code; missing traces fail
+  with `ledgr_run_explanation_unavailable` rather than producing an inferred
+  decision.
+- Added the executed Survivorship Bias article. Its public workflow builds
+  dated membership and session facts, seals and runs an ordinary strategy,
+  explains a blocked exit and retained holding, reopens the same evidence, and
+  contrasts strict invalid-observation rejection with explicit quarantine and
+  an honestly incomplete valuation horizon.
+- Rebuilt that workflow around public fact-history and cutoff-resolution
+  queries, an explicit whole-feed outage, opening-time fill evidence, and a
+  result-derived common comparison window. `ledgr_run_info()` and `summary()`
+  now expose recorded completion bounds, stop evidence, and affected
+  instruments without reconstructing historical evidence.
+- Development continues under the accepted v0.2.0.0 packet. The ordered scope
+  next hardens representation, provenance, and run-coordinator boundaries,
+  then implements the first point-in-time asset-availability path on the shared
+  fold. The packet is at `inst/design/ledgr_v0_2_0_0_spec_packet/`; Batches 0-12
+  are complete after review and Batch 13 is awaiting review.
+
 # ledgr 0.1.9.7
 
 - Added `ledgr_return_panel()` as the public return-panel entry point for

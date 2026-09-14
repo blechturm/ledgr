@@ -39,6 +39,9 @@ ledgr_prepare_snapshot_source_tables <- function(con, snapshot_db_path, run_db_p
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.snapshots"), silent = TRUE)
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.snapshot_instruments"), silent = TRUE)
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.snapshot_bars"), silent = TRUE)
+  for (table_name in names(ledgr_snapshot_availability_tables())) {
+    try(DBI::dbExecute(con, paste("DROP VIEW IF EXISTS temp.", table_name)), silent = TRUE)
+  }
   try(DBI::dbExecute(con, "DETACH ledgr_snapshot_src"), silent = TRUE)
 
   snapshot_path_sql <- DBI::dbQuoteString(con, ledgr_db_path_key(snapshot_db_path))
@@ -46,6 +49,26 @@ ledgr_prepare_snapshot_source_tables <- function(con, snapshot_db_path, run_db_p
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshots AS SELECT * FROM ledgr_snapshot_src.snapshots")
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshot_instruments AS SELECT * FROM ledgr_snapshot_src.snapshot_instruments")
   DBI::dbExecute(con, "CREATE TEMP VIEW snapshot_bars AS SELECT * FROM ledgr_snapshot_src.snapshot_bars")
+  for (table_name in names(ledgr_snapshot_availability_tables())) {
+    source_exists <- DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT COUNT(*) AS n FROM information_schema.tables ",
+        "WHERE table_catalog = 'ledgr_snapshot_src' AND table_name = ",
+        DBI::dbQuoteString(con, table_name)
+      )
+    )$n[[1L]] > 0L
+    if (isTRUE(source_exists)) {
+      DBI::dbExecute(
+        con,
+        sprintf(
+          "CREATE TEMP VIEW %s AS SELECT * FROM ledgr_snapshot_src.%s",
+          table_name,
+          table_name
+        )
+      )
+    }
+  }
 
   TRUE
 }

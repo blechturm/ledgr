@@ -305,6 +305,24 @@ ledgr_run_store_config_feature_set_hash <- function(config_json) {
   NA_character_
 }
 
+ledgr_run_store_config_risk_chain_hash <- function(config_json) {
+  # Read-time projection from the committed config; historical configs may
+  # predate risk identity and must remain visibly absent.
+  if (is.null(config_json) || length(config_json) != 1L ||
+      is.na(config_json) || !nzchar(config_json)) {
+    return(NA_character_)
+  }
+  cfg <- tryCatch(
+    ledgr_json_read_config(config_json),
+    error = function(e) NULL
+  )
+  value <- cfg$risk_chain$risk_chain_hash
+  if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value)) {
+    return(value)
+  }
+  NA_character_
+}
+
 ledgr_run_store_format_ts <- function(x) {
   if (is.null(x) || length(x) != 1L || is.na(x)) return(NA_character_)
   ledgr_normalize_ts_utc(x)
@@ -534,6 +552,18 @@ ledgr_compare_runs_select <- function(rows,
                                       metric_stats = NULL,
                                       metric_context = NULL) {
   out <- rows
+  timing <- lapply(out$config_json, ledgr_execution_timing_from_json)
+  out$execution_timing_version <- vapply(
+    timing,
+    function(x) as.integer(x$execution_timing_version),
+    integer(1)
+  )
+  out$execution_timing_convention <- vapply(
+    timing,
+    function(x) as.character(x$execution_timing_convention),
+    character(1)
+  )
+  timing_comparison <- ledgr_fill_timing_comparison(timing)
   out$n_trades <- NULL
   fill_idx <- match(out$run_id, fill_stats$run_id)
   out$n_trades <- fill_stats$n_trades[fill_idx]
@@ -564,6 +594,8 @@ ledgr_compare_runs_select <- function(rows,
     "win_rate",
     "avg_trade",
     "time_in_market",
+    "execution_timing_version",
+    "execution_timing_convention",
     "execution_mode",
     "elapsed_sec",
     "reproducibility_level",
@@ -579,6 +611,8 @@ ledgr_compare_runs_select <- function(rows,
     attrs$metric_context_hash <- ledgr_metric_context_hash(metric_context)
     attrs$metric_context_version <- as.integer(metric_context$metric_context_version)
   }
+  attrs$fill_timing_comparable <- isTRUE(timing_comparison$comparable)
+  attrs$fill_timing_comparability_reason <- as.character(timing_comparison$reason)
   ledgr_classed_tibble(out, "ledgr_comparison", attrs = attrs)
 }
 
@@ -619,6 +653,11 @@ ledgr_run_info_from_row <- function(row, db_path) {
     rlang::abort("`row` must contain exactly one run.", class = "ledgr_internal_error")
   }
   info <- as.list(row[1, , drop = TRUE])
+  info$risk_chain_hash <- ledgr_run_store_config_risk_chain_hash(info$config_json)
+  timing <- ledgr_execution_timing_from_json(info$config_json)
+  info$execution_timing_version <- timing$execution_timing_version
+  info$execution_timing_convention <- timing$execution_timing_convention
+  info$execution_timing_source <- timing$execution_timing_source
   info$db_path <- db_path
   info$telemetry_missing <- all(vapply(
     info[c("elapsed_sec", "persist_features", "feature_cache_hits", "feature_cache_misses")],
@@ -641,7 +680,9 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   DuckDB file in a new R session.
 #' @param run_ids Optional character vector of run IDs. If supplied, output
 #'   preserves this order, including duplicates, and may include archived
-#'   completed runs. If `NULL`, compares all non-archived completed runs.
+#'   completed runs. A named non-completed run raises
+#'   `ledgr_run_not_complete`. If `NULL`, compares all non-archived completed
+#'   runs and silently excludes other statuses.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported.
 #' @param metric_context Optional metric context for this comparison table.
@@ -654,7 +695,14 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   `avg_trade` are computed over those closed trade rows. `final_equity` is
 #'   read from the last stored equity row. `sharpe_ratio` uses the comparison
 #'   metric context; the table has exactly one metric context, available through
-#'   `ledgr_metric_context(comparison)`. Use `as.data.frame(comparison)` or
+#'   `ledgr_metric_context(comparison)`. Each row reports its fill-timing
+#'   convention. The comparison attributes `fill_timing_comparable` and
+#'   `fill_timing_comparability_reason` describe whether the selected run set
+#'   can support a fill-equivalence claim; they never filter or alter metrics.
+#'   Incomplete runs remain visible through [ledgr_run_list()] and
+#'   [ledgr_run_info()], but cannot enter this ranking surface because a shorter
+#'   horizon changes what return, Sharpe ratio, and drawdown mean.
+#'   Use `as.data.frame(comparison)` or
 #'   tibble operations when exporting report-ready numeric columns.
 #' @section Articles:
 #' Durable experiment stores:
@@ -764,6 +812,9 @@ ledgr_run_compare <- function(snapshot,
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_comparison <- function(x, ...) {
+  comparable <- attr(x, "fill_timing_comparable", exact = TRUE)
+  comparable_label <- if (isTRUE(comparable)) "yes" else "no"
+  comparability_reason <- attr(x, "fill_timing_comparability_reason", exact = TRUE) %||% "unknown"
   ledgr_print_curated_tibble(
     "# ledgr comparison",
     x,
@@ -773,6 +824,11 @@ print.ledgr_comparison <- function(x, ...) {
       "reproducibility_level"
     ),
     footer = c(
+      sprintf(
+        "Fill timing comparable: %s (%s).",
+        comparable_label,
+        comparability_reason
+      ),
       "Full identity and telemetry columns remain available on this tibble.",
       "Inspect one run with ledgr_run_info(snapshot, run_id)."
     ),
@@ -791,8 +847,11 @@ print.ledgr_comparison <- function(x, ...) {
 #' @param include_archived Logical scalar. If `TRUE`, include archived runs.
 #' @return A `ledgr_run_list` object, which is a classed tibble with run
 #'   identity, including `feature_set_hash`, provenance, status, telemetry
-#'   summary, and basic result summary columns. See [ledgr_identity_fields]
-#'   for hash-field semantics.
+#'   summary, and basic result summary columns. Eleven appended completion
+#'   columns distinguish requested and achieved windows, completion status,
+#'   prefix-only performance, and affected instruments. Typed missing values
+#'   mean that completion evidence is unavailable, as for dense or historical
+#'   runs. See [ledgr_identity_fields] for hash-field semantics.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
@@ -813,7 +872,33 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   out <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
   detail_cols <- c("config_json", "dependency_versions_json", "strategy_params_json")
-  ledgr_classed_tibble(out[setdiff(names(out), detail_cols)], "ledgr_run_list")
+  out <- out[setdiff(names(out), detail_cols)]
+  completion <- ledgr_run_completion_info_many(opened$con, out$run_id)
+  out$completion_evidence_available <- vapply(
+    completion, `[[`, logical(1), "completion_evidence_available"
+  )
+  out$completion_status <- vapply(completion, `[[`, character(1), "completion_status")
+  for (name in c(
+    "requested_start_utc", "requested_end_utc", "achieved_start_utc",
+    "achieved_end_utc"
+  )) {
+    out[[name]] <- as.POSIXct(
+      vapply(completion, function(info) as.numeric(info[[name]]), numeric(1)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+  }
+  out$stop_reason <- vapply(completion, `[[`, character(1), "stop_reason")
+  for (name in c("last_fully_valued_ts_utc", "last_executed_ts_utc")) {
+    out[[name]] <- as.POSIXct(
+      vapply(completion, function(info) as.numeric(info[[name]]), numeric(1)),
+      origin = "1970-01-01",
+      tz = "UTC"
+    )
+  }
+  out$complete_performance <- vapply(completion, `[[`, logical(1), "complete_performance")
+  out$affected_instrument_ids <- unname(lapply(completion, `[[`, "affected_instrument_ids"))
+  ledgr_classed_tibble(out, "ledgr_run_list")
 }
 
 #' Print a run list
@@ -825,21 +910,30 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
 print.ledgr_run_list <- function(x, ...) {
   cols <- c(
     "run_id", "label", "tags", "status", "final_equity",
-    "total_return", "execution_mode", "reproducibility_level"
+    "total_return", "complete_performance", "achieved_end_utc",
+    "execution_mode", "reproducibility_level"
   )
   if ("archived" %in% names(x) && any(as.logical(x$archived), na.rm = TRUE)) {
-    cols <- c("run_id", "label", "archived", "tags", "status", "final_equity", "total_return", "execution_mode")
+    cols <- c(
+      "run_id", "label", "archived", "tags", "status", "final_equity",
+      "total_return", "complete_performance", "achieved_end_utc", "execution_mode"
+    )
   }
-  ledgr_print_curated_tibble(
-    "# ledgr run list",
-    x,
-    cols = cols,
-    footer = c(
-      "Full identity and telemetry columns remain available on this tibble.",
-      "Inspect one run with ledgr_run_info(snapshot, run_id)."
+  args <- c(
+    list(
+      title = "# ledgr run list",
+      x = x,
+      cols = cols,
+      footer = c(
+        "INCOMPLETE metrics describe the achieved prefix only.",
+        "Full identity and telemetry columns remain available on this tibble.",
+        "Inspect one run with ledgr_run_info(snapshot, run_id)."
+      )
     ),
-    ...
+    list(...)
   )
+  if (is.null(args$width)) args$width <- Inf
+  do.call(ledgr_print_curated_tibble, args)
 }
 
 #' Inspect one run in a ledgr experiment store
@@ -853,11 +947,16 @@ print.ledgr_run_list <- function(x, ...) {
 #' @param run_id Run identifier.
 #' @return A `ledgr_run_info` object. Important fields include `run_id`,
 #'   `status`, `snapshot_id`, `snapshot_hash`, `strategy_source_hash`,
-#'   `strategy_params_hash`, `feature_set_hash`, `config_hash`,
+#'   `strategy_params_hash`, `feature_set_hash`, `risk_chain_hash`, `config_hash`,
+#'   `execution_timing_version`, `execution_timing_convention`,
 #'   `reproducibility_level`, `execution_mode`, `elapsed_sec`, `pulse_count`,
 #'   `persist_features`, feature-cache counts, `promotion_context` for runs
-#'   created with [ledgr_promote()], and `error_msg` for failed runs. See
-#'   [ledgr_identity_fields] for hash-field semantics.
+#'   created with [ledgr_promote()], and `error_msg` for failed runs. When
+#'   terminal completion evidence exists, the object also reports requested
+#'   and achieved windows, stop reason, last fully valued and executed times,
+#'   whether performance is complete, and affected instrument identifiers.
+#'   Historical or dense runs without that evidence report those fields as
+#'   unknown. See [ledgr_identity_fields] for hash-field semantics.
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -888,6 +987,8 @@ ledgr_run_info <- function(snapshot, run_id) {
 
   info <- ledgr_run_info_from_row(row, db_path)
   info$promotion_context <- ledgr_fetch_promotion_context(opened$con, run_id)
+  completion <- ledgr_run_completion_info(opened$con, run_id)
+  info[names(completion)] <- completion
   info
 }
 
@@ -915,14 +1016,21 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Status:          ", value("status"), "\n", sep = "")
   cat("Archived:        ", value("archived", "FALSE"), "\n", sep = "")
   cat("Tags:            ", value("tags"), "\n", sep = "")
+  if (isTRUE(x$completion_evidence_available)) {
+    cat("\n")
+    ledgr_print_completion_info(x)
+  }
   cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
   cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
   cat("Feature Set Hash: ", value("feature_set_hash"), "\n", sep = "")
+  cat("Risk Chain Hash:  ", value("risk_chain_hash"), "\n", sep = "")
   cat("Config Hash:     ", value("config_hash"), "\n", sep = "")
   cat("Strategy Hash:   ", value("strategy_source_hash"), "\n", sep = "")
   cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
   cat("Reproducibility: ", value("reproducibility_level"), "\n", sep = "")
   cat("Execution Mode:  ", value("execution_mode"), "\n", sep = "")
+  cat("Fill Timing:     ", value("execution_timing_convention"), "\n", sep = "")
+  cat("Timing Version:  ", value("execution_timing_version", "N/A"), "\n", sep = "")
   cat("Elapsed Sec:     ", value("elapsed_sec"), "\n", sep = "")
   cat("Persist Features:", value("persist_features"), "\n", sep = "")
   cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
@@ -930,21 +1038,27 @@ print.ledgr_run_info <- function(x, ...) {
   if (isTRUE(x$legacy_pre_provenance)) {
     cat("\nLegacy/pre-provenance run: strategy provenance is incomplete.\n")
   }
-  if (!identical(value("status"), "DONE")) {
-    cat("\nDiagnostics: ", value("error_msg"), "\n", sep = "")
+  error_msg <- x$error_msg
+  if (
+    length(error_msg) == 1L && !is.na(error_msg) &&
+      is.character(error_msg) && nzchar(error_msg)
+  ) {
+    cat("\nDiagnostics: ", error_msg, "\n", sep = "")
   }
   invisible(x)
 }
 
-#' Reopen a completed run from a ledgr experiment store
+#' Reopen a terminal run from a ledgr experiment store
 #'
-#' Returns a `ledgr_backtest`-compatible handle over an existing completed run.
-#' The run is not recomputed and strategy code is not executed.
+#' Returns a `ledgr_backtest`-compatible handle over an existing `DONE` or
+#' `INCOMPLETE` run. The run is not recomputed and strategy code is not
+#' executed. `INCOMPLETE` runs retain only their achieved evidence prefix.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
 #'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable
 #'   DuckDB file in a new R session.
-#' @param run_id Run identifier. The run must have status `DONE`.
+#' @param run_id Run identifier. The run must have status `DONE` or
+#'   `INCOMPLETE`.
 #' @return A `ledgr_backtest` object.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
@@ -978,7 +1092,7 @@ ledgr_run_open <- function(snapshot, run_id) {
     rlang::abort(sprintf("Run not found: %s", run_id), class = "ledgr_run_not_found")
   }
   status <- row$status[[1]]
-  if (!identical(status, "DONE")) {
+  if (!status %in% c("DONE", "INCOMPLETE")) {
     rlang::abort(
       sprintf("Run '%s' has status %s and cannot be opened as a completed backtest. Use ledgr_run_info() for diagnostics.", run_id, status),
       class = "ledgr_run_not_complete"
@@ -1024,6 +1138,41 @@ ledgr_run_open <- function(snapshot, run_id) {
       rlang::abort(sprintf("Run '%s' has invalid config_json and cannot be reopened.", run_id), class = "ledgr_invalid_run", parent = e)
     }
   )
+  if (identical(status, "INCOMPLETE")) {
+    if (!ledgr_availability_config_active(cfg)) {
+      ledgr_run_terminal_evidence_abort(
+        sprintf("Run '%s' is INCOMPLETE without an availability-aware terminal contract.", run_id)
+      )
+    }
+    snapshot_opened <- ledgr_snapshot_connection(snapshot)
+    if (isTRUE(snapshot_opened$opened_new)) {
+      on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+    }
+    snapshot_info <- ledgr_snapshot_info(snapshot_opened$con, snapshot_id)
+    provider <- ledgr_availability_provider(
+      snapshot_opened$con,
+      cfg,
+      as.character(snapshot_info$snapshot_hash[[1L]])
+    )
+    calendar <- ledgr_availability_calendar(
+      provider,
+      cfg$backtest$start_ts_utc,
+      cfg$backtest$end_ts_utc
+    )
+    completion <- ledgr_run_completion_read(opened$con, run_id, required = TRUE)
+    completion <- ledgr_run_completion_validate(
+      completion,
+      run_id,
+      calendar,
+      stored_status = status
+    )
+    ledgr_run_completion_validate_finalized(
+      opened$con,
+      completion,
+      run_id,
+      calendar
+    )
+  }
   new_ledgr_backtest(run_id = run_id, db_path = db_path, config = cfg)
 }
 

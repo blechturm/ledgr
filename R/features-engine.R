@@ -62,6 +62,14 @@ ledgr_validate_feature_def <- function(feature_def) {
 
   if (is.null(params)) params <- list()
 
+  gap_contract <- feature_def$gap_contract
+  if (!is.null(gap_contract) && !identical(gap_contract, "strict_window")) {
+    rlang::abort(
+      sprintf("feature_def$gap_contract is unsupported (feature: %s).", id),
+      class = "ledgr_invalid_feature_def"
+    )
+  }
+
   json_safe_def <- list(
     id = id,
     requires_bars = as.integer(requires_bars),
@@ -106,7 +114,8 @@ ledgr_feature_sma_n <- function(n) {
       if (!is.numeric(closes)) closes <- as.numeric(closes)
       ledgr_rolling_mean(closes, as.integer(params$n))
     },
-    params = list(n = n)
+    params = list(n = n),
+    gap_contract = "strict_window"
   )
 }
 
@@ -130,7 +139,8 @@ ledgr_feature_return_1 <- function() {
       }
       out
     },
-    params = list()
+    params = list(),
+    gap_contract = "strict_window"
   )
 }
 
@@ -269,6 +279,66 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
     window <- bars_df[start_idx:i, , drop = FALSE]
     value <- ledgr_call_feature_fn(fn, window, params)
     out[[i]] <- ledgr_normalize_feature_scalar_output(value, feature_def$id)
+  }
+  out
+}
+
+ledgr_compute_feature_series_strict <- function(bars_df, feature_def) {
+  ledgr_validate_feature_def(feature_def)
+  if (!identical(feature_def$gap_contract, "strict_window")) {
+    rlang::abort(
+      sprintf(
+        "Indicator '%s' does not declare the availability gap contract `strict_window`.",
+        feature_def$id
+      ),
+      class = c("ledgr_indicator_gap_unsupported", "ledgr_invalid_feature_def")
+    )
+  }
+  if (!is.data.frame(bars_df) || !all(c("ts_utc", "close") %in% names(bars_df))) {
+    rlang::abort(
+      "Strict feature input must be an expected-session-aligned data frame.",
+      class = "ledgr_invalid_feature_input"
+    )
+  }
+  n <- nrow(bars_df)
+  width <- as.integer(feature_def$stable_after)
+  out <- rep(NA_real_, n)
+  if (n < width) return(out)
+  value_columns <- intersect(c("open", "high", "low", "close"), names(bars_df))
+  for (i in seq.int(width, n)) {
+    window <- bars_df[seq.int(i - width + 1L, i), , drop = FALSE]
+    complete <- all(vapply(window[value_columns], function(x) {
+      values <- suppressWarnings(as.numeric(x))
+      !anyNA(values) && all(is.finite(values))
+    }, logical(1)))
+    if (!complete) next
+    scalar <- ledgr_normalize_feature_scalar_output(
+      ledgr_call_feature_fn(feature_def$fn, window, feature_def$params %||% list()),
+      feature_def$id
+    )
+    if (!is.null(feature_def$series_fn)) {
+      series <- ledgr_call_feature_series_fn(
+        feature_def$series_fn,
+        window,
+        feature_def$params %||% list()
+      )
+      terminal <- ledgr_normalize_feature_scalar_output(
+        utils::tail(series, 1L),
+        feature_def$id
+      )
+      same <- (is.na(scalar) && is.na(terminal)) ||
+        isTRUE(all.equal(scalar, terminal, tolerance = sqrt(.Machine$double.eps)))
+      if (!same) {
+        rlang::abort(
+          sprintf(
+            "Indicator '%s' scalar and series functions disagree on a strict window.",
+            feature_def$id
+          ),
+          class = c("ledgr_indicator_gap_parity", "ledgr_invalid_feature_output")
+        )
+      }
+    }
+    out[[i]] <- scalar
   }
   out
 }

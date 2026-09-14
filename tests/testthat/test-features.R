@@ -399,6 +399,44 @@ testthat::test_that("no-lookahead checker passes for built-in features on determ
   )
 })
 
+testthat::test_that("no-lookahead checker detects a leaking series function", {
+  bars <- make_test_bars("AAA", "2020-01-01", 8L)
+  causal <- list(
+    id = "causal_close",
+    requires_bars = 1L,
+    stable_after = 1L,
+    fn = function(window) tail(window$close, 1L),
+    series_fn = function(x, params = list()) as.numeric(x$close),
+    params = list()
+  )
+  leaking <- causal
+  leaking$id <- "leaking_final_close"
+  leaking$series_fn <- function(x, params = list()) {
+    rep(as.numeric(tail(x$close, 1L)), nrow(x))
+  }
+
+  detects_leak <- function(checker) {
+    error <- tryCatch(
+      checker(leaking, bars, horizons = c(1L, 3L)),
+      error = identity
+    )
+    if (!inherits(error, "ledgr_feature_lookahead_detected")) {
+      stop("The leaking feature was not detected.", call. = FALSE)
+    }
+    invisible(TRUE)
+  }
+
+  testthat::expect_silent(
+    ledgr:::ledgr_check_no_lookahead(causal, bars, horizons = c(1L, 3L))
+  )
+  testthat::expect_silent(detects_leak(ledgr:::ledgr_check_no_lookahead))
+  testthat::expect_error(
+    detects_leak(function(...) invisible(TRUE)),
+    "The leaking feature was not detected.",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("feature engine fails loud when bars are missing for an instrument", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

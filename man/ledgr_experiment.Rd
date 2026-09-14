@@ -10,6 +10,7 @@ ledgr_experiment(
   features = list(),
   opening = ledgr_opening(cash = 1e+05),
   universe = NULL,
+  valuation_policy = NULL,
   timing_model = ledgr_timing_next_open(),
   cost_model,
   risk_chain = ledgr_risk_none(),
@@ -34,8 +35,11 @@ advanced exact-ID workflows, but new parameterized feature sweeps should use
 
 \item{opening}{A \code{ledgr_opening} object.}
 
-\item{universe}{Character vector of instrument IDs, or \code{NULL} for all
-instruments in the snapshot.}
+\item{universe}{Character vector of instrument IDs, \code{NULL} for all
+instruments in the snapshot, or a rule from \code{\link[=ledgr_universe_members]{ledgr_universe_members()}}.}
+
+\item{valuation_policy}{Optional policy from \code{\link[=ledgr_valuation_stale]{ledgr_valuation_stale()}}. It is
+required whenever availability facts or a membership rule are active.}
 
 \item{timing_model}{Timing model object. Defaults to
 \code{ledgr_timing_next_open()}. The timing model proposes fills; cost models

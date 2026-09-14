@@ -10,6 +10,9 @@
 ^pkgdown$
 ^_pkgdown\.yml$
 ^inst/design/maintainer_review$
+^inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum[.]md$
+^inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis_codex_review[.]md$
+^inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/ledgrcore_spike_execution_prompt[.]md$
 ^inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data$
 ^inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/ldg241[0-9_].*$
 ^.*\.Rcheck$
@@ -30,5 +33,6 @@
 ^lib$
 ^lib-wsl$
 ^Rprof\.out$
+^tests/testthat/Rplots\.pdf$
 ^vignettes/.*\.html$
 ^vignettes/.*_files$

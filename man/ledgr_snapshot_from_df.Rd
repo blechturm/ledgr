@@ -8,7 +8,9 @@ ledgr_snapshot_from_df(
   bars_df,
   instruments_df = NULL,
   db_path = NULL,
-  snapshot_id = NULL
+  snapshot_id = NULL,
+  facts = NULL,
+  invalid_observations = c("error", "quarantine")
 )
 }
 \arguments{
@@ -21,6 +23,12 @@ canonical bar columns are persisted and hashed.}
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
 \item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
+
+\item{facts}{Optional point-in-time facts created by \code{\link[=ledgr_facts]{ledgr_facts()}}.}
+
+\item{invalid_observations}{Either \code{"error"} (the default) or the explicit
+\code{"quarantine"} acknowledgement. Quarantine requires declared sessions and
+is available only through this data-frame adapter.}
 }
 \value{
 A \code{ledgr_snapshot} object.
@@ -34,6 +42,9 @@ seals the snapshot, and returns a lazy snapshot object.
 Durable experiment stores:
 \code{vignette("experiment-store", package = "ledgr")}
 \code{system.file("doc", "experiment-store.html", package = "ledgr")}
+Point-in-time facts and quarantine:
+\code{vignette("survivorship-bias", package = "ledgr")}
+\code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
 
 \examples{

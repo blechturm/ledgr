@@ -453,6 +453,12 @@ ledgr_risk_context_equity <- function(ctx) {
 ledgr_risk_context_prices <- function(ctx, universe) {
   close_vec <- NULL
   if (is.list(ctx$vec) &&
+      is.numeric(ctx$vec$risk_mark) &&
+      length(ctx$vec$risk_mark) == length(universe)) {
+    close_vec <- as.numeric(ctx$vec$risk_mark)
+  }
+  if (is.list(ctx$vec) &&
+      is.null(close_vec) &&
       is.numeric(ctx$vec$close) &&
       length(ctx$vec$close) == length(universe)) {
     close_vec <- as.numeric(ctx$vec$close)

@@ -1,0 +1,3002 @@
+# ledgr v0.2.0.0 Tickets
+
+Version: v0.2.0.0
+Date: 2026-09-09
+Total Tickets: 47
+
+## Ticket Organization
+
+v0.2.0.0 first corrects and extracts the existing API/run coordinator, then
+implements the first point-in-time asset-availability path on the shared fold.
+The maintainer accepted the spec and its explicit quarantine and active
+short-exposure amendments on 2026-09-09.
+
+Ticket IDs begin at LDG-2672 after the v0.1.9.7 packet.
+
+The release spine is:
+
+```text
+LDG-2672 packet alignment
+  -> LDG-2673..2676 hardening corrections
+  -> LDG-2677..2678 inspection and workflow
+  -> LDG-2679..2680 ownership split and coordinator stages 1-2
+  -> LDG-2681..2684 failure and boundary corrections
+  -> LDG-2685..2686 coordinator stages 3-4
+  -> LDG-2687..2689 facts, calendar, schema, hash, quarantine
+  -> LDG-2690..2692 activation, provider, state, strict features
+  -> LDG-2693..2696 shared-fold economics and controlled stops
+  -> LDG-2697..2700 terminal and cross-path evidence
+  -> LDG-2701..2702 teaching and release surfaces
+  -> LDG-2704..2706 economic execution timing correction
+  -> LDG-2707..2710 inspectable evidence preparation
+  -> LDG-2711 inspectable workflow teaching and completion
+  -> LDG-2712..2715 honest reporting defaults
+  -> LDG-2716..2718 print honesty
+  -> LDG-2703 release gate
+```
+
+Ticket dependencies are the hard readiness gate. Batch order is the default
+review sequence. Coordinator stages remain separate bounded commits, and the
+Batch 8 and Batch 9 independent review stops are mandatory.
+
+## Priority Levels
+
+- P0: release-blocking correctness, identity, persistence, or execution work.
+- P1: required public API, workflow, documentation, or maintainability work.
+- P2: optional polish that may defer without changing the release contract.
+
+## Dependency DAG
+
+```text
+2672 -> {2673,2674,2675,2676}
+{2673,2674,2675,2676} -> {2677,2678}
+{2677,2678} -> 2679 -> 2680
+2680 -> {2681,2682,2683}; {2682,2683} -> 2684
+{2681,2682,2683,2684} -> 2685 -> 2686
+2686 -> {2687,2688}; {2687,2688} -> 2689
+2689 -> 2690 -> 2691 -> 2692
+2692 -> {2693,2694}; {2693,2694} -> 2695
+{2693,2694,2695} -> 2696 -> 2697 -> 2698 -> 2699
+{2697,2698,2699} -> 2700 -> 2701 -> 2702 -> 2703
+```
+
+## Gate Ownership
+
+| Gates | Owning tickets |
+| --- | --- |
+| H1 | LDG-2673 |
+| H2 | LDG-2673 |
+| H3 | LDG-2674 |
+| H4 | LDG-2675 |
+| H5 | LDG-2676 |
+| H6 | LDG-2677 |
+| H7 | LDG-2678, LDG-2683 |
+| H8 | LDG-2678, LDG-2701 |
+| H9 | LDG-2682 |
+| H10 | LDG-2683, LDG-2684 |
+| H11 | LDG-2679, LDG-2680, LDG-2685, LDG-2686 |
+| H12 | LDG-2681, retained by LDG-2685 and LDG-2686 |
+| U1 | LDG-2700 |
+| U2 | LDG-2691, LDG-2692 |
+| U3 | LDG-2692 |
+| U4 | LDG-2690, LDG-2691, LDG-2700 |
+| U5 | LDG-2693 |
+| U6 | LDG-2691 |
+| U7 | LDG-2694 |
+| U8 | LDG-2693 |
+| U9 | LDG-2698, LDG-2699 |
+| U10 | LDG-2689, LDG-2691 |
+| U11 | LDG-2698, LDG-2699, LDG-2700 |
+| U12 | LDG-2700, LDG-2701 |
+| U13 | LDG-2695 |
+| U14 | LDG-2687 |
+| U15 | LDG-2687 |
+| U16 | LDG-2687, LDG-2689 |
+| U17 | LDG-2693 |
+| U18 | LDG-2695 |
+| U19 | LDG-2694, LDG-2696, LDG-2697 |
+| U20 | LDG-2690, LDG-2693 |
+| U21 | LDG-2687, LDG-2694 |
+| U22 | LDG-2696, LDG-2697 |
+| U23 | LDG-2691, LDG-2699 |
+| U24 | LDG-2688, LDG-2692, LDG-2694 |
+| First-review short/quarantine/exception/idempotency/exposure rows | LDG-2693/2695, LDG-2689, LDG-2681/2696, LDG-2697, LDG-2694/2696 |
+
+## LDG-2672 - Packet Alignment And Ticket Cut
+
+Priority: P0
+Effort: M
+Dependencies: None
+Status: Complete After Review
+
+### Description
+
+Accept the reviewed v0.2.0.0 spec, create synchronized execution artifacts,
+and promote the packet into active governance without claiming implementation.
+
+### Tasks
+
+- Record the maintainer's acceptance of all spec-cut decisions and amendments.
+- Allocate LDG-2672 through LDG-2703 and bind the dependency DAG.
+- Create packet README, Markdown tickets, YAML tickets, and batch plan.
+- Record the ticket-cut baseline: `048b925e5411b7c1a7500d4163163aed72039062`,
+  R 4.5.2 ucrt on `x86_64-w64-mingw32`, duckdb 1.4.3, and dplyr 1.1.4.
+- Record that no named maintainer-owned store inventory was supplied at cut
+  and hand the required pre-edit inventory explicitly to LDG-2684.
+- Align design index, roadmap, horizon, RFC index, AGENTS, NEWS, and their
+  documentation-contract assertions.
+- Apply the two non-blocking final-review wording corrections.
+
+### Acceptance Criteria
+
+- Every spec scope item, H1-H12 gate, U1-U24 gate, and first-review regression
+  has a ticket owner.
+- Markdown/YAML IDs, status, dependency, and batch mappings agree.
+- Active governance points to v0.2.0.0 and v0.1.9.7 is historical.
+- Baseline environment evidence and the LDG-2684 store-inventory handoff are
+  visible in the packet.
+- No runtime behavior, package export, or test result is introduced or claimed.
+
+### Verification
+
+- YAML parse and graph validation.
+- Cross-artifact ID/status/dependency comparison.
+- Local R/platform/package-version query and store-inventory handoff review.
+- Documentation-contract tests.
+- `git diff --check` and ASCII scan.
+
+### Implementation Notes
+
+- Packet artifacts and active governance were committed in `fa31c11` after
+  independent review accepted the ticket cut.
+- A Batch 1 package-check follow-up made the packet documentation-contract test
+  skip cleanly when source-only packet files are unavailable from an installed
+  package test context; source-tree execution still asserts the full contract.
+
+### Source Reference
+
+- `v0_2_0_0_spec.md` Sections 5-9
+- Both accepted RFC syntheses named by the spec
+
+### Classification
+
+```yaml
+type: planning
+surface: design-packet
+scope: packet-alignment
+```
+
+## LDG-2673 - Reversal Fee Projection Correction
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2672
+Status: Complete After Review
+
+### Description
+
+Allocate each source fill fee pro rata across its derived CLOSE/OPEN rows while
+preserving event-level economics.
+
+### Tasks
+
+- Add independent conservation and unequal-leg allocation assertions first.
+- Match derived rows to their source `event_seq` and allocate by absolute
+  executed quantity.
+- Preserve price, quantity, event order, cash, lot basis, realized PnL, and
+  trade metrics.
+
+### Acceptance Criteria
+
+- H1 and H2 pass in both reversal directions.
+- Derived fees sum to each independently specified source fee.
+- No shorting or financing behavior is inferred from the algebraic fixture.
+
+### Verification
+
+- `test-fifo-torture.R`
+- `test-accounting-consistency.R`
+- Targeted fills/trades/result regressions
+
+### Implementation Notes
+
+- Added independent two-direction unequal-leg allocation and event-level fee
+  conservation assertions before correcting the projection.
+- One internal pro-rata helper now supplies derived fees to the durable reader,
+  event reconstruction, memory-backed sweep, and compiled spot-FIFO paths.
+- Cash, terminal position and basis, realized PnL, and trade metrics retain
+  independently asserted values.
+- Review follow-up added absolute reversal-fee and event-total assertions for
+  memory-backed and reconstructed output on both R and compiled fold paths,
+  and bound the projection rule in the Result Contract and NEWS.
+
+### Source Reference
+
+- Spec Section 2.1 and gates H1-H2
+- H Section 3, "Fills and fees"
+
+### Classification
+
+```yaml
+type: correctness
+surface: fills-accounting
+scope: pro-rata-reversal-fees
+```
+
+## LDG-2674 - Eager Fills API Simplification
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2672
+Status: Complete After Review
+
+### Description
+
+Make `ledgr_run_fills(bt)` an eager, schema-stable reader and remove the cursor,
+`lazy`, and `stream_threshold` surface without aliases.
+
+### Tasks
+
+- Add the populated/empty H3 assertions before removing code.
+- Remove cursor classes, methods, threshold switching, and old arguments.
+- Return the existing full-schema tibble for empty and populated runs.
+- Update generated help, NAMESPACE/S3 registrations, and callers.
+
+### Acceptance Criteria
+
+- The public function has exactly the `bt` formal.
+- Removed arguments fail through ordinary argument matching before reads.
+- Return type no longer depends on result size.
+
+### Verification
+
+- `test-fills-streaming.R`
+- API export/S3 review
+- `tools::checkRd()`
+
+### Implementation Notes
+
+- Reduced the public API to the single `bt` formal and removed cursor,
+  threshold-switching, and lazy-result code without aliases.
+- Empty, populated, borrowed-connection, and 220-row reads now return the same
+  eager full-schema tibble shape; removed arguments fail before reads.
+- Updated generated help, README source/render, and the experiment-store
+  vignette source/render to remove the deleted cursor contract.
+- Source build without vignette rebuilding and installed-package check pass;
+  the check reports only the existing vignette-output warnings and long-path
+  note.
+- Review follow-up bound the one-formal eager-reader contract and recorded the
+  user-facing removal in NEWS.
+
+### Source Reference
+
+- Spec Section 2.1 and gate H3
+- H Section 3, "Fills and fees"
+
+### Classification
+
+```yaml
+type: api
+surface: run-fills
+scope: eager-reader
+```
+
+## LDG-2675 - Sweep Review Lineage Correction
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2672
+Status: Complete After Review
+
+### Description
+
+Restore sweep/candidate provenance on `review$ranked` so explicit candidate
+extraction and promotion retain source lineage.
+
+### Tasks
+
+- Add the reopened nondefault-risk review-to-promotion regression first.
+- Restore the `ledgr_sweep_results` class and applicable parent metadata on
+  `ranked` without mutating the input artifact.
+- Preserve explicit ranking order and issue reporting.
+- Keep `top` presentation-only and reject candidate use without its payload.
+
+### Acceptance Criteria
+
+- H4 preserves sweep ID, candidate identity, risk identity, and selection order.
+- Plain compatible tables receive no invented parent lineage.
+- No automatic selection or promotion is introduced.
+
+### Verification
+
+- `test-promotion-context.R`
+- Targeted sweep-review/candidate/promotion tests
+
+### Implementation Notes
+
+- Restored `review$ranked` from classed sweep inputs at the existing sweep-view
+  restoration boundary while leaving compatible plain tables unclassed.
+- Added a reopened nondefault-risk review-to-promotion journey that asserts
+  source sweep ID, candidate identity, risk identity, ranking order, unchanged
+  input bytes, and rejection of candidate extraction from `top`.
+- Review follow-up made `review$top` explicitly lineage-free and added
+  detecting assertions for its source and risk attributes.
+
+### Source Reference
+
+- Spec Section 2.1 and gate H4
+- H Section 3, "Review lineage"
+
+### Classification
+
+```yaml
+type: correctness
+surface: sweep-review
+scope: ranked-lineage
+```
+
+## LDG-2676 - Sweep Risk Restoration Correction
+
+Priority: P0
+Effort: S
+Dependencies: LDG-2672
+Status: Complete After Review
+
+### Description
+
+Restore both risk provenance fields explicitly when retained/saved sweep views
+are reconstructed or subset.
+
+### Tasks
+
+- Add a fixture that removes output-side risk attributes before restoration.
+- Restore risk hash and plan fields at the owning boundary.
+- Verify base `[` subsetting and downstream candidate identity without a
+  package-dependent skip.
+
+### Acceptance Criteria
+
+- H5 detects either omitted field.
+- Historical absence remains unknown rather than a fabricated no-op plan.
+- Persistence and candidate identity are unchanged except for corrected
+  restoration.
+
+### Verification
+
+- `test-sweep-persistence-roundtrip.R`
+- Reopened-sweep and candidate identity tests
+
+### Implementation Notes
+
+- Added `risk_chain_hash` and `risk_plan_json` to explicit sweep-result
+  restoration.
+- The detecting fixture strips both output-side attributes before restoration,
+  then checks direct restoration, base and dplyr subsets, reopened evidence,
+  and downstream candidate metadata under a nondefault risk chain.
+- Review follow-up bound present and historically absent risk provenance in the
+  Result Contract.
+
+### Source Reference
+
+- Spec Section 2.1 and gate H5
+- H Section 6, T-3
+
+### Classification
+
+```yaml
+type: correctness
+surface: sweep-persistence
+scope: risk-provenance-restoration
+```
+
+## LDG-2677 - Recorded Run Risk Identity Inspection
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2673, LDG-2674, LDG-2675, LDG-2676
+Status: Complete After Review
+
+### Description
+
+Expose the committed run's `risk_chain_hash` through `ledgr_run_info()` without
+adding another reader or writing during inspection.
+
+### Tasks
+
+- Read the field from committed run/config identity.
+- Cover direct, promoted, no-op, and legacy-absence cases.
+- Keep `risk_plan_json` and current-experiment substitutions out of the reader.
+
+### Acceptance Criteria
+
+- H6 matches the recorded hash for direct and promoted runs.
+- Legacy absence returns `NA_character_`.
+- Inspection writes no persistent row and executes no recovered strategy.
+
+### Verification
+
+- `test-runner.R`
+- Fresh-connection read-only full-table-content check
+- `tools::checkRd()`
+
+### Implementation Notes
+
+- Added a read-time `risk_chain_hash` projection from the committed run config
+  to `ledgr_run_info()` and its curated print surface.
+- H6 covers direct, promoted, no-op, and historical-absence records, verifies
+  no top-level plan field is added, and checks fresh-connection table contents
+  and strategy calls across inspection.
+
+### Source Reference
+
+- Spec Section 2.1 and gate H6
+- H Section 3, "Run risk identity"
+
+### Classification
+
+```yaml
+type: api
+surface: run-info
+scope: risk-chain-hash
+```
+
+## LDG-2678 - Durable Run-Handle Lifecycle And Workflow Teaching
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2673, LDG-2674, LDG-2675, LDG-2676
+Status: Complete After Review
+
+### Description
+
+Lock the run handle as a durable locator, teach names-preserving target access,
+and repair the public review/promotion/new-session workflow.
+
+### Tasks
+
+- Test explicit close, later reads, owned-resource cleanup, and new-session
+  opening without persistent writes.
+- Teach `target[[id]]` and `c(target)`; do not add `ledgr_target_values()`.
+- Teach candidate extraction from `review$ranked`, not `top`.
+- Verify and repair only concrete stale examples and useful doc locks.
+
+### Acceptance Criteria
+
+- H7-H8 pass through public APIs and documented fields.
+- `close(bt)` releases resources but not durable evidence or locator identity.
+- New-session inspection executes no strategy and recomputes no fills.
+
+### Verification
+
+- `test-backtest-lifecycle.R`
+- `test-documentation-contracts.R`
+- `tools/check-readme-example.R`
+- Affected vignette/example checks
+
+### Implementation Notes
+
+- H7 now treats `ledgr_backtest` as a stable `run_id` plus `db_path` locator:
+  explicit close releases owned resources while later reads and a fresh
+  snapshot/run reopen return unchanged evidence without writes or strategy
+  execution.
+- README source/render and the installed-package checker execute ordinary
+  target access, ranked-review candidate extraction, explicit promotion, and
+  new-session reopen. The strategy-authoring surface and target help use the
+  same names-preserving vector operations.
+- Review follow-up strengthened the no-write check to compare complete ordered
+  table contents, prints the extracted target vector in the vignette, and
+  locks the complete `target[[id]]` expression in the documentation contract.
+
+### Source Reference
+
+- Spec Sections 2.1 and 4; gates H7-H8
+- H Sections 3-4
+
+### Classification
+
+```yaml
+type: documentation
+surface: run-workflow
+scope: locator-and-target-teaching
+```
+
+## LDG-2679 - Mechanical Backtest Ownership Split
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2677, LDG-2678
+Status: Complete After Review
+
+### Description
+
+Split `R/backtest.R` along accepted config, handle, fills, and result ownership
+without changing behavior, formals, effects, or public names.
+
+### Tasks
+
+- Move exact bodies into `backtest-config.R`, `backtest-handle.R`,
+  `backtest-fills.R`, and `backtest-results.R` in bounded commits.
+- Keep public construction/orchestration thin.
+- Review NAMESPACE/S3/source-order consequences after every move.
+- Do not split `R/sweep.R`, modularize `R/fold-engine.R`, or introduce a file
+  registry.
+
+### Acceptance Criteria
+
+- H11 passes after every mechanical move.
+- Function bodies/formals and observable effects are unchanged.
+- No correction is hidden inside the move.
+
+### Verification
+
+- Full local suite after each commit
+- API/S3/NAMESPACE comparison
+- `git diff --check`
+
+### Implementation Notes
+
+- Moved the config, handle, fills, and result ownership groups into the four
+  accepted files while leaving public construction and orchestration in
+  `R/backtest.R`.
+- Parsed-expression comparison against the pre-batch `R/backtest.R` confirms
+  all 56 relocated assignments are unchanged. `ledgr_run_config()` is the sole
+  deliberate caller change required by LDG-2680.
+- H11 passed after the ownership move. NAMESPACE, DESCRIPTION, public exports,
+  S3 registrations, and generated Rd files are unchanged.
+- Review follow-up corrected the relocation count, removed inherited trailing
+  whitespace from the moved result source, and updated the manual's obsolete
+  wrapper call path without expanding into its LDG-2702 line-anchor audit.
+
+### Source Reference
+
+- Spec Sections 2.1 and 3; gate H11
+- H Section 5 module boundaries
+
+### Classification
+
+```yaml
+type: refactor
+surface: backtest-modules
+scope: ownership-split
+```
+
+## LDG-2680 - Coordinator Stages 1 And 2 Extraction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2679
+Status: Complete After Review
+
+### Description
+
+Extract preparation/config/control and snapshot guard/hash/calendar records as
+the first two coordinator stages without rescheduling effects.
+
+### Tasks
+
+- Delete the two internal backtest-run wrappers and retarget callers.
+- Extract stage 1 with explicit inputs/outputs; leave `set.seed()`, clock, and
+  RUNNING writes at their existing call sites.
+- Extract stage 2 without hoisting calendar work or weakening snapshot guards.
+- Commit and verify each stage separately.
+
+### Acceptance Criteria
+
+- H11 passes after each stage.
+- Store cleanup remains coordinator-scoped and handlers remain available where
+  resume requires them.
+- No shared mutable coordinator environment or second execution path appears.
+
+### Verification
+
+- Full local suite after each stage
+- `test-runner.R`
+- `test-runner-snapshots.R`
+- `test-acceptance-v0.1.1.R`
+
+### Implementation Notes
+
+- Deleted `ledgr_backtest_run()` and `ledgr_backtest_run_internal()` and
+  retargeted package and test callers without changing the public entry point.
+- Stage 1 returns named config, engine, control, and telemetry records from
+  `R/run-prepare.R`; clock, seed, RUNNING status, and telemetry-validation
+  effects remain at their prior coordinator positions.
+- Stage 2 returns the verified snapshot hash and pulse calendar from
+  `R/run-snapshot.R`; guard and TEMP-view work stays after handler creation,
+  and calendar work stays after strategy preflight.
+- Coordinator-owned cleanup and explicit connection/handler dependencies are
+  unchanged. Focused runner, snapshot, API, wrapper, experiment, and acceptance
+  tests pass, and H11 passed after each stage.
+
+### Source Reference
+
+- Spec Sections 2.1, 3, and 5; gate H11
+- H Section 5 stages 1-2
+
+### Classification
+
+```yaml
+type: refactor
+surface: run-coordinator
+scope: prepare-and-snapshot-stages
+```
+
+## LDG-2681 - Finalization Failure And Recovery Correction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2680
+Status: Complete After Review
+
+### Description
+
+Add the real post-fold failure fixture and correct finalization failure to
+record FAILED while preserving committed fold/features for clean recovery.
+
+### Tasks
+
+- Inject once after the feature transaction and before equity/DONE using the
+  specified transaction-expression seam.
+- Record FAILED and the original error without masking it.
+- Preserve committed fold/state/features and resume the same identity without
+  duplicate events or rows.
+- Keep fold transaction, partial-run, seed, and status placement unchanged.
+
+### Acceptance Criteria
+
+- H12's three fresh-connection assertions pass.
+- The clean and failed-then-resumed stores agree on ordered economic evidence.
+- No public fault hook or mocked success path is introduced.
+
+### Verification
+
+- `test-runner.R`
+- Existing partial-run/resume tests
+- Full local suite before coordinator stages 3-4
+
+### Implementation Notes
+
+- Finalization errors are trapped after the fold boundary, recorded as FAILED
+  without masking the original condition, and leave committed fold evidence
+  intact.
+- The H12 transaction-seam fixture proves fresh-connection failure evidence and
+  finalization-only resume equality against a clean run without duplicate rows.
+- Review follow-up wraps best-effort FAILED telemetry and injects a telemetry
+  failure in H12, proving it cannot replace the original finalization error.
+
+### Source Reference
+
+- Spec Section 2.2 and gate H12
+- H Section 6 finalization fixture
+
+### Classification
+
+```yaml
+type: correctness
+surface: run-finalization
+scope: post-fold-failure-recovery
+```
+
+## LDG-2682 - Feature Causality Regression Gate
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2680
+Status: Complete After Review
+
+### Description
+
+Turn the existing no-lookahead diagnostic into a detecting causal/leaking
+feature regression with a future-only perturbation control.
+
+### Tasks
+
+- Add causal and leaking `series_fn` fixtures.
+- Assert the leaking path raises `ledgr_feature_lookahead_detected`.
+- Gut the checker in the test harness and prove the negative assertion fails.
+- Compare only prefixes whose information sets and execution bars are
+  unchanged under future-data perturbation.
+
+### Acceptance Criteria
+
+- H9 detects a disabled or bypassed checker.
+- Eligible earlier outputs remain unchanged under future-only perturbation.
+- No imputer or claim about arbitrary R-code causality is introduced.
+
+### Verification
+
+- `test-features.R`
+- `test-precompute-features.R`
+- Targeted cache/fingerprint tests
+
+### Implementation Notes
+
+- H9 now pairs a causal and deliberately leaking `series_fn`, and its gutted
+  checker control fails when detection is bypassed.
+- A future-only bar perturbation changes snapshot identity and the affected
+  feature tail while preserving the eligible earlier prefix.
+
+### Source Reference
+
+- Spec Section 2.1 and gate H9
+- H Section 6, T-2
+
+### Classification
+
+```yaml
+type: correctness
+surface: features
+scope: lookahead-detection
+```
+
+## LDG-2683 - RNG Lifecycle And Documentation Boundary Hygiene
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2680
+Status: Complete After Review
+
+### Description
+
+Close the scoped RNG, resource-cleanup, warning, and brittle documentation-lock
+findings without broad test or CI redesign.
+
+### Tasks
+
+- Preserve caller RNG state and next draw through ingestion and nonempty reads,
+  including initially absent `.Random.seed`.
+- Add explicit close/cleanup and expected-warning assertions to named fixtures.
+- Retain API/schema/disclosure documentation checks and retire only identified
+  editorial locks.
+- Record any unrelated audit lead as deferred rather than absorbing it.
+
+### Acceptance Criteria
+
+- H7/H10 tests detect RNG or cleanup regressions.
+- No generic test framework, registry, or coverage reduction is introduced.
+- Installed examples remain executable.
+
+### Verification
+
+- `test-rng.R`
+- `test-walk-forward-orchestrator.R`
+- `test-backtest-audit-log-equivalence.R`
+- `test-backtest-lifecycle.R`
+- `test-documentation-contracts.R`
+
+### Implementation Notes
+
+- Snapshot ingestion and nonempty eager fill reads preserve caller RNG state,
+  the next draw, and an initially absent `.Random.seed`.
+- The named walk-forward and audit-log fixtures close owned resources and the
+  audit-log parity fixture muffles only `LEDGR_LAST_BAR_NO_FILL`.
+- Only the audited Mermaid-label and historical-roadmap editorial locks were
+  removed; API, schema, disclosure, and installed-example locks remain.
+
+### Source Reference
+
+- Spec Section 2.1 and gates H7/H10
+- H Section 6, RNG/T-4/T-5 rows
+
+### Classification
+
+```yaml
+type: correctness
+surface: integration-boundaries
+scope: rng-cleanup-doc-locks
+```
+
+## LDG-2684 - Reversible Wide-Projection Name Escaping
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2682, LDG-2683
+Status: Complete After Review
+
+### Description
+
+Prevent candidate IDs from colliding with structural wide-table columns while
+preserving source-neutral candidate identity.
+
+### Tasks
+
+- Inventory named maintainer-owned stores and affected wide artifacts before
+  editing; record compatibility, migration, or explicit non-migration for each.
+- Implement Section 2.1's prefix-plus-lowercase-hex UTF-8 escaping and
+  intrinsic reverse mapping; do not introduce a persistent mapping registry.
+- Protect structural timestamp/value columns from candidate-name overwrite.
+- Preserve original IDs in long/matrix views and candidate extraction.
+- Apply this last among artifact-shape corrections.
+
+### Acceptance Criteria
+
+- H10 catches a candidate named `ts_utc` and other reserved collisions.
+- Wide names map reversibly to unchanged original candidate IDs and values.
+- The store/artifact inventory is recorded before the first shape edit, and no
+  migration is promised for an unnamed artifact.
+- No generic name registry is added.
+
+### Verification
+
+- `test-sweep-retention.R`
+- Return-panel projection tests
+- Reopened-sweep/candidate identity tests
+
+### Implementation Notes
+
+- The required pre-edit inventory is recorded in
+  `wide_projection_store_inventory.md`; no tracked or named maintainer store
+  requires migration, and the five ignored benchmark stores contain no sweep
+  tables.
+- Reserved IDs use the bound prefix plus lowercase UTF-8 hex encoding. Tests
+  cover structural `ts_utc`, reserved-prefix, UTF-8, invalid encoding, reopen,
+  and unchanged long/matrix/candidate identities without a mapping registry.
+- The full 112-file local suite is green with one expected optional
+  adapter-path skip, and all 142 Rd files pass `tools::checkRd()`.
+
+### Source Reference
+
+- Spec Section 2.1's bound prefix-plus-hex rule and Section 5; gate H10
+- H Section 11 collision question
+
+### Classification
+
+```yaml
+type: correctness
+surface: sweep-retention
+scope: wide-name-collisions
+```
+
+## LDG-2685 - Coordinator Stage 3 Finalization Extraction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2681, LDG-2682, LDG-2683, LDG-2684
+Status: Complete After Review
+
+### Description
+
+Extract coordinator finalization, including the second FIFO lot pass and
+separate projection/status transactions, after the corrected failure gate.
+
+### Tasks
+
+- Move finalization into `R/run-finalize.R` with explicit records.
+- Preserve the second lot pass, transaction boundaries, telemetry ordering,
+  and corrected error contract.
+- Commit this stage independently before registration/resume extraction.
+
+### Acceptance Criteria
+
+- H11 and H12 pass unchanged after extraction.
+- Clean/resumed equality and event sequencing remain intact.
+- No fold or feature transaction is moved.
+
+### Verification
+
+- Full local suite
+- `test-runner.R`
+- `test-acceptance-v0.1.0.R`
+- Accounting/fills regressions
+
+### Implementation Notes
+
+- The complete finalization block moved to `R/run-finalize.R` behind explicit
+  run, calendar, projection, and fold records. The second FIFO lot pass and
+  separate feature and equity/DONE transactions retain their runtime order.
+- H12 and the focused runner, acceptance, accounting, FIFO, and fills nets
+  pass unchanged. H11 then passed across all 112 local test files with one
+  expected optional adapter-path skip before Stage 4 began.
+
+### Source Reference
+
+- Spec Sections 2.1, 2.2, and 3; gates H11-H12
+- H Section 5 stage 3
+
+### Classification
+
+```yaml
+type: refactor
+surface: run-coordinator
+scope: finalization-stage
+```
+
+## LDG-2686 - Coordinator Stage 4 Registration And Resume Extraction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2685
+Status: Complete After Review
+
+### Description
+
+Extract registration, lookup, identity checks, DONE shortcut, and resume-tail
+cleanup without changing runtime order or handler dependencies.
+
+### Tasks
+
+- Create explicit registration/resume helper records.
+- Pass the existing handler and store connection explicitly.
+- Preserve identity guards, status transitions, tail deletion, opening events,
+  and coordinator-owned cleanup.
+- Commit stage 4 separately.
+
+### Acceptance Criteria
+
+- H11-H12 and all existing resume/DONE cases pass.
+- A returning helper cannot lose connection cleanup.
+- No shared mutable environment or new execution entry point is added.
+
+### Verification
+
+- Full local suite
+- `test-runner.R`
+- `test-runner-snapshots.R`
+- Partial-run/clean-resumed acceptance tests
+
+### Implementation Notes
+
+- Registration, lookup, identity checks, insert verification, and the DONE
+  shortcut moved to `R/run-registration.R`. Provenance receives the existing
+  connection and persistent handler explicitly at its original runtime point.
+- Resume preflight, tail cleanup, finalization-only recovery detection, event
+  sequencing, and opening events moved to `R/run-resume.R`. The coordinator
+  still owns store opening and function-scoped cleanup.
+- Focused runner, snapshot, partial/resume, fresh-connection, and metadata nets
+  pass. H11 passed across all 112 local test files with one expected optional
+  adapter-path skip after extraction.
+
+### Source Reference
+
+- Spec Sections 2.1 and 3; gates H11-H12
+- H Section 5 stage 4
+
+### Classification
+
+```yaml
+type: refactor
+surface: run-coordinator
+scope: registration-resume-stage
+```
+
+## LDG-2687 - Point-In-Time Fact Constructors And Validation Report
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2686
+Status: Complete After Review
+
+### Description
+
+Implement the classed membership, status, lifetime, session, and fact-bundle
+inputs plus a source-aware pre-seal validation report.
+
+### Tasks
+
+- Add the six family/bundle constructors and `ledgr_facts_validate()`.
+- Bind half-open effective intervals, knowledge time, provenance, completeness,
+  precedence, supersession, and canonical omission.
+- Distinguish accepted facts, retained runtime conflicts, rejected facts,
+  quarantine candidates, and audit-only facts.
+- Keep tied valid status assertions for conservative runtime resolution.
+
+### Acceptance Criteria
+
+- U14-U16 and U21 fact semantics pass.
+- Complete omission, partial omission, unknown, conflict, and structural error
+  remain distinct.
+- Dry-run validation writes nothing and fabricates no evidence.
+
+### Verification
+
+- `test-availability-facts.R`
+- Constructor/hash canonicalization tests
+- `tools::checkRd()` and export review
+
+### Source Reference
+
+- Spec Sections 2.3-2.4; gates U14-U16/U21
+- U Sections 3-4 and 10
+
+### Classification
+
+```yaml
+type: feature
+surface: availability-facts
+scope: constructors-and-validation
+```
+
+### Implementation Notes
+
+- Added classed constructors for membership intervals and snapshots, trading
+  status, lifetime, and sessions plus a canonical bundle and read-only
+  validation report.
+- U14-U16/U21 fixtures distinguish complete and partial membership, empty
+  complete states, assumption-backed and audit-only facts, retained tied status
+  conflicts, structural contradictions, and tamper rejection.
+- Family and bundle hashes cover normalized evidence and metadata without
+  writing during dry-run validation.
+- Review follow-up replaced pairwise status-conflict classification with
+  interval-aware highest-applicable-precedence resolution. A full higher-level
+  cover suppresses the lower tie; partial coverage preserves the unresolved
+  lower conflict outside the covered interval.
+- Review confirmed that applicability uses the later of effective and knowledge
+  time. A detecting fixture that separates those clocks is routed to LDG-2691,
+  which owns provider cutoff causality.
+
+## LDG-2688 - Complete Session Calendar And EOD Mapping
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2686
+Status: Complete After Review
+
+### Description
+
+Implement a complete, knowledge-bounded venue-session clock independent of
+observed bars and map EOD vendor labels explicitly to session closes.
+
+### Tasks
+
+- Validate one open/closed row for every civil date over declared coverage.
+- Normalize IANA timezone, opening/closing times, and knowledge requirements.
+- Drive decision pulses from open-session closes and execution opportunities
+  from the next open-session opening.
+- Reject missing/late coverage and never infer holidays or terminal sessions.
+
+### Acceptance Criteria
+
+- U24 retains whole-feed-outage pulses and exposes feature/valuation gaps.
+- Bar timestamps never stand in for the expected-session clock in active mode.
+- Dense timestamp behavior remains unchanged.
+
+### Verification
+
+- `test-availability-facts.R`
+- `test-availability-features.R`
+- `test-availability-valuation.R`
+- Calendar timezone/coverage fixtures
+
+### Source Reference
+
+- Spec Sections 2.3-2.4; gate U24
+- U Sections 3-4 and 10
+
+### Classification
+
+```yaml
+type: feature
+surface: availability-calendar
+scope: expected-session-clock
+```
+
+### Implementation Notes
+
+- Added a complete civil-date venue calendar with explicit open/closed states,
+  IANA timezone validation, knowledge bounds, and local-midnight DST handling.
+- Daily vendor dates map to declared session closes; missing or late coverage
+  fails closed, while valid explicit off-calendar observations remain available
+  for later cutoff classification.
+- U24 fixtures retain open-session pulses during whole-feed gaps and keep dense
+  timestamp behavior unchanged when facts are omitted.
+
+## LDG-2689 - Availability Snapshot Schema Hash And Quarantine
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2687, LDG-2688
+Status: Complete After Review
+
+### Description
+
+Persist fact families and acknowledged invalid-observation quarantine under
+transactional schema migration and deterministic snapshot hash rule 2.
+
+### Tasks
+
+- Add normalized fact/quarantine tables, indexes, writers, and validators.
+- Implement store schema 113 and saved-sweep schema 4 with marker-last
+  transactional migration and legacy read compatibility.
+- Preserve exact hash rule 1 for fact-free snapshots; hash all fact headers,
+  rows, assumptions, and quarantine evidence under rule 2.
+- Keep `invalid_observations = "error"` as default; implement explicit
+  dataframe-only quarantine with declared sessions.
+
+### Acceptance Criteria
+
+- Default invalid input creates no SEALED hash.
+- Explicit quarantine seals/reopens valid bars and excluded originals, and
+  tampering fails verification.
+- U10's identity half and U16's retained-conflict/reopen half pass through the
+  persisted snapshot path.
+- Malformed facts, duplicate valid keys, invalid instrument masters, and empty
+  post-exclusion bars still block sealing.
+- Existing sealed snapshots are never resealed or hash-migrated.
+
+### Verification
+
+- `test-availability-facts.R`
+- `test-schema.R` and `test-schema-snapshots.R`
+- `test-schema-validator-side-effects.R`
+- `test-persistence-fresh-connection.R`
+- U10 identity and U16 conflict/reopen cases
+- First-review quarantine fixture
+
+### Source Reference
+
+- Spec Sections 2.4-2.5; gates U10/U16 and quarantine regression row
+- U Sections 4.4, 9, and 10.3 as amended
+
+### Classification
+
+```yaml
+type: persistence
+surface: snapshot-store
+scope: facts-hash-quarantine-migration
+```
+
+### Implementation Notes
+
+- Added normalized fact-family, membership, status, lifetime, session, and
+  quarantine tables plus validators and indexes under store schema 113 and
+  saved-sweep schema 4.
+- Marker-last transactional migration rolls back fully on failure. Existing
+  sealed stores reopen with their original hash, no rule marker, and rule-1
+  interpretation rather than being resealed or migrated by hash.
+- Fact-free snapshots retain their prior hash bytes. Fact-bearing snapshots use
+  rule 2 over canonical headers, rows, assumptions, and acknowledged quarantine
+  evidence; row/family order does not affect identity and tampering fails
+  verification after reopen.
+- Strict invalid input creates no snapshot. Explicit dataframe quarantine
+  requires declared sessions, excludes rejected rows from runtime bars, and
+  persists their original payload and reasons as hashed audit evidence.
+- Added a design-only walkthrough fixture shape for later connected teaching;
+  this batch advertises no availability strategy runtime.
+
+## LDG-2690 - Availability Activation And Public Policy Surface
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2689
+Status: Complete after review
+
+### Description
+
+Add presence-driven availability activation, public universe/valuation policy
+constructors, snapshot fact ingestion, and effective-plan disclosure.
+
+### Tasks
+
+- Add `facts = NULL` snapshot input and the accepted family-first constructors.
+- Add `ledgr_universe_members()`, `ledgr_valuation_stale()`, and experiment
+  validation with no mode flag or default stale horizon.
+- Require complete sessions and valuation policy whenever availability is
+  active.
+- Expose declared, omitted, assumption-backed, and disabled checks through
+  `ledgr_experiment_plan()`.
+
+### Acceptance Criteria
+
+- Canonical omission retains the dense path and payload shape.
+- A fixed basket may consume status/session/lifetime facts without becoming a
+  membership rule.
+- U4/U20 public construction and helper preconditions pass.
+
+### Verification
+
+- `test-availability-workflow.R`
+- Experiment/config/hash tests
+- API exports and `tools::checkRd()`
+
+### Implementation Notes
+
+- Added classed membership-universe and stale-valuation policy constructors,
+  presence-driven activation, and `ledgr_experiment_plan()` disclosure.
+- Active experiments require complete declared sessions and an explicit
+  valuation policy. Fixed baskets remain fixed, canonical omission preserves
+  the dense config shape, and active compiled requests fail before execution.
+
+### Source Reference
+
+- Spec Sections 2.3 and 2.5; gates U4/U20
+- U Sections 3 and 10
+
+### Classification
+
+```yaml
+type: api
+surface: availability-policy
+scope: activation-universe-valuation-plan
+```
+
+## LDG-2691 - Availability Provider Pulse Axis And Stable-Key State
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2690
+Status: Complete after review
+
+### Description
+
+Implement the single internal availability provider, dynamic decision axis,
+context planes, and stable-ID asset-state lifecycle without economic policy.
+
+### Tasks
+
+- Implement `facts`, `decision_view`, `execution_view`, `history`, and
+  `identity` operations.
+- Build the public axis as ordered members followed by held nonmembers in
+  C-locale stable-ID order.
+- Add accepted context fields and deterministic restriction-reason ordering.
+- Normalize `ctx$state_prev$asset_state`, clean exited IDs, initialize re-entry,
+  and preserve portfolio-level state.
+- Add a status-precedence cutoff fixture where a higher-precedence fact is
+  effective before it is knowable; the lower tied assertions remain unresolved
+  until that knowledge cutoff.
+- Reject explicit compiled availability before execution.
+
+### Acceptance Criteria
+
+- U2, U4, U6, U10, and U23 provider/state obligations pass.
+- Future facts cannot alter earlier contexts, errors, or telemetry.
+- The empty axis invokes the strategy and accepts a named zero-length target.
+- No economics or second fold is implemented in the provider.
+
+### Verification
+
+- `test-availability-causality.R`
+- Effective-time versus knowledge-time status-precedence cutoff fixture
+- `test-availability-state.R`
+- `test-availability-workflow.R`
+- Dense context/axis parity tests
+
+### Implementation Notes
+
+- Added one provider with fact, decision, execution, history, and identity
+  operations plus the complete session axis used by the runner.
+- Dynamic contexts expose the accepted decision-time planes and preserve
+  stable-ID `asset_state`; exited state is cleaned, re-entry starts empty, and
+  an empty public axis still invokes the strategy.
+- The routed later-knowledge fixture detects that an effective but not yet
+  knowable higher-precedence status row cannot shadow a lower-precedence tie.
+- Provider code introduces no valuation, affordability, risk, or fill policy.
+- Review follow-up normalizes interval- and snapshot-sourced members in
+  C-locale stable-ID order and adds detecting tests for asset-state pruning,
+  empty re-entry, typed invalid-state failures, and nonzero mark age.
+
+### Source Reference
+
+- Spec Section 2.6; gates U2/U4/U6/U10/U23
+- U Sections 5-6
+
+### Classification
+
+```yaml
+type: feature
+surface: availability-provider
+scope: axis-context-state
+```
+
+## LDG-2692 - Strict Expected-Session Feature Semantics
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2691
+Status: Complete after review
+
+### Description
+
+Add strict finite-window gap semantics and cutoff-causal cache identity for
+availability-aware indicators.
+
+### Tasks
+
+- Add normalized `gap_contract = "strict_window"` declarations on the existing
+  indicator path while omitting them from dense identity.
+- Count finite windows over expected sessions; any missing required observation
+  yields NA and no valuation mark enters features.
+- Certify SMA and returns first through scalar/series/window parity.
+- Reject unsupported recursive/carry/imputing indicators before strategy use.
+- Include actual active semantics in the feature-engine fingerprint.
+
+### Acceptance Criteria
+
+- U3 passes across scalar, series, and cache paths.
+- U24 whole-feed outages break affected windows.
+- Future-known history cannot rewrite cached earlier results.
+- No generalized imputation or cross-sectional cache is added.
+
+### Verification
+
+- `test-features.R`
+- `test-precompute-features.R`
+- `test-availability-features.R`
+- Cache identity and future-perturbation tests
+
+### Implementation Notes
+
+- Added the `strict_window` indicator gap declaration and certified the native
+  SMA and returns indicators across scalar, series, and cache paths.
+- Active feature windows use the complete expected-session axis, never stale
+  valuation marks. Missing required observations yield `NA_real_`, including
+  whole-feed outages; unsupported indicators fail before strategy use.
+- Active feature identity records strict-gap semantics while dense indicator
+  and feature-engine identities remain unchanged.
+- Review follow-up omits `gap_contract` from dense feature definitions and
+  directly compares dense annotated and unannotated indicator config hashes.
+
+### Source Reference
+
+- Spec Sections 2.5-2.6; gates U2-U3/U24
+- U Sections 8-9
+
+### Classification
+
+```yaml
+type: feature
+surface: availability-features
+scope: strict-gap-cache
+```
+
+## LDG-2693 - Availability Target Restrictions And Helper Safety
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2692
+Status: Complete After Review
+
+### Description
+
+Enforce the accepted member/restricted/nonmember target contract, helper
+behavior, post-risk closure, and availability-only short-exposure guard.
+
+### Tasks
+
+- Validate literal zero, hold, reduction-only nonmember, and restriction rules
+  with classed reason-bearing errors.
+- Make zero-default constructors preserve held nonmembers by default while raw
+  full named vectors remain literal.
+- Make active rebalance sizing fail on unavailable current prices; preserve the
+  dense warn-and-zero path.
+- Enforce `q >= min(q_held, 0)` after risk and at resolved-fill quantity.
+
+### Acceptance Criteria
+
+- U5, U8, U17, and U20 pass.
+- Active execution cannot open, enlarge, or reverse into a short; no rejected
+  short proposal funds another purchase.
+- Existing short holdings may hold/cover and explicit `long_only` clipping may
+  reach zero; dense behavior and risk identity remain unchanged.
+
+### Verification
+
+- `test-strategy-contracts.R`
+- `test-availability-fold.R`
+- `test-availability-workflow.R`
+- First-review short-financing fixture
+
+### Implementation Notes
+
+- The shared fold enforces restricted-ID hold/zero, nonmember
+  reduction-only, post-risk closure, and the active short-exposure floor before
+  fill acceptance.
+- Active rebalance sizing preserves held nonmembers, reserves their marked
+  gross exposure, and fails on unavailable current closes. Dense warn-and-zero
+  behavior remains unchanged.
+- Detecting tests cover rejected short financing, explicit `long_only`
+  clipping, existing-short hold/cover algebra, and literal target failures.
+- Review follow-up added an exact near-zero quantity assertion so the short
+  guard cannot acquire the cash tolerance as a quantity tolerance.
+
+### Source Reference
+
+- Spec Section 2.7 and short-financing regression row
+- U Section 6.3 as amended
+
+### Classification
+
+```yaml
+type: correctness
+surface: strategy-targets
+scope: active-admissibility-short-guard
+```
+
+## LDG-2694 - Stale Valuation Risk Marks And Affected Exposure
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2692
+Status: Complete After Review
+
+### Description
+
+Separate observed closes, valuation/risk marks, and execution prices; age
+stale marks on venue sessions and compute the bound diagnostic gross exposure.
+
+### Tasks
+
+- Implement fresh/current and policy-permitted stale mark selection with
+  source timestamp, age, and reason evidence.
+- Stop new positive targets lacking a permissible risk mark before proposals.
+- Age held marks through venue-open sessions including known inactivity.
+- Compute affected gross exposure from held quantities and latest accepted
+  observations knowable at the stop cutoff, including expired diagnostic-only
+  references and explicit missing-reference behavior.
+
+### Acceptance Criteria
+
+- U7, U19, and U21 valuation assertions pass.
+- U24's valuation-clock behavior passes through a whole-feed outage.
+- Stale marks never price execution or silently create NA equity.
+- Independent gross fixture yields 1200 rather than net 800 and covers missing,
+  duplicate, zero-quantity, expired, and later-known cases.
+
+### Verification
+
+- `test-availability-valuation.R`
+- `test-availability-parity.R`
+- U24 whole-feed-outage valuation assertions
+- Risk-hash invariance and fresh-connection checks
+
+### Implementation Notes
+
+- A fold-owned valuation plane resolves current and policy-permitted stale
+  marks on the venue-session clock and supplies risk without changing risk
+  identity or execution prices.
+- Expected mark exhaustion, unavailable new-exposure risk marks, and terminal
+  assertions return typed incomplete outcomes before forbidden work.
+- Gross affected exposure deduplicates IDs, preserves expired references as
+  diagnostic-only evidence, returns unknown for missing nonzero references,
+  and treats specified empty sets and zero quantities explicitly.
+
+### Source Reference
+
+- Spec Section 2.7; gates U7/U19/U21/U24 and affected-exposure regression row
+- U Sections 7.3-7.4
+
+### Classification
+
+```yaml
+type: correctness
+surface: valuation
+scope: stale-marks-and-exposure
+```
+
+## LDG-2695 - Bounded Affordability And Execution Reconciliation
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2693, LDG-2694
+Status: Complete After Review
+
+### Description
+
+Add the active-mode virtual cash ledger after costs and proposals, preserving
+axis-order events and final-pulse reconciliation.
+
+### Tasks
+
+- Reserve marked absolute exposure of held nonmembers during helper sizing.
+- Freeze membership at decision and recheck status, lifetime, execution price,
+  and affordability at execution.
+- Credit accepted cash-generating reductions first, then evaluate consuming
+  fills in stable-ID order against `cash_tolerance = 1e-8`.
+- Apply accepted fills in axis order; never scale, floor, defer, or credit a
+  rejected sale.
+- Reconcile virtual and recorded cash plus intended/post-risk/actual exposure.
+
+### Acceptance Criteria
+
+- U13 and U18 pass under target-order permutations and exact-boundary cases.
+- No opening short or unaccepted sale generates spendable cash.
+- Final cash matches the virtual ledger or stops with the typed reconciliation
+  reason.
+
+### Verification
+
+- `test-availability-affordability.R`
+- `test-availability-fold.R`
+- Cost/risk/accounting regression tests
+
+### Implementation Notes
+
+- Active proposals resolve costs before a virtual cash ledger credits accepted
+  reductions and evaluates consumers in C-locale stable-ID order against the
+  fixed `1e-8` tolerance.
+- Accepted fills remain in decision-axis order. Rejected sales fund nothing,
+  membership changes are diagnostic-only, and all applicable gate reasons are
+  retained in their fixed order.
+- A reconciliation row records virtual and actual cash plus intended,
+  post-risk, and actual marked gross exposure; mismatches stop before current
+  pulse economics are applied.
+
+### Source Reference
+
+- Spec Section 2.7; gates U13/U18 and short regression
+- U Sections 7.1-7.2
+
+### Classification
+
+```yaml
+type: correctness
+surface: execution-affordability
+scope: virtual-ledger-policy
+```
+
+## LDG-2696 - Controlled Stops Completion And Direct Diagnostics
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2693, LDG-2694, LDG-2695
+Status: Complete After Review
+
+### Description
+
+Represent expected valuation/settlement stops as committed INCOMPLETE prefixes
+with durable completion and ordered diagnostic evidence on direct runs.
+
+### Tasks
+
+- Return typed terminal fold results through the normal transaction return path.
+- Stage pulse work until feasibility/reconciliation succeeds and discard only
+  unaccepted current-pulse work.
+- Add `run_completion` and `run_diagnostics` schemas/writers with intended and
+  achieved bounds, stop reason, gross exposure, and deterministic sequences.
+- Preserve last-valued and last-executed timestamps separately.
+- Keep fold exceptions FAILED with rollback of the current fold transaction.
+
+### Acceptance Criteria
+
+- Expected exhaustion/unsupported settlement finalizes INCOMPLETE, never DONE.
+- Earlier accepted events and valid prefix evidence persist; fabricated
+  settlement and partial current-pulse economics do not.
+- Direct diagnostic rows and completion payload validate through a fresh
+  connection.
+
+### Verification
+
+- `test-availability-valuation.R`
+- `test-availability-fold.R`
+- `test-availability-parity.R`
+- First-review exception-phase and affected-exposure fixtures
+
+### Implementation Notes
+
+- Experiment-store schema 114 adds keyed `run_completion` and
+  `run_diagnostics` tables with direct-run writers and fresh-connection
+  validation.
+- Availability-aware direct runs retain deterministic decision, risk,
+  execution, reconciliation, and stop rows. Deliberate interruptions retain
+  their invoked-pulse trace and resume appends to it. Last-valued and
+  last-executed timestamps remain separate.
+- Expected stops return normally and commit accepted prefixes as
+  `INCOMPLETE`. Unexpected fold exceptions remain `FAILED`, roll back fold
+  economics, and add an error diagnostic only after rollback.
+- Review follow-up bound the complete durable reason-code vocabulary and added
+  all six Batch 8 conditions to the generated-help contract lock.
+
+### Source Reference
+
+- Spec Section 2.7; gates U19/U22 and first-review regression rows
+- U Sections 7.4 and 9.3
+
+### Classification
+
+```yaml
+type: persistence
+surface: run-completion
+scope: incomplete-prefix-diagnostics
+```
+
+## LDG-2697 - Terminal Finalization Reopen And Idempotent Recovery
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2696
+Status: Complete After Review
+
+### Description
+
+Finalize and reopen DONE/INCOMPLETE outcomes safely, with a zero-execution
+shortcut for achieved terminals and finalization-only recovery after failure.
+
+### Tasks
+
+- Persist terminal intent and prefix bounds with the committed fold result.
+- Make RUNNING/FAILED rows with valid terminal completion evidence rebuild
+  projections only, then commit the intended terminal status once.
+- Return achieved INCOMPLETE handles idempotently after identity verification.
+- Extend `ledgr_run_open()` to inspect DONE or INCOMPLETE without strategy code.
+- Fail closed on missing/inconsistent terminal evidence.
+
+### Acceptance Criteria
+
+- Same-ID achieved INCOMPLETE invokes no callback, cleanup, status change, or
+  projection rewrite.
+- Injected DONE and INCOMPLETE finalization failures recover without replay or
+  duplicate rows.
+- U19 and U22 terminal recovery/reopen assertions pass.
+- Mismatched identity and malformed completion bounds fail closed.
+
+### Verification
+
+- `test-runner.R`
+- `test-persistence-fresh-connection.R`
+- `test-availability-parity.R`
+- U19 valuation-horizon and U22 terminal-settlement recovery cases
+- First-review terminal-idempotency fixture
+
+### Implementation Notes
+
+- Valid terminal evidence is checked against the stored session calendar.
+  Achieved `INCOMPLETE` IDs also validate the exact equity timestamp prefix
+  and stopped diagnostic before returning without mutation; failed `DONE` or
+  `INCOMPLETE` finalization resumes without invoking the strategy or fold.
+- Fresh-session opening accepts validated `DONE` and availability-aware
+  `INCOMPLETE` runs; malformed completion bounds fail closed.
+- Review follow-up added direct detecting tests for incomplete-performance,
+  off-calendar intended bounds, and missing incomplete stop reasons, and bound
+  `ledgr_run_terminal_evidence_invalid` in contracts, NEWS, and generated help.
+
+### Source Reference
+
+- Spec Sections 2.2 and 2.7; gates U19/U22 and terminal-idempotency regression row
+- U Section 7.4
+
+### Classification
+
+```yaml
+type: correctness
+surface: run-recovery
+scope: terminal-incomplete-finalization
+```
+
+## LDG-2698 - Sweep And Parallel Incomplete-Evidence Propagation
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2697
+Status: Complete After Review
+
+### Description
+
+Carry compact completion/stop evidence through memory sweeps, saved sweeps,
+and parallel candidates while excluding incomplete performance from selection.
+
+### Tasks
+
+- Add INCOMPLETE and canonical `completion_json` support to sweep candidates.
+- Persist/reopen saved-sweep schema 4 without full per-candidate ledgers.
+- Return compact worker evidence to the parent for persistence.
+- Exclude incomplete candidates from panels, candidate selection, and
+  promotion even through `allow_failed` paths.
+
+### Acceptance Criteria
+
+- U9 and the sweep/parallel portions of U11 pass.
+- Direct, sequential, parallel, and reopened completion evidence agree.
+- Incomplete retained series are visibly labelled and never treated as
+  complete performance.
+
+### Verification
+
+- `test-sweep-persistence-roundtrip.R`
+- `test-sweep-parallel.R`
+- `test-availability-parity.R`
+- Candidate/promotion rejection tests
+
+### Implementation Notes
+
+- Experiment-store schema 115 carries nullable canonical completion payloads
+  on candidate rows. Its transactional migration preserves existing rows and
+  keys and rolls back its marker on failure, while saved-sweep schema 4 and
+  identity formats remain unchanged.
+- Sequential, parallel, direct, and reopened completion evidence agrees.
+  Incomplete retained prefixes stay visible with status but cannot enter a
+  complete panel even through an explicit candidate request, candidate
+  extraction, selection, or promotion.
+- Historical retained-return evidence without a status column normalizes to
+  `DONE`, while current parity tests require the explicit status column.
+- Review follow-up documented and locked the extraction and promotion failure
+  classes for incomplete candidates.
+
+### Source Reference
+
+- Spec Section 2.7; gates U9/U11
+- U Sections 7.4 and 9.3
+
+### Classification
+
+```yaml
+type: feature
+surface: sweep-parallel
+scope: incomplete-evidence
+```
+
+## LDG-2699 - Walk-Forward Incomplete-Evidence Propagation
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2698
+Status: Complete After Review
+
+### Description
+
+Propagate incomplete candidate/fold evidence through walk-forward evaluation
+without inventing selection eligibility or later opening state.
+
+### Tasks
+
+- Admit INCOMPLETE and canonical completion payloads on score rows.
+- Exclude incomplete training candidates and explain the exclusion.
+- Stop a carry-state chain with existing PARTIAL fold/session semantics when a
+  test run becomes incomplete.
+- Preserve candidate/session identity formats and prior opening state.
+
+### Acceptance Criteria
+
+- U9 and walk-forward U11 pass.
+- U23 walk-forward state/history continuity passes across the incomplete
+  carry-state boundary.
+- No incomplete candidate is selected or promoted.
+- No later fold is fabricated after an incomplete carry-state boundary.
+
+### Verification
+
+- `test-walk-forward-orchestrator.R`
+- `test-availability-parity.R`
+- U23 walk-forward asset-state lifecycle assertions
+- Saved/reopened walk-forward tests
+
+### Implementation Notes
+
+- Score rows admit `INCOMPLETE` with canonical completion evidence, while
+  training selection continues to admit only `DONE` candidates.
+- An incomplete test run records a `PARTIAL` fold/session and ends the
+  carry-state chain without fabricating the next fold or opening state.
+  A degenerate prefix whose metric cannot be derived remains `INCOMPLETE`
+  rather than becoming `FAILED`; saved and reopened fold/score evidence
+  agrees.
+- Review follow-up made availability-aware window validation use the sealed
+  session calendar and made availability-aware carry-state reconstruction read
+  finalized equity, ledger holdings, and lot evidence. A two-instrument fixture
+  with different missing sessions completes through direct, sweep, and two
+  walk-forward folds; fold-two opening cash, positions, and cost basis equal
+  fold one's finalized evidence.
+
+### Source Reference
+
+- Spec Section 2.7; gates U9/U11/U23
+- U Sections 7.4 and 9.3
+
+### Classification
+
+```yaml
+type: feature
+surface: walk-forward
+scope: incomplete-fold-propagation
+```
+
+## LDG-2700 - Durable Explanation Views And Cross-Path Parity
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2697, LDG-2698, LDG-2699
+Status: Complete After Review
+
+### Description
+
+Expose durable availability/diagnostic result tables and `ledgr_run_explain()`
+over recorded evidence, then verify dense and active behavior across all paths.
+
+### Tasks
+
+- Add `as_tibble(bt, what = "diagnostics"|"availability")` and delegate
+  `ledgr_results()` through the same path.
+- Implement `ledgr_run_explain()` without strategy execution or target
+  reconstruction.
+- Reconstruct availability planes only from sealed facts, effective plan, and
+  ledger holdings; use committed decision traces for actual targets.
+- Compare direct, reopened, sweep, parallel, and walk-forward completion and
+  economic evidence under equal versions.
+
+### Acceptance Criteria
+
+- U1, U4, U11, and U12 pass.
+- Dense hashes, axes, events, and metrics remain version-qualified identical.
+- Reopened explanations equal live ones and inspection writes nothing.
+- Missing retained trace fails explicitly rather than inventing an answer.
+
+### Verification
+
+- `test-availability-parity.R`
+- `test-availability-workflow.R`
+- U4 same-strategy dense/active parity
+- Result delegation and fresh-connection tests
+- `tools::checkRd()` and export review
+
+### Implementation Notes
+
+- Added delegated `diagnostics` and `availability` result tables plus
+  `ledgr_run_explain()`, which consumes those same result tables. Targets and
+  execution outcomes come only from the committed decision trace;
+  availability holdings come from ledger replay and marks from sealed bars,
+  never from trace-only position or mark fields.
+- Live and reopened views/explanations are identical, inspection leaves table
+  contents unchanged, dense diagnostics are typed empty evidence, and missing
+  traces raise `ledgr_run_explanation_unavailable`.
+- Review follow-up pins member, held, priced, mark-source, and mark-age values
+  on the durable availability view and includes the missing-trace class in the
+  generated condition-reference lock.
+
+### Source Reference
+
+- Spec Sections 2.3, 2.7, and 4; gates U1/U4/U11/U12
+- U Sections 9-10
+
+### Classification
+
+```yaml
+type: api
+surface: availability-results
+scope: explain-reopen-parity
+```
+
+## LDG-2701 - Survivorship-Bias Article And Connected Workflow
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2700
+Status: Complete After Review
+
+### Description
+
+Teach the point-in-time universe problem and ledgr's first implementation with
+one executable public ingest-run-explain-close-reopen journey.
+
+### Tasks
+
+- Add `vignettes/survivorship-bias.qmd` using the approved synthetic
+  vendor-shaped fixture and explicit session calendar.
+- Show membership entry/removal, a retained holding, blocked and retried exit,
+  valuation age, completion state, and reopened explanation.
+- Show strict invalid-observation rejection before explicit quarantine and the
+  resulting missing session. Accepted relocation: the executable tutorial now
+  lives in `vignettes/data-input-and-snapshots.qmd`, where sealing and data
+  input are taught, because quarantine requires a declared session calendar.
+  The survivorship article states the rule and links there rather than
+  repeating the demonstration.
+- Teach assumptions, omitted checks, incomplete evidence, and unsupported
+  terminal economics without overclaiming point-in-time completeness.
+
+### Acceptance Criteria
+
+- H8 and U12's connected journey execute entirely through public APIs.
+- No private provider fields, hand-built planes, internal SQL, or strategy
+  replay appears in the teaching path.
+- The article follows the styleguide and uses real references.
+
+### Verification
+
+- Execute all vignette chunks
+- Render QMD and Markdown mirror
+- `test-documentation-contracts.R`
+- Local pkgdown article inspection
+- Overclaim and stale-API scan
+
+### Implementation Notes
+
+- Added and executed `vignettes/survivorship-bias.qmd` with the approved
+  synthetic venue, complete session calendar, and membership changes.
+- The public-only journey shows a retained former member, a blocked exit, no
+  hidden standing order, an explicit retry, valuation age, close/reopen
+  explanation parity, and an `INCOMPLETE` valuation-horizon variant.
+- Strict invalid-observation rejection and explicit quarantine are stated and
+  cross-linked in the survivorship article; the executable demonstration lives
+  in `vignettes/data-input-and-snapshots.qmd`, because quarantine requires a
+  declared session calendar and belongs where sealing is taught.
+- The article names disabled checks and assumptions, uses primary references,
+  and preserves the settlement, short-financing, OMS, imputation, and
+  point-in-time-completeness limits.
+- Review follow-up added a bounded `max_sessions` exercise contrasting a
+  current-mark-only stop with one permitted stale session.
+
+### Source Reference
+
+- Spec Section 4; gates H8/U12
+- U Sections 10.4 and 13
+- `inst/design/vignette_styleguide.md`
+
+### Classification
+
+```yaml
+type: documentation
+surface: availability-teaching
+scope: survivorship-bias-workflow
+```
+
+## LDG-2702 - Reference Surfaces Audit Dispositions And Closeout
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2701
+Status: Complete After Review
+
+### Description
+
+Complete generated/reference documentation, contract and maintainer traces,
+release surfaces, and explicit audit/horizon dispositions for implemented work.
+
+### Tasks
+
+- Update `contracts.md`, NEWS, README, generated help/NAMESPACE, `_pkgdown.yml`,
+  affected vignettes, and maintainer manual implementation traces.
+- Publish the reason-code table with stage/action mappings.
+- Make condition-class prose locks structurally distinct from alias locks and
+  match durable reason-code vocabulary as exact tokens, including
+  `status_unknown` versus `status_unknown_or_conflicting`.
+- Update identity reference for schema/hash/availability choices.
+- Record every scoped audit outcome and preserve all explicit deferrals.
+- Remove active-pointer claims only when implementation/release status warrants.
+
+### Acceptance Criteria
+
+- Release surfaces accurately describe shipped behavior and limitations.
+- No surface claims short financing, settlement, arbitrary PIT completeness,
+  performance superiority, or a second execution engine.
+- Audit and horizon entries are closed or routed with reasons.
+- Documentation-contract tests fail when a condition's prose entry is removed
+  or one durable reason token is satisfied only as another token's substring.
+
+### Verification
+
+- Documentation-contract tests
+- `tools::checkRd()`
+- NAMESPACE/API/reference index review
+- Full pkgdown build
+- Manual audit/deferral ledger review
+
+### Implementation Notes
+
+- Added article links to package, README, pkgdown, result, snapshot, facts,
+  policy, plan, and explanation surfaces; regenerated affected help.
+- Replaced the reason-code prose list with an exact-token stage/action table
+  and made condition prose locks structurally distinct from alias locks.
+- Updated snapshot, feature, fold, identity, and walk-forward maintainer traces;
+  corrected the scoped September 4 stale examples and explicitly retained the
+  broader editorial/navigation work in the horizon.
+- Verification rendered the public article and maintainer mirrors, passed 66
+  documentation-contract tests with 2,078 expectations, checked all 147 Rd
+  files, passed the API-export lock, and completed the full pkgdown build. The
+  fold trace now identifies the runner-owned availability calendar and the
+  dense-only `ledgr_run_snapshot_calendar()` branch precisely.
+- Review follow-up documented every `ledgr_run_explain()` result field and
+  labelled `no_action` and `no_target_change` as non-durable explain-time
+  values, with documentation-contract coverage.
+
+### Source Reference
+
+- Spec Sections 4 and 7-8
+- H/U documentation and future-obligation sections
+
+### Classification
+
+```yaml
+type: documentation
+surface: release-surfaces
+scope: help-manual-audit-deferrals
+```
+
+## LDG-2704 - Opening-Time Execution Correction
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2702
+Status: Complete After Review
+
+### Description
+
+Execute active-mode fills at the next declared session opening, as Section 2.4
+requires, instead of at the following close. The correction covers the
+execution-time fact cutoff as well as the timestamp.
+
+### Tasks
+
+- Derive execution opportunities from declared next-session openings and use
+  that instant as the execution timestamp for active events.
+- Recheck trading-status, lifetime, and other execution-time facts at the
+  opening cutoff rather than the close.
+- Preserve decision-frozen membership eligibility, the permitted next-open
+  price evidence boundary, and the terminal no-fill rule.
+- Leave dense conventions unchanged; that path declares no independent opening
+  clock and must not gain a fabricated one.
+
+### Acceptance Criteria
+
+- A decision at a session close fills at the next declared opening and uses
+  that opening's price.
+- With a 14:30 opening: a halt effective and knowable 12:00-16:00 blocks the
+  fill; a halt 18:00-23:00 does not; a halt ending before 14:30 does not.
+- Knowledge cutoffs are explicit, and a later-known assertion is tested
+  separately from a later-effective one.
+- Selected-window alignment and final no-opportunity behavior are unchanged.
+- No future OHLCV becomes visible to the strategy.
+
+### Verification
+
+- Availability economics and parity tests
+- Independent expected dates and economics, not only cross-path parity
+- Execution-spec and availability-calendar alignment tests
+
+### Implementation Notes
+
+- Derived one declared opening-time execution opportunity for each
+  non-terminal availability decision pulse and carried it through direct and
+  sweep execution specs.
+- Execution-time fact resolution, accepted event timestamps, diagnostics, and
+  `last_executed_ts_utc` now use the opening instant. Price evidence remains
+  the next bar's open, membership remains decision-frozen, and the terminal
+  pulse still has no execution opportunity.
+- Added detecting 14:30 cases for a known halt spanning the opening, a
+  later-effective halt, a halt ending before the opening, a later-known halt,
+  and an opening-time lifetime restriction, plus terminal and direct/sweep
+  coverage. Dense specs omit and reject an independent opening clock. The full
+  120-file suite, 147-file Rd check, YAML parse, and diff hygiene checks pass.
+- Review follow-up routed the live calendar through the existing
+  `ledgr_session_execution_opportunities()` helper and added detecting
+  correct-length `NA` and wrong-type execution-spec cases. The four
+  post-follow-up focused files pass 316 expectations.
+- Independent review accepted the opening-time behavior, dense neutrality,
+  helper consolidation, and detecting validation cases with no findings.
+
+### Classification
+
+```yaml
+type: correctness
+surface: fold-economics
+scope: opening-time-execution
+```
+
+## LDG-2705 - Fill And Read-Side Timestamp Alignment
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2704
+Status: Complete After Review
+
+### Description
+
+Align the public fill surface with economic execution time and expose session
+alignment as a derived read-side value rather than a fourth stored column.
+
+### Tasks
+
+- Return the opening instant as public `fills$ts_utc` and as the ledger fill
+  event timestamp.
+- Derive `recording_pulse_ts_utc` from recorded fill association and sealed
+  session facts; do not persist it.
+- Keep equity rows stamped at their existing close pulse.
+- Document the grouped fills-to-equity join and why an equality join on
+  economic fill time is not session alignment.
+
+### Acceptance Criteria
+
+- Public `fills$ts_utc` is the opening instant; the derived pulse field
+  resolves to the correct close.
+- The derived value survives reopening without strategy replay, and stays
+  explicitly unavailable when the association is missing or ambiguous.
+- A grouped fills-to-equity join preserves equity row cardinality.
+- Within-version event order, clean, reopened, and replayed projections,
+  completion evidence, and fingerprints reconcile.
+- No historical stored event timestamp is rewritten.
+
+### Verification
+
+- Fills, results, parity, and persistence tests
+- Documented join example executed in a vignette or help page
+
+### Implementation Notes
+
+- Public fill timestamps remain the recorded economic execution instant. The
+  new `recording_pulse_ts_utc` result column derives the close of the execution
+  session from fill association and sealed session facts; no persistence
+  schema or event row gained another timestamp.
+- Filled diagnostics now retain their existing ledger `event_seq` association.
+  Missing or ambiguous evidence returns `NA` rather than guessing, while dense
+  projections use their existing fill timestamp as the alignment pulse.
+- Direct, reopened, and reconstructed fills agree without strategy replay. An
+  executed help example groups fills before matching them to close-stamped
+  equity, and tests pin unchanged equity cardinality.
+- Review follow-up added a detecting assertion over the fills passed from a
+  live sweep candidate into retention, so deleting the candidate remap fails.
+  Standalone event reconstruction now takes an explicit pulse axis and routes
+  recording-time derivation through the shared opportunity mapper. The remap
+  gut produces exactly one `09:30` versus `16:00` failure at the new assertion.
+- Independent review accepted the live sweep remap and shared reconstruction
+  rule with no findings after the follow-up patches.
+
+### Classification
+
+```yaml
+type: correctness
+surface: results-read-side
+scope: fill-timestamp-alignment
+```
+
+## LDG-2706 - Historical Timing Compatibility And Identity
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2704, LDG-2705
+Status: Complete After Review
+
+### Description
+
+Record the corrected execution convention in identity, classify pre-correction
+runs read-only, and forbid cross-version fill equivalence claims.
+
+### Tasks
+
+- Record `availability$execution_timing_version = 2L` in new active configs and
+  admit it to canonical config identity and execution fingerprint inputs.
+- Classify a stored active config carrying the provider sentinel and no timing
+  version as legacy version 1, as a read-time inference rather than a field
+  written back into the store.
+- Expose the version and a convention label through `ledgr_run_info()`,
+  reopened summaries, and comparison provenance.
+- Add a `fill_timing_comparable` flag to comparison metadata without filtering
+  or altering historical metrics.
+
+### Acceptance Criteria
+
+- New active identity records version 2; dense configs gain no availability
+  timing field.
+- Legacy inference is visible on reopen and never silently classified as
+  version 2 from inconsistent or unrecognized evidence.
+- Retained version-1 rows, hashes, and returned fill timestamps are unchanged
+  byte for byte.
+- A version-1 and version-2 pair reports `fill_timing_comparable = FALSE` with
+  its reason, while summary metrics stay available.
+- A corrected run cannot resume a pre-correction run identity.
+
+### Verification
+
+- Persistence and comparison tests against a retained version-1 fixture
+- Compatibility tested independently of time-alignment and economic parity
+
+### Implementation Notes
+
+- New active configs record execution timing version 2 in canonical config,
+  sweep/candidate reproduction, provider, and walk-forward descendant identity.
+  Dense config and identity retain canonical omission.
+- Read-side provenance classifies recognized active configs without a version
+  as `availability_close_v1`, explicit version 2 as
+  `availability_open_v2`, and insufficient or inconsistent evidence as
+  `unknown`. Legacy active configs remain inspectable but cannot execute or
+  resume under corrected timing semantics.
+- Run information, summaries, and comparisons expose timing provenance.
+  Comparison metadata is selected-set-wide, leaves historical metrics intact,
+  and rejects differing or unknown conventions as fill-timing comparable.
+- The timing-specific file passes 56 expectations. The pre-follow-up full
+  120-file suite was green with zero failures or errors and one expected
+  snapshot-adapter skip; the post-follow-up sweep, parity, and execution-spec
+  regression net is green. Rd, YAML, export, schema, and diff hygiene checks
+  also pass.
+- Independent review accepted the timing identity, legacy classification, and
+  comparison boundary with no findings after the follow-up patches.
+
+### Classification
+
+```yaml
+type: compatibility
+surface: run-identity
+scope: execution-timing-version
+```
+
+## LDG-2707 - Shared Local-Time Ambiguity Validation
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2702
+Status: Complete After Review
+
+### Description
+
+Reject ambiguous and nonexistent local wall times in the shared session-time
+helper, so every calendar path inherits the same rule.
+
+### Tasks
+
+- Reject ambiguous fall-back local times in `ledgr_session_times()` instead of
+  silently selecting one offset.
+- Preserve and verify nonexistent spring-forward rejection consistently across
+  supported operating systems.
+- Keep ordinary per-date conversion and explicit `POSIXct` instants working
+  unchanged.
+
+### Acceptance Criteria
+
+- The ordinary constructor rejects an ambiguous fall-back time and a
+  nonexistent spring-forward time on supported systems.
+- Normal daylight-saving conversion is preserved, with no adapter involved.
+- Explicit instants remain valid.
+
+### Verification
+
+- `test-availability-facts.R`
+- Operating-system gates
+
+### Implementation Notes
+
+- Local wall-time parsing now enumerates candidate timezone offsets and
+  round-trips each UTC candidate through the declared IANA timezone.
+  Ambiguous and nonexistent values fail with distinct classes, while ordinary
+  conversions and explicit POSIXct instants retain their existing behavior.
+
+### Classification
+
+```yaml
+type: correctness
+surface: facts-sessions
+scope: local-time-validation
+```
+
+## LDG-2708 - Facts History And Cutoff Resolution
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2702
+Status: Complete After Review
+
+### Description
+
+Add `ledgr_facts_history()` and `ledgr_facts_resolve()` so a user can inspect
+supplied assertions and resolve membership at a decision cutoff before any
+portfolio accounting exists.
+
+### Tasks
+
+- Accept either a normalized fact family or bundle, or a sealed snapshot
+  handle, and dispatch both into the same normalization and resolution code.
+- Return classed results with eager-tibble `rows` and `evidence` and
+  serializable `metadata`; no cursors and no durable inspection artifact.
+- Keep the retrospective history view separate from cutoff resolution, with no
+  `at = NULL` mode and no range argument on the resolver.
+- Preserve false versus unknown membership, cite complete-set headers for
+  omission, and never fabricate a negative member assertion.
+- Verify sealed state and hash on the snapshot path, release connections the
+  call opened, and leave caller-owned connections usable.
+
+### Acceptance Criteria
+
+- Typed outputs across all argument combinations; invalid combinations fail
+  with a classed error.
+- History includes supplied future-effective, future-known, and audit-only
+  evidence; resolution excludes not-yet-known evidence, its identifiers, and
+  its provenance.
+- Explicitly requested unknown and false identifiers are retained in request
+  order; default resolution does not enumerate future members.
+- A fresh process resolves from a sealed snapshot with no facts object in
+  scope and matches in-memory semantic evidence.
+- Unsealed, corrupt, and undeclared-scope inputs fail; no callback, persistent
+  write, RNG change, or caller-connection closure occurs.
+
+### Verification
+
+- Facts, causality, workflow, and persistence tests
+
+### Implementation Notes
+
+- Added separate eager history and cutoff-resolution results over normalized
+  facts and sealed snapshots. The resolver shares the runtime membership
+  algorithm, retains requested false and unknown identifiers, and cites
+  complete-set omission without fabricating a negative assertion.
+- Snapshot inspection verifies SEALED state and the current snapshot hash on
+  every call, closes only connections it opened, and changes neither stored
+  evidence nor RNG state. A fresh-process snapshot-only resolution test passes.
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-inspection
+scope: history-and-resolution
+```
+
+## LDG-2709 - Constituent-List Membership Input
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2708
+Status: Complete After Review
+
+### Description
+
+Accept a list-column constituent table in
+`ledgr_facts_membership_snapshots()` alongside the existing row-per-member
+form, so familiar vendor shapes are valid input.
+
+### Tasks
+
+- Normalize the list-column path through existing set headers and member rows.
+- Represent an empty set as `character(0)` without a dummy instrument.
+- Reject mixed input shapes and inconsistent group headers.
+- Retain `complete` and its current default, and spell out complete
+  replacement lists versus partial assertions in printing.
+
+### Acceptance Criteria
+
+- Equivalent list and row forms with identical provenance produce identical
+  canonical facts and hashes.
+- An empty complete list seals; partial assertions keep existing semantics and
+  do not become explicit false assertions.
+- No fabricated instrument or header row enters user input.
+
+### Verification
+
+- `test-availability-facts.R`
+- Hash-equivalence regressions
+
+### Implementation Notes
+
+- Membership snapshots now accept a `members` list-column and normalize it
+  through the existing set-header and member-row representation. Equivalent
+  row and list inputs with identical provenance produce identical canonical
+  facts and hashes; empty complete lists and partial assertions remain
+  semantically distinct.
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-membership
+scope: constituent-list-input
+```
+
+## LDG-2710 - Optional qlcal Session Adapter
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2707, LDG-2709
+Status: Complete After Review
+
+### Description
+
+Add one bounded `ledgr_facts_sessions_qlcal()` preparation adapter as an
+explicit narrow exception to the calendar-expansion deferral.
+
+### Tasks
+
+- Materialize every civil date, including closures, and delegate to
+  `ledgr_facts_sessions()` for conversion, coverage, and knowledge validation.
+- Use an explicit qlcal calendar object, never the global calendar, and never
+  persist its external pointer.
+- Apply explicit per-date overrides as complete replacement rows validated
+  through the same constructor.
+- Keep the existing two-value `knowledge` vocabulary and record generated
+  schedule content as `schedule_basis = "generated"` in hashed family metadata.
+- Extend the plan's assumption predicate to treat a generated schedule as
+  assumption-backed while preserving the two reasons separately.
+
+### Acceptance Criteria
+
+- Inclusive coverage, a known closure, and an explicit early-close override all
+  materialize correctly; invalid or out-of-range overrides fail.
+- No global calendar mutation occurs, and a materialized snapshot runs,
+  reopens, and inspects without qlcal installed.
+- Provider version, hours, overrides, and assumptions change new snapshot
+  identity; generation wall time does not.
+- Generated-with-evidenced and generated-with-assumed cases each report their
+  distinct assumption correctly.
+
+### Verification
+
+- Focused adapter tests with `qlcal` in `Suggests`
+- Identity and assumption-label regressions
+
+### Implementation Notes
+
+- Added the optional qlcal adapter with qlcal in Suggests and no namespace
+  import. It materializes inclusive civil-date rows from an explicit calendar,
+  delegates validation to `ledgr_facts_sessions()`, and retains no pointer or
+  generation wall time.
+- Complete overrides, provider metadata, hours, and knowledge assumptions enter
+  canonical family and snapshot identity. Generated-with-assumed and
+  generated-with-evidenced plans report separate assumption reasons. All 11
+  availability files and the full 123-file suite pass; all 149 Rd files pass
+  `tools::checkRd()`.
+- A fresh process reopens, inspects, and runs a materialized snapshot without
+  loading the qlcal namespace. Source build succeeds; structural package check
+  is clean apart from the existing two missing-`inst/doc` warnings and
+  long-path note. The full built-package check retains the known four
+  source-document lookup failures while the source-tree suite is green.
+
+### Classification
+
+```yaml
+type: feature
+surface: facts-sessions
+scope: qlcal-adapter
+```
+
+## LDG-2711 - Inspectable Workflow Teaching And Completion Reporting
+
+Priority: P1
+Effort: L
+Dependencies: LDG-2705, LDG-2708, LDG-2710
+Status: Complete After Review
+
+### Description
+
+Teach the inspectable workflow against the published article and close the
+remaining completion-reporting gaps.
+
+### Tasks
+
+- Replace the artificial opening positions and do-nothing runs used solely for
+  membership inspection with the new resolver.
+- Teach delayed knowledge and already-known future-effective replacement
+  through executable cutoff queries.
+- Update the fill-clock explanation to the corrected opening convention and
+  regenerate every timing-sensitive output.
+- Inspect a closed date and a venue-wide feed outage, and keep the separate
+  questions for observation, membership, holding, admissibility, and valuation.
+- Confirm the existing run info and summary expose requested and achieved
+  window, status, stop reason, last fully valued and executed time, the
+  incomplete label, and affected identifiers.
+
+### Acceptance Criteria
+
+- Public preparation and resolution require no artificial holdings.
+- The full experiment constructor precedes the comparison wrapper.
+- The common-window comparison is computed from outputs with no extrapolation,
+  and no numeric result is retained by assumption.
+- Completion and stop evidence agree on reopen; unknown legacy evidence stays
+  unknown.
+- Tests assert behavior and causal evidence, not exact prose or plot styling.
+
+### Verification
+
+- Documentation-contract tests
+- Workflow and completion tests
+- Rendered article and pkgdown build
+
+### Implementation Notes
+
+- Replaced the membership-inspection workaround with public history and cutoff
+  resolution. The executed article distinguishes delayed knowledge from an
+  already-known future-effective replacement and compares a venue-wide outage
+  with a closed date without artificial portfolio state.
+- Rebuilt the run comparison around a fully shown experiment, opening-time
+  fills, recording-pulse aggregation, and an endpoint computed from the actual
+  result curves rather than a retained prose value.
+- Extended `ledgr_run_info()` and `summary()` with read-only terminal completion
+  evidence. Availability-aware runs report requested and achieved windows,
+  status and stop reason, last valued and executed timestamps, completeness,
+  and affected IDs; absent historical or dense evidence remains typed unknown.
+- Added detecting workflow, completion, reopen, and documentation-contract
+  assertions. The rendered article carries the regenerated timing-sensitive
+  output and verifies both explanation and completion evidence after reopen.
+- The workflow/completion net and full 123-file source suite pass without
+  failure, error, or attributed warning; the full run has one expected adapter
+  skip. All 149 Rd files pass `tools::checkRd()`, the article renders to GFM,
+  and the complete pkgdown 2.2.1 site build succeeds.
+- Review follow-up added a two-instrument detecting fixture: `AAA` supplies the
+  only stopped diagnostic while `BBB` supplies ordinary fill evidence. The
+  affected set is exactly `AAA`, and changing the production filter from
+  `stopped` to `filled` fails exactly this test.
+
+### Classification
+
+```yaml
+type: documentation
+surface: teaching-workflow
+scope: inspection-and-completion
+```
+
+## LDG-2712 - Curated Fact Inspection Printing
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2711
+Status: Complete After Review
+
+### Description
+
+Print fact history and resolution results by family and operation, so the
+columns that carry point-in-time meaning are visible without reshaping.
+
+### Tasks
+
+- Select printed columns by family and operation rather than printing every
+  stored column.
+- Membership history prints `evidence_type`, `instrument_id`, `member`,
+  `effective_from`, `knowledge_time`, `complete`.
+- Membership resolution prints `instrument_id`, `member`, `reason`, and the
+  cutoff already carried in metadata.
+- Session history prints `session_date`, `status`, `session_open`,
+  `session_close`, `knowledge_time`.
+- Session resolution prints `session_date`, `status`, `session_open`,
+  `session_close`, `reason`, and a `knowledge_time` derived only from
+  applicable supporting evidence.
+- Disclose omitted columns and the full row count.
+
+### Acceptance Criteria
+
+- Membership history print shows `knowledge_time` and `complete` without
+  truncation and retains `evidence_type`, so a set-header row is never an
+  unexplained `NA` member.
+- Session resolution print shows `reason`, so an `NA` status distinguishes
+  missing coverage from evidence not yet knowable at the cutoff.
+- A derived session-resolution `knowledge_time` comes only from applicable
+  supporting evidence and is typed missing when none applies; excluded future
+  evidence is never inspected to populate it.
+- `$rows` and `$evidence` are unchanged for every family and operation.
+- Omitted columns and the full row count are disclosed in the print.
+
+### Verification
+
+- `test-availability-inspection.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- Printing now selects family- and operation-specific columns, reports the
+  full row count and omitted columns, and leaves `$rows` and `$evidence`
+  unchanged.
+- Session-resolution knowledge time is derived only from applicable supporting
+  evidence; excluded future evidence cannot populate it, and no supporting
+  evidence produces a typed missing timestamp.
+- Review follow-up labels that value as derived from `$evidence`, not stored in
+  `$rows`, and adds detecting tests for both unsupported evidence and excluded
+  future evidence.
+
+### Classification
+
+```yaml
+type: documentation
+surface: facts-inspection
+scope: curated-printing
+```
+
+## LDG-2713 - Completion-Aware Run Inventory
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2711
+Status: Complete After Review
+
+### Description
+
+Project recorded completion evidence onto `ledgr_run_list()`, so a listing
+cannot present an incomplete run's prefix return as a peer of a complete run's.
+
+### Tasks
+
+- Append these eleven fields, in this order, after the existing columns:
+  `completion_evidence_available`, `completion_status`, `requested_start_utc`,
+  `requested_end_utc`, `achieved_start_utc`, `achieved_end_utc`, `stop_reason`,
+  `last_fully_valued_ts_utc`, `last_executed_ts_utc`, `complete_performance`,
+  `affected_instrument_ids`.
+- Project recorded evidence whenever it exists, including for `FAILED` runs;
+  status does not gate the projection.
+- Use typed missing values only when completion evidence is genuinely absent.
+- Keep timestamps as `POSIXct` and `affected_instrument_ids` as a list-column
+  distinguishing unavailable, known-empty, and known sets.
+- Mark an incomplete row's metrics as describing only its achieved prefix, in
+  the curated print and in the help.
+- Implement the projection at `ledgr_run_list()` without widening the shared
+  low-level fetch.
+
+### Acceptance Criteria
+
+- `DONE`, `INCOMPLETE`, dense-without-completion, `FAILED`, and legacy rows
+  produce one stable schema with the eleven fields appended in the bound order.
+- A finalization-failed run that retains a `run_completion` row reports that
+  evidence, and the inventory agrees with `ledgr_run_info()` on it.
+- Absence is typed unknown and never inferred.
+- `affected_instrument_ids` distinguishes unavailable, known-empty, and known
+  sets.
+- The print marks an incomplete row's metrics as prefix-only.
+- Reopen parity holds; no strategy executes and no stored row changes.
+
+### Verification
+
+- `test-run-store.R`
+- `test-availability-parity.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- `ledgr_run_list()` appends the eleven completion fields in their bound order
+  using a batched read that leaves the shared low-level fetch unchanged.
+- Tests cover dense and legacy absence, incomplete and failed completion
+  evidence, the affected-ID tri-state, reopen parity, no strategy replay, and
+  full-table read-only store behavior.
+
+### Classification
+
+```yaml
+type: feature
+surface: run-inventory
+scope: completion-projection
+```
+
+## LDG-2714 - Incomplete-Comparison Prohibition
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2713
+Status: Complete After Review
+
+### Description
+
+Bind the existing refusal to rank incomplete runs as a forbidden behaviour with
+its own tests, rather than leaving it an implementation detail that a later
+change could relax.
+
+### Tasks
+
+- Record both selection modes in the contract: explicit `run_ids` reject a
+  non-`DONE` run, and omitted `run_ids` exclude non-`DONE` rows.
+- Add a test for each mode.
+- Document the completion-aware inventory as the supported way to see runs of
+  different horizons together.
+
+### Acceptance Criteria
+
+- Naming a non-`DONE` run explicitly raises `ledgr_run_not_complete`.
+- Omitting `run_ids` excludes non-`DONE` rows without raising, so surveying a
+  store does not fail because it holds an incomplete run.
+- Both runs still appear in the inventory with their horizon difference
+  visible.
+- The contract records why the refusal exists: an incomplete horizon changes
+  what return, Sharpe and drawdown mean, rather than merely qualifying them.
+
+### Verification
+
+- `test-run-store.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- Contracts, help, and tests preserve both comparison modes: explicit
+  non-`DONE` IDs fail with `ledgr_run_not_complete`, while omitted IDs exclude
+  non-`DONE` rows without failing the store survey.
+- The completion-aware inventory remains the supported surface for inspecting
+  runs with different achieved horizons together.
+
+### Classification
+
+```yaml
+type: contract
+surface: run-comparison
+scope: incomplete-prohibition
+```
+
+## LDG-2715 - Reporting UX Article Corrections
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2712, LDG-2713, LDG-2714
+Status: Complete After Review
+
+### Description
+
+Rewrite the Survivorship Bias article against the corrected surfaces so no
+canonical workflow defines a helper to display recorded evidence.
+
+### Tasks
+
+- Remove the session-inspection wrapper and its output block; teach the
+  difference between an open-session feed outage and a closed date from the
+  already printed calendar and observation tables.
+- Remove the hand-built common-window calculation and the hand-built horizon
+  table; take the horizon comparison from the completion-aware inventory.
+- Retain the four-scenario membership counterfactual, visibly labelled as
+  article-specific analysis, with its fixture construction folded.
+- Regenerate rendered output and figures from current execution.
+
+### Acceptance Criteria
+
+- No user-defined reporting wrapper remains in the canonical workflow.
+- The outage versus closed-date distinction is still taught.
+- The counterfactual block reads as article-specific analysis and not as part
+  of the ingestion-to-run path.
+- Rendered Markdown and figures regenerate from current execution, and no
+  numeric result is retained by prose assumption.
+
+### Verification
+
+- Documentation-contract tests
+- GFM render and pkgdown build
+
+### Implementation Notes
+
+- The article now teaches fact history, fact resolution, and completion
+  evidence through public outputs rather than local reporting helpers.
+- The common-window calculation and hand-built horizon table are gone. The
+  four-scenario membership exercise remains as folded, labelled sensitivity
+  analysis, and current execution regenerated the GFM output and figure.
+- Targeted tests and the full source suite pass; `tools::checkRd()` is clean,
+  and the full pkgdown 2.2.1 site build succeeds.
+- Review follow-up exposes the previously hidden `bars_input` construction and
+  removes the unsupported 26.1-point prose figure before rerendering.
+
+### Classification
+
+```yaml
+type: documentation
+surface: teaching-workflow
+scope: reporting-ux
+```
+
+## LDG-2716 - Completion-Aware Run Summary
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2713
+Status: Complete After Review
+
+### Description
+
+`summary()` prints `Status: INCOMPLETE` and `Performance: incomplete`, then
+reports an annualized return, annualized volatility, and a Sharpe ratio derived
+from the achieved prefix. Annualizing a truncated horizon extrapolates evidence
+the run does not have.
+
+### Tasks
+
+- Withhold annualized return, annualized volatility, and Sharpe ratio whenever
+  recorded completion evidence says performance is incomplete, and say why in
+  their place rather than printing a blank.
+- Head the metrics block so a reader cannot mistake prefix-derived figures for
+  the requested horizon, naming the achieved window.
+- Leave raw prefix metrics such as total return and maximum drawdown visible
+  and unchanged; they describe what happened, not an extrapolation of it.
+- Leave complete runs byte-identical.
+
+### Acceptance Criteria
+
+- An `INCOMPLETE` run's summary reports no annualized figure, and states that
+  the achieved window is shorter than the requested one.
+- A `DONE` run's summary is unchanged in content and order.
+- A `FAILED` run that retains completion evidence follows the completion
+  evidence, not the status.
+- Raw prefix metrics remain visible and are labelled as prefix-only.
+
+### Verification
+
+- `test-run-print.R`
+- `test-availability-parity.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- Suppression follows recorded `complete_performance` evidence rather than run
+  status. The achieved-window heading and explicit withholding text replace
+  extrapolated annualized figures while raw prefix metrics remain visible.
+- A byte-for-byte complete-run print assertion permits only LDG-2718's label
+  correction.
+- Reverting the helper to key on status fails both discriminating evidence
+  assertions; forcing prefix mode off fails the achieved-window and withholding
+  assertions in the incomplete-run test.
+
+### Classification
+
+```yaml
+type: contract
+surface: run-summary
+scope: prefix-only-metrics
+```
+
+## LDG-2717 - Run Info Print Ordering
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2713
+
+Status: Complete After Review
+
+### Description
+
+`print.ledgr_run_info()` emits six full-length hashes before completion
+evidence, so a reader reaches identity metadata before learning why a run
+stopped.
+
+### Tasks
+
+- Print status and completion evidence before identity and telemetry fields.
+- Keep every field that is printed today; this reorders, it does not remove.
+- Update the Survivorship Bias article so the completion block is not shown
+  twice in immediate succession by `ledgr_run_info()` and `summary()`.
+
+### Acceptance Criteria
+
+- Completion evidence precedes the identity hashes in the printed record.
+- No field present before the change is absent after it.
+- The article shows the completion story once, not twice.
+
+### Verification
+
+- `test-run-print.R`
+- Documentation-contract tests
+- GFM render
+
+### Implementation Notes
+
+- Completion evidence now follows the status metadata and precedes all identity
+  and telemetry fields. Tests retain an assertion for every prior field.
+- The article prints `ledgr_run_info()` once and no longer immediately repeats
+  the same completion evidence through `summary()`.
+- Restoring the prior print order fails the completion-before-snapshot assertion;
+  restoring the second article summary fails the documentation-contract lock.
+- Review follow-up keeps one article `summary()` call as the visible
+  completion-aware demonstration while retaining exactly one completion block.
+  The article's Core Workflow placement is intentional and contract-locked.
+- The follow-up GFM and pkgdown renders expose the achieved-prefix heading and
+  all three withholding messages in the checked-in and built article.
+
+### Classification
+
+```yaml
+type: documentation
+surface: run-inspection
+scope: print-ordering
+```
+
+## LDG-2718 - Closed-Trade Statistics Label
+
+Priority: P1
+Effort: S
+Dependencies: LDG-2716
+
+Status: Complete After Review
+
+### Description
+
+The summary prints `Total Trades: 0` for a run whose fills the same article
+has just displayed. The count is correct, because `n_trades` counts closed
+trade rows, but only the help says so.
+
+### Tasks
+
+- Name the statistic for what it counts in the printed summary.
+- Keep the computation unchanged; open-only fills still do not count.
+- Keep the help and the printed label in agreement.
+
+### Acceptance Criteria
+
+- The summary label states that the count is of closed trades.
+- The value is unchanged for every run.
+- Help text and printed output use the same term.
+
+### Verification
+
+- `test-run-print.R`
+- Documentation-contract tests
+
+### Implementation Notes
+
+- The printed label and help now say `Closed Trades`; the value remains
+  `computed$n_trades`, so no accounting or metric computation changed.
+- Restoring the old printed label fails the byte-for-byte complete summary test.
+- Review follow-up regenerates all affected public Markdown and locks the public
+  documentation against the stale `Total Trades:` label.
+- The README, eight other affected vignette siblings, and the Survivorship Bias
+  article now agree with the generated help and built site.
+
+### Classification
+
+```yaml
+type: documentation
+surface: run-summary
+scope: trade-label
+```
+
+## LDG-2703 - v0.2.0.0 Release Gate
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2672, LDG-2673, LDG-2674, LDG-2675, LDG-2676, LDG-2677, LDG-2678, LDG-2679, LDG-2680, LDG-2681, LDG-2682, LDG-2683, LDG-2684, LDG-2685, LDG-2686, LDG-2687, LDG-2688, LDG-2689, LDG-2690, LDG-2691, LDG-2692, LDG-2693, LDG-2694, LDG-2695, LDG-2696, LDG-2697, LDG-2698, LDG-2699, LDG-2700, LDG-2701, LDG-2702, LDG-2704, LDG-2705, LDG-2706, LDG-2707, LDG-2708, LDG-2709, LDG-2710, LDG-2711, LDG-2712, LDG-2713, LDG-2714, LDG-2715, LDG-2716, LDG-2717, LDG-2718
+Status: Complete After Review
+
+### Description
+
+Follow the release playbook, close the packet, and prepare the branch for
+remote CI, merge, and tag without conflating those evidence stages.
+
+### Tasks
+
+- Read `inst/design/release_ci_playbook.md` before execution.
+- Run full tests, installed README, source build/check, coverage, pkgdown, and
+  Linux persistence/executable-documentation gates.
+- Suppress DuckDB temporary-home startup chatter across every rendered
+  vignette without globally hiding ledgr warnings, errors, or meaningful
+  example output.
+- Record versions, commands, skips, failures, reruns, and exact commits.
+- Confirm every ticket is complete after review or explicitly deferred by a
+  dated maintainer amendment.
+- Rebuild `docs/` once with a pkgdown at or above the build script's
+  compatibility floor and commit exactly what pkgdown produces; record the
+  version actually used in the closeout rather than hand-editing metadata.
+- Add a contract check that every relative local image referenced by
+  `vignettes/*.md` resolves to an existing file, ignoring absolute URLs, data
+  URIs, and pure anchors.
+- Declare every CRAN-available package a gated test requires, so no test can
+  be skipped for a dependency `DESCRIPTION` never names. `pbo` is on CRAN and
+  belongs in `Suggests`; `quantstrat` is not, so either record it under
+  `Additional_repositories` or convert that cross-check into a documented
+  manual procedure rather than a permanently skipped test.
+- Remove generated local artifacts and write the release closeout.
+
+### Acceptance Criteria
+
+- Full release verification passes or each exception is documented and
+  accepted.
+- Coverage remains at least 80 percent and ordinary parallel tests run outside
+  covr.
+- Contracts, schemas, identities, NEWS, docs, and packet records agree.
+- Rendered vignettes contain no repeated DuckDB temporary-directory startup
+  notices, while intended diagnostic and example output remains visible.
+- Every local vignette image target exists, so a site build that removes
+  rendered figure directories cannot ship dead image links regardless of the
+  order in which rendering ran.
+- `docs/pkgdown.yml` records a pkgdown at or above the floor, and the closeout
+  names that version.
+- No test is skipped for a package absent from `DESCRIPTION`, and the skip
+  inventory in the closeout names the R version and the optional packages
+  installed when it was produced, because a skip count without them is not
+  reproducible evidence.
+- Branch is ready for remote branch CI; main and tag CI remain later evidence.
+
+### Verification
+
+- Release CI playbook
+- Full local suite
+- Installed README check
+- `R CMD build` and `R CMD check --no-manual --no-build-vignettes`
+- Coverage, pkgdown, and Linux gates
+- Rendered-HTML scan for DuckDB temporary-home startup messages
+- Vignette local-image resolution check
+- Git status/generated-artifact review
+
+### Implementation Notes
+
+- The maintainer accepted the release gate on 2026-09-13 after reviewing the
+  completed local evidence; no separate independent review cycle was required.
+- Local release gates are recorded in `v0_2_0_0_release_closeout.md`; remote
+  branch, main, and tag CI remain later evidence.
+- Coverage passed on Linux at 85.92 percent, above the 80 percent gate. The
+  ordinary Windows suite ran the parallel tests outside covr.
+- DuckDB startup noise is removed by a capability-aware driver choice rather
+  than broad output suppression. The path passes on DuckDB 1.5.5/Windows and
+  DuckDB 1.5.2/WSL.
+- All 20 GFM siblings reproduce, all local image targets resolve, the pkgdown
+  2.2.1 site contains no DuckDB shared-home notice across 24 articles, and all
+  149 Rd files pass `tools::checkRd()`.
+- A clean source package built in 373.5 seconds, and `R CMD check` on that
+  archive completed in 1023.6 seconds with `Status: OK` after installation,
+  examples, tests, and execution of all 20 vignettes.
+- `pbo` is declared in `Suggests`; the `quantstrat` DSR comparison is now a
+  documented manual procedure because quantstrat is unavailable on CRAN.
+- Remote branch CI run `34784297278` failed twice while covr read generated
+  trace shards after all earlier Ubuntu steps passed. The two fresh-process
+  tests and optional mirai availability-parity test now skip only under covr
+  and remain active under ordinary package checks; preserved-shard WSL
+  coverage passed at 85.95 percent with the threshold unchanged. Corrective
+  run `34793675897` isolated the remaining mirai worker path after the two
+  fresh-process paths were excluded.
+
+### Source Reference
+
+- Spec Section 7
+- `inst/design/release_ci_playbook.md`
+
+### Classification
+
+```yaml
+type: release
+surface: release-gate
+scope: v0.2.0.0-closeout
+```

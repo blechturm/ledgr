@@ -7,6 +7,10 @@
 #'   open, high, low, close. Optional: volume. Extra columns are ignored; only
 #'   canonical bar columns are persisted and hashed.
 #' @param instruments_df Optional data.frame with instrument metadata.
+#' @param facts Optional point-in-time facts created by [ledgr_facts()].
+#' @param invalid_observations Either `"error"` (the default) or the explicit
+#'   `"quarantine"` acknowledgement. Quarantine requires declared sessions and
+#'   is available only through this data-frame adapter.
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @return A `ledgr_snapshot` object.
@@ -14,6 +18,9 @@
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#' Point-in-time facts and quarantine:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
@@ -31,12 +38,38 @@
 ledgr_snapshot_from_df <- function(bars_df,
                                    instruments_df = NULL,
                                    db_path = NULL,
-                                   snapshot_id = NULL) {
+                                   snapshot_id = NULL,
+                                   facts = NULL,
+                                   invalid_observations = c("error", "quarantine")) {
+  invalid_observations <- match.arg(invalid_observations)
   if (!is.data.frame(bars_df)) {
     rlang::abort("`bars_df` must be a data.frame (or tibble).", class = "ledgr_invalid_args")
   }
 
   ledgr_validate_snapshot_id(snapshot_id)
+
+  availability_report <- NULL
+  if (is.null(facts)) {
+    if (identical(invalid_observations, "quarantine")) {
+      rlang::abort(
+        "`invalid_observations = \"quarantine\"` requires a facts bundle declaring sessions.",
+        class = c("ledgr_quarantine_requires_sessions", "ledgr_invalid_args")
+      )
+    }
+  } else {
+    facts <- ledgr_facts_assert(facts)
+    availability_report <- ledgr_availability_validate_inputs(
+      facts,
+      bars_df,
+      instruments_df,
+      invalid_observations
+    )
+    if (!isTRUE(availability_report$can_seal)) {
+      ledgr_availability_abort_validation(availability_report)
+    }
+    bars_df <- availability_report$prepared_bars
+    instruments_df <- availability_report$prepared_instruments
+  }
 
   required_cols <- c("ts_utc", "instrument_id", "open", "high", "low", "close")
   missing <- setdiff(required_cols, names(bars_df))
@@ -288,7 +321,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   )
 
   if (identical(db_path, ":memory:") || !file.exists(db_path)) {
-    drv <- duckdb::duckdb()
+    drv <- ledgr_duckdb_driver()
     con <- DBI::dbConnect(drv, dbdir = db_path)
     attr(con, "ledgr_duckdb_drv") <- drv
     ledgr_create_schema(con)
@@ -326,7 +359,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   inst_db$meta_json <- if (is.null(meta_updates)) rep(NA_character_, nrow(inst_db)) else meta_updates
 
   bulk_copy_parquet <- function(df, table, select_sql) {
-    reg_name <- paste0("ledgr_ingest_", paste(sample(c(letters, LETTERS, 0:9), 12, replace = TRUE), collapse = ""))
+    reg_name <- basename(tempfile(pattern = "ledgr_ingest_"))
     tmp_path <- normalizePath(tempfile(pattern = "ledgr_ingest_", fileext = ".parquet"), winslash = "/", mustWork = FALSE)
     duckdb::duckdb_register(con, reg_name, df)
     on.exit(duckdb::duckdb_unregister(con, reg_name), add = TRUE)
@@ -385,6 +418,15 @@ ledgr_snapshot_from_df <- function(bars_df,
         )
       }
     )
+    if (!is.null(availability_report)) {
+      ledgr_snapshot_write_availability(
+        con,
+        snapshot_id,
+        facts,
+        availability_report$quarantine_rows,
+        invalid_observations
+      )
+    }
   })
 
   DBI::dbExecute(
@@ -420,6 +462,12 @@ ledgr_snapshot_from_df <- function(bars_df,
     end_date = end_date,
     created_at = ledgr_normalize_ts_utc(created_at)
   )
+  if (!is.null(availability_report)) {
+    metadata$snapshot_hash_rule_version <- 2L
+    metadata$fact_family_count <- length(facts$families) +
+      as.integer(identical(invalid_observations, "quarantine"))
+    metadata$quarantined_observation_count <- nrow(availability_report$quarantine_rows)
+  }
 
   DBI::dbExecute(
     con,
@@ -457,6 +505,9 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#' Point-in-time facts and quarantine:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' csv_path <- tempfile(fileext = ".csv")
 #' utils::write.csv(data.frame(
@@ -540,6 +591,9 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
 #' `system.file("doc", "experiment-store.html", package = "ledgr")`
+#' Point-in-time facts and quarantine:
+#' `vignette("survivorship-bias", package = "ledgr")`
+#' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @examples
 #' if (FALSE) {
 #'   # Requires quantmod and network access. Yahoo data can change over time.

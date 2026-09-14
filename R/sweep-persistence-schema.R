@@ -106,6 +106,11 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
       candidate_id = as.character(row$candidate_id[[1]]),
       candidate_row = candidate_row,
       status = as.character(row$status[[1]]),
+      completion_json = if ("completion_json" %in% names(row)) {
+        ledgr_sweep_storage_chr(row$completion_json[[1]])
+      } else {
+        NA_character_
+      },
       final_equity = ledgr_sweep_storage_num(row$final_equity[[1]]),
       metrics_json = ledgr_sweep_storage_json(ledgr_sweep_storage_metric_record(row)),
       total_return = ledgr_sweep_storage_num(row$total_return[[1]]),

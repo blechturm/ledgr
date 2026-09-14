@@ -72,15 +72,14 @@ Metric assumptions now live in a `metric_context`. The default context
 is US equity daily: zero annual risk-free rate and `252 * 1` periods per
 year. Use market templates for common assumptions:
 
-<div class="ledgr-callout ledgr-callout-note">
+> [!NOTE]
+>
+> ### Definition
+>
+> A metric context is the assumption object behind metrics: risk-free
+> rate, calendar, annualization, and reserved provider slots. It makes
+> metric assumptions inspectable instead of hidden in summary output.
 
-**Definition**
-
-A metric context is the assumption object behind metrics: risk-free
-rate, calendar, annualization, and reserved provider slots. It makes
-metric assumptions inspectable instead of hidden in summary output.
-
-</div>
 
 ### Common Contexts
 
@@ -293,6 +292,10 @@ summary(bt)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
+#>
 #> Performance Metrics:
 #>   Total Return:        0.40%
 #>   Annualized Return:   28.59%
@@ -305,7 +308,7 @@ summary(bt)
 #>   Sharpe Ratio:        7.937
 #>
 #> Trade Statistics:
-#>   Total Trades:        1
+#>   Closed Trades:       1
 #>   Win Rate:            100.00%
 #>   Avg Trade:           $4.00
 #>
@@ -368,7 +371,7 @@ the sample, but no closed round trips were recorded.
 
 Use this checklist before changing the strategy:
 
-1.  Start with `summary(bt)`. If `Total Trades` is zero, `win_rate` and
+1.  Start with `summary(bt)`. If `Closed Trades` is zero, `win_rate` and
     `avg_trade` should be `NA`, not zero. If a registered feature can
     never become usable because the sample is too short, `summary(bt)`
     also prints a `Warmup Diagnostics` note with the feature ID,

@@ -35,17 +35,17 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 
 | Article | Source | Status | Scope |
 | --- | --- | --- | --- |
-| [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Reviewable first batch | Shared fold core, pulse lifecycle, output handlers, trust boundary, B2 guard, and maintainer checklist. |
+| [`execution_fold_core.md`](execution_fold_core.md) | `execution_fold_core.qmd` | Updated through v0.2.0.0 | Shared fold core, pulse lifecycle, availability economics, output handlers, trust boundary, and B2 guard. |
 | [`observability_determinism.md`](observability_determinism.md) | `observability_determinism.qmd` | Reviewable LDG-2540 batch | Fingerprints, closure captures, preflight/RNG determinism, telemetry, replay, and event evidence. |
-| [`snapshots_data.md`](snapshots_data.md) | `snapshots_data.qmd` | Reviewable LDG-2541 batch | Snapshot sealing, split stores, fold-entry guards, hot-path trust boundary, and data provenance. |
+| [`snapshots_data.md`](snapshots_data.md) | `snapshots_data.qmd` | Updated through v0.2.0.0 | Snapshot sealing, availability facts and quarantine, split stores, fold-entry guards, and data provenance. |
 | [`sweep.md`](sweep.md) | `sweep.qmd` | Reviewable LDG-2542 batch | Sweep candidate identity, parallel dispatch, memory output handler, B2 scope guard, and promotion. |
-| [`features.md`](features.md) | `features.qmd` | Reviewable LDG-2543 batch | Feature maps, aliases, cache/projection path, TTR adapters, and runtime `ctx$feature()` lookup. |
+| [`features.md`](features.md) | `features.qmd` | Updated through v0.2.0.0 | Feature maps, aliases, strict availability gaps, cache/projection path, adapters, and runtime lookup. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
 | [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Reviewable LDG-2545 batch | Local benchmark record generation, repeatability expectations, release-gate checks, and public-claim boundaries. |
-| [`identity_contract.md`](identity_contract.md) | `identity_contract.qmd` | Reviewable v0.1.9.1 LDG-2563 batch | Config, feature, alias, and cost identity fields after the public cost API and identity hardening work. |
+| [`identity_contract.md`](identity_contract.md) | `identity_contract.qmd` | Updated through v0.2.0.0 | Config, snapshot, availability, feature, alias, cost, risk, and walk-forward identity fields. |
 | [`cost_resolver.md`](cost_resolver.md) | `cost_resolver.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Public cost-model plans, resolver reconstruction, cost identity, and fold integration boundaries. |
 | [`target_risk_layer.md`](target_risk_layer.md) | `target_risk_layer.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Classed risk steps, risk-chain identity, worker-safe plans, and target-risk layer boundaries. |
-| [`walk_forward_machinery.md`](walk_forward_machinery.md) | `walk_forward_machinery.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Walk-forward fold orchestration, scalar selection, locator verification, persistence, and inspection surfaces. |
+| [`walk_forward_machinery.md`](walk_forward_machinery.md) | `walk_forward_machinery.qmd` | Updated through v0.2.0.0 | Walk-forward orchestration, availability carry state, locator verification, persistence, and inspection. |
 
 ## Rendered Output
 
@@ -92,3 +92,5 @@ articles:
 - `../rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`
 - `../rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
 - `../rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`
+- `../rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+- `../ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`

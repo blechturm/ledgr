@@ -70,10 +70,17 @@ ledgr_execution_spec <- function(run_id,
                                  seed = NULL,
                                  event_mode = c("live", "buffered"),
                                  use_fast_context = FALSE,
-                                 compiled_accounting_model = NULL) {
+                                 compiled_accounting_model = NULL,
+                                 availability_provider = NULL,
+                                 execution_opportunities_posix = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
+  if (is.null(availability_provider) && !is.null(execution_opportunities_posix)) {
+    ledgr_abort_invalid_execution_spec(
+      "Dense execution must not declare availability execution opportunities."
+    )
+  }
   spec <- list(
     spec_version = ledgr_execution_spec_version(),
     run_id = run_id,
@@ -107,6 +114,10 @@ ledgr_execution_spec <- function(run_id,
     use_fast_context = isTRUE(use_fast_context),
     compiled_accounting_model = compiled_accounting_model
   )
+  if (!is.null(availability_provider)) {
+    spec$availability_provider <- availability_provider
+    spec$execution_opportunities_posix <- execution_opportunities_posix
+  }
   class(spec) <- c("ledgr_execution_spec", "list")
   ledgr_validate_execution_spec(spec)
 }
@@ -207,6 +218,27 @@ ledgr_validate_execution_spec <- function(spec) {
     is.null(spec$static_feature_views) || is.list(spec$static_feature_views),
     "`execution$static_feature_views` must be NULL or a list."
   )
+  ledgr_execution_spec_check(
+    is.null(spec$availability_provider) ||
+      inherits(spec$availability_provider, "ledgr_availability_provider"),
+    "`execution$availability_provider` must be NULL or a ledgr availability provider."
+  )
+  if (!is.null(spec$availability_provider)) {
+    ledgr_execution_spec_check(
+      inherits(spec$execution_opportunities_posix, "POSIXct") &&
+        length(spec$execution_opportunities_posix) == max(length(spec$pulses_posix) - 1L, 0L) &&
+        !anyNA(spec$execution_opportunities_posix),
+      paste(
+        "`execution$execution_opportunities_posix` must contain one declared",
+        "next-session opening for every non-terminal availability pulse."
+      )
+    )
+  } else {
+    ledgr_execution_spec_check(
+      is.null(spec$execution_opportunities_posix),
+      "Dense execution must not declare availability execution opportunities."
+    )
+  }
   ledgr_execution_spec_check(
     is.list(spec$feature_defs),
     "`execution$feature_defs` must be a list."
