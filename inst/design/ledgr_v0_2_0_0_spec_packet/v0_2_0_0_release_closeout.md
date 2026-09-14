@@ -106,12 +106,15 @@ DuckDB 1.5.2. The WSL image had no Quarto executable.
   passed. The one failed-job rerun allowed by the release playbook reproduced
   it; the first package frame was `ledgr_collect_coverage()` calling
   `covr::package_coverage()` before `readRDS()` failed.
-- The two tests that launch fresh child R processes now skip only under covr.
-  They remain active in ordinary tests and `R CMD check`, while coverage no
-  longer depends on child-process finalizers writing readable trace shards.
-  A preserved-shard WSL run passed at 85.95 percent with the 80 percent
-  threshold unchanged. Remote branch CI must pass on the corrective commit
-  before merge.
+- Corrective branch run `34793675897` still failed after excluding the two
+  explicit fresh-R-process tests, which exposed the remaining optional mirai
+  availability-parity worker path under covr.
+- The two fresh-R-process tests and the optional mirai availability-parity test
+  now skip only under covr. They remain active in ordinary tests and
+  `R CMD check`, while coverage no longer depends on child or worker-process
+  finalizers writing readable trace shards. A preserved-shard WSL run passed
+  at 85.95 percent with the 80 percent threshold unchanged. Remote branch CI
+  must pass on the corrective commit before merge.
 - WSL executable-documentation verification was unavailable because that image
   has no Quarto executable. The complete executable documentation surface passed
   on Windows; Linux pkgdown remains a distinct branch-CI gate.

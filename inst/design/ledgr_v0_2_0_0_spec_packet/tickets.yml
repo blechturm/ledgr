@@ -1229,6 +1229,8 @@ tickets:
       - >-
         Remote branch CI run 34784297278 failed twice while covr read generated
         trace shards after all earlier Ubuntu steps passed. The two
-        child-process integration tests now skip only under covr and remain
-        active under ordinary package checks; preserved-shard WSL coverage
-        passed at 85.95 percent with the threshold unchanged.
+        fresh-process tests and optional mirai availability-parity test now
+        skip only under covr and remain active under ordinary package checks;
+        preserved-shard WSL coverage passed at 85.95 percent with the
+        threshold unchanged. Corrective run 34793675897 isolated the remaining
+        mirai worker path after the two fresh-process paths were excluded.
