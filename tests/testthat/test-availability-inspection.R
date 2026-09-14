@@ -359,6 +359,7 @@ testthat::test_that("sealed snapshot inspection verifies evidence and connection
 })
 
 testthat::test_that("snapshot resolution works in a fresh process without a facts object", {
+  testthat::skip_on_covr()
   testthat::skip_if_not_installed("pkgload")
   membership <- availability_inspection_membership()
   db_path <- tempfile(fileext = ".duckdb")

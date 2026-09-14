@@ -101,6 +101,17 @@ DuckDB 1.5.2. The WSL image had no Quarto executable.
 - A later Windows coverage collection completed its tests but failed reading a
   covr RDS shard. This was treated as a separate coverage-transport failure.
   The CI-matching Linux coverage run passed at 85.92 percent.
+- Remote branch CI run `34784297278` reproduced the same covr shard-read
+  failure on Ubuntu after README, acceptance, `R CMD check`, and pkgdown had
+  passed. The one failed-job rerun allowed by the release playbook reproduced
+  it; the first package frame was `ledgr_collect_coverage()` calling
+  `covr::package_coverage()` before `readRDS()` failed.
+- The two tests that launch fresh child R processes now skip only under covr.
+  They remain active in ordinary tests and `R CMD check`, while coverage no
+  longer depends on child-process finalizers writing readable trace shards.
+  A preserved-shard WSL run passed at 85.95 percent with the 80 percent
+  threshold unchanged. Remote branch CI must pass on the corrective commit
+  before merge.
 - WSL executable-documentation verification was unavailable because that image
   has no Quarto executable. The complete executable documentation surface passed
   on Windows; Linux pkgdown remains a distinct branch-CI gate.

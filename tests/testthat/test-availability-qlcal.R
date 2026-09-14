@@ -214,6 +214,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
 })
 
 testthat::test_that("materialized sessions run in a fresh process without loading qlcal", {
+  testthat::skip_on_covr()
   testthat::skip_if_not_installed("qlcal")
   testthat::skip_if_not_installed("pkgload")
   family <- ledgr_facts_sessions_qlcal(

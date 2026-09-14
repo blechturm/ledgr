@@ -1111,6 +1111,11 @@ Implementation notes:
   runs exposed source-layout and covr child-process test defects, which were
   corrected with detecting reruns; a later Windows shard-read failure was
   treated separately and the CI-matching Linux gate passed.
+- Remote branch CI run `34784297278` then reproduced the covr shard-read
+  failure twice on Ubuntu after every earlier job step passed. The two
+  fresh-process integration tests now skip only under covr, remain active in
+  ordinary package checks, and a preserved-shard WSL coverage run passed at
+  85.95 percent without lowering the 80 percent threshold.
 - The full pkgdown 2.2.1 build contains no DuckDB shared-home notice across 24
   rendered articles. All 20 GFM siblings reproduce, all local image references
   resolve, and 149 Rd files pass `tools::checkRd()`.

@@ -2980,6 +2980,11 @@ remote CI, merge, and tag without conflating those evidence stages.
   examples, tests, and execution of all 20 vignettes.
 - `pbo` is declared in `Suggests`; the `quantstrat` DSR comparison is now a
   documented manual procedure because quantstrat is unavailable on CRAN.
+- Remote branch CI run `34784297278` failed twice while covr read generated
+  trace shards after all earlier Ubuntu steps passed. The two child-process
+  integration tests now skip only under covr and remain active under ordinary
+  package checks; preserved-shard WSL coverage passed at 85.95 percent with
+  the threshold unchanged.
 
 ### Source Reference
 
