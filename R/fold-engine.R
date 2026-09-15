@@ -315,15 +315,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
     ts_utc = as.POSIXct(NA, tz = "UTC"),
     specified = FALSE
   )
-  diagnostic_rows <- list()
+  diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler, pulses_posix)
+  diag_row <- diagnostic_writer$row
   diagnostic_seq <- 0L
   equity_facts <- list()
   current_fold_ts <- as.POSIXct(NA, tz = "UTC")
   current_fold_stage <- "fold"
   append_diagnostic <- function(row) {
     diagnostic_seq <<- diagnostic_seq + 1L
-    row$diagnostic_seq <- diagnostic_seq
-    diagnostic_rows[[diagnostic_seq]] <<- row
+    diagnostic_writer$append(row, diagnostic_seq)
     invisible(NULL)
   }
   telemetry_idx <- as.integer(telemetry$telemetry_samples %||% 0L)
@@ -415,7 +415,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             ) {
               stop_reasons <- paste(stop_reasons, "lifetime_inactive", sep = "|")
             }
-            append_diagnostic(ledgr_availability_diagnostic_row(
+            append_diagnostic(diag_row(
               run_id = run_id,
               diagnostic_seq = diagnostic_seq + 1L,
               ts_utc = ts,
@@ -610,7 +610,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       strategy_targets <- targets
       append_decision_trace <- function(target_after = NULL) {
         if (length(context_ids) == 0L) {
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -629,7 +629,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           )
           reason <- if (nzchar(restriction)) restriction else "decision_recorded"
           reasons <- if (nzchar(restrictions)) restrictions else reason
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -672,7 +672,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             )
             affected <<- c(affected_value, list(ts_utc = ts, specified = TRUE))
             for (id in stopped_ids) {
-              append_diagnostic(ledgr_availability_diagnostic_row(
+              append_diagnostic(diag_row(
                 run_id = run_id,
                 diagnostic_seq = diagnostic_seq + 1L,
                 ts_utc = ts,
@@ -717,7 +717,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             as.numeric(targets[[id]]),
             as.numeric(strategy_targets[[id]])
           ))
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -809,7 +809,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         ))) {
           terminal_status <<- "INCOMPLETE"
           stop_reason <<- "affordability_reconciliation_failed"
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -826,7 +826,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           break
         }
         for (entry in pulse_plan$rejected) {
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -851,7 +851,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           informational <- ledgr_availability_reason_values(
             entry$informational_reasons
           )
-          append_diagnostic(ledgr_availability_diagnostic_row(
+          append_diagnostic(diag_row(
             run_id = run_id,
             diagnostic_seq = diagnostic_seq + 1L,
             ts_utc = ts,
@@ -982,7 +982,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           state$positions[match(context_ids, instrument_ids)],
           context_ids
         )
-        append_diagnostic(ledgr_availability_diagnostic_row(
+        append_diagnostic(diag_row(
           run_id = run_id,
           diagnostic_seq = diagnostic_seq + 1L,
           ts_utc = ts,
@@ -1080,18 +1080,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       output_handler$flush_pending()
     }
     if (availability_active) {
-      diagnostics <- if (length(diagnostic_rows) == 0L) {
-        ledgr_availability_diagnostic_row(
-          run_id = run_id,
-          diagnostic_seq = 1L,
-          ts_utc = pulses_posix[[1L]],
-          stage = "decision",
-          outcome = "observed",
-          reason_code = "no_diagnostics"
-        )[0, , drop = FALSE]
-      } else {
-        do.call(rbind, diagnostic_rows)
-      }
+      diagnostics <- diagnostic_writer$drain()
       if (isTRUE(full_run)) {
         completion <- ledgr_availability_completion_row(
           run_id = run_id,

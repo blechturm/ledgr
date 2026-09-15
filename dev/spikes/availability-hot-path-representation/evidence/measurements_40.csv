@@ -1,0 +1,9 @@
+"arm","repetition","measured","wall_seconds","t_loop_seconds","peak_ws_mib","status","decision_rows","reconciliation_rows"
+"rows","warmup",FALSE,52.89,50.79,790.35546875,"DONE",20200,40
+"rows","run1",TRUE,51.65,49.49,668.0625,"DONE",20200,40
+"rows","run2",TRUE,51.59,49.58,786.5234375,"DONE",20200,40
+"rows","run3",TRUE,51.21,49.15,789.265625,"DONE",20200,40
+"columnar","warmup",FALSE,22.15,20.08,373.88671875,"DONE",20200,40
+"columnar","run1",TRUE,22.14,20.08,369.02734375,"DONE",20200,40
+"columnar","run2",TRUE,22.18,20.11,369.5859375,"DONE",20200,40
+"columnar","run3",TRUE,21.86,19.78,371.66796875,"DONE",20200,40
