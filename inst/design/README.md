@@ -4,6 +4,10 @@
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.2.0.0`.
 **Current active packet:** none; no successor packet has been cut.
+**Current planning branch:** `v0.2.0.1`; the availability hot-path synthesis
+and maintainer decisions are accepted. The next artifact is the implementation
+spec draft for independent review. No tickets have been cut. The refreshed
+spot-crypto probe follows as a separate v0.2.0.x planning cycle.
 **Latest packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
@@ -410,6 +414,9 @@ load-bearing for future sweep and fold-core work.
 - `manual/features.qmd`
 - `manual/sweep.qmd`
 - `manual/benchmark_methodology.qmd`
+- `manual/optimization_coding_style.qmd` (reviewable draft: the arc's
+  per-element loop shapes and their replacements, review criteria for
+  hot-path, ingest, seal, and reader code)
 - `collapse_optimization_map.md`
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
@@ -437,6 +444,7 @@ or versioned packet records.
 | Research workflow and artifact topology | `rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` | v0.1.8.5 canonical workflow and teachability planning | Accepted |
 | Feature projection shape, materialization policy, and lookback access | `rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` | v0.1.8.6 feature-projection materialization; later lookback/export/storage gates | Accepted |
 | Primitive internals and conditional collapse acceleration | `rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` | v0.1.9 primitive-internals planning and v0.1.9.x implementation gates | Accepted |
+| Availability hot- and cold-path representation | `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md`; `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md` | v0.2.0.1 prepared provider, typed diagnostic writes, seal-validator correction, resumed-run repair, and benchmark closeout | Accepted 2026-09-15 |
 | Walk-forward evaluation | `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` (Amendment 1 + Amendment 2 + Section 17 ticket-cut gates, all 2026-06-04) | v0.1.9.x walk-forward ticket-cut planning after target risk; final review closed the cycle, Amendment 2 strengthened four procedural routings into substantive defaults, Section 17 binds packet-open and release-gate enforcement | Accepted |
 | Sweep artifact persistence | `rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` | v0.1.9.2 saved-sweep artifacts, optional retained net equity/return series, reopened-sweep compatibility, and compact retention substrate; ranking helpers, benchmark diagnostics, signal decay, and walk-forward integration remain non-scope | Accepted |
 | OMS semantics and order lifecycle | `rfc/rfc_ledgr_oms_seed_synthesis.md` | v0.2.x OMS data-model and lifecycle planning; paper/live deferred | Accepted |

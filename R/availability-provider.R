@@ -300,7 +300,24 @@ ledgr_availability_provider_portable <- function(data,
   ledgr_availability_provider_build(data, config, snapshot_hash, history)
 }
 
+# Spike seam (provider-preparation spike, Charter v2): one build entry point
+# selects the current production closures or the single prepared alternative
+# from options(ledgr.internal.spike_availability_provider), default "current",
+# and stamps the provider object with the arm it actually built. The stamp is
+# an attribute outside identity() and every view value.
 ledgr_availability_provider_build <- function(data, config, snapshot_hash, history) {
+  arm <- getOption("ledgr.internal.spike_availability_provider", "current")
+  provider <- if (identical(arm, "prepared")) {
+    ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
+  } else {
+    arm <- "current"
+    ledgr_availability_provider_build_current(data, config, snapshot_hash, history)
+  }
+  attr(provider, "spike_arm") <- arm
+  provider
+}
+
+ledgr_availability_provider_build_current <- function(data, config, snapshot_hash, history) {
   family_order <- c("membership", "sessions", "trading_status", "lifetime")
   families <- family_order[family_order %in% as.character(data$families$family)]
   universe_rule <- config$availability$universe_rule

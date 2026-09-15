@@ -97,6 +97,15 @@ cost around that boundary; large full-row overhead on Python rows
 reflects per-invocation process and environment setup outside the phase
 total. Phase definitions are in the Methodology section.
 
+For peer comparison, this complete boundary is the cold end-to-end view
+when the engines perform meaningfully comparable preparation and produce
+the required outputs. ledgr's repeated research workflow has a separate
+warm clock over an existing unchanged, verified snapshot. This harness
+does not yet publish that clock: experiment construction is bundled into
+`Ingestion`, so `Engine + Results` omits recurring setup and is only a
+partial recurring-work slice. Snapshot preparation is paid once per
+unchanged data-and-facts identity and again after that identity changes.
+
 ![](peer_benchmark_files/figure-commonmark/unnamed-chunk-6-1.png)
 
 ## Equity curves
@@ -254,6 +263,13 @@ The three phase columns must reconcile to `Total` within 0.5 seconds or
 the harness aborts. LEAN is the one explicit exception: when the local
 CLI runs, the whole CLI subprocess is bucketed as engine time because
 ingestion, run, and extraction are not separable from outside the CLI.
+
+A future warm-iteration record must split reusable snapshot preparation
+from experiment-specific construction. Its warm clock includes the latter,
+engine execution, and every required result surface. A cross-package warm
+comparison is valid only when each package starts from its own already
+prepared native data boundary; otherwise this report keeps the cold
+end-to-end comparison only.
 
 | Engine | Ingestion | Engine | Results |
 |----|----|----|----|

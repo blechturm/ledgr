@@ -1,0 +1,7 @@
+"table","columns_compared","excluded","rows_current","rows_prepared","only_in_current","only_in_prepared","identical","run_id","status_current","status_prepared","observed_arm_current","observed_arm_prepared"
+"runs",14,"run_id|created_at_utc|archived_at_utc|config_json.run_id|config_json.db_path|config_json.data.snapshot_db_path",1,1,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"
+"run_completion",12,"run_id",1,1,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"
+"run_diagnostics",21,"run_id",383042,383042,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"
+"ledger_events",10,"run_id",0,0,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"
+"equity_curve",6,"run_id",757,757,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"
+"strategy_state",2,"run_id",757,757,0,0,TRUE,"spike-757-parity","DONE","DONE","current","prepared"

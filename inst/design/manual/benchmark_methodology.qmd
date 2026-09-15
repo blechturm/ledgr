@@ -37,6 +37,35 @@ Both families write generated records under `dev/bench/results/`, which is
 local-only and ignored by git. Tracked reports and closeouts cite record
 prefixes, not a constantly committed result directory.
 
+### Two clocks, two questions
+
+Every snapshot-backed performance record should distinguish:
+
+- **cold end-to-end time**, from source-data preparation through the required
+  result surface; and
+- **warm research-iteration time**, from an existing unchanged, verified
+  snapshot through experiment-specific setup, execution, and the required
+  result surface.
+
+Cold end to end answers the fair lifecycle question for an apples-to-apples
+peer comparison. Warm iteration answers ledgr's normal research question: how
+long does the next experiment take after the snapshot has been ingested,
+validated, sealed, and prepared once? Both matter, and neither may be presented
+as the other.
+
+Reusable preparation is paid again when source data or snapshot facts change.
+Anything rebuilt for each strategy, parameter set, or run belongs to the warm
+clock even if the current implementation calls it setup or ingestion. For `N`
+experiments over one unchanged snapshot, the workflow interpretation is:
+
+```text
+workflow_total(N) = snapshot_prepare + N * warm_research_iteration
+```
+
+Cross-package cold comparisons require comparable input, outputs, and lifecycle
+boundaries. Cross-package warm comparisons additionally require every package
+to start from its own already prepared native data boundary.
+
 Release-gate benchmark review asks:
 
 1. Did the relevant smoke command run?
@@ -215,6 +244,25 @@ The release gate should read hot, warm, and cold phases separately. A result
 extraction regression should not be described as an engine regression, and a B2
 engine win should not be described as a durable-run speed claim.
 
+The existing peer harness's three phases are sufficient for its cold
+end-to-end comparison, but not for a complete warm-iteration claim:
+`ingestion_sec` currently combines reusable snapshot preparation with some
+experiment-specific construction. Therefore `engine_sec + results_sec` is only
+a partial recurring-work slice, not the full warm research-iteration time.
+
+Before publishing a warm record, split that boundary into at least
+`snapshot_prepare_sec` and `experiment_setup_sec`, then report:
+
+```text
+cold_end_to_end = snapshot_prepare + experiment_setup + engine + results
+warm_research_iteration = experiment_setup + engine + results
+```
+
+Reusable feature or provider compilation belongs to snapshot preparation only
+when it survives across the declared experiment set. Required result extraction
+belongs to every warm iteration; an optional or lazy result surface must be
+timed and named separately rather than silently omitted.
+
 ### Concrete Examples
 
 Closeout wording should be record-specific:
@@ -255,6 +303,10 @@ Before closing a benchmark-sensitive ticket:
 - Link the result prefix when a record run was required.
 - Confirm phase columns reconcile.
 - Confirm parity before interpreting peer performance.
+- Report cold end-to-end and warm research-iteration clocks separately when a
+  reusable snapshot is part of the workflow.
+- Do not claim a complete warm clock while reusable preparation and
+  experiment-specific setup share one timing bucket.
 - Keep raw results local unless the packet explicitly asks to track a report.
 - Avoid public-speed-claim language.
 

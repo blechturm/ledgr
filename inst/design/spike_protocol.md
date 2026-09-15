@@ -98,8 +98,45 @@ the spec may consume, and what remains open. Green, red, or inconclusive is
 stated in one sentence with the charter clause that decides it. Structural
 numbers from small fixtures never appear in a ranking.
 
+## 10. Performance clocks for reusable snapshots
+
+A performance spike over snapshot-backed research reports two clocks when the
+question reaches both boundaries:
+
+- **cold end to end** measures source-data preparation through the required
+  result surface. Use it for peer comparison only when the fixture, outputs,
+  and lifecycle boundary are meaningfully comparable;
+- **warm research iteration** starts from an existing unchanged, verified
+  snapshot and includes experiment-specific setup, execution, and the required
+  result materialization.
+
+Snapshot ingestion, validation, sealing, and reusable representation building
+may be excluded from the warm clock only when the same artifacts are reused
+without data or fact changes. A changed snapshot pays those costs again. Any
+preparation rebuilt per experiment belongs to the warm clock regardless of its
+name or implementation location.
+
+Report the clocks separately; neither substitutes for the other. If a harness
+cannot isolate reusable snapshot preparation from experiment-specific setup,
+it may report the cold clock and phase timings, but it must label any proposed
+warm number incomplete. A cross-package warm comparison is valid only when
+each package starts from its own already prepared native data boundary.
+
+For a declared batch of `N` experiments, an optional workflow interpretation
+may report:
+
+```text
+workflow_total(N) = snapshot_prepare + N * warm_research_iteration
+```
+
+The report must state what invalidates reuse and which result surface the warm
+clock materializes.
+
 ## Revision history
 
 - **2026-09-08** -- initial version, written after the asset-availability
   spike closed inconclusive. Budgets are calibrated to the earlier spikes under
   `inst/design/spikes/`, which mostly fit them already.
+- **2026-09-15** -- separated cold end-to-end comparison from warm research
+  iteration over a reused snapshot, including invalidation and incomplete-clock
+  rules.

@@ -29,6 +29,15 @@ The peer benchmark has two explicitly separated outputs:
   row;
 - performance: same-host timing under declared per-engine boundaries.
 
+Performance has two interpretations. Cold end-to-end time remains the primary
+apples-to-apples peer boundary when input preparation and required outputs are
+comparable. Warm research-iteration time is the ledgr workflow boundary over an
+existing unchanged, verified snapshot. It must include experiment-specific
+setup, execution, and required results, while one-time snapshot preparation is
+reported separately and paid again whenever the data or facts change. The
+current peer harness does not yet isolate experiment setup from snapshot
+preparation, so its engine-plus-results slice is not a complete warm clock.
+
 The primary zipline row is `zipline-reloaded-full`, which exercises
 zipline-reloaded csvdir bundle ingestion plus `run_algorithm()`.
 

@@ -1,0 +1,12 @@
+"lane","samples","seconds","share_in_loop"
+"provider_build",3,0.06,0
+"provider_membership",3,0.06,0.000997340425531915
+"provider_status_lifetime",4,0.08,0.00132978723404255
+"provider_other",1,0.02,0.000332446808510638
+"valuation",323,6.46,0.107380319148936
+"diag_construct",489,9.78,0.162566489361702
+"diag_append_retain",2040,40.8,0.678191489361702
+"final_bind",0,0,0
+"duckdb_diag_append",36,0.72,0.011968085106383
+"residual_fold",112,2.24,0.0372340425531915
+"outside_loop",343,6.86,0

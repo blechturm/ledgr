@@ -1,0 +1,10 @@
+"arm","repetition","measured","profiled","killed","run_elapsed_s","wall_seconds","t_loop_seconds","peak_ws_mib","status","store_diagnostic_rows","decision_rows","pulses_with_diagnostics","observed_mode","observed_provider","scalar_calls","block_calls","collapse","seal_seconds","within_stop"
+"current","warmup",FALSE,FALSE,"",95.748704,95.23,85.9,733.56640625,"DONE",383042,382285,757,"columnar","prepared",383042,0,"2.1.8",747.91,TRUE
+"current","run1",TRUE,FALSE,"",94.9759442,94.36,85.05,739.9765625,"DONE",383042,382285,757,"columnar","prepared",383042,0,"2.1.8",747.91,TRUE
+"current","run2",TRUE,FALSE,"",94.3236918,93.71,84.49,741.3125,"DONE",383042,382285,757,"columnar","prepared",383042,0,"2.1.8",747.91,TRUE
+"current","run3",TRUE,FALSE,"",95.0268744,94.5,85.3,743.46875,"DONE",383042,382285,757,"columnar","prepared",383042,0,"2.1.8",747.91,TRUE
+"block","warmup",FALSE,FALSE,"",25.3871471,24.93,15.63,791.44921875,"DONE",383042,382285,757,"block","prepared",0,757,"2.1.8",747.91,TRUE
+"block","run1",TRUE,FALSE,"",25.5558474,25.11,15.73,764.82421875,"DONE",383042,382285,757,"block","prepared",0,757,"2.1.8",747.91,TRUE
+"block","run2",TRUE,FALSE,"",25.3028671,24.93,15.67,745.3984375,"DONE",383042,382285,757,"block","prepared",0,757,"2.1.8",747.91,TRUE
+"block","run3",TRUE,FALSE,"",25.4235408,24.88,15.6,799.4609375,"DONE",383042,382285,757,"block","prepared",0,757,"2.1.8",747.91,TRUE
+"block","profiled",FALSE,TRUE,"",25.6036485,25,15.64,801.015625,"DONE",383042,382285,757,"block","prepared",0,757,"2.1.8",747.91,TRUE

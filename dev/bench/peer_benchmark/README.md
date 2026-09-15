@@ -90,3 +90,13 @@ and canonical output writes. LEAN is a real CLI subprocess boundary when
 locally configured; no substitute loop is emitted. `zipline-reloaded-full` is
 the full zipline row for this harness: it includes temporary csvdir bundle
 construction, bundle ingestion, and `zipline.run_algorithm()`.
+
+Use the complete row for cold end-to-end peer comparisons only when the input,
+output, and lifecycle boundaries are meaningfully comparable. ledgr's repeated
+research workflow has a second clock: warm iteration over an existing unchanged,
+verified snapshot. That clock includes experiment construction, execution, and
+required result materialization, but not reusable snapshot preparation. The
+current harness combines snapshot preparation and experiment construction in
+its ingestion phase, so `engine_sec + results_sec` is a partial recurring slice,
+not a complete warm-iteration measurement. Data or fact changes invalidate
+reuse and incur preparation again.

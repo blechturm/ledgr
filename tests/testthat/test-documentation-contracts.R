@@ -2835,7 +2835,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-13)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-15)", fixed = TRUE)
   testthat::expect_match(
     docs$horizon,
     "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
@@ -2857,6 +2857,125 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
   testthat::expect_no_match(public_release, "guarantees future profitability", fixed = TRUE)
   testthat::expect_no_match(public_release, "automatically promotes", fixed = TRUE)
   testthat::expect_no_match(public_release, "teaching\\s+plots")
+})
+
+testthat::test_that("post-v0.2.0.1 crypto planning stays probe-first and non-authorizing", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    agents = file.path(root, "AGENTS.md")
+  )
+  testthat::skip_if_not(
+    all(file.exists(unlist(paths))),
+    "v0.2.0.1 planning surfaces unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE), collapse = "\n")
+  })
+
+  testthat::expect_match(
+    docs$roadmap,
+    "| v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$roadmap, "the next step is not a charter", fixed = TRUE)
+  testthat::expect_match(
+    docs$roadmap,
+    "No charter, RFC, spec packet, ticket\\s+set, or\\s+implementation is authorized"
+  )
+  testthat::expect_no_match(
+    docs$roadmap,
+    "| v0.1.9.x | Planned | Crypto-readiness spike",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$horizon,
+    "2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Spot-crypto readiness | **parked behind v0.2.0.1**",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Austrian private-investor tax accounting and after-tax returns | **parked**",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$design_index,
+    "Current planning branch:** `v0.2.0.1`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$agents,
+    "executable prerequisite and one-page findings",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    agents = file.path(root, "AGENTS.md"),
+    synthesis = file.path(
+      root,
+      "inst",
+      "design",
+      "rfc",
+      "rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md"
+    ),
+    decisions = file.path(
+      root,
+      "inst",
+      "design",
+      "rfc",
+      "rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(unlist(paths))),
+    "v0.2.0.1 acceptance surfaces unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE), collapse = "\n")
+  })
+
+  testthat::expect_match(
+    docs$roadmap,
+    "| v0.2.0.1 | Planned | Productionize the three reviewed availability seams",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$design_index,
+    "Availability hot- and cold-path representation",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Availability hot- and cold-path representation | v0.2.0.1 productionizes",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$agents, "accepted v0.2.0.1 RFC", fixed = TRUE)
+  testthat::expect_match(
+    docs$synthesis,
+    "Status:** Accepted by the maintainer on 2026-09-15",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$decisions, "Decision 4: release-cycle benchmark closeout", fixed = TRUE)
+  testthat::expect_match(
+    docs$horizon,
+    "After v0.2.0.1** -- the refreshed spot-crypto readiness probe",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {
@@ -3153,7 +3272,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   )
   testthat::expect_match(
     agents,
-    "completed v0.2.0.0 packet; no successor packet cut",
+    "completed v0.2.0.0 packet; accepted v0.2.0.1 RFC",
     fixed = TRUE
   )
   testthat::expect_no_match(

@@ -1,0 +1,13 @@
+"phase","calls","inclusive_seconds","share_of_seal"
+"ledgr_availability_validate_inputs",1,40.96,0.0282759668088749
+"ledgr_snapshot_create",1,0,0
+"ledgr_create_schema",1,0.300000000000011,0.000207099366275947
+"ledgr_snapshot_write_availability",1,8.08999999999999,0.00558477957724115
+"ledgr_snapshot_write_fact_family",4,0.0599999999999881,4.14198732551796e-05
+"ledgr_snapshot_seal",0,0,0
+"ledgr_snapshot_validate_for_seal",1,0.0100000000000051,6.90331220920151e-06
+"ledgr_snapshot_validate_availability_for_seal",1,1377.96,0.951248809178644
+"ledgr_snapshot_metadata_for_seal",1,0.0599999999999454,4.14198732551502e-05
+"ledgr_snapshot_hash",1,9.48000000000002,0.00654433997431969
+"ledgr_checkpoint_duckdb",1,0.00999999999999091,6.90331220919169e-06
+"ledgr_snapshot_from_df (total)",1,1448.58,1

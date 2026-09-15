@@ -47,6 +47,7 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`cost_resolver.md`](cost_resolver.md) | `cost_resolver.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Public cost-model plans, resolver reconstruction, cost identity, and fold integration boundaries. |
 | [`target_risk_layer.md`](target_risk_layer.md) | `target_risk_layer.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Classed risk steps, risk-chain identity, worker-safe plans, and target-risk layer boundaries. |
 | [`walk_forward_machinery.md`](walk_forward_machinery.md) | `walk_forward_machinery.qmd` | Updated through v0.2.0.0 | Walk-forward orchestration, availability carry state, locator verification, persistence, and inspection. |
+| [`optimization_coding_style.md`](optimization_coding_style.md) | `optimization_coding_style.qmd` | Reviewable draft, availability hot-path cycle | Coding style distilled from the optimization arc: the recurring per-element shapes, their replacements, prepare-before-the-loop, boundary-only frames, typed buffer writes, cursors, identity and measurement discipline. |
 
 ## Rendered Output
 

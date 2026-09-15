@@ -26,10 +26,12 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-13):** v0.2.0.0 is complete after maintainer
-review and local release gates. No successor packet has been cut. Horizon
-entries below remain non-binding unless a future packet, the roadmap,
-contracts, or an accepted RFC promotes them.
+**Current packet note (2026-09-15):** v0.2.0.0 is complete after maintainer
+review and local release gates. The availability-performance RFC is accepted
+for v0.2.0.1, but its spec and tickets have not been cut. Spot-crypto planning
+follows that release as a separate v0.2.0.x cycle. Horizon entries below remain
+non-binding unless a packet, the roadmap, contracts, or an accepted RFC
+promotes them.
 
 The completed packet consumed only verified API-golden-path and stale-example
 findings in Batches 2 and 10. Batch 10 closed those scoped repairs. The
@@ -61,9 +63,15 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
-  exchange cost templates; crypto-readiness spike; spot-FIFO as default
+  exchange cost templates; spot-FIFO as default
   for ephemeral spot workloads (candidate; see 2026-06-05 and
   2026-06-13 entries).
+- **v0.2.0.1** -- availability hot- and cold-path productionization, the
+  resumed-run correctness repair, and release-closeout measurements under the
+  accepted synthesis and maintainer decisions.
+- **After v0.2.0.1** -- the refreshed spot-crypto readiness probe and
+  conditional measurement spike. No prior crypto spike was executed; the
+  roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
 - **v0.2.x** — snapshot administration and research-loop ergonomics
   (promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -93,6 +101,103 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-15 [infrastructure] Containerized reproducible benchmark laboratory
+
+After the v0.2.0.1 benchmark closeout stabilizes the workload definitions and
+phase clocks, consider moving repeatable performance testing into a separate
+Docker-based benchmark repository. Its purpose would be twofold: detect ledgr
+performance regressions across pinned releases, and run honest peer comparisons
+over standardized public or synthetic workflows and data. It would be a
+measurement laboratory, not a ledgr package dependency or a public leaderboard.
+
+The ledgr suite should cover representative cold and warm tasks: snapshot build
+and seal, durable and in-memory experiments, sweeps, point-in-time availability,
+fill- and event-heavy runs, and result materialization. Each image should pin its
+base image by digest, language and toolchain versions, package release or commit,
+dependency lock, and fixture generator, seed, and content hash. Measured phases
+should not require network access. Results should retain the phase clock, host
+and container metadata, repeated-run medians and spread, peak working set, and a
+compact machine-readable comparison with an accepted baseline release.
+
+Peer images may include quantstrat, Backtrader, Zipline, and a local LEAN engine
+where their licenses and installation paths permit reproducible execution. They
+should consume the same public or generated market inputs and the closest honest
+statement of one strategy and accounting workflow, emit canonical outputs for
+parity or documented-difference checks, and use the same cold-versus-warm phase
+boundaries. Comparisons must disclose semantic work that is not shared rather
+than treating unlike provenance, persistence, or accounting guarantees as equal.
+
+Docker can reproduce software environments but cannot make unlike hardware or
+contended hosts comparable. Regression interpretation should therefore prefer
+same-host release series, quiet-host repetitions, warm-ups, and predeclared
+noise thresholds. Licensed Sharadar data, credentials, and paid hosted services
+stay outside the repository. Keeping the laboratory separate also keeps peer
+dependencies, image weight, and license constraints out of ledgr itself. This
+entry records a direction only; it does not authorize creating the repository or
+publishing cross-engine rankings before the current benchmark methodology and
+v0.2.0.1 closeout have been reviewed.
+
+### 2026-09-15 [infrastructure] Evidence-gated removal of scale-growing R work
+
+The availability representation cycle and snapshot-sealing probe exposed one
+recurring performance failure: R-level iteration over a collection that grows
+with the data while each iteration constructs a frame, rescans or subsets a
+table, parses repetitive values, grows a container, or recomputes unused work.
+The discontinuities were representation and placement defects, not evidence
+that every explicit loop is defective. Bounded loops, cursor advances, and
+clear cold-path iteration remain valid when measurement does not make them a
+meaningful cost.
+
+The durable direction is to prepare data-scale inputs once into primitive
+vectors, matrices, segment tables, indexes, or bounded typed buffers; operate on
+those shapes in the fold or validator; and manifest frames only at public and
+persistence boundaries. Optimization starts with a production-shaped probe,
+separates the cold snapshot clock from warm repeated experiments, changes one
+seam, and proves semantic and persisted-output parity. A package-wide mechanical
+rewrite is explicitly not the goal.
+
+Immediate evidence supports bounded work on the diagnostic lane and the
+quadratic seal-time membership validator. The latter must retain half-open
+interval semantics and detect opposing states; complete-set rows may bypass
+pairwise checking only after their persisted positive-member shape and header
+references pass setwise validation. The per-bar timestamp, repetitive JSON and
+hashing, valuation-history, finalisation, and result-reader findings remain
+candidates to measure and route individually. The broad loop audit is a
+discovery map, not an auditable census or a commitment to fix every listed
+site. The accepted availability synthesis promotes only its bounded v0.2.0.1
+workstreams. The broader audit remains a discovery map and authorizes no
+additional implementation.
+
+### 2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff
+
+The old v0.1.9.x crypto-readiness plan was never executed and predates the
+v0.2.0.0 point-in-time availability surface. The roadmap places a refreshed
+spot-only readiness probe after v0.2.0.1. It asks whether the released
+engine can support deterministic, unlevered, long-only spot-crypto research on
+one venue and in one quote currency. `inst/design/spike_protocol.md` requires
+an executable package probe and one-page findings record before any charter or
+RFC prose is written.
+
+The readiness work should exercise fractional accounting, complete 24/7
+sessions, availability and valuation gaps, the existing metric and cost
+surfaces, and durable research workflows. It must not infer maker/taker state
+from coarse bars or claim sub-second execution support. Derivatives, funding,
+margin, staking, token events, exchange adapters, multi-currency accounting,
+and tax remain outside that spike. The accounting-critical-events RFC remains
+the named dependency for support claims involving non-trade crypto economics;
+the event-free spot probe may run before that RFC, with a correspondingly
+narrow claim boundary.
+
+A separate Austrian private-investor tax-accounting RFC is worth opening only
+after the readiness probe and the accounting-critical-events research can
+identify the evidence boundary. That RFC should cover crypto and non-crypto
+investments together, distinguish tax-law interpretation from ledger facts,
+and decide taxable-event classification, lot selection, fee treatment,
+withholding, foreign-currency conversion, loss offsetting, and after-tax return
+reporting. The crypto spike may report missing inputs for that work, but it must
+not implement Austrian KESt or define tax policy. This entry authorizes neither
+cycle.
 
 ### 2026-09-13 [research] Minimum evidence for annualized summary metrics
 

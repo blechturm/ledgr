@@ -1,0 +1,3 @@
+"arm","observed_arm","file","test","mirai_available","ran","nb","failed","skipped","error","passed"
+"current","current","test-availability-parity.R","parallel availability sweeps return the same compact terminal evidence",FALSE,FALSE,1,0,TRUE,FALSE,0
+"prepared","prepared","test-availability-parity.R","parallel availability sweeps return the same compact terminal evidence",FALSE,FALSE,1,0,TRUE,FALSE,0
