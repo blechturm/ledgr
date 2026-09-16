@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 3 complete after review and maintainer acceptance.
-Batch 4 is implemented with review pending. Batches 5-8 are pending.
+Status: Batches 0 through 4 complete after review and maintainer acceptance.
+Batches 5-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -190,7 +190,7 @@ scalar reference arm. The review remains inline rather than in this packet.
 
 ## Batch 4 - Production Parity And Retirement
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -217,6 +217,17 @@ Exit criteria:
 - parity record exists; source guard passes; regression net green.
 
 Implementation evidence: `batch4-parity-evidence.md`.
+
+Closeout: accepted by the maintainer after independent review passed the
+pre-retirement record, six-table persisted parity, installed-path retirement,
+public inspection separation, source guard, and direct production
+`append_block()` failure witness. Three non-blocking review observations carry
+into the Batch 5 preflight without widening its scope: remove the unused
+`pulses_posix` writer parameter, make the installed-package guard scan
+deparsed namespace bodies for retired spike tokens, and directly pin the two
+diagnostic schema name vectors to each other. The retired provider and writer
+spike runners are historical evidence and must not be planned for rerun. The
+review remains inline rather than in this packet.
 
 ## Batch 5 - Resumed-Run Finalization
 
