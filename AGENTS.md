@@ -71,9 +71,8 @@ active v0.2.0.1 packet):
   cold-path direction: three warm-path seams, a separately gated seal-validator
   correction, the resumed-run equity-prefix repair, and separated benchmark
   closeouts. Spec, tickets LDG-2719 through LDG-2735, YAML, and batch plan live
-  in `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batches 0 through 2 are
-  complete after review and maintainer acceptance, and Batch 3 is implemented
-  and pending independent review.
+  in `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batches 0 through 3 are
+  complete after review and maintainer acceptance, and Batch 4 is pending.
   Old runtime paths ship in no
   form, `ledgr_facts_resolve()` stays
   independent, and no public performance

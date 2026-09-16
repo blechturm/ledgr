@@ -81,7 +81,7 @@ tickets:
 
   - id: "LDG-2724"
     title: "Production diagnostic writer and per-pulse block"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2720", "LDG-2721"]

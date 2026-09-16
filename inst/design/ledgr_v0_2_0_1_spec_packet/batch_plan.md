@@ -1,8 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 2 complete after review and maintainer acceptance.
-Batch 3 is implemented and pending independent review; Batches 4-8 are
-pending.
+Status: Batches 0 through 3 complete after review and maintainer acceptance.
+Batches 4-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -156,7 +155,7 @@ artifact remains inline rather than in this packet.
 
 ## Batch 3 - Diagnostic Writer And Block
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -182,6 +181,13 @@ Exit criteria:
 
 Implementation evidence: `batch3-diagnostic-evidence.md`.
 
+Closeout: accepted by the maintainer after independent review passed the
+production default, constructor-only capacity, chunk lifecycle, rollback and
+resume witnesses, dual-collapse evidence, and deterministic replay. The
+review's one Low observation is a Batch 4 pre-retirement condition: exercise
+failed-append retention directly through `append_block()` before removing the
+scalar reference arm. The review remains inline rather than in this packet.
+
 ## Batch 4 - Production Parity And Retirement
 
 Status: Pending.
@@ -202,6 +208,8 @@ Review focus:
 
 - every persisted table identical with exactly three exclusions;
 - the relative-spread criterion recorded by prefix before retirement;
+- the production `append_block()` path directly retains its full chunk after
+  an injected durable-append failure;
 - no fallback, stamp, or option survives in installed code.
 
 Exit criteria:

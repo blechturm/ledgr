@@ -4,7 +4,7 @@
 **Implementation base:** `82d58fa25fa95f0595b37ecdbcce42330c2756d7`
 **Runtime:** R 4.6.1, duckdb 1.5.2, testthat 3.3.2, collapse 2.1.7
 by default and collapse 2.1.8 from the isolated library
-**Status:** Implemented; pending independent review.
+**Status:** Complete after independent review and maintainer acceptance.
 
 ## Production boundary
 
