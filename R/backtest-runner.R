@@ -1133,6 +1133,31 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   next_event_seq <- fold_result$next_event_seq
 
   if (!isTRUE(full_run)) {
+    if (availability_active && length(fold_result$equity_facts) > 0L) {
+      partial_error <- tryCatch({
+        ledgr_run_equity_prefix_commit(
+          con = con,
+          run_id = run_id,
+          current = ledgr_run_fold_equity_frame(
+            run_id,
+            fold_result$equity_facts
+          ),
+          calendar = calendar
+        )
+        NULL
+      }, error = identity)
+      if (!is.null(partial_error)) {
+        output_handler$record_failure(conditionMessage(partial_error))
+        ledgr_finalize_fold_telemetry(
+          output_handler = output_handler,
+          status = "FAILED",
+          telemetry = telemetry,
+          processed = processed,
+          strict = FALSE
+        )
+        rlang::cnd_signal(partial_error)
+      }
+    }
     ledgr_finalize_fold_telemetry(
       output_handler = output_handler,
       status = "RUNNING",

@@ -199,6 +199,228 @@ ledgr_run_terminal_recovery_equity <- function(con,
   })
 }
 
+ledgr_run_fold_equity_frame <- function(run_id, fold_equity) {
+  if (length(fold_equity) == 0L) {
+    return(data.frame(
+      run_id = character(),
+      ts_utc = as.POSIXct(character(), tz = "UTC"),
+      cash = numeric(),
+      positions_value = numeric(),
+      equity = numeric(),
+      realized_pnl = numeric(),
+      unrealized_pnl = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  ts_utc <- as.POSIXct(
+    vapply(fold_equity, function(x) as.numeric(x$ts_utc), numeric(1)),
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  cash <- vapply(fold_equity, `[[`, numeric(1), "cash")
+  positions_value <- vapply(fold_equity, `[[`, numeric(1), "positions_value")
+  realized_pnl <- vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
+  cost_basis <- vapply(fold_equity, `[[`, numeric(1), "cost_basis")
+  data.frame(
+    run_id = rep(as.character(run_id), length(ts_utc)),
+    ts_utc = ts_utc,
+    cash = cash,
+    positions_value = positions_value,
+    equity = cash + positions_value,
+    realized_pnl = realized_pnl,
+    unrealized_pnl = positions_value - cost_basis,
+    stringsAsFactors = FALSE
+  )
+}
+
+ledgr_run_equity_prefix_columns <- function() {
+  c(
+    "run_id", "ts_utc", "cash", "positions_value", "equity",
+    "realized_pnl", "unrealized_pnl"
+  )
+}
+
+ledgr_run_equity_prefix_read <- function(con, run_id) {
+  DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT run_id, ts_utc, cash, positions_value, equity,",
+      "realized_pnl, unrealized_pnl FROM equity_curve",
+      "WHERE run_id = ? ORDER BY ts_utc"
+    ),
+    params = list(run_id)
+  )
+}
+
+ledgr_run_equity_prefix_normalize <- function(rows, run_id, calendar, label) {
+  columns <- ledgr_run_equity_prefix_columns()
+  if (!is.data.frame(rows) || !all(columns %in% names(rows))) {
+    ledgr_run_terminal_evidence_abort(
+      sprintf("%s equity evidence is missing required fields.", label)
+    )
+  }
+  rows <- rows[, columns, drop = FALSE]
+  if (nrow(rows) == 0L) {
+    rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+    return(rows)
+  }
+  if (any(is.na(rows$run_id)) ||
+      any(as.character(rows$run_id) != as.character(run_id))) {
+    ledgr_run_terminal_evidence_abort(
+      sprintf("%s equity evidence belongs to a different run.", label)
+    )
+  }
+  rows$run_id <- as.character(rows$run_id)
+  rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+  timestamp <- as.numeric(rows$ts_utc)
+  calendar_timestamp <- as.numeric(as.POSIXct(calendar$pulses_posix, tz = "UTC"))
+  if (anyNA(timestamp) || any(match(timestamp, calendar_timestamp, nomatch = 0L) == 0L)) {
+    ledgr_run_terminal_evidence_abort(
+      sprintf("%s equity evidence contains an out-of-calendar pulse.", label)
+    )
+  }
+  if (length(timestamp) > 1L && any(diff(timestamp) < 0)) {
+    ledgr_run_terminal_evidence_abort(
+      sprintf("%s equity evidence is not monotone.", label)
+    )
+  }
+  for (name in setdiff(columns, c("run_id", "ts_utc"))) {
+    rows[[name]] <- as.numeric(rows[[name]])
+  }
+  rows
+}
+
+ledgr_run_equity_values_equal <- function(left, right) {
+  left_na <- is.na(left)
+  right_na <- is.na(right)
+  same_missing <- left_na & right_na & (is.nan(left) == is.nan(right))
+  same_value <- !left_na & !right_na & left == right
+  same_missing | same_value
+}
+
+ledgr_run_equity_prefix_expected <- function(calendar, achieved_end_utc) {
+  pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
+  achieved_end <- as.POSIXct(achieved_end_utc, tz = "UTC")
+  if (length(achieved_end) != 1L || is.na(achieved_end)) {
+    return(pulses[FALSE])
+  }
+  if (!as.numeric(achieved_end) %in% as.numeric(pulses)) {
+    ledgr_run_terminal_evidence_abort(
+      "Equity-prefix end is outside the intended pulse calendar."
+    )
+  }
+  pulses[pulses <= achieved_end]
+}
+
+ledgr_run_equity_prefix_merge <- function(prior,
+                                          current,
+                                          run_id,
+                                          calendar,
+                                          achieved_end_utc) {
+  prior <- ledgr_run_equity_prefix_normalize(prior, run_id, calendar, "Prior")
+  current <- ledgr_run_equity_prefix_normalize(current, run_id, calendar, "Current")
+  combined <- rbind(prior, current)
+  expected <- ledgr_run_equity_prefix_expected(calendar, achieved_end_utc)
+  if (nrow(combined) == 0L) {
+    if (length(expected) != 0L) {
+      ledgr_run_terminal_evidence_abort(
+        "Merged equity evidence does not contain its exact achieved prefix."
+      )
+    }
+    return(combined)
+  }
+
+  timestamp <- as.numeric(combined$ts_utc)
+  order_index <- order(timestamp, seq_along(timestamp))
+  combined <- combined[order_index, , drop = FALSE]
+  timestamp <- timestamp[order_index]
+  repeated <- duplicated(timestamp)
+  if (any(repeated)) {
+    previous <- c(NA_integer_, seq_len(nrow(combined) - 1L))
+    same_value <- rep(TRUE, nrow(combined))
+    value_columns <- setdiff(
+      ledgr_run_equity_prefix_columns(),
+      c("run_id", "ts_utc")
+    )
+    for (name in value_columns) {
+      same_value[repeated] <- same_value[repeated] &
+        ledgr_run_equity_values_equal(
+          combined[[name]][repeated],
+          combined[[name]][previous[repeated]]
+        )
+    }
+    if (any(repeated & !same_value)) {
+      ledgr_run_terminal_evidence_abort(
+        "Merged equity evidence contains conflicting duplicate pulses."
+      )
+    }
+  }
+  merged <- combined[!repeated, , drop = FALSE]
+  rownames(merged) <- NULL
+  if (!identical(as.numeric(merged$ts_utc), as.numeric(expected))) {
+    ledgr_run_terminal_evidence_abort(
+      "Merged equity evidence does not contain its exact achieved prefix."
+    )
+  }
+  merged
+}
+
+ledgr_run_equity_prefix_commit <- function(con,
+                                           run_id,
+                                           current,
+                                           calendar,
+                                           achieved_end_utc = NULL,
+                                           record_status = NULL) {
+  DBI::dbWithTransaction(con, {
+    current <- ledgr_run_equity_prefix_normalize(
+      current,
+      run_id,
+      calendar,
+      "Current"
+    )
+    prior <- current[0, , drop = FALSE]
+    if (is.null(achieved_end_utc)) {
+      prior <- ledgr_run_equity_prefix_read(con, run_id)
+      candidate_timestamp <- c(
+        as.numeric(as.POSIXct(prior$ts_utc, tz = "UTC")),
+        as.numeric(current$ts_utc)
+      )
+      if (length(candidate_timestamp) == 0L) {
+        achieved_end_utc <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+      } else {
+        achieved_end_utc <- as.POSIXct(
+          max(candidate_timestamp),
+          origin = "1970-01-01",
+          tz = "UTC"
+        )
+      }
+    } else {
+      expected <- ledgr_run_equity_prefix_expected(calendar, achieved_end_utc)
+      current_timestamp <- as.numeric(current$ts_utc[!duplicated(current$ts_utc)])
+      if (!identical(current_timestamp, as.numeric(expected))) {
+        prior <- ledgr_run_equity_prefix_read(con, run_id)
+      }
+    }
+    merged <- ledgr_run_equity_prefix_merge(
+      prior,
+      current,
+      run_id,
+      calendar,
+      achieved_end_utc
+    )
+    DBI::dbExecute(
+      con,
+      "DELETE FROM equity_curve WHERE run_id = ?",
+      params = list(run_id)
+    )
+    if (nrow(merged) > 0L) {
+      DBI::dbAppendTable(con, "equity_curve", merged)
+    }
+    if (is.function(record_status)) record_status()
+    invisible(merged)
+  })
+}
+
 ledgr_run_finalize <- function(con,
                                output_handler,
                                run,
@@ -418,13 +640,36 @@ ledgr_run_finalize <- function(con,
         })
       }
     }
-    DBI::dbWithTransaction(con, {
-      DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
-      if (nrow(eq_df) > 0) {
-        DBI::dbAppendTable(con, "equity_curve", eq_df)
+    if (use_fold_equity) {
+      completion <- ledgr_run_completion_read(con, run_id, required = TRUE)
+      completion <- ledgr_run_completion_validate(completion, run_id, calendar)
+      if (!identical(
+        as.character(completion$intended_terminal_status[[1L]]),
+        as.character(terminal_status)
+      )) {
+        ledgr_run_terminal_evidence_abort(
+          "Fold status disagrees with terminal completion evidence."
+        )
       }
-      output_handler$record_run_status(terminal_status, NA_character_)
-    })
+      ledgr_run_equity_prefix_commit(
+        con = con,
+        run_id = run_id,
+        current = eq_df,
+        calendar = calendar,
+        achieved_end_utc = completion$achieved_end_utc[[1L]],
+        record_status = function() {
+          output_handler$record_run_status(terminal_status, NA_character_)
+        }
+      )
+    } else {
+      DBI::dbWithTransaction(con, {
+        DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
+        if (nrow(eq_df) > 0) {
+          DBI::dbAppendTable(con, "equity_curve", eq_df)
+        }
+        output_handler$record_run_status(terminal_status, NA_character_)
+      })
+    }
     NULL
   }, error = function(e) e)
   if (!is.null(finalization_error)) {

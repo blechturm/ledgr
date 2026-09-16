@@ -128,7 +128,7 @@ tickets:
 
   - id: "LDG-2727"
     title: "Resumed-run equity-prefix merge"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2720"]

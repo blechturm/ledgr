@@ -6,7 +6,6 @@
 
 ledgr_fold_diagnostic_writer <- function(run_id,
                                          output_handler,
-                                         pulses_posix,
                                          chunk_rows = 4096L) {
   ledgr_columnar_diagnostic_writer(
     run_id,

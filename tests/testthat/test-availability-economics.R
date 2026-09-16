@@ -52,7 +52,8 @@ availability_economics_tables <- function(bt) {
     run = DBI::dbGetQuery(opened$con, "SELECT status FROM runs WHERE run_id = ?", params = list(bt$run_id)),
     completion = DBI::dbGetQuery(opened$con, "SELECT * FROM run_completion WHERE run_id = ?", params = list(bt$run_id)),
     diagnostics = DBI::dbGetQuery(opened$con, "SELECT * FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq", params = list(bt$run_id)),
-    events = DBI::dbGetQuery(opened$con, "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(bt$run_id))
+    events = DBI::dbGetQuery(opened$con, "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(bt$run_id)),
+    equity = DBI::dbGetQuery(opened$con, "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc", params = list(bt$run_id))
   )
 }
 
@@ -835,6 +836,7 @@ testthat::test_that("decision traces append across deliberate interruption and r
   testthat::expect_identical(first_stored$run$status, "RUNNING")
   testthat::expect_equal(nrow(first_stored$completion), 0L)
   testthat::expect_gt(nrow(first_diagnostics), 0L)
+  testthat::expect_equal(nrow(first_stored$equity), 1L)
   close(first)
 
   options(ledgr.interrupt = FALSE)
@@ -843,6 +845,14 @@ testthat::test_that("decision traces append across deliberate interruption and r
   resumed_stored <- availability_economics_tables(resumed)
   testthat::expect_identical(resumed_stored$run$status, "DONE")
   testthat::expect_equal(nrow(resumed_stored$completion), 1L)
+  testthat::expect_equal(nrow(resumed_stored$equity), 3L)
+  testthat::expect_identical(
+    as.numeric(as.POSIXct(resumed_stored$equity$ts_utc, tz = "UTC")),
+    as.numeric(as.POSIXct(
+      paste(as.Date("2020-01-01") + 0:2, "16:00:00"),
+      tz = "UTC"
+    ))
+  )
   testthat::expect_gt(nrow(resumed_stored$diagnostics), nrow(first_diagnostics))
   testthat::expect_identical(
     resumed_stored$diagnostics[seq_len(nrow(first_diagnostics)), , drop = FALSE],
@@ -852,6 +862,9 @@ testthat::test_that("decision traces append across deliberate interruption and r
     resumed_stored$diagnostics$diagnostic_seq,
     seq_len(nrow(resumed_stored$diagnostics))
   )
+  reopened <- ledgr_run_open(snapshot, "availability-interrupted")
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_equal(nrow(ledgr_compute_equity_curve(reopened)), 3L)
 })
 
 testthat::test_that("unexpected fold errors roll back economics and retain error diagnostics", {

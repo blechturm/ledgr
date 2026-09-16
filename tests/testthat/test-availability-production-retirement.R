@@ -27,6 +27,23 @@ testthat::test_that("installed availability runtime contains no retired arm", {
     retired_functions,
     "do.call(rbind, diagnostic_rows)"
   )
+  installed_forbidden <- c(
+    "ledgr.internal.spike",
+    "spike_arm",
+    "spike_diagnostic_mode",
+    "do.call(rbind, diagnostic_rows)"
+  )
+  namespace_source <- paste(vapply(
+    ls(ns, all.names = TRUE),
+    function(name) {
+      value <- get(name, envir = ns, inherits = FALSE)
+      if (is.function(value)) paste(deparse(value), collapse = "\n") else ""
+    },
+    character(1)
+  ), collapse = "\n")
+  for (token in installed_forbidden) {
+    testthat::expect_false(grepl(token, namespace_source, fixed = TRUE), info = token)
+  }
   r_dir <- testthat::test_path("..", "..", "R")
   if (dir.exists(r_dir)) {
     source <- paste(

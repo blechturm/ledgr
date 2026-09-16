@@ -249,6 +249,17 @@ testthat::test_that("retained references are test-only and detect perturbation",
     stage = "decision",
     outcome = "observed"
   )
+  production_row <- ledgr:::ledgr_availability_diagnostic_row(
+    run_id = "witness",
+    diagnostic_seq = 1L,
+    ts_utc = availability_v201_at(1L),
+    stage = "decision",
+    outcome = "observed"
+  )
+  testthat::expect_identical(
+    names(ledgr:::ledgr_availability_diagnostic_columns(0L)),
+    names(production_row)
+  )
   testthat::expect_identical(row$outcome, "observed")
   perturbed <- row
   perturbed$outcome <- "blocked"

@@ -527,7 +527,7 @@ scope: old-path-retirement
 Priority: P0
 Effort: M
 Dependencies: LDG-2720
-Status: Pending
+Status: Review Pending
 
 ### Description
 

@@ -315,7 +315,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
     ts_utc = as.POSIXct(NA, tz = "UTC"),
     specified = FALSE
   )
-  diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler, pulses_posix)
+  diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler)
   diagnostic_seq <- 0L
   equity_facts <- list()
   current_fold_ts <- as.POSIXct(NA, tz = "UTC")

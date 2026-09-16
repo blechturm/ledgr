@@ -191,4 +191,5 @@ testthat::test_that("ported failures roll back and resumes preserve prefixes", {
     resumed$final$diagnostics$reason_code[[nrow(resumed$final$diagnostics)]],
     "fold_exception"
   )
+  testthat::expect_identical(resumed$final$equity, resumed$first$equity)
 })

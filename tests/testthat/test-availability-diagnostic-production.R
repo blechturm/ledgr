@@ -33,8 +33,7 @@ testthat::test_that("the production diagnostic path defaults to one typed block"
   sink <- diagnostic_production_handler()
   writer <- ledgr:::ledgr_fold_diagnostic_writer(
     "diagnostic-production",
-    sink$handler,
-    as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
+    sink$handler
   )
   testthat::expect_identical(names(writer), c("append_block", "drain", "release"))
 

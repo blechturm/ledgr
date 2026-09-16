@@ -71,6 +71,7 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
   diagnostics <- tibble::as_tibble(direct, what = "diagnostics")
   decision <- diagnostics[diagnostics$stage == "decision", , drop = FALSE][1L, ]
   active_availability <- tibble::as_tibble(direct, what = "availability")
+  active_equity <- ledgr_compute_equity_curve(direct)
   active_explain <- ledgr_run_explain(
     direct,
     as.character(decision$instrument_id[[1L]]),
@@ -85,6 +86,7 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
   reopen_error <- NULL
   reopened_availability <- NULL
   reopened_explain <- NULL
+  reopened_equity <- NULL
   if (inherits(reopened, "error")) {
     reopen_error <- list(
       class = class(reopened),
@@ -95,6 +97,7 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
       reopened,
       what = "availability"
     )
+    reopened_equity <- ledgr_compute_equity_curve(reopened)
     reopened_explain <- ledgr_run_explain(
       reopened,
       as.character(decision$instrument_id[[1L]]),
@@ -106,8 +109,10 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
   list(
     store = availability_v201_read_store(db, run_id),
     active_availability = active_availability,
+    active_equity = active_equity,
     active_explain = active_explain,
     reopened_availability = reopened_availability,
+    reopened_equity = reopened_equity,
     reopened_explain = reopened_explain,
     reopen_error = reopen_error
   )
@@ -218,26 +223,18 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
 testthat::test_that("provider results and reopen surfaces preserve production evidence", {
   for (interrupt_day in list(NULL, 6L)) {
     production <- availability_v201_inspection_case(interrupt_day)
-    if (is.null(interrupt_day)) {
-      testthat::expect_null(production$reopen_error)
-      testthat::expect_identical(
-        production$active_availability,
-        production$reopened_availability
-      )
-      testthat::expect_identical(
-        production$active_explain,
-        production$reopened_explain
-      )
-    } else {
-      testthat::expect_true(
-        "ledgr_run_terminal_evidence_invalid" %in%
-          production$reopen_error$class
-      )
-      testthat::expect_match(
-        production$reopen_error$message,
-        "exact achieved equity prefix",
-        fixed = TRUE
-      )
-    }
+    testthat::expect_null(production$reopen_error)
+    testthat::expect_identical(
+      production$active_availability,
+      production$reopened_availability
+    )
+    testthat::expect_identical(
+      production$active_equity,
+      production$reopened_equity
+    )
+    testthat::expect_identical(
+      production$active_explain,
+      production$reopened_explain
+    )
   }
 })
