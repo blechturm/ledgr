@@ -61,7 +61,7 @@ git_lines <- function(...) {
   on.exit(Sys.setenv(HOME = old_home), add = TRUE)
   profile_home <- Sys.getenv("USERPROFILE")
   if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
-  out <- suppressWarnings(system2("git", c("-C", repo_root, ...), stdout = TRUE, stderr = FALSE))
+  out <- suppressWarnings(system2("git", c("-C", shQuote(repo_root), ...), stdout = TRUE, stderr = FALSE))
   status <- attr(out, "status")
   if (!is.null(status) && status != 0L) { note(FALSE, sprintf("git %s failed with status %d", paste(c(...), collapse = " "), status)); finish() }
   as.character(out)
@@ -280,6 +280,10 @@ note(
     all(file.exists(file.path(repo_root, c(seam_modified, seam_added)))),
   "scope: reviewed provider seam is present in the committed baseline"
 )
+seam_unmodified <- length(git_lines(
+  "diff", "--name-only", "HEAD", "--", seam_modified, seam_added
+)) == 0L
+note(seam_unmodified, "scope: the reviewed seam is unmodified relative to HEAD")
 stat <- git_lines(
   "diff", "--numstat", "--no-renames", "f0b847d^", "f0b847d", "--",
   seam_modified

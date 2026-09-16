@@ -47,6 +47,10 @@ unsafe. The correction makes all three checkers temporarily inherit
 `USERPROFILE` as `HOME` for Git and teaches their scope guards to validate the
 reviewed seam at its committed introduction range. No semantic evidence or
 measurement CSV was rewritten for that correction.
+The four assertions not repeated after the correction were the semantic rerun
+and its three byte-exact diffs. The correction cannot affect those assertions:
+the writer runner records no Git output in any of the three deterministic
+files they compare.
 
 ## Test-only references
 
@@ -94,3 +98,8 @@ Under R 4.6.1, the focused availability regression net passed all 14 matching
 test files with zero failures, warnings, or skips. The documentation-contract
 file also passed with the two Batch 1 tickets in `review_pending` and every
 later ticket still `pending`.
+
+After the independent review found leaked spike options, the corrected
+availability net passed again in 305.9 seconds. The provider, writer, chunk,
+and block options were `NULL | NULL | NULL | NULL` both before and after the
+complete 14-file run, so later files execute under their declared defaults.

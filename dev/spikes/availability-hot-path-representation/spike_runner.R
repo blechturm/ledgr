@@ -460,7 +460,7 @@ if (length(args) >= 1L && identical(args[[1L]], "--child")) {
   options(warn = 1)
   pkgload::load_all(repo_root, quiet = TRUE, export_all = TRUE)
   cat("spike_runner", mode, "\n")
-  cat("HEAD:", system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE), "\n")
+  cat("HEAD:", system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE), "\n")
   cat("R:", R.version.string, " collapse:", as.character(utils::packageVersion("collapse")), " duckdb:", as.character(utils::packageVersion("duckdb")), "\n")
   fixture_df <- do.call(rbind, lapply(names(FIXTURES), function(nm) { f <- FIXTURES[[nm]]
     data.frame(fixture = nm, n_instruments = f$n_instruments, n_members = f$n_members, n_sessions = f$n_sessions, n_lists = f$n_lists,

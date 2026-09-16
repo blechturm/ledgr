@@ -527,7 +527,7 @@ write_fixture_csv <- function(evidence) {
   fx$envelope <- sprintf("block median fold_wall_s<=%d and current_median - block_median > diff(range(current measured walls)); every measured peak_ws_mib<=%d; current-arm stop %d s / %d MiB",
                          ENVELOPE$fold_wall_s, ENVELOPE$peak_ws_mib, WALL_STOP_S, WS_STOP_MIB)
   utils::write.csv(fx, file.path(evidence, "fixture.csv"), row.names = FALSE)
-  env <- environment_row(); env$head <- system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE)
+  env <- environment_row(); env$head <- system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE)
   utils::write.csv(env, file.path(evidence, "environment.csv"), row.names = FALSE)
   print(fx[, c("fixture", "n_instruments", "n_sessions", "counts")], row.names = FALSE)
 }
@@ -546,7 +546,7 @@ if (length(args) >= 1L && startsWith(args[[1L]], "--child")) {
   dir.create(evidence_dir, recursive = TRUE, showWarnings = FALSE)
   load_package(); set_arm("current"); install_observer()
   cat("spike_runner", mode, "\n")
-  cat("HEAD:", system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE), "\n")
+  cat("HEAD:", system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE), "\n")
   cat("R:", R.version.string, " collapse:", as.character(utils::packageVersion("collapse")), " duckdb:", as.character(utils::packageVersion("duckdb")), "\n")
   write_fixture_csv(evidence_dir)
   if (mode %in% c("semantic", "all")) semantic_phase(evidence_dir)

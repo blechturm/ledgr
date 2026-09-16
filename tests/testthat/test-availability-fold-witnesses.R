@@ -27,6 +27,14 @@ availability_v201_run_scenarios <- function() {
 }
 
 testthat::test_that("ported fold witnesses preserve every persisted surface", {
+  option_names <- c(
+    "ledgr.internal.spike_availability_provider",
+    "ledgr.internal.spike_diagnostic_writer",
+    "ledgr.internal.spike_diagnostic_chunk_rows",
+    "ledgr.internal.spike_diagnostic_block"
+  )
+  options_before <- options()[option_names]
+  on.exit(options(options_before), add = TRUE)
   results <- availability_v201_run_scenarios()
 
   for (scenario in names(availability_v201_scenarios)) {
@@ -79,6 +87,7 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
     availability_v201_assert_frozen(summaries, perturbed),
     "frozen witness mismatch"
   )
+  testthat::expect_identical(options()[option_names], options_before)
 })
 
 testthat::test_that("direct persisted rows match the reviewed baseline", {

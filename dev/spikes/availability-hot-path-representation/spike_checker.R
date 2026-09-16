@@ -69,7 +69,7 @@ git_lines <- function(...) {
   on.exit(Sys.setenv(HOME = old_home), add = TRUE)
   profile_home <- Sys.getenv("USERPROFILE")
   if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
-  cmd <- c("-C", repo_root, ...)
+  cmd <- c("-C", shQuote(repo_root), ...)
   out <- suppressWarnings(system2("git", cmd, stdout = TRUE, stderr = FALSE))
   status <- attr(out, "status")
   if (!is.null(status) && status != 0L) {
@@ -251,6 +251,10 @@ tracked_seams <- git_lines("ls-files", "--", seam_modified, seam_added)
 seam_present <- all(c(seam_modified, seam_added) %in% tracked_seams) &&
   all(file.exists(file.path(repo_root, c(seam_modified, seam_added))))
 note(seam_present, "scope: reviewed seam is present in the committed baseline")
+seam_unmodified <- length(git_lines(
+  "diff", "--name-only", "HEAD", "--", seam_modified, seam_added
+)) == 0L
+note(seam_unmodified, "scope: the reviewed seam is unmodified relative to HEAD")
 stat <- git_lines(
   "diff", "--numstat", "--no-renames", "5edabae^", "5edabae", "--",
   seam_modified

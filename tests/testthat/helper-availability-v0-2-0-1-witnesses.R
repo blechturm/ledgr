@@ -351,13 +351,13 @@ availability_v201_fold_strategy <- function(ctx, params) {
 }
 
 availability_v201_set_fold_arm <- function(arm, chunk_rows) {
-  options(
+  invisible(options(
     ledgr.internal.spike_availability_provider = "prepared",
     ledgr.internal.spike_diagnostic_writer = "columnar",
     ledgr.internal.spike_diagnostic_chunk_rows = as.integer(chunk_rows),
     ledgr.internal.spike_diagnostic_block =
       if (identical(arm, "block")) "on" else "off"
-  )
+  ))
 }
 
 availability_v201_run_invocation <- function(experiment, run_id) {
@@ -394,7 +394,8 @@ availability_v201_run_case <- function(arm,
     ledgr_snapshot_close(snapshot)
     unlink(c(db, paste0(db, ".wal")), force = TRUE)
   }, add = TRUE)
-  availability_v201_set_fold_arm(arm, chunk_rows)
+  arm_prior <- availability_v201_set_fold_arm(arm, chunk_rows)
+  on.exit(options(arm_prior), add = TRUE)
   timestamp <- function(day) {
     if (is.null(day)) "" else {
       format(
@@ -447,10 +448,7 @@ availability_v201_compare_store <- function(x, y) {
     "identity", "diagnostics", "events", "equity", "state", "completion"
   )
   vapply(surfaces, function(surface) {
-    identical(
-      availability_v201_strip_run_id(x[[surface]]),
-      availability_v201_strip_run_id(y[[surface]])
-    )
+    identical(x[[surface]], y[[surface]])
   }, logical(1))
 }
 
