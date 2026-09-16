@@ -1635,6 +1635,31 @@ with concrete changes to the relevant process documents and templates. It
 must not reopen v0.2.0.1 product decisions or silently rewrite historical RFC,
 spike, review, or closeout records.
 
+The governance review includes a test-suite audit as a named workstream. The
+timing baseline captured at `217bd66` under R 4.6.1 is 1,005 seconds for the
+ordinary full suite, 250 seconds for the availability slice, and about 59
+seconds for the Batch 1 witness files. The full timing run ended with test
+errors that included a sandbox refusal to create `Rplots.pdf`, so these are
+runtime baselines rather than clean verification evidence.
+
+The audit measures every test block, not only each file, and records setup,
+snapshot construction, sealing, migration, execution, plotting, and teardown
+costs separately where they are material. For each test it asks which contract
+or historical defect it protects, whether a deliberate mutation proves that
+it detects failure, whether another test already protects the same claim,
+whether it runs at the right layer, whether its fixture is minimally sized,
+and whether it is deterministic and isolated. Slowness alone never justifies
+deletion: consolidation, fixture reduction, setup reuse, or movement to a
+heavier lane must preserve equivalent detecting evidence.
+
+The audit should propose three explicit lanes: a fast developer suite with a
+60-to-90-second target, a comprehensive correctness suite for review and
+release gates, and separately invoked heavy evidence and benchmark protocols.
+It must also settle artifact locations, CI triggers, failure reporting, and
+the rule for preventing a heavy test from drifting back into the default
+developer lane. Any suite changes require independent review before they can
+replace the current release gate.
+
 This is post-release governance work, not part of the v0.2.0.1 release gate.
 The spot-crypto readiness probe remains the next product-research cycle, but no
 new implementation packet opens until this governance review is resolved.
