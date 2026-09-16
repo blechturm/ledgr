@@ -3,12 +3,15 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest completed release packet:** `v0.2.0.0`.
-**Current active packet:** none; no successor packet has been cut.
+**Current active packet:** `v0.2.0.1`.
+**Current active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
 **Current planning branch:** `v0.2.0.1`; the availability hot-path synthesis
-and maintainer decisions are accepted. The next artifact is the implementation
-spec draft for independent review. No tickets have been cut. The refreshed
-spot-crypto probe follows as a separate v0.2.0.x planning cycle.
-**Latest packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
+and maintainer decisions are accepted, the
+[v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
+2026-09-16 after two independent reviews, and tickets LDG-2719 through
+LDG-2735 are cut with Batch 0 awaiting review. The refreshed spot-crypto probe
+follows as a separate v0.2.0.x planning cycle.
+**Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
 implementation. All 16 batches are complete after review and local release
@@ -208,6 +211,22 @@ criteria, first-class intraday runtime, and paper/live work remain non-scope.
 - Spike and storage evidence:
   `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md` and
   `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`.
+
+The v0.2.0.1 packet is active. It productionizes the three reviewed
+availability hot-path representations behind the shared fold, replaces the
+quadratic seal-time conflict validators through a separately gated cold-path
+workstream, repairs resumed-run equity finalization, and closes with separated
+cold, warm, and peer benchmark records. Tickets are cut; Batch 0 awaits review.
+
+- Spec: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`.
+- Independent reviews: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec_review.md`
+  and `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec_re_review.md`.
+- Tickets: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`.
+- Machine-readable tickets: `ledgr_v0_2_0_1_spec_packet/tickets.yml`.
+- Batch plan: `ledgr_v0_2_0_1_spec_packet/batch_plan.md`.
+- Primary synthesis and decisions:
+  `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md` and
+  `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md`.
 
 The v0.2.0.0 packet is complete. It consumes the accepted API/representation
 hardening and asset-availability syntheses. The ordered implementation first
@@ -751,6 +770,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
+| active v0.2.0.1 packet | `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`, `ledgr_v0_2_0_1_spec_packet/tickets.yml`, `ledgr_v0_2_0_1_spec_packet/batch_plan.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md`, `manual/optimization_coding_style.qmd`, `manual/benchmark_methodology.qmd`, `spike_protocol.md` |
 | v0.2.0.0 release record | `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `ledgr_v0_2_0_0_spec_packet/tickets.yml`, `ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `audits/v0_2_0_test_suite_audit.md`, `spike_protocol.md`, `vignette_styleguide.md`, `release_ci_playbook.md`, `contracts.md`, `ledgr_roadmap.md` |
 | v0.1.9.7 release record | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | Accepted asset-availability / point-in-time-universe RFC | `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, historical), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md` (reviewed response), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md` (maintainer accepted; synthesis input), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md` (accepted 2026-09-08; binding first-implementation direction), inconclusive terminal spike report on `spike/asset-availability-pit-universes` at `d59259f`, `horizon.md` 2026-05-28, 2026-09-06, and 2026-09-08 `[data]` entries, `ledgr_roadmap.md` v0.2.x ragged-universe section, `rfc/README.md` pipeline row, `research/Sharadar-Empirical-Evidence.md`, `research/ledgr_ragged_universe_prior_art_review.md`, `research/rfc-evidence-handoff.md`, `research/Cross-Asset-Accounting-Critical-Events.md`, `contracts.md` |

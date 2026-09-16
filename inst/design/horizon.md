@@ -26,12 +26,14 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-15):** v0.2.0.0 is complete after maintainer
-review and local release gates. The availability-performance RFC is accepted
-for v0.2.0.1, but its spec and tickets have not been cut. Spot-crypto planning
-follows that release as a separate v0.2.0.x cycle. Horizon entries below remain
-non-binding unless a packet, the roadmap, contracts, or an accepted RFC
-promotes them.
+**Current packet note (2026-09-16):** v0.2.0.0 is complete after maintainer
+review and local release gates. The v0.2.0.1 packet is active: its spec was
+accepted on 2026-09-16 and tickets LDG-2719 through LDG-2735 are cut for
+availability hot- and cold-path productionization, the seal-validator
+correction, the resumed-run equity-prefix repair, and separated benchmark
+closeouts. Spot-crypto planning follows that release as a separate v0.2.0.x
+cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
+contracts, or an accepted RFC promotes them.
 
 The completed packet consumed only verified API-golden-path and stale-example
 findings in Batches 2 and 10. Batch 10 closed those scoped repairs. The

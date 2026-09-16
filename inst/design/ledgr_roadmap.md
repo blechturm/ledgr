@@ -4,10 +4,11 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
-**Active packet:** none; no successor packet has been cut.
+**Active packet:** v0.2.0.1 availability hot- and cold-path optimization.
+**Active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
 **Current planning branch:** `v0.2.0.1`; the availability hot- and cold-path
-RFC is accepted and awaits its spec draft. No tickets have been cut. The
-spot-crypto readiness cycle follows v0.2.0.1.
+RFC and its spec are accepted, and tickets LDG-2719 through LDG-2735 are cut
+with Batch 0 awaiting review. The spot-crypto readiness cycle follows v0.2.0.1.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -144,7 +145,8 @@ claim boundaries remain governed by
 | v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
-| v0.2.0.1 | Planned | Productionize the three reviewed availability seams, correct the quadratic seal validators, repair resumed-run equity-prefix finalization, and close with separated availability and peer benchmarks. The RFC is accepted; the spec is next and no tickets exist yet. | Accepted availability hot-path synthesis and maintainer decisions; three spike inventories; snapshot-sealing probe |
+| v0.2.0.1 | Active | Productionize the three reviewed availability seams, correct the quadratic seal validators, repair resumed-run equity-prefix finalization, and close with separated availability and peer benchmarks. The RFC and spec are accepted; tickets LDG-2719 through LDG-2735 are cut and Batch 0 awaits review. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; three spike inventories; snapshot-sealing probe |
+| Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, and closeout process while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, and honest measurement clocks. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
 | v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
@@ -1603,6 +1605,37 @@ loop removal, and the proposed Docker benchmark laboratory remain outside this
 packet. The accepted synthesis, maintainer decisions, final review, spike
 inventories, benchmark methodology, and optimization coding style are the
 authoritative inputs to the spec draft.
+
+### After v0.2.0.1: Governance Review And Process Improvement
+
+Maintainer decision, 2026-09-16: after v0.2.0.1 closes, run a bounded
+governance review before opening the next implementation packet. The review
+must ask where the current RFC, spike, spec, review, and closeout cycle creates
+duplicate prose, repeated manual verification, stale cross-references, or a
+level of ceremony disproportionate to the decision being made.
+
+The objective is to reduce process cost and document entropy, not to weaken
+the standards that made the availability work trustworthy. The following
+remain non-negotiable:
+
+- independent review at material design and correctness boundaries;
+- immutable or explicitly superseded empirical evidence;
+- visible failures, corrections, and abandoned approaches;
+- scope containment and explicit maintainer acceptance;
+- executable semantic and persistence invariants where practical; and
+- separate, honestly labelled cold, warm, and peer-comparison clocks.
+
+The review should prefer executable checks over repeated narrative claims,
+define proportionate routes for a full RFC, bounded spike, direct ticket,
+audit, or documentation chore, and identify artifacts that can be consolidated
+without erasing decision history. Its output is a reviewed governance proposal
+with concrete changes to the relevant process documents and templates. It
+must not reopen v0.2.0.1 product decisions or silently rewrite historical RFC,
+spike, review, or closeout records.
+
+This is post-release governance work, not part of the v0.2.0.1 release gate.
+The spot-crypto readiness probe remains the next product-research cycle, but no
+new implementation packet opens until this governance review is resolved.
 
 ### After v0.2.0.1: Spot-Crypto Readiness Probe And Spike
 

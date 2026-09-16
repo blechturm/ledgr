@@ -569,7 +569,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
   testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** none; no successor packet has been cut", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** v0.2.0.1 availability hot- and cold-path optimization", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
@@ -584,7 +584,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   )
 
   testthat::expect_match(design_index, "Latest completed release packet:** `v0.2.0.0`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** none", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** `v0.2.0.1`", fixed = TRUE)
   testthat::expect_match(design_index, "ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
@@ -2738,7 +2738,7 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
 
   testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
   testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(docs$design_index, "Current active packet:** none", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** `v0.2.0.1`", fixed = TRUE)
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
@@ -2835,7 +2835,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-15)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-16)", fixed = TRUE)
   testthat::expect_match(
     docs$horizon,
     "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
@@ -2951,7 +2951,7 @@ testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
 
   testthat::expect_match(
     docs$roadmap,
-    "| v0.2.0.1 | Planned | Productionize the three reviewed availability seams",
+    "| v0.2.0.1 | Active | Productionize the three reviewed availability seams",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -2976,6 +2976,51 @@ testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
     "After v0.2.0.1** -- the refreshed spot-crypto readiness probe",
     fixed = TRUE
   )
+})
+
+testthat::test_that("v0.2.0.1 packet cut is discoverable and does not claim implementation", {
+  root <- testthat::test_path("..", "..")
+  packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_1_spec_packet")
+  paths <- file.path(packet, c(
+    "README.md", "v0_2_0_1_spec.md", "v0_2_0_1_tickets.md",
+    "tickets.yml", "batch_plan.md"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source v0.2.0.1 packet unavailable during installed-package tests"
+  )
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
+
+  testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
+  testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Total Tickets: 17", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2719 - Packet Alignment", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2735 - v0.2.0.1 Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| 4.1 mechanism and source guard | LDG-2726 |", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| 3.5 status supersession-exact hybrid | LDG-2729 |", fixed = TRUE)
+  for (id in sprintf("LDG-%d", 2719:2735)) {
+    testthat::expect_match(docs$tickets, paste0("## ", id, " - "), fixed = TRUE)
+    testthat::expect_match(docs$yaml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
+  testthat::expect_no_match(docs$yaml, "status: \"complete", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Status: Review Pending.", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 6 - Seal Validators", fixed = TRUE)
+  testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
+
+  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  agents <- paste(readLines(file.path(root, "AGENTS.md"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(roadmap, "| v0.2.0.1 | Active | Productionize", fixed = TRUE)
+  testthat::expect_match(horizon, "v0.2.0.1 packet is active", fixed = TRUE)
+  testthat::expect_match(agents, "active v0.2.0.1 packet", fixed = TRUE)
+  testthat::expect_match(agents, "ledgr_v0_2_0_1_spec_packet/tickets.yml", fixed = TRUE)
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {
