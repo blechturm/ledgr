@@ -1,7 +1,6 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batch 0 implementation complete and awaiting review. Batches 1-8 are
-pending.
+Status: Batch 0 complete after maintainer acceptance. Batches 1-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -53,7 +52,7 @@ unlock a failed correctness stage. Batch 8 starts by reading
 
 ## Batch 0 - Packet Alignment And Ticket Cut
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -82,6 +81,10 @@ Review focus:
 Exit criteria:
 
 - independent ticket-cut review accepts the packet.
+
+Closeout: accepted by the maintainer on 2026-09-16 after the independent
+ticket-cut corrections landed in `e1ae717`; an additional Claude review was
+explicitly waived for this planning-only batch.
 
 ## Batch 1 - Witnesses And Test-Only References
 

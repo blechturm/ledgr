@@ -7,7 +7,8 @@
   finalization, and closes with separated cold, warm, and peer benchmark
   records. It changes no public API, schema, hash, run identity, accounting
   policy, or availability policy. The packet is at
-  `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 awaits review.
+  `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
+  maintainer acceptance and Batch 1 is pending.
 
 # ledgr 0.2.0.0
 

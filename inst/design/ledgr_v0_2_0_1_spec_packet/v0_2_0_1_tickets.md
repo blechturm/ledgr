@@ -91,7 +91,7 @@ unlock a failed correctness stage.
 Priority: P0
 Effort: M
 Dependencies: None
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -124,6 +124,10 @@ governance without claiming implementation.
 - Markdown and YAML IDs, statuses, dependencies, and batch mappings agree.
 - Active governance points to v0.2.0.1 and v0.2.0.0 is historical.
 - No implementation or gate is claimed complete.
+
+Maintainer closeout: accepted 2026-09-16 after the independent ticket-cut
+review corrections landed in `e1ae717`. An additional Claude review was
+explicitly waived because this batch changes planning artifacts only.
 
 ### Verification
 

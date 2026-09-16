@@ -3009,14 +3009,17 @@ testthat::test_that("v0.2.0.1 packet cut is discoverable and does not claim impl
   yaml_ids <- sub("^  - id: \"(LDG-[0-9]+)\"$", "\\1", grep("^  - id: \"LDG-", yaml_lines, value = TRUE))
   yaml_statuses <- sub("^    status: \"([a-z_]+)\"$", "\\1", grep("^    status: \"", yaml_lines, value = TRUE))
   testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
-  testthat::expect_identical(yaml_statuses, c("review_pending", rep("pending", 16L)))
+  testthat::expect_identical(yaml_statuses, c("complete_after_review", rep("pending", 16L)))
   ticket_lines <- readLines(paths[[3L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
-  testthat::expect_identical(md_statuses, c("Review Pending", rep("Pending", 16L)))
+  testthat::expect_identical(md_statuses, c("Complete After Review", rep("Pending", 16L)))
   batch_lines <- readLines(paths[[5L]], warn = FALSE)
-  batch_statuses <- sub("^Status: ", "", grep("^Status: (Review Pending|Pending)\\.$", batch_lines, value = TRUE))
-  testthat::expect_identical(batch_statuses, c("Review Pending.", rep("Pending.", 8L)))
-  testthat::expect_no_match(docs$yaml, "status: \"complete", fixed = TRUE)
+  batch_statuses <- sub(
+    "^Status: ",
+    "",
+    grep("^Status: (Complete After Review|Pending)\\.$", batch_lines, value = TRUE)
+  )
+  testthat::expect_identical(batch_statuses, c("Complete After Review.", rep("Pending.", 8L)))
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)

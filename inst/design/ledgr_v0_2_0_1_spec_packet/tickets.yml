@@ -4,7 +4,7 @@ generated_from: "v0_2_0_1_spec.md"
 tickets:
   - id: "LDG-2719"
     title: "Packet alignment and ticket cut"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: []

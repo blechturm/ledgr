@@ -1,7 +1,6 @@
 # ledgr v0.2.0.1 Spec Packet
 
-Status: Batch 0 implementation complete and awaiting review. Batches 1-8 are
-pending.
+Status: Batch 0 complete after maintainer acceptance. Batches 1-8 are pending.
 
 This packet scopes v0.2.0.1 as an internal implementation and correctness
 release. It productionizes the three reviewed availability hot-path
