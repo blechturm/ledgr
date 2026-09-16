@@ -130,7 +130,7 @@ testthat::test_that("declared empty status family keeps the row-presence default
   )
 })
 
-testthat::test_that("the production provider defaults to prepared instance-local cursors", {
+testthat::test_that("the production provider defaults to prepared with query-order independence", {
   withr::local_options(list(
     ledgr.internal.spike_availability_provider = NULL
   ))

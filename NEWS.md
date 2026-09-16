@@ -8,9 +8,8 @@
   records. It changes no public API, schema, hash, run identity, accounting
   policy, or availability policy. The packet is at
   `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
-  maintainer acceptance. Batch 1's durable witnesses and test-only references
-  are complete after independent re-review; Batch 2's prepared provider and
-  consumer routing are implemented and awaiting independent review.
+  maintainer acceptance. Batches 1 and 2 are complete after independent
+  review; Batch 3's diagnostic writer and per-pulse block are pending.
 
 # ledgr 0.2.0.0
 

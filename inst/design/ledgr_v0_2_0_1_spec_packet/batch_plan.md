@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 and 1 complete after review and maintainer acceptance. Batch
-2 is implemented and awaiting independent review; Batches 3-8 are pending.
+Status: Batches 0 through 2 complete after review and maintainer acceptance.
+Batches 3-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -122,7 +122,7 @@ the option-containment correction at `bdcab66` with no new findings.
 
 ## Batch 2 - Prepared Provider
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -147,6 +147,11 @@ Exit criteria:
 - independent review accepts the provider boundary before Batch 4.
 
 Implementation evidence: `batch2-provider-evidence.md`.
+
+Closeout: accepted by the maintainer after independent review passed the
+production default, consumer boundaries, provider parity, public-inspection
+independence, and the honestly retained resumed-reopen limitation. The review
+artifact remains inline rather than in this packet.
 
 ## Batch 3 - Diagnostic Writer And Block
 

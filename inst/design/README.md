@@ -9,9 +9,8 @@
 and maintainer decisions are accepted, the
 [v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
 2026-09-16 after two independent reviews, and tickets LDG-2719 through
-LDG-2735 are cut. Batches 0 and 1 are complete after review and maintainer
-acceptance; Batch 2 is implemented and awaiting independent review. The
-refreshed spot-crypto probe
+LDG-2735 are cut. Batches 0 through 2 are complete after review and maintainer
+acceptance; Batch 3 is pending. The refreshed spot-crypto probe
 follows as a separate v0.2.0.x planning cycle.
 **Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
@@ -218,9 +217,8 @@ The v0.2.0.1 packet is active. It productionizes the three reviewed
 availability hot-path representations behind the shared fold, replaces the
 quadratic seal-time conflict validators through a separately gated cold-path
 workstream, repairs resumed-run equity finalization, and closes with separated
-cold, warm, and peer benchmark records. Tickets are cut; Batches 0 and 1 are
-complete after review and maintainer acceptance, and Batch 2 is implemented
-and awaiting independent review.
+cold, warm, and peer benchmark records. Tickets are cut; Batches 0 through 2
+are complete after review and maintainer acceptance, and Batch 3 is pending.
 
 - Spec: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`.
 - Independent spec review history is retained in Git; the accepted spec folds

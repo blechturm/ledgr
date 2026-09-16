@@ -3,7 +3,7 @@
 **Tickets:** LDG-2722 and LDG-2723
 **Implementation base:** `93b627cabe6b450cc6549dffbc35c048f0cdbc5f`
 **Runtime:** R 4.6.1, duckdb 1.5.2, testthat 3.3.2, collapse 2.1.8
-**Status:** Implemented; awaiting independent review.
+**Status:** Complete after independent review and maintainer acceptance.
 
 ## Production boundary
 
