@@ -1,3 +1,14 @@
+# ledgr 0.2.0.1
+
+- Development version opened for the accepted v0.2.0.1 packet. No user-facing
+  changes have shipped yet. The packet productionizes the reviewed availability
+  provider and diagnostic representations behind the shared fold, replaces the
+  quadratic seal-time conflict validators, repairs resumed-run equity
+  finalization, and closes with separated cold, warm, and peer benchmark
+  records. It changes no public API, schema, hash, run identity, accounting
+  policy, or availability policy. The packet is at
+  `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 awaits review.
+
 # ledgr 0.2.0.0
 
 - Made ledgr-owned DuckDB drivers use session-local extension and secret
