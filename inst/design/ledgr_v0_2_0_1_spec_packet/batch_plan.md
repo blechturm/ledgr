@@ -63,9 +63,10 @@ Scope:
 
 - record maintainer acceptance and apply the N1 spec patch;
 - allocate LDG-2719 through LDG-2735;
-- record baseline `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42`, package
-  `0.2.0.1`, R 4.5.2 ucrt on `x86_64-w64-mingw32`, duckdb 1.4.3, testthat
-  3.3.1, collapse 2.1.7 default and 2.1.8 isolated;
+- record historical ticket-cut baseline
+  `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42`, package `0.2.0.1`, R 4.5.2 ucrt
+  on `x86_64-w64-mingw32`, duckdb 1.4.3, testthat 3.3.1, collapse 2.1.7
+  default and 2.1.8 isolated, without changing the `DESCRIPTION` support floor;
 - create packet README, tickets, YAML, and this plan;
 - align design index, roadmap, horizon, AGENTS, NEWS, and doc-contract
   pointers;

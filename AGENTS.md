@@ -113,13 +113,14 @@ packets are records, not authorization for new work.
 
 ## Local Verification
 
-Windows R path used in this workspace:
+Current Windows R path used in this workspace. This local verification runtime
+does not change the package support floor in `DESCRIPTION`.
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
-& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
-& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" tools/check-coverage.R
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
+& "C:\Program Files\R\R-4.6.1\bin\x64\R.exe" CMD build .
+& "C:\Program Files\R\R-4.6.1\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" tools/check-coverage.R
 ```
 
 Targeted checks are preferred while editing, followed by full tests and package
@@ -132,8 +133,8 @@ the user library fallback, cleans compiled `src/` artifacts (the 0-byte DLL
 that breaks `load_all` in vignette setup), then runs `pkgdown::build_site()`.
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
 ```
 
 The live site otherwise redeploys from the `pkgdown` GitHub Actions workflow on

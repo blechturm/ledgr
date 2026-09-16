@@ -219,8 +219,8 @@ workstream, repairs resumed-run equity finalization, and closes with separated
 cold, warm, and peer benchmark records. Tickets are cut; Batch 0 awaits review.
 
 - Spec: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`.
-- Independent reviews: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec_review.md`
-  and `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec_re_review.md`.
+- Independent spec review history is retained in Git; the accepted spec folds
+  in both review rounds and the maintainer's N1 patch.
 - Tickets: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_2_0_1_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_2_0_1_spec_packet/batch_plan.md`.

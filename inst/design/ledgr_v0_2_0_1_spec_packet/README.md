@@ -13,6 +13,10 @@ ticket cut.
 
 Ticket-cut baseline:
 
+These versions record the environment used to cut the packet. They do not set
+the package support floor or constrain later implementation verification;
+`DESCRIPTION` remains authoritative for supported R versions.
+
 - source baseline `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42` on branch
   `v0.2.0.1`, package `0.2.0.1`;
 - R 4.5.2 ucrt on `x86_64-w64-mingw32`;
@@ -26,9 +30,8 @@ Ticket-cut baseline:
 
 Authoritative files:
 
-- `v0_2_0_1_spec.md` (accepted 2026-09-16)
-- `v0_2_0_1_spec_review.md` and `v0_2_0_1_spec_re_review.md` (independent
-  reviews that preceded acceptance)
+- `v0_2_0_1_spec.md` (accepted 2026-09-16 after two independent review rounds;
+  the review drafts are retained in Git history rather than this packet)
 - `v0_2_0_1_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`

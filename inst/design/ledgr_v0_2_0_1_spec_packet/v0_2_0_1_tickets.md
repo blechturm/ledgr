@@ -108,9 +108,11 @@ governance without claiming implementation.
   the declared-but-empty status family to the Section 4.1 provider-only tests.
 - Allocate LDG-2719 through LDG-2735 and bind the dependency DAG.
 - Create the packet README, Markdown tickets, YAML tickets, and batch plan.
-- Record the ticket-cut baseline: `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42`,
-  package `0.2.0.1`, R 4.5.2 ucrt on `x86_64-w64-mingw32`, duckdb 1.4.3,
-  testthat 3.3.1, collapse 2.1.7 default and 2.1.8 isolated.
+- Record the historical ticket-cut baseline:
+  `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42`, package `0.2.0.1`,
+  R 4.5.2 ucrt on `x86_64-w64-mingw32`, duckdb 1.4.3, testthat 3.3.1, collapse
+  2.1.7 default and 2.1.8 isolated. This record does not change the `DESCRIPTION`
+  support floor or constrain later implementation verification.
 - Align design index, roadmap, horizon, AGENTS, NEWS, and the
   documentation-contract assertions.
 - Make no runtime, public-API, schema, or test-result change.

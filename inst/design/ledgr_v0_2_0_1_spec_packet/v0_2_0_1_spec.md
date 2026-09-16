@@ -3,8 +3,8 @@
 **Status:** Accepted 2026-09-16; tickets cut for implementation. No
 implementation or release gate is claimed complete.
 **Date:** 2026-09-15. **Revised:** 2026-09-16. **Accepted:** 2026-09-16, after
-the first review (`v0_2_0_1_spec_review.md`), the focused re-review
-(`v0_2_0_1_spec_re_review.md`), and the in-place N1 patch to Sections 3.2 and 4.1.
+two independent review rounds and the in-place N1 patch to Sections 3.2 and
+4.1. The review drafts are retained in Git history rather than this packet.
 **Target release:** v0.2.0.1.
 **Draft baseline:** `f0b847d02c2cf66a9871fdda119f55e0ccfd7e42` on branch
 `v0.2.0.1`.
