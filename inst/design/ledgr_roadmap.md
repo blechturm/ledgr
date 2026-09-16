@@ -1660,6 +1660,24 @@ the rule for preventing a heavy test from drifting back into the default
 developer lane. Any suite changes require independent review before they can
 replace the current release gate.
 
+This is also a test-architecture and standards review. It must inventory the
+approaches currently mixed across unit, contract, integration, migration,
+acceptance, documentation-governance, optional-dependency, frozen-regression,
+and empirical-evidence checks, then decide which distinctions are intentional.
+The goal is an explicit taxonomy rather than one mechanically uniform test
+style. Each retained category needs rules for naming and location, fixture and
+golden-file ownership, deterministic clocks and randomness, permitted mocks,
+environment and optional-package handling, database and graphics cleanup,
+failure messages, runtime budgets, and the CI or local lane that owns it.
+
+The reviewed output must include maintained testing documentation: how to run
+each lane, how to interpret and reproduce a failure, how to add a new test,
+when mutation evidence is required, how frozen evidence is regenerated and
+reviewed, and when a test belongs in a spike or benchmark protocol instead of
+the package suite. Existing tests are classified before broad movement or
+deletion, and exceptions to the standard must state the contract that makes
+them necessary.
+
 This is post-release governance work, not part of the v0.2.0.1 release gate.
 The spot-crypto readiness probe remains the next product-research cycle, but no
 new implementation packet opens until this governance review is resolved.
