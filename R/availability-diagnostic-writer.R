@@ -1,42 +1,38 @@
-# Spike seam for the availability hot-path representation RFC (Charter v2).
+# Production diagnostic accumulation for availability-aware folds. The default
+# path constructs one typed block per pulse and appends it to bounded typed
+# column buffers. The durable output handler still owns the transaction and
+# assigns diagnostic_seq at write time. Chunk capacity is an unexported
+# constructor seam used by tests; ordinary folds always use 4096 rows.
 #
-# Selects, once per fold, how availability diagnostics are accumulated before
-# persistence. Mode "rows" is the unchanged production path: one data frame per
-# diagnostic row, retained in a list, bound once with do.call(rbind, ...).
-# Mode "columnar" is the single chartered alternative: typed column buffers of
-# bounded capacity, manifested as one data frame per chunk and flushed through
-# the existing output handler, which still owns the transaction and assigns
-# diagnostic_seq at write time. Schema, values, order, reason vocabulary, and
-# persisted rows are unchanged. The mode is read once from
-# options(ledgr.internal.spike_diagnostic_writer); the default is "rows".
-#
-# Diagnostic block spike (Charter v2): options(ledgr.internal.spike_diagnostic_block)
-# = "on" (default "off") makes the columnar writer accept one typed block per
-# pulse through append_block(); the fold then builds that block from the
-# vectors it already holds instead of one scalar field list per row. The
-# writer stamps the mode it actually built as an attribute on the writer
-# object, outside every persisted value.
+# The exact "rows" and columnar-block-"off" selections retain the two reviewed
+# reference arms until Batch 4 records parity and removes them. Malformed or
+# absent selections take the production path. The mode stamp remains outside
+# persisted values for that retirement gate.
 
-ledgr_fold_diagnostic_writer <- function(run_id, output_handler, pulses_posix) {
-  mode <- getOption("ledgr.internal.spike_diagnostic_writer", "rows")
-  block <- identical(getOption("ledgr.internal.spike_diagnostic_block", "off"), "on")
-  writer <- if (identical(mode, "columnar")) {
-    chunk_rows <- as.integer(getOption("ledgr.internal.spike_diagnostic_chunk_rows", 4096L))
-    if (length(chunk_rows) != 1L || is.na(chunk_rows) || chunk_rows < 1L) {
-      rlang::abort("`ledgr.internal.spike_diagnostic_chunk_rows` must be a positive integer.", class = "ledgr_invalid_args")
-    }
-    ledgr_columnar_diagnostic_writer(run_id, output_handler, chunk_rows, block = block)
-  } else {
-    if (block) {
-      rlang::abort("`ledgr.internal.spike_diagnostic_block` requires the columnar writer.", class = "ledgr_invalid_args")
-    }
+ledgr_fold_diagnostic_writer <- function(run_id,
+                                         output_handler,
+                                         pulses_posix,
+                                         chunk_rows = 4096L) {
+  mode <- getOption("ledgr.internal.spike_diagnostic_writer", "columnar")
+  block <- !identical(
+    getOption("ledgr.internal.spike_diagnostic_block", "on"),
+    "off"
+  )
+  writer <- if (identical(mode, "rows")) {
     ledgr_row_list_diagnostic_writer(run_id, pulses_posix)
+  } else {
+    ledgr_columnar_diagnostic_writer(
+      run_id,
+      output_handler,
+      chunk_rows = chunk_rows,
+      block = block
+    )
   }
   attr(writer, "spike_diagnostic_mode") <- if (isTRUE(writer$block)) "block" else writer$mode
   writer
 }
 
-# Production behaviour, moved verbatim behind the seam.
+# Pre-promotion reference behaviour, retained temporarily for Batch 4 parity.
 ledgr_row_list_diagnostic_writer <- function(run_id, pulses_posix) {
   diagnostic_rows <- list()
   append <- function(row, diagnostic_seq) {
@@ -57,7 +53,17 @@ ledgr_row_list_diagnostic_writer <- function(run_id, pulses_posix) {
     }
     do.call(rbind, diagnostic_rows)
   }
-  list(mode = "rows", row = ledgr_availability_diagnostic_row, append = append, drain = drain)
+  release <- function() {
+    diagnostic_rows <<- list()
+    invisible(NULL)
+  }
+  list(
+    mode = "rows",
+    row = ledgr_availability_diagnostic_row,
+    append = append,
+    drain = drain,
+    release = release
+  )
 }
 
 # Same signature, defaults, and coercions as ledgr_availability_diagnostic_row(),
@@ -126,7 +132,7 @@ ledgr_availability_diagnostic_columns <- function(n) {
   )
 }
 
-# Diagnostic block spike (Charter v2): one typed block per pulse. `segments`
+# Build one typed diagnostic block per pulse. `segments`
 # is a list of segment lists in emission order; each carries `n` (its row
 # count) and, for any subset of the field names, a vector of length n or 1.
 # Absent fields take the defaults of ledgr_availability_diagnostic_fields():
@@ -185,7 +191,7 @@ ledgr_availability_diagnostic_block <- function(run_id, ts_utc, first_seq, segme
   )
 }
 
-# The chartered alternative. Columns live in an environment so writes target
+# Production column writer. Columns live in an environment so writes target
 # stable preallocated vectors. Numeric, integer, and POSIXct writes use
 # collapse::setv(); character writes use base replacement, the same split the
 # production durable handler adopted in v0.1.8.9 (R/backtest-runner.R:381-394).
@@ -193,7 +199,24 @@ ledgr_availability_diagnostic_block <- function(run_id, ts_utc, first_seq, segme
 # block per pulse: append_block() fills the same bounded chunks, splitting a
 # block across a chunk boundary, with base block replacement for character
 # columns and collapse::setv() vector writes for the others.
-ledgr_columnar_diagnostic_writer <- function(run_id, output_handler, chunk_rows, block = FALSE) {
+ledgr_columnar_diagnostic_writer <- function(run_id,
+                                             output_handler,
+                                             chunk_rows = 4096L,
+                                             block = TRUE) {
+  if (
+    length(chunk_rows) != 1L ||
+      !is.numeric(chunk_rows) ||
+      is.na(chunk_rows) ||
+      !is.finite(chunk_rows) ||
+      chunk_rows < 1L ||
+      chunk_rows != as.integer(chunk_rows)
+  ) {
+    rlang::abort(
+      "`chunk_rows` must be a positive integer.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  chunk_rows <- as.integer(chunk_rows)
   cols <- new.env(parent = emptyenv())
   column_names <- names(ledgr_availability_diagnostic_columns(0L))
   n <- 0L
@@ -264,10 +287,15 @@ ledgr_columnar_diagnostic_writer <- function(run_id, output_handler, chunk_rows,
     invisible(NULL)
   }
   drain <- function() {
-    out <- build(n)
-    reset()
-    out
+    build(n)
   }
-  list(mode = "columnar", block = isTRUE(block), row = ledgr_availability_diagnostic_fields, append = append,
-       append_block = if (isTRUE(block)) append_block else NULL, drain = drain)
+  list(
+    mode = "columnar",
+    block = isTRUE(block),
+    row = ledgr_availability_diagnostic_fields,
+    append = append,
+    append_block = if (isTRUE(block)) append_block else NULL,
+    drain = drain,
+    release = reset
+  )
 }

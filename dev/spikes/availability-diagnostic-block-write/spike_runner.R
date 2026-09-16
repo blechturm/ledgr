@@ -80,8 +80,8 @@ import_definitions(PROVIDER_RUNNER, c("weekday_sessions", "at", "sessions_df", "
                                       "pulse_iso", "sampler_ps1", "launch_child", "run_child_json", "rscript_path", "load_package", "environment_row"))
 
 set_arm <- function(arm, chunk_rows = DEFAULT_CHUNK_ROWS) {
+  spike_observed$chunk_rows <- as.integer(chunk_rows)
   options(ledgr.internal.spike_availability_provider = "prepared", ledgr.internal.spike_diagnostic_writer = "columnar",
-          ledgr.internal.spike_diagnostic_chunk_rows = as.integer(chunk_rows),
           ledgr.internal.spike_diagnostic_block = if (identical(arm, "block")) "on" else "off")
 }
 
@@ -97,6 +97,7 @@ install_observer <- function() {
   ns <- asNamespace("ledgr")
   invisible(suppressMessages({
     trace("ledgr_fold_diagnostic_writer", where = ns, print = FALSE,
+          tracer = quote(chunk_rows <- spike_observed$chunk_rows),
           exit = quote(spike_observed$modes <- c(spike_observed$modes, attr(returnValue(), "spike_diagnostic_mode") %||% NA_character_)))
     trace("ledgr_availability_provider_build", where = ns, print = FALSE,
           exit = quote(spike_observed$providers <- c(spike_observed$providers, attr(returnValue(), "spike_arm") %||% NA_character_)))

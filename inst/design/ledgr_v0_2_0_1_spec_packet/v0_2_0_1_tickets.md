@@ -369,7 +369,7 @@ scope: consumer-routing
 Priority: P0
 Effort: L
 Dependencies: LDG-2720, LDG-2721
-Status: Pending
+Status: Review Pending
 
 ### Description
 

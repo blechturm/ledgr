@@ -1230,6 +1230,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       } else {
         output_handler$write_run_diagnostics(diagnostics)
       }
+      diagnostic_writer$release()
     }
     invisible(NULL)
   }

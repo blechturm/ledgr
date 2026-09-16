@@ -9,7 +9,8 @@
   policy, or availability policy. The packet is at
   `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
   maintainer acceptance. Batches 1 and 2 are complete after independent
-  review; Batch 3's diagnostic writer and per-pulse block are pending.
+  review; Batch 3's diagnostic writer and per-pulse block are implemented and
+  pending independent review.
 
 # ledgr 0.2.0.0
 

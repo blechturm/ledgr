@@ -47,7 +47,6 @@ availability_v201_inspection_case <- function(provider_arm,
   withr::local_options(list(
     ledgr.internal.spike_availability_provider = provider_arm,
     ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_chunk_rows = 7L,
     ledgr.internal.spike_diagnostic_block = "on",
     ledgr.interrupt = FALSE,
     ledgr.v201.interrupt_at = interrupt_at,
@@ -122,7 +121,6 @@ testthat::test_that("production consumers build one prepared provider at each bo
   withr::local_options(list(
     ledgr.internal.spike_availability_provider = NULL,
     ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_chunk_rows = 7L,
     ledgr.internal.spike_diagnostic_block = "on"
   ))
   builds <- new.env(parent = emptyenv())
@@ -184,7 +182,6 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
   withr::local_options(list(
     ledgr.internal.spike_availability_provider = NULL,
     ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_chunk_rows = 7L,
     ledgr.internal.spike_diagnostic_block = "on"
   ))
   builds <- new.env(parent = emptyenv())

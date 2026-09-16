@@ -350,11 +350,10 @@ availability_v201_fold_strategy <- function(ctx, params) {
   target
 }
 
-availability_v201_set_fold_arm <- function(arm, chunk_rows) {
+availability_v201_set_fold_arm <- function(arm) {
   invisible(options(
     ledgr.internal.spike_availability_provider = "prepared",
     ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_chunk_rows = as.integer(chunk_rows),
     ledgr.internal.spike_diagnostic_block =
       if (identical(arm, "block")) "on" else "off"
   ))
@@ -394,8 +393,22 @@ availability_v201_run_case <- function(arm,
     ledgr_snapshot_close(snapshot)
     unlink(c(db, paste0(db, ".wal")), force = TRUE)
   }, add = TRUE)
-  arm_prior <- availability_v201_set_fold_arm(arm, chunk_rows)
+  arm_prior <- availability_v201_set_fold_arm(arm)
   on.exit(options(arm_prior), add = TRUE)
+  capacity_expr <- substitute(
+    chunk_rows <- value,
+    list(value = as.integer(chunk_rows))
+  )
+  suppressMessages(trace(
+    "ledgr_fold_diagnostic_writer",
+    where = asNamespace("ledgr"),
+    tracer = capacity_expr,
+    print = FALSE
+  ))
+  on.exit(suppressMessages(untrace(
+    "ledgr_fold_diagnostic_writer",
+    where = asNamespace("ledgr")
+  )), add = TRUE)
   timestamp <- function(day) {
     if (is.null(day)) "" else {
       format(

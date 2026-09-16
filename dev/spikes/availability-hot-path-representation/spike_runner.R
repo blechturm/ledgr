@@ -126,8 +126,8 @@ spike_strategy <- function(ctx, params) {
 }
 flat_strategy <- function(ctx, params) ctx$flat()
 
-set_arm <- function(arm, chunk = CHUNK_ROWS) {
-  options(ledgr.internal.spike_diagnostic_writer = arm, ledgr.internal.spike_diagnostic_chunk_rows = chunk)
+set_arm <- function(arm) {
+  options(ledgr.internal.spike_diagnostic_writer = arm)
 }
 
 open_snapshot <- function(fx, db_path) {
@@ -171,7 +171,21 @@ run_invocation <- function(exp, run_id) {
 }
 
 run_case <- function(arm, fx, run_id, chunk = CHUNK_ROWS, interrupt_at = NULL, resume_fail_at = NULL, fail_at = NULL) {
-  set_arm(arm, chunk)
+  set_arm(arm)
+  capacity_expr <- substitute(
+    chunk_rows <- value,
+    list(value = as.integer(chunk))
+  )
+  suppressMessages(trace(
+    "ledgr_fold_diagnostic_writer",
+    where = asNamespace("ledgr"),
+    tracer = capacity_expr,
+    print = FALSE
+  ))
+  on.exit(suppressMessages(untrace(
+    "ledgr_fold_diagnostic_writer",
+    where = asNamespace("ledgr")
+  )), add = TRUE)
   prior <- options(ledgr.interrupt = FALSE, ledgr.spike.interrupt_at = interrupt_at %||% "", ledgr.spike.fail_at = fail_at %||% "")
   on.exit(options(prior), add = TRUE)
   db <- tempfile(paste0("spike_", arm, "_"), fileext = ".duckdb")

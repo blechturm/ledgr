@@ -30,7 +30,6 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
   option_names <- c(
     "ledgr.internal.spike_availability_provider",
     "ledgr.internal.spike_diagnostic_writer",
-    "ledgr.internal.spike_diagnostic_chunk_rows",
     "ledgr.internal.spike_diagnostic_block"
   )
   options_before <- options()[option_names]

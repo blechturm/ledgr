@@ -1,7 +1,8 @@
 # ledgr v0.2.0.1 Batch Plan
 
 Status: Batches 0 through 2 complete after review and maintainer acceptance.
-Batches 3-8 are pending.
+Batch 3 is implemented and pending independent review; Batches 4-8 are
+pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -155,7 +156,7 @@ artifact remains inline rather than in this packet.
 
 ## Batch 3 - Diagnostic Writer And Block
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -178,6 +179,8 @@ Review focus:
 Exit criteria:
 
 - independent review accepts the writer boundary before Batch 4.
+
+Implementation evidence: `batch3-diagnostic-evidence.md`.
 
 ## Batch 4 - Production Parity And Retirement
 
