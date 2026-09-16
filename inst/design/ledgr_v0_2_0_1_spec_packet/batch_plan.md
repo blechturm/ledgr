@@ -10,9 +10,11 @@ Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
 
 A batch is the independent review unit. Ticket dependencies are the hard
 readiness gate; numeric batch order is the default sequence. Batches 5 and 6
-are independent of the warm seams and may run beside Batches 2 to 4; if a batch
-lands out of order, status text must name the completed and blocked batches
-rather than implying linear progress.
+are independent of the warm seams and may run beside Batches 2 to 4; Batch 7
+cannot start until Batches 4, 5, and 6 have closed, and Batch 8 cannot start
+until Batch 7 has closed, because the hard edges say so. If a batch lands out
+of order, status text must name the completed and blocked batches rather than
+implying linear progress.
 
 For implementation batches:
 
@@ -230,7 +232,9 @@ Review focus:
 - agreement with the retained pairwise references on random and adversarial
   sets, including the X/Y/J and Y/Z shapes;
 - no malformed set row is silently exempted;
-- the seal completes with the pairwise validator absent.
+- targeted seal fixtures pass and the structural check proves production no
+  longer calls the pairwise validators; the registered full-scale seal is
+  measured once, in Batch 8.
 
 Exit criteria:
 
@@ -248,12 +252,14 @@ Tickets:
 Scope:
 
 - split the peer ingestion phase and reconcile clocks;
-- refresh the optimization and benchmark manuals and the peer report.
+- refresh the optimization and benchmark manuals; the record-specific peer
+  README and tracked-report update waits for the Batch 8 record.
 
 Review focus:
 
 - per-engine phase definitions with honest unavailability;
-- every anchor resolves; no forecast or ranking appears as a claim.
+- every anchor resolves; no forecast, ranking, or unrecorded record prefix
+  appears as a claim.
 
 Exit criteria:
 
@@ -271,13 +277,16 @@ Tickets:
 
 Scope:
 
-- availability warm and cold seal records; the explicit peer record; the
-  Section 9 release gate and closeout.
+- availability warm record and the single registered cold seal record; the
+  explicit peer record with the peer README and tracked report updated from
+  it; the Section 9 release gate and closeout, including the unchanged
+  telemetry-name check.
 
 Review focus:
 
 - comparable host and cited pre-retirement pair;
-- three separate clocks, three record prefixes;
+- three separate clocks, three record prefixes, and the five peer-report
+  fields;
 - gates 1 through 10 hold and no benchmark waives gates 1 to 6.
 
 Exit criteria:

@@ -30,8 +30,10 @@ LDG-2719 packet alignment (stage A)
 
 Ticket dependencies are the hard readiness gate. Batch order is the default
 review sequence. Stages E and F are independent of the warm seams and may run
-beside Batches 2 to 4, but every batch keeps its own independent review stop
-and no benchmark number can unlock a failed correctness stage.
+beside Batches 2 to 4; Stage G follows the production and correctness stages
+and Stage H follows Stage G, and the hard edges below enforce that order.
+Every batch keeps its own independent review stop and no benchmark number can
+unlock a failed correctness stage.
 
 ## Priority Levels
 
@@ -42,15 +44,15 @@ and no benchmark number can unlock a failed correctness stage.
 ## Dependency DAG
 
 ```text
-2719 -> {2720, 2721, 2731}
+2719 -> {2720, 2721}
 {2720, 2721} -> 2722 -> 2723
 {2720, 2721} -> 2724
 {2723, 2724} -> 2725 -> 2726
 2720 -> 2727
 2721 -> 2728 -> {2729, 2730}
-{2726, 2727, 2729, 2730, 2731} -> 2732
-{2726, 2727, 2729, 2730} -> 2733
-{2726, 2727, 2731} -> 2734
+{2726, 2727, 2729, 2730} -> 2731 -> 2732
+{2726, 2727, 2729, 2730, 2732} -> 2733
+{2726, 2727, 2731, 2732} -> 2734
 {2719..2734} -> 2735
 ```
 
@@ -65,7 +67,7 @@ and no benchmark number can unlock a failed correctness stage.
 | 3.5 membership and lifetime sweeps | LDG-2728 |
 | 3.5 status supersession-exact hybrid | LDG-2729 |
 | 3.5 complete-set setwise validation and bypass | LDG-2730 |
-| 3.6 dependency posture (collapse 2.1.7 and 2.1.8, no floor) | LDG-2724, LDG-2735 |
+| 3.6 dependency and telemetry posture (collapse 2.1.7 and 2.1.8, no floor; unchanged telemetry names; no new schema column, hash input, public telemetry API, or durable lane name) | LDG-2724, LDG-2735 |
 | 3.7 benchmark clocks and peer workload | LDG-2731, LDG-2734 |
 | 4.1 provider-only views | LDG-2720, LDG-2722 |
 | 4.1 fold scenarios | LDG-2720, LDG-2723, LDG-2724 |
@@ -79,8 +81,8 @@ and no benchmark number can unlock a failed correctness stage.
 | 7.1 availability warm record | LDG-2725 (pre-retirement pair), LDG-2733 (stage H) |
 | 7.2 cold seal record | LDG-2733 |
 | 7.3 peer record | LDG-2734 |
-| 7.4 permitted release claims | LDG-2732, LDG-2735 |
-| 8 documentation and governance closeout | LDG-2732, LDG-2735 |
+| 7.4 permitted release claims | LDG-2732, LDG-2734, LDG-2735 |
+| 8 documentation and governance closeout | LDG-2732 (manuals and methodology), LDG-2734 (peer README and tracked report after the record), LDG-2735 |
 | 9 release gates 1-10 | LDG-2735 (gate 2 evidence from LDG-2726; gate 6 from LDG-2724 and LDG-2735; gate 7 from LDG-2733 and LDG-2734) |
 | Re-review N1 (status default keyed on row presence) | LDG-2719 (spec patch), LDG-2720 (test) |
 
@@ -679,24 +681,26 @@ setwise validation proves they cannot conflict.
   bypass.
 - Route any malformed set row to failure or into the general validator.
 - Add mutation tests for each invariant independently and in combination.
-- Measure the seal on the registered fixture once the bypass is in place.
+- Add a structural check that production seal and construction paths no
+  longer call the pairwise validators; the registered full-scale seal is
+  measured once, in LDG-2733.
 
 ### Acceptance Criteria
 
 - No malformed set row is silently exempted.
-- The seal completes with the pairwise validator absent from production
-  execution.
+- Targeted seal fixtures pass and the structural check proves the pairwise
+  validators are absent from production execution.
 - Independent review accepts Batch 6 before closeout records.
 
 ### Verification
 
 - Setwise mutation tests
-- Seal tests
+- Targeted seal fixtures and the structural pairwise-absence check
 - Independent review stop
 
 ### Source Reference
 
-- Spec Sections 3.5, 4.2, 7.2
+- Spec Sections 3.5, 4.2
 
 ### Classification
 
@@ -710,7 +714,7 @@ scope: setwise-bypass
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2719
+Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730
 Status: Pending
 
 ### Description
@@ -773,16 +777,18 @@ production source settles.
   source anchor resolving to production code.
 - Update `benchmark_methodology.qmd` and its rendering for the four peer phase
   fields and the final warm and cold interpretation.
-- Update the peer README and tracked report with the exact closeout command,
-  environment, parity status, and explicit non-ranking language.
 - Keep the style article internal; preserve RFC and spike artifacts and their
   recorded clocks.
+- Leave the record-specific peer README and tracked-report update to
+  LDG-2734, which owns it once the record exists.
 
 ### Acceptance Criteria
 
 - Rendered Markdown siblings reproduce.
 - Every cited source anchor resolves.
 - No forecast or peer ranking appears as a claim.
+- No record prefix, environment, or parity status is asserted before the peer
+  record exists.
 
 ### Verification
 
@@ -806,7 +812,7 @@ scope: post-productionization-refresh
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730
+Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730, LDG-2732
 Status: Pending
 
 ### Description
@@ -857,13 +863,14 @@ scope: warm-and-cold-records
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2726, LDG-2727, LDG-2731
+Dependencies: LDG-2726, LDG-2727, LDG-2731, LDG-2732
 Status: Pending
 
 ### Description
 
-Run the explicit standard peer workload after the package code and phase split
-are final and record it without a ranking claim.
+Run the explicit standard peer workload after the package code, phase split,
+and manuals are final, record it without a ranking claim, and carry the record
+into the peer README and tracked report.
 
 ### Tasks
 
@@ -873,22 +880,29 @@ are final and record it without a ranking claim.
   full row wall; compare canonical equity, fills, and trades to durable ledgr
   before interpreting timing; classify the first divergence where full parity
   is impossible; keep unavailable peers unavailable.
-- Cite the exact record prefix in the closeout; keep raw records local.
+- Update the peer README and tracked report with all five required fields: the
+  exact closeout command, the exact record prefix, the environment, the parity
+  status, and explicit non-ranking language.
+- Cite the exact record prefix in the release closeout; keep raw records
+  local.
 
 ### Acceptance Criteria
 
 - Required rows are present or explicitly `UNAVAILABLE` with reasons.
 - Parity precedes timing interpretation.
-- No hosted LEAN service and no ranking language.
+- The peer README and tracked report carry the five required fields for this
+  record and no ranking language.
+- No hosted LEAN service.
 
 ### Verification
 
 - Peer benchmark record run
 - Parity and divergence review
+- Peer README and tracked-report field check
 
 ### Source Reference
 
-- Spec Sections 3.7, 7.3, 7.4
+- Spec Sections 3.7, 7.3, 7.4, 8
 
 ### Classification
 
@@ -918,6 +932,9 @@ packet without conflating local, branch, main, and tag evidence.
 - Run the relevant suite under collapse 2.1.7 and 2.1.8 without changing the
   dependency floor.
 - Confirm schemas, identity formats, and v0.2.0.0 fixture reopen are unchanged.
+- Confirm persisted and public telemetry names are unchanged and that no
+  schema column, hash input, public telemetry API, or durable lane name was
+  added for this cycle.
 - Confirm every Section 4 matrix is represented by durable tests or a named
   closeout artifact and every correctness or parity stop was independently
   reviewed.
@@ -930,6 +947,8 @@ packet without conflating local, branch, main, and tag evidence.
 ### Acceptance Criteria
 
 - Release gates 1 through 10 hold; no benchmark number waives gates 1 to 6.
+- Telemetry names are unchanged and none of the four prohibited additions
+  exists.
 - Ticket Markdown, YAML, batch plan, spec, indexes, and closeout agree.
 - Branch is ready for remote branch CI; main and tag CI remain later evidence.
 
@@ -938,6 +957,7 @@ packet without conflating local, branch, main, and tag evidence.
 - Release CI playbook
 - Full local suite, build, and check
 - Dual collapse-version suite
+- Telemetry-name and prohibited-addition check
 - Documentation renders and anchor check
 - Git status and generated-artifact review
 

@@ -181,7 +181,7 @@ tickets:
       scope: "setwise-bypass"
     tests:
       - "Setwise mutation tests"
-      - "Seal tests with the pairwise validator absent"
+      - "Targeted seal fixtures and the structural pairwise-absence check"
       - "Independent review stop"
 
   - id: "LDG-2731"
@@ -189,7 +189,7 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2719"]
+    dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730"]
     classification:
       type: "benchmark"
       surface: "peer-benchmark"
@@ -218,7 +218,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730"]
+    dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730", "LDG-2732"]
     classification:
       type: "benchmark"
       surface: "availability-closeout"
@@ -232,7 +232,7 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2726", "LDG-2727", "LDG-2731"]
+    dependencies: ["LDG-2726", "LDG-2727", "LDG-2731", "LDG-2732"]
     classification:
       type: "benchmark"
       surface: "peer-benchmark"
@@ -240,6 +240,7 @@ tickets:
     tests:
       - "Peer benchmark record run"
       - "Parity and divergence review"
+      - "Peer README and tracked-report field check"
 
   - id: "LDG-2735"
     title: "v0.2.0.1 release gate"
@@ -271,5 +272,6 @@ tickets:
       - "Release CI playbook"
       - "Full local suite, build, and check"
       - "Dual collapse-version suite"
+      - "Telemetry-name and prohibited-addition check"
       - "Documentation renders and anchor check"
       - "Git status and generated-artifact review"
