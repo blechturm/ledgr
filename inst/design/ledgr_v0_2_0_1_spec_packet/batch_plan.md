@@ -1,6 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batch 0 complete after maintainer acceptance. Batches 1-8 are pending.
+Status: Batch 0 complete after maintainer acceptance. Batch 1 implementation
+is complete and awaiting independent review. Batches 2-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -88,7 +89,7 @@ explicitly waived for this planning-only batch.
 
 ## Batch 1 - Witnesses And Test-Only References
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -113,6 +114,8 @@ Exit criteria:
 
 - ported tests pass against the baseline under both arms; checker results are
   recorded.
+
+Implementation evidence: `batch1-baseline-evidence.md`.
 
 ## Batch 2 - Prepared Provider
 

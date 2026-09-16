@@ -43,6 +43,8 @@ script_path <- local({
 })
 spike_dir <- dirname(script_path)
 repo_root <- normalizePath(file.path(spike_dir, "..", "..", ".."), winslash = "/")
+profile_home <- Sys.getenv("USERPROFILE")
+if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
 arg_value <- function(flag, default) { i <- match(flag, args); if (is.na(i) || i == length(args)) default else args[[i + 1L]] }
 evidence_dir <- normalizePath(arg_value("--evidence", file.path(spike_dir, "evidence")), winslash = "/", mustWork = FALSE)
 
@@ -458,7 +460,7 @@ if (length(args) >= 1L && identical(args[[1L]], "--child")) {
   options(warn = 1)
   pkgload::load_all(repo_root, quiet = TRUE, export_all = TRUE)
   cat("spike_runner", mode, "\n")
-  cat("HEAD:", system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE), "\n")
+  cat("HEAD:", system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE), "\n")
   cat("R:", R.version.string, " collapse:", as.character(utils::packageVersion("collapse")), " duckdb:", as.character(utils::packageVersion("duckdb")), "\n")
   fixture_df <- do.call(rbind, lapply(names(FIXTURES), function(nm) { f <- FIXTURES[[nm]]
     data.frame(fixture = nm, n_instruments = f$n_instruments, n_members = f$n_members, n_sessions = f$n_sessions, n_lists = f$n_lists,

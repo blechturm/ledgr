@@ -40,6 +40,8 @@ script_path <- local({
 })
 spike_dir <- dirname(script_path)
 repo_root <- normalizePath(file.path(spike_dir, "..", "..", ".."), winslash = "/")
+profile_home <- Sys.getenv("USERPROFILE")
+if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
 arg_value <- function(flag, default) { i <- match(flag, args); if (is.na(i) || i == length(args)) default else args[[i + 1L]] }
 evidence_dir <- normalizePath(arg_value("--evidence", file.path(spike_dir, "evidence")), winslash = "/", mustWork = FALSE)
 `%||%` <- function(a, b) if (is.null(a)) b else a
@@ -803,7 +805,7 @@ write_fixture_csv <- function(evidence) {
   fx$envelope <- sprintf("fold_wall_s<=%d peak_ws_mib<=%d eventful_pass_s<=%d; current-arm stop %d s / %d MiB", ENVELOPE$fold_wall_s, ENVELOPE$peak_ws_mib,
                          ENVELOPE$eventful_pass_s, WALL_STOP_S, WS_STOP_MIB)
   utils::write.csv(fx, file.path(evidence, "fixture.csv"), row.names = FALSE)
-  env <- environment_row(); env$head <- system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE)
+  env <- environment_row(); env$head <- system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE)
   utils::write.csv(env, file.path(evidence, "environment.csv"), row.names = FALSE)
   print(fx[, c("fixture", "n_instruments", "n_sessions", "counts")], row.names = FALSE)
 }
@@ -823,7 +825,7 @@ if (length(args) >= 1L && startsWith(args[[1L]], "--child")) {
   dir.create(evidence_dir, recursive = TRUE, showWarnings = FALSE)
   load_package(); set_arm("current"); install_arm_observer()
   cat("spike_runner", mode, "\n")
-  cat("HEAD:", system2("git", c("-C", shQuote(repo_root), "rev-parse", "HEAD"), stdout = TRUE), "\n")
+  cat("HEAD:", system2("git", c("-C", repo_root, "rev-parse", "HEAD"), stdout = TRUE), "\n")
   cat("R:", R.version.string, " collapse:", as.character(utils::packageVersion("collapse")), " duckdb:", as.character(utils::packageVersion("duckdb")), "\n")
   write_fixture_csv(evidence_dir)
   if (mode %in% c("parity", "all")) parity_phase(evidence_dir)

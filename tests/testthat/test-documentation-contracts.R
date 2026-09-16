@@ -2978,12 +2978,12 @@ testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
   )
 })
 
-testthat::test_that("v0.2.0.1 packet cut is discoverable and does not claim implementation", {
+testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   root <- testthat::test_path("..", "..")
   packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_1_spec_packet")
   paths <- file.path(packet, c(
     "README.md", "v0_2_0_1_spec.md", "v0_2_0_1_tickets.md",
-    "tickets.yml", "batch_plan.md"
+    "tickets.yml", "batch_plan.md", "batch1-baseline-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -2991,7 +2991,9 @@ testthat::test_that("v0.2.0.1 packet cut is discoverable and does not claim impl
   )
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
-  names(docs) <- c("readme", "spec", "tickets", "yaml", "batches")
+  names(docs) <- c(
+    "readme", "spec", "tickets", "yaml", "batches", "batch1_evidence"
+  )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
   testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
@@ -3009,23 +3011,41 @@ testthat::test_that("v0.2.0.1 packet cut is discoverable and does not claim impl
   yaml_ids <- sub("^  - id: \"(LDG-[0-9]+)\"$", "\\1", grep("^  - id: \"LDG-", yaml_lines, value = TRUE))
   yaml_statuses <- sub("^    status: \"([a-z_]+)\"$", "\\1", grep("^    status: \"", yaml_lines, value = TRUE))
   testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
-  testthat::expect_identical(yaml_statuses, c("complete_after_review", rep("pending", 16L)))
+  testthat::expect_identical(
+    yaml_statuses,
+    c("complete_after_review", rep("review_pending", 2L), rep("pending", 14L))
+  )
   ticket_lines <- readLines(paths[[3L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
-  testthat::expect_identical(md_statuses, c("Complete After Review", rep("Pending", 16L)))
+  testthat::expect_identical(
+    md_statuses,
+    c("Complete After Review", rep("Review Pending", 2L), rep("Pending", 14L))
+  )
   batch_lines <- readLines(paths[[5L]], warn = FALSE)
   batch_statuses <- sub(
     "^Status: ",
     "",
-    grep("^Status: (Complete After Review|Pending)\\.$", batch_lines, value = TRUE)
+    grep(
+      "^Status: (Complete After Review|Review Pending|Pending)\\.$",
+      batch_lines,
+      value = TRUE
+    )
   )
-  testthat::expect_identical(batch_statuses, c("Complete After Review.", rep("Pending.", 8L)))
+  testthat::expect_identical(
+    batch_statuses,
+    c("Complete After Review.", "Review Pending.", rep("Pending.", 7L))
+  )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 6 - Seal Validators", fixed = TRUE)
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
+  testthat::expect_match(
+    docs$batch1_evidence,
+    "prepared provider | `dev/spikes/availability-provider-preparation/evidence/` | full rerun passed 54/54 checks",
+    fixed = TRUE
+  )
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")

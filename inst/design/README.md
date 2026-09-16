@@ -10,8 +10,8 @@ and maintainer decisions are accepted, the
 [v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
 2026-09-16 after two independent reviews, and tickets LDG-2719 through
 LDG-2735 are cut. Batch 0 is complete after maintainer acceptance and Batch 1
-is pending. The refreshed spot-crypto probe follows as a separate v0.2.0.x
-planning cycle.
+is implemented pending independent review. The refreshed spot-crypto probe
+follows as a separate v0.2.0.x planning cycle.
 **Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
@@ -218,7 +218,8 @@ availability hot-path representations behind the shared fold, replaces the
 quadratic seal-time conflict validators through a separately gated cold-path
 workstream, repairs resumed-run equity finalization, and closes with separated
 cold, warm, and peer benchmark records. Tickets are cut; Batch 0 is complete
-after maintainer acceptance and Batch 1 is pending.
+after maintainer acceptance and Batch 1 is implemented pending independent
+review.
 
 - Spec: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`.
 - Independent spec review history is retained in Git; the accepted spec folds
@@ -226,6 +227,8 @@ after maintainer acceptance and Batch 1 is pending.
 - Tickets: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_2_0_1_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_2_0_1_spec_packet/batch_plan.md`.
+- Batch 1 baseline evidence:
+  `ledgr_v0_2_0_1_spec_packet/batch1-baseline-evidence.md`.
 - Primary synthesis and decisions:
   `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md` and
   `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md`.

@@ -63,7 +63,11 @@ first_diff <- function(a, b) {
   if (length(i)) sprintf("first differing line %d", i[[1L]]) else "differs only in line endings or trailing bytes"
 }
 git_lines <- function(...) {
-  out <- suppressWarnings(system2("git", c("-C", shQuote(repo_root), ...), stdout = TRUE, stderr = FALSE))
+  old_home <- Sys.getenv("HOME")
+  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
+  profile_home <- Sys.getenv("USERPROFILE")
+  if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
+  out <- suppressWarnings(system2("git", c("-C", repo_root, ...), stdout = TRUE, stderr = FALSE))
   status <- attr(out, "status")
   if (!is.null(status) && status != 0L) { note(FALSE, sprintf("git %s failed with status %d", paste(c(...), collapse = " "), status)); finish() }
   as.character(out)
@@ -320,11 +324,19 @@ note(length(unexpected_tracked) == 0L, sprintf("scope: tracked package changes (
      if (length(unexpected_tracked)) paste0(" (unexpected: ", paste(unexpected_tracked, collapse = ", "), ")") else ""))
 note(length(unexpected_untracked) == 0L, sprintf("scope: untracked package files are only the prepared provider, this cycle's RFC artifacts, and pre-existing untracked design pages%s",
      if (length(unexpected_untracked)) paste0(" (unexpected: ", paste(unexpected_untracked, collapse = ", "), ")") else ""))
-note(all(seam_modified %in% tracked_path[tracked_status == "M"]), "scope: seam present (diagnostic writer and fold engine modified)")
-stat <- git_lines("diff", "--numstat", "--no-renames", "HEAD", "--", seam_modified)
+tracked_seams <- git_lines("ls-files", "--", seam_modified)
+note(
+  all(seam_modified %in% tracked_seams) &&
+    all(file.exists(file.path(repo_root, seam_modified))),
+  "scope: reviewed diagnostic-block seam is present in the committed baseline"
+)
+stat <- git_lines(
+  "diff", "--numstat", "--no-renames", "f0b847d^", "f0b847d", "--",
+  seam_modified
+)
 nums <- do.call(rbind, lapply(strsplit(stat, "\t"), function(x) as.integer(x[1:2])))
 added <- sum(nums[, 1L]); removed <- sum(nums[, 2L])
-note(nrow(nums) == 2L && !anyNA(nums) && added <= 320L && removed <= 60L, sprintf("scope: seam diff is small (+%d/-%d lines over the two files)", added, removed))
+note(nrow(nums) == 2L && !anyNA(nums) && added <= 320L && removed <= 60L, sprintf("scope: recorded seam diff was small (+%d/-%d lines over the two files)", added, removed))
 harness_lines <- sum(vapply(c(runner, script_path), function(f) length(readLines(f, warn = FALSE)), integer(1))) + added
 note(harness_lines <= 1500L, sprintf("scope: harness and seam within budget (%d R lines: runner, checker, seam additions)", harness_lines))
 probe_files <- c("probe.R", "probe_findings.md", "probe_measurements.csv")

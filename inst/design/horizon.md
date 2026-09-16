@@ -32,8 +32,8 @@ accepted on 2026-09-16 and tickets LDG-2719 through LDG-2735 are cut for
 availability hot- and cold-path productionization, the seal-validator
 correction, the resumed-run equity-prefix repair, and separated benchmark
 closeouts. Batch 0 is complete after maintainer acceptance and Batch 1 is
-pending. Spot-crypto planning follows that release as a separate v0.2.0.x
-cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
+implemented pending independent review. Spot-crypto planning follows that
+release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
 contracts, or an accepted RFC promotes them.
 
 The completed packet consumed only verified API-golden-path and stale-example

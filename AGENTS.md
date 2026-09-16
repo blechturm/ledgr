@@ -72,8 +72,9 @@ active v0.2.0.1 packet):
   correction, the resumed-run equity-prefix repair, and separated benchmark
   closeouts. Spec, tickets LDG-2719 through LDG-2735, YAML, and batch plan live
   in `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
-  maintainer acceptance and Batch 1 is pending. Old runtime paths ship in no
-  form, `ledgr_facts_resolve()` stays independent, and no public performance
+  maintainer acceptance; Batch 1 is implemented and awaiting independent
+  review. Old runtime paths ship in no form, `ledgr_facts_resolve()` stays
+  independent, and no public performance
   claim is authorized.
 - The refreshed spot-crypto readiness probe follows v0.2.0.1 as a separate
   v0.2.0.x planning cycle. Do not draft its Charter or change package code

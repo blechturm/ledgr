@@ -1,0 +1,2 @@
+"run_id","intended_start_utc","intended_end_utc","achieved_start_utc","achieved_end_utc","intended_terminal_status","stop_reason","affected_exposure","affected_exposure_ts_utc","affected_exposure_basis","last_fully_valued_ts_utc","last_executed_ts_utc","complete_performance"
+"availability-v201-direct","2021-01-04T21:00:00Z","2021-01-15T21:00:00Z","2021-01-04T21:00:00Z","2021-01-12T21:00:00Z","INCOMPLETE","terminal_settlement_unsupported","1696","2021-01-13T21:00:00Z","last_accepted_close_gross","2021-01-12T21:00:00Z","2021-01-13T14:30:00Z","FALSE"

@@ -153,7 +153,7 @@ scope: packet-alignment
 Priority: P0
 Effort: L
 Dependencies: LDG-2719
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -207,7 +207,7 @@ scope: spike-witness-port
 Priority: P0
 Effort: M
 Dependencies: LDG-2719
-Status: Pending
+Status: Review Pending
 
 ### Description
 

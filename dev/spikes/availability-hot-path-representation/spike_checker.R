@@ -65,7 +65,11 @@ first_diff_line <- function(a, b) {
   which(is.na(la) | is.na(lb) | la != lb)[[1L]]
 }
 git_lines <- function(...) {
-  cmd <- c("-C", shQuote(repo_root), ...)
+  old_home <- Sys.getenv("HOME")
+  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
+  profile_home <- Sys.getenv("USERPROFILE")
+  if (nzchar(profile_home)) Sys.setenv(HOME = profile_home)
+  cmd <- c("-C", repo_root, ...)
   out <- suppressWarnings(system2("git", cmd, stdout = TRUE, stderr = FALSE))
   status <- attr(out, "status")
   if (!is.null(status) && status != 0L) {
@@ -243,10 +247,15 @@ note(length(unexpected_tracked) == 0L, sprintf("scope: tracked package changes (
      if (length(unexpected_tracked)) paste0(" (unexpected: ", paste(unexpected_tracked, collapse = ", "), ")") else ""))
 note(length(unexpected_untracked) == 0L, sprintf("scope: untracked package files are only the seam and this cycle's RFC artifacts%s",
      if (length(unexpected_untracked)) paste0(" (unexpected: ", paste(unexpected_untracked, collapse = ", "), ")") else ""))
-seam_present <- any(tracked_path == seam_modified & tracked_status == "M") && seam_added %in% untracked && file.exists(file.path(repo_root, seam_added))
-note(seam_present, "scope: seam present (R/fold-engine.R modified, R/availability-diagnostic-writer.R added and untracked)")
-stat <- git_lines("diff", "--numstat", "--no-renames", "HEAD", "--", seam_modified)
+tracked_seams <- git_lines("ls-files", "--", seam_modified, seam_added)
+seam_present <- all(c(seam_modified, seam_added) %in% tracked_seams) &&
+  all(file.exists(file.path(repo_root, c(seam_modified, seam_added))))
+note(seam_present, "scope: reviewed seam is present in the committed baseline")
+stat <- git_lines(
+  "diff", "--numstat", "--no-renames", "5edabae^", "5edabae", "--",
+  seam_modified
+)
 nums <- if (length(stat)) as.integer(strsplit(stat[[length(stat)]], "\t")[[1L]][1:2]) else c(NA_integer_, NA_integer_)
-note(!anyNA(nums) && all(nums <= 40L), sprintf("scope: R/fold-engine.R seam diff is small (+%s/-%s lines)", nums[[1L]], nums[[2L]]))
+note(!anyNA(nums) && all(nums <= 40L), sprintf("scope: recorded R/fold-engine.R seam diff was small (+%s/-%s lines)", nums[[1L]], nums[[2L]]))
 
 finish()
