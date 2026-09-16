@@ -140,9 +140,12 @@ availability_v201_build_provider <- function(arm, data, config) {
       history
     ))
   }
-  prior <- options(ledgr.internal.spike_availability_provider = arm)
-  on.exit(options(prior), add = TRUE)
-  ledgr:::ledgr_availability_provider_build(
+  builder <- if (identical(arm, "prepared")) {
+    ledgr:::ledgr_availability_provider_build_prepared
+  } else {
+    ledgr:::ledgr_availability_provider_build
+  }
+  builder(
     data,
     config,
     "witness-hash",
@@ -350,15 +353,6 @@ availability_v201_fold_strategy <- function(ctx, params) {
   target
 }
 
-availability_v201_set_fold_arm <- function(arm) {
-  invisible(options(
-    ledgr.internal.spike_availability_provider = "prepared",
-    ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_block =
-      if (identical(arm, "block")) "on" else "off"
-  ))
-}
-
 availability_v201_run_invocation <- function(experiment, run_id) {
   handle <- NULL
   error <- tryCatch(
@@ -393,8 +387,6 @@ availability_v201_run_case <- function(arm,
     ledgr_snapshot_close(snapshot)
     unlink(c(db, paste0(db, ".wal")), force = TRUE)
   }, add = TRUE)
-  arm_prior <- availability_v201_set_fold_arm(arm)
-  on.exit(options(arm_prior), add = TRUE)
   capacity_expr <- substitute(
     chunk_rows <- value,
     list(value = as.integer(chunk_rows))

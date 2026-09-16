@@ -56,15 +56,6 @@ ledgr_availability_applicable <- function(rows, cutoff) {
   effective & knowable & before_end
 }
 
-ledgr_availability_members_at <- function(data, universe_rule, fixed_ids, cutoff) {
-  if (is.null(universe_rule)) return(as.character(fixed_ids))
-  ledgr_membership_resolve_at(
-    data,
-    universe_id = as.character(universe_rule$universe_id),
-    cutoff = cutoff
-  )$members
-}
-
 ledgr_membership_resolve_at <- function(data,
                                         universe_id,
                                         cutoff,
@@ -184,55 +175,6 @@ ledgr_membership_resolve_at <- function(data,
   )
 }
 
-ledgr_availability_status_at <- function(rows, ids, cutoff) {
-  out <- stats::setNames(rep("active", length(ids)), ids)
-  if (nrow(rows) == 0L || length(ids) == 0L) return(out)
-  for (id in ids) {
-    current <- rows[rows$instrument_id == id, , drop = FALSE]
-    current <- current[ledgr_availability_applicable(current, cutoff), , drop = FALSE]
-    if (nrow(current) == 0L) {
-      out[[id]] <- "unknown"
-      next
-    }
-    superseded <- as.character(current$supersedes_fact_id)
-    superseded <- superseded[!is.na(superseded) & nzchar(superseded)]
-    current <- current[!current$fact_id %in% superseded, , drop = FALSE]
-    top <- max(as.integer(current$precedence))
-    values <- unique(as.character(current$status[current$precedence == top]))
-    out[[id]] <- if (length(values) == 1L) values else "conflicting"
-  }
-  out
-}
-
-ledgr_availability_lifetime_at <- function(rows, ids, cutoff) {
-  out <- stats::setNames(rep("unknown", length(ids)), ids)
-  if (nrow(rows) == 0L || length(ids) == 0L) return(out)
-  for (id in ids) {
-    current <- rows[rows$instrument_id == id, , drop = FALSE]
-    current <- current[ledgr_availability_applicable(current, cutoff), , drop = FALSE]
-    if (nrow(current) > 0L) {
-      current <- current[order(current$effective_from, current$knowledge_time), , drop = FALSE]
-      out[[id]] <- as.character(current$assertion[[nrow(current)]])
-    }
-  }
-  out
-}
-
-ledgr_availability_terminal_event_at <- function(rows, ids, cutoff) {
-  out <- stats::setNames(rep("", length(ids)), ids)
-  if (nrow(rows) == 0L || length(ids) == 0L) return(out)
-  for (id in ids) {
-    current <- rows[rows$instrument_id == id, , drop = FALSE]
-    current <- current[ledgr_availability_applicable(current, cutoff), , drop = FALSE]
-    if (nrow(current) > 0L) {
-      current <- current[order(current$effective_from, current$knowledge_time), , drop = FALSE]
-      value <- as.character(current$terminal_event[[nrow(current)]])
-      if (!is.na(value) && nzchar(value)) out[[id]] <- value
-    }
-  }
-  out
-}
-
 ledgr_availability_restrictions <- function(status, lifetime, status_declared, lifetime_declared) {
   ids <- names(status)
   restricted <- stats::setNames(rep(FALSE, length(ids)), ids)
@@ -300,115 +242,8 @@ ledgr_availability_provider_portable <- function(data,
   ledgr_availability_provider_build(data, config, snapshot_hash, history)
 }
 
-# Temporary two-arm seam retained until the Batch 4 parity gate. Ordinary
-# package execution selects the reviewed prepared provider without requiring
-# a caller or worker option. Tests and the retained spike checker may still
-# select the v0.2.0.0 reference arm explicitly before that arm is retired.
-# The stamp is outside identity() and every public view value.
 ledgr_availability_provider_build <- function(data, config, snapshot_hash, history) {
-  arm <- getOption("ledgr.internal.spike_availability_provider", "prepared")
-  provider <- if (identical(arm, "current")) {
-    ledgr_availability_provider_build_current(data, config, snapshot_hash, history)
-  } else {
-    arm <- "prepared"
-    ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
-  }
-  attr(provider, "spike_arm") <- arm
-  provider
-}
-
-ledgr_availability_provider_build_current <- function(data, config, snapshot_hash, history) {
-  family_order <- c("membership", "sessions", "trading_status", "lifetime")
-  families <- family_order[family_order %in% as.character(data$families$family)]
-  universe_rule <- config$availability$universe_rule
-  if (!is.null(universe_rule)) class(universe_rule) <- c("ledgr_universe_rule", "list")
-
-  facts <- function(cutoff, ids = config$universe$instrument_ids) {
-    cutoff <- as.POSIXct(cutoff, tz = "UTC")
-    status <- ledgr_availability_status_at(data$status, ids, cutoff)
-    lifetime <- ledgr_availability_lifetime_at(data$lifetime, ids, cutoff)
-    list(
-      status = status,
-      lifetime = lifetime,
-      terminal_event = ledgr_availability_terminal_event_at(data$lifetime, ids, cutoff),
-      cutoff = cutoff
-    )
-  }
-
-  decision_view <- function(cutoff, positions) {
-    cutoff <- as.POSIXct(cutoff, tz = "UTC")
-    members <- ledgr_availability_members_at(
-      data,
-      universe_rule,
-      config$universe$instrument_ids,
-      cutoff
-    )
-    held <- names(positions)[as.numeric(positions) != 0]
-    held_nonmembers <- ledgr_availability_stable_ids(setdiff(held, members))
-    axis <- unique(c(members, held_nonmembers))
-    resolved <- facts(cutoff, axis)
-    restrictions <- ledgr_availability_restrictions(
-      resolved$status,
-      resolved$lifetime,
-      "trading_status" %in% families,
-      "lifetime" %in% families
-    )
-    list(
-      axis = axis,
-      members = members,
-      member = stats::setNames(axis %in% members, axis),
-      held = stats::setNames(axis %in% held, axis),
-      target_restricted = restrictions$restricted,
-      target_restriction_reason = restrictions$reason,
-      target_restriction_reasons = restrictions$reasons,
-      status = resolved$status,
-      lifetime = resolved$lifetime,
-      terminal_event = resolved$terminal_event
-    )
-  }
-
-  execution_view <- function(cutoff, ids) {
-    resolved <- facts(cutoff, ids)
-    members <- ledgr_availability_members_at(
-      data,
-      universe_rule,
-      config$universe$instrument_ids,
-      as.POSIXct(cutoff, tz = "UTC")
-    )
-    restrictions <- ledgr_availability_restrictions(
-      resolved$status,
-      resolved$lifetime,
-      "trading_status" %in% families,
-      "lifetime" %in% families
-    )
-    c(
-      resolved,
-      list(member = stats::setNames(ids %in% members, ids)),
-      restrictions
-    )
-  }
-
-  identity <- function() {
-    list(
-      provider_version = ledgr_availability_provider_version(),
-      execution_timing_version = config$availability$execution_timing_version %||% NULL,
-      snapshot_hash = snapshot_hash,
-      declared_families = families
-    )
-  }
-
-  structure(
-    list(
-      facts = facts,
-      decision_view = decision_view,
-      execution_view = execution_view,
-      history = history,
-      identity = identity,
-      sessions = data$sessions,
-      valuation_policy = config$availability$valuation_policy
-    ),
-    class = c("ledgr_availability_provider", "list")
-  )
+  ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
 }
 
 ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {

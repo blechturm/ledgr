@@ -1,118 +1,17 @@
-# Production diagnostic accumulation for availability-aware folds. The default
-# path constructs one typed block per pulse and appends it to bounded typed
-# column buffers. The durable output handler still owns the transaction and
-# assigns diagnostic_seq at write time. Chunk capacity is an unexported
-# constructor seam used by tests; ordinary folds always use 4096 rows.
-#
-# The exact "rows" and columnar-block-"off" selections retain the two reviewed
-# reference arms until Batch 4 records parity and removes them. Malformed or
-# absent selections take the production path. The mode stamp remains outside
-# persisted values for that retirement gate.
+# Production diagnostic accumulation for availability-aware folds constructs
+# one typed block per pulse and appends it to bounded typed column buffers. The
+# durable output handler still owns the transaction and assigns diagnostic_seq
+# at write time. Chunk capacity is an unexported constructor seam used by
+# tests; ordinary folds always use 4096 rows.
 
 ledgr_fold_diagnostic_writer <- function(run_id,
                                          output_handler,
                                          pulses_posix,
                                          chunk_rows = 4096L) {
-  mode <- getOption("ledgr.internal.spike_diagnostic_writer", "columnar")
-  block <- !identical(
-    getOption("ledgr.internal.spike_diagnostic_block", "on"),
-    "off"
-  )
-  writer <- if (identical(mode, "rows")) {
-    ledgr_row_list_diagnostic_writer(run_id, pulses_posix)
-  } else {
-    ledgr_columnar_diagnostic_writer(
-      run_id,
-      output_handler,
-      chunk_rows = chunk_rows,
-      block = block
-    )
-  }
-  attr(writer, "spike_diagnostic_mode") <- if (isTRUE(writer$block)) "block" else writer$mode
-  writer
-}
-
-# Pre-promotion reference behaviour, retained temporarily for Batch 4 parity.
-ledgr_row_list_diagnostic_writer <- function(run_id, pulses_posix) {
-  diagnostic_rows <- list()
-  append <- function(row, diagnostic_seq) {
-    row$diagnostic_seq <- diagnostic_seq
-    diagnostic_rows[[diagnostic_seq]] <<- row
-    invisible(NULL)
-  }
-  drain <- function() {
-    if (length(diagnostic_rows) == 0L) {
-      return(ledgr_availability_diagnostic_row(
-        run_id = run_id,
-        diagnostic_seq = 1L,
-        ts_utc = pulses_posix[[1L]],
-        stage = "decision",
-        outcome = "observed",
-        reason_code = "no_diagnostics"
-      )[0, , drop = FALSE])
-    }
-    do.call(rbind, diagnostic_rows)
-  }
-  release <- function() {
-    diagnostic_rows <<- list()
-    invisible(NULL)
-  }
-  list(
-    mode = "rows",
-    row = ledgr_availability_diagnostic_row,
-    append = append,
-    drain = drain,
-    release = release
-  )
-}
-
-# Same signature, defaults, and coercions as ledgr_availability_diagnostic_row(),
-# returning a typed list of scalars instead of a one-row data frame.
-ledgr_availability_diagnostic_fields <- function(run_id,
-                                                 diagnostic_seq,
-                                                 ts_utc,
-                                                 instrument_id = "",
-                                                 stage,
-                                                 outcome,
-                                                 reason_code = "",
-                                                 reasons = reason_code,
-                                                 target = NA_real_,
-                                                 quantity = NA_real_,
-                                                 price = NA_real_,
-                                                 mark_source = "",
-                                                 mark_age = NA_integer_,
-                                                 decision_ts_utc = ts_utc,
-                                                 execution_ts_utc = as.POSIXct(NA, tz = "UTC"),
-                                                 event_seq = NA_integer_,
-                                                 target_before_risk = NA_real_,
-                                                 target_after_risk = NA_real_,
-                                                 position_before = NA_real_,
-                                                 position_after = NA_real_,
-                                                 feature_identity_json = NA_character_,
-                                                 detail_json = "{}") {
-  list(
-    run_id = as.character(run_id),
-    diagnostic_seq = as.integer(diagnostic_seq),
-    ts_utc = as.POSIXct(ts_utc, tz = "UTC"),
-    instrument_id = as.character(instrument_id),
-    stage = as.character(stage),
-    outcome = as.character(outcome),
-    reason_code = as.character(reason_code),
-    reasons = as.character(reasons),
-    target = as.numeric(target),
-    quantity = as.numeric(quantity),
-    price = as.numeric(price),
-    mark_source = as.character(mark_source),
-    mark_age = as.integer(mark_age),
-    decision_ts_utc = as.POSIXct(decision_ts_utc, tz = "UTC"),
-    execution_ts_utc = as.POSIXct(execution_ts_utc, tz = "UTC"),
-    event_seq = as.integer(event_seq),
-    target_before_risk = as.numeric(target_before_risk),
-    target_after_risk = as.numeric(target_after_risk),
-    position_before = as.numeric(position_before),
-    position_after = as.numeric(position_after),
-    feature_identity_json = as.character(feature_identity_json),
-    detail_json = as.character(detail_json)
+  ledgr_columnar_diagnostic_writer(
+    run_id,
+    output_handler,
+    chunk_rows = chunk_rows
   )
 }
 
@@ -135,7 +34,7 @@ ledgr_availability_diagnostic_columns <- function(n) {
 # Build one typed diagnostic block per pulse. `segments`
 # is a list of segment lists in emission order; each carries `n` (its row
 # count) and, for any subset of the field names, a vector of length n or 1.
-# Absent fields take the defaults of ledgr_availability_diagnostic_fields():
+# Absent fields take the persisted diagnostic-schema defaults:
 # `reasons` defaults to the segment's reason_code and `decision_ts_utc` to the
 # pulse timestamp. Every row shares `ts_utc`; diagnostic_seq starts at
 # `first_seq`. The result is a list of typed, unnamed vectors in the column
@@ -195,14 +94,13 @@ ledgr_availability_diagnostic_block <- function(run_id, ts_utc, first_seq, segme
 # stable preallocated vectors. Numeric, integer, and POSIXct writes use
 # collapse::setv(); character writes use base replacement, the same split the
 # production durable handler adopted in v0.1.8.9 (R/backtest-runner.R:381-394).
-# With block = TRUE (diagnostic block spike) the writer also accepts one typed
-# block per pulse: append_block() fills the same bounded chunks, splitting a
+# The writer accepts one typed block per pulse: append_block() fills bounded
+# chunks, splitting a
 # block across a chunk boundary, with base block replacement for character
 # columns and collapse::setv() vector writes for the others.
 ledgr_columnar_diagnostic_writer <- function(run_id,
                                              output_handler,
-                                             chunk_rows = 4096L,
-                                             block = TRUE) {
+                                             chunk_rows = 4096L) {
   if (
     length(chunk_rows) != 1L ||
       !is.numeric(chunk_rows) ||
@@ -227,16 +125,6 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     invisible(NULL)
   }
   reset()
-  put <- function(nm, i, value) {
-    col <- get(nm, envir = cols)
-    if (is.character(col)) {
-      col[[i]] <- value
-      assign(nm, col, envir = cols)
-      return(invisible(NULL))
-    }
-    collapse::setv(col, i, value, vind1 = TRUE)
-    invisible(NULL)
-  }
   build <- function(k) {
     out <- lapply(column_names, function(nm) {
       col <- get(nm, envir = cols)
@@ -249,14 +137,6 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     if (n == 0L) return(invisible(NULL))
     output_handler$write_run_diagnostics(build(n))
     reset()
-    invisible(NULL)
-  }
-  append <- function(fields, diagnostic_seq) {
-    if (n >= chunk_rows) flush()
-    i <- n + 1L
-    fields$diagnostic_seq <- as.integer(diagnostic_seq)
-    for (nm in column_names) put(nm, i, fields[[nm]])
-    n <<- i
     invisible(NULL)
   }
   append_block <- function(fields) {
@@ -290,11 +170,7 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     build(n)
   }
   list(
-    mode = "columnar",
-    block = isTRUE(block),
-    row = ledgr_availability_diagnostic_fields,
-    append = append,
-    append_block = if (isTRUE(block)) append_block else NULL,
+    append_block = append_block,
     drain = drain,
     release = reset
   )

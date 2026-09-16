@@ -95,10 +95,9 @@ testthat::test_that("pairwise validators are retained exactly for later gates", 
   )
 })
 
-testthat::test_that("row-list writer reference preserves its production shape", {
+testthat::test_that("row-list writer reference remains test-only", {
   pulses <- availability_v201_at(1:2)
   reference <- availability_reference_row_list_writer("witness", pulses)
-  production <- ledgr:::ledgr_row_list_diagnostic_writer("witness", pulses)
   row <- ledgr:::ledgr_availability_diagnostic_row(
     run_id = "witness",
     diagnostic_seq = 1L,
@@ -108,16 +107,13 @@ testthat::test_that("row-list writer reference preserves its production shape", 
     reason_code = "decision_recorded"
   )
   reference$append(row, 1L)
-  production$append(row, 1L)
-  testthat::expect_identical(reference$drain(), production$drain())
+  testthat::expect_identical(reference$drain(), row)
 
   empty_reference <- availability_reference_row_list_writer("witness", pulses)
-  empty_production <- ledgr:::ledgr_row_list_diagnostic_writer(
-    "witness",
-    pulses
-  )
-  testthat::expect_identical(
-    empty_reference$drain(),
-    empty_production$drain()
-  )
+  testthat::expect_equal(nrow(empty_reference$drain()), 0L)
+  testthat::expect_false(exists(
+    "ledgr_row_list_diagnostic_writer",
+    envir = asNamespace("ledgr"),
+    inherits = FALSE
+  ))
 })

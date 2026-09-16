@@ -91,13 +91,6 @@ testthat::test_that("history is retrospective while cutoff resolution is causal"
     "2024-01-15T00:00:00Z"
   )
   testthat::expect_identical(default$rows$instrument_id, "AAA")
-  runtime <- ledgr:::ledgr_availability_members_at(
-    ledgr:::ledgr_facts_inspection_data(facts),
-    ledgr_universe_members("research"),
-    character(),
-    as.POSIXct("2024-01-15", tz = "UTC")
-  )
-  testthat::expect_identical(runtime, default$rows$instrument_id)
 })
 
 testthat::test_that("complete sets distinguish omission from unknown", {

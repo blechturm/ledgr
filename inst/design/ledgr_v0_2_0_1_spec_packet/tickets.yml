@@ -98,7 +98,7 @@ tickets:
 
   - id: "LDG-2725"
     title: "Pre-retirement production parity and paired warm record"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2723", "LDG-2724"]
@@ -113,7 +113,7 @@ tickets:
 
   - id: "LDG-2726"
     title: "Retire old paths and activate the source guard"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2725"]

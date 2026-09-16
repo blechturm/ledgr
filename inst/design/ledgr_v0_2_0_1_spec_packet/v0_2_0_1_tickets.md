@@ -427,7 +427,7 @@ scope: writer-and-block
 Priority: P0
 Effort: M
 Dependencies: LDG-2723, LDG-2724
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -474,7 +474,7 @@ scope: production-parity-record
 Priority: P0
 Effort: M
 Dependencies: LDG-2725
-Status: Pending
+Status: Review Pending
 
 ### Description
 

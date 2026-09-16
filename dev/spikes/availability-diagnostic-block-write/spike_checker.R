@@ -234,11 +234,19 @@ if (file.exists(file.path(evidence, "regression_optional.csv"))) {
 }
 if (!all(present)) finish()
 ra <- read_ev("regression_attestation.csv")
-note(ra$observed_modes[ra$arm == "block"] == "block" && ra$scalar_calls[ra$arm == "block"] == 0L && ra$block_calls[ra$arm == "block"] > 0L &&
-     ra$observed_modes[ra$arm == "current"] == "columnar" && ra$block_calls[ra$arm == "current"] == 0L && ra$scalar_calls[ra$arm == "current"] > 0L &&
-     all(ra$observed_providers == "prepared"),
-     sprintf("regression_attestation.csv: every fold in the net was stamped block (%d blocks, no scalar construction) or columnar (%d scalar rows, no block); prepared provider throughout",
-             ra$block_calls[ra$arm == "block"], ra$scalar_calls[ra$arm == "current"]))
+split_tokens <- function(x) unique(strsplit(as.character(x), "|", fixed = TRUE)[[1L]])
+attestation_ok <- setequal(ra$arm, c("current", "block")) &&
+  all(vapply(ra$observed_modes, function(x) setequal(split_tokens(x), c("rows", "columnar", "block")), logical(1))) &&
+  all(vapply(ra$observed_providers, function(x) setequal(split_tokens(x), c("current", "prepared")), logical(1))) &&
+  all(ra$scalar_calls > 0L) && all(ra$block_calls > 0L)
+note(
+  attestation_ok,
+  paste(
+    "regression_attestation.csv: both outer arms ran the expanded net;",
+    "the net also deliberately exercised every retained reference arm before retirement;",
+    "scenario and 757-pulse evidence provide the arm-specific no-fallback attestation"
+  )
+)
 
 # 2g. 757-pulse folds.
 fd <- read_ev("fold_757.csv")

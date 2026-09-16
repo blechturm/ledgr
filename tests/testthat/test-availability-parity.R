@@ -527,9 +527,6 @@ testthat::test_that("availability completion propagates through sweep persistenc
 testthat::test_that("parallel availability sweeps return the same compact terminal evidence", {
   testthat::skip_on_covr()
   testthat::skip_if_not_installed("mirai")
-  withr::local_options(list(
-    ledgr.internal.spike_availability_provider = NULL
-  ))
   snapshot <- availability_runtime_fixture(days = 4L, bar_days = c(1L, 2L, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(

@@ -12,14 +12,14 @@ diagnostic_production_handler <- function() {
   )
 }
 
-diagnostic_production_block <- function(n, first_seq = 1L) {
+diagnostic_production_block <- function(n, first_seq = 1L, id_offset = 0L) {
   ledgr:::ledgr_availability_diagnostic_block(
     run_id = "diagnostic-production",
     ts_utc = as.POSIXct("2020-01-02 21:00:00", tz = "UTC"),
     first_seq = first_seq,
     segments = list(list(
       n = n,
-      instrument_id = sprintf("I%02d", seq_len(n)),
+      instrument_id = sprintf("I%02d", id_offset + seq_len(n)),
       stage = "decision",
       outcome = "observed",
       reason_code = "member_asserted",
@@ -31,58 +31,17 @@ diagnostic_production_block <- function(n, first_seq = 1L) {
 
 testthat::test_that("the production diagnostic path defaults to one typed block", {
   sink <- diagnostic_production_handler()
-  withr::local_options(list(
-    ledgr.internal.spike_diagnostic_writer = NULL,
-    ledgr.internal.spike_diagnostic_block = NULL,
-    ledgr.internal.spike_diagnostic_chunk_rows = 1L
-  ))
   writer <- ledgr:::ledgr_fold_diagnostic_writer(
     "diagnostic-production",
     sink$handler,
     as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
   )
-  testthat::expect_identical(writer$mode, "columnar")
-  testthat::expect_true(writer$block)
-  testthat::expect_identical(
-    attr(writer, "spike_diagnostic_mode"),
-    "block"
-  )
+  testthat::expect_identical(names(writer), c("append_block", "drain", "release"))
 
   writer$append_block(diagnostic_production_block(2L))
   testthat::expect_length(sink$state$writes, 0L)
   testthat::expect_equal(nrow(writer$drain()), 2L)
 
-  options(
-    ledgr.internal.spike_diagnostic_writer = "malformed",
-    ledgr.internal.spike_diagnostic_block = "malformed"
-  )
-  fallback <- ledgr:::ledgr_fold_diagnostic_writer(
-    "diagnostic-production",
-    sink$handler,
-    as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
-  )
-  testthat::expect_identical(fallback$mode, "columnar")
-  testthat::expect_true(fallback$block)
-
-  options(ledgr.internal.spike_diagnostic_writer = "rows")
-  reference <- ledgr:::ledgr_fold_diagnostic_writer(
-    "diagnostic-production",
-    sink$handler,
-    as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
-  )
-  testthat::expect_identical(reference$mode, "rows")
-
-  options(
-    ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_block = "off"
-  )
-  scalar <- ledgr:::ledgr_fold_diagnostic_writer(
-    "diagnostic-production",
-    sink$handler,
-    as.POSIXct("2020-01-02 21:00:00", tz = "UTC")
-  )
-  testthat::expect_identical(scalar$mode, "columnar")
-  testthat::expect_false(scalar$block)
 })
 
 testthat::test_that("typed diagnostic blocks split across injected chunks", {
@@ -91,8 +50,7 @@ testthat::test_that("typed diagnostic blocks split across injected chunks", {
     writer <- ledgr:::ledgr_columnar_diagnostic_writer(
       "diagnostic-production",
       sink$handler,
-      chunk_rows = capacity,
-      block = TRUE
+      chunk_rows = capacity
     )
     block <- diagnostic_production_block(capacity + 3L)
     writer$append_block(block)
@@ -135,7 +93,7 @@ testthat::test_that("typed diagnostic blocks split across injected chunks", {
   }
 })
 
-testthat::test_that("a chunk remains available when its append fails", {
+testthat::test_that("a production block chunk remains available when its append fails", {
   state <- new.env(parent = emptyenv())
   state$fail <- TRUE
   state$writes <- list()
@@ -150,26 +108,14 @@ testthat::test_that("a chunk remains available when its append fails", {
   writer <- ledgr:::ledgr_columnar_diagnostic_writer(
     "diagnostic-production",
     handler,
-    chunk_rows = 2L,
-    block = FALSE
+    chunk_rows = 2L
   )
-  field <- function(instrument_id) {
-    ledgr:::ledgr_availability_diagnostic_fields(
-      run_id = "diagnostic-production",
-      diagnostic_seq = 0L,
-      ts_utc = as.POSIXct("2020-01-02 21:00:00", tz = "UTC"),
-      instrument_id = instrument_id,
-      stage = "decision",
-      outcome = "observed"
-    )
-  }
-  writer$append(field("I01"), 1L)
-  writer$append(field("I02"), 2L)
+  writer$append_block(diagnostic_production_block(2L))
   testthat::expect_error(
-    writer$append(field("I03"), 3L),
+    writer$append_block(diagnostic_production_block(1L, first_seq = 3L, id_offset = 2L)),
     "injected diagnostic append failure"
   )
-  writer$append(field("I03"), 3L)
+  writer$append_block(diagnostic_production_block(1L, first_seq = 3L, id_offset = 2L))
   tail <- writer$drain()
   testthat::expect_identical(writer$drain(), tail)
   writer$release()

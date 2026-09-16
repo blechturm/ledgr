@@ -19,11 +19,10 @@ availability_v201_membership_fixture <- function(days = 5L,
   )
 }
 
-availability_v201_inspection_case <- function(provider_arm,
-                                              interrupt_day = NULL) {
+availability_v201_inspection_case <- function(interrupt_day = NULL) {
   fixture <- availability_v201_fold_fixture()
   db <- tempfile(
-    paste0("availability_provider_", provider_arm, "_"),
+    "availability_provider_",
     fileext = ".duckdb"
   )
   snapshot <- ledgr_snapshot_from_df(
@@ -45,9 +44,6 @@ availability_v201_inspection_case <- function(provider_arm,
     )
   }
   withr::local_options(list(
-    ledgr.internal.spike_availability_provider = provider_arm,
-    ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_block = "on",
     ledgr.interrupt = FALSE,
     ledgr.v201.interrupt_at = interrupt_at,
     ledgr.v201.fail_at = "",
@@ -118,11 +114,6 @@ availability_v201_inspection_case <- function(provider_arm,
 }
 
 testthat::test_that("production consumers build one prepared provider at each boundary", {
-  withr::local_options(list(
-    ledgr.internal.spike_availability_provider = NULL,
-    ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_block = "on"
-  ))
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
   original <- ledgr:::ledgr_availability_provider_build_prepared
@@ -179,11 +170,6 @@ testthat::test_that("production consumers build one prepared provider at each bo
 })
 
 testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
-  withr::local_options(list(
-    ledgr.internal.spike_availability_provider = NULL,
-    ledgr.internal.spike_diagnostic_writer = "columnar",
-    ledgr.internal.spike_diagnostic_block = "on"
-  ))
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
   original <- ledgr:::ledgr_availability_provider_build_prepared
@@ -229,43 +215,26 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
   })
 })
 
-testthat::test_that("provider results and reopen surfaces preserve both reference arms", {
+testthat::test_that("provider results and reopen surfaces preserve production evidence", {
   for (interrupt_day in list(NULL, 6L)) {
-    current <- availability_v201_inspection_case("current", interrupt_day)
-    prepared <- availability_v201_inspection_case("prepared", interrupt_day)
-    testthat::expect_true(all(
-      availability_v201_compare_store(current$store, prepared$store)
-    ))
-    for (surface in c(
-      "active_availability",
-      "active_explain",
-      "reopened_availability",
-      "reopened_explain",
-      "reopen_error"
-    )) {
-      testthat::expect_identical(
-        prepared[[surface]],
-        current[[surface]],
-        info = paste(surface, interrupt_day %||% "direct")
-      )
-    }
+    production <- availability_v201_inspection_case(interrupt_day)
     if (is.null(interrupt_day)) {
-      testthat::expect_null(prepared$reopen_error)
+      testthat::expect_null(production$reopen_error)
       testthat::expect_identical(
-        prepared$active_availability,
-        prepared$reopened_availability
+        production$active_availability,
+        production$reopened_availability
       )
       testthat::expect_identical(
-        prepared$active_explain,
-        prepared$reopened_explain
+        production$active_explain,
+        production$reopened_explain
       )
     } else {
       testthat::expect_true(
         "ledgr_run_terminal_evidence_invalid" %in%
-          prepared$reopen_error$class
+          production$reopen_error$class
       )
       testthat::expect_match(
-        prepared$reopen_error$message,
+        production$reopen_error$message,
         "exact achieved equity prefix",
         fixed = TRUE
       )

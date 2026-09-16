@@ -15,38 +15,19 @@ availability_v201_run_scenarios <- function() {
     args <- availability_v201_scenarios[[scenario]]
     chunk_rows <- args$chunk_rows %||% 7L
     args$chunk_rows <- NULL
-    for (arm in c("current", "block")) {
-      key <- paste(scenario, arm, sep = "::")
-      out[[key]] <- do.call(
-        availability_v201_run_case,
-        c(list(arm = arm, scenario = scenario, chunk_rows = chunk_rows), args)
-      )
-    }
+    out[[scenario]] <- do.call(
+      availability_v201_run_case,
+      c(list(arm = "production", scenario = scenario, chunk_rows = chunk_rows), args)
+    )
   }
   out
 }
 
 testthat::test_that("ported fold witnesses preserve every persisted surface", {
-  option_names <- c(
-    "ledgr.internal.spike_availability_provider",
-    "ledgr.internal.spike_diagnostic_writer",
-    "ledgr.internal.spike_diagnostic_block"
-  )
-  options_before <- options()[option_names]
-  on.exit(options(options_before), add = TRUE)
   results <- availability_v201_run_scenarios()
 
-  for (scenario in names(availability_v201_scenarios)) {
-    current <- results[[paste(scenario, "current", sep = "::")]]$final
-    block <- results[[paste(scenario, "block", sep = "::")]]$final
-    testthat::expect_true(
-      all(availability_v201_compare_store(current, block)),
-      info = scenario
-    )
-  }
-
-  direct <- results[["direct::current"]]$final
-  direct_large <- results[["direct_chunk4096::current"]]$final
+  direct <- results[["direct"]]$final
+  direct_large <- results[["direct_chunk4096"]]$final
   testthat::expect_identical(
     availability_v201_strip_run_id(direct$diagnostics),
     availability_v201_strip_run_id(direct_large$diagnostics)
@@ -54,14 +35,13 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
 
   summaries <- do.call(rbind, lapply(
     names(results),
-    function(key) {
-      parts <- strsplit(key, "::", fixed = TRUE)[[1L]]
-      chunk_rows <- availability_v201_scenarios[[parts[[1L]]]]$chunk_rows %||%
+    function(scenario) {
+      chunk_rows <- availability_v201_scenarios[[scenario]]$chunk_rows %||%
         7L
       availability_v201_case_summary(
-        results[[key]],
-        parts[[1L]],
-        parts[[2L]],
+        results[[scenario]],
+        scenario,
+        "production",
         chunk_rows
       )
     }
@@ -78,6 +58,9 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
+  expected <- expected[expected$arm == "block", , drop = FALSE]
+  expected$arm <- "production"
+  rownames(expected) <- NULL
   availability_v201_expect_frozen(summaries, expected)
 
   perturbed <- expected
@@ -86,11 +69,10 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
     availability_v201_assert_frozen(summaries, perturbed),
     "frozen witness mismatch"
   )
-  testthat::expect_identical(options()[option_names], options_before)
 })
 
 testthat::test_that("direct persisted rows match the reviewed baseline", {
-  result <- availability_v201_run_case("current", "direct", 7L)$final
+  result <- availability_v201_run_case("production", "direct", 7L)$final
   fixture_dir <- testthat::test_path(
     "fixtures",
     "availability-v0-2-0-1"
@@ -162,19 +144,19 @@ testthat::test_that("run identity excludes exactly the three registered fields",
 
 testthat::test_that("ported failures roll back and resumes preserve prefixes", {
   exception <- availability_v201_run_case(
-    "current",
+    "production",
     "exception_rollback",
     7L,
     fail_day = 7L
   )
   nonmember <- availability_v201_run_case(
-    "current",
+    "production",
     "nonmember_increase_rollback",
     7L,
     increase_day = 6L
   )
   resumed <- availability_v201_run_case(
-    "current",
+    "production",
     "resume_exception",
     7L,
     interrupt_day = 5L,

@@ -316,20 +316,12 @@ ledgr_execute_fold <- function(execution, output_handler) {
     specified = FALSE
   )
   diagnostic_writer <- ledgr_fold_diagnostic_writer(run_id, output_handler, pulses_posix)
-  diag_row <- diagnostic_writer$row
   diagnostic_seq <- 0L
   equity_facts <- list()
   current_fold_ts <- as.POSIXct(NA, tz = "UTC")
   current_fold_stage <- "fold"
-  append_diagnostic <- function(row) {
-    diagnostic_seq <<- diagnostic_seq + 1L
-    diagnostic_writer$append(row, diagnostic_seq)
-    invisible(NULL)
-  }
-  # Diagnostic block spike (Charter v2): in block mode each pulse accumulates
-  # its diagnostic rows as typed segments in emission order and appends them
-  # as one block; the scalar per-row path below is unchanged otherwise.
-  block_mode <- isTRUE(diagnostic_writer$block) && is.function(diagnostic_writer$append_block)
+  # Each pulse accumulates typed diagnostic segments in emission order and
+  # appends one bounded block through the production writer.
   pulse_segments <- list()
   add_segment <- function(segment) {
     pulse_segments[[length(pulse_segments) + 1L]] <<- segment
@@ -426,49 +418,20 @@ ledgr_execute_fold <- function(execution, output_handler) {
             valuation
           )
           affected <<- c(affected_value, list(ts_utc = ts, specified = TRUE))
-          if (block_mode) {
-            add_segment(list(
-              n = length(stopped_ids), instrument_id = stopped_ids, stage = "valuation", outcome = "stopped",
-              reason_code = stop_reason,
-              reasons = ifelse(
-                identical(stop_reason, "valuation_horizon_exhausted") &
-                  as.character(availability_view$lifetime[stopped_ids]) %in% "known_inactive",
-                paste(stop_reason, "lifetime_inactive", sep = "|"),
-                stop_reason
-              ),
-              quantity = full_positions[stopped_ids], price = valuation$reference[stopped_ids],
-              mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
-              position_before = full_positions[stopped_ids], position_after = full_positions[stopped_ids],
-              detail_json = vapply(seq_along(stopped_ids), function(k) canonical_json(affected_value$details[[k]]), character(1))
-            ))
-          } else {
-          for (id in stopped_ids) {
-            stop_reasons <- stop_reason
-            if (
-              identical(stop_reason, "valuation_horizon_exhausted") &&
-                identical(as.character(availability_view$lifetime[[id]]), "known_inactive")
-            ) {
-              stop_reasons <- paste(stop_reasons, "lifetime_inactive", sep = "|")
-            }
-            append_diagnostic(diag_row(
-              run_id = run_id,
-              diagnostic_seq = diagnostic_seq + 1L,
-              ts_utc = ts,
-              instrument_id = id,
-              stage = "valuation",
-              outcome = "stopped",
-              reason_code = stop_reason,
-              reasons = stop_reasons,
-              quantity = full_positions[[id]],
-              price = valuation$reference[[id]],
-              mark_source = valuation$source[[id]],
-              mark_age = valuation$age[[id]],
-              position_before = full_positions[[id]],
-              position_after = full_positions[[id]],
-              detail_json = canonical_json(affected_value$details[[match(id, stopped_ids)]])
-            ))
-          }
-          }
+          add_segment(list(
+            n = length(stopped_ids), instrument_id = stopped_ids, stage = "valuation", outcome = "stopped",
+            reason_code = stop_reason,
+            reasons = ifelse(
+              identical(stop_reason, "valuation_horizon_exhausted") &
+                as.character(availability_view$lifetime[stopped_ids]) %in% "known_inactive",
+              paste(stop_reason, "lifetime_inactive", sep = "|"),
+              stop_reason
+            ),
+            quantity = full_positions[stopped_ids], price = valuation$reference[stopped_ids],
+            mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
+            position_before = full_positions[stopped_ids], position_after = full_positions[stopped_ids],
+            detail_json = vapply(seq_along(stopped_ids), function(k) canonical_json(affected_value$details[[k]]), character(1))
+          ))
           flush_pulse_block(ts)
           break
         }
@@ -647,64 +610,21 @@ ledgr_execute_fold <- function(execution, output_handler) {
       strategy_targets <- targets
       append_decision_trace <- function(target_after = NULL) {
         if (length(context_ids) == 0L) {
-          if (block_mode) {
-            add_segment(list(n = 1L, stage = "decision", outcome = "recorded", reason_code = "empty_public_domain"))
-            return(invisible(NULL))
-          }
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            stage = "decision",
-            outcome = "recorded",
-            reason_code = "empty_public_domain"
-          ))
+          add_segment(list(n = 1L, stage = "decision", outcome = "recorded", reason_code = "empty_public_domain"))
           return(invisible(NULL))
         }
-        if (block_mode) {
-          restriction <- as.character(availability_view$target_restriction_reason[context_ids])
-          restrictions <- as.character(availability_view$target_restriction_reasons[context_ids])
-          reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
-          add_segment(list(
-            n = length(context_ids), instrument_id = context_ids, stage = "decision", outcome = "recorded",
-            reason_code = reason, reasons = ifelse(nzchar(restrictions), restrictions, reason),
-            target = strategy_targets[context_ids], quantity = positions_snapshot[context_ids],
-            price = valuation$mark[context_ids], mark_source = valuation$source[context_ids],
-            mark_age = valuation$age[context_ids], target_before_risk = strategy_targets[context_ids],
-            target_after_risk = if (is.null(target_after)) NA_real_ else target_after[context_ids],
-            position_before = positions_snapshot[context_ids], position_after = positions_snapshot[context_ids]
-          ))
-          return(invisible(NULL))
-        }
-        for (id in context_ids) {
-          restriction <- as.character(
-            availability_view$target_restriction_reason[[id]]
-          )
-          restrictions <- as.character(
-            availability_view$target_restriction_reasons[[id]]
-          )
-          reason <- if (nzchar(restriction)) restriction else "decision_recorded"
-          reasons <- if (nzchar(restrictions)) restrictions else reason
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            instrument_id = id,
-            stage = "decision",
-            outcome = "recorded",
-            reason_code = reason,
-            reasons = reasons,
-            target = strategy_targets[[id]],
-            quantity = positions_snapshot[[id]],
-            price = valuation$mark[[id]],
-            mark_source = valuation$source[[id]],
-            mark_age = valuation$age[[id]],
-            target_before_risk = strategy_targets[[id]],
-            target_after_risk = if (is.null(target_after)) NA_real_ else target_after[[id]],
-            position_before = positions_snapshot[[id]],
-            position_after = positions_snapshot[[id]]
-          ))
-        }
+        restriction <- as.character(availability_view$target_restriction_reason[context_ids])
+        restrictions <- as.character(availability_view$target_restriction_reasons[context_ids])
+        reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
+        add_segment(list(
+          n = length(context_ids), instrument_id = context_ids, stage = "decision", outcome = "recorded",
+          reason_code = reason, reasons = ifelse(nzchar(restrictions), restrictions, reason),
+          target = strategy_targets[context_ids], quantity = positions_snapshot[context_ids],
+          price = valuation$mark[context_ids], mark_source = valuation$source[context_ids],
+          mark_age = valuation$age[context_ids], target_before_risk = strategy_targets[context_ids],
+          target_after_risk = if (is.null(target_after)) NA_real_ else target_after[context_ids],
+          position_before = positions_snapshot[context_ids], position_after = positions_snapshot[context_ids]
+        ))
         invisible(NULL)
       }
       if (length(targets) > 0L) {
@@ -727,38 +647,14 @@ ledgr_execute_fold <- function(execution, output_handler) {
               valuation
             )
             affected <<- c(affected_value, list(ts_utc = ts, specified = TRUE))
-            if (block_mode) {
-              add_segment(list(
-                n = length(stopped_ids), instrument_id = stopped_ids, stage = "risk", outcome = "stopped",
-                reason_code = stop_reason, target = targets[stopped_ids], quantity = positions_snapshot[stopped_ids],
-                mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
-                target_before_risk = targets[stopped_ids], position_before = positions_snapshot[stopped_ids],
-                position_after = positions_snapshot[stopped_ids],
-                detail_json = canonical_json(list(risk_step = "availability_risk_mark_gate"))
-              ))
-            } else {
-            for (id in stopped_ids) {
-              append_diagnostic(diag_row(
-                run_id = run_id,
-                diagnostic_seq = diagnostic_seq + 1L,
-                ts_utc = ts,
-                instrument_id = id,
-                stage = "risk",
-                outcome = "stopped",
-                reason_code = stop_reason,
-                target = targets[[id]],
-                quantity = positions_snapshot[[id]],
-                mark_source = valuation$source[[id]],
-                mark_age = valuation$age[[id]],
-                target_before_risk = targets[[id]],
-                position_before = positions_snapshot[[id]],
-                position_after = positions_snapshot[[id]],
-                detail_json = canonical_json(list(
-                  risk_step = "availability_risk_mark_gate"
-                ))
-              ))
-            }
-            }
+            add_segment(list(
+              n = length(stopped_ids), instrument_id = stopped_ids, stage = "risk", outcome = "stopped",
+              reason_code = stop_reason, target = targets[stopped_ids], quantity = positions_snapshot[stopped_ids],
+              mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
+              target_before_risk = targets[stopped_ids], position_before = positions_snapshot[stopped_ids],
+              position_after = positions_snapshot[stopped_ids],
+              detail_json = canonical_json(list(risk_step = "availability_risk_mark_gate"))
+            ))
             processed <<- processed + 1L
             flush_pulse_block(ts)
             break
@@ -780,7 +676,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             valuation$age[context_ids] > 0L &
             (positions_snapshot[context_ids] != 0 | targets[context_ids] != 0)
         ]
-        if (block_mode && length(stale_ids) > 0L) {
+        if (length(stale_ids) > 0L) {
           reduced <- vapply(stale_ids, function(id) {
             !isTRUE(all.equal(as.numeric(targets[[id]]), as.numeric(strategy_targets[[id]])))
           }, logical(1))
@@ -792,30 +688,6 @@ ledgr_execute_fold <- function(execution, output_handler) {
             mark_source = valuation$source[stale_ids], mark_age = valuation$age[stale_ids],
             target_before_risk = strategy_targets[stale_ids], target_after_risk = targets[stale_ids],
             position_before = positions_snapshot[stale_ids], position_after = positions_snapshot[stale_ids]
-          ))
-        }
-        for (id in if (block_mode) character() else stale_ids) {
-          reduced <- !isTRUE(all.equal(
-            as.numeric(targets[[id]]),
-            as.numeric(strategy_targets[[id]])
-          ))
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            instrument_id = id,
-            stage = "risk",
-            outcome = if (reduced) "reduced" else "passed",
-            reason_code = if (reduced) "stale_mark_reduction" else "stale_mark_pass_through",
-            target = targets[[id]],
-            quantity = positions_snapshot[[id]],
-            price = valuation$mark[[id]],
-            mark_source = valuation$source[[id]],
-            mark_age = valuation$age[[id]],
-            target_before_risk = strategy_targets[[id]],
-            target_after_risk = targets[[id]],
-            position_before = positions_snapshot[[id]],
-            position_after = positions_snapshot[[id]]
           ))
         }
       }
@@ -896,27 +768,15 @@ ledgr_execute_fold <- function(execution, output_handler) {
             virtual_final_cash = pulse_plan$expected_final_cash,
             recorded_final_cash = recorded_final_cash
           ))
-          if (block_mode) {
-            add_segment(list(
-              n = 1L, stage = "affordability", outcome = "stopped", reason_code = stop_reason,
-              detail_json = affordability_detail
-            ))
-          } else {
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            stage = "affordability",
-            outcome = "stopped",
-            reason_code = stop_reason,
+          add_segment(list(
+            n = 1L, stage = "affordability", outcome = "stopped", reason_code = stop_reason,
             detail_json = affordability_detail
           ))
-          }
           processed <<- processed + 1L
           flush_pulse_block(ts)
           break
         }
-        if (block_mode && length(pulse_plan$rejected) > 0L) {
+        if (length(pulse_plan$rejected) > 0L) {
           rejected <- pulse_plan$rejected
           rejected_ids <- vapply(rejected, function(entry) as.character(entry$instrument_id), character(1))
           rejected_qty <- vapply(rejected, function(entry) as.numeric(entry$current_qty), numeric(1))
@@ -932,7 +792,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
             position_before = rejected_qty, position_after = rejected_qty
           ))
         }
-        if (block_mode && length(pulse_plan$fills) > 0L) {
+        if (length(pulse_plan$fills) > 0L) {
           fills <- pulse_plan$fills
           fill_ids <- vapply(fills, function(entry) as.character(entry$instrument_id), character(1))
           informational <- lapply(fills, function(entry) ledgr_availability_reason_values(entry$informational_reasons))
@@ -949,53 +809,6 @@ ledgr_execute_fold <- function(execution, output_handler) {
             target_before_risk = strategy_targets[fill_ids], target_after_risk = targets[fill_ids],
             position_before = vapply(fills, function(entry) as.numeric(entry$current_qty), numeric(1)),
             position_after = vapply(fills, function(entry) as.numeric(entry$resulting_qty), numeric(1))
-          ))
-        }
-        for (entry in if (block_mode) list() else pulse_plan$rejected) {
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            instrument_id = entry$instrument_id,
-            stage = "execution",
-            outcome = "no_fill",
-            reason_code = entry$reason_code,
-            reasons = entry$reasons %||% entry$reason_code,
-            target = targets[[entry$instrument_id]],
-            quantity = entry$current_qty,
-            price = as.numeric(entry$fill$fill_price %||% NA_real_),
-            decision_ts_utc = ts,
-            execution_ts_utc = entry$execution_ts_utc,
-            target_before_risk = strategy_targets[[entry$instrument_id]],
-            target_after_risk = targets[[entry$instrument_id]],
-            position_before = entry$current_qty,
-            position_after = entry$current_qty
-          ))
-        }
-        for (fill_idx in if (block_mode) integer() else seq_along(pulse_plan$fills)) {
-          entry <- pulse_plan$fills[[fill_idx]]
-          informational <- ledgr_availability_reason_values(
-            entry$informational_reasons
-          )
-          append_diagnostic(diag_row(
-            run_id = run_id,
-            diagnostic_seq = diagnostic_seq + 1L,
-            ts_utc = ts,
-            instrument_id = entry$instrument_id,
-            stage = "execution",
-            outcome = "filled",
-            reason_code = if (length(informational) > 0L) informational[[1L]] else "",
-            reasons = ledgr_availability_reason_text(informational),
-            target = targets[[entry$instrument_id]],
-            quantity = entry$fill$qty,
-            price = entry$fill$fill_price,
-            decision_ts_utc = ts,
-            execution_ts_utc = entry$execution_ts_utc,
-            event_seq = event_seq + fill_idx - 1L,
-            target_before_risk = strategy_targets[[entry$instrument_id]],
-            target_after_risk = targets[[entry$instrument_id]],
-            position_before = entry$current_qty,
-            position_after = entry$resulting_qty
           ))
         }
       }
@@ -1130,22 +943,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
           ),
           exposure_basis = "decision_mark_gross"
         ))
-        if (block_mode) {
-          add_segment(list(
-            n = 1L, stage = "reconciliation", outcome = "reconciled",
-            reason_code = "affordability_reconciled", detail_json = reconciliation_detail
-          ))
-        } else {
-        append_diagnostic(diag_row(
-          run_id = run_id,
-          diagnostic_seq = diagnostic_seq + 1L,
-          ts_utc = ts,
-          stage = "reconciliation",
-          outcome = "reconciled",
-          reason_code = "affordability_reconciled",
-          detail_json = reconciliation_detail
+        add_segment(list(
+          n = 1L, stage = "reconciliation", outcome = "reconciled",
+          reason_code = "affordability_reconciled", detail_json = reconciliation_detail
         ))
-        }
         flush_pulse_block(ts)
       }
 

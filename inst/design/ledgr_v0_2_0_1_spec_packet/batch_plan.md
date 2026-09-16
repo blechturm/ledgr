@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
 Status: Batches 0 through 3 complete after review and maintainer acceptance.
-Batches 4-8 are pending.
+Batch 4 is implemented with review pending. Batches 5-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -190,7 +190,7 @@ scalar reference arm. The review remains inline rather than in this packet.
 
 ## Batch 4 - Production Parity And Retirement
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -215,6 +215,8 @@ Review focus:
 Exit criteria:
 
 - parity record exists; source guard passes; regression net green.
+
+Implementation evidence: `batch4-parity-evidence.md`.
 
 ## Batch 5 - Resumed-Run Finalization
 

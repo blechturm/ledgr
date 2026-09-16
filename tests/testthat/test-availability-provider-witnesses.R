@@ -2,12 +2,12 @@ testthat::test_that("prepared provider preserves the frozen provider witnesses",
   fixture <- availability_v201_provider_data()
   config <- availability_v201_provider_config(fixture$ids)
   providers <- lapply(
-    c("reference", "current", "prepared"),
+    c("reference", "production"),
     availability_v201_build_provider,
     data = fixture$data,
     config = config
   )
-  names(providers) <- c("reference", "current", "prepared")
+  names(providers) <- c("reference", "production")
 
   cutoffs <- availability_v201_at(c(8L, 1L, 4L, 3L, 6L, 2L, 8L, 5L))
   positions <- stats::setNames(c(0, 4, 0, 2), fixture$ids)
@@ -21,18 +21,12 @@ testthat::test_that("prepared provider preserves the frozen provider witnesses",
       execution = providers$reference$execution_view(cutoff, execution_ids),
       facts = providers$reference$facts(cutoff)
     )
-    current <- list(
-      decision = providers$current$decision_view(cutoff, positions),
-      execution = providers$current$execution_view(cutoff, execution_ids),
-      facts = providers$current$facts(cutoff)
+    production <- list(
+      decision = providers$production$decision_view(cutoff, positions),
+      execution = providers$production$execution_view(cutoff, execution_ids),
+      facts = providers$production$facts(cutoff)
     )
-    prepared <- list(
-      decision = providers$prepared$decision_view(cutoff, positions),
-      execution = providers$prepared$execution_view(cutoff, execution_ids),
-      facts = providers$prepared$facts(cutoff)
-    )
-    testthat::expect_identical(current, reference)
-    testthat::expect_identical(prepared, reference)
+    testthat::expect_identical(production, reference)
     signatures[[i]] <- data.frame(
       cutoff = format(cutoff, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       members = paste(reference$decision$members, collapse = "|"),
@@ -114,7 +108,7 @@ testthat::test_that("declared empty status family keeps the row-presence default
   fixture <- availability_v201_provider_data(empty_status = TRUE)
   config <- availability_v201_provider_config(fixture$ids)
   providers <- lapply(
-    c("reference", "current", "prepared"),
+    c("reference", "production"),
     availability_v201_build_provider,
     data = fixture$data,
     config = config
@@ -123,17 +117,13 @@ testthat::test_that("declared empty status family keeps the row-presence default
     provider$facts(availability_v201_at(8L), fixture$ids)
   })
   testthat::expect_identical(views[[2L]], views[[1L]])
-  testthat::expect_identical(views[[3L]], views[[1L]])
   testthat::expect_identical(
-    unname(views[[3L]]$status),
+    unname(views[[2L]]$status),
     rep("active", length(fixture$ids))
   )
 })
 
-testthat::test_that("the production provider defaults to prepared with query-order independence", {
-  withr::local_options(list(
-    ledgr.internal.spike_availability_provider = NULL
-  ))
+testthat::test_that("the production provider is query-order independent", {
   fixture <- availability_v201_provider_data()
   config <- availability_v201_provider_config(fixture$ids)
   first <- availability_v201_build_provider(
@@ -148,7 +138,7 @@ testthat::test_that("the production provider defaults to prepared with query-ord
     function(...) stop("history is unreachable in provider witnesses")
   )
 
-  testthat::expect_identical(attr(second, "spike_arm"), "prepared")
+  testthat::expect_null(attr(second, "spike_arm"))
   positions <- stats::setNames(c(0, 4, 0, 2), fixture$ids)
   cutoffs <- availability_v201_at(c(8L, 2L, 6L, 1L, 8L, 4L))
   first_views <- lapply(cutoffs, first$decision_view, positions = positions)
@@ -159,16 +149,6 @@ testthat::test_that("the production provider defaults to prepared with query-ord
   )
   testthat::expect_identical(first_views, rev(second_views))
 
-  withr::local_options(list(
-    ledgr.internal.spike_availability_provider = "not-an-arm"
-  ))
-  production_safe <- ledgr:::ledgr_availability_provider_build(
-    fixture$data,
-    config,
-    "witness-hash",
-    function(...) stop("history is unreachable in provider witnesses")
-  )
-  testthat::expect_identical(attr(production_safe, "spike_arm"), "prepared")
 })
 
 testthat::test_that("public membership resolution agrees with prepared views", {
@@ -269,16 +249,7 @@ testthat::test_that("retained references are test-only and detect perturbation",
     stage = "decision",
     outcome = "observed"
   )
-  testthat::expect_identical(
-    row,
-    ledgr:::ledgr_availability_diagnostic_fields(
-      run_id = "witness",
-      diagnostic_seq = 1L,
-      ts_utc = availability_v201_at(1L),
-      stage = "decision",
-      outcome = "observed"
-    )
-  )
+  testthat::expect_identical(row$outcome, "observed")
   perturbed <- row
   perturbed$outcome <- "blocked"
   testthat::expect_error(

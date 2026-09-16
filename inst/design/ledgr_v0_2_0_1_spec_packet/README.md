@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Spec Packet
 
 Status: Batches 0 through 3 complete after review and maintainer acceptance.
-Batches 4-8 are pending.
+Batch 4 is implemented with review pending. Batches 5-8 are pending.
 
 This packet scopes v0.2.0.1 as an internal implementation and correctness
 release. It productionizes the three reviewed availability hot-path
@@ -41,6 +41,8 @@ Authoritative files:
   and focused parity verification)
 - `batch3-diagnostic-evidence.md` (production writer boundary, chunk and
   rollback tests, deterministic replay, and dual-collapse verification)
+- `batch4-parity-evidence.md` (pre-retirement same-session measurement,
+  six-table parity, path retirement, and source-guard verification)
 
 Binding design inputs:
 
