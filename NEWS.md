@@ -9,7 +9,8 @@
   policy, or availability policy. The packet is at
   `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
   maintainer acceptance. Batch 1's durable witnesses and test-only references
-  are complete after independent re-review; Batch 2 is pending.
+  are complete after independent re-review; Batch 2's prepared provider and
+  consumer routing are implemented and awaiting independent review.
 
 # ledgr 0.2.0.0
 

@@ -50,7 +50,7 @@ tickets:
 
   - id: "LDG-2722"
     title: "Production prepared provider compile and queries"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2720", "LDG-2721"]
@@ -65,7 +65,7 @@ tickets:
 
   - id: "LDG-2723"
     title: "Provider-build consumers and result/reopen parity"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2722"]

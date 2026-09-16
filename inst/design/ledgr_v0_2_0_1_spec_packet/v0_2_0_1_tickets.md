@@ -254,7 +254,7 @@ scope: reference-retention
 Priority: P0
 Effort: L
 Dependencies: LDG-2720, LDG-2721
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -316,7 +316,7 @@ scope: prepared-compile
 Priority: P0
 Effort: M
 Dependencies: LDG-2722
-Status: Pending
+Status: Review Pending
 
 ### Description
 

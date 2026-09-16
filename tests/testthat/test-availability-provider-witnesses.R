@@ -130,6 +130,47 @@ testthat::test_that("declared empty status family keeps the row-presence default
   )
 })
 
+testthat::test_that("the production provider defaults to prepared instance-local cursors", {
+  withr::local_options(list(
+    ledgr.internal.spike_availability_provider = NULL
+  ))
+  fixture <- availability_v201_provider_data()
+  config <- availability_v201_provider_config(fixture$ids)
+  first <- availability_v201_build_provider(
+    "prepared",
+    fixture$data,
+    config
+  )
+  second <- ledgr:::ledgr_availability_provider_build(
+    fixture$data,
+    config,
+    "witness-hash",
+    function(...) stop("history is unreachable in provider witnesses")
+  )
+
+  testthat::expect_identical(attr(second, "spike_arm"), "prepared")
+  positions <- stats::setNames(c(0, 4, 0, 2), fixture$ids)
+  cutoffs <- availability_v201_at(c(8L, 2L, 6L, 1L, 8L, 4L))
+  first_views <- lapply(cutoffs, first$decision_view, positions = positions)
+  second_views <- lapply(
+    rev(cutoffs),
+    second$decision_view,
+    positions = positions
+  )
+  testthat::expect_identical(first_views, rev(second_views))
+
+  withr::local_options(list(
+    ledgr.internal.spike_availability_provider = "not-an-arm"
+  ))
+  production_safe <- ledgr:::ledgr_availability_provider_build(
+    fixture$data,
+    config,
+    "witness-hash",
+    function(...) stop("history is unreachable in provider witnesses")
+  )
+  testthat::expect_identical(attr(production_safe, "spike_arm"), "prepared")
+})
+
 testthat::test_that("public membership resolution agrees with prepared views", {
   ids <- c("AAA", "BBB", "CCC", "DDD")
   dates <- as.Date("2021-01-04") + 0:8

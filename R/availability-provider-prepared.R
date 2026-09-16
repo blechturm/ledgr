@@ -1,6 +1,6 @@
-# Prepared availability provider: the single chartered alternative arm of the
-# provider-preparation spike (Charter v2). Selected through the seam in
-# ledgr_availability_provider_build(); never the default.
+# Prepared availability provider promoted from the reviewed provider spike.
+# It is the production default while the temporary two-arm seam remains for
+# the Batch 4 parity gate.
 #
 # Canonical sparse facts remain the durable input. The build step compiles them
 # once, before the fold, into instrument-indexed primitive vectors plus monotone

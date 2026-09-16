@@ -300,18 +300,18 @@ ledgr_availability_provider_portable <- function(data,
   ledgr_availability_provider_build(data, config, snapshot_hash, history)
 }
 
-# Spike seam (provider-preparation spike, Charter v2): one build entry point
-# selects the current production closures or the single prepared alternative
-# from options(ledgr.internal.spike_availability_provider), default "current",
-# and stamps the provider object with the arm it actually built. The stamp is
-# an attribute outside identity() and every view value.
+# Temporary two-arm seam retained until the Batch 4 parity gate. Ordinary
+# package execution selects the reviewed prepared provider without requiring
+# a caller or worker option. Tests and the retained spike checker may still
+# select the v0.2.0.0 reference arm explicitly before that arm is retired.
+# The stamp is outside identity() and every public view value.
 ledgr_availability_provider_build <- function(data, config, snapshot_hash, history) {
-  arm <- getOption("ledgr.internal.spike_availability_provider", "current")
-  provider <- if (identical(arm, "prepared")) {
-    ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
-  } else {
-    arm <- "current"
+  arm <- getOption("ledgr.internal.spike_availability_provider", "prepared")
+  provider <- if (identical(arm, "current")) {
     ledgr_availability_provider_build_current(data, config, snapshot_hash, history)
+  } else {
+    arm <- "prepared"
+    ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
   }
   attr(provider, "spike_arm") <- arm
   provider

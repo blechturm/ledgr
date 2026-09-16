@@ -2983,7 +2983,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_1_spec_packet")
   paths <- file.path(packet, c(
     "README.md", "v0_2_0_1_spec.md", "v0_2_0_1_tickets.md",
-    "tickets.yml", "batch_plan.md", "batch1-baseline-evidence.md"
+    "tickets.yml", "batch_plan.md", "batch1-baseline-evidence.md",
+    "batch2-provider-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -2992,7 +2993,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c(
-    "readme", "spec", "tickets", "yaml", "batches", "batch1_evidence"
+    "readme", "spec", "tickets", "yaml", "batches", "batch1_evidence",
+    "batch2_evidence"
   )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
@@ -3013,13 +3015,21 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
   testthat::expect_identical(
     yaml_statuses,
-    c(rep("complete_after_review", 3L), rep("pending", 14L))
+    c(
+      rep("complete_after_review", 3L),
+      rep("review_pending", 2L),
+      rep("pending", 12L)
+    )
   )
   ticket_lines <- readLines(paths[[3L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
   testthat::expect_identical(
     md_statuses,
-    c(rep("Complete After Review", 3L), rep("Pending", 14L))
+    c(
+      rep("Complete After Review", 3L),
+      rep("Review Pending", 2L),
+      rep("Pending", 12L)
+    )
   )
   batch_lines <- readLines(paths[[5L]], warn = FALSE)
   batch_statuses <- sub(
@@ -3033,7 +3043,11 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   )
   testthat::expect_identical(
     batch_statuses,
-    c(rep("Complete After Review.", 2L), rep("Pending.", 7L))
+    c(
+      rep("Complete After Review.", 2L),
+      "Review Pending.",
+      rep("Pending.", 6L)
+    )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
@@ -3044,6 +3058,11 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(
     docs$batch1_evidence,
     "prepared provider | `dev/spikes/availability-provider-preparation/evidence/` | full rerun passed 54/54 checks",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch2_evidence,
+    "3,676 of 3,676 provider views were identical",
     fixed = TRUE
   )
 
