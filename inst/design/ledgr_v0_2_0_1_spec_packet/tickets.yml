@@ -20,7 +20,7 @@ tickets:
 
   - id: "LDG-2720"
     title: "Port spike witnesses into durable tests"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2719"]
@@ -36,7 +36,7 @@ tickets:
 
   - id: "LDG-2721"
     title: "Retain test-only references and baseline checker run"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2719"]

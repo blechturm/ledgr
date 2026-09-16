@@ -3,7 +3,7 @@
 **Tickets:** LDG-2720 and LDG-2721
 **Baseline:** `b60c9ac4f50012d93b040551e4ffc83aa29c6e08`
 **Runtime:** R 4.6.1, duckdb 1.5.2, testthat 3.3.2, collapse 2.1.7
-**Status:** Implementation complete; independent review pending.
+**Status:** Complete after independent re-review and maintainer acceptance.
 
 ## Durable witnesses
 

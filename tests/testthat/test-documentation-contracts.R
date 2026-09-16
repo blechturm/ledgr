@@ -3013,13 +3013,13 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
   testthat::expect_identical(
     yaml_statuses,
-    c("complete_after_review", rep("review_pending", 2L), rep("pending", 14L))
+    c(rep("complete_after_review", 3L), rep("pending", 14L))
   )
   ticket_lines <- readLines(paths[[3L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
   testthat::expect_identical(
     md_statuses,
-    c("Complete After Review", rep("Review Pending", 2L), rep("Pending", 14L))
+    c(rep("Complete After Review", 3L), rep("Pending", 14L))
   )
   batch_lines <- readLines(paths[[5L]], warn = FALSE)
   batch_statuses <- sub(
@@ -3033,7 +3033,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   )
   testthat::expect_identical(
     batch_statuses,
-    c("Complete After Review.", "Review Pending.", rep("Pending.", 7L))
+    c(rep("Complete After Review.", 2L), rep("Pending.", 7L))
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
