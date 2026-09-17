@@ -1,6 +1,6 @@
 # v0.2.0.1 Batch 6 Seal-Validator Evidence
 
-Status: Implemented; pending independent correctness review.
+Status: Complete after independent correctness review and maintainer acceptance.
 
 Tickets: LDG-2728, LDG-2729, and LDG-2730.
 Implementation base: `7a6217bffa77f26ae4626dfab8de7199262b5972`.
@@ -112,4 +112,13 @@ The registered full-scale cold seal was not run. Its single measurement
 belongs to Batch 8, and the historical 60-90 second estimate remains a
 forecast rather than an achieved Batch 6 result.
 
-Independent review and maintainer acceptance remain outstanding.
+## Independent review
+
+The independent reviewer replayed all 6,000 randomized comparisons with zero
+mismatches and passed the focused 118-block, 2,617-expectation regression set.
+The review accepted the grouped sweeps, status hybrid, setwise bypass, and
+Batch 5 carry-forwards. Three Low observations remain recorded in the Batch 6
+closeout: delimiter-based scope keys admit a control-character collision,
+missing persisted states fail closed with a generic R error, and the
+nested-loop source guard recognizes one literal spelling. None blocks the
+accepted implementation or expands the Batch 7 scope.

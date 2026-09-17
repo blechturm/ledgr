@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 5 complete after review and maintainer acceptance.
-Batch 6 is implemented with review pending. Batches 7-8 are pending.
+Status: Batches 0 through 6 complete after review and maintainer acceptance.
+Batches 7-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -269,7 +269,7 @@ than in this packet.
 
 ## Batch 6 - Seal Validators
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -296,6 +296,16 @@ Exit criteria:
 - independent review accepts the validators before closeout records.
 
 Implementation evidence: `batch6-seal-validator-evidence.md`.
+
+Closeout: accepted by the maintainer after independent review replayed all
+6,000 randomized comparisons with zero mismatches and passed the focused
+regression net. The review found three non-blocking edge and test-hardening
+observations: pasted scope keys can collide on embedded carriage returns,
+persisted missing state values fail closed under a generic R error rather than
+the domain condition, and the nested-loop source guard matches one literal
+spelling. These remain bounded follow-up candidates and do not widen Batch 7.
+The registered full-scale cold seal remains owned by Batch 8. The review
+remains inline rather than in this packet.
 
 ## Batch 7 - Benchmark Phases And Manuals
 
