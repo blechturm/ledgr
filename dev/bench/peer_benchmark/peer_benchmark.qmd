@@ -12,26 +12,38 @@ params:
   results_preset: "record"
 ---
 
-On a standard 500-instrument, 5-year daily-bar SMA crossover workload,
-ledgr's memory-backed opt-in compiled spot-FIFO accelerator is the
-fastest completed row in this included event-driven comparison, ahead
-of Backtrader by a meaningful margin on end-to-end wall time and by a
-larger margin on engine work alone. Parsed canonical equity, cash, and
-position outputs match canonical R ledgr exactly, so the speedup comes
-from the scoped spot-FIFO hot frame rather than from cutting corners.
+This tracked report records the v0.2.0.1 internal same-host peer workload.
+Parity is interpreted before timing. The report preserves phase boundaries,
+unavailable engines, and classified divergences without turning one host and
+one fixture into a public engine ranking.
 
-This report walks the measurement: headline result first, parity check
-second, full peer comparison third, methodology last. Read in order, or
-jump to whichever section answers what you came to verify.
+The exact closeout command was:
+
+```powershell
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530
+```
+
+The exact ignored local prefix is
+`dev/bench/results/peer_benchmark_record_20260917T104909Z`. The record was
+produced from `6b09a1b57ff42293091130d2dca565f224a29aea` under R 4.6.1 ucrt on
+Windows build 26200 with TTR 0.24.4. Backtrader and zipline-reloaded completed
+through pinned `uv` environments. Quantstrat was unavailable because its R
+packages were absent; local LEAN was unavailable because its CLI root uses an
+obsolete organization layout. No hosted LEAN service was used.
+
+The durable and ephemeral canonical ledgr rows and the built-in SMA row agree
+at the registered tolerance. Backtrader and zipline-reloaded pass the
+registered Tier 1 tolerance while retaining classified residuals,
+predominantly position sizing and, for Zipline, fill timing.
 
 > **Scope of this report**
 >
 > Internal repo-local benchmark. Same host, same seed, single fixture.
-> The B2 row is an explicit opt-in (`compiled_accounting_model =
-> "spot_fifo"`) on ledgr's ephemeral/memory-backed path. Default ledgr
-> execution remains canonical R. Numbers are for maintainer use and
-> release-closeout language, not a public ranking or a universal speed
-> claim.
+> A B2 row, when explicitly requested, remains an opt-in
+> (`compiled_accounting_model = "spot_fifo"`) on ledgr's
+> ephemeral/memory-backed path. Default ledgr execution remains canonical R.
+> Numbers are for maintainer use and release closeout, not a public ranking or
+> a universal performance claim.
 
 ```{r}
 #| echo: false
@@ -126,7 +138,7 @@ parity_surface <- function(peer) {
 }
 ```
 
-## Headline: B2 spot-FIFO vs Backtrader
+## Optional B2 timing context
 
 Same fixture, same seed, same shared bars CSV. The B2 row uses ledgr's
 explicit `compiled_accounting_model = "spot_fifo"` spot-FIFO hot frame
@@ -211,7 +223,7 @@ if ("ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
   plot_panel(compare$reported_core_sec, "Core wall")
   plot_panel(compare$engine_sec, "Engine phase")
   mtext(
-    "ledgr B2 spot-FIFO is the fastest completed row on the SMA peer fixture",
+    "Optional B2 timing on the same fixture; interpret only after parity",
     outer = TRUE,
     line = 0.7,
     font = 2
@@ -227,7 +239,7 @@ if ("ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
 }
 ```
 
-## Why the speed claim is trustworthy
+## Why parity comes before timing
 
 A speed number only matters if the engine produces the same answer.
 ledgr's compiled `spot_fifo` row matches canonical ledgr ephemeral
@@ -273,19 +285,17 @@ if (file.exists(b2_eq_file) && file.exists(canon_ephemeral_eq_file)) {
 }
 ```
 
-The compiled path is doing the same accounting as the R path, just
-faster. That makes the speed delta a real engine measurement rather
-than a corner cut. Peer-by-peer parity against ledgr canonical follows
-below.
+When present, the compiled row is interpreted only after its canonical outputs
+agree with the R path. Peer-by-peer parity against ledgr canonical follows
+below; timing does not waive a failed semantic comparison.
 
 ## Full peer comparison
 
-The B2 sidecar row is measured on the same fixture as the seven-row peer
-record bundle and appended here for comparison. Backtrader is the closest
-comparable: event-driven, Python, no durable persistence. Zipline and
-quantstrat are included as event-driven reference points; both are
-materially slower. LEAN is included as a status row when the local CLI is
-available, otherwise marked unavailable with the failure reason.
+When requested, the B2 sidecar row is measured on the same fixture as the
+seven-row peer record bundle and appended here for timing context. Backtrader,
+Zipline, quantstrat, and LEAN retain their declared lifecycle boundaries and
+availability states; no row is treated as universally representative of its
+engine or language.
 
 ledgr appears in canonical and B2 rows because both answer useful
 questions. Canonical durable and ephemeral track the R fold and the
@@ -296,13 +306,15 @@ result as a default ledgr claim.
 ```{r}
 #| echo: false
 perf_table <- data.frame(
-  Engine = performance$engine,
+  `Engine row` = performance$engine,
   Status = performance$status,
   `Full row` = fmt_sec(performance$full_row_sec),
-  Ingestion = fmt_sec(performance$ingestion_sec),
-  Engine = fmt_sec(performance$engine_sec),
+  `Snapshot prepare` = fmt_sec(performance$snapshot_prepare_sec),
+  `Experiment setup` = fmt_sec(performance$experiment_setup_sec),
+  `Engine phase` = fmt_sec(performance$engine_sec),
   Results = fmt_sec(performance$results_sec),
-  Total = fmt_sec(performance$reported_core_sec),
+  Cold = fmt_sec(performance$cold_end_to_end),
+  Warm = fmt_sec(performance$warm_research_iteration),
   `Bars/sec` = fmt_rate(performance$core_bars_per_sec),
   check.names = FALSE
 )
@@ -311,30 +323,27 @@ has_cost_risk_columns <- any(!is.na(performance$cost_model)) ||
   any(!is.na(performance$compiled_accounting_model))
 if (has_cost_risk_columns) {
   perf_table <- cbind(
-    perf_table[, c("Engine", "Status"), drop = FALSE],
+    perf_table[, c("Engine row", "Status"), drop = FALSE],
     Cost = performance$cost_model,
     Risk = performance$risk_chain,
     Compiled = performance$compiled_accounting_model,
-    perf_table[, setdiff(names(perf_table), c("Engine", "Status")), drop = FALSE],
-    check.names = FALSE
+    perf_table[, setdiff(names(perf_table), c("Engine row", "Status")), drop = FALSE]
   )
 }
 knitr::kable(perf_table, row.names = FALSE)
 ```
 
-Read `Total` as the engine-row boundary. Read `Full row` as the wrapper
-cost around that boundary; large full-row overhead on Python rows
-reflects per-invocation process and environment setup outside the phase
-total. Phase definitions are in the Methodology section.
+Read `Cold` as the sum of snapshot preparation, experiment setup, engine, and
+results. Read `Warm` as the same row without reusable snapshot preparation.
+`Full row` is the wrapper clock around the engine row; phase definitions are in
+the Methodology section.
 
 For peer comparison, this complete boundary is the cold end-to-end view
 when the engines perform meaningfully comparable preparation and produce
 the required outputs. ledgr's repeated research workflow has a separate
-warm clock over an existing unchanged, verified snapshot. This harness
-does not yet publish that clock: experiment construction is bundled into
-`Ingestion`, so `Engine + Results` omits recurring setup and is only a
-partial recurring-work slice. Snapshot preparation is paid once per
-unchanged data-and-facts identity and again after that identity changes.
+warm clock over an existing unchanged, verified snapshot. Snapshot preparation
+is paid once per unchanged data-and-facts identity and again after that
+identity changes.
 
 ```{r}
 #| echo: false
@@ -346,7 +355,8 @@ perf_done <- performance[is.finite(performance$full_row_sec), , drop = FALSE]
 ord <- order(perf_done$full_row_sec)
 perf_done <- perf_done[ord, , drop = FALSE]
 mat <- rbind(
-  Ingestion = perf_done$ingestion_sec,
+  `Snapshot prepare` = perf_done$snapshot_prepare_sec,
+  `Experiment setup` = perf_done$experiment_setup_sec,
   Engine = perf_done$engine_sec,
   Results = perf_done$results_sec
 )
@@ -357,12 +367,17 @@ bp <- barplot(
   horiz = TRUE,
   names.arg = perf_done$engine,
   las = 1,
-  col = c("#7A9E9F", "#D19C1D", "#B85C5C"),
+  col = c("#7A9E9F", "#4C78A8", "#D19C1D", "#B85C5C"),
   border = NA,
   xlab = "Seconds",
-  main = "Record Performance Timing\ningestion / engine / results phases"
+  main = "Record Performance Timing\nsnapshot / setup / engine / results phases"
 )
-legend("bottomright", legend = rownames(mat), fill = c("#7A9E9F", "#D19C1D", "#B85C5C"), bty = "n")
+legend(
+  "bottomright",
+  legend = rownames(mat),
+  fill = c("#7A9E9F", "#4C78A8", "#D19C1D", "#B85C5C"),
+  bty = "n"
+)
 grid(nx = NA, ny = NULL, col = "gray85")
 totals <- colSums(mat)
 text(totals, bp, labels = paste0(sprintf("%.3f", totals), "s"), pos = 4, cex = 0.72)
@@ -602,27 +617,21 @@ labeled with unavailable metadata rather than silently dropped.
 
 ### Phase definitions
 
-Each DONE row in the performance table is split into three measured
+Each DONE row in the performance table is split into four measured
 phases:
 
-- **Ingestion**: from timed-window start until the engine has native
-  data structures ready to iterate.
+- **Snapshot preparation**: reusable native data or bundle preparation.
+- **Experiment setup**: construction repeated for each experiment.
 - **Engine**: from ready-to-iterate until strategy execution completes
   and engine state is final.
 - **Results**: from final engine state until canonical equity, fills,
   and trades are materialized for this harness.
 
-The three phase columns must reconcile to `Total` within 0.5 seconds or
-the harness aborts. LEAN is the one explicit exception: when the local
-CLI runs, the whole CLI subprocess is bucketed as engine time because
-ingestion, run, and extraction are not separable from outside the CLI.
-
-A future warm-iteration record must split reusable snapshot preparation
-from experiment-specific construction. Its warm clock includes the latter,
-engine execution, and every required result surface. A cross-package warm
-comparison is valid only when each package starts from its own already
-prepared native data boundary; otherwise this report keeps the cold
-end-to-end comparison only.
+The four phase columns must reconcile to the cold clock within 0.5 seconds or
+the harness aborts. The warm clock is experiment setup plus engine plus results.
+LEAN is the one explicit exception: when the local CLI runs, the whole CLI
+subprocess is bucketed as engine time because preparation, execution, and
+extraction are not separable from outside the CLI.
 
 | Engine | Ingestion | Engine | Results |
 | --- | --- | --- | --- |
@@ -752,5 +761,5 @@ Do not compare bars/sec here directly to the v0.1.8.7 `peer_sma_crossover`
 row as a pure version regression. That row used the same 500 x 1260
 scale but a continuous `fast > slow` target strategy and far fewer
 fills. This row uses high-turnover crossover-state semantics plus
-per-engine parity artifacts and surface-status outputs. The three-phase
+per-engine parity artifacts and surface-status outputs. The four-phase
 table is the useful comparison artifact, not a single bars/sec headline.

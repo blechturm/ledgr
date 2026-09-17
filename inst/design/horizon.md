@@ -33,8 +33,8 @@ accepted on 2026-09-16, its hot-path complexity amendment was accepted on
 availability hot- and cold-path productionization, the seal-validator
 correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, and fresh separated benchmark closeouts. Batches 0 through
-7 are complete after review and maintainer acceptance; Batch 8 is implemented
-and review pending, and Batches 9 through 11 are pending. The amendment ticket
+8 are complete after review and maintainer acceptance; Batch 9 is implemented
+and review pending, and Batches 10 and 11 are pending. The amendment ticket
 cut was independently accepted before implementation. Batch 10 is the final
 benchmark checkpoint; Batch 11
 requires an explicit maintainer go-ahead after those results are reviewed.
@@ -110,6 +110,40 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-17 [infrastructure] Durable-path ingestion and serialization observations
+
+The Batch 8 and Batch 9 investigation found additional cold- and durable-path
+costs that are deliberately outside v0.2.0.1. The discovery record is parked at
+`dev/bench/notes/durable_path_observations.md`. It is profiling and
+micro-measurement evidence, not a ticket, release gate, performance target, or
+authorization to change snapshot identity.
+
+The future work separates three concerns. First, identity-preserving candidates
+include chunk-local reuse of repeated canonical hash formatting, vectorized
+timestamp handling, and removal of redundant duplicate-key string formatting.
+Second, event serialization needs a bounded spike because sequence and
+cash/position deltas are consumed during the fold even though much of the JSON
+payload appears deferrable. Third, hashing canonical values as raw typed bytes
+could be materially faster but changes durable identity and therefore requires
+its own version-matrix RFC rather than an optimization ticket.
+
+The three exported ingestion surfaces retain distinct contracts:
+`ledgr_snapshot_from_df()`, its `ledgr_snapshot_from_csv()` wrapper, and the
+separate strict `ledgr_snapshot_import_bars_csv()` importer. Any future cycle
+must register a compatibility matrix instead of silently merging them. A later
+peer-benchmark revision may call `ledgr_snapshot_from_csv()` directly so its
+preparation clock represents the public user path; that would change the phase
+definition and must be disclosed rather than presented as a like-for-like
+speedup.
+
+Before tickets are cut, reproduce the observations in a quiet, checked-in
+probe with component clocks, bounded-memory measurements, byte-identity checks,
+reopen and tamper detection, and explicit timestamp-branch coverage. The
+identity-preserving candidates should be evaluated before the binary-identity
+RFC, but measured payoff does not waive semantic or persistence gates. The
+current 55-to-62-second figures are orientation only; v0.2.0.1 Batch 10 measures
+the accepted source without consuming this entry.
 
 ### 2026-09-15 [infrastructure] Containerized reproducible benchmark laboratory
 

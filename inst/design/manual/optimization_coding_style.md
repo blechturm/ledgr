@@ -65,7 +65,7 @@ Those figures are a discovery estimate from a non-reconstructive read of
 the source, useful for direction, not a census and not a claim an RFC
 may cite as one.
 
-## The Six Shapes And Their Replacements
+## The Seven Shapes And Their Replacements
 
 1.  **One-row frame per element, bound at the end.** A `data.frame()`
     per diagnostic, event, state row, or score, collected in a list and
@@ -108,6 +108,19 @@ may cite as one.
     confirmed that every persisted set row has `member = TRUE`, a valid
     header, and the snapshot invariants; the database does not enforce
     `set_id` implying `member = TRUE`.
+7.  **Scalar writes into an environment-held vector.** A vector reached
+    through an environment is copied in full by every base
+    subassignment, whatever the syntax: `env$v[i] <- x`,
+    `env[["v"]][i] <- x`, and the extract/mutate/reassign triple all
+    cost the same. When the vector is a buffer sized by events or
+    instruments times pulses, per-element writes make buffer
+    construction quadratic in the rows written. Measured at 630,000
+    elements, each base write costs about 1,620 microseconds against
+    about 20 for `setv()`. Replace with a by-reference write through
+    `collapse::setv()`, or move the buffer out of the environment. The
+    discriminator is the environment, not the temporary name: a locally
+    owned list mutates in place, so `bars_mat$close[j, ] <- v` over a
+    local list is a different shape and carries no penalty.
 
 ## Rules
 
@@ -121,14 +134,14 @@ may cite as one.
   chunks, and inspection surfaces are data frames or tibbles. Inside the
   fold and inside compile steps, state lives in typed atomic vectors,
   matrices, or CSR-style flat segment vectors with offsets.
-- **Write by index into preallocated typed buffers.** Numeric, integer,
-  and POSIXct columns through
-  `collapse::setv(col, i, value, vind1 = TRUE)`; character columns
-  through base replacement on a vector held in an environment, until a
-  collapse version whose character `setv` is certified becomes the
-  declared floor (2.1.8 fixed the write barrier; the package declares no
-  collapse version floor, and the maintainer’s current R 4.5.2 library
-  resolves 2.1.7). Never grow a vector or list by appending.
+- **Write by index into preallocated typed buffers.** Every typed
+  column, character and list included, through
+  `collapse::setv(col, i, value, vind1 = TRUE)`. The declared floor is
+  `collapse (>= 2.1.8)` because 2.1.8 fixed the generational write
+  barrier that made character and list `setv()` unsafe under 2.1.7; that
+  bug is why earlier guidance sent character writes through base
+  replacement, and that detour is what shape 7 describes. Never grow a
+  vector or list by appending.
 - **Advance, do not recompute.** Point-in-time state changes at known
   boundaries. Keep a cursor per instrument or per header over sorted
   boundary times; advance it for non-decreasing cutoffs and re-seek with

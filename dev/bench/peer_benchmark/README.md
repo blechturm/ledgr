@@ -1,6 +1,6 @@
 # Peer Parity And Performance Benchmark
 
-This is the current v0.1.8.8 LDG-2476 peer benchmark. It has two separate
+This is the current ledgr peer benchmark. It has two separate
 outputs:
 
 - a parity benchmark: do peer engines agree with the ledgr canonical row?
@@ -19,6 +19,31 @@ Run from the package root:
 
 The record preset is the primary artifact for closeout. It uses 100 instruments
 and 252 daily bars. The smoke preset is only a harness verification.
+
+## v0.2.0.1 Closeout Record
+
+The v0.2.0.1 closeout deliberately overrides the unchanged record-preset shape
+with this exact command:
+
+```powershell
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530
+```
+
+The exact ignored local record prefix is
+`dev/bench/results/peer_benchmark_record_20260917T104909Z`. It was produced at
+source commit `6b09a1b57ff42293091130d2dca565f224a29aea` under R 4.6.1 ucrt on
+Windows build 26200 with TTR 0.24.4. Backtrader and zipline-reloaded completed
+through their pinned `uv` environments. Quantstrat was unavailable because its
+required R packages were not installed. Local LEAN was unavailable because the
+configured CLI root uses an obsolete organization layout; no hosted service
+was used.
+
+Parity is interpreted before timing. The durable and ephemeral canonical ledgr
+rows and the built-in SMA row agree at the registered tolerance. Backtrader and
+zipline-reloaded pass the registered Tier 1 tolerance while retaining
+classified residuals, predominantly position sizing and, for Zipline, fill
+timing. This is an internal same-host method record, not a public ranking or a
+claim that the engines expose identical lifecycle boundaries.
 
 Render the Markdown report from the package root:
 
@@ -78,10 +103,13 @@ ordering.
 
 ## Performance Boundaries
 
-The performance CSV reports both:
+The performance CSV reports:
 
 - `full_row_sec`: elapsed time around the whole harness call for that engine row;
-- `reported_core_sec`: the timing reported from inside the engine row.
+- `snapshot_prepare_sec`: reusable native data preparation;
+- `experiment_setup_sec`: per-experiment construction;
+- `engine_sec`: the declared engine execution boundary; and
+- `results_sec`: required canonical result materialization.
 
 The boundaries are intentionally explicit. ledgr's core timing is `ledgr_run()`
 over the snapshot-backed fold with feature plumbing and durable ledgr surfaces.
@@ -91,12 +119,7 @@ locally configured; no substitute loop is emitted. `zipline-reloaded-full` is
 the full zipline row for this harness: it includes temporary csvdir bundle
 construction, bundle ingestion, and `zipline.run_algorithm()`.
 
-Use the complete row for cold end-to-end peer comparisons only when the input,
-output, and lifecycle boundaries are meaningfully comparable. ledgr's repeated
-research workflow has a second clock: warm iteration over an existing unchanged,
-verified snapshot. That clock includes experiment construction, execution, and
-required result materialization, but not reusable snapshot preparation. The
-current harness combines snapshot preparation and experiment construction in
-its ingestion phase, so `engine_sec + results_sec` is a partial recurring slice,
-not a complete warm-iteration measurement. Data or fact changes invalidate
-reuse and incur preparation again.
+`cold_end_to_end` sums all four phases. `warm_research_iteration` excludes only
+reusable snapshot preparation. Use those clocks across engines only when input,
+output, and lifecycle boundaries are meaningfully comparable. Data or fact
+changes invalidate snapshot reuse and incur preparation again.
