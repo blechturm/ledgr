@@ -1,6 +1,6 @@
 # v0.2.0.1 Batch 7 Benchmark And Manual Evidence
 
-Status: Implemented; focused correction review pending.
+Status: Complete after independent review and maintainer acceptance.
 
 Tickets: LDG-2731 and LDG-2732.
 Implementation base: `0f618fd9693584ff0a36dc6447d1cb32c56ccfda`.
@@ -130,3 +130,10 @@ record was not run.
 The explicit 500 by 1,260 peer record, record-specific peer README/report
 update, availability warm record, and registered full-scale cold seal remain
 owned by Batch 8.
+
+The focused correction review accepted all six closures. It independently
+replayed the validator and documentation witnesses and found no blocking or
+medium defect. Its remaining Low notes concern future guard generalization,
+the intentionally stricter malformed-input production behavior, and three
+stale anchors in otherwise unrelated manuals; they do not alter this batch's
+accepted result.

@@ -3019,8 +3019,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     yaml_statuses,
     c(
-      rep("complete_after_review", 12L),
-      rep("review_pending", 2L),
+      rep("complete_after_review", 14L),
       rep("pending", 3L)
     )
   )
@@ -3029,8 +3028,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     md_statuses,
     c(
-      rep("Complete After Review", 12L),
-      rep("Review Pending", 2L),
+      rep("Complete After Review", 14L),
       rep("Pending", 3L)
     )
   )
@@ -3047,8 +3045,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     batch_statuses,
     c(
-      rep("Complete After Review.", 7L),
-      "Review Pending.",
+      rep("Complete After Review.", 8L),
       "Pending."
     )
   )

@@ -300,16 +300,15 @@ Implementation evidence: `batch6-seal-validator-evidence.md`.
 Closeout: accepted by the maintainer after independent review replayed all
 6,000 randomized comparisons with zero mismatches and passed the focused
 regression net. The review found three non-blocking edge and test-hardening
-observations: pasted scope keys can collide on embedded carriage returns,
-persisted missing state values fail closed under a generic R error rather than
-the domain condition, and the nested-loop source guard matches one literal
-spelling. These remain bounded follow-up candidates and do not widen Batch 7.
+observations. The accepted correction grouped scope identity on its real
+columns, classed missing states, and replaced the literal loop guard with
+syntax-tree checks.
 The registered full-scale cold seal remains owned by Batch 8. The review
 remains inline rather than in this packet.
 
 ## Batch 7 - Benchmark Phases And Manuals
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -333,6 +332,12 @@ Exit criteria:
 - renders reproduce; documentation-contract tests pass.
 
 Implementation evidence: `batch7-benchmark-manual-evidence.md`.
+
+Closeout: accepted by the maintainer after the initial review and focused
+correction review both passed. The phase labels, Zipline teardown attribution,
+availability-provider boundary, rendered manuals, and documentation contracts
+were independently verified. The release-sized records remain owned by Batch
+8. Reviews remain inline rather than in this packet.
 
 ## Batch 8 - Release Closeout
 

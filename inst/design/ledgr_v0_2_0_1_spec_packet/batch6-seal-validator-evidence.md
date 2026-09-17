@@ -140,3 +140,9 @@ snapshot-seal test files passed on the final tree in 330 seconds. Routing
 does not restore the retired quadratic behavior. This bounded check is a
 regression guard, not a release
 benchmark.
+
+The retained pairwise functions are exact comparison oracles for the
+constructor-admitted, well-formed rows exercised by the equivalence harness.
+Missing persisted state is intentionally outside that oracle domain: the
+production grouped validators are stricter and reject it with
+`ledgr_fact_structural_conflict`.
