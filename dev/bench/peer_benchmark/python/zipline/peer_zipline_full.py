@@ -154,9 +154,19 @@ def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
             trading_calendar=get_calendar("CSVDIR"),
             benchmark_returns=pd.Series(dtype=float),
         )
-        run_sec = time.perf_counter() - run_start
-    snapshot_prepare_sec = snapshot_done - prepare_start
-    return perf, csv_write_sec, ingest_sec, snapshot_prepare_sec, experiment_setup_sec, run_sec
+        engine_done = time.perf_counter()
+        run_sec = engine_done - run_start
+    teardown_sec = time.perf_counter() - engine_done
+    snapshot_prepare_sec = snapshot_done - prepare_start + teardown_sec
+    return (
+        perf,
+        csv_write_sec,
+        ingest_sec,
+        teardown_sec,
+        snapshot_prepare_sec,
+        experiment_setup_sec,
+        run_sec,
+    )
 
 
 def write_equity(path: str, perf: pd.DataFrame) -> None:
@@ -252,9 +262,15 @@ def main() -> int:
     wall_start = time.perf_counter()
     bars = pd.read_csv(args.bars, parse_dates=["ts_utc"])
     bars_done = time.perf_counter()
-    perf, csv_write_sec, ingest_sec, prepare_extra_sec, setup_sec, run_sec = run_zipline_full(
-        bars, args.fast, args.slow
-    )
+    (
+        perf,
+        csv_write_sec,
+        ingest_sec,
+        teardown_sec,
+        prepare_extra_sec,
+        setup_sec,
+        run_sec,
+    ) = run_zipline_full(bars, args.fast, args.slow)
     engine_done = time.perf_counter()
 
     write_equity(args.equity_out, perf)
@@ -276,6 +292,7 @@ def main() -> int:
                 "phase_sec": phase_sec,
                 "csvdir_write_sec": csv_write_sec,
                 "ingest_sec": ingest_sec,
+                "bundle_teardown_sec": teardown_sec,
                 "run_algorithm_sec": run_sec,
                 "zipline_reloaded": importlib.metadata.version("zipline-reloaded"),
                 "pandas": importlib.metadata.version("pandas"),

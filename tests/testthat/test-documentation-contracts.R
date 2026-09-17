@@ -3129,7 +3129,11 @@ testthat::test_that("v0.2.0.1 optimization manuals record production boundaries"
     testthat::expect_match(docs[[name]], "warm_research_iteration", fixed = TRUE)
     testthat::expect_match(
       docs[[name]],
-      "Provider construction is[[:space:]]+warm setup"
+      "future[[:space:]]+availability-enabled peer row"
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "peer workload declares no[[:space:]]+availability facts"
     )
   }
   for (name in c("style_qmd", "style_md")) {
@@ -3140,6 +3144,54 @@ testthat::test_that("v0.2.0.1 optimization manuals record production boundaries"
     testthat::expect_no_match(docs[[name]], "uncommitted spike seams", fixed = TRUE)
     testthat::expect_no_match(docs[[name]], "not yet fixed; sort-and-sweep", fixed = TRUE)
   }
+})
+
+testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
+  root <- testthat::test_path("..", "..")
+  paths <- c(
+    harness = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "peer_benchmark.R"
+    ),
+    zipline = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "python", "zipline",
+      "peer_zipline_full.py"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "peer benchmark sources unavailable during installed-package tests"
+  )
+  harness <- paste(readLines(paths[["harness"]], warn = FALSE), collapse = "\n")
+  zipline <- paste(readLines(paths[["zipline"]], warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    harness,
+    paste0(
+      "ledgr_builtin_sma = \"durable ledgr built-in SMA: ",
+      "snapshot preparation="
+    ),
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    harness,
+    "ledgr_builtin_sma = \"durable ledgr built-in SMA: ingestion=",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    zipline,
+    "teardown_sec = time.perf_counter() - engine_done",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    zipline,
+    paste0(
+      "snapshot_prepare_sec = snapshot_done - prepare_start + ",
+      "teardown_sec"
+    ),
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

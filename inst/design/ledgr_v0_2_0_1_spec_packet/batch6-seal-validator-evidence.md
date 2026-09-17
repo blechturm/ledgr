@@ -117,8 +117,26 @@ forecast rather than an achieved Batch 6 result.
 The independent reviewer replayed all 6,000 randomized comparisons with zero
 mismatches and passed the focused 118-block, 2,617-expectation regression set.
 The review accepted the grouped sweeps, status hybrid, setwise bypass, and
-Batch 5 carry-forwards. Three Low observations remain recorded in the Batch 6
-closeout: delimiter-based scope keys admit a control-character collision,
-missing persisted states fail closed with a generic R error, and the
-nested-loop source guard recognizes one literal spelling. None blocks the
-accepted implementation or expands the Batch 7 scope.
+Batch 5 carry-forwards.
+
+## Post-review follow-up
+
+The three Low observations from the accepted review were closed with the
+Batch 7 correction follow-up. Scope identity is now grouped directly on its
+columns, so control characters cannot merge distinct scopes or bind a set row
+to the wrong header. Missing membership, lifetime, or status state now raises
+`ledgr_fact_structural_conflict`, including a status row routed through the
+supersession lane. The production-source guard now walks the R syntax tree and
+rejects any nested `for` construct across the validators and grouped overlap
+helper rather than recognizing one deparsed loop spelling.
+
+Focused witnesses cover the delimiter collision in membership, status, and
+set-header matching; all three missing-state families; and a rewritten nested
+row-pair loop that the old literal guard missed. The original 6,000 randomized
+comparisons remain part of the focused validator test. All 20 availability and
+snapshot-seal test files passed on the final tree in 330 seconds. Routing
+30,300 valid complete-set rows through the corrected setwise guard took
+0.01-0.15 seconds across two local checks, so the exact multi-column grouping
+does not restore the retired quadratic behavior. This bounded check is a
+regression guard, not a release
+benchmark.

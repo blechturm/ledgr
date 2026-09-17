@@ -217,7 +217,7 @@ and result readers.
 | prepared membership, segments, cursors, and provider | `R/availability-provider-prepared.R:23-323` |
 | execution view per actionable target | `R/availability-economics.R:225-251` |
 | valuation marks per instrument | `R/availability-economics.R:16-31` |
-| grouped conflict sweeps and status hybrid | `R/availability-facts.R:1297-1436`; called at seal from `R/availability-persistence.R:430-448` |
+| grouped conflict sweeps and status hybrid | `R/availability-facts.R:1297-1476`; called at seal from `R/availability-persistence.R:432-450` |
 | complete-set validation before membership bypass | `R/availability-persistence.R:193-303` |
 | per-bar timestamp loop | `R/availability-ingest.R:200-206` |
 | fact payload per row, repeated per assert | `R/availability-facts.R:775-800`, `:931-966` |

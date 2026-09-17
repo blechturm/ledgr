@@ -1294,22 +1294,62 @@ ledgr_fact_validate_status_supersession <- function(rows) {
   invisible(TRUE)
 }
 
-ledgr_fact_scope_key <- function(rows, columns) {
-  do.call(
-    paste,
-    c(unname(as.list(rows[, columns, drop = FALSE])), list(sep = "\r"))
-  )
+ledgr_fact_scope_group <- function(rows, columns, already_sorted = FALSE) {
+  count <- nrow(rows)
+  if (count == 0L) return(integer())
+  order_index <- if (isTRUE(already_sorted)) {
+    seq_len(count)
+  } else {
+    do.call(
+      order,
+      c(
+        unname(as.list(rows[, columns, drop = FALSE])),
+        list(na.last = TRUE, method = "radix")
+      )
+    )
+  }
+  ordered <- rows[order_index, columns, drop = FALSE]
+  starts_group <- c(TRUE, rep(FALSE, count - 1L))
+  if (count > 1L) {
+    differs <- rep(FALSE, count - 1L)
+    for (column in columns) {
+      left <- ordered[[column]][-count]
+      right <- ordered[[column]][-1L]
+      equal <- (is.na(left) & is.na(right)) |
+        (!is.na(left) & !is.na(right) & left == right)
+      differs <- differs | !equal
+    }
+    starts_group[-1L] <- differs
+  }
+  ordered_group <- cumsum(starts_group)
+  group <- integer(count)
+  group[order_index] <- ordered_group
+  group
+}
+
+ledgr_fact_nonmissing_states <- function(rows, state_column) {
+  states <- as.character(rows[[state_column]])
+  if (anyNA(states)) {
+    rlang::abort(
+      sprintf(
+        "Fact conflict validation requires non-missing `%s` states.",
+        state_column
+      ),
+      class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
+    )
+  }
+  states
 }
 
 ledgr_fact_opposing_state_overlap <- function(rows,
                                               scope_columns,
                                               state_column,
                                               stable_column = "fact_id") {
+  states <- ledgr_fact_nonmissing_states(rows, state_column)
   if (nrow(rows) < 2L) return(FALSE)
   starts <- as.numeric(rows$effective_from)
   ends <- as.numeric(rows$effective_to)
   ends[is.na(ends)] <- Inf
-  states <- as.character(rows[[state_column]])
   stable <- if (stable_column %in% names(rows)) {
     as.character(rows[[stable_column]])
   } else {
@@ -1319,16 +1359,22 @@ ledgr_fact_opposing_state_overlap <- function(rows,
     order,
     c(
       unname(as.list(rows[, scope_columns, drop = FALSE])),
-      list(starts, ends, states, stable, na.last = TRUE)
+      list(
+        starts, ends, states, stable,
+        na.last = TRUE, method = "radix"
+      )
     )
   )
   rows <- rows[order_index, , drop = FALSE]
   starts <- starts[order_index]
   ends <- ends[order_index]
   states <- states[order_index]
-  scope <- ledgr_fact_scope_key(rows, scope_columns)
-  group <- match(scope, unique(scope))
-  state_levels <- sort(unique(states), na.last = TRUE)
+  group <- ledgr_fact_scope_group(
+    rows,
+    scope_columns,
+    already_sorted = TRUE
+  )
+  state_levels <- sort(unique(states))
   previous_end <- matrix(
     -Inf,
     nrow = nrow(rows),
@@ -1354,7 +1400,7 @@ ledgr_fact_opposing_state_overlap <- function(rows,
 }
 
 ledgr_fact_validate_source_conflicts <- function(rows) {
-  if (nrow(rows) < 2L) return(invisible(TRUE))
+  ledgr_fact_nonmissing_states(rows, "status")
   superseded <- as.character(rows$supersedes_fact_id)
   supplied <- !is.na(superseded) & nzchar(superseded)
   involved <- supplied | rows$fact_id %in% superseded[supplied]
@@ -1367,7 +1413,7 @@ ledgr_fact_validate_source_conflicts <- function(rows) {
 
   involved_index <- which(involved)
   if (!conflict && length(involved_index) > 0L) {
-    scope <- ledgr_fact_scope_key(
+    scope <- ledgr_fact_scope_group(
       rows,
       c("instrument_id", "source", "precedence")
     )

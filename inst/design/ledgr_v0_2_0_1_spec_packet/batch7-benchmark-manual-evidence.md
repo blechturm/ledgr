@@ -1,6 +1,6 @@
 # v0.2.0.1 Batch 7 Benchmark And Manual Evidence
 
-Status: Implemented; pending independent review.
+Status: Implemented; focused correction review pending.
 
 Tickets: LDG-2731 and LDG-2732.
 Implementation base: `0f618fd9693584ff0a36dc6447d1cb32c56ccfda`.
@@ -90,9 +90,24 @@ environment, peer parity result, forecast, or ranking.
 
 Both articles and the manual index were rendered with the bundled Quarto. A
 source-anchor check resolved all 42 explicit `R/...:line` and
-`dev/...:line` references in the two sources. The documentation-contract test
-locks the new clock names, warm provider boundary, production seam wording,
-valuation handoff, and identity comparison.
+`dev/...:line` references, representing 41 unique anchors, in the two sources.
+The documentation-contract test locks the new clock names, warm provider
+boundary, production seam wording, valuation handoff, and identity comparison.
+
+## Review corrections
+
+The initial independent review passed Batch 7 with three Low observations.
+The built-in SMA boundary label now uses the same four-phase vocabulary as the
+durable ledgr row. Zipline measures temporary-bundle teardown separately and
+adds it to reusable snapshot preparation rather than allowing the R wrapper to
+attribute the child timing gap to warm setup. The child metadata retains the
+teardown measurement as `bundle_teardown_sec`.
+
+The methodology manual now states explicitly that provider construction is a
+warm-setup rule for a future availability-enabled peer row. The current peer
+workload declares no availability facts and measures no provider build. The
+rendered Markdown sibling and documentation contracts carry the same
+distinction.
 
 ## Verification
 
@@ -105,6 +120,12 @@ valuation handoff, and identity comparison.
 - Quarto renders: completed for both articles and the manual index; and
 - documentation-contract test: passed after final Batch 7 governance
   alignment.
+
+The focused correction pass additionally reran all 20 availability and
+snapshot-seal test files, reparsed the R harness and Zipline driver, rechecked
+the built-in SMA label and phase arithmetic, rerendered both affected manual
+articles, and passed the documentation-contract test. The release-sized peer
+record was not run.
 
 The explicit 500 by 1,260 peer record, record-specific peer README/report
 update, availability warm record, and registered full-scale cold seal remain

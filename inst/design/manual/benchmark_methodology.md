@@ -279,9 +279,11 @@ an engine row and are not smuggled into an engine claim.
 
 Warm benchmark work begins after the reusable native data boundary. It
 includes experiment-specific construction, the measured execution
-surface, and required result materialization. Provider construction is
-warm setup because it is rebuilt per experiment. Result materialization
-is warm work and has its own phase.
+surface, and required result materialization. For a future
+availability-enabled peer row, provider construction is warm setup when
+it is rebuilt per experiment. The current peer workload declares no
+availability facts and therefore measures no provider build. Result
+materialization is warm work and has its own phase.
 
 The release gate should read hot, warm, and cold phases separately. A
 result extraction regression should not be described as an engine
@@ -301,9 +303,10 @@ be separated from execution and remains honestly inside its engine
 subprocess boundary.
 
 Reusable feature or provider compilation belongs to snapshot preparation
-only when it survives across the declared experiment set. The
-availability provider does not: it is rebuilt per experiment and
-therefore belongs to experiment setup. Required result extraction
+only when it survives across the declared experiment set. In a future
+availability-enabled peer row, the availability provider would be
+rebuilt per experiment and therefore belongs to experiment setup. The
+current peer row does not construct one. Required result extraction
 belongs to every warm iteration; an optional or lazy result surface must
 be timed and named separately rather than silently omitted.
 

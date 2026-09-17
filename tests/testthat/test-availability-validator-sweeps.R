@@ -206,6 +206,76 @@ testthat::test_that("validator adversaries preserve interval and scope semantics
   ))
 })
 
+testthat::test_that("validator scope grouping preserves exact field boundaries", {
+  at <- availability_v201_at
+  na_time <- availability_v201_na_time
+  membership <- data.frame(
+    fact_id = c("a", "b"),
+    instrument_id = c("A\rB", "A"),
+    universe_id = c("C", "B\rC"),
+    member = c(TRUE, FALSE),
+    effective_from = at(c(0L, 0L)),
+    effective_to = na_time(2L),
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_true(availability_validator_compare(
+    availability_reference_validate_membership_conflicts,
+    ledgr:::ledgr_fact_validate_membership_conflicts,
+    membership
+  ))
+
+  status <- data.frame(
+    fact_id = c("a", "b"),
+    instrument_id = c("A\rB", "A"),
+    source = c("C", "B\rC"),
+    precedence = 5L,
+    status = c("active", "halted"),
+    effective_from = at(c(0L, 0L)),
+    effective_to = na_time(2L),
+    supersedes_fact_id = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_true(availability_validator_compare(
+    availability_reference_validate_status_conflicts,
+    ledgr:::ledgr_fact_validate_source_conflicts,
+    status
+  ))
+})
+
+testthat::test_that("persisted missing states raise the domain condition", {
+  membership <- availability_validator_membership_rows(1L)
+  membership$member[[1L]] <- NA
+  lifetime <- availability_validator_lifetime_rows(1L)
+  lifetime$assertion[[1L]] <- NA_character_
+  status <- availability_validator_status_rows(1L)
+  status$status[[1L]] <- NA_character_
+  status$supersedes_fact_id[[1L]] <- "prior-fact"
+
+  cases <- list(
+    membership = list(
+      fn = ledgr:::ledgr_fact_validate_membership_conflicts,
+      rows = membership
+    ),
+    lifetime = list(
+      fn = ledgr:::ledgr_fact_validate_lifetime_conflicts,
+      rows = lifetime
+    ),
+    status = list(
+      fn = ledgr:::ledgr_fact_validate_source_conflicts,
+      rows = status
+    )
+  )
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    testthat::expect_error(
+      case$fn(case$rows),
+      regexp = "requires non-missing",
+      class = "ledgr_fact_structural_conflict",
+      info = name
+    )
+  }
+})
+
 availability_validator_status_shape <- function(
     ids,
     statuses,
@@ -350,6 +420,23 @@ testthat::test_that("setwise membership bypass validates every persisted invaria
   }
 })
 
+testthat::test_that("setwise membership matching uses exact field boundaries", {
+  fixture <- availability_validator_set_fixture()
+  fixture$headers$universe_id <- "U\rS"
+  fixture$headers$set_id <- "T"
+  fixture$rows <- fixture$rows[1L, , drop = FALSE]
+  fixture$rows$universe_id <- "U"
+  fixture$rows$set_id <- "S\rT"
+
+  testthat::expect_error(
+    ledgr:::ledgr_snapshot_membership_sweep_rows(
+      fixture$rows,
+      fixture$headers
+    ),
+    class = "ledgr_snapshot_membership_set_missing"
+  )
+})
+
 testthat::test_that("mixed interval assertions enter the membership sweep", {
   fixture <- availability_validator_set_fixture()
   interval <- fixture$rows[1L, , drop = FALSE]
@@ -434,6 +521,22 @@ testthat::test_that("seal validates complete sets before bypassing their rows", 
   )
 })
 
+availability_validator_has_nested_for <- function(expr, inside_for = FALSE) {
+  if (!is.call(expr) && !is.expression(expr) && !is.pairlist(expr)) {
+    return(FALSE)
+  }
+  is_for <- is.call(expr) && identical(expr[[1L]], as.name("for"))
+  if (inside_for && is_for) return(TRUE)
+  children <- as.list(expr)
+  if (is.call(expr)) children <- children[-1L]
+  any(vapply(
+    children,
+    availability_validator_has_nested_for,
+    logical(1),
+    inside_for = inside_for || is_for
+  ))
+}
+
 testthat::test_that("installed seal path contains no retained pairwise implementation", {
   namespace <- asNamespace("ledgr")
   functions <- mget(
@@ -460,14 +563,24 @@ testthat::test_that("installed seal path contains no retained pairwise implement
     "ledgr_snapshot_membership_sweep_rows",
     fixed = TRUE
   )
-  validators <- c(
-    paste(deparse(body(ledgr:::ledgr_fact_validate_membership_conflicts)), collapse = "\n"),
-    paste(deparse(body(ledgr:::ledgr_fact_validate_source_conflicts)), collapse = "\n"),
-    paste(deparse(body(ledgr:::ledgr_fact_validate_lifetime_conflicts)), collapse = "\n")
+  validators <- list(
+    ledgr:::ledgr_fact_validate_membership_conflicts,
+    ledgr:::ledgr_fact_validate_source_conflicts,
+    ledgr:::ledgr_fact_validate_lifetime_conflicts,
+    ledgr:::ledgr_fact_opposing_state_overlap
   )
-  testthat::expect_false(any(grepl(
-    "for (i in seq_len(nrow(rows) - 1L))",
+  testthat::expect_false(any(vapply(
     validators,
-    fixed = TRUE
+    function(fn) availability_validator_has_nested_for(body(fn)),
+    logical(1)
   )))
+  rewritten_pair_loop <- quote({
+    count <- nrow(rows)
+    for (left in seq_len(count - 1L)) {
+      for (right in seq.int(left + 1L, count)) NULL
+    }
+  })
+  testthat::expect_true(
+    availability_validator_has_nested_for(rewritten_pair_loop)
+  )
 })

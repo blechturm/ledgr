@@ -231,22 +231,21 @@ ledgr_snapshot_membership_sweep_rows <- function(membership,
       "Snapshot membership-set headers are malformed."
     )
   }
-  header_key <- paste(
-    membership_sets$universe_id,
-    membership_sets$set_id,
-    sep = "\r"
+  identity_columns <- c("universe_id", "set_id")
+  identity_rows <- rbind(
+    membership_sets[, identity_columns, drop = FALSE],
+    membership[set_rows, identity_columns, drop = FALSE]
   )
-  if (anyDuplicated(header_key)) {
+  identity_group <- ledgr_fact_scope_group(identity_rows, identity_columns)
+  header_count <- nrow(membership_sets)
+  header_group <- identity_group[seq_len(header_count)]
+  row_group <- identity_group[header_count + seq_len(sum(set_rows))]
+  if (anyDuplicated(header_group)) {
     ledgr_snapshot_membership_set_abort(
       "Snapshot membership-set header identity is duplicated."
     )
   }
-  row_key <- paste(
-    membership$universe_id[set_rows],
-    membership$set_id[set_rows],
-    sep = "\r"
-  )
-  header_index <- match(row_key, header_key)
+  header_index <- match(row_group, header_group)
   if (anyNA(header_index)) {
     rlang::abort(
       "Snapshot membership rows reference a missing membership-set header.",
@@ -284,12 +283,12 @@ ledgr_snapshot_membership_sweep_rows <- function(membership,
       "Snapshot membership-set rows do not match their header provenance."
     )
   }
-  member_identity <- paste(
-    row_key,
-    membership$instrument_id[set_rows],
-    sep = "\r"
+  member_columns <- c(identity_columns, "instrument_id")
+  member_group <- ledgr_fact_scope_group(
+    membership[set_rows, member_columns, drop = FALSE],
+    member_columns
   )
-  if (anyDuplicated(member_identity)) {
+  if (anyDuplicated(member_group)) {
     ledgr_snapshot_membership_set_abort(
       "Snapshot membership-set rows contain a duplicate member identity."
     )
@@ -297,7 +296,10 @@ ledgr_snapshot_membership_sweep_rows <- function(membership,
 
   interval_rows <- !set_rows
   if (!any(interval_rows)) return(membership[0, , drop = FALSE])
-  scope <- paste(membership$instrument_id, membership$universe_id, sep = "\r")
+  scope <- ledgr_fact_scope_group(
+    membership,
+    c("instrument_id", "universe_id")
+  )
   shared_scope <- set_rows & scope %in% scope[interval_rows]
   membership[interval_rows | shared_scope, , drop = FALSE]
 }
