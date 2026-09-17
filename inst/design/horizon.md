@@ -33,9 +33,10 @@ accepted on 2026-09-16, its hot-path complexity amendment was accepted on
 availability hot- and cold-path productionization, the seal-validator
 correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, and fresh separated benchmark closeouts. Batches 0 through
-7 are complete after review and maintainer acceptance; Batches 8 through 11
-are pending behind amendment ticket-cut review, with no amendment
-implementation started. Batch 10 is the final benchmark checkpoint; Batch 11
+7 are complete after review and maintainer acceptance; Batch 8 is implemented
+and review pending, and Batches 9 through 11 are pending. The amendment ticket
+cut was independently accepted before implementation. Batch 10 is the final
+benchmark checkpoint; Batch 11
 requires an explicit maintainer go-ahead after those results are reviewed.
 Spot-crypto planning follows that
 release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,

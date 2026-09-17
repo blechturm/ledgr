@@ -357,7 +357,7 @@ were independently verified. The release-sized records remain owned by Batch
 
 ## Batch 8 - Linear Event Buffers
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -388,6 +388,12 @@ Exit criteria:
 
 - immutable paired event evidence exists, the retirement commit cites it, the
   source guard passes, and independent review accepts Batch 8.
+
+Implementation handoff: the production route, dependency floor, semantic and
+failure matrix, five-point scaling curves, paired 500-instrument record, and
+source guard are complete in
+`batch8-event-buffer-evidence.md`. Independent review is pending; Batch 9 has
+not started.
 
 ## Batch 9 - Prepared Availability Valuation
 
@@ -437,7 +443,9 @@ Scope:
 - regenerate the availability warm record and single cold seal record from
   final accepted source under new prefixes;
 - regenerate the explicit peer record and update its README and tracked report
-  from that new prefix; and
+  from that new prefix, with ledgr's compiled spot-FIFO core as a distinct
+  parity-gated row and quantstrat completing from a pinned isolated R 4.6.1
+  benchmark library; and
 - stop with a concise comparison of the achieved results against every
   registered performance gate, without running release closeout work or
   promoting the provisional `6b09a1b` records.
@@ -447,8 +455,10 @@ Review focus:
 - comparable host and cited pre-retirement pairs;
 - three separate clocks, fresh record prefixes, and the five peer-report
   fields;
+- exact canonical parity for the compiled spot-FIFO row and a `DONE`
+  quantstrat row with its resolved versions and GitHub SHAs recorded;
 - benchmark and parity results are reported literally, including misses or
-  unavailable peers, and no result is converted into a release claim.
+  unavailable optional peers, and no result is converted into a release claim.
 
 Exit criteria:
 

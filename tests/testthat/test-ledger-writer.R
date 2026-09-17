@@ -327,6 +327,204 @@ testthat::test_that("memory output handler grows event buffer and preserves even
   testthat::expect_identical(attr(events, "ledgr_event_position_delta")[[n_events]], as.numeric(n_events))
 })
 
+testthat::test_that("collapse event writes survive allocation and forced garbage collection", {
+  columns <- new.env(parent = emptyenv())
+  n <- 2048L
+  columns$label <- character(n)
+  columns$meta <- vector("list", n)
+
+  # Promote the live target before the first write so the test exercises the
+  # old-generation target / young-value barrier that collapse 2.1.8 repairs.
+  for (generation in seq_len(3L)) {
+    invisible(gc(full = TRUE))
+  }
+
+  testthat::expect_warning({
+    for (i in seq_len(n)) {
+      ledgr:::ledgr_event_buffer_setv(columns, "label", i, sprintf("event-%04d", i))
+      ledgr:::ledgr_event_buffer_setv(columns, "meta", i, list(list(i = i, text = sprintf("meta-%04d", i))))
+      if (i %% 17L == 0L) {
+        junk <- replicate(20L, raw(4096L), simplify = FALSE)
+        invisible(junk)
+        invisible(gc(full = TRUE))
+      }
+    }
+  }, NA)
+
+  testthat::expect_identical(columns$label, sprintf("event-%04d", seq_len(n)))
+  testthat::expect_identical(vapply(columns$meta, `[[`, integer(1), "i"), seq_len(n))
+  testthat::expect_identical(
+    vapply(columns$meta, `[[`, character(1), "text"),
+    sprintf("meta-%04d", seq_len(n))
+  )
+})
+
+testthat::test_that("both event handlers preserve rows across two injected growth boundaries", {
+  n_events <- 10L
+  expected_writes <- lapply(seq_len(n_events), function(i) {
+    fake_write_result("linear-memory", i)
+  })
+  expected <- do.call(rbind, lapply(expected_writes, `[[`, "row"))
+  memory <- ledgr:::ledgr_memory_output_handler(
+    "linear-memory",
+    .event_initial_capacity = 2L
+  )
+  memory$init_buffers(n_events)
+  for (i in seq_len(n_events)) {
+    testthat::expect_true(memory$buffer_event(fake_write_result("linear-memory", i)))
+  }
+  memory_rows <- memory$events()
+  expected$meta_json <- as.character(expected$meta_json)
+  for (name in names(expected)) {
+    testthat::expect_identical(memory_rows[[name]], expected[[name]])
+  }
+  testthat::expect_identical(
+    attr(memory_rows, "ledgr_event_cash_delta"),
+    vapply(expected_writes, `[[`, numeric(1), "cash_delta")
+  )
+  testthat::expect_identical(
+    attr(memory_rows, "ledgr_event_position_delta"),
+    vapply(expected_writes, `[[`, numeric(1), "position_delta")
+  )
+  testthat::expect_identical(
+    attr(memory_rows, "ledgr_event_meta"),
+    lapply(expected_writes, `[[`, "meta")
+  )
+  testthat::expect_identical(
+    attr(memory_rows, "ledgr_event_realized"),
+    rep(NA_real_, n_events)
+  )
+  testthat::expect_identical(
+    attr(memory_rows, "ledgr_event_cost_basis"),
+    rep(NA_real_, n_events)
+  )
+
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  insert_test_run(con, "linear-durable")
+  durable <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = "linear-durable",
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE,
+    .event_initial_capacity = 2L
+  )
+  durable$init_buffers(n_events)
+  for (i in seq_len(n_events)) {
+    testthat::expect_true(durable$buffer_event(fake_write_result("linear-durable", i)))
+  }
+  durable$flush_pending()
+  durable_rows <- DBI::dbGetQuery(
+    con,
+    "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+    params = list("linear-durable")
+  )
+  durable_expected <- do.call(rbind, lapply(seq_len(n_events), function(i) {
+    fake_write_result("linear-durable", i)$row
+  }))
+  durable_expected$meta_json <- as.character(durable_expected$meta_json)
+  for (name in names(durable_expected)) {
+    testthat::expect_identical(durable_rows[[name]], durable_expected[[name]])
+  }
+})
+
+testthat::test_that("failed event-buffer writes do not expose a partial active row", {
+  original <- ledgr:::ledgr_event_buffer_setv
+  calls <- 0L
+  fail_once <- function(...) {
+    calls <<- calls + 1L
+    if (calls == 4L) {
+      stop("injected event-buffer write failure", call. = FALSE)
+    }
+    original(...)
+  }
+  testthat::local_mocked_bindings(
+    ledgr_event_buffer_setv = fail_once,
+    .package = "ledgr"
+  )
+
+  memory <- ledgr:::ledgr_memory_output_handler("linear-failure-memory", .event_initial_capacity = 2L)
+  memory$init_buffers(2L)
+  write <- fake_write_result("linear-failure-memory", 1L)
+  testthat::expect_error(memory$buffer_event(write), "injected event-buffer write failure", fixed = TRUE)
+  testthat::expect_identical(nrow(memory$events()), 0L)
+  testthat::expect_true(memory$buffer_event(write))
+  testthat::expect_identical(memory$events()$event_id, write$row$event_id)
+
+  calls <- 0L
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  insert_test_run(con, "linear-failure-durable")
+  durable <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = "linear-failure-durable",
+    run_wall_start = as.POSIXct("2020-01-01 00:00:00", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE,
+    .event_initial_capacity = 2L
+  )
+  durable$init_buffers(2L)
+  write <- fake_write_result("linear-failure-durable", 1L)
+  testthat::expect_error(durable$buffer_event(write), "injected event-buffer write failure", fixed = TRUE)
+  testthat::expect_identical(durable$pending_event_count(), 0L)
+  testthat::expect_true(durable$buffer_event(write))
+  durable$flush_pending()
+  rows <- DBI::dbGetQuery(con, "SELECT event_id FROM ledger_events WHERE run_id = ?", params = list("linear-failure-durable"))
+  testthat::expect_identical(rows$event_id, write$row$event_id)
+})
+
+testthat::test_that("event-buffer source has one collapse 2.1.8 route and no fallback", {
+  root <- testthat::test_path("..", "..")
+  description <- read.dcf(file.path(root, "DESCRIPTION"))
+  testthat::expect_match(description[[1L, "Imports"]], "collapse \\(>= 2[.]1[.]8\\)")
+
+  helper_body <- paste(deparse(body(ledgr:::ledgr_event_buffer_setv)), collapse = "\n")
+  memory_body <- paste(deparse(body(ledgr:::ledgr_memory_output_handler)), collapse = "\n")
+  durable_body <- paste(deparse(body(ledgr:::ledgr_persistent_output_handler)), collapse = "\n")
+  testthat::expect_match(helper_body, "collapse::setv", fixed = TRUE)
+  testthat::expect_match(helper_body, "xlist = TRUE", fixed = TRUE)
+  testthat::expect_false(grepl("getOption|Sys.getenv|packageVersion", helper_body))
+  testthat::expect_false(grepl("col\\[\\[i\\]\\] <-|col\\[i\\] <-", memory_body))
+  testthat::expect_false(grepl("col\\[\\[i\\]\\] <-|col\\[i\\] <-", durable_body))
+  testthat::expect_false(grepl("state\\$event_cols\\[\\[name\\]\\] <- col", memory_body))
+  testthat::expect_false(grepl("state\\$pending_cols\\[\\[name\\]\\] <- col", durable_body))
+  testthat::expect_false(grepl("state\\$event_cols\\$[A-Za-z_]+\\[idx\\] <-", memory_body))
+  testthat::expect_false(grepl("rm\\s*\\(", helper_body))
+  testthat::expect_false(grepl("rm\\s*\\(", memory_body))
+  testthat::expect_false(grepl("rm\\s*\\(", durable_body))
+  testthat::expect_false(any(grepl("arm|route|fallback", names(formals(ledgr:::ledgr_memory_output_handler)))))
+  testthat::expect_false(any(grepl("arm|route|fallback", names(formals(ledgr:::ledgr_persistent_output_handler)))))
+  testthat::expect_error(
+    ledgr:::ledgr_event_buffer_setv(list(label = character(1L)), "label", 1L, "lost"),
+    class = "ledgr_invalid_state"
+  )
+
+  fake_lib <- tempfile("ledgr-under-floor-")
+  dir.create(file.path(fake_lib, "collapse", "Meta"), recursive = TRUE)
+  writeLines(
+    c("Package: collapse", "Version: 2.1.7"),
+    file.path(fake_lib, "collapse", "DESCRIPTION")
+  )
+  saveRDS(
+    list(DESCRIPTION = c(Package = "collapse", Version = "2.1.7")),
+    file.path(fake_lib, "collapse", "Meta", "package.rds")
+  )
+  imports <- trimws(unlist(strsplit(description[[1L, "Imports"]], ",", fixed = TRUE)))
+  collapse_import <- imports[grepl("^collapse[[:space:]]*\\(", imports)]
+  testthat::expect_length(collapse_import, 1L)
+  collapse_floor <- sub(
+    "^collapse[[:space:]]*\\(>=[[:space:]]*([^)]*)\\)$",
+    "\\1",
+    collapse_import
+  )
+  testthat::expect_identical(collapse_floor, "2.1.8")
+  resolved_under_floor <- utils::packageVersion("collapse", lib.loc = fake_lib)
+  testthat::expect_lt(resolved_under_floor, package_version(collapse_floor))
+})
+
 testthat::test_that("SELL fill writes correct deltas", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

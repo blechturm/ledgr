@@ -32,7 +32,7 @@ the execution contracts in `inst/design/contracts.md`.
   instruments x pulses, events, diagnostics, or candidates; prepare and index
   once, read primitives by index, manifest data frames only at boundaries,
   write by index into typed buffers, and replace pairwise validators with
-  grouped sweeps. Its six named shapes are review criteria for any change on
+  grouped sweeps. Its seven named shapes are review criteria for any change on
   those paths; a new loop over such a collection needs a stated reason.
 - This file stays operational and under 150 lines: rules, current state,
   entry points for open work, verification, and ticket workflow. Release
@@ -70,8 +70,9 @@ active v0.2.0.1 packet):
 - The active v0.2.0.1 packet covers availability seams, seal validators,
   resumed-run repair, linear event writes, prepared valuation, and benchmark
   closeout. LDG-2719 through LDG-2740 are in the active packet; Batches 0-7
-  are complete and Batches 8-11 pending. Batch 10 is the benchmark checkpoint;
-  Batch 11 needs a maintainer go-ahead. Old paths ship in no form, the public
+  are complete, Batch 8 is implemented and review pending, and Batches 9-11
+  are pending. Batch 10 is the benchmark checkpoint; Batch 11 needs a
+  maintainer go-ahead. Old paths ship in no form, the public
   fact resolver stays independent, and no speed claim is authorized.
 - The refreshed spot-crypto readiness probe follows v0.2.0.1 as a separate
   v0.2.0.x planning cycle. Do not draft its Charter or change package code

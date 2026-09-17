@@ -241,6 +241,8 @@ tickets:
       scope: "release-record"
     tests:
       - "Fresh final-source peer benchmark record run"
+      - "Compiled spot-FIFO row with exact canonical parity"
+      - "Pinned isolated quantstrat environment and DONE row"
       - "Parity and divergence review"
       - "Peer README and tracked-report field check"
       - "Status/reason, conditional-row, zero-denominator, and weak-tolerance report checks"
@@ -289,7 +291,7 @@ tickets:
 
   - id: "LDG-2736"
     title: "Collapse 2.1.8 event-write route gate"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2732"]
@@ -305,7 +307,7 @@ tickets:
 
   - id: "LDG-2737"
     title: "Linear memory and durable event buffers"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2736"]
@@ -321,7 +323,7 @@ tickets:
 
   - id: "LDG-2738"
     title: "Event scaling and old-writer retirement"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2737"]

@@ -11,10 +11,11 @@
   maintainer acceptance. Batches 1 through 7 are complete after independent
   review and maintainer acceptance. The accepted hot-path complexity amendment
   adds linear memory/durable event writes and prepared fold-time valuation;
-  Batches 8 through 11 are pending behind amendment ticket-cut review, no
-  amendment implementation has started, and the first benchmark records remain
-  provisional until rerun from final source. Final benchmarks have their own
-  checkpoint before a separately authorized release gate.
+  its ticket cut was independently accepted, Batch 8 event buffers are
+  implemented and review pending, and Batches 9 through 11 remain pending.
+  The first benchmark records remain provisional until rerun from final source.
+  Final benchmarks have their own checkpoint before a separately authorized
+  release gate.
 
 # ledgr 0.2.0.0
 

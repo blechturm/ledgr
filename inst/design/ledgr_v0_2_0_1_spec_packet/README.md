@@ -1,9 +1,9 @@
 # ledgr v0.2.0.1 Spec Packet
 
 Status: Batches 0 through 7 complete after review and maintainer acceptance.
+Batch 8 is implemented and review pending; Batches 9 through 11 are pending.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
-LDG-2740; its ticket-cut review is pending, no implementation has started, and
-Batches 8 through 11 are pending.
+LDG-2740, and its ticket cut was independently accepted before implementation.
 
 This packet scopes v0.2.0.1 as an internal implementation and correctness
 release. It productionizes the three reviewed availability hot-path
@@ -66,6 +66,10 @@ Authoritative files:
   terminal merge, strict failure matrix, dense-path exclusion, and reopen)
 - `batch6-seal-validator-evidence.md` (randomized and adversarial equivalence,
   grouped sweeps, status hybrid, setwise bypass, and structural retirement)
+- `batch7-benchmark-manual-evidence.md` (peer phase boundaries, smoke evidence,
+  rendered manuals, and documentation contracts)
+- `batch8-event-buffer-evidence.md` (collapse route choice, exact parity,
+  semantic and failure matrix, five-point scaling, and source retirement)
 
 Binding design inputs:
 

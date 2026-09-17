@@ -1513,11 +1513,15 @@ ledgr_sweep_run_candidate <- function(exp,
   list(row = row, retained_returns = retained_returns, retained_trades = retained_trades)
 }
 
-ledgr_memory_output_handler <- function(run_id) {
+ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L) {
   state <- new.env(parent = emptyenv())
   state$event_count <- 0L
   state$event_capacity <- 0L
   state$event_max_capacity <- .Machine$integer.max
+  state$event_initial_capacity <- ledgr_event_buffer_checked_capacity(
+    .event_initial_capacity,
+    "`.event_initial_capacity`"
+  )
   state$event_cols <- NULL
   state$status <- "RUNNING"
   state$completion <- NULL
@@ -1552,7 +1556,8 @@ ledgr_memory_output_handler <- function(run_id) {
     next_capacity <- ledgr_event_buffer_next_capacity(
       current_capacity = state$event_capacity,
       required = required,
-      max_events = state$event_max_capacity
+      max_events = state$event_max_capacity,
+      initial_capacity = state$event_initial_capacity
     )
     if (required <= state$event_capacity) {
       return(invisible(TRUE))
@@ -1563,9 +1568,7 @@ ledgr_memory_output_handler <- function(run_id) {
     if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
       for (name in ls(old_cols, all.names = TRUE)) {
-        col <- state$event_cols[[name]]
-        col[idx] <- old_cols[[name]][idx]
-        state$event_cols[[name]] <- col
+        ledgr_event_buffer_setv(state$event_cols, name, idx, old_cols[[name]][idx])
       }
     }
     invisible(TRUE)
@@ -1573,26 +1576,19 @@ ledgr_memory_output_handler <- function(run_id) {
 
   set_event_value <- function(name, i, value) {
     col <- state$event_cols[[name]]
-    if (is.character(col)) {
-      col[[i]] <- as.character(value)[[1]]
-      state$event_cols[[name]] <- col
-      return(invisible(NULL))
-    }
     if (is.list(col)) {
-      col[i] <- list(value)
-      state$event_cols[[name]] <- col
-      return(invisible(NULL))
+      return(ledgr_event_buffer_setv(state$event_cols, name, i, list(value)))
     }
     value <- if (inherits(col, "POSIXct")) {
       as.POSIXct(value, tz = "UTC")[[1]]
+    } else if (is.character(col)) {
+      as.character(value)[[1]]
     } else if (is.integer(col)) {
       as.integer(value)[[1]]
     } else {
       as.numeric(value)[[1]]
     }
-    collapse::setv(col, i, value, vind1 = TRUE)
-    state$event_cols[[name]] <- col
-    invisible(NULL)
+    ledgr_event_buffer_setv(state$event_cols, name, i, value)
   }
 
   append_event_row_list <- function(row,
@@ -1602,8 +1598,7 @@ ledgr_memory_output_handler <- function(run_id) {
                                     event_cost_basis = NA_real_,
                                     meta = NULL) {
     ensure_event_capacity(state$event_count + 1L)
-    state$event_count <- state$event_count + 1L
-    i <- state$event_count
+    i <- state$event_count + 1L
     set_event_value("event_id", i, row$event_id)
     set_event_value("run_id", i, row$run_id)
     set_event_value("ts_utc", i, row$ts_utc)
@@ -1620,6 +1615,7 @@ ledgr_memory_output_handler <- function(run_id) {
     set_event_value("event_realized", i, event_realized)
     set_event_value("event_cost_basis", i, event_cost_basis)
     set_event_value("meta", i, meta)
+    state$event_count <- i
     invisible(TRUE)
   }
 
@@ -1702,17 +1698,17 @@ ledgr_memory_output_handler <- function(run_id) {
       end <- state$event_count + n
       ensure_event_capacity(end)
       idx <- start:end
-      state$event_cols$event_id[idx] <- as.character(rows$event_id)
-      state$event_cols$run_id[idx] <- as.character(rows$run_id)
-      state$event_cols$ts_utc[idx] <- as.POSIXct(rows$ts_utc, tz = "UTC")
-      state$event_cols$event_type[idx] <- as.character(rows$event_type)
-      state$event_cols$instrument_id[idx] <- as.character(rows$instrument_id)
-      state$event_cols$side[idx] <- as.character(rows$side)
-      state$event_cols$qty[idx] <- as.numeric(rows$qty)
-      state$event_cols$price[idx] <- as.numeric(rows$price)
-      state$event_cols$fee[idx] <- as.numeric(rows$fee)
-      state$event_cols$meta_json[idx] <- as.character(rows$meta_json)
-      state$event_cols$event_seq[idx] <- as.integer(rows$event_seq)
+      ledgr_event_buffer_setv(state$event_cols, "event_id", idx, rows$event_id)
+      ledgr_event_buffer_setv(state$event_cols, "run_id", idx, rows$run_id)
+      ledgr_event_buffer_setv(state$event_cols, "ts_utc", idx, rows$ts_utc)
+      ledgr_event_buffer_setv(state$event_cols, "event_type", idx, rows$event_type)
+      ledgr_event_buffer_setv(state$event_cols, "instrument_id", idx, rows$instrument_id)
+      ledgr_event_buffer_setv(state$event_cols, "side", idx, rows$side)
+      ledgr_event_buffer_setv(state$event_cols, "qty", idx, rows$qty)
+      ledgr_event_buffer_setv(state$event_cols, "price", idx, rows$price)
+      ledgr_event_buffer_setv(state$event_cols, "fee", idx, rows$fee)
+      ledgr_event_buffer_setv(state$event_cols, "meta_json", idx, rows$meta_json)
+      ledgr_event_buffer_setv(state$event_cols, "event_seq", idx, rows$event_seq)
       for (j in seq_len(n)) {
         meta <- ledgr_lot_parse_meta(rows$meta_json[[j]])
         pos <- start + j - 1L
@@ -1735,28 +1731,28 @@ ledgr_memory_output_handler <- function(run_id) {
     end <- state$event_count + n
     ensure_event_capacity(end)
     idx <- start:end
-    state$event_cols$event_id[idx] <- as.character(batch$event_id)
-    state$event_cols$run_id[idx] <- as.character(batch$event_run_id)
-    state$event_cols$ts_utc[idx] <- as.POSIXct(
+    ledgr_event_buffer_setv(state$event_cols, "event_id", idx, batch$event_id)
+    ledgr_event_buffer_setv(state$event_cols, "run_id", idx, batch$event_run_id)
+    ledgr_event_buffer_setv(state$event_cols, "ts_utc", idx, as.POSIXct(
       as.numeric(batch$event_ts_utc),
       origin = "1970-01-01",
       tz = "UTC"
-    )
-    state$event_cols$event_type[idx] <- as.character(batch$event_type)
-    state$event_cols$instrument_id[idx] <- as.character(batch$event_instrument_id)
-    state$event_cols$side[idx] <- as.character(batch$event_side)
-    state$event_cols$qty[idx] <- as.numeric(batch$event_qty)
-    state$event_cols$price[idx] <- as.numeric(batch$event_price)
-    state$event_cols$fee[idx] <- as.numeric(batch$event_fee)
-    state$event_cols$meta_json[idx] <- rep(NA_character_, n)
-    state$event_cols$event_seq[idx] <- as.integer(batch$event_seq)
-    state$event_cols$cash_delta[idx] <- as.numeric(batch$cash_delta)
-    state$event_cols$position_delta[idx] <- as.numeric(batch$position_delta)
-    state$event_cols$event_realized[idx] <- as.numeric(batch$event_realized)
-    state$event_cols$event_cost_basis[idx] <- as.numeric(batch$event_cost_basis)
+    ))
+    ledgr_event_buffer_setv(state$event_cols, "event_type", idx, batch$event_type)
+    ledgr_event_buffer_setv(state$event_cols, "instrument_id", idx, batch$event_instrument_id)
+    ledgr_event_buffer_setv(state$event_cols, "side", idx, batch$event_side)
+    ledgr_event_buffer_setv(state$event_cols, "qty", idx, batch$event_qty)
+    ledgr_event_buffer_setv(state$event_cols, "price", idx, batch$event_price)
+    ledgr_event_buffer_setv(state$event_cols, "fee", idx, batch$event_fee)
+    ledgr_event_buffer_setv(state$event_cols, "meta_json", idx, rep(NA_character_, n))
+    ledgr_event_buffer_setv(state$event_cols, "event_seq", idx, batch$event_seq)
+    ledgr_event_buffer_setv(state$event_cols, "cash_delta", idx, batch$cash_delta)
+    ledgr_event_buffer_setv(state$event_cols, "position_delta", idx, batch$position_delta)
+    ledgr_event_buffer_setv(state$event_cols, "event_realized", idx, batch$event_realized)
+    ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", idx, batch$event_cost_basis)
     # Keep field order aligned with ledgr_fill_event_payload(); meta_json
     # materialization is byte-compared against the canonical R path.
-    state$event_cols$meta[idx] <- Map(
+    ledgr_event_buffer_setv(state$event_cols, "meta", idx, Map(
       function(fee, cash_delta, position_delta) {
         list(
           fee = as.numeric(fee),
@@ -1768,7 +1764,7 @@ ledgr_memory_output_handler <- function(run_id) {
       as.numeric(batch$event_fee),
       as.numeric(batch$cash_delta),
       as.numeric(batch$position_delta)
-    )
+    ))
     state$event_count <- end
 
     ledgr_fill_row_buffer_add_many(

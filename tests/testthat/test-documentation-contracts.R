@@ -2988,7 +2988,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch1-baseline-evidence.md", "batch2-provider-evidence.md",
     "batch3-diagnostic-evidence.md", "batch4-parity-evidence.md",
     "batch5-finalization-evidence.md", "batch6-seal-validator-evidence.md",
-    "batch7-benchmark-manual-evidence.md"
+    "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -3000,7 +3000,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "readme", "spec", "amendment", "tickets", "yaml", "batches",
     "batch1_evidence", "batch2_evidence", "batch3_evidence",
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
-    "batch7_evidence"
+    "batch7_evidence", "batch8_evidence"
   )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
@@ -3035,7 +3035,9 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     yaml_statuses,
     c(
       rep("complete_after_review", 14L),
-      rep("pending", 8L)
+      rep("pending", 3L),
+      rep("review_pending", 3L),
+      rep("pending", 2L)
     )
   )
   ticket_lines <- readLines(paths[[4L]], warn = FALSE)
@@ -3044,7 +3046,9 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     md_statuses,
     c(
       rep("Complete After Review", 14L),
-      rep("Pending", 8L)
+      rep("Pending", 3L),
+      rep("Review Pending", 3L),
+      rep("Pending", 2L)
     )
   )
   batch_lines <- readLines(paths[[6L]], warn = FALSE)
@@ -3061,7 +3065,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     batch_statuses,
     c(
       rep("Complete After Review.", 8L),
-      rep("Pending.", 4L)
+      "Review Pending.",
+      rep("Pending.", 3L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3124,6 +3129,36 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     docs$batch7_evidence,
     "No record run was performed in[[:space:]]+this batch"
   )
+  testthat::expect_match(
+    docs$batch8_evidence,
+    "memory | direct | 29.28, 28.61, 29.12 | 29.12",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch8_evidence,
+    "BATCH8_EVENT_BUFFER_GATES_OK",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "--compiled-accounting-model spot_fifo",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "Quantstrat must finish as `DONE`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batches,
+    "compiled spot-FIFO core as a distinct",
+    fixed = TRUE
+  )
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
@@ -3160,6 +3195,16 @@ testthat::test_that("v0.2.0.1 optimization manuals record production boundaries"
     testthat::expect_match(
       docs[[name]],
       "peer workload declares no[[:space:]]+availability facts"
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "--compiled-accounting-model spot_fifo",
+      fixed = TRUE
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "quantstrat must finish as DONE from its pinned isolated library",
+      ignore.case = TRUE
     )
   }
   for (name in c("style_qmd", "style_md")) {

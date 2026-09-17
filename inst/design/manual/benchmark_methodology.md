@@ -142,6 +142,16 @@ B2 peer sidecar, when explicitly scoped:
 Rscript dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
 ```
 
+The generic record preset remains unchanged. For the v0.2.0.1 final
+measurement checkpoint, however, the compiled spot-FIFO row is required
+and the exact record command includes
+`--compiled-accounting-model spot_fifo`. Quantstrat is also a required
+completed row for that checkpoint. It is provisioned only in a dedicated
+isolated R 4.6.1 benchmark library, with the resolved versions and GitHub
+SHAs recorded; it does not become a package dependency. An unavailable
+compiled or quantstrat row blocks that checkpoint, while other peer rows
+retain their explicit availability semantics.
+
 Generated files stay local. Closeout documents should name the record
 prefix and summarize the relevant rows, not commit raw results by
 default.
@@ -242,7 +252,7 @@ result extraction separately. Sweep rows call `ledgr_sweep()` and read
 candidate telemetry columns for engine and result phases.
 
 `peer_benchmark.R` dispatches a shared bars CSV through ledgr durable,
-ledgr memory-backed, optional B2 memory-backed, ledgr built-in SMA,
+ledgr memory-backed, opt-in B2 memory-backed, ledgr built-in SMA,
 quantstrat, Backtrader, zipline-reloaded, and LEAN surfaces. It compares
 every peer row to canonical ledgr before performance interpretation. Its
 phase validator rejects a completed row whose four measured phases do
@@ -332,11 +342,13 @@ Peer closeout wording should include parity:
 Peer benchmark completed with:
   dev/bench/peer_benchmark/peer_benchmark.R --preset record \
     --release v0.2.0.1 --engine-set all \
-    --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530
+    --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 \
+    --compiled-accounting-model spot_fifo
 
 Parity:
   canonical ledgr vs memory-backed ledgr must pass before peer performance
-  rows are interpreted.
+  rows are interpreted. The compiled spot-FIFO row must match canonical ledgr
+  exactly, and quantstrat must finish as DONE from its pinned isolated library.
 
 Interpretation:
   Compare only under the report's declared same-host fixture and phase

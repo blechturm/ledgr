@@ -14,8 +14,9 @@ first independent review, the focused re-review, and the in-place N1 patch.
 On 2026-09-17 the maintainer accepted the reviewed hot-path complexity
 amendment. It adds exactly two release-blocking corrections before closeout:
 linear event-buffer writes and prepared fold-time availability valuation.
-This amendment ticket cut awaits independent review; LDG-2736 through
-LDG-2740 remain Pending and no implementation has started.
+The amendment ticket cut was independently accepted. LDG-2736 through
+LDG-2738 are implemented and Review Pending; LDG-2739 and LDG-2740 remain
+Pending.
 
 Ticket IDs begin at LDG-2719 after the v0.2.0.0 packet. LDG-2733 through
 LDG-2735 retain their existing tail identities; amendment tickets continue at
@@ -911,18 +912,31 @@ Run the explicit standard peer workload after the package code, phase split,
 and manuals are final, record it without a ranking claim, and carry the record
 into the peer README and tracked report. The record first run from `6b09a1b`
 is provisional and cannot satisfy this ticket. This is a measurement ticket,
-not release closeout.
+not release closeout. The final record includes ledgr's compiled spot-FIFO core
+as its own parity-gated row and a completed quantstrat row.
 
 ### Tasks
 
 - Run `--preset record --release v0.2.0.1 --engine-set all --n-inst 500
-  --n-days 1260 --fast 5 --slow 10 --seed 20260530`.
+  --n-days 1260 --fast 5 --slow 10 --seed 20260530
+  --compiled-accounting-model spot_fifo`.
 - Use a new record prefix from accepted post-LDG-2740 source; do not overwrite
   or silently promote the provisional record.
+- Provision quantstrat in a dedicated isolated R 4.6.1 benchmark library. Pin
+  quantstrat 0.25 at `1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f`, blotter
+  0.17.0 at `dddb448f7a5d6eb63dfbe421ba80779e820a3601`, and
+  FinancialInstrument 1.3.0 at
+  `98bcf09fc80e25611897404dcd59321ef67850ac`; use xts 0.14.2 and TTR
+  0.24.4. Record the resolved versions, GitHub SHAs, and library root. This is
+  benchmark-only provisioning and must not add a package dependency.
+- Record `ledgr_ttr_compiled_spot_fifo_ephemeral` as a distinct row. Require
+  its canonical equity, fills, and trades to match the canonical ledgr row
+  before interpreting any compiled timing.
 - Record status and environment per engine; reconcile phase totals with the
   full row wall; compare canonical equity, fills, and trades to durable ledgr
   before interpreting timing; classify the first divergence where full parity
-  is impossible; keep unavailable peers unavailable.
+  is impossible. Quantstrat must finish as `DONE`; Backtrader, Zipline, and
+  local LEAN may remain explicitly `UNAVAILABLE` with reasons.
 - Update the peer README and tracked report with all five required fields: the
   exact closeout command, the exact record prefix, the environment, the parity
   status, and explicit non-ranking language.
@@ -938,7 +952,14 @@ not release closeout.
 
 ### Acceptance Criteria
 
-- Required rows are present or explicitly `UNAVAILABLE` with reasons.
+- The durable and ephemeral canonical ledgr rows, built-in SMA row, compiled
+  spot-FIFO row, and quantstrat row are present with status `DONE`.
+- The compiled spot-FIFO row has exact canonical parity before its timing is
+  interpreted.
+- The isolated quantstrat environment records the required versions and SHAs;
+  an unavailable or failed quantstrat row blocks this measurement checkpoint.
+- Backtrader, Zipline, and local LEAN are present or explicitly `UNAVAILABLE`
+  with reasons.
 - Parity precedes timing interpretation.
 - The peer README and tracked report carry the five required fields for this
   record and no ranking language.
@@ -1044,7 +1065,7 @@ scope: v0.2.0.1-closeout
 Priority: P0
 Effort: M
 Dependencies: LDG-2732
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -1107,7 +1128,7 @@ scope: collapse-route-gate
 Priority: P0
 Effort: L
 Dependencies: LDG-2736
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -1169,7 +1190,7 @@ scope: linear-production-writes
 Priority: P0
 Effort: M
 Dependencies: LDG-2737
-Status: Pending
+Status: Review Pending
 
 ### Description
 
