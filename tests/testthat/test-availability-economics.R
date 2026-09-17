@@ -909,3 +909,145 @@ testthat::test_that("unexpected fold errors roll back economics and retain error
   testthat::expect_identical(diagnostics$outcome, "error")
   testthat::expect_identical(diagnostics$reason_code, "fold_exception")
 })
+
+testthat::test_that("prepared valuation and linear event growth coexist in one eventful fold", {
+  dates <- as.Date("2020-01-01") + 0:3
+  closes <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")
+  membership_input <- data.frame(
+    effective_from = as.POSIXct(paste(dates[1:2], "00:00:00"), tz = "UTC"),
+    knowledge_time = as.POSIXct(paste(dates[1:2] - 1, "23:00:00"), tz = "UTC"),
+    source = "combined_case",
+    stringsAsFactors = FALSE
+  )
+  membership_input$members <- list(c("AAA", "BBB"), "BBB")
+  membership <- ledgr_facts_membership_snapshots(
+    membership_input,
+    "combined",
+    complete = TRUE
+  )
+  lifetime <- ledgr_facts_lifetime(data.frame(
+    instrument_id = "BBB",
+    effective_from = closes[[4L]],
+    knowledge_time = closes[[4L]] - 1,
+    assertion = "known_inactive",
+    terminal_event = "delisted",
+    source = "combined_case"
+  ))
+  grid <- expand.grid(
+    instrument_id = c("AAA", "BBB"),
+    day = seq_along(dates),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  grid <- grid[!(grid$instrument_id == "AAA" & grid$day == 3L), , drop = FALSE]
+  bars <- data.frame(
+    ts_utc = closes[grid$day],
+    instrument_id = grid$instrument_id,
+    open = 100 + grid$day,
+    high = 101 + grid$day,
+    low = 99 + grid$day,
+    close = 100 + grid$day,
+    volume = 1000
+  )
+  snapshot <- availability_economics_snapshot(
+    c("AAA", "BBB"),
+    days = 4L,
+    bars = bars,
+    membership = membership,
+    lifetime = lifetime
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) {
+      target[c("AAA", "BBB")] <- c(2, 1)
+    } else if (identical(ctx$ts_utc, "2020-01-02T16:00:00Z")) {
+      target[["BBB"]] <- 0
+    } else if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
+      target[c("AAA", "BBB")] <- c(0, 1)
+    }
+    target
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    universe = ledgr_universe_members("combined"),
+    valuation_policy = ledgr_valuation_stale(1L),
+    cost_model = ledgr_cost_fixed_fee(0.5),
+    opening = ledgr_opening(cash = 1000)
+  )
+
+  original_handler <- ledgr:::ledgr_persistent_output_handler
+  original_capacity <- ledgr:::ledgr_event_buffer_next_capacity
+  growths <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_persistent_output_handler = function(con,
+                                                run_id,
+                                                run_wall_start,
+                                                execution_mode,
+                                                persist_features,
+                                                .event_initial_capacity = 1024L) {
+      original_handler(
+        con,
+        run_id,
+        run_wall_start,
+        execution_mode,
+        persist_features,
+        .event_initial_capacity = 2L
+      )
+    },
+    ledgr_event_buffer_next_capacity = function(current_capacity,
+                                                 required,
+                                                 max_events,
+                                                 initial_capacity) {
+      next_capacity <- original_capacity(
+        current_capacity,
+        required,
+        max_events,
+        initial_capacity
+      )
+      if (current_capacity > 0L && next_capacity > current_capacity) {
+        growths <<- growths + 1L
+      }
+      next_capacity
+    },
+    .package = "ledgr"
+  )
+
+  bt <- ledgr_run(experiment, run_id = "combined-linear-corrections")
+  on.exit(close(bt), add = TRUE)
+  stored <- availability_economics_tables(bt)
+  testthat::expect_identical(stored$run$status, "INCOMPLETE")
+  testthat::expect_identical(
+    stored$completion$stop_reason,
+    "terminal_settlement_unsupported"
+  )
+  testthat::expect_gte(growths, 2L)
+  fills <- stored$events[stored$events$event_type == "FILL", , drop = FALSE]
+  testthat::expect_equal(nrow(fills), 5L)
+  testthat::expect_true(all(fills$fee == 0.5))
+  testthat::expect_true(any(
+    stored$diagnostics$instrument_id == "AAA" &
+      stored$diagnostics$mark_source == "stale_close" &
+      stored$diagnostics$mark_age == 1L
+  ))
+  testthat::expect_true(any(
+    stored$diagnostics$instrument_id == "AAA" &
+      stored$diagnostics$stage == "decision" &
+      stored$diagnostics$quantity != 0
+  ))
+  testthat::expect_true(any(
+    stored$diagnostics$reason_code == "membership_changed_before_execution"
+  ))
+  testthat::expect_identical(
+    stored$diagnostics$reason_code[stored$diagnostics$outcome == "stopped"],
+    "terminal_settlement_unsupported"
+  )
+  reopened <- ledgr_run_open(snapshot, "combined-linear-corrections")
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_identical(
+    as.data.frame(ledgr_results(reopened, "ledger")),
+    as.data.frame(ledgr_results(bt, "ledger"))
+  )
+})

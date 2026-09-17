@@ -23,6 +23,7 @@ summary.
 | `paired_runs.csv` | `30d17bccb74927e5d686946ca40b42db9903e3626f1c581747e001400ba93590` |
 | `surface_fingerprints.csv` | `d12673d61c581ad0306c472e8f80f36c967ffe75036f894e5e4b3434d1978adf` |
 | `gate_summary.csv` | `747219327caaefd478989439edb533151320b4bd618a48b236b214ce63ea5c86` |
+| `combined_case.csv` | `c026cd28f5debf90cc7715910bd4f9d06995050fa65e002ae0ccc12b4f292750` |
 
 The registered shape was 563 source instruments, a 505-member axis, 757
 pulses, 426,191 bars, and 30,300 membership rows. One shared sealed snapshot
@@ -66,6 +67,21 @@ current instruments; exact fresh, stale, and expired states; reordered axes;
 repeated cutoffs; and fail-closed backward, duplicate, and unknown axes.
 Focused availability-economics and availability-state suites passed under
 both the reference and prepared arms before this prefix was frozen.
+
+## Combined correction case
+
+The bounded eventful case was run at the frozen evidence commit `5e88065`,
+before reference retirement. Both arms used the same two-instrument,
+four-pulse availability fold and a private event-buffer initial capacity of
+two. They matched exactly on config hash, diagnostics, ledger events, equity,
+strategy state, and completion.
+
+Both arms crossed two geometric event-buffer boundaries and produced five
+fills with a non-zero fixed fee. The case also exercised a complete-list
+membership change, a held former member, an interior price gap at the exact
+stale boundary, and a terminal-event stop. Every registered predicate is true
+in `combined_case.csv`. The final durable test retains this shape against the
+prepared production path, including reopen parity.
 
 ## Retirement rule
 

@@ -1,50 +1,9 @@
 ledgr_availability_cash_tolerance <- 1e-8
 
-ledgr_availability_valuation_marks_reference <- function(bars_mat,
-                                                          instrument_ids,
-                                                          axis,
-                                                          pulse_idx,
-                                                          pulses_posix,
-                                                          max_sessions) {
-  n <- length(axis)
-  reference <- mark <- stats::setNames(rep(NA_real_, n), axis)
-  source_ts <- stats::setNames(as.POSIXct(rep(NA_character_, n), tz = "UTC"), axis)
-  age <- stats::setNames(rep(NA_integer_, n), axis)
-  source <- stats::setNames(rep("missing", n), axis)
-  permissible <- stats::setNames(rep(FALSE, n), axis)
-
-  for (id in axis) {
-    row <- match(id, instrument_ids)
-    observed <- which(is.finite(bars_mat$close[row, seq_len(pulse_idx)]))
-    if (length(observed) == 0L) next
-    last <- utils::tail(observed, 1L)
-    reference[[id]] <- as.numeric(bars_mat$close[row, last])
-    source_ts[[id]] <- as.POSIXct(pulses_posix[[last]], tz = "UTC")
-    age[[id]] <- as.integer(pulse_idx - last)
-    permissible[[id]] <- age[[id]] <= as.integer(max_sessions)
-    if (isTRUE(permissible[[id]])) {
-      mark[[id]] <- reference[[id]]
-      source[[id]] <- if (age[[id]] == 0L) "current_close" else "stale_close"
-    } else {
-      source[[id]] <- "expired_close"
-    }
-  }
-
-  list(
-    mark = mark,
-    reference = reference,
-    source_ts = source_ts,
-    age = age,
-    source = source,
-    permissible = permissible,
-    priced = is.finite(mark)
-  )
-}
-
-ledgr_availability_valuation_state_prepared <- function(bars_mat,
-                                                         instrument_ids,
-                                                         pulses_posix,
-                                                         max_sessions) {
+ledgr_availability_valuation_state <- function(bars_mat,
+                                                instrument_ids,
+                                                pulses_posix,
+                                                max_sessions) {
   instrument_ids <- as.character(instrument_ids)
   pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
   close <- bars_mat$close
@@ -156,64 +115,6 @@ ledgr_availability_valuation_state_prepared <- function(bars_mat,
   }
 
   list(advance = advance, stats = stats)
-}
-
-ledgr_availability_valuation_state_reference <- function(bars_mat,
-                                                          instrument_ids,
-                                                          pulses_posix,
-                                                          max_sessions) {
-  current_pulse <- 0L
-  advance <- function(pulse_idx, axis) {
-    pulse_idx <- as.integer(pulse_idx)
-    if (pulse_idx < current_pulse) {
-      rlang::abort(
-        "Availability valuation pulses must be nondecreasing.",
-        class = c(
-          "ledgr_availability_valuation_out_of_order",
-          "ledgr_invalid_fold_execution"
-        )
-      )
-    }
-    current_pulse <<- pulse_idx
-    out <- ledgr_availability_valuation_marks_reference(
-      bars_mat,
-      instrument_ids,
-      axis,
-      pulse_idx,
-      pulses_posix,
-      max_sessions
-    )
-    out$source_row <- stats::setNames(match(axis, instrument_ids), axis)
-    out
-  }
-  list(advance = advance)
-}
-
-ledgr_availability_valuation_state <- function(bars_mat,
-                                                instrument_ids,
-                                                pulses_posix,
-                                                max_sessions) {
-  arm <- getOption("ledgr.availability.valuation_arm", "prepared")
-  if (identical(arm, "reference")) {
-    return(ledgr_availability_valuation_state_reference(
-      bars_mat,
-      instrument_ids,
-      pulses_posix,
-      max_sessions
-    ))
-  }
-  if (!identical(arm, "prepared")) {
-    rlang::abort(
-      "Unknown temporary availability valuation arm.",
-      class = "ledgr_invalid_fold_execution"
-    )
-  }
-  ledgr_availability_valuation_state_prepared(
-    bars_mat,
-    instrument_ids,
-    pulses_posix,
-    max_sessions
-  )
 }
 
 ledgr_availability_affected_exposure <- function(ids, positions, valuation) {

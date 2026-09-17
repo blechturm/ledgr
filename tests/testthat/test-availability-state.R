@@ -207,7 +207,7 @@ testthat::test_that("prepared valuation advances finite closes without rescannin
       DDD = c(NA, NA, 30, NA, NA, 35)
     )
   )
-  state <- ledgr:::ledgr_availability_valuation_state_prepared(
+  state <- ledgr:::ledgr_availability_valuation_state(
     bars_mat,
     rownames(bars_mat$close),
     pulses,
@@ -268,7 +268,7 @@ testthat::test_that("prepared valuation work is exactly linear in source cells a
       nrow = shape[["source"]]
     )
     close[seq.int(2L, length(close), by = 11L)] <- NA_real_
-    state <- ledgr:::ledgr_availability_valuation_state_prepared(
+    state <- ledgr:::ledgr_availability_valuation_state(
       list(close = close),
       ids,
       pulses,
@@ -289,4 +289,70 @@ testthat::test_that("prepared valuation work is exactly linear in source cells a
       shapes[[i]][["axis"]] * shapes[[i]][["pulses"]]
     )
   }
+})
+
+testthat::test_that("valuation retirement guard excludes matching, prefix scans, and selectors", {
+  namespace <- asNamespace("ledgr")
+  retired <- c(
+    "ledgr_availability_valuation_marks",
+    "ledgr_availability_valuation_marks_reference",
+    "ledgr_availability_valuation_state_reference",
+    "ledgr_availability_valuation_state_prepared",
+    "ledgr_fold_availability_mark_age"
+  )
+  testthat::expect_false(any(vapply(
+    retired,
+    exists,
+    logical(1),
+    envir = namespace,
+    inherits = FALSE
+  )))
+  state_body <- paste(
+    deparse(body(ledgr:::ledgr_availability_valuation_state)),
+    collapse = "\n"
+  )
+  fold_body <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  testthat::expect_false(grepl("match\\(", state_body))
+  testthat::expect_false(grepl("seq_len\\(pulse_idx\\)", state_body))
+  testthat::expect_false(grepl("which\\(", state_body))
+  testthat::expect_false(grepl("valuation_arm|marks_reference", fold_body))
+  testthat::expect_false("valuation_state" %in% names(formals(ledgr:::ledgr_execution_spec)))
+})
+
+testthat::test_that("dense folds never construct availability valuation state", {
+  dates <- as.POSIXct(
+    paste(as.Date("2020-01-01") + 0:1, "16:00:00"),
+    tz = "UTC"
+  )
+  bars <- data.frame(
+    ts_utc = dates,
+    instrument_id = "AAA",
+    open = 100,
+    high = 101,
+    low = 99,
+    close = 100,
+    volume = 1000
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = "AAA")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::local_mocked_bindings(
+    ledgr_availability_valuation_state = function(...) {
+      stop("dense fold reached availability valuation")
+    },
+    .package = "ledgr"
+  )
+  bt <- ledgr_run(experiment, run_id = "dense-valuation-bypass")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_identical(
+    ledgr_run_info(snapshot, "dense-valuation-bypass")$status,
+    "DONE"
+  )
 })
