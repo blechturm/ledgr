@@ -69,9 +69,9 @@ active v0.2.0.1 packet):
   and closeouts are listed in `inst/design/README.md`.
 - The active v0.2.0.1 packet covers availability seams, seal validators,
   resumed-run repair, linear event writes, prepared valuation, and benchmark
-  closeout. LDG-2719 through LDG-2740 are in the active packet; Batches 0-7
-  are complete, Batch 8 is implemented and review pending, and Batches 9-11
-  are pending. Batch 10 is the benchmark checkpoint; Batch 11 needs a
+  closeout. LDG-2719 through LDG-2740 are in the active packet; Batches 0-9
+  are complete, and Batches 10-11 are pending. Batch 10 is the benchmark
+  checkpoint; Batch 11 needs a
   maintainer go-ahead. Old paths ship in no form, the public
   fact resolver stays independent, and no speed claim is authorized.
 - The refreshed spot-crypto readiness probe follows v0.2.0.1 as a separate

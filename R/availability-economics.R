@@ -26,12 +26,15 @@ ledgr_availability_valuation_state <- function(bars_mat,
   }
 
   n_source <- length(instrument_ids)
+  row_index_builds <- 0L
   row_by_id <- stats::setNames(seq_len(n_source), instrument_ids)
+  row_index_builds <- row_index_builds + 1L
+  row_index_cells <- length(row_by_id)
   last_close <- rep(NA_real_, n_source)
   last_pulse <- rep(NA_integer_, n_source)
   current_pulse <- 0L
-  pulse_cells_advanced <- 0
-  axis_cells_emitted <- 0
+  close_cells_read <- 0
+  source_index_lookups <- 0
 
   advance <- function(pulse_idx, axis) {
     pulse_idx <- as.integer(pulse_idx)
@@ -53,6 +56,7 @@ ledgr_availability_valuation_state <- function(bars_mat,
     }
     axis <- as.character(axis)
     source_row <- unname(row_by_id[axis])
+    source_index_lookups <<- source_index_lookups + length(source_row)
     if (anyNA(axis) || any(!nzchar(axis)) || anyDuplicated(axis) || anyNA(source_row)) {
       rlang::abort(
         "Availability valuation axis must contain unique prepared instrument IDs.",
@@ -63,15 +67,13 @@ ledgr_availability_valuation_state <- function(bars_mat,
     if (pulse_idx > current_pulse) {
       for (j in seq.int(current_pulse + 1L, pulse_idx)) {
         current_close <- as.numeric(close[, j])
+        close_cells_read <<- close_cells_read + length(current_close)
         observed <- is.finite(current_close)
         last_close[observed] <<- current_close[observed]
         last_pulse[observed] <<- j
       }
-      pulse_cells_advanced <<- pulse_cells_advanced +
-        n_source * (pulse_idx - current_pulse)
       current_pulse <<- pulse_idx
     }
-    axis_cells_emitted <<- axis_cells_emitted + length(axis)
 
     reference <- stats::setNames(last_close[source_row], axis)
     source_position <- last_pulse[source_row]
@@ -108,9 +110,10 @@ ledgr_availability_valuation_state <- function(bars_mat,
     list(
       source_instruments = n_source,
       current_pulse = current_pulse,
-      row_index_builds = 1L,
-      pulse_cells_advanced = pulse_cells_advanced,
-      axis_cells_emitted = axis_cells_emitted
+      row_index_builds = row_index_builds,
+      row_index_cells = row_index_cells,
+      close_cells_read = close_cells_read,
+      source_index_lookups = source_index_lookups
     )
   }
 

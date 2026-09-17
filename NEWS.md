@@ -11,8 +11,9 @@
   maintainer acceptance. Batches 1 through 7 are complete after independent
   review and maintainer acceptance. The accepted hot-path complexity amendment
   adds linear memory/durable event writes and prepared fold-time valuation;
-  its ticket cut was independently accepted, Batch 8 event buffers are
-  implemented and review pending, and Batches 9 through 11 remain pending.
+  its ticket cut was independently accepted, and the Batch 8 event buffers and
+  Batch 9 prepared valuation are complete after review. Batches 10 and 11
+  remain pending.
   The first benchmark records remain provisional until rerun from final source.
   Final benchmarks have their own checkpoint before a separately authorized
   release gate.

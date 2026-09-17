@@ -478,8 +478,13 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
 
 testthat::test_that("event-buffer source has one collapse 2.1.8 route and no fallback", {
   root <- testthat::test_path("..", "..")
-  description <- read.dcf(file.path(root, "DESCRIPTION"))
-  testthat::expect_match(description[[1L, "Imports"]], "collapse \\(>= 2[.]1[.]8\\)")
+  description_path <- file.path(root, "DESCRIPTION")
+  imports_field <- if (file.exists(description_path)) {
+    read.dcf(description_path)[[1L, "Imports"]]
+  } else {
+    as.character(utils::packageDescription("ledgr", fields = "Imports"))
+  }
+  testthat::expect_match(imports_field, "collapse \\(>= 2[.]1[.]8\\)")
 
   helper_body <- paste(deparse(body(ledgr:::ledgr_event_buffer_setv)), collapse = "\n")
   memory_body <- paste(deparse(body(ledgr:::ledgr_memory_output_handler)), collapse = "\n")
@@ -512,7 +517,7 @@ testthat::test_that("event-buffer source has one collapse 2.1.8 route and no fal
     list(DESCRIPTION = c(Package = "collapse", Version = "2.1.7")),
     file.path(fake_lib, "collapse", "Meta", "package.rds")
   )
-  imports <- trimws(unlist(strsplit(description[[1L, "Imports"]], ",", fixed = TRUE)))
+  imports <- trimws(unlist(strsplit(imports_field, ",", fixed = TRUE)))
   collapse_import <- imports[grepl("^collapse[[:space:]]*\\(", imports)]
   testthat::expect_length(collapse_import, 1L)
   collapse_floor <- sub(

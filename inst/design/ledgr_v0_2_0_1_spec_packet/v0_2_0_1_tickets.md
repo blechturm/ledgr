@@ -15,8 +15,7 @@ On 2026-09-17 the maintainer accepted the reviewed hot-path complexity
 amendment. It adds exactly two release-blocking corrections before closeout:
 linear event-buffer writes and prepared fold-time availability valuation.
 The amendment ticket cut was independently accepted. LDG-2736 through
-LDG-2738 are implemented and Review Pending; LDG-2739 and LDG-2740 remain
-Pending.
+LDG-2740 are Complete After Review.
 
 Ticket IDs begin at LDG-2719 after the v0.2.0.0 packet. LDG-2733 through
 LDG-2735 retain their existing tail identities; amendment tickets continue at
@@ -1065,7 +1064,7 @@ scope: v0.2.0.1-closeout
 Priority: P0
 Effort: M
 Dependencies: LDG-2732
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1128,7 +1127,7 @@ scope: collapse-route-gate
 Priority: P0
 Effort: L
 Dependencies: LDG-2736
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1190,7 +1189,7 @@ scope: linear-production-writes
 Priority: P0
 Effort: M
 Dependencies: LDG-2737
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1251,7 +1250,7 @@ scope: scaling-and-retirement
 Priority: P0
 Effort: L
 Dependencies: LDG-2738
-Status: Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1314,7 +1313,7 @@ scope: prepared-fold-state
 Priority: P0
 Effort: M
 Dependencies: LDG-2739
-Status: Pending
+Status: Complete After Review
 
 ### Description
 

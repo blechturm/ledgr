@@ -291,7 +291,7 @@ tickets:
 
   - id: "LDG-2736"
     title: "Collapse 2.1.8 event-write route gate"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2732"]
@@ -307,7 +307,7 @@ tickets:
 
   - id: "LDG-2737"
     title: "Linear memory and durable event buffers"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2736"]
@@ -323,7 +323,7 @@ tickets:
 
   - id: "LDG-2738"
     title: "Event scaling and old-writer retirement"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2737"]
@@ -339,7 +339,7 @@ tickets:
 
   - id: "LDG-2739"
     title: "Prepared fold-time availability valuation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2738"]
@@ -355,7 +355,7 @@ tickets:
 
   - id: "LDG-2740"
     title: "Valuation scaling and combined correction evidence"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2739"]

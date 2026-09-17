@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Spec Packet
 
-Status: Batches 0 through 7 complete after review and maintainer acceptance.
-Batch 8 is implemented and review pending; Batches 9 through 11 are pending.
+Status: Batches 0 through 9 complete after review and maintainer acceptance.
+Batches 10 and 11 are pending.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
 
@@ -70,6 +70,8 @@ Authoritative files:
   rendered manuals, and documentation contracts)
 - `batch8-event-buffer-evidence.md` (collapse route choice, exact parity,
   semantic and failure matrix, five-point scaling, and source retirement)
+- `batch9-valuation-evidence.md` (transient valuation state, structural gate,
+  paired 757-pulse gate, combined eventful case, and source retirement)
 
 Binding design inputs:
 

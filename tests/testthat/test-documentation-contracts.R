@@ -2988,7 +2988,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch1-baseline-evidence.md", "batch2-provider-evidence.md",
     "batch3-diagnostic-evidence.md", "batch4-parity-evidence.md",
     "batch5-finalization-evidence.md", "batch6-seal-validator-evidence.md",
-    "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md"
+    "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md",
+    "batch9-valuation-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -3000,7 +3001,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "readme", "spec", "amendment", "tickets", "yaml", "batches",
     "batch1_evidence", "batch2_evidence", "batch3_evidence",
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
-    "batch7_evidence", "batch8_evidence"
+    "batch7_evidence", "batch8_evidence", "batch9_evidence"
   )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
@@ -3036,8 +3037,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("complete_after_review", 14L),
       rep("pending", 3L),
-      rep("review_pending", 3L),
-      rep("pending", 2L)
+      rep("complete_after_review", 5L)
     )
   )
   ticket_lines <- readLines(paths[[4L]], warn = FALSE)
@@ -3047,8 +3047,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review", 14L),
       rep("Pending", 3L),
-      rep("Review Pending", 3L),
-      rep("Pending", 2L)
+      rep("Complete After Review", 5L)
     )
   )
   batch_lines <- readLines(paths[[6L]], warn = FALSE)
@@ -3064,9 +3063,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     batch_statuses,
     c(
-      rep("Complete After Review.", 8L),
-      "Review Pending.",
-      rep("Pending.", 3L)
+      rep("Complete After Review.", 10L),
+      rep("Pending.", 2L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3138,6 +3136,16 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     docs$batch8_evidence,
     "BATCH8_EVENT_BUFFER_GATES_OK",
     fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch9_evidence,
+    "prepared/current median ratio is 0.5643",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch9_evidence,
+    "bounded eventful case",
+    ignore.case = TRUE
   )
   testthat::expect_match(
     docs$tickets,

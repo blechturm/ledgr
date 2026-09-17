@@ -21,6 +21,7 @@
 ^src/.*\.dll$
 ^src/.*\.so$
 ^src/.*\.dylib$
+^src/.*\.gcda$
 ^coverage\.html$
 ^\.quarto$
 ^\.quarto-cache$

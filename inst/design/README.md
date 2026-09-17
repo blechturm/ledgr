@@ -10,9 +10,9 @@ and maintainer decisions are accepted, the
 [v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
 2026-09-16 after two independent reviews. The reviewed hot-path complexity
 amendment was accepted 2026-09-17, and tickets LDG-2719 through LDG-2740 are
-cut. Batches 0 through 7 are complete after review and maintainer acceptance;
-Batch 8 is implemented and review pending, and Batches 9 through 11 are
-pending. Batch 10 measures final source and stops;
+cut. Batches 0 through 9 are complete after review and maintainer acceptance;
+Batches 10 and 11 are pending.
+Batch 10 measures final source and stops;
 Batch 11 requires explicit maintainer authorization.
 The refreshed spot-crypto probe
 follows as a separate v0.2.0.x planning cycle.
@@ -223,9 +223,8 @@ quadratic seal-time conflict validators through a separately gated cold-path
 workstream, repairs resumed-run equity finalization, and closes with separated
 cold, warm, and peer benchmark records. The accepted complexity amendment adds
 the two release-material closeout findings, linear event writes and prepared
-fold-time valuation. Tickets are cut; Batches 0 through 7 are complete after
-review and maintainer acceptance, Batch 8 is implemented and review pending,
-and Batches 9 through 11 are pending. Batch
+fold-time valuation. Tickets are cut; Batches 0 through 9 are complete after
+review and maintainer acceptance, and Batches 10 and 11 are pending. Batch
 10 is a separately reviewed benchmark checkpoint; Batch 11 is the release gate
 and requires explicit maintainer authorization after those results are known.
 The amendment ticket cut was independently accepted before Batch 8 started.

@@ -250,8 +250,13 @@ testthat::test_that("prepared valuation advances finite closes without rescannin
 
   stats <- state$stats()
   testthat::expect_identical(stats$row_index_builds, 1L)
-  testthat::expect_equal(stats$pulse_cells_advanced, 4L * 4L)
-  testthat::expect_equal(stats$axis_cells_emitted, 3L + 4L + 3L + 1L)
+  testthat::expect_identical(stats$row_index_cells, 4L)
+  testthat::expect_equal(stats$close_cells_read, 4L * 4L)
+  # The duplicate and unknown-axis calls also perform lookups before aborting.
+  testthat::expect_equal(
+    stats$source_index_lookups,
+    3L + 4L + 3L + 1L + 2L + 1L
+  )
 })
 
 testthat::test_that("prepared valuation work is exactly linear in source cells and emitted axis cells", {
@@ -281,11 +286,15 @@ testthat::test_that("prepared valuation work is exactly linear in source cells a
   for (i in seq_along(shapes)) {
     testthat::expect_identical(observed[[i]]$row_index_builds, 1L)
     testthat::expect_equal(
-      observed[[i]]$pulse_cells_advanced,
+      observed[[i]]$row_index_cells,
+      shapes[[i]][["source"]]
+    )
+    testthat::expect_equal(
+      observed[[i]]$close_cells_read,
       shapes[[i]][["source"]] * shapes[[i]][["pulses"]]
     )
     testthat::expect_equal(
-      observed[[i]]$axis_cells_emitted,
+      observed[[i]]$source_index_lookups,
       shapes[[i]][["axis"]] * shapes[[i]][["pulses"]]
     )
   }
@@ -307,14 +316,50 @@ testthat::test_that("valuation retirement guard excludes matching, prefix scans,
     envir = namespace,
     inherits = FALSE
   )))
+  reachable_bodies <- function(root, function_env = namespace) {
+    queue <- root
+    seen <- character()
+    out <- character()
+    while (length(queue) > 0L) {
+      name <- queue[[1L]]
+      queue <- queue[-1L]
+      if (name %in% seen) next
+      candidate <- get(name, envir = function_env, inherits = FALSE)
+      seen <- c(seen, name)
+      out <- c(out, paste(deparse(body(candidate)), collapse = "\n"))
+      called <- all.names(body(candidate), functions = TRUE, unique = TRUE)
+      internal <- called[vapply(called, function(called_name) {
+        present <- exists(
+          called_name,
+          envir = function_env,
+          inherits = FALSE
+        )
+        if (!present) return(FALSE)
+        called_fn <- get(called_name, envir = function_env, inherits = FALSE)
+        is.function(called_fn) && identical(environment(called_fn), function_env)
+      }, logical(1))]
+      queue <- c(queue, setdiff(internal, seen))
+    }
+    out
+  }
+  probe_env <- new.env(parent = baseenv())
+  probe_env$helper <- function() match("needle", "haystack")
+  environment(probe_env$helper) <- probe_env
+  probe_env$root <- function() helper()
+  environment(probe_env$root) <- probe_env
+  testthat::expect_match(
+    paste(reachable_bodies("root", probe_env), collapse = "\n"),
+    "match\\("
+  )
   state_body <- paste(
-    deparse(body(ledgr:::ledgr_availability_valuation_state)),
+    reachable_bodies("ledgr_availability_valuation_state"),
     collapse = "\n"
   )
   fold_body <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
   testthat::expect_false(grepl("match\\(", state_body))
   testthat::expect_false(grepl("seq_len\\(pulse_idx\\)", state_body))
   testthat::expect_false(grepl("which\\(", state_body))
+  testthat::expect_false(grepl("getOption|valuation_arm", state_body))
   testthat::expect_false(grepl("valuation_arm|marks_reference", fold_body))
   testthat::expect_false("valuation_state" %in% names(formals(ledgr:::ledgr_execution_spec)))
 })

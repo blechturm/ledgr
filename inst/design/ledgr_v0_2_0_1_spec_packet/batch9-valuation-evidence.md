@@ -1,7 +1,6 @@
 # v0.2.0.1 Batch 9 Prepared-Valuation Evidence
 
-Status: implementation evidence in progress; paired prefix frozen before
-reference retirement.
+Status: complete after independent review and maintainer acceptance.
 
 ## Paired 757-pulse record
 
@@ -52,15 +51,28 @@ collapse 2.1.8 resolved from the isolated collapse library. A prior
 corroborating run under DuckDB 1.5.5 also passed, but it is not the binding
 record because it did not use the registered release-library resolution.
 
-## Structural proof
+## Structural gate
 
 The focused test constructs the transient row index once and advances one
-close-matrix column at a time. It checks exact work counters at three shapes,
-including 563 source instruments, 505 emitted axis members, and 757 pulses:
+close-matrix column at a time. Its counters are incremented where the index is
+built, source rows are looked up, and close-matrix columns are actually read;
+they are not recomputed from loop bounds. It checks exact observed work at
+three shapes, including 563 source instruments, 505 emitted axis members, and
+757 pulses:
 
 - `row_index_builds == 1`;
-- `pulse_cells_advanced == source_instruments * pulses`; and
-- `axis_cells_emitted == axis_members * pulses`.
+- `row_index_cells == source_instruments`;
+- `close_cells_read == source_instruments * pulses`; and
+- `source_index_lookups == axis_members * pulses`.
+
+The retirement guard follows package-local functions reachable from the state
+constructor before rejecting full-vector `match()`, growing
+`seq_len(pulse_idx)` prefixes, and `which()` scans. Moving either retired
+operation one helper call away therefore does not evade the guard.
+
+This gate covers fold-time valuation. Result and reopen assembly remain an
+explicit amendment non-goal; this batch makes no scaling claim for that reader
+path.
 
 The same test covers leading, interior, and trailing gaps; never-observed and
 current instruments; exact fresh, stale, and expired states; reordered axes;
@@ -81,12 +93,56 @@ fills with a non-zero fixed fee. The case also exercised a complete-list
 membership change, a held former member, an interior price gap at the exact
 stale boundary, and a terminal-event stop. Every registered predicate is true
 in `combined_case.csv`. The final durable test retains this shape against the
-prepared production path, including reopen parity.
+prepared production path, including reopened-ledger parity.
 
-## Retirement rule
+## Retirement and source guard
 
-This tracked evidence prefix must be committed before the temporary reference
-function and selector are removed. The later retirement commit must cite that
-commit, remove the scanner and selector from installed source, and extend the
-source guard. Combined eventful evidence, full verification, governance
-reconciliation, and independent review remain outstanding at this point.
+The paired prefix was frozen in commit
+`5e880656df242728ca649e71ade405ac6be2c313`. Commit `42fa54d` is later and
+cites that exact prefix while removing the temporary reference scanner and
+selector. The final namespace contains only
+`ledgr_availability_valuation_state()`.
+
+The durable guard rejects the retired function names, the temporary selector,
+full-vector matching in the state constructor, and the growing
+`seq_len(pulse_idx)` price-prefix shape. A dense-fold test replaces the state
+constructor with an aborting mock and completes `DONE`, proving that dense
+execution does not enter the availability valuation path. Execution-spec
+formals contain no valuation-state field; no schema, config, hash, identity,
+worker, cache, or public return surface was added.
+
+## Verification
+
+The affected regression net passed for availability state, economics, parity,
+finalization prefix, inspection and reopen, execution timing, provider
+production, and execution-spec validation. The combined durable case and the
+structural 563 by 505 by 757 observed-work gate are part of that net.
+
+The pre-review direct full suite reached every test file in 891.1 seconds. Its
+only five failures were plot tests unable to create `Rplots.pdf` under the
+command sandbox; the three affected files then passed with filesystem
+permission and the generated PDF was removed. The pre-review source-package
+check recorded 6,981 passes, zero failures, zero warnings, and 85 expected
+installed-package skips. Test execution took 844.8 seconds.
+
+The Quarto-enabled source build completed successfully. Final
+`R CMD check --no-manual --no-build-vignettes` completed with installation,
+examples, tests, and all vignette code `OK`. Its status is `1 NOTE`, solely for
+the packet's pre-existing long RFC filenames. An earlier check exposed two
+Batch 8 verification-hygiene issues: generated coverage `.gcda` files entered
+the tarball, and the collapse-floor test assumed a source-tree `DESCRIPTION`.
+The build now excludes `.gcda` files, the test uses public installed-package
+metadata when source metadata is absent, its 1,178 expectations pass, and the
+final check has no error or warning.
+
+After the first independent review, the structural counters were moved from
+loop-bound arithmetic to the actual index-build, lookup, and close-read sites,
+and the source guard was extended across reachable package-local helpers. The
+availability-state, availability-economics, and documentation-contract tests
+then passed under R 4.6.1, DuckDB 1.5.2, testthat 3.3.2, and isolated collapse
+2.1.8. The paired benchmark was not rerun: the correction changes private
+work instrumentation and its guard, not the measured valuation algorithm.
+
+Governance records Batches 0 through 9 and LDG-2739/LDG-2740 complete after
+review and maintainer acceptance, with Batches 10 and 11 pending. Batch 10 has
+not started. Batch 9 makes no final release or peer-performance claim.

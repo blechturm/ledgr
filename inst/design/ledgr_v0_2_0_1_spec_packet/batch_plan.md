@@ -1,9 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 7 complete after review and maintainer acceptance.
-The accepted hot-path complexity amendment is cut; Batches 8 through 11 are
-pending behind independent ticket-cut review. No amendment implementation has
-started.
+Status: Batches 0 through 9 complete after review and maintainer acceptance.
+Batches 10 and 11 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -357,7 +355,7 @@ were independently verified. The release-sized records remain owned by Batch
 
 ## Batch 8 - Linear Event Buffers
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -392,12 +390,12 @@ Exit criteria:
 Implementation handoff: the production route, dependency floor, semantic and
 failure matrix, five-point scaling curves, paired 500-instrument record, and
 source guard are complete in
-`batch8-event-buffer-evidence.md`. Independent review is pending; Batch 9 has
-not started.
+`batch8-event-buffer-evidence.md`. Independent review passed and the maintainer
+accepted Batch 8.
 
 ## Batch 9 - Prepared Availability Valuation
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -428,6 +426,11 @@ Exit criteria:
 - immutable valuation and combined-case evidence exists, the retirement
   commit cites it, the source guard passes, and independent review accepts
   Batch 9.
+
+Implementation handoff: the transient production state, observed-work gate,
+paired 757-pulse gate, combined eventful case, oracle-retirement history, and
+source guard are complete in `batch9-valuation-evidence.md`. Independent review
+passed and the maintainer accepted Batch 9. Batch 10 has not started.
 
 ## Batch 10 - Fresh Benchmark Records
 
