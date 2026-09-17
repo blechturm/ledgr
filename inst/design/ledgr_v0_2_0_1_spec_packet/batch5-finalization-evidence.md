@@ -1,6 +1,6 @@
 # v0.2.0.1 Batch 5 Resumed-Run Finalization Evidence
 
-Status: Implemented; pending independent correctness review.
+Status: Complete after independent review and maintainer acceptance.
 
 Ticket: LDG-2727.
 Implementation base: `3329cdab6ea8d6db0fb4b93271a9cf7447f485ab`.

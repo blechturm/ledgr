@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 4 complete after review and maintainer acceptance.
-Batch 5 is implemented with review pending. Batches 6-8 are pending.
+Status: Batches 0 through 5 complete after review and maintainer acceptance.
+Batches 6-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -231,7 +231,7 @@ review remains inline rather than in this packet.
 
 ## Batch 5 - Resumed-Run Finalization
 
-Status: Review Pending.
+Status: Complete After Review.
 
 Tickets:
 
@@ -254,6 +254,18 @@ Exit criteria:
 - independent correctness review accepts the repair.
 
 Implementation evidence: `batch5-finalization-evidence.md`.
+
+Closeout: accepted by the maintainer after independent review passed the
+scope boundary, strict exact-prefix validation, atomic replacement and status
+transition, dense-path exclusion, resumed-run reopen, and Batch 4
+carry-forwards. Two non-blocking test observations carry into the Batch 6
+preflight without widening its seal-validator scope: assert the distinct
+failure messages for the malformed-prefix matrix and add the direct foreign
+run-ID rejection witness. A zero-pulse finalization-only availability resume
+continues to use event replay because that invocation supplies no fold equity;
+the reviewer found no semantic divergence and accepted that behavior under
+the spec's fold-supplied-equity boundary. The review remains inline rather
+than in this packet.
 
 ## Batch 6 - Seal Validators
 
