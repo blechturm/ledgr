@@ -186,7 +186,7 @@ tickets:
 
   - id: "LDG-2731"
     title: "Peer benchmark phase split"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730"]
@@ -200,7 +200,7 @@ tickets:
 
   - id: "LDG-2732"
     title: "Manual and report updates"
-    status: "pending"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730", "LDG-2731"]

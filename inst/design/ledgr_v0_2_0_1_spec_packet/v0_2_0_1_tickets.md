@@ -721,7 +721,7 @@ scope: setwise-bypass
 Priority: P1
 Effort: M
 Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730
-Status: Pending
+Status: Review Pending
 
 ### Description
 
@@ -768,7 +768,7 @@ scope: phase-split
 Priority: P1
 Effort: M
 Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730, LDG-2731
-Status: Pending
+Status: Review Pending
 
 ### Description
 

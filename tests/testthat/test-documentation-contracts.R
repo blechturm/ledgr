@@ -2986,7 +2986,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "tickets.yml", "batch_plan.md", "batch1-baseline-evidence.md",
     "batch2-provider-evidence.md", "batch3-diagnostic-evidence.md",
     "batch4-parity-evidence.md", "batch5-finalization-evidence.md",
-    "batch6-seal-validator-evidence.md"
+    "batch6-seal-validator-evidence.md", "batch7-benchmark-manual-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -2997,7 +2997,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   names(docs) <- c(
     "readme", "spec", "tickets", "yaml", "batches", "batch1_evidence",
     "batch2_evidence", "batch3_evidence", "batch4_evidence",
-    "batch5_evidence", "batch6_evidence"
+    "batch5_evidence", "batch6_evidence", "batch7_evidence"
   )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
@@ -3018,13 +3018,21 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
   testthat::expect_identical(
     yaml_statuses,
-    c(rep("complete_after_review", 12L), rep("pending", 5L))
+    c(
+      rep("complete_after_review", 12L),
+      rep("review_pending", 2L),
+      rep("pending", 3L)
+    )
   )
   ticket_lines <- readLines(paths[[3L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
   testthat::expect_identical(
     md_statuses,
-    c(rep("Complete After Review", 12L), rep("Pending", 5L))
+    c(
+      rep("Complete After Review", 12L),
+      rep("Review Pending", 2L),
+      rep("Pending", 3L)
+    )
   )
   batch_lines <- readLines(paths[[5L]], warn = FALSE)
   batch_statuses <- sub(
@@ -3038,12 +3046,17 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   )
   testthat::expect_identical(
     batch_statuses,
-    c(rep("Complete After Review.", 7L), rep("Pending.", 2L))
+    c(
+      rep("Complete After Review.", 7L),
+      "Review Pending.",
+      "Pending."
+    )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 6 - Seal Validators", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 7 - Benchmark Phases And Manuals", fixed = TRUE)
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
   testthat::expect_match(
@@ -3076,6 +3089,15 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "for 6,000 randomized comparisons in total",
     fixed = TRUE
   )
+  testthat::expect_match(
+    docs$batch7_evidence,
+    "warm_research_iteration",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch7_evidence,
+    "No record run was performed in[[:space:]]+this batch"
+  )
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
   horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
@@ -3084,6 +3106,40 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(horizon, "v0.2.0.1 packet is active", fixed = TRUE)
   testthat::expect_match(agents, "active v0.2.0.1 packet", fixed = TRUE)
   testthat::expect_match(agents, "ledgr_v0_2_0_1_spec_packet/tickets.yml", fixed = TRUE)
+})
+
+testthat::test_that("v0.2.0.1 optimization manuals record production boundaries", {
+  root <- testthat::test_path("..", "..")
+  manual <- file.path(root, "inst", "design", "manual")
+  paths <- file.path(manual, c(
+    "benchmark_methodology.qmd", "benchmark_methodology.md",
+    "optimization_coding_style.qmd", "optimization_coding_style.md"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "maintainer manuals unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c("benchmark_qmd", "benchmark_md", "style_qmd", "style_md")
+
+  for (name in c("benchmark_qmd", "benchmark_md")) {
+    testthat::expect_match(docs[[name]], "snapshot_prepare_sec", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "experiment_setup_sec", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "cold_end_to_end", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "warm_research_iteration", fixed = TRUE)
+    testthat::expect_match(
+      docs[[name]],
+      "Provider construction is[[:space:]]+warm setup"
+    )
+  }
+  for (name in c("style_qmd", "style_md")) {
+    testthat::expect_match(docs[[name]], "production typed blocks", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "next measured lane", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "Run IDs", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "archived_at_utc", fixed = TRUE)
+    testthat::expect_no_match(docs[[name]], "uncommitted spike seams", fixed = TRUE)
+    testthat::expect_no_match(docs[[name]], "not yet fixed; sort-and-sweep", fixed = TRUE)
+  }
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

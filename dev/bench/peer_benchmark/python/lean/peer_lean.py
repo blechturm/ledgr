@@ -72,9 +72,16 @@ def write_unavailable(args, reason: str, wall_sec: float = 0.0) -> int:
                     "reason": reason,
                     "wall_sec": wall_sec,
                     "phase_sec": {
-                        "ingestion_sec": None,
+                        "snapshot_prepare_sec": None,
+                        "experiment_setup_sec": None,
                         "engine_sec": None,
                         "results_sec": None,
+                        "unavailable": {
+                            "snapshot_prepare_sec": reason,
+                            "experiment_setup_sec": reason,
+                            "engine_sec": reason,
+                            "results_sec": reason,
+                        },
                     },
                     "boundary_check": ["bars_csv_read", "lean_cli_subprocess", "engine_run", "canonical_equity_write"],
                 },
@@ -190,6 +197,9 @@ def main() -> int:
     if lean is None:
         return write_unavailable(args, "lean executable not found", time.perf_counter() - wall_start)
 
+    bars_info = inspect_bars(args.bars)
+    snapshot_done = time.perf_counter()
+
     with tempfile.TemporaryDirectory(prefix="ledgr_lean_cli_") as tmp:
         tmp_path = Path(tmp)
         project_dir = tmp_path / "lean_project"
@@ -198,7 +208,6 @@ def main() -> int:
         data_dir = project_dir / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(args.bars, data_dir / "shared_bars.csv")
-        bars_info = inspect_bars(args.bars)
         config = {
             "bars_csv": str((data_dir / "shared_bars.csv").resolve()),
             "fast": args.fast,
@@ -209,19 +218,20 @@ def main() -> int:
         }
         with open(project_dir / "ledgr_peer_config.json", "w", encoding="utf-8") as fh:
             json.dump(config, fh, indent=2)
+        setup_done = time.perf_counter()
 
         cmd = [lean, "backtest", str(project_dir), "--backtest-name", "ledgr_peer", "--output", str(output_dir)]
         proc = run_cmd(cmd, cwd=project_dir)
-        wall_mid = time.perf_counter()
+        engine_done = time.perf_counter()
         if proc.returncode != 0:
             reason = (proc.stdout + "\n" + proc.stderr).strip().replace("\n", " | ")
-            return write_unavailable(args, reason, wall_mid - wall_start)
+            return write_unavailable(args, reason, engine_done - wall_start)
         results_path = find_results_json(output_dir)
         if results_path is None:
-            return write_unavailable(args, "lean CLI completed but no results JSON was found", wall_mid - wall_start)
+            return write_unavailable(args, "lean CLI completed but no results JSON was found", engine_done - wall_start)
         equity_rows = extract_equity_rows(results_path)
         if not equity_rows:
-            return write_unavailable(args, f"lean results JSON had no Strategy Equity series: {results_path}", wall_mid - wall_start)
+            return write_unavailable(args, f"lean results JSON had no Strategy Equity series: {results_path}", engine_done - wall_start)
 
     write_equity(args.equity_out, equity_rows)
     write_empty_csv(args.fills_out, ["engine", "ts_utc", "instrument_id", "side", "qty", "price"])
@@ -240,12 +250,14 @@ def main() -> int:
                 "trade_level_status": "unavailable",
             }
         )
-    wall_sec = time.perf_counter() - wall_start
+    results_done = time.perf_counter()
     phase_sec = {
-        "ingestion_sec": 0.0,
-        "engine_sec": wall_sec,
-        "results_sec": 0.0,
+        "snapshot_prepare_sec": snapshot_done - wall_start,
+        "experiment_setup_sec": setup_done - snapshot_done,
+        "engine_sec": engine_done - setup_done,
+        "results_sec": results_done - engine_done,
     }
+    wall_sec = sum(phase_sec.values())
     with open(args.metadata_out, "w", encoding="utf-8") as fh:
         json.dump(
             {
@@ -253,7 +265,7 @@ def main() -> int:
                 "status": "DONE",
                 "wall_sec": wall_sec,
                 "phase_sec": phase_sec,
-                "boundary_check": ["bars_csv_read", "lean_cli_subprocess", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
+                "boundary_check": ["bars_csv_read", "experiment_setup", "lean_cli_subprocess", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
             },
             fh,
             indent=2,

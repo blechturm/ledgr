@@ -1,10 +1,8 @@
 # Optimization Coding Style
 
 
-**Status:** Reviewable draft for the availability hot-path
-representation cycle (2026-09-15). Not yet ticketed; the v0.2.0.x spec
-packet that consumes the provider and writer spikes should cut its
-review and rendering ticket.
+**Status:** Maintainer coding-style article updated after v0.2.0.1
+productionization (LDG-2732).
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain
 in the v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the
@@ -15,10 +13,8 @@ ingest, and reader code does not reintroduce a shape the arc has already
 measured and removed.
 
 **Anchor scope:** `R/...:line` references resolve against branch
-`v0.2.0.1` at commit `b0fe6b8`; references into
-`R/availability-provider-prepared.R` and
-`R/availability-diagnostic-writer.R` describe the uncommitted spike
-seams on that branch and are labelled as such.
+`v0.2.0.1` at commit `0f618fd`, after the three warm seams, finalization
+repair, and grouped seal validators reached production code.
 
 You are about to write or review code that touches bars, facts, pulses,
 instruments, events, or diagnostics, and you need to know which shapes
@@ -51,10 +47,16 @@ the placement of loops.
 |----|---:|---:|----|
 | per-row `[[<-` into scale-growing column buffers | scale-growing write cost per fill | `collapse::setv` in place | v0.1.8.9 workstream A |
 | per-iteration `format.POSIXlt` in the fold | common root of the v0.1.8.7 hot paths | vectorised timestamp handling | fold hot-path audit |
-| diagnostics as one data frame per row, bound once at the end | 51.6 s and 786.5 MiB at 40 pulses; did not finish 757 pulses in 1,800 s | typed column chunks: 22.1 s and 369.6 MiB; 523 s at 757 pulses | writer spike (2026-09-14) |
-| provider re-resolving facts from data frames per instrument and pulse | 396 s for 757 identical decision views; 82.7% of loop samples | facts compiled once into primitive vectors and cursors: 0.2 s; 0.26% | provider spike (2026-09-15) |
-| O(n^2) membership conflict validator run at seal | 95.1% of the traced seal at 30,300 rows (about 1,200 s extrapolated from slices) | not yet fixed; sort-and-sweep is O(n log n) | sealing probe (2026-09-15) |
+| diagnostics as one data frame per row, bound once at the end | 51.6 s and 786.5 MiB at 40 pulses; did not finish 757 pulses in 1,800 s | production typed blocks; reviewed spike median 24.93 s at 757 pulses | diagnostic-block spike and LDG-2724 |
+| provider re-resolving facts from data frames per instrument and pulse | 396 s for 757 identical decision views; 82.7% of loop samples | production primitive planes and cursors; provider-only pass 0.2 s and 0.26% of profiled loop samples | provider spike and LDG-2722/2723 |
+| O(n^2) membership conflict validator run at seal | 95.1% of the traced seal at 30,300 rows (about 1,200 s extrapolated from slices) | production grouped sweeps; 6,000 randomized equivalence comparisons passed; full-scale seal timing remains a Batch 8 measurement | sealing probe and LDG-2728/2729/2730 |
 | per-bar timestamp loop in the ingest dry run | 17 s for 426,191 bars | vectorised call already exists: 0.02 s | sealing probe |
+
+After the production diagnostic block, the profiled 757-pulse spike
+attributed 67.6% of captured in-loop samples to valuation, 20.7% to
+residual fold work, and the remainder to diagnostics and persistence.
+Valuation is therefore the next measured lane, not work authorized by
+v0.2.0.1 and not a forecast of a future runtime.
 
 The loop audit of 2026-09-15
 (`../../../dev/spikes/snapshot-sealing/loop_audit.md`) recorded roughly
@@ -170,33 +172,32 @@ and result readers.
 
 ### Data Structures
 
-- **Typed column chunk (writer seam, uncommitted).** An environment
-  holding 22 preallocated vectors of `chunk_rows` (default 4,096):
-  character for ids, stages, reasons, and JSON; integer for sequences
-  and ages; numeric for targets, quantities, and prices; POSIXct for
-  timestamps. A fill index `n` and the closures `append`, `flush`,
-  `drain` (`R/availability-diagnostic-writer.R:119-168`). `flush()`
-  manifests one `data.frame` and hands it to `write_run_diagnostics()`,
-  which still owns the transaction and the write-time
+- **Typed column chunk (production).** An environment holding 22
+  preallocated vectors of `chunk_rows` (default 4,096): character for
+  ids, stages, reasons, and JSON; integer for sequences and ages;
+  numeric for targets, quantities, and prices; POSIXct for timestamps. A
+  fill index `n` and the closures `append`, `flush`, `drain`
+  (`R/availability-diagnostic-writer.R:100-175`). `flush()` manifests
+  one `data.frame` and hands it to `write_run_diagnostics()`, which
+  still owns the transaction and the write-time
   `MAX(diagnostic_seq) + 1` renumbering.
 - **Instrument key.** A stable-sorted character vector of every id any
   fact or the configured universe names, built with
   `ledgr_availability_stable_ids()` (`R/availability-provider.R:9-13`);
   all planes are indexed by position in it
   (`R/availability-provider-prepared.R:172-181`, uncommitted).
-- **Membership plane (prepared arm, uncommitted).** Headers in the
-  resolver’s processing order with eligibility times
+- **Membership plane (production).** Headers in the resolver’s
+  processing order with eligibility times
   `max(effective_from, knowledge_time)`, per-header member index sets,
   an eligibility order and its sorted times for the advance-only cursor,
   and interval assertions as flat `start`, `end`, `member`,
   `instrument index` vectors
   (`R/availability-provider-prepared.R:23-96`).
-- **Segment table (prepared arm, uncommitted).** For status and
-  lifetime: per instrument, boundary times and resolved integer codes
-  laid out as flat vectors with `off` and `cnt` per instrument (CSR),
-  values resolved at compile time by the production rule; one cursor
-  vector `cur` over all instruments
-  (`R/availability-provider-prepared.R:98-165`).
+- **Segment table (production).** For status and lifetime: per
+  instrument, boundary times and resolved integer codes laid out as flat
+  vectors with `off` and `cnt` per instrument (CSR), values resolved at
+  compile time by the production rule; one cursor vector `cur` over all
+  instruments (`R/availability-provider-prepared.R:98-165`).
 - **Event buffer (production).** Preallocated typed columns in the
   durable handler with `collapse::setv` for numeric, integer, and
   POSIXct fields and base replacement for character fields
@@ -209,18 +210,18 @@ and result readers.
 | boundary | anchor |
 |----|----|
 | column-buffer write rule | `../ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md` section 3.1 |
-| per-row diagnostic constructor (row form) | `R/availability-economics.R:386-433` |
-| writer seam and columnar chunk | `R/availability-diagnostic-writer.R` (uncommitted) |
-| fold accumulator and final drain | `R/fold-engine.R:318-327`, `:1082-1108` |
-| provider build seam and arm stamp | `R/availability-provider.R:303-320` (uncommitted seam) |
-| current per-pulse resolvers | `R/availability-provider.R:68-234`, `:353-372` |
-| prepared compile and cursors | `R/availability-provider-prepared.R` (uncommitted) |
+| diagnostic block constructor and typed writer | `R/availability-diagnostic-writer.R:42-175` |
+| fold writer construction, per-pulse append, and final drain | `R/fold-engine.R:318-337`, `:1019` |
+| production provider build boundary | `R/availability-provider.R:208-246` |
+| retained public membership inspection resolver | `R/availability-provider.R:51-176` |
+| prepared membership, segments, cursors, and provider | `R/availability-provider-prepared.R:23-323` |
 | execution view per actionable target | `R/availability-economics.R:225-251` |
 | valuation marks per instrument | `R/availability-economics.R:16-31` |
-| quadratic validators | `R/availability-facts.R:1303-1360`; called at seal from `R/availability-persistence.R:318`, `:336`, `:343` |
+| grouped conflict sweeps and status hybrid | `R/availability-facts.R:1297-1436`; called at seal from `R/availability-persistence.R:430-448` |
+| complete-set validation before membership bypass | `R/availability-persistence.R:193-303` |
 | per-bar timestamp loop | `R/availability-ingest.R:200-206` |
 | fact payload per row, repeated per assert | `R/availability-facts.R:775-800`, `:931-966` |
-| finalisation replay of every event | `R/run-finalize.R:285`, `:309`, `:335`; `:161` per pulse |
+| availability equity-prefix merge and atomic commit | `R/run-finalize.R:236-422`, invoked at `:654` |
 
 ### Lookup And Dispatch Mechanisms
 
@@ -239,15 +240,14 @@ and result readers.
   its set; interval assertions override per id with the last applicable
   one winning (`!duplicated(fromLast = TRUE)`), which is the production
   precedence.
-- **Arm selection and attestation.**
-  `options(ledgr.internal.spike_availability_provider)` selects the arm
-  once per build; the seam stamps the provider object with the arm it
-  actually built, outside `identity()` and every view, so a harness can
-  observe substitution rather than trust the option.
-- **Identity.** `config_hash` excludes local locators; the provider
-  spike’s parity comparison of the `runs` row drops `run_id`,
-  `created_at_utc`, `archived_at_utc`, and the config JSON’s run ID and
-  store paths, and compares everything else.
+- **Production dispatch.** `ledgr_availability_provider_build()` has one
+  path: the prepared provider. The spike option, arm stamps, full
+  data-frame provider, scalar diagnostic construction, and row-list
+  writer do not ship.
+- **Identity.** The production parity comparison excluded exactly the
+  top-level creation time and the two embedded store locators. Run IDs,
+  `archived_at_utc`, `config_hash`, and every other persisted field were
+  compared. The optimized representations remain outside identity.
 
 ### Edge Cases
 
@@ -271,11 +271,11 @@ and result readers.
 - Fixed-universe configs (`universe_rule` NULL) return the configured
   ids in configured order, not stable order; membership-rule universes
   return stable-sorted members.
-- Reopening an interrupted-then-resumed run that finalised `INCOMPLETE`
-  fails terminal-evidence validation in both arms
-  (`R/run-finalize.R:97-113` versus the equity rewrite at `:422`); this
-  is a package finding, not a style matter, recorded in the provider
-  spike inventory.
+- Interrupted-then-resumed availability-aware runs merge the prior and
+  current fold-supplied equity into one exact achieved prefix before the
+  terminal status changes (`R/run-finalize.R:236-422`, `:654`). Dense
+  runs retain full recomputation. Missing, duplicate, foreign, or
+  conflicting rows fail before destructive replacement.
 - `ledgr_facts()` refuses two membership families on one universe, so
   snapshot lists and interval assertions for the same universe cannot be
   mixed in one bundle.
@@ -319,7 +319,10 @@ o <- order(instrument_id, universe_id, effective_from)
 from <- as.numeric(effective_from)[o]
 end <- ifelse(is.na(effective_to), Inf, as.numeric(effective_to))[o]
 state <- member[o]
-group <- paste(instrument_id, universe_id)[o]
+scope_start <- c(TRUE,
+  instrument_id[o][-1L] != instrument_id[o][-length(o)] |
+    universe_id[o][-1L] != universe_id[o][-length(o)])
+group <- cumsum(scope_start)
 conflict <- unlist(lapply(split(seq_along(o), group), function(g) {
   prev_true <- c(-Inf, head(cummax(ifelse(state[g], end[g], -Inf)), -1L))
   prev_false <- c(-Inf, head(cummax(ifelse(!state[g], end[g], -Inf)), -1L))
@@ -380,7 +383,8 @@ One diagnostic block per pulse versus one frame per instrument:
 ## Where Next
 
 Read `performance_arc_v0_1_8_x.qmd` for the release-by-release record
-and `benchmark_methodology.qmd` for what a benchmark row may claim. For
-the next bounded question, the profile after provider preparation puts
-diagnostics at 85% of loop samples and the seal at one quadratic
-validator; both are shape 1 and shape 6 above and follow the same style.
+and `benchmark_methodology.qmd` for what a benchmark row may claim. The
+provider, diagnostic block, and conflict sweeps are now production code.
+The next measured warm lane is valuation; the remaining ingest
+observations and any broader loop cleanup stay profile-triggered rather
+than becoming a census rewrite.

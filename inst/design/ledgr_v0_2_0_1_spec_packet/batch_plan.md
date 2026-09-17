@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
 Status: Batches 0 through 6 complete after review and maintainer acceptance.
-Batches 7-8 are pending.
+Batch 7 is implemented with review pending. Batch 8 is pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -309,7 +309,7 @@ remains inline rather than in this packet.
 
 ## Batch 7 - Benchmark Phases And Manuals
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -331,6 +331,8 @@ Review focus:
 Exit criteria:
 
 - renders reproduce; documentation-contract tests pass.
+
+Implementation evidence: `batch7-benchmark-manual-evidence.md`.
 
 ## Batch 8 - Release Closeout
 

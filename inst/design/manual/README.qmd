@@ -41,12 +41,12 @@ The v0.1.8.11 manual foundation follows the priority order recorded in
 | [`sweep.md`](sweep.md) | `sweep.qmd` | Reviewable LDG-2542 batch | Sweep candidate identity, parallel dispatch, memory output handler, B2 scope guard, and promotion. |
 | [`features.md`](features.md) | `features.qmd` | Updated through v0.2.0.0 | Feature maps, aliases, strict availability gaps, cache/projection path, adapters, and runtime lookup. |
 | [`performance_arc_v0_1_8_x.md`](performance_arc_v0_1_8_x.md) | `performance_arc_v0_1_8_x.qmd` | Reviewable LDG-2534 batch | v0.1.8.7 to v0.1.8.10 performance arc, benchmark evidence map, peer caveats, and public-claim boundaries. |
-| [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Reviewable LDG-2545 batch | Local benchmark record generation, repeatability expectations, release-gate checks, and public-claim boundaries. |
+| [`benchmark_methodology.md`](benchmark_methodology.md) | `benchmark_methodology.qmd` | Maintained; four-phase peer clock updated in LDG-2732 | Local benchmark record generation, cold/warm phase separation, repeatability expectations, release-gate checks, and public-claim boundaries. |
 | [`identity_contract.md`](identity_contract.md) | `identity_contract.qmd` | Updated through v0.2.0.0 | Config, snapshot, availability, feature, alias, cost, risk, and walk-forward identity fields. |
 | [`cost_resolver.md`](cost_resolver.md) | `cost_resolver.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Public cost-model plans, resolver reconstruction, cost identity, and fold integration boundaries. |
 | [`target_risk_layer.md`](target_risk_layer.md) | `target_risk_layer.qmd` | Reviewable v0.1.9.5 LDG-2638 batch | Classed risk steps, risk-chain identity, worker-safe plans, and target-risk layer boundaries. |
 | [`walk_forward_machinery.md`](walk_forward_machinery.md) | `walk_forward_machinery.qmd` | Updated through v0.2.0.0 | Walk-forward orchestration, availability carry state, locator verification, persistence, and inspection. |
-| [`optimization_coding_style.md`](optimization_coding_style.md) | `optimization_coding_style.qmd` | Reviewable draft, availability hot-path cycle | Coding style distilled from the optimization arc: the recurring per-element shapes, their replacements, prepare-before-the-loop, boundary-only frames, typed buffer writes, cursors, identity and measurement discipline. |
+| [`optimization_coding_style.md`](optimization_coding_style.md) | `optimization_coding_style.qmd` | Maintained; production anchors updated in LDG-2732 | Coding style distilled from the optimization arc: the recurring per-element shapes, their replacements, prepare-before-the-loop, boundary-only frames, typed buffer writes, cursors, identity and measurement discipline. |
 
 ## Rendered Output
 

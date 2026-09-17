@@ -1,7 +1,8 @@
 # Benchmark Methodology
 
 
-**Status:** Reviewable maintainer-manual article for LDG-2545.
+**Status:** Maintainer manual updated for the v0.2.0.1 four-phase peer
+clock (LDG-2732).
 
 **Authority:** Synthesis plus implementation trace. Binding release
 scope remains in versioned spec packets and release-gate tickets. Public
@@ -33,7 +34,9 @@ ledgr has two benchmark families:
 - **Peer benchmark:** `dev/bench/peer_benchmark/peer_benchmark.R` runs a
   shared SMA crossover fixture across ledgr surfaces and optional peers,
   then writes parity, performance, status, divergence, and environment
-  artifacts.
+  artifacts. Each completed row separates reusable snapshot preparation,
+  experiment setup, engine execution, and required result
+  materialization.
 
 Both families write generated records under `dev/bench/results/`, which
 is local-only and ignored by git. Tracked reports and closeouts cite
@@ -46,28 +49,51 @@ Every snapshot-backed performance record should distinguish:
 - **cold end-to-end time**, from source-data preparation through the
   required result surface; and
 - **warm research-iteration time**, from an existing unchanged, verified
-  snapshot through experiment-specific setup, execution, and the required
-  result surface.
+  snapshot through experiment-specific setup, execution, and the
+  required result surface.
 
 Cold end to end answers the fair lifecycle question for an
-apples-to-apples peer comparison. Warm iteration answers ledgr's normal
+apples-to-apples peer comparison. Warm iteration answers ledgr’s normal
 research question: how long does the next experiment take after the
 snapshot has been ingested, validated, sealed, and prepared once? Both
 matter, and neither may be presented as the other.
 
 Reusable preparation is paid again when source data or snapshot facts
-change. Anything rebuilt for each strategy, parameter set, or run belongs
-to the warm clock even if the current implementation calls it setup or
-ingestion. For `N` experiments over one unchanged snapshot, the workflow
-interpretation is:
+change. Anything rebuilt for each strategy, parameter set, or run
+belongs to the warm clock even if the current implementation calls it
+setup or ingestion. For `N` experiments over one unchanged snapshot, the
+workflow interpretation is:
 
 ``` text
 workflow_total(N) = snapshot_prepare + N * warm_research_iteration
 ```
 
+The peer harness records these four measured phase fields:
+
+``` text
+snapshot_prepare_sec
+experiment_setup_sec
+engine_sec
+results_sec
+```
+
+It derives, without estimating missing components:
+
+``` text
+cold_end_to_end = snapshot_prepare + experiment_setup + engine + results
+warm_research_iteration = experiment_setup + engine + results
+```
+
+If an engine cannot expose a component, that field and any derived clock
+that needs it are unavailable with a reason. They are never filled with
+zero merely to make the arithmetic close. The retained `ingestion_sec`
+performance column is a compatibility aggregate of snapshot preparation
+plus experiment setup; new interpretation uses the four named fields.
+
 Cross-package cold comparisons require comparable input, outputs, and
-lifecycle boundaries. Cross-package warm comparisons additionally require
-every package to start from its own already prepared native data boundary.
+lifecycle boundaries. Cross-package warm comparisons additionally
+require every package to start from its own already prepared native data
+boundary.
 
 Release-gate benchmark review asks:
 
@@ -195,13 +221,16 @@ Peer records:
 | Sweep phase extraction | `dev/bench/shared/run_benchmarks.R:533` |
 | Self-profiling record writes | `dev/bench/shared/run_benchmarks.R:695` |
 | Peer argument shape | `dev/bench/peer_benchmark/peer_benchmark.R:12` |
-| Peer status and unavailable handling | `dev/bench/peer_benchmark/peer_benchmark.R:708` |
-| Peer phase-boundary labels | `dev/bench/peer_benchmark/peer_benchmark.R:783` |
-| Peer performance rows | `dev/bench/peer_benchmark/peer_benchmark.R:798` |
-| Peer parity rows | `dev/bench/peer_benchmark/peer_benchmark.R:827` |
-| Peer divergence attribution | `dev/bench/peer_benchmark/peer_benchmark.R:1038` |
-| Peer output writes | `dev/bench/peer_benchmark/peer_benchmark.R:1071` |
-| Peer main dispatch | `dev/bench/peer_benchmark/peer_benchmark.R:1237` |
+| Peer four-phase shape and reconciliation | `dev/bench/peer_benchmark/peer_benchmark.R:199-291` |
+| Peer durable and memory-backed boundaries | `dev/bench/peer_benchmark/peer_benchmark.R:342-558` |
+| Peer status and unavailable handling | `dev/bench/peer_benchmark/peer_benchmark.R:726-792` |
+| Python peer phase normalization | `dev/bench/peer_benchmark/peer_benchmark.R:843-942` |
+| Peer phase-boundary labels | `dev/bench/peer_benchmark/peer_benchmark.R:973` |
+| Peer performance rows | `dev/bench/peer_benchmark/peer_benchmark.R:991` |
+| Peer parity rows | `dev/bench/peer_benchmark/peer_benchmark.R:1029` |
+| Peer divergence attribution | `dev/bench/peer_benchmark/peer_benchmark.R:1217` |
+| Peer output writes | `dev/bench/peer_benchmark/peer_benchmark.R:1273` |
+| Peer main dispatch | `dev/bench/peer_benchmark/peer_benchmark.R:1452` |
 
 ### Lookup And Dispatch Mechanisms
 
@@ -215,7 +244,10 @@ candidate telemetry columns for engine and result phases.
 `peer_benchmark.R` dispatches a shared bars CSV through ledgr durable,
 ledgr memory-backed, optional B2 memory-backed, ledgr built-in SMA,
 quantstrat, Backtrader, zipline-reloaded, and LEAN surfaces. It compares
-every peer row to canonical ledgr before performance interpretation.
+every peer row to canonical ledgr before performance interpretation. Its
+phase validator rejects a completed row whose four measured phases do
+not reconcile with the outer row wall within tolerance. An unavailable
+phase must carry an explicit reason.
 
 ### Edge Cases
 
@@ -239,40 +271,41 @@ Non-failing cases:
 
 ### Hot And Cold Paths
 
-Cold benchmark work includes bars generation, CSV reads, snapshot
-construction, experiment setup, feature setup, peer environment
-initialization, metadata writes, and markdown rendering. These costs
-belong in setup or ingestion columns, not in fold-engine claims.
+Cold benchmark work includes reusable bars preparation, snapshot
+construction, native bundle ingestion, experiment setup, feature setup,
+peer environment initialization, execution, and required result
+materialization. Harness-level metadata and report writes remain outside
+an engine row and are not smuggled into an engine claim.
 
-Hot benchmark work is the measured execution surface: ledgr fold loop,
-peer engine run, or B2 spot-FIFO batch path when explicitly requested.
-Result materialization is warm work and gets a separate results phase
-when the harness can separate it.
+Warm benchmark work begins after the reusable native data boundary. It
+includes experiment-specific construction, the measured execution
+surface, and required result materialization. Provider construction is
+warm setup because it is rebuilt per experiment. Result materialization
+is warm work and has its own phase.
 
 The release gate should read hot, warm, and cold phases separately. A
 result extraction regression should not be described as an engine
 regression, and a B2 engine win should not be described as a durable-run
 speed claim.
 
-The existing peer harness's three phases are sufficient for its cold
-end-to-end comparison, but not for a complete warm-iteration claim:
-`ingestion_sec` currently combines reusable snapshot preparation with
-some experiment-specific construction. Therefore
-`engine_sec + results_sec` is only a partial recurring-work slice, not the
-full warm research-iteration time.
-
-Before publishing a warm record, split that boundary into at least
-`snapshot_prepare_sec` and `experiment_setup_sec`, then report:
-
-``` text
-cold_end_to_end = snapshot_prepare + experiment_setup + engine + results
-warm_research_iteration = experiment_setup + engine + results
-```
+The peer harness now records all four phases. Durable ledgr puts CSV
+parsing, normalization, and sealed-snapshot creation in
+`snapshot_prepare_sec`, then experiment and run-identity construction in
+`experiment_setup_sec`. Memory-backed ledgr puts reusable bars matrices
+and views in preparation, then feature projection and the execution
+specification in setup. The peer engines use the equivalent native
+boundary: prepared xts bars, grouped pandas bars, or an ingested Zipline
+bundle are reusable preparation; strategy, portfolio, feed, and callback
+construction are experiment setup. LEAN’s CLI-internal data load cannot
+be separated from execution and remains honestly inside its engine
+subprocess boundary.
 
 Reusable feature or provider compilation belongs to snapshot preparation
-only when it survives across the declared experiment set. Required result
-extraction belongs to every warm iteration; an optional or lazy result
-surface must be timed and named separately rather than silently omitted.
+only when it survives across the declared experiment set. The
+availability provider does not: it is rebuilt per experiment and
+therefore belongs to experiment setup. Required result extraction
+belongs to every warm iteration; an optional or lazy result surface must
+be timed and named separately rather than silently omitted.
 
 ### Concrete Examples
 
@@ -294,7 +327,9 @@ Peer closeout wording should include parity:
 
 ``` text
 Peer benchmark completed with:
-  dev/bench/peer_benchmark/peer_benchmark.R --preset record
+  dev/bench/peer_benchmark/peer_benchmark.R --preset record \
+    --release v0.2.0.1 --engine-set all \
+    --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530
 
 Parity:
   canonical ledgr vs memory-backed ledgr must pass before peer performance
@@ -313,12 +348,12 @@ Before closing a benchmark-sensitive ticket:
   documentation-only.
 - Record command, preset, repeats, warmup, seed, and source state.
 - Link the result prefix when a record run was required.
-- Confirm phase columns reconcile.
+- Confirm the four phase columns reconcile with the outer row wall.
 - Confirm parity before interpreting peer performance.
 - Report cold end-to-end and warm research-iteration clocks separately
   when a reusable snapshot is part of the workflow.
-- Do not claim a complete warm clock while reusable preparation and
-  experiment-specific setup share one timing bucket.
+- Treat an unavailable phase as unavailable; do not estimate or
+  zero-fill it.
 - Keep raw results local unless the packet explicitly asks to track a
   report.
 - Avoid public-speed-claim language.
