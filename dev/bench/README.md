@@ -6,6 +6,7 @@ public release-note performance claims.
 
 ## Layout
 
+- `availability_closeout/` - v0.2.0.1 production warm/cold closeout runner.
 - `peer_benchmark/` - current v0.1.8.8 peer benchmark and parity report.
 - `parallel_sweep/` - Batch 7 parallel sweep attribution harness.
 - `fold_loop/` - fold-loop diagnostic profiler.

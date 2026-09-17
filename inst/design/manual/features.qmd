@@ -162,7 +162,7 @@ SHA-256. The original alias order is kept separately for user-facing order.
 | Feature-factory grid guard | `R/experiment.R:494-509` |
 | Feature engine definition validation and built-ins | `R/features-engine.R:1-170` |
 | Feature engine version and feature cache keys | `R/feature-cache.R:1-132` |
-| Feature cache get/set | `R/feature-cache.R:182-205` |
+| Feature cache get/set | `R/feature-cache.R:182-198` |
 | Precompute object construction | `R/precompute-features.R:41-85` |
 | Precompute validation | `R/precompute-features.R:107-182` |
 | Candidate feature resolution and alias provenance | `R/precompute-features.R:337-425` |
