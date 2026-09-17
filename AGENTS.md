@@ -67,16 +67,12 @@ active v0.2.0.1 packet):
   validation substrate with selection-integrity diagnostics, business
   objectives, and the evidence-only all-candidates sweep filter. Their packets
   and closeouts are listed in `inst/design/README.md`.
-- The active v0.2.0.1 packet productionizes the accepted availability hot- and
-  cold-path direction: three warm-path seams, a separately gated seal-validator
-  correction, the resumed-run equity-prefix repair, and separated benchmark
-  closeouts. Spec, tickets LDG-2719 through LDG-2735, YAML, and batch plan live
-  in `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batches 0 through 7 are
-  complete after review and maintainer acceptance, and Batch 8 is pending.
-  Old runtime paths ship in no
-  form, `ledgr_facts_resolve()` stays
-  independent, and no public performance
-  claim is authorized.
+- The active v0.2.0.1 packet covers availability seams, seal validators,
+  resumed-run repair, linear event writes, prepared valuation, and benchmark
+  closeout. LDG-2719 through LDG-2740 are in the active packet; Batches 0-7
+  are complete and Batches 8-11 pending. Batch 10 is the benchmark checkpoint;
+  Batch 11 needs a maintainer go-ahead. Old paths ship in no form, the public
+  fact resolver stays independent, and no speed claim is authorized.
 - The refreshed spot-crypto readiness probe follows v0.2.0.1 as a separate
   v0.2.0.x planning cycle. Do not draft its Charter or change package code
   before its executable prerequisite and one-page findings under
@@ -94,7 +90,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.2.0.1 availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_1_spec_packet/batch_plan.md`; accepted synthesis, maintainer decisions, and final review under `inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_*`; `inst/design/manual/optimization_coding_style.qmd`; `inst/design/manual/benchmark_methodology.qmd`; `inst/design/spike_protocol.md` section 10; the three spike inventories and `dev/spikes/snapshot-sealing/` |
+| v0.2.0.1 availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_hot_path_complexity_amendment_proposed.md`, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
 | Post-v0.2.0.1 spot-crypto planning | `inst/design/ledgr_roadmap.md` (spot-crypto section), `inst/design/horizon.md` (2026-09-14 research entry), `inst/design/rfc/README.md` (pipeline row), `inst/design/spike_protocol.md`, `inst/design/research/Transaction-Cost-Models.md`, `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` |
 | v0.2.0.0 release record | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
 | Release records v0.1.8.2 to v0.1.9.7 | `inst/design/README.md` (release-record list) and `inst/design/ledgr_roadmap.md`; the per-packet reading lists that previously sat in this table are preserved in `inst/design/planning_context_history.md` |

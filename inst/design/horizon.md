@@ -26,13 +26,17 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-16):** v0.2.0.0 is complete after maintainer
+**Current packet note (2026-09-17):** v0.2.0.0 is complete after maintainer
 review and local release gates. The v0.2.0.1 packet is active: its spec was
-accepted on 2026-09-16 and tickets LDG-2719 through LDG-2735 are cut for
+accepted on 2026-09-16, its hot-path complexity amendment was accepted on
+2026-09-17, and tickets LDG-2719 through LDG-2740 are cut for
 availability hot- and cold-path productionization, the seal-validator
-correction, the resumed-run equity-prefix repair, and separated benchmark
-closeouts. Batches 0 through 7 are complete after review and maintainer
-acceptance, and Batch 8 is pending.
+correction, the resumed-run equity-prefix repair, linear event writes, prepared
+fold-time valuation, and fresh separated benchmark closeouts. Batches 0 through
+7 are complete after review and maintainer acceptance; Batches 8 through 11
+are pending behind amendment ticket-cut review, with no amendment
+implementation started. Batch 10 is the final benchmark checkpoint; Batch 11
+requires an explicit maintainer go-ahead after those results are reviewed.
 Spot-crypto planning follows that
 release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
 contracts, or an accepted RFC promotes them.
@@ -161,17 +165,14 @@ separates the cold snapshot clock from warm repeated experiments, changes one
 seam, and proves semantic and persisted-output parity. A package-wide mechanical
 rewrite is explicitly not the goal.
 
-Immediate evidence supports bounded work on the diagnostic lane and the
-quadratic seal-time membership validator. The latter must retain half-open
-interval semantics and detect opposing states; complete-set rows may bypass
-pairwise checking only after their persisted positive-member shape and header
-references pass setwise validation. The per-bar timestamp, repetitive JSON and
-hashing, valuation-history, finalisation, and result-reader findings remain
-candidates to measure and route individually. The broad loop audit is a
+The accepted packet already consumed the diagnostic and seal-validator work.
+The reviewed closeout audit then promoted exactly two more measured costs into
+the accepted amendment: memory/durable event writes and fold-time availability
+valuation. The per-bar timestamp, repetitive JSON and hashing, broader
+finalisation, recovery, hydration, compiled packing, and result-reader findings
+remain candidates to measure and route individually. The broad loop audit is a
 discovery map, not an auditable census or a commitment to fix every listed
-site. The accepted availability synthesis promotes only its bounded v0.2.0.1
-workstreams. The broader audit remains a discovery map and authorizes no
-additional implementation.
+site; only the amendment's two named corrections are authorized now.
 
 ### 2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff
 

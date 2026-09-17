@@ -2835,7 +2835,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-16)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-17)", fixed = TRUE)
   testthat::expect_match(
     docs$horizon,
     "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
@@ -2982,11 +2982,13 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   root <- testthat::test_path("..", "..")
   packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_1_spec_packet")
   paths <- file.path(packet, c(
-    "README.md", "v0_2_0_1_spec.md", "v0_2_0_1_tickets.md",
-    "tickets.yml", "batch_plan.md", "batch1-baseline-evidence.md",
-    "batch2-provider-evidence.md", "batch3-diagnostic-evidence.md",
-    "batch4-parity-evidence.md", "batch5-finalization-evidence.md",
-    "batch6-seal-validator-evidence.md", "batch7-benchmark-manual-evidence.md"
+    "README.md", "v0_2_0_1_spec.md",
+    "v0_2_0_1_hot_path_complexity_amendment_proposed.md",
+    "v0_2_0_1_tickets.md", "tickets.yml", "batch_plan.md",
+    "batch1-baseline-evidence.md", "batch2-provider-evidence.md",
+    "batch3-diagnostic-evidence.md", "batch4-parity-evidence.md",
+    "batch5-finalization-evidence.md", "batch6-seal-validator-evidence.md",
+    "batch7-benchmark-manual-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -2995,44 +2997,57 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c(
-    "readme", "spec", "tickets", "yaml", "batches", "batch1_evidence",
-    "batch2_evidence", "batch3_evidence", "batch4_evidence",
-    "batch5_evidence", "batch6_evidence", "batch7_evidence"
+    "readme", "spec", "amendment", "tickets", "yaml", "batches",
+    "batch1_evidence", "batch2_evidence", "batch3_evidence",
+    "batch4_evidence", "batch5_evidence", "batch6_evidence",
+    "batch7_evidence"
   )
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
   testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
-  testthat::expect_match(docs$tickets, "Total Tickets: 17", fixed = TRUE)
+  testthat::expect_match(
+    docs$amendment,
+    "Status:** Accepted by the maintainer 2026-09-17",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$amendment, "collapse (>= 2.1.8)", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "Total Tickets: 22", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2719 - Packet Alignment", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2735 - v0.2.0.1 Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2740 - Valuation Scaling", fixed = TRUE)
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 4.1 mechanism and source guard | LDG-2726 |", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 3.5 status supersession-exact hybrid | LDG-2729 |", fixed = TRUE)
-  for (id in sprintf("LDG-%d", 2719:2735)) {
+  testthat::expect_match(
+    docs$tickets,
+    "| Amendment 5 combined eventful availability case | LDG-2740 |",
+    fixed = TRUE
+  )
+  for (id in sprintf("LDG-%d", 2719:2740)) {
     testthat::expect_match(docs$tickets, paste0("## ", id, " - "), fixed = TRUE)
     testthat::expect_match(docs$yaml, paste0("id: \"", id, "\""), fixed = TRUE)
   }
-  yaml_lines <- readLines(paths[[4L]], warn = FALSE)
+  yaml_lines <- readLines(paths[[5L]], warn = FALSE)
   yaml_ids <- sub("^  - id: \"(LDG-[0-9]+)\"$", "\\1", grep("^  - id: \"LDG-", yaml_lines, value = TRUE))
   yaml_statuses <- sub("^    status: \"([a-z_]+)\"$", "\\1", grep("^    status: \"", yaml_lines, value = TRUE))
-  testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2735))
+  testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2740))
   testthat::expect_identical(
     yaml_statuses,
     c(
       rep("complete_after_review", 14L),
-      rep("pending", 3L)
+      rep("pending", 8L)
     )
   )
-  ticket_lines <- readLines(paths[[3L]], warn = FALSE)
+  ticket_lines <- readLines(paths[[4L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
   testthat::expect_identical(
     md_statuses,
     c(
       rep("Complete After Review", 14L),
-      rep("Pending", 3L)
+      rep("Pending", 8L)
     )
   )
-  batch_lines <- readLines(paths[[5L]], warn = FALSE)
+  batch_lines <- readLines(paths[[6L]], warn = FALSE)
   batch_statuses <- sub(
     "^Status: ",
     "",
@@ -3046,7 +3061,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     batch_statuses,
     c(
       rep("Complete After Review.", 8L),
-      "Pending."
+      rep("Pending.", 4L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3054,8 +3069,22 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 6 - Seal Validators", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 7 - Benchmark Phases And Manuals", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 8 - Linear Event Buffers", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 9 - Prepared Availability Valuation", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 10 - Fresh Benchmark Records", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 11 - Release Gate", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Batch 11 stays blocked until the maintainer explicitly",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `6b09a1b", fixed = TRUE)
+  testthat::expect_match(
+    docs$readme,
+    "provisional[[:space:]]+diagnostic[[:space:]]+evidence"
+  )
   testthat::expect_match(
     docs$batch1_evidence,
     "prepared provider | `dev/spikes/availability-provider-preparation/evidence/` | full rerun passed 54/54 checks",

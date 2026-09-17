@@ -1,0 +1,2 @@
+"source_commit","fixture","warm_median_seconds","warm_spread_seconds","valuation_profile_share","event_count","cold_end_to_end_seconds"
+"6b09a1b57ff42293091130d2dca565f224a29aea","563 instruments; 505-member axis; 757 pulses; flat targets; zero fills",25.42,0.129999999999999,0.67680608365019,0,93.06

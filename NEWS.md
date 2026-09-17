@@ -9,7 +9,12 @@
   policy, or availability policy. The packet is at
   `inst/design/ledgr_v0_2_0_1_spec_packet/`; Batch 0 is complete after
   maintainer acceptance. Batches 1 through 7 are complete after independent
-  review and maintainer acceptance, and Batch 8 is pending.
+  review and maintainer acceptance. The accepted hot-path complexity amendment
+  adds linear memory/durable event writes and prepared fold-time valuation;
+  Batches 8 through 11 are pending behind amendment ticket-cut review, no
+  amendment implementation has started, and the first benchmark records remain
+  provisional until rerun from final source. Final benchmarks have their own
+  checkpoint before a separately authorized release gate.
 
 # ledgr 0.2.0.0
 

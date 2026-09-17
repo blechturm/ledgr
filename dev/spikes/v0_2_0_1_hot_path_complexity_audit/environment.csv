@@ -1,0 +1,2 @@
+"source_commit","started_at_utc","r","platform","os","logical_cores","duckdb","testthat","collapse","primary_library","concurrency"
+"6b09a1b57ff42293091130d2dca565f224a29aea","2026-09-17T12:40:08Z","R version 4.6.1 (2026-06-24 ucrt)","x86_64-w64-mingw32","Windows 10 x64 build 26200",24,"1.5.2","3.3.2","2.1.7","C:/Users/maxth/Documents/R/win-library/4.6","serial probe; no R or Rscript process observed before launch"

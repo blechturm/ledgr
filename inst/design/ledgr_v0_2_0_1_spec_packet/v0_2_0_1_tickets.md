@@ -1,8 +1,8 @@
 # ledgr v0.2.0.1 Tickets
 
 Version: v0.2.0.1
-Date: 2026-09-16
-Total Tickets: 17
+Date: 2026-09-17
+Total Tickets: 22
 
 ## Ticket Organization
 
@@ -11,8 +11,15 @@ representations, corrects the quadratic seal-time conflict validators, repairs
 resumed-run equity finalization, and closes with separated cold, warm, and peer
 benchmark records. The maintainer accepted the spec on 2026-09-16 after the
 first independent review, the focused re-review, and the in-place N1 patch.
+On 2026-09-17 the maintainer accepted the reviewed hot-path complexity
+amendment. It adds exactly two release-blocking corrections before closeout:
+linear event-buffer writes and prepared fold-time availability valuation.
+This amendment ticket cut awaits independent review; LDG-2736 through
+LDG-2740 remain Pending and no implementation has started.
 
-Ticket IDs begin at LDG-2719 after the v0.2.0.0 packet.
+Ticket IDs begin at LDG-2719 after the v0.2.0.0 packet. LDG-2733 through
+LDG-2735 retain their existing tail identities; amendment tickets continue at
+LDG-2736 through LDG-2740 and become prerequisites of those tail IDs.
 
 The release spine follows the spec's Section 6 stages:
 
@@ -25,13 +32,18 @@ LDG-2719 packet alignment (stage A)
   -> LDG-2727 resumed-run equity-prefix merge (stage E)
   -> LDG-2728..2730 seal validators and complete-set bypass (stage F)
   -> LDG-2731..2732 benchmark phases and manuals (stage G)
-  -> LDG-2733..2735 closeout records and release gate (stage H)
+  -> LDG-2736..2738 linear event buffers (amendment stage H)
+  -> LDG-2739..2740 prepared valuation and combined proof (amendment stage I)
+  -> LDG-2733..2734 fresh benchmark records and maintainer decision (stage J)
+  -> LDG-2735 release gate (stage K)
 ```
 
 Ticket dependencies are the hard readiness gate. Batch order is the default
 review sequence. Stages E and F are independent of the warm seams and may run
 beside Batches 2 to 4; Stage G follows the production and correctness stages
-and Stage H follows Stage G, and the hard edges below enforce that order.
+and amendment Stages H and I follow Stage G. Stage J follows both, and the
+hard edges below enforce that order. Stage K follows the independently
+reviewed Stage J records and an explicit maintainer go-ahead.
 Every batch keeps its own independent review stop and no benchmark number can
 unlock a failed correctness stage.
 
@@ -51,9 +63,9 @@ unlock a failed correctness stage.
 2720 -> 2727
 2721 -> 2728 -> {2729, 2730}
 {2726, 2727, 2729, 2730} -> 2731 -> 2732
-{2726, 2727, 2729, 2730, 2732} -> 2733
-{2726, 2727, 2731, 2732} -> 2734
-{2719..2734} -> 2735
+2732 -> 2736 -> 2737 -> 2738 -> 2739 -> 2740
+2740 -> {2733, 2734}
+{2719..2734, 2736..2740} -> 2735
 ```
 
 ## Gate Ownership
@@ -67,7 +79,7 @@ unlock a failed correctness stage.
 | 3.5 membership and lifetime sweeps | LDG-2728 |
 | 3.5 status supersession-exact hybrid | LDG-2729 |
 | 3.5 complete-set setwise validation and bypass | LDG-2730 |
-| 3.6 dependency and telemetry posture (collapse 2.1.7 and 2.1.8, no floor; unchanged telemetry names; no new schema column, hash input, public telemetry API, or durable lane name) | LDG-2724, LDG-2735 |
+| 3.6 dependency and telemetry posture (collapse rule superseded by the amendment; unchanged telemetry names; no new schema column, hash input, public telemetry API, or durable lane name) | LDG-2736 (floor), LDG-2735 (telemetry) |
 | 3.7 benchmark clocks and peer workload | LDG-2731, LDG-2734 |
 | 4.1 provider-only views | LDG-2720, LDG-2722 |
 | 4.1 fold scenarios | LDG-2720, LDG-2723, LDG-2724 |
@@ -77,14 +89,27 @@ unlock a failed correctness stage.
 | 4.1 mechanism and source guard | LDG-2726 |
 | 4.2 seal-validator matrix | LDG-2728, LDG-2729, LDG-2730 |
 | 4.3 finalization matrix | LDG-2727 |
-| 4.4 identity and compatibility matrix | LDG-2723, LDG-2724, LDG-2726, LDG-2735 |
-| 7.1 availability warm record | LDG-2725 (pre-retirement pair), LDG-2733 (stage H) |
+| 4.4 identity and compatibility matrix | LDG-2723, LDG-2724, LDG-2726, LDG-2736, LDG-2739, LDG-2735 |
+| 7.1 availability warm record | LDG-2725 (historical pre-retirement pair), LDG-2740 (valuation pair), LDG-2733 (stage J) |
 | 7.2 cold seal record | LDG-2733 |
 | 7.3 peer record | LDG-2734 |
 | 7.4 permitted release claims | LDG-2732, LDG-2734, LDG-2735 |
 | 8 documentation and governance closeout | LDG-2732 (manuals and methodology), LDG-2734 (peer README and tracked report after the record), LDG-2735 |
-| 9 release gates 1-10 | LDG-2735 (gate 2 evidence from LDG-2726; gate 6 from LDG-2724 and LDG-2735; gate 7 from LDG-2733 and LDG-2734) |
+| 9 release gates 1-10 | LDG-2735 (gate 2 evidence from LDG-2726, LDG-2738, and LDG-2740; superseded gate 6 from LDG-2736 and LDG-2735; gate 7 from LDG-2733 and LDG-2734) |
 | Re-review N1 (status default keyed on row presence) | LDG-2719 (spec patch), LDG-2720 (test) |
+| Amendment 1 authority and narrow supersession | LDG-2735 (final cross-artifact reconciliation) |
+| Amendment 2 dependency floor and implementation-choice gate | LDG-2736 |
+| Amendment 3.1 event semantic and failure matrix | LDG-2737 |
+| Amendment 3.2 event scaling and old-writer retirement | LDG-2738 |
+| Amendment 4.1 prepared valuation and semantic matrix | LDG-2739 |
+| Amendment 4.2 valuation scaling gate | LDG-2740 |
+| Amendment 5 combined eventful availability case | LDG-2740 |
+| Amendment 6 compatibility and source guards | LDG-2736, LDG-2738, LDG-2739, LDG-2740 |
+| Amendment 7 sequencing and review stops | LDG-2738, LDG-2740, LDG-2733, LDG-2734, LDG-2735 |
+| Amendment 8 final-source reruns and documentation claims | LDG-2733, LDG-2734, LDG-2735 |
+| Amendment 9 explicit non-goals and later-work routing | LDG-2735 |
+| Amendment 10 release gates | LDG-2735 (evidence from LDG-2736 through LDG-2740, LDG-2733, and LDG-2734) |
+| Amendment 11 source basis and revision record | LDG-2735 |
 
 ## LDG-2719 - Packet Alignment And Ticket Cut
 
@@ -696,7 +721,7 @@ setwise validation proves they cannot conflict.
 - No malformed set row is silently exempted.
 - Targeted seal fixtures pass and the structural check proves the pairwise
   validators are absent from production execution.
-- Independent review accepts Batch 6 before closeout records.
+- Independent review accepts Batch 6 before final benchmark records.
 
 ### Verification
 
@@ -814,17 +839,19 @@ surface: maintainer-manuals
 scope: post-productionization-refresh
 ```
 
-## LDG-2733 - Availability Warm And Cold Closeout Records
+## LDG-2733 - Availability Warm And Cold Benchmark Records
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2726, LDG-2727, LDG-2729, LDG-2730, LDG-2732
+Dependencies: LDG-2740
 Status: Pending
 
 ### Description
 
-Record the stage H availability warm record and the cold seal record on the
-registered fixture.
+Regenerate the stage J availability warm record and cold seal record on the
+registered fixture from accepted final source. The records produced at
+`6b09a1b` are provisional diagnostic evidence and cannot satisfy this ticket.
+This is a measurement ticket, not release closeout.
 
 ### Tasks
 
@@ -832,6 +859,8 @@ registered fixture.
   production path; median and spread of wall around the warm experiment and
   externally sampled peak working set; a host comparable to the reviewed block
   spike or the gate stays open.
+- Use a new record prefix from the accepted post-LDG-2740 source. Do not
+  relabel, overwrite, or promote the provisional `6b09a1b` record.
 - Cite the LDG-2725 pre-retirement pair by prefix as comparison context; do
   not restore the retired path.
 - Cold record: the registered full seal once without the profiler, plus a
@@ -839,6 +868,8 @@ registered fixture.
   and peak working set.
 - Report fixture shape, source commit, versions, host metadata, warm-up count,
   repetitions, parity status, and the largest profiled lane.
+- Stop after the record is written. Review it with the LDG-2734 result and
+  summarize every registered pass or miss for an explicit maintainer decision.
 
 ### Acceptance Criteria
 
@@ -847,6 +878,8 @@ registered fixture.
 - The seal completes with the pairwise validator absent; the 60-to-90-second
   estimate stays a forecast.
 - Both records are cited by exact local prefix.
+- The reviewed record is available to the maintainer before any release-gate
+  work starts; this ticket does not itself authorize closeout.
 
 ### Verification
 
@@ -855,7 +888,7 @@ registered fixture.
 
 ### Source Reference
 
-- Spec Sections 7.1, 7.2
+- Spec Sections 7.1, 7.2; accepted amendment Sections 7 stage J, 8
 
 ### Classification
 
@@ -869,19 +902,23 @@ scope: warm-and-cold-records
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2726, LDG-2727, LDG-2731, LDG-2732
+Dependencies: LDG-2740
 Status: Pending
 
 ### Description
 
 Run the explicit standard peer workload after the package code, phase split,
 and manuals are final, record it without a ranking claim, and carry the record
-into the peer README and tracked report.
+into the peer README and tracked report. The record first run from `6b09a1b`
+is provisional and cannot satisfy this ticket. This is a measurement ticket,
+not release closeout.
 
 ### Tasks
 
 - Run `--preset record --release v0.2.0.1 --engine-set all --n-inst 500
   --n-days 1260 --fast 5 --slow 10 --seed 20260530`.
+- Use a new record prefix from accepted post-LDG-2740 source; do not overwrite
+  or silently promote the provisional record.
 - Record status and environment per engine; reconcile phase totals with the
   full row wall; compare canonical equity, fills, and trades to durable ledgr
   before interpreting timing; classify the first divergence where full parity
@@ -889,8 +926,15 @@ into the peer README and tracked report.
 - Update the peer README and tracked report with all five required fields: the
   exact closeout command, the exact record prefix, the environment, the parity
   status, and explicit non-ranking language.
+- Build report status from the named `Status` column and keep `Reason`
+  separate; make B2 prose conditional on the row actually being present.
+- Report zero divergence as a count without a zero-denominator percentage, and
+  report Zipline's weak-tolerance result literally rather than as full parity.
 - Cite the exact record prefix in the release closeout; keep raw records
   local.
+- Stop after the record and report are written. Review them with the LDG-2733
+  result and summarize every registered pass, miss, or unavailable peer for an
+  explicit maintainer decision.
 
 ### Acceptance Criteria
 
@@ -898,7 +942,11 @@ into the peer README and tracked report.
 - Parity precedes timing interpretation.
 - The peer README and tracked report carry the five required fields for this
   record and no ranking language.
+- Status/reason, conditional-row, zero-denominator, and weak-tolerance report
+  cases render honestly from the fresh record.
 - No hosted LEAN service.
+- The reviewed record is available to the maintainer before any release-gate
+  work starts; this ticket does not itself authorize closeout.
 
 ### Verification
 
@@ -908,7 +956,7 @@ into the peer README and tracked report.
 
 ### Source Reference
 
-- Spec Sections 3.7, 7.3, 7.4, 8
+- Spec Sections 3.7, 7.3, 7.4, 8; accepted amendment Sections 7 stage J, 8
 
 ### Classification
 
@@ -922,21 +970,25 @@ scope: release-record
 
 Priority: P0
 Effort: L
-Dependencies: LDG-2719, LDG-2720, LDG-2721, LDG-2722, LDG-2723, LDG-2724, LDG-2725, LDG-2726, LDG-2727, LDG-2728, LDG-2729, LDG-2730, LDG-2731, LDG-2732, LDG-2733, LDG-2734
+Dependencies: LDG-2719, LDG-2720, LDG-2721, LDG-2722, LDG-2723, LDG-2724, LDG-2725, LDG-2726, LDG-2727, LDG-2728, LDG-2729, LDG-2730, LDG-2731, LDG-2732, LDG-2733, LDG-2734, LDG-2736, LDG-2737, LDG-2738, LDG-2739, LDG-2740
 Status: Pending
 
 ### Description
 
-Follow the release playbook, prove the ten Section 9 gates, and close the
-packet without conflating local, branch, main, and tag evidence.
+After the Stage J benchmark checkpoint has been independently reviewed and the
+maintainer has explicitly elected to proceed, follow the release playbook,
+prove the ten Section 9 gates, and close the packet without conflating local,
+branch, main, and tag evidence.
 
 ### Tasks
 
+- Confirm the accepted LDG-2733 and LDG-2734 review and explicit maintainer
+  go-ahead before execution; otherwise stop with this ticket Pending.
 - Read `inst/design/release_ci_playbook.md` before execution.
 - Run the complete suite, source build, and
   `R CMD check --no-manual --no-build-vignettes`.
-- Run the relevant suite under collapse 2.1.7 and 2.1.8 without changing the
-  dependency floor.
+- Confirm `collapse (>= 2.1.8)` is declared and run the relevant suite under
+  collapse 2.1.8 or later; no 2.1.7 fallback or compatibility branch exists.
 - Confirm schemas, identity formats, and v0.2.0.0 fixture reopen are unchanged.
 - Confirm persisted and public telemetry names are unchanged and that no
   schema column, hash input, public telemetry API, or durable lane name was
@@ -944,6 +996,10 @@ packet without conflating local, branch, main, and tag evidence.
 - Confirm every Section 4 matrix is represented by durable tests or a named
   closeout artifact and every correctness or parity stop was independently
   reviewed.
+- Confirm every amendment matrix and performance gate is represented by
+  durable tests or an accepted evidence artifact, the combined eventful
+  availability case passes, and no superseded implementation or test-only
+  selector ships.
 - Render documentation, confirm anchors resolve, and remove generated
   artifacts, temporary stores, `Rplots.pdf`, tarballs, and check directories.
 - Update NEWS, version surfaces, AGENTS, design index, roadmap, and horizon
@@ -952,7 +1008,11 @@ packet without conflating local, branch, main, and tag evidence.
 
 ### Acceptance Criteria
 
-- Release gates 1 through 10 hold; no benchmark number waives gates 1 to 6.
+- Base-spec gates 1 through 10 and amendment gates 1 through 6 hold; no
+  benchmark number waives a semantic, persistence, identity, rollback, resume,
+  reopen, dependency, or source-removal gate.
+- The Stage J benchmark checkpoint was independently reviewed and explicitly
+  accepted by the maintainer before Stage K began.
 - Telemetry names are unchanged and none of the four prohibited additions
   exists.
 - Ticket Markdown, YAML, batch plan, spec, indexes, and closeout agree.
@@ -962,14 +1022,14 @@ packet without conflating local, branch, main, and tag evidence.
 
 - Release CI playbook
 - Full local suite, build, and check
-- Dual collapse-version suite
+- Collapse minimum-version and no-fallback checks
 - Telemetry-name and prohibited-addition check
 - Documentation renders and anchor check
 - Git status and generated-artifact review
 
 ### Source Reference
 
-- Spec Sections 8, 9
+- Spec Sections 8, 9; accepted amendment Sections 7 stage K, 8, 10
 
 ### Classification
 
@@ -977,4 +1037,316 @@ packet without conflating local, branch, main, and tag evidence.
 type: release
 surface: release-gate
 scope: v0.2.0.1-closeout
+```
+
+## LDG-2736 - Collapse 2.1.8 Event-Write Route Gate
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2732
+Status: Pending
+
+### Description
+
+Freeze the current memory and durable event writers as test-only oracles,
+prove the corrected collapse 2.1.8 by-reference route against the temporary
+unbind control, and raise the package dependency floor only after that route
+passes.
+
+### Tasks
+
+- Preserve the current extract/mutate/reassign behavior outside installed
+  source as the exact pre-retirement oracle for both handlers.
+- Add one private direct-write candidate using collapse 2.1.8 character and
+  list `setv()` on buffer-owned storage; expose no public argument, option,
+  environment variable, or durable arm stamp.
+- Implement the unbind/mutate/rebind route only in the bounded comparison
+  harness. It may not enter installed package source.
+- On the registered 500 by 1,260 eventful shape, compare the direct route with
+  the control for both handlers using one warm-up and at least three measured
+  runs, exact output parity, repeated allocation, ordinary GC, and forced-GC
+  stress.
+- Require each direct-route median eventful wall to be no more than 1.20 times
+  its control. If any gate fails, stop and return to the amendment; do not
+  promote the control or retain a dual shipping path.
+- After the route passes, declare `collapse (>= 2.1.8)` in `DESCRIPTION` and
+  prove an under-floor environment fails dependency resolution rather than
+  selecting a runtime fallback.
+
+### Acceptance Criteria
+
+- Direct and control outputs are exact on every compared semantic and
+  persisted field, and the direct route passes the two handler wall gates.
+- Forced-GC stress produces no corruption, invalid character/list reference,
+  warning, or crash.
+- `DESCRIPTION` declares collapse 2.1.8 as the minimum and no 2.1.7 behavior
+  branch exists.
+- The temporary control is test-only and no caller-selectable seam exists.
+
+### Verification
+
+- Two-handler implementation-choice record
+- Exact event and persisted-output diff
+- Allocation, ordinary-GC, and forced-GC stress
+- Dependency-floor and under-floor resolution checks
+
+### Source Reference
+
+- Accepted amendment Sections 2, 6, 7 stage H
+
+### Classification
+
+```yaml
+type: performance
+surface: event-buffer
+scope: collapse-route-gate
+```
+
+## LDG-2737 - Linear Memory And Durable Event Buffers
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2736
+Status: Pending
+
+### Description
+
+Make indexed writes into owned typed storage the single production path in
+both event handlers and prove the amendment's complete semantic and failure
+matrix before the old oracle is retired.
+
+### Tasks
+
+- Replace scale-growing extract/scalar-replace/reassign writes for the memory
+  handler's six character and one list columns and the durable handler's six
+  character columns with the accepted direct route.
+- Preserve geometric capacity growth and existing memory/durable transaction,
+  flush, rollback, and ownership boundaries; keep total buffer construction
+  amortized `O(E)` apart from required accounting work.
+- Compare the full ordered event schema, including IDs, sequence, timestamps,
+  all economic fields, `meta_json`, and parsed list metadata, against the
+  frozen oracle.
+- Cover fills, trades, cash, positions, equity, strategy state, completion,
+  diagnostics, telemetry, opens, closes, reversals, repeated same-side and
+  no-op targets, final-bar no-fill, non-zero fees, and non-zero slippage.
+- Inject a small private capacity and exercise immediately before, at, and
+  after at least two growth boundaries.
+- Cover completion, controlled stop, unexpected error, append failure,
+  interruption, resume to `DONE`, resume then error, memory/durable common
+  surfaces, and durable close/reopen/result extraction.
+
+### Acceptance Criteria
+
+- Compared values are exact unless an existing contract names a numeric
+  tolerance; identity and row order are exact.
+- Failure paths expose no partial active event and leave the committed prefix
+  recoverable.
+- No production append extracts and reassigns a capacity-growing column.
+- One production writer path serves each existing handler without changing
+  public API, schemas, hashes, identities, or accounting policy.
+
+### Verification
+
+- Event semantic and persisted-output matrix
+- Capacity-boundary tests
+- Error, rollback, interruption, resume, and reopen tests
+- Memory/durable parity checks
+
+### Source Reference
+
+- Accepted amendment Sections 3.1, 6, 7 stage H
+
+### Classification
+
+```yaml
+type: performance
+surface: event-buffer
+scope: linear-production-writes
+```
+
+## LDG-2738 - Event Scaling And Old-Writer Retirement
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2737
+Status: Pending
+
+### Description
+
+Prove the repaired event writers scale materially and linearly, then retire
+the oracle, comparison control, and every selection mechanism before the
+independent Batch 8 review.
+
+### Tasks
+
+- Run the registered SMA 5/10, 1,260-session, seed-20260530 zero-cost curve at
+  50, 100, 200, 350, and 500 stable-subset instruments for both handlers.
+- In one quiet-host session, record one warm-up and at least three measured
+  current and candidate runs at 500 instruments plus one diagnostic run at
+  every smaller point.
+- Require each 500-instrument candidate median engine wall to be at most 0.60
+  times its current oracle median and its microseconds per fill to be no more
+  than 1.35 times the minimum over 100, 200, 350, and 500 instruments.
+- Reconcile fill count and final equity at every point; record externally
+  sampled peak working set and require no more than 15 percent above the
+  current arm's same-session maximum.
+- Persist the exact accepted evidence prefix before deleting the oracle. The
+  deletion commit must be later than and cite that prefix.
+- Remove the old writer, unbind control, comparison seam, and arm markers;
+  extend the installed-source guard to reject them and the retired
+  extract/mutate/reassign shape.
+- Write the Batch 8 evidence record and stop for independent review.
+
+### Acceptance Criteria
+
+- Both handlers pass the wall, normalized-cost, reconciliation, and memory
+  gates; a merely lower-constant quadratic writer cannot pass.
+- The evidence prefix is immutable and precedes oracle retirement.
+- Installed source contains only the direct linear path and no old writer,
+  control, fallback, option, stamp, or 2.1.7 compatibility branch.
+- Independent review accepts the Batch 8 implementation and evidence.
+
+### Verification
+
+- Five-point scaling curve for both handlers
+- Quiet-host paired 500-instrument record
+- Source and namespace-body guard
+- Focused regression net and independent review
+
+### Source Reference
+
+- Accepted amendment Sections 3.2, 6, 7 stage H, 10
+
+### Classification
+
+```yaml
+type: performance
+surface: event-buffer
+scope: scaling-and-retirement
+```
+
+## LDG-2739 - Prepared Fold-Time Availability Valuation
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2738
+Status: Pending
+
+### Description
+
+Replace repeated instrument matching and price-prefix rescanning with
+run-local primitive valuation state whose fold-time work is `O(N*P)`, while
+keeping the current function as a test-only oracle until measurement closes.
+
+### Tasks
+
+- Freeze the current valuation function outside installed execution as the
+  pre-retirement oracle.
+- Prepare once per run an instrument-to-source-row index and primitive state
+  for last finite close, source pulse or timestamp, and staleness age.
+- Advance state once per nondecreasing fold pulse and emit current-axis marks
+  by indexed lookup; fail closed on an out-of-order internal pulse.
+- Prohibit per-axis full-vector `match()` and growing `seq_len(pulse_idx)`
+  close-prefix scans in production valuation.
+- Cover never-observed and current names; leading, interior, and trailing
+  gaps; exact fresh/stale boundaries; expiry and re-entry; held former members
+  and held names outside the strategy axis; terminal events around the pulse;
+  complete-list and interval membership changes; completion and controlled
+  stop.
+- Compare direct, memory, durable, interrupted/resumed, and reopened outputs:
+  full valuation views, diagnostic stages and reasons, equity, completion,
+  events, strategy state, and terminal evidence.
+- Keep the state transient and absent from persistence, caches, hashes,
+  identities, configs, worker contracts, public returns, and dense runs.
+
+### Acceptance Criteria
+
+- The semantic matrix is exact and expected gaps are never imputed to zero or
+  to future observations.
+- Instrument lookup is prepared once and no price prefix is rescanned.
+- Instrumented work remains proportional to emitted instrument-pulses over at
+  least three pulse counts and three source-instrument counts, including the
+  563-source, 505-member, 757-pulse shape.
+- Public and durable compatibility surfaces remain unchanged.
+
+### Verification
+
+- Valuation semantic matrix
+- Structural pulse and source-instrument scaling proof
+- Resume, reopen, and dense-path exclusion tests
+- Identity, persistence, and public-surface guards
+
+### Source Reference
+
+- Accepted amendment Sections 4.1, 4.2 structural gate, 6, 7 stage I
+
+### Classification
+
+```yaml
+type: performance
+surface: availability-valuation
+scope: prepared-fold-state
+```
+
+## LDG-2740 - Valuation Scaling And Combined Correction Evidence
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2739
+Status: Pending
+
+### Description
+
+Prove the prepared valuation path at the registered population, exercise both
+amendment corrections together, retire the test oracle, and close Batch 9 at
+an independent review stop.
+
+### Tasks
+
+- On one quiet host, run one warm-up and at least three measured current and
+  candidate arms over the zero-fill 563-source, 505-member, 757-pulse fixture
+  with provider and diagnostic paths held constant.
+- Require candidate median `wall_seconds` at most 0.80 times the current arm's
+  same-session median, an improvement exceeding the current arm's full spread,
+  every peak at most 1,024 MiB, and no peak more than 15 percent above the
+  current arm's same-session maximum.
+- Record full semantic parity and the structural scaling proof beside the
+  paired measurement; the provisional 25.42-second record cannot satisfy this
+  ticket.
+- Add the bounded combined case with non-zero fills, at least one event-buffer
+  capacity crossing, non-zero transaction cost, complete-membership change, a
+  held former member, a gap reaching the stale boundary, and one terminal
+  event. Compare every event and valuation surface required by the amendment.
+- Persist the accepted paired prefix before removing the valuation oracle; the
+  deletion commit must be later than and cite that prefix.
+- Remove the oracle and any test-only selector, extend the source guard, write
+  the Batch 9 evidence record, and stop for independent review.
+
+### Acceptance Criteria
+
+- The candidate passes the 0.80 wall, spread, peak-memory, structural, and
+  semantic gates.
+- The combined case proves the two corrections coexist without changing
+  accounting, availability, diagnostic, persistence, or identity semantics.
+- No prefix-scanning oracle or selector remains in installed source or ships
+  into Stage J.
+- Independent review accepts the Batch 9 implementation and evidence.
+
+### Verification
+
+- Paired 757-pulse quiet-host record
+- Combined eventful availability case
+- Source and identity guards
+- Focused regression net and independent review
+
+### Source Reference
+
+- Accepted amendment Sections 4.2 measured gate, 5, 6, 7 stage I, 10
+
+### Classification
+
+```yaml
+type: performance
+surface: availability-valuation
+scope: scaling-integration-and-retirement
 ```

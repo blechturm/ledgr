@@ -1,7 +1,9 @@
 # ledgr v0.2.0.1 Batch Plan
 
-Status: Batches 0 through 6 complete after review and maintainer acceptance.
-Batch 7 is implemented with review pending. Batch 8 is pending.
+Status: Batches 0 through 7 complete after review and maintainer acceptance.
+The accepted hot-path complexity amendment is cut; Batches 8 through 11 are
+pending behind independent ticket-cut review. No amendment implementation has
+started.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -10,11 +12,13 @@ Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
 
 A batch is the independent review unit. Ticket dependencies are the hard
 readiness gate; numeric batch order is the default sequence. Batches 5 and 6
-are independent of the warm seams and may run beside Batches 2 to 4; Batch 7
-cannot start until Batches 4, 5, and 6 have closed, and Batch 8 cannot start
-until Batch 7 has closed, because the hard edges say so. If a batch lands out
-of order, status text must name the completed and blocked batches rather than
-implying linear progress.
+were independent of the warm seams and could run beside Batches 2 to 4; Batch 7
+could not start until Batches 4, 5, and 6 closed. Amendment Batch 8 depends on
+Batch 7, Batch 9 depends on Batch 8, Batch 10 is the final measurement
+checkpoint, and Batch 11 is the release gate. Batch 11 remains blocked until
+Batch 10 is independently reviewed and the maintainer explicitly elects to
+proceed. If a batch lands out of order, status text must name the completed and
+blocked batches rather than implying linear progress.
 
 For implementation batches:
 
@@ -25,10 +29,11 @@ For implementation batches:
 - stop for independent review before commit unless the maintainer directs
   otherwise.
 
-The spike protocol's correction budgets are stop signals. Batch 4 cannot retire
-the old paths before its two-arm parity record exists. No benchmark number can
-unlock a failed correctness stage. Batch 8 starts by reading
-`inst/design/release_ci_playbook.md`.
+The spike protocol's correction budgets are stop signals. Batch 4 could not
+retire its old paths before the two-arm parity record existed. The new event
+and valuation oracles likewise survive only until their exact paired records
+exist. No benchmark number can unlock a failed correctness stage. Batch 11
+starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Ticket-Cut Decisions
 
@@ -50,6 +55,17 @@ unlock a failed correctness stage. Batch 8 starts by reading
   500 by 1,260, SMA 5/10, seed 20260530, and `--engine-set all`.
 - Cold seal, warm availability, and peer records are three separate clocks;
   none is a public ranking and the seal estimate stays a forecast.
+- The maintainer accepted the reviewed hot-path complexity amendment on
+  2026-09-17. It raises the floor to collapse 2.1.8, adds only linear event
+  writes and prepared fold-time valuation, and leaves every other audit
+  finding outside this release.
+- The records first run from `6b09a1b` are provisional diagnostic evidence.
+  They cannot satisfy closeout and are rerun from accepted final source.
+- Existing tail IDs LDG-2733 through LDG-2735 are preserved. Amendment
+  work uses LDG-2736 through LDG-2740 and becomes their hard prerequisite.
+- LDG-2733 and LDG-2734 form a separate final-measurement checkpoint. Their
+  reviewed results and an explicit maintainer go-ahead are prerequisites for
+  the LDG-2735 release gate, even though no new ticket ID is required.
 
 ## Batch 0 - Packet Alignment And Ticket Cut
 
@@ -293,7 +309,7 @@ Review focus:
 
 Exit criteria:
 
-- independent review accepts the validators before closeout records.
+- independent review accepts the validators before final benchmark records.
 
 Implementation evidence: `batch6-seal-validator-evidence.md`.
 
@@ -337,9 +353,77 @@ Closeout: accepted by the maintainer after the initial review and focused
 correction review both passed. The phase labels, Zipline teardown attribution,
 availability-provider boundary, rendered manuals, and documentation contracts
 were independently verified. The release-sized records remain owned by Batch
-8. Reviews remain inline rather than in this packet.
+10. Reviews remain inline rather than in this packet.
 
-## Batch 8 - Release Closeout
+## Batch 8 - Linear Event Buffers
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2736
+- LDG-2737
+- LDG-2738
+
+Scope:
+
+- freeze both current event writers as test-only oracles;
+- compare the corrected collapse 2.1.8 direct route with the temporary
+  unbind/rebind control and raise the package floor only after it passes;
+- make the direct linear route production for memory and durable handlers;
+- prove the complete semantic, failure, capacity, scaling, and memory gates;
+- preserve the accepted evidence prefix, retire every old/control path, and
+  activate the source guard.
+
+Review focus:
+
+- exact full-schema and persisted-output parity under forced GC, failures,
+  interruption, resume, and reopen;
+- both handlers meet the 0.60 wall and 1.35 normalized-cost gates without
+  exceeding the paired peak-memory allowance;
+- collapse 2.1.8 is the real minimum and no control, old writer, fallback,
+  option, stamp, or 2.1.7 branch survives.
+
+Exit criteria:
+
+- immutable paired event evidence exists, the retirement commit cites it, the
+  source guard passes, and independent review accepts Batch 8.
+
+## Batch 9 - Prepared Availability Valuation
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2739
+- LDG-2740
+
+Scope:
+
+- prepare the instrument-row map, last finite close, source position/time, and
+  staleness age once per run;
+- replace repeated matching and price-prefix rescans with monotone `O(N*P)`
+  fold state while retaining the old function as a temporary test oracle;
+- prove the semantic and structural matrices, the paired 757-pulse gate, and
+  the combined eventful availability case;
+- preserve the accepted evidence prefix, retire the oracle and selector, and
+  extend the source guard.
+
+Review focus:
+
+- exact gaps, staleness, membership, held-former-member, terminal, stop,
+  resume, reopen, dense-path, persistence, and identity behavior;
+- `wall_seconds` at most 0.80 of the paired current arm, spread and memory
+  gates, and no hidden matching or prefix scan;
+- both amendment corrections operate together under non-zero fills and cost.
+
+Exit criteria:
+
+- immutable valuation and combined-case evidence exists, the retirement
+  commit cites it, the source guard passes, and independent review accepts
+  Batch 9.
+
+## Batch 10 - Fresh Benchmark Records
 
 Status: Pending.
 
@@ -347,21 +431,56 @@ Tickets:
 
 - LDG-2733
 - LDG-2734
+
+Scope:
+
+- regenerate the availability warm record and single cold seal record from
+  final accepted source under new prefixes;
+- regenerate the explicit peer record and update its README and tracked report
+  from that new prefix; and
+- stop with a concise comparison of the achieved results against every
+  registered performance gate, without running release closeout work or
+  promoting the provisional `6b09a1b` records.
+
+Review focus:
+
+- comparable host and cited pre-retirement pairs;
+- three separate clocks, fresh record prefixes, and the five peer-report
+  fields;
+- benchmark and parity results are reported literally, including misses or
+  unavailable peers, and no result is converted into a release claim.
+
+Exit criteria:
+
+- fresh benchmark artifacts are independently reviewed and summarized for the
+  maintainer; and
+- execution stops. Batch 11 stays blocked until the maintainer explicitly
+  accepts the measurement checkpoint and directs the release gate to proceed.
+
+## Batch 11 - Release Gate
+
+Status: Pending.
+
+Tickets:
+
 - LDG-2735
 
 Scope:
 
-- availability warm record and the single registered cold seal record; the
-  explicit peer record with the peer README and tracked report updated from
-  it; the Section 9 release gate and closeout, including the unchanged
-  telemetry-name check.
+- after explicit maintainer authorization, run the base-spec and amendment
+  release gates, including unchanged telemetry and the collapse 2.1.8 minimum;
+- run the full suite, source build/check, documentation rendering, governance
+  reconciliation, and generated-artifact review; and
+- write the closeout citing the accepted Batch 10 record prefixes without
+  promoting the provisional `6b09a1b` records.
 
 Review focus:
 
-- comparable host and cited pre-retirement pair;
-- three separate clocks, three record prefixes, and the five peer-report
-  fields;
-- gates 1 through 10 hold and no benchmark waives gates 1 to 6.
+- Batch 10 was accepted explicitly before this work began;
+- all base and amendment gates hold and no benchmark waives correctness,
+  persistence, identity, rollback, resume, reopen, dependency, or retirement;
+  and
+- local, branch, main, and tag evidence remain distinct.
 
 Exit criteria:
 
