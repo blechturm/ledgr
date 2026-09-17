@@ -158,6 +158,12 @@ ledgr_run_terminal_recovery_equity <- function(con,
   if (is.na(achieved_end)) return(list())
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
   keep <- which(pulses <= achieved_end)
+  valuation_state <- ledgr_availability_valuation_state(
+    bars_mat,
+    instrument_ids,
+    pulses,
+    as.integer(availability_provider$valuation_policy$max_sessions)
+  )
   lapply(keep, function(i) {
     ts <- pulses[[i]]
     state <- ledgr_state_asof(
@@ -174,14 +180,7 @@ ledgr_run_terminal_recovery_equity <- function(con,
     if (length(held) == 0L) {
       positions_value <- 0
     } else {
-      valuation <- ledgr_availability_valuation_marks(
-        bars_mat = bars_mat,
-        instrument_ids = instrument_ids,
-        axis = held,
-        pulse_idx = i,
-        pulses_posix = pulses,
-        max_sessions = as.integer(availability_provider$valuation_policy$max_sessions)
-      )
+      valuation <- valuation_state$advance(i, held)
       if (any(!valuation$priced[held])) {
         ledgr_run_terminal_evidence_abort(
           "Committed terminal evidence cannot reconstruct every achieved valuation row."

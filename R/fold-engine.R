@@ -100,16 +100,6 @@ ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FA
   state_value
 }
 
-ledgr_fold_availability_mark_age <- function(bars_mat, instrument_ids, axis, pulse_idx) {
-  out <- stats::setNames(rep(NA_integer_, length(axis)), axis)
-  for (id in axis) {
-    row <- match(id, instrument_ids)
-    observed <- which(is.finite(bars_mat$close[row, seq_len(pulse_idx)]))
-    if (length(observed) > 0L) out[[id]] <- as.integer(pulse_idx - utils::tail(observed, 1L))
-  }
-  out
-}
-
 ledgr_fold_warn_final_bar_no_fill <- function(fill) {
   if (is.character(fill$warn_code) &&
       identical(fill$warn_code, "LEDGR_LAST_BAR_NO_FILL")) {
@@ -254,6 +244,16 @@ ledgr_execute_fold <- function(execution, output_handler) {
   } else {
     NA_integer_
   }
+  valuation_state <- if (availability_active) {
+    ledgr_availability_valuation_state(
+      bars_mat,
+      instrument_ids,
+      pulses_posix,
+      max_stale_sessions
+    )
+  } else {
+    NULL
+  }
   if (use_compiled_spot_fifo) {
     ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
   }
@@ -389,14 +389,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         full_positions <- ledgr_fold_positions_snapshot(state$positions, instrument_ids)
         availability_view <- availability_provider$decision_view(ts, full_positions)
         context_ids <- as.character(availability_view$axis)
-        valuation <- ledgr_availability_valuation_marks(
-          bars_mat = bars_mat,
-          instrument_ids = instrument_ids,
-          axis = context_ids,
-          pulse_idx = i,
-          pulses_posix = pulses_posix,
-          max_sessions = max_stale_sessions
-        )
+        valuation <- valuation_state$advance(i, context_ids)
         availability_view$priced <- valuation$priced
         availability_view$mark_age <- valuation$age
         availability_view$risk_mark <- valuation$mark
@@ -435,8 +428,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           flush_pulse_block(ts)
           break
         }
-        keep_bars <- match(context_ids, as.character(bars_current$instrument_id), nomatch = 0L)
-        bars_current <- bars_current[keep_bars[keep_bars > 0L], , drop = FALSE]
+        bars_current <- bars_current[valuation$source_row, , drop = FALSE]
         if (nrow(features_current) > 0L) {
           features_current <- features_current[
             as.character(features_current$instrument_id) %in% context_ids,
@@ -467,8 +459,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       active_positions <- position_qty != 0
       positions_value <- if (any(active_positions)) {
         if (availability_active) {
-          mark_idx <- match(instrument_ids[active_positions], context_ids)
-          sum(position_qty[active_positions] * valuation$mark[mark_idx])
+          sum(position_qty[active_positions] * valuation$mark[instrument_ids[active_positions]])
         } else {
           sum(position_qty[active_positions] * bars_mat$close[active_positions, i])
         }
@@ -503,7 +494,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
       # The pulse context is the only strategy-visible boundary in the fold.
       # Everything below this point must preserve no-lookahead: bars/features are
       # the current pulse view, while fills are resolved against the next bar.
-      context_position_idx <- match(context_ids, instrument_ids)
+      context_position_idx <- if (availability_active) {
+        unname(valuation$source_row)
+      } else {
+        seq_along(instrument_ids)
+      }
       positions_snapshot <- ledgr_fold_positions_snapshot(
         state$positions[context_position_idx],
         context_ids
@@ -918,7 +913,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           )
         }
         actual_positions <- ledgr_fold_positions_snapshot(
-          state$positions[match(context_ids, instrument_ids)],
+          state$positions[valuation$source_row],
           context_ids
         )
         reconciliation_detail <- canonical_json(list(

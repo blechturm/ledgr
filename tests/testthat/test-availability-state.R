@@ -197,24 +197,96 @@ testthat::test_that("asset state prunes exits, resets re-entry, and fails closed
   )
 })
 
-testthat::test_that("mark age counts sessions since the latest finite close", {
+testthat::test_that("prepared valuation advances finite closes without rescanning prefixes", {
+  pulses <- as.POSIXct(paste(as.Date("2020-01-01") + 0:5, "16:00:00"), tz = "UTC")
   bars_mat <- list(
     close = rbind(
-      c(100, NA, NA, 104),
-      c(NA, NA, NA, NA)
+      AAA = c(NA, 100, NA, NA, 104, NA),
+      BBB = rep(NA_real_, 6L),
+      CCC = c(50, rep(NA_real_, 5L)),
+      DDD = c(NA, NA, 30, NA, NA, 35)
     )
   )
-  testthat::expect_identical(
-    ledgr:::ledgr_fold_availability_mark_age(
-      bars_mat,
-      c("AAA", "BBB"),
-      c("AAA", "BBB"),
-      3L
-    ),
-    c(AAA = 2L, BBB = NA_integer_)
+  state <- ledgr:::ledgr_availability_valuation_state_prepared(
+    bars_mat,
+    rownames(bars_mat$close),
+    pulses,
+    2L
   )
+
+  first <- state$advance(1L, c("CCC", "AAA", "BBB"))
+  testthat::expect_identical(first$reference, c(CCC = 50, AAA = NA_real_, BBB = NA_real_))
+  testthat::expect_identical(first$age, c(CCC = 0L, AAA = NA_integer_, BBB = NA_integer_))
+  testthat::expect_identical(first$source, c(CCC = "current_close", AAA = "missing", BBB = "missing"))
+  testthat::expect_identical(first$source_row, c(CCC = 3L, AAA = 1L, BBB = 2L))
+
+  third <- state$advance(3L, c("AAA", "CCC", "DDD", "BBB"))
+  testthat::expect_identical(third$reference, c(AAA = 100, CCC = 50, DDD = 30, BBB = NA_real_))
+  testthat::expect_identical(third$age, c(AAA = 1L, CCC = 2L, DDD = 0L, BBB = NA_integer_))
   testthat::expect_identical(
-    ledgr:::ledgr_fold_availability_mark_age(bars_mat, c("AAA", "BBB"), "AAA", 4L),
-    c(AAA = 0L)
+    third$source,
+    c(AAA = "stale_close", CCC = "stale_close", DDD = "current_close", BBB = "missing")
   )
+
+  fourth <- state$advance(4L, c("AAA", "CCC", "DDD"))
+  testthat::expect_identical(fourth$age, c(AAA = 2L, CCC = 3L, DDD = 1L))
+  testthat::expect_identical(fourth$permissible, c(AAA = TRUE, CCC = FALSE, DDD = TRUE))
+  testthat::expect_identical(fourth$mark, c(AAA = 100, CCC = NA_real_, DDD = 30))
+  testthat::expect_identical(fourth$source, c(AAA = "stale_close", CCC = "expired_close", DDD = "stale_close"))
+
+  repeated <- state$advance(4L, "AAA")
+  testthat::expect_identical(repeated$age, c(AAA = 2L))
+  testthat::expect_identical(
+    as.numeric(repeated$source_ts),
+    as.numeric(pulses[[2L]])
+  )
+
+  testthat::expect_error(
+    state$advance(3L, "AAA"),
+    class = "ledgr_availability_valuation_out_of_order"
+  )
+  testthat::expect_error(state$advance(4L, c("AAA", "AAA")), "unique prepared")
+  testthat::expect_error(state$advance(4L, "UNKNOWN"), "unique prepared")
+
+  stats <- state$stats()
+  testthat::expect_identical(stats$row_index_builds, 1L)
+  testthat::expect_equal(stats$pulse_cells_advanced, 4L * 4L)
+  testthat::expect_equal(stats$axis_cells_emitted, 3L + 4L + 3L + 1L)
+})
+
+testthat::test_that("prepared valuation work is exactly linear in source cells and emitted axis cells", {
+  shapes <- list(
+    c(source = 3L, axis = 2L, pulses = 5L),
+    c(source = 31L, axis = 17L, pulses = 43L),
+    c(source = 563L, axis = 505L, pulses = 757L)
+  )
+  observed <- lapply(shapes, function(shape) {
+    ids <- sprintf("I%04d", seq_len(shape[["source"]]))
+    pulses <- as.POSIXct("2020-01-01", tz = "UTC") + seq_len(shape[["pulses"]])
+    close <- matrix(
+      seq_len(shape[["source"]] * shape[["pulses"]]),
+      nrow = shape[["source"]]
+    )
+    close[seq.int(2L, length(close), by = 11L)] <- NA_real_
+    state <- ledgr:::ledgr_availability_valuation_state_prepared(
+      list(close = close),
+      ids,
+      pulses,
+      2L
+    )
+    axis <- ids[seq_len(shape[["axis"]])]
+    for (pulse_idx in seq_len(shape[["pulses"]])) state$advance(pulse_idx, axis)
+    state$stats()
+  })
+  for (i in seq_along(shapes)) {
+    testthat::expect_identical(observed[[i]]$row_index_builds, 1L)
+    testthat::expect_equal(
+      observed[[i]]$pulse_cells_advanced,
+      shapes[[i]][["source"]] * shapes[[i]][["pulses"]]
+    )
+    testthat::expect_equal(
+      observed[[i]]$axis_cells_emitted,
+      shapes[[i]][["axis"]] * shapes[[i]][["pulses"]]
+    )
+  }
 })

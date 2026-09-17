@@ -1,11 +1,11 @@
 ledgr_availability_cash_tolerance <- 1e-8
 
-ledgr_availability_valuation_marks <- function(bars_mat,
-                                                instrument_ids,
-                                                axis,
-                                                pulse_idx,
-                                                pulses_posix,
-                                                max_sessions) {
+ledgr_availability_valuation_marks_reference <- function(bars_mat,
+                                                          instrument_ids,
+                                                          axis,
+                                                          pulse_idx,
+                                                          pulses_posix,
+                                                          max_sessions) {
   n <- length(axis)
   reference <- mark <- stats::setNames(rep(NA_real_, n), axis)
   source_ts <- stats::setNames(as.POSIXct(rep(NA_character_, n), tz = "UTC"), axis)
@@ -38,6 +38,181 @@ ledgr_availability_valuation_marks <- function(bars_mat,
     source = source,
     permissible = permissible,
     priced = is.finite(mark)
+  )
+}
+
+ledgr_availability_valuation_state_prepared <- function(bars_mat,
+                                                         instrument_ids,
+                                                         pulses_posix,
+                                                         max_sessions) {
+  instrument_ids <- as.character(instrument_ids)
+  pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
+  close <- bars_mat$close
+  if (!is.matrix(close) || !is.numeric(close) ||
+      nrow(close) != length(instrument_ids) ||
+      ncol(close) != length(pulses_posix) ||
+      anyNA(instrument_ids) || any(!nzchar(instrument_ids)) ||
+      anyDuplicated(instrument_ids)) {
+    rlang::abort(
+      "Availability valuation state requires a numeric close matrix aligned to unique instrument IDs and pulses.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
+  max_sessions <- as.integer(max_sessions)
+  if (length(max_sessions) != 1L || is.na(max_sessions) || max_sessions < 0L) {
+    rlang::abort(
+      "Availability valuation state requires one non-negative stale-session limit.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
+
+  n_source <- length(instrument_ids)
+  row_by_id <- stats::setNames(seq_len(n_source), instrument_ids)
+  last_close <- rep(NA_real_, n_source)
+  last_pulse <- rep(NA_integer_, n_source)
+  current_pulse <- 0L
+  pulse_cells_advanced <- 0
+  axis_cells_emitted <- 0
+
+  advance <- function(pulse_idx, axis) {
+    pulse_idx <- as.integer(pulse_idx)
+    if (length(pulse_idx) != 1L || is.na(pulse_idx) ||
+        pulse_idx < 1L || pulse_idx > ncol(close)) {
+      rlang::abort(
+        "Availability valuation pulse is outside the prepared calendar.",
+        class = "ledgr_invalid_fold_execution"
+      )
+    }
+    if (pulse_idx < current_pulse) {
+      rlang::abort(
+        "Availability valuation pulses must be nondecreasing.",
+        class = c(
+          "ledgr_availability_valuation_out_of_order",
+          "ledgr_invalid_fold_execution"
+        )
+      )
+    }
+    axis <- as.character(axis)
+    source_row <- unname(row_by_id[axis])
+    if (anyNA(axis) || any(!nzchar(axis)) || anyDuplicated(axis) || anyNA(source_row)) {
+      rlang::abort(
+        "Availability valuation axis must contain unique prepared instrument IDs.",
+        class = "ledgr_invalid_fold_execution"
+      )
+    }
+
+    if (pulse_idx > current_pulse) {
+      for (j in seq.int(current_pulse + 1L, pulse_idx)) {
+        current_close <- as.numeric(close[, j])
+        observed <- is.finite(current_close)
+        last_close[observed] <<- current_close[observed]
+        last_pulse[observed] <<- j
+      }
+      pulse_cells_advanced <<- pulse_cells_advanced +
+        n_source * (pulse_idx - current_pulse)
+      current_pulse <<- pulse_idx
+    }
+    axis_cells_emitted <<- axis_cells_emitted + length(axis)
+
+    reference <- stats::setNames(last_close[source_row], axis)
+    source_position <- last_pulse[source_row]
+    age <- stats::setNames(as.integer(pulse_idx - source_position), axis)
+    age[is.na(source_position)] <- NA_integer_
+    permissible <- stats::setNames(!is.na(age) & age <= max_sessions, axis)
+    mark <- reference
+    mark[!permissible] <- NA_real_
+    source <- rep("missing", length(axis))
+    source[!is.na(age) & !permissible] <- "expired_close"
+    source[permissible & age == 0L] <- "current_close"
+    source[permissible & age > 0L] <- "stale_close"
+    names(source) <- axis
+    source_ts <- stats::setNames(
+      as.POSIXct(rep(NA_real_, length(axis)), origin = "1970-01-01", tz = "UTC"),
+      axis
+    )
+    has_source <- !is.na(source_position)
+    source_ts[has_source] <- pulses_posix[source_position[has_source]]
+
+    list(
+      mark = mark,
+      reference = reference,
+      source_ts = source_ts,
+      age = age,
+      source = source,
+      permissible = permissible,
+      priced = is.finite(mark),
+      source_row = stats::setNames(as.integer(source_row), axis)
+    )
+  }
+
+  stats <- function() {
+    list(
+      source_instruments = n_source,
+      current_pulse = current_pulse,
+      row_index_builds = 1L,
+      pulse_cells_advanced = pulse_cells_advanced,
+      axis_cells_emitted = axis_cells_emitted
+    )
+  }
+
+  list(advance = advance, stats = stats)
+}
+
+ledgr_availability_valuation_state_reference <- function(bars_mat,
+                                                          instrument_ids,
+                                                          pulses_posix,
+                                                          max_sessions) {
+  current_pulse <- 0L
+  advance <- function(pulse_idx, axis) {
+    pulse_idx <- as.integer(pulse_idx)
+    if (pulse_idx < current_pulse) {
+      rlang::abort(
+        "Availability valuation pulses must be nondecreasing.",
+        class = c(
+          "ledgr_availability_valuation_out_of_order",
+          "ledgr_invalid_fold_execution"
+        )
+      )
+    }
+    current_pulse <<- pulse_idx
+    out <- ledgr_availability_valuation_marks_reference(
+      bars_mat,
+      instrument_ids,
+      axis,
+      pulse_idx,
+      pulses_posix,
+      max_sessions
+    )
+    out$source_row <- stats::setNames(match(axis, instrument_ids), axis)
+    out
+  }
+  list(advance = advance)
+}
+
+ledgr_availability_valuation_state <- function(bars_mat,
+                                                instrument_ids,
+                                                pulses_posix,
+                                                max_sessions) {
+  arm <- getOption("ledgr.availability.valuation_arm", "prepared")
+  if (identical(arm, "reference")) {
+    return(ledgr_availability_valuation_state_reference(
+      bars_mat,
+      instrument_ids,
+      pulses_posix,
+      max_sessions
+    ))
+  }
+  if (!identical(arm, "prepared")) {
+    rlang::abort(
+      "Unknown temporary availability valuation arm.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
+  ledgr_availability_valuation_state_prepared(
+    bars_mat,
+    instrument_ids,
+    pulses_posix,
+    max_sessions
   )
 }
 
