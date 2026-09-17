@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Spec Packet
 
 Status: Batches 0 through 5 complete after review and maintainer acceptance.
-Batches 6-8 are pending.
+Batch 6 is implemented with review pending. Batches 7-8 are pending.
 
 This packet scopes v0.2.0.1 as an internal implementation and correctness
 release. It productionizes the three reviewed availability hot-path
@@ -45,6 +45,8 @@ Authoritative files:
   six-table parity, path retirement, and source-guard verification)
 - `batch5-finalization-evidence.md` (interrupted-prefix persistence, atomic
   terminal merge, strict failure matrix, dense-path exclusion, and reopen)
+- `batch6-seal-validator-evidence.md` (randomized and adversarial equivalence,
+  grouped sweeps, status hybrid, setwise bypass, and structural retirement)
 
 Binding design inputs:
 

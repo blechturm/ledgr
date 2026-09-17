@@ -14,7 +14,7 @@ availability_v201_capture_validation <- function(fn, rows) {
   )
 }
 
-testthat::test_that("pairwise validators are retained exactly for later gates", {
+testthat::test_that("test-only pairwise validators remain exact semantic references", {
   at <- availability_v201_at
   na_time <- availability_v201_na_time
   membership <- data.frame(

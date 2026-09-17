@@ -1,7 +1,7 @@
 # ledgr v0.2.0.1 Batch Plan
 
 Status: Batches 0 through 5 complete after review and maintainer acceptance.
-Batches 6-8 are pending.
+Batch 6 is implemented with review pending. Batches 7-8 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -269,7 +269,7 @@ than in this packet.
 
 ## Batch 6 - Seal Validators
 
-Status: Pending.
+Status: Review Pending.
 
 Tickets:
 
@@ -294,6 +294,8 @@ Review focus:
 Exit criteria:
 
 - independent review accepts the validators before closeout records.
+
+Implementation evidence: `batch6-seal-validator-evidence.md`.
 
 ## Batch 7 - Benchmark Phases And Manuals
 

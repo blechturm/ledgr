@@ -103,6 +103,12 @@ testthat::test_that("equity-prefix merge rejects every malformed pulse shape", {
     non_monotone = calendar$pulses_posix[[5L]],
     out_of_calendar = calendar$pulses_posix[[5L]]
   )
+  messages <- c(
+    missing = "does not contain its exact achieved prefix",
+    extra = "does not contain its exact achieved prefix",
+    non_monotone = "is not monotone",
+    out_of_calendar = "contains an out-of-calendar pulse"
+  )
   for (name in names(cases)) {
     testthat::expect_error(
       ledgr:::ledgr_run_equity_prefix_merge(
@@ -112,10 +118,28 @@ testthat::test_that("equity-prefix merge rejects every malformed pulse shape", {
         calendar,
         ends[[name]]
       ),
+      messages[[name]],
       class = "ledgr_run_terminal_evidence_invalid",
       info = name
     )
   }
+
+  foreign <- availability_prefix_rows(
+    calendar,
+    3:5,
+    run_id = "another-run"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_run_equity_prefix_merge(
+      prior,
+      foreign,
+      "prefix-run",
+      calendar,
+      calendar$pulses_posix[[5L]]
+    ),
+    "belongs to a different run",
+    class = "ledgr_run_terminal_evidence_invalid"
+  )
 })
 
 testthat::test_that("invalid terminal merge preserves prior rows and status", {

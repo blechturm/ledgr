@@ -143,7 +143,7 @@ tickets:
 
   - id: "LDG-2728"
     title: "Validator equivalence harness and membership/lifetime sweeps"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2721"]
@@ -157,7 +157,7 @@ tickets:
 
   - id: "LDG-2729"
     title: "Status supersession-exact hybrid validator"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2728"]
@@ -171,7 +171,7 @@ tickets:
 
   - id: "LDG-2730"
     title: "Complete-set setwise validation and sweep bypass"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2728"]
