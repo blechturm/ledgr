@@ -1,22 +1,37 @@
-peer_stage_l_harness <- local({
-  env <- new.env(parent = globalenv())
-  sys.source(
-    testthat::test_path(
-      "..", "..", "dev", "bench", "peer_benchmark", "peer_benchmark.R"
-    ),
-    envir = env
-  )
-  env
-})
+peer_stage_l_harness_path <- testthat::test_path(
+  "..", "..", "dev", "bench", "peer_benchmark", "peer_benchmark.R"
+)
+peer_stage_l_harness <- if (file.exists(peer_stage_l_harness_path)) {
+  local({
+    env <- new.env(parent = globalenv())
+    sys.source(peer_stage_l_harness_path, envir = env)
+    env
+  })
+} else {
+  NULL
+}
 
-testthat::test_that("Stage L freezes prerequisite and optimization oracles", {
+peer_stage_l_require_harness <- function() {
+  testthat::skip_if(
+    is.null(peer_stage_l_harness),
+    "Peer benchmark sources are unavailable during installed-package tests."
+  )
+}
+
+testthat::test_that("Stage L freezes prerequisite source hash", {
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
   availability_path <- file.path(root, "R", "availability-ingest.R")
+  testthat::skip_if_not(
+    file.exists(availability_path),
+    "Availability source is unavailable during installed-package tests."
+  )
   testthat::expect_identical(
     ledgr_stage_l_normalized_source_sha256(availability_path),
     unname(ledgr_stage_l_source_sha256[["availability_ingest"]])
   )
+})
 
+testthat::test_that("Stage L freezes optimization oracles", {
   axis <- as.POSIXct(
     c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
     tz = "UTC"
@@ -40,6 +55,7 @@ testthat::test_that("Stage L freezes prerequisite and optimization oracles", {
 })
 
 testthat::test_that("public sweep benchmark boundary is executable", {
+  peer_stage_l_require_harness()
   testthat::skip_if_not_installed("TTR")
   bars <- as.data.frame(ledgr_sim_bars(
     n_instruments = 2L,
@@ -72,6 +88,7 @@ testthat::test_that("public sweep benchmark boundary is executable", {
 })
 
 testthat::test_that("memory parity reference reports residuals and fails loudly", {
+  peer_stage_l_require_harness()
   measured <- list(
     status = "DONE",
     equity = data.frame(
@@ -148,6 +165,7 @@ testthat::test_that("memory parity reference reports residuals and fails loudly"
 })
 
 testthat::test_that("compiled parity distinguishes tolerance from identity", {
+  peer_stage_l_require_harness()
   reference <- list(
     public_returns = data.frame(
       candidate_id = "A",
@@ -186,6 +204,7 @@ testthat::test_that("compiled parity distinguishes tolerance from identity", {
 })
 
 testthat::test_that("report data preserves order, missingness, and source totals", {
+  peer_stage_l_require_harness()
   performance <- data.frame(
     engine = c("done", "missing"),
     status = c("DONE", "UNAVAILABLE"),

@@ -12,11 +12,14 @@
   review and maintainer acceptance. The accepted hot-path complexity amendment
   adds linear memory/durable event writes and prepared fold-time valuation;
   its ticket cut was independently accepted, and the Batch 8 event buffers and
-  Batch 9 prepared valuation are complete after review. Batches 10 and 11
-  remain pending.
-  The first benchmark records remain provisional until rerun from final source.
-  Final benchmarks have their own checkpoint before a separately authorized
-  release gate.
+  Batch 9 prepared valuation are complete after review. Batch 10 is retained
+  as diagnostic history. Batches 11 through 14 are complete after review,
+  including the corrected public peer boundary, dense timestamp validation,
+  within-chunk hash formatting, and final accepted-source records. Batch 15
+  completed local suite, build, check, documentation, Linux portability,
+  governance, and artifact gates and passed independent review. The maintainer
+  accepted the local release gate; remote branch CI, merge, main CI, tag, tag
+  CI, and release publication remain later evidence.
 
 # ledgr 0.2.0.0
 

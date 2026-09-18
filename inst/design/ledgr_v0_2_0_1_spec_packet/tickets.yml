@@ -257,7 +257,7 @@ tickets:
 
   - id: "LDG-2735"
     title: "v0.2.0.1 release gate"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies:

@@ -4,7 +4,9 @@ Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is diagnostic history and does not satisfy final evidence. The
 trusted-timestamp and benchmark-boundary amendment ticket cut passed
 independent review. Batches 11 through 14 are complete after review; Batch 15
-is authorized for implementation.
+is complete after independent review and maintainer acceptance. The local
+release gate is complete and the branch is ready for remote branch CI; merge,
+main CI, tag, tag CI, and release publication remain later evidence.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
 The maintainer accepted the trusted-timestamp and benchmark-boundary amendment
@@ -106,6 +108,8 @@ Authoritative files:
   and paired Stage N record)
 - `batch14-final-evidence.md` and `batch14-stage-o-records.csv` (final-source
   cold, warm, hash, profile, peer, parity, and record-prefix evidence)
+- `v0_2_0_1_release_closeout.md` (accepted local release-gate evidence, gate
+  adjudication, rerun history, and remote-evidence boundary)
 - `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md`
   (binding pre-cut `NEITHER` outcome)
 - `inst/design/exact_parity_internal_optimization_proof_template.md`

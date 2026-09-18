@@ -2995,7 +2995,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch12-dense-timestamp-evidence.md",
     "batch13-snapshot-hash-evidence.md",
     "batch14-final-evidence.md",
-    "batch14-stage-o-records.csv"
+    "batch14-stage-o-records.csv",
+    "v0_2_0_1_release_closeout.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -3010,7 +3011,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
     "batch7_evidence", "batch8_evidence", "batch9_evidence",
     "batch10_evidence", "batch11_evidence", "batch12_evidence",
-    "batch13_evidence", "batch14_evidence", "batch14_records"
+    "batch13_evidence", "batch14_evidence", "batch14_records",
+    "release_closeout"
   )
   prerequisite_path <- file.path(
     root,
@@ -3109,9 +3111,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     yaml_statuses,
     c(
-      rep("complete_after_review", 16L),
-      "pending",
-      rep("complete_after_review", 9L)
+      rep("complete_after_review", 26L)
     )
   )
   ticket_lines <- readLines(paths[[5L]], warn = FALSE)
@@ -3119,9 +3119,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     md_statuses,
     c(
-      rep("Complete After Review", 16L),
-      "Pending",
-      rep("Complete After Review", 9L)
+      rep("Complete After Review", 26L)
     )
   )
   batch_lines <- readLines(paths[[7L]], warn = FALSE)
@@ -3142,8 +3140,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review.", 10L),
       "Diagnostic History.",
-      rep("Complete After Review.", 4L),
-      "Pending."
+      rep("Complete After Review.", 5L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3266,6 +3263,33 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     docs$batch14_evidence,
     "This document does not authorize Batch[[:space:]]+15"
   )
+  testthat::expect_match(
+    docs$release_closeout,
+    "Local release gate complete after independent review and maintainer",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "R CMD check --no-manual --no-build-vignettes ledgr_0.2.0.1.tar.gz",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "completed in 1,129.08 seconds with `Status: OK`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "Coverage was not rerun",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    paste0(
+      "Remote[[:space:]]+branch CI, merge, main CI, tag, tag CI, and ",
+      "GitHub Release remain later"
+    )
+  )
   stage_o_records <- utils::read.csv(paths[[22L]], stringsAsFactors = FALSE)
   testthat::expect_identical(
     stage_o_records$record,
@@ -3371,7 +3395,11 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(horizon, "v0.2.0.1 packet is active", fixed = TRUE)
   testthat::expect_match(horizon, "Public single-evaluation memory surface", fixed = TRUE)
   testthat::expect_match(horizon, "must not\\s+create a second execution engine")
-  testthat::expect_match(agents, "active v0.2.0.1 packet", fixed = TRUE)
+  testthat::expect_match(
+    agents,
+    "locally complete v0.2.0.1 release gate",
+    fixed = TRUE
+  )
   testthat::expect_match(agents, "ledgr_v0_2_0_1_spec_packet/tickets.yml", fixed = TRUE)
 })
 

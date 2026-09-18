@@ -56,7 +56,7 @@ Read before implementing any non-trivial change:
 ## Current State
 
 Current planning context (completed v0.2.0.0 packet; accepted v0.2.0.1 RFC;
-active v0.2.0.1 packet):
+locally complete v0.2.0.1 release gate):
 
 - v0.2.0.0 combined API/representation hardening with the first point-in-time
   asset-availability implementation (`inst/design/ledgr_v0_2_0_0_spec_packet/`).
@@ -71,8 +71,10 @@ active v0.2.0.1 packet):
   resumed-run repair, linear event writes, prepared valuation, and benchmark
   closeout. LDG-2719 through LDG-2744 are in the active packet; Batches 0-9
   are complete, Batch 10 is diagnostic history, Batch 11 is complete after
-  review, Batches 12 through 14 are complete after review, and Batch 15 is
-  authorized for implementation. The availability
+  review, and Batches 12 through 15 are complete after review. The local
+  release gate is accepted and the branch is ready for remote CI; main and tag
+  evidence do not yet exist. The
+  availability
   prerequisite selected `NEITHER`; no availability-ingestion optimization is
   authorized. Old paths ship in no form, the public
   fact resolver stays independent, and no speed claim is authorized.
@@ -115,8 +117,7 @@ packets are records, not authorization for new work.
 
 ## Local Verification
 
-Current Windows R path used in this workspace. This local verification runtime
-does not change the package support floor in `DESCRIPTION`.
+Current Windows R path used here; it does not change the `DESCRIPTION` floor.
 
 ```powershell
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
@@ -125,22 +126,17 @@ does not change the package support floor in `DESCRIPTION`.
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" tools/check-coverage.R
 ```
 
-Targeted checks are preferred while editing, followed by full tests and package
-check before committing release-ticket work.
+Prefer targeted checks while editing, then full tests and package check.
 
-Building the pkgdown site locally is wrapped in `dev/build-site.R`. A bare
-`Rscript` does not inherit RStudio's Quarto/Pandoc environment and trips on
-stale `src/` artifacts; the wrapper sets `QUARTO_PATH`/`RSTUDIO_PANDOC`, adds
-the user library fallback, cleans compiled `src/` artifacts (the 0-byte DLL
-that breaks `load_all` in vignette setup), then runs `pkgdown::build_site()`.
+Local pkgdown builds use `dev/build-site.R`. It sets Quarto/Pandoc and the user
+library fallback, cleans stale compiled `src/` artifacts, then runs pkgdown.
 
 ```powershell
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
 ```
 
-The live site otherwise redeploys from the `pkgdown` GitHub Actions workflow on
-push to `main`; the wrapper is for local preview before pushing.
+The live site redeploys from the `pkgdown` workflow on push to `main`.
 
 ## Ticket Workflow
 

@@ -30,14 +30,15 @@ an architecture note, or a spec packet.
 review and local release gates. The v0.2.0.1 packet is active: its spec was
 accepted on 2026-09-16, its hot-path complexity amendment was accepted on
 2026-09-17, and the timestamp/benchmark amendment was accepted 2026-09-18.
-Tickets LDG-2719 through LDG-2744 are cut and await ticket-cut review for
+Tickets LDG-2719 through LDG-2744 are cut and their cut passed review for
 availability hot- and cold-path productionization, the seal-validator
 correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, corrected public peer boundaries, dense timestamp
 validation, within-chunk hash formatting, and fresh separated benchmark
 closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batches 11 through 14 are complete after review; Batch 15 is authorized for
-implementation. The prerequisite
+Batches 11 through 15 are complete after review. The accepted local release
+gate leaves the branch ready for remote CI; main and tag evidence remain later
+steps. The prerequisite
 selected `NEITHER`, so no
 availability-ingestion optimization enters the release. The Batch 14 review
 passed and the maintainer explicitly authorized the release gate.
@@ -84,6 +85,9 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **After v0.2.0.1** -- the refreshed spot-crypto readiness probe and
   conditional measurement spike. No prior crypto spike was executed; the
   roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
+- **Next implementation packet** -- the peer benchmark session alignment
+  chore: normalize peer session indexes before parity scoring, report join
+  retention, and revisit the 0.99 weak-return threshold in the article.
 - **v0.2.x** — snapshot administration and research-loop ergonomics
   (promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -113,6 +117,55 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-18 [infrastructure] Peer benchmark session alignment defect
+
+The promoted v0.2.0.1 peer record reports zipline-reloaded at a 0.146064
+daily-return correlation against ledgr, and the rendered article labels that
+row `review (weak return correlation)`. The number measures the harness, not
+zipline.
+
+Every one of zipline's 1,260 equity rows is labelled exactly one calendar day
+after the corresponding ledgr row. ledgr spans 2018-01-01 to 2022-10-28 on
+Monday-to-Friday labels; zipline spans 2018-01-02 to 2022-10-29 on
+Tuesday-to-Saturday labels; the offset is `+1` on every row without exception.
+The adapter registers the `exchange_calendars` 24/5 calendar at
+`dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py:93` to match
+ledgr's synthetic weekday bars, and that calendar's session labels land one day
+after the bar dates written into the csvdir bundle. Zipline trades the same
+price sequence in the same order; it only names each session a day later.
+
+Parity is then scored by an inner join on the timestamp string at
+`dev/bench/peer_benchmark/peer_benchmark.R:1456-1463`. Against a shifted index
+that join keeps 1,008 of 1,260 rows, silently dropping all 252 Mondays and all
+252 Saturdays, and pairs ledgr's session at date D with zipline's row for bar
+D-1. Equity levels are smooth enough to survive the lag at 0.999757
+correlation; first differences are not, and that is the entire distance between
+0.146 and a real result.
+
+Scored positionally, row against row, zipline returns 0.999832 equity
+correlation, 0.987974 daily-return correlation, and 0.00200155 maximum
+single-bar divergence. It passes the same Tier 1 rule and lands beside
+quantstrat's 0.987795. Zipline is not an outlier.
+
+Two further observations belong with any fix. The join reports no retention, so
+a twenty percent row loss passed unremarked while the other peers retained
+essentially every comparable row; a retention check would have caught this
+without anyone reading a calendar. And the article's weak-return threshold is
+0.99, which no external engine except backtrader clears on returns, so a
+corrected zipline at 0.987974 would still render as a defect. That threshold
+describes engine-convention distance, not a fault.
+
+Smaller and separate: zipline's final session liquidates, 341 fills ending
+fully in cash, where ledgr's final session has none. It is worth understanding,
+but it is not the cause, since excluding that bar moves the positional return
+correlation only from 0.987974 to 0.987997.
+
+The promoted record measured what it says it measured, and its Tier 1 verdict
+holds under either alignment, so this is not a release-gate failure and the
+frozen record should stay as measured history. It is a comparison-correctness
+defect that would misrepresent a peer project if the article were published as
+it stands.
 
 ### 2026-09-18 [execution] Duplicated FIFO accounting replays
 

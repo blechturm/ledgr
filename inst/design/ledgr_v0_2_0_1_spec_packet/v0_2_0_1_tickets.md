@@ -1047,7 +1047,7 @@ scope: release-record
 Priority: P0
 Effort: L
 Dependencies: LDG-2719, LDG-2720, LDG-2721, LDG-2722, LDG-2723, LDG-2724, LDG-2725, LDG-2726, LDG-2727, LDG-2728, LDG-2729, LDG-2730, LDG-2731, LDG-2732, LDG-2733, LDG-2734, LDG-2736, LDG-2737, LDG-2738, LDG-2739, LDG-2740, LDG-2741, LDG-2742, LDG-2743, LDG-2744
-Status: Pending
+Status: Complete After Review
 
 ### Description
 

@@ -32,6 +32,21 @@ preserve the execution contracts in `inst/design/contracts.md`.
   harness, and deliver a runner, a diff-based checker, and a gut
   demonstration. Size budgets in that document are stop signals, not
   targets.
+- Code on ingest, seal, fold, hydration, finalisation, or result-reader
+  paths follows the optimization coding style in
+  `inst/design/manual/optimization_coding_style.qmd` (reviewable draft):
+  no R-level iteration over collections that grow with bars, fact rows,
+  instruments x pulses, events, diagnostics, or candidates; prepare and
+  index once, read primitives by index, manifest data frames only at
+  boundaries, write by index into typed buffers, and replace pairwise
+  validators with grouped sweeps. Its seven named shapes are review
+  criteria for any change on those paths; a new loop over such a
+  collection needs a stated reason.
+- This file stays operational and under 150 lines: rules, current state,
+  entry points for open work, verification, and ticket workflow. Release
+  history and packet narratives belong in `inst/design/ledgr_roadmap.md`
+  and `inst/design/README.md`; when a packet closes, replace its bullet
+  here with a pointer rather than appending its story.
 
 ## Design Documents
 
@@ -43,290 +58,47 @@ Read before implementing any non-trivial change:
 - RFC cycle process reference: `inst/design/rfc_cycle.md`
 - Spike protocol (binding for spikes and prototypes):
   `inst/design/spike_protocol.md`
+- Optimization coding style (maintainer manual; review criteria for
+  hot-path, ingest, seal, and reader code):
+  `inst/design/manual/optimization_coding_style.qmd`
 - ADRs: `inst/design/adr/`
 
-Current planning context (active v0.2.0.0 packet):
+## Current State
 
-- The completed v0.1.8.2 packet is an archival release record.
-- The completed v0.1.8.3 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_spec.md`,
-  `inst/design/ledgr_v0_1_8_3_spec_packet/ledgr_triage_report.md`,
-  `inst/design/ledgr_v0_1_8_3_spec_packet/categorized_feedback.yml`,
-  `inst/design/ledgr_v0_1_8_3_spec_packet/cycle_retrospective.md`,
-  `inst/design/ledgr_v0_1_8_3_spec_packet/v0_1_8_3_tickets.md`, and
-  `inst/design/ledgr_v0_1_8_3_spec_packet/tickets.yml`.
-- The completed v0.1.8.4 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_spec.md`,
-  `inst/design/ledgr_v0_1_8_4_spec_packet/auditr_intake_synthesis.md`,
-  `inst/design/ledgr_v0_1_8_4_spec_packet/v0_1_8_4_tickets.md`, and
-  `inst/design/ledgr_v0_1_8_4_spec_packet/tickets.yml`.
-- v0.1.8.4 combined active parameterized feature aliases with
-  pulled-forward feature-grid and strategy-grid construction helpers
-  plus routed v0.1.8.3 auditr findings.
-- The completed v0.1.8.5 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_5_spec_packet/v0_1_8_5_spec.md`,
-  `inst/design/ledgr_v0_1_8_5_spec_packet/v0_1_8_5_tickets.md`,
-  `inst/design/ledgr_v0_1_8_5_spec_packet/tickets.yml`, and
-  `inst/design/ledgr_v0_1_8_5_spec_packet/cycle_retrospective.md`.
-- The completed v0.1.8.6 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_spec.md`,
-  `inst/design/ledgr_v0_1_8_6_spec_packet/v0_1_8_6_tickets.md`,
-  `inst/design/ledgr_v0_1_8_6_spec_packet/tickets.yml`, and
-  `inst/design/ledgr_v0_1_8_6_spec_packet/cycle_retrospective.md`.
-- The completed v0.1.8.7 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md`,
-  `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_tickets.md`,
-  `inst/design/ledgr_v0_1_8_7_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md`,
-  and `inst/design/ledgr_v0_1_8_7_spec_packet/cycle_retrospective.md`.
-- v0.1.8.7 shipped Optimization Round 2: modern execution is
-  snapshot-backed and function-strategy based; raw `bars` execution, R6
-  strategy execution, and run-time `data_hash` identity were removed
-  from modern execution or now fail clearly before fold entry.
-- v0.1.8.7 also shipped the event-buffer/emission lane,
-  representation/setup cleanup, fills reconstruction/read-back cleanup,
-  deterministic `collapse` wrapper, ADR 0004 dependency moves
-  (`cli`/`R6` dropped, `collapse` added, `tibble` retained), and the
-  sweep fast path / promotion materialization boundary.
-- The completed v0.1.8.8 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_spec.md`,
-  `inst/design/ledgr_v0_1_8_8_spec_packet/v0_1_8_8_tickets.md`,
-  `inst/design/ledgr_v0_1_8_8_spec_packet/tickets.yml`, and
-  `inst/design/ledgr_v0_1_8_8_spec_packet/release_closeout.md`.
-- v0.1.8.8 shipped parallel sweep dispatch and determinism, fold-core
-  diagnostics / containment, repo-local peer benchmark reporting under
-  `dev/bench/`, and a self-profiling workload grid extension for
-  v0.1.8.9 optimization scoping. The maintainer-manual skeleton and
-  stale-doc cleanup ticket was explicitly deferred.
-- Sequential
-  [`ledgr_sweep()`](https://blechturm.github.io/ledgr/reference/ledgr_sweep.md)
-  remains the reference implementation. Parallelism is candidate
-  dispatch over the same fold core, not a second execution engine.
-- v0.1.8.8 binds deterministic-only resume/parallel RNG semantics with
-  `ctx$pulse_seed`, `mirai` as a suggested parallel backend with
-  fail-loud missing-backend behavior, hybrid worker dependency handling,
-  an internal typed execution-spec constructor, and a mechanical
-  fold-core split paired with documentation if behavior-neutral.
-- The completed v0.1.8.9 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`,
-  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`,
-  `inst/design/ledgr_v0_1_8_9_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_8_9_spec_packet/per_lane_attribution.md`,
-  `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`,
-  and `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`.
-- v0.1.8.9 shipped the single-core optimization round: scale-growing
-  buffer write fixes, per-pulse vectorization, yyjsonr canonical JSON
-  byte-format v2 migration, per-lane attribution, and workload-grid /
-  peer-benchmark closeout.
-- The completed v0.1.8.10 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`,
-  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`,
-  `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`,
-  `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md`.
-- v0.1.8.10 closed the v0.1.8.x single-core arc with ephemeral subphase
-  telemetry, matrix-canonical fold substrate and accepted strategy
-  accessors, event-preserving fold-owned FIFO accounting, yyjsonr
-  options hoisting, a compiled hot-frame B2 measurement gate,
-  parked-spike disposition, and measurement closeout. It also shipped
-  the scoped public memory-backed sweep B2 spot-FIFO opt-in. Events
-  remain canonical evidence.
-- Default compiled execution, durable compiled integration, non-spot
-  compiled accounting, target risk, walk-forward, cost/liquidity, OMS,
-  split stores, live data logs, point-in-time regressors, scaffold
-  generation, external-provider work, broad collapse adoption, and
-  package-vignette benchmark claims remain deferred unless the next
-  packet explicitly scopes a bounded subset.
-- The completed v0.1.8.11 packet is an archival release record:
-  `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`. It was a
-  documentation, structure, and cleanup release before v0.1.9 features.
-  Scope was RFC / decision synthesis, ADR population, `contracts.md`
-  audit and structural pass, maintainer manual, post-B2 vignette
-  refresh, user-facing research-software disclaimer, performance-arc
-  narrative, and horizon/roadmap/design-index housekeeping. Tickets are
-  cut; Batch 0 packet alignment, Batch 1 `contracts.md` audit, Batch 2
-  planning-doc housekeeping, and Batch 3 RFC decision-index work are
-  complete after Claude review. Batch 4 `contracts.md` structure work is
-  complete after Claude review. Batch 5 maintainer-manual foundation
-  work is complete after Claude review. Batch 6 user-facing
-  documentation refresh work is complete after Claude review. Batch 7
-  performance arc narrative work is complete after Claude review. Batch
-  8 research software disclaimer surface work is complete after Claude
-  review. Batch 9 generated docs and man-page audit work is complete
-  after Claude review. LDG-2539 was added to consume the generated-doc
-  audit findings and is complete after review. Batch 10 `inst/`
-  subdirectory audit and reviewed cleanup work is complete. Rescoped
-  2026-06-04: LDG-2540 through LDG-2546 added to absorb the manual
-  remainder and complete the `adr/` + `architecture/` +
-  `maintainer_review/` wind-downs in v0.1.8.11 (no v0.1.8.12 follow-on).
-  ADR-0005 deleted; ADR-0001 through ADR-0003 and the fold
-  trust-boundary note migrated into manual articles. Spec Section 3.7
-  introduces the two-layer manual article standard (Synthesis +
-  Implementation Trace) after a 2026-06-04 review found the first
-  articles too synthesis-heavy; LDG-2546 retrofits `execution_fold_core`
-  and `performance_arc` with Implementation Trace sections and winds
-  down `maintainer_review/`. Batch 11 / LDG-2540 + LDG-2541 is complete
-  after Claude review: both new deterministic substrate manual articles
-  now carry Synthesis and Implementation Trace layers. Batch 12 /
-  LDG-2542 + LDG-2543 is complete after Claude review: sweep and
-  features manual articles now carry both layers, the architecture notes
-  were migrated, and `architecture/` is wound down to its README. Batch
-  14 / LDG-2546 is complete after Claude review: existing manual
-  articles now carry Implementation Trace layers and
-  `maintainer_review/` is wound down. Batch 13 / LDG-2544 + LDG-2545 is
-  complete after Claude review: ADR-0004 rationale is split into the
-  manual, `adr/` is wound down to its README, and the benchmark
-  methodology article is in place. Batch 15 / LDG-2537 closed the packet
-  on 2026-06-04 and prepared the branch for merge/tag. Preserve the
-  packet’s no execution/API, target-risk, OMS, walk-forward,
-  cost/liquidity, durable compiled, non-spot compiled, and public
-  benchmark-claim implementation boundary.
-- The completed v0.1.9.1 packet is an archival release record:
-  `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`,
-  `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`,
-  `inst/design/ledgr_v0_1_9_1_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_1_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_release_closeout.md`.
-  It shipped the first public transaction-cost API, explicit
-  `timing_model`, required `cost_model`, cost model inspection helpers,
-  legacy-shape rejection, cost identity (`cost_model_hash` and
-  `cost_plan_json`), and bounded auditr identity / disclaimer fixes.
-- The completed v0.1.9.2 packet is an archival release record:
-  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`,
-  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`,
-  `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`.
-  It shipped durable saved-sweep artifacts, optional retained net
-  equity/return series for completed candidates, reopened-sweep
-  compatibility, `candidate_id` / `candidate_row` sweep identity, and
-  compact retention infrastructure for later walk-forward. Ranking
-  helpers, named selection views, benchmark diagnostics, signal decay,
-  implementation/cost decay, gross-vs-net attribution, and walk-forward
-  integration remain non-scope.
-- The completed v0.1.9.3 packet is an archival release record:
-  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`,
-  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`,
-  `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`,
-  `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`,
-  and `inst/design/ledgr_v0_1_9_3_spec_packet/README.md`. It shipped
-  classed target-risk steps, risk-chain identity, a behavior-preserving
-  phased-pulse substrate, bounded risk application, and integration with
-  sweep/promotion/reopen identity. Batch 0 packet alignment, Batch 1
-  public risk constructors and identity, Batch 2 config/run identity,
-  Batch 3 phased-pulse substrate, Batch 4 fold risk application, Batch 5
-  built-in risk steps, Batch 6 sweep row identity, Batch 7 saved-sweep
-  and promotion identity, and Batch 8 parallel / compiled sweep safety
-  are complete after Claude review. Batch 9 documentation and release
-  surfaces are complete after Claude review. Arbitrary risk callbacks,
-  affordability enforcement, liquidity/capacity policy, OMS behavior,
-  walk-forward implementation, failure-schema columns, target-helper
-  expansion, and compiled-core architecture work remain non-scope.
-- The completed v0.1.9.4 packet is an archival release record:
-  `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`,
-  `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`,
-  `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`,
-  `inst/design/ledgr_v0_1_9_4_spec_packet/README.md`, and
-  `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`.
-  It shipped the first walk-forward evaluation surface as a wrapper over
-  [`ledgr_sweep()`](https://blechturm.github.io/ledgr/reference/ledgr_sweep.md)
-  and
-  [`ledgr_run()`](https://blechturm.github.io/ledgr/reference/ledgr_run.md):
-  calendar-time fold definitions, the internal window contract,
-  train-window scalar selection, selected-candidate test runs,
-  walk-forward session identity, compact persistence, inspection
-  helpers, promotion-ready candidate extraction, and the
-  degradation-first user-facing result surface. Batch 0 packet
-  alignment, Batch 1 fold objects and window parity substrate, Batch 2
-  feature windows and selection rules, Batch 3 identity and persistence
-  foundation, Batch 4 orchestrator and opening-state work, Batch 5 score
-  rows / failures / partial sessions, Batch 6 inspection / reopen /
-  extraction / promotion, and Batch 7 degradation UX and user
-  documentation are complete after Claude review. Batch 8 release
-  surfaces and planning docs are complete after Claude review: version,
-  identity-reference, horizon, AGENTS, roxygen-regenerated
-  reference-page, and `@useDynLib` source-migration updates. Batch 9
-  release-gate closeout is complete after local release gates; the
-  branch is ready for remote CI, merge, and tag. Selection-integrity
-  diagnostics, PBO/CSCV/CPCV, DSR, purging/embargo, randomized or
-  blocked slice protocols, cross-snapshot walk-forward, evaluation
-  registry, ML-first tooling, candidate clustering, benchmark-relative
-  metrics, top-N/all-candidate test retention, gross-vs-net attribution,
-  signal decay, implementation/cost decay, liquidity/capacity policy,
-  OMS behavior, paper/live walk-forward, target-construction helper
-  expansion, risk-chain constraint expansion, and compiled-core
-  architecture work remain non-scope.
-- The completed v0.1.9.5 packet is an archival release record:
-  `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_spec.md`,
-  `inst/design/ledgr_v0_1_9_5_spec_packet/v0_1_9_5_tickets.md`,
-  `inst/design/ledgr_v0_1_9_5_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_5_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_9_5_spec_packet/README.md`. It consumed the
-  accepted API naming-consistency synthesis, the v0.1.9.4 deep
-  code-review audit, the v0.1.9.4 vignette-screening audit, and the
-  v0.1.9.5 vignette audit. It shipped public API naming cleanup,
-  candidate-generic alignment, contract and identity-reference refresh,
-  scheduled audit fixes, vignette splits, new teaching surfaces,
-  release-surface housekeeping, and the two promoted vignette-audit
-  helpers.
-- The completed v0.1.9.6 packet is an archival release record for the
-  validation-substrate and selection-integrity diagnostics release:
-  `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_spec.md`,
-  `inst/design/ledgr_v0_1_9_6_spec_packet/v0_1_9_6_tickets.md`,
-  `inst/design/ledgr_v0_1_9_6_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_6_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_9_6_spec_packet/README.md`. It consumed the
-  accepted validation-toolkit synthesis as maintainer-amended on
-  2026-06-14, the Methodological Diagnostics styleguide gate, the PBO
-  spike, the intraday-readiness audit, and the current-surface peer
-  benchmark redo. Scope was canonical single-run returns,
-  retained-return panels and projections, native PBO/CSCV, native
-  MinTRL, native DSR with deterministic effective-trial clustering, the
-  Selection Integrity teaching surface, audit-only intraday-readiness
-  findings, and internal benchmark measurement. Business-objective
-  filtering, purging/embargo/CPCV, K-Ratio, Triple Penance, intraday
-  runtime support, public benchmark claims, and compiled spot-FIFO
-  default changes remained non-scope at closeout.
-- The completed v0.1.9.7 packet is an archival business-objective
-  eligibility and validation-polish release:
-  `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`,
-  `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`,
-  `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`,
-  `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, and
-  `inst/design/ledgr_v0_1_9_7_spec_packet/README.md`. It consumes the
-  validation-toolkit synthesis as maintainer-amended on 2026-06-26, the
-  stable-region research input and spike, the v0.1.9.6
-  intraday-readiness audit M-1 finding, and the public return-panel
-  design. Implemented scope is closed-trade retention, a strict-lattice
-  stable-region criterion, the public return-panel entry point, the
-  Selection Integrity vignette rebuild, the intraday metric-context
-  guardrail, native K-Ratio, all seven business-objective criteria plus
-  diagnostic thresholds, and the evidence-only all-candidates sweep
-  filter. Automatic selection or promotion, objective-filtered
-  walk-forward identity, scored objective composition, broader
-  non-lattice robustness criteria, first-class intraday runtime,
-  paper/live work, OMS, and liquidity/capacity work remain non-scope.
-  The 2026-09-04 all-vignette review is parked in
-  `inst/design/horizon.md`; v0.1.9.7 consumed only its Selection
-  Integrity-specific findings through LDG-2671.
-- The active v0.2.0.0 packet combines API/representation hardening with
-  the first point-in-time asset-availability implementation:
-  `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`,
-  `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`,
-  `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, and
-  `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`. It consumes
-  the accepted API-hardening and asset-availability syntheses. Hardening
-  corrections and bounded coordinator extraction must finish before
-  availability implementation. Batch 8 economics and Batch 9
-  terminal/cross- path evidence each require independent review before
-  downstream work. Batches 0-9 are complete after review. Batch 10
-  teaching/reference work is implemented and awaiting review; Batch 11
-  remains the release gate. No second engine, general short financing,
-  settlement economics, OMS, imputation framework, or representation
-  optimization is authorized.
+Current planning context (completed v0.2.0.0 packet; accepted v0.2.0.1
+RFC; locally complete v0.2.0.1 release gate):
+
+- v0.2.0.0 combined API/representation hardening with the first
+  point-in-time asset-availability implementation
+  (`inst/design/ledgr_v0_2_0_0_spec_packet/`). No second engine, general
+  short financing, settlement economics, OMS, imputation framework, or
+  representation optimization is authorized by it.
+- The v0.1.9.x releases shipped the public transaction-cost API, saved
+  sweeps, classed target risk, walk-forward evaluation, API naming
+  cleanup, the validation substrate with selection-integrity
+  diagnostics, business objectives, and the evidence-only all-candidates
+  sweep filter. Their packets and closeouts are listed in
+  `inst/design/README.md`.
+- The active v0.2.0.1 packet covers availability seams, seal validators,
+  resumed-run repair, linear event writes, prepared valuation, and
+  benchmark closeout. LDG-2719 through LDG-2744 are in the active
+  packet; Batches 0-9 are complete, Batch 10 is diagnostic history,
+  Batch 11 is complete after review, and Batches 12 through 15 are
+  complete after review. The local release gate is accepted and the
+  branch is ready for remote CI; main and tag evidence do not yet exist.
+  The availability prerequisite
+  selected `NEITHER`; no availability-ingestion optimization is
+  authorized. Old paths ship in no form, the public fact resolver stays
+  independent, and no speed claim is authorized.
+- The refreshed spot-crypto readiness probe follows v0.2.0.1 as a
+  separate v0.2.0.x planning cycle. Do not draft its Charter or change
+  package code before its executable prerequisite and one-page findings
+  under `inst/design/spike_protocol.md`. Austrian tax work remains
+  separately parked.
+- The release-by-release planning narrative that previously lived in
+  this file is preserved verbatim in
+  `inst/design/planning_context_history.md`; the maintained records are
+  `inst/design/ledgr_roadmap.md` and `inst/design/README.md`.
 
 ## Active Design Entry Points
 
@@ -337,20 +109,14 @@ work.
 
 | Area | Read |
 |----|----|
-| active v0.2.0.0 packet | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
-| v0.1.9.7 release record | `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md` |
-| v0.1.9.4 release record | `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_spec.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_tickets.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_4_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_4_spec_packet/v0_1_9_4_release_closeout.md`, `inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md` |
-| v0.1.9.3 release record | `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_spec.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_tickets.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_3_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_3_spec_packet/v0_1_9_3_release_closeout.md`, `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` |
-| v0.1.9.2 release record | `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_spec.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_tickets.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_2_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_2_spec_packet/v0_1_9_2_release_closeout.md`, `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md` |
-| v0.1.9.1 release record | `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_spec.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_tickets.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_9_1_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_9_1_spec_packet/v0_1_9_1_release_closeout.md`, `inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`, `inst/design/manual/identity_contract.qmd` |
-| v0.1.8.11 release record | `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_spec.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_tickets.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_11_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_11_spec_packet/v0_1_8_11_release_closeout.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md`, `inst/design/contracts.md` |
-| v0.1.8.10 release record | `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_spec.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_tickets.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/tickets.yml`, `inst/design/ledgr_v0_1_8_10_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/per_lane_attribution.md`, `inst/design/ledgr_v0_1_8_10_spec_packet/v0_1_8_10_release_closeout.md` |
-| v0.1.8.9 release record | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_spec.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_tickets.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md` |
+| v0.2.0.1 availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted hot-path and timestamp/benchmark amendments in that packet, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
+| Post-v0.2.0.1 spot-crypto planning | `inst/design/ledgr_roadmap.md` (spot-crypto section), `inst/design/horizon.md` (2026-09-14 research entry), `inst/design/rfc/README.md` (pipeline row), `inst/design/spike_protocol.md`, `inst/design/research/Transaction-Cost-Models.md`, `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` |
+| v0.2.0.0 release record | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
+| Release records v0.1.8.2 to v0.1.9.7 | `inst/design/README.md` (release-record list) and `inst/design/ledgr_roadmap.md`; the per-packet reading lists that previously sat in this table are preserved in `inst/design/planning_context_history.md` |
 | v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
 | Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
-| v0.1.8.7 release record | `inst/design/ledgr_v0_1_8_7_spec_packet/v0_1_8_7_spec.md` |
 | Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd` |
@@ -365,13 +131,14 @@ work.
 
 ## Local Verification
 
-Windows R path used in this workspace:
+Current Windows R path used in this workspace. This local verification
+runtime does not change the package support floor in `DESCRIPTION`.
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
-& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD build .
-& "C:\Program Files\R\R-4.5.2\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" tools/check-coverage.R
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
+& "C:\Program Files\R\R-4.6.1\bin\x64\R.exe" CMD build .
+& "C:\Program Files\R\R-4.6.1\bin\x64\R.exe" CMD check --no-manual --no-build-vignettes ledgr_<version>.tar.gz
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" tools/check-coverage.R
 ```
 
 Targeted checks are preferred while editing, followed by full tests and
@@ -386,8 +153,8 @@ vignette setup), then runs
 [`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html).
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
 ```
 
 The live site otherwise redeploys from the `pkgdown` GitHub Actions
