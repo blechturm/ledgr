@@ -10,7 +10,7 @@ params:
   run_harness: false
   preset: "smoke"
   results_preset: "record"
-  results_prefix: "peer_benchmark_record_20260917T231851Z"
+  results_prefix: "peer_benchmark_record_20260918T140507Z"
 ---
 
 This tracked report records the v0.2.0.1 internal same-host peer workload.
@@ -23,29 +23,38 @@ The exact closeout command was:
 ```powershell
 $env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
 $env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1-boundary-correction --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260917T231851Z`. The correction
-record was produced from a working tree based on
-`400a3e56ae49cc61256d0e7aaca66281626d4fe3`; the exact benchmark harness has
-SHA-256 `3ef4a31831a16bc8cb06cc2647bd68e1f3e9f5d13268806523ec62edb22b579e`.
-This makes the measurement reconstructive, but a final immutable closeout
-still requires the same method to be rerun after commit. It ran under R 4.6.1
-ucrt on Windows build 26200. Quantstrat 0.25 completed from the isolated
-library with the ticket-pinned blotter 0.17.0, FinancialInstrument 1.3.0, xts
-0.14.2, and TTR 0.24.4. Backtrader and zipline-reloaded completed through
-pinned `uv` environments. Local LEAN was unavailable because its CLI root uses
-an obsolete organization layout. No hosted LEAN service was used.
+`dev/bench/results/peer_benchmark_record_20260918T140507Z`. The final Stage O
+record was produced from accepted source commit
+`bcced9457de58f10f9c862c2890576a7370b1140`; the exact benchmark harness has
+SHA-256 `6b7ab57149a6e17b0f386117b82c8e33ac19eb3eb84eda3be6995571230b5f2f`.
+It ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
+from the isolated library with the ticket-pinned blotter 0.17.0,
+FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
+zipline-reloaded completed through pinned `uv` environments. Local LEAN was
+unavailable because its CLI root uses an obsolete organization layout. No
+hosted LEAN service was used.
 
 The report checks every ledgr row before interpreting its timing. The canonical
-public sweep completed in 64.87 seconds cold and 44.84 seconds warm; the public
-compiled sweep completed in 49.71 seconds cold and 30.38 seconds warm. Their
-retained public equity/trades are identical. The richer cash, position and fill
-surfaces come from an explicitly untimed private oracle and are used only for
-parity. The report retains peer residuals and partial surfaces rather than
-turning a numerical tolerance into a claim of full parity.
+public sweep completed in 48.63 seconds cold and 30.96 seconds warm; the public
+compiled sweep completed in 33.66 seconds cold and 16.63 seconds warm. The two
+public sweep rows are exact across all 1,260 equity rows, 68,201 fills, and the
+realized-trade row after normalizing only the engine label. Against durable
+ledgr, fills and trades are exact; compensated production-inline equity passes
+the existing relative `all.equal()` tolerance of `1e-8`, with maximum absolute
+residual `4.0046870708465576e-07`, maximum relative residual
+`4.7321774610389843e-13`, 3,578 affected cells across 1,247 rows, and affected
+columns `equity`, `positions_value`, and `position_proxy`. Earlier diagnostic
+peer CSVs used reconstructed equity; this final record uses compensated
+production-inline equity as the memory reference. Richer surfaces come from an
+explicitly untimed private oracle and are used only for parity. The report
+retains peer residuals and partial surfaces rather than turning a numerical
+tolerance into a claim of full parity. An external one-second sampler over the
+complete benchmark process tree recorded a peak working set of 1,754.3 MiB
+across 964 samples; this is a record-level peak, not a per-engine allocation.
 
 > **Scope of this report**
 >
@@ -114,6 +123,11 @@ if (!"compiled_accounting_model" %in% names(performance)) {
 divergence_summary <- read_result("_divergence_summary.csv")
 surface <- read_result("_surface_status.csv")
 env <- jsonlite::read_json(paste0(stem, "_environment.json"), simplifyVector = TRUE)
+peer_peak_path <- paste0(stem, "_working_set_peak.csv")
+if (!file.exists(peer_peak_path)) {
+  stop("The final peer record requires a process-tree peak-working-set sidecar.")
+}
+peer_peak <- utils::read.csv(peer_peak_path, stringsAsFactors = FALSE)
 quantstrat_env_path <- paste0(stem, "_quantstrat_environment.json")
 quantstrat_env <- if (file.exists(quantstrat_env_path)) {
   jsonlite::read_json(quantstrat_env_path, simplifyVector = FALSE)
@@ -923,8 +937,15 @@ knitr::kable(surface, row.names = FALSE)
 ```{r}
 #| echo: false
 data.frame(
-  field = c("created_at", "release", "preset", "input_hash", "git_sha"),
-  value = c(env$created_at, env$release, env$preset, env$input_hash, env$git_sha),
+  field = c(
+    "created_at", "release", "preset", "input_hash", "git_sha",
+    "process_tree_peak_mib", "peak_sampling_interval_sec"
+  ),
+  value = c(
+    env$created_at, env$release, env$preset, env$input_hash, env$git_sha,
+    sprintf("%.1f", peer_peak$peak_working_set_mib[[1L]]),
+    peer_peak$sampling_interval_sec[[1L]]
+  ),
   stringsAsFactors = FALSE
 ) |>
   knitr::kable()

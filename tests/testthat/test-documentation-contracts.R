@@ -2993,7 +2993,9 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch9-valuation-evidence.md", "batch10-benchmark-evidence.md",
     "batch11-boundary-oracle-evidence.md",
     "batch12-dense-timestamp-evidence.md",
-    "batch13-snapshot-hash-evidence.md"
+    "batch13-snapshot-hash-evidence.md",
+    "batch14-final-evidence.md",
+    "batch14-stage-o-records.csv"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -3008,7 +3010,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
     "batch7_evidence", "batch8_evidence", "batch9_evidence",
     "batch10_evidence", "batch11_evidence", "batch12_evidence",
-    "batch13_evidence"
+    "batch13_evidence", "batch14_evidence", "batch14_records"
   )
   prerequisite_path <- file.path(
     root,
@@ -3107,8 +3109,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     yaml_statuses,
     c(
-      rep("complete_after_review", 14L),
-      rep("pending", 3L),
+      rep("complete_after_review", 16L),
+      "pending",
       rep("complete_after_review", 9L)
     )
   )
@@ -3117,8 +3119,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_identical(
     md_statuses,
     c(
-      rep("Complete After Review", 14L),
-      rep("Pending", 3L),
+      rep("Complete After Review", 16L),
+      "Pending",
       rep("Complete After Review", 9L)
     )
   )
@@ -3140,8 +3142,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review.", 10L),
       "Diagnostic History.",
-      rep("Complete After Review.", 3L),
-      rep("Pending.", 2L)
+      rep("Complete After Review.", 4L),
+      "Pending."
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3216,6 +3218,63 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(
     docs$batch13_evidence,
     "This is Stage N evidence, not final\\s+Stage O evidence\\."
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "bcced9457de58f10f9c862c2890576a7370b1140",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "v0_2_0_1_stage_o_availability_bcced94_20260918T123618Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "v0_2_0_1_stage_o_hash_bcced94_20260918T124304Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "peer_benchmark_record_20260918T140507Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "cold clock[[:space:]]+is 119.11 seconds"
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "Stage O is 31 percent[[:space:]]+slower cold and 21 percent slower warm"
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "C:/tmp/ledgr-quantstrat-batch10-lib",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "C:/tmp/ledgr-collapse-218-lib",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "peak working set of 1,754.26171875 MiB",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "This document does not authorize Batch[[:space:]]+15"
+  )
+  stage_o_records <- utils::read.csv(paths[[22L]], stringsAsFactors = FALSE)
+  testthat::expect_identical(
+    stage_o_records$record,
+    c("availability_warm_cold_profile", "snapshot_hash_pair", "peer_benchmark")
+  )
+  testthat::expect_true(all(stage_o_records$status == "PASS"))
+  testthat::expect_identical(
+    unique(stage_o_records$source_commit),
+    "bcced9457de58f10f9c862c2890576a7370b1140"
   )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
@@ -3443,6 +3502,21 @@ testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
   )
   testthat::expect_match(report, "ggplot2::ggplot", fixed = TRUE)
   testthat::expect_match(report, "position_stack(reverse = TRUE)", fixed = TRUE)
+  testthat::expect_match(
+    report,
+    "results_prefix: \"peer_benchmark_record_20260918T140507Z\"",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    report,
+    "bcced9457de58f10f9c862c2890576a7370b1140",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    report,
+    "The final peer record requires a process-tree peak-working-set sidecar.",
+    fixed = TRUE
+  )
   testthat::expect_match(harness, "NULL (", fixed = TRUE)
   testthat::expect_match(
     report,

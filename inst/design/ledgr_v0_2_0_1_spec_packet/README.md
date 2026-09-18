@@ -3,8 +3,8 @@
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is diagnostic history and does not satisfy final evidence. The
 trusted-timestamp and benchmark-boundary amendment ticket cut passed
-independent review. Batches 11 through 13 are complete after review; Batches
-14 and 15 are pending.
+independent review. Batches 11 through 14 are complete after review; Batch 15
+is authorized for implementation.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
 The maintainer accepted the trusted-timestamp and benchmark-boundary amendment
@@ -100,6 +100,12 @@ Authoritative files:
 - `batch11-boundary-oracle-evidence.md` (public one-candidate benchmark
   boundary, parity and rendering gates, frozen current-arm prefixes, source
   guard, and prospective dense/hash proof plans)
+- `batch12-dense-timestamp-evidence.md` (dense semantic matrix, structural
+  mutation gate, and paired Stage M record)
+- `batch13-snapshot-hash-evidence.md` (byte/hash identity, structural gate,
+  and paired Stage N record)
+- `batch14-final-evidence.md` and `batch14-stage-o-records.csv` (final-source
+  cold, warm, hash, profile, peer, parity, and record-prefix evidence)
 - `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md`
   (binding pre-cut `NEITHER` outcome)
 - `inst/design/exact_parity_internal_optimization_proof_template.md`

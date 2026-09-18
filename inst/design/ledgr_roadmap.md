@@ -8,10 +8,11 @@ constraints.
 **Active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
 **Current planning branch:** `v0.2.0.1`; the availability hot- and cold-path
 RFC, spec, hot-path amendment, and timestamp/benchmark amendment are accepted.
-Tickets LDG-2719 through LDG-2744 are cut and await ticket-cut review. Batches
-0 through 9 are complete, Batch 10 is diagnostic history, and Batches 11
-through 15 are pending. The availability prerequisite selected `NEITHER`;
-Batch 15 remains blocked on Batch 14 review and explicit maintainer go-ahead.
+Tickets LDG-2719 through LDG-2744 are cut and their cut passed independent
+review. Batches 0 through 9 and 11 through 14 are complete after review, Batch
+10 is diagnostic history, and Batch 15 is authorized for implementation. The
+availability prerequisite selected `NEITHER`; the Batch 14 review passed and
+the maintainer explicitly authorized the release gate.
 The
 amendment ticket cut was independently accepted before implementation. The
 spot-crypto readiness cycle follows
@@ -152,8 +153,9 @@ claim boundaries remain governed by
 | v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
-| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and the cut passed independent review. Batches 0 through 9 are complete, Batch 10 is diagnostic history, Batches 11 through 13 are complete after review, and Batches 14 and 15 are pending. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; earlier spike inventories |
+| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and the cut passed independent review. Batches 0 through 9 and 11 through 14 are complete after review, Batch 10 is diagnostic history, and Batch 15 is authorized for implementation. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; earlier spike inventories |
 | Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, closeout, and testing processes while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, honest measurement clocks, and strict semantic detection. Decide how reference-implementation authority differs from runtime defaults, and classify compiled-path guarantees without imposing a Cartesian benchmark grid. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
+| Post-v0.2.0.1 accounting-core consolidation RFC | Planned after governance review, before the compiled execution RFC | Collapse the eight independently written FIFO replay loops into one shared accounting core behind the fold, leaving projections at each call site. Decide which replays must remain independent verifiers, how `CASHFLOW` events are covered, and whether the shared core keeps the global compensated accumulator or declares a tolerance. Treat this as correctness consolidation whose optimizations follow, not as a performance ticket. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 duplicated-FIFO entry |
 | Post-v0.2.0.1 compiled execution RFC | Planned after governance review | Use the governance and test-suite review outputs to decide the supported compiled-execution envelope, differential proof architecture, availability and durable-sink scope, and any later default-promotion gate. Treat the existing spot-FIFO result as evidence, not authority to widen scope. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 compiled-execution entry |
 | v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
@@ -1727,6 +1729,44 @@ refactoring inside the audit.
 This is post-release governance work, not part of the v0.2.0.1 release gate.
 The spot-crypto readiness probe remains the next product-research cycle, but no
 new implementation packet opens until this governance review is resolved.
+
+### After v0.2.0.1: Accounting-Core Consolidation
+
+The FIFO accounting state machine is driven from nine places. One is the live
+fold. Six are production replays reached from exported surfaces, and two are
+parity oracles reached only from the benchmark harness and the test suite. The
+inventory, the shared defects each replay carries, and the reachability split
+are recorded in the 2026-09-18 duplicated-FIFO horizon entry.
+
+This is a correctness consolidation whose performance benefit follows. Nine
+implementations of one state machine must agree, no differential test covers
+most pairs, and any later change to accounting semantics would otherwise have
+to land consistently in six production copies.
+
+The RFC must settle three things. Which replays remain independent verifiers,
+where the reachability split already indicates that the two oracles stay in R
+and outside any shared core. How `CASHFLOW` events are covered, since every
+replay handles them and the compiled kernel accepts fills only. And whether the
+shared core preserves the global compensated accumulator or declares a
+tolerance, which is the same class of decision as the memory equity reference.
+
+Sequencing. This RFC follows the governance and test-suite review, because it
+consumes the reference-authority decision and the proof-lane taxonomy, and it
+precedes the compiled execution RFC, because a consolidated core is what makes
+the kernel-backed reader question answerable at all.
+
+Research may proceed in parallel. Collecting deficiencies against the current
+base is discovery rather than implementation and does not conflict with pending
+consolidation. The ordering constraint runs the other way: if research surfaces
+an accounting-semantics need such as settlement, corporate actions, borrow, or
+short exposure, consolidate before implementing it rather than landing the same
+change in six places.
+
+The unrelated duplicated helper families recorded in the 2026-09-18 duplication
+horizon entry are independent of this RFC. They need no design decision,
+preserve inputs, outputs, errors and classes exactly, and are candidates for
+the exact-parity internal optimization proof template in its first use outside
+a performance change.
 
 ### After v0.2.0.1: Compiled Execution RFC
 

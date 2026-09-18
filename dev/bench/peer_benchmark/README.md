@@ -28,17 +28,17 @@ with this exact command:
 ```powershell
 $env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
 $env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1-boundary-correction --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
 ```
 
 The exact ignored local record prefix is
-`dev/bench/results/peer_benchmark_record_20260917T231851Z`. It was produced by
-the public-sweep boundary correction from a working tree based on source commit
-`400a3e56ae49cc61256d0e7aaca66281626d4fe3`; the exact harness SHA-256 is
-`3ef4a31831a16bc8cb06cc2647bd68e1f3e9f5d13268806523ec62edb22b579e`.
-The same method must be rerun after commit before it becomes immutable release
-closeout evidence. The prior `20260917T212008Z` bundle remains the historical
-private-fold record and is not rewritten. The correction ran under R 4.6.1
+`dev/bench/results/peer_benchmark_record_20260918T140507Z`. It was produced
+from accepted Stage O source commit
+`bcced9457de58f10f9c862c2890576a7370b1140`; the exact harness SHA-256 is
+`6b7ab57149a6e17b0f386117b82c8e33ac19eb3eb84eda3be6995571230b5f2f`.
+The prior `20260917T212008Z` private-fold bundle and `20260917T231851Z`
+working-tree correction remain diagnostic history and are not rewritten. The
+final record ran under R 4.6.1
 ucrt on Windows build 26200. Quantstrat completed from
 `C:/tmp/ledgr-quantstrat-batch10-lib` with quantstrat 0.25 at
 `1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f`, blotter 0.17.0 at
@@ -47,6 +47,11 @@ ucrt on Windows build 26200. Quantstrat completed from
 Backtrader and zipline-reloaded completed through their pinned `uv`
 environments. Local LEAN was unavailable because the configured CLI root uses
 an obsolete organization layout; no hosted service was used.
+An external one-second sampler over the complete benchmark process tree
+recorded a 1,754.3 MiB peak across 964 samples. The earlier Stage O attempts
+at `20260918T130244Z`, `20260918T132659Z`, and `20260918T134600Z` remain local
+non-promoted records: the first omitted the registered peak field, while two
+sampler-wrapper post-processing defects lost the subsequent peak samples.
 
 Parity is interpreted before timing. The compiled spot-FIFO and canonical
 public-sweep ledgr rows are exactly identical across canonical equity, fills,

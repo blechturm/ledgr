@@ -3,8 +3,8 @@
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is retained as diagnostic history and does not satisfy final
 evidence. The timestamp/benchmark amendment ticket cut passed independent
-review. Batches 11 through 13 are complete after review; Batches 14 and 15 are
-pending.
+review. Batches 11 through 14 are complete after review; Batch 15 is
+authorized for implementation.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -552,7 +552,7 @@ Exit criteria:
 
 ## Batch 14 - Proof Template And Final Evidence
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 

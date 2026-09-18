@@ -11,32 +11,41 @@ The exact closeout command was:
 ``` powershell
 $env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
 $env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1-boundary-correction --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260917T231851Z`. The
-correction record was produced from a working tree based on
-`400a3e56ae49cc61256d0e7aaca66281626d4fe3`; the exact benchmark harness
+`dev/bench/results/peer_benchmark_record_20260918T140507Z`. The final
+Stage O record was produced from accepted source commit
+`bcced9457de58f10f9c862c2890576a7370b1140`; the exact benchmark harness
 has SHA-256
-`3ef4a31831a16bc8cb06cc2647bd68e1f3e9f5d13268806523ec62edb22b579e`. This
-makes the measurement reconstructive, but a final immutable closeout
-still requires the same method to be rerun after commit. It ran under R
-4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed from the
-isolated library with the ticket-pinned blotter 0.17.0,
+`6b7ab57149a6e17b0f386117b82c8e33ac19eb3eb84eda3be6995571230b5f2f`. It
+ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
+from the isolated library with the ticket-pinned blotter 0.17.0,
 FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
 zipline-reloaded completed through pinned `uv` environments. Local LEAN
 was unavailable because its CLI root uses an obsolete organization
 layout. No hosted LEAN service was used.
 
 The report checks every ledgr row before interpreting its timing. The
-canonical public sweep completed in 64.87 seconds cold and 44.84 seconds
-warm; the public compiled sweep completed in 49.71 seconds cold and
-30.38 seconds warm. Their retained public equity/trades are identical.
-The richer cash, position and fill surfaces come from an explicitly
-untimed private oracle and are used only for parity. The report retains
-peer residuals and partial surfaces rather than turning a numerical
-tolerance into a claim of full parity.
+canonical public sweep completed in 48.63 seconds cold and 30.96 seconds
+warm; the public compiled sweep completed in 33.66 seconds cold and
+16.63 seconds warm. The two public sweep rows are exact across all 1,260
+equity rows, 68,201 fills, and the realized-trade row after normalizing
+only the engine label. Against durable ledgr, fills and trades are
+exact; compensated production-inline equity passes the existing relative
+`all.equal()` tolerance of `1e-8`, with maximum absolute residual
+`4.0046870708465576e-07`, maximum relative residual
+`4.7321774610389843e-13`, 3,578 affected cells across 1,247 rows, and
+affected columns `equity`, `positions_value`, and `position_proxy`.
+Earlier diagnostic peer CSVs used reconstructed equity; this final
+record uses compensated production-inline equity as the memory
+reference. Richer surfaces come from an explicitly untimed private
+oracle and are used only for parity. The report retains peer residuals
+and partial surfaces rather than turning a numerical tolerance into a
+claim of full parity. An external one-second sampler over the complete
+benchmark process tree recorded a peak working set of 1,754.3 MiB across
+964 samples; this is a record-level peak, not a per-engine allocation.
 
 > **Scope of this report**
 >
@@ -57,9 +66,9 @@ comparison.
 
 | Surface | B2 seconds | Backtrader seconds | B2 / Backtrader | B2 reduction vs Backtrader |
 |:---|:---|:---|:---|:---|
-| Cold end to end | 49.710 | 83.690 | 0.59x | 40.6% |
-| Warm research iteration | 30.380 | 83.114 | 0.37x | 63.4% |
-| Engine phase | 14.780 | 77.415 | 0.19x | 80.9% |
+| Cold end to end | 33.660 | 83.870 | 0.40x | 59.9% |
+| Warm research iteration | 16.630 | 83.300 | 0.20x | 80.0% |
+| Engine phase | 14.890 | 78.508 | 0.19x | 81.0% |
 
 The three clocks answer different questions. Cold includes the reusable
 sealed snapshot. Warm measures the public research iteration over that
@@ -102,13 +111,13 @@ prevents reading a compiled opt-in result as a default ledgr claim.
 
 | Engine row | Status | Cost | Risk | Compiled | Full row | Snapshot prepare | Setup / orchestration | Engine phase | Results | Cold | Warm | Bars/sec |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
-| ledgr_ttr_canonical | DONE | cost_zero | risk_none | NA | 78.180 | 19.450 | 0.330 | 49.480 | 8.890 | 78.150 | 58.700 | 8,061.42 |
-| ledgr_ttr_canonical_sweep | DONE | cost_zero | risk_none | NA | 64.940 | 20.030 | 15.800 | 29.010 | 0.030 | 64.870 | 44.840 | 9,711.73 |
-| ledgr_ttr_compiled_spot_fifo_sweep | DONE | cost_zero | risk_none | spot_fifo | 49.750 | 19.330 | 15.520 | 14.780 | 0.080 | 49.710 | 30.380 | 12,673.5 |
-| ledgr_builtin_sma | DONE | cost_zero | risk_none | NA | 70.590 | 18.760 | 0.320 | 43.590 | 7.920 | 70.590 | 51.830 | 8,924.78 |
-| quantstrat | DONE | NA | NA | NA | 352.680 | 10.470 | 2.220 | 338.640 | 1.170 | 352.500 | 342.030 | 1,787.23 |
-| backtrader | DONE | NA | NA | NA | 83.720 | 0.576 | 5.412 | 77.415 | 0.286 | 83.690 | 83.114 | 7,527.78 |
-| zipline-reloaded-full | DONE | NA | NA | NA | 304.570 | 15.782 | 11.511 | 276.740 | 0.527 | 304.560 | 288.778 | 2,068.56 |
+| ledgr_ttr_canonical | DONE | cost_zero | risk_none | NA | 75.800 | 17.550 | 0.330 | 47.470 | 10.430 | 75.780 | 58.230 | 8,313.54 |
+| ledgr_ttr_canonical_sweep | DONE | cost_zero | risk_none | NA | 48.700 | 17.670 | 1.620 | 29.320 | 0.020 | 48.630 | 30.960 | 12,955 |
+| ledgr_ttr_compiled_spot_fifo_sweep | DONE | cost_zero | risk_none | spot_fifo | 33.700 | 17.030 | 1.660 | 14.890 | 0.080 | 33.660 | 16.630 | 18,716.6 |
+| ledgr_builtin_sma | DONE | cost_zero | risk_none | NA | 67.850 | 16.910 | 0.330 | 42.480 | 8.130 | 67.850 | 50.940 | 9,285.19 |
+| quantstrat | DONE | NA | NA | NA | 356.410 | 10.150 | 1.880 | 342.950 | 1.220 | 356.200 | 346.050 | 1,768.67 |
+| backtrader | DONE | NA | NA | NA | 83.930 | 0.570 | 4.549 | 78.508 | 0.243 | 83.870 | 83.300 | 7,511.63 |
+| zipline-reloaded-full | DONE | NA | NA | NA | 305.610 | 15.754 | 11.322 | 277.986 | 0.548 | 305.610 | 289.856 | 2,061.45 |
 | LEAN | UNAVAILABLE | NA | NA | NA | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NA |
 
 Read `Cold` as the sum of snapshot preparation, setup/orchestration,
@@ -408,11 +417,13 @@ are vector operations rather than a per-instrument R loop.
 
 | field | value |
 |:---|:---|
-| created_at | 2026-09-17T23:18:51Z |
-| release | v0.2.0.1-boundary-correction |
+| created_at | 2026-09-18T14:05:07Z |
+| release | v0.2.0.1 |
 | preset | record |
 | input_hash | 0b183457b3fe720d63b02a90fe552e1202fdb31b4e967a75e91304f9d3e416fc |
-| git_sha | 400a3e56ae49cc61256d0e7aaca66281626d4fe3 |
+| git_sha | bcced9457de58f10f9c862c2890576a7370b1140 |
+| process_tree_peak_mib | 1754.3 |
+| peak_sampling_interval_sec | 1 |
 
 ### Isolated quantstrat environment
 

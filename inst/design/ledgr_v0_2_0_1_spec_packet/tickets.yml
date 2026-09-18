@@ -218,7 +218,7 @@ tickets:
 
   - id: "LDG-2733"
     title: "Final availability, cold, hash, and profile records"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2744"]
@@ -236,7 +236,7 @@ tickets:
 
   - id: "LDG-2734"
     title: "Peer benchmark record"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2744"]

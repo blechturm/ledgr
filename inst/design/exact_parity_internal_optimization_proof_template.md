@@ -335,7 +335,7 @@ permission.
 - OPT-L01 is the accepted worked proof. Its A-through-J artifact is
   `ledgr_v0_2_0_1_spec_packet/batch13-snapshot-hash-evidence.md`; the Stage N
   implementation is commit
-  `765e46739429efc2307f3c49982d6b794e2c2f86`. The proof preserves canonical
+  `765e4677876bdc3f53cdeee871fbb7f2c9e82c53`. The proof preserves canonical
   bytes and hashes, includes a mutation-sensitive formatter-count gate, uses
   the public snapshot workflow, and passed independent Stage N review before
   maintainer acceptance.

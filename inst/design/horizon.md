@@ -36,11 +36,11 @@ correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, corrected public peer boundaries, dense timestamp
 validation, within-chunk hash formatting, and fresh separated benchmark
 closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batches 11 through 13 are complete after review; Batches 14 and 15 are
-pending. The prerequisite
+Batches 11 through 14 are complete after review; Batch 15 is authorized for
+implementation. The prerequisite
 selected `NEITHER`, so no
-availability-ingestion optimization enters the release. Batch 15 requires
-Batch 14 review and an explicit maintainer go-ahead.
+availability-ingestion optimization enters the release. The Batch 14 review
+passed and the maintainer explicitly authorized the release gate.
 Spot-crypto planning follows that
 release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
 contracts, or an accepted RFC promotes them.
@@ -113,6 +113,146 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-18 [execution] Duplicated FIFO accounting replays
+
+An inventory of lot-state usage found nine places that drive the FIFO
+accounting state machine. One computes the truth: `ledgr_execute_fold()`.
+The other eight replay it, each as an independently hand-written loop over
+events:
+
+- `ledgr_extract_fills_impl()` for durable `ledgr_results(bt, "fills")`;
+- `ledgr_equity_from_events()` and `ledgr_fills_from_events()` for memory
+  reconstruction;
+- `ledgr_sweep_summary_from_ordered_events()` for the durable-sweep fallback;
+- `ledgr_rebuild_derived_state()`;
+- `ledgr_run_finalize()`;
+- `ledgr_compare_runs_fill_stats()`; and
+- `ledgr_lot_state_from_events()`, shared by two state-as-of callers.
+
+Four further sites only seed or unpack state and are not replays.
+
+A reachability pass from the 165 exported functions splits those eight. Six are
+production: `ledgr_extract_fills_impl()` through `ledgr_run_fills()`,
+`as_tibble()`, `ledgr_extract_trades()` and metrics;
+`ledgr_sweep_summary_from_ordered_events()` through
+`ledgr_sweep_run_candidate()`; `ledgr_rebuild_derived_state()` through
+`ledgr_state_reconstruct()`; `ledgr_run_finalize()` through
+`ledgr_run_fold()`; `ledgr_compare_runs_fill_stats()` through
+`ledgr_run_compare()` and `ledgr_run_store_fetch()`; and
+`ledgr_lot_state_from_events()` through the two state-as-of callers.
+
+`ledgr_equity_from_events()` and `ledgr_fills_from_events()` have no package
+callers at all. They are reached only from the benchmark harness and the test
+suite, which is what the corrected public benchmark boundary intended. They are
+parity oracles, they belong in R, and they must stay outside any shared core,
+because folding an oracle into the implementation it verifies destroys the
+verification.
+
+That makes the target a fold, one shared core, and two independent oracles:
+four implementations rather than nine. It also settles in advance one question
+the consolidation RFC would otherwise have to open, namely which replays remain
+independent verifiers.
+
+These are copies rather than variations. Each carries the same per-row
+`[[` extraction from a fetched frame, the same per-row `meta_json` parse, an
+`O(instruments)` named-list lot lookup, and an `O(lot depth)` re-sum of net
+position or cost basis. `ledgr_run_finalize()` also re-implements the
+`colSums(positions_mat * close_mat)` block that sits a few hundred lines above
+it in the equity reconstruction.
+
+The cost is correctness before performance. Nine implementations of one state
+machine must agree, no differential test covers most pairs, and any future
+change to accounting semantics - short exposure, settlement, borrow, an
+alternative lot-selection policy - has to land consistently in all of them.
+
+There are really two implementations in two languages: the R machine driven
+nine times, and `ledgr_cpp_spot_fifo_batch()` driven once from the fold's
+opt-in branch. The compiled kernel is the only place the accounting was ever
+reduced to a single batched contract, and it serves the smallest share of the
+work.
+
+That kernel's contract is also the natural consolidation target. It accepts
+batched fills with integer instrument indices and flat lot arrays and returns
+positions, cash, lot arrays, cost basis, realized P&L, the compensation term,
+and the next event sequence - which is the per-event trajectory every replay
+needs. Making the replays speak that shape is the same work as consolidating
+them, so an R consolidation first and an optional compiled backend afterwards
+is one refactor rather than two.
+
+Three constraints belong with the idea. The kernel has no `CASHFLOW` branch
+while every replay handles cashflow events. Any replay that verifies compiled
+output must stay independent of it, which keeps the benchmark parity oracles
+in R, and `ledgr_extract_fills_impl()` is a subtle case because it cross-checks
+persisted realized P&L against its own recomputation. The compensated
+`realized_comp` accumulator is global and threaded through the kernel, so a
+kernel-backed replay preserves summation semantics while an R-side regrouping
+by instrument would not.
+
+Consolidation is what makes the known optimizations worth doing, because today
+each would have to be applied eight times: hoist fetched columns once with
+`.subset2()` instead of per-row `[[`; resolve instruments with one
+`collapse::fmatch()` and index lot state by integer; maintain cost basis and
+net position incrementally rather than re-summing open lots; parse `meta_json`
+once per chunk; drop the vestigial `COUNT(*)` pre-scan in the durable reader;
+share one connection across `equity` and `fills`; and reuse the realized P&L
+the fold already persisted where the path is a reader rather than a verifier.
+
+It should also shrink the compiled proof matrix rather than grow it. With nine
+drivers reduced to a fold plus one replay over a shared core, adversarial
+trace evidence proves the accounting once and the remaining surfaces become
+projection tests over a verified trajectory.
+
+### 2026-09-18 [infrastructure] Duplicated helper families
+
+A similarity pass over package function bodies, with string literals and
+numeric constants normalized away, found twenty-seven near-duplicate pairs
+above a 0.45 Jaccard threshold. Two families are worth naming; the rest are
+parallel structure a careful author would plausibly write.
+
+The `*_validate_matrix` family has five members across three files:
+`ledgr_pbo_validate_matrix()`, `ledgr_dsr_validate_matrix()`,
+`ledgr_effective_trials_validate_matrix()`, `ledgr_k_ratio_validate_matrix()`
+and `ledgr_min_track_record_validate_matrix()`. Every one runs the same
+sequence: a matrix and numeric type check, a minimum-row check, then a finite
+and non-missing check, with some adding column and constant-column checks. The
+two closest pairs differ by a single numeric literal, three rows against four,
+plus their message text and error classes. One parameterized validator taking
+the metric label, minimum rows, minimum columns and a non-constant flag would
+replace all five while preserving every message and class.
+
+The feature accessor family has five members forming a projection-by-bundle-by
+-state matrix at eighty to eighty-six percent pairwise overlap, each twenty-
+seven to thirty-seven lines with three aborts. That reads as combinatorial
+expansion that wants flags rather than five near-clones.
+
+Weaker pairs, recorded so they are not rediscovered: cost and risk
+`flatten_children`, the feature-set and risk-chain config hashes, the sweep-
+candidate and walk-forward-score store upgrades, the objective diagnostic and
+evidence numeric helpers, the two strategy symbol resolvers, run tag and
+untag, rolling and anchored folds, and cached and uncached features at pulse.
+Repeated SQL is almost absent: only two snapshot-status lookups appear twice,
+in availability persistence against CSV utilities, and in derived state
+against the run snapshot guard.
+
+Separately, twenty-four per-row `for (i in seq_len(nrow(...)))` loops exist
+across seventeen files. That is a census for the test-suite audit and the
+optimization backlog rather than a refactor target, and broad loop cleanup
+remains a declared non-goal.
+
+Unlike the duplicated FIFO replays, these are shape duplication with low
+correctness risk: the failure mode is an inconsistent message, not a wrong
+number. They are also exact-parity candidates in the sense the internal
+optimization proof template defines, since a correct consolidation preserves
+inputs, outputs, errors, classes and messages exactly. They would be the
+template's first use outside a performance change, which would test whether it
+generalizes.
+
+Two limits of the method belong with the result. Bodies under roughly two
+hundred and forty normalized characters were excluded, so small helpers are not
+covered. And the pass finds textual similarity, so it would have missed the
+FIFO replays had they been written in different styles; the call-site inventory
+found those, not this scan.
 
 ### 2026-09-17 [infrastructure] Durable-path ingestion and serialization observations
 

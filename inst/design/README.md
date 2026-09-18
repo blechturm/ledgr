@@ -11,10 +11,10 @@ and maintainer decisions are accepted, the
 2026-09-16 after two independent reviews. The reviewed hot-path complexity
 amendment was accepted 2026-09-17. The trusted-timestamp and benchmark-boundary
 amendment was accepted 2026-09-18; its prerequisite selected `NEITHER`.
-Tickets LDG-2719 through LDG-2744 are cut and await ticket-cut review. Batches
-0 through 9 are complete; Batch 10 is diagnostic history; Batches 11 through
-15 are pending. Batch 14 is final evidence and Batch 15 requires its review
-plus explicit maintainer authorization.
+Tickets LDG-2719 through LDG-2744 are cut and their cut passed independent
+review. Batches 0 through 9 and 11 through 14 are complete after review; Batch
+10 is diagnostic history; Batch 15 is authorized for implementation after the
+Stage O review and explicit maintainer acceptance.
 The refreshed spot-crypto probe
 follows as a separate v0.2.0.x planning cycle.
 **Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
@@ -228,9 +228,9 @@ fold-time valuation. The accepted timestamp/benchmark amendment adds the
 public peer boundary correction, dense timestamp validation, within-chunk hash
 deduplication, and proof template. Tickets LDG-2719 through LDG-2744 are cut;
 their cut passed independent review. Batches 0 through 9 are complete, Batch
-10 is diagnostic history, Batches 11 and 12 are complete after review, Batch
-13 is implemented and awaiting independent review, and Batches 14 and 15 are
-pending. Batch 14 is the
+10 is diagnostic history, Batches 11 through 13 are complete after review,
+Batch 14 is complete after independent evidence review and maintainer
+acceptance, and Batch 15 is authorized for implementation. Batch 14 is the
 separately reviewed final-evidence checkpoint; Batch 15 is the release gate
 and requires that review plus explicit maintainer authorization.
 The amendment ticket cut was independently accepted before Batch 8 started.

@@ -71,8 +71,8 @@ active v0.2.0.1 packet):
   resumed-run repair, linear event writes, prepared valuation, and benchmark
   closeout. LDG-2719 through LDG-2744 are in the active packet; Batches 0-9
   are complete, Batch 10 is diagnostic history, Batch 11 is complete after
-  review, Batches 12 and 13 are complete after review, and Batches 14-15 are
-  pending. The availability
+  review, Batches 12 through 14 are complete after review, and Batch 15 is
+  authorized for implementation. The availability
   prerequisite selected `NEITHER`; no availability-ingestion optimization is
   authorized. Old paths ship in no form, the public
   fact resolver stays independent, and no speed claim is authorized.
