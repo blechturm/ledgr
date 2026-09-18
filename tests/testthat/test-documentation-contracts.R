@@ -3019,10 +3019,13 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     root,
     "inst", "design", "exact_parity_internal_optimization_proof_template.md"
   )
+  design_index_path <- file.path(root, "inst", "design", "README.md")
   testthat::expect_true(file.exists(prerequisite_path))
   testthat::expect_true(file.exists(proof_template_path))
+  testthat::expect_true(file.exists(design_index_path))
   prerequisite <- paste(readLines(prerequisite_path, warn = FALSE), collapse = "\n")
   proof_template <- paste(readLines(proof_template_path, warn = FALSE), collapse = "\n")
+  design_index <- paste(readLines(design_index_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
   testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
@@ -3050,6 +3053,41 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "accepted specifications remain the source of implementation authority",
     fixed = TRUE
   )
+  testthat::expect_match(
+    proof_template,
+    "Status: accepted 2026-09-18 as v0.2.0.1 evidence infrastructure",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "the measured gain exists only in a private harness",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "a new numerical tolerance or authoritative path must be chosen",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "OPT-C01 is `RECLASSIFY`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "batch13-snapshot-hash-evidence.md",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    design_index,
+    "exact_parity_internal_optimization_proof_template.md",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "accepted evidence infrastructure; not independent implementation authority",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 4.1 mechanism and source guard | LDG-2726 |", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 3.5 status supersession-exact hybrid | LDG-2729 |", fixed = TRUE)
@@ -3071,8 +3109,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("complete_after_review", 14L),
       rep("pending", 3L),
-      rep("complete_after_review", 8L),
-      "pending"
+      rep("complete_after_review", 9L)
     )
   )
   ticket_lines <- readLines(paths[[5L]], warn = FALSE)
@@ -3082,8 +3119,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review", 14L),
       rep("Pending", 3L),
-      rep("Complete After Review", 8L),
-      "Pending"
+      rep("Complete After Review", 9L)
     )
   )
   batch_lines <- readLines(paths[[7L]], warn = FALSE)

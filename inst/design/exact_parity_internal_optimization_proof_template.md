@@ -1,9 +1,9 @@
 # Exact-Parity Internal Optimization Proof Template
 
-Status: reviewable draft proposed as a v0.2.0.1 documentation deliverable.
-It is non-binding until accepted through the active packet. It defines an
-evidence shape, not authority to bypass an RFC, specification, ticket, or
-maintainer scope decision.
+Status: accepted 2026-09-18 as v0.2.0.1 evidence infrastructure after
+independent review and maintainer acceptance. It defines an evidence shape,
+not authority to bypass an RFC, specification, ticket, or maintainer scope
+decision, and it creates no standing no-ticket or no-RFC lane.
 
 ## 1. Purpose
 
@@ -321,3 +321,24 @@ post-v0.2.0.1 governance review decides whether an accepted version becomes a
 standing exact-parity lane and how that lane is represented in roadmap,
 packet, and documentation contracts.
 
+## 7. v0.2.0.1 Application Record
+
+The accepted timestamp and benchmark amendment supplied implementation
+authority before either optimization below was implemented. This template
+records their evidence classification; it does not grant retrospective
+permission.
+
+- OPT-C01 is `RECLASSIFY`. Dense timestamp validation intentionally tightened
+  unsupported direct/internal sub-second behavior, so the normal amendment,
+  ticket, tests, review, and maintainer acceptance authorize that change. It
+  is not an exact-parity proof.
+- OPT-L01 is the accepted worked proof. Its A-through-J artifact is
+  `ledgr_v0_2_0_1_spec_packet/batch13-snapshot-hash-evidence.md`; the Stage N
+  implementation is commit
+  `765e46739429efc2307f3c49982d6b794e2c2f86`. The proof preserves canonical
+  bytes and hashes, includes a mutation-sensitive formatter-count gate, uses
+  the public snapshot workflow, and passed independent Stage N review before
+  maintainer acceptance.
+
+These examples do not widen eligibility. Future work still starts from its
+own governing specification, ticket, or RFC decision.

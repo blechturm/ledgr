@@ -436,7 +436,7 @@ tickets:
 
   - id: "LDG-2744"
     title: "Finalize and index exact-parity proof template"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2743"]

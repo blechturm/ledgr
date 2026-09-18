@@ -243,6 +243,8 @@ The amendment ticket cut was independently accepted before Batch 8 started.
 - Tickets: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`.
 - Machine-readable tickets: `ledgr_v0_2_0_1_spec_packet/tickets.yml`.
 - Batch plan: `ledgr_v0_2_0_1_spec_packet/batch_plan.md`.
+- Accepted exact-parity evidence template:
+  `exact_parity_internal_optimization_proof_template.md`.
 - Batch 1 baseline evidence:
   `ledgr_v0_2_0_1_spec_packet/batch1-baseline-evidence.md`.
 - Batch 2 provider evidence:

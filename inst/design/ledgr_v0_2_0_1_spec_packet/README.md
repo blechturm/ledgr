@@ -103,7 +103,7 @@ Authoritative files:
 - `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md`
   (binding pre-cut `NEITHER` outcome)
 - `inst/design/exact_parity_internal_optimization_proof_template.md`
-  (reviewed draft pending LDG-2744 finalization)
+  (accepted evidence infrastructure; not independent implementation authority)
 
 Binding design inputs:
 
