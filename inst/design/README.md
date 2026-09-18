@@ -226,9 +226,10 @@ cold, warm, and peer benchmark records. The accepted complexity amendment adds
 the two release-material closeout findings, linear event writes and prepared
 fold-time valuation. The accepted timestamp/benchmark amendment adds the
 public peer boundary correction, dense timestamp validation, within-chunk hash
-deduplication, and proof template. Tickets LDG-2719 through LDG-2744 are cut
-and await ticket-cut review. Batches 0 through 9 are complete, Batch 10 is
-diagnostic history, and Batches 11 through 15 are pending. Batch 14 is the
+deduplication, and proof template. Tickets LDG-2719 through LDG-2744 are cut;
+their cut passed independent review. Batches 0 through 9 are complete, Batch
+10 is diagnostic history, Batch 11 is implemented and awaiting independent
+review, and Batches 12 through 15 are pending. Batch 14 is the
 separately reviewed final-evidence checkpoint; Batch 15 is the release gate
 and requires that review plus explicit maintainer authorization.
 The amendment ticket cut was independently accepted before Batch 8 started.

@@ -1,0 +1,7 @@
+"mechanism","repetition","wall_sec","row_count","semantic_fingerprint","environment"
+"dense_static_coverage",1,13.88,630000,"690d278077c25ef02cad54314c2d9a4d2b0d9efabfaf140564b4f8bb86997163","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"
+"dense_static_coverage",2,13.78,630000,"690d278077c25ef02cad54314c2d9a4d2b0d9efabfaf140564b4f8bb86997163","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"
+"dense_static_coverage",3,13.7,630000,"690d278077c25ef02cad54314c2d9a4d2b0d9efabfaf140564b4f8bb86997163","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"
+"snapshot_hash_rule_1",1,7.02,630000,"ed05aa170e93af7e2f229f9d920882faad844e91b03397b1293a0722fcac7bb5","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"
+"snapshot_hash_rule_1",2,7.64,630000,"ed05aa170e93af7e2f229f9d920882faad844e91b03397b1293a0722fcac7bb5","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"
+"snapshot_hash_rule_1",3,7.69,630000,"ed05aa170e93af7e2f229f9d920882faad844e91b03397b1293a0722fcac7bb5","R 4.6.1; ledgr 0.2.0.1; duckdb 1.5.2; collapse 2.1.8"

@@ -2,8 +2,9 @@
 
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is diagnostic history and does not satisfy final evidence. The
-trusted-timestamp and benchmark-boundary amendment ticket cut is pending
-independent review. Batches 11 through 15 are pending.
+trusted-timestamp and benchmark-boundary amendment ticket cut passed
+independent review. Batch 11 is implemented and pending independent review;
+Batches 12 through 15 are pending.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
 The maintainer accepted the trusted-timestamp and benchmark-boundary amendment
@@ -96,6 +97,9 @@ Authoritative files:
   paired 757-pulse gate, combined eventful case, and source retirement)
 - `batch10-benchmark-evidence.md` (diagnostic first-closeout record; not final
   evidence and not a completed LDG-2733 or LDG-2734 artifact)
+- `batch11-boundary-oracle-evidence.md` (public one-candidate benchmark
+  boundary, parity and rendering gates, frozen current-arm prefixes, source
+  guard, and prospective dense/hash proof plans)
 - `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md`
   (binding pre-cut `NEITHER` outcome)
 - `inst/design/exact_parity_internal_optimization_proof_template.md`

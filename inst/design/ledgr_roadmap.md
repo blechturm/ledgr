@@ -152,8 +152,9 @@ claim boundaries remain governed by
 | v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
-| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and await review. Batches 0 through 9 are complete, Batch 10 is diagnostic history, and Batches 11 through 15 are pending. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; earlier spike inventories |
-| Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, and closeout process while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, and honest measurement clocks. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
+| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and the cut passed independent review. Batches 0 through 9 are complete, Batch 10 is diagnostic history, Batch 11 is implemented and awaiting independent review, and Batches 12 through 15 are pending. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; earlier spike inventories |
+| Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, closeout, and testing processes while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, honest measurement clocks, and strict semantic detection. Decide how reference-implementation authority differs from runtime defaults, and classify compiled-path guarantees without imposing a Cartesian benchmark grid. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
+| Post-v0.2.0.1 compiled execution RFC | Planned after governance review | Use the governance and test-suite review outputs to decide the supported compiled-execution envelope, differential proof architecture, availability and durable-sink scope, and any later default-promotion gate. Treat the existing spot-FIFO result as evidence, not authority to widen scope. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 compiled-execution entry |
 | v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
@@ -1640,6 +1641,15 @@ with concrete changes to the relevant process documents and templates. It
 must not reopen v0.2.0.1 product decisions or silently rewrite historical RFC,
 spike, review, or closeout records.
 
+The review must explicitly settle how implementation authority is assigned.
+In particular, it must decide whether canonical R remains the normative oracle
+for optimized or compiled execution, how that authority differs from the
+runtime default, and how a permitted divergence is specified, tested, and
+reviewed. This roadmap entry deliberately does not pre-answer that governance
+question. It requires an independently checkable reference or equivalent
+oracle strategy rather than allowing a faster implementation to define its
+own correctness.
+
 The governance review includes a test-suite audit as a named workstream. The
 timing baseline captured at `217bd66` under R 4.6.1 is 1,005 seconds for the
 ordinary full suite, 250 seconds for the availability slice, and about 59
@@ -1683,9 +1693,55 @@ the package suite. Existing tests are classified before broad movement or
 deletion, and exceptions to the standard must state the contract that makes
 them necessary.
 
+Compiled execution is a named case study in that audit. Its guarantees must be
+classified into adversarial kernel traces, sink-specific atomicity and
+rollback tests, small workflow witnesses, representative cost and risk cases,
+and one or two full-scale performance records. Dense versus availability,
+memory versus durable, cost models, and risk layers form a risk map for
+selecting witnesses; they do not create a Cartesian requirement to rerun every
+combination at full scale. The audit must preserve exact fill and realized-
+trade comparisons, the existing floating-equity tolerance where the contract
+already permits it, failure-sensitive mutations, and clear ownership of each
+guarantee while removing redundant or misplaced work. It may recommend a
+focused testing RFC and subsequent refactoring, but it must not perform that
+refactoring inside the audit.
+
 This is post-release governance work, not part of the v0.2.0.1 release gate.
 The spot-crypto readiness probe remains the next product-research cycle, but no
 new implementation packet opens until this governance review is resolved.
+
+### After v0.2.0.1: Compiled Execution RFC
+
+After the governance and test-suite review has settled implementation authority
+and proof ownership, open a focused RFC for compiled execution. The current
+spot-FIFO accelerator is the empirical starting point: at the corrected public
+sweep boundary it removes about half of canonical engine time on the registered
+fixture while preserving the registered outputs. That observation does not
+identify a pure R-language tax, authorize a new default, or prove a wider
+economic model. It combines native FIFO accounting, batched work, and compiled
+event appends over one workload.
+
+The RFC must treat supported combinations as a risk map rather than a benchmark
+matrix. It should decide the evidence needed for availability-aware execution,
+a durable compiled sink with atomicity and rollback, representative cost and
+risk inputs, and any later default promotion. The proof plan should combine
+adversarial differential fill traces, separate sink tests, small dense and
+availability workflow witnesses, representative economic cases, and no more
+than the full-scale records needed to establish performance and memory bounds.
+
+The RFC must account for the real maintenance surface, not only the C++ kernel:
+the current implementation includes roughly 705 lines across the kernel,
+R-side packing and dispatch, and generated bindings, plus integration and tests
+spread across the package. Ordinary order types resolve upstream into the fill
+contract and are not by themselves a reason to delay the RFC. Settlement,
+borrow and financing, multiple currencies, corporate actions, and alternative
+lot-selection or tax policies can change the accounting model and therefore
+must remain explicit boundaries rather than silently accreting into spot FIFO.
+
+This entry schedules design work only. It does not expand v0.2.0.1, unlock the
+current availability abort, authorize durable compiled writes, or choose the
+runtime default. Sequencing against the spot-crypto research cycle is decided
+when the governance review closes.
 
 ### After v0.2.0.1: Spot-Crypto Readiness Probe And Spike
 

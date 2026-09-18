@@ -384,7 +384,7 @@ tickets:
 
   - id: "LDG-2741"
     title: "Freeze public benchmark boundary and optimization oracles"
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2740"]

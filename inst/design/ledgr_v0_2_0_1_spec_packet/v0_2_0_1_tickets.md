@@ -1437,7 +1437,7 @@ scope: scaling-integration-and-retirement
 Priority: P0
 Effort: M
 Dependencies: LDG-2740
-Status: Pending
+Status: Review Pending
 
 ### Description
 

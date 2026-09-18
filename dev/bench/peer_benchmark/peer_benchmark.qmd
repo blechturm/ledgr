@@ -10,6 +10,7 @@ params:
   run_harness: false
   preset: "smoke"
   results_preset: "record"
+  results_prefix: "peer_benchmark_record_20260917T231851Z"
 ---
 
 This tracked report records the v0.2.0.1 internal same-host peer workload.
@@ -20,28 +21,38 @@ one fixture into a public engine ranking.
 The exact closeout command was:
 
 ```powershell
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530
+$env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
+$env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1-boundary-correction --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260917T104909Z`. The record was
-produced from `6b09a1b57ff42293091130d2dca565f224a29aea` under R 4.6.1 ucrt on
-Windows build 26200 with TTR 0.24.4. Backtrader and zipline-reloaded completed
-through pinned `uv` environments. Quantstrat was unavailable because its R
-packages were absent; local LEAN was unavailable because its CLI root uses an
-obsolete organization layout. No hosted LEAN service was used.
+`dev/bench/results/peer_benchmark_record_20260917T231851Z`. The correction
+record was produced from a working tree based on
+`400a3e56ae49cc61256d0e7aaca66281626d4fe3`; the exact benchmark harness has
+SHA-256 `3ef4a31831a16bc8cb06cc2647bd68e1f3e9f5d13268806523ec62edb22b579e`.
+This makes the measurement reconstructive, but a final immutable closeout
+still requires the same method to be rerun after commit. It ran under R 4.6.1
+ucrt on Windows build 26200. Quantstrat 0.25 completed from the isolated
+library with the ticket-pinned blotter 0.17.0, FinancialInstrument 1.3.0, xts
+0.14.2, and TTR 0.24.4. Backtrader and zipline-reloaded completed through
+pinned `uv` environments. Local LEAN was unavailable because its CLI root uses
+an obsolete organization layout. No hosted LEAN service was used.
 
-The durable and ephemeral canonical ledgr rows and the built-in SMA row agree
-at the registered tolerance. Backtrader and zipline-reloaded pass the
-registered Tier 1 tolerance while retaining classified residuals,
-predominantly position sizing and, for Zipline, fill timing.
+The report checks every ledgr row before interpreting its timing. The canonical
+public sweep completed in 64.87 seconds cold and 44.84 seconds warm; the public
+compiled sweep completed in 49.71 seconds cold and 30.38 seconds warm. Their
+retained public equity/trades are identical. The richer cash, position and fill
+surfaces come from an explicitly untimed private oracle and are used only for
+parity. The report retains peer residuals and partial surfaces rather than
+turning a numerical tolerance into a claim of full parity.
 
 > **Scope of this report**
 >
 > Internal repo-local benchmark. Same host, same seed, single fixture.
 > A B2 row, when explicitly requested, remains an opt-in
-> (`compiled_accounting_model = "spot_fifo"`) on ledgr's
-> ephemeral/memory-backed path. Default ledgr execution remains canonical R.
+> (`compiled_accounting_model = "spot_fifo"`) on ledgr's public
+> one-candidate sweep path. Default ledgr execution remains canonical R.
 > Numbers are for maintainer use and release closeout, not a public ranking or
 > a universal performance claim.
 
@@ -50,14 +61,30 @@ predominantly position sizing and, for Zipline, fill timing.
 candidates <- c(".", "..", file.path("..", ".."), file.path("..", "..", ".."))
 repo_root <- candidates[file.exists(file.path(candidates, "DESCRIPTION"))][[1L]]
 repo_root <- normalizePath(repo_root, mustWork = TRUE)
+peer_harness <- new.env(parent = globalenv())
+sys.source(
+  file.path(repo_root, "dev", "bench", "peer_benchmark", "peer_benchmark.R"),
+  envir = peer_harness
+)
 result_dir <- file.path(repo_root, "dev", "bench", "results")
-status_files <- Sys.glob(file.path(
-  result_dir,
-  sprintf("peer_benchmark_%s_*_status.csv", params$results_preset)
-))
-status_files <- status_files[!grepl("_surface_status[.]csv$", status_files)]
-if (!length(status_files)) {
-  stop("No peer benchmark status files found for preset: ", params$results_preset)
+if (nzchar(params$results_prefix)) {
+  status_files <- file.path(
+    result_dir,
+    paste0(params$results_prefix, "_status.csv")
+  )
+} else {
+  status_files <- Sys.glob(file.path(
+    result_dir,
+    sprintf("peer_benchmark_%s_*_status.csv", params$results_preset)
+  ))
+  status_files <- status_files[!grepl("_surface_status[.]csv$", status_files)]
+}
+if (!length(status_files) || !all(file.exists(status_files))) {
+  stop(
+    "No peer benchmark status file found for prefix/preset: ",
+    params$results_prefix,
+    if (nzchar(params$results_prefix)) "" else params$results_preset
+  )
 }
 status_file <- tail(sort(status_files), 1L)
 stem <- sub("_status[.]csv$", "", status_file)
@@ -69,14 +96,12 @@ read_result <- function(suffix) {
 status <- read_result("_status.csv")
 parity <- read_result("_parity.csv")
 performance <- read_result("_performance.csv")
-b2_performance_file <- paste0(stem, "_b2_spot_fifo_performance.csv")
-if (file.exists(b2_performance_file) &&
-    !"ledgr_ttr_compiled_spot_fifo_ephemeral" %in% performance$engine) {
-  performance <- rbind(
-    performance,
-    utils::read.csv(b2_performance_file, stringsAsFactors = FALSE)
-  )
+report_performance <- peer_harness$peer_prepare_report_performance(performance)
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  stop("Rendering the peer benchmark report requires ggplot2.")
 }
+compiled_engine <- "ledgr_ttr_compiled_spot_fifo_sweep"
+has_compiled <- compiled_engine %in% performance$engine
 if (!"cost_model" %in% names(performance)) {
   performance$cost_model <- NA_character_
 }
@@ -89,13 +114,23 @@ if (!"compiled_accounting_model" %in% names(performance)) {
 divergence_summary <- read_result("_divergence_summary.csv")
 surface <- read_result("_surface_status.csv")
 env <- jsonlite::read_json(paste0(stem, "_environment.json"), simplifyVector = TRUE)
+quantstrat_env_path <- paste0(stem, "_quantstrat_environment.json")
+quantstrat_env <- if (file.exists(quantstrat_env_path)) {
+  jsonlite::read_json(quantstrat_env_path, simplifyVector = FALSE)
+} else {
+  NULL
+}
+if (any(status$engine == "quantstrat" & status$status == "DONE") &&
+    is.null(quantstrat_env)) {
+  stop("A DONE quantstrat row requires its isolated-environment sidecar.")
+}
 equity_files <- Sys.glob(paste0(stem, "_*_equity.csv"))
 equity <- do.call(rbind, lapply(equity_files, utils::read.csv, stringsAsFactors = FALSE))
 
 fmt_num <- function(x, digits = 6) {
   ifelse(is.na(x), NA, formatC(as.numeric(x), digits = digits, format = "fg", flag = "#"))
 }
-fmt_sec <- function(x) ifelse(is.na(x), NA, sprintf("%.3f", as.numeric(x)))
+fmt_sec <- function(x) ifelse(is.na(x), "NULL", sprintf("%.3f", as.numeric(x)))
 fmt_rate <- function(x) {
   ifelse(is.na(x), NA, formatC(as.numeric(x), digits = 6, format = "fg", big.mark = ","))
 }
@@ -119,14 +154,12 @@ fmt_pp <- function(x, digits = 5) {
     ifelse(abs(pp) < 0.00001 & pp != 0, "<0.00001 pp", paste0(formatC(pp, digits = digits, format = "fg", flag = "#"), " pp"))
   )
 }
-tier1_pass <- function(attribution) {
-  ifelse(identical(attribution, "passes Tier 1 tolerance"), "pass", "review")
-}
 parity_surface <- function(peer) {
   trade_surface <- surface$trades[match(peer, surface$engine)]
   fill_surface <- surface$fills[match(peer, surface$engine)]
-  if (identical(peer, "quantstrat")) {
-    return("partial: equity + trade count only")
+  if (identical(fill_surface, "available") &&
+      identical(trade_surface, "trade_count_available_only")) {
+    return("partial: equity + fills + trade count; no realized trade P&L")
   }
   if (identical(fill_surface, "available") && identical(trade_surface, "available_realized_pnl")) {
     return("equity + fills + realized trades")
@@ -140,40 +173,46 @@ parity_surface <- function(peer) {
 
 ## Optional B2 timing context
 
-Same fixture, same seed, same shared bars CSV. The B2 row uses ledgr's
-explicit `compiled_accounting_model = "spot_fifo"` spot-FIFO hot frame
-on the ephemeral benchmark boundary; Backtrader uses its standard
-event-driven loop. Both run the same SMA crossover strategy.
+When requested, the B2 row uses ledgr's explicit
+`compiled_accounting_model = "spot_fifo"` hot frame on the same fixture, seed,
+shared bars, and SMA crossover strategy as the other rows. If it is absent,
+this section reports that state rather than synthesizing a comparison.
 
 ```{r}
 #| echo: false
 engine_labels <- c(
-  ledgr_ttr_compiled_spot_fifo_ephemeral = "ledgr B2\nspot_fifo",
+  ledgr_ttr_compiled_spot_fifo_sweep = "ledgr B2\npublic sweep",
   backtrader = "Backtrader",
-  ledgr_ttr_canonical_ephemeral = "ledgr canonical\nephemeral",
+  ledgr_ttr_canonical_sweep = "ledgr canonical\npublic sweep",
   `zipline-reloaded-full` = "Zipline",
   quantstrat = "Quantstrat"
 )
 compare_engines <- names(engine_labels)
 compare <- performance[match(compare_engines, performance$engine), , drop = FALSE]
 compare <- compare[!is.na(compare$engine), , drop = FALSE]
-if (!"ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
+if (!compiled_engine %in% compare$engine) {
   knitr::kable(data.frame(
     Note = "No B2 spot-FIFO peer-shaped row found beside this record bundle. Run the record command with --compiled-accounting-model spot_fifo to populate this section."
   ))
 } else {
-  b2 <- compare[compare$engine == "ledgr_ttr_compiled_spot_fifo_ephemeral", , drop = FALSE]
+  b2 <- compare[compare$engine == compiled_engine, , drop = FALSE]
   bt <- compare[compare$engine == "backtrader", , drop = FALSE]
   speed_table <- data.frame(
-    Surface = c("Core wall", "Engine phase"),
-    `B2 seconds` = fmt_sec(c(b2$reported_core_sec, b2$engine_sec)),
-    `Backtrader seconds` = fmt_sec(c(bt$reported_core_sec, bt$engine_sec)),
+    Surface = c("Cold end to end", "Warm research iteration", "Engine phase"),
+    `B2 seconds` = fmt_sec(c(
+      b2$cold_end_to_end, b2$warm_research_iteration, b2$engine_sec
+    )),
+    `Backtrader seconds` = fmt_sec(c(
+      bt$cold_end_to_end, bt$warm_research_iteration, bt$engine_sec
+    )),
     `B2 / Backtrader` = sprintf("%.2fx", c(
-      b2$reported_core_sec / bt$reported_core_sec,
+      b2$cold_end_to_end / bt$cold_end_to_end,
+      b2$warm_research_iteration / bt$warm_research_iteration,
       b2$engine_sec / bt$engine_sec
     )),
     `B2 reduction vs Backtrader` = paste0(sprintf("%.1f", 100 * c(
-      1 - b2$reported_core_sec / bt$reported_core_sec,
+      1 - b2$cold_end_to_end / bt$cold_end_to_end,
+      1 - b2$warm_research_iteration / bt$warm_research_iteration,
       1 - b2$engine_sec / bt$engine_sec
     )), "%"),
     check.names = FALSE
@@ -182,140 +221,193 @@ if (!"ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
 }
 ```
 
-Two ratios, both honest. The engine-phase ratio is the slice the compiled
-hot frame actually replaces. The core-wall ratio is what a user sees
-end-to-end. The remaining wall B2 spends after the engine phase is
-R-side results materialization: building the canonical equity, fills,
-and trades artifacts the harness measures. Backtrader's equivalent
-results phase is much smaller because it writes raw CSVs without
-canonical materialization.
+The three clocks answer different questions. Cold includes the reusable sealed
+snapshot. Warm measures the public research iteration over that unchanged
+snapshot. Engine isolates the fold slice replaced by the compiled hot frame.
+The timed sweep results phase uses retained inline facts and public accessors;
+the private full-surface parity oracle runs outside every reported clock.
 
 ```{r}
 #| echo: false
 #| fig.width: 10
 #| fig.height: 5.4
-if ("ledgr_ttr_compiled_spot_fifo_ephemeral" %in% compare$engine) {
-  old_par <- par(no.readonly = TRUE)
-  par(mfrow = c(1, 2), mar = c(5, 10, 3, 4), oma = c(2, 0, 2, 0))
-  labels <- unname(engine_labels[compare$engine])
-  colors <- ifelse(
-    compare$engine == "ledgr_ttr_compiled_spot_fifo_ephemeral",
-    "#1F77B4",
-    ifelse(compare$engine == "backtrader", "#7F7F7F", "#C7C7C7")
-  )
-  plot_panel <- function(values, title) {
-    maxv <- max(values, na.rm = TRUE)
-    barplot(
-      rev(values),
-      horiz = TRUE,
-      las = 1,
-      col = rev(colors),
-      border = NA,
-      names.arg = rev(labels),
-      xlim = c(0, maxv * 1.28),
-      main = title,
-      xlab = "Seconds"
+if (compiled_engine %in% compare$engine) {
+  timing_plot <- rbind(
+    data.frame(
+      engine = compare$engine,
+      surface = "Cold end to end",
+      seconds = compare$cold_end_to_end
+    ),
+    data.frame(
+      engine = compare$engine,
+      surface = "Warm research iteration",
+      seconds = compare$warm_research_iteration
+    ),
+    data.frame(
+      engine = compare$engine,
+      surface = "Engine phase",
+      seconds = compare$engine_sec
     )
-    yy <- seq_along(values)
-    text(values, rev(yy), labels = sprintf("%.2fs", values), pos = 4, cex = 0.78)
-    abline(v = values[compare$engine == "backtrader"], lty = 2, col = "#555555")
-  }
-  plot_panel(compare$reported_core_sec, "Core wall")
-  plot_panel(compare$engine_sec, "Engine phase")
-  mtext(
-    "Optional B2 timing on the same fixture; interpret only after parity",
-    outer = TRUE,
-    line = 0.7,
-    font = 2
   )
-  mtext(
-    "Internal benchmark. Lower is better. Dashed line marks Backtrader.",
-    outer = TRUE,
-    side = 1,
-    line = 0,
-    cex = 0.8
+  timing_plot <- timing_plot[is.finite(timing_plot$seconds), , drop = FALSE]
+  timing_plot$label <- unname(engine_labels[timing_plot$engine])
+  timing_plot$label <- factor(
+    timing_plot$label,
+    levels = rev(unname(engine_labels[compare$engine]))
   )
-  par(old_par)
+  timing_plot$surface <- factor(
+    timing_plot$surface,
+    levels = c("Cold end to end", "Warm research iteration", "Engine phase")
+  )
+  timing_plot$kind <- ifelse(
+    timing_plot$engine == compiled_engine,
+    "Compiled sweep",
+    ifelse(timing_plot$engine == "backtrader", "Backtrader", "Other")
+  )
+  backtrader_lines <- timing_plot[
+    timing_plot$engine == "backtrader",
+    c("surface", "seconds"),
+    drop = FALSE
+  ]
+  print(
+    ggplot2::ggplot(
+      timing_plot,
+      ggplot2::aes(x = seconds, y = label, fill = kind)
+    ) +
+      ggplot2::geom_col(width = 0.72) +
+      ggplot2::geom_text(
+        ggplot2::aes(label = sprintf("%.2fs", seconds)),
+        hjust = -0.08,
+        size = 3
+      ) +
+      ggplot2::geom_vline(
+        data = backtrader_lines,
+        ggplot2::aes(xintercept = seconds),
+        linetype = 2,
+        colour = "#555555",
+        inherit.aes = FALSE
+      ) +
+      ggplot2::facet_wrap(~surface, scales = "free_x", nrow = 1) +
+      ggplot2::scale_fill_manual(values = c(
+        "Compiled sweep" = "#1F77B4",
+        "Backtrader" = "#7F7F7F",
+        "Other" = "#C7C7C7"
+      )) +
+      ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
+      ggplot2::labs(
+        title = "Optional B2 timing on the same fixture",
+        subtitle = "Interpret only after parity; dashed line marks Backtrader",
+        x = "Seconds (lower is better)",
+        y = NULL,
+        fill = NULL
+      ) +
+      ggplot2::theme_minimal(base_size = 10) +
+      ggplot2::theme(legend.position = "bottom")
+  )
 }
 ```
 
 ## Why parity comes before timing
 
-A speed number only matters if the engine produces the same answer.
-ledgr's compiled `spot_fifo` row matches canonical ledgr ephemeral
-with zero parsed canonical-output difference on this fixture across
-equity, cash, and the position proxy.
+A speed number only matters if the engine produces the same answer. When the
+compiled row is present, the following check requires exact identity for
+fills, trades, and every non-floating equity field. Floating equity uses only
+the already registered relative `all.equal()` tolerance of `1e-8` and reports
+its residuals.
 
 ```{r}
 #| echo: false
-b2_eq_file <- paste0(stem, "_b2_spot_fifo_equity.csv")
-canon_ephemeral_eq_file <- paste0(stem, "_ledgr_ttr_canonical_ephemeral_equity.csv")
-if (file.exists(b2_eq_file) && file.exists(canon_ephemeral_eq_file)) {
-  b2_eq <- utils::read.csv(b2_eq_file, stringsAsFactors = FALSE)
-  canon_eq <- utils::read.csv(canon_ephemeral_eq_file, stringsAsFactors = FALSE)
-  merged_eq <- merge(
-    canon_eq,
-    b2_eq,
-    by = "ts_utc",
-    suffixes = c("_canonical_ephemeral", "_b2"),
-    sort = TRUE
+canonical_ephemeral_engine <- "ledgr_ttr_canonical_sweep"
+read_surface <- function(engine, surface_name) {
+  path <- paste0(stem, "_", engine, "_", surface_name, ".csv")
+  if (!file.exists(path)) stop("Missing ledgr parity surface: ", path)
+  out <- utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if ("engine" %in% names(out)) out$engine <- "ledgr"
+  out
+}
+if (!has_compiled) {
+  knitr::kable(data.frame(
+    Note = "Compiled spot-FIFO row absent; no compiled timing is interpreted."
+  ))
+} else {
+  canonical_equity <- read_surface(canonical_ephemeral_engine, "equity")
+  compiled_equity <- read_surface(compiled_engine, "equity")
+  equity_residual <- peer_harness$peer_equity_parity(
+    canonical_equity,
+    compiled_equity,
+    floating_columns = c(
+      "equity", "cash", "positions_value", "position_proxy",
+      "realized_pnl", "unrealized_pnl"
+    ),
+    context = "Rendered compiled-versus-canonical equity"
+  )
+  canonical_fills <- read_surface(canonical_ephemeral_engine, "fills")
+  compiled_fills <- read_surface(compiled_engine, "fills")
+  canonical_trades <- read_surface(canonical_ephemeral_engine, "trades")
+  compiled_trades <- read_surface(compiled_engine, "trades")
+  peer_harness$peer_exact_surface(
+    canonical_fills,
+    compiled_fills,
+    "Rendered compiled-versus-canonical fills"
+  )
+  peer_harness$peer_exact_surface(
+    canonical_trades,
+    compiled_trades,
+    "Rendered compiled-versus-canonical trades"
   )
   b2_parity <- data.frame(
-    Check = c(
-      "Canonical ephemeral rows",
-      "B2 rows",
-      "Merged rows",
-      "Equity correlation",
-      "Max abs equity diff",
-      "Max abs cash diff",
-      "Max abs position proxy diff"
+    Surface = c("equity", "fills", "trades"),
+    Standard = c("relative all.equal tolerance 1e-8", "exact", "exact"),
+    Result = c("PASS", "PASS", "PASS"),
+    `Max absolute residual` = c(equity_residual$max_abs, 0, 0),
+    `Max relative residual` = c(equity_residual$max_relative, 0, 0),
+    `Affected columns` = c(
+      paste(equity_residual$affected_columns, collapse = ", "),
+      "none",
+      "none"
     ),
-    Value = c(
-      nrow(canon_eq),
-      nrow(b2_eq),
-      nrow(merged_eq),
-      fmt_corr(stats::cor(merged_eq$equity_canonical_ephemeral, merged_eq$equity_b2)),
-      fmt_num(max(abs(merged_eq$equity_canonical_ephemeral - merged_eq$equity_b2)), digits = 7),
-      fmt_num(max(abs(merged_eq$cash_canonical_ephemeral - merged_eq$cash_b2)), digits = 7),
-      fmt_num(max(abs(merged_eq$position_proxy_canonical_ephemeral - merged_eq$position_proxy_b2)), digits = 7)
-    ),
-    stringsAsFactors = FALSE
+    `Affected rows` = c(length(equity_residual$affected_rows), 0, 0),
+    check.names = FALSE
   )
   knitr::kable(b2_parity, row.names = FALSE)
 }
 ```
 
-When present, the compiled row is interpreted only after its canonical outputs
-agree with the R path. Peer-by-peer parity against ledgr canonical follows
-below; timing does not waive a failed semantic comparison.
+The report renders compiled timing only after the registered comparisons pass.
+Peer-by-peer tolerance results against durable ledgr follow below; timing does
+not waive a failed semantic comparison.
 
 ## Full peer comparison
 
-When requested, the B2 sidecar row is measured on the same fixture as the
-seven-row peer record bundle and appended here for timing context. Backtrader,
-Zipline, quantstrat, and LEAN retain their declared lifecycle boundaries and
-availability states; no row is treated as universally representative of its
-engine or language.
+A compiled row, when requested, uses the same fixture as the other engines.
+Backtrader, Zipline, quantstrat, and LEAN retain their declared lifecycle
+boundaries and availability states; no row is treated as universally
+representative of its engine or language.
 
-ledgr appears in canonical and B2 rows because both answer useful
-questions. Canonical durable and ephemeral track the R fold and the
-auditability surface ledgr ships by default. B2 tracks the opt-in
-compiled hot frame. Keeping both prevents reading a compiled opt-in
-result as a default ledgr claim.
+Canonical durable and public-sweep rows track the audited run workflow and the
+interactive research workflow ledgr ships. An optional B2 sweep row tracks the
+opt-in compiled hot frame. Keeping those labels distinct prevents reading a
+compiled opt-in result as a default ledgr claim.
 
 ```{r}
 #| echo: false
+display_performance <- report_performance$display
+display_full_row_sec <- display_performance$full_row_sec
 perf_table <- data.frame(
-  `Engine row` = performance$engine,
-  Status = performance$status,
-  `Full row` = fmt_sec(performance$full_row_sec),
-  `Snapshot prepare` = fmt_sec(performance$snapshot_prepare_sec),
-  `Experiment setup` = fmt_sec(performance$experiment_setup_sec),
-  `Engine phase` = fmt_sec(performance$engine_sec),
-  Results = fmt_sec(performance$results_sec),
-  Cold = fmt_sec(performance$cold_end_to_end),
-  Warm = fmt_sec(performance$warm_research_iteration),
-  `Bars/sec` = fmt_rate(performance$core_bars_per_sec),
+  `Engine row` = display_performance$engine,
+  Status = display_performance$status,
+  `Full row` = fmt_sec(display_full_row_sec),
+  `Snapshot prepare` = fmt_sec(display_performance$snapshot_prepare_sec),
+  `Setup / orchestration` = fmt_sec(display_performance$experiment_setup_sec),
+  `Engine phase` = fmt_sec(display_performance$engine_sec),
+  Results = fmt_sec(display_performance$results_sec),
+  Cold = fmt_sec(display_performance$cold_end_to_end),
+  Warm = fmt_sec(display_performance$warm_research_iteration),
+  `Bars/sec` = fmt_rate(ifelse(
+    display_performance$status == "DONE",
+    display_performance$core_bars_per_sec,
+    NA_real_
+  )),
   check.names = FALSE
 )
 has_cost_risk_columns <- any(!is.na(performance$cost_model)) ||
@@ -333,10 +425,23 @@ if (has_cost_risk_columns) {
 knitr::kable(perf_table, row.names = FALSE)
 ```
 
-Read `Cold` as the sum of snapshot preparation, experiment setup, engine, and
-results. Read `Warm` as the same row without reusable snapshot preparation.
+Read `Cold` as the sum of snapshot preparation, setup/orchestration, engine,
+and results. Read `Warm` as the same row without reusable snapshot preparation.
 `Full row` is the wrapper clock around the engine row; phase definitions are in
 the Methodology section.
+
+For an unavailable engine, every displayed performance clock is `NULL`. A
+failed wrapper attempt may have elapsed time in its raw metadata, but that is
+diagnostic latency rather than a completed benchmark result.
+
+The public-sweep setup field is broader than experiment-object construction.
+It is the complete public `ledgr_sweep()` wall not covered by its candidate
+fold and inline-results clocks, plus experiment and grid construction. It
+therefore includes warm snapshot reads, bars matrices and views, validation,
+feature and task preparation, and sweep retention/orchestration. The durable
+row exposes no matching subclock: analogous work inside `ledgr_run()` remains
+in that row's engine phase. Compare cold and warm totals across those rows;
+use the colored segments only as each row's declared decomposition.
 
 For peer comparison, this complete boundary is the cold end-to-end view
 when the engines perform meaningfully comparable preparation and produce
@@ -349,39 +454,55 @@ identity changes.
 #| echo: false
 #| fig.width: 9
 #| fig.height: 4.8
-old_par <- par(no.readonly = TRUE)
-par(mar = c(5, 10, 3, 1))
-perf_done <- performance[is.finite(performance$full_row_sec), , drop = FALSE]
-ord <- order(perf_done$full_row_sec)
-perf_done <- perf_done[ord, , drop = FALSE]
-mat <- rbind(
-  `Snapshot prepare` = perf_done$snapshot_prepare_sec,
-  `Experiment setup` = perf_done$experiment_setup_sec,
-  Engine = perf_done$engine_sec,
-  Results = perf_done$results_sec
+phase_plot <- report_performance$phase_plot
+phase_totals <- report_performance$phase_totals
+unavailable_labels <- report_performance$unavailable_labels
+print(
+  ggplot2::ggplot(
+    phase_plot,
+    ggplot2::aes(x = seconds, y = engine, fill = phase)
+  ) +
+    ggplot2::geom_col(
+      width = 0.72,
+      position = ggplot2::position_stack(reverse = TRUE)
+    ) +
+    ggplot2::geom_text(
+      data = phase_totals,
+      ggplot2::aes(
+        x = seconds,
+        y = engine,
+        label = paste0(sprintf("%.3f", seconds), "s")
+      ),
+      hjust = -0.08,
+      size = 3,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::geom_text(
+      data = unavailable_labels,
+      ggplot2::aes(x = seconds, y = engine, label = label),
+      hjust = -0.08,
+      colour = "#666666",
+      size = 3,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::scale_fill_manual(values = c(
+      "Snapshot prepare" = "#7A9E9F",
+      "Setup / orchestration" = "#4C78A8",
+      "Engine" = "#D19C1D",
+      "Results" = "#B85C5C"
+    )) +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.16))) +
+    ggplot2::scale_y_discrete(drop = FALSE) +
+    ggplot2::labs(
+      title = "Record performance timing",
+      subtitle = "Reusable preparation / warm orchestration / engine / results",
+      x = "Seconds",
+      y = NULL,
+      fill = NULL
+    ) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom")
 )
-mat[!is.finite(mat)] <- 0
-bp <- barplot(
-  mat,
-  beside = FALSE,
-  horiz = TRUE,
-  names.arg = perf_done$engine,
-  las = 1,
-  col = c("#7A9E9F", "#4C78A8", "#D19C1D", "#B85C5C"),
-  border = NA,
-  xlab = "Seconds",
-  main = "Record Performance Timing\nsnapshot / setup / engine / results phases"
-)
-legend(
-  "bottomright",
-  legend = rownames(mat),
-  fill = c("#7A9E9F", "#4C78A8", "#D19C1D", "#B85C5C"),
-  bty = "n"
-)
-grid(nx = NA, ny = NULL, col = "gray85")
-totals <- colSums(mat)
-text(totals, bp, labels = paste0(sprintf("%.3f", totals), "s"), pos = 4, cex = 0.72)
-par(old_par)
 ```
 
 ## Equity curves
@@ -398,20 +519,31 @@ investigating in the parity tables below.
 #| fig.height: 5
 equity$ts_utc <- as.POSIXct(equity$ts_utc, tz = "UTC")
 equity <- equity[order(equity$engine, equity$ts_utc), ]
-engines <- unique(equity$engine)
-cols <- c("#2F4858", "#5B8C5A", "#B85C5C", "#7A9E9F", "#8D6A9F", "#D19C1D", "#4C6A92")
-plot(NULL, xlim = range(equity$ts_utc), ylim = range(unlist(lapply(engines, function(engine) {
-  y <- equity$equity[equity$engine == engine]
-  y / y[[1L]]
-})), na.rm = TRUE), xaxt = "n", xlab = "Month", ylab = "Equity / first observed equity", main = "Record Equity Curves\nnormalized within each engine")
-axis.POSIXct(1, at = pretty(equity$ts_utc, n = 8), format = "%Y-%m")
-grid(col = "gray88")
-for (i in seq_along(engines)) {
-  d <- equity[equity$engine == engines[[i]], ]
-  lines(d$ts_utc, d$equity / d$equity[[1L]], col = cols[((i - 1L) %% length(cols)) + 1L], lwd = 2)
-}
-legend_cols <- cols[((seq_along(engines) - 1L) %% length(cols)) + 1L]
-legend("topleft", legend = engines, col = legend_cols, lwd = 2, bty = "n", cex = 0.75)
+equity$normalized_equity <- ave(
+  equity$equity,
+  equity$engine,
+  FUN = function(x) x / x[[1L]]
+)
+print(
+  ggplot2::ggplot(
+    equity,
+    ggplot2::aes(x = ts_utc, y = normalized_equity, colour = engine)
+  ) +
+    ggplot2::geom_line(linewidth = 0.75, alpha = 0.9) +
+    ggplot2::scale_x_datetime(date_breaks = "6 months", date_labels = "%Y-%m") +
+    ggplot2::labs(
+      title = "Record equity curves",
+      subtitle = "Normalized within each engine",
+      x = "Month",
+      y = "Equity / first observed equity",
+      colour = NULL
+    ) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(
+      legend.position = "bottom",
+      axis.text.x = ggplot2::element_text(angle = 35, hjust = 1)
+    )
+)
 ```
 
 ## Peer parity
@@ -433,12 +565,29 @@ float-ordering rounding.
 
 ```{r}
 #| echo: false
+surface_idx <- match(parity$peer, surface$engine)
+status_idx <- match(parity$peer, status$engine)
+full_surface <-
+  surface$equity[surface_idx] == "available" &
+  surface$fills[surface_idx] == "available" &
+  surface$trades[surface_idx] == "available_realized_pnl"
+partial_surface <-
+  status$status[status_idx] == "DONE" &
+  !is.na(full_surface) &
+  !full_surface
+weak_return_correlation <-
+  is.finite(parity$tier1_daily_return_cor) &
+  parity$tier1_daily_return_cor < 0.99
 tier1 <- data.frame(
   Peer = parity$peer,
   `Tier 1` = ifelse(
-    parity$peer == "quantstrat",
+    partial_surface,
     "review (partial surface)",
-    ifelse(parity$attribution == "passes Tier 1 tolerance", "pass", "review")
+    ifelse(
+      weak_return_correlation,
+      "review (weak return correlation)",
+      ifelse(parity$attribution == "passes Tier 1 tolerance", "pass", "review")
+    )
   ),
   `Parity surface` = vapply(parity$peer, parity_surface, character(1)),
   `Equity corr` = fmt_corr(parity$tier1_equity_cor),
@@ -453,7 +602,19 @@ Rows in `review` carry an explicit attribution:
 
 ```{r}
 #| echo: false
-review <- parity[parity$attribution != "passes Tier 1 tolerance", c("peer", "attribution"), drop = FALSE]
+review_mask <- parity$attribution != "passes Tier 1 tolerance" |
+  partial_surface |
+  weak_return_correlation
+review <- parity[review_mask, c("peer", "attribution"), drop = FALSE]
+review_idx <- match(review$peer, parity$peer)
+review_partial <- partial_surface[review_idx]
+review_weak <- weak_return_correlation[review_idx] & !review_partial
+review$attribution[review_partial] <-
+  "partial surface: no comparable realized-trade P&L"
+review$attribution[review_weak] <- sprintf(
+  "equity-level tolerance passes, but daily-return correlation is %.6f",
+  parity$tier1_daily_return_cor[review_idx[review_weak]]
+)
 names(review) <- c("Peer", "Review attribution")
 if (nrow(review) == 0L) {
   review <- data.frame(Peer = "(none)", `Review attribution` = "All peer rows passed Tier 1 tolerance.", check.names = FALSE)
@@ -465,28 +626,50 @@ knitr::kable(review, row.names = FALSE)
 #| echo: false
 #| fig.width: 8
 #| fig.height: 4.5
-old_par <- par(no.readonly = TRUE)
-par(mar = c(5, 12, 3, 2))
 div <- 100 * as.numeric(parity$tier1_max_single_bar_divergence_pct)
-names(div) <- parity$peer
 plot_div <- pmax(div, 1e-12)
 ord <- order(plot_div)
-plot_div <- plot_div[ord]
-labels <- ifelse(div[ord] == 0, "0%", fmt_pct(div[ord] / 100, digits = 4))
-plot(
-  log10(plot_div),
-  seq_along(plot_div),
-  yaxt = "n",
-  ylab = "",
-  xlab = "log10(max divergence percent); zeros shown at display floor",
-  pch = 19,
-  col = ifelse(parity$attribution[ord] == "passes Tier 1 tolerance", "#5B8C5A", "#B85C5C"),
-  main = "Tier 1 Max Divergence vs ledgr Canonical\nlog scale so tiny LEAN/zipline float differences remain visible"
+divergence_plot <- data.frame(
+  peer = parity$peer[ord],
+  display_value = plot_div[ord],
+  label = ifelse(div[ord] == 0, "0%", fmt_pct(div[ord] / 100, digits = 4)),
+  status = ifelse(
+    parity$attribution[ord] == "passes Tier 1 tolerance",
+    "Pass",
+    "Review"
+  ),
+  stringsAsFactors = FALSE
 )
-axis(2, at = seq_along(plot_div), labels = names(plot_div), las = 1)
-grid(col = "gray85")
-text(log10(plot_div), seq_along(plot_div), labels = paste0(" ", labels), pos = 4, cex = 0.8)
-par(old_par)
+divergence_plot$peer <- factor(
+  divergence_plot$peer,
+  levels = divergence_plot$peer
+)
+print(
+  ggplot2::ggplot(
+    divergence_plot,
+    ggplot2::aes(x = display_value, y = peer, colour = status)
+  ) +
+    ggplot2::geom_point(size = 2.4) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = label),
+      hjust = -0.12,
+      size = 3,
+      show.legend = FALSE
+    ) +
+    ggplot2::scale_x_log10(
+      expand = ggplot2::expansion(mult = c(0.03, 0.28))
+    ) +
+    ggplot2::scale_colour_manual(values = c("Pass" = "#5B8C5A", "Review" = "#B85C5C")) +
+    ggplot2::labs(
+      title = "Tier 1 max divergence vs ledgr canonical",
+      subtitle = "Log scale keeps tiny and zero results visible",
+      x = "Max divergence percent; zeros shown at display floor",
+      y = NULL,
+      colour = NULL
+    ) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(legend.position = "bottom")
+)
 ```
 
 ### Tier 2: derived top-line metrics
@@ -528,7 +711,11 @@ sources.
 #| echo: false
 div_table <- divergence_summary
 pct_cols <- grep("^pct_attributable_", names(div_table), value = TRUE)
-for (col in pct_cols) div_table[[col]] <- fmt_pct(div_table[[col]], digits = 4)
+zero_divergence <- div_table$total_abs_divergence == 0
+for (col in pct_cols) {
+  div_table[[col]] <- fmt_pct(div_table[[col]], digits = 4)
+  div_table[[col]][zero_divergence] <- "n/a (zero divergence)"
+}
 names(div_table) <- c(
   "Peer",
   "Total abs divergence",
@@ -570,25 +757,25 @@ if (isTRUE(params$run_harness)) {
 Smoke command:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
 ```
 
 Record command:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
 ```
 
 Record command with the opt-in B2 row:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
 ```
 
 Current-surface cost/risk-chain command:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6
 ```
 
 The harness writes ignored local artifacts under `dev/bench/results/`:
@@ -603,9 +790,9 @@ parity history JSON under `dev/bench/results/parity_history/`.
 | Row | Status policy |
 | --- | --- |
 | ledgr canonical TTR | Required; errors if `TTR` is missing. |
-| ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
-| ledgr current-surface cost/risk ephemeral | Optional internal measurement row; enabled with `--engine-set ledgr-cost`; runs zero-cost/no-risk and public cost/risk-chain rows on the same fixture and seed. |
-| ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral, uses the same closed enum and memory-handler dispatch as the public `compiled_accounting_model = "spot_fifo"` sweep opt-in, and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
+| ledgr canonical TTR public sweep | Required; calls public `ledgr_sweep()` with one candidate and retained returns/trades. Full equity/fill parity is checked afterward by an untimed internal oracle. |
+| ledgr current-surface cost/risk sweep | Optional; enabled with `--engine-set ledgr-cost`; measures public cost/risk-chain sweeps on the same fixture and seed. The legacy resolver row remains an internal diagnostic. |
+| ledgr B2 spot-FIFO public sweep | Optional; enabled with `--compiled-accounting-model spot_fifo`; calls the same public one-candidate sweep with the closed compiled selector and must match the canonical sweep before timing is interpreted. |
 | ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
 | quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
 | Backtrader | Managed through `dev/bench/peer_benchmark/python/backtrader/` and run through `python -m uv`. |
@@ -621,35 +808,46 @@ Each DONE row in the performance table is split into four measured
 phases:
 
 - **Snapshot preparation**: reusable native data or bundle preparation.
-- **Experiment setup**: construction repeated for each experiment.
+- **Setup / orchestration** (`experiment_setup_sec`): construction and other
+  non-engine work repeated for each experiment or public workflow call.
 - **Engine**: from ready-to-iterate until strategy execution completes
   and engine state is final.
-- **Results**: from final engine state until canonical equity, fills,
-  and trades are materialized for this harness.
+- **Results**: from final engine state through the result surface declared by
+  the row. Public sweep rows retain and read returns/trades; their richer
+  parity-oracle surfaces are generated outside the reported clock.
 
 The four phase columns must reconcile to the cold clock within 0.5 seconds or
-the harness aborts. The warm clock is experiment setup plus engine plus results.
+the harness aborts. The warm clock is setup/orchestration plus engine plus
+results.
+
+The internal phase boundary is not identical across rows. Durable ledgr times
+the complete public `ledgr_run()` call as engine work. Public sweep rows expose
+candidate fold and inline-results clocks; their remaining public-call wall is
+recorded as setup/orchestration. The latter includes warm snapshot reads,
+matrix/view preparation and retention assembly, not merely creation of the
+experiment object. Cold and warm totals are the cross-row comparison surfaces.
+The components explain each row and must not be compared as identical internal
+operations.
 LEAN is the one explicit exception: when the local CLI runs, the whole CLI
 subprocess is bucketed as engine time because preparation, execution, and
 extraction are not separable from outside the CLI.
 
-| Engine | Ingestion | Engine | Results |
-| --- | --- | --- | --- |
-| `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
-| `ledgr_ttr_canonical_ephemeral_with_cost_risk` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `ledgr_cost_chain(spread_bps=5, fixed_fee=1)` and `ledgr_risk_chain(long_only, max_weight=0.20)` | event-stream equity/fills canonical materialization |
-| `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `compiled_accounting_model = "spot_fifo"` on the memory handler | event-stream equity/fills canonical materialization |
-| `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
-| `backtrader` | `read.csv`, `PandasData` construction, `cerebro.adddata` loop | `cerebro.run()` | CSV writes from in-memory observer/fill rows |
-| `zipline-reloaded-full` | `read.csv`, temporary csvdir creation, bundle registration and ingest | `run_algorithm()` | performance-frame transaction/equity extraction plus CSV writes |
-| `LEAN` | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
+| Engine | Snapshot preparation | Setup / orchestration | Engine | Results |
+| --- | --- | --- | --- | --- |
+| `ledgr_ttr_canonical` | CSV read, timestamp normalization, and sealed DuckDB snapshot | experiment and run identity | `ledgr_run()` | `ledgr_results()` plus canonical materialization |
+| `ledgr_ttr_canonical_sweep` | CSV read, timestamp normalization, and sealed DuckDB snapshot | experiment, one-candidate grid, and public sweep orchestration outside its candidate clocks | public `ledgr_sweep()` candidate fold | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_ttr_canonical_sweep_with_cost_risk` | Same public sweep boundary | experiment, one-candidate grid, cost model, risk chain, and sweep orchestration | public sweep with cost and risk chains | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_ttr_compiled_spot_fifo_sweep` | Same public sweep boundary | experiment, one-candidate grid, compiled-model selection, and sweep orchestration | public sweep with `compiled_accounting_model = "spot_fifo"` | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_builtin_sma` | Same durable ledgr boundary | experiment with built-in SMA features | `ledgr_run()` | `ledgr_results()` plus canonical materialization |
+| `quantstrat` | CSV read, xts construction, and global data assignment | portfolio, account, orders, and strategy | `applyStrategy()` plus account updates | equity and transaction extraction plus canonical writes |
+| `backtrader` | CSV read and grouped pandas bars | feeds, broker, and strategy construction | `cerebro.run()` | canonical equity, fill, and trade writes |
+| `zipline-reloaded-full` | CSV read, csvdir creation, bundle registration, and ingest | algorithm callbacks and calendar | `run_algorithm()` | performance-frame extraction plus canonical writes |
+| `LEAN` | Not separable from outside the CLI | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
 
-Boundary ambiguity decisions: quantstrat initialization is ingestion
-because it builds native portfolio/order state before strategy
-iteration; zipline bundle registration/ingest is ingestion because it
-creates the native bundle consumed by `run_algorithm()`; LEAN CLI phases
-are unavailable from outside the CLI.
+Boundary ambiguity decisions: quantstrat data/xts preparation is reusable while
+portfolio, account, order, and strategy construction is experiment-specific;
+zipline bundle registration/ingest is reusable native-data preparation; LEAN
+CLI phases are unavailable from outside the CLI.
 
 ```{r}
 #| echo: false
@@ -685,7 +883,7 @@ are vector operations rather than a per-instrument R loop.
 | Label | Meaning |
 | --- | --- |
 | `Tier 1` | Per-bar equity/return parity status. `pass` means the row passed the current tolerance; `review` means the row has a documented divergence attribution. |
-| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness currently gets account equity and transaction count, not comparable fills or realized trade P&L. |
+| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness gets account equity, transactions, and a trade count, but not comparable realized trade P&L. |
 | `Equity corr` | Correlation between peer equity and ledgr canonical equity. Closer to 1 is better. |
 | `Max div` | Largest single-bar equity difference versus ledgr canonical, shown as a percent of ledgr equity. Lower is better. |
 | `Return corr` | Correlation between one-bar equity changes. Closer to 1 is better. |
@@ -699,9 +897,12 @@ are vector operations rather than a per-instrument R loop.
 ```{r}
 #| echo: false
 status_table <- status
-names(status_table) <- c("Engine", "Status", "Wall seconds", "Ingestion seconds", "Engine seconds", "Results seconds", "Reason")
-status_table[["Wall seconds"]] <- fmt_sec(status_table[["Wall seconds"]])
-status_table[["Reason"]] <- ifelse(is.na(status_table[["Reason"]]), "", status_table[["Reason"]])
+status_table <- data.frame(
+  Engine = status_table$engine,
+  Status = status_table$status,
+  Reason = ifelse(is.na(status_table$reason), "", status_table$reason),
+  check.names = FALSE
+)
 status_table[["Reason"]] <- ifelse(
   status_table[["Engine"]] == "LEAN" & status_table[["Status"]] == "UNAVAILABLE",
   "LEAN CLI unavailable: lean backtest rejected the temporary project root; local lean init organization setup is required.",
@@ -729,6 +930,29 @@ data.frame(
   knitr::kable()
 ```
 
+### Isolated quantstrat environment
+
+```{r}
+#| echo: false
+quantstrat_packages <- c(
+  "quantstrat", "blotter", "FinancialInstrument", "xts", "TTR"
+)
+metadata_text <- function(x) {
+  if (is.null(x) || !length(x)) "" else as.character(x[[1L]])
+}
+quantstrat_table <- do.call(rbind, lapply(quantstrat_packages, function(pkg) {
+  metadata <- quantstrat_env$packages[[pkg]]
+  data.frame(
+    Package = pkg,
+    Version = metadata_text(metadata$version),
+    `GitHub SHA` = metadata_text(metadata$remote_sha),
+    Library = metadata_text(metadata$library),
+    check.names = FALSE
+  )
+}))
+knitr::kable(quantstrat_table, row.names = FALSE)
+```
+
 ## Caveats
 
 ### Same-host scope
@@ -740,7 +964,8 @@ benchmark claim.
 
 ### Interpreting the B2 row
 
-The B2 row is interpreted only when measured on the same peer fixture
+The B2 row is interpreted only when measured through the public one-candidate
+sweep on the same peer fixture
 as the external engines: same shared bars CSV, same fast/slow SMA
 settings, same seed. It is also an opt-in compiled accelerator
 measurement, not a default ledgr claim. ledgr's default execution path
@@ -751,7 +976,7 @@ workload-grid B2 rows, which use a different fixture.
 
 VectorBT is excluded from the event-driven peer table because it is a
 vectorized engine and a different paradigm. Published external LEAN and
-Ziplime reference rows remain context-only. The same-host LEAN row is
+Zipline reference rows remain context-only. The same-host LEAN row is
 driven only through the real LEAN CLI; if that CLI is not usable
 locally, the row is marked unavailable.
 

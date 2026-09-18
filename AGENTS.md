@@ -70,8 +70,8 @@ active v0.2.0.1 packet):
 - The active v0.2.0.1 packet covers availability seams, seal validators,
   resumed-run repair, linear event writes, prepared valuation, and benchmark
   closeout. LDG-2719 through LDG-2744 are in the active packet; Batches 0-9
-  are complete, Batch 10 is diagnostic history, the new ticket cut awaits
-  independent review, and Batches 11-15 are pending. The availability
+  are complete, Batch 10 is diagnostic history, Batch 11 is implemented and
+  awaits independent review, and Batches 12-15 are pending. The availability
   prerequisite selected `NEITHER`; no availability-ingestion optimization is
   authorized. Old paths ship in no form, the public
   fact resolver stays independent, and no speed claim is authorized.

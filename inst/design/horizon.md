@@ -36,7 +36,8 @@ correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, corrected public peer boundaries, dense timestamp
 validation, within-chunk hash formatting, and fresh separated benchmark
 closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batches 11 through 15 are pending. The prerequisite selected `NEITHER`, so no
+Batch 11 is implemented and awaiting independent review; Batches 12 through
+15 are pending. The prerequisite selected `NEITHER`, so no
 availability-ingestion optimization enters the release. Batch 15 requires
 Batch 14 review and an explicit maintainer go-ahead.
 Spot-crypto planning follows that
@@ -171,6 +172,52 @@ debugging and rich single-evaluation inspection, not on making a benchmark row
 faster. Until it exists, peer-comparable memory timing uses the public
 one-candidate `ledgr_sweep()` workflow; private fold timings remain internal
 diagnostics. This entry is non-binding and is not part of v0.2.0.1.
+
+### 2026-09-18 [execution] Compiled execution RFC and proof architecture
+
+Stop iterating on compiled spot-FIFO inside v0.2.0.1. The current evidence is
+strong enough to justify a focused post-release RFC, but not to widen the
+shipping scope by inspection. At the corrected public sweep boundary, compiled
+spot-FIFO removes about half of canonical engine time on the registered fixture.
+That result combines native FIFO accounting, batch processing, and compiled
+event appends; it is not a measurement of a pure R-language tax. The private
+record measured a 14.42-second compiled engine phase, while the corrected public
+sweep record derives 14.78 seconds from 30.38 seconds warm wall less 15.52
+seconds of setup. Keep those clocks labelled rather than merging them.
+
+The observed record produced exact equity on that fixture, but the binding
+contract is narrower: fills and realized trades compare exactly, while floating
+equity uses the already registered relative `all.equal()` tolerance of `1e-8`.
+Observed exactness must not be rewritten as a stronger contract. The maintenance
+surface is also broader than the 458-line C++ kernel: roughly 705 code lines
+include R-side packing and dispatch plus generated bindings, with enum,
+validation, and dispatch work threaded through eleven R files and assertions
+across eight test files.
+
+The future RFC should use execution combinations as a risk map, not require a
+full Cartesian benchmark for every release. A proportionate proof stack is:
+adversarial differential kernel traces; separate memory and durable sink tests
+for atomicity and rollback; small dense and availability workflow witnesses;
+representative cost and risk cases; and one or two full-scale performance
+records. This preserves strictness while letting semantic tests, integration
+witnesses, and empirical measurements do different jobs.
+
+The RFC should examine availability-aware compiled execution, a durable batch
+sink, and only then any default-promotion question. Ordinary order types resolve
+upstream into the same fill contract. The more important boundaries are
+settlement, borrow and financing, multiple currencies, corporate actions, and
+alternative lot-selection or tax policies, because those can change accounting
+semantics. Availability and durable support require their own evidence; neither
+is unlocked by code inspection or the current benchmark.
+
+Whether canonical R remains the normative truth is deliberately not decided in
+this entry. Reference authority, runtime defaults, permitted divergence, and
+independent differential verification belong to the scheduled post-release
+governance review. The accompanying test-suite audit must classify compiled
+guarantees within its bounded developer, comprehensive correctness, and heavy
+evidence lanes and may route a focused testing RFC and later refactorings. The
+compiled-execution RFC consumes those decisions. Nothing here changes Batch 11
+or any v0.2.0.1 release gate.
 
 ### 2026-09-15 [infrastructure] Containerized reproducible benchmark laboratory
 
