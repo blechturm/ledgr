@@ -1437,7 +1437,7 @@ scope: scaling-integration-and-retirement
 Priority: P0
 Effort: M
 Dependencies: LDG-2740
-Status: Review Pending
+Status: Complete After Review
 
 ### Description
 
@@ -1503,7 +1503,7 @@ scope: public-method-and-oracle-freeze
 Priority: P0
 Effort: L
 Dependencies: LDG-2741
-Status: Pending
+Status: Complete After Review
 
 ### Description
 

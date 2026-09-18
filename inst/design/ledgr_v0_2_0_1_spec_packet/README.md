@@ -3,8 +3,8 @@
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is diagnostic history and does not satisfy final evidence. The
 trusted-timestamp and benchmark-boundary amendment ticket cut passed
-independent review. Batch 11 is implemented and pending independent review;
-Batches 12 through 15 are pending.
+independent review. Batches 11 and 12 are complete after review; Batches 13
+through 15 are pending.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
 The maintainer accepted the trusted-timestamp and benchmark-boundary amendment

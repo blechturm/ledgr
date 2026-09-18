@@ -384,7 +384,7 @@ tickets:
 
   - id: "LDG-2741"
     title: "Freeze public benchmark boundary and optimization oracles"
-    status: "review_pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2740"]
@@ -402,7 +402,7 @@ tickets:
 
   - id: "LDG-2742"
     title: "Dense static-coverage timestamp validation"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2741"]

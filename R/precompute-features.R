@@ -326,7 +326,26 @@ ledgr_precompute_validate_static_coverage <- function(bars_by_id, universe) {
 }
 
 ledgr_precompute_ts_key <- function(x) {
-  vapply(as.POSIXct(x, tz = "UTC"), ledgr_normalize_ts_utc, character(1))
+  instants <- as.numeric(as.POSIXct(x, tz = "UTC"))
+  if (anyNA(instants) || any(!is.finite(instants))) {
+    rlang::abort(
+      paste(
+        "Dense static-coverage timestamps must be non-missing finite",
+        "UTC instants."
+      ),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  if (any(instants != trunc(instants))) {
+    rlang::abort(
+      paste(
+        "Dense static-coverage timestamps must be whole-second UTC",
+        "instants; sub-second values are unsupported."
+      ),
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  instants
 }
 
 ledgr_precompute_resolve_grid <- function(exp, param_grid) {

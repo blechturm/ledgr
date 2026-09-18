@@ -1,0 +1,3 @@
+"engine","current_validator_median_sec","candidate_validator_median_sec","validator_ratio","current_warm_median_sec","candidate_warm_median_sec","improvement_sec","current_spread_sec","current_max_peak_ws_mib","candidate_max_peak_ws_mib","peak_ws_ratio","passed"
+"canonical",14.78,0.0199999999999996,0.00135317997293637,48.31,34.11,14.2,0.289999999999992,852.86328125,949.66796875,1.11350551680232,TRUE
+"compiled",14.64,0.0100000000000016,0.000683060109289724,32.28,17.43,14.85,0.329999999999998,931.67578125,947.71484375,1.01721528328071,TRUE

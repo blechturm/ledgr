@@ -36,8 +36,8 @@ correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, corrected public peer boundaries, dense timestamp
 validation, within-chunk hash formatting, and fresh separated benchmark
 closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batch 11 is implemented and awaiting independent review; Batches 12 through
-15 are pending. The prerequisite selected `NEITHER`, so no
+Batches 11 and 12 are complete after review; Batches 13 through 15 are
+pending. The prerequisite selected `NEITHER`, so no
 availability-ingestion optimization enters the release. Batch 15 requires
 Batch 14 review and an explicit maintainer go-ahead.
 Spot-crypto planning follows that
@@ -214,8 +214,11 @@ Whether canonical R remains the normative truth is deliberately not decided in
 this entry. Reference authority, runtime defaults, permitted divergence, and
 independent differential verification belong to the scheduled post-release
 governance review. The accompanying test-suite audit must classify compiled
-guarantees within its bounded developer, comprehensive correctness, and heavy
-evidence lanes and may route a focused testing RFC and later refactorings. The
+guarantees within its bounded developer, comprehensive correctness, heavy
+evidence, and CRAN submission lanes and may route a focused testing RFC and
+later refactorings. Compiled sources make the CRAN lane decision material for
+this case, because platform coverage and check runtime constrain what its
+guarantees can prove on CRAN machines. The
 compiled-execution RFC consumes those decisions. Nothing here changes Batch 11
 or any v0.2.0.1 release gate.
 

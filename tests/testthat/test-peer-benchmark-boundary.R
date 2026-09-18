@@ -27,7 +27,7 @@ testthat::test_that("Stage L freezes prerequisite and optimization oracles", {
   )
   testthat::expect_identical(
     ledgr_precompute_ts_key(axis),
-    ledgr_stage_l_dense_ts_key_oracle(axis)
+    as.numeric(axis)
   )
   testthat::expect_identical(
     ledgr_precompute_validate_static_coverage(bars, c("A", "B")),

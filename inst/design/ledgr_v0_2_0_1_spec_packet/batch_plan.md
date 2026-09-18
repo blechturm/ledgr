@@ -3,8 +3,8 @@
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
 Batch 10 is retained as diagnostic history and does not satisfy final
 evidence. The timestamp/benchmark amendment ticket cut passed independent
-review. Batch 11 is implemented and pending independent review; Batches 12
-through 15 are pending.
+review. Batches 11 and 12 are complete after review; Batches 13 through 15 are
+pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -465,7 +465,7 @@ used as release claims.
 
 ## Batch 11 - Public Boundary And Oracle Freeze
 
-Status: Implemented; pending independent review.
+Status: Complete After Review.
 
 Tickets:
 
@@ -495,7 +495,7 @@ Exit criteria:
 
 ## Batch 12 - Dense Timestamp Validation
 
-Status: Pending.
+Status: Complete After Review.
 
 Tickets:
 
