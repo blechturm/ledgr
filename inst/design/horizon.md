@@ -29,15 +29,16 @@ an architecture note, or a spec packet.
 **Current packet note (2026-09-17):** v0.2.0.0 is complete after maintainer
 review and local release gates. The v0.2.0.1 packet is active: its spec was
 accepted on 2026-09-16, its hot-path complexity amendment was accepted on
-2026-09-17, and tickets LDG-2719 through LDG-2740 are cut for
+2026-09-17, and the timestamp/benchmark amendment was accepted 2026-09-18.
+Tickets LDG-2719 through LDG-2744 are cut and await ticket-cut review for
 availability hot- and cold-path productionization, the seal-validator
 correction, the resumed-run equity-prefix repair, linear event writes, prepared
-fold-time valuation, and fresh separated benchmark closeouts. Batches 0 through
-8 are complete after review and maintainer acceptance; Batch 9 is implemented
-and review pending, and Batches 10 and 11 are pending. The amendment ticket
-cut was independently accepted before implementation. Batch 10 is the final
-benchmark checkpoint; Batch 11
-requires an explicit maintainer go-ahead after those results are reviewed.
+fold-time valuation, corrected public peer boundaries, dense timestamp
+validation, within-chunk hash formatting, and fresh separated benchmark
+closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
+Batches 11 through 15 are pending. The prerequisite selected `NEITHER`, so no
+availability-ingestion optimization enters the release. Batch 15 requires
+Batch 14 review and an explicit maintainer go-ahead.
 Spot-crypto planning follows that
 release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
 contracts, or an accepted RFC promotes them.
@@ -145,6 +146,32 @@ RFC, but measured payoff does not waive semantic or persistence gates. The
 current 55-to-62-second figures are orientation only; v0.2.0.1 Batch 10 measures
 the accepted source without consuming this entry.
 
+### 2026-09-18 [ux] Public single-evaluation memory surface
+
+The benchmark-boundary review exposed a product-level gap rather than a missing
+engine. `ledgr_sweep()` already runs candidates through the shared fold with the
+memory output handler, but its public result is intentionally compact and
+candidate-oriented. `ledgr_run()` supplies rich result views only by creating a
+durable, reopenable run. There is no public surface for evaluating one strategy
+once in memory and receiving rich equity, fills, trades, metrics, diagnostics,
+and completion evidence without creating a durable run.
+
+A future RFC should decide whether that workflow merits an explicit ephemeral
+evaluation surface, provisionally described as `ledgr_evaluate()` rather than a
+memory mode on `ledgr_run()`. The distinction matters: a durable run is an
+immutable, reopenable and resumable evidence artifact; an ephemeral evaluation
+would be an interactive research object. It may carry snapshot, configuration,
+strategy, seed and engine-version identity, but it must not claim durable
+archive, resume or reopen semantics. Promotion should reproduce it through
+`ledgr_run()` rather than blessing mutable memory state after the fact.
+
+Any such surface must reuse the existing sweep/fold implementation and must not
+create a second execution engine. Its case depends on real research ergonomics,
+debugging and rich single-evaluation inspection, not on making a benchmark row
+faster. Until it exists, peer-comparable memory timing uses the public
+one-candidate `ledgr_sweep()` workflow; private fold timings remain internal
+diagnostics. This entry is non-binding and is not part of v0.2.0.1.
+
 ### 2026-09-15 [infrastructure] Containerized reproducible benchmark laboratory
 
 After the v0.2.0.1 benchmark closeout stabilizes the workload definitions and
@@ -170,6 +197,25 @@ statement of one strategy and accounting workflow, emit canonical outputs for
 parity or documented-difference checks, and use the same cold-versus-warm phase
 boundaries. Comparisons must disclose semantic work that is not shared rather
 than treating unlike provenance, persistence, or accounting guarantees as equal.
+
+One first-party investigation belongs in that laboratory. The v0.2.0.1 Batch
+10 record measured the durable TTR-backed SMA row at 78.21 seconds cold and
+49.33 seconds in the engine, while the otherwise matched built-in SMA row took
+70.59 and 43.19 seconds. Their 1,260 equity rows, 68,201 fills, and trade record
+are exactly identical after normalizing the engine label. This is an
+interesting observation, not yet an optimization claim: the peer rows ran once
+in a fixed order, and an isolated 1,000-call comparison of the two SMA series
+primitives explained only about 0.04 seconds rather than the 6.14-second engine
+gap.
+
+The future laboratory should therefore include an order-controlled indicator
+path experiment over one reused sealed snapshot. It should compare the native
+`ledgr_ind_sma()` path, the benchmark's TTR wrapper, and public
+`ledgr_ind_ttr("SMA")`; clear feature caches between arms; alternate or randomize
+arm order; repeat in fresh child processes; and separate feature hydration and
+preflight from the fold clock. No package optimization, default change, or
+performance claim follows unless the difference reproduces and the responsible
+mechanism is identified.
 
 Docker can reproduce software environments but cannot make unlike hardware or
 contended hosts comparable. Regression interpretation should therefore prefer

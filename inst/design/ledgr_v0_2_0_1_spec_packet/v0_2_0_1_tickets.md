@@ -1,8 +1,8 @@
 # ledgr v0.2.0.1 Tickets
 
 Version: v0.2.0.1
-Date: 2026-09-17
-Total Tickets: 22
+Date: 2026-09-18
+Total Tickets: 26
 
 ## Ticket Organization
 
@@ -17,9 +17,17 @@ linear event-buffer writes and prepared fold-time availability valuation.
 The amendment ticket cut was independently accepted. LDG-2736 through
 LDG-2740 are Complete After Review.
 
+On 2026-09-18 the maintainer accepted the reviewed trusted-timestamp and
+benchmark-boundary amendment. Its required pre-cut probe selected `NEITHER`:
+all ten semantic comparisons were exact, but the session-close candidate's
+0.763561 median ratio missed the preregistered 0.20 ceiling. Consequently no
+availability-ingestion source change is ticketed. LDG-2741 through LDG-2744
+cover only the corrected public benchmark boundary, dense validation,
+byte-identical snapshot-hash deduplication, and proof-template finalization.
+
 Ticket IDs begin at LDG-2719 after the v0.2.0.0 packet. LDG-2733 through
 LDG-2735 retain their existing tail identities; amendment tickets continue at
-LDG-2736 through LDG-2740 and become prerequisites of those tail IDs.
+LDG-2736 through LDG-2744 and become prerequisites of those tail IDs.
 
 The release spine follows the spec's Section 6 stages:
 
@@ -34,16 +42,21 @@ LDG-2719 packet alignment (stage A)
   -> LDG-2731..2732 benchmark phases and manuals (stage G)
   -> LDG-2736..2738 linear event buffers (amendment stage H)
   -> LDG-2739..2740 prepared valuation and combined proof (amendment stage I)
-  -> LDG-2733..2734 fresh benchmark records and maintainer decision (stage J)
-  -> LDG-2735 release gate (stage K)
+  -> LDG-2741 corrected boundaries and frozen oracles (stage L)
+  -> LDG-2742 dense timestamp validation (stage M)
+  -> LDG-2743 snapshot-hash timestamp deduplication (stage N; NEITHER branch)
+  -> LDG-2744 proof-template finalization (stage O)
+  -> LDG-2733..2734 final accepted-source records (stage O)
+  -> LDG-2735 release gate (stage P)
 ```
 
 Ticket dependencies are the hard readiness gate. Batch order is the default
 review sequence. Stages E and F are independent of the warm seams and may run
 beside Batches 2 to 4; Stage G follows the production and correctness stages
-and amendment Stages H and I follow Stage G. Stage J follows both, and the
-hard edges below enforce that order. Stage K follows the independently
-reviewed Stage J records and an explicit maintainer go-ahead.
+and amendment Stages H and I follow Stage G. The provisional Stage J record is
+diagnostic history. Stages L through O follow it in order, and the hard edges
+below enforce that sequence. Stage P follows the independently reviewed Stage
+O records and an explicit maintainer go-ahead.
 Every batch keeps its own independent review stop and no benchmark number can
 unlock a failed correctness stage.
 
@@ -64,8 +77,9 @@ unlock a failed correctness stage.
 2721 -> 2728 -> {2729, 2730}
 {2726, 2727, 2729, 2730} -> 2731 -> 2732
 2732 -> 2736 -> 2737 -> 2738 -> 2739 -> 2740
-2740 -> {2733, 2734}
-{2719..2734, 2736..2740} -> 2735
+2740 -> 2741 -> 2742 -> 2743 -> 2744
+2744 -> {2733, 2734}
+{2719..2734, 2736..2744} -> 2735
 ```
 
 ## Gate Ownership
@@ -110,6 +124,20 @@ unlock a failed correctness stage.
 | Amendment 9 explicit non-goals and later-work routing | LDG-2735 |
 | Amendment 10 release gates | LDG-2735 (evidence from LDG-2736 through LDG-2740, LDG-2733, and LDG-2734) |
 | Amendment 11 source basis and revision record | LDG-2735 |
+| Timestamp amendment 1 authority and narrow supersession | LDG-2741 (method boundary), LDG-2735 (final reconciliation) |
+| Timestamp amendment 2 exact scope | LDG-2741, LDG-2742, LDG-2743, LDG-2744 |
+| Timestamp amendment 3 public benchmark boundary and parity authority | LDG-2741, LDG-2734 |
+| Timestamp amendment 4 dense static-coverage timestamp validation | LDG-2742 |
+| Timestamp amendment 5.1 prerequisite and selected `NEITHER` branch | prerequisite commit `9686229`, LDG-2741, LDG-2743 |
+| Timestamp amendment 5.2-5.3 availability semantics and gates | LDG-2743 (prove no source change under `NEITHER`) |
+| Timestamp amendment 5.4 snapshot-hash timestamp deduplication | LDG-2743, LDG-2733 (final-source paired record) |
+| Timestamp amendment 6 exact-parity proof template | LDG-2744 |
+| Timestamp amendment 7 sequencing and review stops | LDG-2741, LDG-2742, LDG-2743, LDG-2744, LDG-2733, LDG-2734, LDG-2735 |
+| Timestamp amendment 8 final records and permitted claims | LDG-2733, LDG-2734, LDG-2735 |
+| Timestamp amendment 9 non-goals | LDG-2735 |
+| Timestamp amendment 10 compatibility and source guards | LDG-2741, LDG-2742, LDG-2743, LDG-2734, LDG-2735 |
+| Timestamp amendment 11 review and release requirements | LDG-2742, LDG-2743, LDG-2733, LDG-2734, LDG-2735 |
+| Timestamp amendment 12 source basis and revision record | LDG-2735 |
 
 ## LDG-2719 - Packet Alignment And Ticket Cut
 
@@ -839,33 +867,40 @@ surface: maintainer-manuals
 scope: post-productionization-refresh
 ```
 
-## LDG-2733 - Availability Warm And Cold Benchmark Records
+## LDG-2733 - Final Availability, Cold, Hash, And Profile Records
 
 Priority: P0
 Effort: M
-Dependencies: LDG-2740
+Dependencies: LDG-2744
 Status: Pending
 
 ### Description
 
-Regenerate the stage J availability warm record and cold seal record on the
-registered fixture from accepted final source. The records produced at
-`6b09a1b` are provisional diagnostic evidence and cannot satisfy this ticket.
-This is a measurement ticket, not release closeout.
+Regenerate the Stage O availability warm, cold seal, snapshot-hash, and final
+profile records from one exact accepted-source commit. Records produced at
+`6b09a1b`, `400a3e5`, or from the corrected working tree are diagnostic
+history and cannot satisfy this ticket. This is a measurement ticket, not
+release closeout.
 
 ### Tasks
 
-- Warm record: one warm-up and at least three quiet-host measured runs of the
-  production path; median and spread of wall around the warm experiment and
-  externally sampled peak working set; a host comparable to the reviewed block
-  spike or the gate stays open.
-- Use a new record prefix from the accepted post-LDG-2740 source. Do not
-  relabel, overwrite, or promote the provisional `6b09a1b` record.
+- Warm record: one warm-up and at least three quiet-host measured public
+  production runs; median and spread of wall around the warm experiment and
+  externally sampled peak working set; a host comparable to the reviewed
+  block spike or the gate stays open.
+- Use new record prefixes from one accepted post-LDG-2744 source commit. Do
+  not relabel, overwrite, or promote any earlier record.
 - Cite the LDG-2725 pre-retirement pair by prefix as comparison context; do
   not restore the retired path.
 - Cold record: the registered full seal once without the profiler, plus a
   separate profiled or sampled run only if attribution is needed; phase times
   and peak working set.
+- Rerun the Section 5.4 paired snapshot-hash record at the 630,000-bar dense
+  shape with one warm-up and three measured hashes per arm. Require byte and
+  hash identity, the formatter-count gate, the 0.80 wall gate, and the
+  15-percent peak-memory gate.
+- Run the final profiler and report its largest lane without turning a sample
+  share into a wall-time partition.
 - Report fixture shape, source commit, versions, host metadata, warm-up count,
   repetitions, parity status, and the largest profiled lane.
 - Stop after the record is written. Review it with the LDG-2734 result and
@@ -875,8 +910,12 @@ This is a measurement ticket, not release closeout.
 
 - Production median at most 60 seconds and every measured peak at most
   1,024 MiB on a comparable host.
-- The seal completes with the pairwise validator absent; the 60-to-90-second
-  estimate stays a forecast.
+- The seal completes with the pairwise validator absent; the historical
+  60-to-90-second estimate is not promoted over the measurement.
+- Every snapshot-hash byte and stored hash is exact, and all Section 5.4
+  structural, wall, and peak-memory gates pass.
+- The availability-ingestion sources remain unchanged under the recorded
+  `NEITHER` branch.
 - Both records are cited by exact local prefix.
 - The reviewed record is available to the maintainer before any release-gate
   work starts; this ticket does not itself authorize closeout.
@@ -885,42 +924,44 @@ This is a measurement ticket, not release closeout.
 
 - Availability warm record
 - Cold seal record
+- Snapshot-hash paired record
+- Final profile
 
 ### Source Reference
 
-- Spec Sections 7.1, 7.2; accepted amendment Sections 7 stage J, 8
+- Spec Sections 7.1, 7.2; timestamp amendment Sections 5.4, 7 stage O, 8
 
 ### Classification
 
 ```yaml
 type: benchmark
-surface: availability-closeout
-scope: warm-and-cold-records
+surface: final-performance-evidence
+scope: availability-cold-hash-profile-records
 ```
 
 ## LDG-2734 - Peer Benchmark Record
 
 Priority: P1
 Effort: M
-Dependencies: LDG-2740
+Dependencies: LDG-2744
 Status: Pending
 
 ### Description
 
-Run the explicit standard peer workload after the package code, phase split,
-and manuals are final, record it without a ranking claim, and carry the record
-into the peer README and tracked report. The record first run from `6b09a1b`
-is provisional and cannot satisfy this ticket. This is a measurement ticket,
-not release closeout. The final record includes ledgr's compiled spot-FIFO core
-as its own parity-gated row and a completed quantstrat row.
+Run the explicit standard peer workload after package code, benchmark method,
+and manuals are final. The two memory rows must use public one-candidate
+`ledgr_sweep()` calls under method
+`public_one_candidate_ledgr_sweep_v002`. Earlier private-fold and corrected
+working-tree rows remain diagnostic history. This is a measurement ticket,
+not release closeout.
 
 ### Tasks
 
 - Run `--preset record --release v0.2.0.1 --engine-set all --n-inst 500
   --n-days 1260 --fast 5 --slow 10 --seed 20260530
   --compiled-accounting-model spot_fifo`.
-- Use a new record prefix from accepted post-LDG-2740 source; do not overwrite
-  or silently promote the provisional record.
+- Use a new record prefix from the same exact post-LDG-2744 source commit used
+  by LDG-2733; do not overwrite or silently promote an earlier record.
 - Provision quantstrat in a dedicated isolated R 4.6.1 benchmark library. Pin
   quantstrat 0.25 at `1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f`, blotter
   0.17.0 at `dddb448f7a5d6eb63dfbe421ba80779e820a3601`, and
@@ -928,9 +969,16 @@ as its own parity-gated row and a completed quantstrat row.
   `98bcf09fc80e25611897404dcd59321ef67850ac`; use xts 0.14.2 and TTR
   0.24.4. Record the resolved versions, GitHub SHAs, and library root. This is
   benchmark-only provisioning and must not add a package dependency.
-- Record `ledgr_ttr_compiled_spot_fifo_ephemeral` as a distinct row. Require
-  its canonical equity, fills, and trades to match the canonical ledgr row
-  before interpreting any compiled timing.
+- Record `ledgr_ttr_canonical_sweep` and
+  `ledgr_ttr_compiled_spot_fifo_sweep` as public one-candidate workflows.
+  Keep the complete public-call wall, including sweep orchestration and
+  inline summary, inside each reported clock.
+- Use compensated production-inline equity as the memory reference. Compare
+  fills and trades exactly and floating equity with the existing relative
+  `all.equal()` tolerance of `1e-8`; record maximum absolute and relative
+  residuals, affected columns, and affected rows.
+- Run any private reconstruction only as an untimed oracle. Do not publish it
+  as a peer result or rename an historical private row as a public workflow.
 - Record status and environment per engine; reconcile phase totals with the
   full row wall; compare canonical equity, fills, and trades to durable ledgr
   before interpreting timing; classify the first divergence where full parity
@@ -939,6 +987,11 @@ as its own parity-gated row and a completed quantstrat row.
 - Update the peer README and tracked report with all five required fields: the
   exact closeout command, the exact record prefix, the environment, the parity
   status, and explicit non-ranking language.
+- State that earlier peer parity CSVs used reconstructed equity while this
+  record uses compensated production-inline equity.
+- Render phase order explicitly as snapshot preparation, experiment setup,
+  engine, and results. Unavailable times remain missing; in particular LEAN
+  may not render or sort as zero.
 - Build report status from the named `Status` column and keep `Reason`
   separate; make B2 prose conditional on the row actually being present.
 - Report zero divergence as a count without a zero-denominator percentage, and
@@ -951,9 +1004,10 @@ as its own parity-gated row and a completed quantstrat row.
 
 ### Acceptance Criteria
 
-- The durable and ephemeral canonical ledgr rows, built-in SMA row, compiled
-  spot-FIFO row, and quantstrat row are present with status `DONE`.
-- The compiled spot-FIFO row has exact canonical parity before its timing is
+- The durable, public canonical sweep, public compiled sweep, built-in SMA,
+  and quantstrat rows are present with status `DONE`.
+- The compiled row has exact non-floating parity and tolerance-qualified
+  equity parity against the compensated production reference before timing is
   interpreted.
 - The isolated quantstrat environment records the required versions and SHAs;
   an unavailable or failed quantstrat row blocks this measurement checkpoint.
@@ -962,6 +1016,8 @@ as its own parity-gated row and a completed quantstrat row.
 - Parity precedes timing interpretation.
 - The peer README and tracked report carry the five required fields for this
   record and no ranking language.
+- Plot data, row status, totals, explicit phase order, and missing unavailable
+  times agree with the rendered report.
 - Status/reason, conditional-row, zero-denominator, and weak-tolerance report
   cases render honestly from the fresh record.
 - No hosted LEAN service.
@@ -976,7 +1032,7 @@ as its own parity-gated row and a completed quantstrat row.
 
 ### Source Reference
 
-- Spec Sections 3.7, 7.3, 7.4, 8; accepted amendment Sections 7 stage J, 8
+- Spec Sections 3.7, 7.3, 7.4, 8; timestamp amendment Sections 3, 7 stage O, 8
 
 ### Classification
 
@@ -990,12 +1046,12 @@ scope: release-record
 
 Priority: P0
 Effort: L
-Dependencies: LDG-2719, LDG-2720, LDG-2721, LDG-2722, LDG-2723, LDG-2724, LDG-2725, LDG-2726, LDG-2727, LDG-2728, LDG-2729, LDG-2730, LDG-2731, LDG-2732, LDG-2733, LDG-2734, LDG-2736, LDG-2737, LDG-2738, LDG-2739, LDG-2740
+Dependencies: LDG-2719, LDG-2720, LDG-2721, LDG-2722, LDG-2723, LDG-2724, LDG-2725, LDG-2726, LDG-2727, LDG-2728, LDG-2729, LDG-2730, LDG-2731, LDG-2732, LDG-2733, LDG-2734, LDG-2736, LDG-2737, LDG-2738, LDG-2739, LDG-2740, LDG-2741, LDG-2742, LDG-2743, LDG-2744
 Status: Pending
 
 ### Description
 
-After the Stage J benchmark checkpoint has been independently reviewed and the
+After the Stage O evidence checkpoint has been independently reviewed and the
 maintainer has explicitly elected to proceed, follow the release playbook,
 prove the ten Section 9 gates, and close the packet without conflating local,
 branch, main, and tag evidence.
@@ -1020,6 +1076,10 @@ branch, main, and tag evidence.
   durable tests or an accepted evidence artifact, the combined eventful
   availability case passes, and no superseded implementation or test-only
   selector ships.
+- Confirm the timestamp amendment's `NEITHER` branch changed no availability
+  source, dense validation and hash deduplication passed their own gates, and
+  the proof template is indexed and locked without becoming implementation
+  authority.
 - Render documentation, confirm anchors resolve, and remove generated
   artifacts, temporary stores, `Rplots.pdf`, tarballs, and check directories.
 - Update NEWS, version surfaces, AGENTS, design index, roadmap, and horizon
@@ -1031,7 +1091,7 @@ branch, main, and tag evidence.
 - Base-spec gates 1 through 10 and amendment gates 1 through 6 hold; no
   benchmark number waives a semantic, persistence, identity, rollback, resume,
   reopen, dependency, or source-removal gate.
-- The Stage J benchmark checkpoint was independently reviewed and explicitly
+- The Stage O evidence checkpoint was independently reviewed and explicitly
   accepted by the maintainer before Stage K began.
 - Telemetry names are unchanged and none of the four prohibited additions
   exists.
@@ -1049,7 +1109,8 @@ branch, main, and tag evidence.
 
 ### Source Reference
 
-- Spec Sections 8, 9; accepted amendment Sections 7 stage K, 8, 10
+- Spec Sections 8, 9; hot-path amendment Sections 7 stage K, 8, 10;
+  timestamp amendment Sections 7 stage P, 8, 10, 11
 
 ### Classification
 
@@ -1369,4 +1430,258 @@ an independent review stop.
 type: performance
 surface: availability-valuation
 scope: scaling-integration-and-retirement
+```
+
+## LDG-2741 - Freeze Public Benchmark Boundary And Optimization Oracles
+
+Priority: P0
+Effort: M
+Dependencies: LDG-2740
+Status: Pending
+
+### Description
+
+Freeze the corrected public peer boundary, compensated memory-equity
+authority, report-integrity rules, and current dense/hash oracles before any
+new production optimization begins. Record the prerequisite's `NEITHER`
+branch without reinterpreting its exact but under-threshold candidates.
+
+### Tasks
+
+- Replace the two private-fold peer rows with public one-candidate
+  `ledgr_sweep()` method tests under
+  `public_one_candidate_ledgr_sweep_v002`; retain historical private rows only
+  under their original internal-diagnostic identities.
+- Freeze compensated production-inline memory equity as authoritative. Keep
+  exact fills/trades checks and the existing relative `all.equal()` tolerance
+  of `1e-8` for floating equity, with residual reporting.
+- Lock explicit phase order, completed-versus-unavailable plotting, missing
+  peer times, and source-data/chart agreement in tests.
+- Preserve current dense timestamp validation and snapshot hashing outside the
+  candidate source as test-only oracles. Write proof plans against the
+  exact-parity template; record that dense validation is `RECLASSIFY` while
+  hash deduplication remains eligible.
+- Bind prerequisite commit `9686229` and outcome `NEITHER`. Add a guard that
+  prevents any availability-ingestion source change in this amendment.
+- Capture current-arm semantic and timing prefixes before changing dense or
+  hash production source. Stop for independent review of Stage L.
+
+### Acceptance Criteria
+
+- Both peer memory rows invoke public one-candidate `ledgr_sweep()` and no
+  private-fold row is peer-comparable.
+- The parity reference, exact/tolerance distinctions, and report missingness
+  rules are detecting tests rather than narrative only.
+- Dense and hash current-arm oracles and prefixes are immutable inputs to the
+  next stages.
+- `NEITHER` is recorded before implementation and no availability-ingestion
+  source change is authorized or present.
+
+### Verification
+
+- Public-method and reported-clock boundary tests
+- Memory parity-reference and residual tests
+- Phase-order and unavailable-time render tests
+- Oracle and current-prefix checks
+- Availability-source no-change guard
+- Independent Stage L review
+
+### Source Reference
+
+- Timestamp amendment Sections 1 through 3, 5.1, 6, 7 stage L, 10
+
+### Classification
+
+```yaml
+type: benchmark-correctness
+surface: benchmark-boundary
+scope: public-method-and-oracle-freeze
+```
+
+## LDG-2742 - Dense Static-Coverage Timestamp Validation
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2741
+Status: Pending
+
+### Description
+
+Replace per-bar timestamp formatting in dense static-coverage validation with
+one primitive conversion per instrument axis while retaining the complete
+rectangle proof and deliberately tightening unsupported sub-second direct
+input as specified.
+
+### Tasks
+
+- Implement one primitive POSIXct or numeric conversion per instrument axis;
+  prohibit per-bar normalizers, text formatters, and a DuckDB round trip after
+  vectors are materialized.
+- Fail missing, non-finite, and sub-second axes with
+  `ledgr_invalid_pulse_context`; retain the existing coverage error class and
+  message for missing, empty, and misaligned instruments.
+- Compare the full Section 4.3 matrix against the retained oracle, including
+  direct, public sweep, precompute, and walk-forward consumers and the
+  availability bypass.
+- Add a structural counter and source guard proving one vector conversion per
+  axis and zero per-bar formatting. Gut the optimized path with a scalar or
+  repeated-work mutant and prove the gate fails.
+- Run the paired 500-by-1,260 public canonical and compiled sweep record with
+  one warm-up and three measurements per arm. Enforce the 0.10 validator
+  ratio, both 10-second public-row improvements, spread, semantics, and
+  15-percent peak-memory gates.
+- Remove the production old path only after the paired record passes. Retain
+  no option, arm stamp, fallback, or alternate public method. Stop for an
+  independent Stage M code review.
+
+### Acceptance Criteria
+
+- Every supported semantic case agrees exactly and every specified invalid
+  direct case raises its bound class.
+- The mutation-sensitive structural gate proves zero per-bar formatting.
+- All paired timing, spread, and peak-memory thresholds pass on one quiet
+  host; timing does not substitute for the structural proof.
+- Production source is singular and public APIs, schemas, identities, and
+  availability behavior are unchanged.
+
+### Verification
+
+- Dense semantic and failure matrix
+- Structural counter, source guard, and deliberate mutant
+- Paired public canonical/compiled sweep record
+- Consumer and availability-bypass regression tests
+- Independent Stage M code review
+
+### Source Reference
+
+- Timestamp amendment Sections 4, 6, 7 stage M, 10, 11
+
+### Classification
+
+```yaml
+type: performance-correctness
+surface: dense-static-validation
+scope: primitive-timestamp-axis
+```
+
+## LDG-2743 - Byte-Identical Snapshot-Hash Timestamp Deduplication
+
+Priority: P0
+Effort: L
+Dependencies: LDG-2742
+Status: Pending
+
+### Description
+
+Format each distinct timestamp once within each existing snapshot-hash chunk,
+map canonical tokens back in original row order, and remove the candidate if
+any byte, hash, reopen, tamper, or bounded-memory proof fails. The selected
+`NEITHER` branch makes no availability-ingestion source change.
+
+### Tasks
+
+- Deduplicate timestamp formatting within each existing chunk only, preserving
+  first-occurrence order for distinct values and original emitted row order.
+- Keep chunk size, query order, numeric formatting, separators, missing
+  tokens, newlines, encoding, algorithm, hash-rule version, stored hashes,
+  verification, and ownership unchanged. Ship no cross-chunk cache.
+- Compare bytes and hashes over dense rule 1, availability rule 2, repeated
+  and unique timestamps, every canonical bar column, registered chunk sizes
+  and boundaries, fresh and old snapshots, reopen, run guard, and timestamp,
+  price, and stored-hash tampering.
+- Use the exact-parity proof template and remove OPT-L01 from the release on
+  any identity difference; do not bump a version or expected hash.
+- At 630,000 bars run one warm-up and three measured hashes per arm. Enforce
+  the 0.20 formatter-count, 0.80 median-wall, exact-hash, and 15-percent
+  peak-memory gates.
+- Prove the availability-ingestion files remain unchanged from the Stage L
+  source. Retire only the hash oracle/selector after passing, then stop for an
+  independent Stage N code review.
+
+### Acceptance Criteria
+
+- Every compared byte and hash is identical and all reopen, run-guard, and
+  tamper checks retain their current behavior.
+- All structural, timing, and peak-memory gates pass at the registered shape.
+- Production hashing has one bounded path with no cross-chunk cache, fallback,
+  option, arm stamp, hash-rule change, or old production path.
+- The prerequisite remains `NEITHER` and availability-ingestion production
+  source is unchanged.
+
+### Verification
+
+- Byte/hash matrix across rules, chunks, boundaries, and old snapshots
+- Reopen, run-guard, and tamper tests
+- Formatter-count, wall, and peak-memory record
+- Availability-source no-change guard
+- Exact-parity proof and independent Stage N code review
+
+### Source Reference
+
+- Timestamp amendment Sections 5 through 7 stage N, 8, 10, 11
+
+### Classification
+
+```yaml
+type: performance-identity
+surface: snapshot-hashing
+scope: within-chunk-timestamp-deduplication
+```
+
+## LDG-2744 - Finalize And Index Exact-Parity Proof Template
+
+Priority: P1
+Effort: M
+Dependencies: LDG-2743
+Status: Pending
+
+### Description
+
+Independently verify, finalize, index, and contract-lock the exact-parity
+internal optimization proof template as evidence infrastructure. It does not
+become independent authority to implement work or bypass RFC, spec, ticket,
+spike, or review requirements.
+
+### Tasks
+
+- Review the template against the timestamp amendment, spike protocol, RFC
+  cycle, and accepted optimization-manual principles.
+- Retain its eligibility gate, byte/exact/tolerance distinction,
+  preregistered threshold, structural mutation, public-workflow check, and
+  stop/reclassification conditions.
+- State explicitly that the template is evidence infrastructure and not
+  implementation authority; preserve OPT-C01's `RECLASSIFY` result.
+- Confirm the accepted OPT-L01 proof artifact satisfies the template and cite
+  it without turning the template into retrospective permission.
+- Index the final template from the design index and packet README. Add
+  documentation-contract tests for title, status, core stops, and authority
+  relationship.
+- Stop with Stage O source frozen for LDG-2733 and LDG-2734.
+
+### Acceptance Criteria
+
+- Independent review accepts the template and its authority boundary.
+- The design and packet indexes resolve it and documentation contracts detect
+  removal or weakening of its core stops.
+- No standing no-ticket or no-RFC lane is created.
+- The exact source commit for final evidence is recorded after template and
+  production work are accepted.
+
+### Verification
+
+- Independent proof-template review
+- Index and anchor checks
+- Documentation-contract tests
+- Stage O source-freeze record
+
+### Source Reference
+
+- Timestamp amendment Sections 6, 7 stage O, 10, 11
+
+### Classification
+
+```yaml
+type: documentation-governance
+surface: optimization-proof-template
+scope: finalization-index-and-contract
 ```

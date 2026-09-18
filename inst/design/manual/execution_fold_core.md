@@ -59,7 +59,7 @@ and by the topic map in `../rfc/README.md`.
 
 The execution boundary has three layers:
 
-``` mermaid
+```mermaid
 flowchart TB
   RUN[ledgr_run] --> GUARD[Sealed-snapshot guard]
   SWEEP[ledgr_sweep] --> GUARD

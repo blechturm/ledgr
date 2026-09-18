@@ -2951,7 +2951,7 @@ testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
 
   testthat::expect_match(
     docs$roadmap,
-    "| v0.2.0.1 | Active | Productionize the three reviewed availability seams",
+    "| v0.2.0.1 | Active | Productionize the reviewed availability seams",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -2984,12 +2984,13 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   paths <- file.path(packet, c(
     "README.md", "v0_2_0_1_spec.md",
     "v0_2_0_1_hot_path_complexity_amendment_proposed.md",
+    "v0_2_0_1_timestamp_and_benchmark_amendment_proposed.md",
     "v0_2_0_1_tickets.md", "tickets.yml", "batch_plan.md",
     "batch1-baseline-evidence.md", "batch2-provider-evidence.md",
     "batch3-diagnostic-evidence.md", "batch4-parity-evidence.md",
     "batch5-finalization-evidence.md", "batch6-seal-validator-evidence.md",
     "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md",
-    "batch9-valuation-evidence.md"
+    "batch9-valuation-evidence.md", "batch10-benchmark-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -2998,11 +2999,26 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c(
-    "readme", "spec", "amendment", "tickets", "yaml", "batches",
+    "readme", "spec", "amendment", "timestamp_amendment", "tickets",
+    "yaml", "batches",
     "batch1_evidence", "batch2_evidence", "batch3_evidence",
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
-    "batch7_evidence", "batch8_evidence", "batch9_evidence"
+    "batch7_evidence", "batch8_evidence", "batch9_evidence",
+    "batch10_evidence"
   )
+  prerequisite_path <- file.path(
+    root,
+    "dev", "spikes", "v0_2_0_1_availability_timestamp_prerequisite",
+    "probe_findings.md"
+  )
+  proof_template_path <- file.path(
+    root,
+    "inst", "design", "exact_parity_internal_optimization_proof_template.md"
+  )
+  testthat::expect_true(file.exists(prerequisite_path))
+  testthat::expect_true(file.exists(proof_template_path))
+  prerequisite <- paste(readLines(prerequisite_path, warn = FALSE), collapse = "\n")
+  proof_template <- paste(readLines(proof_template_path, warn = FALSE), collapse = "\n")
 
   testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
   testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
@@ -3012,10 +3028,24 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     fixed = TRUE
   )
   testthat::expect_match(docs$amendment, "collapse (>= 2.1.8)", fixed = TRUE)
-  testthat::expect_match(docs$tickets, "Total Tickets: 22", fixed = TRUE)
+  testthat::expect_match(
+    docs$timestamp_amendment,
+    "Status:** accepted by the maintainer 2026-09-18",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$tickets, "Total Tickets: 26", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2719 - Packet Alignment", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2735 - v0.2.0.1 Release Gate", fixed = TRUE)
   testthat::expect_match(docs$tickets, "LDG-2740 - Valuation Scaling", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2744 - Finalize And Index", fixed = TRUE)
+  testthat::expect_match(prerequisite, "Outcome: `NEITHER`", fixed = TRUE)
+  testthat::expect_match(prerequisite, "ratio is 0.763561", fixed = TRUE)
+  testthat::expect_match(prerequisite, "R 4.6.1 ucrt", fixed = TRUE)
+  testthat::expect_match(
+    proof_template,
+    "accepted specifications remain the source of implementation authority",
+    fixed = TRUE
+  )
   testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 4.1 mechanism and source guard | LDG-2726 |", fixed = TRUE)
   testthat::expect_match(docs$tickets, "| 3.5 status supersession-exact hybrid | LDG-2729 |", fixed = TRUE)
@@ -3024,38 +3054,40 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "| Amendment 5 combined eventful availability case | LDG-2740 |",
     fixed = TRUE
   )
-  for (id in sprintf("LDG-%d", 2719:2740)) {
+  for (id in sprintf("LDG-%d", 2719:2744)) {
     testthat::expect_match(docs$tickets, paste0("## ", id, " - "), fixed = TRUE)
     testthat::expect_match(docs$yaml, paste0("id: \"", id, "\""), fixed = TRUE)
   }
-  yaml_lines <- readLines(paths[[5L]], warn = FALSE)
+  yaml_lines <- readLines(paths[[6L]], warn = FALSE)
   yaml_ids <- sub("^  - id: \"(LDG-[0-9]+)\"$", "\\1", grep("^  - id: \"LDG-", yaml_lines, value = TRUE))
   yaml_statuses <- sub("^    status: \"([a-z_]+)\"$", "\\1", grep("^    status: \"", yaml_lines, value = TRUE))
-  testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2740))
+  testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2744))
   testthat::expect_identical(
     yaml_statuses,
     c(
       rep("complete_after_review", 14L),
       rep("pending", 3L),
-      rep("complete_after_review", 5L)
+      rep("complete_after_review", 5L),
+      rep("pending", 4L)
     )
   )
-  ticket_lines <- readLines(paths[[4L]], warn = FALSE)
+  ticket_lines <- readLines(paths[[5L]], warn = FALSE)
   md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
   testthat::expect_identical(
     md_statuses,
     c(
       rep("Complete After Review", 14L),
       rep("Pending", 3L),
-      rep("Complete After Review", 5L)
+      rep("Complete After Review", 5L),
+      rep("Pending", 4L)
     )
   )
-  batch_lines <- readLines(paths[[6L]], warn = FALSE)
+  batch_lines <- readLines(paths[[7L]], warn = FALSE)
   batch_statuses <- sub(
     "^Status: ",
     "",
     grep(
-      "^Status: (Complete After Review|Review Pending|Pending)\\.$",
+      "^Status: (Complete After Review|Diagnostic History|Pending)\\.$",
       batch_lines,
       value = TRUE
     )
@@ -3064,7 +3096,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     batch_statuses,
     c(
       rep("Complete After Review.", 10L),
-      rep("Pending.", 2L)
+      "Diagnostic History.",
+      rep("Pending.", 5L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3074,16 +3107,38 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   testthat::expect_match(docs$batches, "Batch 7 - Benchmark Phases And Manuals", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 8 - Linear Event Buffers", fixed = TRUE)
   testthat::expect_match(docs$batches, "Batch 9 - Prepared Availability Valuation", fixed = TRUE)
-  testthat::expect_match(docs$batches, "Batch 10 - Fresh Benchmark Records", fixed = TRUE)
-  testthat::expect_match(docs$batches, "Batch 11 - Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 10 - First Closeout Attempt", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 11 - Public Boundary", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
   testthat::expect_match(
     docs$batches,
-    "Batch 11 stays blocked until the maintainer explicitly",
+    "Batch 15 remains unauthorized until that acceptance",
     fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "v0_2_0_1_batch10_availability_400a3e5_20260917T205648Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "peer_benchmark_record_20260917T212008Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "The measured median is 14.51 seconds",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "Batch 11 must not start from this\\s+document alone"
   )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `6b09a1b", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `9686229", fixed = TRUE)
+  testthat::expect_match(docs$readme, "binding[[:space:]]+`NEITHER` outcome")
   testthat::expect_match(
     docs$readme,
     "provisional[[:space:]]+diagnostic[[:space:]]+evidence"
@@ -3164,8 +3219,7 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   )
   testthat::expect_match(
     docs$batches,
-    "compiled spot-FIFO core as a distinct",
-    fixed = TRUE
+    "public canonical and[[:space:]]+compiled performance record"
   )
 
   roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
@@ -3173,6 +3227,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
   agents <- paste(readLines(file.path(root, "AGENTS.md"), warn = FALSE), collapse = "\n")
   testthat::expect_match(roadmap, "| v0.2.0.1 | Active | Productionize", fixed = TRUE)
   testthat::expect_match(horizon, "v0.2.0.1 packet is active", fixed = TRUE)
+  testthat::expect_match(horizon, "Public single-evaluation memory surface", fixed = TRUE)
+  testthat::expect_match(horizon, "must not\\s+create a second execution engine")
   testthat::expect_match(agents, "active v0.2.0.1 packet", fixed = TRUE)
   testthat::expect_match(agents, "ledgr_v0_2_0_1_spec_packet/tickets.yml", fixed = TRUE)
 })
@@ -3232,6 +3288,10 @@ testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
       root,
       "dev", "bench", "peer_benchmark", "peer_benchmark.R"
     ),
+    report = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "peer_benchmark.qmd"
+    ),
     zipline = file.path(
       root,
       "dev", "bench", "peer_benchmark", "python", "zipline",
@@ -3243,6 +3303,7 @@ testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
     "peer benchmark sources unavailable during installed-package tests"
   )
   harness <- paste(readLines(paths[["harness"]], warn = FALSE), collapse = "\n")
+  report <- paste(readLines(paths[["report"]], warn = FALSE), collapse = "\n")
   zipline <- paste(readLines(paths[["zipline"]], warn = FALSE), collapse = "\n")
 
   testthat::expect_match(
@@ -3271,6 +3332,49 @@ testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
     ),
     fixed = TRUE
   )
+  public_sweep_start <- regexpr(
+    "peer_run_ledgr_sweep <- function",
+    harness,
+    fixed = TRUE
+  )[[1L]]
+  public_sweep_end <- regexpr(
+    "peer_attach_sweep_oracle <- function",
+    harness,
+    fixed = TRUE
+  )[[1L]]
+  testthat::expect_gt(public_sweep_start, 0L)
+  testthat::expect_gt(public_sweep_end, public_sweep_start)
+  public_sweep_body <- substr(
+    harness,
+    public_sweep_start,
+    public_sweep_end - 1L
+  )
+  testthat::expect_match(public_sweep_body, "ledgr_sweep(", fixed = TRUE)
+  testthat::expect_match(public_sweep_body, "ledgr_sweep_returns(", fixed = TRUE)
+  testthat::expect_match(public_sweep_body, "ledgr_sweep_trades(", fixed = TRUE)
+  testthat::expect_no_match(public_sweep_body, "ledgr:::", fixed = TRUE)
+  testthat::expect_match(
+    harness,
+    "parity_oracle_outside_clock <- TRUE",
+    fixed = TRUE
+  )
+  testthat::expect_match(report, "ggplot2::ggplot", fixed = TRUE)
+  testthat::expect_match(report, "position_stack(reverse = TRUE)", fixed = TRUE)
+  testthat::expect_match(report, "NULL (", fixed = TRUE)
+  testthat::expect_match(
+    report,
+    "display_full_row_sec[performance$status != \"DONE\"] <- NA_real_",
+    fixed = TRUE
+  )
+  testthat::expect_match(report, "Setup / orchestration", fixed = TRUE)
+  testthat::expect_no_match(
+    report,
+    "phase_plot$seconds[!is.finite(phase_plot$seconds)] <- 0",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(report, "barplot(", fixed = TRUE)
+  testthat::expect_no_match(report, "par(no.readonly", fixed = TRUE)
+  testthat::expect_no_match(report, "plot(NULL", fixed = TRUE)
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {

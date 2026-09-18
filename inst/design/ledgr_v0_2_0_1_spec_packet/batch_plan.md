@@ -1,7 +1,9 @@
 # ledgr v0.2.0.1 Batch Plan
 
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
-Batches 10 and 11 are pending.
+Batch 10 is retained as diagnostic history and does not satisfy final
+evidence. The timestamp/benchmark amendment ticket cut is pending independent
+review. Batches 11 through 15 are pending.
 
 Spec: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`
 Tickets: `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`
@@ -12,11 +14,13 @@ A batch is the independent review unit. Ticket dependencies are the hard
 readiness gate; numeric batch order is the default sequence. Batches 5 and 6
 were independent of the warm seams and could run beside Batches 2 to 4; Batch 7
 could not start until Batches 4, 5, and 6 closed. Amendment Batch 8 depends on
-Batch 7, Batch 9 depends on Batch 8, Batch 10 is the final measurement
-checkpoint, and Batch 11 is the release gate. Batch 11 remains blocked until
-Batch 10 is independently reviewed and the maintainer explicitly elects to
-proceed. If a batch lands out of order, status text must name the completed and
-blocked batches rather than implying linear progress.
+Batch 7, Batch 9 depends on Batch 8, and Batch 10 is diagnostic history from
+the first closeout attempt. Amendment Batches 11 through 13 run sequentially,
+Batch 14 is the only final measurement checkpoint, and Batch 15 is the release
+gate. Batch 15 remains blocked until Batch 14 is independently reviewed and
+the maintainer explicitly elects to proceed. If a batch lands out of order,
+status text must name the completed and blocked batches rather than implying
+linear progress.
 
 For implementation batches:
 
@@ -30,7 +34,7 @@ For implementation batches:
 The spike protocol's correction budgets are stop signals. Batch 4 could not
 retire its old paths before the two-arm parity record existed. The new event
 and valuation oracles likewise survive only until their exact paired records
-exist. No benchmark number can unlock a failed correctness stage. Batch 11
+exist. No benchmark number can unlock a failed correctness stage. Batch 15
 starts by reading `inst/design/release_ci_playbook.md`.
 
 ## Ticket-Cut Decisions
@@ -64,6 +68,20 @@ starts by reading `inst/design/release_ci_playbook.md`.
 - LDG-2733 and LDG-2734 form a separate final-measurement checkpoint. Their
   reviewed results and an explicit maintainer go-ahead are prerequisites for
   the LDG-2735 release gate, even though no new ticket ID is required.
+- The maintainer accepted the trusted-timestamp and benchmark-boundary
+  amendment on 2026-09-18 after independent review and focused re-review.
+- The required pre-cut probe is committed at `9686229`. All ten semantic
+  comparisons were exact, but the session-close candidate ratio was 0.763561
+  against the preregistered 0.20 ceiling. Its binding outcome is `NEITHER`:
+  no availability-ingestion optimization enters this release.
+- LDG-2741 through LDG-2744 implement only the public benchmark correction,
+  dense validation, snapshot-hash deduplication, and proof-template
+  finalization. Existing final-record and release IDs remain LDG-2733 through
+  LDG-2735.
+- The first Batch 10 record and corrected working-tree figures remain
+  diagnostic history. Only Batch 14 may create the final accepted-source
+  records, and Batch 15 remains blocked on their independent review and
+  explicit maintainer acceptance.
 
 ## Batch 0 - Packet Alignment And Ticket Cut
 
@@ -430,47 +448,141 @@ Exit criteria:
 Implementation handoff: the transient production state, observed-work gate,
 paired 757-pulse gate, combined eventful case, oracle-retirement history, and
 source guard are complete in `batch9-valuation-evidence.md`. Independent review
-passed and the maintainer accepted Batch 9. Batch 10 has not started.
+passed and the maintainer accepted Batch 9.
 
-## Batch 10 - Fresh Benchmark Records
+## Batch 10 - First Closeout Attempt
+
+Status: Diagnostic History.
+
+Tickets completed: None. LDG-2733 and LDG-2734 remain Pending.
+
+The record from source `400a3e5` correctly exposed the benchmark-boundary
+defect and additional bounded costs, but it cannot satisfy final evidence. Its
+artifacts keep their original identities and roles. They may be cited as
+diagnostic history only; they are not independently promoted, relabelled, or
+used as release claims.
+
+## Batch 11 - Public Boundary And Oracle Freeze
 
 Status: Pending.
 
 Tickets:
 
+- LDG-2741
+
+Scope:
+
+- make public one-candidate `ledgr_sweep()` the two peer-comparable memory
+  methods and retain private-fold rows as internal diagnostics only;
+- freeze compensated production-inline equity, exact fills/trades, the
+  existing equity tolerance, phase order, and missing-peer rendering;
+- freeze dense and hash current-arm oracles and timing prefixes; and
+- bind prerequisite commit `9686229` and prove no availability-ingestion
+  source change under `NEITHER`.
+
+Review focus:
+
+- public method and complete public-call clock;
+- authoritative parity reference and no tolerance widening;
+- historical rows are not renamed or promoted; and
+- all next-stage oracles and prefixes predate production changes.
+
+Exit criteria:
+
+- LDG-2741 passes an independent review; no dense or hash implementation has
+  started before that review.
+
+## Batch 12 - Dense Timestamp Validation
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2742
+
+Scope:
+
+- replace per-bar timestamp formatting with one primitive conversion per
+  instrument axis while preserving the dense rectangle proof;
+- implement the accepted missing, non-finite, and sub-second failure rules;
+- prove the complete semantic and consumer matrix; and
+- pass the mutation-sensitive structural gate and paired public canonical and
+  compiled performance record before retiring the old production path.
+
+Review focus:
+
+- exact supported semantics and deliberate unsupported-input tightening;
+- zero per-bar formatting and a mutant that fails the structural gate;
+- same-session 0.10, 10-second, spread, and peak-memory gates; and
+- singular production source with unchanged public, identity, and
+  availability surfaces.
+
+Exit criteria:
+
+- LDG-2742 passes independent Stage M code review before Batch 13 begins.
+
+## Batch 13 - Snapshot-Hash Timestamp Deduplication
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2743
+
+Scope:
+
+- format each distinct timestamp once within each existing hash chunk and map
+  it back without changing emitted row order or any byte;
+- prove all registered rules, chunk boundaries, old snapshots, reopen, run
+  guard, tamper, formatter-count, wall, and peak-memory cases; and
+- remove OPT-L01 rather than change a hash or version if identity fails, while
+  retaining the `NEITHER` availability branch without source changes.
+
+Review focus:
+
+- byte and hash identity is absolute;
+- no cross-chunk cache, fallback, selector, or hash-rule change;
+- performance gates are same-session and follow identity; and
+- the exact-parity proof template is used as evidence, not authority.
+
+Exit criteria:
+
+- LDG-2743 passes independent Stage N code review before final evidence.
+
+## Batch 14 - Proof Template And Final Evidence
+
+Status: Pending.
+
+Tickets:
+
+- LDG-2744
 - LDG-2733
 - LDG-2734
 
 Scope:
 
-- regenerate the availability warm record and single cold seal record from
-  final accepted source under new prefixes;
-- regenerate the explicit peer record and update its README and tracked report
-  from that new prefix, with ledgr's compiled spot-FIFO core as a distinct
-  parity-gated row and quantstrat completing from a pinned isolated R 4.6.1
-  benchmark library; and
-- stop with a concise comparison of the achieved results against every
-  registered performance gate, without running release closeout work or
-  promoting the provisional `6b09a1b` records.
+- independently review, finalize, index, and contract-lock the exact-parity
+  proof template;
+- freeze one exact accepted-source commit after all code and template work;
+- from that commit rerun availability warm, cold seal, snapshot-hash paired,
+  final profile, and peer records under new immutable prefixes; and
+- render the corrected public-workflow report with explicit phase order and
+  missing unavailable times.
 
 Review focus:
 
-- comparable host and cited pre-retirement pairs;
-- three separate clocks, fresh record prefixes, and the five peer-report
-  fields;
-- exact canonical parity for the compiled spot-FIFO row and a `DONE`
-  quantstrat row with its resolved versions and GitHub SHAs recorded;
-- benchmark and parity results are reported literally, including misses or
-  unavailable optional peers, and no result is converted into a release claim.
+- the proof template cannot authorize implementation by itself;
+- all final records share the accepted source commit and declare clocks,
+  environment, load, parity, spread, and peak memory;
+- compensated production-inline equity is the new stated reference; and
+- diagnostic records are retained but not promoted.
 
 Exit criteria:
 
-- fresh benchmark artifacts are independently reviewed and summarized for the
-  maintainer; and
-- execution stops. Batch 11 stays blocked until the maintainer explicitly
-  accepts the measurement checkpoint and directs the release gate to proceed.
+- Stage O evidence passes independent review; execution stops for an explicit
+  maintainer decision. Batch 15 remains unauthorized until that acceptance.
 
-## Batch 11 - Release Gate
+## Batch 15 - Release Gate
 
 Status: Pending.
 
@@ -480,19 +592,18 @@ Tickets:
 
 Scope:
 
-- after explicit maintainer authorization, run the base-spec and amendment
-  release gates, including unchanged telemetry and the collapse 2.1.8 minimum;
+- after explicit maintainer authorization, run every base-spec, hot-path
+  amendment, and timestamp-amendment release gate;
 - run the full suite, source build/check, documentation rendering, governance
-  reconciliation, and generated-artifact review; and
-- write the closeout citing the accepted Batch 10 record prefixes without
-  promoting the provisional `6b09a1b` records.
+  reconciliation, compatibility/source guards, and artifact review; and
+- write the closeout citing only accepted Batch 14 final record prefixes.
 
 Review focus:
 
-- Batch 10 was accepted explicitly before this work began;
-- all base and amendment gates hold and no benchmark waives correctness,
-  persistence, identity, rollback, resume, reopen, dependency, or retirement;
-  and
+- Batch 14 was independently reviewed and explicitly accepted first;
+- `NEITHER` caused no availability-ingestion source change;
+- no benchmark waives correctness, identity, hash, quarantine, rollback,
+  resume, reopen, dependency, retirement, or authority boundaries; and
 - local, branch, main, and tag evidence remain distinct.
 
 Exit criteria:

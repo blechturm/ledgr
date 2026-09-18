@@ -19,7 +19,7 @@ seal validators reached production code.
 You are about to write or review code that touches bars, facts, pulses,
 instruments, events, or diagnostics, and you need to know which shapes the
 arc has shown to be expensive in R and what to write instead. By the end you
-should be able to recognise the six recurring anti-patterns on sight, name
+should be able to recognise the seven recurring anti-patterns on sight, name
 the replacement for each, and know which measurement a claim of "faster"
 needs before it is believed.
 
@@ -139,6 +139,23 @@ cite as one.
   times; advance it for non-decreasing cutoffs and re-seek with
   `findInterval()` when a cutoff goes backwards, so answers never depend on
   query order.
+- **Pay validation once and carry its guarantees forward.** Import, sealing,
+  loading, and the execution-mode guard form a dependency chain. Once that
+  chain has accepted a sealed snapshot, downstream code trusts the properties
+  it established and validates only a new property introduced by its own
+  transformation. It does not rescan bars for OHLC consistency, recheck
+  referential integrity, or re-normalize timestamps merely because another
+  function received them. A join, alignment, user callback, deserialization,
+  or synthetic-row step may invalidate a guarantee; name that edge and check
+  the changed property there rather than replaying every upstream validator.
+- **Keep timestamps as timestamps.** POSIXct formatting is an external-boundary
+  operation for display, serialization, or a contract that explicitly binds
+  canonical text. Equality, ordering, grouping, alignment, and range checks on
+  trusted snapshot timestamps use POSIXct or their numeric epochs. Never call
+  `format.POSIXct()`, `ledgr_iso_utc()`, or
+  `ledgr_normalize_ts_utc()` element by element over bars, facts, events, or
+  instrument-by-pulse axes. If text is genuinely required, format the whole
+  vector once and reuse it.
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -159,6 +176,99 @@ cite as one.
 - **Probe before prose.** A performance claim about package behaviour that no
   probe executed is returned. The order is smallest runnable fork, run it,
   let failures generate at most ten cases, then freeze expected answers.
+
+## Sealed Snapshot Guarantee Graph
+
+The optimization rule is not "skip validation." It is "do not pay twice for
+the same established fact." The snapshot contract already defines a trust
+boundary: adapters normalize untrusted inputs, sealing validates canonical
+tables and binds them to a hash, and loading plus the execution-mode guard
+accepts that immutable artifact for a specific consumer. Hot paths start after
+that boundary.
+
+```{mermaid}
+flowchart TD
+  U[External or untrusted input]
+  A[Adapter normalization and input validation]
+  P[Canonical snapshot tables]
+  S[Seal-time validation]
+  H[Snapshot hash and SEALED status]
+  G[Load and execution-mode guard]
+  T[Trusted normalized primitives]
+  C[Consumer transformation]
+  D[Validate only the new derived property]
+
+  U --> A --> P --> S --> H --> G --> T --> C --> D
+
+  S --> R[Referential integrity]
+  S --> W[Whole-second timestamps]
+  S --> O[OHLC consistency]
+  H --> I[Immutable hash-bound identity]
+  G --> M[Mode-specific facts and membership accepted]
+
+  R --> T
+  W --> T
+  O --> T
+  I --> T
+  M --> T
+```
+
+The graph is a dependency graph, not a claim that sealing proves every useful
+property. A consumer may rely on a guarantee only when every upstream edge was
+actually traversed. A raw data frame, an unsealed table, a connection opened
+without the required verification, or values returned by arbitrary user code
+do not inherit sealed-snapshot trust by resemblance.
+
+An internal helper that remains callable with arbitrary, unguarded objects must
+still fail closed on impossible states such as aligned `NA` timestamps.
+Trusting the sealed path removes repeated data-scale normalization; it does not
+license turning a defensive validator into a fail-open one. Direct epoch
+comparison is also stricter than whole-second string formatting for sub-second
+values. That is harmless only after the seal's sub-second rejection has
+actually been traversed, or when the stricter behavior is bound deliberately.
+
+| guarantee available after the guarded sealed boundary | established by | downstream consequence |
+| --- | --- | --- |
+| canonical snapshot identity is immutable and hash-bound | seal plus snapshot-hash verification | reuse the stored hash; do not rehash the run window |
+| bar timestamps are non-missing POSIXct UTC whole seconds | `TIMESTAMP NOT NULL`, adapter normalization, seal sub-second rejection, and load guard | compare instants directly; do not format every timestamp back to ISO text |
+| every bar instrument exists in the snapshot instrument table | seal referential-integrity check | do not repeat the same join-based existence scan in each feature or pulse |
+| OHLC rows satisfy the canonical bounds | adapter and seal OHLC checks | indicators and the fold consume numeric columns without per-window OHLC revalidation |
+| accepted availability facts satisfy their normalized structural rules | fact normalization, seal validation, and execution-mode guard | compile planes and cursors from the accepted facts; do not rerun pairwise family validators per view |
+| artifact contents match the accepted sealed snapshot | hash verification where the workflow requires it | build transient matrices, vectors, and indexes as disposable representations outside identity |
+
+Properties *not* implied by sealing remain the consumer's responsibility:
+
+- SQL row order, unless the query has an explicit `ORDER BY`;
+- a dense instrument-by-pulse rectangle;
+- complete coverage of a requested scoring or warmup window;
+- the absence of expected-session gaps in a sparse availability-aware run;
+- feature stability or sufficient lookback for a particular definition;
+- parity after a join, alignment, padding, imputation, or synthetic-row step;
+  and
+- validity of values produced by strategy or user feature code.
+
+For example, a dense sweep must still prove that every selected instrument has
+the same pulse axis. It should derive the reference axis once and compare the
+trusted POSIXct or numeric epoch vectors. Reformatting all 630,000 timestamps
+to strings does not strengthen the coverage proof; it repeats normalization
+that the sealed boundary already paid for. The reviewable setup/orchestration
+note in the active v0.2.0.1 packet records that exact recurrence and keeps its
+performance numbers non-binding until independent review.
+
+When adding a validator, write its dependency declaration before its loop:
+
+1. Which upstream boundary established each input guarantee?
+2. Which transformation could have invalidated one of them?
+3. What new property does this validator establish?
+4. Which downstream callers may now rely on that property without checking it
+   again?
+5. Is the proof vectorized or grouped over the complete collection rather than
+   repeated per element, pulse, feature, or instrument?
+
+This guarantee ledger belongs in design and review prose today. If the same
+dependency is repeatedly rediscovered, promote it into a named internal type,
+constructor, or guard whose output makes the trusted state explicit; do not
+add a boolean flag that callers can assert without traversing the boundary.
 
 ## Scope Guards
 
@@ -340,6 +450,10 @@ One diagnostic block per pulse versus one frame per instrument:
 - Does any loop's iteration count grow with bars, fact rows, instruments x
   pulses, events, diagnostics, or candidates? If so, what does one iteration
   do, and does a vectorised form exist?
+- Which upstream boundary already validated these values, and is this code
+  proving a new property or paying again for an old one?
+- Is any POSIXct value being formatted merely to compare, order, group, join,
+  or align it? If so, keep it as POSIXct or an epoch vector.
 - Is state inside the fold held in typed vectors, matrices, or segment tables
   with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
@@ -362,6 +476,7 @@ One diagnostic block per pulse versus one frame per instrument:
 - `../../../dev/spikes/availability-hot-path-representation/spike_inventory.md`
 - `../../../dev/spikes/availability-provider-preparation/spike_inventory.md`
 - `../../../dev/spikes/snapshot-sealing/loop_audit.md`
+- `../ledgr_v0_2_0_1_spec_packet/setup-orchestration-optimization-note.md`
 - `../spike_protocol.md` (sections 1, 3, 4, 10)
 - `performance_arc_v0_1_8_x.qmd`, `benchmark_methodology.qmd`, `execution_fold_core.qmd`
 

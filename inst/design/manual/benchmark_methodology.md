@@ -147,10 +147,10 @@ measurement checkpoint, however, the compiled spot-FIFO row is required
 and the exact record command includes
 `--compiled-accounting-model spot_fifo`. Quantstrat is also a required
 completed row for that checkpoint. It is provisioned only in a dedicated
-isolated R 4.6.1 benchmark library, with the resolved versions and GitHub
-SHAs recorded; it does not become a package dependency. An unavailable
-compiled or quantstrat row blocks that checkpoint, while other peer rows
-retain their explicit availability semantics.
+isolated R 4.6.1 benchmark library, with the resolved versions and
+GitHub SHAs recorded; it does not become a package dependency. An
+unavailable compiled or quantstrat row blocks that checkpoint, while
+other peer rows retain their explicit availability semantics.
 
 Generated files stay local. Closeout documents should name the record
 prefix and summarize the relevant rows, not commit raw results by

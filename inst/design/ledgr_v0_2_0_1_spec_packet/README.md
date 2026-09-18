@@ -1,9 +1,14 @@
 # ledgr v0.2.0.1 Spec Packet
 
 Status: Batches 0 through 9 complete after review and maintainer acceptance.
-Batches 10 and 11 are pending.
+Batch 10 is diagnostic history and does not satisfy final evidence. The
+trusted-timestamp and benchmark-boundary amendment ticket cut is pending
+independent review. Batches 11 through 15 are pending.
 The accepted hot-path complexity amendment is cut as LDG-2736 through
 LDG-2740, and its ticket cut was independently accepted before implementation.
+The maintainer accepted the trusted-timestamp and benchmark-boundary amendment
+on 2026-09-18. Its required pre-cut probe selected `NEITHER`, so LDG-2741
+through LDG-2744 contain no availability-ingestion source change.
 
 This packet scopes v0.2.0.1 as an internal implementation and correctness
 release. It productionizes the three reviewed availability hot-path
@@ -11,10 +16,13 @@ representations behind the shared fold, replaces the quadratic seal-time
 conflict validators through a separately gated cold-path workstream, repairs
 resumed-run equity finalization, and closes with separated cold, warm, and peer
 benchmark records. No user-facing changes have shipped from this packet at
-ticket cut. The accepted amendment adds only the two release-material costs
+ticket cut. The first amendment adds only the two release-material costs
 found by the bounded closeout audit: event-buffer writes and fold-time
 availability valuation. The first Batch 8 records are provisional diagnostic
-evidence and cannot close the release.
+evidence and cannot close the release. The second amendment corrects the
+public benchmark boundary, dense timestamp validation, within-chunk
+snapshot-hash formatting, and proof infrastructure before one new final
+record.
 
 Ticket-cut baseline:
 
@@ -33,7 +41,7 @@ the package support floor or constrain later implementation verification;
   54 of 54, and 54 of 54 checks at their evidence reviews and are rerun against
   the baseline in Batch 1 before any production change.
 
-Amendment ticket-cut baseline:
+Hot-path amendment ticket-cut baseline:
 
 - source baseline `6b09a1b57ff42293091130d2dca565f224a29aea`, package
   `0.2.0.1`, R 4.6.1, duckdb 1.5.2, testthat 3.3.2, collapse 2.1.7 in the
@@ -44,6 +52,17 @@ Amendment ticket-cut baseline:
   baseline records resolution; it does not claim the dependency change has
   landed.
 
+Timestamp/benchmark amendment ticket-cut baseline:
+
+- source baseline `9686229`, package `0.2.0.1`, R 4.6.1 ucrt, duckdb 1.5.2,
+  testthat 3.3.2, and collapse 2.1.8 from the isolated library;
+- the prerequisite is
+  `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/` and records ten
+  exact semantic cases, a 0.763561 session-close ratio, and the binding
+  `NEITHER` outcome; and
+- R 4.6.1 is the active ticket-cut and implementation runtime. Historical
+  baseline versions above remain evidence labels, not current runtime locks.
+
 Authoritative files:
 
 - `v0_2_0_1_spec.md` (accepted 2026-09-16 after two independent review rounds;
@@ -51,6 +70,9 @@ Authoritative files:
 - `v0_2_0_1_hot_path_complexity_amendment_proposed.md` (accepted 2026-09-17
   after independent review and focused re-review; the filename preserves its
   proposal history)
+- `v0_2_0_1_timestamp_and_benchmark_amendment_proposed.md` (accepted
+  2026-09-18 after independent review and focused re-review; the filename
+  preserves its proposal history)
 - `v0_2_0_1_tickets.md`
 - `tickets.yml`
 - `batch_plan.md`
@@ -72,6 +94,12 @@ Authoritative files:
   semantic and failure matrix, five-point scaling, and source retirement)
 - `batch9-valuation-evidence.md` (transient valuation state, structural gate,
   paired 757-pulse gate, combined eventful case, and source retirement)
+- `batch10-benchmark-evidence.md` (diagnostic first-closeout record; not final
+  evidence and not a completed LDG-2733 or LDG-2734 artifact)
+- `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md`
+  (binding pre-cut `NEITHER` outcome)
+- `inst/design/exact_parity_internal_optimization_proof_template.md`
+  (reviewed draft pending LDG-2744 finalization)
 
 Binding design inputs:
 
@@ -114,7 +142,16 @@ Scope:
   paired 757-pulse gates;
 - split the peer benchmark's ingestion phase, refresh the manuals, record the
   availability warm, cold seal, and peer benchmarks, review those results at a
-  separate checkpoint, and only then run the release gate if authorized.
+  separate checkpoint, and only then run the release gate if authorized;
+- measure the two memory peer rows through public one-candidate
+  `ledgr_sweep()` calls and bind compensated production-inline equity as their
+  reference;
+- replace per-bar dense static-coverage timestamp formatting under the full
+  semantic, mutation-sensitive structural, and paired performance gates;
+- deduplicate timestamp formatting within existing snapshot-hash chunks only
+  under byte/hash identity and bounded-memory gates; and
+- independently finalize, index, and contract-lock the exact-parity proof
+  template before the final accepted-source record.
 
 Non-scope:
 
@@ -127,6 +164,10 @@ Non-scope:
   change, Docker benchmark repository, or hosted LEAN;
 - no public peer ranking, engine-parity claim, or promotion of the seal
   forecast to a measurement.
+- no availability-ingestion timestamp optimization: the accepted prerequisite
+  selected `NEITHER` and an exact observation candidate may not ship alone;
+- no cross-chunk hash cache, hash-rule change, new memory execution API, or
+  other item from the remaining optimization inventory.
 
 Review protocol:
 
@@ -135,9 +176,10 @@ Review protocol:
   together;
 - stop for independent review before committing unless the maintainer directs
   otherwise;
-- Batches 2, 3, 5, 6, 8, 9, and 10 each end at a named independent review stop;
+- Batches 2, 3, 5, 6, 8, 9, 11, 12, 13, and 14 each end at a named independent
+  review stop;
 - the two-arm production parity record (Batch 4) precedes any retirement;
-- Batch 10 reruns all provisional Batch 8 records from accepted final source,
-  stops for independent evidence review, and requires an explicit maintainer
-  decision; Batch 11 begins by reading `inst/design/release_ci_playbook.md`
-  only after that go-ahead.
+- Batch 10 remains diagnostic history. Batch 14 reruns final records from one
+  accepted source commit, stops for independent evidence review, and requires
+  an explicit maintainer decision; Batch 15 begins by reading
+  `inst/design/release_ci_playbook.md` only after that go-ahead.

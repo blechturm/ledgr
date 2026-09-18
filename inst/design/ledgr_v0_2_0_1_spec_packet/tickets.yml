@@ -1,7 +1,9 @@
 version: "0.2.0.1"
 source: "v0_2_0_1_tickets.md"
 generated_from: "v0_2_0_1_spec.md"
-amended_by: "v0_2_0_1_hot_path_complexity_amendment_proposed.md"
+amended_by:
+  - "v0_2_0_1_hot_path_complexity_amendment_proposed.md"
+  - "v0_2_0_1_timestamp_and_benchmark_amendment_proposed.md"
 tickets:
   - id: "LDG-2719"
     title: "Packet alignment and ticket cut"
@@ -215,18 +217,21 @@ tickets:
       - "Documentation-contract tests"
 
   - id: "LDG-2733"
-    title: "Availability warm and cold benchmark records"
+    title: "Final availability, cold, hash, and profile records"
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: ["LDG-2740"]
+    dependencies: ["LDG-2744"]
     classification:
       type: "benchmark"
-      surface: "availability-closeout"
-      scope: "warm-and-cold-records"
+      surface: "final-performance-evidence"
+      scope: "availability-cold-hash-profile-records"
     tests:
       - "Fresh final-source availability warm record"
       - "Fresh final-source cold seal record"
+      - "Fresh final-source snapshot-hash paired record"
+      - "Fresh final-source profile"
+      - "NEITHER branch availability-source no-change check"
       - "Provisional-record non-promotion check"
 
   - id: "LDG-2734"
@@ -234,18 +239,20 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2740"]
+    dependencies: ["LDG-2744"]
     classification:
       type: "benchmark"
       surface: "peer-benchmark"
       scope: "release-record"
     tests:
-      - "Fresh final-source peer benchmark record run"
-      - "Compiled spot-FIFO row with exact canonical parity"
+      - "Fresh final-source public-workflow peer benchmark record run"
+      - "Canonical and compiled public one-candidate ledgr_sweep rows"
+      - "Exact non-floating and tolerance-qualified equity parity"
       - "Pinned isolated quantstrat environment and DONE row"
       - "Parity and divergence review"
       - "Peer README and tracked-report field check"
       - "Status/reason, conditional-row, zero-denominator, and weak-tolerance report checks"
+      - "Explicit phase order and missing unavailable-time render checks"
       - "Provisional-record non-promotion check"
 
   - id: "LDG-2735"
@@ -275,6 +282,10 @@ tickets:
       - "LDG-2738"
       - "LDG-2739"
       - "LDG-2740"
+      - "LDG-2741"
+      - "LDG-2742"
+      - "LDG-2743"
+      - "LDG-2744"
     classification:
       type: "release"
       surface: "release-gate"
@@ -286,6 +297,8 @@ tickets:
       - "Collapse minimum-version and no-fallback checks"
       - "Telemetry-name and prohibited-addition check"
       - "Amendment matrix and source-removal gate review"
+      - "Timestamp amendment branch, identity, and source-guard review"
+      - "Proof-template index and authority-boundary review"
       - "Documentation renders and anchor check"
       - "Git status and generated-artifact review"
 
@@ -368,3 +381,71 @@ tickets:
       - "Combined eventful availability case"
       - "Source and identity guards"
       - "Focused regression net and independent review"
+
+  - id: "LDG-2741"
+    title: "Freeze public benchmark boundary and optimization oracles"
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2740"]
+    classification:
+      type: "benchmark-correctness"
+      surface: "benchmark-boundary"
+      scope: "public-method-and-oracle-freeze"
+    tests:
+      - "Public-method and reported-clock boundary tests"
+      - "Memory parity-reference and residual tests"
+      - "Phase-order and unavailable-time render tests"
+      - "Oracle and current-prefix checks"
+      - "Availability-source no-change guard"
+      - "Independent Stage L review"
+
+  - id: "LDG-2742"
+    title: "Dense static-coverage timestamp validation"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2741"]
+    classification:
+      type: "performance-correctness"
+      surface: "dense-static-validation"
+      scope: "primitive-timestamp-axis"
+    tests:
+      - "Dense semantic and failure matrix"
+      - "Structural counter, source guard, and deliberate mutant"
+      - "Paired public canonical and compiled sweep record"
+      - "Consumer and availability-bypass regression tests"
+      - "Independent Stage M code review"
+
+  - id: "LDG-2743"
+    title: "Byte-identical snapshot-hash timestamp deduplication"
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2742"]
+    classification:
+      type: "performance-identity"
+      surface: "snapshot-hashing"
+      scope: "within-chunk-timestamp-deduplication"
+    tests:
+      - "Byte and hash matrix across rules, chunks, boundaries, and old snapshots"
+      - "Reopen, run-guard, and tamper tests"
+      - "Formatter-count, wall, and peak-memory record"
+      - "Availability-source no-change guard"
+      - "Exact-parity proof and independent Stage N code review"
+
+  - id: "LDG-2744"
+    title: "Finalize and index exact-parity proof template"
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2743"]
+    classification:
+      type: "documentation-governance"
+      surface: "optimization-proof-template"
+      scope: "finalization-index-and-contract"
+    tests:
+      - "Independent proof-template review"
+      - "Index and anchor checks"
+      - "Documentation-contract tests"
+      - "Stage O source-freeze record"

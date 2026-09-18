@@ -9,11 +9,12 @@
 and maintainer decisions are accepted, the
 [v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
 2026-09-16 after two independent reviews. The reviewed hot-path complexity
-amendment was accepted 2026-09-17, and tickets LDG-2719 through LDG-2740 are
-cut. Batches 0 through 9 are complete after review and maintainer acceptance;
-Batches 10 and 11 are pending.
-Batch 10 measures final source and stops;
-Batch 11 requires explicit maintainer authorization.
+amendment was accepted 2026-09-17. The trusted-timestamp and benchmark-boundary
+amendment was accepted 2026-09-18; its prerequisite selected `NEITHER`.
+Tickets LDG-2719 through LDG-2744 are cut and await ticket-cut review. Batches
+0 through 9 are complete; Batch 10 is diagnostic history; Batches 11 through
+15 are pending. Batch 14 is final evidence and Batch 15 requires its review
+plus explicit maintainer authorization.
 The refreshed spot-crypto probe
 follows as a separate v0.2.0.x planning cycle.
 **Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
@@ -223,10 +224,13 @@ quadratic seal-time conflict validators through a separately gated cold-path
 workstream, repairs resumed-run equity finalization, and closes with separated
 cold, warm, and peer benchmark records. The accepted complexity amendment adds
 the two release-material closeout findings, linear event writes and prepared
-fold-time valuation. Tickets are cut; Batches 0 through 9 are complete after
-review and maintainer acceptance, and Batches 10 and 11 are pending. Batch
-10 is a separately reviewed benchmark checkpoint; Batch 11 is the release gate
-and requires explicit maintainer authorization after those results are known.
+fold-time valuation. The accepted timestamp/benchmark amendment adds the
+public peer boundary correction, dense timestamp validation, within-chunk hash
+deduplication, and proof template. Tickets LDG-2719 through LDG-2744 are cut
+and await ticket-cut review. Batches 0 through 9 are complete, Batch 10 is
+diagnostic history, and Batches 11 through 15 are pending. Batch 14 is the
+separately reviewed final-evidence checkpoint; Batch 15 is the release gate
+and requires that review plus explicit maintainer authorization.
 The amendment ticket cut was independently accepted before Batch 8 started.
 
 - Spec: `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`.
@@ -789,7 +793,7 @@ contract index.
 | Indicator determinism / fingerprinting | `rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md`, relevant release packet or future packet when cut |
 | Maintainer feature-path review | `manual/features.qmd`, `R/experiment.R`, `R/precompute-features.R`, `R/fold-engine.R`, `R/pulse-context.R`, `R/feature-inspection.R` |
 | Metric context / risk metrics | `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md`, `rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_response.md`, future packet when cut |
-| active v0.2.0.1 packet | `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_hot_path_complexity_amendment_proposed.md`, `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`, `ledgr_v0_2_0_1_spec_packet/tickets.yml`, `ledgr_v0_2_0_1_spec_packet/batch_plan.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md`, `manual/optimization_coding_style.qmd`, `manual/benchmark_methodology.qmd`, `spike_protocol.md` |
+| active v0.2.0.1 packet | `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, both accepted amendments in that packet, `ledgr_v0_2_0_1_spec_packet/v0_2_0_1_tickets.md`, `ledgr_v0_2_0_1_spec_packet/tickets.yml`, `ledgr_v0_2_0_1_spec_packet/batch_plan.md`, `exact_parity_internal_optimization_proof_template.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md`, `rfc/rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md`, `manual/optimization_coding_style.qmd`, `manual/benchmark_methodology.qmd`, `spike_protocol.md` |
 | v0.2.0.0 release record | `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `ledgr_v0_2_0_0_spec_packet/tickets.yml`, `ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `audits/v0_2_0_test_suite_audit.md`, `spike_protocol.md`, `vignette_styleguide.md`, `release_ci_playbook.md`, `contracts.md`, `ledgr_roadmap.md` |
 | v0.1.9.7 release record | `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_tickets.md`, `ledgr_v0_1_9_7_spec_packet/tickets.yml`, `ledgr_v0_1_9_7_spec_packet/batch_plan.md`, `ledgr_v0_1_9_7_spec_packet/v0_1_9_7_release_closeout.md`, `ledgr_v0_1_9_7_spec_packet/return_panel_entry_point_design.md`, `ledgr_v0_1_9_7_spec_packet/stable_region_spike_synthesis.md`, `ledgr_v0_1_9_7_spec_packet/closed_trade_retention_storage_smoke.md`, `rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | Accepted asset-availability / point-in-time-universe RFC | `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, historical), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md` (reviewed response), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`, `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md` (maintainer accepted; synthesis input), `rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md` (accepted 2026-09-08; binding first-implementation direction), inconclusive terminal spike report on `spike/asset-availability-pit-universes` at `d59259f`, `horizon.md` 2026-05-28, 2026-09-06, and 2026-09-08 `[data]` entries, `ledgr_roadmap.md` v0.2.x ragged-universe section, `rfc/README.md` pipeline row, `research/Sharadar-Empirical-Evidence.md`, `research/ledgr_ragged_universe_prior_art_review.md`, `research/rfc-evidence-handoff.md`, `research/Cross-Asset-Accounting-Critical-Events.md`, `contracts.md` |

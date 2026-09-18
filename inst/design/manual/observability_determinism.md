@@ -45,7 +45,7 @@ trusted later.
 
 ## Evidence Surfaces
 
-``` mermaid
+```mermaid
 flowchart LR
   DATA[Sealed snapshot] --> CONFIG[Execution config]
   CODE[Strategy and feature logic] --> FP[Fingerprints]
