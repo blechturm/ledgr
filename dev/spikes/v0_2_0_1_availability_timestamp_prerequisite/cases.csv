@@ -1,0 +1,11 @@
+"case","surface","exact"
+"posix_mixed","observation_times",TRUE
+"character_mixed","observation_times",TRUE
+"date_with_sessions","observation_times",TRUE
+"date_without_sessions","observation_times",TRUE
+"equivalent_timezones","observation_times",TRUE
+"registered","session_closes",TRUE
+"boundary","session_closes",TRUE
+"unsorted_duplicates","session_closes",TRUE
+"no_sessions","session_closes",TRUE
+"registered_complete_result","validate_inputs",TRUE

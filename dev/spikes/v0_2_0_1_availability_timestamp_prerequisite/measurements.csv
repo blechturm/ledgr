@@ -1,0 +1,13 @@
+"operation","arm","repetition","seconds"
+"observation_times","current",1,16.19
+"observation_times","candidate",1,0.0300000000000011
+"session_closes","current",1,7.19
+"session_closes","candidate",1,5.49000000000001
+"observation_times","candidate",2,0.0300000000000011
+"observation_times","current",2,16.17
+"session_closes","candidate",2,5.5
+"session_closes","current",2,7.14000000000001
+"observation_times","current",3,16.28
+"observation_times","candidate",3,0.0300000000000011
+"session_closes","current",3,7.28
+"session_closes","candidate",3,5.43000000000001
