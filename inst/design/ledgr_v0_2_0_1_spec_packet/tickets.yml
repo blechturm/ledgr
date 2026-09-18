@@ -419,7 +419,7 @@ tickets:
 
   - id: "LDG-2743"
     title: "Byte-identical snapshot-hash timestamp deduplication"
-    status: "pending"
+    status: "complete_after_review"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2742"]

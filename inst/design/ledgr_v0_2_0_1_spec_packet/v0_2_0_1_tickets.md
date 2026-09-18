@@ -1569,7 +1569,7 @@ scope: primitive-timestamp-axis
 Priority: P0
 Effort: L
 Dependencies: LDG-2742
-Status: Pending
+Status: Complete After Review
 
 ### Description
 

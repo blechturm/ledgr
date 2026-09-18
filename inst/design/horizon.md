@@ -36,8 +36,9 @@ correction, the resumed-run equity-prefix repair, linear event writes, prepared
 fold-time valuation, corrected public peer boundaries, dense timestamp
 validation, within-chunk hash formatting, and fresh separated benchmark
 closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batches 11 and 12 are complete after review; Batches 13 through 15 are
-pending. The prerequisite selected `NEITHER`, so no
+Batches 11 through 13 are complete after review; Batches 14 and 15 are
+pending. The prerequisite
+selected `NEITHER`, so no
 availability-ingestion optimization enters the release. Batch 15 requires
 Batch 14 review and an explicit maintainer go-ahead.
 Spot-crypto planning follows that

@@ -1,0 +1,2 @@
+"row_count","current_formatter_inputs","candidate_formatter_inputs","formatter_ratio","current_median_sec","candidate_median_sec","wall_ratio","current_max_peak_ws_mib","candidate_max_peak_ws_mib","peak_ws_ratio","exact_hash","passed"
+630000,630000,79380,0.126,7.62,5.21,0.683727034120735,422.96484375,421.78125,0.997201673454686,TRUE,TRUE

@@ -2992,7 +2992,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md",
     "batch9-valuation-evidence.md", "batch10-benchmark-evidence.md",
     "batch11-boundary-oracle-evidence.md",
-    "batch12-dense-timestamp-evidence.md"
+    "batch12-dense-timestamp-evidence.md",
+    "batch13-snapshot-hash-evidence.md"
   ))
   testthat::skip_if_not(
     all(file.exists(paths)),
@@ -3006,7 +3007,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     "batch1_evidence", "batch2_evidence", "batch3_evidence",
     "batch4_evidence", "batch5_evidence", "batch6_evidence",
     "batch7_evidence", "batch8_evidence", "batch9_evidence",
-    "batch10_evidence", "batch11_evidence", "batch12_evidence"
+    "batch10_evidence", "batch11_evidence", "batch12_evidence",
+    "batch13_evidence"
   )
   prerequisite_path <- file.path(
     root,
@@ -3069,8 +3071,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("complete_after_review", 14L),
       rep("pending", 3L),
-      rep("complete_after_review", 7L),
-      rep("pending", 2L)
+      rep("complete_after_review", 8L),
+      "pending"
     )
   )
   ticket_lines <- readLines(paths[[5L]], warn = FALSE)
@@ -3080,8 +3082,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review", 14L),
       rep("Pending", 3L),
-      rep("Complete After Review", 7L),
-      rep("Pending", 2L)
+      rep("Complete After Review", 8L),
+      "Pending"
     )
   )
   batch_lines <- readLines(paths[[7L]], warn = FALSE)
@@ -3102,8 +3104,8 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     c(
       rep("Complete After Review.", 10L),
       "Diagnostic History.",
-      rep("Complete After Review.", 2L),
-      rep("Pending.", 3L)
+      rep("Complete After Review.", 3L),
+      rep("Pending.", 2L)
     )
   )
   testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
@@ -3164,6 +3166,20 @@ testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
     docs$batch12_evidence,
     "This is Stage M evidence, not the final Stage O record.",
     fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "implementation evidence pending independent Stage N review",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "Gate disposition: `PASS`.",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "This is Stage N evidence, not final\\s+Stage O evidence\\."
   )
   testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
   testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
