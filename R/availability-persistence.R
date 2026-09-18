@@ -190,6 +190,120 @@ ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
   )
 }
 
+ledgr_snapshot_membership_set_abort <- function(message) {
+  rlang::abort(
+    message,
+    class = c("ledgr_snapshot_membership_set_invalid", "ledgr_invalid_state")
+  )
+}
+
+ledgr_snapshot_membership_time_equal <- function(left, right) {
+  left <- as.numeric(left)
+  right <- as.numeric(right)
+  (is.na(left) & is.na(right)) |
+    (!is.na(left) & !is.na(right) & left == right)
+}
+
+ledgr_snapshot_membership_sweep_rows <- function(membership,
+                                                 membership_sets) {
+  if (nrow(membership) == 0L) return(membership)
+  set_rows <- !is.na(membership$set_id)
+  if (!any(set_rows)) return(membership)
+
+  if (any(!nzchar(membership$set_id[set_rows]))) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows require a non-empty set identity."
+    )
+  }
+  if (any(is.na(membership$member[set_rows]) |
+      !membership$member[set_rows])) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows must assert member = TRUE."
+    )
+  }
+  if (nrow(membership_sets) == 0L ||
+      anyNA(membership_sets$universe_id) ||
+      anyNA(membership_sets$set_id) ||
+      any(!nzchar(membership_sets$universe_id)) ||
+      any(!nzchar(membership_sets$set_id)) ||
+      anyNA(membership_sets$complete)) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set headers are malformed."
+    )
+  }
+  identity_columns <- c("universe_id", "set_id")
+  identity_rows <- rbind(
+    membership_sets[, identity_columns, drop = FALSE],
+    membership[set_rows, identity_columns, drop = FALSE]
+  )
+  identity_group <- ledgr_fact_scope_group(identity_rows, identity_columns)
+  header_count <- nrow(membership_sets)
+  header_group <- identity_group[seq_len(header_count)]
+  row_group <- identity_group[header_count + seq_len(sum(set_rows))]
+  if (anyDuplicated(header_group)) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set header identity is duplicated."
+    )
+  }
+  header_index <- match(row_group, header_group)
+  if (anyNA(header_index)) {
+    rlang::abort(
+      "Snapshot membership rows reference a missing membership-set header.",
+      class = c("ledgr_snapshot_membership_set_missing", "ledgr_invalid_state")
+    )
+  }
+  if (!all(ledgr_snapshot_membership_time_equal(
+    membership$effective_from[set_rows],
+    membership_sets$effective_from[header_index]
+  ))) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows do not match their header effective time."
+    )
+  }
+  if (any(!is.na(membership$effective_to[set_rows]))) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows must have an open effective interval."
+    )
+  }
+  if (!all(ledgr_snapshot_membership_time_equal(
+    membership$knowledge_time[set_rows],
+    membership_sets$knowledge_time[header_index]
+  ))) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows do not match their header knowledge time."
+    )
+  }
+  row_provenance <- as.character(membership$provenance_json[set_rows])
+  header_provenance <- as.character(
+    membership_sets$provenance_json[header_index]
+  )
+  if (anyNA(row_provenance) || anyNA(header_provenance) ||
+      any(row_provenance != header_provenance)) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows do not match their header provenance."
+    )
+  }
+  member_columns <- c(identity_columns, "instrument_id")
+  member_group <- ledgr_fact_scope_group(
+    membership[set_rows, member_columns, drop = FALSE],
+    member_columns
+  )
+  if (anyDuplicated(member_group)) {
+    ledgr_snapshot_membership_set_abort(
+      "Snapshot membership-set rows contain a duplicate member identity."
+    )
+  }
+
+  interval_rows <- !set_rows
+  if (!any(interval_rows)) return(membership[0, , drop = FALSE])
+  scope <- ledgr_fact_scope_group(
+    membership,
+    c("instrument_id", "universe_id")
+  )
+  shared_scope <- set_rows & scope %in% scope[interval_rows]
+  membership[interval_rows | shared_scope, , drop = FALSE]
+}
+
 ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
   rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
   if (identical(rule, 1L)) return(invisible(TRUE))
@@ -315,18 +429,11 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     membership$source <- vapply(membership$provenance_json, function(x) {
       as.character(ledgr_json_read_nested(x)$source %||% "")
     }, character(1))
+    membership <- ledgr_snapshot_membership_sweep_rows(
+      membership,
+      membership_sets
+    )
     ledgr_fact_validate_membership_conflicts(membership)
-  }
-  set_rows <- !is.na(membership$set_id)
-  if (any(set_rows)) {
-    member_keys <- paste(membership$universe_id[set_rows], membership$set_id[set_rows], sep = "\r")
-    set_keys <- paste(membership_sets$universe_id, membership_sets$set_id, sep = "\r")
-    if (any(!member_keys %in% set_keys)) {
-      rlang::abort(
-        "Snapshot membership rows reference a missing membership-set header.",
-        class = c("ledgr_snapshot_membership_set_missing", "ledgr_invalid_state")
-      )
-    }
   }
 
   status_rows <- data$snapshot_trading_status

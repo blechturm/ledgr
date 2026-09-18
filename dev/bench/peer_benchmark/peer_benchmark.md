@@ -1,101 +1,150 @@
 # ledgr Peer Parity And Performance Benchmark Report
 
 
-On a standard 500-instrument, 5-year daily-bar SMA crossover workload,
-ledgr’s memory-backed opt-in compiled spot-FIFO accelerator is the
-fastest completed row in this included event-driven comparison, ahead of
-Backtrader by a meaningful margin on end-to-end wall time and by a
-larger margin on engine work alone. Parsed canonical equity, cash, and
-position outputs match canonical R ledgr exactly, so the speedup comes
-from the scoped spot-FIFO hot frame rather than from cutting corners.
+This tracked report records the v0.2.0.1 internal same-host peer
+workload. Parity is interpreted before timing. The report preserves
+phase boundaries, unavailable engines, and classified divergences
+without turning one host and one fixture into a public engine ranking.
 
-This report walks the measurement: headline result first, parity check
-second, full peer comparison third, methodology last. Read in order, or
-jump to whichever section answers what you came to verify.
+The exact closeout command was:
+
+``` powershell
+$env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
+$env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+```
+
+The exact ignored local prefix is
+`dev/bench/results/peer_benchmark_record_20260918T140507Z`. The final
+Stage O record was produced from accepted source commit
+`bcced9457de58f10f9c862c2890576a7370b1140`; the exact benchmark harness
+has SHA-256
+`6b7ab57149a6e17b0f386117b82c8e33ac19eb3eb84eda3be6995571230b5f2f`. It
+ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
+from the isolated library with the ticket-pinned blotter 0.17.0,
+FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
+zipline-reloaded completed through pinned `uv` environments. Local LEAN
+was unavailable because its CLI root uses an obsolete organization
+layout. No hosted LEAN service was used.
+
+The report checks every ledgr row before interpreting its timing. The
+canonical public sweep completed in 48.63 seconds cold and 30.96 seconds
+warm; the public compiled sweep completed in 33.66 seconds cold and
+16.63 seconds warm. The two public sweep rows are exact across all 1,260
+equity rows, 68,201 fills, and the realized-trade row after normalizing
+only the engine label. Against durable ledgr, fills and trades are
+exact; compensated production-inline equity passes the existing relative
+`all.equal()` tolerance of `1e-8`, with maximum absolute residual
+`4.0046870708465576e-07`, maximum relative residual
+`4.7321774610389843e-13`, 3,578 affected cells across 1,247 rows, and
+affected columns `equity`, `positions_value`, and `position_proxy`.
+Earlier diagnostic peer CSVs used reconstructed equity; this final
+record uses compensated production-inline equity as the memory
+reference. Richer surfaces come from an explicitly untimed private
+oracle and are used only for parity. The report retains peer residuals
+and partial surfaces rather than turning a numerical tolerance into a
+claim of full parity. An external one-second sampler over the complete
+benchmark process tree recorded a peak working set of 1,754.3 MiB across
+964 samples; this is a record-level peak, not a per-engine allocation.
 
 > **Scope of this report**
 >
-> Internal repo-local benchmark. Same host, same seed, single fixture.
-> The B2 row is an explicit opt-in
-> (`compiled_accounting_model = "spot_fifo"`) on ledgr’s
-> ephemeral/memory-backed path. Default ledgr execution remains
-> canonical R. Numbers are for maintainer use and release-closeout
-> language, not a public ranking or a universal speed claim.
+> Internal repo-local benchmark. Same host, same seed, single fixture. A
+> B2 row, when explicitly requested, remains an opt-in
+> (`compiled_accounting_model = "spot_fifo"`) on ledgr’s public
+> one-candidate sweep path. Default ledgr execution remains canonical R.
+> Numbers are for maintainer use and release closeout, not a public
+> ranking or a universal performance claim.
 
-## Headline: B2 spot-FIFO vs Backtrader
+## Optional B2 timing context
 
-Same fixture, same seed, same shared bars CSV. The B2 row uses ledgr’s
-explicit `compiled_accounting_model = "spot_fifo"` spot-FIFO hot frame
-on the ephemeral benchmark boundary; Backtrader uses its standard
-event-driven loop. Both run the same SMA crossover strategy.
+When requested, the B2 row uses ledgr’s explicit
+`compiled_accounting_model = "spot_fifo"` hot frame on the same fixture,
+seed, shared bars, and SMA crossover strategy as the other rows. If it
+is absent, this section reports that state rather than synthesizing a
+comparison.
 
 | Surface | B2 seconds | Backtrader seconds | B2 / Backtrader | B2 reduction vs Backtrader |
 |:---|:---|:---|:---|:---|
-| Core wall | 37.090 | 79.363 | 0.47x | 53.3% |
-| Engine phase | 15.770 | 78.543 | 0.20x | 79.9% |
+| Cold end to end | 33.660 | 83.870 | 0.40x | 59.9% |
+| Warm research iteration | 16.630 | 83.300 | 0.20x | 80.0% |
+| Engine phase | 14.890 | 78.508 | 0.19x | 81.0% |
 
-Two ratios, both honest. The engine-phase ratio is the slice the
-compiled hot frame actually replaces. The core-wall ratio is what a user
-sees end-to-end. The remaining wall B2 spends after the engine phase is
-R-side results materialization: building the canonical equity, fills,
-and trades artifacts the harness measures. Backtrader’s equivalent
-results phase is much smaller because it writes raw CSVs without
-canonical materialization.
+The three clocks answer different questions. Cold includes the reusable
+sealed snapshot. Warm measures the public research iteration over that
+unchanged snapshot. Engine isolates the fold slice replaced by the
+compiled hot frame. The timed sweep results phase uses retained inline
+facts and public accessors; the private full-surface parity oracle runs
+outside every reported clock.
 
 ![](peer_benchmark_files/figure-commonmark/unnamed-chunk-3-1.png)
 
-## Why the speed claim is trustworthy
+## Why parity comes before timing
 
-A speed number only matters if the engine produces the same answer.
-ledgr’s compiled `spot_fifo` row matches canonical ledgr ephemeral with
-zero parsed canonical-output difference on this fixture across equity,
-cash, and the position proxy.
+A speed number only matters if the engine produces the same answer. When
+the compiled row is present, the following check requires exact identity
+for fills, trades, and every non-floating equity field. Floating equity
+uses only the already registered relative `all.equal()` tolerance of
+`1e-8` and reports its residuals.
 
-| Check                       | Value    |
-|:----------------------------|:---------|
-| Canonical ephemeral rows    | 1260     |
-| B2 rows                     | 1260     |
-| Merged rows                 | 1260     |
-| Equity correlation          | 1.000000 |
-| Max abs equity diff         | 0        |
-| Max abs cash diff           | 0        |
-| Max abs position proxy diff | 0        |
+| Surface | Standard | Result | Max absolute residual | Max relative residual | Affected columns | Affected rows |
+|:---|:---|:---|---:|---:|:---|---:|
+| equity | relative all.equal tolerance 1e-8 | PASS | 0 | 0 |  | 0 |
+| fills | exact | PASS | 0 | 0 | none | 0 |
+| trades | exact | PASS | 0 | 0 | none | 0 |
 
-The compiled path is doing the same accounting as the R path, just
-faster. That makes the speed delta a real engine measurement rather than
-a corner cut. Peer-by-peer parity against ledgr canonical follows below.
+The report renders compiled timing only after the registered comparisons
+pass. Peer-by-peer tolerance results against durable ledgr follow below;
+timing does not waive a failed semantic comparison.
 
 ## Full peer comparison
 
-The B2 sidecar row is measured on the same fixture as the seven-row peer
-record bundle and appended here for comparison. Backtrader is the
-closest comparable: event-driven, Python, no durable persistence.
-Zipline and quantstrat are included as event-driven reference points;
-both are materially slower. LEAN is included as a status row when the
-local CLI is available, otherwise marked unavailable with the failure
-reason.
+A compiled row, when requested, uses the same fixture as the other
+engines. Backtrader, Zipline, quantstrat, and LEAN retain their declared
+lifecycle boundaries and availability states; no row is treated as
+universally representative of its engine or language.
 
-ledgr appears in canonical and B2 rows because both answer useful
-questions. Canonical durable and ephemeral track the R fold and the
-auditability surface ledgr ships by default. B2 tracks the opt-in
-compiled hot frame. Keeping both prevents reading a compiled opt-in
-result as a default ledgr claim.
+Canonical durable and public-sweep rows track the audited run workflow
+and the interactive research workflow ledgr ships. An optional B2 sweep
+row tracks the opt-in compiled hot frame. Keeping those labels distinct
+prevents reading a compiled opt-in result as a default ledgr claim.
 
-| Engine | Status | Full row | Ingestion | Engine | Results | Total | Bars/sec |
-|:---|:---|:---|:---|:---|:---|:---|:---|
-| ledgr_ttr_canonical | DONE | 115.120 | 19.780 | 86.580 | 8.730 | 115.090 | 5,473.98 |
-| ledgr_ttr_canonical_ephemeral | DONE | 99.920 | 11.070 | 79.390 | 9.460 | 99.920 | 6,305.04 |
-| ledgr_builtin_sma | DONE | 107.440 | 19.000 | 80.960 | 7.480 | 107.440 | 5,863.74 |
-| quantstrat | DONE | 815.760 | 12.960 | 801.030 | 1.370 | 815.360 | 772.665 |
-| backtrader | DONE | 86.360 | 0.666 | 78.543 | 0.154 | 79.363 | 7,938.23 |
-| zipline-reloaded-full | DONE | 318.900 | 17.256 | 284.626 | 0.464 | 302.346 | 2,083.71 |
-| LEAN | UNAVAILABLE | 9.520 | NA | NA | NA | NA | NA |
-| ledgr_ttr_compiled_spot_fifo_ephemeral | DONE | 37.130 | 11.430 | 15.770 | 9.890 | 37.090 | 16,985.7 |
+| Engine row | Status | Cost | Risk | Compiled | Full row | Snapshot prepare | Setup / orchestration | Engine phase | Results | Cold | Warm | Bars/sec |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| ledgr_ttr_canonical | DONE | cost_zero | risk_none | NA | 75.800 | 17.550 | 0.330 | 47.470 | 10.430 | 75.780 | 58.230 | 8,313.54 |
+| ledgr_ttr_canonical_sweep | DONE | cost_zero | risk_none | NA | 48.700 | 17.670 | 1.620 | 29.320 | 0.020 | 48.630 | 30.960 | 12,955 |
+| ledgr_ttr_compiled_spot_fifo_sweep | DONE | cost_zero | risk_none | spot_fifo | 33.700 | 17.030 | 1.660 | 14.890 | 0.080 | 33.660 | 16.630 | 18,716.6 |
+| ledgr_builtin_sma | DONE | cost_zero | risk_none | NA | 67.850 | 16.910 | 0.330 | 42.480 | 8.130 | 67.850 | 50.940 | 9,285.19 |
+| quantstrat | DONE | NA | NA | NA | 356.410 | 10.150 | 1.880 | 342.950 | 1.220 | 356.200 | 346.050 | 1,768.67 |
+| backtrader | DONE | NA | NA | NA | 83.930 | 0.570 | 4.549 | 78.508 | 0.243 | 83.870 | 83.300 | 7,511.63 |
+| zipline-reloaded-full | DONE | NA | NA | NA | 305.610 | 15.754 | 11.322 | 277.986 | 0.548 | 305.610 | 289.856 | 2,061.45 |
+| LEAN | UNAVAILABLE | NA | NA | NA | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NA |
 
-Read `Total` as the engine-row boundary. Read `Full row` as the wrapper
-cost around that boundary; large full-row overhead on Python rows
-reflects per-invocation process and environment setup outside the phase
-total. Phase definitions are in the Methodology section.
+Read `Cold` as the sum of snapshot preparation, setup/orchestration,
+engine, and results. Read `Warm` as the same row without reusable
+snapshot preparation. `Full row` is the wrapper clock around the engine
+row; phase definitions are in the Methodology section.
+
+For an unavailable engine, every displayed performance clock is `NULL`.
+A failed wrapper attempt may have elapsed time in its raw metadata, but
+that is diagnostic latency rather than a completed benchmark result.
+
+The public-sweep setup field is broader than experiment-object
+construction. It is the complete public `ledgr_sweep()` wall not covered
+by its candidate fold and inline-results clocks, plus experiment and
+grid construction. It therefore includes warm snapshot reads, bars
+matrices and views, validation, feature and task preparation, and sweep
+retention/orchestration. The durable row exposes no matching subclock:
+analogous work inside `ledgr_run()` remains in that row’s engine phase.
+Compare cold and warm totals across those rows; use the colored segments
+only as each row’s declared decomposition.
+
+For peer comparison, this complete boundary is the cold end-to-end view
+when the engines perform meaningfully comparable preparation and produce
+the required outputs. ledgr’s repeated research workflow has a separate
+warm clock over an existing unchanged, verified snapshot. Snapshot
+preparation is paid once per unchanged data-and-facts identity and again
+after that identity changes.
 
 ![](peer_benchmark_files/figure-commonmark/unnamed-chunk-6-1.png)
 
@@ -128,17 +177,20 @@ float-ordering rounding.
 
 | Peer | Tier 1 | Parity surface | Equity corr | Max div | Return corr |
 |:---|:---|:---|:---|:---|:---|
-| ledgr_ttr_canonical_ephemeral | pass | equity + fills + realized trades | 1.000000 | \<0.0001% | 1.000000 |
+| ledgr_ttr_canonical_sweep | pass | equity + fills + realized trades | 1.000000 | \<0.0001% | 1.000000 |
+| ledgr_ttr_compiled_spot_fifo_sweep | pass | equity + fills + realized trades | 1.000000 | \<0.0001% | 1.000000 |
 | ledgr_builtin_sma | pass | equity + fills + realized trades | 1.000000 | 0% | 1.000000 |
-| quantstrat | review (partial surface) | partial: equity + trade count only | 0.999778 | 0.2374% | 0.987795 |
+| quantstrat | review (partial surface) | partial: equity + fills + trade count; no realized trade P&L | 0.999778 | 0.2374% | 0.987795 |
 | backtrader | pass | equity + fills + realized trades | 0.999999 | 0.06082% | 0.999746 |
-| zipline-reloaded-full | pass | equity + fills + realized trades | 0.999757 | 0.2486% | 0.146064 |
+| zipline-reloaded-full | review (weak return correlation) | equity + fills + realized trades | 0.999757 | 0.2486% | 0.146064 |
 | LEAN | review | unavailable | NA | NA | NA |
 
 Rows in `review` carry an explicit attribution:
 
-| Peer | Review attribution       |
-|:-----|:-------------------------|
+| Peer | Review attribution |
+|:---|:---|
+| quantstrat | partial surface: no comparable realized-trade P&L |
+| zipline-reloaded-full | equity-level tolerance passes, but daily-return correlation is 0.146064 |
 | LEAN | unavailable peer surface |
 
 ![](peer_benchmark_files/figure-commonmark/unnamed-chunk-10-1.png)
@@ -147,7 +199,8 @@ Rows in `review` carry an explicit attribution:
 
 | Peer | Total return delta | Sharpe diff | Max DD delta |
 |:---|:---|:---|:---|
-| ledgr_ttr_canonical_ephemeral | \<0.00001 pp | 0.000000000000363265 | \<0.00001 pp |
+| ledgr_ttr_canonical_sweep | \<0.00001 pp | 0.000000000000256684 | \<0.00001 pp |
+| ledgr_ttr_compiled_spot_fifo_sweep | \<0.00001 pp | 0.000000000000256684 | \<0.00001 pp |
 | ledgr_builtin_sma | 0 pp | 0 | 0 pp |
 | quantstrat | -0.16107 pp | -0.106235 | 0.0025844 pp |
 | backtrader | -0.055685 pp | -0.00973772 | -0.00017200 pp |
@@ -158,9 +211,10 @@ Rows in `review` carry an explicit attribution:
 
 | Peer | Trade count diff | Trade surface | Parity note |
 |:---|---:|:---|:---|
-| ledgr_ttr_canonical_ephemeral | 0 | available_realized_pnl | equity + fills + realized trades |
+| ledgr_ttr_canonical_sweep | 0 | available_realized_pnl | equity + fills + realized trades |
+| ledgr_ttr_compiled_spot_fifo_sweep | 0 | available_realized_pnl | equity + fills + realized trades |
 | ledgr_builtin_sma | 0 | available_realized_pnl | equity + fills + realized trades |
-| quantstrat | 33777 | trade_count_available_only | partial: equity + trade count only |
+| quantstrat | 33777 | trade_count_available_only | partial: equity + fills + trade count; no realized trade P&L |
 | backtrader | -238 | available_realized_pnl | equity + fills + realized trades |
 | zipline-reloaded-full | -682 | available_realized_pnl | equity + fills + realized trades |
 | LEAN | NA | unavailable | unavailable |
@@ -174,8 +228,9 @@ sources.
 
 | Peer | Total abs divergence | Diverging bars | First divergence | Indicator warmup | Fill timing | Calendar | Position size | Float rounding | Other |
 |:---|:---|---:|:---|:---|:---|:---|:---|:---|:---|
-| ledgr_ttr_canonical_ephemeral | 0.00004476123 | 1221 | 2018-01-15T00:00:00Z | 0% | 0% | 0% | 0% | 100.0% | 0% |
-| ledgr_builtin_sma | 0 | 0 | NA | 0% | 0% | 0% | 0% | 100.0% | 0% |
+| ledgr_ttr_canonical_sweep | 0.0002358239 | 1239 | 2018-01-15T00:00:00Z | 0% | 0% | 0% | 0% | 100.0% | 0% |
+| ledgr_ttr_compiled_spot_fifo_sweep | 0.0002358239 | 1239 | 2018-01-15T00:00:00Z | 0% | 0% | 0% | 0% | 100.0% | 0% |
+| ledgr_builtin_sma | 0 | 0 | NA | n/a (zero divergence) | n/a (zero divergence) | n/a (zero divergence) | n/a (zero divergence) | n/a (zero divergence) | n/a (zero divergence) |
 | quantstrat | 16597234\. | 1250 | 2018-01-15T00:00:00Z | 0% | 98.96% | 0% | 1.040% | 0% | 0% |
 | backtrader | 6931489\. | 1250 | 2018-01-15T00:00:00Z | 0% | 0.01299% | 0% | 99.99% | 0% | 0% |
 | zipline-reloaded-full | 9200442\. | 1000 | 2018-01-16T00:00:00Z | 0% | 26.01% | 0% | 73.99% | 0% | 0% |
@@ -193,25 +248,25 @@ local same-host harness took under the declared boundary.
 Smoke command:
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
 ```
 
 Record command:
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
 ```
 
 Record command with the opt-in B2 row:
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --compiled-accounting-model spot_fifo
 ```
 
 Current-surface cost/risk-chain command:
 
 ``` powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --engine-set ledgr-cost --release v0.1.9.6
 ```
 
 The harness writes ignored local artifacts under `dev/bench/results/`:
@@ -226,9 +281,9 @@ parity history JSON under `dev/bench/results/parity_history/`.
 | Row | Status policy |
 |----|----|
 | ledgr canonical TTR | Required; errors if `TTR` is missing. |
-| ledgr canonical TTR ephemeral | Required; runs the same fold core through an in-memory output handler and must match durable ledgr equity/fills before the run is accepted. |
-| ledgr current-surface cost/risk ephemeral | Optional internal measurement row; enabled with `--engine-set ledgr-cost`; runs zero-cost/no-risk and public cost/risk-chain rows on the same fixture and seed. |
-| ledgr B2 spot-FIFO ephemeral | Optional; enabled with `--compiled-accounting-model spot_fifo`; uses the same bars/features/strategy surface as ledgr canonical TTR ephemeral, uses the same closed enum and memory-handler dispatch as the public `compiled_accounting_model = "spot_fifo"` sweep opt-in, and must match canonical ledgr outputs before being interpreted as a peer-comparison row. |
+| ledgr canonical TTR public sweep | Required; calls public `ledgr_sweep()` with one candidate and retained returns/trades. Full equity/fill parity is checked afterward by an untimed internal oracle. |
+| ledgr current-surface cost/risk sweep | Optional; enabled with `--engine-set ledgr-cost`; measures public cost/risk-chain sweeps on the same fixture and seed. The legacy resolver row remains an internal diagnostic. |
+| ledgr B2 spot-FIFO public sweep | Optional; enabled with `--compiled-accounting-model spot_fifo`; calls the same public one-candidate sweep with the closed compiled selector and must match the canonical sweep before timing is interpreted. |
 | ledgr built-in SMA diagnostic | Required; runs through ledgr built-ins. |
 | quantstrat | Runs when local R packages are installed; otherwise explicit unavailable row. |
 | Backtrader | Managed through `dev/bench/peer_benchmark/python/backtrader/` and run through `python -m uv`. |
@@ -240,49 +295,64 @@ labeled with unavailable metadata rather than silently dropped.
 
 ### Phase definitions
 
-Each DONE row in the performance table is split into three measured
+Each DONE row in the performance table is split into four measured
 phases:
 
-- **Ingestion**: from timed-window start until the engine has native
-  data structures ready to iterate.
+- **Snapshot preparation**: reusable native data or bundle preparation.
+- **Setup / orchestration** (`experiment_setup_sec`): construction and
+  other non-engine work repeated for each experiment or public workflow
+  call.
 - **Engine**: from ready-to-iterate until strategy execution completes
   and engine state is final.
-- **Results**: from final engine state until canonical equity, fills,
-  and trades are materialized for this harness.
+- **Results**: from final engine state through the result surface
+  declared by the row. Public sweep rows retain and read returns/trades;
+  their richer parity-oracle surfaces are generated outside the reported
+  clock.
 
-The three phase columns must reconcile to `Total` within 0.5 seconds or
-the harness aborts. LEAN is the one explicit exception: when the local
-CLI runs, the whole CLI subprocess is bucketed as engine time because
-ingestion, run, and extraction are not separable from outside the CLI.
+The four phase columns must reconcile to the cold clock within 0.5
+seconds or the harness aborts. The warm clock is setup/orchestration
+plus engine plus results.
 
-| Engine | Ingestion | Engine | Results |
-|----|----|----|----|
-| `ledgr_ttr_canonical` | `read.csv`, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `ledgr_ttr_canonical_ephemeral` | `read.csv`, timestamp normalization, in-memory bars/features/projection construction | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction plus canonical materialization |
-| `ledgr_ttr_canonical_ephemeral_with_cost_risk` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `ledgr_cost_chain(spread_bps=5, fixed_fee=1)` and `ledgr_risk_chain(long_only, max_weight=0.20)` | event-stream equity/fills canonical materialization |
-| `ledgr_ttr_compiled_spot_fifo_ephemeral` | Same ephemeral ledgr boundary as `ledgr_ttr_canonical_ephemeral` | fold execution with `compiled_accounting_model = "spot_fifo"` on the memory handler | event-stream equity/fills canonical materialization |
-| `ledgr_builtin_sma` | Same durable ledgr boundary with built-in SMA features | `ledgr_run()` | `ledgr_results()` for equity/fills plus canonical materialization |
-| `quantstrat` | `read.csv`, xts/globalenv construction, portfolio/account/orders/strategy setup | `applyStrategy()` plus account updates | account/transaction extraction plus canonical materialization |
-| `backtrader` | `read.csv`, `PandasData` construction, `cerebro.adddata` loop | `cerebro.run()` | CSV writes from in-memory observer/fill rows |
-| `zipline-reloaded-full` | `read.csv`, temporary csvdir creation, bundle registration and ingest | `run_algorithm()` | performance-frame transaction/equity extraction plus CSV writes |
-| `LEAN` | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
+The internal phase boundary is not identical across rows. Durable ledgr
+times the complete public `ledgr_run()` call as engine work. Public
+sweep rows expose candidate fold and inline-results clocks; their
+remaining public-call wall is recorded as setup/orchestration. The
+latter includes warm snapshot reads, matrix/view preparation and
+retention assembly, not merely creation of the experiment object. Cold
+and warm totals are the cross-row comparison surfaces. The components
+explain each row and must not be compared as identical internal
+operations. LEAN is the one explicit exception: when the local CLI runs,
+the whole CLI subprocess is bucketed as engine time because preparation,
+execution, and extraction are not separable from outside the CLI.
 
-Boundary ambiguity decisions: quantstrat initialization is ingestion
-because it builds native portfolio/order state before strategy
-iteration; zipline bundle registration/ingest is ingestion because it
-creates the native bundle consumed by `run_algorithm()`; LEAN CLI phases
-are unavailable from outside the CLI.
+| Engine | Snapshot preparation | Setup / orchestration | Engine | Results |
+|----|----|----|----|----|
+| `ledgr_ttr_canonical` | CSV read, timestamp normalization, and sealed DuckDB snapshot | experiment and run identity | `ledgr_run()` | `ledgr_results()` plus canonical materialization |
+| `ledgr_ttr_canonical_sweep` | CSV read, timestamp normalization, and sealed DuckDB snapshot | experiment, one-candidate grid, and public sweep orchestration outside its candidate clocks | public `ledgr_sweep()` candidate fold | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_ttr_canonical_sweep_with_cost_risk` | Same public sweep boundary | experiment, one-candidate grid, cost model, risk chain, and sweep orchestration | public sweep with cost and risk chains | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_ttr_compiled_spot_fifo_sweep` | Same public sweep boundary | experiment, one-candidate grid, compiled-model selection, and sweep orchestration | public sweep with `compiled_accounting_model = "spot_fifo"` | inline summary plus public retained returns/trades; full parity oracle excluded |
+| `ledgr_builtin_sma` | Same durable ledgr boundary | experiment with built-in SMA features | `ledgr_run()` | `ledgr_results()` plus canonical materialization |
+| `quantstrat` | CSV read, xts construction, and global data assignment | portfolio, account, orders, and strategy | `applyStrategy()` plus account updates | equity and transaction extraction plus canonical writes |
+| `backtrader` | CSV read and grouped pandas bars | feeds, broker, and strategy construction | `cerebro.run()` | canonical equity, fill, and trade writes |
+| `zipline-reloaded-full` | CSV read, csvdir creation, bundle registration, and ingest | algorithm callbacks and calendar | `run_algorithm()` | performance-frame extraction plus canonical writes |
+| `LEAN` | Not separable from outside the CLI | Not separable from outside the CLI | whole CLI subprocess if available | Not separable from outside the CLI |
+
+Boundary ambiguity decisions: quantstrat data/xts preparation is
+reusable while portfolio, account, order, and strategy construction is
+experiment-specific; zipline bundle registration/ingest is reusable
+native-data preparation; LEAN CLI phases are unavailable from outside
+the CLI.
 
 | Engine | Boundary |
 |:---|:---|
-| ledgr_ttr_canonical | durable ledgr: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization |
-| ledgr_ttr_canonical_ephemeral | ephemeral ledgr: ingestion=bars CSV read plus in-memory bars/features/projection; engine=ledgr_execute_fold with memory output handler; results=event-stream equity/fills reconstruction plus canonical materialization |
-| ledgr_builtin_sma | durable ledgr built-in SMA: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization |
-| quantstrat | ingestion=bars CSV read, xts/globalenv setup, initPortf/initAcct/initOrders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes |
-| backtrader | ingestion=bars CSV read, PandasData feed construction, cerebro.adddata loop; engine=cerebro.run; results=canonical equity/fill/trade writes |
-| zipline-reloaded-full | ingestion=bars CSV read, temporary csvdir construction, bundle registration and ingest; engine=zipline run_algorithm; results=canonical equity/fill/trade writes |
-| LEAN | LEAN CLI phase split is unavailable locally; if configured, the whole CLI subprocess is the measured boundary, otherwise the row is UNAVAILABLE |
-| ledgr_ttr_compiled_spot_fifo_ephemeral | ephemeral ledgr with compiled_accounting_model=spot_fifo: same bars/projection/strategy surface as ledgr_ttr_canonical_ephemeral; engine uses compiled spot-FIFO fill/accounting batch; results=event-stream equity/fills canonical materialization |
+| ledgr_ttr_canonical | durable ledgr: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment plus run identity; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization |
+| ledgr_ttr_canonical_sweep | public one-candidate ledgr_sweep: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment, grid, and sweep orchestration outside candidate engine/results clocks; engine=public sweep candidate fold; results=public retained returns/trades; full parity surfaces come from an untimed internal oracle |
+| ledgr_ttr_compiled_spot_fifo_sweep | public one-candidate ledgr_sweep with compiled_accounting_model=spot_fifo: same snapshot/strategy surface as ledgr_ttr_canonical_sweep; engine uses compiled spot-FIFO fill/accounting batch; results=public retained returns/trades; full parity surfaces come from an untimed internal oracle |
+| ledgr_builtin_sma | durable ledgr built-in SMA: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment plus run identity; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization |
+| quantstrat | snapshot preparation=bars CSV read plus xts/globalenv setup; experiment setup=portfolio/account/orders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes |
+| backtrader | snapshot preparation=bars CSV read plus grouped pandas bars; experiment setup=PandasData feeds, cerebro.adddata, broker and strategy; engine=cerebro.run; results=canonical equity/fill/trade writes |
+| zipline-reloaded-full | snapshot preparation=bars CSV read, temporary csvdir construction, bundle registration and ingest; experiment setup=algorithm callbacks and calendar; engine=zipline run_algorithm; results=canonical equity/fill/trade writes |
+| LEAN | snapshot preparation=shared-bars inspection; experiment setup=temporary project and config; engine=whole LEAN CLI subprocess including inseparable internal data loading; results=result extraction and canonical writes |
 
 ### Parity tiers
 
@@ -308,7 +378,7 @@ are vector operations rather than a per-instrument R loop.
 | Label | Meaning |
 |----|----|
 | `Tier 1` | Per-bar equity/return parity status. `pass` means the row passed the current tolerance; `review` means the row has a documented divergence attribution. |
-| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness currently gets account equity and transaction count, not comparable fills or realized trade P&L. |
+| `Parity surface` | Which comparable artifacts exist for that peer. Quantstrat is partial because this harness gets account equity, transactions, and a trade count, but not comparable realized trade P&L. |
 | `Equity corr` | Correlation between peer equity and ledgr canonical equity. Closer to 1 is better. |
 | `Max div` | Largest single-bar equity difference versus ledgr canonical, shown as a percent of ledgr equity. Lower is better. |
 | `Return corr` | Correlation between one-bar equity changes. Closer to 1 is better. |
@@ -322,7 +392,8 @@ are vector operations rather than a per-instrument R loop.
 | Engine | Status | Reason |
 |:---|:---|:---|
 | ledgr_ttr_canonical | DONE |  |
-| ledgr_ttr_canonical_ephemeral | DONE |  |
+| ledgr_ttr_canonical_sweep | DONE |  |
+| ledgr_ttr_compiled_spot_fifo_sweep | DONE |  |
 | ledgr_builtin_sma | DONE |  |
 | quantstrat | DONE |  |
 | backtrader | DONE |  |
@@ -334,7 +405,8 @@ are vector operations rather than a per-instrument R loop.
 | engine | equity | fills | trades |
 |:---|:---|:---|:---|
 | ledgr_ttr_canonical | available | available | available_realized_pnl |
-| ledgr_ttr_canonical_ephemeral | available | available | available_realized_pnl |
+| ledgr_ttr_canonical_sweep | available | available | available_realized_pnl |
+| ledgr_ttr_compiled_spot_fifo_sweep | available | available | available_realized_pnl |
 | ledgr_builtin_sma | available | available | available_realized_pnl |
 | quantstrat | available | available | trade_count_available_only |
 | backtrader | available | available | available_realized_pnl |
@@ -345,11 +417,23 @@ are vector operations rather than a per-instrument R loop.
 
 | field | value |
 |:---|:---|
-| created_at | 2026-06-02T16:23:18Z |
-| release | v0.1.8.10 |
+| created_at | 2026-09-18T14:05:07Z |
+| release | v0.2.0.1 |
 | preset | record |
 | input_hash | 0b183457b3fe720d63b02a90fe552e1202fdb31b4e967a75e91304f9d3e416fc |
-| git_sha | f115bfab386746ad8b8728d22786b52e388abba3 |
+| git_sha | bcced9457de58f10f9c862c2890576a7370b1140 |
+| process_tree_peak_mib | 1754.3 |
+| peak_sampling_interval_sec | 1 |
+
+### Isolated quantstrat environment
+
+| Package | Version | GitHub SHA | Library |
+|:---|:---|:---|:---|
+| quantstrat | 0.25 | 1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f | C:/tmp/ledgr-quantstrat-batch10-lib/quantstrat |
+| blotter | 0.17.0 | dddb448f7a5d6eb63dfbe421ba80779e820a3601 | C:/tmp/ledgr-quantstrat-batch10-lib/blotter |
+| FinancialInstrument | 1.3.0 | 98bcf09fc80e25611897404dcd59321ef67850ac | C:/tmp/ledgr-quantstrat-batch10-lib/FinancialInstrument |
+| xts | 0.14.2 |  | C:/tmp/ledgr-quantstrat-batch10-lib/xts |
+| TTR | 0.24.4 |  | C:/tmp/ledgr-quantstrat-batch10-lib/TTR |
 
 ## Caveats
 
@@ -362,18 +446,19 @@ benchmark claim.
 
 ### Interpreting the B2 row
 
-The B2 row is interpreted only when measured on the same peer fixture as
-the external engines: same shared bars CSV, same fast/slow SMA settings,
-same seed. It is also an opt-in compiled accelerator measurement, not a
-default ledgr claim. ledgr’s default execution path remains canonical R.
-Do not combine B2 numbers arithmetically with workload-grid B2 rows,
-which use a different fixture.
+The B2 row is interpreted only when measured through the public
+one-candidate sweep on the same peer fixture as the external engines:
+same shared bars CSV, same fast/slow SMA settings, same seed. It is also
+an opt-in compiled accelerator measurement, not a default ledgr claim.
+ledgr’s default execution path remains canonical R. Do not combine B2
+numbers arithmetically with workload-grid B2 rows, which use a different
+fixture.
 
 ### Engines deliberately excluded
 
 VectorBT is excluded from the event-driven peer table because it is a
 vectorized engine and a different paradigm. Published external LEAN and
-Ziplime reference rows remain context-only. The same-host LEAN row is
+Zipline reference rows remain context-only. The same-host LEAN row is
 driven only through the real LEAN CLI; if that CLI is not usable
 locally, the row is marked unavailable.
 
@@ -384,5 +469,5 @@ Do not compare bars/sec here directly to the v0.1.8.7
 same 500 x 1260 scale but a continuous `fast > slow` target strategy and
 far fewer fills. This row uses high-turnover crossover-state semantics
 plus per-engine parity artifacts and surface-status outputs. The
-three-phase table is the useful comparison artifact, not a single
+four-phase table is the useful comparison artifact, not a single
 bars/sec headline.

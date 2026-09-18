@@ -4,7 +4,20 @@
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
 **Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
-**Active packet:** none; no successor packet has been cut.
+**Active packet:** v0.2.0.1 availability hot- and cold-path optimization.
+**Active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
+**Current planning branch:** `v0.2.0.1`; the availability hot- and cold-path
+RFC, spec, hot-path amendment, and timestamp/benchmark amendment are accepted.
+Tickets LDG-2719 through LDG-2744 are cut and their cut passed independent
+review. Batches 0 through 9 and 11 through 15 are complete after review, and
+Batch 10 is diagnostic history. The local release gate is accepted and the
+branch is ready for remote CI; main and tag evidence remain later steps. The
+availability prerequisite selected `NEITHER`; the Batch 14 review passed and
+the maintainer explicitly authorized the release gate.
+The
+amendment ticket cut was independently accepted before implementation. The
+spot-crypto readiness cycle follows
+v0.2.0.1.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -53,6 +66,14 @@ fold-core architecture are stable.
 - **Public API only after internal boundaries are stable.** Risk, sweep, and
   cost-model APIs must not expose internals that will immediately need to be
   rewritten.
+- **Optimize scale-growing work, not loop syntax.** A `for`, `while`, or apply
+  call is not a defect by itself. Work becomes an optimization candidate when
+  its count grows with bars, facts, instruments by pulses, events, diagnostics,
+  candidates, or folds and each iteration repeatedly allocates frames, scans or
+  subsets tables, parses repetitive values, grows containers, or computes
+  results the active path discards. Prepare and index once, keep primitive
+  vectors, matrices, bounded typed buffers, or cursors inside hot loops, and
+  manifest data frames at public or persistence boundaries.
 
 ## Roadmap Discipline
 
@@ -68,6 +89,26 @@ Roadmap detail is intentionally uneven:
 When a future constraint affects the active design, it must be linked to its
 authoritative home: contracts, architecture notes, RFC responses, ADRs, or a
 versioned packet.
+
+### Performance-engineering discipline
+
+Optimization is evidence-gated maintenance, not a package-wide loop-removal
+campaign. Start with a production-shaped clock and memory observation, separate
+cold snapshot preparation from warm iteration over an unchanged snapshot, and
+attribute the leading lane before changing it. Prefer measured superlinear work
+and dominant lanes; retain bounded, cold, or clearer loops unless measurement
+shows that they matter. Audit inventories are discovery maps, not commitments
+to rewrite every listed site.
+
+Each optimization keeps one semantic seam and must preserve the registered
+identity, ordering, failure, persistence, resume, and public-view behavior.
+Compare full outputs arm to arm and require the optimized mechanism to be
+observably active. A broad mechanical vectorization or dependency rewrite is
+out of scope unless its own RFC and measurements justify that blast radius.
+The maintainer article `inst/design/manual/optimization_coding_style.qmd`
+collects implementation shapes after its review closes; benchmark clocks and
+claim boundaries remain governed by
+`inst/design/manual/benchmark_methodology.qmd`.
 
 ## Milestone Sequence
 
@@ -113,7 +154,12 @@ versioned packet.
 | v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
-| v0.1.9.x | Planned | Crypto-readiness spike: fractional positions, 24/7 calendar, maker/taker cost shape; measurement and doc-disposition only. | Future packet |
+| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and the cut passed independent review. Batches 0 through 9 and 11 through 15 are complete after review, Batch 10 is diagnostic history, and the accepted local release gate leaves the branch ready for remote CI. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; accepted release closeout; earlier spike inventories |
+| Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, closeout, and testing processes while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, honest measurement clocks, and strict semantic detection. Decide how reference-implementation authority differs from runtime defaults, and classify compiled-path guarantees without imposing a Cartesian benchmark grid. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
+| Post-v0.2.0.1 accounting-core consolidation RFC | Planned after governance review, before the compiled execution RFC | Collapse the eight independently written FIFO replay loops into one shared accounting core behind the fold, leaving projections at each call site. Decide which replays must remain independent verifiers, how `CASHFLOW` events are covered, and whether the shared core keeps the global compensated accumulator or declares a tolerance. Treat this as correctness consolidation whose optimizations follow, not as a performance ticket. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 duplicated-FIFO entry |
+| Post-v0.2.0.1 compiled execution RFC | Planned after governance review | Use the governance and test-suite review outputs to decide the supported compiled-execution envelope, differential proof architecture, availability and durable-sink scope, and any later default-promotion gate. Treat the existing spot-FIFO result as evidence, not authority to widen scope. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 compiled-execution entry |
+| Post-v0.2.0.1 peer benchmark alignment chore | Planned for the next implementation packet | Correctness chore on the peer benchmark harness, not on package code. Normalize peer session indexes before parity scoring so an engine whose calendar labels sessions differently is compared bar against bar rather than by timestamp string; make the parity join report row retention and refuse to score a peer that silently loses rows; and revisit the article's 0.99 weak-return threshold, which no external engine except backtrader clears and which therefore reads as a peer defect where it measures engine-convention distance. Re-run and re-render the comparison afterwards. The v0.2.0.1 promoted record stays frozen as measured history and its Tier 1 verdict holds under either alignment, so this corrects a published comparison rather than a release gate. | `inst/design/horizon.md` 2026-09-18 peer-benchmark session alignment entry; `dev/bench/peer_benchmark/peer_benchmark.R`; `dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py` |
+| v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
 | v0.2.x | Planned | External point-in-time regressors and reference-data families beyond the membership, sessions, status, and lifetime facts scoped in v0.2.0.0. | Future packet |
@@ -1545,95 +1591,282 @@ scoped `set_collapse()`, hostile-settings-safe) still applies. Alongside it,
 as a tidyverse-compatibility signal. See
 `inst/design/manual/performance_arc_v0_1_8_x.qmd`.
 
-### v0.1.9.x Crypto-Readiness Spike And Doc Disposition
+### v0.2.0.1 Availability Hot- And Cold-Path Optimization
 
-The crypto-readiness spike is deferred to v0.1.9.x. It remains a focused
-measurement spike on whether spot crypto is already supported by ledgr's
-existing equity-shaped surfaces, with explicit disposition for documentation
-and any specific follow-up work. It is not a derivatives release; perpetuals,
-dated futures, funding rates, and margin accounting all remain part of the
-deferred derivatives arc that lands after the v0.1.x product arc completes.
+The maintainer accepted the availability hot-path representation synthesis on
+2026-09-15 after independent final review. v0.2.0.1 is a bounded internal
+optimization and correctness packet with no public API, schema, identity,
+accounting, or availability-policy change.
 
-Intent:
+The packet productionizes the reviewed prepared provider, columnar diagnostic
+writer, and per-pulse diagnostic block behind the shared fold core. A separate
+cold-path workstream replaces the quadratic availability validators while
+preserving current interval semantics through randomized equivalence. A
+correctness prerequisite repairs interrupted-then-resumed finalization so the
+complete equity prefix survives and reopens under the existing terminal
+validator.
 
-- verify spot-crypto support as a focused measurement spike before users
-  discover edge cases in production research;
-- confirm fractional-position correctness end-to-end (target -> fill ->
-  lot -> trade -> equity -> metrics) at sub-integer quantities;
-- confirm sub-second / sub-minute timestamp preservation through
-  snapshot, fold core, and output handlers;
-- confirm the v0.1.8.2 crypto metric-context template produces correct
-  24/7 annualization in practice;
-- probe the v0.1.9.x cost API for "% of notional" maker/taker cost
-  expressibility;
-- document the spot-crypto support level with explicit caveats, or route
-  specific gaps to follow-up cycles.
+Release closeout records one warm availability experiment over the reused
+563-instrument, 757-pulse snapshot, one separately clocked cold seal, and a
+fresh run of the standardized peer benchmark. Semantic and persisted parity
+precede timing. The peer workload does not stand in for the point-in-time
+availability workload, and neither record authorizes a public ranking claim.
 
-This workstream is a measurement and decision packet. Implementation is
-out of scope; any code change needed to make spot crypto work cleanly is
-scoped into its own follow-up ticket or release after the spike concludes.
+Valuation optimization, spot crypto, compiled-path expansion, broad mechanical
+loop removal, and the proposed Docker benchmark laboratory remain outside this
+packet. The accepted synthesis, maintainer decisions, final review, spike
+inventories, benchmark methodology, and optimization coding style are the
+authoritative inputs to the spec draft.
 
-Required spike axes:
+### After v0.2.0.1: Governance Review And Process Improvement
 
-- **Fractional position correctness.** End-to-end test: declare a strategy that
-  targets `0.0123 BTC`, run through the fold core, inspect lots, trades, and
-  equity. Verify accounting precision is not silently coerced to integer at any
-  layer.
-- **Timestamp resolution.** Seal a synthetic snapshot with sub-second
-  `ts_utc`, run a small strategy, confirm timestamps survive snapshot -> fold
-  -> output handlers without truncation.
-- **24/7 metric context.** Use the crypto metric-context template against a
-  synthetic 7-day crypto-style snapshot, confirm annualization factor and
-  Sharpe / drawdown calculations are correct for 24/7 cadence.
-- **Maker/taker cost shape.** Probe whether "% of notional" commission is
-  expressible through the existing `spread_bps` + `commission_fixed` surface
-  or through the function-valued cost-model API. Identify the API extension
-  needed if neither path is clean.
-- **Demo data.** Decide whether to ship a small synthetic crypto demo dataset
-  alongside `ledgr_demo_bars`, or leave users to bring their own.
+Maintainer decision, 2026-09-16: after v0.2.0.1 closes, run a bounded
+governance review before opening the next implementation packet. The review
+must ask where the current RFC, spike, spec, review, and closeout cycle creates
+duplicate prose, repeated manual verification, stale cross-references, or a
+level of ceremony disproportionate to the decision being made.
 
-Measurement outputs:
+The objective is to reduce process cost and document entropy, not to weaken
+the standards that made the availability work trustworthy. The following
+remain non-negotiable:
 
-- pass/fail evidence per axis;
-- a footgun list naming any code path that silently constrains crypto support;
-- a support-level recommendation: **supported**, **supported with caveats**, or
-  **blocked**.
+- independent review at material design and correctness boundaries;
+- immutable or explicitly superseded empirical evidence;
+- visible failures, corrections, and abandoned approaches;
+- scope containment and explicit maintainer acceptance;
+- executable semantic and persistence invariants where practical; and
+- separate, honestly labelled cold, warm, and peer-comparison clocks.
 
-Readiness gates:
+The review should prefer executable checks over repeated narrative claims,
+define proportionate routes for a full RFC, bounded spike, direct ticket,
+audit, or documentation chore, and identify artifacts that can be consolidated
+without erasing decision history. Its output is a reviewed governance proposal
+with concrete changes to the relevant process documents and templates. It
+must not reopen v0.2.0.1 product decisions or silently rewrite historical RFC,
+spike, review, or closeout records.
 
-- v0.1.8.x fold-core and benchmark work has stabilized enough that crypto
-  findings are about crypto support rather than known execution scaffolding;
-- v0.1.8.2 metric-context crypto template is in place;
-- intraday-readiness audit findings inform which cadence and timestamp footguns
-  to probe specifically.
+The review must explicitly settle how implementation authority is assigned.
+In particular, it must decide whether canonical R remains the normative oracle
+for optimized or compiled execution, how that authority differs from the
+runtime default, and how a permitted divergence is specified, tested, and
+reviewed. This roadmap entry deliberately does not pre-answer that governance
+question. It requires an independently checkable reference or equivalent
+oracle strategy rather than allowing a faster implementation to define its
+own correctness.
 
-Constraints:
+The governance review includes a test-suite audit as a named workstream. The
+timing baseline captured at `217bd66` under R 4.6.1 is 1,005 seconds for the
+ordinary full suite, 250 seconds for the availability slice, and about 59
+seconds for the Batch 1 witness files. The full timing run ended with test
+errors that included a sandbox refusal to create `Rplots.pdf`, so these are
+runtime baselines rather than clean verification evidence.
 
-- spot crypto only; no perpetuals, no dated futures, no funding rates, no
-  margin model;
-- no derivatives architecture work;
-- no new instrument-class architecture;
-- no exchange-specific adapter;
-- the spike output is a doc disposition and a footgun list, not an
-  implementation release.
+The audit measures every test block, not only each file, and records setup,
+snapshot construction, sealing, migration, execution, plotting, and teardown
+costs separately where they are material. For each test it asks which contract
+or historical defect it protects, whether a deliberate mutation proves that
+it detects failure, whether another test already protects the same claim,
+whether it runs at the right layer, whether its fixture is minimally sized,
+and whether it is deterministic and isolated. Slowness alone never justifies
+deletion: consolidation, fixture reduction, setup reuse, or movement to a
+heavier lane must preserve equivalent detecting evidence.
 
-Non-scope:
+The audit should propose three explicit lanes: a fast developer suite with a
+60-to-90-second target, a comprehensive correctness suite for review and
+release gates, and separately invoked heavy evidence and benchmark protocols.
+It must also settle artifact locations, CI triggers, failure reporting, and
+the rule for preventing a heavy test from drifting back into the default
+developer lane. Any suite changes require independent review before they can
+replace the current release gate.
 
-- crypto data adapter;
-- exchange-specific cost-model factories;
-- perpetuals or dated-futures contract specs;
-- margin or funding-rate accounting;
-- crypto demo strategy beyond what is needed to drive the spike's tests.
+The audit must also settle CRAN submission constraints, which the three
+internal lanes do not currently account for. CRAN applies an external check
+budget that the present timing baseline does not fit, so the audit decides
+which blocks run under `R CMD check` on CRAN machines and which are
+maintainer or CI only, and it records that decision as an explicit lane rather
+than as scattered `skip_on_cran()` calls. It must cover check runtime, absence
+of network access, writing only under the session temporary directory,
+optional-dependency handling, graphics and database teardown, and platform
+coverage for the compiled sources. The existing rule still governs: a skipped
+CRAN block must retain equivalent detecting evidence in a lane that does run,
+and slowness alone never justifies deletion.
 
-Exit decisions:
+This matters beyond packaging convenience. Public CRAN availability is a
+practical prerequisite for a Journal of Statistical Software submission about
+ledgr, so the audit's CRAN lane decision gates that writing work as well as
+distribution. The audit scopes and sequences the constraint; it does not
+perform the submission preparation.
 
-- **Pass:** ship a vignette section or short doc note explaining spot crypto
-  support; close the spike with the footgun list pinned as contract tests.
-- **Supported with caveats:** ship a doc note naming the workarounds, route
-  specific gaps to a v0.1.9.x follow-up.
-- **Blocked:** identify the minimum work required, scope it into a v0.1.9.x
-  follow-up or later packet, and defer the user-facing crypto support claim
-  until the work lands.
+This is also a test-architecture and standards review. It must inventory the
+approaches currently mixed across unit, contract, integration, migration,
+acceptance, documentation-governance, optional-dependency, frozen-regression,
+and empirical-evidence checks, then decide which distinctions are intentional.
+The goal is an explicit taxonomy rather than one mechanically uniform test
+style. Each retained category needs rules for naming and location, fixture and
+golden-file ownership, deterministic clocks and randomness, permitted mocks,
+environment and optional-package handling, database and graphics cleanup,
+failure messages, runtime budgets, and the CI or local lane that owns it.
+
+The reviewed output must include maintained testing documentation: how to run
+each lane, how to interpret and reproduce a failure, how to add a new test,
+when mutation evidence is required, how frozen evidence is regenerated and
+reviewed, and when a test belongs in a spike or benchmark protocol instead of
+the package suite. Existing tests are classified before broad movement or
+deletion, and exceptions to the standard must state the contract that makes
+them necessary.
+
+Compiled execution is a named case study in that audit. Its guarantees must be
+classified into adversarial kernel traces, sink-specific atomicity and
+rollback tests, small workflow witnesses, representative cost and risk cases,
+and one or two full-scale performance records. Dense versus availability,
+memory versus durable, cost models, and risk layers form a risk map for
+selecting witnesses; they do not create a Cartesian requirement to rerun every
+combination at full scale. The audit must preserve exact fill and realized-
+trade comparisons, the existing floating-equity tolerance where the contract
+already permits it, failure-sensitive mutations, and clear ownership of each
+guarantee while removing redundant or misplaced work. It may recommend a
+focused testing RFC and subsequent refactoring, but it must not perform that
+refactoring inside the audit.
+
+This is post-release governance work, not part of the v0.2.0.1 release gate.
+The spot-crypto readiness probe remains the next product-research cycle, but no
+new implementation packet opens until this governance review is resolved.
+
+### After v0.2.0.1: Accounting-Core Consolidation
+
+The FIFO accounting state machine is driven from nine places. One is the live
+fold. Six are production replays reached from exported surfaces, and two are
+parity oracles reached only from the benchmark harness and the test suite. The
+inventory, the shared defects each replay carries, and the reachability split
+are recorded in the 2026-09-18 duplicated-FIFO horizon entry.
+
+This is a correctness consolidation whose performance benefit follows. Nine
+implementations of one state machine must agree, no differential test covers
+most pairs, and any later change to accounting semantics would otherwise have
+to land consistently in six production copies.
+
+The RFC must settle three things. Which replays remain independent verifiers,
+where the reachability split already indicates that the two oracles stay in R
+and outside any shared core. How `CASHFLOW` events are covered, since every
+replay handles them and the compiled kernel accepts fills only. And whether the
+shared core preserves the global compensated accumulator or declares a
+tolerance, which is the same class of decision as the memory equity reference.
+
+Sequencing. This RFC follows the governance and test-suite review, because it
+consumes the reference-authority decision and the proof-lane taxonomy, and it
+precedes the compiled execution RFC, because a consolidated core is what makes
+the kernel-backed reader question answerable at all.
+
+Research may proceed in parallel. Collecting deficiencies against the current
+base is discovery rather than implementation and does not conflict with pending
+consolidation. The ordering constraint runs the other way: if research surfaces
+an accounting-semantics need such as settlement, corporate actions, borrow, or
+short exposure, consolidate before implementing it rather than landing the same
+change in six places.
+
+The unrelated duplicated helper families recorded in the 2026-09-18 duplication
+horizon entry are independent of this RFC. They need no design decision,
+preserve inputs, outputs, errors and classes exactly, and are candidates for
+the exact-parity internal optimization proof template in its first use outside
+a performance change.
+
+### After v0.2.0.1: Compiled Execution RFC
+
+After the governance and test-suite review has settled implementation authority
+and proof ownership, open a focused RFC for compiled execution. The current
+spot-FIFO accelerator is the empirical starting point: at the corrected public
+sweep boundary it removes about half of canonical engine time on the registered
+fixture while preserving the registered outputs. That observation does not
+identify a pure R-language tax, authorize a new default, or prove a wider
+economic model. It combines native FIFO accounting, batched work, and compiled
+event appends over one workload.
+
+The RFC must treat supported combinations as a risk map rather than a benchmark
+matrix. It should decide the evidence needed for availability-aware execution,
+a durable compiled sink with atomicity and rollback, representative cost and
+risk inputs, and any later default promotion. The proof plan should combine
+adversarial differential fill traces, separate sink tests, small dense and
+availability workflow witnesses, representative economic cases, and no more
+than the full-scale records needed to establish performance and memory bounds.
+
+The RFC must account for the real maintenance surface, not only the C++ kernel:
+the current implementation includes roughly 705 lines across the kernel,
+R-side packing and dispatch, and generated bindings, plus integration and tests
+spread across the package. Ordinary order types resolve upstream into the fill
+contract and are not by themselves a reason to delay the RFC. Settlement,
+borrow and financing, multiple currencies, corporate actions, and alternative
+lot-selection or tax policies can change the accounting model and therefore
+must remain explicit boundaries rather than silently accreting into spot FIFO.
+
+This entry schedules design work only. It does not expand v0.2.0.1, unlock the
+current availability abort, authorize durable compiled writes, or choose the
+runtime default. Sequencing against the spot-crypto research cycle is decided
+when the governance review closes.
+
+### After v0.2.0.1: Spot-Crypto Readiness Probe And Spike
+
+The earlier crypto-readiness plan was never executed. It returns after
+v0.2.0.1 as planning-only work against the released engine and its
+point-in-time asset-availability surface. No charter, RFC, spec packet, ticket
+set, or implementation is authorized by this entry.
+
+The one question is:
+
+> Can released v0.2.0.0 honestly support deterministic, unlevered, long-only
+> spot-crypto research on one venue and in one quote currency through the
+> shared fold core and durable research workflows?
+
+Per `inst/design/spike_protocol.md`, the next step is not a charter. Create and
+run `dev/spikes/crypto-readiness/probe.R`, then record the executed behavior in
+a one-page `probe_findings.md`. Only a passing prerequisite permits a charter
+of at most 150 lines and a runnable comparison harness with at most ten cases.
+
+The cheaper prerequisite question is whether one synthetic BTC/EUR and ETH/EUR
+fixture can preserve fractional quantities and a complete 24/7 session clock
+through direct execution and durable reopen. Stop before a charter if either
+property needs production changes. Route the observed defect to a separate
+correction cycle rather than fixing package code inside the spike.
+
+If the prerequisite passes, the bounded spike covers:
+
+- fractional targets through risk, affordability, fills, lots, trades, equity,
+  metrics, and retained/reconstructed evidence;
+- explicit daily 24/7 sessions, including whole-feed outages, observation gaps,
+  stale marks, listing/lifetime changes, held assets after removal, and honest
+  incomplete outcomes;
+- the existing crypto metric context and its annualization assumptions;
+- percentage-of-notional fees through the existing cost API, with any
+  maker/taker classification treated as an explicit convention rather than an
+  inference from OHLCV data;
+- direct, memory-backed, durable/reopened, sweep, walk-forward, extraction, and
+  promotion paths where those workflows claim parity; unsupported compiled
+  combinations must fail clearly or be reported as unavailable;
+- timestamp preservation at the package's supported resolution without making
+  a sub-second execution, microstructure, or HFT support claim.
+
+The fixture boundary is synthetic BTC/EUR and ETH/EUR, one synthetic venue,
+EUR as the sole quote and accounting currency, daily sessions, next-session
+execution, and non-negative percentage fees. Demo-data publication is a
+post-verdict documentation choice, not a readiness gate.
+
+The accounting-critical-events RFC is a named dependency for any crypto claim
+that includes funding, staking, distributions, token events, asset-denominated
+fees, or other non-trade economics. It does not block this event-free spot
+fixture; instead, its absence limits the support claim the spike may reach.
+
+The spike excludes exchange adapters, multi-venue routing, multi-currency cash,
+perpetuals, futures, funding, leverage, margin, shorting, lending, staking,
+airdrops, forks, token migrations, wallet transfers, tax calculation, and tax
+optimization. These require accounting-critical event, instrument, execution,
+or jurisdictional contracts that the spot-readiness question cannot settle.
+
+The closeout is one page and gives one verdict: **supported**, **supported with
+caveats**, or **blocked**. It records what ran, user-visible footguns, the exact
+support claim the documentation may make, and any separately scoped follow-up.
+Tax-relevant evidence gaps such as fee currency, custody or venue identity,
+instrument identity, realized-lot evidence, and non-trade economic events are
+handed to a later Austrian private-investor tax RFC; they are not implemented
+or designed in this spike.
 
 ### v0.1.9.4 Walk-Forward Evaluation
 

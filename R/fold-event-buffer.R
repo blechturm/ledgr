@@ -46,6 +46,43 @@ ledgr_event_buffer_checked_capacity <- function(x, label) {
   as.integer(x)
 }
 
+ledgr_event_buffer_setv <- function(columns, name, index, value) {
+  if (!is.environment(columns)) {
+    rlang::abort(
+      "Event-buffer columns must be owned by an environment.",
+      class = "ledgr_invalid_state"
+    )
+  }
+  column <- columns[[name]]
+  index <- as.integer(index)
+  if (length(index) < 1L || anyNA(index) || any(index < 1L) || any(index > length(column))) {
+    rlang::abort("Event-buffer write index is outside allocated storage.", class = "ledgr_invalid_state")
+  }
+
+  if (is.list(column)) {
+    if (!is.list(value) || length(value) != length(index)) {
+      rlang::abort("List event-buffer writes require one list element per index.", class = "ledgr_invalid_state")
+    }
+    collapse::setv(column, index, value, vind1 = TRUE, xlist = TRUE)
+    return(invisible(TRUE))
+  }
+
+  value <- if (inherits(column, "POSIXct")) {
+    as.POSIXct(value, tz = "UTC")
+  } else if (is.character(column)) {
+    as.character(value)
+  } else if (is.integer(column)) {
+    as.integer(value)
+  } else {
+    as.numeric(value)
+  }
+  if (length(value) != length(index)) {
+    rlang::abort("Event-buffer writes require one value per index.", class = "ledgr_invalid_state")
+  }
+  collapse::setv(column, index, value, vind1 = TRUE)
+  invisible(TRUE)
+}
+
 ledgr_opening_position_event_rows <- function(run_id,
                                               ts_utc,
                                               positions,

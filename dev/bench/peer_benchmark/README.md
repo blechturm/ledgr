@@ -1,6 +1,6 @@
 # Peer Parity And Performance Benchmark
 
-This is the current v0.1.8.8 LDG-2476 peer benchmark. It has two separate
+This is the current ledgr peer benchmark. It has two separate
 outputs:
 
 - a parity benchmark: do peer engines agree with the ledgr canonical row?
@@ -13,12 +13,59 @@ public release-note performance claim.
 Run from the package root:
 
 ```powershell
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
-& "C:\Program Files\R\R-4.5.2\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset smoke
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record
 ```
 
 The record preset is the primary artifact for closeout. It uses 100 instruments
 and 252 daily bars. The smoke preset is only a harness verification.
+
+## v0.2.0.1 Closeout Record
+
+The v0.2.0.1 closeout deliberately overrides the unchanged record-preset shape
+with this exact command:
+
+```powershell
+$env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
+$env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.1 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+```
+
+The exact ignored local record prefix is
+`dev/bench/results/peer_benchmark_record_20260918T140507Z`. It was produced
+from accepted Stage O source commit
+`bcced9457de58f10f9c862c2890576a7370b1140`; the exact harness SHA-256 is
+`6b7ab57149a6e17b0f386117b82c8e33ac19eb3eb84eda3be6995571230b5f2f`.
+The prior `20260917T212008Z` private-fold bundle and `20260917T231851Z`
+working-tree correction remain diagnostic history and are not rewritten. The
+final record ran under R 4.6.1
+ucrt on Windows build 26200. Quantstrat completed from
+`C:/tmp/ledgr-quantstrat-batch10-lib` with quantstrat 0.25 at
+`1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f`, blotter 0.17.0 at
+`dddb448f7a5d6eb63dfbe421ba80779e820a3601`, FinancialInstrument 1.3.0 at
+`98bcf09fc80e25611897404dcd59321ef67850ac`, xts 0.14.2, and TTR 0.24.4.
+Backtrader and zipline-reloaded completed through their pinned `uv`
+environments. Local LEAN was unavailable because the configured CLI root uses
+an obsolete organization layout; no hosted service was used.
+An external one-second sampler over the complete benchmark process tree
+recorded a 1,754.3 MiB peak across 964 samples. The earlier Stage O attempts
+at `20260918T130244Z`, `20260918T132659Z`, and `20260918T134600Z` remain local
+non-promoted records: the first omitted the registered peak field, while two
+sampler-wrapper post-processing defects lost the subsequent peak samples.
+
+Parity is interpreted before timing. The compiled spot-FIFO and canonical
+public-sweep ledgr rows are exactly identical across canonical equity, fills,
+and trades after normalizing only the engine label. The timed public surface is
+the complete one-candidate `ledgr_sweep()` call plus retained-result accessors;
+richer cash, position and fill surfaces come from a disclosed untimed internal
+oracle. Durable ledgr differs from the canonical sweep by at most `4.01e-7` in
+equity and is exact on fills. Backtrader and quantstrat pass the registered
+equity-level tolerance
+with classified residuals. Zipline meets that numerical threshold but has only
+0.146 daily-return correlation, so the report labels it a weak-tolerance review
+result rather than full parity. This is an internal same-host method record,
+not a public ranking or a claim that the engines expose identical lifecycle
+boundaries.
 
 Render the Markdown report from the package root:
 
@@ -44,6 +91,10 @@ Backtrader `CrossOver`, quantstrat `sigCrossover`, the full zipline
 ## Engine Rows
 
 - `ledgr_ttr_canonical`: canonical ledgr row using TTR-backed SMA features.
+- `ledgr_ttr_canonical_sweep`: public one-candidate sweep using the same
+  TTR-backed features, with retained returns and trades inside the clock.
+- `ledgr_ttr_compiled_spot_fifo_sweep`: the same public sweep with the explicit
+  compiled spot-FIFO selector.
 - `ledgr_builtin_sma`: ledgr diagnostic row using built-in SMA indicators.
 - `quantstrat`: R quantstrat crossover strategy when local packages exist.
 - `backtrader`: uv-managed Backtrader row.
@@ -68,6 +119,7 @@ Outputs are local-only under `dev/bench/results/`:
 - Tier 1/Tier 2/Tier 3 parity CSV;
 - performance timing CSV;
 - environment JSON;
+- benchmark method and exact harness SHA-256 in the environment JSON;
 - compact Markdown summary;
 - parity history JSON under `dev/bench/results/parity_history/`.
 
@@ -78,15 +130,39 @@ ordering.
 
 ## Performance Boundaries
 
-The performance CSV reports both:
+The performance CSV reports:
 
 - `full_row_sec`: elapsed time around the whole harness call for that engine row;
-- `reported_core_sec`: the timing reported from inside the engine row.
+- `snapshot_prepare_sec`: reusable native data preparation;
+- `experiment_setup_sec`: per-experiment setup and public-workflow orchestration;
+- `engine_sec`: the declared engine execution boundary; and
+- `results_sec`: required canonical result materialization.
 
-The boundaries are intentionally explicit. ledgr's core timing is `ledgr_run()`
-over the snapshot-backed fold with feature plumbing and durable ledgr surfaces.
+The boundaries are intentionally explicit. Durable ledgr timing is
+`ledgr_run()` over the snapshot-backed fold with feature plumbing and durable
+ledgr surfaces. Memory-backed ledgr timing is the public one-candidate
+`ledgr_sweep()` workflow; its internal candidate engine/results clocks are
+reconciled to the complete public call, and its untimed parity oracle is not
+part of any reported phase.
+For those sweep rows, `experiment_setup_sec` is the residual public-call wall
+outside the candidate fold and inline-results clocks, plus experiment/grid
+construction. It includes warm snapshot reads, matrix/view preparation and
+retention assembly. Durable ledgr exposes no matching subclock: analogous work
+inside `ledgr_run()` remains in that row's engine phase. Compare cold and warm
+totals across those rows; the components explain each row's declared boundary.
 Backtrader's core timing includes CSV read, feed construction, `cerebro.run()`,
 and canonical output writes. LEAN is a real CLI subprocess boundary when
 locally configured; no substitute loop is emitted. `zipline-reloaded-full` is
 the full zipline row for this harness: it includes temporary csvdir bundle
 construction, bundle ingestion, and `zipline.run_algorithm()`.
+
+`cold_end_to_end` sums all four phases. `warm_research_iteration` excludes only
+reusable snapshot preparation. Use those clocks across engines only when input,
+output, and lifecycle boundaries are meaningfully comparable. Data or fact
+changes invalidate snapshot reuse and incur preparation again.
+An unavailable engine has `NULL` performance clocks in the report. Any elapsed
+time for its failed wrapper attempt remains diagnostic metadata, not a benchmark
+result.
+
+The tracked report uses `ggplot2` for every figure. Base-R plotting is not part
+of the report path.

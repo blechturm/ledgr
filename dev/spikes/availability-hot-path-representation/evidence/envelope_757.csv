@@ -1,0 +1,4 @@
+"arm","profiled","killed","run_elapsed_s","wall_seconds","t_loop_seconds","peak_ws_mib","store_status","store_diagnostic_rows","decision_rows","within_envelope"
+"rows",FALSE,"wall",1800.3246506,NA,NA,3104.75,"RUNNING",0,NA,FALSE
+"columnar",FALSE,"",523.3544431,522.86,512.91,900.75390625,"DONE",383042,382285,TRUE
+"columnar",TRUE,"",518.3251927,516.75,506.98,934.5234375,"DONE",383042,382285,TRUE

@@ -11,6 +11,15 @@
 ^_pkgdown\.yml$
 ^inst/design/maintainer_review$
 ^inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_diagnostic_block_spike_charter[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_diagnostic_block_spike_charter_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_diagnostic_block_spike_charter_v2[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_diagnostic_block_spike_charter_v2_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_diagnostic_block_spike_evidence_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_provider_spike_charter_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_provider_spike_charter_v2_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_provider_spike_evidence_re_review[.]md$
+^inst/design/rfc/rfc_availability_hot_path_representation_v0_2_0_x_provider_spike_evidence_review[.]md$
 ^inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/architecture_synthesis_codex_review[.]md$
 ^inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/ledgrcore_spike_execution_prompt[.]md$
 ^inst/design/spikes/ledgr_v0_1_8_3_sweep_optimization/data$
@@ -21,6 +30,7 @@
 ^src/.*\.dll$
 ^src/.*\.so$
 ^src/.*\.dylib$
+^src/.*\.gcda$
 ^coverage\.html$
 ^\.quarto$
 ^\.quarto-cache$

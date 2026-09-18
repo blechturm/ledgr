@@ -1,0 +1,451 @@
+version: "0.2.0.1"
+source: "v0_2_0_1_tickets.md"
+generated_from: "v0_2_0_1_spec.md"
+amended_by:
+  - "v0_2_0_1_hot_path_complexity_amendment_proposed.md"
+  - "v0_2_0_1_timestamp_and_benchmark_amendment_proposed.md"
+tickets:
+  - id: "LDG-2719"
+    title: "Packet alignment and ticket cut"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    classification:
+      type: "planning"
+      surface: "design-packet"
+      scope: "packet-alignment"
+    tests:
+      - "Manual spec-to-ticket coverage review"
+      - "Ticket ID and dependency DAG validation"
+      - "YAML parse and cross-artifact consistency"
+      - "Documentation-contract tests"
+
+  - id: "LDG-2720"
+    title: "Port spike witnesses into durable tests"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2719"]
+    classification:
+      type: "test"
+      surface: "availability-regression"
+      scope: "spike-witness-port"
+    tests:
+      - "Ported scenario tests with frozen expected rows"
+      - "Ported provider-parity tests including the empty status family"
+      - "ledgr_facts_resolve() membership agreement"
+      - "Perturbation check on frozen rows"
+
+  - id: "LDG-2721"
+    title: "Retain test-only references and baseline checker run"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2719"]
+    classification:
+      type: "test"
+      surface: "availability-regression"
+      scope: "reference-retention"
+    tests:
+      - "Three spike checkers against the baseline"
+      - "Helper-location review"
+
+  - id: "LDG-2722"
+    title: "Production prepared provider compile and queries"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2720", "LDG-2721"]
+    classification:
+      type: "feature"
+      surface: "availability-provider"
+      scope: "prepared-compile"
+    tests:
+      - "Section 4.1 provider-only durable tests"
+      - "Provider checker 3,676-cutoff parity and 602-cutoff public agreement"
+      - "test-availability-*.R"
+
+  - id: "LDG-2723"
+    title: "Provider-build consumers and result/reopen parity"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2722"]
+    classification:
+      type: "feature"
+      surface: "availability-provider"
+      scope: "consumer-routing"
+    tests:
+      - "Ported scenario parity tests"
+      - "Result and reopen parity tests"
+      - "Optional mirai availability-parity test"
+      - "Independent review stop"
+
+  - id: "LDG-2724"
+    title: "Production diagnostic writer and per-pulse block"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2720", "LDG-2721"]
+    classification:
+      type: "feature"
+      surface: "availability-diagnostics"
+      scope: "writer-and-block"
+    tests:
+      - "7-row and 4,096-row chunk and multi-chunk flush tests"
+      - "Injected append failure, fold failure, interrupt/resume, resume-then-error tests"
+      - "Diagnostic-block checker deterministic phases"
+      - "Dual collapse-version run"
+      - "Independent review stop"
+
+  - id: "LDG-2725"
+    title: "Pre-retirement production parity and paired warm record"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2723", "LDG-2724"]
+    classification:
+      type: "parity"
+      surface: "availability-fold"
+      scope: "production-parity-record"
+    tests:
+      - "Two-arm checkers against the production candidate"
+      - "Six-table DuckDB multiset parity with three exclusions"
+      - "Paired same-session measurement record"
+
+  - id: "LDG-2726"
+    title: "Retire old paths and activate the source guard"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2725"]
+    classification:
+      type: "cleanup"
+      surface: "availability-runtime"
+      scope: "old-path-retirement"
+    tests:
+      - "Source-guard test"
+      - "Public inspection tests"
+      - "test-availability-*.R"
+
+  - id: "LDG-2727"
+    title: "Resumed-run equity-prefix merge"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2720"]
+    classification:
+      type: "correctness"
+      surface: "run-finalization"
+      scope: "equity-prefix-merge"
+    tests:
+      - "Section 4.3 finalization matrix including the dense resumed case"
+      - "Reopen and result extraction after each valid terminal case"
+      - "Independent correctness review stop"
+
+  - id: "LDG-2728"
+    title: "Validator equivalence harness and membership/lifetime sweeps"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2721"]
+    classification:
+      type: "correctness"
+      surface: "availability-facts"
+      scope: "membership-lifetime-sweeps"
+    tests:
+      - "Randomized and adversarial equivalence harness"
+      - "test-availability-facts.R and seal tests"
+
+  - id: "LDG-2729"
+    title: "Status supersession-exact hybrid validator"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2728"]
+    classification:
+      type: "correctness"
+      surface: "availability-facts"
+      scope: "status-hybrid-sweep"
+    tests:
+      - "Equivalence harness with status cases"
+      - "X/Y/J false-positive and Y/Z false-negative guards"
+
+  - id: "LDG-2730"
+    title: "Complete-set setwise validation and sweep bypass"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2728"]
+    classification:
+      type: "correctness"
+      surface: "snapshot-seal"
+      scope: "setwise-bypass"
+    tests:
+      - "Setwise mutation tests"
+      - "Targeted seal fixtures and the structural pairwise-absence check"
+      - "Independent review stop"
+
+  - id: "LDG-2731"
+    title: "Peer benchmark phase split"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730"]
+    classification:
+      type: "benchmark"
+      surface: "peer-benchmark"
+      scope: "phase-split"
+    tests:
+      - "Peer benchmark smoke run"
+      - "Phase reconciliation check"
+
+  - id: "LDG-2732"
+    title: "Manual and report updates"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2726", "LDG-2727", "LDG-2729", "LDG-2730", "LDG-2731"]
+    classification:
+      type: "documentation"
+      surface: "maintainer-manuals"
+      scope: "post-productionization-refresh"
+    tests:
+      - "Quarto renders"
+      - "Anchor resolution check"
+      - "Documentation-contract tests"
+
+  - id: "LDG-2733"
+    title: "Final availability, cold, hash, and profile records"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2744"]
+    classification:
+      type: "benchmark"
+      surface: "final-performance-evidence"
+      scope: "availability-cold-hash-profile-records"
+    tests:
+      - "Fresh final-source availability warm record"
+      - "Fresh final-source cold seal record"
+      - "Fresh final-source snapshot-hash paired record"
+      - "Fresh final-source profile"
+      - "NEITHER branch availability-source no-change check"
+      - "Provisional-record non-promotion check"
+
+  - id: "LDG-2734"
+    title: "Peer benchmark record"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2744"]
+    classification:
+      type: "benchmark"
+      surface: "peer-benchmark"
+      scope: "release-record"
+    tests:
+      - "Fresh final-source public-workflow peer benchmark record run"
+      - "Canonical and compiled public one-candidate ledgr_sweep rows"
+      - "Exact non-floating and tolerance-qualified equity parity"
+      - "Pinned isolated quantstrat environment and DONE row"
+      - "Parity and divergence review"
+      - "Peer README and tracked-report field check"
+      - "Status/reason, conditional-row, zero-denominator, and weak-tolerance report checks"
+      - "Explicit phase order and missing unavailable-time render checks"
+      - "Provisional-record non-promotion check"
+
+  - id: "LDG-2735"
+    title: "v0.2.0.1 release gate"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies:
+      - "LDG-2719"
+      - "LDG-2720"
+      - "LDG-2721"
+      - "LDG-2722"
+      - "LDG-2723"
+      - "LDG-2724"
+      - "LDG-2725"
+      - "LDG-2726"
+      - "LDG-2727"
+      - "LDG-2728"
+      - "LDG-2729"
+      - "LDG-2730"
+      - "LDG-2731"
+      - "LDG-2732"
+      - "LDG-2733"
+      - "LDG-2734"
+      - "LDG-2736"
+      - "LDG-2737"
+      - "LDG-2738"
+      - "LDG-2739"
+      - "LDG-2740"
+      - "LDG-2741"
+      - "LDG-2742"
+      - "LDG-2743"
+      - "LDG-2744"
+    classification:
+      type: "release"
+      surface: "release-gate"
+      scope: "v0.2.0.1-closeout"
+    tests:
+      - "Release CI playbook"
+      - "Accepted benchmark-checkpoint review and explicit maintainer go-ahead"
+      - "Full local suite, build, and check"
+      - "Collapse minimum-version and no-fallback checks"
+      - "Telemetry-name and prohibited-addition check"
+      - "Amendment matrix and source-removal gate review"
+      - "Timestamp amendment branch, identity, and source-guard review"
+      - "Proof-template index and authority-boundary review"
+      - "Documentation renders and anchor check"
+      - "Git status and generated-artifact review"
+
+  - id: "LDG-2736"
+    title: "Collapse 2.1.8 event-write route gate"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2732"]
+    classification:
+      type: "performance"
+      surface: "event-buffer"
+      scope: "collapse-route-gate"
+    tests:
+      - "Two-handler implementation-choice record"
+      - "Exact event and persisted-output diff"
+      - "Allocation, ordinary-GC, and forced-GC stress"
+      - "Dependency-floor and under-floor resolution checks"
+
+  - id: "LDG-2737"
+    title: "Linear memory and durable event buffers"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2736"]
+    classification:
+      type: "performance"
+      surface: "event-buffer"
+      scope: "linear-production-writes"
+    tests:
+      - "Event semantic and persisted-output matrix"
+      - "Capacity-boundary tests"
+      - "Error, rollback, interruption, resume, and reopen tests"
+      - "Memory/durable parity checks"
+
+  - id: "LDG-2738"
+    title: "Event scaling and old-writer retirement"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2737"]
+    classification:
+      type: "performance"
+      surface: "event-buffer"
+      scope: "scaling-and-retirement"
+    tests:
+      - "Five-point scaling curve for both handlers"
+      - "Quiet-host paired 500-instrument record"
+      - "Source and namespace-body guard"
+      - "Focused regression net and independent review"
+
+  - id: "LDG-2739"
+    title: "Prepared fold-time availability valuation"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2738"]
+    classification:
+      type: "performance"
+      surface: "availability-valuation"
+      scope: "prepared-fold-state"
+    tests:
+      - "Valuation semantic matrix"
+      - "Structural pulse and source-instrument scaling proof"
+      - "Resume, reopen, and dense-path exclusion tests"
+      - "Identity, persistence, and public-surface guards"
+
+  - id: "LDG-2740"
+    title: "Valuation scaling and combined correction evidence"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2739"]
+    classification:
+      type: "performance"
+      surface: "availability-valuation"
+      scope: "scaling-integration-and-retirement"
+    tests:
+      - "Paired 757-pulse quiet-host record"
+      - "Combined eventful availability case"
+      - "Source and identity guards"
+      - "Focused regression net and independent review"
+
+  - id: "LDG-2741"
+    title: "Freeze public benchmark boundary and optimization oracles"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2740"]
+    classification:
+      type: "benchmark-correctness"
+      surface: "benchmark-boundary"
+      scope: "public-method-and-oracle-freeze"
+    tests:
+      - "Public-method and reported-clock boundary tests"
+      - "Memory parity-reference and residual tests"
+      - "Phase-order and unavailable-time render tests"
+      - "Oracle and current-prefix checks"
+      - "Availability-source no-change guard"
+      - "Independent Stage L review"
+
+  - id: "LDG-2742"
+    title: "Dense static-coverage timestamp validation"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2741"]
+    classification:
+      type: "performance-correctness"
+      surface: "dense-static-validation"
+      scope: "primitive-timestamp-axis"
+    tests:
+      - "Dense semantic and failure matrix"
+      - "Structural counter, source guard, and deliberate mutant"
+      - "Paired public canonical and compiled sweep record"
+      - "Consumer and availability-bypass regression tests"
+      - "Independent Stage M code review"
+
+  - id: "LDG-2743"
+    title: "Byte-identical snapshot-hash timestamp deduplication"
+    status: "complete_after_review"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2742"]
+    classification:
+      type: "performance-identity"
+      surface: "snapshot-hashing"
+      scope: "within-chunk-timestamp-deduplication"
+    tests:
+      - "Byte and hash matrix across rules, chunks, boundaries, and old snapshots"
+      - "Reopen, run-guard, and tamper tests"
+      - "Formatter-count, wall, and peak-memory record"
+      - "Availability-source no-change guard"
+      - "Exact-parity proof and independent Stage N code review"
+
+  - id: "LDG-2744"
+    title: "Finalize and index exact-parity proof template"
+    status: "complete_after_review"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2743"]
+    classification:
+      type: "documentation-governance"
+      surface: "optimization-proof-template"
+      scope: "finalization-index-and-contract"
+    tests:
+      - "Independent proof-template review"
+      - "Index and anchor checks"
+      - "Documentation-contract tests"
+      - "Stage O source-freeze record"

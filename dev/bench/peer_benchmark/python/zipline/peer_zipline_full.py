@@ -72,6 +72,7 @@ def summarize_transactions(perf: pd.DataFrame) -> tuple[int, float | None, float
 
 
 def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
+    prepare_start = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="ledgr_zipline_full_", ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
         os.environ["ZIPLINE_ROOT"] = str(tmp_path / "zipline_root")
@@ -106,6 +107,7 @@ def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
         )
         ingest(bundle_name, environ=os.environ, show_progress=False)
         ingest_sec = time.perf_counter() - ingest_start
+        snapshot_done = time.perf_counter()
 
         def initialize(context):
             set_commission(commission.PerShare(cost=0.0, min_trade_cost=0.0))
@@ -140,6 +142,7 @@ def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
             context.bar_idx += 1
 
         run_start = time.perf_counter()
+        experiment_setup_sec = run_start - snapshot_done
         perf = run_algorithm(
             start=start,
             end=end,
@@ -151,8 +154,19 @@ def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
             trading_calendar=get_calendar("CSVDIR"),
             benchmark_returns=pd.Series(dtype=float),
         )
-        run_sec = time.perf_counter() - run_start
-    return perf, csv_write_sec, ingest_sec, run_sec
+        engine_done = time.perf_counter()
+        run_sec = engine_done - run_start
+    teardown_sec = time.perf_counter() - engine_done
+    snapshot_prepare_sec = snapshot_done - prepare_start + teardown_sec
+    return (
+        perf,
+        csv_write_sec,
+        ingest_sec,
+        teardown_sec,
+        snapshot_prepare_sec,
+        experiment_setup_sec,
+        run_sec,
+    )
 
 
 def write_equity(path: str, perf: pd.DataFrame) -> None:
@@ -247,7 +261,16 @@ def main() -> int:
 
     wall_start = time.perf_counter()
     bars = pd.read_csv(args.bars, parse_dates=["ts_utc"])
-    perf, csv_write_sec, ingest_sec, run_sec = run_zipline_full(bars, args.fast, args.slow)
+    bars_done = time.perf_counter()
+    (
+        perf,
+        csv_write_sec,
+        ingest_sec,
+        teardown_sec,
+        prepare_extra_sec,
+        setup_sec,
+        run_sec,
+    ) = run_zipline_full(bars, args.fast, args.slow)
     engine_done = time.perf_counter()
 
     write_equity(args.equity_out, perf)
@@ -255,7 +278,8 @@ def main() -> int:
     write_trades(args.trades_out, perf)
     results_done = time.perf_counter()
     phase_sec = {
-        "ingestion_sec": (engine_done - wall_start) - run_sec,
+        "snapshot_prepare_sec": (bars_done - wall_start) + prepare_extra_sec,
+        "experiment_setup_sec": setup_sec,
         "engine_sec": run_sec,
         "results_sec": results_done - engine_done,
     }
@@ -268,11 +292,12 @@ def main() -> int:
                 "phase_sec": phase_sec,
                 "csvdir_write_sec": csv_write_sec,
                 "ingest_sec": ingest_sec,
+                "bundle_teardown_sec": teardown_sec,
                 "run_algorithm_sec": run_sec,
                 "zipline_reloaded": importlib.metadata.version("zipline-reloaded"),
                 "pandas": importlib.metadata.version("pandas"),
                 "execution_boundary": "zipline-reloaded csvdir bundle ingestion plus run_algorithm on a temporary 24/5 bundle",
-                "boundary_check": ["bars_csv_read", "csvdir_write", "bundle_ingest", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
+                "boundary_check": ["bars_csv_read", "csvdir_write", "bundle_ingest", "experiment_setup", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
             },
             fh,
             indent=2,

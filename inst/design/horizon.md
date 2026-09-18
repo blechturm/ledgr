@@ -26,9 +26,24 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-13):** v0.2.0.0 is complete after maintainer
-review and local release gates. No successor packet has been cut. Horizon
-entries below remain non-binding unless a future packet, the roadmap,
+**Current packet note (2026-09-17):** v0.2.0.0 is complete after maintainer
+review and local release gates. The v0.2.0.1 packet is active: its spec was
+accepted on 2026-09-16, its hot-path complexity amendment was accepted on
+2026-09-17, and the timestamp/benchmark amendment was accepted 2026-09-18.
+Tickets LDG-2719 through LDG-2744 are cut and their cut passed review for
+availability hot- and cold-path productionization, the seal-validator
+correction, the resumed-run equity-prefix repair, linear event writes, prepared
+fold-time valuation, corrected public peer boundaries, dense timestamp
+validation, within-chunk hash formatting, and fresh separated benchmark
+closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
+Batches 11 through 15 are complete after review. The accepted local release
+gate leaves the branch ready for remote CI; main and tag evidence remain later
+steps. The prerequisite
+selected `NEITHER`, so no
+availability-ingestion optimization enters the release. The Batch 14 review
+passed and the maintainer explicitly authorized the release gate.
+Spot-crypto planning follows that
+release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
 contracts, or an accepted RFC promotes them.
 
 The completed packet consumed only verified API-golden-path and stale-example
@@ -61,9 +76,18 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   randomized / blocked
   slice diagnostics; promotion-grade sweep artifacts; target
   construction helper extensions (Pass 2 per-stage helpers); broker /
-  exchange cost templates; crypto-readiness spike; spot-FIFO as default
+  exchange cost templates; spot-FIFO as default
   for ephemeral spot workloads (candidate; see 2026-06-05 and
   2026-06-13 entries).
+- **v0.2.0.1** -- availability hot- and cold-path productionization, the
+  resumed-run correctness repair, and release-closeout measurements under the
+  accepted synthesis and maintainer decisions.
+- **After v0.2.0.1** -- the refreshed spot-crypto readiness probe and
+  conditional measurement spike. No prior crypto spike was executed; the
+  roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
+- **Next implementation packet** -- the peer benchmark session alignment
+  chore: normalize peer session indexes before parity scoring, report join
+  retention, and revisit the 0.99 weak-return threshold in the article.
 - **v0.2.x** — snapshot administration and research-loop ergonomics
   (promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -93,6 +117,417 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-18 [infrastructure] Peer benchmark session alignment defect
+
+The promoted v0.2.0.1 peer record reports zipline-reloaded at a 0.146064
+daily-return correlation against ledgr, and the rendered article labels that
+row `review (weak return correlation)`. The number measures the harness, not
+zipline.
+
+Every one of zipline's 1,260 equity rows is labelled exactly one calendar day
+after the corresponding ledgr row. ledgr spans 2018-01-01 to 2022-10-28 on
+Monday-to-Friday labels; zipline spans 2018-01-02 to 2022-10-29 on
+Tuesday-to-Saturday labels; the offset is `+1` on every row without exception.
+The adapter registers the `exchange_calendars` 24/5 calendar at
+`dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py:93` to match
+ledgr's synthetic weekday bars, and that calendar's session labels land one day
+after the bar dates written into the csvdir bundle. Zipline trades the same
+price sequence in the same order; it only names each session a day later.
+
+Parity is then scored by an inner join on the timestamp string at
+`dev/bench/peer_benchmark/peer_benchmark.R:1456-1463`. Against a shifted index
+that join keeps 1,008 of 1,260 rows, silently dropping all 252 Mondays and all
+252 Saturdays, and pairs ledgr's session at date D with zipline's row for bar
+D-1. Equity levels are smooth enough to survive the lag at 0.999757
+correlation; first differences are not, and that is the entire distance between
+0.146 and a real result.
+
+Scored positionally, row against row, zipline returns 0.999832 equity
+correlation, 0.987974 daily-return correlation, and 0.00200155 maximum
+single-bar divergence. It passes the same Tier 1 rule and lands beside
+quantstrat's 0.987795. Zipline is not an outlier.
+
+Two further observations belong with any fix. The join reports no retention, so
+a twenty percent row loss passed unremarked while the other peers retained
+essentially every comparable row; a retention check would have caught this
+without anyone reading a calendar. And the article's weak-return threshold is
+0.99, which no external engine except backtrader clears on returns, so a
+corrected zipline at 0.987974 would still render as a defect. That threshold
+describes engine-convention distance, not a fault.
+
+Smaller and separate: zipline's final session liquidates, 341 fills ending
+fully in cash, where ledgr's final session has none. It is worth understanding,
+but it is not the cause, since excluding that bar moves the positional return
+correlation only from 0.987974 to 0.987997.
+
+The promoted record measured what it says it measured, and its Tier 1 verdict
+holds under either alignment, so this is not a release-gate failure and the
+frozen record should stay as measured history. It is a comparison-correctness
+defect that would misrepresent a peer project if the article were published as
+it stands.
+
+### 2026-09-18 [execution] Duplicated FIFO accounting replays
+
+An inventory of lot-state usage found nine places that drive the FIFO
+accounting state machine. One computes the truth: `ledgr_execute_fold()`.
+The other eight replay it, each as an independently hand-written loop over
+events:
+
+- `ledgr_extract_fills_impl()` for durable `ledgr_results(bt, "fills")`;
+- `ledgr_equity_from_events()` and `ledgr_fills_from_events()` for memory
+  reconstruction;
+- `ledgr_sweep_summary_from_ordered_events()` for the durable-sweep fallback;
+- `ledgr_rebuild_derived_state()`;
+- `ledgr_run_finalize()`;
+- `ledgr_compare_runs_fill_stats()`; and
+- `ledgr_lot_state_from_events()`, shared by two state-as-of callers.
+
+Four further sites only seed or unpack state and are not replays.
+
+A reachability pass from the 165 exported functions splits those eight. Six are
+production: `ledgr_extract_fills_impl()` through `ledgr_run_fills()`,
+`as_tibble()`, `ledgr_extract_trades()` and metrics;
+`ledgr_sweep_summary_from_ordered_events()` through
+`ledgr_sweep_run_candidate()`; `ledgr_rebuild_derived_state()` through
+`ledgr_state_reconstruct()`; `ledgr_run_finalize()` through
+`ledgr_run_fold()`; `ledgr_compare_runs_fill_stats()` through
+`ledgr_run_compare()` and `ledgr_run_store_fetch()`; and
+`ledgr_lot_state_from_events()` through the two state-as-of callers.
+
+`ledgr_equity_from_events()` and `ledgr_fills_from_events()` have no package
+callers at all. They are reached only from the benchmark harness and the test
+suite, which is what the corrected public benchmark boundary intended. They are
+parity oracles, they belong in R, and they must stay outside any shared core,
+because folding an oracle into the implementation it verifies destroys the
+verification.
+
+That makes the target a fold, one shared core, and two independent oracles:
+four implementations rather than nine. It also settles in advance one question
+the consolidation RFC would otherwise have to open, namely which replays remain
+independent verifiers.
+
+These are copies rather than variations. Each carries the same per-row
+`[[` extraction from a fetched frame, the same per-row `meta_json` parse, an
+`O(instruments)` named-list lot lookup, and an `O(lot depth)` re-sum of net
+position or cost basis. `ledgr_run_finalize()` also re-implements the
+`colSums(positions_mat * close_mat)` block that sits a few hundred lines above
+it in the equity reconstruction.
+
+The cost is correctness before performance. Nine implementations of one state
+machine must agree, no differential test covers most pairs, and any future
+change to accounting semantics - short exposure, settlement, borrow, an
+alternative lot-selection policy - has to land consistently in all of them.
+
+There are really two implementations in two languages: the R machine driven
+nine times, and `ledgr_cpp_spot_fifo_batch()` driven once from the fold's
+opt-in branch. The compiled kernel is the only place the accounting was ever
+reduced to a single batched contract, and it serves the smallest share of the
+work.
+
+That kernel's contract is also the natural consolidation target. It accepts
+batched fills with integer instrument indices and flat lot arrays and returns
+positions, cash, lot arrays, cost basis, realized P&L, the compensation term,
+and the next event sequence - which is the per-event trajectory every replay
+needs. Making the replays speak that shape is the same work as consolidating
+them, so an R consolidation first and an optional compiled backend afterwards
+is one refactor rather than two.
+
+Three constraints belong with the idea. The kernel has no `CASHFLOW` branch
+while every replay handles cashflow events. Any replay that verifies compiled
+output must stay independent of it, which keeps the benchmark parity oracles
+in R, and `ledgr_extract_fills_impl()` is a subtle case because it cross-checks
+persisted realized P&L against its own recomputation. The compensated
+`realized_comp` accumulator is global and threaded through the kernel, so a
+kernel-backed replay preserves summation semantics while an R-side regrouping
+by instrument would not.
+
+Consolidation is what makes the known optimizations worth doing, because today
+each would have to be applied eight times: hoist fetched columns once with
+`.subset2()` instead of per-row `[[`; resolve instruments with one
+`collapse::fmatch()` and index lot state by integer; maintain cost basis and
+net position incrementally rather than re-summing open lots; parse `meta_json`
+once per chunk; drop the vestigial `COUNT(*)` pre-scan in the durable reader;
+share one connection across `equity` and `fills`; and reuse the realized P&L
+the fold already persisted where the path is a reader rather than a verifier.
+
+It should also shrink the compiled proof matrix rather than grow it. With nine
+drivers reduced to a fold plus one replay over a shared core, adversarial
+trace evidence proves the accounting once and the remaining surfaces become
+projection tests over a verified trajectory.
+
+### 2026-09-18 [infrastructure] Duplicated helper families
+
+A similarity pass over package function bodies, with string literals and
+numeric constants normalized away, found twenty-seven near-duplicate pairs
+above a 0.45 Jaccard threshold. Two families are worth naming; the rest are
+parallel structure a careful author would plausibly write.
+
+The `*_validate_matrix` family has five members across three files:
+`ledgr_pbo_validate_matrix()`, `ledgr_dsr_validate_matrix()`,
+`ledgr_effective_trials_validate_matrix()`, `ledgr_k_ratio_validate_matrix()`
+and `ledgr_min_track_record_validate_matrix()`. Every one runs the same
+sequence: a matrix and numeric type check, a minimum-row check, then a finite
+and non-missing check, with some adding column and constant-column checks. The
+two closest pairs differ by a single numeric literal, three rows against four,
+plus their message text and error classes. One parameterized validator taking
+the metric label, minimum rows, minimum columns and a non-constant flag would
+replace all five while preserving every message and class.
+
+The feature accessor family has five members forming a projection-by-bundle-by
+-state matrix at eighty to eighty-six percent pairwise overlap, each twenty-
+seven to thirty-seven lines with three aborts. That reads as combinatorial
+expansion that wants flags rather than five near-clones.
+
+Weaker pairs, recorded so they are not rediscovered: cost and risk
+`flatten_children`, the feature-set and risk-chain config hashes, the sweep-
+candidate and walk-forward-score store upgrades, the objective diagnostic and
+evidence numeric helpers, the two strategy symbol resolvers, run tag and
+untag, rolling and anchored folds, and cached and uncached features at pulse.
+Repeated SQL is almost absent: only two snapshot-status lookups appear twice,
+in availability persistence against CSV utilities, and in derived state
+against the run snapshot guard.
+
+Separately, twenty-four per-row `for (i in seq_len(nrow(...)))` loops exist
+across seventeen files. That is a census for the test-suite audit and the
+optimization backlog rather than a refactor target, and broad loop cleanup
+remains a declared non-goal.
+
+Unlike the duplicated FIFO replays, these are shape duplication with low
+correctness risk: the failure mode is an inconsistent message, not a wrong
+number. They are also exact-parity candidates in the sense the internal
+optimization proof template defines, since a correct consolidation preserves
+inputs, outputs, errors, classes and messages exactly. They would be the
+template's first use outside a performance change, which would test whether it
+generalizes.
+
+Two limits of the method belong with the result. Bodies under roughly two
+hundred and forty normalized characters were excluded, so small helpers are not
+covered. And the pass finds textual similarity, so it would have missed the
+FIFO replays had they been written in different styles; the call-site inventory
+found those, not this scan.
+
+### 2026-09-17 [infrastructure] Durable-path ingestion and serialization observations
+
+The Batch 8 and Batch 9 investigation found additional cold- and durable-path
+costs that are deliberately outside v0.2.0.1. The discovery record is parked at
+`dev/bench/notes/durable_path_observations.md`. It is profiling and
+micro-measurement evidence, not a ticket, release gate, performance target, or
+authorization to change snapshot identity.
+
+The future work separates three concerns. First, identity-preserving candidates
+include chunk-local reuse of repeated canonical hash formatting, vectorized
+timestamp handling, and removal of redundant duplicate-key string formatting.
+Second, event serialization needs a bounded spike because sequence and
+cash/position deltas are consumed during the fold even though much of the JSON
+payload appears deferrable. Third, hashing canonical values as raw typed bytes
+could be materially faster but changes durable identity and therefore requires
+its own version-matrix RFC rather than an optimization ticket.
+
+The three exported ingestion surfaces retain distinct contracts:
+`ledgr_snapshot_from_df()`, its `ledgr_snapshot_from_csv()` wrapper, and the
+separate strict `ledgr_snapshot_import_bars_csv()` importer. Any future cycle
+must register a compatibility matrix instead of silently merging them. A later
+peer-benchmark revision may call `ledgr_snapshot_from_csv()` directly so its
+preparation clock represents the public user path; that would change the phase
+definition and must be disclosed rather than presented as a like-for-like
+speedup.
+
+Before tickets are cut, reproduce the observations in a quiet, checked-in
+probe with component clocks, bounded-memory measurements, byte-identity checks,
+reopen and tamper detection, and explicit timestamp-branch coverage. The
+identity-preserving candidates should be evaluated before the binary-identity
+RFC, but measured payoff does not waive semantic or persistence gates. The
+current 55-to-62-second figures are orientation only; v0.2.0.1 Batch 10 measures
+the accepted source without consuming this entry.
+
+### 2026-09-18 [ux] Public single-evaluation memory surface
+
+The benchmark-boundary review exposed a product-level gap rather than a missing
+engine. `ledgr_sweep()` already runs candidates through the shared fold with the
+memory output handler, but its public result is intentionally compact and
+candidate-oriented. `ledgr_run()` supplies rich result views only by creating a
+durable, reopenable run. There is no public surface for evaluating one strategy
+once in memory and receiving rich equity, fills, trades, metrics, diagnostics,
+and completion evidence without creating a durable run.
+
+A future RFC should decide whether that workflow merits an explicit ephemeral
+evaluation surface, provisionally described as `ledgr_evaluate()` rather than a
+memory mode on `ledgr_run()`. The distinction matters: a durable run is an
+immutable, reopenable and resumable evidence artifact; an ephemeral evaluation
+would be an interactive research object. It may carry snapshot, configuration,
+strategy, seed and engine-version identity, but it must not claim durable
+archive, resume or reopen semantics. Promotion should reproduce it through
+`ledgr_run()` rather than blessing mutable memory state after the fact.
+
+Any such surface must reuse the existing sweep/fold implementation and must not
+create a second execution engine. Its case depends on real research ergonomics,
+debugging and rich single-evaluation inspection, not on making a benchmark row
+faster. Until it exists, peer-comparable memory timing uses the public
+one-candidate `ledgr_sweep()` workflow; private fold timings remain internal
+diagnostics. This entry is non-binding and is not part of v0.2.0.1.
+
+### 2026-09-18 [execution] Compiled execution RFC and proof architecture
+
+Stop iterating on compiled spot-FIFO inside v0.2.0.1. The current evidence is
+strong enough to justify a focused post-release RFC, but not to widen the
+shipping scope by inspection. At the corrected public sweep boundary, compiled
+spot-FIFO removes about half of canonical engine time on the registered fixture.
+That result combines native FIFO accounting, batch processing, and compiled
+event appends; it is not a measurement of a pure R-language tax. The private
+record measured a 14.42-second compiled engine phase, while the corrected public
+sweep record derives 14.78 seconds from 30.38 seconds warm wall less 15.52
+seconds of setup. Keep those clocks labelled rather than merging them.
+
+The observed record produced exact equity on that fixture, but the binding
+contract is narrower: fills and realized trades compare exactly, while floating
+equity uses the already registered relative `all.equal()` tolerance of `1e-8`.
+Observed exactness must not be rewritten as a stronger contract. The maintenance
+surface is also broader than the 458-line C++ kernel: roughly 705 code lines
+include R-side packing and dispatch plus generated bindings, with enum,
+validation, and dispatch work threaded through eleven R files and assertions
+across eight test files.
+
+The future RFC should use execution combinations as a risk map, not require a
+full Cartesian benchmark for every release. A proportionate proof stack is:
+adversarial differential kernel traces; separate memory and durable sink tests
+for atomicity and rollback; small dense and availability workflow witnesses;
+representative cost and risk cases; and one or two full-scale performance
+records. This preserves strictness while letting semantic tests, integration
+witnesses, and empirical measurements do different jobs.
+
+The RFC should examine availability-aware compiled execution, a durable batch
+sink, and only then any default-promotion question. Ordinary order types resolve
+upstream into the same fill contract. The more important boundaries are
+settlement, borrow and financing, multiple currencies, corporate actions, and
+alternative lot-selection or tax policies, because those can change accounting
+semantics. Availability and durable support require their own evidence; neither
+is unlocked by code inspection or the current benchmark.
+
+Whether canonical R remains the normative truth is deliberately not decided in
+this entry. Reference authority, runtime defaults, permitted divergence, and
+independent differential verification belong to the scheduled post-release
+governance review. The accompanying test-suite audit must classify compiled
+guarantees within its bounded developer, comprehensive correctness, heavy
+evidence, and CRAN submission lanes and may route a focused testing RFC and
+later refactorings. Compiled sources make the CRAN lane decision material for
+this case, because platform coverage and check runtime constrain what its
+guarantees can prove on CRAN machines. The
+compiled-execution RFC consumes those decisions. Nothing here changes Batch 11
+or any v0.2.0.1 release gate.
+
+### 2026-09-15 [infrastructure] Containerized reproducible benchmark laboratory
+
+After the v0.2.0.1 benchmark closeout stabilizes the workload definitions and
+phase clocks, consider moving repeatable performance testing into a separate
+Docker-based benchmark repository. Its purpose would be twofold: detect ledgr
+performance regressions across pinned releases, and run honest peer comparisons
+over standardized public or synthetic workflows and data. It would be a
+measurement laboratory, not a ledgr package dependency or a public leaderboard.
+
+The ledgr suite should cover representative cold and warm tasks: snapshot build
+and seal, durable and in-memory experiments, sweeps, point-in-time availability,
+fill- and event-heavy runs, and result materialization. Each image should pin its
+base image by digest, language and toolchain versions, package release or commit,
+dependency lock, and fixture generator, seed, and content hash. Measured phases
+should not require network access. Results should retain the phase clock, host
+and container metadata, repeated-run medians and spread, peak working set, and a
+compact machine-readable comparison with an accepted baseline release.
+
+Peer images may include quantstrat, Backtrader, Zipline, and a local LEAN engine
+where their licenses and installation paths permit reproducible execution. They
+should consume the same public or generated market inputs and the closest honest
+statement of one strategy and accounting workflow, emit canonical outputs for
+parity or documented-difference checks, and use the same cold-versus-warm phase
+boundaries. Comparisons must disclose semantic work that is not shared rather
+than treating unlike provenance, persistence, or accounting guarantees as equal.
+
+One first-party investigation belongs in that laboratory. The v0.2.0.1 Batch
+10 record measured the durable TTR-backed SMA row at 78.21 seconds cold and
+49.33 seconds in the engine, while the otherwise matched built-in SMA row took
+70.59 and 43.19 seconds. Their 1,260 equity rows, 68,201 fills, and trade record
+are exactly identical after normalizing the engine label. This is an
+interesting observation, not yet an optimization claim: the peer rows ran once
+in a fixed order, and an isolated 1,000-call comparison of the two SMA series
+primitives explained only about 0.04 seconds rather than the 6.14-second engine
+gap.
+
+The future laboratory should therefore include an order-controlled indicator
+path experiment over one reused sealed snapshot. It should compare the native
+`ledgr_ind_sma()` path, the benchmark's TTR wrapper, and public
+`ledgr_ind_ttr("SMA")`; clear feature caches between arms; alternate or randomize
+arm order; repeat in fresh child processes; and separate feature hydration and
+preflight from the fold clock. No package optimization, default change, or
+performance claim follows unless the difference reproduces and the responsible
+mechanism is identified.
+
+Docker can reproduce software environments but cannot make unlike hardware or
+contended hosts comparable. Regression interpretation should therefore prefer
+same-host release series, quiet-host repetitions, warm-ups, and predeclared
+noise thresholds. Licensed Sharadar data, credentials, and paid hosted services
+stay outside the repository. Keeping the laboratory separate also keeps peer
+dependencies, image weight, and license constraints out of ledgr itself. This
+entry records a direction only; it does not authorize creating the repository or
+publishing cross-engine rankings before the current benchmark methodology and
+v0.2.0.1 closeout have been reviewed.
+
+### 2026-09-15 [infrastructure] Evidence-gated removal of scale-growing R work
+
+The availability representation cycle and snapshot-sealing probe exposed one
+recurring performance failure: R-level iteration over a collection that grows
+with the data while each iteration constructs a frame, rescans or subsets a
+table, parses repetitive values, grows a container, or recomputes unused work.
+The discontinuities were representation and placement defects, not evidence
+that every explicit loop is defective. Bounded loops, cursor advances, and
+clear cold-path iteration remain valid when measurement does not make them a
+meaningful cost.
+
+The durable direction is to prepare data-scale inputs once into primitive
+vectors, matrices, segment tables, indexes, or bounded typed buffers; operate on
+those shapes in the fold or validator; and manifest frames only at public and
+persistence boundaries. Optimization starts with a production-shaped probe,
+separates the cold snapshot clock from warm repeated experiments, changes one
+seam, and proves semantic and persisted-output parity. A package-wide mechanical
+rewrite is explicitly not the goal.
+
+The accepted packet already consumed the diagnostic and seal-validator work.
+The reviewed closeout audit then promoted exactly two more measured costs into
+the accepted amendment: memory/durable event writes and fold-time availability
+valuation. The per-bar timestamp, repetitive JSON and hashing, broader
+finalisation, recovery, hydration, compiled packing, and result-reader findings
+remain candidates to measure and route individually. The broad loop audit is a
+discovery map, not an auditable census or a commitment to fix every listed
+site; only the amendment's two named corrections are authorized now.
+
+### 2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff
+
+The old v0.1.9.x crypto-readiness plan was never executed and predates the
+v0.2.0.0 point-in-time availability surface. The roadmap places a refreshed
+spot-only readiness probe after v0.2.0.1. It asks whether the released
+engine can support deterministic, unlevered, long-only spot-crypto research on
+one venue and in one quote currency. `inst/design/spike_protocol.md` requires
+an executable package probe and one-page findings record before any charter or
+RFC prose is written.
+
+The readiness work should exercise fractional accounting, complete 24/7
+sessions, availability and valuation gaps, the existing metric and cost
+surfaces, and durable research workflows. It must not infer maker/taker state
+from coarse bars or claim sub-second execution support. Derivatives, funding,
+margin, staking, token events, exchange adapters, multi-currency accounting,
+and tax remain outside that spike. The accounting-critical-events RFC remains
+the named dependency for support claims involving non-trade crypto economics;
+the event-free spot probe may run before that RFC, with a correspondingly
+narrow claim boundary.
+
+A separate Austrian private-investor tax-accounting RFC is worth opening only
+after the readiness probe and the accounting-critical-events research can
+identify the evidence boundary. That RFC should cover crypto and non-crypto
+investments together, distinguish tax-law interpretation from ledger facts,
+and decide taxable-event classification, lot selection, fee treatment,
+withholding, foreign-currency conversion, loss offsetting, and after-tax return
+reporting. The crypto spike may report missing inputs for that work, but it must
+not implement Austrian KESt or define tax policy. This entry authorizes neither
+cycle.
 
 ### 2026-09-13 [research] Minimum evidence for annualized summary metrics
 

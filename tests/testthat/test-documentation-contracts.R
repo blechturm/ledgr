@@ -569,7 +569,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   testthat::expect_match(section, "sweep artifact\\s+persistence, target risk, and walk-forward were still future v0.1.9.x")
 
   testthat::expect_match(roadmap, "**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`", fixed = TRUE)
-  testthat::expect_match(roadmap, "**Active packet:** none; no successor packet has been cut", fixed = TRUE)
+  testthat::expect_match(roadmap, "**Active packet:** v0.2.0.1 availability hot- and cold-path optimization", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.1 | Done | Public transaction-cost model API", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.2 | Done | Sweep artifact persistence", fixed = TRUE)
   testthat::expect_match(roadmap, "| v0.1.9.3 | Done | Target-risk", fixed = TRUE)
@@ -584,7 +584,7 @@ testthat::test_that("v0.1.9.1 release surfaces record cost API state without fut
   )
 
   testthat::expect_match(design_index, "Latest completed release packet:** `v0.2.0.0`", fixed = TRUE)
-  testthat::expect_match(design_index, "Current active packet:** none", fixed = TRUE)
+  testthat::expect_match(design_index, "Current active packet:** `v0.2.0.1`", fixed = TRUE)
   testthat::expect_match(design_index, "ledgr_v0_1_9_7_spec_packet/v0_1_9_7_spec.md", fixed = TRUE)
   testthat::expect_match(design_index, "manual/identity_contract.qmd", fixed = TRUE)
   testthat::expect_match(design_index, "rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md", fixed = TRUE)
@@ -2738,7 +2738,7 @@ testthat::test_that("v0.1.9.6 release surfaces state validation scope and deferr
 
   testthat::expect_match(docs$roadmap, "| v0.1.9.6 | Done | Validation toolkit substrate", fixed = TRUE)
   testthat::expect_match(docs$roadmap, "| v0.1.9.7 | Done | Business-objective eligibility", fixed = TRUE)
-  testthat::expect_match(docs$design_index, "Current active packet:** none", fixed = TRUE)
+  testthat::expect_match(docs$design_index, "Current active packet:** `v0.2.0.1`", fixed = TRUE)
   testthat::expect_match(docs$horizon, "PBO spike reversed the default", fixed = TRUE)
   testthat::expect_match(docs$horizon, "No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface", fixed = TRUE)
   testthat::expect_match(docs$horizon, "not a public speed claim", fixed = TRUE)
@@ -2770,7 +2770,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
 
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
 
-  testthat::expect_match(docs$description, "Version: 0.2.0.0", fixed = TRUE)
+  testthat::expect_match(docs$description, "Version: 0.2.0.1", fixed = TRUE)
   for (term in c(
     "# ledgr 0.1.9.7",
     "ledgr_return_panel()",
@@ -2835,7 +2835,7 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
     fixed = TRUE
   )
 
-  testthat::expect_match(docs$horizon, "Current packet note (2026-09-13)", fixed = TRUE)
+  testthat::expect_match(docs$horizon, "Current packet note (2026-09-17)", fixed = TRUE)
   testthat::expect_match(
     docs$horizon,
     "v0[.]2[.]0[.]0 is complete after maintainer\\s+review"
@@ -2857,6 +2857,719 @@ testthat::test_that("v0.1.9.7 release surfaces bind eligibility scope and deferr
   testthat::expect_no_match(public_release, "guarantees future profitability", fixed = TRUE)
   testthat::expect_no_match(public_release, "automatically promotes", fixed = TRUE)
   testthat::expect_no_match(public_release, "teaching\\s+plots")
+})
+
+testthat::test_that("post-v0.2.0.1 crypto planning stays probe-first and non-authorizing", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    agents = file.path(root, "AGENTS.md")
+  )
+  testthat::skip_if_not(
+    all(file.exists(unlist(paths))),
+    "v0.2.0.1 planning surfaces unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE), collapse = "\n")
+  })
+
+  testthat::expect_match(
+    docs$roadmap,
+    "| v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$roadmap, "the next step is not a charter", fixed = TRUE)
+  testthat::expect_match(
+    docs$roadmap,
+    "No charter, RFC, spec packet, ticket\\s+set, or\\s+implementation is authorized"
+  )
+  testthat::expect_no_match(
+    docs$roadmap,
+    "| v0.1.9.x | Planned | Crypto-readiness spike",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$horizon,
+    "2026-09-14 [research] Spot-crypto readiness and Austrian tax handoff",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Spot-crypto readiness | **parked behind v0.2.0.1**",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Austrian private-investor tax accounting and after-tax returns | **parked**",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$design_index,
+    "Current planning branch:** `v0.2.0.1`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$agents,
+    "executable prerequisite and one-page findings",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("v0.2.0.1 availability RFC acceptance is aligned", {
+  root <- testthat::test_path("..", "..")
+  paths <- list(
+    roadmap = file.path(root, "inst", "design", "ledgr_roadmap.md"),
+    horizon = file.path(root, "inst", "design", "horizon.md"),
+    rfc_index = file.path(root, "inst", "design", "rfc", "README.md"),
+    design_index = file.path(root, "inst", "design", "README.md"),
+    agents = file.path(root, "AGENTS.md"),
+    synthesis = file.path(
+      root,
+      "inst",
+      "design",
+      "rfc",
+      "rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md"
+    ),
+    decisions = file.path(
+      root,
+      "inst",
+      "design",
+      "rfc",
+      "rfc_availability_hot_path_representation_v0_2_0_x_maintainer_decisions.md"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(unlist(paths))),
+    "v0.2.0.1 acceptance surfaces unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE), collapse = "\n")
+  })
+
+  testthat::expect_match(
+    docs$roadmap,
+    "| v0.2.0.1 | Active | Productionize the reviewed availability seams",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$design_index,
+    "Availability hot- and cold-path representation",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$rfc_index,
+    "| Availability hot- and cold-path representation | v0.2.0.1 productionizes",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$agents, "accepted v0.2.0.1 RFC", fixed = TRUE)
+  testthat::expect_match(
+    docs$synthesis,
+    "Status:** Accepted by the maintainer on 2026-09-15",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$decisions, "Decision 4: release-cycle benchmark closeout", fixed = TRUE)
+  testthat::expect_match(
+    docs$horizon,
+    "After v0.2.0.1** -- the refreshed spot-crypto readiness probe",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("v0.2.0.1 packet implementation status is aligned", {
+  root <- testthat::test_path("..", "..")
+  packet <- file.path(root, "inst", "design", "ledgr_v0_2_0_1_spec_packet")
+  paths <- file.path(packet, c(
+    "README.md", "v0_2_0_1_spec.md",
+    "v0_2_0_1_hot_path_complexity_amendment_proposed.md",
+    "v0_2_0_1_timestamp_and_benchmark_amendment_proposed.md",
+    "v0_2_0_1_tickets.md", "tickets.yml", "batch_plan.md",
+    "batch1-baseline-evidence.md", "batch2-provider-evidence.md",
+    "batch3-diagnostic-evidence.md", "batch4-parity-evidence.md",
+    "batch5-finalization-evidence.md", "batch6-seal-validator-evidence.md",
+    "batch7-benchmark-manual-evidence.md", "batch8-event-buffer-evidence.md",
+    "batch9-valuation-evidence.md", "batch10-benchmark-evidence.md",
+    "batch11-boundary-oracle-evidence.md",
+    "batch12-dense-timestamp-evidence.md",
+    "batch13-snapshot-hash-evidence.md",
+    "batch14-final-evidence.md",
+    "batch14-stage-o-records.csv",
+    "v0_2_0_1_release_closeout.md"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "source v0.2.0.1 packet unavailable during installed-package tests"
+  )
+
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c(
+    "readme", "spec", "amendment", "timestamp_amendment", "tickets",
+    "yaml", "batches",
+    "batch1_evidence", "batch2_evidence", "batch3_evidence",
+    "batch4_evidence", "batch5_evidence", "batch6_evidence",
+    "batch7_evidence", "batch8_evidence", "batch9_evidence",
+    "batch10_evidence", "batch11_evidence", "batch12_evidence",
+    "batch13_evidence", "batch14_evidence", "batch14_records",
+    "release_closeout"
+  )
+  prerequisite_path <- file.path(
+    root,
+    "dev", "spikes", "v0_2_0_1_availability_timestamp_prerequisite",
+    "probe_findings.md"
+  )
+  proof_template_path <- file.path(
+    root,
+    "inst", "design", "exact_parity_internal_optimization_proof_template.md"
+  )
+  design_index_path <- file.path(root, "inst", "design", "README.md")
+  testthat::expect_true(file.exists(prerequisite_path))
+  testthat::expect_true(file.exists(proof_template_path))
+  testthat::expect_true(file.exists(design_index_path))
+  prerequisite <- paste(readLines(prerequisite_path, warn = FALSE), collapse = "\n")
+  proof_template <- paste(readLines(proof_template_path, warn = FALSE), collapse = "\n")
+  design_index <- paste(readLines(design_index_path, warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(docs$spec, "Status:** Accepted 2026-09-16; tickets cut", fixed = TRUE)
+  testthat::expect_match(docs$spec, "key this default on row presence", fixed = TRUE)
+  testthat::expect_match(
+    docs$amendment,
+    "Status:** Accepted by the maintainer 2026-09-17",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$amendment, "collapse (>= 2.1.8)", fixed = TRUE)
+  testthat::expect_match(
+    docs$timestamp_amendment,
+    "Status:** accepted by the maintainer 2026-09-18",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$tickets, "Total Tickets: 26", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2719 - Packet Alignment", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2735 - v0.2.0.1 Release Gate", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2740 - Valuation Scaling", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "LDG-2744 - Finalize And Index", fixed = TRUE)
+  testthat::expect_match(prerequisite, "Outcome: `NEITHER`", fixed = TRUE)
+  testthat::expect_match(prerequisite, "ratio is 0.763561", fixed = TRUE)
+  testthat::expect_match(prerequisite, "R 4.6.1 ucrt", fixed = TRUE)
+  testthat::expect_match(
+    proof_template,
+    "accepted specifications remain the source of implementation authority",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "Status: accepted 2026-09-18 as v0.2.0.1 evidence infrastructure",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "the measured gain exists only in a private harness",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "a new numerical tolerance or authoritative path must be chosen",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "OPT-C01 is `RECLASSIFY`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    proof_template,
+    "batch13-snapshot-hash-evidence.md",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    design_index,
+    "exact_parity_internal_optimization_proof_template.md",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$readme,
+    "accepted evidence infrastructure; not independent implementation authority",
+    fixed = TRUE
+  )
+  testthat::expect_match(docs$tickets, "R 4.5.2 ucrt", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| 4.1 mechanism and source guard | LDG-2726 |", fixed = TRUE)
+  testthat::expect_match(docs$tickets, "| 3.5 status supersession-exact hybrid | LDG-2729 |", fixed = TRUE)
+  testthat::expect_match(
+    docs$tickets,
+    "| Amendment 5 combined eventful availability case | LDG-2740 |",
+    fixed = TRUE
+  )
+  for (id in sprintf("LDG-%d", 2719:2744)) {
+    testthat::expect_match(docs$tickets, paste0("## ", id, " - "), fixed = TRUE)
+    testthat::expect_match(docs$yaml, paste0("id: \"", id, "\""), fixed = TRUE)
+  }
+  yaml_lines <- readLines(paths[[6L]], warn = FALSE)
+  yaml_ids <- sub("^  - id: \"(LDG-[0-9]+)\"$", "\\1", grep("^  - id: \"LDG-", yaml_lines, value = TRUE))
+  yaml_statuses <- sub("^    status: \"([a-z_]+)\"$", "\\1", grep("^    status: \"", yaml_lines, value = TRUE))
+  testthat::expect_identical(yaml_ids, sprintf("LDG-%d", 2719:2744))
+  testthat::expect_identical(
+    yaml_statuses,
+    c(
+      rep("complete_after_review", 26L)
+    )
+  )
+  ticket_lines <- readLines(paths[[5L]], warn = FALSE)
+  md_statuses <- sub("^Status: ", "", grep("^Status: ", ticket_lines, value = TRUE))
+  testthat::expect_identical(
+    md_statuses,
+    c(
+      rep("Complete After Review", 26L)
+    )
+  )
+  batch_lines <- readLines(paths[[7L]], warn = FALSE)
+  batch_statuses <- sub(
+    "^Status: ",
+    "",
+    grep(
+      paste0(
+        "^Status: (Complete After Review|Diagnostic History|Pending|",
+        "Implemented; pending independent review)\\.$"
+      ),
+      batch_lines,
+      value = TRUE
+    )
+  )
+  testthat::expect_identical(
+    batch_statuses,
+    c(
+      rep("Complete After Review.", 10L),
+      "Diagnostic History.",
+      rep("Complete After Review.", 5L)
+    )
+  )
+  testthat::expect_match(docs$batches, "Batch 0 - Packet Alignment And Ticket Cut", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 4 - Production Parity And Retirement", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 5 - Resumed-Run Finalization", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 6 - Seal Validators", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 7 - Benchmark Phases And Manuals", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 8 - Linear Event Buffers", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 9 - Prepared Availability Valuation", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 10 - First Closeout Attempt", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 11 - Public Boundary", fixed = TRUE)
+  testthat::expect_match(docs$batches, "Batch 15 - Release Gate", fixed = TRUE)
+  testthat::expect_match(
+    docs$batches,
+    "Batch 15 remains unauthorized until that acceptance",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "v0_2_0_1_batch10_availability_400a3e5_20260917T205648Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "peer_benchmark_record_20260917T212008Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "The measured median is 14.51 seconds",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch10_evidence,
+    "Batch 11 must not start from this\\s+document alone"
+  )
+  testthat::expect_match(
+    docs$batch11_evidence,
+    "public_one_candidate_ledgr_sweep_v002",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch11_evidence,
+    "Status: `RECLASSIFY`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch11_evidence,
+    "availability ingestion",
+    ignore.case = TRUE
+  )
+  testthat::expect_match(
+    docs$batch12_evidence,
+    "accepted after independent Stage M review and maintainer approval",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch12_evidence,
+    "This is Stage M evidence, not the final Stage O record.",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "implementation evidence pending independent Stage N review",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "Gate disposition: `PASS`.",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch13_evidence,
+    "This is Stage N evidence, not final\\s+Stage O evidence\\."
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "bcced9457de58f10f9c862c2890576a7370b1140",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "v0_2_0_1_stage_o_availability_bcced94_20260918T123618Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "v0_2_0_1_stage_o_hash_bcced94_20260918T124304Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "peer_benchmark_record_20260918T140507Z",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "cold clock[[:space:]]+is 119.11 seconds"
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "Stage O is 31 percent[[:space:]]+slower cold and 21 percent slower warm"
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "C:/tmp/ledgr-quantstrat-batch10-lib",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "C:/tmp/ledgr-collapse-218-lib",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "peak working set of 1,754.26171875 MiB",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch14_evidence,
+    "This document does not authorize Batch[[:space:]]+15"
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "Local release gate complete after independent review and maintainer",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "R CMD check --no-manual --no-build-vignettes ledgr_0.2.0.1.tar.gz",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "completed in 1,129.08 seconds with `Status: OK`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    "Coverage was not rerun",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$release_closeout,
+    paste0(
+      "Remote[[:space:]]+branch CI, merge, main CI, tag, tag CI, and ",
+      "GitHub Release remain later"
+    )
+  )
+  stage_o_records <- utils::read.csv(paths[[22L]], stringsAsFactors = FALSE)
+  testthat::expect_identical(
+    stage_o_records$record,
+    c("availability_warm_cold_profile", "snapshot_hash_pair", "peer_benchmark")
+  )
+  testthat::expect_true(all(stage_o_records$status == "PASS"))
+  testthat::expect_identical(
+    unique(stage_o_records$source_commit),
+    "bcced9457de58f10f9c862c2890576a7370b1140"
+  )
+  testthat::expect_match(docs$readme, "No user-facing changes have shipped", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `f0b847d", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `6b09a1b", fixed = TRUE)
+  testthat::expect_match(docs$readme, "source baseline `9686229", fixed = TRUE)
+  testthat::expect_match(docs$readme, "binding[[:space:]]+`NEITHER` outcome")
+  testthat::expect_match(
+    docs$readme,
+    "provisional[[:space:]]+diagnostic[[:space:]]+evidence"
+  )
+  testthat::expect_match(
+    docs$batch1_evidence,
+    "prepared provider | `dev/spikes/availability-provider-preparation/evidence/` | full rerun passed 54/54 checks",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch2_evidence,
+    "3,676 of 3,676 provider views were identical",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch3_evidence,
+    "five deterministic files were byte-identical",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch4_evidence,
+    "The production median is 93.01 seconds lower",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch5_evidence,
+    "An atomic conflict test proves",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch6_evidence,
+    "for 6,000 randomized comparisons in total",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch7_evidence,
+    "warm_research_iteration",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch7_evidence,
+    "No record run was performed in[[:space:]]+this batch"
+  )
+  testthat::expect_match(
+    docs$batch8_evidence,
+    "memory | direct | 29.28, 28.61, 29.12 | 29.12",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch8_evidence,
+    "BATCH8_EVENT_BUFFER_GATES_OK",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch9_evidence,
+    "prepared/current median ratio is 0.5643",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batch9_evidence,
+    "bounded eventful case",
+    ignore.case = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "--compiled-accounting-model spot_fifo",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "Quantstrat must finish as `DONE`",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$tickets,
+    "1114e4a1a8a3b68d2fb7a62b52d743cbc5e4b39f",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$batches,
+    "public canonical and[[:space:]]+compiled performance record"
+  )
+
+  roadmap <- paste(readLines(file.path(root, "inst", "design", "ledgr_roadmap.md"), warn = FALSE), collapse = "\n")
+  horizon <- paste(readLines(file.path(root, "inst", "design", "horizon.md"), warn = FALSE), collapse = "\n")
+  agents <- paste(readLines(file.path(root, "AGENTS.md"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(roadmap, "| v0.2.0.1 | Active | Productionize", fixed = TRUE)
+  testthat::expect_match(horizon, "v0.2.0.1 packet is active", fixed = TRUE)
+  testthat::expect_match(horizon, "Public single-evaluation memory surface", fixed = TRUE)
+  testthat::expect_match(horizon, "must not\\s+create a second execution engine")
+  testthat::expect_match(
+    agents,
+    "locally complete v0.2.0.1 release gate",
+    fixed = TRUE
+  )
+  testthat::expect_match(agents, "ledgr_v0_2_0_1_spec_packet/tickets.yml", fixed = TRUE)
+})
+
+testthat::test_that("v0.2.0.1 optimization manuals record production boundaries", {
+  root <- testthat::test_path("..", "..")
+  manual <- file.path(root, "inst", "design", "manual")
+  paths <- file.path(manual, c(
+    "benchmark_methodology.qmd", "benchmark_methodology.md",
+    "optimization_coding_style.qmd", "optimization_coding_style.md"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "maintainer manuals unavailable during installed-package tests"
+  )
+  docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
+  names(docs) <- c("benchmark_qmd", "benchmark_md", "style_qmd", "style_md")
+
+  for (name in c("benchmark_qmd", "benchmark_md")) {
+    testthat::expect_match(docs[[name]], "snapshot_prepare_sec", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "experiment_setup_sec", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "cold_end_to_end", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "warm_research_iteration", fixed = TRUE)
+    testthat::expect_match(
+      docs[[name]],
+      "future[[:space:]]+availability-enabled peer row"
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "peer workload declares no[[:space:]]+availability facts"
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "--compiled-accounting-model spot_fifo",
+      fixed = TRUE
+    )
+    testthat::expect_match(
+      docs[[name]],
+      "quantstrat must finish as DONE from its pinned isolated library",
+      ignore.case = TRUE
+    )
+  }
+  for (name in c("style_qmd", "style_md")) {
+    testthat::expect_match(docs[[name]], "production typed blocks", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "next measured lane", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "Run IDs", fixed = TRUE)
+    testthat::expect_match(docs[[name]], "archived_at_utc", fixed = TRUE)
+    testthat::expect_no_match(docs[[name]], "uncommitted spike seams", fixed = TRUE)
+    testthat::expect_no_match(docs[[name]], "not yet fixed; sort-and-sweep", fixed = TRUE)
+  }
+})
+
+testthat::test_that("v0.2.0.1 peer phase corrections remain explicit", {
+  root <- testthat::test_path("..", "..")
+  paths <- c(
+    harness = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "peer_benchmark.R"
+    ),
+    report = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "peer_benchmark.qmd"
+    ),
+    zipline = file.path(
+      root,
+      "dev", "bench", "peer_benchmark", "python", "zipline",
+      "peer_zipline_full.py"
+    )
+  )
+  testthat::skip_if_not(
+    all(file.exists(paths)),
+    "peer benchmark sources unavailable during installed-package tests"
+  )
+  harness <- paste(readLines(paths[["harness"]], warn = FALSE), collapse = "\n")
+  report <- paste(readLines(paths[["report"]], warn = FALSE), collapse = "\n")
+  zipline <- paste(readLines(paths[["zipline"]], warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(
+    harness,
+    paste0(
+      "ledgr_builtin_sma = \"durable ledgr built-in SMA: ",
+      "snapshot preparation="
+    ),
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    harness,
+    "ledgr_builtin_sma = \"durable ledgr built-in SMA: ingestion=",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    zipline,
+    "teardown_sec = time.perf_counter() - engine_done",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    zipline,
+    paste0(
+      "snapshot_prepare_sec = snapshot_done - prepare_start + ",
+      "teardown_sec"
+    ),
+    fixed = TRUE
+  )
+  public_sweep_start <- regexpr(
+    "peer_run_ledgr_sweep <- function",
+    harness,
+    fixed = TRUE
+  )[[1L]]
+  public_sweep_end <- regexpr(
+    "peer_attach_sweep_oracle <- function",
+    harness,
+    fixed = TRUE
+  )[[1L]]
+  testthat::expect_gt(public_sweep_start, 0L)
+  testthat::expect_gt(public_sweep_end, public_sweep_start)
+  public_sweep_body <- substr(
+    harness,
+    public_sweep_start,
+    public_sweep_end - 1L
+  )
+  testthat::expect_match(public_sweep_body, "ledgr_sweep(", fixed = TRUE)
+  testthat::expect_match(public_sweep_body, "ledgr_sweep_returns(", fixed = TRUE)
+  testthat::expect_match(public_sweep_body, "ledgr_sweep_trades(", fixed = TRUE)
+  testthat::expect_no_match(public_sweep_body, "ledgr:::", fixed = TRUE)
+  testthat::expect_match(
+    harness,
+    "parity_oracle_outside_clock <- TRUE",
+    fixed = TRUE
+  )
+  testthat::expect_match(report, "ggplot2::ggplot", fixed = TRUE)
+  testthat::expect_match(report, "position_stack(reverse = TRUE)", fixed = TRUE)
+  testthat::expect_match(
+    report,
+    "results_prefix: \"peer_benchmark_record_20260918T140507Z\"",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    report,
+    "bcced9457de58f10f9c862c2890576a7370b1140",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    report,
+    "The final peer record requires a process-tree peak-working-set sidecar.",
+    fixed = TRUE
+  )
+  testthat::expect_match(harness, "NULL (", fixed = TRUE)
+  testthat::expect_match(
+    report,
+    "report_performance <- peer_harness$peer_prepare_report_performance(performance)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    harness,
+    "display[!done, clock_columns] <- NA_real_",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    harness,
+    "peer_report_phase_levels <- function",
+    fixed = TRUE
+  )
+  testthat::expect_match(report, "Setup / orchestration", fixed = TRUE)
+  testthat::expect_no_match(
+    report,
+    "phase_plot$seconds[!is.finite(phase_plot$seconds)] <- 0",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(report, "barplot(", fixed = TRUE)
+  testthat::expect_no_match(report, "par(no.readonly", fixed = TRUE)
+  testthat::expect_no_match(report, "plot(NULL", fixed = TRUE)
 })
 
 testthat::test_that("vignette styleguide binds methodological diagnostic teaching", {
@@ -3153,7 +3866,7 @@ testthat::test_that("v0.2.0.0 implementation status and packet history are disco
   )
   testthat::expect_match(
     agents,
-    "completed v0.2.0.0 packet; no successor packet cut",
+    "completed v0.2.0.0 packet; accepted v0.2.0.1 RFC",
     fixed = TRUE
   )
   testthat::expect_no_match(

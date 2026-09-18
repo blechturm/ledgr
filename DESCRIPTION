@@ -1,6 +1,6 @@
 Package: ledgr
 Title: Deterministic Event-Sourced Backtesting
-Version: 0.2.0.0
+Version: 0.2.0.1
 Authors@R: 
     person("Max", "Thomasberger",
       email = "31213680+blechturm@users.noreply.github.com",
@@ -20,7 +20,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr, quarto
 Imports:
-    collapse,
+    collapse (>= 2.1.8),
     codetools,
     DBI,
     digest,

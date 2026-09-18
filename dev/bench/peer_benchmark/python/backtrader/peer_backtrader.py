@@ -88,9 +88,14 @@ def main() -> None:
 
     start = time.perf_counter()
     bars = pd.read_csv(args.bars, parse_dates=["ts_utc"])
+    prepared_bars = [
+        (str(sym), group.sort_values("ts_utc").set_index("ts_utc"))
+        for sym, group in bars.groupby("instrument_id")
+    ]
+    snapshot_done = time.perf_counter()
+
     cerebro = bt.Cerebro()
-    for sym, group in bars.groupby("instrument_id"):
-        group = group.sort_values("ts_utc").set_index("ts_utc")
+    for sym, group in prepared_bars:
         feed = bt.feeds.PandasData(
             dataname=group,
             open="open",
@@ -103,7 +108,7 @@ def main() -> None:
         cerebro.adddata(feed, name=str(sym))
     cerebro.broker.setcash(1e7)
     cerebro.addstrategy(SmaCross, fast=args.fast, slow=args.slow)
-    ingestion_done = time.perf_counter()
+    setup_done = time.perf_counter()
     strategies = cerebro.run(runonce=True, preload=True)
     strategy = strategies[0]
     engine_done = time.perf_counter()
@@ -141,8 +146,9 @@ def main() -> None:
 
     results_done = time.perf_counter()
     phase_sec = {
-        "ingestion_sec": ingestion_done - start,
-        "engine_sec": engine_done - ingestion_done,
+        "snapshot_prepare_sec": snapshot_done - start,
+        "experiment_setup_sec": setup_done - snapshot_done,
+        "engine_sec": engine_done - setup_done,
         "results_sec": results_done - engine_done,
     }
     wall_sec = sum(phase_sec.values())
@@ -153,7 +159,7 @@ def main() -> None:
             "phase_sec": phase_sec,
             "backtrader": importlib.metadata.version("backtrader"),
             "pandas": importlib.metadata.version("pandas"),
-            "boundary_check": ["bars_csv_read", "feed_construction", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
+            "boundary_check": ["bars_csv_read", "native_data_prepare", "feed_construction", "experiment_setup", "engine_run", "canonical_equity_write", "fills_write", "trades_write"],
         }, fh, indent=2)
 
 

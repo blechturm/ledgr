@@ -1,0 +1,18 @@
+"case","arm","first_status","final_status","first_error","resume_error","diagnostic_rows","decision_rows","error_rows","event_rows","equity_rows","completion_rows","seq_continuous","diagnostics_identical_to_direct","diagnostics_identical_to_rows_arm","events_identical_to_rows_arm","equity_identical_to_rows_arm","state_identical_to_rows_arm","completion_identical_to_rows_arm","session_reader_matches_store","reopened_matches_session","reopened_identical_to_rows_arm","explained_identical_to_rows_arm"
+"C1_direct","rows","DONE","DONE",NA,NA,20240,20200,0,0,40,1,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+"C1_direct","columnar","DONE","DONE",NA,NA,20240,20200,0,0,40,1,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+"C2_direct_small_chunk","columnar","DONE","DONE",NA,NA,20240,20200,0,0,40,1,TRUE,TRUE,NA,NA,NA,NA,NA,TRUE,TRUE,NA,NA
+"C3_interrupt_resume","rows","RUNNING","DONE",NA,NA,20240,20200,0,0,20,1,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+"C3_interrupt_resume","columnar","RUNNING","DONE",NA,NA,20240,20200,0,0,20,1,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+"C4_exception_rollback","rows","FAILED","FAILED","Strategy error at ts_utc=2021-02-05T21:00:00Z for run_id=spike-C4_exception_rollback. Instruments: I001, I002, I003, I004, I005, I006, I007, I008, ... (497 more). Available feature IDs: <none>. Original error: injected fold failure
+Caused by error in `fn()`:
+! injected fold failure",NA,1,0,1,0,0,0,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,NA,NA,NA,NA
+"C4_exception_rollback","columnar","FAILED","FAILED","Strategy error at ts_utc=2021-02-05T21:00:00Z for run_id=spike-C4_exception_rollback. Instruments: I001, I002, I003, I004, I005, I006, I007, I008, ... (497 more). Available feature IDs: <none>. Original error: injected fold failure
+Caused by error in `fn()`:
+! injected fold failure",NA,1,0,1,0,0,0,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,NA,NA,NA,NA
+"C5_resume_then_exception","rows","RUNNING","FAILED",NA,"Strategy error at ts_utc=2021-02-05T21:00:00Z for run_id=spike-C5_resume_then_exception. Instruments: I001, I002, I003, I004, I005, I006, I007, I008, ... (497 more). Available feature IDs: <none>. Original error: injected fold failure
+Caused by error in `fn()`:
+! injected fold failure",5061,5050,1,0,0,0,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,NA,NA,NA,NA
+"C5_resume_then_exception","columnar","RUNNING","FAILED",NA,"Strategy error at ts_utc=2021-02-05T21:00:00Z for run_id=spike-C5_resume_then_exception. Instruments: I001, I002, I003, I004, I005, I006, I007, I008, ... (497 more). Available feature IDs: <none>. Original error: injected fold failure
+Caused by error in `fn()`:
+! injected fold failure",5061,5050,1,0,0,0,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,NA,NA,NA,NA

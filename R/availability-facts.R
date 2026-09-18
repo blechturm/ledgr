@@ -1294,64 +1294,189 @@ ledgr_fact_validate_status_supersession <- function(rows) {
   invisible(TRUE)
 }
 
-ledgr_fact_intervals_overlap <- function(a_from, a_to, b_from, b_to) {
-  a_end <- if (is.na(a_to)) as.POSIXct("9999-12-31", tz = "UTC") else a_to
-  b_end <- if (is.na(b_to)) as.POSIXct("9999-12-31", tz = "UTC") else b_to
-  a_from < b_end && b_from < a_end
+ledgr_fact_scope_group <- function(rows, columns, already_sorted = FALSE) {
+  count <- nrow(rows)
+  if (count == 0L) return(integer())
+  order_index <- if (isTRUE(already_sorted)) {
+    seq_len(count)
+  } else {
+    do.call(
+      order,
+      c(
+        unname(as.list(rows[, columns, drop = FALSE])),
+        list(na.last = TRUE, method = "radix")
+      )
+    )
+  }
+  ordered <- rows[order_index, columns, drop = FALSE]
+  starts_group <- c(TRUE, rep(FALSE, count - 1L))
+  if (count > 1L) {
+    differs <- rep(FALSE, count - 1L)
+    for (column in columns) {
+      left <- ordered[[column]][-count]
+      right <- ordered[[column]][-1L]
+      equal <- (is.na(left) & is.na(right)) |
+        (!is.na(left) & !is.na(right) & left == right)
+      differs <- differs | !equal
+    }
+    starts_group[-1L] <- differs
+  }
+  ordered_group <- cumsum(starts_group)
+  group <- integer(count)
+  group[order_index] <- ordered_group
+  group
+}
+
+ledgr_fact_nonmissing_states <- function(rows, state_column) {
+  states <- as.character(rows[[state_column]])
+  if (anyNA(states)) {
+    rlang::abort(
+      sprintf(
+        "Fact conflict validation requires non-missing `%s` states.",
+        state_column
+      ),
+      class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
+    )
+  }
+  states
+}
+
+ledgr_fact_opposing_state_overlap <- function(rows,
+                                              scope_columns,
+                                              state_column,
+                                              stable_column = "fact_id") {
+  states <- ledgr_fact_nonmissing_states(rows, state_column)
+  if (nrow(rows) < 2L) return(FALSE)
+  starts <- as.numeric(rows$effective_from)
+  ends <- as.numeric(rows$effective_to)
+  ends[is.na(ends)] <- Inf
+  stable <- if (stable_column %in% names(rows)) {
+    as.character(rows[[stable_column]])
+  } else {
+    sprintf("%012d", seq_len(nrow(rows)))
+  }
+  order_index <- do.call(
+    order,
+    c(
+      unname(as.list(rows[, scope_columns, drop = FALSE])),
+      list(
+        starts, ends, states, stable,
+        na.last = TRUE, method = "radix"
+      )
+    )
+  )
+  rows <- rows[order_index, , drop = FALSE]
+  starts <- starts[order_index]
+  ends <- ends[order_index]
+  states <- states[order_index]
+  group <- ledgr_fact_scope_group(
+    rows,
+    scope_columns,
+    already_sorted = TRUE
+  )
+  state_levels <- sort(unique(states))
+  previous_end <- matrix(
+    -Inf,
+    nrow = nrow(rows),
+    ncol = length(state_levels)
+  )
+  for (index in seq_along(state_levels)) {
+    state_end <- ifelse(states == state_levels[[index]], ends, -Inf)
+    previous_end[, index] <- stats::ave(
+      state_end,
+      group,
+      FUN = function(value) c(-Inf, utils::head(cummax(value), -1L))
+    )
+  }
+  opposing_end <- rep(-Inf, nrow(rows))
+  for (index in seq_along(state_levels)) {
+    opposing <- states != state_levels[[index]]
+    opposing_end[opposing] <- pmax(
+      opposing_end[opposing],
+      previous_end[opposing, index]
+    )
+  }
+  any(starts < opposing_end)
 }
 
 ledgr_fact_validate_source_conflicts <- function(rows) {
-  if (nrow(rows) < 2L) return(invisible(TRUE))
-  for (i in seq_len(nrow(rows) - 1L)) {
-    for (j in seq.int(i + 1L, nrow(rows))) {
-      same_scope <- identical(rows$instrument_id[[i]], rows$instrument_id[[j]]) &&
-        identical(rows$source[[i]], rows$source[[j]]) &&
-        identical(rows$precedence[[i]], rows$precedence[[j]])
-      superseded_pair <- identical(rows$supersedes_fact_id[[i]], rows$fact_id[[j]]) ||
-        identical(rows$supersedes_fact_id[[j]], rows$fact_id[[i]])
-      if (same_scope && !superseded_pair && !identical(rows$status[[i]], rows$status[[j]]) &&
-          ledgr_fact_intervals_overlap(rows$effective_from[[i]], rows$effective_to[[i]], rows$effective_from[[j]], rows$effective_to[[j]])) {
-        rlang::abort(
-          "One trading-status source cannot assert conflicting tied statuses over the same interval.",
-          class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
-        )
-      }
+  ledgr_fact_nonmissing_states(rows, "status")
+  superseded <- as.character(rows$supersedes_fact_id)
+  supplied <- !is.na(superseded) & nzchar(superseded)
+  involved <- supplied | rows$fact_id %in% superseded[supplied]
+  uninvolved <- rows[!involved, , drop = FALSE]
+  conflict <- ledgr_fact_opposing_state_overlap(
+    uninvolved,
+    c("instrument_id", "source", "precedence"),
+    "status"
+  )
+
+  involved_index <- which(involved)
+  if (!conflict && length(involved_index) > 0L) {
+    scope <- ledgr_fact_scope_group(
+      rows,
+      c("instrument_id", "source", "precedence")
+    )
+    pair_chunks <- lapply(involved_index, function(left) {
+      right <- which(scope == scope[[left]] & seq_len(nrow(rows)) != left)
+      if (length(right) == 0L) return(NULL)
+      cbind(pmin(left, right), pmax(left, right))
+    })
+    pair_chunks <- Filter(Negate(is.null), pair_chunks)
+    if (length(pair_chunks) > 0L) {
+      pairs <- unique(do.call(rbind, pair_chunks))
+      left <- pairs[, 1L]
+      right <- pairs[, 2L]
+      direct <-
+        (!is.na(superseded[left]) & superseded[left] == rows$fact_id[right]) |
+        (!is.na(superseded[right]) & superseded[right] == rows$fact_id[left])
+      ends <- as.numeric(rows$effective_to)
+      ends[is.na(ends)] <- Inf
+      starts <- as.numeric(rows$effective_from)
+      overlap <- starts[left] < ends[right] & starts[right] < ends[left]
+      conflict <- any(
+        !direct &
+          rows$status[left] != rows$status[right] &
+          overlap
+      )
     }
+  }
+  if (conflict) {
+    rlang::abort(
+      paste(
+        "One trading-status source cannot assert conflicting tied",
+        "statuses over the same interval."
+      ),
+      class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
+    )
   }
   invisible(TRUE)
 }
 
 ledgr_fact_validate_membership_conflicts <- function(rows) {
-  if (nrow(rows) < 2L) return(invisible(TRUE))
-  for (i in seq_len(nrow(rows) - 1L)) {
-    for (j in seq.int(i + 1L, nrow(rows))) {
-      same_scope <- identical(rows$instrument_id[[i]], rows$instrument_id[[j]]) &&
-        identical(rows$universe_id[[i]], rows$universe_id[[j]])
-      if (same_scope && !identical(rows$member[[i]], rows$member[[j]]) &&
-          ledgr_fact_intervals_overlap(
-            rows$effective_from[[i]], rows$effective_to[[i]],
-            rows$effective_from[[j]], rows$effective_to[[j]]
-          )) {
-        rlang::abort(
-          "Membership facts cannot assert incompatible overlapping states.",
-          class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
-        )
-      }
-    }
+  if (ledgr_fact_opposing_state_overlap(
+    rows,
+    c("instrument_id", "universe_id"),
+    "member"
+  )) {
+    rlang::abort(
+      "Membership facts cannot assert incompatible overlapping states.",
+      class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
+    )
   }
   invisible(TRUE)
 }
 
 ledgr_fact_validate_lifetime_conflicts <- function(rows) {
-  if (nrow(rows) < 2L) return(invisible(TRUE))
-  for (i in seq_len(nrow(rows) - 1L)) {
-    for (j in seq.int(i + 1L, nrow(rows))) {
-      same_scope <- identical(rows$instrument_id[[i]], rows$instrument_id[[j]])
-      if (same_scope && !identical(rows$assertion[[i]], rows$assertion[[j]]) &&
-          ledgr_fact_intervals_overlap(rows$effective_from[[i]], rows$effective_to[[i]], rows$effective_from[[j]], rows$effective_to[[j]])) {
-        rlang::abort("Lifetime facts cannot assert incompatible overlapping states.", class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args"))
-      }
-    }
+  if (ledgr_fact_opposing_state_overlap(
+    rows,
+    "instrument_id",
+    "assertion"
+  )) {
+    rlang::abort(
+      "Lifetime facts cannot assert incompatible overlapping states.",
+      class = c("ledgr_fact_structural_conflict", "ledgr_invalid_args")
+    )
   }
   invisible(TRUE)
 }

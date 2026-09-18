@@ -1,0 +1,171 @@
+"arm","file","test","nb","failed","skipped","error","warning","passed"
+"current","test-availability-causality.R","provider resolves facts only after effective and knowledge time",9,0,FALSE,FALSE,0,9
+"current","test-availability-causality.R","future facts change identity without rewriting prior context",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","execution facts resolve at the declared next opening",18,0,FALSE,FALSE,0,18
+"current","test-availability-economics.R","lifetime restrictions also resolve at the declared opening",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","the terminal availability decision has no execution opportunity",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","availability target rules and post-risk closure fail closed",8,0,FALSE,FALSE,0,8
+"current","test-availability-economics.R","active rebalance preserves held nonmembers and reserves exposure",2,0,FALSE,FALSE,0,2
+"current","test-availability-economics.R","affordability credits accepted reductions before purchases",8,0,FALSE,FALSE,0,8
+"current","test-availability-economics.R","availability short guard runs after explicit long-only risk",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","existing short holdings may hold or consume cash to cover",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","new positive exposure without a risk mark stops before fills",4,0,FALSE,FALSE,0,4
+"current","test-availability-economics.R","stale valuation marks feed max-weight without pricing execution",6,0,FALSE,FALSE,0,6
+"current","test-availability-economics.R","venue sessions age marks across a whole-feed outage",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","current-mark-only valuation stops on the first missing session",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","known inactivity does not freeze valuation age",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","valuation exhaustion commits an incomplete direct-run prefix",12,0,FALSE,FALSE,0,12
+"current","test-availability-economics.R","terminal assertions stop without fabricated settlement",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","affected exposure is gross and missing references fail closed",6,0,FALSE,FALSE,0,6
+"current","test-availability-economics.R","a rejected sale never funds an unrelated purchase",2,0,FALSE,FALSE,0,2
+"current","test-availability-economics.R","a blocked exit executes only after a new zero target",5,0,FALSE,FALSE,0,5
+"current","test-availability-economics.R","execution diagnostics retain ordered gate reasons",2,0,FALSE,FALSE,0,2
+"current","test-availability-economics.R","execution-time membership changes are diagnostic only",3,0,FALSE,FALSE,0,3
+"current","test-availability-economics.R","decision traces append across deliberate interruption and resume",8,0,FALSE,FALSE,0,8
+"current","test-availability-economics.R","unexpected fold errors roll back economics and retain error diagnostics",8,0,FALSE,FALSE,0,8
+"current","test-availability-execution-timing.R","fill results expose derived recording-pulse alignment",15,0,FALSE,FALSE,0,15
+"current","test-availability-execution-timing.R","recording-pulse derivation fails closed on missing or ambiguous evidence",3,0,FALSE,FALSE,0,3
+"current","test-availability-execution-timing.R","timing version enters active identity and stays absent from dense config",15,0,FALSE,FALSE,0,15
+"current","test-availability-execution-timing.R","legacy timing is read-only and mixed versions reject fill equivalence",20,0,FALSE,FALSE,0,20
+"current","test-availability-execution-timing.R","unknown timing evidence is never promoted to version two",3,0,FALSE,FALSE,0,3
+"current","test-availability-facts.R","fact constructors preserve completeness, knowledge, and conflicts",16,0,FALSE,FALSE,0,16
+"current","test-availability-facts.R","status supersession is source-local and canonical",3,0,FALSE,FALSE,0,3
+"current","test-availability-facts.R","fact bundles reject mutation",1,0,FALSE,FALSE,0,1
+"current","test-availability-facts.R","session calendars are complete, knowledge-bounded, and DST-safe",10,0,FALSE,FALSE,0,10
+"current","test-availability-facts.R","constituent lists normalize to canonical membership sets",12,0,FALSE,FALSE,0,12
+"current","test-availability-facts.R","EOD labels map explicitly and the clock retains feed outages",7,0,FALSE,FALSE,0,7
+"current","test-availability-facts.R","availability validation is a dry-run and fails closed",7,0,FALSE,FALSE,0,7
+"current","test-availability-facts.R","quarantine classifies malformed observation timestamps row by row",3,0,FALSE,FALSE,0,3
+"current","test-availability-facts.R","fact-free snapshots retain hash rule 1",3,0,FALSE,FALSE,0,3
+"current","test-availability-facts.R","hash rule 2 is canonical and facts survive reopening",6,0,FALSE,FALSE,0,6
+"current","test-availability-facts.R","explicit quarantine persists originals and is hash verified",12,0,FALSE,FALSE,0,12
+"current","test-availability-facts.R","quarantine requires sessions and cannot hide duplicate valid keys",3,0,FALSE,FALSE,0,3
+"current","test-availability-features.R","strict features expose whole-feed gaps and recover by window",5,0,FALSE,FALSE,0,5
+"current","test-availability-features.R","strict scalar series and active identity contracts agree",5,0,FALSE,FALSE,0,5
+"current","test-availability-features.R","unsupported active indicators fail during experiment validation",1,0,FALSE,FALSE,0,1
+"current","test-availability-features.R","future facts isolate cache identity without changing earlier features",2,0,FALSE,FALSE,0,2
+"current","test-availability-inspection.R","history is retrospective while cutoff resolution is causal",17,0,FALSE,FALSE,0,17
+"current","test-availability-inspection.R","complete sets distinguish omission from unknown",5,0,FALSE,FALSE,0,5
+"current","test-availability-inspection.R","session history and resolution retain civil-time semantics",7,0,FALSE,FALSE,0,7
+"current","test-availability-inspection.R","fact inspection prints curated causal evidence without mutation",26,0,FALSE,FALSE,0,26
+"current","test-availability-inspection.R","resolution knowledge time ignores unsupported evidence",1,0,FALSE,FALSE,0,1
+"current","test-availability-inspection.R","inspection argument combinations fail with typed errors",5,0,FALSE,FALSE,0,5
+"current","test-availability-inspection.R","sealed snapshot inspection verifies evidence and connection ownership",12,0,FALSE,FALSE,0,12
+"current","test-availability-inspection.R","snapshot resolution works in a fresh process without a facts object",2,0,FALSE,FALSE,0,2
+"current","test-availability-parity.R","achieved incomplete runs reopen and rerun without mutation",79,0,FALSE,FALSE,0,79
+"current","test-availability-parity.R","completion affected IDs come only from stopped diagnostics",4,0,FALSE,FALSE,0,4
+"current","test-availability-parity.R","terminal completion recovers projections without strategy replay",18,0,FALSE,FALSE,0,18
+"current","test-availability-parity.R","complete availability runs recover finalization without strategy replay",11,0,FALSE,FALSE,0,11
+"current","test-availability-parity.R","malformed terminal completion evidence fails closed",1,0,FALSE,FALSE,0,1
+"current","test-availability-parity.R","terminal completion validation rejects invalid incomplete bounds",4,0,FALSE,FALSE,0,4
+"current","test-availability-parity.R","achieved incomplete shortcuts require their finalized prefix",3,0,FALSE,FALSE,0,3
+"current","test-availability-parity.R","availability completion propagates through sweep persistence",8,0,FALSE,FALSE,0,8
+"current","test-availability-parity.R","direct and sweep paths both apply the opening-time status cutoff",4,0,FALSE,FALSE,0,4
+"current","test-availability-parity.R","availability result views and explanations are durable read-only evidence",22,0,FALSE,FALSE,0,22
+"current","test-availability-parity.R","dense runs expose constant availability and no invented explanation",7,0,FALSE,FALSE,0,7
+"current","test-availability-parity.R","walk-forward stops a carry-state chain on incomplete test evidence",11,0,FALSE,FALSE,0,11
+"current","test-availability-parity.R","walk-forward hydrates heterogeneous gaps on the session calendar",9,0,FALSE,FALSE,0,9
+"current","test-availability-parity.R","walk-forward preserves incomplete status when prefix metrics fail",3,0,FALSE,FALSE,0,3
+"current","test-availability-qlcal.R","qlcal adapter materializes closures and complete overrides",13,0,FALSE,FALSE,0,13
+"current","test-availability-qlcal.R","qlcal metadata and assumptions enter existing identity",9,0,FALSE,FALSE,0,9
+"current","test-availability-qlcal.R","materialized qlcal sessions reopen without calendar state",5,0,FALSE,FALSE,0,5
+"current","test-availability-qlcal.R","materialized sessions run in a fresh process without loading qlcal",2,0,FALSE,FALSE,0,2
+"current","test-availability-schema.R","current schema retains normalized availability tables",5,0,FALSE,FALSE,0,5
+"current","test-availability-schema.R","availability migration is transactional and writes its marker last",8,0,FALSE,FALSE,0,8
+"current","test-availability-schema.R","legacy sealed snapshots keep rule 1 and are not rehashed",5,0,FALSE,FALSE,0,5
+"current","test-availability-state.R","dynamic membership drives the axis and stable asset state",7,0,FALSE,FALSE,0,7
+"current","test-availability-state.R","provider orders members before stable held nonmembers",8,0,FALSE,FALSE,0,8
+"current","test-availability-state.R","asset state prunes exits, resets re-entry, and fails closed",9,0,FALSE,FALSE,0,9
+"current","test-availability-state.R","mark age counts sessions since the latest finite close",2,0,FALSE,FALSE,0,2
+"current","test-availability-workflow.R","availability policies activate explicitly and preserve dense omission",21,0,FALSE,FALSE,0,21
+"current","test-availability-workflow.R","effective plans disclose assumption-backed fact families",1,0,FALSE,FALSE,0,1
+"current","test-availability-workflow.R","fixed baskets remain fixed when availability facts are declared",2,0,FALSE,FALSE,0,2
+"current","test-availability-workflow.R","active construction requires sessions valuation and a declared membership rule",2,0,FALSE,FALSE,0,2
+"current","test-availability-workflow.R","run window bounds keep their time of day",6,0,FALSE,FALSE,0,6
+"current","test-availability-workflow.R","a target on the last decision fills at the final session open",5,0,FALSE,FALSE,0,5
+"current","test-availability-workflow.R","normalized timestamps are never parsed without an explicit format",1,0,FALSE,FALSE,0,1
+"block","test-availability-causality.R","provider resolves facts only after effective and knowledge time",9,0,FALSE,FALSE,0,9
+"block","test-availability-causality.R","future facts change identity without rewriting prior context",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","execution facts resolve at the declared next opening",18,0,FALSE,FALSE,0,18
+"block","test-availability-economics.R","lifetime restrictions also resolve at the declared opening",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","the terminal availability decision has no execution opportunity",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","availability target rules and post-risk closure fail closed",8,0,FALSE,FALSE,0,8
+"block","test-availability-economics.R","active rebalance preserves held nonmembers and reserves exposure",2,0,FALSE,FALSE,0,2
+"block","test-availability-economics.R","affordability credits accepted reductions before purchases",8,0,FALSE,FALSE,0,8
+"block","test-availability-economics.R","availability short guard runs after explicit long-only risk",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","existing short holdings may hold or consume cash to cover",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","new positive exposure without a risk mark stops before fills",4,0,FALSE,FALSE,0,4
+"block","test-availability-economics.R","stale valuation marks feed max-weight without pricing execution",6,0,FALSE,FALSE,0,6
+"block","test-availability-economics.R","venue sessions age marks across a whole-feed outage",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","current-mark-only valuation stops on the first missing session",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","known inactivity does not freeze valuation age",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","valuation exhaustion commits an incomplete direct-run prefix",12,0,FALSE,FALSE,0,12
+"block","test-availability-economics.R","terminal assertions stop without fabricated settlement",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","affected exposure is gross and missing references fail closed",6,0,FALSE,FALSE,0,6
+"block","test-availability-economics.R","a rejected sale never funds an unrelated purchase",2,0,FALSE,FALSE,0,2
+"block","test-availability-economics.R","a blocked exit executes only after a new zero target",5,0,FALSE,FALSE,0,5
+"block","test-availability-economics.R","execution diagnostics retain ordered gate reasons",2,0,FALSE,FALSE,0,2
+"block","test-availability-economics.R","execution-time membership changes are diagnostic only",3,0,FALSE,FALSE,0,3
+"block","test-availability-economics.R","decision traces append across deliberate interruption and resume",8,0,FALSE,FALSE,0,8
+"block","test-availability-economics.R","unexpected fold errors roll back economics and retain error diagnostics",8,0,FALSE,FALSE,0,8
+"block","test-availability-execution-timing.R","fill results expose derived recording-pulse alignment",15,0,FALSE,FALSE,0,15
+"block","test-availability-execution-timing.R","recording-pulse derivation fails closed on missing or ambiguous evidence",3,0,FALSE,FALSE,0,3
+"block","test-availability-execution-timing.R","timing version enters active identity and stays absent from dense config",15,0,FALSE,FALSE,0,15
+"block","test-availability-execution-timing.R","legacy timing is read-only and mixed versions reject fill equivalence",20,0,FALSE,FALSE,0,20
+"block","test-availability-execution-timing.R","unknown timing evidence is never promoted to version two",3,0,FALSE,FALSE,0,3
+"block","test-availability-facts.R","fact constructors preserve completeness, knowledge, and conflicts",16,0,FALSE,FALSE,0,16
+"block","test-availability-facts.R","status supersession is source-local and canonical",3,0,FALSE,FALSE,0,3
+"block","test-availability-facts.R","fact bundles reject mutation",1,0,FALSE,FALSE,0,1
+"block","test-availability-facts.R","session calendars are complete, knowledge-bounded, and DST-safe",10,0,FALSE,FALSE,0,10
+"block","test-availability-facts.R","constituent lists normalize to canonical membership sets",12,0,FALSE,FALSE,0,12
+"block","test-availability-facts.R","EOD labels map explicitly and the clock retains feed outages",7,0,FALSE,FALSE,0,7
+"block","test-availability-facts.R","availability validation is a dry-run and fails closed",7,0,FALSE,FALSE,0,7
+"block","test-availability-facts.R","quarantine classifies malformed observation timestamps row by row",3,0,FALSE,FALSE,0,3
+"block","test-availability-facts.R","fact-free snapshots retain hash rule 1",3,0,FALSE,FALSE,0,3
+"block","test-availability-facts.R","hash rule 2 is canonical and facts survive reopening",6,0,FALSE,FALSE,0,6
+"block","test-availability-facts.R","explicit quarantine persists originals and is hash verified",12,0,FALSE,FALSE,0,12
+"block","test-availability-facts.R","quarantine requires sessions and cannot hide duplicate valid keys",3,0,FALSE,FALSE,0,3
+"block","test-availability-features.R","strict features expose whole-feed gaps and recover by window",5,0,FALSE,FALSE,0,5
+"block","test-availability-features.R","strict scalar series and active identity contracts agree",5,0,FALSE,FALSE,0,5
+"block","test-availability-features.R","unsupported active indicators fail during experiment validation",1,0,FALSE,FALSE,0,1
+"block","test-availability-features.R","future facts isolate cache identity without changing earlier features",2,0,FALSE,FALSE,0,2
+"block","test-availability-inspection.R","history is retrospective while cutoff resolution is causal",17,0,FALSE,FALSE,0,17
+"block","test-availability-inspection.R","complete sets distinguish omission from unknown",5,0,FALSE,FALSE,0,5
+"block","test-availability-inspection.R","session history and resolution retain civil-time semantics",7,0,FALSE,FALSE,0,7
+"block","test-availability-inspection.R","fact inspection prints curated causal evidence without mutation",26,0,FALSE,FALSE,0,26
+"block","test-availability-inspection.R","resolution knowledge time ignores unsupported evidence",1,0,FALSE,FALSE,0,1
+"block","test-availability-inspection.R","inspection argument combinations fail with typed errors",5,0,FALSE,FALSE,0,5
+"block","test-availability-inspection.R","sealed snapshot inspection verifies evidence and connection ownership",12,0,FALSE,FALSE,0,12
+"block","test-availability-inspection.R","snapshot resolution works in a fresh process without a facts object",2,0,FALSE,FALSE,0,2
+"block","test-availability-parity.R","achieved incomplete runs reopen and rerun without mutation",79,0,FALSE,FALSE,0,79
+"block","test-availability-parity.R","completion affected IDs come only from stopped diagnostics",4,0,FALSE,FALSE,0,4
+"block","test-availability-parity.R","terminal completion recovers projections without strategy replay",18,0,FALSE,FALSE,0,18
+"block","test-availability-parity.R","complete availability runs recover finalization without strategy replay",11,0,FALSE,FALSE,0,11
+"block","test-availability-parity.R","malformed terminal completion evidence fails closed",1,0,FALSE,FALSE,0,1
+"block","test-availability-parity.R","terminal completion validation rejects invalid incomplete bounds",4,0,FALSE,FALSE,0,4
+"block","test-availability-parity.R","achieved incomplete shortcuts require their finalized prefix",3,0,FALSE,FALSE,0,3
+"block","test-availability-parity.R","availability completion propagates through sweep persistence",8,0,FALSE,FALSE,0,8
+"block","test-availability-parity.R","direct and sweep paths both apply the opening-time status cutoff",4,0,FALSE,FALSE,0,4
+"block","test-availability-parity.R","availability result views and explanations are durable read-only evidence",22,0,FALSE,FALSE,0,22
+"block","test-availability-parity.R","dense runs expose constant availability and no invented explanation",7,0,FALSE,FALSE,0,7
+"block","test-availability-parity.R","walk-forward stops a carry-state chain on incomplete test evidence",11,0,FALSE,FALSE,0,11
+"block","test-availability-parity.R","walk-forward hydrates heterogeneous gaps on the session calendar",9,0,FALSE,FALSE,0,9
+"block","test-availability-parity.R","walk-forward preserves incomplete status when prefix metrics fail",3,0,FALSE,FALSE,0,3
+"block","test-availability-qlcal.R","qlcal adapter materializes closures and complete overrides",13,0,FALSE,FALSE,0,13
+"block","test-availability-qlcal.R","qlcal metadata and assumptions enter existing identity",9,0,FALSE,FALSE,0,9
+"block","test-availability-qlcal.R","materialized qlcal sessions reopen without calendar state",5,0,FALSE,FALSE,0,5
+"block","test-availability-qlcal.R","materialized sessions run in a fresh process without loading qlcal",2,0,FALSE,FALSE,0,2
+"block","test-availability-schema.R","current schema retains normalized availability tables",5,0,FALSE,FALSE,0,5
+"block","test-availability-schema.R","availability migration is transactional and writes its marker last",8,0,FALSE,FALSE,0,8
+"block","test-availability-schema.R","legacy sealed snapshots keep rule 1 and are not rehashed",5,0,FALSE,FALSE,0,5
+"block","test-availability-state.R","dynamic membership drives the axis and stable asset state",7,0,FALSE,FALSE,0,7
+"block","test-availability-state.R","provider orders members before stable held nonmembers",8,0,FALSE,FALSE,0,8
+"block","test-availability-state.R","asset state prunes exits, resets re-entry, and fails closed",9,0,FALSE,FALSE,0,9
+"block","test-availability-state.R","mark age counts sessions since the latest finite close",2,0,FALSE,FALSE,0,2
+"block","test-availability-workflow.R","availability policies activate explicitly and preserve dense omission",21,0,FALSE,FALSE,0,21
+"block","test-availability-workflow.R","effective plans disclose assumption-backed fact families",1,0,FALSE,FALSE,0,1
+"block","test-availability-workflow.R","fixed baskets remain fixed when availability facts are declared",2,0,FALSE,FALSE,0,2
+"block","test-availability-workflow.R","active construction requires sessions valuation and a declared membership rule",2,0,FALSE,FALSE,0,2
+"block","test-availability-workflow.R","run window bounds keep their time of day",6,0,FALSE,FALSE,0,6
+"block","test-availability-workflow.R","a target on the last decision fills at the final session open",5,0,FALSE,FALSE,0,5
+"block","test-availability-workflow.R","normalized timestamps are never parsed without an explicit format",1,0,FALSE,FALSE,0,1

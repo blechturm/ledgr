@@ -1,0 +1,7 @@
+"arm","repetition","measured","profiled","killed","run_elapsed_s","wall_seconds","t_loop_seconds","peak_ws_mib","status","store_diagnostic_rows","decision_rows","observed_arm","collapse","within_stop"
+"current","run1",TRUE,FALSE,"",552.6168115,552.28,541.86,837.2734375,"DONE",383042,382285,"current","2.1.8",TRUE
+"prepared","warmup",FALSE,FALSE,"",103.7432247,103.27,92.64,780.75390625,"DONE",383042,382285,"prepared","2.1.8",TRUE
+"prepared","run1",TRUE,FALSE,"",103.0777655,102.58,91.89,815.6953125,"DONE",383042,382285,"prepared","2.1.8",TRUE
+"prepared","run2",TRUE,FALSE,"",98.6640039,98.05,87.45,866.4609375,"DONE",383042,382285,"prepared","2.1.8",TRUE
+"prepared","run3",TRUE,FALSE,"",104.5058213,104.04,93.32,838.69921875,"DONE",383042,382285,"prepared","2.1.8",TRUE
+"prepared","profiled",FALSE,TRUE,"",104.9840065,104.25,93.47,823.4921875,"DONE",383042,382285,"prepared","2.1.8",TRUE

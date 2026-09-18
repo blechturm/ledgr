@@ -286,14 +286,13 @@ ledgr_availability_marks_at <- function(provider, axis, calendar, pulse_idx) {
     keep <- !is.na(index)
     close[i, index[keep]] <- as.numeric(history$close[keep])
   }
-  ledgr_availability_valuation_marks(
+  state <- ledgr_availability_valuation_state(
     bars_mat = list(close = close),
     instrument_ids = axis,
-    axis = axis,
-    pulse_idx = pulse_idx,
-    pulses_posix = pulses,
+    pulses_posix = pulses[seq_len(pulse_idx)],
     max_sessions = as.integer(provider$valuation_policy$max_sessions)
   )
+  state$advance(pulse_idx, axis)
 }
 
 ledgr_backtest_availability_active <- function(bt, con) {

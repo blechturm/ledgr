@@ -248,10 +248,15 @@ ledgr_persistent_output_handler <- function(con,
                                             run_id,
                                             run_wall_start,
                                             execution_mode,
-                                            persist_features) {
+                                            persist_features,
+                                            .event_initial_capacity = 1024L) {
   state <- new.env(parent = emptyenv())
   state$pending_idx <- 0L
   state$pending_cols <- NULL
+  state$pending_initial_capacity <- ledgr_event_buffer_checked_capacity(
+    .event_initial_capacity,
+    "`.event_initial_capacity`"
+  )
   state$pending_states <- vector("list", 0)
   state$pending_states_idx <- 0L
 
@@ -348,7 +353,8 @@ ledgr_persistent_output_handler <- function(con,
     next_capacity <- ledgr_event_buffer_next_capacity(
       current_capacity = state$pending_capacity %||% 0L,
       required = required,
-      max_events = state$pending_max_events
+      max_events = state$pending_max_events,
+      initial_capacity = state$pending_initial_capacity
     )
     if (!is.null(state$pending_cols) && next_capacity <= state$pending_capacity) {
       return(invisible(TRUE))
@@ -359,9 +365,7 @@ ledgr_persistent_output_handler <- function(con,
     if (!is.null(old_cols) && old_count > 0L) {
       idx <- seq_len(old_count)
       for (name in ls(old_cols, all.names = TRUE)) {
-        col <- state$pending_cols[[name]]
-        col[idx] <- old_cols[[name]][idx]
-        state$pending_cols[[name]] <- col
+        ledgr_event_buffer_setv(state$pending_cols, name, idx, old_cols[[name]][idx])
       }
     }
     invisible(TRUE)
@@ -370,7 +374,10 @@ ledgr_persistent_output_handler <- function(con,
   handler$init_buffers <- function(max_events) {
     state$pending_idx <- 0L
     state$pending_max_events <- ledgr_event_buffer_checked_capacity(max_events, "`max_events`")
-    init_pending_cols(ledgr_event_buffer_initial_capacity(state$pending_max_events))
+    init_pending_cols(ledgr_event_buffer_initial_capacity(
+      state$pending_max_events,
+      state$pending_initial_capacity
+    ))
     state$pending_states <- vector("list", 0)
     state$pending_states_idx <- 0L
     invisible(TRUE)
@@ -378,21 +385,16 @@ ledgr_persistent_output_handler <- function(con,
 
   set_pending_value <- function(name, i, value) {
     col <- state$pending_cols[[name]]
-    if (is.character(col)) {
-      col[[i]] <- as.character(value)[[1]]
-      state$pending_cols[[name]] <- col
-      return(invisible(NULL))
-    }
     value <- if (inherits(col, "POSIXct")) {
       as.POSIXct(value, tz = "UTC")[[1]]
+    } else if (is.character(col)) {
+      as.character(value)[[1]]
     } else if (is.integer(col)) {
       as.integer(value)[[1]]
     } else {
       as.numeric(value)[[1]]
     }
-    collapse::setv(col, i, value, vind1 = TRUE)
-    state$pending_cols[[name]] <- col
-    invisible(NULL)
+    ledgr_event_buffer_setv(state$pending_cols, name, i, value)
   }
 
   handler$buffer_event <- function(write_res) {
@@ -404,7 +406,6 @@ ledgr_persistent_output_handler <- function(con,
     }
     i <- state$pending_idx + 1L
     ensure_pending_capacity(i)
-    state$pending_idx <- i
     set_pending_value("event_id", i, write_res$row$event_id)
     set_pending_value("run_id", i, write_res$row$run_id)
     set_pending_value("ts_utc", i, write_res$row$ts_utc)
@@ -416,6 +417,7 @@ ledgr_persistent_output_handler <- function(con,
     set_pending_value("fee", i, write_res$row$fee)
     set_pending_value("meta_json", i, write_res$row$meta_json)
     set_pending_value("event_seq", i, write_res$row$event_seq)
+    state$pending_idx <- i
     invisible(TRUE)
   }
 
@@ -1133,6 +1135,31 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   next_event_seq <- fold_result$next_event_seq
 
   if (!isTRUE(full_run)) {
+    if (availability_active && length(fold_result$equity_facts) > 0L) {
+      partial_error <- tryCatch({
+        ledgr_run_equity_prefix_commit(
+          con = con,
+          run_id = run_id,
+          current = ledgr_run_fold_equity_frame(
+            run_id,
+            fold_result$equity_facts
+          ),
+          calendar = calendar
+        )
+        NULL
+      }, error = identity)
+      if (!is.null(partial_error)) {
+        output_handler$record_failure(conditionMessage(partial_error))
+        ledgr_finalize_fold_telemetry(
+          output_handler = output_handler,
+          status = "FAILED",
+          telemetry = telemetry,
+          processed = processed,
+          strict = FALSE
+        )
+        rlang::cnd_signal(partial_error)
+      }
+    }
     ledgr_finalize_fold_telemetry(
       output_handler = output_handler,
       status = "RUNNING",

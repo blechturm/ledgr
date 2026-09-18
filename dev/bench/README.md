@@ -6,7 +6,8 @@ public release-note performance claims.
 
 ## Layout
 
-- `peer_benchmark/` - current v0.1.8.8 peer benchmark and parity report.
+- `availability_closeout/` - v0.2.0.1 production warm/cold closeout runner.
+- `peer_benchmark/` - current peer benchmark and v0.2.0.1 closeout report.
 - `parallel_sweep/` - Batch 7 parallel sweep attribution harness.
 - `fold_loop/` - fold-loop diagnostic profiler.
 - `references/` - published context-only reference data and fetchers.
@@ -28,6 +29,15 @@ The peer benchmark has two explicitly separated outputs:
 - parity: canonical equity/trade-surface checks against the ledgr TTR-backed SMA
   row;
 - performance: same-host timing under declared per-engine boundaries.
+
+Performance has two interpretations. Cold end-to-end time remains the primary
+apples-to-apples peer boundary when input preparation and required outputs are
+comparable. Warm research-iteration time is the ledgr workflow boundary over an
+existing unchanged, verified snapshot. It includes experiment-specific setup,
+execution, and required results, while one-time snapshot preparation is
+reported separately and paid again whenever the data or facts change. The
+current harness records those boundaries as `snapshot_prepare_sec`,
+`experiment_setup_sec`, `engine_sec`, and `results_sec`.
 
 The primary zipline row is `zipline-reloaded-full`, which exercises
 zipline-reloaded csvdir bundle ingestion plus `run_algorithm()`.
@@ -71,4 +81,4 @@ mixed into same-host ratios or parity checks.
 `archive/` keeps older timing-only peer scripts and width sweeps for provenance.
 They do not replace the current peer benchmark because they do not emit the
 canonical per-engine equity curves, parity tiers, status rows, and parity
-history required by v0.1.8.8.
+history required by the peer methodology.

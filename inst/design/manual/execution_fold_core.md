@@ -59,7 +59,7 @@ and by the topic map in `../rfc/README.md`.
 
 The execution boundary has three layers:
 
-``` mermaid
+```mermaid
 flowchart TB
   RUN[ledgr_run] --> GUARD[Sealed-snapshot guard]
   SWEEP[ledgr_sweep] --> GUARD
@@ -368,12 +368,12 @@ valuation, affordability, and event emission in the shared fold.
 
 | Boundary | Current anchor |
 |----|----|
-| Point-in-time provider and calendar | `R/availability-provider.R:182-340` |
+| Point-in-time provider and calendar | `R/availability-provider.R:208-290` |
 | Target, post-risk, and short checks | `R/availability-economics.R:75-136` |
 | Stale valuation and affected exposure | `R/availability-economics.R:3-73` |
 | Affordability and reconciliation | `R/availability-economics.R:138-318` |
 | Completion and diagnostic rows | `R/availability-economics.R:320-420` |
-| Shared fold integration | `R/fold-engine.R:209-1128` |
+| Shared fold integration | `R/fold-engine.R:209-1080` |
 | Durable diagnostic writes | `R/backtest-runner.R:426-460` |
 | Terminal validation and finalization | `R/run-finalize.R:8-280` |
 | Public explanation reconstruction | `R/availability-results.R:268-335` |

@@ -196,30 +196,92 @@ peer_metric_oracles <- function(equity) {
   )
 }
 
-peer_phase_sec <- function(ingestion_sec = NA_real_,
+peer_phase_names <- function() {
+  c(
+    "snapshot_prepare_sec",
+    "experiment_setup_sec",
+    "engine_sec",
+    "results_sec"
+  )
+}
+
+peer_phase_sec <- function(snapshot_prepare_sec = NA_real_,
+                           experiment_setup_sec = NA_real_,
                            engine_sec = NA_real_,
-                           results_sec = NA_real_) {
+                           results_sec = NA_real_,
+                           unavailable = list()) {
   list(
-    ingestion_sec = as.numeric(ingestion_sec),
+    snapshot_prepare_sec = as.numeric(snapshot_prepare_sec),
+    experiment_setup_sec = as.numeric(experiment_setup_sec),
     engine_sec = as.numeric(engine_sec),
-    results_sec = as.numeric(results_sec)
+    results_sec = as.numeric(results_sec),
+    unavailable = unavailable
   )
 }
 
 peer_phase_total <- function(phase_sec) {
-  vals <- unlist(phase_sec[c("ingestion_sec", "engine_sec", "results_sec")], use.names = FALSE)
+  vals <- unlist(phase_sec[peer_phase_names()], use.names = FALSE)
+  if (length(vals) != 4L || any(!is.finite(vals))) return(NA_real_)
+  as.numeric(sum(vals))
+}
+
+peer_phase_ingestion <- function(phase_sec) {
+  vals <- unlist(
+    phase_sec[c("snapshot_prepare_sec", "experiment_setup_sec")],
+    use.names = FALSE
+  )
+  if (length(vals) != 2L || any(!is.finite(vals))) return(NA_real_)
+  as.numeric(sum(vals))
+}
+
+peer_phase_warm <- function(phase_sec) {
+  vals <- unlist(
+    phase_sec[c("experiment_setup_sec", "engine_sec", "results_sec")],
+    use.names = FALSE
+  )
   if (length(vals) != 3L || any(!is.finite(vals))) return(NA_real_)
   as.numeric(sum(vals))
+}
+
+peer_phase_missing <- function(phase_sec) {
+  vals <- unlist(phase_sec[peer_phase_names()], use.names = TRUE)
+  names(vals)[!is.finite(vals)]
+}
+
+peer_phase_unavailable <- function(reason, fields = peer_phase_names()) {
+  unavailable <- stats::setNames(as.list(rep(as.character(reason), length(fields))), fields)
+  peer_phase_sec(unavailable = unavailable)
+}
+
+peer_phase_availability <- function(phase_sec) {
+  missing <- peer_phase_missing(phase_sec)
+  if (length(missing) == 0L) return("complete")
+  unavailable <- as.list(phase_sec$unavailable %||% list())
+  paste(vapply(missing, function(field) {
+    sprintf("%s unavailable: %s", field, unavailable[[field]] %||% "reason not recorded")
+  }, character(1L)), collapse = "; ")
 }
 
 peer_check_phase_reconciliation <- function(res, tolerance = 0.5) {
   if (!identical(res$status, "DONE")) return(invisible(res))
   phase_sec <- res$phase_sec %||% res$metadata$phase_sec
+  missing <- peer_phase_missing(phase_sec)
+  if (length(missing) > 0L) {
+    unavailable <- as.list(phase_sec$unavailable %||% list())
+    if (!all(missing %in% names(unavailable))) {
+      stop(sprintf(
+        "%s has unavailable phase fields without explicit reasons: %s",
+        res$engine,
+        paste(setdiff(missing, names(unavailable)), collapse = ", ")
+      ), call. = FALSE)
+    }
+    return(invisible(res))
+  }
   total <- peer_phase_total(phase_sec)
   if (!is.finite(total)) {
-    stop(sprintf("%s is DONE but does not report finite ingestion/engine/results phase seconds.", res$engine), call. = FALSE)
+    stop(sprintf("%s is DONE but does not report four finite phase seconds.", res$engine), call. = FALSE)
   }
-  wall <- as.numeric(res$wall_sec)
+  wall <- as.numeric(res$row_wall_sec %||% res$wall_sec)
   if (!is.finite(wall) || abs(total - wall) > tolerance) {
     stop(sprintf(
       "%s phase seconds do not reconcile with wall_sec within %.3fs: phases=%.3f wall=%.3f",
@@ -289,6 +351,7 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
     try(ledgr_snapshot_close(snapshot), silent = TRUE)
     try(unlink(db_path), silent = TRUE)
   }, add = TRUE)
+  t1 <- proc.time()[["elapsed"]]
   exp <- ledgr_experiment(
     snapshot = snapshot,
     strategy = strategy,
@@ -299,15 +362,20 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
     persist_features = FALSE
   )
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
-  t1 <- proc.time()[["elapsed"]]
+  t2 <- proc.time()[["elapsed"]]
   bt <- ledgr_run(exp, run_id = run_id, seed = seed)
   on.exit(try(close(bt), silent = TRUE), add = TRUE)
-  t2 <- proc.time()[["elapsed"]]
+  t3 <- proc.time()[["elapsed"]]
   equity <- as.data.frame(ledgr_results(bt, "equity"))
   fills <- as.data.frame(tryCatch(ledgr_results(bt, "fills"), error = function(e) data.frame()))
   out_eq <- peer_canonical_equity(engine, equity)
-  t3 <- proc.time()[["elapsed"]]
-  phase_sec <- peer_phase_sec(t1 - t0, t2 - t1, t3 - t2)
+  t4 <- proc.time()[["elapsed"]]
+  phase_sec <- peer_phase_sec(
+    snapshot_prepare_sec = t1 - t0,
+    experiment_setup_sec = t2 - t1,
+    engine_sec = t3 - t2,
+    results_sec = t4 - t3
+  )
   elapsed <- peer_phase_total(phase_sec)
   list(
     status = "DONE",
@@ -325,13 +393,16 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
       phase_sec = phase_sec,
       cost_model = peer_cost_label(cost_model),
       risk_chain = peer_risk_label(risk_chain),
-      boundary_check = c("bars_csv_read", "snapshot_create", "engine_run", "canonical_equity_write", "fills_write")
+      boundary_check = c(
+        "bars_csv_read", "snapshot_create", "experiment_setup",
+        "engine_run", "canonical_equity_write", "fills_write"
+      )
     ),
     reason = NA_character_
   )
 }
 
-peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
+peer_ledgr_ephemeral_snapshot_prepare <- function(bars_path) {
   bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
   bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
   universe <- sort(unique(as.character(bars$instrument_id)))
@@ -348,6 +419,18 @@ peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
     instrument_ids = universe,
     pulses_posix = pulses_posix
   )
+  list(
+    bars = bars,
+    universe = universe,
+    bars_by_id = bars_by_id,
+    bars_mat = bars_mat,
+    pulses_posix = pulses_posix,
+    pulses_iso = pulses_iso,
+    static_bars_views = static_bars_views
+  )
+}
+
+peer_ledgr_ephemeral_experiment_setup <- function(prep, features) {
   if (inherits(features, "ledgr_feature_map")) {
     features <- ledgr:::ledgr_resolve_feature_map(features, feature_params = list())
     feature_defs <- ledgr:::ledgr_feature_map_indicators(features)
@@ -356,37 +439,35 @@ peer_ledgr_ephemeral_prepare <- function(bars_path, features) {
     feature_defs <- ledgr:::ledgr_flatten_feature_list(features, context = "`features`")
     active_alias_map <- NULL
   }
-  feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(feature_defs, bars_by_id, universe)
+  feature_matrix <- ledgr:::ledgr_sweep_compute_feature_matrix(
+    feature_defs,
+    prep$bars_by_id,
+    prep$universe
+  )
   runtime_projection <- ledgr:::ledgr_projection_from_feature_matrix(
     feature_matrix = feature_matrix,
-    universe = universe,
-    pulses_posix = pulses_posix,
+    universe = prep$universe,
+    pulses_posix = prep$pulses_posix,
     feature_engine_version = ledgr:::ledgr_feature_engine_version(),
     alias_index = NULL
   )
-  list(
-    bars = bars,
-    universe = universe,
-    bars_by_id = bars_by_id,
-    bars_mat = bars_mat,
-    pulses_posix = pulses_posix,
-    pulses_iso = pulses_iso,
-    static_bars_views = static_bars_views,
+  c(prep, list(
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = active_alias_map
-  )
+  ))
 }
 
-peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed,
-                                     compiled_accounting_model = NULL,
-                                     cost_model = peer_cost_zero_model(),
-                                     risk_chain = peer_risk_none_model(),
-                                     cost_resolver = NULL,
-                                     legacy_cost = FALSE) {
+peer_run_ledgr_internal_oracle <- function(engine, bars_path, features, strategy, seed,
+                                           compiled_accounting_model = NULL,
+                                           cost_model = peer_cost_zero_model(),
+                                           risk_chain = peer_risk_none_model(),
+                                           cost_resolver = NULL,
+                                           legacy_cost = FALSE) {
   t0 <- proc.time()[["elapsed"]]
-  prep <- peer_ledgr_ephemeral_prepare(bars_path, features)
+  prep <- peer_ledgr_ephemeral_snapshot_prepare(bars_path)
   t1 <- proc.time()[["elapsed"]]
+  prep <- peer_ledgr_ephemeral_experiment_setup(prep, features)
   run_id <- paste0("peer_", engine, "_", paste(sample(c(0:9, letters), 6L, TRUE), collapse = ""))
   output_handler <- ledgr:::ledgr_memory_output_handler(run_id)
   initial_positions <- stats::setNames(rep(0, length(prep$universe)), prep$universe)
@@ -426,8 +507,9 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
     use_fast_context = TRUE,
     compiled_accounting_model = compiled_accounting_model
   )
-  ledgr:::ledgr_execute_fold(execution, output_handler)
   t2 <- proc.time()[["elapsed"]]
+  ledgr:::ledgr_execute_fold(execution, output_handler)
+  t3 <- proc.time()[["elapsed"]]
   events <- output_handler$typed_events()
   equity <- as.data.frame(ledgr:::ledgr_equity_from_events(
     events = events,
@@ -439,8 +521,13 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
   ))
   fills <- as.data.frame(ledgr:::ledgr_fills_from_events(events))
   out_eq <- peer_canonical_equity(engine, equity)
-  t3 <- proc.time()[["elapsed"]]
-  phase_sec <- peer_phase_sec(t1 - t0, t2 - t1, t3 - t2)
+  t4 <- proc.time()[["elapsed"]]
+  phase_sec <- peer_phase_sec(
+    snapshot_prepare_sec = t1 - t0,
+    experiment_setup_sec = t2 - t1,
+    engine_sec = t3 - t2,
+    results_sec = t4 - t3
+  )
   elapsed <- peer_phase_total(phase_sec)
   list(
     status = "DONE",
@@ -459,7 +546,11 @@ peer_run_ledgr_ephemeral <- function(engine, bars_path, features, strategy, seed
       cost_model = peer_cost_label(cost_model, legacy = legacy_cost),
       risk_chain = peer_risk_label(risk_chain),
       compiled_accounting_model = compiled_accounting_model,
-      boundary_check = c("bars_csv_read", "in_memory_projection", "engine_run", "canonical_equity_write", "fills_write")
+      boundary_check = c(
+        "bars_csv_read", "in_memory_snapshot_prepare", "experiment_setup",
+        "in_memory_projection", "engine_run", "canonical_equity_write",
+        "fills_write"
+      )
     ),
     reason = NA_character_
   )
@@ -521,6 +612,7 @@ peer_run_quantstrat <- function(bars_path, fast, slow) {
       colnames(x) <- c("Open", "High", "Low", "Close", "Volume")
       assign(sym, x, envir = globalenv())
     }
+    t1 <- proc.time()[["elapsed"]]
     tag <- paste(sample(c(0:9, letters), 8L, TRUE), collapse = "")
     init_date <- as.character(min(as.Date(bars$ts_utc)) - 1L)
     portf <- paste0("peer_p_", tag)
@@ -540,14 +632,14 @@ peer_run_quantstrat <- function(bars_path, fast, slow) {
     add.signal(st, name = "sigCrossover", arguments = list(columns = c("fast", "slow"), relationship = "lt"), label = "exit")
     add.rule(st, name = "ruleSignal", arguments = list(sigcol = "enter", sigval = TRUE, orderqty = 1, ordertype = "market", orderside = "long", replace = FALSE), type = "enter")
     add.rule(st, name = "ruleSignal", arguments = list(sigcol = "exit", sigval = TRUE, orderqty = "all", ordertype = "market", orderside = "long", replace = FALSE), type = "exit")
-    t1 <- proc.time()[["elapsed"]]
+    t2 <- proc.time()[["elapsed"]]
     invisible(capture.output({
       applyStrategy(st, portfolios = portf, verbose = FALSE)
       updatePortf(portf)
       updateAcct(acct)
       updateEndEq(acct)
     }))
-    t2 <- proc.time()[["elapsed"]]
+    t3 <- proc.time()[["elapsed"]]
     portfolio_obj <- tryCatch(getPortfolio(portf), error = function(e) NULL)
     if (is.null(portfolio_obj)) {
       stop("quantstrat portfolio object unavailable after applyStrategy")
@@ -594,8 +686,13 @@ peer_run_quantstrat <- function(bars_path, fast, slow) {
       trade_level_status = "trade_count_available_only",
       stringsAsFactors = FALSE
     )
-    t3 <- proc.time()[["elapsed"]]
-    out$phase_sec <- peer_phase_sec(t1 - t0, t2 - t1, t3 - t2)
+    t4 <- proc.time()[["elapsed"]]
+    out$phase_sec <- peer_phase_sec(
+      snapshot_prepare_sec = t1 - t0,
+      experiment_setup_sec = t2 - t1,
+      engine_sec = t3 - t2,
+      results_sec = t4 - t3
+    )
     TRUE
   }, error = function(e) e)
   if (inherits(ok, "error")) {
@@ -616,14 +713,22 @@ peer_run_quantstrat <- function(bars_path, fast, slow) {
       status = "DONE",
       wall_sec = as.numeric(elapsed),
       phase_sec = out$phase_sec,
-      boundary_check = c("bars_csv_read", "xts_construction", "globalenv_assignment", "engine_run", "canonical_equity_write", "fills_write")
+      boundary_check = c(
+        "bars_csv_read", "xts_construction", "globalenv_assignment",
+        "experiment_setup", "engine_run", "canonical_equity_write",
+        "fills_write"
+      )
     ),
     reason = NA_character_
   )
 }
 
 peer_unavailable <- function(engine, reason, metadata = list()) {
-  phase_sec <- metadata$phase_sec %||% peer_phase_sec(NA_real_, NA_real_, NA_real_)
+  phase_sec <- if (is.null(metadata$phase_sec)) {
+    peer_phase_unavailable(reason)
+  } else {
+    peer_phase_from_metadata(metadata)
+  }
   list(
     status = "UNAVAILABLE",
     engine = engine,
@@ -650,7 +755,7 @@ peer_env_ready <- function(engine, reason, wall_sec = NA_real_) {
     status = "ENV_READY",
     engine = engine,
     wall_sec = wall_sec,
-    phase_sec = peer_phase_sec(NA_real_, NA_real_, NA_real_),
+    phase_sec = peer_phase_unavailable(reason),
     equity = data.frame(),
     fills = data.frame(),
     trades = data.frame(
@@ -669,11 +774,334 @@ peer_env_ready <- function(engine, reason, wall_sec = NA_real_) {
 
 peer_phase_from_metadata <- function(metadata) {
   phase <- metadata$phase_sec %||% list()
+  unavailable <- as.list(phase$unavailable %||% list())
+  if (is.null(phase$snapshot_prepare_sec) && !is.null(phase$ingestion_sec)) {
+    legacy_reason <- "legacy peer metadata does not separate reusable preparation from experiment setup"
+    unavailable$snapshot_prepare_sec <- legacy_reason
+    unavailable$experiment_setup_sec <- legacy_reason
+  }
   peer_phase_sec(
-    phase$ingestion_sec %||% NA_real_,
-    phase$engine_sec %||% NA_real_,
-    phase$results_sec %||% NA_real_
+    snapshot_prepare_sec = phase$snapshot_prepare_sec %||% NA_real_,
+    experiment_setup_sec = phase$experiment_setup_sec %||% NA_real_,
+    engine_sec = phase$engine_sec %||% NA_real_,
+    results_sec = phase$results_sec %||% NA_real_,
+    unavailable = unavailable
   )
+}
+
+peer_trade_summary_from_retained <- function(engine, trades) {
+  pnl <- if (is.null(trades) || nrow(trades) == 0L) {
+    numeric()
+  } else {
+    as.numeric(trades$realized_pnl)
+  }
+  pnl <- pnl[is.finite(pnl) & pnl != 0]
+  data.frame(
+    engine = engine,
+    trade_count = length(pnl),
+    win_rate = if (length(pnl) > 0L) mean(pnl > 0) else NA_real_,
+    average_trade = if (length(pnl) > 0L) mean(pnl) else NA_real_,
+    trade_level_status = if (length(pnl) > 0L) {
+      "available_realized_pnl"
+    } else {
+      "fills_available_no_closed_trade_pnl"
+    },
+    stringsAsFactors = FALSE
+  )
+}
+
+peer_run_ledgr_sweep <- function(engine, bars_path, features, strategy, seed,
+                                 compiled_accounting_model = NULL,
+                                 cost_model = peer_cost_zero_model(),
+                                 risk_chain = peer_risk_none_model()) {
+  t0 <- proc.time()[["elapsed"]]
+  bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
+  bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
+  db_path <- tempfile(pattern = paste0("ledgr_peer_", engine, "_"), fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit({
+    try(ledgr_snapshot_close(snapshot), silent = TRUE)
+    try(unlink(db_path), silent = TRUE)
+  }, add = TRUE)
+  t1 <- proc.time()[["elapsed"]]
+
+  exp <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    features = features,
+    opening = ledgr_opening(cash = 1e7),
+    cost_model = cost_model,
+    risk_chain = risk_chain,
+    persist_features = FALSE
+  )
+  grid <- ledgr_param_grid(benchmark = list())
+  retention <- ledgr_sweep_retention(returns = "completed", trades = "closed")
+  t2 <- proc.time()[["elapsed"]]
+
+  sweep <- ledgr_sweep(
+    exp = exp,
+    param_grid = grid,
+    retain = retention,
+    seed = seed,
+    workers = 1L,
+    compiled_accounting_model = compiled_accounting_model
+  )
+  t3 <- proc.time()[["elapsed"]]
+  if (nrow(sweep) != 1L || !identical(as.character(sweep$status[[1L]]), "DONE")) {
+    stop("The public one-candidate ledgr sweep did not complete.", call. = FALSE)
+  }
+
+  returns <- as.data.frame(ledgr_sweep_returns(sweep), stringsAsFactors = FALSE)
+  retained_trades <- as.data.frame(ledgr_sweep_trades(sweep), stringsAsFactors = FALSE)
+  equity <- data.frame(
+    engine = rep(engine, nrow(returns)),
+    ts_utc = format(
+      as.POSIXct(returns$ts_utc, tz = "UTC"),
+      "%Y-%m-%dT%H:%M:%SZ",
+      tz = "UTC"
+    ),
+    equity = as.numeric(returns$equity),
+    cash = rep(NA_real_, nrow(returns)),
+    positions_value = rep(NA_real_, nrow(returns)),
+    position_proxy = rep(NA_real_, nrow(returns)),
+    stringsAsFactors = FALSE
+  )
+  trades <- peer_trade_summary_from_retained(engine, retained_trades)
+  t4 <- proc.time()[["elapsed"]]
+
+  engine_sec <- as.numeric(sweep$t_engine[[1L]])
+  inline_results_sec <- as.numeric(sweep$t_results[[1L]])
+  public_sweep_sec <- as.numeric(t3 - t2)
+  sweep_setup_sec <- public_sweep_sec - engine_sec - inline_results_sec
+  if (!is.finite(sweep_setup_sec) || sweep_setup_sec < -0.01) {
+    stop("Public sweep subclocks do not reconcile with its wall clock.", call. = FALSE)
+  }
+  sweep_setup_sec <- max(sweep_setup_sec, 0)
+  phase_sec <- peer_phase_sec(
+    snapshot_prepare_sec = t1 - t0,
+    experiment_setup_sec = (t2 - t1) + sweep_setup_sec,
+    engine_sec = engine_sec,
+    results_sec = inline_results_sec + (t4 - t3)
+  )
+  elapsed <- peer_phase_total(phase_sec)
+  list(
+    status = "DONE",
+    engine = engine,
+    wall_sec = as.numeric(elapsed),
+    phase_sec = phase_sec,
+    equity = equity,
+    fills = data.frame(),
+    trades = trades,
+    public_returns = returns,
+    public_trades = retained_trades,
+    metrics = peer_metric_oracles(equity$equity),
+    metadata = list(
+      engine = engine,
+      status = "DONE",
+      wall_sec = as.numeric(elapsed),
+      phase_sec = phase_sec,
+      cost_model = peer_cost_label(cost_model),
+      risk_chain = peer_risk_label(risk_chain),
+      compiled_accounting_model = compiled_accounting_model,
+      measurement_surface = "public_one_candidate_ledgr_sweep_v002",
+      boundary_check = c(
+        "bars_csv_read", "snapshot_create", "experiment_setup",
+        "public_ledgr_sweep", "public_sweep_returns", "public_sweep_trades"
+      )
+    ),
+    reason = NA_character_
+  )
+}
+
+peer_plain_df <- function(x) {
+  out <- as.data.frame(x, stringsAsFactors = FALSE)
+  for (nm in names(out)) {
+    if (!inherits(out[[nm]], "POSIXct")) {
+      attributes(out[[nm]]) <- NULL
+    }
+  }
+  attr(out, "ledgr_result_type") <- NULL
+  row.names(out) <- NULL
+  out
+}
+
+peer_equity_parity <- function(reference, candidate, floating_columns,
+                               tolerance = 1e-8, context = "equity") {
+  reference <- peer_plain_df(reference)
+  candidate <- peer_plain_df(candidate)
+  if (!identical(names(reference), names(candidate)) ||
+      nrow(reference) != nrow(candidate)) {
+    stop(context, " shape differs.", call. = FALSE)
+  }
+  floating_columns <- intersect(floating_columns, names(reference))
+  exact_columns <- setdiff(names(reference), floating_columns)
+  if (!identical(
+    reference[, exact_columns, drop = FALSE],
+    candidate[, exact_columns, drop = FALSE]
+  )) {
+    stop(context, " non-floating columns differ.", call. = FALSE)
+  }
+
+  residual_rows <- integer()
+  affected_columns <- character()
+  max_abs <- 0
+  max_relative <- 0
+  for (nm in floating_columns) {
+    old <- reference[[nm]]
+    new <- candidate[[nm]]
+    if (!isTRUE(all.equal(
+      old,
+      new,
+      tolerance = tolerance,
+      check.attributes = TRUE
+    ))) {
+      stop(
+        sprintf("%s floating column `%s` exceeds tolerance %.1e.",
+                context, nm, tolerance),
+        call. = FALSE
+      )
+    }
+    comparable <- !is.na(old) & !is.na(new)
+    abs_diff <- abs(new[comparable] - old[comparable])
+    if (length(abs_diff)) {
+      changed <- which(comparable)[abs_diff != 0]
+      if (length(changed)) {
+        residual_rows <- union(residual_rows, changed)
+        affected_columns <- c(affected_columns, nm)
+      }
+      max_abs <- max(max_abs, abs_diff)
+      denominator <- pmax(abs(old[comparable]), .Machine$double.eps)
+      max_relative <- max(max_relative, abs_diff / denominator)
+    }
+  }
+  list(
+    tolerance = tolerance,
+    max_abs = max_abs,
+    max_relative = max_relative,
+    affected_columns = unique(affected_columns),
+    affected_rows = as.integer(residual_rows)
+  )
+}
+
+peer_exact_surface <- function(reference, candidate, context) {
+  reference <- peer_plain_df(reference)
+  candidate <- peer_plain_df(candidate)
+  if (!identical(reference, candidate)) {
+    stop(context, " differs; exact identity is required.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+peer_attach_sweep_oracle <- function(measured, oracle) {
+  if (!identical(measured$status, "DONE") || !identical(oracle$status, "DONE")) {
+    stop("Both public sweep measurement and internal oracle must complete.", call. = FALSE)
+  }
+  oracle_idx <- match(measured$equity$ts_utc, oracle$equity$ts_utc)
+  if (anyNA(oracle_idx) || length(oracle_idx) != nrow(oracle$equity)) {
+    stop("Public sweep and internal oracle equity timestamps differ.", call. = FALSE)
+  }
+  equity_reference <- data.frame(
+    ts_utc = measured$equity$ts_utc,
+    equity = measured$equity$equity,
+    stringsAsFactors = FALSE
+  )
+  equity_candidate <- data.frame(
+    ts_utc = oracle$equity$ts_utc[oracle_idx],
+    equity = oracle$equity$equity[oracle_idx],
+    stringsAsFactors = FALSE
+  )
+  equity_residual <- peer_equity_parity(
+    equity_reference,
+    equity_candidate,
+    floating_columns = "equity",
+    context = "Public sweep versus internal-oracle equity"
+  )
+
+  public_trade <- measured$trades
+  oracle_trade <- oracle$trades
+  public_trade$engine <- "ledgr"
+  oracle_trade$engine <- "ledgr"
+  peer_exact_surface(
+    public_trade,
+    oracle_trade,
+    "Public sweep versus internal-oracle trade summary"
+  )
+
+  measured$equity$cash <- oracle$equity$cash[oracle_idx]
+  measured$equity$positions_value <- oracle$equity$positions_value[oracle_idx]
+  measured$equity$position_proxy <- oracle$equity$position_proxy[oracle_idx]
+  measured$fills <- oracle$fills
+  measured$trades <- oracle$trades
+  measured$metadata$canonical_surface_source <- paste(
+    "public retained equity plus untimed internal parity-oracle",
+    "cash, positions, fills, and trade detail"
+  )
+  measured$metadata$parity_oracle_outside_clock <- TRUE
+  measured$metadata$parity_oracle_wall_sec <- as.numeric(oracle$wall_sec)
+  measured$metadata$public_vs_oracle_equity_tolerance <- equity_residual$tolerance
+  measured$metadata$public_vs_oracle_max_abs_equity_diff <- equity_residual$max_abs
+  measured$metadata$public_vs_oracle_max_relative_equity_diff <-
+    equity_residual$max_relative
+  measured$metadata$public_vs_oracle_equity_affected_columns <-
+    equity_residual$affected_columns
+  measured$metadata$public_vs_oracle_equity_affected_rows <-
+    equity_residual$affected_rows
+  measured
+}
+
+peer_run_ledgr_sweep_with_oracle <- function(engine, bars_path, features, strategy, seed,
+                                             compiled_accounting_model = NULL,
+                                             cost_model = peer_cost_zero_model(),
+                                             risk_chain = peer_risk_none_model()) {
+  measured <- peer_timed(peer_run_ledgr_sweep(
+    engine = engine,
+    bars_path = bars_path,
+    features = features,
+    strategy = strategy,
+    seed = seed,
+    compiled_accounting_model = compiled_accounting_model,
+    cost_model = cost_model,
+    risk_chain = risk_chain
+  ))
+  oracle <- peer_run_ledgr_internal_oracle(
+    engine = engine,
+    bars_path = bars_path,
+    features = features,
+    strategy = strategy,
+    seed = seed,
+    compiled_accounting_model = compiled_accounting_model,
+    cost_model = cost_model,
+    risk_chain = risk_chain
+  )
+  peer_attach_sweep_oracle(measured, oracle)
+}
+
+peer_compare_public_sweep_surfaces <- function(reference, candidate) {
+  returns_columns <- c("candidate_id", "status", "ts_utc", "equity", "period_return")
+  trades_columns <- c(
+    "candidate_id", "candidate_row", "trade_seq", "close_ts_utc",
+    "realized_pnl", "win_loss"
+  )
+  reference_returns <- reference$public_returns[, returns_columns, drop = FALSE]
+  candidate_returns <- candidate$public_returns[, returns_columns, drop = FALSE]
+  reference_trades <- reference$public_trades[, trades_columns, drop = FALSE]
+  candidate_trades <- candidate$public_trades[, trades_columns, drop = FALSE]
+  row.names(reference_returns) <- NULL
+  row.names(candidate_returns) <- NULL
+  row.names(reference_trades) <- NULL
+  row.names(candidate_trades) <- NULL
+  residual <- peer_equity_parity(
+    reference_returns,
+    candidate_returns,
+    floating_columns = c("equity", "period_return"),
+    context = "Compiled versus canonical public-sweep returns"
+  )
+  peer_exact_surface(
+    reference_trades,
+    candidate_trades,
+    "Compiled versus canonical public-sweep realized trades"
+  )
+  residual
 }
 
 peer_python_uv_available <- function() {
@@ -728,6 +1156,7 @@ peer_restore_uv_runtime <- function(old) {
 }
 
 peer_python_run <- function(engine, project_name, script_name, bars_path, fast, slow) {
+  outer_start <- proc.time()[["elapsed"]]
   project <- file.path("dev", "bench", "peer_benchmark", "python", project_name)
   script <- file.path(project, script_name)
   if (!file.exists(file.path(project, "pyproject.toml")) || !file.exists(script)) {
@@ -755,7 +1184,9 @@ peer_python_run <- function(engine, project_name, script_name, bars_path, fast, 
   )
   old_uv <- peer_with_uv_runtime(project_name)
   on.exit(peer_restore_uv_runtime(old_uv), add = TRUE)
+  system_start <- proc.time()[["elapsed"]]
   status <- system2("python", args, stdout = TRUE, stderr = TRUE)
+  system_done <- proc.time()[["elapsed"]]
   code <- attr(status, "status") %||% 0L
   if (!identical(as.integer(code), 0L)) {
     return(peer_unavailable(engine, paste(status, collapse = " | ")))
@@ -785,11 +1216,26 @@ peer_python_run <- function(engine, project_name, script_name, bars_path, fast, 
   }
   fills <- if (file.exists(fills_path)) utils::read.csv(fills_path, stringsAsFactors = FALSE) else data.frame()
   trades <- utils::read.csv(trades_path, stringsAsFactors = FALSE)
+  child_phase_sec <- peer_phase_from_metadata(metadata)
+  child_wall_sec <- peer_phase_total(child_phase_sec)
+  if (is.finite(child_wall_sec)) {
+    process_elapsed <- system_done - system_start
+    phase_sec <- child_phase_sec
+    phase_sec$experiment_setup_sec <- phase_sec$experiment_setup_sec +
+      (system_start - outer_start) + max(process_elapsed - child_wall_sec, 0)
+    phase_sec$results_sec <- phase_sec$results_sec +
+      (proc.time()[["elapsed"]] - system_done)
+    metadata$child_phase_sec <- metadata$phase_sec
+    metadata$phase_sec <- phase_sec
+    metadata$wall_sec <- peer_phase_total(phase_sec)
+  } else {
+    phase_sec <- child_phase_sec
+  }
   list(
     status = "DONE",
     engine = engine,
-    wall_sec = as.numeric(metadata$wall_sec),
-    phase_sec = peer_phase_from_metadata(metadata),
+    wall_sec = peer_phase_total(phase_sec),
+    phase_sec = phase_sec,
     equity = eq,
     fills = fills,
     trades = trades,
@@ -842,17 +1288,17 @@ peer_timed <- function(expr) {
 peer_performance_boundary <- function(engine) {
   switch(
     engine,
-    ledgr_ttr_canonical = "durable ledgr: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
-    ledgr_ttr_canonical_ephemeral = "ephemeral ledgr: ingestion=bars CSV read plus in-memory bars/features/projection; engine=ledgr_execute_fold with memory output handler; results=event-stream equity/fills reconstruction plus canonical materialization",
-    ledgr_ttr_canonical_ephemeral_with_costs = "ephemeral ledgr with realistic public cost chain: same bars/projection/strategy surface as canonical ephemeral; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1)",
-    ledgr_ttr_canonical_ephemeral_with_cost_risk = "ephemeral ledgr with realistic public cost and risk chains: same bars/projection/strategy surface as canonical ephemeral; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1) plus ledgr_risk_chain(long_only, max_weight=0.20)",
-    ledgr_ttr_canonical_ephemeral_legacy_costs = "ephemeral ledgr with legacy internal fill-model resolver: same bars/projection/strategy surface as canonical ephemeral; engine uses spread_bps=5 and commission_fixed=1 baseline resolver",
-    ledgr_ttr_compiled_spot_fifo_ephemeral = "ephemeral ledgr with compiled_accounting_model=spot_fifo: same bars/projection/strategy surface as ledgr_ttr_canonical_ephemeral; engine uses compiled spot-FIFO fill/accounting batch; results=event-stream equity/fills canonical materialization",
-    ledgr_builtin_sma = "durable ledgr built-in SMA: ingestion=bars CSV read plus DuckDB snapshot plus experiment construction; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
-    quantstrat = "ingestion=bars CSV read, xts/globalenv setup, initPortf/initAcct/initOrders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes",
-    backtrader = "ingestion=bars CSV read, PandasData feed construction, cerebro.adddata loop; engine=cerebro.run; results=canonical equity/fill/trade writes",
-    `zipline-reloaded-full` = "ingestion=bars CSV read, temporary csvdir construction, bundle registration and ingest; engine=zipline run_algorithm; results=canonical equity/fill/trade writes",
-    LEAN = "LEAN CLI phase split is unavailable locally; if configured, the whole CLI subprocess is the measured boundary, otherwise the row is UNAVAILABLE",
+    ledgr_ttr_canonical = "durable ledgr: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment plus run identity; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
+    ledgr_ttr_canonical_sweep = "public one-candidate ledgr_sweep: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment, grid, and sweep orchestration outside candidate engine/results clocks; engine=public sweep candidate fold; results=public retained returns/trades; full parity surfaces come from an untimed internal oracle",
+    ledgr_ttr_canonical_sweep_with_costs = "public one-candidate ledgr_sweep with realistic public cost chain: same snapshot/strategy surface as canonical sweep; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1)",
+    ledgr_ttr_canonical_sweep_with_cost_risk = "public one-candidate ledgr_sweep with realistic public cost and risk chains: same snapshot/strategy surface as canonical sweep; engine uses ledgr_cost_chain(spread_bps=5, fixed_fee=1) plus ledgr_risk_chain(long_only, max_weight=0.20)",
+    ledgr_ttr_canonical_ephemeral_legacy_costs = "internal diagnostic with legacy fill-model resolver: private fold boundary retained only for historical cost-path comparison",
+    ledgr_ttr_compiled_spot_fifo_sweep = "public one-candidate ledgr_sweep with compiled_accounting_model=spot_fifo: same snapshot/strategy surface as ledgr_ttr_canonical_sweep; engine uses compiled spot-FIFO fill/accounting batch; results=public retained returns/trades; full parity surfaces come from an untimed internal oracle",
+    ledgr_builtin_sma = "durable ledgr built-in SMA: snapshot preparation=bars CSV read plus DuckDB snapshot; experiment setup=ledgr_experiment plus run identity; engine=ledgr_run; results=ledgr_results equity/fills plus canonical materialization",
+    quantstrat = "snapshot preparation=bars CSV read plus xts/globalenv setup; experiment setup=portfolio/account/orders/strategy setup; engine=applyStrategy plus account updates; results=equity/transaction extraction plus canonical writes",
+    backtrader = "snapshot preparation=bars CSV read plus grouped pandas bars; experiment setup=PandasData feeds, cerebro.adddata, broker and strategy; engine=cerebro.run; results=canonical equity/fill/trade writes",
+    `zipline-reloaded-full` = "snapshot preparation=bars CSV read, temporary csvdir construction, bundle registration and ingest; experiment setup=algorithm callbacks and calendar; engine=zipline run_algorithm; results=canonical equity/fill/trade writes",
+    LEAN = "snapshot preparation=shared-bars inspection; experiment setup=temporary project and config; engine=whole LEAN CLI subprocess including inseparable internal data loading; results=result extraction and canonical writes",
     "boundary not classified"
   )
 }
@@ -864,6 +1310,7 @@ peer_performance_rows <- function(results, args) {
     row <- as.numeric(res$row_wall_sec %||% NA_real_)
     phase <- res$phase_sec %||% res$metadata$phase_sec %||% peer_phase_sec()
     phase_total <- peer_phase_total(phase)
+    warm_total <- peer_phase_warm(phase)
     data.frame(
       engine = res$engine,
       status = res$status,
@@ -872,10 +1319,15 @@ peer_performance_rows <- function(results, args) {
       n_bars = n_bars,
       full_row_sec = row,
       reported_core_sec = core,
-      ingestion_sec = as.numeric(phase$ingestion_sec %||% NA_real_),
+      snapshot_prepare_sec = as.numeric(phase$snapshot_prepare_sec %||% NA_real_),
+      experiment_setup_sec = as.numeric(phase$experiment_setup_sec %||% NA_real_),
+      ingestion_sec = peer_phase_ingestion(phase),
       engine_sec = as.numeric(phase$engine_sec %||% NA_real_),
       results_sec = as.numeric(phase$results_sec %||% NA_real_),
+      cold_end_to_end = phase_total,
+      warm_research_iteration = warm_total,
       phase_total_sec = phase_total,
+      phase_availability = peer_phase_availability(phase),
       harness_overhead_sec = if (is.finite(row) && is.finite(core)) row - core else NA_real_,
       core_bars_per_sec = if (is.finite(core) && core > 0) n_bars / core else NA_real_,
       full_row_bars_per_sec = if (is.finite(row) && row > 0) n_bars / row else NA_real_,
@@ -887,6 +1339,100 @@ peer_performance_rows <- function(results, args) {
       stringsAsFactors = FALSE
     )
   }))
+}
+
+peer_report_phase_levels <- function() {
+  c("Snapshot prepare", "Setup / orchestration", "Engine", "Results")
+}
+
+peer_prepare_report_performance <- function(performance, tolerance = 0.5) {
+  required <- c(
+    "engine", "status", "full_row_sec", "snapshot_prepare_sec",
+    "experiment_setup_sec", "engine_sec", "results_sec", "cold_end_to_end"
+  )
+  missing <- setdiff(required, names(performance))
+  if (length(missing)) {
+    stop(
+      "Peer report performance data is missing: ",
+      paste(missing, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  done <- performance$status == "DONE"
+  phase_columns <- c(
+    "snapshot_prepare_sec", "experiment_setup_sec", "engine_sec", "results_sec"
+  )
+  if (any(done & !is.finite(performance$full_row_sec)) ||
+      any(done & !is.finite(performance$cold_end_to_end)) ||
+      any(!is.finite(as.matrix(performance[done, phase_columns, drop = FALSE])))) {
+    stop("Every DONE peer row needs finite report clocks.", call. = FALSE)
+  }
+  phase_sums <- rowSums(performance[done, phase_columns, drop = FALSE])
+  if (any(abs(phase_sums - performance$cold_end_to_end[done]) > tolerance)) {
+    stop("Peer report phase totals do not reconcile with source data.", call. = FALSE)
+  }
+
+  display <- performance
+  clock_columns <- c(
+    "full_row_sec", phase_columns, "cold_end_to_end",
+    intersect("warm_research_iteration", names(display))
+  )
+  display[!done, clock_columns] <- NA_real_
+
+  completed <- display[done, , drop = FALSE]
+  unavailable <- display[!done, , drop = FALSE]
+  completed <- completed[order(completed$full_row_sec), , drop = FALSE]
+  engine_levels <- c(completed$engine, unavailable$engine)
+  phase_plot <- do.call(rbind, Map(
+    function(column, label) {
+      data.frame(
+        engine = completed$engine,
+        phase = label,
+        seconds = completed[[column]],
+        stringsAsFactors = FALSE
+      )
+    },
+    phase_columns,
+    peer_report_phase_levels()
+  ))
+  phase_plot$engine <- factor(phase_plot$engine, levels = engine_levels)
+  phase_plot$phase <- factor(
+    phase_plot$phase,
+    levels = peer_report_phase_levels()
+  )
+  totals <- data.frame(
+    engine = factor(completed$engine, levels = engine_levels),
+    seconds = completed$cold_end_to_end,
+    stringsAsFactors = FALSE
+  )
+  plotted_totals <- stats::aggregate(
+    phase_plot$seconds,
+    by = list(engine = as.character(phase_plot$engine)),
+    FUN = sum
+  )
+  names(plotted_totals)[[2L]] <- "seconds"
+  plotted_totals <- plotted_totals[match(completed$engine, plotted_totals$engine), ]
+  if (!isTRUE(all.equal(
+    plotted_totals$seconds,
+    totals$seconds,
+    tolerance = tolerance,
+    check.attributes = FALSE
+  ))) {
+    stop("Peer report chart totals differ from source cold clocks.", call. = FALSE)
+  }
+  unavailable_labels <- data.frame(
+    engine = factor(unavailable$engine, levels = engine_levels),
+    seconds = 0,
+    label = paste0("NULL (", tolower(unavailable$status), ")"),
+    stringsAsFactors = FALSE
+  )
+  list(
+    display = display,
+    phase_plot = phase_plot,
+    phase_totals = totals,
+    unavailable_labels = unavailable_labels,
+    engine_levels = engine_levels
+  )
 }
 
 peer_parity <- function(reference, peer) {
@@ -953,36 +1499,34 @@ peer_parity <- function(reference, peer) {
 }
 
 peer_compare_ledgr_surfaces <- function(durable, ephemeral) {
-  plain_df <- function(x) {
-    out <- as.data.frame(x, stringsAsFactors = FALSE)
-    for (nm in names(out)) {
-      if (!inherits(out[[nm]], "POSIXct")) {
-        attributes(out[[nm]]) <- NULL
-      }
-    }
-    attr(out, "ledgr_result_type") <- NULL
-    row.names(out) <- NULL
-    out
-  }
   eq_a <- durable$equity
   eq_b <- ephemeral$equity
   eq_a$engine <- "ledgr"
   eq_b$engine <- "ledgr"
-  eq_a <- plain_df(eq_a)
-  eq_b <- plain_df(eq_b)
-  fills_a <- plain_df(durable$fills)
-  fills_b <- plain_df(ephemeral$fills)
-  eq_ok <- isTRUE(all.equal(eq_a, eq_b, tolerance = 1e-8, check.attributes = TRUE))
-  fills_ok <- identical(fills_a, fills_b)
-  if (!eq_ok || !fills_ok) {
-    eq_msg <- if (eq_ok) "equity equal within 1e-8" else "equity differs"
-    fills_msg <- if (identical(fills_a, fills_b)) "fills identical" else "fills differ"
-    stop(sprintf(
-      "ledgr ephemeral parity gate failed: %s; %s. The no-durable row must match durable ledgr before peer results are accepted.",
-      eq_msg, fills_msg
-    ), call. = FALSE)
-  }
-  invisible(TRUE)
+  residual <- peer_equity_parity(
+    eq_a,
+    eq_b,
+    floating_columns = c(
+      "equity", "cash", "positions_value", "position_proxy",
+      "realized_pnl", "unrealized_pnl"
+    ),
+    context = "Durable versus public-sweep ledgr equity"
+  )
+  peer_exact_surface(
+    durable$fills,
+    ephemeral$fills,
+    "Durable versus public-sweep ledgr fills"
+  )
+  trades_a <- durable$trades
+  trades_b <- ephemeral$trades
+  if ("engine" %in% names(trades_a)) trades_a$engine <- "ledgr"
+  if ("engine" %in% names(trades_b)) trades_b$engine <- "ledgr"
+  peer_exact_surface(
+    trades_a,
+    trades_b,
+    "Durable versus public-sweep ledgr trades"
+  )
+  residual
 }
 
 peer_normalize_fills <- function(fills) {
@@ -1166,9 +1710,13 @@ peer_write_outputs <- function(results, parity, statuses, performance, bars_path
       engine = res$engine,
       status = res$status,
       wall_sec = res$wall_sec,
-      ingestion_sec = as.numeric(phase$ingestion_sec %||% NA_real_),
+      snapshot_prepare_sec = as.numeric(phase$snapshot_prepare_sec %||% NA_real_),
+      experiment_setup_sec = as.numeric(phase$experiment_setup_sec %||% NA_real_),
       engine_sec = as.numeric(phase$engine_sec %||% NA_real_),
       results_sec = as.numeric(phase$results_sec %||% NA_real_),
+      cold_end_to_end = peer_phase_total(phase),
+      warm_research_iteration = peer_phase_warm(phase),
+      phase_availability = peer_phase_availability(phase),
       reason = res$reason,
       stringsAsFactors = FALSE
     )
@@ -1213,6 +1761,10 @@ peer_environment <- function(args, input_hash) {
     git_branch = git_branch,
     ledgr_version = as.character(utils::packageVersion("ledgr")),
     input_hash = input_hash,
+    benchmark_method = "public_one_candidate_ledgr_sweep_v002",
+    harness_sha256 = peer_hash_file(file.path(
+      "dev", "bench", "peer_benchmark", "peer_benchmark.R"
+    )),
     packages = list(
       TTR = if (requireNamespace("TTR", quietly = TRUE)) as.character(utils::packageVersion("TTR")) else NA_character_,
       quantstrat = if (requireNamespace("quantstrat", quietly = TRUE)) as.character(utils::packageVersion("quantstrat")) else NA_character_,
@@ -1270,17 +1822,21 @@ peer_write_markdown <- function(parity, raw, status, performance, env, bars_path
       parity$tier1_daily_return_cor[[i]], parity$attribution[[i]]
     ), con)
   }
-  writeLines(c("", "## Performance", "", "| Engine | Cost | Risk | Compiled | Full row s | Ingestion s | Engine s | Results s | Total s | Core bars/sec | Boundary |", "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |"), con)
+  writeLines(c("", "## Performance", "", "| Engine | Cost | Risk | Compiled | Full row s | Snapshot prepare s | Experiment setup s | Engine s | Results s | Cold s | Warm s | Phase availability | Core bars/sec | Boundary |", "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |"), con)
   for (i in seq_len(nrow(performance))) {
     writeLines(sprintf(
-      "| `%s` | `%s` | `%s` | `%s` | %.4f | %.4f | %.4f | %.4f | %.4f | %.1f | %s |",
+      "| `%s` | `%s` | `%s` | `%s` | %.4f | %.4f | %.4f | %.4f | %.4f | %.4f | %.4f | %s | %.1f | %s |",
       performance$engine[[i]],
       performance$cost_model[[i]] %||% "",
       performance$risk_chain[[i]] %||% "",
       performance$compiled_accounting_model[[i]] %||% "",
       performance$full_row_sec[[i]],
-      performance$ingestion_sec[[i]], performance$engine_sec[[i]],
-      performance$results_sec[[i]], performance$reported_core_sec[[i]],
+      performance$snapshot_prepare_sec[[i]],
+      performance$experiment_setup_sec[[i]],
+      performance$engine_sec[[i]], performance$results_sec[[i]],
+      performance$cold_end_to_end[[i]],
+      performance$warm_research_iteration[[i]],
+      performance$phase_availability[[i]],
       performance$core_bars_per_sec[[i]],
       performance$boundary[[i]]
     ), con)
@@ -1341,39 +1897,40 @@ peer_main <- function(args = peer_parse_args()) {
     cost_model = zero_cost,
     risk_chain = no_risk
   ))
-  canonical_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
-    engine = "ledgr_ttr_canonical_ephemeral",
+  canonical_ephemeral <- peer_run_ledgr_sweep_with_oracle(
+    engine = "ledgr_ttr_canonical_sweep",
     bars_path = bars_path,
     features = canonical_features,
     strategy = canonical_strategy,
     seed = args$seed,
     cost_model = zero_cost,
     risk_chain = no_risk
-  ))
-  peer_compare_ledgr_surfaces(canonical, canonical_ephemeral)
+  )
+  canonical_parity <- peer_compare_ledgr_surfaces(canonical, canonical_ephemeral)
+  canonical_ephemeral$metadata$durable_parity <- canonical_parity
   with_costs_ephemeral <- NULL
   with_cost_risk_ephemeral <- NULL
   legacy_costs_ephemeral <- NULL
   if (identical(args$engine_set, "ledgr-cost")) {
-    with_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
-      engine = "ledgr_ttr_canonical_ephemeral_with_costs",
+    with_costs_ephemeral <- peer_run_ledgr_sweep_with_oracle(
+      engine = "ledgr_ttr_canonical_sweep_with_costs",
       bars_path = bars_path,
       features = canonical_features,
       strategy = canonical_strategy,
       seed = args$seed,
       cost_model = realistic_cost,
       risk_chain = no_risk
-    ))
-    with_cost_risk_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
-      engine = "ledgr_ttr_canonical_ephemeral_with_cost_risk",
+    )
+    with_cost_risk_ephemeral <- peer_run_ledgr_sweep_with_oracle(
+      engine = "ledgr_ttr_canonical_sweep_with_cost_risk",
       bars_path = bars_path,
       features = canonical_features,
       strategy = canonical_strategy,
       seed = args$seed,
       cost_model = realistic_cost,
       risk_chain = realistic_risk
-    ))
-    legacy_costs_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
+    )
+    legacy_costs_ephemeral <- peer_timed(peer_run_ledgr_internal_oracle(
       engine = "ledgr_ttr_canonical_ephemeral_legacy_costs",
       bars_path = bars_path,
       features = canonical_features,
@@ -1387,8 +1944,8 @@ peer_main <- function(args = peer_parse_args()) {
   }
   compiled_ephemeral <- NULL
   if (!is.null(args$compiled_accounting_model) && identical(args$engine_set, "all")) {
-    compiled_ephemeral <- peer_timed(peer_run_ledgr_ephemeral(
-      engine = "ledgr_ttr_compiled_spot_fifo_ephemeral",
+    compiled_ephemeral <- peer_run_ledgr_sweep_with_oracle(
+      engine = "ledgr_ttr_compiled_spot_fifo_sweep",
       bars_path = bars_path,
       features = canonical_features,
       strategy = canonical_strategy,
@@ -1396,8 +1953,14 @@ peer_main <- function(args = peer_parse_args()) {
       cost_model = zero_cost,
       risk_chain = no_risk,
       compiled_accounting_model = args$compiled_accounting_model
-    ))
-    peer_compare_ledgr_surfaces(canonical, compiled_ephemeral)
+    )
+    public_parity <- peer_compare_public_sweep_surfaces(
+      canonical_ephemeral,
+      compiled_ephemeral
+    )
+    durable_parity <- peer_compare_ledgr_surfaces(canonical, compiled_ephemeral)
+    compiled_ephemeral$metadata$canonical_public_sweep_parity <- public_parity
+    compiled_ephemeral$metadata$durable_parity <- durable_parity
   }
   results <- list(canonical, canonical_ephemeral)
   if (!is.null(with_costs_ephemeral)) {

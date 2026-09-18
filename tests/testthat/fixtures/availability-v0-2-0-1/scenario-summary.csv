@@ -1,0 +1,17 @@
+"scenario","arm","chunk_rows","first_status","final_status","first_error_class","resume_error_class","diagnostics","decision","execution","errors","events","equity","state","completion","sequence_continuous"
+"direct","block",7,"INCOMPLETE","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"direct","current",7,"INCOMPLETE","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"direct_chunk4096","block",4096,"INCOMPLETE","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"direct_chunk4096","current",4096,"INCOMPLETE","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"early_exit","block",7,"DONE","DONE","","",120,58,49,0,42,12,12,1,TRUE
+"early_exit","current",7,"DONE","DONE","","",120,58,49,0,42,12,12,1,TRUE
+"exception_rollback","block",7,"FAILED","FAILED","ledgr_strategy_error","",1,0,0,1,0,0,0,0,TRUE
+"exception_rollback","current",7,"FAILED","FAILED","ledgr_strategy_error","",1,0,0,1,0,0,0,0,TRUE
+"interrupt_resume","block",7,"RUNNING","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"interrupt_resume","current",7,"RUNNING","INCOMPLETE","","",93,43,39,0,35,9,9,1,TRUE
+"interrupt_resume_early_exit","block",7,"RUNNING","DONE","","",120,58,49,0,42,12,12,1,TRUE
+"interrupt_resume_early_exit","current",7,"RUNNING","DONE","","",120,58,49,0,42,12,12,1,TRUE
+"nonmember_increase_rollback","block",7,"FAILED","FAILED","ledgr_nonmember_exposure_increase","",1,0,0,1,0,0,0,0,TRUE
+"nonmember_increase_rollback","current",7,"FAILED","FAILED","ledgr_nonmember_exposure_increase","",1,0,0,1,0,0,0,0,TRUE
+"resume_exception","block",7,"RUNNING","FAILED","","ledgr_strategy_error",47,21,19,1,16,5,5,0,TRUE
+"resume_exception","current",7,"RUNNING","FAILED","","ledgr_strategy_error",47,21,19,1,16,5,5,0,TRUE

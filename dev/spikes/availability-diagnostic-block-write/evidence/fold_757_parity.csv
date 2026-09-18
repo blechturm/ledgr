@@ -1,0 +1,7 @@
+"table","columns_compared","excluded","rows_current","rows_block","only_in_current","only_in_block","identical","run_id","status_current","mode_current","provider_current","scalar_calls_current","block_calls_current","status_block","mode_block","provider_block","scalar_calls_block","block_calls_block"
+"runs",16,"created_at_utc|config_json.db_path|config_json.data.snapshot_db_path",1,1,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757
+"run_completion",13,"",1,1,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757
+"run_diagnostics",22,"",383042,383042,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757
+"ledger_events",11,"",0,0,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757
+"equity_curve",7,"",757,757,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757
+"strategy_state",3,"",757,757,0,0,TRUE,"spike-757-block-parity","DONE","columnar","prepared",383042,0,"DONE","block","prepared",0,757

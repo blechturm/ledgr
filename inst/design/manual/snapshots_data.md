@@ -49,7 +49,7 @@ not be weakened silently.
 
 ## Snapshot Lifecycle
 
-``` mermaid
+```mermaid
 flowchart LR
   RAW[Raw input bars] --> INGEST[Snapshot ingest validation]
   INGEST --> SEAL[Seal snapshot]
