@@ -2,23 +2,19 @@
 
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
-**Latest completed release packet:** `v0.2.0.0`.
-**Current active packet:** `v0.2.0.1`.
-**Current active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
-**Current planning branch:** `v0.2.0.1`; the availability hot-path synthesis
-and maintainer decisions are accepted, the
-[v0.2.0.1 spec](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md) was accepted on
-2026-09-16 after two independent reviews. The reviewed hot-path complexity
-amendment was accepted 2026-09-17. The trusted-timestamp and benchmark-boundary
-amendment was accepted 2026-09-18; its prerequisite selected `NEITHER`.
-Tickets LDG-2719 through LDG-2744 are cut and their cut passed independent
-review. Batches 0 through 9 and 11 through 15 are complete after review; Batch
-10 is diagnostic history. The local release gate is accepted and the branch
-is ready for remote branch CI. Merge, main CI, tag, tag CI, and release
-publication remain later evidence.
-The refreshed spot-crypto probe
-follows as a separate v0.2.0.x planning cycle.
-**Latest completed packet path:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
+**Latest released packet:** [v0.2.0.1](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md).
+**Current planning branch / next scheduled release:** `v0.2.0.2`.
+**Current implementation packet:** not yet opened for v0.2.0.2.
+The maintainer scheduled equity accounting and Sharadar-discovered workflow
+improvements on 2026-09-20. Start with the
+[roadmap scope](ledgr_roadmap.md#v0202-equity-accounting-and-research-workflow),
+[corporate-event evidence](research/Sharadar-Corporate-Event-Evidence.md), and
+[workflow evidence](research/Sharadar-Workflow-Improvement-Evidence.md).
+The existing governance review and accounting-core dependency remain explicit;
+API and economic contracts still require scoped design. Spot-crypto stays parked.
+[v0.2.0.1 is published](https://github.com/blechturm/ledgr/releases/tag/v0.2.0.1);
+its packet and measurements are release history, not authorization for new work.
+
 The accepted [v0.2.0.0 spec](ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md)
 combines API/representation hardening with the first asset-availability
 implementation. All 16 batches are complete after review and local release

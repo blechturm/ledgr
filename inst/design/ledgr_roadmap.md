@@ -3,21 +3,12 @@
 **Status:** Active roadmap.
 **Authority:** Milestone sequence, current planning horizon, and downstream
 constraints.
-**Latest completed packet:** `inst/design/ledgr_v0_2_0_0_spec_packet/`.
-**Active packet:** v0.2.0.1 availability hot- and cold-path optimization.
-**Active packet path:** `inst/design/ledgr_v0_2_0_1_spec_packet/`.
-**Current planning branch:** `v0.2.0.1`; the availability hot- and cold-path
-RFC, spec, hot-path amendment, and timestamp/benchmark amendment are accepted.
-Tickets LDG-2719 through LDG-2744 are cut and their cut passed independent
-review. Batches 0 through 9 and 11 through 15 are complete after review, and
-Batch 10 is diagnostic history. The local release gate is accepted and the
-branch is ready for remote CI; main and tag evidence remain later steps. The
-availability prerequisite selected `NEITHER`; the Batch 14 review passed and
-the maintainer explicitly authorized the release gate.
-The
-amendment ticket cut was independently accepted before implementation. The
-spot-crypto readiness cycle follows
-v0.2.0.1.
+**Latest released packet:** `inst/design/ledgr_v0_2_0_1_spec_packet/`;
+[v0.2.0.1 is published](https://github.com/blechturm/ledgr/releases/tag/v0.2.0.1).
+**Next scheduled release / planning branch:** `v0.2.0.2`.
+**Active implementation packet:** none for v0.2.0.2 yet; release scoping below
+is maintainer-directed planning, not accepted API or settlement contracts.
+The v0.2.0.1 packet and its measurements remain historical evidence.
 
 This roadmap is a directional planning document. Versioned spec packets are the
 authoritative records for completed release work. Architecture notes, RFC
@@ -154,13 +145,14 @@ claim boundaries remain governed by
 | v0.1.9.7 | Done | Business-objective eligibility and validation polish: seven classed/hashable criteria plus diagnostic thresholds, evidence-only all-candidates filtering, closed-trade retention, strict-lattice stable regions, native K-Ratio, the metric-context guardrail, public return panels, and the rebuilt Selection Integrity article. Automatic selection or promotion remained out of scope. | `inst/design/ledgr_v0_1_9_7_spec_packet/`; `inst/design/rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md` |
 | v0.1.9.x | Done | Conditional primitive-internals implementation phases -- consumed early by the v0.1.8.7 / v0.1.8.9 / v0.1.8.10 optimization arc (row closed 2026-06-12 ahead of the v0.1.9.5 Workstream G roadmap audit, which named it the first closure candidate). The collapse dependency gates fired: the deterministic wrapper landed and `collapse` entered Imports at v0.1.8.7. Phase A (pulse views) shipped v0.1.8.4/8.6; Phase B (event buffers, `collapse::setv` in both output handlers) shipped v0.1.8.7/8.9; Phase C.1 (cumulative reconstruction) shipped v0.1.8.7; Phase C.2 (FIFO lot replay) was superseded by the stronger B2 compiled spot-FIFO kernel at v0.1.8.10. Phases D/E remain dormant profile-triggered options recorded in the synthesis, not planned work. The binding architecture rule (primitive internal shapes, data.frames as boundary views) is permanent via the RFC decision index and contracts. | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`; v0.1.8.7-v0.1.8.10 packet records |
 | v0.2.0.0 | Done | Correct known API, accounting-projection, provenance, finalization, causality, RNG, cleanup, and wide-name boundaries; split backtest ownership and extract the existing coordinator without moving effects; then add the first point-in-time asset-availability implementation with complete sessions, hashed facts/quarantine, strict gaps, dynamic axes, bounded valuation/affordability, durable incomplete outcomes, explanation views, and survivorship-bias teaching. | `inst/design/ledgr_v0_2_0_0_spec_packet/`; accepted API-hardening and asset-availability syntheses; `inst/design/horizon.md` September 2026 entries |
-| v0.2.0.1 | Active | Productionize the reviewed availability seams, seal validators, resumed-run repair, event writes, and prepared valuation, then correct the public peer boundary, dense timestamp validation, and within-chunk hash formatting before final evidence. The RFC, spec, and both amendments are accepted; tickets LDG-2719 through LDG-2744 are cut and the cut passed independent review. Batches 0 through 9 and 11 through 15 are complete after review, Batch 10 is diagnostic history, and the accepted local release gate leaves the branch ready for remote CI. The prerequisite selected `NEITHER`, so no availability-ingestion optimization enters this release. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; accepted availability hot-path synthesis and maintainer decisions; accepted complexity and timestamp/benchmark amendments; prerequisite commit `9686229`; accepted release closeout; earlier spike inventories |
+| v0.2.0.1 | Released | Availability and sealing performance, resumed-run repair, event writes, prepared valuation and benchmark closeout. Historical evidence stays in the released packet. | `inst/design/ledgr_v0_2_0_1_spec_packet/`; [release](https://github.com/blechturm/ledgr/releases/tag/v0.2.0.1) |
+| v0.2.0.2 | Scheduled; design/spec pending | Equity economic events with accounting-core consolidation; fast availability results; minimal progress; consistent opening validation; first-cutoff inspection; clear unsupported-economics explanations. | This roadmap, v0.2.0.2 section; `inst/design/research/Sharadar-Corporate-Event-Evidence.md`; `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` |
 | Post-v0.2.0.1 governance review | Planned after release | Review and simplify the RFC, spike, spec, review, closeout, and testing processes while preserving independent review, evidence integrity, scope containment, explicit maintainer acceptance, honest measurement clocks, and strict semantic detection. Decide how reference-implementation authority differs from runtime defaults, and classify compiled-path guarantees without imposing a Cartesian benchmark grid. Complete this review before opening the next implementation packet. | This roadmap decision; future reviewed governance proposal |
 | Post-v0.2.0.1 accounting-core consolidation RFC | Planned after governance review, before the compiled execution RFC | Collapse the eight independently written FIFO replay loops into one shared accounting core behind the fold, leaving projections at each call site. Decide which replays must remain independent verifiers, how `CASHFLOW` events are covered, and whether the shared core keeps the global compensated accumulator or declares a tolerance. Treat this as correctness consolidation whose optimizations follow, not as a performance ticket. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 duplicated-FIFO entry |
 | Post-v0.2.0.1 compiled execution RFC | Planned after governance review | Use the governance and test-suite review outputs to decide the supported compiled-execution envelope, differential proof architecture, availability and durable-sink scope, and any later default-promotion gate. Treat the existing spot-FIFO result as evidence, not authority to widen scope. | Future focused RFC; `inst/design/horizon.md` 2026-09-18 compiled-execution entry |
 | Post-v0.2.0.1 pulse-context accessor cost chore | Planned for the next implementation packet | Remove three measured, output-preserving costs on the warm research path. Stop `ledgr_feature_lookup_map()` calling `ledgr_alias_map_storage()` only to discard its JSON, hash and version; replace the `replicate()` of a constant empty feature-table schema with one shared object; and fill the `ledgr_features_wide()` matrix by matched integer index instead of a per-element character-indexed loop. Leave `ledgr_alias_map_storage()` and its five identity callers unchanged. Then inventory the `ctx` surface without changing it: record which fields are built eagerly per pulse regardless of use, and which accessor closures carry bodies heavier than their callers expect. Whether the context should instead be derived from the strategy is parked for a spike and is not authorized by this chore. All three changes are `identical()`-provable rather than tolerance-bounded, so this is the first candidate for the exact-parity proof template outside a timestamp change. | `inst/design/horizon.md` 2026-09-18 per-pulse context and feature accessor entry; `inst/design/exact_parity_internal_optimization_proof_template.md` |
 | Post-v0.2.0.1 peer benchmark alignment chore | Planned for the next implementation packet | Correctness chore on the peer benchmark harness, not on package code. Normalize peer session indexes before parity scoring so an engine whose calendar labels sessions differently is compared bar against bar rather than by timestamp string; make the parity join report row retention and refuse to score a peer that silently loses rows; and revisit the article's 0.99 weak-return threshold, which no external engine except backtrader clears and which therefore reads as a peer defect where it measures engine-convention distance. Re-run and re-render the comparison afterwards. The v0.2.0.1 promoted record stays frozen as measured history and its Tier 1 verdict holds under either alignment, so this corrects a published comparison rather than a release gate. | `inst/design/horizon.md` 2026-09-18 peer-benchmark session alignment entry; `dev/bench/peer_benchmark/peer_benchmark.R`; `dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py` |
-| v0.2.0.x | Planned after v0.2.0.1 | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
+| Later v0.2.0.x | Parked behind the v0.2.0.2 equity/workflow priority | Spot-crypto readiness probe and, only if its prerequisite passes, a bounded measurement spike over fractional accounting, complete 24/7 sessions, availability semantics, costs, and durable research workflows. | Future `dev/spikes/crypto-readiness/`; this roadmap section; `inst/design/spike_protocol.md` |
 | v0.1.9.x | Planned | Target construction helper extensions over the existing strategy-helper pipeline. | Future packet |
 | v0.2.x | Planned | Liquidity and capacity policy separate from cost application. | Future packet |
 | v0.2.x | Planned | External point-in-time regressors and reference-data families beyond the membership, sessions, status, and lifetime facts scoped in v0.2.0.0. | Future packet |
@@ -1619,6 +1611,45 @@ packet. The accepted synthesis, maintainer decisions, final review, spike
 inventories, benchmark methodology, and optimization coding style are the
 authoritative inputs to the spec draft.
 
+### v0.2.0.2 Equity Accounting And Research Workflow
+
+Maintainer scheduling decision, 2026-09-20: use the Sharadar research findings
+as evidence for the next release. Evidence is collected in
+[corporate events](research/Sharadar-Corporate-Event-Evidence.md) and
+[workflow improvements](research/Sharadar-Workflow-Improvement-Evidence.md).
+These are inputs, not new execution contracts or a ticket packet.
+
+| Workstream | Release outcome | Implementation route |
+| --- | --- | --- |
+| LFB-001/011 equity events | Dividend entitlement/payment, cash/security/mixed acquisitions, spin-offs and fractional entitlements with explicit clocks, compatible price/unit basis, unsettled-claim valuation and received non-member handling. Retain unsupported outcomes when terms are insufficient. | Existing accounting-event and corporate-action design directions; consolidate production accounting before changing settlement semantics. |
+| LFB-008 availability reads / OPT-L14 | Forward reconstruction with unchanged public results and causal/reopen behavior; remove repeated prefix work. | Exact-behavior maintenance, existing parity discipline; no new RFC required. |
+| LFB-009 live progress | Optional stage visibility during runs and result reads, throttled and economically inert. | Minimal interface decision in the spec; no monitoring framework. |
+| LFB-010 opening validation | Constructor and execution agree on the supported cash domain, with early errors. | Small public-boundary bug fix; no financing expansion implied. |
+| LFB-006 first-cutoff inspection | Read historical membership and current sizing eligibility without registering a throwaway run. | Focused API design reusing production resolution; no state-export or whole-history framework. |
+| Accounting explanations | Existing summaries/explanations make supplied-but-unsupported economics understandable. | Inspect and extend existing surfaces alongside equity events; never certify coverage of unknown events. |
+
+Sequence the work by dependency. Retain the already scheduled bounded governance
+and test-suite review before the implementation packet; this evidence import
+neither duplicates that review nor declares it complete. Accounting-core
+consolidation precedes new economic effects, with independent verification
+preserved. Reader and validation corrections do not need to wait for settlement
+implementation or acquire their own RFC cycles. Resolve progress and inspection
+interfaces proportionately, then use one release spec to organize implementation.
+
+Keep the user journey concrete: inspect the initial universe, run an ordinary
+strategy, see progress, read results promptly, and understand any unsupported
+economic event. Use existing reproducers and small synthetic cases. No new
+manifest hierarchy, authorization service or research-specific A0 artifact.
+
+General lineage metadata (LFB-002), source-membership-clock enrichment (LFB-004),
+crypto, tax, derivatives, compiled-default promotion, full instrument-master
+rebuilding and strategy-state export are not dependencies of this release.
+The separately scheduled accessor and peer-benchmark chores remain visible in
+the milestone table; they are not silently completed or expanded by this scope.
+The equity/workflow priority supersedes spot-crypto as the next product cycle.
+Supported source terms remain an adapter responsibility; release completion
+alone does not guarantee full-horizon completion of the historical portfolios.
+
 ### After v0.2.0.1: Governance Review And Process Improvement
 
 Maintainer decision, 2026-09-16: after v0.2.0.1 closes, run a bounded
@@ -1730,8 +1761,9 @@ focused testing RFC and subsequent refactoring, but it must not perform that
 refactoring inside the audit.
 
 This is post-release governance work, not part of the v0.2.0.1 release gate.
-The spot-crypto readiness probe remains the next product-research cycle, but no
-new implementation packet opens until this governance review is resolved.
+The 2026-09-20 scheduling decision makes v0.2.0.2 equity accounting and research
+workflow the next product cycle. No new implementation packet opens until this
+governance review is resolved; evidence collection and scoping may proceed.
 
 ### After v0.2.0.1: Accounting-Core Consolidation
 
@@ -1806,8 +1838,8 @@ when the governance review closes.
 
 ### After v0.2.0.1: Spot-Crypto Readiness Probe And Spike
 
-The earlier crypto-readiness plan was never executed. It returns after
-v0.2.0.1 as planning-only work against the released engine and its
+The earlier crypto-readiness plan was never executed. It remains parked behind
+the v0.2.0.2 equity/workflow priority as planning-only work against the engine and its
 point-in-time asset-availability surface. No charter, RFC, spec packet, ticket
 set, or implementation is authorized by this entry.
 
@@ -2154,7 +2186,8 @@ security, mixed and spin-off settlement as the bounded equity scope, with
 explicit price/unit and timing policies. The earlier accounting-core
 consolidation dependency applies. A full instrument-master rebuild, compiled
 default promotion or cross-asset event catalogue is not implied. Release
-assignment and implementation remain decisions for the scoped packet.
+assignment is now v0.2.0.2 (2026-09-20 maintainer scheduling decision);
+contracts and implementation remain decisions for the scoped packet.
 
 Intent:
 

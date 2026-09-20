@@ -26,25 +26,11 @@ an architecture note, or a spec packet.
 
 ## Open
 
-**Current packet note (2026-09-17):** v0.2.0.0 is complete after maintainer
-review and local release gates. The v0.2.0.1 packet is active: its spec was
-accepted on 2026-09-16, its hot-path complexity amendment was accepted on
-2026-09-17, and the timestamp/benchmark amendment was accepted 2026-09-18.
-Tickets LDG-2719 through LDG-2744 are cut and their cut passed review for
-availability hot- and cold-path productionization, the seal-validator
-correction, the resumed-run equity-prefix repair, linear event writes, prepared
-fold-time valuation, corrected public peer boundaries, dense timestamp
-validation, within-chunk hash formatting, and fresh separated benchmark
-closeouts. Batches 0 through 9 are complete; Batch 10 is diagnostic history;
-Batches 11 through 15 are complete after review. The accepted local release
-gate leaves the branch ready for remote CI; main and tag evidence remain later
-steps. The prerequisite
-selected `NEITHER`, so no
-availability-ingestion optimization enters the release. The Batch 14 review
-passed and the maintainer explicitly authorized the release gate.
-Spot-crypto planning follows that
-release as a separate v0.2.0.x cycle. Horizon entries below remain non-binding unless a packet, the roadmap,
-contracts, or an accepted RFC promotes them.
+**Current planning note (2026-09-20):** v0.2.0.1 is released. The roadmap
+schedules v0.2.0.2 equity accounting and research-workflow improvements from
+Sharadar evidence. No v0.2.0.2 implementation packet is open yet. The roadmap
+owns commitments; observations below remain non-binding unless promoted.
+Spot-crypto is parked behind that equity/workflow priority.
 
 The completed packet consumed only verified API-golden-path and stale-example
 findings in Batches 2 and 10. Batch 10 closed those scoped repairs. The
@@ -122,6 +108,31 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-20 [ux] Real-data workflow costs beyond accounting
+
+The empirical handoff `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`
+collects LFB-006/008/009/010 from the research repository. The roadmap promotes
+these improvements into v0.2.0.2 planning; this note keeps their design rationale.
+
+A silent 858.69-second phase obscured a 12.61-second fold and a 799.56-second
+availability read. Optional stage progress would distinguish useful work from
+a stalled process without a dashboard or new evidence system. Progress should
+be throttled and must not affect economic results, identity or RNG behavior.
+
+The public opening constructor accepts zero cash that execution later rejects.
+The supported domain should be consistent and fail early; the research-side
+epsilon-cash probe is not a reason to expand financing semantics.
+
+The corporate-event findings also motivate clear explanations of supplied but
+unsupported economics. Inspect existing diagnostics and summary surfaces first.
+Computational completion is not a guarantee of complete event coverage, and no
+reader can certify events absent from the supplied data. This belongs with the
+equity work, not a parallel provenance or certification mechanism.
+
+The existing single-cutoff inspection and availability reconstruction entries
+below retain their specific boundaries. LFB-007 remains obsolete: explicit
+strategies can already distinguish holding from liquidation.
+
 ### 2026-09-20 [data] Equity accounting events now block real portfolio research
 
 The Sharadar baseline census supplies empirical input to the existing
@@ -142,7 +153,8 @@ dependency, source-fact versus account-event split, explicit price/unit basis,
 and independent replay verification. The adapter still needs supported terms
 and declared clocks; missing publication/payment/settlement inputs are not
 fixed by a new ledger event type. Crypto, tax and derivatives remain separate.
-This evidence import does not choose a release number, API or event schema.
+The roadmap now schedules the bounded equity direction for v0.2.0.2; API and
+event-schema decisions remain open for the existing design directions.
 
 ### 2026-09-20 [data] Point-in-time universe inspection before execution
 
@@ -215,10 +227,10 @@ it neither requires nor approves a new inspection surface, and approving an
 inspection surface would not excuse leaving it unfixed. The 2026-09-08 entry
 records the accepted availability implementation direction this builds on.
 
-Trigger for revisiting: a second study needing a derived fixed universe, or
-any study that cannot express its universe without a setup run. Either turns
-this from one project's workaround into a recurring configuration gap, and
-that is the point to consider an RFC rather than now.
+Promotion (2026-09-20): the maintainer scheduled single-cutoff inspection in
+v0.2.0.2 on the reported fixed-follow-on-experiment evidence. Focused API design
+should choose the smallest production-backed surface; this promotion does not
+choose a signature or authorize whole-history analytics or strategy-state export.
 
 ### 2026-09-19 [execution] Availability result reconstruction is quadratic
 

@@ -3,6 +3,9 @@
 Date: 2026-09-20. Non-binding empirical input to the existing v0.2.x
 corporate-actions and explicit accounting-event directions. This is not an
 RFC, accepted release scope, vendor schema, or implementation authorization.
+Scheduling update: the maintainer assigned the bounded equity direction to
+v0.2.0.2 on 2026-09-20; the roadmap owns that commitment. This note remains
+evidence rather than an economic or API contract.
 
 ## Source and evidence limits
 
