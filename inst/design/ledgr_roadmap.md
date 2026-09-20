@@ -2145,6 +2145,17 @@ those cases. No spec packet, tickets, or implementation are open yet.
 
 ### v0.2.x Corporate Actions And Instrument Master
 
+**Empirical scope input (2026-09-20):**
+`inst/design/research/Sharadar-Corporate-Event-Evidence.md` brings the real
+baseline census and LFB-001/LFB-011 into this existing direction. Dividend and
+spin-off omissions already affect held portfolios; acquisition settlement
+blocks continuation. Consider dividend entitlements/payments and cash,
+security, mixed and spin-off settlement as the bounded equity scope, with
+explicit price/unit and timing policies. The earlier accounting-core
+consolidation dependency applies. A full instrument-master rebuild, compiled
+default promotion or cross-asset event catalogue is not implied. Release
+assignment and implementation remain decisions for the scoped packet.
+
 Intent:
 
 - make real equity data semantics explicit before ledgr claims serious
@@ -2168,8 +2179,17 @@ Source material:
 - `inst/design/research/Cross-Asset-Accounting-Critical-Events.md`
   records the cross-asset prior-art and design-space pass after LFB-001; the
   RFC must re-verify load-bearing primary-source claims before binding policy.
+- `inst/design/research/Sharadar-Corporate-Event-Evidence.md` supplies the
+  subsequent real-data exposure, corrected terminal stop, and unresolved
+  adapter term/clock requirements. Existing research results remain
+  price-accounting evidence, not economically complete total-return results.
 
 ### v0.2.x Explicit Accounting Event Types RFC
+
+The 2026-09-20 empirical handoff above also informs this RFC: receiving cash,
+replacement securities or distributed child securities must remain coherent
+across execution, replay and public results. This is the accounting side of
+the same equity scope, not a requirement for a second broad research survey.
 
 Intent:
 

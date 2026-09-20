@@ -16,6 +16,7 @@ promote to a user-facing docs surface.
 
 | File | Evidence source | Intended RFC use |
 |---|---|---|
+| `Sharadar-Corporate-Event-Evidence.md` | Baselines Batch C, corporate-event census, terminal-translation follow-up and LFB-001/LFB-011 at private source commit `a7b24b3b694a3ee754c61537339ec24679e9d3a0` | Existing v0.2.x corporate-actions and accounting-event scoping; non-binding equity evidence, no seed or release scope accepted. |
 | `Sharadar-Empirical-Evidence.md` | Sharadar Data MVP and Evidence Promotion v0.1.0, private authoritative source commit `e53bda3b108e51ad44720b9812c8072624b8820e` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, non-binding) |
 
 The Sharadar synthesis contains only non-reconstructive aggregates and

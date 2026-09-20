@@ -122,6 +122,28 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-20 [data] Equity accounting events now block real portfolio research
+
+The Sharadar baseline census supplies empirical input to the existing
+2026-06-28 cross-asset accounting entry and the v0.2.x corporate-actions and
+explicit accounting-event roadmap sections. The compact handoff is
+`inst/design/research/Sharadar-Corporate-Event-Evidence.md`; it links the private
+source inventory, corrected terminal case and LFB-001/LFB-011 at a fixed commit.
+
+The 563-instrument population contains cash/security/mixed acquisition forms,
+delistings, spin-offs and cash dividends. The retained portfolio prefix already
+crosses dividend and spin-off events without their distributions being booked;
+terminal facts stop held delistings without settling them. Mechanical
+reconciliation therefore does not establish total-return accounting.
+
+This supports an equity-first scope rather than implementing the entire
+cross-asset catalogue. Preserve the roadmap's accounting-core consolidation
+dependency, source-fact versus account-event split, explicit price/unit basis,
+and independent replay verification. The adapter still needs supported terms
+and declared clocks; missing publication/payment/settlement inputs are not
+fixed by a new ledger event type. Crypto, tax and derivatives remain separate.
+This evidence import does not choose a release number, API or event schema.
+
 ### 2026-09-20 [data] Point-in-time universe inspection before execution
 
 Using ledgr on real Sharadar data exposed friction when a study needs a fixed
