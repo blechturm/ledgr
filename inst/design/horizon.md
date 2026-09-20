@@ -87,7 +87,11 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
 - **Next implementation packet** -- the peer benchmark session alignment
   chore: normalize peer session indexes before parity scoring, report join
-  retention, and revisit the 0.99 weak-return threshold in the article.
+  retention, and revisit the 0.99 weak-return threshold in the article. Also
+  the pulse-context accessor chore: stop discarding alias-map identity work in
+  the per-pulse feature accessor, share the constant feature-table schema,
+  index the `features_wide` fill, and audit which `ctx` fields deserve
+  laziness.
 - **v0.2.x** — snapshot administration and research-loop ergonomics
   (promotion recovery); point-in-time data tables / external regressor
   snapshots (unify in one RFC); corporate actions and instrument master;
@@ -117,6 +121,286 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-20 [data] Point-in-time universe inspection before execution
+
+Using ledgr on real Sharadar data exposed friction when a study needs a fixed
+initial investment universe derived from point-in-time facts.
+
+The comparison has three arms: B1 buys an initially eligible basket and holds
+it; B2 rebalances that same fixed basket monthly; B3 rebalances against
+evolving historical membership. The first production callback already exposes
+what the initial basket needs, namely historical membership, exact-current
+prices and admissibility. B2 needs that derived basket as its experiment
+universe before execution begins, and there is no way to obtain it without
+running something first.
+
+Remembering the basket inside a dynamic-membership strategy is not necessarily
+equivalent. An original constituent that later leaves the index must stay
+eligible under B2's fixed-basket policy, so a strategy reading live membership
+each pulse is answering a different question.
+
+The need, stated without a vendor or an API: a researcher should be able to
+inspect historical membership and current sizing eligibility at a chosen
+decision cutoff, then use that result in ordinary experiment configuration.
+The same information would also support coverage summaries, membership
+transition tables, and visualizations of change over time.
+
+The reported workaround is a setup run that encodes selection through unfunded
+targets, whose diagnostics are then read to configure the real experiments.
+Treat that as reported evidence rather than verified behavior. It motivates
+the inspection friction; it does not establish a causality or accounting
+defect. Its cost is that configuration requires executing a throwaway run, and
+that selection travels in a channel meant for targets.
+
+What exists today is adjacent and does not close the gap.
+`ledgr_universe_members()` is a policy constructor declaring which membership
+universe an experiment uses, not a query. The `ledgr_facts_*` family
+constructs fact tables on the input side. `ledgr_run_explain()` and the
+availability result surface both resolve availability only after a run exists.
+Nothing answers what the universe is at a chosen cutoff from a sealed snapshot
+and a policy alone.
+
+Boundaries any eventual answer must keep explicit:
+
+- membership is not sizing eligibility;
+- sizing eligibility does not guarantee affordability or execution;
+- a permissible stale valuation mark is not a fresh sizing or execution price;
+- portfolio-dependent information such as held positions differs from
+  snapshot-and-policy information; and
+- future execution observations must never enter a causal decision-time
+  screen.
+
+Design alternatives, recorded without choosing among them and without naming
+functions or signatures: extend an existing public inspection surface; provide
+a read-only production-context or universe query; or expose persisted strategy
+state where that is independently useful. Single-cutoff inspection is the
+immediate need. Whole-period summaries are a possible extension, not a
+prerequisite. A strategy-state reader and any future walk-forward
+fitted-output handoff are related but distinct concerns and do not belong in
+the same decision.
+
+Any eventual solution should reuse production availability resolution rather
+than introduce a second semantic implementation, and should rest on existing
+snapshot and configuration identity. It should not require a study-specific
+artifact or another provenance system.
+
+One cross-reference, deliberately not bundled. The 2026-09-19 entry on
+quadratic availability result reconstruction is relevant, because a
+single-date query should not have to reconstruct an entire run to answer one
+cutoff. That is an established performance defect on its own evidence: fixing
+it neither requires nor approves a new inspection surface, and approving an
+inspection surface would not excuse leaving it unfixed. The 2026-09-08 entry
+records the accepted availability implementation direction this builds on.
+
+Trigger for revisiting: a second study needing a derived fixed universe, or
+any study that cannot express its universe without a setup run. Either turns
+this from one project's workaround into a recurring configuration gap, and
+that is the point to consider an RFC rather than now.
+
+### 2026-09-19 [execution] Availability result reconstruction is quadratic
+
+Work in the ledgr-research sister repository measured
+`ledgr_results(run, "availability")` at 799.56 seconds against a 12.61-second
+757-pulse fold on the same run, a factor of 63. The surrounding phase was
+858.69 seconds, of which reading fills, equity and diagnostics together cost
+0.55. The numbers are the sister repository's, not reproduced here; what
+follows is a reading of the package source that explains them.
+
+The public read does not load a persisted table. It rebuilds the provider and
+calendar and then, for every decision timestamp, reconstructs positions,
+recreates the decision view, resolves marks for every visible instrument, and
+builds one data frame per pulse. The driver is
+`R/availability-results.R:326-353`.
+
+The dominant cost is `ledgr_availability_marks_at()` at
+`R/availability-results.R:271`. It allocates a `length(axis)` by `pulse_idx`
+matrix per pulse and then loops over instruments, and `provider$history()` at
+`R/availability-provider.R:212` issues one DuckDB query per call, filtered
+`ts_utc <= ?`, so at pulse p each query returns p rows. At 757 pulses and the
+505 instruments implied by 382,288 result rows that is 382,288 separate
+queries returning about 144.9 million rows to produce 382,288, a read
+amplification of 379 which is exactly (P+1)/2. The discarded matrices total
+roughly 1.16 GB. The valuation state is then rebuilt over the whole prefix and
+advanced one step, so that walk restarts every pulse too.
+
+The second mechanism is `ledgr_availability_positions_asof()` at
+`R/availability-results.R:243`. It re-reads the ledger prefix per pulse, parses
+`meta_json` per event in an R loop, and accumulates into a named numeric vector
+by name, which costs an instrument-count lookup and a reallocation per
+assignment. That is O(P * E) JSON parses. It contributed nothing to the
+measured run because the control was flat and the function returns early on an
+empty event set. The consequence is that 799.56 seconds is the floor for this
+shape, not the worst case: the same call on a run with fills adds the whole
+ledger replay on top and grows with fill count.
+
+The architectural point is that the fold already computed all of this. The
+engine walks pulses forward carrying positions and valuation state
+incrementally, which is what the 12.61 seconds bought. The reconstruction
+discards that shape and re-derives each pulse from the beginning, turning an
+O(P) forward pass into O(P^2), and O(N * P^2) in rows touched. The gap widens
+with horizon: doubling the pulses costs the fold twice and the rebuild four
+times. This is the same disease as the duplicated FIFO replays recorded on
+2026-09-18, one layer out, and the same remedy applies, which is to compute
+once forward and project rather than re-derive.
+
+The complexity is already catalogued as OPT-L14 in the packet's remaining
+optimization inventory, which names `O(P * E + N * P^2)` and prescribes
+prepared ranges and set-wise reads. What the inventory has never carried is a
+measured cost; its evidence line cites the complexity and loop audits with no
+seconds. This measurement is therefore new and strengthens the scheduling case
+considerably, because the defect sits on a public, supported, documented call
+where the audit read costs 63 times the computation it audits. OPT-L14 is
+marked as needing no RFC for exact read-side reconstruction.
+
+The fix shape is one pass for each mechanism. Marks become one query for all
+instruments to the final pulse, pivoted once into an instrument-by-pulse
+matrix, then a forward walk reusing the valuation state. Positions become one
+query for the event stream and one grouped forward cumulative sum indexed per
+pulse, with the JSON parsed once. A correctly shaped reconstruction does
+strictly less per-pulse work than the fold, since it evaluates no strategy and
+generates no fills, so single-digit seconds is a reasonable expectation rather
+than a promise. OPT-L14's stated caution still holds and should govern the
+work: recovery and historical inspection are correctness oracles, and each
+needs point-in-time, terminal-event, reopen and missing-evidence cases before
+the query shape changes.
+
+Two limits on the arithmetic above. It assumes 505 instruments visible at
+every pulse, inferred by dividing the result rows by the pulse count; if
+visibility varies the totals shift, though the quadratic shape does not. And
+the implied 2.09 milliseconds per query is derived from the reported total
+rather than measured independently, so it is consistency evidence and not a
+benchmark.
+
+### 2026-09-18 [execution] Per-pulse context and feature accessor costs
+
+A staged profile of the full public pipeline found that the sweep is where
+essentially all the time goes, and that most of the sweep is not execution.
+The shape was 40 instruments by 756 days, two SMA features, twelve
+candidates: `from_df` 0.88s, `from_csv` 1.72s, `ledgr_experiment` 0.50s,
+`ledgr_sweep` 60.2s serial, `ledgr_promote` 6.70s. Parallel dispatch is
+healthy and is not a finding: four workers took the same sweep from 60.20s to
+17.69s, a 3.40x speedup at 85 percent efficiency. DuckDB is not a bottleneck
+anywhere in the pipeline.
+
+Three costs are worth naming. All three preserve output exactly, which makes
+them candidates for the exact-parity proof template's first use outside a
+timestamp change.
+
+The dominant one is discarded identity work inside a hot accessor.
+`ledgr_feature_lookup_map()` at `R/feature-alias-map.R:179` calls
+`ledgr_alias_map_storage()` and keeps only `storage$alias_map`. That storage
+function normalizes the map, sorts names twice, builds two mapping lists, runs
+`canonical_json()` twice and computes a SHA-256. Everything except the
+normalized map is thrown away. Measured on a two-alias map the full call is
+100 microseconds against roughly zero for `ledgr_normalize_alias_map()` alone,
+the results are `identical()` on both the populated and the null branch, and
+about 30 microseconds each go to the JSON and the digest. The accessor runs
+once per instrument per pulse, so the profiled sweep made 362,880 calls and
+the profiler attributed 56.73 percent of the sweep and 47.44 percent of
+`ledgr_promote` to it. It also accounts for the `digest`, `serialize` and
+`order` peaks in the same profile.
+
+One limit on that share, and it is a sharp one. The profiled strategy calls
+`ctx$features(id)` once per instrument per pulse. That is the documented
+quickstart idiom and the shape `ledgr_demo_sma_crossover_strategy()` uses, but
+the peer benchmark's own strategy reads `ctx$features_wide` and names concrete
+feature columns, so it never enters this path at all. The promoted peer
+records therefore do not carry this cost, and fixing it would not move them.
+The 56.73 percent belongs to the alias-accessor authoring style, and a
+`features_wide` strategy pays none of it.
+
+The fix is confined to that one call site. Five other callers exist, in
+`R/backtest-config.R:157`, `R/experiment.R:458` and `:480`, and
+`R/pulse-snapshot.R:54` and `:58`. They keep the whole object because they
+need the JSON and hash for run identity, and they run once per run rather
+than once per pulse. `ledgr_alias_map_storage()` itself should not change.
+The abort inside it on mismatched identity names is unreachable from the
+accessor, because `identity_map` defaults to `alias_map` and the check then
+compares a vector with itself.
+
+Second, `R/runtime-projection.R:337` uses
+`replicate(n_pulses, ledgr_projection_feature_table_schema(), simplify =
+FALSE)`. `replicate` re-evaluates its expression, so this constructs 756
+identical empty frames, each containing `as.POSIXct(character(), tz = "UTC")`,
+which is the expensive part. Measured at 309 milliseconds against roughly zero
+for `rep(list(schema), n_pulses)`, with `identical()` true.
+
+Third, `ledgr_features_wide()` fills its matrix with a per-element loop using
+character row and column indices at `R/pulse-context.R:196-198`. Replacing it
+with one `match()` pair and a single `cbind()` matrix assignment is exact and
+measured 30 against 20 microseconds at 40 instruments by 2 features, 500
+against 40 at 200 by 5, and 2,450 against 100 at 563 by 5. The per-cell cost
+rises from 0.38 to 0.87 microseconds across that range, so the loop is
+superlinear at roughly the 1.24 power rather than linear, and it degrades as
+the universe grows.
+
+Two minor items from the same profile, recorded so they are not rediscovered.
+`match.arg()` took 8.10 percent of total sweep time from
+`R/runtime-projection.R:287`, inside the per-pulse pulse-views builder, where
+the argument has two fixed options. And `list.files` appeared
+in three stages, including 58 percent of `ledgr_experiment` at 0.29 seconds
+absolute; the only package caller is `R/parallel-workers.R:276`, in the
+worker-setup dry run that fires even at `workers = 1`. Part of that may be a
+`pkgload` artifact and it should be confirmed against an installed package
+before anyone acts on it.
+
+Nothing else in this path is new. The `sprintf` and `format.POSIXlt` peaks
+topping both ingestion profiles are the `R/snapshot_adapters.R:104` reformat
+already recorded as Observation 7 in the durable-path observations note and
+catalogued as OPT-L02; `from_csv` running about twice
+`from_df` is consistent with OPT-L03. `ledgr_promote()` inherits the alias-map
+cost wholesale because it re-runs a full fold. No new code duplication appeared
+beyond the two families already parked, the duplicated FIFO replays and the
+`*_validate_matrix` and feature-accessor clones. No quadratic cost was found
+anywhere in the pipeline; every cost here is a constant, not an exponent.
+
+The generalizable observation behind these is that `ctx` mixes two shapes with
+different cost behavior, and neither is measured. Accessor closures such as
+`ctx$features()` and `ctx$feature()` do their work per call, so their cost
+depends on how the strategy is written; an in-run probe measured
+`ctx$features(id)` across the universe at 4,616 microseconds per pulse while
+every other surface measured at or near zero. Materialized fields such as
+`ctx$features_wide`, `ctx$vec` and `ctx$bars` are built eagerly during context
+construction at `R/pulse-context.R:310` and `:318`, unconditionally, so they
+are free to read and paid for whether or not a strategy ever touches them.
+A strategy that avoids `ctx$features()` therefore does not avoid
+`ledgr_features_wide()`.
+
+That mix means a strategy author cannot see or control these costs, and that
+the accessor bodies have never been measured as a surface. A later audit
+should record which materialized fields are built regardless of use, and
+whether any other accessor closure carries a body heavier than its callers
+expect. Only `ctx$features()` does today, but nothing prevents the next one.
+What to do about the mix is the parked question below, not this entry's.
+
+Parked direction, not planned work. The architectural question behind these
+three costs is whether the context should be derived from the strategy rather
+than built as a fixed union, with the preflight computing a `ctx` read set and
+the fold building only that set. Much of the machinery is already present:
+`R/strategy-preflight.R` walks the strategy AST and classifies tier 1 through
+tier 3, and `fast_context` at `R/pulse-context.R:411` already builds helpers
+once and rebinds them per pulse. The conservative fallback for an unanalyzable
+strategy is today's full build, so the worst case is a no-op. A read set would
+also be a leakage-surface statement and not only a speed change, since a
+strategy that provably never references a field cannot leak through it.
+
+This needs a spike before any prose commits to it. Under the spike protocol
+the cheaper prerequisite question comes first: can the preflight resolve a
+`ctx` read set for realistic strategies at all, including dynamic
+`ctx[[name]]` forms? If it cannot, the derived-context idea stops there and
+the answer is something else. Lazy bindings via `delayedAssign` or
+`makeActiveBinding` are the obvious alternative and belong in the same probe
+rather than being assumed away: they move error timing into strategy code,
+which ledgr treats as contract, and they raise a promise-serialization
+question on the mirai worker path that currently measures a clean 3.40x. No
+charter is written until that prerequisite has been run.
+
+One separable item does not depend on the architecture. The alias-map defect
+reached production because an identity function was reachable from the pulse
+loop. A source guard asserting that `canonical_json`, `digest`, and the hash
+helpers are unreachable from the fold's per-pulse path would have caught it
+when it was written, and it follows the existing Stage L source-guard pattern.
 
 ### 2026-09-18 [infrastructure] Peer benchmark session alignment defect
 
