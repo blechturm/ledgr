@@ -1,7 +1,8 @@
 # RFC Seed v2: Post-v0.2.0.1 Governance Review
 
-**Status:** Seed v2; non-binding. Supersedes Seed v1 for further
-deliberation.
+**Status:** Rejected on direction, 2026-09-21, by the type-2 review and
+the maintainer. Retained as history. A replacement seed with a different
+model follows; this file is not revised.
 
 **Release destination:** None. This cycle changes process documents, not
 package code.
