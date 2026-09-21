@@ -1,25 +1,51 @@
 packet: "v0.2.0.2"
 cut: "2026-09-21"
+cut_review: "cut_review.md; PASS_AFTER_PATCHES at 6d37eeb; patched in place"
 authority: "inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md"
 source_table: "inst/design/audits/post_v0_2_0_1_test_suite_audit_blocks.csv"
 review_gate:
   max_review_invocations_per_ticket: 0.5
+sequencing: >-
+  A workstream opens only when the previous workstream's review is accepted
+  by the maintainer. Ticket dependencies are intra-workstream only; this
+  file is the sole sequencing authority.
+review_obligations: >-
+  Every workstream review answers, for each new load-bearing claim and each
+  new review or heavy block (synthesis D5): what contract or defect it
+  protects; whether its oracle is independent enough; what smallest change
+  makes it fail; why this is the cheapest adequate lane; which existing
+  evidence overlaps it. No block carries these as boilerplate.
 workstreams:
   - id: 1
     name: "Oracle repair"
+    status: "pending"
+    depends_on_workstream: null
+    requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "Repairs precede every other change so the baseline is trustworthy before anything is moved."}
   - id: 2
     name: "Control plane"
+    status: "pending"
+    depends_on_workstream: 1
+    requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 2", reason: "The runner, census, and gates must prove their own failure sensitivity before shrink or merge is measured against them."}
   - id: 3
     name: "Shrink"
+    status: "pending"
+    depends_on_workstream: 2
+    requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 3", reason: "Fixture reduction is where the time is and where a defect can be lost; each reduction must still fail on its condition."}
   - id: 4
     name: "Merge"
+    status: "pending"
+    depends_on_workstream: 3
+    requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 4", reason: "Merging by claim family answers the overlap question the registry cannot; the reviewer asks it per merge."}
   - id: 5
-    name: "Delete"
-    review: {mode: "Type 1", point: "close of workstream 5", reason: "Deletion is last so every replacement is named and executable in a bound lane first."}
+    name: "Delete and closeout"
+    status: "pending"
+    depends_on_workstream: 4
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 5", reason: "Deletion is last so every replacement is named and executable in a bound lane first; the closeout is reviewed with it."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -83,6 +109,16 @@ tickets:
     scope: "Lines 522, 2699, 2751, 2862, 2921, 2981, 3595, 3883. Each pins governance or release prose the accepted loop abolished; no replacement evidence exists because the artifacts no longer exist. Deleted, not skipped."
     acceptance: ["the suite is green", "each deletion's reason is in the commit message"]
 
+  - id: "LDG-2773"
+    title: "Apply the four bound rules to the mocks and frozen fixtures that exist"
+    workstream: 1
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Synthesis 2.5. The twelve files using local_mocked_bindings and the seven CSV fixtures under tests/testthat/fixtures/availability-v0-2-0-1/. Mocks: a mocked binding may isolate a dependency, never supply the asserted value; circular blocks are repaired or returned. Frozen artifacts: each fixture names its regeneration command, and that command does not run the implementation the fixture guards. Cleanup and determinism: DuckDB connections and run stores torn down explicitly, nothing written outside the session temp directory, no oracle compares a version string, run timestamp, or unseeded draw. Bounded to the named inventory; not a suite-wide audit."
+    acceptance: ["every mock in the twelve files is listed with the value it isolates and the value the block asserts, and no block asserts what it mocks", "each of the seven fixtures names a regeneration command that does not invoke the guarded implementation", "a run with the session temp directory read-only outside its own tree passes"]
+
   # ---------------------------------------------------------- 2 Control plane
   - id: "LDG-2751"
     title: "One parameterized runner with fast and review memberships and fail-closed selection"
@@ -91,8 +127,8 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: []
-    scope: "Synthesis 2.1. fast is the default membership; review by tag; heavy protocols by name outside membership. Unknown, missing, or contradictory profile metadata fails the run."
-    acceptance: ["an unknown profile token fails, never skips", "a homogeneous-file declaration expands to the same per-block authority"]
+    scope: "Synthesis 2.1. fast is the default membership; review by tag; heavy protocols are named scripts invoked by name, outside membership, each with its own owner and diff-based checker. Unknown, missing, or contradictory profile metadata fails the run."
+    acceptance: ["an unknown profile token fails, never skips", "a homogeneous-file declaration expands to the same per-block authority", "every heavy protocol is listed with its owner, its invocation, and its own checker; the runner does not absorb it"]
 
   - id: "LDG-2752"
     title: "Two-sided execution census and reconciliation"
@@ -101,7 +137,7 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2751"]
-    scope: "Synthesis D4. Expected selection from a static preflight over source profile metadata; actual execution from the testthat reporter; reconciled on every invocation. The selector produces neither side."
+    scope: "Synthesis D4. Expected selection from a static preflight over source profile metadata; actual execution from the testthat reporter, including skipped status; reconciled on every invocation. The selector produces neither side."
     acceptance: ["a promised block that did not run fails the invocation regardless of passes", "the preflight fails when it cannot classify a syntactic block"]
 
   - id: "LDG-2753"
@@ -131,8 +167,8 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2752"]
-    scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, or a promised block absent from the census. It reads structure and run output, never prose."
-    acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does"]
+    scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, a promised block absent from the census, or a claim whose every promised block reported skipped. It reads structure and run output, never prose."
+    acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does", "a claim whose only detecting blocks are optional-dependency skips fails the checker"]
 
   - id: "LDG-2756"
     title: "Run the canonical-R differential core in every fast invocation"
@@ -141,8 +177,8 @@ tickets:
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2753", "LDG-2754"]
-    scope: "test-execution-spec.R:490 and :542 and test-sweep-persistence-parity.R:209, 6.16 seconds; the third moves from the audit's heavy lane into fast. Extended parity stays review with the unconditional release backstop. Owner: maintainer."
-    acceptance: ["all three run in fast; fast stays under 90 seconds", "each is a registered detecting block"]
+    scope: "test-execution-spec.R:490 and :542 and test-sweep-persistence-parity.R:209, 6.16 seconds; the third moves from the audit's heavy lane into fast. Extended parity, the public-sweep comparison and any full-scale record, is registered in review. Owner of both: the maintainer."
+    acceptance: ["all three run in fast; fast stays under 90 seconds", "each is a registered detecting block", "extended parity is a registered claim promised in review with the maintainer as owner"]
 
   - id: "LDG-2757"
     title: "CRAN execution mode with recorded library isolation and its own clock"
@@ -150,19 +186,19 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: ["LDG-2751", "LDG-2747"]
-    scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak."
-    acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately"]
+    dependencies: ["LDG-2751"]
+    scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak. Requires the workstream 1 graphics, warning, and finalizer repairs."
+    acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately", "the CRAN-mode census shows no registered claim with every detecting block skipped"]
 
   - id: "LDG-2758"
-    title: "CI gates: fast under 90 seconds by median of three, CRAN clock, census as gate"
+    title: "CI gates: fast under 90 seconds by median of three, CRAN clock, census as gate, review unconditional at release"
     workstream: 2
     status: "pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2752", "LDG-2757"]
-    scope: "Synthesis D2. One fresh-process run on the registered CI runner; over 90 seconds triggers two confirmation runs; fail on the median. A timing result without a reconciled census is not a gate result. CRAN gate bound set only after the isolated mode runs."
-    acceptance: ["a deliberately slow block fails the fast gate", "a gutted selector fails the gate faster, not greener"]
+    scope: "Synthesis D2 and 2.3. One fresh-process run on the registered CI runner; over 90 seconds triggers two confirmation runs; fail on the median. A timing result without a reconciled census is not a gate result. CRAN gate bound set only after the isolated mode runs. The release gate runs the review membership unconditionally, including extended parity."
+    acceptance: ["a deliberately slow block fails the fast gate", "a gutted selector fails the gate faster, not greener", "the release gate cannot pass with review unexecuted"]
 
   - id: "LDG-2759"
     title: "Control-plane mutation proof"
@@ -181,8 +217,8 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2759"]
-    scope: "The runner and its modes, the registry and checker, the four bound rules, and what to do when fast exceeds budget. No test reads it."
-    acceptance: ["under sixty lines", "every command in it runs"]
+    scope: "The runner and its modes, the registry and checker, the four bound rules, the D5 statement that no Oracle line is required, and what to do when fast exceeds budget. No test reads it."
+    acceptance: ["under sixty lines", "every command in it runs", "it states that no checker or review requires an inline Oracle note"]
 
   # ---------------------------------------------------------- 3 Shrink
   - id: "LDG-2761"
@@ -191,7 +227,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "L"
-    dependencies: ["LDG-2758"]
+    dependencies: []
     scope: "29 blocks, about 89 seconds: sweep-parity, sweep-parallel, sweep, sweep-retention, sweep-persistence-roundtrip, sweep-persistence-parity, sweep-filter."
     acceptance: ["each reduced block still fails under its failure_condition perturbation", "fast stays under budget with a reconciled census"]
 
@@ -201,7 +237,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "L"
-    dependencies: ["LDG-2758"]
+    dependencies: []
     scope: "35 blocks, about 80 seconds: experiment-run, promotion-context, experiment, run-compare, run-store, runner, run-print, backtest-wrapper, backtest-lifecycle, backtest-s3."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
 
@@ -211,7 +247,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: ["LDG-2758"]
+    dependencies: []
     scope: "13 blocks, about 45 seconds: availability-qlcal, availability-parity, availability-workflow, availability-execution-timing, availability-finalization-prefix, availability-state, dense-timestamp-validation."
     acceptance: ["each reduced block still fails under its failure_condition perturbation", "no frozen-artifact fixture is regenerated from the implementation it guards"]
 
@@ -221,7 +257,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: ["LDG-2758"]
+    dependencies: []
     scope: "15 blocks, about 47 seconds: walk-forward-orchestrator, walk-forward-folds, metric-context-tables, metric-kernel, metric-context-storage, metrics-zero-trades, backtest-audit-log-equivalence."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
 
@@ -231,7 +267,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "L"
-    dependencies: ["LDG-2758"]
+    dependencies: []
     scope: "42 blocks, about 76 seconds: active-alias-runtime, cost-model, precompute-features, feature-inspection, feature-cache, feature-map, indicator-adapters, indicator-ttr, strategy-types, strategy-reference, strategy-preflight, demo-strategies, risk-config, risk-fold, rng, snapshot-hash-deduplication, pulse-context-accessors, public-api, persistence-fresh-connection."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
 
@@ -242,8 +278,8 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2765"]
-    scope: "validation-pbo, validation-dsr, validation-min-track-record, validation-k-ratio, sweep-review, pulse-context-accessors, indicator-adapters, snapshots-create-list, acceptance-v0.1.0; about 17 blocks."
+    dependencies: []
+    scope: "validation-pbo, validation-dsr, validation-min-track-record, validation-k-ratio, sweep-review, pulse-context-accessors, indicator-adapters, snapshots-create-list, acceptance-v0.1.0; 17 blocks."
     acceptance: ["the overlap question answered per merge in the review", "no registered claim loses a detecting block"]
 
   - id: "LDG-2767"
@@ -252,8 +288,8 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2765"]
-    scope: "schema, strategy-preflight, strategy-contracts, param-grid, collapse-determinism, release-coverage-branches, fixtures; about 24 blocks."
+    dependencies: []
+    scope: "schema, strategy-preflight, strategy-contracts, param-grid, collapse-determinism, release-coverage-branches, fixtures; 24 blocks."
     acceptance: ["the overlap question answered per merge", "every negative witness keeps its rejected input and expected class"]
 
   - id: "LDG-2768"
@@ -262,8 +298,8 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "S"
-    dependencies: ["LDG-2765"]
-    scope: "walk-forward-identity, fingerprint-stability, feature-cache, run-compare, strategy-extract, risk-model, cost-model; about 10 blocks."
+    dependencies: []
+    scope: "walk-forward-identity, fingerprint-stability, feature-cache, run-compare, strategy-extract, risk-model, cost-model; 10 blocks."
     acceptance: ["the overlap question answered per merge"]
 
   - id: "LDG-2769"
@@ -272,8 +308,8 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "M"
-    dependencies: ["LDG-2765"]
-    scope: "snapshots-seal, snapshots-hash, snapshots-import-csv, schema-snapshots, snapshot-adapters, ledger-writer, features, feature-inspection, indicators, lot-accounting, execution-spec; about 20 blocks."
+    dependencies: []
+    scope: "snapshots-seal, snapshots-hash, snapshots-import-csv, schema-snapshots, snapshot-adapters, ledger-writer, features, feature-inspection, indicators, lot-accounting, execution-spec; 20 blocks."
     acceptance: ["the overlap question answered per merge", "canonical-R core blocks are not merged"]
 
   - id: "LDG-2770"
@@ -282,27 +318,47 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "S"
-    dependencies: ["LDG-2765"]
-    scope: "sweep, rng, parallel-workers; about 6 blocks."
+    dependencies: []
+    scope: "sweep, rng, parallel-workers; 6 blocks."
     acceptance: ["the overlap question answered per merge", "seeded behavior remains asserted"]
 
-  # ---------------------------------------------------------- 5 Delete
+  - id: "LDG-2774"
+    title: "Merge the 49 documentation-surface blocks by claim family, or delete each with its own reason"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "L"
+    dependencies: []
+    scope: "The 49 test-documentation-contracts.R rows the audit marks merge, across seven claim families (13 run lifecycle and persistence, 9 metrics, 7 documentation and governance, 6 execution and accounting, 6 identity and configuration, 5 features and indicators, 3 snapshot trust and ingestion). Executable journeys, runnable examples, installed help paths, and public result semantics keep a detecting block with an executable oracle in their claim family. A row that pins only wording, a version-stamped sentence, or a link is deleted with an individually stated reason; it is not merged into a prose check. The audit's MERGE-01 rule applies: merge on demonstrated overlap, not on the CSV's description score."
+    acceptance: ["every one of the 49 rows has a named outcome: the block it merged into, or its deletion reason", "the overlap question answered per merge", "no runnable example, installed-path, or public-journey claim is left without a detecting block that executes"]
+
+  # ---------------------------------------------------------- 5 Delete and closeout
   - id: "LDG-2771"
-    title: "Rebuild the render-freshness invariant as a build-step check"
+    title: "Replace the 18 remaining historical pins with one current-state artifact and link check"
     workstream: 5
     status: "pending"
     priority: "P0"
     effort: "S"
-    dependencies: ["LDG-2770"]
-    scope: "The one real invariant in test-documentation-contracts.R: rendered image targets exist and no DuckDB shared-home notice leaked. Becomes a step after site render; no test reads a document."
-    acceptance: ["a missing image target fails the build step", "a leaked notice fails the build step"]
+    dependencies: []
+    scope: "Audit DELETE-01 for the 18 delete_after_replacement rows still open after LDG-2750: one check that current artifacts exist, installed links resolve, and rendered vignette targets are complete and quiet, in a bound lane. Sentence-level assertions about completed historical packet states get no replacement; Git is their history."
+    acceptance: ["a missing artifact or dangling installed link fails the check", "a leaked DuckDB notice fails the check", "the check runs in a bound lane and appears in the census"]
 
   - id: "LDG-2772"
-    title: "Retire test-documentation-contracts.R"
+    title: "Delete the 18 replace-then-delete blocks after the replacement runs"
     workstream: 5
     status: "pending"
     priority: "P0"
     effort: "S"
-    dependencies: ["LDG-2771", "LDG-2750"]
-    scope: "The remaining 67 blocks: 18 delete-after-replacement and 49 the audit marked merge, all routed to the render step under the bound rule. Each deletion's replacement, or the reason none exists, is in the commit message."
-    acceptance: ["the checker passes with nothing unresolved", "the file is gone", "the render-step check runs in CI"]
+    dependencies: ["LDG-2771"]
+    scope: "Each deletion names its replacement from LDG-2771 or the reason none is needed, in the commit message. Whether test-documentation-contracts.R survives depends on LDG-2774's outcome; the file is not retired by this ticket."
+    acceptance: ["the checker passes with nothing unresolved", "every deleted block's replacement or reason is in the commit message"]
+
+  - id: "LDG-2775"
+    title: "Packet closeout and pilot record"
+    workstream: 5
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2772"]
+    scope: "Governance synthesis D4 and D8. One closeout: what shipped; which claims are supported; what remains open; one line per rejected approach or record and why. The pilot counters: workstreams and review invocations; maintainer and agent turns and heavy-command runtime attributable to governance; findings by mode and whether each changed an outcome; reruns, rejected records, reopenings; retained governance files and lines; disputed classifications. The fast and CRAN clocks with commit, environment, and reproduction command. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the review-invocation ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the closeout ends with the maintainer's decision to promote, revise, or abandon the loop"]
