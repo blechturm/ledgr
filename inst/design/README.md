@@ -10,7 +10,7 @@ improvements on 2026-09-20. Start with the
 [roadmap scope](ledgr_roadmap.md#v0202-equity-accounting-and-research-workflow),
 [corporate-event evidence](research/Sharadar-Corporate-Event-Evidence.md), and
 [workflow evidence](research/Sharadar-Workflow-Improvement-Evidence.md).
-The existing governance review and accounting-core dependency remain explicit;
+The governance review is accepted (2026-09-21; `rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`, with Seed v3 and its final review) and pilots on the next packet; the test-suite audit still gates v0.2.0.2, and the accounting-core dependency remains explicit.
 API and economic contracts still require scoped design. Spot-crypto stays parked.
 [v0.2.0.1 is published](https://github.com/blechturm/ledgr/releases/tag/v0.2.0.1);
 its packet and measurements are release history, not authorization for new work.

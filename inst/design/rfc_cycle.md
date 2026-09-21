@@ -207,27 +207,69 @@ document patches, none reopened design.
 
 ---
 
-## Prompt-writing notes
+## Review modes, workstreams, and routes
 
-When the maintainer prompts an LLM (Codex or Claude) for a stage, the prompts have a consistent shape:
+Accepted 2026-09-21 (`rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`,
+D2, D3, D4, D6, D8). Binding as a pilot for the next implementation packet;
+the maintainer promotes, revises, or abandons it after that packet's closeout.
 
-- name the role (response-stage reviewer, synthesis author, final reviewer);
-- list files to read in order;
-- list the constraints (roadmap, predecessor syntheses, current code);
-- name what to focus on (specific questions);
-- name what to skip (don't redesign, don't edit, don't generate code);
-- specify the output artifact (file path and structure);
-- include process-discipline notes (revision notes, role rotation, in-place vs new file).
+**Two modes.** `Type 2` asks whether the problem is framed correctly, the
+proposal is the best response, its incentives are sane, and its cost and
+failure modes are acceptable; the RFC response stage is Type 2. `Type 1` asks
+whether an accepted direction was implemented faithfully, its evidence runs,
+and scope stayed contained; final review is Type 1. Synthesis is neither: it
+weighs the challenge, chooses, and records what it rejected. Every Type 1
+review carries one standing question regardless of brief: are the inputs the
+right inputs, and how does the reviewer know independently of the author? A
+Type 1 reviewer who finds a design problem returns `NEEDS_TYPE_2` and stops.
 
-The actual prompts used for each cycle may be available in conversation history,
-but they are not durable artifacts. Reference them as examples when available;
-otherwise use the shape above. Do not formalize them into a template library yet.
+**Workstreams, not batches.** At ticket cut the maintainer groups tickets into
+workstreams, each sharing one correctness or evidence claim, and records each
+ticket's workstream, review mode, review point, and a one-sentence reason in
+`tickets.yml`, the sole ticket authority; the batch plan renders that map as a
+table and is not separately edited. Ticket cut keeps one independent review
+whose brief asks, in order: does every accepted requirement have an owner
+(Type 1), and are the grouping and review points sensible (Type 2). A normal
+workstream gets one Type 1 review after implementation and before dependent
+work removes a fallback, freezes evidence, or makes reversal hard; a
+workstream gets Type 2 first when it chooses architecture, public semantics,
+an oracle, or an evidence boundary. Batches sequence work; they are not review
+units and produce no evidence essay. The packet closeout records what shipped,
+which claims are supported, what remains open, one line per rejected approach
+or record, and the pilot counters: review invocations per completed ticket
+(gate: at most 0.5), findings by mode and whether each changed an outcome,
+reruns and rejected records, and disputed classifications.
 
-The prompts that worked best had three properties:
+**Routes.** Full RFC when work changes a contract, public semantics,
+authority, or an evidence boundary; Type 2 mandatory, stages and rotation as
+above. Bounded spike when an open question can be answered by running the
+package; `spike_protocol.md` governs and findings bind nothing. Direct ticket
+when work implements an accepted direction; it joins a workstream. Audit when
+the question is about existing code or tests; its own Type 2 brief, a table,
+proposed tickets. Documentation chore when nothing semantic changes; no
+review unless the document defines claims or clocks, in which case it is not
+a chore.
 
-1. **Open-ended on next step.** "Decide what to do next: revise, escalate, synthesize, or run another response round." Better than "write a synthesis" when the right step might not be synthesis.
-2. **Code citations expected.** "Verify against R/fill-model.R; cite line numbers." Catches phantom claims.
-3. **Constrained on scope.** "Don't propose new architecture." Prevents Codex's tendency to over-bind and Claude's tendency to add follow-up obligations.
+---
+
+## Briefs
+
+The maintainer writes every operative brief: review, response, and synthesis
+(accepted 2026-09-21, governance synthesis v2, D1). An agent may draft one; a
+drafted brief says so, and the review it produces stays provisional until the
+maintainer has reread brief and response together and accepted the framing.
+An agent must not define the test by which its own design will be challenged.
+
+A brief names its mode near the top — `Type 1`, `Type 2`, or `Decision
+synthesis` — asks a question, may name non-negotiables and required reading,
+and does not enumerate the conclusions the reviewer is expected to confirm.
+Short beats specified: the briefs that produced this repository's best
+artifacts fit in ten lines, and the one that produced its worst was the
+longest and most prescriptive. Agents reproduce the shape of their brief.
+
+Three properties still hold from earlier cycles: open-ended on next step;
+code citations expected, which catches phantom claims; constrained on scope.
+Briefs are not durable artifacts and are not templated.
 
 ---
 
@@ -273,3 +315,4 @@ Deviations should be visible. If a cycle deviates from this pattern, the synthes
 - **2026-06-04** -- walk-forward RFC closed the cycle with a final-review artifact (`rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) and Amendment 1 to the synthesis (Section 14). Walk-forward stage list updated above to 1, 2, 3, 4, 5, 7, 8, 9. Pattern: post-synthesis findings route via final_review + maintainer amendment (authorized by synthesis Section 13) when they correct bound text, constrain open spec-cut questions, or augment Minimum Scope / Future Obligations; new RFC chains are reserved for findings that re-deliberate architecture.
 - **2026-06-04 (same day)** -- walk-forward RFC closure strengthened with Amendment 2 (synthesis Section 16) and Section 17 ticket-cut gates after a post-Amendment-1 review (Claude online, then Codex) identified that Amendment 1's Sections 14.2 and 14.3 bound procedural constraints ("must justify", "must address", "visually unavoidable") rather than substantive defaults, and that no ticket-cut enforcement mechanism gated the obligations. Amendment 2 replaced the four procedural routings with substantive defaults (carry_test_state, fail-closed metric classification, no-default extraction with rationale arg, operational print data contract). Section 17 added a two-gate enforcement matrix (packet-open and release-gate). Pattern refined: an amendment that routes findings to procedural constraints alone is insufficient closure. A post-synthesis amendment must either (a) bind a substantive default, operational contract, or forbidden-list; or (b) name a ticket-cut gate matrix that enforces the procedural constraint at named lifecycle points; or both. Procedural-only routings ("the spec-cut writer must justify X") fail closed at the cycle-discipline level because they delegate the substantive decision back to the moment the amendment was meant to constrain. The walk-forward closure is the first cycle to apply this refinement; future cycles' final-review patches should follow it.
 - **2026-09-08** -- added "Spikes inside a cycle" and the binding `spike_protocol.md` after the asset-availability spike (v0.1.9.8) closed inconclusive: probe before prose, runnable core before expected tables, size budgets as stop signals, provenance in the product not the harness, and a three-action review contract.
+- **2026-09-21** -- post-v0.2.0.1 governance review accepted (synthesis v2 at `78cef8c`). Replaced "Prompt-writing notes" with "Briefs": maintainer-owned, mode-named, question-first. Added "Review modes, workstreams, and routes" as a pilot for the next implementation packet. Stages and rotation unchanged. Lesson: agents reproduce the shape of their brief; the cycle's first synthesis was rejected for converting decisions into form checks after an over-specified brief, and its second was returned once for three unchallenged synthesis-only choices.

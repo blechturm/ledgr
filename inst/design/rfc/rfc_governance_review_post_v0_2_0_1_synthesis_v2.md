@@ -1,9 +1,10 @@
 # RFC Synthesis v2: A Smaller Governance Loop After v0.2.0.1
 
-**Status:** Draft; pending Type 1 final review and maintainer acceptance.
-On acceptance it binds as a pilot for the next implementation packet only,
-and becomes the default after the maintainer reviews that pilot. It
-supersedes the rejected first synthesis, which remains as history.
+**Status:** Accepted by the maintainer on 2026-09-21 after Codex's Type 1
+re-verification at `78cef8c` returned `PASS_AFTER_PATCHES`. Binding as a
+pilot for the next implementation packet only; it becomes the default after
+the maintainer reviews that pilot. Supersedes the rejected first synthesis,
+which remains as history.
 
 **Date:** 2026-09-21. **Window:** none; this changes process, not code.
 
@@ -298,3 +299,6 @@ restored profile were withdrawn.
   as a rule and its finding routed as a benchmark-correction ticket in
   Section 7; Section 5's `AGENTS.md` wording aligned with D4; the revised
   Seed v3 committed separately after this synthesis.
+- 2026-09-21 — Accepted by the maintainer after Type 1 re-verification
+  passed. Codified the same day in `rfc_cycle.md`, `spike_protocol.md`,
+  `AGENTS.md`, the roadmap, and the design and RFC indexes.

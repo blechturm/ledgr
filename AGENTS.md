@@ -25,6 +25,17 @@ the execution contracts in `inst/design/contracts.md`.
   table, keep provenance in the product rather than the harness, and deliver
   a runner, a diff-based checker, and a gut demonstration. Size budgets in
   that document are stop signals, not targets.
+- Governance loop (accepted 2026-09-21, pilot on the next packet): the
+  maintainer writes every operative brief and names its mode. `Type 1`
+  verifies an accepted direction and always asks independently whether the
+  inputs are right; `Type 2` challenges the design; a design concern found
+  in Type 1 returns `NEEDS_TYPE_2`. Review is per workstream, not batch.
+  `tickets.yml` is the sole ticket authority; batches produce no evidence
+  essay; a decision-changing rejection gets a concise durable reason, which
+  Git does not hold. Details: `inst/design/rfc_cycle.md`.
+- Contracts and specifications define semantics. Canonical R is the
+  normative executable oracle for optimized or compiled paths; runtime
+  default is a separate decision; divergence fails closed pending an RFC.
 - Code on ingest, seal, fold, hydration, finalisation, or result-reader paths
   follows the optimization coding style in
   `inst/design/manual/optimization_coding_style.qmd` (reviewable draft):
@@ -63,9 +74,11 @@ Current planning context (2026-09-20):
   research-workflow improvements. Read the roadmap's v0.2.0.2 section and
   `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` plus its
   corporate-event companion. No v0.2.0.2 implementation packet is open yet.
-- The existing governance/test review precedes the next implementation packet;
-  production accounting consolidation precedes new settlement semantics.
-  Exact-behavior reader work and validation fixes do not require new RFC cycles.
+- The governance review is accepted (2026-09-21) and pilots on the next
+  packet. The test-suite audit still gates v0.2.0.2 and runs as an audit
+  route with its own Type 2 brief. Production accounting consolidation
+  precedes new settlement semantics. Exact-behavior reader work and
+  validation fixes do not require new RFC cycles.
 - Reuse public capabilities and production semantics. Design only the missing
   behavior; do not add research-specific manifests or a parallel provenance
   system. Prefer small detecting examples and concrete workflow improvements.
@@ -132,4 +145,5 @@ The live site redeploys from the `pkgdown` workflow on push to `main`.
 3. Implement the smallest change that satisfies the ticket.
 4. Run targeted tests, then full tests/package checks when the change affects
    public API, runner behavior, snapshots, CI, or release gates.
-5. Update the active `tickets.md` checkboxes and `tickets.yml` status together.
+5. Update `tickets.yml`; it is the only ticket authority. Any readable view
+   is generated, not edited.

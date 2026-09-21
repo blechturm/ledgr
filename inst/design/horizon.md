@@ -108,6 +108,33 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-21 [infrastructure] Governance loop accepted; what it deferred
+
+The post-v0.2.0.1 governance review is accepted
+(`rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`) and binds as a
+pilot on the next implementation packet. Four things it deliberately left
+open, parked here so they are not rediscovered.
+
+The peer benchmark's public-workflow claim has a known gap: it reads
+`ctx$features_wide` while the documentation teaches `ctx$features()`, so the
+taught idiom is unmeasured (2026-09-18 per-pulse entry). Closing it is a
+direct ticket for the next packet, one benchmark row using the taught idiom.
+It is a correction to an existing claim, not a process rule.
+
+A code-health census, duplication scan, and forbidden-call reachability guard
+were proposed and rejected as standing release steps. Each remains available
+as a triggered audit under the accepted routes when a question calls for it.
+
+A second reviewing human, or a rotating second reader of the maintainer's
+briefs, would remove the model's single point of judgment. It is not
+available to a one-maintainer project and was not proposed; the question
+stays open.
+
+The cycle itself needed nine artifacts, one rejected synthesis, and two
+returned seeds to change a process document. The pilot's counters should show
+that is not repeated; if a process change again costs more than the feature
+work it governs, that is a finding against the model.
+
 ### 2026-09-20 [ux] Real-data workflow costs beyond accounting
 
 The empirical handoff `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`

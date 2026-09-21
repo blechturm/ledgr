@@ -17,6 +17,11 @@ the package against the open questions and records what it actually does in a
 may cite only behavior that was executed or is already in `contracts.md`.
 A seed that reasons about package behavior nobody ran is returned.
 
+Under the accepted governance loop (governance synthesis v2, D6) a spike is
+the bounded empirical route: it answers one question by running the package,
+binds nothing, and feeds an RFC or a direct ticket. The budgets in section 4
+are stop signals a human reads, not tested limits.
+
 ## 2. One question, one kill condition
 
 A charter names exactly one question, the cheaper prerequisite question it

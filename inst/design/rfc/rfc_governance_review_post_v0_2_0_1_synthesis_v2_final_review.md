@@ -133,3 +133,24 @@ the exact revised seed and index state, and repeat Type 1 verification. Do not
 reopen the accepted workstream model or canonical-R authority decision.
 
 **FINAL_REVIEW_DISPOSITION: NEEDS_TYPE_2**
+
+## Re-verification at `78cef8c`
+
+Type 1, 2026-09-21, Codex. All five findings are closed. B1: D8 carries only
+the review-invocation ratio; no defect-yield quota. B2: the standing release
+profile is withdrawn and the benchmark gap is routed separately. B3: ticket
+cut is one review with a two-question brief; 9 / 26 = 0.346, reported as
+0.35. M1: the `AGENTS.md` instruction preserves Git's bounded role and
+requires reasons for decision-changing rejections. M2: Seed v3 is tracked at
+`a3ab93c` and the synthesis discloses the late commit.
+
+The Section 8 checklist passes: seven workstreams cover Batches 1-9 and
+11-15, with Batch 0 ticket cut and Batch 10 diagnostic history; D6 names all
+five routes; D8 has the single ratio gate; D7 settles every authority
+question; Section 4 carries all six non-negotiables; no test, guard,
+benchmark, ticket, or standing artifact is created; the synthesis is exactly
+300 lines and `git diff --check` passes. No new defects; no protected
+decision reopened; no files changed. Acceptance does not open v0.2.0.2; the
+test-suite audit remains its gate.
+
+**FINAL_REVIEW_DISPOSITION: PASS_AFTER_PATCHES**
