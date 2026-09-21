@@ -238,16 +238,15 @@ testthat::test_that("native PBO fails closed on invalid evidence and arguments",
 testthat::test_that("native PBO adds no pbo runtime dependency", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
-  namespace_path <- file.path(root, "NAMESPACE")
   testthat::skip_if_not(
-    file.exists(description_path) && file.exists(namespace_path),
+    file.exists(description_path),
     "source package metadata not available during installed-package tests"
   )
   description <- read.dcf(description_path)
   imports <- trimws(unlist(strsplit(description[, "Imports"], "[,\n]")))
-  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
-
   testthat::expect_false("pbo" %in% imports)
-  testthat::expect_no_match(namespace, "import\\(pbo\\)")
-  testthat::expect_no_match(namespace, "importFrom(pbo", fixed = TRUE)
+  testthat::expect_s3_class(
+    ledgr_pbo(ledgr_pbo_test_sweep(ledgr_pbo_reference_panel()), S = 4L),
+    "ledgr_pbo"
+  )
 })

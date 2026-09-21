@@ -713,10 +713,42 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
 })
 
 testthat::test_that("run and sweep route fold payloads through one constructor", {
-  run_body <- paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")
-  sweep_body <- paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n")
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2,
+    open = 100:102,
+    high = 101:103,
+    low = 99:101,
+    close = 100:102,
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    cost_model = ledgr_cost_zero()
+  )
+  calls <- 0L
+  original <- ledgr:::ledgr_execution_spec
+  testthat::local_mocked_bindings(
+    ledgr_execution_spec = function(...) {
+      calls <<- calls + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
 
-  testthat::expect_true(grepl("ledgr_execution_spec", run_body, fixed = TRUE))
-  testthat::expect_true(grepl("ledgr_execution_spec", sweep_body, fixed = TRUE))
-  testthat::expect_true(grepl("ledgr_validate_execution_spec", paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n"), fixed = TRUE))
+  run <- ledgr_run(experiment, run_id = "execution-spec-route")
+  on.exit(close(run), add = TRUE)
+  sweep <- ledgr_sweep(
+    experiment,
+    ledgr_param_grid(single = list()),
+    seed = 1L
+  )
+  testthat::expect_s3_class(run, "ledgr_backtest")
+  testthat::expect_s3_class(sweep, "ledgr_sweep_results")
+  testthat::expect_identical(calls, 2L)
 })

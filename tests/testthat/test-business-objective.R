@@ -164,16 +164,40 @@ testthat::test_that("criterion steps expose one generic internal evaluation cont
   testthat::expect_identical(pass$evidence_source, "summary.max_drawdown")
 })
 
-testthat::test_that("business-objective provenance is excluded from identity code", {
-  files <- c(
-    "R/config-hash.R",
-    "R/sweep.R",
-    "R/walk-forward.R",
-    "R/walk-forward-identity.R"
+testthat::test_that("business objectives do not mutate sweep identity", {
+  sweep <- tibble::tibble(
+    candidate_id = "candidate-1",
+    candidate_row = 1L,
+    status = "DONE",
+    max_drawdown = -0.10,
+    n_trades = 2L,
+    params = list(list(qty = 1)),
+    feature_params = list(list())
   )
-  paths <- vapply(files, function(path) testthat::test_path("..", "..", path), character(1))
-  paths <- paths[file.exists(paths)]
-  identity_code <- paste(vapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"), character(1)), collapse = "\n")
-  testthat::expect_no_match(identity_code, "business_objective_hash", fixed = TRUE)
-  testthat::expect_no_match(identity_code, "ledgr_business_objective", fixed = TRUE)
+  class(sweep) <- c("ledgr_sweep_results", class(sweep))
+  attr(sweep, "sweep_id") <- "objective-identity"
+  attr(sweep, "snapshot_hash") <- paste(rep("1", 64L), collapse = "")
+  attr(sweep, "metric_context_hash") <- paste(rep("2", 64L), collapse = "")
+  attr(sweep, "cost_model_hash") <- paste(rep("3", 64L), collapse = "")
+  attr(sweep, "risk_chain_hash") <- paste(rep("4", 64L), collapse = "")
+  identity <- ledgr:::ledgr_return_panel_sweep_identity(sweep)
+
+  permissive <- ledgr_sweep_filter(
+    sweep,
+    ledgr_business_objective(ledgr_objective_max_drawdown(0.20))
+  )
+  strict <- ledgr_sweep_filter(
+    sweep,
+    ledgr_business_objective(ledgr_objective_max_drawdown(0.05))
+  )
+  testthat::expect_identical(permissive$metadata$input_identity, identity)
+  testthat::expect_identical(strict$metadata$input_identity, identity)
+  testthat::expect_false(identical(
+    permissive$metadata$business_objective_hash,
+    strict$metadata$business_objective_hash
+  ))
+  testthat::expect_identical(
+    ledgr:::ledgr_return_panel_sweep_identity(sweep),
+    identity
+  )
 })

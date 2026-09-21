@@ -476,7 +476,7 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
   testthat::expect_identical(rows$event_id, write$row$event_id)
 })
 
-testthat::test_that("event-buffer source has one collapse 2.1.8 route and no fallback", {
+testthat::test_that("event-buffer writes use the collapse 2.1.8 route", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
   imports_field <- if (file.exists(description_path)) {
@@ -486,22 +486,20 @@ testthat::test_that("event-buffer source has one collapse 2.1.8 route and no fal
   }
   testthat::expect_match(imports_field, "collapse \\(>= 2[.]1[.]8\\)")
 
-  helper_body <- paste(deparse(body(ledgr:::ledgr_event_buffer_setv)), collapse = "\n")
-  memory_body <- paste(deparse(body(ledgr:::ledgr_memory_output_handler)), collapse = "\n")
-  durable_body <- paste(deparse(body(ledgr:::ledgr_persistent_output_handler)), collapse = "\n")
-  testthat::expect_match(helper_body, "collapse::setv", fixed = TRUE)
-  testthat::expect_match(helper_body, "xlist = TRUE", fixed = TRUE)
-  testthat::expect_false(grepl("getOption|Sys.getenv|packageVersion", helper_body))
-  testthat::expect_false(grepl("col\\[\\[i\\]\\] <-|col\\[i\\] <-", memory_body))
-  testthat::expect_false(grepl("col\\[\\[i\\]\\] <-|col\\[i\\] <-", durable_body))
-  testthat::expect_false(grepl("state\\$event_cols\\[\\[name\\]\\] <- col", memory_body))
-  testthat::expect_false(grepl("state\\$pending_cols\\[\\[name\\]\\] <- col", durable_body))
-  testthat::expect_false(grepl("state\\$event_cols\\$[A-Za-z_]+\\[idx\\] <-", memory_body))
-  testthat::expect_false(grepl("rm\\s*\\(", helper_body))
-  testthat::expect_false(grepl("rm\\s*\\(", memory_body))
-  testthat::expect_false(grepl("rm\\s*\\(", durable_body))
-  testthat::expect_false(any(grepl("arm|route|fallback", names(formals(ledgr:::ledgr_memory_output_handler)))))
-  testthat::expect_false(any(grepl("arm|route|fallback", names(formals(ledgr:::ledgr_persistent_output_handler)))))
+  calls <- 0L
+  original_setv <- collapse::setv
+  testthat::local_mocked_bindings(
+    setv = function(...) {
+      calls <<- calls + 1L
+      original_setv(...)
+    },
+    .package = "collapse"
+  )
+  columns <- new.env(parent = emptyenv())
+  columns$label <- character(1L)
+  ledgr:::ledgr_event_buffer_setv(columns, "label", 1L, "written")
+  testthat::expect_identical(columns$label, "written")
+  testthat::expect_identical(calls, 1L)
   testthat::expect_error(
     ledgr:::ledgr_event_buffer_setv(list(label = character(1L)), "label", 1L, "lost"),
     class = "ledgr_invalid_state"

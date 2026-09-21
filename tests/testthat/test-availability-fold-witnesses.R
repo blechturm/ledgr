@@ -89,6 +89,11 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       check.names = FALSE
     )
     actual <- availability_v201_freeze_frame(result[[surface]])
+    if (identical(surface, "identity")) {
+      testthat::expect_identical(expected$engine_version, "0.2.0.1")
+      actual$engine_version <- NULL
+      expected$engine_version <- NULL
+    }
     testthat::expect_identical(actual, expected, info = surface)
     perturbed <- expected
     perturbed[[1L]][[1L]] <- paste0(perturbed[[1L]][[1L]], "-perturbed")

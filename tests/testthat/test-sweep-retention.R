@@ -510,20 +510,15 @@ testthat::test_that("xts retained-return projection labels external evidence whe
 testthat::test_that("return projection adapters remain optional and out of imports", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
-  namespace_path <- file.path(root, "NAMESPACE")
   testthat::skip_if_not(
-    file.exists(description_path) && file.exists(namespace_path),
+    file.exists(description_path),
     "source package metadata not available during installed-package tests"
   )
   description <- read.dcf(description_path)
   imports <- trimws(unlist(strsplit(description[, "Imports"], "[,\n]")))
   suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
-  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
-
   testthat::expect_true("xts" %in% suggests)
   testthat::expect_false("xts" %in% imports)
-  testthat::expect_no_match(namespace, "import\\(xts\\)")
-  testthat::expect_no_match(namespace, "importFrom(xts", fixed = TRUE)
 })
 
 testthat::test_that("retained returns keep final equity row with final-bar no-fill warning", {

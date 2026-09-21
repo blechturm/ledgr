@@ -521,66 +521,29 @@ testthat::test_that("seal validates complete sets before bypassing their rows", 
   )
 })
 
-availability_validator_has_nested_for <- function(expr, inside_for = FALSE) {
-  if (!is.call(expr) && !is.expression(expr) && !is.pairlist(expr)) {
-    return(FALSE)
-  }
-  is_for <- is.call(expr) && identical(expr[[1L]], as.name("for"))
-  if (inside_for && is_for) return(TRUE)
-  children <- as.list(expr)
-  if (is.call(expr)) children <- children[-1L]
-  any(vapply(
-    children,
-    availability_validator_has_nested_for,
-    logical(1),
-    inside_for = inside_for || is_for
-  ))
-}
-
-testthat::test_that("installed seal path contains no retained pairwise implementation", {
-  namespace <- asNamespace("ledgr")
-  functions <- mget(
-    ls(namespace, all.names = TRUE),
-    envir = namespace,
-    inherits = FALSE
+testthat::test_that("seal activates the grouped membership sweep", {
+  membership <- ledgr_facts_membership_snapshots(
+    data.frame(
+      effective_from = as.POSIXct("2020-01-01", tz = "UTC"),
+      knowledge_time = as.POSIXct("2019-12-31", tz = "UTC"),
+      set_id = "seal-sweep",
+      members = I(list("AAA")),
+      source = "test",
+      stringsAsFactors = FALSE
+    ),
+    universe_id = "U",
+    complete = TRUE
   )
-  bodies <- vapply(
-    Filter(is.function, functions),
-    function(fn) paste(deparse(body(fn), width.cutoff = 500L), collapse = "\n"),
-    character(1)
+  calls <- 0L
+  original <- ledgr:::ledgr_snapshot_membership_sweep_rows
+  testthat::local_mocked_bindings(
+    ledgr_snapshot_membership_sweep_rows = function(...) {
+      calls <<- calls + 1L
+      original(...)
+    },
+    .package = "ledgr"
   )
-  testthat::expect_false(any(grepl(
-    "availability_reference_validate_",
-    bodies,
-    fixed = TRUE
-  )))
-  seal_body <- paste(
-    deparse(body(ledgr:::ledgr_snapshot_validate_availability_for_seal)),
-    collapse = "\n"
-  )
-  testthat::expect_match(
-    seal_body,
-    "ledgr_snapshot_membership_sweep_rows",
-    fixed = TRUE
-  )
-  validators <- list(
-    ledgr:::ledgr_fact_validate_membership_conflicts,
-    ledgr:::ledgr_fact_validate_source_conflicts,
-    ledgr:::ledgr_fact_validate_lifetime_conflicts,
-    ledgr:::ledgr_fact_opposing_state_overlap
-  )
-  testthat::expect_false(any(vapply(
-    validators,
-    function(fn) availability_validator_has_nested_for(body(fn)),
-    logical(1)
-  )))
-  rewritten_pair_loop <- quote({
-    count <- nrow(rows)
-    for (left in seq_len(count - 1L)) {
-      for (right in seq.int(left + 1L, count)) NULL
-    }
-  })
-  testthat::expect_true(
-    availability_validator_has_nested_for(rewritten_pair_loop)
-  )
+  snapshot <- availability_runtime_fixture(membership = membership)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  testthat::expect_identical(calls, 1L)
 })

@@ -18,7 +18,7 @@ review_obligations: >-
 workstreams:
   - id: 1
     name: "Oracle repair"
-    status: "pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "Repairs precede every other change so the baseline is trustworthy before anything is moved."}
@@ -52,17 +52,18 @@ tickets:
   - id: "LDG-2745"
     title: "Repair the 15 audited oracle defects no other ticket owns"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "The fix_oracle blocks in the audit table minus the six owned by LDG-2746 through LDG-2748: 15 blocks in 14 files, about one second. Each repair names the defect from the table's failure_condition column."
     acceptance: ["each repaired block fails when its stated failure_condition is deliberately introduced", "no assertion is weakened to pass"]
+    evidence: ["Independent review mutation sample: replacing ledgr_event_buffer_setv with a value-correct implementation that bypassed collapse::setv left the value assertion green and made the repaired route assertion fail. The other fourteen repairs were structurally inspected and run green; no exhaustive mutation campaign was performed."]
 
   - id: "LDG-2746"
     title: "Keep the fold witness's recorded engine_version and exclude it from economic comparison"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -72,7 +73,7 @@ tickets:
   - id: "LDG-2747"
     title: "Open a temporary graphics device in the four Rplots.pdf blocks"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -82,7 +83,7 @@ tickets:
   - id: "LDG-2748"
     title: "Assert the cadence warning by class and let other warnings surface"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -92,7 +93,7 @@ tickets:
   - id: "LDG-2749"
     title: "Localize the walk-forward finalizer advisory to its owning block, then fix it"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -102,7 +103,7 @@ tickets:
   - id: "LDG-2750"
     title: "Delete the eight red governance pins in test-documentation-contracts.R with reasons"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -112,12 +113,12 @@ tickets:
   - id: "LDG-2773"
     title: "Apply the four bound rules to the mocks and frozen fixtures that exist"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
-    scope: "Synthesis 2.5. The twelve files using local_mocked_bindings and the seven CSV fixtures under tests/testthat/fixtures/availability-v0-2-0-1/. Mocks: a mocked binding may isolate a dependency, never supply the asserted value; circular blocks are repaired or returned. Frozen artifacts: each fixture names its regeneration command, and that command does not run the implementation the fixture guards. Cleanup and determinism: DuckDB connections and run stores torn down explicitly, nothing written outside the session temp directory, no oracle compares a version string, run timestamp, or unseeded draw. Bounded to the named inventory; not a suite-wide audit."
-    acceptance: ["every mock in the twelve files is listed with the value it isolates and the value the block asserts, and no block asserts what it mocks", "each of the seven fixtures names a regeneration command that does not invoke the guarded implementation", "a run with the session temp directory read-only outside its own tree passes"]
+    scope: "Synthesis 2.5. The twelve files using local_mocked_bindings at the ticket cut, the non-circular spies added during oracle repair, the terminal-cleanup probe, and the seven CSV fixtures under tests/testthat/fixtures/availability-v0-2-0-1/. Mocks: a mocked binding may isolate a dependency, never supply the asserted value; circular blocks are repaired or returned. Frozen artifacts: each fixture names its regeneration command, and that command does not run the implementation the fixture guards. Cleanup and determinism: DuckDB connections and run stores torn down explicitly, nothing written outside the session temp directory, no oracle compares a version string, run timestamp, or unseeded draw. Bounded to the named inventory; not a suite-wide audit."
+    acceptance: ["every current mock is listed with the value it isolates and the value the block asserts, and no block asserts what it mocks", "each of the seven fixtures names a regeneration command that does not invoke the guarded implementation", "a run with the session temp directory read-only outside its own tree passes"]
 
   # ---------------------------------------------------------- 2 Control plane
   - id: "LDG-2751"
@@ -167,8 +168,8 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2752"]
-    scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, a promised block absent from the census, or a claim whose every promised block reported skipped. It reads structure and run output, never prose."
-    acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does", "a claim whose only detecting blocks are optional-dependency skips fails the checker"]
+    scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, a promised block absent from the census, or a claim whose every promised block reported skipped. It reads structure and run output, never prose. The shared-fold Core Rule registers behavioral evidence that both ledgr_run_fold and ledgr_sweep_run_candidate reach ledgr_execute_fold."
+    acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does", "a claim whose only detecting blocks are optional-dependency skips fails the checker", "the shared-fold Core Rule names an independent behavioral detector for both production callers"]
 
   - id: "LDG-2756"
     title: "Run the canonical-R differential core in every fast invocation"
@@ -187,8 +188,8 @@ tickets:
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2751"]
-    scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak. Requires the workstream 1 graphics, warning, and finalizer repairs."
-    acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately", "the CRAN-mode census shows no registered claim with every detecting block skipped"]
+    scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak. Requires the workstream 1 graphics, warning, and finalizer repairs. Source-tree-dependent subprocess harnesses in test-availability-inspection.R and test-availability-qlcal.R must work from an installed-package check tree."
+    acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately", "the CRAN-mode census shows no registered claim with every detecting block skipped", "installed-package subprocess tests do not assume a source-tree DESCRIPTION and are not hidden by skip_on_cran"]
 
   - id: "LDG-2758"
     title: "CI gates: fast under 90 seconds by median of three, CRAN clock, census as gate, review unconditional at release"

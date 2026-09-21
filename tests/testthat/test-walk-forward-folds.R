@@ -286,12 +286,42 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
   testthat::expect_equal(nrow(ledgr_results(run, "fills")), 0)
 })
 
-testthat::test_that("walk-forward Batch 1 does not add a pulse loop to fold engine", {
-  fold_engine_path <- testthat::test_path("..", "..", "R", "fold-engine.R")
-  testthat::skip_if_not(
-    file.exists(fold_engine_path),
-    "fold-engine source file is unavailable in this test layout"
+testthat::test_that("walk-forward routes every candidate and test through the fold core", {
+  snapshot <- ledgr_snapshot_from_df(ledgr_wf_test_bars())
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    ledgr_wf_strategy,
+    cost_model = ledgr_cost_zero()
   )
-  fold_engine <- readLines(fold_engine_path, warn = FALSE)
-  testthat::expect_false(any(grepl("walk_forward|walk-forward", fold_engine)))
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(
+      "2020-01-01", "2020-01-04",
+      "2020-01-05", "2020-01-07",
+      fold_seq = 1L
+    )),
+    constructor = list(type_id = "explicit")
+  )
+  grid <- ledgr_param_grid(
+    trade = list(qty = 1, threshold = 101),
+    idle = list(qty = 0, threshold = 999)
+  )
+  calls <- 0L
+  original <- ledgr:::ledgr_execute_fold
+  testthat::local_mocked_bindings(
+    ledgr_execute_fold = function(...) {
+      calls <<- calls + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
+  result <- ledgr_walk_forward(
+    experiment,
+    grid,
+    folds,
+    ledgr_select_argmax("sharpe_ratio"),
+    seed = 123L
+  )
+  on.exit(lapply(result$test_runs, close), add = TRUE)
+  testthat::expect_identical(calls, 3L)
 })

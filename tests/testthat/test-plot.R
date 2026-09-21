@@ -1,5 +1,6 @@
 testthat::test_that("plot.ledgr_backtest dispatches and returns a plot object", {
   testthat::skip_if_not_installed("ggplot2")
+  ledgr_test_local_graphics_device()
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -19,6 +20,7 @@ testthat::test_that("plot.ledgr_backtest dispatches and returns a plot object", 
 
 testthat::test_that("plot.ledgr_backtest has dependency fallbacks", {
   testthat::skip_if_not_installed("ggplot2")
+  ledgr_test_local_graphics_device()
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

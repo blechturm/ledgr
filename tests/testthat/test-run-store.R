@@ -249,6 +249,7 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
   testthat::expect_s3_class(fills, "tbl_df")
   testthat::expect_s3_class(trades, "tbl_df")
   if (requireNamespace("ggplot2", quietly = TRUE)) {
+    ledgr_test_local_graphics_device()
     testthat::expect_error(plot_obj <- plot(reopened), NA)
     testthat::expect_true(
       inherits(plot_obj, "ggplot") || inherits(plot_obj, "gtable") || inherits(plot_obj, "grob")

@@ -334,21 +334,18 @@ testthat::test_that("a target on the last decision fills at the final session op
   )
 })
 
-testthat::test_that("normalized timestamps are never parsed without an explicit format", {
-  sources <- list.files("../../R", pattern = "[.]R$", full.names = TRUE)
-  if (length(sources) == 0L) testthat::skip("package sources not available")
-  offenders <- character()
-  for (path in sources) {
-    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
-    pattern <- paste0("as", "\\.", "POSIXct", "\\(", "\\s*", "ledgr_normalize_ts_utc", "\\(")
-    starts <- gregexpr(pattern, text)[[1L]]
-    if (starts[[1L]] == -1L) next
-    for (start in starts) {
-      window <- substr(text, start, start + 200L)
-      if (!grepl("%Y-%m-%dT%H:%M:%SZ", window, fixed = TRUE)) {
-        offenders <- c(offenders, basename(path))
-      }
-    }
-  }
-  testthat::expect_equal(offenders, character())
+testthat::test_that("opening events preserve normalized timestamp instants", {
+  instant <- as.POSIXct("2020-01-02 21:34:56", tz = "UTC")
+  rows <- ledgr:::ledgr_opening_position_event_rows(
+    run_id = "timestamp-format-oracle",
+    ts_utc = instant,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 100),
+    event_seq_start = 1L
+  )
+  testthat::expect_identical(as.numeric(rows$ts_utc), as.numeric(instant))
+  testthat::expect_identical(
+    ledgr:::ledgr_normalize_ts_utc(rows$ts_utc),
+    "2020-01-02T21:34:56Z"
+  )
 })

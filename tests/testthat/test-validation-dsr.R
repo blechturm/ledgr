@@ -296,16 +296,17 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
 testthat::test_that("native DSR adds no quantstrat runtime dependency", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
-  namespace_path <- file.path(root, "NAMESPACE")
   testthat::skip_if_not(
-    file.exists(description_path) && file.exists(namespace_path),
+    file.exists(description_path),
     "source package metadata not available during installed-package tests"
   )
   description <- read.dcf(description_path)
   imports <- trimws(unlist(strsplit(description[, "Imports"], "[,\n]")))
-  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
-
+  suggests <- trimws(unlist(strsplit(description[, "Suggests"], "[,\n]")))
   testthat::expect_false("quantstrat" %in% imports)
-  testthat::expect_no_match(namespace, "import\\(quantstrat\\)")
-  testthat::expect_no_match(namespace, "importFrom(quantstrat", fixed = TRUE)
+  testthat::expect_false("quantstrat" %in% suggests)
+  testthat::expect_s3_class(
+    ledgr_dsr(ledgr_dsr_test_sweep(ledgr_dsr_reference_panel())),
+    "ledgr_dsr"
+  )
 })

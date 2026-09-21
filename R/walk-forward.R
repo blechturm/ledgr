@@ -158,6 +158,9 @@ ledgr_walk_forward <- function(exp,
   ledgr_walk_forward_write_session(exp, session_row, fold_table, score_table)
 
   if (!is.null(terminal_error)) {
+    invisible(lapply(selected_tests, function(test_run) {
+      try(close(test_run), silent = TRUE)
+    }))
     stop(terminal_error)
   }
 

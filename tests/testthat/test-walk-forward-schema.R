@@ -137,9 +137,7 @@ testthat::test_that("session provenance keeps the creation time of day", {
   # without an explicit format falls through to `%Y-%m-%d` and silently
   # truncates the recorded instant to midnight. Exercise the real creation
   # path, not the parser, so the regression cannot return unnoticed.
-  fixed <- as.POSIXct("2020-01-17 21:34:56", tz = "UTC")
-  testthat::local_mocked_bindings(Sys.time = function() fixed, .package = "base")
-
+  before <- Sys.time()
   row <- ledgr:::ledgr_walk_forward_session_row(
     identity = list(
       session_id = "session-provenance",
@@ -156,11 +154,11 @@ testthat::test_that("session provenance keeps the creation time of day", {
     opening_state_policy = "carry_test_state",
     cold_start_distorted = FALSE
   )
+  after <- Sys.time()
 
   testthat::expect_s3_class(row$created_at_utc, "POSIXct")
-  testthat::expect_equal(row$created_at_utc, fixed)
-  testthat::expect_identical(
-    format(row$created_at_utc, "%H:%M:%S", tz = "UTC"),
-    "21:34:56"
-  )
+  # Canonical persistence is whole-second precision, so allow truncation of
+  # the fractional second while still detecting any date-only conversion.
+  testthat::expect_gte(as.numeric(row$created_at_utc), as.numeric(before) - 1)
+  testthat::expect_lte(as.numeric(row$created_at_utc), as.numeric(after) + 1)
 })

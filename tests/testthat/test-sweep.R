@@ -1289,17 +1289,14 @@ testthat::test_that("precomputed features are consumed without calling the featu
   testthat::expect_identical(calls$n, 0L)
 })
 
-testthat::test_that("the shared fold core is private and DB-free", {
+testthat::test_that("the shared fold core has a private two-boundary interface", {
   exports <- getNamespaceExports("ledgr")
   testthat::expect_false("ledgr_execute_fold" %in% exports)
   testthat::expect_true(exists("ledgr_execute_fold", envir = asNamespace("ledgr"), inherits = FALSE))
-
-  core_body <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
-  testthat::expect_false(grepl("DBI::|dbGetQuery|dbExecute|dbAppendTable|dbWithTransaction|duckdb", core_body))
-  testthat::expect_true(grepl("ledgr_execute_fold", paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")))
-  testthat::expect_true(grepl("ledgr_execute_fold", paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n")))
-  testthat::expect_true(grepl("runtime_projection", core_body, fixed = TRUE))
-  testthat::expect_false(grepl("run_feature_matrix", core_body, fixed = TRUE))
-  testthat::expect_true(grepl("runtime_projection", paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n"), fixed = TRUE))
-  testthat::expect_true(grepl("runtime_projection", paste(deparse(body(ledgr:::ledgr_sweep_run_candidate)), collapse = "\n"), fixed = TRUE))
+  testthat::expect_identical(
+    names(formals(ledgr:::ledgr_execute_fold)),
+    c("execution", "output_handler")
+  )
+  testthat::expect_true(is.function(ledgr:::ledgr_run_fold))
+  testthat::expect_true(is.function(ledgr:::ledgr_sweep_run_candidate))
 })

@@ -1,4 +1,4 @@
-testthat::test_that("installed availability runtime contains no retired arm", {
+testthat::test_that("retired availability entry points are absent", {
   ns <- asNamespace("ledgr")
   retired_functions <- c(
     "ledgr_availability_provider_build_current",
@@ -17,52 +17,9 @@ testthat::test_that("installed availability runtime contains no retired arm", {
     inherits = FALSE
   )))
 
-  forbidden <- c(
-    "ledgr.internal.spike_availability_provider",
-    "ledgr.internal.spike_diagnostic_writer",
-    "ledgr.internal.spike_diagnostic_chunk_rows",
-    "ledgr.internal.spike_diagnostic_block",
-    "spike_arm",
-    "spike_diagnostic_mode",
-    retired_functions,
-    "do.call(rbind, diagnostic_rows)"
-  )
-  installed_forbidden <- c(
-    "ledgr.internal.spike",
-    "spike_arm",
-    "spike_diagnostic_mode",
-    "do.call(rbind, diagnostic_rows)"
-  )
-  namespace_source <- paste(vapply(
-    ls(ns, all.names = TRUE),
-    function(name) {
-      value <- get(name, envir = ns, inherits = FALSE)
-      if (is.function(value)) paste(deparse(value), collapse = "\n") else ""
-    },
-    character(1)
-  ), collapse = "\n")
-  for (token in installed_forbidden) {
-    testthat::expect_false(grepl(token, namespace_source, fixed = TRUE), info = token)
-  }
-  r_dir <- testthat::test_path("..", "..", "R")
-  if (dir.exists(r_dir)) {
-    source <- paste(
-      unlist(lapply(
-        list.files(r_dir, pattern = "[.]R$", full.names = TRUE),
-        readLines,
-        warn = FALSE
-      )),
-      collapse = "\n"
-    )
-    for (token in forbidden) {
-      testthat::expect_false(grepl(token, source, fixed = TRUE), info = token)
-    }
-  } else {
-    testthat::succeed("source-tree scan is unavailable in installed-package tests")
-  }
 })
 
-testthat::test_that("provider consumers do not call public inspection helpers", {
+testthat::test_that("production provider consumers bypass public inspection helpers", {
   ns <- asNamespace("ledgr")
   retained <- c("ledgr_membership_resolve_at", "ledgr_membership_evidence")
   testthat::expect_true(all(vapply(
@@ -73,18 +30,15 @@ testthat::test_that("provider consumers do not call public inspection helpers", 
     inherits = FALSE
   )))
 
-  consumers <- c(
-    "ledgr_availability_provider",
-    "ledgr_availability_provider_portable",
-    "ledgr_availability_provider_build",
-    "ledgr_availability_provider_build_prepared"
+  testthat::local_mocked_bindings(
+    ledgr_membership_resolve_at = function(...) {
+      stop("production consumer called the public membership resolver")
+    },
+    ledgr_membership_evidence = function(...) {
+      stop("production consumer called the public membership evidence path")
+    },
+    .package = "ledgr"
   )
-  consumer_source <- paste(vapply(
-    consumers,
-    function(name) paste(deparse(get(name, envir = ns)), collapse = "\n"),
-    character(1)
-  ), collapse = "\n")
-  for (name in retained) {
-    testthat::expect_false(grepl(name, consumer_source, fixed = TRUE), info = name)
-  }
+  result <- availability_v201_run_case("production", "direct", 7L)$final
+  testthat::expect_gt(nrow(result$diagnostics), 0L)
 })

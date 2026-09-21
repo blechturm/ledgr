@@ -1,5 +1,6 @@
 testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
   testthat::skip_if_not_installed("ggplot2")
+  ledgr_test_local_graphics_device()
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

@@ -231,16 +231,17 @@ testthat::test_that("minimum track record length fails closed on invalid evidenc
 testthat::test_that("minimum track record length adds no PerformanceAnalytics runtime import", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
-  namespace_path <- file.path(root, "NAMESPACE")
   testthat::skip_if_not(
-    file.exists(description_path) && file.exists(namespace_path),
+    file.exists(description_path),
     "source package metadata not available during installed-package tests"
   )
   description <- read.dcf(description_path)
   imports <- trimws(unlist(strsplit(description[, "Imports"], "[,\n]")))
-  namespace <- paste(readLines(namespace_path, warn = FALSE), collapse = "\n")
-
   testthat::expect_false("PerformanceAnalytics" %in% imports)
-  testthat::expect_no_match(namespace, "import\\(PerformanceAnalytics\\)")
-  testthat::expect_no_match(namespace, "importFrom(PerformanceAnalytics", fixed = TRUE)
+  testthat::expect_s3_class(
+    ledgr_min_track_record(
+      ledgr_min_trl_test_sweep(ledgr_min_trl_reference_panel())
+    ),
+    "ledgr_min_track_record"
+  )
 })

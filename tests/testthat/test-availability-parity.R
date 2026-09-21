@@ -908,15 +908,21 @@ testthat::test_that("walk-forward hydrates heterogeneous gaps on the session cal
 })
 
 testthat::test_that("walk-forward preserves incomplete status when prefix metrics fail", {
-  test_run <- structure(
-    list(run_id = "incomplete-metric-prefix"),
-    class = c("ledgr_backtest", "list")
+  path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(path), add = TRUE)
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  fixture <- availability_incomplete_experiment(path, calls)
+  on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
+  test_run <- ledgr_run(
+    fixture$experiment,
+    run_id = "incomplete-metric-prefix"
   )
+  on.exit(close(test_run), add = TRUE)
+  terminal <- ledgr:::ledgr_backtest_terminal_evidence(test_run)
+  testthat::expect_identical(terminal$status, "INCOMPLETE")
   local({
     testthat::local_mocked_bindings(
-      ledgr_backtest_terminal_evidence = function(...) {
-        list(status = "INCOMPLETE", completion_json = "{\"status\":\"INCOMPLETE\"}")
-      },
       ledgr_compute_metrics = function(...) {
         rlang::abort("prefix too short", class = "ledgr_metric_prefix_too_short")
       },
@@ -925,6 +931,6 @@ testthat::test_that("walk-forward preserves incomplete status when prefix metric
     score <- ledgr:::ledgr_walk_forward_test_score_wide(test_run)
     testthat::expect_identical(score$status, "INCOMPLETE")
     testthat::expect_identical(score$error_class, "ledgr_metric_prefix_too_short")
-    testthat::expect_match(score$completion_json, "INCOMPLETE", fixed = TRUE)
+    testthat::expect_identical(score$completion_json, terminal$completion_json)
   })
 })

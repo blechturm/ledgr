@@ -188,20 +188,26 @@ testthat::test_that("walk-forward exposes cadence warnings through existing metr
   )
   warning_contexts <- character()
 
-  wf <- withCallingHandlers(
-    ledgr_walk_forward(
-      exp,
-      grid = ledgr_wfo_grid(),
-      folds = folds,
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
-      seed = 909L
-    ),
-    warning = function(w) {
-      if (inherits(w, "ledgr_metric_context_cadence_mismatch")) {
-        warning_contexts <<- c(warning_contexts, w$context)
+  testthat::expect_warning(
+    wf <- withCallingHandlers(
+      {
+        warning("unrelated cadence test warning")
+        ledgr_walk_forward(
+          exp,
+          grid = ledgr_wfo_grid(),
+          folds = folds,
+          selection_rule = ledgr_select_argmax("sharpe_ratio"),
+          seed = 909L
+        )
+      },
+      warning = function(w) {
+        if (inherits(w, "ledgr_metric_context_cadence_mismatch")) {
+          warning_contexts <<- c(warning_contexts, w$context)
+          invokeRestart("muffleWarning")
+        }
       }
-      invokeRestart("muffleWarning")
-    }
+    ),
+    "unrelated cadence test warning"
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
 
@@ -520,6 +526,38 @@ testthat::test_that("walk-forward interrupt after a completed fold persists a pa
   testthat::expect_identical(folds$status[[1]], "DONE")
   testthat::expect_identical(unique(score_windows$fold_seq), 1L)
   testthat::expect_true(all(c("train", "test") %in% score_windows$window))
+})
+
+testthat::test_that("terminal cleanup closes test handles without masking the terminal error", {
+  fx <- ledgr_wfo_exp()
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  withr::local_options(list(ledgr.walk_forward_interrupt_after_completed_folds = 1L))
+  closed_states <- list()
+  original_close <- ledgr:::close.ledgr_backtest
+  testthat::local_mocked_bindings(
+    close.ledgr_backtest = function(con, ...) {
+      original_close(con, ...)
+      closed_states[[length(closed_states) + 1L]] <<- con$.state
+      rlang::abort("injected close failure", class = "ledgr_close_probe")
+    },
+    .package = "ledgr"
+  )
+
+  err <- tryCatch(
+    ledgr_walk_forward(
+      fx$exp,
+      grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
+      folds = ledgr_wfo_folds(),
+      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      seed = 809L
+    ),
+    interrupt = function(e) e,
+    error = function(e) e
+  )
+
+  testthat::expect_s3_class(err, "interrupt")
+  testthat::expect_length(closed_states, 1L)
+  testthat::expect_true(closed_states[[1L]]$closed)
 })
 
 testthat::test_that("walk-forward inspection helpers reopen completed and partial sessions read-only", {
