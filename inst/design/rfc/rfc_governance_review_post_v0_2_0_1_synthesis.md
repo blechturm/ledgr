@@ -1,8 +1,8 @@
 # RFC Synthesis: Post-v0.2.0.1 Governance Review
 
-**Status:** Draft; pending independent final review and maintainer
-acceptance. Binding for every packet opened after acceptance, until
-superseded.
+**Status:** Rejected by the maintainer on 2026-09-21. Retained as history;
+binds nothing. Seed v2 remains the standing seed and stage 7 re-runs. See
+the revision history for the grounds.
 
 **Date:** 2026-09-21. **Window:** none; this cycle changes process, not code.
 
@@ -258,6 +258,12 @@ The independent final reviewer:
   `rfc_cycle.md` change row named a section that does not exist and now
   names its placement; the `benchmark_methodology.qmd` row now names the two
   headings that exist; the Direction line was rewrapped. No rule changed.
+- 2026-09-21 — Rejected by the maintainer. The enforcement layer turns
+  process judgment into form checks and would grow the test suite the way
+  the review set out to shrink narrative; the same disease in a new medium.
+  The synthesis brief was over-specified and was followed mechanically
+  rather than critiqued at the process level. The rules in Sections 4.1
+  through 4.8 are not themselves rejected; their enforcement is.
 
 **Direction:** ready for stage 8 final review because both open decisions
 are resolved by repository evidence.

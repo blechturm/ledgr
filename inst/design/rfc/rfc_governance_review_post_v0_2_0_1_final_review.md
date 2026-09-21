@@ -87,3 +87,9 @@ and the one party with a stake in the size rule conceded it on a count. The
 three patches are citation fixes of the kind `rfc_cycle.md` permits in place;
 none touches a rule. After acceptance, one commit applies the process-document
 table and a post-synthesis horizon entry records what was deferred.
+
+**Maintainer disposition, 2026-09-21: rejected.** This review verified the
+synthesis against its own checklist and never asked whether its enforcement
+layer was proportionate. That is the review's own failure, and it is the same
+failure the cycle set out to correct: a form check of a form check. The
+acceptance above is void.
