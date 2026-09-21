@@ -1,3 +1,14 @@
+# ledgr 0.2.0.2
+
+- Development version opened. No user-facing changes have shipped yet, and no
+  spec is cut. The roadmap schedules this release to open with the test-suite
+  cleanup under the testing-architecture RFC, then FIFO accounting-core
+  consolidation, then equity economic events, fast availability results,
+  minimal progress, consistent opening validation, first-cutoff inspection,
+  and clear unsupported-economics explanations, in that order. Scope becomes
+  binding only when the packet spec is accepted, which follows the test-suite
+  audit and the testing-architecture RFC; the governance review is accepted.
+
 # ledgr 0.2.0.1
 
 - Development version opened for the accepted v0.2.0.1 packet. No user-facing
