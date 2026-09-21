@@ -183,9 +183,9 @@ the link to this accepted synthesis.
 | --- | --- | --- |
 | `AGENTS.md` | Core Rules | Add Section 4.8's sentence and authority link. |
 | `../spike_protocol.md` | Size Budgets; Provenance; probe rules | Add Section 4.7 caps, Section 4.3 fields, and Section 4.6 probe manifest. |
-| `../rfc_cycle.md` | implementation handoff after acceptance | Keep stages/rotation; add Sections 4.1-4.3 classifier and review gate. |
+| `../rfc_cycle.md` | new section after "Final review scope" | Keep stages/rotation; add Sections 4.1-4.3 classifier and review gate. |
 | `../manual/optimization_coding_style.qmd` | Seven Shapes; Maintainer Checklist | Give shapes stable IDs and make the checklist the Section 4.4 census specification; re-render its sibling. |
-| `../manual/benchmark_methodology.qmd` | record contract; clocks | Add Sections 4.3, 4.6, and the evidence-clock review flag; re-render its sibling. |
+| `../manual/benchmark_methodology.qmd` | Record Generation Workflow; Two clocks, two questions | Add Sections 4.3, 4.6, and the evidence-clock review flag; re-render its sibling. |
 | `../ledgr_v0_2_0_1_spec_packet/batch_plan.md` | Review Protocol | Make no historical edit. Future packet templates must not copy its blanket batch-review or evidence-essay rules. |
 
 The test-suite audit in [ROADMAP]:1689-1761 produces the specified table of
@@ -254,5 +254,10 @@ The independent final reviewer:
 
 - 2026-09-21 — Draft synthesis by Codex from Seed v2, its preceding response
   and review, and the counted v0.2.0.1 record.
+- 2026-09-21 — Final-review citation patches by Claude, in place: the
+  `rfc_cycle.md` change row named a section that does not exist and now
+  names its placement; the `benchmark_methodology.qmd` row now names the two
+  headings that exist; the Direction line was rewrapped. No rule changed.
 
-**Direction:** ready for stage 8 final review because both open decisions are resolved by repository evidence.
+**Direction:** ready for stage 8 final review because both open decisions
+are resolved by repository evidence.
