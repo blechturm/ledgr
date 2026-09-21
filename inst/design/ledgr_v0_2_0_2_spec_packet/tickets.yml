@@ -1,0 +1,308 @@
+packet: "v0.2.0.2"
+cut: "2026-09-21"
+authority: "inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md"
+source_table: "inst/design/audits/post_v0_2_0_1_test_suite_audit_blocks.csv"
+review_gate:
+  max_review_invocations_per_ticket: 0.5
+workstreams:
+  - id: 1
+    name: "Oracle repair"
+    review: {mode: "Type 1", point: "close of workstream 1", reason: "Repairs precede every other change so the baseline is trustworthy before anything is moved."}
+  - id: 2
+    name: "Control plane"
+    review: {mode: "Type 1", point: "close of workstream 2", reason: "The runner, census, and gates must prove their own failure sensitivity before shrink or merge is measured against them."}
+  - id: 3
+    name: "Shrink"
+    review: {mode: "Type 1", point: "close of workstream 3", reason: "Fixture reduction is where the time is and where a defect can be lost; each reduction must still fail on its condition."}
+  - id: 4
+    name: "Merge"
+    review: {mode: "Type 1", point: "close of workstream 4", reason: "Merging by claim family answers the overlap question the registry cannot; the reviewer asks it per merge."}
+  - id: 5
+    name: "Delete"
+    review: {mode: "Type 1", point: "close of workstream 5", reason: "Deletion is last so every replacement is named and executable in a bound lane first."}
+
+tickets:
+  # ---------------------------------------------------------- 1 Oracle repair
+  - id: "LDG-2745"
+    title: "Repair the 15 audited oracle defects no other ticket owns"
+    workstream: 1
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "The fix_oracle blocks in the audit table minus the six owned by LDG-2746 through LDG-2748: 15 blocks in 14 files, about one second. Each repair names the defect from the table's failure_condition column."
+    acceptance: ["each repaired block fails when its stated failure_condition is deliberately introduced", "no assertion is weakened to pass"]
+
+  - id: "LDG-2746"
+    title: "Keep the fold witness's recorded engine_version and exclude it from economic comparison"
+    workstream: 1
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "test-availability-fold-witnesses.R:74. The fixture keeps 0.2.0.1 as recorded; the identity comparison excludes engine_version; the economic comparison is unchanged. The witness is never made to read DESCRIPTION."
+    acceptance: ["the block passes on the recorded fixture", "a perturbed economic value still fails", "a changed package version does not fail it"]
+
+  - id: "LDG-2747"
+    title: "Open a temporary graphics device in the four Rplots.pdf blocks"
+    workstream: 1
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "test-integration-full.R:1, test-plot.R:1, test-plot.R:20, test-run-store.R:199."
+    acceptance: ["a focused run in a read-only working directory passes", "no Rplots.pdf is written anywhere"]
+
+  - id: "LDG-2748"
+    title: "Assert the cadence warning by class and let other warnings surface"
+    workstream: 1
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "test-walk-forward-orchestrator.R:163 currently muffles every warning after recording the expected class."
+    acceptance: ["the expected class is asserted", "an injected unrelated warning is reported, not muffled"]
+
+  - id: "LDG-2749"
+    title: "Localize the walk-forward finalizer advisory to its owning block, then fix it"
+    workstream: 1
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: "Fresh-process runs of test-walk-forward-orchestrator.R and test-backtest-audit-log-equivalence.R emit an auto-checkpoint advisory at exit. Localize first; attribute by evidence, not by guess."
+    acceptance: ["the owning block is named with a reproduction", "a fresh-process run emits no advisory"]
+
+  - id: "LDG-2750"
+    title: "Delete the eight red governance pins in test-documentation-contracts.R with reasons"
+    workstream: 1
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "Lines 522, 2699, 2751, 2862, 2921, 2981, 3595, 3883. Each pins governance or release prose the accepted loop abolished; no replacement evidence exists because the artifacts no longer exist. Deleted, not skipped."
+    acceptance: ["the suite is green", "each deletion's reason is in the commit message"]
+
+  # ---------------------------------------------------------- 2 Control plane
+  - id: "LDG-2751"
+    title: "One parameterized runner with fast and review memberships and fail-closed selection"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Synthesis 2.1. fast is the default membership; review by tag; heavy protocols by name outside membership. Unknown, missing, or contradictory profile metadata fails the run."
+    acceptance: ["an unknown profile token fails, never skips", "a homogeneous-file declaration expands to the same per-block authority"]
+
+  - id: "LDG-2752"
+    title: "Two-sided execution census and reconciliation"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2751"]
+    scope: "Synthesis D4. Expected selection from a static preflight over source profile metadata; actual execution from the testthat reporter; reconciled on every invocation. The selector produces neither side."
+    acceptance: ["a promised block that did not run fails the invocation regardless of passes", "the preflight fails when it cannot classify a syntactic block"]
+
+  - id: "LDG-2753"
+    title: "Declare profiles in the 23 homogeneous review and heavy files"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2751"]
+    scope: "One file-level declaration each, expanding to per-block authority; membership from the audit's proposed_lane column as the starting set."
+    acceptance: ["census shows every block in these files selected under its declared profile"]
+
+  - id: "LDG-2754"
+    title: "Tag the 333 non-fast blocks in the 76 mixed files"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2751"]
+    scope: "Per-block tags, one form, from the audit's proposed_lane column; files are not split or moved. This covers the audit's 35 move_lane rows, which are lane changes, not file moves."
+    acceptance: ["census reconciles for every mixed file under fast and review"]
+
+  - id: "LDG-2755"
+    title: "Claims registry, [LTB-nnnn] block prefixes, and the structure checker"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2752"]
+    scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, or a promised block absent from the census. It reads structure and run output, never prose."
+    acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does"]
+
+  - id: "LDG-2756"
+    title: "Run the canonical-R differential core in every fast invocation"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2753", "LDG-2754"]
+    scope: "test-execution-spec.R:490 and :542 and test-sweep-persistence-parity.R:209, 6.16 seconds; the third moves from the audit's heavy lane into fast. Extended parity stays review with the unconditional release backstop. Owner: maintainer."
+    acceptance: ["all three run in fast; fast stays under 90 seconds", "each is a registered detecting block"]
+
+  - id: "LDG-2757"
+    title: "CRAN execution mode with recorded library isolation and its own clock"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2751", "LDG-2747"]
+    scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak."
+    acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately"]
+
+  - id: "LDG-2758"
+    title: "CI gates: fast under 90 seconds by median of three, CRAN clock, census as gate"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2752", "LDG-2757"]
+    scope: "Synthesis D2. One fresh-process run on the registered CI runner; over 90 seconds triggers two confirmation runs; fail on the median. A timing result without a reconciled census is not a gate result. CRAN gate bound set only after the isolated mode runs."
+    acceptance: ["a deliberately slow block fails the fast gate", "a gutted selector fails the gate faster, not greener"]
+
+  - id: "LDG-2759"
+    title: "Control-plane mutation proof"
+    workstream: 2
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2755", "LDG-2758"]
+    scope: "Synthesis section 6. A small fixture: gut selection, supply an unknown profile, suppress one reporter record. Each must fail the control-plane check for its intended reason."
+    acceptance: ["three mutations, three distinct named failures"]
+
+  - id: "LDG-2760"
+    title: "tests/README.md under sixty lines"
+    workstream: 2
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2759"]
+    scope: "The runner and its modes, the registry and checker, the four bound rules, and what to do when fast exceeds budget. No test reads it."
+    acceptance: ["under sixty lines", "every command in it runs"]
+
+  # ---------------------------------------------------------- 3 Shrink
+  - id: "LDG-2761"
+    title: "Shrink sweep-family fixtures"
+    workstream: 3
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2758"]
+    scope: "29 blocks, about 89 seconds: sweep-parity, sweep-parallel, sweep, sweep-retention, sweep-persistence-roundtrip, sweep-persistence-parity, sweep-filter."
+    acceptance: ["each reduced block still fails under its failure_condition perturbation", "fast stays under budget with a reconciled census"]
+
+  - id: "LDG-2762"
+    title: "Shrink experiment, run, promotion, and backtest-wrapper fixtures"
+    workstream: 3
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2758"]
+    scope: "35 blocks, about 80 seconds: experiment-run, promotion-context, experiment, run-compare, run-store, runner, run-print, backtest-wrapper, backtest-lifecycle, backtest-s3."
+    acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+
+  - id: "LDG-2763"
+    title: "Shrink availability fixtures"
+    workstream: 3
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2758"]
+    scope: "13 blocks, about 45 seconds: availability-qlcal, availability-parity, availability-workflow, availability-execution-timing, availability-finalization-prefix, availability-state, dense-timestamp-validation."
+    acceptance: ["each reduced block still fails under its failure_condition perturbation", "no frozen-artifact fixture is regenerated from the implementation it guards"]
+
+  - id: "LDG-2764"
+    title: "Shrink walk-forward and metrics fixtures"
+    workstream: 3
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2758"]
+    scope: "15 blocks, about 47 seconds: walk-forward-orchestrator, walk-forward-folds, metric-context-tables, metric-kernel, metric-context-storage, metrics-zero-trades, backtest-audit-log-equivalence."
+    acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+
+  - id: "LDG-2765"
+    title: "Shrink features, strategy, cost, and remaining fixtures"
+    workstream: 3
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2758"]
+    scope: "42 blocks, about 76 seconds: active-alias-runtime, cost-model, precompute-features, feature-inspection, feature-cache, feature-map, indicator-adapters, indicator-ttr, strategy-types, strategy-reference, strategy-preflight, demo-strategies, risk-config, risk-fold, rng, snapshot-hash-deduplication, pulse-context-accessors, public-api, persistence-fresh-connection."
+    acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+
+  # ---------------------------------------------------------- 4 Merge
+  - id: "LDG-2766"
+    title: "Merge metrics-family blocks"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2765"]
+    scope: "validation-pbo, validation-dsr, validation-min-track-record, validation-k-ratio, sweep-review, pulse-context-accessors, indicator-adapters, snapshots-create-list, acceptance-v0.1.0; about 17 blocks."
+    acceptance: ["the overlap question answered per merge in the review", "no registered claim loses a detecting block"]
+
+  - id: "LDG-2767"
+    title: "Merge public-behavior blocks"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2765"]
+    scope: "schema, strategy-preflight, strategy-contracts, param-grid, collapse-determinism, release-coverage-branches, fixtures; about 24 blocks."
+    acceptance: ["the overlap question answered per merge", "every negative witness keeps its rejected input and expected class"]
+
+  - id: "LDG-2768"
+    title: "Merge identity-and-configuration blocks"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2765"]
+    scope: "walk-forward-identity, fingerprint-stability, feature-cache, run-compare, strategy-extract, risk-model, cost-model; about 10 blocks."
+    acceptance: ["the overlap question answered per merge"]
+
+  - id: "LDG-2769"
+    title: "Merge snapshot, features, and execution blocks"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2765"]
+    scope: "snapshots-seal, snapshots-hash, snapshots-import-csv, schema-snapshots, snapshot-adapters, ledger-writer, features, feature-inspection, indicators, lot-accounting, execution-spec; about 20 blocks."
+    acceptance: ["the overlap question answered per merge", "canonical-R core blocks are not merged"]
+
+  - id: "LDG-2770"
+    title: "Merge determinism and parallel-execution blocks"
+    workstream: 4
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2765"]
+    scope: "sweep, rng, parallel-workers; about 6 blocks."
+    acceptance: ["the overlap question answered per merge", "seeded behavior remains asserted"]
+
+  # ---------------------------------------------------------- 5 Delete
+  - id: "LDG-2771"
+    title: "Rebuild the render-freshness invariant as a build-step check"
+    workstream: 5
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2770"]
+    scope: "The one real invariant in test-documentation-contracts.R: rendered image targets exist and no DuckDB shared-home notice leaked. Becomes a step after site render; no test reads a document."
+    acceptance: ["a missing image target fails the build step", "a leaked notice fails the build step"]
+
+  - id: "LDG-2772"
+    title: "Retire test-documentation-contracts.R"
+    workstream: 5
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2771", "LDG-2750"]
+    scope: "The remaining 67 blocks: 18 delete-after-replacement and 49 the audit marked merge, all routed to the render step under the bound rule. Each deletion's replacement, or the reason none exists, is in the commit message."
+    acceptance: ["the checker passes with nothing unresolved", "the file is gone", "the render-step check runs in CI"]
