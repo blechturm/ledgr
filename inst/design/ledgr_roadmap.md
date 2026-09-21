@@ -1781,7 +1781,9 @@ which decides lanes, CRAN strategy, the canonical-R differential lane's
 owner, and the rule for new tests. Maintainer decision 2026-09-21: both gate
 v0.2.0.2, and the cleanup they produce ships in v0.2.0.2 as its first
 workstream, ahead of equity accounting, because subsequent development
-depends on it.
+depends on it. That RFC's synthesis was accepted on 2026-09-21
+(`rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md`); the cleanup
+implements it directly as five workstreams without a further RFC.
 
 ### After v0.2.0.1: Accounting-Core Consolidation
 

@@ -1,6 +1,8 @@
 # Synthesis: Testing Architecture For v0.2.0.2 And After
 
-**Status:** Decision synthesis; ready for independent Type 1 final review.
+**Status:** Accepted by the maintainer on 2026-09-21 after Type 1 final
+review passed with citation patches at `1ee0efa`. Binding for the v0.2.0.2
+cleanup workstreams; implements directly without a further RFC.
 **Author:** Codex
 **Date:** 2026-09-21
 **Inputs:** Seed v3 at `a4516d5`, both Type 2 responses, the 930-row
@@ -249,5 +251,7 @@ evidence cannot become invisible merely by making the run shorter.
 - 2026-09-21 — Type 1 final-review patch by Claude, in place: §4 item 1
   said 23 red blocks; the audit and table say nine blocks with 23 failing
   assertions. No decision changed.
+- 2026-09-21 — Accepted by the maintainer. Indexed; the cleanup opens
+  v0.2.0.2 as five workstreams in this synthesis's order.
 
 ready for Type 1 final review

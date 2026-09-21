@@ -74,11 +74,11 @@ Current planning context (2026-09-20):
   research-workflow improvements. Read the roadmap's v0.2.0.2 section and
   `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` plus its
   corporate-event companion. No v0.2.0.2 implementation packet is open yet.
-- The governance review is accepted (2026-09-21) and pilots on the next
-  packet. The test-suite audit and its testing-architecture RFC gate
-  v0.2.0.2; the cleanup is that packet's first workstream, before equity
-  accounting. Accounting consolidation precedes new settlement semantics.
-  Reader work and validation fixes do not require new RFC cycles.
+- The governance review and the testing-architecture RFC are accepted
+  (2026-09-21). v0.2.0.2 opens with the five test-cleanup workstreams, then
+  accounting consolidation, then equity settlement, in that order and not
+  in parallel; the loop pilots on this packet. Reader work and validation
+  fixes do not require new RFC cycles. See `inst/design/rfc_cycle.md`.
 - Reuse public capabilities and production semantics. Design only the missing
   behavior; do not add research-specific manifests or a parallel provenance
   system. Prefer small detecting examples and concrete workflow improvements.

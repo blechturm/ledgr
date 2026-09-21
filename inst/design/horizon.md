@@ -108,6 +108,30 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-21 [infrastructure] Testing architecture accepted; what it deferred
+
+The testing-architecture RFC is accepted
+(`rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md`) and implements
+directly as v0.2.0.2's five opening workstreams. Four things it left open.
+
+The claims registry registers declared load-bearing claims and cannot prove
+completeness; an undeclared contract stays invisible to its checker. The
+Shrink, Merge, and Delete reviews carry that question by hand. If a sole
+guard is ever lost that way, the registry's seed set from `contracts.md`
+and the prior audit's twelve rows is where to look for why.
+
+Snapshot-file and failure-message rules were declined because no
+`expect_snapshot` artifact exists and no failure was traced to a message.
+Either becomes a rule the day the mechanism or the defect appears.
+
+A mixed file that becomes homogeneous through Shrink or Merge is noticed by
+nothing; its per-block tags keep working and become redundant. A periodic
+look is cheap; a checker for it is not worth writing.
+
+Extended parity beyond the cheap canonical core runs at release
+unconditionally, owned by the maintainer. Whether a future compiled
+expansion needs its own trigger between releases is that RFC's question.
+
 ### 2026-09-21 [infrastructure] Governance loop accepted; what it deferred
 
 The post-v0.2.0.1 governance review is accepted
