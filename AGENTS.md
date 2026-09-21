@@ -75,10 +75,10 @@ Current planning context (2026-09-20):
   `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` plus its
   corporate-event companion. No v0.2.0.2 implementation packet is open yet.
 - The governance review is accepted (2026-09-21) and pilots on the next
-  packet. The test-suite audit still gates v0.2.0.2 and runs as an audit
-  route with its own Type 2 brief. Production accounting consolidation
-  precedes new settlement semantics. Exact-behavior reader work and
-  validation fixes do not require new RFC cycles.
+  packet. The test-suite audit and its testing-architecture RFC gate
+  v0.2.0.2; the cleanup is that packet's first workstream, before equity
+  accounting. Accounting consolidation precedes new settlement semantics.
+  Reader work and validation fixes do not require new RFC cycles.
 - Reuse public capabilities and production semantics. Design only the missing
   behavior; do not add research-specific manifests or a parallel provenance
   system. Prefer small detecting examples and concrete workflow improvements.
