@@ -157,7 +157,7 @@ when `fast` is under budget and its census reconciles.
 
 | Workstream | Content | Claim reviewed |
 | --- | --- | --- |
-| Oracle and claims | 21 oracle repairs; the three CRAN repairs; the 23 red blocks repaired, replaced, or quarantined with a reason; the registry seeded; the census and checker built | every declared claim resolves to a block that ran where promised |
+| Oracle and claims | 21 oracle repairs; the three CRAN repairs; the nine red blocks repaired, replaced, or quarantined with a reason; the registry seeded; the census and checker built | every declared claim resolves to a block that ran where promised |
 | Move | tags, the runner, the `fast` and CRAN gates, the canonical core in `fast` | both gates clean under budget with a reconciled census |
 | Shrink | 134 fixture reductions | each reduced block's failure condition still fails |
 | Merge | 126 merges by claim family | no declared claim loses its block; the overlap question asked per merge |
@@ -223,3 +223,5 @@ document.
   stable IDs and census reconciliation; rules for the mocks and frozen
   artifacts that exist; no universal oracle comment; nothing ships before
   synthesis; the control-plane scenario added; two false premises corrected.
+- 2026-09-21 — Final-review citation patch: §6 said 23 red blocks; the
+  audit says nine blocks carrying 23 failing assertions.

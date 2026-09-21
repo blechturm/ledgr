@@ -163,7 +163,8 @@ built the census, while Move said it built the runner that produces it.
 Bind these five workstreams instead:
 
 1. **Oracle repair.** Repair the 21 identified oracle defects and three CRAN
-   blockers. Repair or replace the 23 currently red blocks. A version-stamped
+   blockers. Repair or replace the nine currently red blocks, which carry
+   23 failing assertions. A version-stamped
    prose pin with no current claim is deleted with its reason; it is not
    converted into a permanent skip. Preserve historical `engine_version`
    and compare it separately from economic equality.
@@ -241,5 +242,12 @@ The design is now specific enough to cut an implementation packet after
 Type 1 acceptance and small enough to live under. Its success criterion is
 not the elegance of its taxonomy; it is a fast ordinary check whose missing
 evidence cannot become invisible merely by making the run shorter.
+
+## Revision history
+
+- 2026-09-21 — Decision synthesis by Codex from Seed v3 and both responses.
+- 2026-09-21 — Type 1 final-review patch by Claude, in place: §4 item 1
+  said 23 red blocks; the audit and table say nine blocks with 23 failing
+  assertions. No decision changed.
 
 ready for Type 1 final review
