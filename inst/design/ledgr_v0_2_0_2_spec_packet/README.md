@@ -4,8 +4,9 @@
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2, the accounting-core consolidation, was cut
-on 2026-09-22 and awaits its cut review. Nothing in cut 2 opens until that
-review is accepted.
+on 2026-09-22; its cut review (`cut_review_2.md`) returned
+`PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
+opens on the maintainer's word.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
 cut, and sequencing authority. Each cut names its own RFC authority there;
@@ -43,13 +44,14 @@ the 2.5 rules, the D5 review questions, heavy-protocol ownership,
 optional-dependency coverage, the unconditional release run of extended
 parity, the closeout, and workstream gating in the YAML itself.
 
-## Cut 2: Accounting-core consolidation (cut review pending)
+## Cut 2: Accounting-core consolidation (cut review passed after patches)
 
 The one workstream the accepted accounting-core synthesis
 (`inst/design/rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md`)
 binds in its section 5, implementing directly without a further RFC. Source
 table: `inst/design/audits/post_v0_2_0_1_accounting_core_inventory_sites.csv`,
-twelve sites. Tickets LDG-2776 through LDG-2785. It opens after cut 1's
+eighteen sites after the 2026-09-22 correction at `b92a45c`. Tickets
+LDG-2776 through LDG-2785. It opens after cut 1's
 closeout, which is accepted, and after its own cut review.
 
 | Workstream | Tickets | Content | Review claim |
@@ -63,11 +65,11 @@ registration (2784), and closeout (2785). The synthesis's step 6 also named
 the roadmap correction of the eight-replay premise; that landed with the
 RFC's acceptance at `688ae0b` and is not a ticket here.
 
-Two reviews over ten tickets — the cut review and one Type 1 at close —
-give 2 / 10 = 0.20 against the 0.5 gate. The workstream's review reason in
-`tickets.yml` records that the maintainer may call one extra check after
-LDG-2776, before the replay is built on the new carrier; that would be
-3 / 10 = 0.30.
+The gate is judged on completed tickets at close, not the planned count:
+two reviews over ten if LDG-2783 lands (0.20), over nine if it is deferred
+(0.22). The maintainer may call one optional check after LDG-2777, so the
+carrier and its scaling detector are reviewed together before the preparer
+and replay are built on them; that makes 0.30 or 0.33.
 
 **Where the cut departs from the synthesis:** nowhere on substance. The
 synthesis's six numbered steps became ten tickets because the D5 detector
@@ -75,7 +77,18 @@ synthesis's six numbered steps became ten tickets because the D5 detector
 (step 4) each carry a distinct acceptance criterion and a distinct
 detecting witness.
 
-**The cut review** asks, in order: does every requirement the synthesis
+**What the cut review added.** Three bounded patches, applied in place:
+LDG-2778 and LDG-2779 no longer claim deletions that LDG-2782 and LDG-2780
+own, and LDG-2778 now rejects invalid quantity, price, fee, and opening
+metadata, not only unknown types; LDG-2776 owns the no-persisted-change
+prohibition, LDG-2784 owns the compiled boundary, and LDG-2785 states that
+prototype multiples are not thresholds; LDG-2785 now depends on both
+cleanup tickets and must name LDG-2783 as landed or deferred. Separately,
+the inventory correction at `b92a45c` — six `ledger_events` readers the
+lot-keyed search missed, three of them dead — widened LDG-2779 and
+LDG-2780 after the review; their ownership map still holds.
+
+**The cut review** asked, in order: does every requirement the synthesis
 binds — sections 3.1 through 3.5, D1 through D6, and every bullet of
 section 6 — have exactly one owning ticket (Type 1); and is one workstream
 of ten tickets with a single close review the honest grain, or should the
