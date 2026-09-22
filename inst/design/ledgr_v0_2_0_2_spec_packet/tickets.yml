@@ -24,9 +24,10 @@ cuts:
     cut_review: "cut_review_3_4.md; PASS_AFTER_PATCHES at 8747c64; patched in place"
     authority: "maintainer decision 2026-09-22 (horizon entry '[product] One CSV ingestion surface'); dev/bench/notes/durable_path_observations.md decisions 1 and 2; inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L02 and OPT-L03"
     source_table: "dev/bench/notes/durable_path_observations.md observations 4, 6 and 7; the 2026-09-22 release-shape probe recorded in README.md cut 3"
-    workstreams: [7]
-    closeout: "ingestion_consolidation_closeout.md"
-    close_review: "close_review_7_9.md; PASS_AFTER_PATCHES at 51a90ee; patched in place"
+    workstreams: [7, 9]
+    closeout: "ingestion_consolidation_closeout.md; ingestion_reader_closeout.md"
+    close_review: "close_review_7_9.md; workstream 7 PASS_AFTER_PATCHES at 51a90ee, workstream 9 FAIL twice, both patched in place"
+    chronology: "Workstream 9 ran 2026-09-22 as its own cut 5 and was folded into cut 3 by maintainer decision after its re-review. It reached 3 review invocations over 3 tickets, 1.00, which is what prompted the fold; the combined count is 4 over 9, 0.44. The fold changes the packet's topology, not the order the work happened in."
     status: "closed"
   - id: 4
     name: "Exact-parity and workflow corrections"
@@ -38,16 +39,13 @@ cuts:
     closeout: "pending"
     status: "cut"
   - id: 5
-    name: "Ingestion reader"
+    name: "Ingestion reader (folded into cut 3)"
     cut: "2026-09-22"
-    cut_review: "compression REJECTED by close_review_7_9.md; owed and not run"
-    authority: "maintainer decision 2026-09-22 (horizon entry '[product] DuckDB reads the ingestion CSV'); inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L03; inst/design/ledgr_v0_2_0_2_spec_packet/ingestion_consolidation_closeout.md section 7"
-    source_table: "none; the compatibility matrix registered by LDG-2800 is the source table"
+    status: "folded"
+    folded_into: 3
+    reason: "Three tickets could not carry a cut review, a close review and a re-review and stay under the D8 gate; at 3/3 the ratio was measuring the cut's size, not wasted review effort. The work is a direct continuation of workstream 7 on the same surface. Retained here so the chronology stays honest: this ran as its own cut and its shape is what prompted the fold."
+    historical_gate: "3 review invocations over 3 completed tickets, 1.00, against a 0.5 gate"
     workstreams: [9]
-    closeout: "ingestion_reader_closeout.md"
-    close_review: "close_review_7_9.md; FAIL at 51a90ee; patched in place; re-review owed"
-    gate_note: "D8 breached at 0.67 once the owed cut review is counted; see the closeout section 6"
-    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -121,7 +119,7 @@ workstreams:
     review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a surface the horizon measured. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, and that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes. Workstream 8 has no dependency on workstream 7; staffing decides which opens first."}
   - id: 9
     name: "Ingestion reader"
-    cut: 5
+    cut: 3
     status: "complete"
     depends_on_workstream: 7
     requires_review_acceptance: true

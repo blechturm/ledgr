@@ -1,4 +1,8 @@
-# Cut 3 Closeout: Ingestion Consolidation
+# Cut 3 Closeout: Ingestion Consolidation (workstream 7)
+
+*Cut 3 has a second workstream, 9, closed out in
+`ingestion_reader_closeout.md`. It ran as cut 5 and was folded in on
+2026-09-22. Combined gate: 4 review invocations over 9 tickets, 0.44.*
 
 **Workstream 7, tickets LDG-2786 through LDG-2791.**
 **Opened 2026-09-22 at `cf94e02`, closed at `c43fe1a`.**
@@ -100,7 +104,12 @@ under the gate. The migrated CSV contract blocks call
 importer blocks they replaced used an in-memory DuckDB and never sealed, so
 four blocks that had been nearly free became about one second each.
 
-Measured back to back on the same machine, three runs of the fast profile:
+Measured on the same machine, three runs of the fast profile each. Read the
+cross-tree rows with care: they were taken sequentially, one tree then the
+other, and a later interleaved comparison showed that method can invent a
+five-second difference out of machine drift alone. See section 12 of
+`ingestion_reader_closeout.md`. The lane decision does not rest on these
+rows; it rests on the per-block measurement below them.
 
 | tree | blocks | seconds | median |
 | --- | ---: | --- | ---: |

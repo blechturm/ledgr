@@ -354,3 +354,81 @@ test_that("a malformed numeric past the type sample still fails, at the reader",
     class = "ledgr_invalid_args"
   )
 })
+
+# W9-F5, maintainer decision 2026-09-22. A quarantined row's saved copy is a
+# diagnostic, not part of the snapshot's identity. Both ingestion surfaces
+# document that extra columns "are ignored and do not become part of the
+# sealed snapshot or its hash", and hashing original_row_json made that false:
+# a stray spreadsheet column moved the hash whenever a row was quarantined.
+# quarantine_id carried the same content, being a digest of the whole row, and
+# was the ORDER BY key as well. Both are now excluded from the hashed view and
+# the rows are ordered on stable fields. The copy itself is unchanged.
+test_that("a quarantined row's extra columns do not reach the snapshot hash", {
+  sessions <- data.frame(
+    session_date = as.Date("2024-01-01") + 0:4,
+    status = c("closed", "open", "open", "open", "open"),
+    session_open = c(NA_character_, rep("09:30:00", 4L)),
+    session_close = c(NA_character_, rep("16:00:00", 4L)),
+    knowledge_time = as.POSIXct("2023-12-01", tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  facts <- ledgr_facts(ledgr_facts_sessions(
+    sessions, venue_id = "XNYS", timezone = "America/New_York"
+  ))
+
+  seal <- function(extra_header = NULL, extra_values = NULL) {
+    header <- "instrument_id,ts_utc,open,high,low,close,volume"
+    rows <- c("AAA,2024-01-02,10,11,9,10,100",
+              "AAA,2024-01-03,11,8,10,11,100",   # high below open: quarantined
+              "AAA,2024-01-04,12,13,11,12,100")
+    if (!is.null(extra_header)) {
+      header <- paste0(header, ",", extra_header)
+      rows <- paste0(rows, ",", extra_values)
+    }
+    snap <- ledgr_snapshot_from_csv(
+      csvc_file(c(header, rows)), facts = facts, invalid_observations = "quarantine"
+    )
+    on.exit(ledgr_snapshot_close(snap), add = TRUE)
+    con <- ledgr_db_init(snap$db_path)
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    list(
+      hash = ledgr_snapshot_info(con, snap$snapshot_id)$snapshot_hash,
+      saved = DBI::dbGetQuery(
+        con,
+        "SELECT original_row_json FROM snapshot_observation_quarantine WHERE snapshot_id = ?",
+        params = list(snap$snapshot_id)
+      )$original_row_json
+    )
+  }
+
+  baseline <- seal()
+  expect_equal(length(baseline$saved), 1L)
+
+  for (case in list(
+    list(h = "extra", v = "1"),
+    list(h = "extra", v = "0001"),
+    list(h = "extra", v = "NA"),
+    list(h = "note", v = "anything")
+  )) {
+    got <- seal(case$h, case$v)
+    expect_identical(got$hash, baseline$hash, info = paste(case$h, case$v))
+    # The copy still carries the column; only the hash ignores it.
+    expect_true(grepl(case$h, got$saved, fixed = TRUE), info = case$h)
+  }
+
+  # The quarantine itself still changes the hash, so this has not simply
+  # stopped hashing the availability tables.
+  clean <- ledgr_snapshot_from_csv(
+    csvc_file(c("instrument_id,ts_utc,open,high,low,close,volume",
+                "AAA,2024-01-02,10,11,9,10,100",
+                "AAA,2024-01-03,11,12,10,11,100",
+                "AAA,2024-01-04,12,13,11,12,100")),
+    facts = facts, invalid_observations = "quarantine"
+  )
+  on.exit(ledgr_snapshot_close(clean), add = TRUE)
+  con <- ledgr_db_init(clean$db_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_false(identical(
+    ledgr_snapshot_info(con, clean$snapshot_id)$snapshot_hash, baseline$hash
+  ))
+})

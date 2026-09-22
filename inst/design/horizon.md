@@ -108,6 +108,49 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-22 [product] A quarantined row's copy is a diagnostic, not identity
+
+Maintainer decision, taken after the ingestion-reader re-review. When a bar
+fails validation under `invalid_observations = "quarantine"`, ledgr saves the
+supplied row as `original_row_json` so the user can see what was wrong. That
+field serialized every column of the row, including ones ledgr never reads,
+and the rule-2 hash covered it, so a stray spreadsheet column changed the
+snapshot's identity. Both ingestion surfaces document the opposite: extra
+columns "are ignored and do not become part of the sealed snapshot or its
+hash". The documentation was right and the hash was wrong.
+
+The hashed view now keeps only the canonical bar keys of the saved row and
+drops `quarantine_id`, which is a digest of the whole row and also the read's
+ordering key. The stored row is unchanged.
+
+The subtlety worth carrying forward is why the obvious fix is wrong. A
+quarantined bar is not written to `snapshot_bars`, so the saved copy is the
+only record of its values. Dropping the field from the hash outright, which
+was the first attempt, meant that editing a quarantined bar no longer changed
+the snapshot hash. An existing test caught it. The field has to be projected,
+not discarded: identity covers the row's canonical values and ignores
+everything else about it.
+
+This predates the DuckDB reader. The reader only changed how those ignored
+values render, which is what made the exposure visible.
+
+### 2026-09-22 [process] Sequential A/B timing invented a regression
+
+Recorded because it nearly caused a wrong decision twice in one cut. After an
+identity fix the fast gate reported a 92.16 s median against a 90 s bound,
+and three runs of the patched tree against three runs of the previous commit
+appeared to confirm a 5.6 s regression. Interleaving the two trees, one run
+each in turn, showed them identical: 84.69, 84.70, 84.67 against 84.67,
+84.38, 85.03. The difference was machine state drifting over a long session.
+
+Sequential A-then-B blocks on this machine cannot separate a real change from
+drift, and the drift is the same order as the effects being measured.
+Interleave, or measure the component directly rather than the whole profile.
+The same sequential method produced the earlier claim that moving four
+sealing blocks took the fast median from 86.78 s to 90.25 s; that lane
+decision survives only because it also rests on a direct per-block
+measurement within one tree.
+
 ### 2026-09-22 [product] DuckDB reads the ingestion CSV
 
 Maintainer decision: `duckdb::read_csv_auto()` replaces `utils::read.csv()`

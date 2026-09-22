@@ -1,4 +1,6 @@
-# Cut 5 Closeout: Ingestion Reader
+# Cut 3, Workstream 9 Closeout: Ingestion Reader
+
+*Ran as cut 5; folded into cut 3 by maintainer decision, 2026-09-22.*
 
 **Workstream 9, tickets LDG-2800 through LDG-2802.**
 **Opened and closed 2026-09-22, from `ac60941`.**
@@ -272,7 +274,11 @@ The re-review also confirmed the forced set independently, by deriving it
 from the schema and the adapter's reads and sealing one column at a time. No
 member is missing and none should be removed.
 
-**W9-F5 is open and is not mine to close.** Quarantined rows persist
+**W9-F5 is resolved. Maintainer decision, 2026-09-22: a quarantined row's
+saved copy is a diagnostic, not part of the snapshot's identity.** What
+follows is what was found; section 11 records what was done.
+
+Quarantined rows persist
 `original_row_json`, which serializes *every* column of the offending bars
 row, and the rule-2 hash covers the whole quarantine table. So reader type
 inference reaches snapshot identity through columns outside the forced set.
@@ -306,9 +312,71 @@ excluding `original_row_json` from the rule-2 payload while keeping it in the
 table for diagnostics, is one line but changes rule-2 identity for every
 quarantine snapshot.
 
-**Governance.** The re-review computes 3 invocations over 3 tickets, 1.00,
-and recommends folding workstream 9 into cut 3 as its second workstream,
-which gives 4 over 9, 0.44, while keeping a durable note that the cut-5 shape
-reached 3/3 and is what prompted the change. That restructuring is a
-maintainer decision and has not been made; the packet still shows cut 5 as
-its own cut.
+**Governance. Maintainer decision, 2026-09-22: fold.** Workstream 9 is now
+cut 3's second workstream, giving 4 invocations over 9 completed tickets,
+0.44. `tickets.yml` keeps cut 5 as a `folded` record carrying its historical
+3-over-3 ratio and the reason, so the chronology is not rewritten: this work
+did run as its own cut, and that shape is what the gate caught.
+
+## 11. The two maintainer decisions, as implemented
+
+### A quarantined row's saved copy is a diagnostic, not identity
+
+Implemented in `ledgr_snapshot_availability_hash_payload()`. The hashed view
+of `snapshot_observation_quarantine` keeps only the canonical bar keys of
+`original_row_json` and drops `quarantine_id`; rows are ordered on stable
+fields rather than on that id. The stored row is untouched, so a user still
+reads every column they supplied.
+
+Three things had to be true at once, and the first attempt only got two:
+
+1. An extra column must not reach the hash. That is what both ingestion
+   surfaces already promise.
+2. `quarantine_id` must not carry it back in. It is a digest of the whole
+   quarantine row and it is also the read's `ORDER BY` key, so leaving it in
+   leaked the same values twice, once directly and once through row order.
+3. **A quarantined row's own bar values must still reach the hash.** They are
+   not in `snapshot_bars`, because the row was excluded, so `original_row_json`
+   is the only record of them.
+
+The first attempt dropped `original_row_json` wholesale and satisfied 1 and 2
+while breaking 3: changing a quarantined bar's `high` from 8 to 7 no longer
+moved the snapshot hash, which is an identity hole, not a fix. An existing
+block, `explicit quarantine persists` in `test-availability-facts.R`, caught
+it. The shipped version projects the saved row down to the canonical keys
+instead of discarding it.
+
+Pinned by `a quarantined row's extra columns do not reach the snapshot hash`
+in the compatibility matrix, which asserts both directions: four extra-column
+shapes leave the hash unchanged, and a file with no quarantined row hashes
+differently from one with.
+
+This changes the rule-2 hash of any snapshot with a quarantined row whose
+file carried columns beyond the canonical set. Those old values were computed
+over data the documentation said was ignored.
+
+### The fold
+
+Recorded above and in `tickets.yml`. Nothing in the code depends on it.
+
+## 12. A measurement method that was wrong
+
+Worth carrying forward, because it affected a decision in workstream 7 too.
+
+After the identity fix the fast gate reported a 92.16 s median against a 90 s
+bound, and a three-run comparison against the previous commit appeared to
+confirm a 5.6 s regression. It was not one. Running the two trees
+**interleaved**, alternating one run each, gave 84.69, 84.70, 84.67 for the
+patched tree against 84.67, 84.38, 85.03 for the baseline. Identical. The
+apparent regression was machine state drifting across a long session, and
+sequential A-then-B blocks cannot separate that from a real change.
+
+The gate was then re-run on a quiet machine and passed at 86.72 s.
+
+The same sequential method produced workstream 7's claim that moving four
+sealing blocks took the fast median from 86.78 s to 90.25 s. That framing is
+unreliable for the same reason. The lane decision itself still stands,
+because it rests on a direct per-block measurement, about 1.0 s of sealing
+per block against a 0.15 s baseline in the same file, which is not a
+cross-tree comparison. Cut 3's closeout section 2 should be read with that
+distinction in mind.

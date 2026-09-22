@@ -170,8 +170,68 @@ ledgr_snapshot_availability_read <- function(con, snapshot_id) {
   out
 }
 
+# How a quarantined row enters snapshot identity.
+#
+# A quarantined bar is not written to snapshot_bars, so `original_row_json` is
+# the only record of its values and the hash has to cover them. But that field
+# serializes *every* column of the supplied row, including ones ledgr never
+# reads, and both ingestion surfaces document that extra columns "are ignored
+# and do not become part of the sealed snapshot or its hash". Hashing the
+# field whole made that false: a stray spreadsheet column moved the snapshot
+# hash whenever a row was quarantined.
+#
+# So the hashed view keeps the row's canonical bar fields and drops the rest.
+# `quarantine_id` is a digest of the whole quarantine row, `original_row_json`
+# included, so it carries the discarded values straight back in, and it is
+# also the read's ORDER BY key, which would leak them through row order. It is
+# dropped from the view and the rows are ordered on stable fields instead.
+#
+# The stored field is untouched. A user still reads the complete supplied row.
+#
+# Maintainer decision, 2026-09-22, after close review W9-F5. This changes the
+# rule-2 hash of any snapshot that has a quarantined row whose supplied file
+# carried columns beyond the canonical set.
+ledgr_snapshot_quarantine_hashed_row_keys <- function() {
+  c("instrument_id", "ts_utc", "open", "high", "low", "close", "volume")
+}
+
+ledgr_snapshot_quarantine_hashed_row <- function(original_row_json) {
+  vapply(
+    original_row_json,
+    function(value) {
+      if (is.na(value) || !nzchar(value)) return(NA_character_)
+      parsed <- tryCatch(ledgr_json_read_nested(value), error = function(e) NULL)
+      if (!is.list(parsed)) return(value)
+      keep <- intersect(ledgr_snapshot_quarantine_hashed_row_keys(), names(parsed))
+      as.character(canonical_json(parsed[keep]))
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+}
+
 ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
   tables <- ledgr_snapshot_availability_read(con, snapshot_id)
+
+  quarantine <- tables$snapshot_observation_quarantine
+  if (!is.null(quarantine) && nrow(quarantine) > 0L) {
+    if ("original_row_json" %in% names(quarantine)) {
+      quarantine$original_row_json <-
+        ledgr_snapshot_quarantine_hashed_row(quarantine$original_row_json)
+    }
+    order_by <- intersect(
+      c("supplied_instrument_id", "supplied_ts_utc", "reason",
+        "original_row_json", "provenance_json"),
+      names(quarantine)
+    )
+    if (length(order_by) > 0L) {
+      quarantine <- quarantine[do.call(order, unname(quarantine[order_by])), , drop = FALSE]
+      rownames(quarantine) <- NULL
+    }
+    keep <- setdiff(names(quarantine), "quarantine_id")
+    tables$snapshot_observation_quarantine <- quarantine[, keep, drop = FALSE]
+  }
+
   normalized <- lapply(tables, function(df) {
     if (nrow(df) == 0L) return(list())
     for (name in names(df)) {

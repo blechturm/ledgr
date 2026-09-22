@@ -1,6 +1,6 @@
 # v0.2.0.2 Packet
 
-**Status:** Five cuts. Cut 1, the test-suite cleanup, is closed: five
+**Status:** Four cuts. Cut 1, the test-suite cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2, the accounting-core consolidation, was cut
@@ -8,10 +8,12 @@ on 2026-09-22; its cut review (`cut_review_2.md`) returned
 `PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
 opens on the maintainer's word. Cut 3, the ingestion
 consolidation, is complete: six tickets, one CSV ingestion surface, two
-reviews over six tickets. Cut 5, the ingestion
-reader, is complete: DuckDB reads the ingestion CSV, and a silent
-leading-zero corruption is fixed. Cut 4 (exact-parity and workflow
-corrections) was cut on 2026-09-22 and awaits its workstream. The joint review
+reviews over six tickets. Its second
+workstream, the ingestion reader, is also complete: DuckDB reads the
+ingestion CSV, and two silent corruptions are fixed. That workstream ran as
+a separate cut 5 and was folded back into cut 3 after its re-review; see
+below. Cut 4 (exact-parity and workflow corrections) was cut on 2026-09-22
+and awaits its workstream. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cuts are independent of one another;
 workstreams are serial within a cut.
@@ -228,7 +230,7 @@ feature accessor family; `list.files` in the worker-setup dry run until
 confirmed on an installed package; the article's 0.99 weak-return
 threshold.
 
-## Cut 5: Ingestion reader (closed; close review FAILED and was patched)
+### Cut 3, workstream 9: Ingestion reader (was cut 5; closed after two FAIL reviews)
 
 Authority: the maintainer's decision of 2026-09-22 that DuckDB reads the
 ingestion CSV, recorded in the horizon as `[product] DuckDB reads the
