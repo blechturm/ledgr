@@ -194,31 +194,46 @@ the honest grain (Type 2).
 error fires first); hash chunk widening; raw-bytes hashing (own RFC); any
 change to the seal, the schema, or snapshot identity.
 
-## Cut 4: Exact-parity and workflow corrections (review passed after patches)
+## Cut 4: Exact-parity and workflow corrections (review passed after patches;
+maintainer-amended before implementation)
 
 Authority: horizon entries of 2026-09-18 (per-pulse context and feature
 accessor costs; duplicated helper families; peer benchmark session
 alignment defect) and 2026-09-19 (availability result reconstruction is
-quadratic), OPT-L14, and LFB-010 from the Sharadar workflow evidence. Every
-site was re-verified in the tree on 2026-09-22. No RFC: each ticket
+quadratic), OPT-L14, OPT-C03, the reviewed availability timestamp
+prerequisite and sealing audit, and LFB-010 from the Sharadar workflow
+evidence. Every site was re-verified in the tree on 2026-09-22. No RFC: each ticket
 preserves outputs, errors, classes and messages exactly, or is a
-public-boundary bug fix. Tickets LDG-2792 through LDG-2799, one workstream.
+public-boundary bug fix. Tickets LDG-2792 through LDG-2799 and LDG-2803,
+one workstream.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 8 Exact-parity and workflow corrections | 2792–2799 | discarded identity work in the per-pulse path (alias-map accessor, `replicate`, `match.arg`); `features_wide` fill by index; a source guard keeping identity helpers out of the pulse loop; forward reconstruction of availability marks (OPT-L14, marks half); zero opening cash rejected at construction (LFB-010); zipline alignment and a retention check; closeout. LDG-2795, the matrix-validator consolidation, is deferred to a maintenance cut | each parity witness fails on its smallest breaking change; the source guard fails on a reintroduced identity call; the availability oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes; before and after clocks on the profiled sweep shape and the availability read |
+| 8 Exact-parity and workflow corrections | 2792–2799, 2803 | discarded identity work in the per-pulse path (alias-map accessor, `replicate`, `match.arg`); `features_wide` fill by index; a source guard keeping identity helpers out of the pulse loop; forward reconstruction of availability marks (OPT-L14, marks half); prepared availability-ingestion timestamps and session rows with one retained fail-closed facts assertion; zero opening cash rejected at construction (LFB-010); zipline alignment and a retention check; closeout. LDG-2795, the matrix-validator consolidation, is deferred to a maintenance cut | each parity witness fails on its smallest breaking change; the source guard fails on a reintroduced identity call; the availability oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes; the ingestion witness detects rowwise parsing and a nested facts assertion; before and after clocks on the profiled sweep shape, the availability read and cold availability validation |
 
 The alias-map item was 56.73 percent of the profiled sweep under the
 `ctx$features(id)` idiom and none of the peer benchmark's, which reads
 `ctx$features_wide`; the cut states that limit rather than claiming a peer
 number. `ledgr_availability_positions_asof()` is excluded: it is inventory
 site S15 and becomes a consumer of the accounting-core replay under
-LDG-2779. Two reviews over seven tickets, 0.29.
+LDG-2779. Two reviews over eight tickets, 0.25.
 
 Workstream 8 has no dependency on workstream 7; staffing decides which
-opens first. The workstream is named for its actual outcome: five tickets
-sit on the sweep or result path and one (zipline) corrects peer evidence
-this packet already scheduled.
+opens first. Its package work stays on measured ingestion, sweep, result and
+validation boundaries; one ticket (zipline) corrects peer evidence this
+packet already scheduled.
+
+**Post-review maintainer amendment.** On 2026-09-22 the maintainer added
+LDG-2803 before implementation after reconciling the prior-cycle records with
+the unchanged availability-ingest source. The historical timestamp
+prerequisite remains `NEITHER`: its primitive session-close candidate missed
+the registered speed gate. The new ticket instead retains the initial
+fail-closed facts assertion, removes only a nested repeat, parses distinct
+observation values under the existing scalar contract, and reuses prepared
+timestamp tokens. The old probe measured observation normalization at 16.19
+seconds current and 0.03 seconds candidate; a same-shape check measured the
+redundant facts assertion at 5.83 seconds. Those are orientation for the new
+paired record, not substituted release evidence.
 
 **What the cut review added.** Four bounded patches, applied in place.
 C4-F1: LDG-2792, LDG-2793 and LDG-2796 now name the smallest breaking
@@ -243,7 +258,8 @@ in this workstream at all, or held for a maintenance cut (Type 2).
 deferred with its candidate-id note); the derived-context spike; the
 feature accessor family; `list.files` in the worker-setup dry run until
 confirmed on an installed package; the article's 0.99 weak-return
-threshold.
+threshold; global fact-hash caching; and the failed primitive session-close
+candidate by itself.
 
 ### Cut 3, workstream 9: Ingestion reader (was cut 5; closed after two FAIL reviews)
 

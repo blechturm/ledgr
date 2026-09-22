@@ -33,9 +33,9 @@ cuts:
   - id: 4
     name: "Exact-parity and workflow corrections"
     cut: "2026-09-22"
-    cut_review: "cut_review_3_4.md; PASS_AFTER_PATCHES at 8747c64; patched in place"
-    authority: "inst/design/horizon.md 2026-09-18 (per-pulse context and feature accessor costs; duplicated helper families; peer benchmark session alignment defect) and 2026-09-19 (availability result reconstruction is quadratic); remaining-optimization-options-inventory.md OPT-L14; inst/design/research/Sharadar-Workflow-Improvement-Evidence.md LFB-010"
-    source_table: "none; each ticket cites its horizon entry and source lines"
+    cut_review: "cut_review_3_4.md; PASS_AFTER_PATCHES at 8747c64; patched in place. Maintainer amendment on 2026-09-22 added LDG-2803 before implementation."
+    authority: "inst/design/horizon.md 2026-09-18 (per-pulse context and feature accessor costs; duplicated helper families; peer benchmark session alignment defect) and 2026-09-19 (availability result reconstruction is quadratic); remaining-optimization-options-inventory.md OPT-L14 and OPT-C03; dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md; dev/spikes/snapshot-sealing/loop_audit.md; inst/design/research/Sharadar-Workflow-Improvement-Evidence.md LFB-010"
+    source_table: "Each ticket cites its horizon or evidence source; LDG-2803 reuses the registered availability timestamp prerequisite fixture and measurements."
     workstreams: [8]
     closeout: "pending"
     status: "cut"
@@ -117,7 +117,7 @@ workstreams:
     status: "pending"
     depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a surface the horizon measured. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, and that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes. Workstream 8 has no dependency on workstream 7; staffing decides which opens first."}
+    review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a measured surface or fixes a public-boundary defect. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes, and that availability input validation retains one fail-closed facts assertion while eliminating only duplicate parsing, tokenization and assertion work. Workstream 8 has no dependency on workstream 7; staffing decides which opens first."}
   - id: 9
     name: "Ingestion reader"
     cut: 3
@@ -707,14 +707,24 @@ tickets:
     scope: "Horizon 2026-09-18, peer benchmark session alignment defect. The zipline adapter's 24/5 calendar (dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py:93) labels every session one day after the bar date; the timestamp join at dev/bench/peer_benchmark/peer_benchmark.R:1456-1463 then drops 252 Mondays and 252 Saturdays and pairs each ledgr session with zipline's previous bar. Fix the pairing (calendar or positional), add a retention check that reports the retained-row share per peer and fails below a stated floor, and re-score zipline. The promoted v0.2.0.1 record stays as measured history; the new record discloses the change. The article's 0.99 weak-return threshold is reported on, not changed here."
     acceptance: ["zipline's daily-return correlation is reported from a full 1,260-row pairing", "the retention check flags the 1,008-of-1,260 join when the fix is reverted; mutation recorded", "no promoted record is edited"]
 
+  - id: "LDG-2803"
+    title: "Prepare availability timestamps and session rows once"
+    workstream: 8
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Maintainer amendment after reviewing the v0.2.0.1 availability records. ledgr_availability_validate_inputs() already calls ledgr_facts_assert() before preparing observations, but ledgr_availability_times_are_session_closes() reaches ledgr_session_open_rows(), which re-runs the complete family hashes. On the registered 563-instrument, 757-session fixture that redundant assertion independently measured 5.83 seconds. Separately, the accepted prerequisite proved an exact candidate that parses each distinct non-date observation timestamp once through the existing scalar ledgr_fact_time() contract and maps it back: 16.19 seconds current versus 0.03 seconds candidate. Implement one local prepared path: retain the initial fail-closed facts assertion; derive open session rows from that already-validated bundle without asserting it again; parse distinct observation values once while preserving row-level invalid-to-quarantine behavior; compute observation timestamp tokens once and reuse them for session membership, duplicate keys and the report. Standalone helpers retain their present validation and error behavior. This is a new v0.2.0.2 mechanism; it does not rewrite the historical NEITHER outcome, introduce global fact-hash caching, or adopt the failed primitive session-close candidate."
+    acceptance: ["the five observation-time cases and the complete registered validation result are identical before and after, including prepared bars, quarantine rows and identities, report rows and ordering, summary, conditions, warnings, and snapshot hash", "repeated valid and malformed timestamp values prove that every distinct value is parsed under the existing scalar contract and mapped back to every original row without changing quarantine locators", "a detecting spy establishes exactly one ledgr_facts_assert call per complete ledgr_availability_validate_inputs invocation and no more scalar timestamp parses than distinct non-date inputs; reintroducing the rowwise parser or the nested facts assertion fails the block", "paired interleaved measurements report the observation normalizer, complete input validation, and cold availability end to end on the registered 563-instrument, 757-session fixture; the old 16.19/0.03-second normalizer and 5.83-second duplicate assertion are orientation, not substituted release evidence", "no warm-run improvement is claimed because this work is paid when the snapshot is prepared"]
+
   - id: "LDG-2799"
     title: "Workstream closeout"
     workstream: 8
     status: "pending"
     priority: "P0"
     effort: "S"
-    dependencies: ["LDG-2792", "LDG-2793", "LDG-2794", "LDG-2796", "LDG-2797", "LDG-2798"]
-    scope: "Governance synthesis D4. Closeout section for cut 4: what shipped; LDG-2795 named as deferred to a maintenance cut with its candidate-id note; the before and after on the profiled sweep shape and on the availability read; the parity witnesses by ticket; review invocations against the 0.5 gate; declined items with reasons: list.files in the worker-setup dry run (R/parallel-workers.R:276; confirm on an installed package first), the feature accessor family (a design question), the derived-context spike (parked). Owner: the maintainer; the draft is agent-provisional."
+    dependencies: ["LDG-2792", "LDG-2793", "LDG-2794", "LDG-2796", "LDG-2797", "LDG-2798", "LDG-2803"]
+    scope: "Governance synthesis D4. Closeout section for cut 4: what shipped; LDG-2795 named as deferred to a maintenance cut with its candidate-id note; the before and after on the profiled sweep shape, the availability read, and the cold availability input-validation path; the parity witnesses by ticket; review invocations against the 0.5 gate; declined items with reasons: list.files in the worker-setup dry run (R/parallel-workers.R:276; confirm on an installed package first), the feature accessor family (a design question), the derived-context spike (parked), primitive session-close comparison alone (the historical candidate missed its gate), and global fact-hash caching (changes the tamper-detection boundary). Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the declined items are listed with their reason"]
 
   - id: "LDG-2800"
