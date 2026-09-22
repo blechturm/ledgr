@@ -116,8 +116,6 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_snapshot_from_csv",
     "ledgr_snapshot_from_df",
     "ledgr_snapshot_from_yahoo",
-    "ledgr_snapshot_import_bars_csv",
-    "ledgr_snapshot_import_instruments_csv",
     "ledgr_snapshot_info",
     "ledgr_snapshot_list",
     "ledgr_snapshot_open",

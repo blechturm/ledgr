@@ -40,17 +40,29 @@
 #'   con,
 #'   snapshot_id = "snapshot_20200101_000000_abcd"
 #' )
-#' bars_csv <- tempfile(fileext = ".csv")
-#' utils::write.csv(data.frame(
+#' DBI::dbAppendTable(con, "snapshot_instruments", data.frame(
+#'   snapshot_id = snapshot_id,
 #'   instrument_id = "AAA",
-#'   ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+#'   symbol = "AAA",
+#'   currency = "USD",
+#'   asset_class = "EQUITY",
+#'   multiplier = 1,
+#'   tick_size = 0.01,
+#'   meta_json = NA_character_
+#' ))
+#' DBI::dbAppendTable(con, "snapshot_bars", data.frame(
+#'   snapshot_id = snapshot_id,
+#'   instrument_id = "AAA",
+#'   ts_utc = as.POSIXct(
+#'     c("2020-01-01", "2020-01-02"),
+#'     tz = "UTC"
+#'   ),
 #'   open = c(100, 101),
 #'   high = c(101, 102),
 #'   low = c(99, 100),
 #'   close = c(100, 101),
 #'   volume = 1000
-#' ), bars_csv, row.names = FALSE)
-#' ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv)
+#' ))
 #' ledgr_snapshot_seal(con, snapshot_id)
 #' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export

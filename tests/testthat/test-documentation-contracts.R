@@ -382,7 +382,6 @@ testthat::test_that("help pages provide browser-free paths to installed articles
     ledgr_snapshot_from_csv = "experiment-store",
     ledgr_snapshot_from_yahoo = "experiment-store",
     ledgr_snapshot_create = "experiment-store",
-    ledgr_snapshot_import_bars_csv = "experiment-store",
     ledgr_snapshot_seal = "experiment-store",
     ledgr_snapshot_open = "experiment-store",
     ledgr_snapshot_info = "experiment-store",

@@ -445,7 +445,6 @@ Use this map when you know the task but not the function name:
 | Seal in-memory bars | `ledgr_snapshot_from_df()` |
 | Seal a local CSV | `ledgr_snapshot_from_csv()` |
 | Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
-| Control low-level CSV create/import/seal lifecycle | `?ledgr_snapshot_import_bars_csv` |
 | Reopen an existing store | `ledgr_snapshot_open()` |
 | List stored runs | `ledgr_run_list()` |
 | Compare durable runs | `ledgr_run_compare()` |

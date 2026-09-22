@@ -521,11 +521,10 @@ ledgr_snapshot_from_df <- function(bars_df,
 #'
 #' CSV parse and OHLC validation errors are snapshot creation errors. They are
 #' raised before a snapshot can be loaded into `ledgr_experiment()` or executed
-#' with `ledgr_run()`. High-level validation uses general ledgr argument and
-#' timestamp classes such as `ledgr_invalid_args` and `ledgr_invalid_timestamp`;
-#' the low-level CSV reader uses `LEDGR_CSV_FORMAT_ERROR`. In both paths,
-#' snapshot creation fails before a usable snapshot artifact is left behind, so
-#' fix the CSV and rerun snapshot creation.
+#' with `ledgr_run()`, and they use the general ledgr argument and timestamp
+#' classes `ledgr_invalid_args` and `ledgr_invalid_timestamp`. Snapshot
+#' creation fails before a usable snapshot artifact is left behind, so fix the
+#' CSV and rerun snapshot creation.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
