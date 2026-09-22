@@ -108,6 +108,33 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-22 [product] One CSV ingestion surface
+
+Maintainer decision: `ledgr_snapshot_from_csv()` and
+`ledgr_snapshot_from_df()` are the ingestion surface. The connection-first
+lifecycle from v0.1.1, `ledgr_snapshot_create()` then
+`ledgr_snapshot_import_bars_csv()` then `ledgr_snapshot_seal()`, with
+`ledgr_snapshot_import_instruments_csv()` beside it, is removed in v0.2.0.2
+cut 3. The 2026-09-17 entry below asked for a compatibility matrix rather
+than a silent merge; this is the explicit decision it reserved.
+
+Why. The two CSV surfaces are two generations of the same idea. The strict
+importer came first (2025-12-19); the handle-returning adapters came two days
+later and re-implemented its four validations (finite OHLC, rounding, bounds,
+duplicate key) in a second error vocabulary rather than calling it, and
+`from_csv()` bypasses it entirely. Every capability added since landed on
+`from_df()` only: the strict flow has no reference to availability facts or
+quarantine and cannot carry them. Its one distinct capability, instrument
+metadata from a second file, moves to `from_csv()` as an argument. Nothing
+in package code or vignettes drives the strict flow; its callers are its own
+examples and twenty-six test sites.
+
+What stays open. The identity-preserving timestamp work in `from_df()`
+(OPT-L02) ships in the same cut with a pinned snapshot hash as its witness.
+`colClasses` on the reader changes which error fires first and is declined
+at 0.9 s. Hash chunk widening and raw-bytes hashing keep their earlier
+dispositions.
+
 ### 2026-09-22 [architecture] Accounting core accepted; what it deferred
 
 The accounting-core consolidation RFC is accepted

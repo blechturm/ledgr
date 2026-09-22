@@ -1,12 +1,15 @@
 # v0.2.0.2 Packet
 
-**Status:** Two cuts. Cut 1, the test-suite cleanup, is closed: five
+**Status:** Four cuts. Cut 1, the test-suite cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2, the accounting-core consolidation, was cut
 on 2026-09-22; its cut review (`cut_review_2.md`) returned
 `PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
-opens on the maintainer's word.
+opens on the maintainer's word. Cuts 3 (ingestion consolidation) and 4
+(sweep-side exact-parity optimizations) were cut on 2026-09-22 and await
+their cut reviews. Cuts are independent of one another; workstreams are
+serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
 cut, and sequencing authority. Each cut names its own RFC authority there;
@@ -98,6 +101,89 @@ carrier be reviewed before the replay is built on it (Type 2).
 removing the per-lot list allocation in pack/unpack; no runtime-default
 decision; no compiled-execution RFC work. Nothing is edited before the cut
 review is accepted.
+
+## Cut 3: Ingestion consolidation (cut review pending)
+
+Authority: the maintainer's decision of 2026-09-22 that
+`ledgr_snapshot_from_csv()` and `ledgr_snapshot_from_df()` are the ingestion
+surface and the connection-first create/import/seal lifecycle from v0.1.1 is
+removed (horizon, `[product] One CSV ingestion surface`), together with the
+durable-path note's decisions 1 and 2 and the v0.2.0.1 inventory's OPT-L02
+and OPT-L03. No RFC: the 2026-09-17 note reserved exactly this call for the
+maintainer. Tickets LDG-2786 through LDG-2791, one workstream.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 7 Ingestion consolidation | 2786–2791 | migrate the strict importer's 26 test sites; remove `ledgr_snapshot_import_bars_csv()`, `ledgr_snapshot_import_instruments_csv()` and five dead helpers; `from_csv` gains the file-side arguments (`instruments_csv_path`, `facts`, `invalid_observations`); exact-output timestamp handling in `from_df` with a seven-branch identity matrix and a pinned snapshot hash; the peer harness calls `from_csv`; closeout | the pinned hash did not move; every timestamp branch identical before and after; no contract case lost in migration; the harness record discloses its phase change |
+
+Before-state, measured 2026-09-22 at the release shape (500 instruments by
+1,260 sessions, 630,000 rows), `pkgload`, R 4.6.1:
+
+| Path | Seconds |
+| --- | ---: |
+| `ledgr_snapshot_from_df()`, POSIXct input | 10.39 |
+| `ledgr_snapshot_from_df()`, ISO-Z character input | 12.09 |
+| `ledgr_snapshot_from_csv()` | 20.07 |
+| `ledgr_snapshot_import_bars_csv()` (removed) | 13.01 |
+
+Component clocks with an `identical()` alternative: line-104 format 4.32 s
+to 0.03; ISO-Z round-trip format 3.23 s to 0; ISO-Z parse 2.02 s to 0.03;
+scalar fallback 2.28 s per 20,000 rows. These are component clocks, not an
+end-to-end forecast; the closeout records the after-state.
+
+Ticket order: tests first (2786) so the suite stays green, then removal
+(2787), then the widened `from_csv` (2788); the timestamp work (2789) is
+independent of the removal; the harness switch (2790) follows it; closeout
+(2791). Two reviews over six tickets, 0.33.
+
+**Maintainer-amendable assumptions:** straight removal with no deprecation
+shim (LDG-2787); `from_csv` gains all three pass-throughs rather than only
+`instruments_csv_path` (LDG-2788).
+
+**The cut review** asks, in order: does every contract case the removed
+surface tested have either a kept-surface owner in LDG-2786 or a stated
+reason for deletion (Type 1); is the hash pin plus seven-branch matrix an
+adequate identity witness for LDG-2789, and what smallest change would it
+miss (Type 1); and is one workstream of six tickets with one close review
+the honest grain (Type 2).
+
+**Not in this cut:** `colClasses` on the CSV reader (0.9 s; changes which
+error fires first); hash chunk widening; raw-bytes hashing (own RFC); any
+change to the seal, the schema, or snapshot identity.
+
+## Cut 4: Sweep-side exact-parity optimizations (cut review pending)
+
+Authority: horizon entries of 2026-09-18 (per-pulse context and feature
+accessor costs; duplicated helper families; peer benchmark session
+alignment defect) and 2026-09-19 (availability result reconstruction is
+quadratic), OPT-L14, and LFB-010 from the Sharadar workflow evidence. Every
+site was re-verified in the tree on 2026-09-22. No RFC: each ticket
+preserves outputs, errors, classes and messages exactly, or is a
+public-boundary bug fix. Tickets LDG-2792 through LDG-2799, one workstream.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 8 Sweep-side optimizations | 2792–2799 | discarded identity work in the per-pulse path (alias-map accessor, `replicate`, `match.arg`); `features_wide` fill by index; a source guard keeping identity helpers out of the pulse loop; one parameterized matrix validator for six clones; forward reconstruction of availability marks (OPT-L14, marks half); opening-cash validation agreement (LFB-010); zipline alignment and a retention check; closeout | each parity witness fails on its smallest breaking change; the source guard fails on a reintroduced identity call; the availability oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes; before and after clocks on the profiled sweep shape and the availability read |
+
+The alias-map item was 56.73 percent of the profiled sweep under the
+`ctx$features(id)` idiom and none of the peer benchmark's, which reads
+`ctx$features_wide`; the cut states that limit rather than claiming a peer
+number. `ledgr_availability_positions_asof()` is excluded: it is inventory
+site S15 and becomes a consumer of the accounting-core replay under
+LDG-2779. Two reviews over eight tickets, 0.25.
+
+Workstream 8 is sequenced after workstream 7 for staffing, not dependency.
+The maintainer may open it earlier.
+
+**The cut review** asks, in order: does each ticket name a parity witness
+and the smallest change that breaks it (Type 1); is the marks-only scope of
+LDG-2796 cleanly separable from the positions half owned by LDG-2779
+(Type 1); and should the validator consolidation and the zipline chore be
+in this workstream at all, or held for a maintenance cut (Type 2).
+
+**Not in this cut:** the derived-context spike; the feature accessor
+family; `list.files` in the worker-setup dry run until confirmed on an
+installed package; the article's 0.99 weak-return threshold.
 
 ## Pilot
 
