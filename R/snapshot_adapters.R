@@ -9,8 +9,8 @@
 #' @param instruments_df Optional data.frame with instrument metadata.
 #' @param facts Optional point-in-time facts created by [ledgr_facts()].
 #' @param invalid_observations Either `"error"` (the default) or the explicit
-#'   `"quarantine"` acknowledgement. Quarantine requires declared sessions and
-#'   is available only through this data-frame adapter.
+#'   `"quarantine"` acknowledgement. Quarantine requires declared sessions in
+#'   `facts`.
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @return A `ledgr_snapshot` object.
@@ -482,25 +482,50 @@ ledgr_snapshot_from_df <- function(bars_df,
 
 #' Create a snapshot from a CSV file
 #'
-#' Reads a CSV file and delegates to `ledgr_snapshot_from_df()`.
+#' Reads a bars CSV, optionally an instruments CSV, and seals a snapshot. This
+#' is the file-input form of `ledgr_snapshot_from_df()`. Both accept the same
+#' columns, the same timestamp forms, and the same point-in-time facts, and
+#' both return a sealed `ledgr_snapshot`.
 #'
 #' @param csv_path Path to a bars CSV file.
+#' @param instruments_csv_path Optional path to an instruments CSV. When
+#'   `NULL`, instruments are generated from the instrument ids in the bars.
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
+#' @param facts Optional point-in-time facts created by [ledgr_facts()].
+#' @param invalid_observations Either `"error"` (the default) or the explicit
+#'   `"quarantine"` acknowledgement. Quarantine requires declared sessions in
+#'   `facts`.
 #' @return A `ledgr_snapshot` object.
 #' @details
+#' The bars CSV must contain `instrument_id`, `ts_utc`, `open`, `high`, `low`,
+#' and `close`; `volume` is optional. ledgr imports only those canonical bar
+#' columns. Other CSV columns are ignored and do not become part of the sealed
+#' snapshot or its hash.
+#'
+#' `ts_utc` accepts a date-only value such as `2020-01-01`, an ISO 8601 UTC
+#' datetime with a trailing `Z`, and the same datetime without the `Z`. A
+#' date-only value becomes midnight UTC. Timestamps are whole seconds by
+#' contract.
+#'
+#' Whole-number price and volume columns are read as integers by R's CSV
+#' reader. ledgr coerces the canonical numeric bar columns to double before
+#' sealing, so a snapshot's identity depends on the data rather than on the
+#' reader's column-type inference, and a bars CSV and the equivalent
+#' `data.frame` seal to the same snapshot hash.
+#'
+#' The instruments CSV must contain `instrument_id`. `symbol`, `currency`,
+#' `asset_class`, `multiplier`, and `tick_size` are optional and default to the
+#' instrument id, `"USD"`, `"EQUITY"`, `1`, and `0.01`. Every instrument the
+#' bars reference must appear in it.
+#'
 #' CSV parse and OHLC validation errors are snapshot creation errors. They are
 #' raised before a snapshot can be loaded into `ledgr_experiment()` or executed
 #' with `ledgr_run()`. High-level validation uses general ledgr argument and
 #' timestamp classes such as `ledgr_invalid_args` and `ledgr_invalid_timestamp`;
-#' the low-level CSV import helpers use `LEDGR_CSV_FORMAT_ERROR`. In both paths,
+#' the low-level CSV reader uses `LEDGR_CSV_FORMAT_ERROR`. In both paths,
 #' snapshot creation fails before a usable snapshot artifact is left behind, so
 #' fix the CSV and rerun snapshot creation.
-#'
-#' The CSV must contain `instrument_id`, `ts_utc`, `open`, `high`, `low`, and
-#' `close`; `volume` is optional. ledgr imports only those canonical bar columns.
-#' Other CSV columns are ignored and do not become part of the sealed snapshot or
-#' its hash.
 #' @section Articles:
 #' Durable experiment stores:
 #' `vignette("experiment-store", package = "ledgr")`
@@ -523,12 +548,47 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' ledgr_snapshot_info(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
+ledgr_csv_normalize_numeric_columns <- function(df) {
+  # read.csv infers integer columns for whole-number prices. from_df treats the
+  # supplied column type as the user's own, and records it verbatim in a
+  # quarantined row's original_row_json, so an inferred integer would make a
+  # snapshot's identity depend on the reader rather than on the data. Coerce the
+  # canonical numeric bar columns to double so the file and frame surfaces agree.
+  for (col in c("open", "high", "low", "close", "volume")) {
+    if (col %in% names(df) && is.integer(df[[col]])) {
+      df[[col]] <- as.numeric(df[[col]])
+    }
+  }
+  df
+}
+
 ledgr_snapshot_from_csv <- function(csv_path,
+                                    instruments_csv_path = NULL,
                                     db_path = NULL,
-                                    snapshot_id = NULL) {
+                                    snapshot_id = NULL,
+                                    facts = NULL,
+                                    invalid_observations = c("error", "quarantine")) {
   ledgr_validate_snapshot_id(snapshot_id)
   bars_df <- ledgr_read_csv_strict(csv_path, encoding = "UTF-8", strict = TRUE)
-  ledgr_snapshot_from_df(bars_df = bars_df, db_path = db_path, snapshot_id = snapshot_id)
+  bars_df <- ledgr_csv_normalize_numeric_columns(bars_df)
+
+  instruments_df <- NULL
+  if (!is.null(instruments_csv_path)) {
+    instruments_df <- ledgr_read_csv_strict(
+      instruments_csv_path,
+      encoding = "UTF-8",
+      strict = TRUE
+    )
+  }
+
+  ledgr_snapshot_from_df(
+    bars_df = bars_df,
+    instruments_df = instruments_df,
+    db_path = db_path,
+    snapshot_id = snapshot_id,
+    facts = facts,
+    invalid_observations = invalid_observations
+  )
 }
 
 ledgr_yahoo_extract_bars <- function(x, symbol) {

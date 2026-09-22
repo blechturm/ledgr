@@ -4,34 +4,69 @@
 \alias{ledgr_snapshot_from_csv}
 \title{Create a snapshot from a CSV file}
 \usage{
-ledgr_snapshot_from_csv(csv_path, db_path = NULL, snapshot_id = NULL)
+ledgr_snapshot_from_csv(
+  csv_path,
+  instruments_csv_path = NULL,
+  db_path = NULL,
+  snapshot_id = NULL,
+  facts = NULL,
+  invalid_observations = c("error", "quarantine")
+)
 }
 \arguments{
 \item{csv_path}{Path to a bars CSV file.}
 
+\item{instruments_csv_path}{Optional path to an instruments CSV. When
+\code{NULL}, instruments are generated from the instrument ids in the bars.}
+
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
 \item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
+
+\item{facts}{Optional point-in-time facts created by \code{\link[=ledgr_facts]{ledgr_facts()}}.}
+
+\item{invalid_observations}{Either \code{"error"} (the default) or the explicit
+\code{"quarantine"} acknowledgement. Quarantine requires declared sessions in
+\code{facts}.}
 }
 \value{
 A \code{ledgr_snapshot} object.
 }
 \description{
-Reads a CSV file and delegates to \code{ledgr_snapshot_from_df()}.
+Reads a bars CSV, optionally an instruments CSV, and seals a snapshot. This
+is the file-input form of \code{ledgr_snapshot_from_df()}. Both accept the same
+columns, the same timestamp forms, and the same point-in-time facts, and
+both return a sealed \code{ledgr_snapshot}.
 }
 \details{
+The bars CSV must contain \code{instrument_id}, \code{ts_utc}, \code{open}, \code{high}, \code{low},
+and \code{close}; \code{volume} is optional. ledgr imports only those canonical bar
+columns. Other CSV columns are ignored and do not become part of the sealed
+snapshot or its hash.
+
+\code{ts_utc} accepts a date-only value such as \code{2020-01-01}, an ISO 8601 UTC
+datetime with a trailing \code{Z}, and the same datetime without the \code{Z}. A
+date-only value becomes midnight UTC. Timestamps are whole seconds by
+contract.
+
+Whole-number price and volume columns are read as integers by R's CSV
+reader. ledgr coerces the canonical numeric bar columns to double before
+sealing, so a snapshot's identity depends on the data rather than on the
+reader's column-type inference, and a bars CSV and the equivalent
+\code{data.frame} seal to the same snapshot hash.
+
+The instruments CSV must contain \code{instrument_id}. \code{symbol}, \code{currency},
+\code{asset_class}, \code{multiplier}, and \code{tick_size} are optional and default to the
+instrument id, \code{"USD"}, \code{"EQUITY"}, \code{1}, and \code{0.01}. Every instrument the
+bars reference must appear in it.
+
 CSV parse and OHLC validation errors are snapshot creation errors. They are
 raised before a snapshot can be loaded into \code{ledgr_experiment()} or executed
 with \code{ledgr_run()}. High-level validation uses general ledgr argument and
 timestamp classes such as \code{ledgr_invalid_args} and \code{ledgr_invalid_timestamp};
-the low-level CSV import helpers use \code{LEDGR_CSV_FORMAT_ERROR}. In both paths,
+the low-level CSV reader uses \code{LEDGR_CSV_FORMAT_ERROR}. In both paths,
 snapshot creation fails before a usable snapshot artifact is left behind, so
 fix the CSV and rerun snapshot creation.
-
-The CSV must contain \code{instrument_id}, \code{ts_utc}, \code{open}, \code{high}, \code{low}, and
-\code{close}; \code{volume} is optional. ledgr imports only those canonical bar columns.
-Other CSV columns are ignored and do not become part of the sealed snapshot or
-its hash.
 }
 \section{Articles}{
 

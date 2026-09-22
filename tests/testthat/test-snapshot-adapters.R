@@ -249,3 +249,130 @@ test_that("ledgr_snapshot_from_yahoo requires quantmod", {
     "quantmod package required"
   )
 })
+
+# ledgr-test-profile: review
+test_that("ledgr_snapshot_from_csv accepts an instruments CSV", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+
+  bars_path <- tempfile(fileext = ".csv")
+  utils::write.csv(
+    data.frame(
+      instrument_id = rep(c("AAA", "BBB"), each = 2L),
+      ts_utc = rep(c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"), 2L),
+      open = c(100, 101, 200, 201),
+      high = c(101, 102, 201, 202),
+      low = c(99, 100, 199, 200),
+      close = c(100, 101, 200, 201),
+      volume = 1000,
+      stringsAsFactors = FALSE
+    ),
+    bars_path,
+    row.names = FALSE
+  )
+
+  inst_path <- tempfile(fileext = ".csv")
+  utils::write.csv(
+    data.frame(
+      instrument_id = c("AAA", "BBB"),
+      symbol = c("ALPHA", "BETA"),
+      currency = c("EUR", "USD"),
+      asset_class = c("EQUITY", "EQUITY"),
+      multiplier = c(2, 1),
+      tick_size = c(0.05, 0.01),
+      stringsAsFactors = FALSE
+    ),
+    inst_path,
+    row.names = FALSE
+  )
+
+  snap <- ledgr_snapshot_from_csv(
+    bars_path,
+    instruments_csv_path = inst_path,
+    db_path = db_path
+  )
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  expect_equal(snap$metadata$n_instruments, 2L)
+
+  con <- ledgr_db_init(snap$db_path)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  inst <- DBI::dbGetQuery(
+    con,
+    "SELECT instrument_id, symbol, currency, asset_class, multiplier, tick_size
+     FROM snapshot_instruments WHERE snapshot_id = ? ORDER BY instrument_id",
+    params = list(snap$snapshot_id)
+  )
+  expect_identical(inst$instrument_id, c("AAA", "BBB"))
+  expect_identical(inst$symbol, c("ALPHA", "BETA"))
+  expect_identical(inst$currency, c("EUR", "USD"))
+  expect_equal(inst$multiplier, c(2, 1))
+  expect_equal(inst$tick_size, c(0.05, 0.01))
+})
+
+# ledgr-test-profile: review
+test_that("ledgr_snapshot_from_csv quarantines exactly as ledgr_snapshot_from_df does", {
+  sessions <- data.frame(
+    session_date = as.Date("2024-01-01") + 0:4,
+    status = c("closed", "open", "open", "open", "open"),
+    session_open = c(NA_character_, rep("09:30:00", 4L)),
+    session_close = c(NA_character_, rep("16:00:00", 4L)),
+    knowledge_time = as.POSIXct("2023-12-01", tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  facts <- ledgr_facts(
+    ledgr_facts_sessions(
+      sessions,
+      venue_id = "XNYS",
+      timezone = "America/New_York"
+    )
+  )
+
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = as.Date("2024-01-02") + 0:2,
+    open = c(10, 11, 12),
+    high = c(11, 8, 13),
+    low = c(9, 10, 11),
+    close = c(10, 11, 12),
+    volume = 100,
+    stringsAsFactors = FALSE
+  )
+
+  csv_path <- tempfile(fileext = ".csv")
+  utils::write.csv(bars, csv_path, row.names = FALSE)
+
+  db_df <- tempfile(fileext = ".duckdb")
+  db_csv <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(db_df, db_csv)), add = TRUE)
+
+  snap_df <- ledgr_snapshot_from_df(
+    bars,
+    db_path = db_df,
+    facts = facts,
+    invalid_observations = "quarantine"
+  )
+  on.exit(ledgr_snapshot_close(snap_df), add = TRUE)
+
+  snap_csv <- ledgr_snapshot_from_csv(
+    csv_path,
+    db_path = db_csv,
+    facts = facts,
+    invalid_observations = "quarantine"
+  )
+  on.exit(ledgr_snapshot_close(snap_csv), add = TRUE)
+
+  expect_equal(snap_df$metadata$quarantined_observation_count, 1L)
+  expect_identical(
+    snap_csv$metadata$quarantined_observation_count,
+    snap_df$metadata$quarantined_observation_count
+  )
+  expect_identical(snap_csv$metadata$n_bars, snap_df$metadata$n_bars)
+
+  hash_of <- function(snap) {
+    con <- ledgr_db_init(snap$db_path)
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+    ledgr_snapshot_info(con, snap$snapshot_id)$snapshot_hash
+  }
+  expect_identical(hash_of(snap_csv), hash_of(snap_df))
+})

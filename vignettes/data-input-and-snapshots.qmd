@@ -119,10 +119,13 @@ new R session, recover the handle with `ledgr_snapshot_open(db_path,
 snapshot_id)`.
 
 If your market data starts in CSV, seal the CSV into the same kind of durable
-store. The CSV must contain `instrument_id`, `ts_utc`, `open`, `high`, `low`,
-and `close`; `volume` is optional. ledgr imports only those canonical bar
-columns. Other CSV columns are ignored and do not become part of the sealed
-snapshot or its hash.
+store. `ledgr_snapshot_from_csv()` is the file-input form of
+`ledgr_snapshot_from_df()`: one contract, two input types. Both require
+`instrument_id`, `ts_utc`, `open`, `high`, `low`, and `close`, with `volume`
+optional. ledgr imports only those canonical bar columns. Other columns are
+ignored and do not become part of the sealed snapshot or its hash. `ts_utc`
+accepts a date-only value, an ISO 8601 UTC datetime with a trailing `Z`, and
+the same datetime without the `Z`.
 
 ```{r}
 #| label: csv-snapshot
@@ -130,6 +133,24 @@ snapshot or its hash.
 
 snapshot <- ledgr_snapshot_from_csv(
   "data/daily_bars.csv",
+  db_path = "artifacts/ledgr_store.duckdb",
+  snapshot_id = "eod_2019_h1"
+)
+```
+
+Instrument metadata and point-in-time facts take the same arguments they take
+on the data-frame adapter. Supply instruments as a second file with
+`instrument_id` and the optional `symbol`, `currency`, `asset_class`,
+`multiplier`, and `tick_size` columns; without it, ledgr generates instruments
+from the ids the bars carry.
+
+```{r}
+#| label: csv-snapshot-instruments
+#| eval: false
+
+snapshot <- ledgr_snapshot_from_csv(
+  "data/daily_bars.csv",
+  instruments_csv_path = "data/instruments.csv",
   db_path = "artifacts/ledgr_store.duckdb",
   snapshot_id = "eod_2019_h1"
 )

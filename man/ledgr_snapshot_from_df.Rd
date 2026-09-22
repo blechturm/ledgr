@@ -27,8 +27,8 @@ canonical bar columns are persisted and hashed.}
 \item{facts}{Optional point-in-time facts created by \code{\link[=ledgr_facts]{ledgr_facts()}}.}
 
 \item{invalid_observations}{Either \code{"error"} (the default) or the explicit
-\code{"quarantine"} acknowledgement. Quarantine requires declared sessions and
-is available only through this data-frame adapter.}
+\code{"quarantine"} acknowledgement. Quarantine requires declared sessions in
+\code{facts}.}
 }
 \value{
 A \code{ledgr_snapshot} object.
