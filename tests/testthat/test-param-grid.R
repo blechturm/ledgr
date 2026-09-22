@@ -1,4 +1,5 @@
-testthat::test_that("ledgr_param_grid preserves named labels and params", {
+testthat::test_that("ledgr_param_grid preserves named parameters and generates stable labels", {
+  local({
   grid <- ledgr_param_grid(
     conservative = list(threshold = 0.01, qty = 1),
     aggressive = list(threshold = 0.03, qty = 3)
@@ -8,16 +9,19 @@ testthat::test_that("ledgr_param_grid preserves named labels and params", {
   testthat::expect_identical(grid$labels, c("conservative", "aggressive"))
   testthat::expect_identical(grid$params[[1]]$threshold, 0.01)
   testthat::expect_identical(grid$params[[2]]$qty, 3)
-})
+  })
 
-testthat::test_that("ledgr_param_grid generates stable labels for unnamed params", {
+  # Also covers: ledgr_param_grid generates stable labels for unnamed params
+  local({
   grid_a <- ledgr_param_grid(list(qty = 1, threshold = 0.01))
   grid_b <- ledgr_param_grid(list(threshold = 0.01, qty = 1))
 
   testthat::expect_match(grid_a$labels, "^grid_[0-9a-f]{12}$")
   testthat::expect_identical(grid_a$labels, grid_b$labels)
   testthat::expect_identical(grid_a$labels, "grid_eee9d719309a")
+  })
 })
+
 
 testthat::test_that("ledgr_param_grid rejects duplicate labels and invalid entries", {
   testthat::expect_error(

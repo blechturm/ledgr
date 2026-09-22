@@ -21,7 +21,8 @@ ledgr_test_coverage_script <- function() {
   testthat::skip("coverage helper source unavailable in installed-package test context")
 }
 
-testthat::test_that("coverage helper retries transient collection failures", {
+testthat::test_that("coverage helper defaults to one attempt and retries transient failures", {
+  local({
   source(ledgr_test_coverage_script())
 
   attempts <- 0L
@@ -36,9 +37,10 @@ testthat::test_that("coverage helper retries transient collection failures", {
 
   testthat::expect_equal(attempts, 3L)
   testthat::expect_equal(coverage, list(ok = TRUE))
-})
+  })
 
-testthat::test_that("coverage helper defaults to one collection attempt", {
+  # Also covers: coverage helper defaults to one collection attempt
+  local({
   source(ledgr_test_coverage_script())
 
   old <- Sys.getenv("LEDGR_COVERAGE_ATTEMPTS", unset = NA_character_)
@@ -53,7 +55,9 @@ testthat::test_that("coverage helper defaults to one collection attempt", {
   Sys.unsetenv("LEDGR_COVERAGE_ATTEMPTS")
 
   testthat::expect_identical(ledgr_coverage_attempts(), 1L)
+  })
 })
+
 
 testthat::test_that("coverage helper fails after retry budget is exhausted", {
   source(ledgr_test_coverage_script())

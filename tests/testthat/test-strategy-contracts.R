@@ -25,7 +25,8 @@ testthat::test_that("PulseContext validates basic fields and per-pulse bars", {
   testthat::expect_identical(ctx$ts_utc, ts)
 })
 
-testthat::test_that("PulseContext rejects empty universe and duplicate instrument ids", {
+testthat::test_that("PulseContext rejects invalid universe, bars, and position shapes", {
+  local({
   ts <- "2020-01-02T00:00:00Z"
   bars <- data.frame(instrument_id = "A", ts_utc = ts, stringsAsFactors = FALSE)
 
@@ -40,9 +41,10 @@ testthat::test_that("PulseContext rejects empty universe and duplicate instrumen
     "duplicate",
     ignore.case = TRUE
   )
-})
+  })
 
-testthat::test_that("PulseContext rejects bars ts mismatch and bars instrument outside universe", {
+  # Also covers: PulseContext rejects bars ts mismatch and bars instrument outside universe
+  local({
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
 
@@ -64,9 +66,10 @@ testthat::test_that("PulseContext rejects bars ts mismatch and bars instrument o
     "not in universe",
     ignore.case = TRUE
   )
-})
+  })
 
-testthat::test_that("PulseContext rejects positions outside universe", {
+  # Also covers: PulseContext rejects positions outside universe
+  local({
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(instrument_id = "A", ts_utc = ts, stringsAsFactors = FALSE)
@@ -77,7 +80,10 @@ testthat::test_that("PulseContext rejects positions outside universe", {
     "positions",
     ignore.case = TRUE
   )
+  })
 })
+
+
 
 testthat::test_that("hold-zero reference strategy is deterministic and returns valid targets", {
   ts <- "2020-01-02T00:00:00Z"
@@ -165,4 +171,3 @@ testthat::test_that("legacy on_pulse strategy objects are rejected", {
     class = "ledgr_invalid_args"
   )
 })
-

@@ -147,7 +147,8 @@ testthat::test_that("print.ledgr_indicator surfaces the feature ID", {
   testthat::expect_true(any(grepl("Requires bars:\\s*20", out)))
 })
 
-testthat::test_that("indicator registry supports register/get/list", {
+testthat::test_that("indicator registry supports registration, discovery, and removal", {
+  local({
   ind <- ledgr_ind_sma(2)
   ledgr_indicator_register(ind, "test_sma_2", overwrite = TRUE)
 
@@ -160,6 +161,29 @@ testthat::test_that("indicator registry supports register/get/list", {
     ledgr_indicator_get("missing_indicator"),
     class = "ledgr_invalid_args"
   )
+  })
+
+  # Also covers: indicator registry supports deregistration
+  local({
+  name <- "test_registry_remove"
+  ledgr_indicator_remove(name, missing_ok = TRUE)
+  on.exit(ledgr_indicator_remove(name, missing_ok = TRUE), add = TRUE)
+
+  ind <- ledgr_indicator(
+    id = name,
+    fn = function(window) mean(window$close),
+    requires_bars = 2L
+  )
+
+  ledgr_indicator_register(ind)
+  testthat::expect_true(name %in% ledgr_indicator_list("^test_registry_remove$"))
+  testthat::expect_true(ledgr_indicator_remove(name))
+  testthat::expect_false(name %in% ledgr_indicator_list("^test_registry_remove$"))
+  testthat::expect_error(
+    ledgr_indicator_get(name),
+    class = "ledgr_invalid_args"
+  )
+  })
 })
 
 testthat::test_that("indicator registry rejects silent overwrite", {
@@ -190,26 +214,6 @@ testthat::test_that("indicator registry rejects silent overwrite", {
   testthat::expect_silent(ledgr_indicator_register(ind_b, name, overwrite = TRUE))
 })
 
-testthat::test_that("indicator registry supports deregistration", {
-  name <- "test_registry_remove"
-  ledgr_indicator_remove(name, missing_ok = TRUE)
-  on.exit(ledgr_indicator_remove(name, missing_ok = TRUE), add = TRUE)
-
-  ind <- ledgr_indicator(
-    id = name,
-    fn = function(window) mean(window$close),
-    requires_bars = 2L
-  )
-
-  ledgr_indicator_register(ind)
-  testthat::expect_true(name %in% ledgr_indicator_list("^test_registry_remove$"))
-  testthat::expect_true(ledgr_indicator_remove(name))
-  testthat::expect_false(name %in% ledgr_indicator_list("^test_registry_remove$"))
-  testthat::expect_error(
-    ledgr_indicator_get(name),
-    class = "ledgr_invalid_args"
-  )
-})
 
 testthat::test_that("indicator deregistration handles missing and invalid names", {
   name <- "test_registry_missing"

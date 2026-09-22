@@ -92,7 +92,8 @@ testthat::test_that("strategy preflight classifies unresolved user helpers as Ti
   testthat::expect_match(preflight$reason, "my_helper", fixed = TRUE)
 })
 
-testthat::test_that("strategy preflight allows resolved external objects as Tier 2", {
+testthat::test_that("strategy preflight retains resolved external Tier 2 values", {
+  local({
   qty <- 1
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
@@ -105,6 +106,24 @@ testthat::test_that("strategy preflight allows resolved external objects as Tier
   testthat::expect_true(preflight$allowed)
   testthat::expect_identical(preflight$unresolved_symbols, character())
   testthat::expect_true(any(grepl("qty", preflight$notes, fixed = TRUE)))
+  })
+
+  # Also covers: strategy preflight keeps resolved external scalars as Tier 2
+  local({
+  threshold <- 100
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    if (threshold > 0) {
+      targets["TEST_A"] <- params$qty
+    }
+    targets
+  }
+
+  preflight <- ledgr_strategy_preflight(strategy)
+  testthat::expect_identical(preflight$tier, "tier_2")
+  testthat::expect_true(preflight$allowed)
+  testthat::expect_true(any(grepl("threshold", preflight$notes, fixed = TRUE)))
+  })
 })
 
 testthat::test_that("strategy preflight allows explicit ledgr_signal_strategy wrappers as Tier 2", {
@@ -138,7 +157,8 @@ testthat::test_that("strategy preflight rejects RNG state mutation as Tier 3", {
   testthat::expect_match(preflight_kind$reason, "RNGkind", fixed = TRUE)
 })
 
-testthat::test_that("strategy preflight rejects determinism-forbidden calls as Tier 3", {
+testthat::test_that("strategy preflight rejects forbidden Tier 3 calls and mutations", {
+  local({
   strategies <- list(
     Sys.time = function(ctx, params) {
       Sys.time()
@@ -161,9 +181,10 @@ testthat::test_that("strategy preflight rejects determinism-forbidden calls as T
     testthat::expect_match(preflight$reason, name, fixed = TRUE, info = name)
     testthat::expect_match(preflight$reason, "forbidden nondeterministic", fixed = TRUE, info = name)
   }
-})
+  })
 
-testthat::test_that("strategy preflight rejects forbidden do.call indirection as Tier 3", {
+  # Also covers: strategy preflight rejects forbidden do.call indirection as Tier 3
+  local({
   strategies <- list(
     `do.call("Sys.time")` = function(ctx, params) {
       do.call("Sys.time", list())
@@ -201,9 +222,10 @@ testthat::test_that("strategy preflight rejects forbidden do.call indirection as
     testthat::expect_false(preflight$allowed, info = label)
     testthat::expect_match(preflight$reason, "do.call", fixed = TRUE, info = label)
   }
-})
+  })
 
-testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
+  # Also covers: strategy preflight rejects global assignment as Tier 3
+  local({
   strategy <- function(ctx, params) {
     counter <<- counter + 1
     ctx$flat()
@@ -223,9 +245,10 @@ testthat::test_that("strategy preflight rejects global assignment as Tier 3", {
   testthat::expect_false(lhs_preflight$allowed)
   testthat::expect_match(lhs_preflight$reason, "<<-", fixed = TRUE)
   testthat::expect_false("global_probe_value" %in% lhs_preflight$unresolved_symbols)
-})
+  })
 
-testthat::test_that("strategy preflight rejects context attribute mutation as Tier 3", {
+  # Also covers: strategy preflight rejects context attribute mutation as Tier 3
+  local({
   strategy <- function(ctx, params) {
     attr(ctx, "secret") <- 1
     ctx$flat()
@@ -236,7 +259,11 @@ testthat::test_that("strategy preflight rejects context attribute mutation as Ti
   testthat::expect_false(preflight$allowed)
   testthat::expect_match(preflight$reason, "attr(ctx", fixed = TRUE)
   testthat::expect_match(preflight$reason, "context mutation", fixed = TRUE)
+  })
 })
+
+
+
 
 testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certified Tier 1", {
   strategy <- function(ctx, params) {
@@ -275,21 +302,6 @@ testthat::test_that("ambient RNG preflight has a resume fail-loud helper", {
   testthat::expect_match(conditionMessage(err), "ctx$pulse_seed", fixed = TRUE)
 })
 
-testthat::test_that("strategy preflight keeps resolved external scalars as Tier 2", {
-  threshold <- 100
-  strategy <- function(ctx, params) {
-    targets <- ctx$flat()
-    if (threshold > 0) {
-      targets["TEST_A"] <- params$qty
-    }
-    targets
-  }
-
-  preflight <- ledgr_strategy_preflight(strategy)
-  testthat::expect_identical(preflight$tier, "tier_2")
-  testthat::expect_true(preflight$allowed)
-  testthat::expect_true(any(grepl("threshold", preflight$notes, fixed = TRUE)))
-})
 
 testthat::test_that("strategy preflight keeps captured mutable environments Tier 2 with an explicit note", {
   external_env <- new.env(parent = emptyenv())

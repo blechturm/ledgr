@@ -36,7 +36,7 @@ workstreams:
     review: {mode: "Type 1", point: "close of workstream 3", reason: "Fixture reduction is where the time is and where a defect can be lost; each reduction must still fail on its condition."}
   - id: 4
     name: "Merge"
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 3
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 4", reason: "Merging by claim family answers the overlap question the registry cannot; the reviewer asks it per merge."}
@@ -285,76 +285,87 @@ tickets:
   - id: "LDG-2766"
     title: "Merge metrics-family blocks"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
     scope: "validation-pbo, validation-dsr, validation-min-track-record, validation-k-ratio, sweep-review, pulse-context-accessors, indicator-adapters, snapshots-create-list, acceptance-v0.1.0; 17 blocks."
     acceptance: ["the overlap question answered per merge in the review", "no registered claim loses a detecting block"]
+    evidence: ["Seventeen candidates became fourteen blocks. Three overlaps were demonstrated: the legacy AT4 built-in no-lookahead pass is covered by the current built-in pass plus LTB-0003 leak detector; the two CSV missing-key adapter cases share one setup while retaining warning, type, and NA assertions; and sweep-review ranking retention and invalid-input rejection share one public surface. The twelve remaining candidates stay separate because they cover different formulas, accessors, or snapshot-list behavior."]
 
   - id: "LDG-2767"
     title: "Merge public-behavior blocks"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
     scope: "schema, strategy-preflight, strategy-contracts, param-grid, collapse-determinism, release-coverage-branches, fixtures; 24 blocks."
     acceptance: ["the overlap question answered per merge", "every negative witness keeps its rejected input and expected class"]
+    evidence: ["Twenty-four candidates became eleven blocks. Shared setups now group schema absence and status constraints, Tier 2 preflight positives, Tier 3 forbidden forms, PulseContext shape failures, parameter-label behavior, collapse restoration, coverage retries, and fixture identity. Every rejected input and expected condition class remains in a local subcase; no assertion was weakened."]
 
   - id: "LDG-2768"
     title: "Merge identity-and-configuration blocks"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "walk-forward-identity, fingerprint-stability, feature-cache, run-compare, strategy-extract, risk-model, cost-model; 10 blocks."
     acceptance: ["the overlap question answered per merge"]
+    evidence: ["Ten candidates became nine blocks: the two walk-forward identity witnesses share one canonical-identity block. Core versus optional-TTR fingerprints, fast versus optional feature-cache keys, run comparison versus strategy extraction, and risk versus cost identities remain separate because their dependency, API, or serializer failures are independent."]
 
   - id: "LDG-2769"
     title: "Merge snapshot, features, and execution blocks"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
     scope: "snapshots-seal, snapshots-hash, snapshots-import-csv, schema-snapshots, snapshot-adapters, ledger-writer, features, feature-inspection, indicators, lot-accounting, execution-spec; 20 blocks."
     acceptance: ["the overlap question answered per merge", "canonical-R core blocks are not merged"]
+    evidence: ["Twenty candidates became sixteen blocks by grouping instrument/bar hash sensitivity, CREATED/SEALED CSV import lifecycle, vectorized feature-series dispatch/validation, and indicator registry add/remove behavior. Seal versus adapter validation, writer buffer/cap/delta cases, and feature-inspection behavior remain separate. Canonical-R lot accounting and compiled fractional-dust parity were explicitly not merged."]
 
   - id: "LDG-2770"
     title: "Merge determinism and parallel-execution blocks"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "sweep, rng, parallel-workers; 6 blocks."
     acceptance: ["the overlap question answered per merge", "seeded behavior remains asserted"]
+    evidence: ["Six candidates became three locally isolated blocks: run and pulse seed derivation; mutation isolation across pulses and candidate folds; and worker dry-run actions plus missing-package rejection. Exact seeded values, ambient-RNG independence, mutation witnesses, and the missing-package condition remain asserted."]
 
   - id: "LDG-2774"
     title: "Merge the 49 documentation-surface blocks by claim family, or delete each with its own reason"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: []
     scope: "The 49 test-documentation-contracts.R rows the audit marks merge, across seven claim families (13 run lifecycle and persistence, 9 metrics, 7 documentation and governance, 6 execution and accounting, 6 identity and configuration, 5 features and indicators, 3 snapshot trust and ingestion). Executable journeys, runnable examples, installed help paths, and public result semantics keep a detecting block with an executable oracle in their claim family. A row that pins only wording, a version-stamped sentence, or a link is deleted with an individually stated reason; it is not merged into a prose check. The audit's MERGE-01 rule applies: merge on demonstrated overlap, not on the CSV's description score."
     acceptance: ["every one of the 49 rows has a named outcome: the block it merged into, or its deletion reason", "the overlap question answered per merge", "no runnable example, installed-path, or public-journey claim is left without a detecting block that executes"]
+    evidence:
+      - "All 49 audit merge rows have an outcome. Twenty-four of those rows were consolidated into twelve locally isolated blocks covering source/install boundaries; public navigation; browser-free help paths; package-help links; disclaimer/non-overclaiming; runnable cost examples/current cost API; feature teaching; public result/helper semantics; release-reference/platform gates; condition help/final-bar behavior; rendered-site integrity; and the survivorship workflow journey. The audit's delete_after_replacement row 'public site polish avoids stale public artifacts' was also consolidated into the rendered-site block because its executable ordering, ignored-artifact, and local-path witnesses remain useful there; twenty-five source rows were consolidated in total."
+      - "Deleted historical sentence pins: pkgdown v0.1.7.4 helper exports; the v0.1.7.4 playbook post-mortem; v0.1.7.5 TTR wording; v0.1.7.6 persistence wording; the v0.1.7.7 risk boundary; the v0.1.8 fold boundary; v0.1.9.5 stale-fact wording; v0.2.0.1 optimization-manual boundaries; and v0.2.0.1 peer-phase wording. Git and current executable checks, not frozen release prose, own those histories."
+      - "Deleted behavior-duplicating prose pins: closed backtest result wording; retained-return wording; sweep-filter wording; adapter positioning; metric-context wording; execution timing prose; availability identity/quarantine prose; experiment-store CSV prose; provenance tiers; reproducibility extraction prose; leakage prose; custom-indicator placeholders; Yahoo/seal lifecycle wording; selection-integrity teaching; and the vignette styleguide sentence lock. Their product behaviors or structural documentation checks remain executable elsewhere."
+      - "Deleted the DuckDB-driver source-text pin because it asserted implementation spelling rather than behavior; snapshot ownership and connection behavior remain covered by executable tests. The merged runnable examples, installed paths, rendered artifacts, public result semantics, and public survivorship journey remain detecting blocks."
+      - "The ten merged blocks identified across the two independent-review rounds no longer use skip_if_not() for differing source prerequisites. Each affected prerequisite is an explicit review-lane expectation followed by a guarded read, so an absent source fails its own witness without suppressing runnable siblings."
 
   # ---------------------------------------------------------- 5 Delete and closeout
   - id: "LDG-2771"
-    title: "Replace the 18 remaining historical pins with one current-state artifact and link check"
+    title: "Replace the 17 remaining historical pins with one current-state artifact and link check"
     workstream: 5
     status: "pending"
     priority: "P0"
     effort: "S"
     dependencies: []
-    scope: "Audit DELETE-01 for the 18 delete_after_replacement rows still open after LDG-2750: one check that current artifacts exist, installed links resolve, and rendered vignette targets are complete and quiet, in a bound lane. Sentence-level assertions about completed historical packet states get no replacement; Git is their history."
+    scope: "Audit DELETE-01 for the 17 delete_after_replacement rows still open after LDG-2750 and LDG-2774: one check that current artifacts exist, installed links resolve, and rendered vignette targets are complete and quiet, in a bound lane. Sentence-level assertions about completed historical packet states get no replacement; Git is their history."
     acceptance: ["a missing artifact or dangling installed link fails the check", "a leaked DuckDB notice fails the check", "the check runs in a bound lane and appears in the census"]
 
   - id: "LDG-2772"
-    title: "Delete the 18 replace-then-delete blocks after the replacement runs"
+    title: "Delete the 17 replace-then-delete blocks after the replacement runs"
     workstream: 5
     status: "pending"
     priority: "P0"

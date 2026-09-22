@@ -1121,7 +1121,8 @@ testthat::test_that("shared fold projection path uses prebuilt pulse views", {
   testthat::expect_true(all(vapply(seen$fast_bar_fns[-1], identical, logical(1), seen$fast_bar_fns[[1]])))
 })
 
-testthat::test_that("prebuilt pulse views do not leak mutation across pulses", {
+testthat::test_that("prebuilt pulse-view mutations do not leak across pulses or candidates", {
+  local({
   bars <- ledgr_sweep_test_bars()
   bars_by_id <- split(bars, as.character(bars$instrument_id))
   bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
@@ -1202,9 +1203,10 @@ testthat::test_that("prebuilt pulse views do not leak mutation across pulses", {
   testthat::expect_false(any(unlist(observed$bars_3, use.names = FALSE) == -777))
   testthat::expect_false(any(unlist(observed$table_3, use.names = FALSE) == -888))
   testthat::expect_false(any(unlist(observed$wide_3, use.names = FALSE) == -999))
-})
+  })
 
-testthat::test_that("prebuilt pulse view mutation does not leak across candidate folds", {
+  # Also covers: prebuilt pulse view mutation does not leak across candidate folds
+  local({
   bars <- ledgr_sweep_test_bars()
   bars_by_id <- split(bars, as.character(bars$instrument_id))
   bars_by_id <- ledgr:::ledgr_sweep_normalize_bars_by_id(bars_by_id, "AAA")
@@ -1280,7 +1282,9 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
   testthat::expect_false(any(observed$table_value == -888))
   testthat::expect_false(any(observed$wide_value == -999))
   testthat::expect_equal(observed$wide_value, as.numeric(run_feature_matrix$custom_close[1, ]))
+  })
 })
+
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {

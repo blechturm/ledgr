@@ -1,5 +1,6 @@
 # ledgr-test-file-profile: review
-testthat::test_that("collapse deterministic wrapper pins and restores caller settings", {
+testthat::test_that("collapse deterministic wrapper restores caller settings on success and error", {
+  local({
   testthat::skip_if_not_installed("collapse")
   original <- collapse::set_collapse()
   on.exit(do.call(collapse::set_collapse, original), add = TRUE)
@@ -18,9 +19,10 @@ testthat::test_that("collapse deterministic wrapper pins and restores caller set
 
   testthat::expect_identical(observed, ledgr:::ledgr_collapse_deterministic_state())
   testthat::expect_identical(collapse::set_collapse(), hostile)
-})
+  })
 
-testthat::test_that("collapse deterministic wrapper restores settings after errors", {
+  # Also covers: collapse deterministic wrapper restores settings after errors
+  local({
   testthat::skip_if_not_installed("collapse")
   original <- collapse::set_collapse()
   on.exit(do.call(collapse::set_collapse, original), add = TRUE)
@@ -40,7 +42,9 @@ testthat::test_that("collapse deterministic wrapper restores settings after erro
     class = "ledgr_test_error"
   )
   testthat::expect_identical(collapse::set_collapse(), hostile)
+  })
 })
+
 
 testthat::test_that("hostile caller settings cannot alter wrapper-scoped value-bearing collapse output", {
   testthat::skip_if_not_installed("collapse")

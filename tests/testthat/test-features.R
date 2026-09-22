@@ -119,7 +119,8 @@ testthat::test_that("feature definitions are validated fail-loud", {
   )
 })
 
-testthat::test_that("feature series uses vectorized series_fn when available", {
+testthat::test_that("feature series uses and validates vectorized series functions", {
+  local({
   bars <- make_test_bars(c("AAA"), "2020-01-01 00:00:00", n = 6)
   calls <- new.env(parent = emptyenv())
   calls$fn <- 0L
@@ -146,9 +147,10 @@ testthat::test_that("feature series uses vectorized series_fn when available", {
   testthat::expect_identical(calls$fn, 0L)
   testthat::expect_true(is.na(values[[1]]))
   testthat::expect_equal(values[-1], bars$close[-1])
-})
+  })
 
-testthat::test_that("feature series validates vectorized output", {
+  # Also covers: feature series validates vectorized output
+  local({
   bars <- make_test_bars(c("AAA"), "2020-01-01 00:00:00", n = 4)
   base_def <- list(
     id = "bad_series",
@@ -209,7 +211,9 @@ testthat::test_that("feature series validates vectorized output", {
     "NA outside",
     fixed = TRUE
   )
+  })
 })
+
 
 testthat::test_that("fn-only feature fallback uses bounded windows", {
   bars <- make_test_bars(c("AAA"), "2020-01-01 00:00:00", n = 8)

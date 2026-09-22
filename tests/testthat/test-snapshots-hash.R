@@ -119,7 +119,8 @@ testthat::test_that("snapshot hash ignores snapshot_id and metadata", {
   testthat::expect_identical(h1, h3)
 })
 
-testthat::test_that("instrument changes affect snapshot hash", {
+testthat::test_that("instrument and bar changes affect the snapshot hash", {
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -135,9 +136,10 @@ testthat::test_that("instrument changes affect snapshot hash", {
   h2 <- ledgr:::ledgr_snapshot_hash(con, snapshot_id)
 
   testthat::expect_true(!identical(h1, h2))
-})
+  })
 
-testthat::test_that("bar changes affect snapshot hash", {
+  # Also covers: bar changes affect snapshot hash
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -157,7 +159,9 @@ testthat::test_that("bar changes affect snapshot hash", {
   h2 <- ledgr:::ledgr_snapshot_hash(con, snapshot_id)
 
   testthat::expect_true(!identical(h1, h2))
+  })
 })
+
 
 testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversarial precision)", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -281,4 +285,3 @@ testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversari
 
   testthat::expect_identical(h1, expected)
 })
-

@@ -70,7 +70,8 @@ testthat::test_that("worker dependencies distinguish qualified and attached pack
 })
 
 # ledgr-test-profile: review
-testthat::test_that("worker setup dry run reports ledgr and package setup actions", {
+testthat::test_that("worker setup dry runs report setup actions and missing packages", {
+  local({
   strategy <- function(ctx, params) {
     yyjsonr::write_json_str(
       list(qty = 1),
@@ -95,9 +96,10 @@ testthat::test_that("worker setup dry run reports ledgr and package setup action
   testthat::expect_true(any(plan$actions %in% c("pkgload::load_all", "library:ledgr")))
   testthat::expect_true("requireNamespace:yyjsonr" %in% plan$actions)
   testthat::expect_true("library:yyjsonr" %in% plan$actions)
-})
+  })
 
-testthat::test_that("worker setup reports missing worker packages", {
+  # Also covers: worker setup reports missing worker packages
+  local({
   strategy <- function(ctx, params) ctx$flat()
   preflight <- ledgr_strategy_preflight(strategy)
 
@@ -113,7 +115,9 @@ testthat::test_that("worker setup reports missing worker packages", {
 
   testthat::expect_s3_class(err, "ledgr_parallel_worker_package_missing")
   testthat::expect_match(conditionMessage(err), "ledgrDefinitelyMissingPkg", fixed = TRUE)
+  })
 })
+
 
 testthat::test_that("worker setup rejects Tier 3 helper smuggling", {
   my_helper <- function(ctx) ctx$flat()

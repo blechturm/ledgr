@@ -54,7 +54,8 @@ testthat::test_that("ledgr_adapter_csv loads once and looks up by ts/instrument"
   testthat::expect_equal(ind$fn(window), 0.2)
 })
 
-testthat::test_that("ledgr_adapter_csv warns and returns NA on missing key", {
+testthat::test_that("ledgr_adapter_csv returns typed NA with a warning for missing keys", {
+  local({
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp), add = TRUE)
 
@@ -88,9 +89,10 @@ testthat::test_that("ledgr_adapter_csv warns and returns NA on missing key", {
     "No CSV value"
   )
   testthat::expect_true(is.na(result))
-})
+  })
 
-testthat::test_that("ledgr_adapter_csv returns NA_real_ for missing keys", {
+  # Also covers: ledgr_adapter_csv returns NA_real_ for missing keys
+  local({
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp), add = TRUE)
 
@@ -122,7 +124,9 @@ testthat::test_that("ledgr_adapter_csv returns NA_real_ for missing keys", {
   testthat::expect_warning(result <- ind$fn(window), "No CSV value")
   testthat::expect_true(is.double(result))
   testthat::expect_true(is.na(result))
+  })
 })
+
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_adapter_r integrates with TTR when available", {

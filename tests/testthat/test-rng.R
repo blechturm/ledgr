@@ -1,4 +1,5 @@
-testthat::test_that("ledgr_derive_seed is stable and independent of ambient RNG", {
+testthat::test_that("derived run and pulse seeds are stable and ambient-RNG independent", {
+  local({
   set.seed(1)
   first <- ledgr:::ledgr_derive_seed(2026L, list(run_id = "grid_abc", params = list(n = 20L)))
   stats::runif(10)
@@ -9,9 +10,10 @@ testthat::test_that("ledgr_derive_seed is stable and independent of ambient RNG"
   testthat::expect_true(first >= 1L)
   testthat::expect_true(first <= 2147483647L)
   testthat::expect_identical(first, 350931654L)
-})
+  })
 
-testthat::test_that("ledgr_derive_pulse_seed is stable and independent of ambient RNG", {
+  # Also covers: ledgr_derive_pulse_seed is stable and independent of ambient RNG
+  local({
   set.seed(1)
   first <- ledgr:::ledgr_derive_pulse_seed(350931654L, 3L)
   stats::runif(10)
@@ -28,7 +30,9 @@ testthat::test_that("ledgr_derive_pulse_seed is stable and independent of ambien
     ledgr:::ledgr_derive_pulse_seed(350931654L, 0L),
     class = "ledgr_invalid_args"
   )
+  })
 })
+
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads preserve caller RNG", {

@@ -36,7 +36,8 @@ testthat::test_that("ledgr_sweep_review ranks completed rows and separates issue
   testthat::expect_true(any(grepl("Issue rows", printed, fixed = TRUE)))
 })
 
-testthat::test_that("ledgr_sweep_review top keeps the ranking column", {
+testthat::test_that("ledgr_sweep_review preserves ranking columns and validates inputs", {
+  local({
   sweep <- tibble::tibble(
     candidate_id = c("a", "b"),
     candidate_row = 1:2,
@@ -49,9 +50,10 @@ testthat::test_that("ledgr_sweep_review top keeps the ranking column", {
   testthat::expect_identical(review$top$candidate_id, "b")
   testthat::expect_true("custom_metric" %in% names(review$top))
   testthat::expect_identical(review$top$custom_metric, 7)
-})
+  })
 
-testthat::test_that("ledgr_sweep_review validates ranking inputs", {
+  # Also covers: ledgr_sweep_review validates ranking inputs
+  local({
   sweep <- tibble::tibble(
     candidate_id = c("a", "b"),
     status = c("DONE", "DONE"),
@@ -74,7 +76,9 @@ testthat::test_that("ledgr_sweep_review validates ranking inputs", {
     ledgr_sweep_review(tibble::tibble(candidate_id = "a"), rank_by = candidate_id),
     class = "ledgr_invalid_sweep_review_input"
   )
+  })
 })
+
 
 testthat::test_that("ledgr_temp_store returns a disposable path and clears stale files", {
   path <- ledgr_temp_store()

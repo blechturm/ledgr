@@ -28,7 +28,8 @@ testthat::test_that("schema creation is idempotent", {
   testthat::expect_true(ledgr_validate_schema(con))
 })
 
-testthat::test_that("missing table fails validation", {
+testthat::test_that("schema validation rejects missing tables and columns", {
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -36,9 +37,10 @@ testthat::test_that("missing table fails validation", {
   DBI::dbExecute(con, "DROP TABLE bars")
 
   testthat::expect_error(ledgr_validate_schema(con), "Missing table: bars", fixed = TRUE)
-})
+  })
 
-testthat::test_that("missing column fails validation", {
+  # Also covers: missing column fails validation
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -56,7 +58,20 @@ testthat::test_that("missing column fails validation", {
   )
 
   testthat::expect_error(ledgr_validate_schema(con), "Missing columns in runs:", fixed = TRUE)
+  })
+
+  # Also covers: missing strategy_state table fails validation
+  local({
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  ledgr_create_schema(con)
+  DBI::dbExecute(con, "DROP TABLE strategy_state")
+
+  testthat::expect_error(ledgr_validate_schema(con), "Missing table: strategy_state", fixed = TRUE)
+  })
 })
+
 
 testthat::test_that("bars primary key enforcement is detectable", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -83,7 +98,8 @@ testthat::test_that("bars primary key enforcement is detectable", {
   )
 })
 
-testthat::test_that("runs.status CHECK constraint is enforced", {
+testthat::test_that("run and snapshot status constraints are enforced", {
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -126,9 +142,10 @@ testthat::test_that("runs.status CHECK constraint is enforced", {
       NA
     )
   }
-})
+  })
 
-testthat::test_that("snapshots.status CHECK constraint is enforced", {
+  # Also covers: snapshots.status CHECK constraint is enforced
+  local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -171,7 +188,9 @@ testthat::test_that("snapshots.status CHECK constraint is enforced", {
       NA
     )
   }
+  })
 })
+
 
 testthat::test_that("missing features table fails validation", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -183,15 +202,6 @@ testthat::test_that("missing features table fails validation", {
   testthat::expect_error(ledgr_validate_schema(con), "Missing table: features", fixed = TRUE)
 })
 
-testthat::test_that("missing strategy_state table fails validation", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-  DBI::dbExecute(con, "DROP TABLE strategy_state")
-
-  testthat::expect_error(ledgr_validate_schema(con), "Missing table: strategy_state", fixed = TRUE)
-})
 
 testthat::test_that("strategy_state primary key prevents duplicates", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")

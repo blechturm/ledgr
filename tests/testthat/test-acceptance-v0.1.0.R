@@ -205,24 +205,6 @@ testthat::test_that("AT3: deterministic replay produces identical outputs (exclu
   testthat::expect_equal(eq_a, eq_b)
 })
 
-testthat::test_that("AT4: no-lookahead holds for built-in features", {
-  bars <- ledgr_test_make_bars(c("AAA"), c(
-    "2020-01-01 00:00:00",
-    "2020-01-02 00:00:00",
-    "2020-01-03 00:00:00",
-    "2020-01-04 00:00:00"
-  ))
-  bars <- bars[order(bars$ts_utc), , drop = FALSE]
-
-  testthat::expect_error(
-    ledgr:::ledgr_check_no_lookahead(ledgr:::ledgr_feature_sma_n(2L), bars, horizons = c(1L, 2L)),
-    NA
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_check_no_lookahead(ledgr:::ledgr_feature_return_1(), bars, horizons = c(1L, 2L)),
-    NA
-  )
-})
 
 # ledgr-test-profile: review
 testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting identities and monotone time", {

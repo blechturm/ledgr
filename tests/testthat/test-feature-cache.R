@@ -82,7 +82,6 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
   testthat::expect_equal(bench$mean[bench$component == "feature_cache_hits"], 1)
   testthat::expect_equal(bench$mean[bench$component == "feature_cache_misses"], 0)
 })
-
 testthat::test_that("ledgr_feature_cache_clear removes cached series", {
   ledgr_feature_cache_clear()
   on.exit(ledgr_feature_cache_clear(), add = TRUE)

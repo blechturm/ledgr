@@ -1,4 +1,5 @@
-testthat::test_that("walk-forward candidate keys use canonical identity fields", {
+testthat::test_that("walk-forward candidate identity uses canonical fields and deterministic seeds", {
+  local({
   fields <- list(
     params_hash = digest::digest("params", algo = "sha256"),
     feature_params_hash = digest::digest("feature-params", algo = "sha256"),
@@ -38,9 +39,10 @@ testthat::test_that("walk-forward candidate keys use canonical identity fields",
   testthat::expect_identical(key_a, key_b)
   testthat::expect_false(identical(key_a, changed_cost))
   testthat::expect_false(identical(key_a, changed_risk))
-})
+  })
 
-testthat::test_that("walk-forward candidate identity derives deterministic per-row seeds", {
+  # Also covers: walk-forward candidate identity derives deterministic per-row seeds
+  local({
   fields <- list(
     params_hash = digest::digest("params", algo = "sha256"),
     feature_params_hash = digest::digest("feature-params", algo = "sha256"),
@@ -81,7 +83,9 @@ testthat::test_that("walk-forward candidate identity derives deterministic per-r
   testthat::expect_false(identical(seeded$execution_seed, changed_fold$execution_seed))
   testthat::expect_false(identical(seeded$candidate_key, changed_window$candidate_key))
   testthat::expect_true(is.na(unseeded$execution_seed))
+  })
 })
+
 
 testthat::test_that("walk-forward param grid hash excludes labels and row order", {
   grid_ab <- ledgr_param_grid(
