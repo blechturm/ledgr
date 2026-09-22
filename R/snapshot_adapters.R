@@ -89,66 +89,9 @@ ledgr_snapshot_from_df <- function(bars_df,
     rlang::abort("bars_df `instrument_id` must be non-empty strings.", class = "ledgr_invalid_args")
   }
 
-  ts_raw <- bars_df$ts_utc
-  ts_posix <- NULL
-  if (inherits(ts_raw, "POSIXt")) {
-    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
-    if (length(ts_posix) != length(ts_raw) || anyNA(ts_posix)) {
-      rlang::abort("bars_df `ts_utc` must be valid POSIXt values.", class = "ledgr_invalid_args")
-    }
-    ts_posix <- ledgr_assert_whole_second_utc(
-      ts_posix,
-      label = "bars_df `ts_utc`",
-      class = "ledgr_invalid_args"
-    )
-    ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  } else if (inherits(ts_raw, "Date")) {
-    if (length(ts_raw) == 0 || anyNA(ts_raw)) {
-      rlang::abort("bars_df `ts_utc` must be valid Date values.", class = "ledgr_invalid_args")
-    }
-    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
-    ts_utc <- sprintf("%sT00:00:00Z", format(ts_raw, "%Y-%m-%d"))
-  } else if (is.character(ts_raw)) {
-    if (anyNA(ts_raw) || any(!nzchar(ts_raw))) {
-      rlang::abort("bars_df `ts_utc` must be non-empty timestamps.", class = "ledgr_invalid_args")
-    }
-    pat_date <- "^\\d{4}-\\d{2}-\\d{2}$"
-    pat_dt <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-    pat_dt_z <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
-
-    if (all(grepl(pat_date, ts_raw))) {
-      d <- as.Date(ts_raw, format = "%Y-%m-%d")
-      if (anyNA(d)) {
-        rlang::abort("bars_df `ts_utc` contains invalid dates.", class = "ledgr_invalid_args")
-      }
-      ts_posix <- as.POSIXct(d, tz = "UTC")
-      ts_utc <- sprintf("%sT00:00:00Z", format(d, "%Y-%m-%d"))
-    } else if (all(grepl(pat_dt_z, ts_raw))) {
-      ts_posix <- as.POSIXct(ts_raw, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-      if (anyNA(ts_posix)) {
-        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
-      }
-      ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    } else if (all(grepl(pat_dt, ts_raw))) {
-      ts_posix <- as.POSIXct(ts_raw, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
-      if (anyNA(ts_posix)) {
-        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
-      }
-      ts_utc <- format(ts_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    } else {
-      ts_utc <- vapply(ts_raw, ledgr_iso_utc, character(1))
-      ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-      if (anyNA(ts_posix)) {
-        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
-      }
-    }
-  } else {
-    ts_utc <- vapply(ts_raw, ledgr_iso_utc, character(1))
-    ts_posix <- as.POSIXct(ts_utc, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-    if (anyNA(ts_posix)) {
-      rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
-    }
-  }
+  normalized <- ledgr_snapshot_normalize_ts_utc(bars_df$ts_utc)
+  ts_utc <- normalized$ts_utc
+  ts_posix <- normalized$ts_posix
 
   open <- suppressWarnings(as.numeric(bars_df$open))
   high <- suppressWarnings(as.numeric(bars_df$high))
@@ -547,6 +490,113 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' ledgr_snapshot_info(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
+ledgr_snapshot_format_distinct_ts_utc <- function(x) {
+  # The bars timestamp column holds one distinct value per session, repeated
+  # once per instrument, so formatting every row repeats the same conversion
+  # thousands of times. Format the distinct values and map back. Byte-identical
+  # to formatting every element.
+  distinct <- unique(x)
+  ledgr_snapshot_iso_z(distinct)[match(x, distinct)]
+}
+
+ledgr_snapshot_iso_z <- function(x) {
+  format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+}
+
+ledgr_snapshot_parse_distinct_iso_z <- function(x, fmt) {
+  distinct <- unique(x)
+  as.POSIXct(distinct, tz = "UTC", format = fmt)[match(x, distinct)]
+}
+
+# Normalize a bars `ts_utc` column to the canonical ISO 8601 UTC string and its
+# POSIXct value. Accepts POSIXt, Date, a date-only character, an ISO datetime
+# with or without a trailing `Z`, and falls back to `ledgr_iso_utc()` per
+# distinct value for anything else.
+#
+# Every branch deduplicates before it converts, and the ISO-Z branch keeps the
+# supplied strings rather than formatting the parse back into the strings it
+# came from. Both are exact: the outputs are `identical()` to converting every
+# element. LDG-2789.
+ledgr_snapshot_normalize_ts_utc <- function(ts_raw) {
+  if (inherits(ts_raw, "POSIXt")) {
+    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
+    if (length(ts_posix) != length(ts_raw) || anyNA(ts_posix)) {
+      rlang::abort("bars_df `ts_utc` must be valid POSIXt values.", class = "ledgr_invalid_args")
+    }
+    ts_posix <- ledgr_assert_whole_second_utc(
+      ts_posix,
+      label = "bars_df `ts_utc`",
+      class = "ledgr_invalid_args"
+    )
+    return(list(ts_utc = ledgr_snapshot_format_distinct_ts_utc(ts_posix), ts_posix = ts_posix))
+  }
+
+  if (inherits(ts_raw, "Date")) {
+    if (length(ts_raw) == 0 || anyNA(ts_raw)) {
+      rlang::abort("bars_df `ts_utc` must be valid Date values.", class = "ledgr_invalid_args")
+    }
+    ts_posix <- as.POSIXct(ts_raw, tz = "UTC")
+    distinct <- unique(ts_raw)
+    ts_utc <- sprintf("%sT00:00:00Z", format(distinct, "%Y-%m-%d"))[match(ts_raw, distinct)]
+    return(list(ts_utc = ts_utc, ts_posix = ts_posix))
+  }
+
+  if (is.character(ts_raw)) {
+    if (anyNA(ts_raw) || any(!nzchar(ts_raw))) {
+      rlang::abort("bars_df `ts_utc` must be non-empty timestamps.", class = "ledgr_invalid_args")
+    }
+    pat_date <- "^\\d{4}-\\d{2}-\\d{2}$"
+    pat_dt <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+    pat_dt_z <- "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    distinct <- unique(ts_raw)
+    back <- match(ts_raw, distinct)
+
+    if (all(grepl(pat_date, distinct))) {
+      d <- as.Date(distinct, format = "%Y-%m-%d")
+      if (anyNA(d)) {
+        rlang::abort("bars_df `ts_utc` contains invalid dates.", class = "ledgr_invalid_args")
+      }
+      ts_posix <- as.POSIXct(d, tz = "UTC")[back]
+      ts_utc <- sprintf("%sT00:00:00Z", format(d, "%Y-%m-%d"))[back]
+      return(list(ts_utc = ts_utc, ts_posix = ts_posix))
+    }
+
+    if (all(grepl(pat_dt_z, distinct))) {
+      ts_posix <- as.POSIXct(distinct, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+      if (anyNA(ts_posix)) {
+        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+      }
+      # The supplied strings already are the canonical form, so formatting the
+      # parse back would reproduce them exactly. Keep them instead.
+      return(list(ts_utc = ts_raw, ts_posix = ts_posix[back]))
+    }
+
+    if (all(grepl(pat_dt, distinct))) {
+      ts_posix <- as.POSIXct(distinct, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
+      if (anyNA(ts_posix)) {
+        rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+      }
+      # The canonical form is the supplied string plus the trailing Z.
+      return(list(ts_utc = paste0(ts_raw, "Z"), ts_posix = ts_posix[back]))
+    }
+
+    ts_utc <- vapply(distinct, ledgr_iso_utc, character(1), USE.NAMES = FALSE)[back]
+    ts_posix <- ledgr_snapshot_parse_distinct_iso_z(ts_utc, "%Y-%m-%dT%H:%M:%SZ")
+    if (anyNA(ts_posix)) {
+      rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+    }
+    return(list(ts_utc = ts_utc, ts_posix = ts_posix))
+  }
+
+  distinct <- unique(ts_raw)
+  ts_utc <- vapply(distinct, ledgr_iso_utc, character(1), USE.NAMES = FALSE)[match(ts_raw, distinct)]
+  ts_posix <- ledgr_snapshot_parse_distinct_iso_z(ts_utc, "%Y-%m-%dT%H:%M:%SZ")
+  if (anyNA(ts_posix)) {
+    rlang::abort("bars_df `ts_utc` contains invalid timestamps.", class = "ledgr_invalid_args")
+  }
+  list(ts_utc = ts_utc, ts_posix = ts_posix)
+}
+
 ledgr_csv_normalize_numeric_columns <- function(df) {
   # read.csv infers integer columns for whole-number prices. from_df treats the
   # supplied column type as the user's own, and records it verbatim in a
@@ -613,7 +663,10 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
     rlang::abort("Yahoo data has invalid time index.", class = "ledgr_invalid_args")
   }
 
-  ts_utc <- vapply(idx, ledgr_iso_utc, character(1))
+  distinct_idx <- unique(idx)
+  ts_utc <- vapply(
+    distinct_idx, ledgr_iso_utc, character(1), USE.NAMES = FALSE
+  )[match(idx, distinct_idx)]
   volume <- if (length(volume_col) == 1) df[[volume_col]] else rep(NA_real_, nrow(df))
 
   data.frame(

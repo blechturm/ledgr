@@ -97,3 +97,10 @@ claims:
     detecting_blocks: ["LTB-0016", "LTB-0017"]
     promised_profile: "review"
     owner: "maintainer"
+  - id: "LCL-0015"
+    source: "contracts.md: Snapshot Contract"
+    scope: "Snapshot identity is independent of the accepted ts_utc input form"
+    oracle_class: "pinned identity literal"
+    detecting_blocks: ["LTB-0018"]
+    promised_profile: "review"
+    owner: "maintainer"
