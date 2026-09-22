@@ -3,8 +3,8 @@
 **Status:** Four cuts. Cut 1, the test-suite cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
-next version inherits it. Cut 2's accounting-core implementation is complete
-and awaiting its workstream-close review; its provisional record is
+next version inherits it. Cut 2's accounting-core workstream is closed at
+accepted implementation commit `6d1b39b`; its record is
 `accounting_core_closeout.md`. Cuts 3 (ingestion consolidation) and 4
 (exact-parity and workflow corrections) were cut on 2026-09-22; their joint
 cut review (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for each at
@@ -47,7 +47,7 @@ the 2.5 rules, the D5 review questions, heavy-protocol ownership,
 optional-dependency coverage, the unconditional release run of extended
 parity, the closeout, and workstream gating in the YAML itself.
 
-## Cut 2: Accounting-core consolidation (implementation review pending)
+## Cut 2: Accounting-core consolidation (closed)
 
 The one workstream the accepted accounting-core synthesis
 (`inst/design/rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md`)
@@ -79,15 +79,16 @@ deferred. The flat carrier and consolidated replay pass 443 fast, 219 review,
 and 192 heavy blocks. D5 is flat at the registered depths while its injected
 rescan fails; the real 50,000-row fetch boundary is covered with 50,002 events.
 The closeout records the small floating-order residual, the copy and compiled
-transfer clocks, and the zero-FEE persisted-store census. Workstream 6 remains
-`review_pending`: its first close review found a fractional multi-lot reversal
+transfer clocks, and the zero-FEE persisted-store census. Workstream 6 is
+complete: its first close review found a fractional multi-lot reversal
 defect, its first focused review found the matching compiled dust-scale
 residual, and its second focused review found that the first dust witness was
 not mutation-sensitive. Separate BUY and SELL witnesses now protect the two
 compiled consumption sites, and their confirming re-review passed. Five reviews
 occurred over nine completed tickets (`0.56`), above the `0.5` gate. The code is
-accepted by independent review; the historical governance breach still requires
-explicit maintainer adjudication.
+accepted by independent review. On 2026-09-22 the maintainer accepted the
+workstream and adjudicated the historical breach as warranted by the defects
+those reviews found; the breach remains recorded and the threshold is unchanged.
 
 **Where the cut departs from the synthesis:** nowhere on substance. The
 synthesis's six numbered steps became ten tickets because the D5 detector

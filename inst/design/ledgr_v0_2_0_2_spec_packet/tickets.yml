@@ -17,7 +17,7 @@ cuts:
     source_table: "inst/design/audits/post_v0_2_0_1_accounting_core_inventory_sites.csv"
     workstreams: [6]
     closeout: "accounting_core_closeout.md"
-    status: "review_pending"
+    status: "closed"
   - id: 3
     name: "Ingestion consolidation"
     cut: "2026-09-22"
@@ -88,7 +88,7 @@ workstreams:
   - id: 6
     name: "Accounting core"
     cut: 2
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 5
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 6", reason: "The synthesis chose the architecture; the workstream implements it. One review at close checks parity on every surface, that the D5 detector fails on a reintroduced scan, and that no cash or position write entered the lot kernel. The maintainer may call one optional check after LDG-2777, so the carrier and its scaling detector are reviewed together before the preparer and replay are built on them."}
@@ -557,7 +557,7 @@ tickets:
     dependencies: ["LDG-2784", "LDG-2780", "LDG-2781", "LDG-2782"]
     scope: "Governance synthesis D4. A closeout section for cut 2: what shipped; which claims are supported; what remains open, naming the D5 curve and the pack/unpack transfer cost as the compiled-execution RFC's inputs; one line per rejected record; review invocations for this cut against the 0.5 gate; the production-validation profile with commit, environment, and command. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the compiled-execution RFC's inputs are named by artifact and section", "prototype multiples are stated as not being thresholds; the production-validation profile is the record", "LDG-2783 is named as landed or deferred"]
-    evidence: ["accounting_core_closeout.md records scope, claims, FEE branch, D5/copy/transfer inputs, corrected profile clocks, rejected records and LDG-2783 deferral. The fifth review passed the two-way dust witness, so code review is complete; five reviews over nine completed tickets (0.56) breach the historical 0.5 gate and require maintainer adjudication. Candidate identity is base commit plus stable patch ID pending maintainer acceptance."]
+    evidence: ["accounting_core_closeout.md records scope, claims, FEE branch, D5/copy/transfer inputs, corrected profile clocks, rejected records and LDG-2783 deferral. The fifth review passed the two-way dust witness. Five reviews over nine completed tickets (0.56) breached the historical 0.5 gate; on 2026-09-22 the maintainer accepted the workstream and adjudicated the breach as warranted without changing the count or threshold. Accepted implementation commit: 6d1b39bf0d2ad087da4b26b62481c2461a79165b."]
 
   - id: "LDG-2786"
     title: "Migrate the strict importer's tests to the kept surface"

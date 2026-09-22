@@ -1,15 +1,11 @@
 # Cut 2 Closeout: Accounting Core
 
-**Status:** Agent-provisional; implementation complete and awaiting the
-workstream's Type 1 review.
+**Status:** Accepted by the maintainer on 2026-09-22; Workstream 6 closed.
 
-**Candidate identity:** branch `codex/cut2-accounting-core`, base
-`f63d2f506235a0059edc7ab26c9b9a7d3ff39d4f`, stable `R/`, `src/`, and
-`tests/` patch ID `332792c543fa775f9bc6c293d83c02da927f55d4`.
-The two untracked code/test additions were hashed as `/dev/null` additions, so
-the scope is reproducible without staging. The candidate is deliberately
-uncommitted until maintainer acceptance. The acceptance commit must replace
-this patch identity in the release record; none of the clocks below may be
+**Accepted implementation:** commit
+`6d1b39bf0d2ad087da4b26b62481c2461a79165b` on branch
+`codex/cut2-accounting-core`, based on
+`f63d2f506235a0059edc7ab26c9b9a7d3ff39d4f`. None of the clocks below may be
 silently relabelled as a different tree.
 
 ## What Shipped
@@ -159,8 +155,10 @@ compiled dust-scale residual, one focused review that found the first dust
 witness was not mutation-sensitive, and one confirming review that passed the
 two-way replacement: five review invocations over nine completed tickets, ratio
 `0.56`, above the `0.5` gate. The code review passed, but the workstream cannot
-claim the governance gate until the maintainer adjudicates that historical
-breach. No optional mid-workstream review was invoked.
+claim that it met the governance gate. On 2026-09-22 the maintainer accepted
+the workstream and adjudicated the historical breach as warranted by the real
+correctness defects those reviews found. The `0.56` result remains recorded;
+the threshold was not rewritten. No optional mid-workstream review was invoked.
 
 The acceptance commit must name the deleted superseded replay loops, derived
 basis walk, per-lot compiled allocation, ignored fallthrough, three dead
@@ -169,7 +167,6 @@ readers, dead side and partial-fill vocabulary, and the old `FIFO Mismatch` and
 the writer never emitted `meta.realized_pnl`, while malformed JSON now fails
 closed in the shared preparer.
 
-After review acceptance, the maintainer must replace the provisional candidate
-identity with the accepted commit and decide whether the future compiled-
-execution RFC consumes the recorded transfer and D5 inputs. Equity settlement
-remains outside this cut and may open only after this workstream is accepted.
+The future compiled-execution RFC may consume the recorded transfer and D5
+inputs. Equity settlement remains outside this cut and may now open under its
+own accepted authority.
