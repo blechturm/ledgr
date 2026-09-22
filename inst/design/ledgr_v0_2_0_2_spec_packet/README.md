@@ -1,9 +1,10 @@
 # v0.2.0.2 Packet: Test-Suite Cleanup
 
 **Status:** Cut on 2026-09-21. Cut review (`cut_review.md`) returned
-`PASS_AFTER_PATCHES` at `6d37eeb`; patched in place. Workstream 1 opens on
-the maintainer's word. This packet is the pilot of the governance loop
-accepted the same day.
+`PASS_AFTER_PATCHES` at `6d37eeb`; patched in place. Workstreams 1 through 4
+are complete. Workstream 5's first review returned two bounded corrections
+and its focused re-review passed. The maintainer promoted the governance loop
+for v0.2.0.2, with mandatory reassessment before the next version inherits it.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket
 and sequencing authority. The workstream table below is a rendered view of
@@ -36,8 +37,8 @@ parallel.
 Thirty-one tickets, LDG-2745 through LDG-2775; IDs are stable and the
 `workstream` field, not the ID range, places a ticket. A workstream opens
 only when the previous one's review is accepted; ticket dependencies are
-intra-workstream. With the cut review that is six review invocations:
-6 / 31 = 0.19 against the pilot gate of at most 0.5.
+intra-workstream. Eleven independent reviews closed 31 completed tickets:
+11 / 31 = 0.35 against the pilot gate of at most 0.5.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
@@ -45,7 +46,7 @@ intra-workstream. With the cut review that is six review invocations:
 | 2 Control plane | 2751–2760 | one runner with fail-closed selection and named heavy protocols with owners; the two-sided census; profile tags for 23 homogeneous and 76 mixed files; the claims registry and checker; the canonical core into `fast` and extended parity registered in `review`; CRAN mode; both gates with `review` unconditional at release; the control-plane mutation proof; `tests/README.md` | `fast` and CRAN run clean under budget with a reconciled census; gutted selection fails the gate; no registered claim rests only on optional-dependency skips |
 | 3 Shrink | 2761–2765 | 134 fixture reductions across 50 files, cut by fixture family: sweep; experiment and run; availability; walk-forward and metrics; features, strategy, and cost | each reduced block's failure condition still fails under deliberate perturbation |
 | 4 Merge | 2766–2770, 2774 | 126 merges: 77 across 37 files by claim family — metrics; public behavior; identity and configuration; snapshot, features, and execution; determinism — and the 49 documentation-surface blocks, each merged into its claim family with an executable oracle or deleted with its own reason | no declared claim loses its detecting block; the overlap question answered per merge; every one of the 49 has a named outcome |
-| 5 Delete and closeout | 2771, 2772, 2775 | the 18 remaining replace-then-delete pins: one current-state artifact and link check built in a bound lane, then the pins deleted; the packet closeout with the pilot counters and clocks | the checker passes; the replacement runs where the census sees it; the closeout states the ratio and the maintainer's decision on the loop |
+| 5 Delete and closeout | 2771, 2772, 2775 | the 17 remaining replace-then-delete pins: one current-state artifact, link, logo, and optional-dependency check built in a bound lane, then the pins deleted; the packet closeout with the pilot counters and clocks | the checker passes; the replacement runs where the census sees it; the closeout states the ratio and the maintainer's decision on the loop |
 
 ## Where the cut departs from the audit's disposition column
 
@@ -74,7 +75,8 @@ preferences, not findings.
 
 ## Pilot counters
 
-The closeout (LDG-2775) records: workstreams and review invocations;
+The agent-provisional closeout (`test_cleanup_closeout.md`, LDG-2775) records:
+workstreams and review invocations;
 maintainer and agent turns and heavy-command runtime attributable to
 governance; findings by mode and whether each changed an outcome; reruns,
 rejected records, and reopenings; retained governance files and lines;

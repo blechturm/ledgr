@@ -42,7 +42,7 @@ workstreams:
     review: {mode: "Type 1", point: "close of workstream 4", reason: "Merging by claim family answers the overlap question the registry cannot; the reviewer asks it per merge."}
   - id: 5
     name: "Delete and closeout"
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 4
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 5", reason: "Deletion is last so every replacement is named and executable in a bound lane first; the closeout is reviewed with it."}
@@ -355,31 +355,34 @@ tickets:
 
   # ---------------------------------------------------------- 5 Delete and closeout
   - id: "LDG-2771"
-    title: "Replace the 17 remaining historical pins with one current-state artifact and link check"
+    title: "Replace the 17 remaining pins with one current-state artifact, link, and boundary check"
     workstream: 5
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
-    scope: "Audit DELETE-01 for the 17 delete_after_replacement rows still open after LDG-2750 and LDG-2774: one check that current artifacts exist, installed links resolve, and rendered vignette targets are complete and quiet, in a bound lane. Sentence-level assertions about completed historical packet states get no replacement; Git is their history."
-    acceptance: ["a missing artifact or dangling installed link fails the check", "a leaked DuckDB notice fails the check", "the check runs in a bound lane and appears in the census"]
+    scope: "Audit DELETE-01 for the 17 delete_after_replacement rows still open after LDG-2750 and LDG-2774: one bound review-lane check that current artifacts exist, installed links resolve, rendered vignette targets are complete and quiet, the package logo exists below its size cap, and qlcal remains an optional dependency confined to availability-facts.R. Sentence-level assertions about completed historical packet states get no replacement; Git is their history."
+    acceptance: ["a missing artifact, oversized logo, or dangling installed link fails the check", "a leaked DuckDB notice fails the check", "qlcal leaving Suggests, entering NAMESPACE imports, or gaining another source-file user fails the check", "the check runs in a bound lane and appears in the census"]
+    evidence: ["One review-lane block checks current documentation roots, both logo assets and the package-logo size cap, installed article links, rendered image targets, the DuckDB notice, and qlcal optional-dependency containment. Full-block mutations of the artifact, link, image, and notice surfaces failed; direct predicate mutations of logo size, Suggests, NAMESPACE, and source users also failed. Its source-article check overlaps the Workstream 4 installed-article block; rendered-article and image-target checks remain distinct. The corrected review census executed its 15 assertions among 215/215 selected blocks in 328.670 seconds with no failure."]
 
   - id: "LDG-2772"
     title: "Delete the 17 replace-then-delete blocks after the replacement runs"
     workstream: 5
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2771"]
     scope: "Each deletion names its replacement from LDG-2771 or the reason none is needed, in the commit message. Whether test-documentation-contracts.R survives depends on LDG-2774's outcome; the file is not retired by this ticket."
     acceptance: ["the checker passes with nothing unresolved", "every deleted block's replacement or reason is in the commit message"]
+    evidence: ["All 17 remaining delete_after_replacement blocks are absent. The closeout maps the structural logo and qlcal assertions into LDG-2771, maps the other current artifact/link surfaces there, and assigns only sentence-level completed packet states to Git history; the final commit message must retain that mapping."]
 
   - id: "LDG-2775"
     title: "Packet closeout and pilot record"
     workstream: 5
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2772"]
     scope: "Governance synthesis D4 and D8. One closeout: what shipped; which claims are supported; what remains open; one line per rejected approach or record and why. The pilot counters: workstreams and review invocations; maintainer and agent turns and heavy-command runtime attributable to governance; findings by mode and whether each changed an outcome; reruns, rejected records, reopenings; retained governance files and lines; disputed classifications. The fast and CRAN clocks with commit, environment, and reproduction command. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the review-invocation ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the closeout ends with the maintainer's decision to promote, revise, or abandon the loop"]
+    evidence: ["test_cleanup_closeout.md records shipped scope, supported claims, open work, deletion reasons, clocks, and pilot counters. After focused Type 1 re-review passed, the maintainer promoted the loop for v0.2.0.2 with mandatory reassessment before the next version inherits it."]
