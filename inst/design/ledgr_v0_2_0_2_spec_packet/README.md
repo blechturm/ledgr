@@ -6,9 +6,11 @@ governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2, the accounting-core consolidation, was cut
 on 2026-09-22; its cut review (`cut_review_2.md`) returned
 `PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
-opens on the maintainer's word. Cuts 3 (ingestion consolidation) and 4
-(exact-parity and workflow corrections) were cut on 2026-09-22; their joint
-cut review (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for each at
+opens on the maintainer's word. Cut 3, the ingestion
+consolidation, is complete: six tickets, one CSV ingestion surface, two
+reviews over six tickets. Cut 4 (exact-parity and workflow corrections) was
+cut on 2026-09-22 and awaits its workstream. The joint cut review
+(`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cuts are independent of one another;
 workstreams are serial within a cut.
 
@@ -103,7 +105,7 @@ removing the per-lot list allocation in pack/unpack; no runtime-default
 decision; no compiled-execution RFC work. Nothing is edited before the cut
 review is accepted.
 
-## Cut 3: Ingestion consolidation (cut review passed after patches)
+## Cut 3: Ingestion consolidation (closed)
 
 Authority: the maintainer's decision of 2026-09-22 that
 `ledgr_snapshot_from_csv()` and `ledgr_snapshot_from_df()` are the ingestion
@@ -138,9 +140,17 @@ removal (2787), so every commit is green and no commit drops a capability;
 the timestamp work (2789) is independent of the removal; the harness switch
 (2790) follows it; closeout (2791). Two reviews over six tickets, 0.33.
 
-**Maintainer-amendable assumptions:** straight removal with no deprecation
-shim (LDG-2787); `from_csv` gains all three pass-throughs rather than only
-`instruments_csv_path` (LDG-2788).
+**Both maintainer-amendable assumptions were taken as written:** straight
+removal with no deprecation shim (LDG-2787), and `from_csv` gaining all three
+pass-throughs (LDG-2788).
+
+**Closed 2026-09-22** at `c43fe1a`. Closeout and clocks:
+`ingestion_consolidation_closeout.md`. Migration detail and the twelve-item
+mutation record: `ws7_migration_evidence.md`. At the release shape
+`from_csv()` went from 20.07 s to 10.72 s and `from_df()` from 10.39 s to
+7.17 s on POSIXct input, with the snapshot hash pinned unchanged as LCL-0015.
+Three deliberate contract changes are listed in the closeout, the largest
+being that `LEDGR_CSV_FORMAT_ERROR` no longer exists.
 
 **What the cut review added.** Three bounded patches, applied in place.
 C3-F1: the census is 27 calls, not 26, and LDG-2786 now lists the cases the

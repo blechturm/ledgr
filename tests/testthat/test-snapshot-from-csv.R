@@ -24,6 +24,7 @@ read_bars <- function(snap, cols = "open, high, low, close, volume") {
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("bars CSV rounds OHLCV to 8 decimals", {
   snap <- seal_from_csv(c(
     "instrument_id,ts_utc,open,high,low,close,volume",
@@ -56,6 +57,7 @@ testthat::test_that("bars CSV missing required column fails", {
 # timestamp without a trailing Z; the kept surface accepts that form by design
 # and normalizes it. LDG-2789 owns the full branch matrix; this block pins the
 # contract change at the point where it was made.
+# ledgr-test-profile: review
 testthat::test_that("a timestamp without a trailing Z is accepted and normalized", {
   snap <- seal_from_csv(c(
     "instrument_id,ts_utc,open,high,low,close",
@@ -82,6 +84,7 @@ testthat::test_that("OHLC violation fails", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("instruments are generated from the bars", {
   snap <- seal_from_csv(c(
     "instrument_id,ts_utc,open,high,low,close",
@@ -102,6 +105,7 @@ testthat::test_that("instruments are generated from the bars", {
   testthat::expect_equal(n, 2L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("UTF-8 BOM in bars CSV header is tolerated", {
   snap <- seal_from_csv(
     c(

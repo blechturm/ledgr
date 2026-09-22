@@ -25,8 +25,8 @@ cuts:
     authority: "maintainer decision 2026-09-22 (horizon entry '[product] One CSV ingestion surface'); dev/bench/notes/durable_path_observations.md decisions 1 and 2; inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L02 and OPT-L03"
     source_table: "dev/bench/notes/durable_path_observations.md observations 4, 6 and 7; the 2026-09-22 release-shape probe recorded in README.md cut 3"
     workstreams: [7]
-    closeout: "pending"
-    status: "cut"
+    closeout: "ingestion_consolidation_closeout.md"
+    status: "closed"
   - id: 4
     name: "Exact-parity and workflow corrections"
     cut: "2026-09-22"
@@ -96,7 +96,7 @@ workstreams:
   - id: 7
     name: "Ingestion consolidation"
     cut: 3
-    status: "pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 7", reason: "The maintainer chose the surface; the workstream removes the other and makes the kept one exactly faster. One review at close checks that the pinned snapshot hash did not move, that every timestamp branch is identical before and after, that no contract case was lost in test migration, and that the harness record discloses its phase change."}
@@ -552,7 +552,7 @@ tickets:
   - id: "LDG-2786"
     title: "Migrate the strict importer's tests to the kept surface"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2788"]
@@ -562,7 +562,7 @@ tickets:
   - id: "LDG-2787"
     title: "Remove the strict CSV import lifecycle"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2786"]
@@ -572,7 +572,7 @@ tickets:
   - id: "LDG-2788"
     title: "ledgr_snapshot_from_csv() carries the full file contract"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -582,7 +582,7 @@ tickets:
   - id: "LDG-2789"
     title: "Exact-output timestamp handling in ledgr_snapshot_from_df()"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -592,7 +592,7 @@ tickets:
   - id: "LDG-2790"
     title: "Peer harness calls ledgr_snapshot_from_csv()"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2789"]
@@ -602,7 +602,7 @@ tickets:
   - id: "LDG-2791"
     title: "Workstream closeout"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2787", "LDG-2789", "LDG-2790"]

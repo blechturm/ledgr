@@ -1,0 +1,182 @@
+# Cut 3 Closeout: Ingestion Consolidation
+
+**Workstream 7, tickets LDG-2786 through LDG-2791.**
+**Opened 2026-09-22 at `cf94e02`, closed at `c43fe1a`.**
+**Owner: the maintainer. This draft is agent-provisional.**
+
+## 1. What shipped
+
+| ticket | commit | outcome |
+| --- | --- | --- |
+| LDG-2788 | `bfb2304` | `ledgr_snapshot_from_csv()` gains `instruments_csv_path`, `facts`, `invalid_observations`. One contract, two input types. |
+| LDG-2786 | `f63d2f5` | 27 importer calls migrated across eight test files. Four blocks deleted, four added, twelve mutations recorded. |
+| LDG-2787 | `c0a2a32` | `ledgr_snapshot_import_bars_csv()` and `ledgr_snapshot_import_instruments_csv()` removed with five dead helpers. |
+| LDG-2789 | `fab0158` | Timestamp normalization deduplicates and stops reformatting what it just parsed. Output identical, hash pinned. |
+| LDG-2790 | `c43fe1a` | The peer harness prepares its snapshot through the public file surface. |
+| LDG-2791 | this document | Closeout. |
+
+Detail for LDG-2786 and LDG-2787 is in `ws7_migration_evidence.md`.
+
+The package now has one CSV ingestion surface. `ledgr_snapshot_from_csv()` is
+the file form of `ledgr_snapshot_from_df()`: same columns, same timestamp
+forms, same point-in-time facts, same error vocabulary, same snapshot hash.
+
+## 2. Clocks
+
+Environment for every clock below: R 4.6.1 (2026-06-24 ucrt),
+x86_64-w64-mingw32, duckdb 1.5.5, collapse 2.1.8, package loaded with
+`pkgload::load_all(export_all = TRUE)`.
+
+### Ingestion at the release shape
+
+500 instruments by 1,260 sessions, 630,000 rows, one cold run each.
+Before: `cf94e02`. After: `c43fe1a`. Command: a scratch probe building the
+frame, writing it to CSV, and timing each entry point once.
+
+| path | before | after |
+| --- | ---: | ---: |
+| `ledgr_snapshot_from_df()`, POSIXct input | 10.39 s | 7.17 s |
+| `ledgr_snapshot_from_df()`, ISO-Z character input | 12.09 s | 6.69 s |
+| `ledgr_snapshot_from_csv()` | 20.07 s | 10.72 s |
+
+These are two end-to-end clocks per path, not a distribution. They are
+orientation for the closeout, not a promoted performance record.
+
+### Timestamp normalization, component clocks
+
+Same shape and commits, timing `ledgr_snapshot_normalize_ts_utc()` alone.
+Before, the same work inline in `ledgr_snapshot_from_df()`.
+
+| branch | before | after |
+| --- | ---: | ---: |
+| POSIXct | 4.32 s | 0.05 s |
+| ISO-Z character (parse plus reformat) | 2.02 + 3.23 s | 0.04 s |
+| date-only character | not isolated before | 0.03 s |
+| ISO without Z | not isolated before | 0.09 s |
+
+Component clocks. They do not sum to the end-to-end difference and must not
+be quoted as a speedup for `ledgr_snapshot_from_df()`. The ISO-Z before figure
+is the sum of two separately timed steps, parse then reformat; a second run of
+the same pair measured 1.79 and 3.21, so treat these as one significant figure.
+
+### Peer fixture
+
+`dev/bench/results/peer_benchmark_shared_bars_record.csv`, 630,000 rows over
+500 instruments, 2018-01-01 to 2022-10-28, at `c43fe1a`.
+
+| ingestion phase | seconds | snapshot hash |
+| --- | ---: | --- |
+| old: `read.csv()` + `as.POSIXct()` + `from_df()` | 15.94 | `89ce4285...afdc` |
+| new: `from_csv()` | 11.36 | `89ce4285...afdc` |
+
+The sealed artifact is byte-identical. The phase changed definition, so a
+record produced after this cut is not comparable with an earlier one on
+`snapshot_prepare_sec`. No promoted record was edited.
+
+### Test profiles
+
+At `c43fe1a`, command `Rscript tools/run-test-profile.R --profile=<p>`.
+
+| profile | blocks | seconds |
+| --- | ---: | ---: |
+| fast (gate run) | 439 | 87.99 |
+| review | 229 | 346.27 |
+
+Gate: `Rscript tools/check-test-gate.R --profile=fast --mode=ordinary`
+returned `LEDGR_TEST_GATE_OK mode=ordinary runs=1 median=87.990 bound=90.000`.
+One run is the protocol when the first run is under the bound. Heavy protocol
+is unchanged at 190 blocks; this cut touched no heavy block and none was
+re-run.
+
+### A fast-lane regression this cut caused and fixed
+
+Worth recording, because it was invisible in per-file runs and only appeared
+under the gate. The migrated CSV contract blocks call
+`ledgr_snapshot_from_csv()`, which creates a DuckDB file and seals it. The
+importer blocks they replaced used an in-memory DuckDB and never sealed, so
+four blocks that had been nearly free became about one second each.
+
+Measured back to back on the same machine, three runs of the fast profile:
+
+| tree | blocks | seconds | median |
+| --- | ---: | --- | ---: |
+| `cf94e02`, before the cut | 445 | 88.09, 86.74, 86.78 | 86.78 |
+| after LDG-2790, all blocks `fast` | 443 | 88.74, 90.25, 90.91 | 90.25 |
+| after moving four sealing blocks to `review` | 439 | 84.83, 85.05, 86.59 | 85.05 |
+
+Two of three runs had crossed the 90-second bound. The four blocks that seal
+a durable snapshot are now `review`, which is where the suite already puts
+durable seal work, and the three rejection blocks that never reach the seal
+stay `fast`. The lane is now 1.7 seconds faster than the cut found it.
+
+## 3. Census
+
+| | total | fast | review | heavy |
+| --- | ---: | ---: | ---: | ---: |
+| before, cut 1 close | 850 | 445 | 215 | 190 |
+| after cut 3 | 858 | 439 | 229 | 190 |
+
+Twelve blocks added, four deleted. The additions are the two LDG-2788
+surface blocks, the two new contract blocks in `test-snapshot-from-csv.R`,
+and the eight blocks of `test-snapshot-timestamp-branches.R`. Six blocks
+moved lane: four from `fast` to `review` for the reason above, and the
+`test-snapshot-from-csv.R` file's remaining split.
+
+One claim registered: **LCL-0015**, snapshot identity is independent of the
+accepted `ts_utc` input form, detected by **LTB-0018**, promised profile
+`review`.
+
+## 4. Review invocations against the gate
+
+| invocation | mode | artifact |
+| --- | --- | --- |
+| cut review | Type 1 and Type 2 | `cut_review_3_4.md`, `PASS_AFTER_PATCHES`, patched at `cf94e02` |
+| close review | Type 1 | pending |
+
+Two reviews over six completed tickets: **0.33**, at most the 0.5 gate.
+
+## 5. Contract changes
+
+Three, all deliberate, none of them a silent merge of the two surfaces.
+
+1. **One error vocabulary.** `LEDGR_CSV_FORMAT_ERROR` no longer exists. A
+   missing or unparseable file reaches a `from_csv()` caller as
+   `ledgr_invalid_args`. Required by LDG-2787's acceptance, which keeps
+   `ledgr_read_csv_strict()` while binding the class to disappear.
+2. **The no-Z timestamp form is accepted by the file surface.** The removed
+   importer rejected it; the kept surface normalizes it. This is the removal
+   of a stricter surface, not a loosening of the kept one.
+3. **`from_csv` normalizes integer price columns to double.** R's CSV reader
+   infers integer columns for whole-number prices, and a quarantined row
+   records the supplied row verbatim, so the same logical data sealed to a
+   different hash depending on input form. Found by LDG-2788's own acceptance
+   test. No existing identity moved, because quarantine was unreachable from
+   `from_csv` before that ticket.
+
+Two capabilities were removed with no replacement, both recorded in
+`ws7_migration_evidence.md`: the caller-owned create-import-seal lifecycle
+with its `CREATED`/`NOT_MUTABLE` guard, and `auto_generate_instruments =
+FALSE`, which asked for neither a file nor generated instruments.
+
+## 6. Declined, with reasons
+
+| item | reason |
+| --- | --- |
+| `colClasses` on the bars reader | 0.9 s at the release shape, and it moves the malformed-numeric error from `ledgr_csv_parse_num()` to `read.csv()`, changing which error fires and what it says. Not worth a contract change. |
+| Widening the hash chunk window | A bounded-memory question for datasets whose timestamps are mostly unique, not a free change. Keeps its earlier disposition. |
+| Raw-bytes canonical hashing | Changes durable identity; needs its own version-matrix RFC, not an optimization ticket. |
+| Speeding the peer harness's own `read.csv()` for peer engines | Would improve a published peer number without improving ledgr. Declined in the durable-path note and still declined. |
+| Deduplicating the adapter's duplicate-key check against the primary key | The two layers are both real and the app-level check gives a clear message before any write. Recorded, not changed. |
+
+## 7. What this cut leaves open
+
+- **The no-Z branch is redundant with the fallback.** Proved by mutation:
+  breaking either alone leaves the form accepted. The fast branch is a speed
+  path over a fallback that already handles the form. Collapsing them is a
+  small later cleanup, not done here because it would change which code
+  raises which error.
+- **`dev/ledgr_v0.1.1_dryrun.R`** still names the removed importer. It has
+  been broken since `ledgr_backtest_run()` was removed several versions ago.
+  For the maintainer to delete or rewrite.
+- **Event serialization** still needs the bounded spike the 2026-09-17
+  durable-path note asked for. Untouched by this cut.
