@@ -7,7 +7,7 @@
 **Workstream 7, tickets LDG-2786 through LDG-2791.**
 **Opened 2026-09-22 at `cf94e02`, closed at `c43fe1a`.**
 **Close review `close_review_7_9.md`: PASS_AFTER_PATCHES; patched, section 8.**
-**Owner: the maintainer. This draft is agent-provisional.**
+**Accepted by the maintainer, 2026-09-22.**
 
 ## 1. What shipped
 

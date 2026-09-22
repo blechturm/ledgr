@@ -7,7 +7,7 @@
 **Close review returned FAIL twice, `close_review_7_9.md` and its re-review
 at `2b15563`, then PASS_AFTER_PATCHES at `ea227fa`. Every finding is
 patched. Sections 8, 10, 11 and 13.**
-**Owner: the maintainer. This draft is agent-provisional.**
+**Accepted by the maintainer, 2026-09-22.**
 
 ## 1. What shipped
 
