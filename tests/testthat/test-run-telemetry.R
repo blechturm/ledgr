@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("successful runs persist compact telemetry and print execution mode", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

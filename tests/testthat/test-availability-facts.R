@@ -382,6 +382,7 @@ testthat::test_that("quarantine classifies malformed observation timestamps row 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("fact-free snapshots retain hash rule 1", {
   bars <- data.frame(
     instrument_id = c("AAA", "AAA"),
@@ -402,6 +403,7 @@ testthat::test_that("fact-free snapshots retain hash rule 1", {
   testthat::expect_null(first$metadata$snapshot_hash_rule_version)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("hash rule 2 is canonical and facts survive reopening", {
   db_path <- tempfile(fileext = ".duckdb")
   bars <- availability_test_bars()
@@ -460,6 +462,7 @@ testthat::test_that("hash rule 2 is canonical and facts survive reopening", {
   testthat::expect_false(identical(ledgr_snapshot_info(changed)$snapshot_hash[[1L]], hash))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("explicit quarantine persists originals and is hash verified", {
   db_path <- tempfile(fileext = ".duckdb")
   facts <- availability_test_facts()

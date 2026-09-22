@@ -15,6 +15,7 @@ ledgr_risk_test_cost_config <- function(cost_model = ledgr_cost_zero()) {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("experiment and run configs carry no-op risk identity by default", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -112,6 +113,7 @@ testthat::test_that("risk config validation fails closed on mismatched or invali
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg_bad_plan), "risk_chain.risk_chain_hash", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("stored pre-risk run config reopens with in-memory no-op risk identity only", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   db_path <- tempfile(fileext = ".duckdb")

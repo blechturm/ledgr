@@ -63,6 +63,7 @@ ledgr_skip_parallel_sweep_under_covr <- function() {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -84,6 +85,7 @@ testthat::test_that("ledgr_sweep workers = 1 equals sequential reference", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects", {
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -119,6 +121,7 @@ testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects",
   testthat::expect_identical(compiled, parent_compiled)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep matches sequential deterministic candidate rows", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -159,6 +162,7 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
   testthat::expect_identical(parallel_three$candidate_row, 1:3)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep preserves parameterized risk identity and row order", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -204,6 +208,7 @@ testthat::test_that("parallel sweep preserves parameterized risk identity and ro
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep preserves warning and failure row association", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -245,6 +250,7 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
   testthat::expect_match(out$error_msg[[3]], "boom-bad", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep id", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -270,6 +276,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep workers do not write persistent artifacts", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
@@ -292,6 +299,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
   testthat::expect_identical(after, before)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep rejects ambient RNG strategies", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()

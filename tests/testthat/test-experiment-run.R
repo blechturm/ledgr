@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run executes an experiment with fixed features", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -31,6 +32,7 @@ testthat::test_that("ledgr_run executes an experiment with fixed features", {
   testthat::expect_true(nrow(fills) > 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run evaluates feature functions once per run", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -60,6 +62,7 @@ testthat::test_that("ledgr_run evaluates feature functions once per run", {
   testthat::expect_s3_class(bt, "ledgr_backtest")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run accepts execution seeds and stores them in config identity", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -94,6 +97,7 @@ testthat::test_that("ledgr_run accepts execution seeds and stores them in config
   testthat::expect_null(cfg$engine$seed)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without resetting it", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -124,6 +128,7 @@ testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without 
   testthat::expect_equal(fills$qty[[1]], expected_qty)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -158,6 +163,7 @@ testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input"
   testthat::expect_identical(observed$pulse_seed, expected)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("pulse_seed strategies reproduce across continuous and resumed runs", {
   db_clean <- tempfile(fileext = ".duckdb")
   db_resume <- tempfile(fileext = ".duckdb")
@@ -233,6 +239,7 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ambient RNG strategies fail loudly on resume", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -277,6 +284,7 @@ testthat::test_that("ambient RNG strategies fail loudly on resume", {
   testthat::expect_match(conditionMessage(err), "ctx$pulse_seed", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
   db_path_exp <- tempfile(fileext = ".duckdb")
   db_path_legacy <- tempfile(fileext = ".duckdb")
@@ -324,6 +332,7 @@ testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
   testthat::expect_equal(equity_exp$cash, equity_legacy$cash)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run records opening positions as ledger events", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -358,6 +367,7 @@ testthat::test_that("ledgr_run records opening positions as ledger events", {
   testthat::expect_equal(state$cash$cash[[nrow(state$cash)]], 1000)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("opening position cost basis seeds FIFO accounting", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -427,6 +437,7 @@ testthat::test_that("opening position cost basis seeds FIFO accounting", {
   testthat::expect_equal(rebuilt$equity_curve$unrealized_pnl[[nrow(rebuilt$equity_curve)]], 0)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run accepts params = list()", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

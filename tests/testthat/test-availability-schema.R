@@ -60,6 +60,7 @@ testthat::test_that("availability migration is transactional and writes its mark
   testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("legacy sealed snapshots keep rule 1 and are not rehashed", {
   db_path <- tempfile(fileext = ".duckdb")
   bars <- data.frame(

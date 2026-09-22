@@ -36,6 +36,7 @@ ledgr_test_replace_run_provenance <- function(db_path, run_id, values) {
   invisible(TRUE)
 }
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy returns Tier 1 source metadata without evaluation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -75,6 +76,7 @@ testthat::test_that("ledgr_run_strategy returns Tier 1 source metadata without e
   testthat::expect_false(any(grepl("targets <- ctx", printed, fixed = TRUE)))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy trust TRUE verifies hash and returns a function", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -106,6 +108,7 @@ testthat::test_that("ledgr_run_strategy trust TRUE verifies hash and returns a f
   testthat::expect_identical(names(formals(extracted$strategy_function)), c("ctx", "params"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy detects source hash mismatch", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -146,6 +149,7 @@ testthat::test_that("ledgr_run_strategy detects source hash mismatch", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy trust FALSE does not parse or evaluate source", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -186,6 +190,7 @@ testthat::test_that("ledgr_run_strategy trust FALSE does not parse or evaluate s
   testthat::expect_false("strategy_function" %in% names(extracted))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy trust TRUE reports parse failures", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -225,6 +230,7 @@ testthat::test_that("ledgr_run_strategy trust TRUE reports parse failures", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_strategy surfaces Tier 2 warnings", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

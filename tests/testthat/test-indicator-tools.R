@@ -31,6 +31,7 @@ testthat::test_that("ledgr_indicator_dev returns a read-only window", {
   testthat::expect_true(any(grepl("Indicator Development", printed)))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

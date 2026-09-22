@@ -281,6 +281,7 @@ testthat::test_that("inspection argument combinations fail with typed errors", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("sealed snapshot inspection verifies evidence and connection ownership", {
   membership <- availability_inspection_membership()
   bars <- availability_inspection_bars(as.Date("2024-01-02"))
@@ -351,6 +352,7 @@ testthat::test_that("sealed snapshot inspection verifies evidence and connection
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("snapshot resolution works in a fresh process without a facts object", {
   testthat::skip_on_covr()
   testthat::skip_if_not_installed("pkgload")
@@ -369,10 +371,10 @@ testthat::test_that("snapshot resolution works in a fresh process without a fact
   installed_root <- normalizePath(system.file(package = "ledgr"), winslash = "/")
   writeLines(c(
     "args <- commandArgs(trailingOnly = TRUE)",
-    "if (identical(Sys.getenv('R_COVR'), 'true')) {",
-    "  library(ledgr, lib.loc = dirname(args[[4L]]))",
-    "} else {",
+    "if (file.exists(file.path(args[[1L]], 'DESCRIPTION')) && !identical(Sys.getenv('R_COVR'), 'true')) {",
     "  pkgload::load_all(args[[1L]], quiet = TRUE)",
+    "} else {",
+    "  library(ledgr, lib.loc = dirname(args[[4L]]))",
     "}",
     "snapshot <- ledgr_snapshot_open(args[[2L]], args[[3L]], verify = FALSE)",
     "result <- ledgr_facts_resolve(snapshot, 'membership', 'research', '2024-01-15T00:00:00Z')",

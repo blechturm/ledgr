@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: heavy_protocol
 testthat::test_that("ledgr_run resolves active aliases from feature_params", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

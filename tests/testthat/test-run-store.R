@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_list discovers multiple runs and hides archived rows", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -90,6 +91,7 @@ testthat::test_that("experiment-store APIs reject db_path-first calls", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates missing telemetry", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -152,6 +154,7 @@ testthat::test_that("ledgr_run_info returns printable diagnostics and tolerates 
   testthat::expect_true(any(grepl("simulated failure", failed_print, fixed = TRUE)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature_set_hash is exposed on run config, info, list, and reopened handles", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -196,6 +199,7 @@ testthat::test_that("feature_set_hash is exposed on run config, info, list, and 
   testthat::expect_identical(reopened$config$features$feature_set_hash, hash)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_open returns a handle without recomputation or mutation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -266,6 +270,7 @@ testthat::test_that("ledgr_run_open returns a handle without recomputation or mu
   testthat::expect_gt(original_calls, 0L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_open rejects incomplete runs and archived completed runs still open", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

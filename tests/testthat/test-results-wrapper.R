@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("ledgr_results delegates to tibble::as_tibble for supported result tables", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

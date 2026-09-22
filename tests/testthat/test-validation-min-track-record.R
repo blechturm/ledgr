@@ -132,6 +132,7 @@ testthat::test_that("minimum track record length accepts user return panels", {
   testthat::expect_null(from_panel$metadata$input_identity)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("minimum track record length cross-checks against PerformanceAnalytics", {
   testthat::skip_if_not_installed("PerformanceAnalytics")
   testthat::skip_if_not_installed("xts")
@@ -228,6 +229,7 @@ testthat::test_that("minimum track record length fails closed on invalid evidenc
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("minimum track record length adds no PerformanceAnalytics runtime import", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")

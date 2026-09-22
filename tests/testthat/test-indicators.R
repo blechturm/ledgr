@@ -230,6 +230,7 @@ testthat::test_that("indicator deregistration handles missing and invalid names"
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("indicator deregistration does not mutate persisted feature artifacts", {
   name <- "test_registry_persisted_artifact"
   db_path <- tempfile(fileext = ".duckdb")

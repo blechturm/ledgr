@@ -60,6 +60,7 @@ testthat::test_that("core indicator fingerprints remain stable", {
   )), c("sma_20", "ema_20", "rsi_14", "return_5"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
   testthat::skip_if(
     requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
@@ -88,6 +89,7 @@ testthat::test_that("TTR indicator fingerprints remain stable by TTR version", {
   testthat::expect_identical(observed, pins)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature-factory sweep identity remains stable", {
   testthat::skip_if(
     requireNamespace("covr", quietly = TRUE) && covr::in_covr(),

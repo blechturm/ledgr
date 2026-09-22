@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("qlcal adapter materializes closures and complete overrides", {
   testthat::skip_if_not_installed("qlcal")
   calendar <- qlcal::getCalendar("UnitedStates/NYSE")
@@ -60,6 +61,7 @@ testthat::test_that("qlcal adapter materializes closures and complete overrides"
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("qlcal metadata and assumptions enter existing identity", {
   testthat::skip_if_not_installed("qlcal")
   calendar <- qlcal::getCalendar("UnitedStates/NYSE")
@@ -167,6 +169,7 @@ testthat::test_that("qlcal metadata and assumptions enter existing identity", {
   testthat::expect_identical(evidenced_row$assumption_reasons, "generated_schedule")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("materialized qlcal sessions reopen without calendar state", {
   testthat::skip_if_not_installed("qlcal")
   family <- ledgr_facts_sessions_qlcal(
@@ -213,6 +216,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("materialized sessions run in a fresh process without loading qlcal", {
   testthat::skip_on_covr()
   testthat::skip_if_not_installed("qlcal")
@@ -246,10 +250,10 @@ testthat::test_that("materialized sessions run in a fresh process without loadin
   installed_root <- normalizePath(system.file(package = "ledgr"), winslash = "/")
   writeLines(c(
     "args <- commandArgs(trailingOnly = TRUE)",
-    "if (identical(Sys.getenv('R_COVR'), 'true')) {",
-    "  library(ledgr, lib.loc = dirname(args[[4L]]))",
-    "} else {",
+    "if (file.exists(file.path(args[[1L]], 'DESCRIPTION')) && !identical(Sys.getenv('R_COVR'), 'true')) {",
     "  pkgload::load_all(args[[1L]], quiet = TRUE)",
+    "} else {",
+    "  library(ledgr, lib.loc = dirname(args[[4L]]))",
     "}",
     "stopifnot(!'qlcal' %in% loadedNamespaces())",
     "snapshot <- ledgr_snapshot_open(args[[2L]], args[[3L]], verify = TRUE)",

@@ -31,6 +31,7 @@ Imports:
 LinkingTo:
     cpp11
 Suggests: 
+    brio,
     covr,
     dplyr,
     ggplot2,
@@ -50,5 +51,6 @@ Suggests:
     withr,
     quantmod,
     xts,
+    yaml,
     zoo
 Config/testthat/edition: 3

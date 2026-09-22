@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("snapshot_load reopens an existing sealed snapshot", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

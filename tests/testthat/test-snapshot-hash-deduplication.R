@@ -37,6 +37,7 @@ stage_n_hash_source <- function(fn) {
   paste(deparse(body(fn), width.cutoff = 500L), collapse = "\n")
 }
 
+# ledgr-test-profile: review
 testthat::test_that("within-chunk timestamp remapping is byte-identical", {
   base <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC")
   chunk_sizes <- c(1L, 2L, 17L, 9999L, 10000L, 10001L, 50000L)
@@ -74,6 +75,7 @@ testthat::test_that("within-chunk timestamp remapping is byte-identical", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("formatter-count gate detects restored per-row work", {
   axis <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") +
     seq.int(0L, 1259L) * 86400
@@ -173,6 +175,7 @@ testthat::test_that("availability rule 2 hashes retain the unchanged base hash",
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("a snapshot sealed by the old formatter reopens unchanged", {
   path <- tempfile(fileext = ".duckdb")
   bars <- ledgr_test_make_bars(
@@ -197,6 +200,7 @@ testthat::test_that("a snapshot sealed by the old formatter reopens unchanged", 
   testthat::expect_silent(ledgr_snapshot_validate(reopened))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("run, timestamp, price, and stored-hash guards still detect tampering", {
   path <- tempfile(fileext = ".duckdb")
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)

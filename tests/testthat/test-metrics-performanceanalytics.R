@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("optional PerformanceAnalytics parity matches aligned ledgr metric definitions", {
   testthat::skip_if_not_installed("PerformanceAnalytics")
   testthat::skip_if_not_installed("xts")

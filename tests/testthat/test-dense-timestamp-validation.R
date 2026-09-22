@@ -242,6 +242,7 @@ testthat::test_that("dense validation has one vector conversion per axis", {
   testthat::expect_identical(calls$formatter, 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("dense public consumers use the primitive validator", {
   bars <- ledgr_test_make_bars(
     c("AAA", "BBB"),
@@ -305,6 +306,7 @@ testthat::test_that("dense public consumers use the primitive validator", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("availability consumers bypass dense timestamp validation", {
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

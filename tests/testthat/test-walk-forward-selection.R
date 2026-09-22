@@ -14,7 +14,7 @@ testthat::test_that("walk-forward selection rules hash canonical scalar payloads
   testthat::expect_true(any(grepl("ledgr selection rule", capture.output(print(rule)), fixed = TRUE)))
 })
 
-testthat::test_that("walk-forward selection fails closed on metric classes and eligibility", {
+testthat::test_that("[LTB-0010] walk-forward selection fails closed on metric classes and eligibility", {
   scores <- data.frame(
     candidate_key = c("b", "a", "c", "d"),
     sharpe_ratio = c(1, 1, NA, Inf),

@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 make_snapshot_runner_db <- function(status = "SEALED") {
   path <- tempfile(fileext = ".duckdb")
   drv <- duckdb::duckdb()
@@ -128,7 +129,7 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
   testthat::expect_gt(as.integer(equity_rows), 0L)
 })
 
-testthat::test_that("tamper detection fails loud when SEALED snapshot is mutated after seal", {
+testthat::test_that("[LTB-0001] tamper detection fails loud when SEALED snapshot is mutated after seal", {
   fx <- make_snapshot_runner_db(status = "SEALED")
   gc()
   Sys.sleep(0.05)

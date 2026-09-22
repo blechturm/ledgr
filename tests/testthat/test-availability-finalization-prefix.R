@@ -195,6 +195,7 @@ testthat::test_that("invalid terminal merge preserves prior rows and status", {
   testthat::expect_identical(status, "RUNNING")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("dense resume keeps full recomputation and bypasses prefix merge", {
   dates <- as.Date("2020-01-01") + 0:4
   bars <- data.frame(

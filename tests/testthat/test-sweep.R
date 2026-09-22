@@ -274,6 +274,7 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   testthat::expect_equal(inline$fills$qty, c(2, 1))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep public compiled accounting opt-in dispatches spot FIFO path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -339,6 +340,7 @@ testthat::test_that("sweep public compiled accounting opt-in dispatches spot FIF
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep public compiled accounting preserves risk parity", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -438,6 +440,7 @@ testthat::test_that("fills reconstruction is invariant under hostile collapse se
   testthat::expect_equal(hostile, expected)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep returns ordered summary rows without store writes", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -468,6 +471,7 @@ testthat::test_that("ledgr_sweep returns ordered summary rows without store writ
   testthat::expect_identical(before_telemetry, after_telemetry)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata contract", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -542,6 +546,7 @@ testthat::test_that("ledgr_sweep_results has the v0.1.8 column and metadata cont
   }
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep preserves warning conditions", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -558,6 +563,7 @@ testthat::test_that("ledgr_sweep preserves warning conditions", {
   testthat::expect_s3_class(out$warnings[[1]][[1]], "ledgr_test_sweep_warning")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep_results prints a curated view", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -580,6 +586,7 @@ testthat::test_that("ledgr_sweep_results prints a curated view", {
   testthat::expect_true(any(grepl("provenance", printed, fixed = TRUE)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep_results print footer stays neutral after reordering", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -595,6 +602,7 @@ testthat::test_that("ledgr_sweep_results print footer stays neutral after reorde
   testthat::expect_false(any(grepl("parameter-grid order", printed, fixed = TRUE)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_candidate selects by label or position and handles failures", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -641,6 +649,7 @@ testthat::test_that("ledgr_candidate selects by label or position and handles fa
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -662,6 +671,7 @@ testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
   testthat::expect_identical(candidate$params, list())
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep candidate key supports later durable materialization", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -723,6 +733,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
   testthat::expect_equal(equity$equity[[nrow(equity)]], results$final_equity[[1]], tolerance = 1e-12)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_promote forwards candidate params and execution seed", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -765,6 +776,7 @@ testthat::test_that("ledgr_promote forwards candidate params and execution seed"
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_promote validates same-snapshot provenance when requested", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   other_bars <- ledgr_sweep_test_bars()
@@ -804,6 +816,7 @@ testthat::test_that("ledgr_promote validates same-snapshot provenance when reque
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep_candidate print shows strategy name and hash when available", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -820,6 +833,7 @@ testthat::test_that("ledgr_sweep_candidate print shows strategy name and hash wh
   testthat::expect_true(any(grepl("Feature-set hash:", printed, fixed = TRUE)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("derived execution seeds are stable across sweep invocations", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -841,6 +855,7 @@ testthat::test_that("derived execution seeds are stable across sweep invocations
   testthat::expect_false(identical(attr(one, "sweep_id"), attr(two, "sweep_id")))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep captures candidate failures and stop_on_error rethrows", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -864,6 +879,7 @@ testthat::test_that("ledgr_sweep captures candidate failures and stop_on_error r
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep stop_on_error preserves unique strategy error classes", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -899,6 +915,7 @@ testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate exec
   testthat::expect_false(grepl("by default", conditionMessage(err), fixed = TRUE))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment before candidate execution", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -951,6 +968,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
   testthat::expect_identical(counter, 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature-consuming sweep strategies see the same feature values as ledgr_run", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -1263,6 +1281,7 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
   testthat::expect_equal(observed$wide_value, as.numeric(run_feature_matrix$custom_close[1, ]))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -1289,6 +1308,7 @@ testthat::test_that("precomputed features are consumed without calling the featu
   testthat::expect_identical(calls$n, 0L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("the shared fold core has a private two-boundary interface", {
   exports <- getNamespaceExports("ledgr")
   testthat::expect_false("ledgr_execute_fold" %in% exports)

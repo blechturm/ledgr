@@ -164,6 +164,7 @@ testthat::test_that("criterion steps expose one generic internal evaluation cont
   testthat::expect_identical(pass$evidence_source, "summary.max_drawdown")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("business objectives do not mutate sweep identity", {
   sweep <- tibble::tibble(
     candidate_id = "candidate-1",

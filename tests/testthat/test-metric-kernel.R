@@ -63,6 +63,7 @@ testthat::test_that("metric kernel warns only for daily contexts over subdaily p
   testthat::expect_equal(intraday_kernel$bars_per_year, 252 * 390)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("single-run cadence warning is honesty-only and identity-neutral", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -109,6 +110,7 @@ testthat::test_that("single-run cadence warning is honesty-only and identity-neu
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("single-run metrics use stored context by default and support ephemeral overrides", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -182,6 +184,7 @@ testthat::test_that("single-run metrics use stored context by default and suppor
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("summary discloses risk-free rate and annualization assumptions", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

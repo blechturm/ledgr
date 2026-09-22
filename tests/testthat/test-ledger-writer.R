@@ -140,6 +140,7 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("persistent output handler grows event buffer without changing rows", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -225,6 +226,7 @@ testthat::test_that("persistent output handler preserves all pending event colum
   testthat::expect_identical(as.integer(rows$event_seq), expected$event_seq)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("persistent output handler preserves full columns across growth", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -327,6 +329,7 @@ testthat::test_that("memory output handler grows event buffer and preserves even
   testthat::expect_identical(attr(events, "ledgr_event_position_delta")[[n_events]], as.numeric(n_events))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("collapse event writes survive allocation and forced garbage collection", {
   columns <- new.env(parent = emptyenv())
   n <- 2048L
@@ -476,6 +479,7 @@ testthat::test_that("failed event-buffer writes do not expose a partial active r
   testthat::expect_identical(rows$event_id, write$row$event_id)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("event-buffer writes use the collapse 2.1.8 route", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")

@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("session feature cache reuses series by snapshot hash", {
   ledgr_feature_cache_clear()
   on.exit(ledgr_feature_cache_clear(), add = TRUE)
@@ -230,6 +231,7 @@ testthat::test_that("hoisted feature cache key parts match canonical key", {
   expect_key_parity(explicit_def)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("hoisted feature cache key parts match bundle output keys", {
   testthat::skip_if_not_installed("TTR")
 

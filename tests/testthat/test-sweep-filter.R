@@ -233,6 +233,7 @@ testthat::test_that("sweep-filter evidence is rejected by selection surfaces", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep_filter evaluates reopened retained evidence", {
   bars <- data.frame(
     instrument_id = "AAA",

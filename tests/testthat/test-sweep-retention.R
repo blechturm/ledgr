@@ -73,6 +73,7 @@ testthat::test_that("ledgr_sweep_retention fails loudly on invalid values", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep attaches retention metadata without changing default rows", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -103,6 +104,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
   testthat::expect_null(attr(out, "execution_assumptions")$sweep_retention)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("completed retention is accepted without changing scalar identity", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -138,6 +140,7 @@ testthat::test_that("completed retention is accepted without changing scalar ide
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("completed retention exposes long and wide return series", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -272,6 +275,7 @@ testthat::test_that("ledgr_return_panel constructs source-neutral return evidenc
   testthat::expect_equal(long_panel$matrix, panel$matrix, tolerance = 1e-12)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep return panels use the same class and hash payload", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -322,6 +326,7 @@ testthat::test_that("ledgr_return_panel fails loudly on malformed input", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("closed-trade retention exposes deterministic minimal trade evidence", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -392,6 +397,7 @@ testthat::test_that("closed-trade retention exposes deterministic minimal trade 
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("retained return accessors fail loudly for unretained, missing, and failed candidates", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -453,6 +459,7 @@ testthat::test_that("retained return accessors fail loudly for unretained, missi
   testthat::expect_identical(panel$excluded_candidate_ids, "bad")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("retained-return panels fail closed for ragged complete grids", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -483,6 +490,7 @@ testthat::test_that("retained-return panels fail closed for ragged complete grid
   testthat::expect_true(is.na(permissive[nrow(permissive), "b"]))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("xts retained-return projection labels external evidence when available", {
   testthat::skip_if_not_installed("xts")
 
@@ -507,6 +515,7 @@ testthat::test_that("xts retained-return projection labels external evidence whe
   testthat::expect_identical(attr(projected_xts, "ledgr_return_panel")$candidate_ids, c("b", "a"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("return projection adapters remain optional and out of imports", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")
@@ -521,6 +530,7 @@ testthat::test_that("return projection adapters remain optional and out of impor
   testthat::expect_false("xts" %in% imports)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("retained returns keep final equity row with final-bar no-fill warning", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -567,6 +577,7 @@ testthat::test_that("ledgr_sweep rejects invalid retain arguments before executi
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("wide return projections reversibly escape reserved candidate ids", {
   snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

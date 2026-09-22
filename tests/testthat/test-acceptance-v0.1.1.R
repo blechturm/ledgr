@@ -239,6 +239,7 @@ testthat::test_that("AT6: Immutability guard (SEALED snapshot rejects writes)", 
   testthat::expect_equal(after, before)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT7: Tamper detection on load (runner)", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)
@@ -276,6 +277,7 @@ testthat::test_that("AT7: Tamper detection on load (runner)", {
   testthat::expect_error(ledgr_run_config(cfg, run_id = "run-v011-tamper"), class = "LEDGR_SNAPSHOT_CORRUPTED")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT8: Subset universe allowed", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)
@@ -306,6 +308,7 @@ testthat::test_that("AT8: Subset universe allowed", {
   testthat::expect_identical(out$run_id, "run-v011-subset")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT9: Per-instrument coverage validation fails on ragged coverage", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)

@@ -64,6 +64,7 @@ testthat::test_that("ledgr_target unwraps through the strategy target validator"
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("functional strategies may return ledgr_target", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -87,6 +88,7 @@ testthat::test_that("functional strategies may return ledgr_target", {
   testthat::expect_true(all(fills$instrument_id == "AAA"))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("intermediate strategy helper types fail when returned directly", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

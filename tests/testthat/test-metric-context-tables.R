@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: heavy_protocol
 ledgr_metric_context_table_bars <- function() {
   data.frame(
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,

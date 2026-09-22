@@ -118,6 +118,7 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("production consumers build one prepared provider at each boundary", {
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
@@ -174,6 +175,7 @@ testthat::test_that("production consumers build one prepared provider at each bo
   })
 })
 
+# ledgr-test-profile: review
 testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
   builds <- new.env(parent = emptyenv())
   builds$n <- 0L
@@ -220,6 +222,7 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
   })
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("provider results and reopen surfaces preserve production evidence", {
   for (interrupt_day in list(NULL, 6L)) {
     production <- availability_v201_inspection_case(interrupt_day)

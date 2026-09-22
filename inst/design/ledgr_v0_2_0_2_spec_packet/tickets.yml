@@ -24,7 +24,7 @@ workstreams:
     review: {mode: "Type 1", point: "close of workstream 1", reason: "Repairs precede every other change so the baseline is trustworthy before anything is moved."}
   - id: 2
     name: "Control plane"
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 1
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 2", reason: "The runner, census, and gates must prove their own failure sensitivity before shrink or merge is measured against them."}
@@ -124,7 +124,7 @@ tickets:
   - id: "LDG-2751"
     title: "One parameterized runner with fast and review memberships and fail-closed selection"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -134,7 +134,7 @@ tickets:
   - id: "LDG-2752"
     title: "Two-sided execution census and reconciliation"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2751"]
@@ -144,7 +144,7 @@ tickets:
   - id: "LDG-2753"
     title: "Declare profiles in the 23 homogeneous review and heavy files"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2751"]
@@ -154,7 +154,7 @@ tickets:
   - id: "LDG-2754"
     title: "Tag the 333 non-fast blocks in the 76 mixed files"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2751"]
@@ -164,17 +164,18 @@ tickets:
   - id: "LDG-2755"
     title: "Claims registry, [LTB-nnnn] block prefixes, and the structure checker"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2752"]
     scope: "tests/claims.yml seeded from contracts.md and the prior audit's twelve rows, one row per independently falsifiable invariant or defect; prefixes on registered detecting blocks only; checker fails on unresolved block, missing owner, unknown profile, duplicate ID, a promised block absent from the census, or a claim whose every promised block reported skipped. It reads structure and run output, never prose. The shared-fold Core Rule registers behavioral evidence that both ledgr_run_fold and ledgr_sweep_run_candidate reach ledgr_execute_fold."
     acceptance: ["every seeded claim resolves to a block that ran where promised", "a renamed title behind an intact prefix does not break the registry", "a removed prefix does", "a claim whose only detecting blocks are optional-dependency skips fails the checker", "the shared-fold Core Rule names an independent behavioral detector for both production callers"]
+    evidence: ["LTB-0015 runs ledgr_run and ledgr_sweep while independently spying both ledgr_execution_spec and ledgr_execute_fold; either caller bypassing the shared fold core changes the exact two-call assertion."]
 
   - id: "LDG-2756"
     title: "Run the canonical-R differential core in every fast invocation"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2753", "LDG-2754"]
@@ -184,37 +185,40 @@ tickets:
   - id: "LDG-2757"
     title: "CRAN execution mode with recorded library isolation and its own clock"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2751"]
     scope: "Synthesis 2.2. The fast membership under an isolated library whose construction is recorded, a read-only working directory, and the CRAN check environment. Installed optional packages must not leak. Requires the workstream 1 graphics, warning, and finalizer repairs. Source-tree-dependent subprocess harnesses in test-availability-inspection.R and test-availability-qlcal.R must work from an installed-package check tree."
     acceptance: ["an optional package present in the maintainer library is absent in CRAN mode", "the mode passes read-only", "its clock is reported separately", "the CRAN-mode census shows no registered claim with every detecting block skipped", "installed-package subprocess tests do not assume a source-tree DESCRIPTION and are not hidden by skip_on_cran"]
+    evidence: ["Isolated R 4.6.1 run: 468/468 fast blocks, zero skips and failures, 84.750 seconds from a read-only working directory; the first CRAN bound is 105 seconds, registered after the initial isolated 85.300-second test clock with 19.700 seconds fixed headroom."]
 
   - id: "LDG-2758"
     title: "CI gates: fast under 90 seconds by median of three, CRAN clock, census as gate, review unconditional at release"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2752", "LDG-2757"]
     scope: "Synthesis D2 and 2.3. One fresh-process run on the registered CI runner; over 90 seconds triggers two confirmation runs; fail on the median. A timing result without a reconciled census is not a gate result. CRAN gate bound set only after the isolated mode runs. The release gate runs the review membership unconditionally, including extended parity."
     acceptance: ["a deliberately slow block fails the fast gate", "a gutted selector fails the gate faster, not greener", "the release gate cannot pass with review unexecuted"]
+    evidence: ["R 4.6.1 ordinary fast gate after review corrections: 468/468 blocks, zero skips and failures, 85.310 seconds against 90. Release review: 270/270 blocks, 27 disclosed optional-dependency skips, zero failures, 325.460 seconds; the fast-plus-review release checker passed."]
 
   - id: "LDG-2759"
     title: "Control-plane mutation proof"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2755", "LDG-2758"]
     scope: "Synthesis section 6. A small fixture: gut selection, supply an unknown profile, suppress one reporter record. Each must fail the control-plane check for its intended reason."
     acceptance: ["three mutations, three distinct named failures"]
+    evidence: ["The mutation block drives the real profile runner: gutted static selection fails ledgr_test_profile_selection_mismatch, and both a suppressed reporter row and an injected reporter row fail ledgr_test_profile_execution_mismatch; the unknown-token path remains a distinct ledgr_test_profile_unknown failure."]
 
   - id: "LDG-2760"
     title: "tests/README.md under sixty lines"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2759"]

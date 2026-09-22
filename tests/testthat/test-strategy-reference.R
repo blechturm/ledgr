@@ -188,6 +188,7 @@ testthat::test_that("strategy helpers consume ctx vec accessors when available",
   testthat::expect_identical(names(target), c("AAA", "BBB"))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("reference helper pipeline runs through ledgr_run", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

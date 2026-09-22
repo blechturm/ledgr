@@ -169,6 +169,7 @@ testthat::test_that("TTR warmup rules table has the documented schema", {
   testthat::expect_setequal(rules$ttr_fn, expected)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_ind_ttr constructs known indicators with deterministic IDs", {
   testthat::skip_if_not_installed("TTR")
 
@@ -209,6 +210,7 @@ testthat::test_that("TTR input builders use TTR-compatible column names", {
   testthat::expect_identical(colnames(ledgr:::ledgr_ttr_build_input(bars, "hlcv")), c("High", "Low", "Close", "Volume"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR constructor errors are actionable", {
   testthat::skip_if_not_installed("TTR")
 
@@ -249,6 +251,7 @@ testthat::test_that("TTR constructor errors are actionable", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("unknown TTR functions can be used with explicit warmup", {
   testthat::skip_if_not_installed("TTR")
 
@@ -280,6 +283,7 @@ testthat::test_that("TTR warmup inference is implemented for every rules-table e
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR parity matrix covers every supported rule and output", {
   testthat::skip_if_not_installed("TTR")
 
@@ -311,6 +315,7 @@ testthat::test_that("TTR parity matrix covers every supported rule and output", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR ledgr output matches direct TTR output after normalization", {
   testthat::skip_if_not_installed("TTR")
 
@@ -337,6 +342,7 @@ testthat::test_that("TTR ledgr output matches direct TTR output after normalizat
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("MACD audit case uses direct TTR warmup with percent false", {
   testthat::skip_if_not_installed("TTR")
 
@@ -370,6 +376,7 @@ testthat::test_that("MACD audit case uses direct TTR warmup with percent false",
   testthat::expect_identical(first_callable_from_ttr, ind$requires_bars)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("MACD warmup matches direct TTR output for all percent/output cases", {
   testthat::skip_if_not_installed("TTR")
 
@@ -402,6 +409,7 @@ testthat::test_that("MACD warmup matches direct TTR output for all percent/outpu
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR short samples return aligned warmup NA instead of low-level TTR errors", {
   testthat::skip_if_not_installed("TTR")
 
@@ -431,6 +439,7 @@ testthat::test_that("TTR short samples return aligned warmup NA instead of low-l
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR fingerprint includes TTR version metadata", {
   testthat::skip_if_not_installed("TTR")
 
@@ -444,6 +453,7 @@ testthat::test_that("TTR fingerprint includes TTR version metadata", {
   ))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR output bundles materialize ordinary indicators with stable names", {
   testthat::skip_if_not_installed("TTR")
 
@@ -469,6 +479,7 @@ testthat::test_that("TTR output bundles materialize ordinary indicators with sta
   testthat::expect_length(unique(fingerprints), length(fingerprints))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR output bundle naming supports filters, prefixes, and raw-name opt-in", {
   testthat::skip_if_not_installed("TTR")
 
@@ -500,6 +511,7 @@ testthat::test_that("TTR output bundle naming supports filters, prefixes, and ra
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("TTR output bundles include MACD derived histogram output", {
   testthat::skip_if_not_installed("TTR")
 
@@ -531,6 +543,7 @@ testthat::test_that("TTR output bundles include MACD derived histogram output", 
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("TTR output bundles flatten at feature boundaries", {
   testthat::skip_if_not_installed("TTR")
 
@@ -573,6 +586,7 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
   testthat::expect_match(resolved$candidate_features$feature_set_hash[[1]], "^[0-9a-f]{64}$")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("parameterized TTR declarations resolve to concrete indicators and bundle identities", {
   testthat::skip_if_not_installed("TTR")
 
@@ -625,6 +639,7 @@ testthat::test_that("parameterized TTR declarations resolve to concrete indicato
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("TTR indicators use series_fn during backtest feature precomputation", {
   testthat::skip_if_not_installed("TTR")
 

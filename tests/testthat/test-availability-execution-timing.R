@@ -104,6 +104,7 @@ availability_make_legacy_timing_run <- function(path, run_id) {
   list(config_json = config_json, config_hash = config_hash)
 }
 
+# ledgr-test-profile: review
 testthat::test_that("fill results expose derived recording-pulse alignment", {
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -270,6 +271,7 @@ testthat::test_that("recording-pulse derivation fails closed on missing or ambig
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("timing version enters active identity and stays absent from dense config", {
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -375,6 +377,7 @@ testthat::test_that("timing version enters active identity and stays absent from
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("legacy timing is read-only and mixed versions reject fill equivalence", {
   snapshot <- availability_runtime_fixture(days = 4L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

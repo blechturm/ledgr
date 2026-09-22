@@ -293,6 +293,7 @@ testthat::test_that("DSR and clustering fail closed on invalid evidence and argu
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("native DSR adds no quantstrat runtime dependency", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")

@@ -39,6 +39,7 @@ ledgr_sweep_roundtrip_json <- function(x) {
   vapply(x, function(value) as.character(canonical_json(value)), character(1))
 }
 
+# ledgr-test-profile: review
 testthat::test_that("reopened sweeps round-trip scalar rows, identity, and retained series", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -131,6 +132,7 @@ testthat::test_that("reopened sweeps round-trip scalar rows, identity, and retai
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("reopened sweeps round-trip retained closed-trade evidence", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -173,6 +175,7 @@ testthat::test_that("reopened sweeps round-trip retained closed-trade evidence",
   testthat::expect_identical(unique(ledgr_sweep_trades(filtered)$candidate_id), "b")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("pre-trade-retention saved sweeps reopen without sweep_trades table", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -210,6 +213,7 @@ testthat::test_that("pre-trade-retention saved sweeps reopen without sweep_trade
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -245,6 +249,7 @@ testthat::test_that("schema-1 saved sweeps reopen with no-op risk identity", {
   }, logical(1))))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("schema-1 saved sweeps fail closed with non-noop risk identity", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -275,6 +280,7 @@ testthat::test_that("schema-1 saved sweeps fail closed with non-noop risk identi
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("schema-2 saved sweeps fail closed on provenance risk drift", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
@@ -315,7 +321,8 @@ testthat::test_that("schema-2 saved sweeps fail closed on provenance risk drift"
   )
 })
 
-testthat::test_that("reopened sweeps survive dplyr and base row operations", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0008] reopened sweeps survive dplyr and base row operations", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),
     db_path = tempfile(fileext = ".duckdb"),
@@ -406,6 +413,7 @@ testthat::test_that("reopened sweeps survive dplyr and base row operations", {
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("promotion from reopened sweeps re-executes committed run artifacts", {
   testthat::skip_if_not_installed("dplyr")
   snapshot <- ledgr_snapshot_from_df(
@@ -441,6 +449,7 @@ testthat::test_that("promotion from reopened sweeps re-executes committed run ar
   testthat::expect_identical(context$candidate_summary[[1]]$candidate_id, "b")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("promotion from reopened sweep replays selected candidate risk plan", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_roundtrip_bars(),

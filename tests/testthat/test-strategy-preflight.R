@@ -37,6 +37,7 @@ testthat::test_that("strategy preflight classifies non-standard package-qualifie
   testthat::expect_identical(preflight$unresolved_symbols, character())
 })
 
+# ledgr-test-profile: review
 testthat::test_that("strategy preflight records unqualified package calls for worker attachment", {
   testthat::skip_if_not_installed("TTR")
   strategy <- local({
@@ -306,6 +307,7 @@ testthat::test_that("strategy preflight keeps captured mutable environments Tier
   testthat::expect_true(any(grepl("mutated externally", preflight$notes, fixed = TRUE)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -338,6 +340,7 @@ testthat::test_that("ledgr_run stops Tier 3 strategies before execution", {
   testthat::expect_equal(nrow(rows), 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or execution artifacts", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -368,6 +371,7 @@ testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or 
   testthat::expect_equal(nrow(rows), 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run rejects do.call indirection and context mutation before artifacts", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -410,6 +414,7 @@ testthat::test_that("ledgr_run rejects do.call indirection and context mutation 
   testthat::expect_equal(nrow(rows), 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run rejects global assignment before strategy execution", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

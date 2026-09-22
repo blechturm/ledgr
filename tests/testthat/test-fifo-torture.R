@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: heavy_protocol
 testthat::test_that("FIFO lot engine handles stress sequences", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)

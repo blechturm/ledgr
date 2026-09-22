@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("schema validation is repeatable and does not persist test rows", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

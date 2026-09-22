@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("parallel worker setup with workers = 1 does not require mirai", {
   strategy <- function(ctx, params) ctx$flat()
   preflight <- ledgr_strategy_preflight(strategy)
@@ -15,6 +16,7 @@ testthat::test_that("parallel worker setup with workers = 1 does not require mir
   testthat::expect_identical(plan$actions, "sequential")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("workers > 1 without mirai fails loudly and actionably", {
   strategy <- function(ctx, params) ctx$flat()
   preflight <- ledgr_strategy_preflight(strategy)
@@ -32,6 +34,7 @@ testthat::test_that("workers > 1 without mirai fails loudly and actionably", {
   testthat::expect_match(conditionMessage(err), "workers = 1", fixed = TRUE)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("worker dependencies distinguish qualified and attached packages", {
   qualified_strategy <- function(ctx, params) {
     yyjsonr::write_json_str(
@@ -66,6 +69,7 @@ testthat::test_that("worker dependencies distinguish qualified and attached pack
   testthat::expect_identical(unqualified_deps$all_packages, "TTR")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("worker setup dry run reports ledgr and package setup actions", {
   strategy <- function(ctx, params) {
     yyjsonr::write_json_str(

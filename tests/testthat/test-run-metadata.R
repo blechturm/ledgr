@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_label updates labels without changing identity hashes", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -45,6 +46,7 @@ testthat::test_that("ledgr_run_label updates labels without changing identity ha
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed runs", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -83,6 +85,7 @@ testthat::test_that("ledgr_run_label and ledgr_run_archive work on non-completed
   testthat::expect_identical(running_archive$archive_reason, "stale running test")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_archive hides runs by default and is idempotent", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

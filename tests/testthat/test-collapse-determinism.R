@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("collapse deterministic wrapper pins and restores caller settings", {
   testthat::skip_if_not_installed("collapse")
   original <- collapse::set_collapse()

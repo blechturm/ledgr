@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 ledgr_test_source_vignette <- function(file) {
   root <- testthat::test_path("..", "..", "vignettes")
   candidates <- file.path(root, file)

@@ -112,6 +112,7 @@ testthat::test_that("cost describe is stable and includes step content", {
   testthat::expect_match(ledgr_cost_describe(ledgr_cost_zero()), "zero cost")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("timing constructor is accepted by ledgr_experiment", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -140,6 +141,7 @@ testthat::test_that("timing constructor is accepted by ledgr_experiment", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("optional cost identity is stored on experiments and configs", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -174,6 +176,7 @@ testthat::test_that("optional cost identity is stored on experiments and configs
   testthat::expect_identical(prov$cost_plan_json, exp$cost_plan_json)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("cost model is required and legacy fill_model fails loudly", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -195,7 +198,8 @@ testthat::test_that("cost model is required and legacy fill_model fails loudly",
   )
 })
 
-testthat::test_that("cost model applies half-spread price transforms and explicit fees", {
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("[LTB-0005] cost model applies half-spread price transforms and explicit fees", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   bars$open <- c(100, 110, 120, 130, 140)
   bars$high <- bars$open
@@ -244,6 +248,7 @@ testthat::test_that("notional fees use spread-adjusted pre-rounding price", {
   testthat::expect_equal(fill$fee, abs(3 * spread_adjusted) * 10 / 10000)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("direct run, sweep candidate, and promotion preserve cost identity", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -273,6 +278,7 @@ testthat::test_that("direct run, sweep candidate, and promotion preserve cost id
   testthat::expect_identical(promoted$config$cost_model$cost_plan_json, ledgr:::ledgr_cost_plan_json(cost))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_backtest shares required cost and legacy fill_model behavior", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   strategy <- function(ctx, params) ctx$flat()
@@ -291,6 +297,7 @@ testthat::test_that("ledgr_backtest shares required cost and legacy fill_model b
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_open rejects stored legacy fill_model config", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   db_path <- tempfile(fileext = ".duckdb")

@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("strict features expose whole-feed gaps and recover by window", {
   snapshot <- availability_runtime_fixture(days = 5L, bar_days = c(1L, 2L, 4L, 5L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -88,6 +89,7 @@ testthat::test_that("strict scalar series and active identity contracts agree", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("unsupported active indicators fail during experiment validation", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -108,6 +110,7 @@ testthat::test_that("unsupported active indicators fail during experiment valida
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("future facts isolate cache identity without changing earlier features", {
   future_status <- ledgr_facts_trading_status(data.frame(
     instrument_id = "AAA",

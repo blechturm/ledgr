@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("availability policies activate explicitly and preserve dense omission", {
   rule <- ledgr_universe_members("dynamic")
   valuation <- ledgr_valuation_stale(0)
@@ -82,6 +83,7 @@ testthat::test_that("availability policies activate explicitly and preserve dens
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("effective plans disclose assumption-backed fact families", {
   dates <- as.Date("2020-01-01") + 0:2
   sessions <- ledgr_facts_sessions(
@@ -119,6 +121,7 @@ testthat::test_that("effective plans disclose assumption-backed fact families", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("fixed baskets remain fixed when availability facts are declared", {
   dates <- as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC")
   membership <- ledgr_facts_membership_snapshots(
@@ -151,6 +154,7 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
   testthat::expect_identical(availability_last_state(bt)$members, "AAA")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that(
   "active construction requires sessions valuation and a declared membership rule",
   {
@@ -267,6 +271,7 @@ testthat::test_that("run window bounds keep their time of day", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("a target on the last decision fills at the final session open", {
   sessions <- availability_window_fixture()
   open_dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15", "2020-01-16", "2020-01-17"))
@@ -334,6 +339,7 @@ testthat::test_that("a target on the last decision fills at the final session op
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("opening events preserve normalized timestamp instants", {
   instant <- as.POSIXct("2020-01-02 21:34:56", tz = "UTC")
   rows <- ledgr:::ledgr_opening_position_event_rows(

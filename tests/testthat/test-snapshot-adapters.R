@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 test_that("ledgr_snapshot_from_df creates a sealed snapshot", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -37,6 +38,7 @@ test_that("ledgr_snapshot_from_df rejects sub-second POSIXct bars", {
   )
 })
 
+# ledgr-test-profile: review
 test_that("ledgr_snapshot_from_df allows custom snapshot IDs and warns on malformed generated-style IDs", {
   expect_warning(
     snap <- ledgr_snapshot_from_df(test_bars, snapshot_id = "research_baseline"),
@@ -121,6 +123,7 @@ test_that("ledgr_snapshot_from_csv delegates to df adapter", {
   expect_true(file.exists(snap$db_path))
 })
 
+# ledgr-test-profile: review
 test_that("create/import/seal CSV snapshots infer runnable metadata", {
   snapshot <- seal_manual_csv_snapshot(make_manual_csv_bars())
   on.exit(unlink(snapshot$db_path), add = TRUE)
@@ -168,6 +171,7 @@ test_that("CSV seal metadata derivation preserves existing user metadata", {
   expect_equal(meta$end_date, "2020-04-04T00:00:00Z")
 })
 
+# ledgr-test-profile: review
 test_that("low-level CSV sealing preserves high-level snapshot hash identity", {
   bars <- make_manual_csv_bars()
 
@@ -185,6 +189,7 @@ test_that("low-level CSV sealing preserves high-level snapshot hash identity", {
   expect_equal(low_level$hash, from_df_info$snapshot_hash[[1]])
 })
 
+# ledgr-test-profile: review
 test_that("ledgr_snapshot_from_yahoo works offline with CSV fixture", {
   skip_if_not_installed("quantmod")
 
@@ -211,6 +216,7 @@ test_that("ledgr_snapshot_from_yahoo works offline with CSV fixture", {
   expect_equal(snap$metadata$n_instruments, 1L)
 })
 
+# ledgr-test-profile: review
 test_that("ledgr_yahoo_extract_bars uses named columns", {
   skip_if_not_installed("xts")
 
@@ -233,6 +239,7 @@ test_that("ledgr_yahoo_extract_bars uses named columns", {
   expect_equal(out$ts_utc[[1]], "2020-01-01T00:00:00Z")
 })
 
+# ledgr-test-profile: review
 test_that("ledgr_snapshot_from_yahoo requires quantmod", {
   if (requireNamespace("quantmod", quietly = TRUE)) {
     skip("quantmod installed; missing-package path not exercised")

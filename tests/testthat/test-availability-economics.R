@@ -57,6 +57,7 @@ availability_economics_tables <- function(bt) {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("execution facts resolve at the declared next opening", {
   opening <- as.POSIXct("2020-01-02 14:30:00", tz = "UTC")
   cases <- list(
@@ -161,6 +162,7 @@ testthat::test_that("execution facts resolve at the declared next opening", {
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("lifetime restrictions also resolve at the declared opening", {
   lifetime <- ledgr_facts_lifetime(data.frame(
     instrument_id = "AAA",
@@ -202,6 +204,7 @@ testthat::test_that("lifetime restrictions also resolve at the declared opening"
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("the terminal availability decision has no execution opportunity", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -339,6 +342,7 @@ testthat::test_that("affordability credits accepted reductions before purchases"
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("availability short guard runs after explicit long-only risk", {
   snapshot <- availability_economics_snapshot(c("AAA", "BBB"), days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -387,6 +391,7 @@ testthat::test_that("existing short holdings may hold or consume cash to cover",
   testthat::expect_equal(out$final_cash, 0)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("new positive exposure without a risk mark stops before fills", {
   dates <- as.Date("2020-01-01") + 0:3
   bars <- data.frame(
@@ -415,6 +420,7 @@ testthat::test_that("new positive exposure without a risk mark stops before fill
   testthat::expect_true(any(stored$diagnostics$reason_code == "risk_mark_unavailable"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("stale valuation marks feed max-weight without pricing execution", {
   dates <- as.Date("2020-01-01") + 0:3
   bars <- data.frame(
@@ -466,6 +472,7 @@ testthat::test_that("stale valuation marks feed max-weight without pricing execu
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("venue sessions age marks across a whole-feed outage", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:3, "16:00:00"), tz = "UTC")
   bars <- data.frame(
@@ -497,6 +504,7 @@ testthat::test_that("venue sessions age marks across a whole-feed outage", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("current-mark-only valuation stops on the first missing session", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
   bars <- data.frame(
@@ -526,6 +534,7 @@ testthat::test_that("current-mark-only valuation stops on the first missing sess
   testthat::expect_identical(stop_row$mark_age, 1L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("known inactivity does not freeze valuation age", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:3, "16:00:00"), tz = "UTC")
   lifetime <- ledgr_facts_lifetime(data.frame(
@@ -569,6 +578,7 @@ testthat::test_that("known inactivity does not freeze valuation age", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("valuation exhaustion commits an incomplete direct-run prefix", {
   dates <- as.Date("2020-01-01") + 0:4
   bars <- data.frame(
@@ -615,6 +625,7 @@ testthat::test_that("valuation exhaustion commits an incomplete direct-run prefi
   testthat::expect_equal(stop_row$price, 100)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("terminal assertions stop without fabricated settlement", {
   terminal <- ledgr_facts_lifetime(data.frame(
     instrument_id = "AAA",
@@ -668,6 +679,7 @@ testthat::test_that("affected exposure is gross and missing references fail clos
   )$value))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("a rejected sale never funds an unrelated purchase", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
   openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
@@ -701,6 +713,7 @@ testthat::test_that("a rejected sale never funds an unrelated purchase", {
   testthat::expect_setequal(execution$reason_code, c("trading_halted", "insufficient_cash"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("a blocked exit executes only after a new zero target", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:3, "16:00:00"), tz = "UTC")
   openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
@@ -734,6 +747,7 @@ testthat::test_that("a blocked exit executes only after a new zero target", {
   testthat::expect_identical(fill$ts_utc, openings[[3L]])
 })
 
+# ledgr-test-profile: review
 testthat::test_that("execution diagnostics retain ordered gate reasons", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
   openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
@@ -777,6 +791,7 @@ testthat::test_that("execution diagnostics retain ordered gate reasons", {
   testthat::expect_identical(row$reasons[[1L]], "trading_halted|execution_bar_missing")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("execution-time membership changes are diagnostic only", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:2, "16:00:00"), tz = "UTC")
   openings <- as.POSIXct(paste(as.Date(dates), "09:30:00"), tz = "UTC")
@@ -813,6 +828,7 @@ testthat::test_that("execution-time membership changes are diagnostic only", {
   testthat::expect_true(any(stored$events$event_type == "FILL"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("decision traces append across deliberate interruption and resume", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -867,6 +883,7 @@ testthat::test_that("decision traces append across deliberate interruption and r
   testthat::expect_equal(nrow(ledgr_compute_equity_curve(reopened)), 3L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("unexpected fold errors roll back economics and retain error diagnostics", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -910,6 +927,7 @@ testthat::test_that("unexpected fold errors roll back economics and retain error
   testthat::expect_identical(diagnostics$reason_code, "fold_exception")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("prepared valuation and linear event growth coexist in one eventful fold", {
   dates <- as.Date("2020-01-01") + 0:3
   closes <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")

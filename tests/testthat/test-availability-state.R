@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("dynamic membership drives the axis and stable asset state", {
   dates <- as.POSIXct(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"), tz = "UTC")
   membership <- ledgr_facts_membership_snapshots(
@@ -75,6 +76,7 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
   testthat::expect_equal(nrow(availability_state_rows(bt)), 4L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("provider orders members before stable held nonmembers", {
   dates <- as.Date("2020-01-01") + 0:2
   sessions <- ledgr_facts_sessions(
@@ -300,6 +302,7 @@ testthat::test_that("prepared valuation work is exactly linear in source cells a
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("retired valuation entry points remain unavailable", {
   namespace <- asNamespace("ledgr")
   retired <- c(
@@ -319,6 +322,7 @@ testthat::test_that("retired valuation entry points remain unavailable", {
   testthat::expect_false("valuation_state" %in% names(formals(ledgr:::ledgr_execution_spec)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("dense folds never construct availability valuation state", {
   dates <- as.POSIXct(
     paste(as.Date("2020-01-01") + 0:1, "16:00:00"),

@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: heavy_protocol
 testthat::test_that("audit_log matches db_live results", {
   n_rows <- 50
   base <- 50000 + cumsum(rep(1, n_rows))

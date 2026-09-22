@@ -64,6 +64,7 @@ testthat::test_that("ledgr_experiment builds a validated experiment object", {
   testthat::expect_identical(runs_after, runs_before)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_experiment stores resolved metric context metadata only", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -130,6 +131,7 @@ testthat::test_that("ledgr_experiment rejects unsealed snapshots", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_experiment validates strategy, universe, features, and opening", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

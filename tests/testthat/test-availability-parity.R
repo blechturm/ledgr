@@ -37,6 +37,7 @@ availability_incomplete_experiment <- function(path, calls) {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("achieved incomplete runs reopen and rerun without mutation", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
@@ -181,6 +182,7 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
   testthat::expect_identical(calls$n, calls_after_first)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("completion affected IDs come only from stopped diagnostics", {
   dates <- as.Date("2020-01-01") + 0:3
   sessions <- ledgr_facts_sessions(
@@ -252,6 +254,7 @@ testthat::test_that("completion affected IDs come only from stopped diagnostics"
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("terminal completion recovers projections without strategy replay", {
   path <- tempfile(fileext = ".duckdb")
   clean_path <- tempfile(fileext = ".duckdb")
@@ -322,6 +325,7 @@ testthat::test_that("terminal completion recovers projections without strategy r
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("complete availability runs recover finalization without strategy replay", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -379,6 +383,7 @@ testthat::test_that("complete availability runs recover finalization without str
   testthat::expect_true(nrow(after$equity_curve) > 0L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("malformed terminal completion evidence fails closed", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
@@ -449,6 +454,7 @@ testthat::test_that("terminal completion validation rejects invalid incomplete b
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("achieved incomplete shortcuts require their finalized prefix", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
@@ -482,6 +488,7 @@ testthat::test_that("achieved incomplete shortcuts require their finalized prefi
   testthat::expect_identical(calls$n, calls_after_run)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("availability completion propagates through sweep persistence", {
   snapshot <- availability_runtime_fixture(days = 4L, bar_days = c(1L, 2L, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -524,6 +531,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("parallel availability sweeps return the same compact terminal evidence", {
   testthat::skip_on_covr()
   testthat::skip_if_not_installed("mirai")
@@ -553,6 +561,7 @@ testthat::test_that("parallel availability sweeps return the same compact termin
   testthat::expect_identical(sequential$completion_json[[1L]], direct_terminal$completion_json)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("direct and sweep paths both apply the opening-time status cutoff", {
   halt <- ledgr_facts_trading_status(data.frame(
     instrument_id = c("AAA", "AAA"),
@@ -604,6 +613,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("availability result views and explanations are durable read-only evidence", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -708,6 +718,7 @@ testthat::test_that("availability result views and explanations are durable read
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("dense runs expose constant availability and no invented explanation", {
   snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 10L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -736,6 +747,7 @@ testthat::test_that("dense runs expose constant availability and no invented exp
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward stops a carry-state chain on incomplete test evidence", {
   snapshot <- availability_runtime_fixture(
     days = 10L,
@@ -788,6 +800,7 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
   testthat::expect_identical(reopened$scores, wf$scores)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward hydrates heterogeneous gaps on the session calendar", {
   dates <- as.Date("2020-01-01") + 0:11
   sessions <- ledgr_facts_sessions(

@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("plot.ledgr_backtest dispatches and returns a plot object", {
   testthat::skip_if_not_installed("ggplot2")
   ledgr_test_local_graphics_device()

@@ -89,6 +89,7 @@ testthat::test_that("snapshot_list(status=...) filters and validates status enum
   testthat::expect_error(ledgr_snapshot_list(con, status = "NOPE"), class = "ledgr_invalid_args")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("snapshot_list accepts a DuckDB path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

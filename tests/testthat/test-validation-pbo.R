@@ -148,6 +148,7 @@ testthat::test_that("return-panel constructor and resolver fail closed", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("native PBO can cross-check against pbo when it is installed", {
   testthat::skip_if_not_installed("pbo")
 
@@ -235,6 +236,7 @@ testthat::test_that("native PBO fails closed on invalid evidence and arguments",
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("native PBO adds no pbo runtime dependency", {
   root <- testthat::test_path("..", "..")
   description_path <- file.path(root, "DESCRIPTION")

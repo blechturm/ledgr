@@ -74,6 +74,7 @@ testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and reb
   testthat::expect_equal(eq_rows, 3)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_state_reconstruct() fails clearly for unsupported object-style calls", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -110,6 +111,7 @@ testthat::test_that("ledgr_state_reconstruct() fails clearly for unsupported obj
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed runs", {
   snapshot_path <- tempfile(fileext = ".duckdb")
   run_path <- tempfile(fileext = ".duckdb")
@@ -165,6 +167,7 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
   testthat::expect_equal(out$positions$qty[[1]], 1)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources", {
   snapshot_path <- tempfile(fileext = ".duckdb")
   run_path <- tempfile(fileext = ".duckdb")

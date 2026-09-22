@@ -36,6 +36,7 @@ testthat::test_that("demo SMA crossover strategy holds through warmup", {
   testthat::expect_identical(targets, c(AAA = 0))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("demo SMA crossover strategy runs and keeps qty zero baseline flat", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -72,6 +73,7 @@ testthat::test_that("demo SMA crossover strategy runs and keeps qty zero baselin
   testthat::expect_identical(nrow(ledgr_results(flat, what = "fills")), 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("demo SMA crossover strategy sweeps feature and strategy grids", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -100,6 +102,7 @@ testthat::test_that("demo SMA crossover strategy sweeps feature and strategy gri
   testthat::expect_match(out$provenance[[1]]$alias_map_hash, "^[0-9a-f]{64}$")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("demo SMA crossover strategy fails through active alias classes", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

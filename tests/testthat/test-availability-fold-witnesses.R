@@ -23,6 +23,7 @@ availability_v201_run_scenarios <- function() {
   out
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ported fold witnesses preserve every persisted surface", {
   results <- availability_v201_run_scenarios()
 
@@ -71,6 +72,7 @@ testthat::test_that("ported fold witnesses preserve every persisted surface", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("direct persisted rows match the reviewed baseline", {
   result <- availability_v201_run_case("production", "direct", 7L)$final
   fixture_dir <- testthat::test_path(
@@ -147,6 +149,7 @@ testthat::test_that("run identity excludes exactly the three registered fields",
   ) %in% names(normalized)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ported failures roll back and resumes preserve prefixes", {
   exception <- availability_v201_run_case(
     "production",

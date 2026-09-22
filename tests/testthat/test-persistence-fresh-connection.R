@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: heavy_protocol
 testthat::test_that("completed run artifacts are visible from a fresh connection after ledgr_run", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

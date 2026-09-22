@@ -183,6 +183,7 @@ testthat::test_that("rolling and anchored fold lists preserve full train windows
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("experiment windows validate pulse coverage and derive fold windows", {
   bars <- ledgr_wf_test_bars()
   snapshot <- ledgr_snapshot_from_df(bars)
@@ -211,6 +212,7 @@ testthat::test_that("experiment windows validate pulse coverage and derive fold 
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("windowed run and sweep match equivalent sliced snapshots", {
   bars <- ledgr_wf_test_bars()
   window_rows <- bars[bars$ts_utc >= as.POSIXct("2020-01-02", tz = "UTC") &
@@ -263,6 +265,7 @@ testthat::test_that("windowed run and sweep match equivalent sliced snapshots", 
   testthat::expect_identical(attr(sweep_window, "scoring_range")$end, "2020-01-06T00:00:00Z")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("windowed execution preserves final-bar no-fill semantics at scoring_end", {
   bars <- ledgr_wf_test_bars()
   snapshot <- ledgr_snapshot_from_df(bars)
@@ -286,6 +289,7 @@ testthat::test_that("windowed execution preserves final-bar no-fill semantics at
   testthat::expect_equal(nrow(ledgr_results(run, "fills")), 0)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward routes every candidate and test through the fold core", {
   snapshot <- ledgr_snapshot_from_df(ledgr_wf_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("provider resolves facts only after effective and knowledge time", {
   status <- ledgr_facts_trading_status(data.frame(
     instrument_id = "AAA",

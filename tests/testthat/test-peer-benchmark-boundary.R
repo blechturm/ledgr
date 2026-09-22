@@ -54,7 +54,8 @@ testthat::test_that("Stage L freezes optimization oracles", {
   )
 })
 
-testthat::test_that("public sweep benchmark boundary is executable", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0016] public sweep benchmark boundary is executable", {
   peer_stage_l_require_harness()
   testthat::skip_if_not_installed("TTR")
   bars <- as.data.frame(ledgr_sim_bars(

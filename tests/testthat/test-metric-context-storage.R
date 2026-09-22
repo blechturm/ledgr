@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run stores recoverable metric context outside execution identity", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   db_path <- tempfile(fileext = ".duckdb")
@@ -41,6 +42,7 @@ testthat::test_that("ledgr_run stores recoverable metric context outside executi
   testthat::expect_identical(ledgr_metric_context_hash(recovered), ledgr_metric_context_hash(context))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("metric context changes do not change execution config hashes", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

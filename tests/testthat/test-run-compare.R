@@ -9,6 +9,7 @@ ledgr_compare_test_table_counts <- function(con) {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_compare compares stored completed runs without recomputation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -79,6 +80,7 @@ testthat::test_that("ledgr_run_compare compares stored completed runs without re
   testthat::expect_true(all(!is.na(cmp$strategy_params_hash)))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_compare compares different stored strategies", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -121,6 +123,7 @@ testthat::test_that("ledgr_run_compare compares different stored strategies", {
   testthat::expect_false(identical(cmp$strategy_source_hash[[1]], cmp$strategy_source_hash[[2]]))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_compare counts only closing trades for win rate", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -172,6 +175,7 @@ testthat::test_that("ledgr_run_compare counts only closing trades for win rate",
   testthat::expect_identical(listed$n_trades[match("compare-roundtrip", listed$run_id)], 1L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("open-only fills are not counted as closed trades", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -221,6 +225,7 @@ testthat::test_that("open-only fills are not counted as closed trades", {
   testthat::expect_identical(listed$n_trades[match("compare-open-only", listed$run_id)], 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("multi-fill runs count each closing fill as a trade", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -268,6 +273,7 @@ testthat::test_that("multi-fill runs count each closing fill as a trade", {
   testthat::expect_equal(cmp$win_rate, 1)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

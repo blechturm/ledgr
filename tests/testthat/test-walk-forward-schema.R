@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("walk-forward tables are created and validated with the experiment store schema", {
   path <- tempfile(fileext = ".duckdb")
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = path)
@@ -24,6 +25,7 @@ testthat::test_that("walk-forward tables are created and validated with the expe
   testthat::expect_identical(as.integer(version), ledgr:::ledgr_experiment_store_schema_version)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward schema stores compact identity rows without plan JSON duplication", {
   path <- tempfile(fileext = ".duckdb")
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = path)

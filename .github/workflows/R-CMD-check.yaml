@@ -55,6 +55,64 @@ jobs:
         run: |
           Rscript -e "pkgload::load_all('.', quiet = TRUE); testthat::test_local('.', filter = 'acceptance-v0.1', reporter = 'summary', load_package = 'none')"
 
+      - name: Run ordinary fast profile
+        id: ordinary_fast_1
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=1
+
+      - name: Confirm ordinary fast profile (run 2)
+        if: steps.ordinary_fast_1.outputs.exceeded == 'true'
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=2
+
+      - name: Confirm ordinary fast profile (run 3)
+        if: steps.ordinary_fast_1.outputs.exceeded == 'true'
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=3
+
+      - name: Check ordinary fast-profile gate
+        run: |
+          Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary
+
+      - name: Prepare isolated CRAN library
+        run: |
+          Rscript --vanilla tools/prepare-cran-test-library.R --library=.ledgr-cran-test-library
+
+      - name: Run isolated CRAN fast profile
+        id: cran_fast_1
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=1
+
+      - name: Confirm isolated CRAN fast profile (run 2)
+        if: steps.cran_fast_1.outputs.exceeded == 'true'
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=2
+
+      - name: Confirm isolated CRAN fast profile (run 3)
+        if: steps.cran_fast_1.outputs.exceeded == 'true'
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=3
+
+      - name: Check isolated CRAN-profile gate
+        run: |
+          Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=cran --records=test-profile-artifacts/cran
+
+      - name: Run release review profile
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          Rscript --vanilla tools/run-test-profile.R --profile=review --mode=ordinary --reporter=summary --census=test-profile-artifacts/review/census.csv --summary=test-profile-artifacts/review/summary.csv
+
+      - name: Require fast and review evidence at release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          Rscript --vanilla tools/check-release-test-profiles.R --fast-summary=test-profile-artifacts/ordinary/run-1-summary.csv --review-summary=test-profile-artifacts/review/summary.csv
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-profile-evidence-${{ runner.os }}
+          path: test-profile-artifacts
+
       - name: Run R CMD check
         run: |
           Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'), error_on = 'warning', check_dir = 'check')"

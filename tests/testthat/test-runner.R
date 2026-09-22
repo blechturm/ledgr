@@ -55,6 +55,7 @@ base_runner_config <- function(db_path) {
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("runner executes a minimal end-to-end run and writes outputs", {
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
@@ -89,6 +90,7 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   testthat::expect_equal(n_state, 3L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("low-level runner rejects opening positions outside the universe", {
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
@@ -107,6 +109,7 @@ testthat::test_that("low-level runner rejects opening positions outside the univ
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("runner resume appends ledger events without duplicate event_seq and rebuilds tail", {
   db_path <- make_runner_fixture_db()
 
@@ -143,6 +146,7 @@ testthat::test_that("runner resume appends ledger events without duplicate event
   testthat::expect_true(n_eq > 0)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("runner refuses to resume on config hash mismatch", {
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
@@ -165,6 +169,7 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("strategy_state is persisted and restored across resume", {
   path <- tempfile(fileext = ".duckdb")
 
@@ -243,6 +248,7 @@ testthat::test_that("strategy_state is persisted and restored across resume", {
   testthat::expect_identical(as.integer(steps), c(1L, 2L, 3L, 4L))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("db_live writes strategy_state only after pulse fill writes", {
   db_path <- make_runner_fixture_db()
   cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
@@ -293,7 +299,8 @@ testthat::test_that("db_live writes strategy_state only after pulse fill writes"
   testthat::expect_equal(as.integer(fill_rows), 1L)
 })
 
-testthat::test_that("post-fold failure preserves evidence and resumes finalization", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes finalization", {
   make_config <- function(path) {
     bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
     cost <- ledgr_cost_notional_bps_fee(10)
@@ -462,6 +469,7 @@ testthat::test_that("post-fold failure preserves evidence and resumes finalizati
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("run info projects recorded risk identity without side effects", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

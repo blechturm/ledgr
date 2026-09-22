@@ -199,6 +199,7 @@ ledgr_expect_memory_reconstruction_matches_run <- function(bt, bars, initial_cas
   }
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep candidates match persistent run and promoted run artifacts", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -291,6 +292,7 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
   testthat::expect_identical(ledgr_compute_metrics(open_end_direct)$n_trades, 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep parity covers opening-position lots and non-default metric context", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -354,6 +356,7 @@ testthat::test_that("sweep parity covers opening-position lots and non-default m
   )))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("seeded stochastic sweep promotion reproduces the selected candidate", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -399,6 +402,7 @@ testthat::test_that("seeded stochastic sweep promotion reproduces the selected c
   testthat::expect_equal(context$candidate_summary[[1]]$final_equity, results$final_equity[[1]], tolerance = 0)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("pulse_seed sweep promotion reproduces the selected candidate", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -437,6 +441,7 @@ testthat::test_that("pulse_seed sweep promotion reproduces the selected candidat
   ledgr_expect_run_artifacts_identical(promoted, direct)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature-factory sweep parity covers candidate-varying feature sets and warmup", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

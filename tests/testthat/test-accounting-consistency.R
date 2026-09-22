@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("equity curve state is reconstructed from ledger fills", {
   bars <- data.frame(
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
@@ -49,7 +50,7 @@ testthat::test_that("equity curve state is reconstructed from ledger fills", {
   })
 })
 
-testthat::test_that("reversal fee projection conserves source economics in both directions", {
+testthat::test_that("[LTB-0004] reversal fee projection conserves source economics in both directions", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)
 

@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("raw signal strings are not valid functional strategy results", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -93,6 +94,7 @@ testthat::test_that("ledgr_signal_strategy fails loud on ambiguous or unknown si
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_signal_strategy runs through the data-first backtest path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

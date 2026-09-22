@@ -92,6 +92,7 @@ fifo_opening_equity_detail <- function(db_path, run_id) {
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("resume after partial opening-position liquidation does not double-count cost basis", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 60, 60)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
@@ -140,6 +141,7 @@ testthat::test_that("resume after partial opening-position liquidation does not 
   testthat::expect_equal(rebuilt$equity_curve$unrealized_pnl[[nrow(rebuilt$equity_curve)]], 0)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("opening-position lot drains before accumulated lots", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 70, 80)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
@@ -178,6 +180,7 @@ testthat::test_that("opening-position lot drains before accumulated lots", {
   testthat::expect_equal(rebuilt$equity_curve$realized_pnl[[nrow(rebuilt$equity_curve)]], 2500)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("opening-position lots are isolated across instruments", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 60), BBB = c(40, 40, 40)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
@@ -208,6 +211,7 @@ testthat::test_that("opening-position lots are isolated across instruments", {
   testthat::expect_equal(rebuilt$equity_curve$realized_pnl[[nrow(rebuilt$equity_curve)]], 3000)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("opening-position fills keep gross fill P&L separate from net equity P&L", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 60)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
@@ -236,6 +240,7 @@ testthat::test_that("opening-position fills keep gross fill P&L separate from ne
   testthat::expect_equal(metrics$n_trades, 1L)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("opening-position liquidation can flip into a short lot", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 55)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
@@ -267,6 +272,7 @@ testthat::test_that("opening-position liquidation can flip into a short lot", {
   testthat::expect_equal(rebuilt$equity_curve$unrealized_pnl[[nrow(rebuilt$equity_curve)]], 750)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("db_live and audit_log opening-position accounting agree", {
   run_mode <- function(mode) {
     setup <- fifo_opening_setup(list(AAA = c(60, 60, 60)))

@@ -124,6 +124,7 @@ testthat::test_that("ledgr_adapter_csv returns NA_real_ for missing keys", {
   testthat::expect_true(is.na(result))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   testthat::skip_if_not_installed("TTR")
 
@@ -157,6 +158,7 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   testthat::expect_true("test_ttr_rsi" %in% unique(features$feature_name))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   db_path <- tempfile(fileext = ".duckdb")
   csv_path <- tempfile(fileext = ".csv")

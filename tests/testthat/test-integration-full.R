@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
   testthat::skip_if_not_installed("ggplot2")
   ledgr_test_local_graphics_device()

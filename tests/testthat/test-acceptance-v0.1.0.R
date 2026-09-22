@@ -1,5 +1,6 @@
 # Acceptance suite for v0.1.0 (Given/When/Then style)
 
+# ledgr-test-profile: review
 testthat::test_that("AT1: schema initialization creates required tables", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)
@@ -8,6 +9,7 @@ testthat::test_that("AT1: schema initialization creates required tables", {
   testthat::expect_error(ledgr_validate_schema(con), NA)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
   instrument_ids <- c("AAA", "BBB")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00")
@@ -54,6 +56,7 @@ testthat::test_that("AT2: run registration stores hashes and reaches DONE", {
   testthat::expect_true(is.na(row$error_msg[[1]]))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT3: deterministic replay produces identical outputs (excluding run_id/event_id)", {
   instrument_ids <- c("AAA", "BBB")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00")
@@ -221,6 +224,7 @@ testthat::test_that("AT4: no-lookahead holds for built-in features", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting identities and monotone time", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00")
@@ -288,6 +292,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("AT8: resume deletes tails and final outputs match a clean run", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00")
@@ -362,6 +367,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
   testthat::expect_equal(st_resume, st_clean)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("last-bar policy warns and produces no fill event", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00")

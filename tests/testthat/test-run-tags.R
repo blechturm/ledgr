@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("run tags are mutable metadata and do not alter identity", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

@@ -181,7 +181,7 @@ testthat::test_that("fee is included and must be non-negative", {
   )
 })
 
-testthat::test_that("last-bar policy returns a structured NO_FILL with WARN code", {
+testthat::test_that("[LTB-0002] last-bar policy returns a structured NO_FILL with WARN code", {
   out <- ledgr_test_next_open_fill(
     desired_qty_delta = 1,
     next_bar = NULL,

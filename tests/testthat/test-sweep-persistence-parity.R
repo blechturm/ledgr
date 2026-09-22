@@ -174,6 +174,7 @@ ledgr_sweep_persistence_expect_ordered_event_parity <- function(fixture, candida
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("retained series match inline-memory summary on R accounting", {
   fixture <- ledgr_sweep_persistence_parity_fixture()
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
@@ -182,7 +183,8 @@ testthat::test_that("retained series match inline-memory summary on R accounting
   ledgr_sweep_persistence_expect_summary_parity(fixture$sweep)
 })
 
-testthat::test_that("retained series match inline-memory summary on compiled spot FIFO", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0017] retained series match inline-memory summary on compiled spot FIFO", {
   fixture <- ledgr_sweep_persistence_with_compiled(
     ledgr_sweep_persistence_parity_fixture(compiled_accounting_model = "spot_fifo")
   )
@@ -196,6 +198,7 @@ testthat::test_that("retained series match inline-memory summary on compiled spo
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("retained series match ordered-event reconstruction on R accounting", {
   fixture <- ledgr_sweep_persistence_parity_fixture()
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
@@ -206,7 +209,8 @@ testthat::test_that("retained series match ordered-event reconstruction on R acc
   }
 })
 
-testthat::test_that("retained series match ordered-event reconstruction on compiled spot FIFO", {
+# ledgr-test-profile: fast
+testthat::test_that("[LTB-0014] retained series match ordered-event reconstruction on compiled spot FIFO", {
   fixture <- ledgr_sweep_persistence_with_compiled(
     ledgr_sweep_persistence_parity_fixture(compiled_accounting_model = "spot_fifo")
   )
@@ -221,6 +225,7 @@ testthat::test_that("retained series match ordered-event reconstruction on compi
   }
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("retained-series parity matrix covers final-bar and failed-candidate edges", {
   snapshot <- ledgr_snapshot_from_df(
     ledgr_sweep_persistence_parity_bars(),

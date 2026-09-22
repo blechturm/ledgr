@@ -9,4 +9,12 @@
 library(testthat)
 library(ledgr)
 
-test_check("ledgr")
+source("test-control-plane.R", local = TRUE)
+ledgr_test_run_profile(
+  root = normalizePath("..", winslash = "/"),
+  profile = "fast",
+  mode = "ordinary",
+  reporter = "summary",
+  census_path = file.path(tempdir(), "ledgr-check-census.csv"),
+  load_package = "none"
+)

@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -125,6 +126,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   testthat::expect_error(close(bt), NA)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("summary surfaces impossible warmup diagnostics without changing results", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

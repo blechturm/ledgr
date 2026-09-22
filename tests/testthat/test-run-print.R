@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_list prints curated view while preserving tibble data", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -65,6 +66,7 @@ testthat::test_that("summary prefix suppression follows completion evidence", {
   testthat::expect_false(ledgr:::ledgr_summary_prefix_only(unavailable))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_compare prints curated view while preserving numeric metrics", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

@@ -399,7 +399,7 @@ testthat::test_that("no-lookahead checker passes for built-in features on determ
   )
 })
 
-testthat::test_that("no-lookahead checker detects a leaking series function", {
+testthat::test_that("[LTB-0003] no-lookahead checker detects a leaking series function", {
   bars <- make_test_bars("AAA", "2020-01-01", 8L)
   causal <- list(
     id = "causal_close",

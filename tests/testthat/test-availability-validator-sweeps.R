@@ -96,6 +96,7 @@ availability_validator_compare <- function(reference, production, rows) {
   )
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("grouped validators equal pairwise references on 2000 randomized sets", {
   withr::local_seed(20260917)
   mismatches <- character()
@@ -521,6 +522,7 @@ testthat::test_that("seal validates complete sets before bypassing their rows", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("seal activates the grouped membership sweep", {
   membership <- ledgr_facts_membership_snapshots(
     data.frame(

@@ -74,6 +74,7 @@ ledgr_wfo_test_failure_strategy <- function(ctx, params) {
   target
 }
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -160,6 +161,7 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
   testthat::expect_true(all(score_rows$status == "DONE"))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward exposes cadence warnings through existing metric boundaries", {
   timestamps <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:11
   bars <- ledgr_wfo_bars()
@@ -217,6 +219,7 @@ testthat::test_that("walk-forward exposes cadence warnings through existing metr
   testthat::expect_true(nrow(wf$degradation) > 0L)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward derives fold/window candidate seeds and preserves deterministic session identity", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -284,6 +287,7 @@ testthat::test_that("walk-forward derives fold/window candidate seeds and preser
   testthat::expect_identical(test_score$execution_seed[[1]], expected_test_seed)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward reruns reopen deterministic test runs and replace session rows", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -361,6 +365,7 @@ testthat::test_that("walk-forward reruns reopen deterministic test runs and repl
   testthat::expect_equal(events_after, events_before)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("flat-test state is explicit and marked cold-start distorted", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -393,6 +398,7 @@ testthat::test_that("flat-test state is explicit and marked cold-start distorted
   testthat::expect_match(session$meta_json[[1]], "cold_start_distorted", fixed = TRUE)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward preserves failed train candidate score rows while selecting survivors", {
   fx <- ledgr_wfo_exp(strategy = ledgr_wfo_candidate_failure_strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -426,6 +432,7 @@ testthat::test_that("walk-forward preserves failed train candidate score rows wh
   testthat::expect_identical(wf$selected$candidate_id[[1]], "trade")
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward persists no-selection failure evidence", {
   fx <- ledgr_wfo_exp(strategy = ledgr_wfo_candidate_failure_strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -461,6 +468,7 @@ testthat::test_that("walk-forward persists no-selection failure evidence", {
   testthat::expect_true("ledgr_strategy_error" %in% scores$error_class)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward test-run failure preserves train rows and fails the session", {
   fx <- ledgr_wfo_exp(strategy = ledgr_wfo_test_failure_strategy)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -495,6 +503,7 @@ testthat::test_that("walk-forward test-run failure preserves train rows and fail
   testthat::expect_true(all(scores$status == "DONE"))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("walk-forward interrupt after a completed fold persists a partial session", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -560,6 +569,7 @@ testthat::test_that("terminal cleanup closes test handles without masking the te
   testthat::expect_true(closed_states[[1L]]$closed)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward inspection helpers reopen completed and partial sessions read-only", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
@@ -654,6 +664,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_candidate extracts walk-forward candidates through locators", {
   candidate_cost <- ledgr_cost_notional_bps_fee(7)
   candidate_risk <- ledgr_risk_max_weight(0.4)
@@ -712,6 +723,7 @@ testthat::test_that("ledgr_candidate extracts walk-forward candidates through lo
   testthat::expect_identical(promoted$config$risk_chain$risk_chain_hash, ledgr:::ledgr_risk_chain_hash(candidate_risk))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward candidate locators verify overrides and missing stores", {
   fx <- ledgr_wfo_exp()
   fx_closed <- FALSE
@@ -794,6 +806,7 @@ testthat::test_that("fold-list print shows per-fold train and test windows", {
   testthat::expect_match(late_start_blob, "2019-01-01T23:59:59Z", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("degradation table is classed and prints a curated core view", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)

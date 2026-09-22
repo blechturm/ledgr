@@ -1,0 +1,6 @@
+ordinary_fast_max_seconds: 90
+cran_fast_max_seconds: 105
+cran_initial_seconds: 85.300
+cran_bound_basis: "first isolated R 4.6.1 test clock plus 19.700 seconds fixed headroom"
+confirmation_runs_above_bound: 2
+registered_runner: "GitHub Actions R-CMD-check matrix"

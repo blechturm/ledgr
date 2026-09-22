@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_precompute_features computes concrete feature payloads once", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
   db_path <- tempfile(fileext = ".duckdb")
@@ -62,6 +63,7 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(precomputed, exp, grid))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature factories resolve per candidate and dedupe by fingerprint", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
   db_path <- tempfile(fileext = ".duckdb")
@@ -109,6 +111,7 @@ testthat::test_that("feature factories resolve per candidate and dedupe by finge
   ))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("precompute separates scoring range from warmup feasibility", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
   db_path <- tempfile(fileext = ".duckdb")
@@ -142,6 +145,7 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
   testthat::expect_false(precomputed$warmup$warmup_achievable[[1]])
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("windowed sweeps validate precomputed scoring and hydration coverage", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
   db_path <- tempfile(fileext = ".duckdb")
@@ -197,6 +201,7 @@ testthat::test_that("windowed sweeps validate precomputed scoring and hydration 
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("runtime projection flattens bundle outputs to concrete feature IDs", {
   testthat::skip_if_not_installed("TTR")
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:30)
@@ -224,6 +229,7 @@ testthat::test_that("runtime projection flattens bundle outputs to concrete feat
   testthat::expect_equal(sort(precomputed$feature_union$feature_id), sort(expected_ids))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("precompute aborts on static scoring coverage gaps", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:5)
   bars <- bars[!(bars$instrument_id == "BBB" & bars$ts_utc == ledgr_utc("2020-01-03")), , drop = FALSE]
@@ -249,6 +255,7 @@ testthat::test_that("precompute aborts on static scoring coverage gaps", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("precomputed feature validation binds snapshot, universe, range, labels, and feature union", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
   db_path <- tempfile(fileext = ".duckdb")
@@ -414,6 +421,7 @@ testthat::test_that("feature set hashes are normalized by sorted candidate finge
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("future-only bar changes preserve eligible feature prefixes", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
   changed <- bars

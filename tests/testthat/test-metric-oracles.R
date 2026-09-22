@@ -213,7 +213,8 @@ ledgr_run_metric_fixture <- function(name) {
   list(bt = bt, db_path = db_path)
 }
 
-testthat::test_that("standard metrics match independent public-table oracles", {
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("[LTB-0011] standard metrics match independent public-table oracles", {
   fixtures <- c(
     "flat",
     "open_only",
@@ -247,6 +248,7 @@ testthat::test_that("standard metrics match independent public-table oracles", {
   }
 })
 
+# ledgr-test-profile: review
 testthat::test_that("summary, comparison, and run-list metrics use the same definitions", {
   run <- ledgr_run_metric_fixture("multi_instrument")
   bt <- run$bt
@@ -281,6 +283,7 @@ testthat::test_that("summary, comparison, and run-list metrics use the same defi
   testthat::expect_false("time_in_market" %in% names(listed))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("sharpe ratio uses geometric scalar risk-free conversion", {
   run <- ledgr_run_metric_fixture("multi_instrument")
   bt <- run$bt
@@ -314,6 +317,7 @@ testthat::test_that("sharpe ratio edge cases return NA instead of Inf", {
   testthat::expect_true(is.na(ledgr:::compute_sharpe_ratio(c(0.01, 0.02, 0.03), 252, risk_free_rate = -1)))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("zero-row trade metrics are explicit", {
   run <- ledgr_run_metric_fixture("flat")
   bt <- run$bt

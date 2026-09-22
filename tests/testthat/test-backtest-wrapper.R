@@ -1,3 +1,4 @@
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional strategies", {
   db_path_direct <- tempfile(fileext = ".duckdb")
   db_path_wrapper <- tempfile(fileext = ".duckdb")
@@ -72,6 +73,7 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
   testthat::expect_equal(eq1, eq2, tolerance = 1e-10)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run validates compiled accounting model without changing default path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -113,6 +115,7 @@ testthat::test_that("ledgr_run validates compiled accounting model without chang
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("functional strategies must return targets for the full universe", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -161,6 +164,7 @@ testthat::test_that("functional strategies must return targets for the full univ
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_backtest data-first path matches explicit snapshot workflow", {
   db_path_data <- tempfile(fileext = ".duckdb")
   db_path_explicit <- tempfile(fileext = ".duckdb")
@@ -207,6 +211,7 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
   testthat::expect_equal(eq_data$equity, eq_explicit$equity, tolerance = 1e-10)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_backtest source validation and inference are clear", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -262,6 +267,7 @@ testthat::test_that("functional strategy fingerprints include captured values", 
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("default runtime context is data-frame compatible with pulse snapshot context", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -321,6 +327,7 @@ testthat::test_that("default runtime context is data-frame compatible with pulse
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("backtest feature hydration uses indicator series_fn", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -369,6 +376,7 @@ testthat::test_that("backtest feature hydration uses indicator series_fn", {
   testthat::expect_true("series_backtest_probe" %in% features$feature_name)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("runtime feature typos fail loudly instead of running as no-op", {
   typo_strategy <- function(ctx, params) {
     ctx$feature("TEST_A", "returns_2")
@@ -389,6 +397,7 @@ testthat::test_that("runtime feature typos fail loudly instead of running as no-
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("single-pulse run windows fail before fold entry", {
   one_pulse <- test_bars[test_bars$ts_utc == min(test_bars$ts_utc), , drop = FALSE]
   strategy <- function(ctx, params) ctx$flat()
@@ -406,6 +415,7 @@ testthat::test_that("single-pulse run windows fail before fold entry", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("strategy evaluation errors include pulse context and preserve parent", {
   bad_strategy <- function(ctx, params) {
     stop("strategy boom")
@@ -455,6 +465,7 @@ testthat::test_that("strategy evaluation errors include pulse context and preser
   testthat::expect_match(conditionMessage(direct_err$parent), "strategy boom", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("backtest rejects non-positive initial cash", {
   strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")
@@ -521,6 +532,7 @@ testthat::test_that("backtest rejects non-positive initial cash", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("duplicate feature IDs fail before DuckDB feature writes", {
   strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")
@@ -548,6 +560,7 @@ testthat::test_that("duplicate feature IDs fail before DuckDB feature writes", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("final-bar target changes emit LEDGR_LAST_BAR_NO_FILL", {
   bars <- data.frame(
     instrument_id = "AAA",

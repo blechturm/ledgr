@@ -1,4 +1,5 @@
-testthat::test_that("closed durable handles remain read-only locators across sessions", {
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("[LTB-0012] closed durable handles remain read-only locators across sessions", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -92,6 +93,7 @@ testthat::test_that("closed durable handles remain read-only locators across ses
   testthat::expect_identical(store_contents(), before)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("durable backtest safety net checkpoints and messages", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -130,6 +132,7 @@ testthat::test_that("durable backtest safety net checkpoints and messages", {
   testthat::expect_identical(info$status, "DONE")
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ordinary result access does not keep durable run files locked", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)

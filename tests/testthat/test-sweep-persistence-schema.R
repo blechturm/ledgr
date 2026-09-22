@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 ledgr_sweep_persistence_schema_bars <- function() {
   data.frame(
     instrument_id = rep("AAA", 6L),

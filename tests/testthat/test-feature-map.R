@@ -61,6 +61,7 @@ testthat::test_that("ledgr_feature_map rejects duplicate resolved feature IDs", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("ledgr_feature_map duplicate bundle aliases suggest prefix changes", {
   testthat::skip_if_not_installed("TTR")
 
@@ -71,6 +72,7 @@ testthat::test_that("ledgr_feature_map duplicate bundle aliases suggest prefix c
   testthat::expect_match(conditionMessage(err), "change the bundle prefix", fixed = TRUE)
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_experiment accepts feature maps and preserves list behavior", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
@@ -205,6 +207,7 @@ testthat::test_that("feature maps are copied into experiments at construction", 
   testthat::expect_identical(exp$features$feature_ids, c(signal = "sma_2"))
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("feature maps preserve concrete feature-set identity while aliases affect config hash", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))

@@ -30,7 +30,8 @@ testthat::test_that("ledgr_derive_pulse_seed is stable and independent of ambien
   )
 })
 
-testthat::test_that("snapshot ingestion and nonempty fill reads preserve caller RNG", {
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads preserve caller RNG", {
   seed_existed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   if (seed_existed) {
     old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)

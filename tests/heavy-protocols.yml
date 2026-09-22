@@ -1,0 +1,7 @@
+protocols:
+  - id: "full-heavy"
+    owner: "maintainer"
+    profile: "heavy_protocol"
+    invocation: "Rscript --vanilla tools/run-heavy-protocol.R --protocol=full-heavy"
+    checker: "Rscript --vanilla tools/check-heavy-protocol.R --protocol=full-heavy --census=<path>"
+    purpose: "Run and reconcile all 190 blocks classified outside ordinary membership."

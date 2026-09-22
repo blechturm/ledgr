@@ -151,6 +151,7 @@ testthat::test_that("the production provider is query-order independent", {
 
 })
 
+# ledgr-test-profile: review
 testthat::test_that("public membership resolution agrees with prepared views", {
   ids <- c("AAA", "BBB", "CCC", "DDD")
   dates <- as.Date("2021-01-04") + 0:8

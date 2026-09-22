@@ -487,7 +487,7 @@ testthat::test_that("compiled accounting model enum fails closed", {
   )
 })
 
-testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", {
+testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold outputs", {
   r_path <- ledgr_compiled_spot_fifo_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_test_run("spot_fifo")
 
@@ -539,7 +539,7 @@ testthat::test_that("compiled spot FIFO path matches canonical R fold outputs", 
   testthat::expect_identical(compiled_path$fold$next_event_seq, r_path$fold$next_event_seq)
 })
 
-testthat::test_that("compiled spot FIFO batches preserve multi-instrument pulse parity", {
+testthat::test_that("[LTB-0013] compiled spot FIFO batches preserve multi-instrument pulse parity", {
   r_path <- ledgr_compiled_spot_fifo_multi_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_multi_test_run("spot_fifo")
 
@@ -712,7 +712,8 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
   testthat::expect_s3_class(observed[[1L]]$idx_error, "ledgr_invalid_pulse_context")
 })
 
-testthat::test_that("run and sweep route fold payloads through one constructor", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0015] run and sweep share execution construction and fold core", {
   bars <- data.frame(
     instrument_id = "AAA",
     ts_utc = as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2,
@@ -732,11 +733,17 @@ testthat::test_that("run and sweep route fold payloads through one constructor",
     cost_model = ledgr_cost_zero()
   )
   calls <- 0L
+  fold_calls <- 0L
   original <- ledgr:::ledgr_execution_spec
+  original_fold <- ledgr:::ledgr_execute_fold
   testthat::local_mocked_bindings(
     ledgr_execution_spec = function(...) {
       calls <<- calls + 1L
       original(...)
+    },
+    ledgr_execute_fold = function(...) {
+      fold_calls <<- fold_calls + 1L
+      original_fold(...)
     },
     .package = "ledgr"
   )
@@ -751,4 +758,5 @@ testthat::test_that("run and sweep route fold payloads through one constructor",
   testthat::expect_s3_class(run, "ledgr_backtest")
   testthat::expect_s3_class(sweep, "ledgr_sweep_results")
   testthat::expect_identical(calls, 2L)
+  testthat::expect_identical(fold_calls, 2L)
 })

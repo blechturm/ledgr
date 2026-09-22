@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("function(ctx, params) strategies receive strategy_params and persist provenance", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -64,6 +65,7 @@ testthat::test_that("function(ctx, params) strategies receive strategy_params an
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("function(ctx, params) with empty default strategy_params is valid", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -91,6 +93,7 @@ testthat::test_that("function(ctx, params) with empty default strategy_params is
   testthat::expect_true(any(as.numeric(fills$qty) == 1))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("function(ctx) strategies fail with migration guidance", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -121,6 +124,7 @@ testthat::test_that("function(ctx) strategies fail with migration guidance", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("strategy signature and params validation fail clearly", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
@@ -153,6 +157,7 @@ testthat::test_that("strategy signature and params validation fail clearly", {
   )
 })
 
+# ledgr-test-profile: heavy_protocol
 testthat::test_that("strategy params and source changes alter provenance hashes", {
   strategy_a <- function(ctx, params) {
     targets <- ctx$flat()

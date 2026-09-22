@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 test_that("ledgr_snapshot opens and closes connections lazily", {
   test_con <- get_test_connection()
   on.exit(close_test_connection(test_con), add = TRUE)

@@ -1,3 +1,4 @@
+# ledgr-test-file-profile: review
 testthat::test_that("retired availability entry points are absent", {
   ns <- asNamespace("ledgr")
   retired_functions <- c(
