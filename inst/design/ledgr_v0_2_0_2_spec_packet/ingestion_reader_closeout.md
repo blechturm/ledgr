@@ -2,7 +2,9 @@
 
 **Workstream 9, tickets LDG-2800 through LDG-2802.**
 **Opened and closed 2026-09-22, from `ac60941`.**
-**Close review `close_review_7_9.md` returned FAIL; patched, see section 8.**
+**Close review returned FAIL twice: `close_review_7_9.md` and its re-review
+at `2b15563`. Sections 8 and 10. W9-F5 is unresolved and is a maintainer
+decision.**
 **Owner: the maintainer. This draft is agent-provisional.**
 
 ## 1. What shipped
@@ -251,3 +253,62 @@ block. `meta_json`, which is stored verbatim with no JSON requirement, keeps
 The enumeration itself held: of the seven instrument columns
 `ledgr_snapshot_from_df()` reads, the five text ones move with the reader and
 `multiplier` and `tick_size` do not, confirmed by sealing each in turn.
+
+## 10. The re-review, and what is still open
+
+The re-review at `2b15563` closed W9-F1 and W9-F4, closed W9-F2 for the
+canonical bars and instrument columns, and returned **FAIL** again on three
+further findings. It confirmed all four workstream 7 patches.
+
+**Closed here.** W9-F6, the null-token rule was stated generally and pinned
+only for a bars instrument id; it is now table-driven over every forced text
+name in both CSV inputs. W9-F7, the `metadata` rejection asserted a message
+without its class; it now pins `ledgr_config_invalid_json`. W9-O3, the matrix
+called its expectations "exact messages" when it deliberately pins only
+ledgr-owned fragments and, for a DuckDB failure, only the wrapper prefix;
+that trade is now stated where the claim was.
+
+The re-review also confirmed the forced set independently, by deriving it
+from the schema and the adapter's reads and sealing one column at a time. No
+member is missing and none should be removed.
+
+**W9-F5 is open and is not mine to close.** Quarantined rows persist
+`original_row_json`, which serializes *every* column of the offending bars
+row, and the rule-2 hash covers the whole quarantine table. So reader type
+inference reaches snapshot identity through columns outside the forced set.
+Reproduced:
+
+| input | old | new | rule-2 hash |
+| --- | --- | --- | --- |
+| extra column `extra=1` | `"extra":1` | `"extra":1.0` | moved |
+| extra column `extra=0001` | `"extra":1` | `"extra":"0001"` | moved |
+| extra column `extra=NA` | `"extra":null` | `"extra":"NA"` | moved |
+| headers `junk,junk` | `junk`, `junk.1` | `junk`, `junk_1` | moved |
+| headers `junk,JUNK` | `junk`, `JUNK` | `junk`, `JUNK_1` | moved |
+
+Two corrections to the re-review's evidence, which do not change its verdict.
+The old reader did not keep two `junk` keys; `utils::read.csv()` also renamed,
+to `junk.1`. So duplicate headers were already not preserved and the swap
+changed the renaming scheme rather than introducing renaming. The case-only
+collision is different: `JUNK` survived before and becomes `JUNK_1` now,
+because DuckDB treats a case-only difference as a collision. That one is new.
+
+**The finding underneath is older than this cut.** Both
+`ledgr_snapshot_from_df()` and `ledgr_snapshot_from_csv()` document that extra
+columns "are ignored and do not become part of the sealed snapshot or its
+hash". That is false whenever a row is quarantined: the extra column is
+serialized into `original_row_json` and hashed. The reader swap changed how
+those values are rendered; it did not create the exposure. Either the
+documented contract or the hash payload is wrong, and that is a durable
+identity question, so it goes to the maintainer rather than into another
+patch round. The options are in the handover note; the smallest of them,
+excluding `original_row_json` from the rule-2 payload while keeping it in the
+table for diagnostics, is one line but changes rule-2 identity for every
+quarantine snapshot.
+
+**Governance.** The re-review computes 3 invocations over 3 tickets, 1.00,
+and recommends folding workstream 9 into cut 3 as its second workstream,
+which gives 4 over 9, 0.44, while keeping a durable note that the cut-5 shape
+reached 3/3 and is what prompted the change. That restructuring is a
+maintainer decision and has not been made; the packet still shows cut 5 as
+its own cut.

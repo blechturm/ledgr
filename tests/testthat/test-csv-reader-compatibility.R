@@ -3,10 +3,16 @@
 # LDG-2800. The registered compatibility matrix for the ingestion CSV reader.
 #
 # Every row records what the reader and the public file surface actually do
-# for one input shape, by exact condition class and message, so that a change
-# to the reader has to declare what it moves instead of inheriting it. A row
-# that changes must be listed with a reason in the cut 5 closeout; an
-# undeclared change fails here.
+# for one input shape, by condition class and by a stable ledgr-owned message
+# or prefix, so that a change to the reader has to declare what it moves
+# instead of inheriting it. A row that changes must be listed with a reason in
+# the cut 5 closeout; an undeclared change fails here.
+#
+# On message pinning, per re-review W9-O3: these are not complete condition
+# strings. Fragments ledgr owns are pinned; for a failure that originates in
+# DuckDB only the reader's own wrapper prefix is pinned, because the
+# dependency's diagnostic tail can drift between versions and would produce
+# false failures without telling us anything about ledgr.
 #
 # Strengthened after close review W9-F1, W9-F2, W9-F3 and W9-O1, which found
 # the first version asserted classes loosely, covered only the bars CSV, and
@@ -218,6 +224,39 @@ test_that("an empty field is missing and a literal NA is text", {
   )
 })
 
+# W9-F6. The rule above is stated generally, so it is pinned generally: every
+# forced text name, in both CSV inputs. Each row was missing before the
+# re-review, which pinned only the bars instrument_id instance.
+test_that("the null-token rule holds for every forced text column", {
+  # The bars side. ts_utc is forced text too, so its NA token reaches the
+  # timestamp parser as the string "NA" and is rejected there.
+  expect_error(
+    csvc_seal(c(csvc_header, "AAA,NA,1,1,1,1,10", "AAA,NA,1,1,1,1,10")),
+    "must be a UTC timestamp",
+    fixed = TRUE,
+    class = "ledgr_invalid_timestamp"
+  )
+
+  # The instruments side. Four columns store the literal token; the metadata
+  # spelling rejects it, because "NA" is not valid JSON.
+  stored <- function(col) {
+    persisted <- if (identical(col, "metadata")) "meta_json" else col
+    csvc_seal(
+      csvc_bars,
+      instruments = c(paste0("instrument_id,", col), "AAA,NA")
+    )$instruments[[persisted]]
+  }
+  for (col in c("symbol", "currency", "asset_class", "meta_json")) {
+    expect_identical(stored(col), "NA", info = col)
+  }
+  expect_error(
+    stored("metadata"),
+    "not valid JSON",
+    fixed = TRUE,
+    class = "ledgr_config_invalid_json"
+  )
+})
+
 # from_df accepts `metadata` as an alternative spelling of `meta_json` and
 # runs canonical_json() over it. Forcing the column to text, which the W9-F2
 # patch did, changed what that accepts: an all-numeric value with leading
@@ -240,7 +279,8 @@ test_that("the metadata spelling requires valid JSON, the meta_json spelling doe
   expect_error(
     meta("metadata", "0001"),
     "not valid JSON",
-    fixed = TRUE
+    fixed = TRUE,
+    class = "ledgr_config_invalid_json"
   )
 
   expect_identical(meta("meta_json", "0001"), "0001")
