@@ -292,3 +292,137 @@ rule-2 quarantine comparisons reported in W9-F5. The focused
 tests passed. The checked-in clock probe completed. Heavy was not run. Only
 this section was appended; no source, test, ticket, closeout, stage, commit,
 or push was changed.
+
+## Review at ea227fa
+
+**Mode and scope:** Type 1 review of the W9-F5 snapshot-identity change,
+confirmation of the three prior patches, and confirmation of the cut fold.
+The comparison base is `2b15563`; the reviewed tree is `ea227fa`.
+
+**Verdict: PASS_AFTER_PATCHES.** The implementation is deterministic for
+states produced by both ingestion surfaces, ignores extra columns without
+losing any of the seven canonical bar values, and preserves the intended
+tamper boundary. It does not fail closed when a quarantine saved row is valid
+JSON of the wrong shape (W9-F8). Two statements added to the closeout are
+also factually wrong or stale (W9-F9 and W9-F10).
+
+### Determinism and retained identity
+
+Repeated computation of one sealed snapshot returned one hash and matched
+the stored hash. Repeated seals of the same file returned one hash, and a
+close followed by `ledgr_snapshot_open(..., verify = TRUE)` succeeded with
+that hash.
+
+Exact duplicate invalid rows are rejected as
+`ledgr_observation_quarantine_duplicate` before sealing. Two invalid rows
+that differ only in an ignored extra column are admitted and can tie on all
+five new ordering fields after projection. Their complete hashed rows are
+then identical: `quarantine_id` and the differing extra value are the only
+differences, and both have been removed. Reversing those rows produced the
+same hash. The tie therefore has no unspecified-order consequence for the
+payload.
+
+The projected key set is the canonical bars set:
+`instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`, and optional
+`volume`. I changed each field separately on an `ohlc_invalid` row while
+keeping the same quarantine reason. Every change moved the hash. Changes to
+`supplied_instrument_id`, `supplied_ts_utc`, `reason`, and `provenance_json`
+also moved it.
+
+### W9-F8 - Gate: a non-object saved row can seal without any bar value in identity
+
+**What is wrong.** `ledgr_snapshot_quarantine_hashed_row()` returns the raw
+string when parsed JSON is not a list. The seal validator checks that
+`original_row_json` is canonical JSON, but it does not require a JSON object
+or the canonical bar keys. Canonical scalars and arrays can therefore reach
+the fallback or an empty projection. This violates property 3 for a state
+that the seal boundary currently accepts.
+
+**Evidence.** I replaced a quarantine row's saved object with the canonical
+JSON scalar `42` and exercised the seal checks. `ledgr_snapshot_validate_availability_for_seal()`
+returned successfully, `ledgr_snapshot_seal()` produced a `SEALED` snapshot,
+and `ledgr_snapshot_validate()` then succeeded. The hash contained the raw
+token `42` and none of the row's seven canonical bar fields. Direct helper
+probes likewise returned raw `not-json`, `42`, and `null`; an empty JSON array
+also passed the broad list test. The supported ingestion writers do emit
+objects, but `ledgr_db_init()`, `ledgr_snapshot_create()`, and
+`ledgr_snapshot_seal()` expose the lower-level store and seal boundary, so
+the accepted state is reachable.
+
+**Smallest correction.** Remove the raw fallback. Require
+`original_row_json` to parse as a named JSON object with each of the six
+required bar keys exactly once and optional `volume` at most once; abort with
+the existing `ledgr_snapshot_fact_json_invalid` / `ledgr_invalid_state`
+family otherwise. Apply the same shape check during seal validation, and add
+scalar, array, malformed, and missing-required-key rejection cases. Extra
+object keys should remain permitted and excluded from the hashed projection.
+
+### W9-F9 - Gate record: the closeout gives W9-F5 two statuses
+
+**What is wrong.** The opening status of `ingestion_reader_closeout.md` says
+"W9-F5 is unresolved and is a maintainer decision." Section 10 says
+"W9-F5 is resolved," and section 11 records its implementation. A closed
+workstream cannot leave its gate finding in both states.
+
+**Evidence.** Both statements are present in the reviewed file; the latter
+matches commit `ea227fa` and the source change.
+
+**Smallest correction.** Change the opening status to say that the second
+FAIL was patched by the decisions and implementation recorded in sections
+10 and 11.
+
+### W9-F10 - Gate record: the duplicate-header correction describes the wrong old reader
+
+**What is wrong.** Section 10 says the old reader renamed duplicate `junk`
+headers to `junk.1` and calls the prior review's two-key result an error. The
+old ledgr reader explicitly disabled that renaming.
+
+**Evidence.** At `ac60941`, `ledgr_read_csv_strict()` called
+`utils::read.csv(..., check.names = FALSE)`. Executing that call on
+`instrument_id,junk,junk` returned names `instrument_id|junk|junk`; the
+default `check.names = TRUE` call returned `instrument_id|junk|junk.1`.
+Thus the prior review's two `junk` keys describe the actual old ledgr path,
+and the closeout table and purported correction do not.
+
+**Smallest correction.** Restore the old result to two `junk` keys and remove
+the false correction. Retain the separate case-only observation and the
+current DuckDB-renaming result.
+
+### W9-O4 - The intended exclusion also excludes diagnostic spelling
+
+Tamper detection is weaker exactly where the new identity rule makes the
+saved copy diagnostic. A tamperer can change `quarantine_id`; add, remove,
+rename, or change extra keys in `original_row_json`; or change the JSON's
+lexical spelling while preserving the parsed retained values. In a probe,
+adding surrounding whitespace to the stored JSON left the computed hash
+unchanged and `ledgr_snapshot_validate()` still succeeded. Changes to every
+canonical bar value and every other quarantine payload column moved the
+hash. W9-F8 covers wrong JSON shapes, which are outside the intended
+diagnostic exclusion and must fail closed.
+
+### Prior patches and fold
+
+All three prior patches are sufficient. The null-token block now exercises
+`ts_utc` plus every forced instrument text name; the `metadata=0001`
+rejection pins `ledgr_config_invalid_json`; and the matrix header accurately
+describes stable ledgr-owned fragments and the DuckDB-tail trade. The complete
+`test-csv-reader-compatibility.R` and `test-availability-facts.R` files passed.
+
+The fold is bookkeeping only in implementation. `tickets.yml` assigns
+workstreams 7 and 9 to cut 3, retains cut 5 as a folded record with its
+historical 3 / 3, and computes the combined 4 / 9 = 0.44. No ticket body,
+ticket completion state, or recorded measurement value was changed to obtain
+that denominator. The closeout titles and cross-references were updated, and
+the later measurement-method qualification was added without rewriting the
+earlier measurements. W9-F9 and W9-F10 are closeout accuracy defects, not
+runtime consequences of the fold.
+
+### Verification
+
+Inspected `2b15563..ea227fa` and the named source, tests, tickets, and
+closeouts. Ran repeated-computation, repeated-seal, reopen-and-verify,
+duplicate-invalid-row, reversed-tie, seven-field mutation, quarantine-column
+tamper, JSON-shape, and reseal probes. Ran the complete focused compatibility
+and availability-facts test files; both passed. Heavy was not run. Only this
+review section was appended; no source, test, ticket, closeout, stage, commit,
+or push was changed.

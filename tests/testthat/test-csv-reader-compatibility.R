@@ -432,3 +432,31 @@ test_that("a quarantined row's extra columns do not reach the snapshot hash", {
     ledgr_snapshot_info(con, clean$snapshot_id)$snapshot_hash, baseline$hash
   ))
 })
+
+# W9-F8. The hashed view covers a quarantined row's canonical bar keys and
+# nothing else, so a saved copy that is not an object carrying those keys
+# would seal and verify with the row's values absent from identity. Close
+# review reached that state through the lower-level store and seal boundary
+# by replacing a saved row with the canonical scalar 42. The projection and
+# the seal validator now both fail closed. Extra keys stay allowed.
+test_that("a quarantined row's saved copy must be an object with the bar keys", {
+  project <- ledgr:::ledgr_snapshot_quarantine_hashed_row
+  required <- '"instrument_id":"AAA","ts_utc":"2024-01-03","open":11.0,"high":8.0,"low":10.0,"close":11.0'
+
+  # Accepted: the canonical keys, with or without volume, extras ignored.
+  expect_identical(
+    project(paste0("{", required, ',"volume":100.0,"extra":1}')),
+    project(paste0("{", required, ',"volume":100.0,"other":"x"}'))
+  )
+  expect_true(nzchar(project(paste0("{", required, "}"))))
+
+  # Rejected: every shape that cannot carry the row's values.
+  for (bad in list("42", "[]", "null", '"text"', "not-json", NA_character_, "",
+                   paste0("{", sub('"close":11.0', '"unused":0', required), "}"))) {
+    expect_error(
+      project(bad),
+      class = "ledgr_snapshot_fact_json_invalid",
+      info = if (is.na(bad)) "NA" else bad
+    )
+  }
+})

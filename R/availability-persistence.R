@@ -195,16 +195,48 @@ ledgr_snapshot_quarantine_hashed_row_keys <- function() {
   c("instrument_id", "ts_utc", "open", "high", "low", "close", "volume")
 }
 
+# The projection fails closed. A saved row that is not a JSON object carrying
+# the required bar keys cannot be projected, and returning it raw would put
+# the discarded columns back into the hash, or, for a scalar, leave the row's
+# values out of identity altogether while the snapshot still verified. Close
+# review W9-F8 reached that state through the lower-level store and seal
+# boundary. Extra keys stay allowed and stay excluded.
+ledgr_snapshot_quarantine_required_row_keys <- function() {
+  c("instrument_id", "ts_utc", "open", "high", "low", "close")
+}
+
+ledgr_snapshot_quarantine_parse_hashed_row <- function(value) {
+  invalid <- function(detail) {
+    rlang::abort(
+      sprintf(
+        "snapshot_observation_quarantine.original_row_json %s.",
+        detail
+      ),
+      class = c("ledgr_snapshot_fact_json_invalid", "ledgr_invalid_state")
+    )
+  }
+  if (length(value) != 1L || is.na(value) || !nzchar(value)) {
+    invalid("must be a non-empty canonical JSON object")
+  }
+  parsed <- tryCatch(ledgr_json_read_nested(value), error = function(e) NULL)
+  if (!is.list(parsed) || is.null(names(parsed)) || any(!nzchar(names(parsed)))) {
+    invalid("must be a JSON object with named keys")
+  }
+  if (anyDuplicated(names(parsed))) {
+    invalid("must not repeat a key")
+  }
+  missing <- setdiff(ledgr_snapshot_quarantine_required_row_keys(), names(parsed))
+  if (length(missing) > 0L) {
+    invalid(sprintf("is missing required bar key(s): %s", paste(missing, collapse = ", ")))
+  }
+  keep <- intersect(ledgr_snapshot_quarantine_hashed_row_keys(), names(parsed))
+  as.character(canonical_json(parsed[keep]))
+}
+
 ledgr_snapshot_quarantine_hashed_row <- function(original_row_json) {
   vapply(
     original_row_json,
-    function(value) {
-      if (is.na(value) || !nzchar(value)) return(NA_character_)
-      parsed <- tryCatch(ledgr_json_read_nested(value), error = function(e) NULL)
-      if (!is.list(parsed)) return(value)
-      keep <- intersect(ledgr_snapshot_quarantine_hashed_row_keys(), names(parsed))
-      as.character(canonical_json(parsed[keep]))
-    },
+    ledgr_snapshot_quarantine_parse_hashed_row,
     character(1),
     USE.NAMES = FALSE
   )
@@ -410,6 +442,20 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
         )
       }
     }
+  }
+
+  # Valid canonical JSON is not enough for a quarantined row's saved copy. The
+  # hash covers its canonical bar keys and nothing else, so a scalar or an
+  # object missing those keys would seal and verify with the row's values
+  # absent from identity. Reject the shape here, at the seal boundary, rather
+  # than only where the hash is computed. Close review W9-F8.
+  quarantine_rows <- data$snapshot_observation_quarantine
+  if (!is.null(quarantine_rows) && nrow(quarantine_rows) > 0L &&
+      "original_row_json" %in% names(quarantine_rows)) {
+    invisible(lapply(
+      quarantine_rows$original_row_json,
+      ledgr_snapshot_quarantine_parse_hashed_row
+    ))
   }
 
   required_headers <- list(

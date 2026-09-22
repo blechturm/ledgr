@@ -4,9 +4,9 @@
 
 **Workstream 9, tickets LDG-2800 through LDG-2802.**
 **Opened and closed 2026-09-22, from `ac60941`.**
-**Close review returned FAIL twice: `close_review_7_9.md` and its re-review
-at `2b15563`. Sections 8 and 10. W9-F5 is unresolved and is a maintainer
-decision.**
+**Close review returned FAIL twice, `close_review_7_9.md` and its re-review
+at `2b15563`, then PASS_AFTER_PATCHES at `ea227fa`. Every finding is
+patched. Sections 8, 10, 11 and 13.**
 **Owner: the maintainer. This draft is agent-provisional.**
 
 ## 1. What shipped
@@ -292,12 +292,16 @@ Reproduced:
 | headers `junk,junk` | `junk`, `junk.1` | `junk`, `junk_1` | moved |
 | headers `junk,JUNK` | `junk`, `JUNK` | `junk`, `JUNK_1` | moved |
 
-Two corrections to the re-review's evidence, which do not change its verdict.
-The old reader did not keep two `junk` keys; `utils::read.csv()` also renamed,
-to `junk.1`. So duplicate headers were already not preserved and the swap
-changed the renaming scheme rather than introducing renaming. The case-only
-collision is different: `JUNK` survived before and becomes `JUNK_1` now,
-because DuckDB treats a case-only difference as a collision. That one is new.
+One note on the duplicate-header row. An earlier revision of this section
+claimed the old reader also renamed, to `junk.1`, and called the re-review's
+two-`junk` result an error. That claim was wrong and is withdrawn: the probe
+behind it called `utils::read.csv()` with the default `check.names = TRUE`,
+while ledgr's reader passed `check.names = FALSE` and preserved both keys.
+So the re-review was right, and DuckDB's renaming is new, as is the
+case-only collision where `JUNK` survived before and becomes `JUNK_1` now.
+Recorded because the mistake was a probe that did not replicate the code it
+claimed to measure, which is the same error as the sequential timing in
+section 12.
 
 **The finding underneath is older than this cut.** Both
 `ledgr_snapshot_from_df()` and `ledgr_snapshot_from_csv()` document that extra
@@ -380,3 +384,51 @@ because it rests on a direct per-block measurement, about 1.0 s of sealing
 per block against a 0.15 s baseline in the same file, which is not a
 cross-tree comparison. Cut 3's closeout section 2 should be read with that
 distinction in mind.
+
+## 13. The third review, at `ea227fa`
+
+`PASS_AFTER_PATCHES`. It confirmed what the identity change was supposed to
+do, by probe rather than by reading: one hash across repeated computation,
+repeated seals and reopen-with-verify; every one of the seven canonical bar
+fields moves the hash when changed; two invalid rows differing only in an
+ignored column tie on the new ordering fields but hash identically, so the
+tie has no consequence; and the three earlier patches and the fold are
+sufficient. Three findings.
+
+**W9-F8, a real hole, patched.** The projection returned the saved copy raw
+when it did not parse as a list. The review reached that state through the
+lower-level store and seal boundary by replacing a saved row with the
+canonical scalar `42`: the snapshot sealed, `ledgr_snapshot_validate()`
+succeeded, and the hash contained `42` and none of the row's bar values. So
+a verified snapshot could have a quarantined bar absent from its identity.
+
+The raw fallback is gone. A saved copy must now parse as a JSON object with
+named, non-repeating keys including the six required bar keys; `volume` stays
+optional and extra keys stay allowed and excluded. The same shape check runs
+at seal validation, so the state is rejected before it can seal rather than
+only where the hash is computed. Both raise
+`ledgr_snapshot_fact_json_invalid`. Pinned by a block covering scalars,
+arrays, `null`, a quoted string, malformed text, empty, `NA`, and an object
+missing a required key.
+
+**W9-F9, patched.** The opening status said W9-F5 was unresolved while
+sections 10 and 11 recorded its resolution. Corrected.
+
+**W9-F10, patched, and my error not the review's.** Section 10 had claimed
+the old reader also renamed duplicate headers and called the re-review's
+two-`junk` result wrong. The probe behind that claim called
+`utils::read.csv()` with the default `check.names = TRUE`, while ledgr's
+reader passed `check.names = FALSE`. The re-review was right. The claim is
+withdrawn.
+
+**W9-O4, accepted as the intended boundary.** A tamperer can now change
+`quarantine_id`, alter extra keys, or reformat the saved JSON's whitespace
+without moving the hash. That is what "the saved copy is a diagnostic"
+means. Every canonical bar value and every other quarantine column still
+moves it, and W9-F8 closes the shapes that fall outside the intended
+exclusion.
+
+Two of the three findings were defects in this document rather than in the
+code, and both came from a probe that did not replicate what it claimed to
+measure: `check.names` here, and the sequential timing in section 12. That
+is the pattern worth carrying out of this workstream.
