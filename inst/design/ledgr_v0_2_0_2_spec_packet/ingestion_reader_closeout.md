@@ -98,6 +98,7 @@ and the table below marks the rows it gained.
 | **leading-zero instrument id** | **yes, fixed** |
 | **leading-zero `symbol`, `currency`, `asset_class`, `meta_json`** | **yes, fixed; row added under W9-F2** |
 | **a literal `NA` field** | **yes, widened and declared; row added under W9-F3** |
+| **an all-numeric `metadata` value** | **yes, now a loud error; found while answering the re-review question, see section 9** |
 | malformed numeric past DuckDB's type sample | rejects as before, at the reader with a different message; row added under W9-O1 |
 
 ### The one change
@@ -222,3 +223,31 @@ witness covers rather than a cleanup. Left for the maintainer.
 **W9-O1, the sniff boundary.** Accepted as a declared consequence and pinned
 by its own matrix block. Both stages reject with `ledgr_invalid_args`; only
 the message differs, and section 4 no longer implies message parity.
+
+## 9. A third change, found after the close review was patched
+
+Checking the new forced-text set exhaustively, column by column, turned up one
+more behaviour the W9-F2 patch moved and did not declare.
+
+`ledgr_snapshot_from_df()` accepts `metadata` as an alternative spelling of
+`meta_json` and runs `canonical_json()` over it. Forcing that column to text
+changed what it accepts:
+
+| `metadata` value | before | after |
+| --- | --- | --- |
+| `0001` | sealed as `1` | rejected, not valid JSON |
+| `42` | sealed as `42` | sealed as `42` |
+| `"{}"` | sealed as `{}` | sealed as `{}` |
+| `abc` | rejected | rejected |
+
+The new behaviour is the right one. JSON does not allow leading zeros in a
+number, so `0001` was never valid content for that column, and the old path
+silently turned it into `1`. But this is the third undeclared change in a cut
+whose whole witness was a matrix meant to make changes declare themselves, and
+the second found after the close review. It is now pinned by its own matrix
+block. `meta_json`, which is stored verbatim with no JSON requirement, keeps
+`0001` as text.
+
+The enumeration itself held: of the seven instrument columns
+`ledgr_snapshot_from_df()` reads, the five text ones move with the reader and
+`multiplier` and `tick_size` do not, confirmed by sealing each in turn.

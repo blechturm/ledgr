@@ -218,6 +218,35 @@ test_that("an empty field is missing and a literal NA is text", {
   )
 })
 
+# from_df accepts `metadata` as an alternative spelling of `meta_json` and
+# runs canonical_json() over it. Forcing the column to text, which the W9-F2
+# patch did, changed what that accepts: an all-numeric value with leading
+# zeros used to be inferred as a number and stored as one, and is now the
+# string it was written as, which is not valid JSON and fails loudly. That is
+# the intended direction, since the old path silently changed 0001 into 1,
+# but it is a third behaviour change in this cut and is pinned here.
+#
+# meta_json is stored verbatim and has no JSON requirement on this path.
+test_that("the metadata spelling requires valid JSON, the meta_json spelling does not", {
+  meta <- function(col, value) {
+    csvc_seal(
+      csvc_bars,
+      instruments = c(paste0("instrument_id,", col), paste0("AAA,", value))
+    )$instruments$meta_json
+  }
+
+  expect_identical(meta("metadata", "42"), "42")
+  expect_identical(meta("metadata", "\"{}\""), "{}")
+  expect_error(
+    meta("metadata", "0001"),
+    "not valid JSON",
+    fixed = TRUE
+  )
+
+  expect_identical(meta("meta_json", "0001"), "0001")
+  expect_identical(meta("meta_json", "abc"), "abc")
+})
+
 # ------------------------------------------------------ public surface: fail
 
 test_that("each malformed file fails with its recorded class and message", {
