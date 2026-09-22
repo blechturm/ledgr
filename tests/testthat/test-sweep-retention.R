@@ -1,11 +1,12 @@
-ledgr_sweep_retention_test_bars <- function() {
+ledgr_sweep_retention_test_bars <- function(n_pulses = 6L) {
+  offsets <- seq_len(n_pulses) - 1L
   data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * offsets,
     instrument_id = "AAA",
-    open = 100:105,
-    high = 101:106,
-    low = 99:104,
-    close = 100:105,
+    open = 100 + offsets,
+    high = 101 + offsets,
+    low = 99 + offsets,
+    close = 100 + offsets,
     volume = 1000,
     stringsAsFactors = FALSE
   )
@@ -75,7 +76,7 @@ testthat::test_that("ledgr_sweep_retention fails loudly on invalid values", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep attaches retention metadata without changing default rows", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -106,7 +107,7 @@ testthat::test_that("ledgr_sweep attaches retention metadata without changing de
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("completed retention is accepted without changing scalar identity", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -142,7 +143,7 @@ testthat::test_that("completed retention is accepted without changing scalar ide
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("completed retention exposes long and wide return series", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -277,7 +278,7 @@ testthat::test_that("ledgr_return_panel constructs source-neutral return evidenc
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep return panels use the same class and hash payload", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -328,18 +329,18 @@ testthat::test_that("ledgr_return_panel fails loudly on malformed input", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("closed-trade retention exposes deterministic minimal trade evidence", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(5L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
       targets["AAA"] <- params$qty
-    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
       targets["AAA"] <- 0
-    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
       targets["AAA"] <- -params$qty
-    } else if (identical(ctx$ts_utc, "2020-01-05T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
       targets["AAA"] <- 0
     }
     targets
@@ -399,7 +400,7 @@ testthat::test_that("closed-trade retention exposes deterministic minimal trade 
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("retained return accessors fail loudly for unretained, missing, and failed candidates", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -579,7 +580,7 @@ testthat::test_that("ledgr_sweep rejects invalid retain arguments before executi
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("wide return projections reversibly escape reserved candidate ids", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_retention_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     targets <- ctx$flat()

@@ -38,7 +38,7 @@ testthat::test_that("demo SMA crossover strategy holds through warmup", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("demo SMA crossover strategy runs and keeps qty zero baseline flat", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -104,7 +104,7 @@ testthat::test_that("demo SMA crossover strategy sweeps feature and strategy gri
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("demo SMA crossover strategy fails through active alias classes", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 

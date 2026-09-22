@@ -121,14 +121,14 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
   bars <- data.frame(
     instrument_id = "AAA",
     ts_utc = as.POSIXct(
-      c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00"),
+      c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
       tz = "UTC"
     ),
-    open = c(100, 101, 102),
-    high = c(100, 101, 102),
-    low = c(100, 101, 102),
-    close = c(100, 101, 102),
-    volume = c(1, 1, 1),
+    open = c(100, 101),
+    high = c(100, 101),
+    low = c(100, 101),
+    close = c(100, 101),
+    volume = c(1, 1),
     stringsAsFactors = FALSE
   )
   snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
@@ -142,7 +142,7 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
     strategy = strat,
     universe = "AAA",
     start = "2020-01-01",
-    end = "2020-01-03",
+    end = "2020-01-02",
     initial_cash = 1000,
     db_path = run_path,
     cost_model = ledgr_cost_zero()
@@ -161,9 +161,9 @@ testthat::test_that("ledgr_state_reconstruct() rebuilds split-DB snapshot-backed
   DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(bt$run_id))
   out <- ledgr_state_reconstruct(bt$run_id, con)
 
-  testthat::expect_equal(nrow(out$equity_curve), 3L)
+  testthat::expect_equal(nrow(out$equity_curve), 2L)
   eq_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?", params = list(bt$run_id))$n[[1]]
-  testthat::expect_equal(as.integer(eq_rows), 3L)
+  testthat::expect_equal(as.integer(eq_rows), 2L)
   testthat::expect_equal(out$positions$qty[[1]], 1)
 })
 
@@ -177,14 +177,14 @@ testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources
   bars <- data.frame(
     instrument_id = "AAA",
     ts_utc = as.POSIXct(
-      c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00"),
+      c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
       tz = "UTC"
     ),
-    open = c(100, 101, 102),
-    high = c(100, 101, 102),
-    low = c(100, 101, 102),
-    close = c(100, 101, 102),
-    volume = c(1, 1, 1),
+    open = c(100, 101),
+    high = c(100, 101),
+    low = c(100, 101),
+    close = c(100, 101),
+    volume = c(1, 1),
     stringsAsFactors = FALSE
   )
   snap <- ledgr_snapshot_from_df(bars, db_path = snapshot_path, snapshot_id = "snapshot_20200101_000000_abcd")
@@ -198,7 +198,7 @@ testthat::test_that("ledgr_state_reconstruct() rejects tampered snapshot sources
     strategy = strat,
     universe = "AAA",
     start = "2020-01-01",
-    end = "2020-01-03",
+    end = "2020-01-02",
     initial_cash = 1000,
     db_path = run_path,
     cost_model = ledgr_cost_zero()

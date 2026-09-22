@@ -1,23 +1,23 @@
 ledgr_parity_bars <- function() {
-  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:7
+  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3
   rbind(
     data.frame(
       ts_utc = dates,
       instrument_id = "AAA",
-      open = c(100, 101, 103, 102, 104, 107, 106, 108),
-      high = c(101, 103, 104, 103, 106, 108, 108, 109),
-      low = c(99, 100, 101, 101, 103, 106, 105, 107),
-      close = c(100, 102, 103, 102, 105, 107, 106, 108),
+      open = c(100, 101, 103, 102),
+      high = c(101, 103, 104, 103),
+      low = c(99, 100, 101, 101),
+      close = c(100, 102, 103, 102),
       volume = 1000,
       stringsAsFactors = FALSE
     ),
     data.frame(
       ts_utc = dates,
       instrument_id = "BBB",
-      open = c(50, 51, 50, 49, 48, 50, 52, 51),
-      high = c(51, 52, 51, 50, 49, 51, 53, 52),
-      low = c(49, 50, 49, 48, 47, 49, 51, 50),
-      close = c(50, 51, 50, 49, 48, 50, 52, 51),
+      open = c(50, 51, 50, 49),
+      high = c(51, 52, 51, 50),
+      low = c(49, 50, 49, 48),
+      close = c(50, 51, 50, 49),
       volume = 2000,
       stringsAsFactors = FALSE
     )
@@ -219,7 +219,7 @@ testthat::test_that("sweep candidates match persistent run and promoted run arti
     } else if (identical(day, "2020-01-03") && isTRUE(params$close_day3)) {
       targets["AAA"] <- 0
       targets["BBB"] <- 0
-    } else if (identical(day, "2020-01-08")) {
+    } else if (identical(day, "2020-01-04")) {
       targets["AAA"] <- params$last_bar_qty
     }
     targets

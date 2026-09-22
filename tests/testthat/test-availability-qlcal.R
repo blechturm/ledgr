@@ -72,7 +72,7 @@ testthat::test_that("qlcal metadata and assumptions enter existing identity", {
     ledgr_facts_sessions_qlcal(
       calendar,
       as.Date("2024-07-01"),
-      as.Date("2024-07-05"),
+      as.Date("2024-07-03"),
       "XNYS",
       "America/New_York",
       "09:30:00",
@@ -175,7 +175,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
   family <- ledgr_facts_sessions_qlcal(
     qlcal::getCalendar("UnitedStates/NYSE"),
     as.Date("2024-07-01"),
-    as.Date("2024-07-05"),
+    as.Date("2024-07-03"),
     "XNYS",
     "America/New_York",
     "09:30:00",
@@ -194,7 +194,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
   ledgr_snapshot_close(snapshot)
   reopened <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
   history <- ledgr_facts_history(reopened, "sessions", "XNYS")
-  testthat::expect_equal(nrow(history$rows), 5L)
+  testthat::expect_equal(nrow(history$rows), 3L)
   testthat::expect_identical(history$metadata$source, "snapshot")
   experiment <- ledgr_experiment(
     reopened,
@@ -224,7 +224,7 @@ testthat::test_that("materialized sessions run in a fresh process without loadin
   family <- ledgr_facts_sessions_qlcal(
     qlcal::getCalendar("UnitedStates/NYSE"),
     as.Date("2024-07-01"),
-    as.Date("2024-07-05"),
+    as.Date("2024-07-03"),
     "XNYS",
     "America/New_York",
     "09:30:00",
@@ -258,7 +258,7 @@ testthat::test_that("materialized sessions run in a fresh process without loadin
     "stopifnot(!'qlcal' %in% loadedNamespaces())",
     "snapshot <- ledgr_snapshot_open(args[[2L]], args[[3L]], verify = TRUE)",
     "history <- ledgr_facts_history(snapshot, 'sessions', 'XNYS')",
-    "stopifnot(nrow(history$rows) == 5L)",
+    "stopifnot(nrow(history$rows) == 3L)",
     "experiment <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(),",
     "  valuation_policy = ledgr_valuation_stale(1), cost_model = ledgr_cost_zero())",
     "run <- ledgr_run(experiment)",

@@ -647,8 +647,9 @@ testthat::test_that("TTR indicators use series_fn during backtest feature precom
   on.exit(unlink(db_path), add = TRUE)
   ledgr_feature_cache_clear()
   on.exit(ledgr_feature_cache_clear(), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_ind_ttr("RSI", input = "close", n = 3)

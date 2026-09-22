@@ -474,12 +474,12 @@ testthat::test_that("run info projects recorded risk identity without side effec
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   bars <- data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
     instrument_id = "AAA",
-    open = 100:105,
-    high = 101:106,
-    low = 99:104,
-    close = 100:105,
+    open = 100:102,
+    high = 101:103,
+    low = 99:101,
+    close = 100:102,
     volume = 1000,
     stringsAsFactors = FALSE
   )

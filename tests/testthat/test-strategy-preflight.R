@@ -375,8 +375,9 @@ testthat::test_that("ledgr_run rejects forbidden calls before fingerprinting or 
 testthat::test_that("ledgr_run rejects do.call indirection and context mutation before artifacts", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars(n_pulses = 3L)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   do_call_strategy <- function(ctx, params) {

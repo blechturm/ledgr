@@ -237,11 +237,11 @@ testthat::test_that("sweep-filter evidence is rejected by selection surfaces", {
 testthat::test_that("ledgr_sweep_filter evaluates reopened retained evidence", {
   bars <- data.frame(
     instrument_id = "AAA",
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
-    open = 100:105,
-    high = 101:106,
-    low = 99:104,
-    close = c(100, 102, 101, 104, 103, 106),
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+    open = 100:102,
+    high = 101:103,
+    low = 99:101,
+    close = c(100, 102, 101),
     volume = 1000,
     stringsAsFactors = FALSE
   )

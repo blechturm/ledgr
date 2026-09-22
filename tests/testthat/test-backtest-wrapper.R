@@ -6,11 +6,12 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
   on.exit(unlink(db_path_wrapper), add = TRUE)
 
   snapshot_id <- "snapshot_20200101_000000_abcd"
+  bars <- ledgr_test_compact_bars()
 
-  snap_direct <- ledgr_snapshot_from_df(test_bars, db_path = db_path_direct, snapshot_id = snapshot_id)
+  snap_direct <- ledgr_snapshot_from_df(bars, db_path = db_path_direct, snapshot_id = snapshot_id)
   on.exit(ledgr_snapshot_close(snap_direct), add = TRUE)
 
-  snap_wrapper <- ledgr_snapshot_from_df(test_bars, db_path = db_path_wrapper, snapshot_id = snapshot_id)
+  snap_wrapper <- ledgr_snapshot_from_df(bars, db_path = db_path_wrapper, snapshot_id = snapshot_id)
   on.exit(ledgr_snapshot_close(snap_wrapper), add = TRUE)
 
   universe <- c("TEST_A", "TEST_B")
@@ -77,8 +78,9 @@ testthat::test_that("ledgr_backtest is equivalent to ledgr_run for functional st
 testthat::test_that("ledgr_run validates compiled accounting model without changing default path", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   exp <- ledgr_experiment(
@@ -119,8 +121,9 @@ testthat::test_that("ledgr_run validates compiled accounting model without chang
 testthat::test_that("functional strategies must return targets for the full universe", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path, snapshot_id = "snapshot_20200101_000000_abcd")
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "snapshot_20200101_000000_abcd")
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   missing_target_strategy <- function(ctx, params) {
@@ -170,9 +173,10 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
   db_path_explicit <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path_data), add = TRUE)
   on.exit(unlink(db_path_explicit), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
   bt_data <- ledgr_backtest(
-    data = test_bars,
+    data = bars,
     strategy = test_strategy,
     start = "2020-01-01",
     end = "2020-12-31",
@@ -181,12 +185,12 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
     db_path = db_path_data
   )
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path_explicit)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path_explicit)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
   bt_explicit <- ledgr_backtest(
     snapshot = snap,
     strategy = test_strategy,
-    universe = sort(unique(test_bars$instrument_id)),
+    universe = sort(unique(bars$instrument_id)),
     start = "2020-01-01",
     end = "2020-12-31",
     initial_cash = 100000,
@@ -194,7 +198,7 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
     db_path = db_path_explicit
   )
 
-  testthat::expect_identical(bt_data$config$universe$instrument_ids, sort(unique(test_bars$instrument_id)))
+  testthat::expect_identical(bt_data$config$universe$instrument_ids, sort(unique(bars$instrument_id)))
 
   con_data <- ledgr:::get_connection(bt_data)
   con_explicit <- ledgr:::get_connection(bt_explicit)
@@ -215,12 +219,13 @@ testthat::test_that("ledgr_backtest data-first path matches explicit snapshot wo
 testthat::test_that("ledgr_backtest source validation and inference are clear", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   testthat::expect_error(
-    ledgr_backtest(snapshot = snap, data = test_bars, strategy = test_strategy, cost_model = ledgr_cost_zero()),
+    ledgr_backtest(snapshot = snap, data = bars, strategy = test_strategy, cost_model = ledgr_cost_zero()),
     "exactly one data source",
     class = "ledgr_invalid_args"
   )
@@ -233,9 +238,9 @@ testthat::test_that("ledgr_backtest source validation and inference are clear", 
     cost_model = ledgr_cost_zero(),
     db_path = db_path
   )
-  testthat::expect_identical(bt$config$universe$instrument_ids, sort(unique(test_bars$instrument_id)))
+  testthat::expect_identical(bt$config$universe$instrument_ids, sort(unique(bars$instrument_id)))
 
-  bad_data <- test_bars
+  bad_data <- bars
   bad_data$instrument_id <- NULL
   testthat::expect_error(
     ledgr_backtest(data = bad_data, strategy = test_strategy, start = "2020-01-01", end = "2020-12-31", cost_model = ledgr_cost_zero()),
@@ -271,12 +276,13 @@ testthat::test_that("functional strategy fingerprints include captured values", 
 testthat::test_that("default runtime context is data-frame compatible with pulse snapshot context", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   universe <- c("TEST_A", "TEST_B")
-  ts_utc <- ledgr_iso_utc(test_bars$ts_utc[[10]])
+  ts_utc <- ledgr_iso_utc(bars$ts_utc[[10]])
   ctx <- ledgr_pulse_snapshot(snap, universe = universe, ts_utc = ts_utc, features = list(ledgr_ind_sma(2)))
   on.exit(close(ctx), add = TRUE)
   testthat::expect_true(is.data.frame(ctx$bars))
@@ -470,12 +476,13 @@ testthat::test_that("backtest rejects non-positive initial cash", {
   strategy <- function(ctx, params) ctx$flat()
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  bars <- ledgr_test_compact_bars()
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   testthat::expect_error(
     ledgr_backtest(
-      data = test_bars,
+      data = bars,
       strategy = strategy,
       cost_model = ledgr_cost_zero(),
       initial_cash = 0
@@ -486,7 +493,7 @@ testthat::test_that("backtest rejects non-positive initial cash", {
   )
   testthat::expect_error(
     ledgr_backtest(
-      data = test_bars,
+      data = bars,
       strategy = strategy,
       cost_model = ledgr_cost_zero(),
       initial_cash = -1

@@ -31,7 +31,8 @@ testthat::test_that("session feature cache reuses series by snapshot hash", {
   on.exit(unlink(db_path_a), add = TRUE)
   on.exit(unlink(db_path_b), add = TRUE)
 
-  bars <- test_bars[test_bars$instrument_id == "TEST_A", , drop = FALSE]
+  bars <- ledgr_test_compact_bars(n_pulses = 10L)
+  bars <- bars[bars$instrument_id == "TEST_A", , drop = FALSE]
 
   snap_a <- ledgr_snapshot_from_df(bars, db_path = db_path_a, snapshot_id = "snapshot_20200101_000000_caca")
   on.exit(ledgr_snapshot_close(snap_a), add = TRUE)

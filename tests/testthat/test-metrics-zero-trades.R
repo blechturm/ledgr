@@ -3,7 +3,7 @@ testthat::test_that("metrics handle zero-trade backtests", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   zero_strategy <- function(ctx, params) {

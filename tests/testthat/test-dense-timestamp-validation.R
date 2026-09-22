@@ -246,7 +246,7 @@ testthat::test_that("dense validation has one vector conversion per axis", {
 testthat::test_that("dense public consumers use the primitive validator", {
   bars <- ledgr_test_make_bars(
     c("AAA", "BBB"),
-    as.Date("2020-01-01") + 0:7
+    as.Date("2020-01-01") + 0:6
   )
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

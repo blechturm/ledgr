@@ -1,5 +1,6 @@
-ledgr_wfo_bars <- function() {
-  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:11
+ledgr_wfo_bars <- function(n_days = 12L) {
+  dates <- as.POSIXct("2020-01-01", tz = "UTC") +
+    86400 * (seq_len(n_days) - 1L)
   data.frame(
     ts_utc = dates,
     instrument_id = "AAA",
@@ -23,8 +24,9 @@ ledgr_wfo_strategy <- function(ctx, params) {
 ledgr_wfo_exp <- function(opening = ledgr_opening(cash = 10000),
                           strategy = ledgr_wfo_strategy,
                           cost_model = ledgr_cost_zero(),
-                          risk_chain = ledgr_risk_none()) {
-  snapshot <- ledgr_snapshot_from_df(ledgr_wfo_bars())
+                          risk_chain = ledgr_risk_none(),
+                          n_days = 12L) {
+  snapshot <- ledgr_snapshot_from_df(ledgr_wfo_bars(n_days))
   exp <- ledgr_experiment(
     snapshot,
     strategy,
@@ -571,7 +573,7 @@ testthat::test_that("terminal cleanup closes test handles without masking the te
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward inspection helpers reopen completed and partial sessions read-only", {
-  fx <- ledgr_wfo_exp()
+  fx <- ledgr_wfo_exp(n_days = 10L)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
 
   wf <- ledgr_walk_forward(
@@ -624,7 +626,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
   ledgr:::ledgr_run_store_close(opened)
   testthat::expect_identical(counts_after, counts_before)
 
-  partial_fx <- ledgr_wfo_exp()
+  partial_fx <- ledgr_wfo_exp(n_days = 10L)
   on.exit(ledgr_snapshot_close(partial_fx$snapshot), add = TRUE)
   withr::local_options(list(ledgr.walk_forward_interrupt_after_completed_folds = 1L))
   err <- tryCatch(
@@ -650,7 +652,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
     class = "ledgr_walk_forward_session_not_found"
   )
 
-  mismatch_bars <- ledgr_wfo_bars()
+  mismatch_bars <- ledgr_wfo_bars(10L)
   mismatch_bars$close <- mismatch_bars$close + 1
   mismatch_snapshot <- ledgr_snapshot_from_df(
     mismatch_bars,
@@ -725,7 +727,7 @@ testthat::test_that("ledgr_candidate extracts walk-forward candidates through lo
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward candidate locators verify overrides and missing stores", {
-  fx <- ledgr_wfo_exp()
+  fx <- ledgr_wfo_exp(n_days = 10L)
   fx_closed <- FALSE
   on.exit(if (!fx_closed) ledgr_snapshot_close(fx$snapshot), add = TRUE)
 
@@ -749,7 +751,7 @@ testthat::test_that("walk-forward candidate locators verify overrides and missin
   override_candidate <- ledgr_candidate(wf, fold_seq = 1L, snapshot = override)
   testthat::expect_s3_class(override_candidate, "ledgr_sweep_candidate")
 
-  mismatch_bars <- ledgr_wfo_bars()
+  mismatch_bars <- ledgr_wfo_bars(10L)
   mismatch_bars$close <- mismatch_bars$close + 1
   mismatch_snapshot <- ledgr_snapshot_from_df(mismatch_bars)
   on.exit(ledgr_snapshot_close(mismatch_snapshot), add = TRUE)

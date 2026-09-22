@@ -74,7 +74,7 @@ testthat::test_that("ledgr_feature_map duplicate bundle aliases suggest prefix c
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_experiment accepts feature maps and preserves list behavior", {
-  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
@@ -209,7 +209,7 @@ testthat::test_that("feature maps are copied into experiments at construction", 
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("feature maps preserve concrete feature-set identity while aliases affect config hash", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {

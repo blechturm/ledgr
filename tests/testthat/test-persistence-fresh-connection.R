@@ -3,7 +3,7 @@ testthat::test_that("completed run artifacts are visible from a fresh connection
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -50,7 +50,7 @@ testthat::test_that("run metadata mutations are visible from fresh connections",
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) ctx$flat()

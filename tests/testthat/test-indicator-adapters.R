@@ -130,8 +130,9 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars(n_pulses = 16L)
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
@@ -164,16 +165,17 @@ testthat::test_that("ledgr_adapter_csv integrates with feature persistence", {
   csv_path <- tempfile(fileext = ".csv")
   on.exit(unlink(db_path), add = TRUE)
   on.exit(unlink(csv_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
   csv_df <- data.frame(
-    ts_utc = vapply(test_bars$ts_utc, ledgr_iso_utc, character(1)),
-    instrument_id = test_bars$instrument_id,
-    signal = seq_len(nrow(test_bars)) / 100,
+    ts_utc = vapply(bars$ts_utc, ledgr_iso_utc, character(1)),
+    instrument_id = bars$instrument_id,
+    signal = seq_len(nrow(bars)) / 100,
     stringsAsFactors = FALSE
   )
   utils::write.csv(csv_df, csv_path, row.names = FALSE)
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")

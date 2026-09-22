@@ -3,7 +3,7 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy_one <- function(ctx, params) {
@@ -159,7 +159,7 @@ testthat::test_that("feature_set_hash is exposed on run config, info, list, and 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {

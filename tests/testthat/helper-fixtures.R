@@ -25,6 +25,14 @@ if (file.exists(fixture_path)) {
   source(fixture_path, local = TRUE)
 }
 
+ledgr_test_compact_bars <- function(bars = test_bars, n_pulses = 6L) {
+  n_pulses <- as.integer(n_pulses)
+  stopifnot(length(n_pulses) == 1L, !is.na(n_pulses), n_pulses > 0L)
+  timestamps <- sort(unique(as.character(bars$ts_utc)))
+  keep <- utils::head(timestamps, n_pulses)
+  bars[as.character(bars$ts_utc) %in% keep, , drop = FALSE]
+}
+
 test_strategy <- function(ctx, params) {
   c(TEST_A = 100, TEST_B = 50)
 }

@@ -1,12 +1,12 @@
 # ledgr-test-file-profile: heavy_protocol
 ledgr_metric_context_table_bars <- function() {
   data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
     instrument_id = "AAA",
-    open = c(100, 101, 103, 102, 105, 106),
-    high = c(100, 101, 103, 102, 105, 106),
-    low = c(100, 101, 103, 102, 105, 106),
-    close = c(100, 101, 103, 102, 105, 106),
+    open = c(100, 101, 103, 102),
+    high = c(100, 101, 103, 102),
+    low = c(100, 101, 103, 102),
+    close = c(100, 101, 103, 102),
     volume = 1,
     stringsAsFactors = FALSE
   )

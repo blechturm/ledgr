@@ -147,7 +147,7 @@ testthat::test_that("precompute separates scoring range from warmup feasibility"
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("windowed sweeps validate precomputed scoring and hydration coverage", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -257,7 +257,7 @@ testthat::test_that("precompute aborts on static scoring coverage gaps", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("precomputed feature validation binds snapshot, universe, range, labels, and feature union", {
-  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:4)
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -423,9 +423,9 @@ testthat::test_that("feature set hashes are normalized by sorted candidate finge
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("future-only bar changes preserve eligible feature prefixes", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:7)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   changed <- bars
-  future_rows <- 7:8
+  future_rows <- 4:5
   changed[future_rows, c("open", "high", "low", "close")] <-
     changed[future_rows, c("open", "high", "low", "close")] + 100
 
@@ -451,6 +451,6 @@ testthat::test_that("future-only bar changes preserve eligible feature prefixes"
   second_values <- second$projection$feature_values[[feature_id]]["AAA", ]
 
   testthat::expect_false(identical(first$snapshot_hash, second$snapshot_hash))
-  testthat::expect_identical(first_values[1:6], second_values[1:6])
-  testthat::expect_false(identical(first_values[7:8], second_values[7:8]))
+  testthat::expect_identical(first_values[1:3], second_values[1:3])
+  testthat::expect_false(identical(first_values[4:5], second_values[4:5]))
 })

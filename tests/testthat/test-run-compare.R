@@ -13,7 +13,7 @@ ledgr_compare_test_table_counts <- function(con) {
 testthat::test_that("ledgr_run_compare compares stored completed runs without recomputation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   calls <- new.env(parent = emptyenv())
@@ -84,7 +84,7 @@ testthat::test_that("ledgr_run_compare compares stored completed runs without re
 testthat::test_that("ledgr_run_compare compares different stored strategies", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   buy_one <- function(ctx, params) {

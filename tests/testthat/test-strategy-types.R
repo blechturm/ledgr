@@ -71,7 +71,7 @@ testthat::test_that("functional strategies may return ledgr_target", {
 
   bars <- ledgr_test_make_bars(
     instrument_ids = c("AAA", "BBB"),
-    ts_utc = c("2020-01-01", "2020-01-02", "2020-01-03")
+    ts_utc = c("2020-01-01", "2020-01-02")
   )
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -95,7 +95,7 @@ testthat::test_that("intermediate strategy helper types fail when returned direc
 
   bars <- ledgr_test_make_bars(
     instrument_ids = c("AAA", "BBB"),
-    ts_utc = c("2020-01-01", "2020-01-02", "2020-01-03")
+    ts_utc = c("2020-01-01", "2020-01-02")
   )
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

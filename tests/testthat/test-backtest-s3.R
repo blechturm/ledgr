@@ -3,7 +3,7 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   one_leg <- function(ctx, params) c(TEST_A = 100)
@@ -33,20 +33,20 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "  Fill Timing:         dense_bar_timestamp",
       "  Timing Version:      N/A", "",
       "Performance Metrics:",
-      "  Total Return:        -0.14%",
-      "  Annualized Return:   -2.44%",
-      "  Max Drawdown:        -0.62%", "",
+      "  Total Return:        -0.26%",
+      "  Annualized Return:   -12.37%",
+      "  Max Drawdown:        -0.35%", "",
       "Risk Metrics:",
       "  Risk-Free Rate:      0.00% annual",
       "  Annualization:       252 periods/year (US equity daily)",
-      "  Volatility (annual): 2.82%",
-      "  Sharpe Ratio:        -0.863", "",
+      "  Volatility (annual): 2.66%",
+      "  Sharpe Ratio:        -4.958", "",
       "Trade Statistics:",
       "  Closed Trades:       0",
       "  Win Rate:            N/A (no trades)",
       "  Avg Trade:           N/A (no trades)", "",
       "Exposure:",
-      "  Time in Market:      93.33%"
+      "  Time in Market:      83.33%"
     )
   )
 

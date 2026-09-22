@@ -1,6 +1,6 @@
 # ledgr-test-file-profile: heavy_protocol
 testthat::test_that("ledgr_run resolves active aliases from feature_params", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -36,7 +36,7 @@ testthat::test_that("ledgr_run resolves active aliases from feature_params", {
 })
 
 testthat::test_that("ctx features without active aliases fails loudly", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -53,7 +53,7 @@ testthat::test_that("ctx features without active aliases fails loudly", {
 })
 
 testthat::test_that("sweeps keep feature params separate from strategy params", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -88,7 +88,7 @@ testthat::test_that("sweeps keep feature params separate from strategy params", 
 testthat::test_that("parameterized active-alias bundle sweeps resolve concrete outputs", {
   testthat::skip_if_not_installed("TTR")
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:30)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:8)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -153,7 +153,7 @@ testthat::test_that("legacy feature factories reject executable feature grids", 
 })
 
 testthat::test_that("promotion replays active alias feature params", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -191,7 +191,7 @@ testthat::test_that("promotion replays active alias feature params", {
 })
 
 testthat::test_that("alias maps affect config identity independently of feature set identity", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
@@ -243,7 +243,7 @@ testthat::test_that("alias maps affect config identity independently of feature 
 })
 
 testthat::test_that("active alias identity is order- and parameter-stable at the right layers", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:9)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()

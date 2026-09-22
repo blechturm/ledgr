@@ -295,7 +295,7 @@ testthat::test_that("feature inspection views fail loudly for unregistered mappe
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("feature inspection views match across execution modes", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:8)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 

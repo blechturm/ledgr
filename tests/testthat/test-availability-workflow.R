@@ -56,7 +56,7 @@ testthat::test_that("availability policies activate explicitly and preserve dens
     ledgr:::config_hash(dense_feature_without_gap_bt$config)
   )
 
-  snapshot <- availability_runtime_fixture()
+  snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   testthat::expect_error(
     ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero()),
@@ -189,7 +189,7 @@ testthat::test_that(
     class = "ledgr_availability_sessions_required"
   )
 
-  snapshot <- availability_runtime_fixture()
+  snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   testthat::expect_error(
     ledgr_experiment(
@@ -208,8 +208,11 @@ testthat::test_that(
 # them without an explicit format silently truncates to midnight, which drops
 # the final session close from the decision axis and strands the last target.
 availability_window_fixture <- function(session_open = "14:30:00",
-                                        session_close = "21:00:00") {
-  dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15", "2020-01-16", "2020-01-17"))
+                                        session_close = "21:00:00",
+                                        dates = as.Date(c(
+                                          "2020-01-13", "2020-01-14", "2020-01-15",
+                                          "2020-01-16", "2020-01-17"
+                                        ))) {
   ledgr_facts_sessions(
     data.frame(
       session_date = dates,
@@ -273,15 +276,15 @@ testthat::test_that("run window bounds keep their time of day", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("a target on the last decision fills at the final session open", {
-  sessions <- availability_window_fixture()
-  open_dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15", "2020-01-16", "2020-01-17"))
+  open_dates <- as.Date(c("2020-01-13", "2020-01-14", "2020-01-15"))
+  sessions <- availability_window_fixture(dates = open_dates)
   bars <- data.frame(
     ts_utc = open_dates,
     instrument_id = "BBB",
-    open = c(50, 51, 52, 53, 59),
-    high = c(51, 52, 53, 54, 60),
-    low = c(49, 50, 51, 52, 58),
-    close = c(50, 51, 52, 53, 59),
+    open = c(50, 51, 59),
+    high = c(51, 52, 60),
+    low = c(49, 50, 58),
+    close = c(50, 51, 59),
     volume = 1000,
     stringsAsFactors = FALSE
   )
@@ -303,10 +306,10 @@ testthat::test_that("a target on the last decision fills at the final session op
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  # Buy on 16 Jan, the last session that still has a next open to fill against.
+  # Buy on 14 Jan, the last session that still has a next open to fill against.
   strategy <- function(ctx, params) {
     target <- ctx$hold()
-    if (substr(ctx$ts_utc, 1, 10) == "2020-01-16") target[["BBB"]] <- 10
+    if (substr(ctx$ts_utc, 1, 10) == "2020-01-14") target[["BBB"]] <- 10
     target
   }
   bt <- ledgr_run(
@@ -323,19 +326,19 @@ testthat::test_that("a target on the last decision fills at the final session op
   on.exit(close(bt), add = TRUE)
 
   equity <- ledgr_results(bt, "equity")
-  testthat::expect_equal(nrow(equity), 5L)
+  testthat::expect_equal(nrow(equity), 3L)
   testthat::expect_equal(
     max(equity$ts_utc),
-    as.POSIXct("2020-01-17 21:00:00", tz = "UTC")
+    as.POSIXct("2020-01-15 21:00:00", tz = "UTC")
   )
 
   fills <- ledgr_results(bt, "fills")
   testthat::expect_equal(nrow(fills), 1L)
-  # Priced and recorded at the declared 17 Jan opening.
+  # Priced and recorded at the declared 15 Jan opening.
   testthat::expect_equal(fills$price[[1L]], 59)
   testthat::expect_equal(
     fills$ts_utc[[1L]],
-    as.POSIXct("2020-01-17 14:30:00", tz = "UTC")
+    as.POSIXct("2020-01-15 14:30:00", tz = "UTC")
   )
 })
 

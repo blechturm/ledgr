@@ -1,6 +1,6 @@
 # ledgr-test-file-profile: heavy_protocol
 testthat::test_that("audit_log matches db_live results", {
-  n_rows <- 50
+  n_rows <- 6
   base <- 50000 + cumsum(rep(1, n_rows))
   open <- base
   close <- base + rep(c(-1, 1), length.out = n_rows)

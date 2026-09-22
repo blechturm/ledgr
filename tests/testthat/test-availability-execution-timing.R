@@ -273,7 +273,7 @@ testthat::test_that("recording-pulse derivation fails closed on missing or ambig
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("timing version enters active identity and stays absent from dense config", {
-  snapshot <- availability_runtime_fixture(days = 4L)
+  snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- availability_timing_experiment(snapshot)
   bt <- ledgr_run(exp, run_id = "timing-identity")

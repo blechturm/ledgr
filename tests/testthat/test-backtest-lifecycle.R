@@ -3,7 +3,7 @@ testthat::test_that("[LTB-0012] closed durable handles remain read-only locators
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   snapshot_id <- snapshot$snapshot_id
   calls <- new.env(parent = emptyenv())
@@ -98,7 +98,7 @@ testthat::test_that("durable backtest safety net checkpoints and messages", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
@@ -137,7 +137,7 @@ testthat::test_that("ordinary result access does not keep durable run files lock
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  snapshot <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(ledgr_test_compact_bars(), db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     targets <- ctx$flat()

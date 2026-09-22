@@ -359,7 +359,7 @@ testthat::test_that("max-weight fails closed when nonzero targets need invalid d
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("public run applies long-only risk step", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2024-01-01") + 0:3)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2024-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {

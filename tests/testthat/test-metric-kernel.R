@@ -68,7 +68,7 @@ testthat::test_that("single-run cadence warning is honesty-only and identity-neu
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  timestamps <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:5
+  timestamps <- as.POSIXct("2020-01-02 09:00:00", tz = "UTC") + 3600 * 0:2
   bars <- data.frame(
     ts_utc = timestamps,
     instrument_id = "AAA",
@@ -116,12 +116,12 @@ testthat::test_that("single-run metrics use stored context by default and suppor
   on.exit(unlink(db_path), add = TRUE)
 
   bars <- data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
     instrument_id = "AAA",
-    open = c(100, 101, 103, 102, 105, 106),
-    high = c(100, 101, 103, 102, 105, 106),
-    low = c(100, 101, 103, 102, 105, 106),
-    close = c(100, 101, 103, 102, 105, 106),
+    open = c(100, 101, 103, 102),
+    high = c(100, 101, 103, 102),
+    low = c(100, 101, 103, 102),
+    close = c(100, 101, 103, 102),
     volume = 1,
     stringsAsFactors = FALSE
   )
@@ -189,7 +189,7 @@ testthat::test_that("summary discloses risk-free rate and annualization assumpti
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 

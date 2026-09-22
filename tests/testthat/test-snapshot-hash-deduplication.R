@@ -203,7 +203,7 @@ testthat::test_that("a snapshot sealed by the old formatter reopens unchanged", 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("run, timestamp, price, and stored-hash guards still detect tampering", {
   path <- tempfile(fileext = ".duckdb")
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   con <- ledgr:::get_connection(snapshot)

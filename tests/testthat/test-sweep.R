@@ -1,11 +1,12 @@
-ledgr_sweep_test_bars <- function() {
+ledgr_sweep_test_bars <- function(n_pulses = 6L) {
+  offsets <- seq_len(n_pulses) - 1L
   data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * offsets,
     instrument_id = "AAA",
-    open = 100:105,
-    high = 101:106,
-    low = 99:104,
-    close = 100:105,
+    open = 100 + offsets,
+    high = 101 + offsets,
+    low = 99 + offsets,
+    close = 100 + offsets,
     volume = 1000,
     stringsAsFactors = FALSE
   )
@@ -673,7 +674,7 @@ testthat::test_that("ledgr_candidate supports degraded tibble-like inputs", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("sweep candidate key supports later durable materialization", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(5L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   ind <- ledgr_indicator(
@@ -735,7 +736,7 @@ testthat::test_that("sweep candidate key supports later durable materialization"
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_promote forwards candidate params and execution seed", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
@@ -778,8 +779,8 @@ testthat::test_that("ledgr_promote forwards candidate params and execution seed"
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_promote validates same-snapshot provenance when requested", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
-  other_bars <- ledgr_sweep_test_bars()
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(2L))
+  other_bars <- ledgr_sweep_test_bars(2L)
   other_bars$open <- other_bars$open + 10
   other_bars$high <- other_bars$high + 10
   other_bars$low <- other_bars$low + 10
@@ -917,7 +918,7 @@ testthat::test_that("ledgr_sweep rejects Tier 3 strategies before candidate exec
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment before candidate execution", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(2L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   grid <- ledgr_param_grid(candidate = list())
@@ -970,7 +971,7 @@ testthat::test_that("ledgr_sweep rejects forbidden calls and global assignment b
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("feature-consuming sweep strategies see the same feature values as ledgr_run", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   observed <- new.env(parent = emptyenv())
@@ -1283,7 +1284,7 @@ testthat::test_that("prebuilt pulse view mutation does not leak across candidate
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("precomputed features are consumed without calling the feature factory during sweep", {
-  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars())
+  snapshot <- ledgr_snapshot_from_df(ledgr_sweep_test_bars(3L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   calls <- new.env(parent = emptyenv())

@@ -1,11 +1,11 @@
 ledgr_sweep_roundtrip_bars <- function() {
   data.frame(
-    instrument_id = rep("AAA", 6L),
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
-    open = 100:105,
-    high = 101:106,
-    low = 99:104,
-    close = c(100, 102, 101, 104, 103, 106),
+    instrument_id = rep("AAA", 5L),
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
+    open = 100:104,
+    high = 101:105,
+    low = 99:103,
+    close = c(100, 102, 101, 104, 103),
     volume = 1000,
     stringsAsFactors = FALSE
   )
@@ -144,11 +144,11 @@ testthat::test_that("reopened sweeps round-trip retained closed-trade evidence",
     targets <- ctx$flat()
     if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
       targets["AAA"] <- params$qty
-    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-02T00:00:00Z")) {
       targets["AAA"] <- 0
-    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-03T00:00:00Z")) {
       targets["AAA"] <- -params$qty
-    } else if (identical(ctx$ts_utc, "2020-01-05T00:00:00Z")) {
+    } else if (identical(ctx$ts_utc, "2020-01-04T00:00:00Z")) {
       targets["AAA"] <- 0
     }
     targets

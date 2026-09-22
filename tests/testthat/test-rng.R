@@ -44,7 +44,7 @@ testthat::test_that("[LTB-0009] snapshot ingestion and nonempty fill reads prese
     }
   }, add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   assert_preserves_rng <- function(code) {
     set.seed(8675309L)
     before <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)

@@ -30,7 +30,7 @@ workstreams:
     review: {mode: "Type 1", point: "close of workstream 2", reason: "The runner, census, and gates must prove their own failure sensitivity before shrink or merge is measured against them."}
   - id: 3
     name: "Shrink"
-    status: "pending"
+    status: "complete"
     depends_on_workstream: 2
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 3", reason: "Fixture reduction is where the time is and where a defect can be lost; each reduction must still fail on its condition."}
@@ -229,52 +229,57 @@ tickets:
   - id: "LDG-2761"
     title: "Shrink sweep-family fixtures"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
     scope: "29 blocks, about 89 seconds: sweep-parity, sweep-parallel, sweep, sweep-retention, sweep-persistence-roundtrip, sweep-persistence-parity, sweep-filter."
     acceptance: ["each reduced block still fails under its failure_condition perturbation", "fast stays under budget with a reconciled census"]
+    evidence: ["All 29 sweep-family fixtures were reduced without changing their asserted contract. Boundary search was failure-sensitive: a three-pulse candidate-materialization fixture produced no ledger event and failed its original assertion, so the minimum was restored to five. The seven focused files pass; the ordinary fast gate reconciles 468 blocks in 85.570 seconds, and the full-heavy protocol reconciles 190 blocks in 509.680 seconds."]
 
   - id: "LDG-2762"
     title: "Shrink experiment, run, promotion, and backtest-wrapper fixtures"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
     scope: "35 blocks, about 80 seconds: experiment-run, promotion-context, experiment, run-compare, run-store, runner, run-print, backtest-wrapper, backtest-lifecycle, backtest-s3."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+    evidence: ["All 35 experiment, run, promotion, and wrapper fixtures use the smallest history needed by their existing oracle. Their focused files and the reconciled heavy protocol pass; no assertion, condition class, or persistence boundary was removed."]
 
   - id: "LDG-2763"
     title: "Shrink availability fixtures"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "13 blocks, about 45 seconds: availability-qlcal, availability-parity, availability-workflow, availability-execution-timing, availability-finalization-prefix, availability-state, dense-timestamp-validation."
     acceptance: ["each reduced block still fails under its failure_condition perturbation", "no frozen-artifact fixture is regenerated from the implementation it guards"]
+    evidence: ["Twelve availability fixtures were reduced. The thirteenth, the two-pulse dense valuation bypass, was retained after a deliberate one-pulse perturbation failed earlier with ledgr_run_window_too_short and could no longer exercise its oracle. All focused files and the full-heavy protocol pass; no frozen artifact was regenerated or edited."]
 
   - id: "LDG-2764"
     title: "Shrink walk-forward and metrics fixtures"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "15 blocks, about 47 seconds: walk-forward-orchestrator, walk-forward-folds, metric-context-tables, metric-kernel, metric-context-storage, metrics-zero-trades, backtest-audit-log-equivalence."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+    evidence: ["All 15 walk-forward and metrics fixtures were reduced to their asserted temporal boundary: fold fixtures end at the last referenced session, while next-open cases retain the following pulse. All seven focused files pass and the 270-block review profile reconciles in 334.870 seconds."]
 
   - id: "LDG-2765"
     title: "Shrink features, strategy, cost, and remaining fixtures"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
     scope: "42 blocks, about 76 seconds: active-alias-runtime, cost-model, precompute-features, feature-inspection, feature-cache, feature-map, indicator-adapters, indicator-ttr, strategy-types, strategy-reference, strategy-preflight, demo-strategies, risk-config, risk-fold, rng, snapshot-hash-deduplication, pulse-context-accessors, public-api, persistence-fresh-connection."
     acceptance: ["each reduced block still fails under its failure_condition perturbation"]
+    evidence: ["Forty-one fixtures were reduced. The four-pulse reference-strategy fixture was retained after a deliberate three-pulse perturbation made its original nonempty-fill assertion fail because return warmup left no following fill pulse. The focused feature, strategy, cost, risk, RNG, reconstruction, and tamper suites pass, as does the full-heavy protocol."]
 
   # ---------------------------------------------------------- 4 Merge
   - id: "LDG-2766"

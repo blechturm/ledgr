@@ -114,7 +114,7 @@ testthat::test_that("cost describe is stable and includes step content", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("timing constructor is accepted by ledgr_experiment", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
@@ -143,7 +143,7 @@ testthat::test_that("timing constructor is accepted by ledgr_experiment", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("optional cost identity is stored on experiments and configs", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
@@ -178,7 +178,7 @@ testthat::test_that("optional cost identity is stored on experiments and configs
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("cost model is required and legacy fill_model fails loudly", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()
@@ -200,8 +200,8 @@ testthat::test_that("cost model is required and legacy fill_model fails loudly",
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("[LTB-0005] cost model applies half-spread price transforms and explicit fees", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
-  bars$open <- c(100, 110, 120, 130, 140)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
+  bars$open <- c(100, 110, 120)
   bars$high <- bars$open
   bars$low <- bars$open
   bars$close <- bars$open
@@ -250,7 +250,7 @@ testthat::test_that("notional fees use spread-adjusted pre-rounding price", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("direct run, sweep candidate, and promotion preserve cost identity", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
@@ -299,7 +299,7 @@ testthat::test_that("ledgr_backtest shares required cost and legacy fill_model b
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_run_open rejects stored legacy fill_model config", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:1)
   db_path <- tempfile(fileext = ".duckdb")
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

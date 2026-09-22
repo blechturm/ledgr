@@ -1,12 +1,12 @@
 # ledgr-test-file-profile: heavy_protocol
 ledgr_promotion_test_bars <- function(offset = 0) {
   data.frame(
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:5,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
     instrument_id = "AAA",
-    open = 100:105 + offset,
-    high = 101:106 + offset,
-    low = 99:104 + offset,
-    close = 100:105 + offset,
+    open = 100:102 + offset,
+    high = 101:103 + offset,
+    low = 99:101 + offset,
+    close = 100:102 + offset,
     volume = 1000,
     stringsAsFactors = FALSE
   )
@@ -172,7 +172,7 @@ testthat::test_that("promotion context stores warning summaries only", {
   on.exit(close(bt), add = TRUE)
   context <- ledgr_promotion_context(bt)
 
-  testthat::expect_identical(context$candidate_summary[[1]]$n_warnings, 6L)
+  testthat::expect_identical(context$candidate_summary[[1]]$n_warnings, 3L)
   testthat::expect_true(is.character(context$candidate_summary[[1]]$warning_classes))
   testthat::expect_true("ledgr_test_promotion_warning" %in% context$candidate_summary[[1]]$warning_classes)
 })

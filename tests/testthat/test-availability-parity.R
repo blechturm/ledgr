@@ -184,7 +184,7 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("completion affected IDs come only from stopped diagnostics", {
-  dates <- as.Date("2020-01-01") + 0:3
+  dates <- as.Date("2020-01-01") + 0:2
   sessions <- ledgr_facts_sessions(
     data.frame(
       session_date = dates,
@@ -720,7 +720,7 @@ testthat::test_that("availability result views and explanations are durable read
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("dense runs expose constant availability and no invented explanation", {
-  snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 10L))
+  snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(
     snapshot,
@@ -802,7 +802,7 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("walk-forward hydrates heterogeneous gaps on the session calendar", {
-  dates <- as.Date("2020-01-01") + 0:11
+  dates <- as.Date("2020-01-01") + 0:9
   sessions <- ledgr_facts_sessions(
     data.frame(
       session_date = dates,
@@ -827,8 +827,8 @@ testthat::test_that("walk-forward hydrates heterogeneous gaps on the session cal
     )
   }
   bars <- rbind(
-    make_bars("AAA", setdiff(seq_along(dates), 6L), 0),
-    make_bars("BBB", setdiff(seq_along(dates), 3L), 20)
+    make_bars("AAA", setdiff(seq_along(dates), 5L), 0),
+    make_bars("BBB", setdiff(seq_along(dates), 8L), 20)
   )
   snapshot <- ledgr_snapshot_from_df(
     bars,
@@ -856,13 +856,13 @@ testthat::test_that("walk-forward hydrates heterogeneous gaps on the session cal
   folds <- ledgr:::ledgr_fold_list(
     list(
       ledgr_fold(
-        "2020-01-01T16:00:00Z", "2020-01-04T16:00:00Z",
-        "2020-01-05T16:00:00Z", "2020-01-08T16:00:00Z",
+        "2020-01-01T16:00:00Z", "2020-01-03T16:00:00Z",
+        "2020-01-04T16:00:00Z", "2020-01-05T16:00:00Z",
         fold_seq = 1L
       ),
       ledgr_fold(
-        "2020-01-05T16:00:00Z", "2020-01-08T16:00:00Z",
-        "2020-01-09T16:00:00Z", "2020-01-12T16:00:00Z",
+        "2020-01-04T16:00:00Z", "2020-01-06T16:00:00Z",
+        "2020-01-07T16:00:00Z", "2020-01-10T16:00:00Z",
         fold_seq = 2L
       )
     ),

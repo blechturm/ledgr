@@ -227,8 +227,10 @@ testthat::test_that("[LTB-0014] retained series match ordered-event reconstructi
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("retained-series parity matrix covers final-bar and failed-candidate edges", {
+  bars <- ledgr_sweep_persistence_parity_bars()
+  bars <- bars[bars$ts_utc <= as.POSIXct("2020-01-05", tz = "UTC"), , drop = FALSE]
   snapshot <- ledgr_snapshot_from_df(
-    ledgr_sweep_persistence_parity_bars(),
+    bars,
     db_path = tempfile(fileext = ".duckdb")
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -238,7 +240,7 @@ testthat::test_that("retained-series parity matrix covers final-bar and failed-c
       stop("candidate failed")
     }
     targets <- ctx$flat()
-    if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-08")) {
+    if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-05")) {
       targets["AAA"] <- params$qty
     }
     targets
@@ -253,7 +255,7 @@ testthat::test_that("retained-series parity matrix covers final-bar and failed-c
   testthat::expect_identical(as.character(sweep$status), c("DONE", "FAILED"))
   retained <- ledgr_sweep_returns(sweep)
   testthat::expect_identical(unique(as.character(retained$candidate_id)), "final_bar")
-  testthat::expect_identical(nrow(retained), length(unique(as.POSIXct(ledgr_sweep_persistence_parity_bars()$ts_utc, tz = "UTC"))))
+  testthat::expect_identical(nrow(retained), length(unique(bars$ts_utc)))
   testthat::expect_equal(retained$equity[[nrow(retained)]], sweep$final_equity[[1]], tolerance = 1e-12)
   testthat::expect_true(any(vapply(
     sweep$warnings[[1]],

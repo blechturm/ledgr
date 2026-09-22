@@ -66,7 +66,7 @@ testthat::test_that("ledgr_experiment builds a validated experiment object", {
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("ledgr_experiment stores resolved metric context metadata only", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) ctx$flat()

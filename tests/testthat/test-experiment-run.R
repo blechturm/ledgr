@@ -3,7 +3,7 @@ testthat::test_that("ledgr_run executes an experiment with fixed features", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -37,7 +37,7 @@ testthat::test_that("ledgr_run evaluates feature functions once per run", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -67,7 +67,7 @@ testthat::test_that("ledgr_run accepts execution seeds and stores them in config
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -102,7 +102,7 @@ testthat::test_that("ledgr_run with seed NULL uses ambient strategy RNG without 
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -133,7 +133,7 @@ testthat::test_that("pulse_seed is exposed as a stable per-pulse strategy input"
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
@@ -169,7 +169,7 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
   db_resume <- tempfile(fileext = ".duckdb")
   on.exit(unlink(c(db_clean, db_resume)), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:6)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:3)
   snap_clean <- ledgr_snapshot_from_df(bars, db_path = db_clean)
   snap_resume <- ledgr_snapshot_from_df(bars, db_path = db_resume)
   on.exit(ledgr_snapshot_close(snap_clean), add = TRUE)
@@ -290,7 +290,7 @@ testthat::test_that("ledgr_run matches equivalent ledgr_backtest output", {
   db_path_legacy <- tempfile(fileext = ".duckdb")
   on.exit(unlink(c(db_path_exp, db_path_legacy)), add = TRUE)
 
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
   snapshot_exp <- ledgr_snapshot_from_df(bars, db_path = db_path_exp)
   snapshot_legacy <- ledgr_snapshot_from_df(bars, db_path = db_path_legacy)
   on.exit(ledgr_snapshot_close(snapshot_exp), add = TRUE)

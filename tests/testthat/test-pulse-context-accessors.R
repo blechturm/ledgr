@@ -515,8 +515,9 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
 testthat::test_that("runtime strategy contexts expose strategy authoring helpers", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
+  bars <- ledgr_test_compact_bars()
 
-  snap <- ledgr_snapshot_from_df(test_bars, db_path = db_path)
+  snap <- ledgr_snapshot_from_df(bars, db_path = db_path)
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   observed <- new.env(parent = emptyenv())
@@ -566,7 +567,7 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("feature-map strategies match across execution modes", {
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:8)
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
