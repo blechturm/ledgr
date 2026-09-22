@@ -100,12 +100,32 @@ detected. Harness:
 Two mutations needed a correction before they detected, and both are findings
 rather than harness noise.
 
-**M3 needs two sites, not one.** The no-Z form is accepted independently by
-the fast branch at `R/snapshot_adapters.R:132` and by the scalar fallback
-through `ledgr_iso_utc()`. Breaking either alone leaves the form accepted, so
-the branch is a speed path over a fallback that already handles it. That is
-the redundancy LDG-2789 collapses, and it is recorded here so the mutation
-count is not read as one site.
+**M3 was described too broadly, corrected under close review W7-F3.** The
+claim "two sites are required" is true only of a mutation that *reroutes* the
+column: changing the branch predicate so an all-no-Z column falls through to
+the scalar fallback is masked, because `ledgr_iso_utc()` accepts the same
+form. It is not true of a mutation inside the branch that is already
+selected. Making that branch abort is a one-site change and the positive
+block detects it. Both are now recorded:
+
+| mutation | sites | verdict |
+| --- | ---: | --- |
+| the no-Z branch aborts | 1 | DETECTED, and the smallest change that breaks the contract |
+| the branch predicate never matches, so the column reroutes to the fallback | 2 | masked at one site; DETECTED only with `ledgr_iso_utc()` also broken |
+| the branch returns a lowercase `z` suffix | 1 | detected by the frozen-body matrix only; see below |
+
+The third is a finding about what the normalized string can affect, not a
+gap. `snapshot_bars.ts_utc` is a `TIMESTAMP` column, so DuckDB re-parses
+whatever string the adapter hands it, and the snapshot hash re-derives its
+own canonical form from the stored value. A suffix-case corruption is
+therefore unobservable in the sealed artifact and in its hash. Only the
+comparison against the frozen pre-change body sees it. The positive block in
+`test-snapshot-from-csv.R` now also asserts the stored instant, which is the
+part that is observable.
+
+**The branch redundancy stands as an observation.** The fast no-Z branch is a
+speed path over a fallback that already accepts the form. Collapsing them
+remains open work, recorded in cut 3's closeout.
 
 **M7 was blind until the message was pinned.** The block first asserted any
 error whose message contained "duplicate". With the adapter's own check at

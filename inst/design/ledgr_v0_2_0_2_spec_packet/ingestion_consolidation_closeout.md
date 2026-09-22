@@ -2,6 +2,7 @@
 
 **Workstream 7, tickets LDG-2786 through LDG-2791.**
 **Opened 2026-09-22 at `cf94e02`, closed at `c43fe1a`.**
+**Close review `close_review_7_9.md`: PASS_AFTER_PATCHES; patched, section 8.**
 **Owner: the maintainer. This draft is agent-provisional.**
 
 ## 1. What shipped
@@ -30,8 +31,11 @@ x86_64-w64-mingw32, duckdb 1.5.5, collapse 2.1.8, package loaded with
 ### Ingestion at the release shape
 
 500 instruments by 1,260 sessions, 630,000 rows, one cold run each.
-Before: `cf94e02`. After: `c43fe1a`. Command: a scratch probe building the
-frame, writing it to CSV, and timing each entry point once.
+Before: `cf94e02`. After: `c43fe1a`.
+Command: `Rscript dev/bench/v0_2_0_2_ingestion/ingestion_clocks.R`, checked in
+under close review W7-F4, which found this section named no reproducible
+command. The probe builds the frame, writes it to CSV, and times each entry
+point once.
 
 | path | before | after |
 | --- | ---: | ---: |
@@ -105,9 +109,42 @@ Measured back to back on the same machine, three runs of the fast profile:
 | after moving four sealing blocks to `review` | 439 | 84.83, 85.05, 86.59 | 85.05 |
 
 Two of three runs had crossed the 90-second bound. The four blocks that seal
-a durable snapshot are now `review`, which is where the suite already puts
-durable seal work, and the three rejection blocks that never reach the seal
-stay `fast`. The lane is now 1.7 seconds faster than the cut found it.
+a durable snapshot moved to `review` and the three rejection blocks that never
+reach the seal stayed `fast`. The lane is now 1.7 seconds faster than the cut
+found it.
+
+**The criterion, stated after close review W7-F4.** The rule as first written
+here, "durable sealing belongs in review", is too broad and the review was
+right that the tree does not obey it: `AT2`, `AT3` and `AT12` in
+`test-acceptance-v0.1.1.R` seal durable snapshots and stay `fast`. The
+criterion that the tree does obey, and that a reviewer can check block by
+block, is narrower:
+
+> A block belongs in `review` when durable sealing dominates its cost and the
+> contract it asserts is not itself the durable path. A block whose subject is
+> the end-to-end durable path keeps its lane, because there the sealing is the
+> thing under test rather than overhead.
+
+Under that criterion the four moved blocks belong in `review`: each seals a
+whole snapshot to assert one property of the reader or the adapter. The three
+acceptance blocks keep `fast`: the v0.1.1 acceptance suite exists to exercise
+the whole ingestion-to-seal path, so their sealing is intrinsic. Measured
+cost of that exception: `AT2` 1.39 s, `AT3` 1.43 s, `AT12` 1.16 s against
+`AT1` at 0.75 s for the same file with no sealing, so about 1.5 s of the fast
+lane. If the maintainer prefers the broader rule, moving all three is a
+one-line change per block and buys that 1.5 s.
+
+**D5 questions for the four moved blocks.** What contract: the reader's
+rounding, its acceptance of the no-Z form, instrument auto-generation, and BOM
+tolerance, each on the kept file surface. Oracle independence: each asserts a
+value read back out of the sealed database, not a value the adapter returned.
+Smallest breaking change: recorded as M1, M3, M5 and M6 in section 5, all
+detected. Cheapest adequate lane: `review`, because the assertion needs a
+sealed snapshot and the fast lane is budgeted. Overlap: `AT2` overlaps the
+rounding block and `AT3` overlaps the auto-generation block, both through the
+same public call. That overlap is real and is the reason the acceptance
+blocks were not also rewritten; merging by claim family was cut 1's
+workstream 4 and is closed.
 
 ## 3. Census
 
@@ -181,3 +218,38 @@ FALSE`, which asked for neither a file nor generated instruments.
   For the maintainer to delete or rewrite.
 - **Event serialization** still needs the bounded spike the 2026-09-17
   durable-path note asked for. Untouched by this cut.
+
+## 8. What the close review changed
+
+`close_review_7_9.md` returned PASS_AFTER_PATCHES for this workstream. Four
+findings, all verified before patching.
+
+**W7-F1, the rejection matrix omitted a required input.** LDG-2789 binds a
+non-time column and the matrix tested only character, Date and POSIXct
+inputs. Added: a numeric `ts_utc` and a factor `ts_utc`, both asserted
+against the frozen pre-change body for class and message.
+
+**W7-F2, removal left contradictory operative documentation.**
+`contracts.md` still promised the low-level create/import/seal workflow and
+`man/ledgr_snapshot_from_csv.Rd` still named `LEDGR_CSV_FORMAT_ERROR`, a
+class that no longer exists. Both corrected. The contract clause now names
+`ledgr_snapshot_from_csv()` and records that `ledgr_snapshot_create()` and
+`ledgr_snapshot_seal()` remain public with their status rules intact.
+
+**W7-F3, M3 was not the smallest mutation.** Correct, and the correction is
+recorded in `ws7_migration_evidence.md` section 5 with a three-row table. The
+one-site mutation is the branch aborting; the two-site account applies only to
+a reroute. A third mutation, a lowercase suffix, is detected only by the
+frozen-body comparison, because the database re-parses the stored timestamp
+and the hash re-derives its own canonical form. The positive block now also
+asserts the stored instant.
+
+**W7-F4, lane reason and clock reproduction.** The lane criterion is now
+stated and applied in section 2, with the measured cost of the acceptance-suite
+exception and the D5 questions for the four moved blocks. The clocks now name
+a checked-in command.
+
+**On the blind spot the review named.** It observed that a change zeroing
+nonzero seconds in the ISO-Z branch would pass every literal in the matrix,
+because they all end in `:00`. Correct. The matrix now carries ISO-Z, no-Z
+and POSIXct literals ending in `:37`.

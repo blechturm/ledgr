@@ -117,11 +117,26 @@ test_that("each fast branch produces literal canonical timestamps", {
     ledgr:::ledgr_snapshot_normalize_ts_utc(c("2020-01-01", "2020-01-02"))$ts_utc,
     c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
   )
+  # Nonzero seconds, so a change that zeroed the seconds field in the ISO-Z
+  # branch could not pass. The close review named that blind spot: every other
+  # ISO-Z literal here ends in :00.
   expect_identical(
     ledgr:::ledgr_snapshot_normalize_ts_utc(
-      c("2020-01-01T00:00:00Z", "2020-01-02T14:30:00Z")
+      c("2020-01-01T00:00:00Z", "2020-01-02T14:30:37Z")
     )$ts_utc,
-    c("2020-01-01T00:00:00Z", "2020-01-02T14:30:00Z")
+    c("2020-01-01T00:00:00Z", "2020-01-02T14:30:37Z")
+  )
+  expect_identical(
+    ledgr:::ledgr_snapshot_normalize_ts_utc(
+      c("2020-01-01T00:00:00", "2020-01-02T14:30:37")
+    )$ts_utc,
+    c("2020-01-01T00:00:00Z", "2020-01-02T14:30:37Z")
+  )
+  expect_identical(
+    ledgr:::ledgr_snapshot_normalize_ts_utc(
+      as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 14:30:37"), tz = "UTC")
+    )$ts_utc,
+    c("2020-01-01T00:00:00Z", "2020-01-02T14:30:37Z")
   )
   expect_identical(
     ledgr:::ledgr_snapshot_normalize_ts_utc(
@@ -146,7 +161,13 @@ test_that("invalid and mixed-type timestamp input is rejected as before", {
     list(input = c("not a time", "also not"), msg = "must be a UTC timestamp",
          cls = "ledgr_invalid_timestamp"),
     list(input = as.POSIXct(c("2020-01-01", NA), tz = "UTC"), msg = "must be valid POSIXt values", cls = args),
-    list(input = as.Date(c("2020-01-01", NA)), msg = "must be valid Date values", cls = args)
+    list(input = as.Date(c("2020-01-01", NA)), msg = "must be valid Date values", cls = args),
+    # W7-F1: a non-time column. The frozen body has an explicit final else for
+    # it, and it must reject with the same class and message after the rewrite.
+    list(input = c(1, 2), msg = "must be a non-empty ISO 8601 string",
+         cls = "ledgr_invalid_timestamp"),
+    list(input = factor(c("2020-01-01", "2020-01-02")),
+         msg = "must be a non-empty ISO 8601 string", cls = "ledgr_invalid_timestamp")
   )
 
   for (case in rejections) {

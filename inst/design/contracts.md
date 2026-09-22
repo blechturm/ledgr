@@ -504,10 +504,13 @@ The strategy preflight boundary originated in
 - Best-effort checkpointing is reserved for cleanup paths where a secondary
   checkpoint error would mask the primary run or cleanup error. It must not be
   used as the only durability mechanism for public mutating APIs.
-- Low-level CSV snapshot workflows must survive close and reopen:
-  create/import/seal followed by `ledgr_snapshot_open(verify = TRUE)` must
-  preserve hash verification, seal-time metadata, and subsequent `ledgr_run()`
-  execution.
+- CSV snapshot workflows must survive close and reopen:
+  `ledgr_snapshot_from_csv()` followed by `ledgr_snapshot_open(verify = TRUE)`
+  must preserve hash verification, seal-time metadata, and subsequent
+  `ledgr_run()` execution. The connection-first create/import/seal lifecycle
+  this clause used to name was removed in v0.2.0.2 cut 3;
+  `ledgr_snapshot_create()` and `ledgr_snapshot_seal()` remain public and keep
+  their CREATED and SEALED status rules.
 - v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
   in normal workflows only at snapshot creation or snapshot loading.
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store

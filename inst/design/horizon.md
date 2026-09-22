@@ -137,9 +137,25 @@ That is a correctness fix that happens to be faster, not an optimization.
 What this costs: snapshots previously sealed from such a file have wrong ids
 and wrong hashes, and non-UTF-8 files are now rejected explicitly rather than
 silently mis-decoded. Both are deliberate, and the package is pre-release
-with no external consumers. The generalizable lesson is that a compatibility
-matrix registered as a test before the change, rather than as a document,
-turned a fourteen-shape risk into a single declared difference.
+with no external consumers.
+
+Corrected 2026-09-22 after close review. The first version of this entry said
+the defect and the moved hashes were confined to `instrument_id`. That was
+wrong. Every column ledgr persists as text has the same hole, and the review
+demonstrated it for `symbol`, `currency` and `asset_class`: the old reader
+inferred a number for an all-numeric value and the new one returns text, so
+each moves the hash. The forced set is now every persisted text column, not
+three identity columns. A second undeclared change came with it: DuckDB
+returns a literal `NA` as the two-character string where `utils::read.csv()`
+read it as missing, so an instrument id of `NA` now seals instead of being
+rejected. That is kept and declared, because `NA` is a real ticker and CSV
+says missing with an empty field.
+
+The generalizable lesson is narrower than the first version claimed. A
+compatibility matrix registered as a test before the change is worth having,
+but it only covers what it enumerates: this one had no instruments-CSV row
+and no null-token row, so it reported one moved behaviour where there were
+several. An enumerated witness proves the enumeration, not the surface.
 
 ### 2026-09-22 [product] One CSV ingestion surface
 

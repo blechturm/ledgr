@@ -107,7 +107,7 @@ removing the per-lot list allocation in pack/unpack; no runtime-default
 decision; no compiled-execution RFC work. Nothing is edited before the cut
 review is accepted.
 
-## Cut 3: Ingestion consolidation (closed)
+## Cut 3: Ingestion consolidation (closed; close review passed after patches)
 
 Authority: the maintainer's decision of 2026-09-22 that
 `ledgr_snapshot_from_csv()` and `ledgr_snapshot_from_df()` are the ingestion
@@ -228,7 +228,7 @@ feature accessor family; `list.files` in the worker-setup dry run until
 confirmed on an installed package; the article's 0.99 weak-return
 threshold.
 
-## Cut 5: Ingestion reader (closed)
+## Cut 5: Ingestion reader (closed; close review FAILED and was patched)
 
 Authority: the maintainer's decision of 2026-09-22 that DuckDB reads the
 ingestion CSV, recorded in the horizon as `[product] DuckDB reads the
@@ -241,16 +241,22 @@ Tickets LDG-2800 through LDG-2802, one workstream.
 
 The reader went from 4.91 s to 0.26 s at the release shape and
 `ledgr_snapshot_from_csv()` from 10.72 s to 7.23 s, so across cuts 3 and 5 it
-went from 20.07 s to 7.23 s. Exactly one compatibility row moved: a CSV
-declaring instrument ids `0001` and `0002` used to seal with ids `1` and `2`,
-silently, because R's CSV reader inferred an integer column. Snapshots sealed
-from such a file before this cut carry wrong identifiers and a hash computed
-from them.
+went from 20.07 s to 7.23 s. The correctness fix is larger than speed: an
+all-numeric leading-zero value in any persisted text column used to seal
+without its zeros, silently, because R's CSV reader inferred a number.
+Snapshots sealed from such a file before this cut carry wrong strings and a
+hash computed from them.
 
-**The cut review is compressed into the close review.** The cut implements a
-decision already taken, it is three tickets, and its witness was registered as
-a test before any code moved. The compression is recorded in `tickets.yml` and
-in `ingestion_reader_closeout.md` so a reviewer can reject it.
+**The compressed cut review was rejected.** `close_review_7_9.md` returned
+FAIL for this workstream and declined the compression, on the ground that the
+missing review was a question about the matrix's inputs that had to be asked
+before the matrix could be treated as authority. Three of its four findings
+are exactly what that question would have caught: the forced-text set covered
+three columns where it needed seven, so `symbol`, `currency` and `asset_class`
+also moved hashes; a literal `NA` changed from missing to text undeclared; and
+the matrix asserted classes loosely. All are patched. Counting the owed cut
+review, this cut stands at 2 over 3 tickets, **0.67, above the D8 gate**,
+which is recorded in the closeout rather than argued away.
 
 **Not in this cut:** letting DuckDB parse timestamps, which would hand the
 accepted-form contract to a dependency; `utils::read.csv()` in the indicator

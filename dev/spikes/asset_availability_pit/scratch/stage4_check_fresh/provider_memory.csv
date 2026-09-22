@@ -1,0 +1,7 @@
+"provider","path","retained_object_count","retained_bytes","serialized_bytes","temporary_rows","temporary_bytes","evidence_role"
+"dense_state_planes","direct",11,118192,26236,779,228528,"fork_derived"
+"dense_state_planes","restore",11,118192,26236,1331,390808,"fork_derived"
+"dynamic_active_matrices","direct",1,12616,8697,14,11064,"fork_derived"
+"dynamic_active_matrices","restore",1,12616,8697,26,19840,"fork_derived"
+"sparse_fact_materializer","direct",2,24816,13107,693,206432,"fork_derived"
+"sparse_fact_materializer","restore",2,24816,13107,1245,366600,"fork_derived"

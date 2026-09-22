@@ -26,6 +26,7 @@ cuts:
     source_table: "dev/bench/notes/durable_path_observations.md observations 4, 6 and 7; the 2026-09-22 release-shape probe recorded in README.md cut 3"
     workstreams: [7]
     closeout: "ingestion_consolidation_closeout.md"
+    close_review: "close_review_7_9.md; PASS_AFTER_PATCHES at 51a90ee; patched in place"
     status: "closed"
   - id: 4
     name: "Exact-parity and workflow corrections"
@@ -39,11 +40,13 @@ cuts:
   - id: 5
     name: "Ingestion reader"
     cut: "2026-09-22"
-    cut_review: "compressed into the close review; see README cut 5"
+    cut_review: "compression REJECTED by close_review_7_9.md; owed and not run"
     authority: "maintainer decision 2026-09-22 (horizon entry '[product] DuckDB reads the ingestion CSV'); inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L03; inst/design/ledgr_v0_2_0_2_spec_packet/ingestion_consolidation_closeout.md section 7"
     source_table: "none; the compatibility matrix registered by LDG-2800 is the source table"
     workstreams: [9]
     closeout: "ingestion_reader_closeout.md"
+    close_review: "close_review_7_9.md; FAIL at 51a90ee; patched in place; re-review owed"
+    gate_note: "D8 breached at 0.67 once the owed cut review is counted; see the closeout section 6"
     status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5

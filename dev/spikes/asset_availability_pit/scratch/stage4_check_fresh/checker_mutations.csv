@@ -1,0 +1,6 @@
+"mutation_id","witness_id","baseline_pass","mutated_pass","failed_fields","evidence_role"
+"M1","W22",TRUE,FALSE,"execution_bar_available|fill_price","fork_derived"
+"M2","W09",TRUE,FALSE,"resolved_status|fill_status","fork_derived"
+"M3","W24",TRUE,FALSE,"opening_axis|held_qty|held_nonmember_count","fork_derived"
+"M4","W25",TRUE,FALSE,"fit_identity","fork_derived"
+"M5","W02",TRUE,FALSE,"fill_status|position_after|cash_after|event_cash_after|completed_pulse_valid","fork_derived"

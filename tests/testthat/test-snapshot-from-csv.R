@@ -69,6 +69,17 @@ testthat::test_that("a timestamp without a trailing Z is accepted and normalized
   testthat::expect_identical(snap$metadata$start_date, "2020-01-01T00:00:00Z")
   testthat::expect_identical(snap$metadata$end_date, "2020-01-02T00:00:00Z")
   testthat::expect_equal(nrow(read_bars(snap)), 2L)
+
+  # Assert the stored instant, not only the metadata dates, which are derived
+  # from the parsed POSIXct. Note the limit: snapshot_bars.ts_utc is a
+  # TIMESTAMP column, so DuckDB re-parses whatever string the adapter hands
+  # it. A mutation that changed only the case of the trailing Z is therefore
+  # unobservable in the sealed snapshot and in its hash; only the frozen-body
+  # matrix in test-snapshot-timestamp-branches.R sees it. See W7-F3.
+  testthat::expect_identical(
+    format(read_bars(snap, cols = "ts_utc")$ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z")
+  )
 })
 
 testthat::test_that("OHLC violation fails", {

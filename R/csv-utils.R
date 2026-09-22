@@ -1,20 +1,38 @@
 # Read an ingestion CSV with DuckDB.
 #
-# DuckDB is a reader here and nothing more. The columns that carry identity,
-# `instrument_id`, `ts_utc` and `symbol`, are forced to VARCHAR so ledgr keeps
-# owning instrument ids and every accepted timestamp form; DuckDB never parses
-# a timestamp and never turns an all-numeric ticker into a number. Everything
-# else is inferred, which makes price columns double rather than integer.
+# DuckDB is a reader here and nothing more. Every column ledgr persists or
+# hashes as text is forced to VARCHAR, so ledgr keeps owning instrument ids,
+# every accepted timestamp form, and every stored metadata string; DuckDB
+# never parses a timestamp and never turns an all-numeric field into a number.
+# The numeric bar and instrument columns are left inferred, which makes them
+# double rather than integer.
+#
+# The forced set is exactly the text columns of snapshot_bars and
+# snapshot_instruments, plus `metadata`, which `ledgr_snapshot_from_df()`
+# accepts as an alternative spelling of `meta_json`. An all-numeric value in
+# any of them, `0001` for instance, is a string to ledgr and would otherwise
+# have been inferred as a number and stored without its leading zeros,
+# changing the snapshot hash. That defect is what LDG-2801 fixed for
+# `instrument_id`; close review W9-F2 found the same hole in the rest.
 #
 # The column names are sniffed first so the type map names only columns that
 # are present. Without that, a file missing `ts_utc` would fail inside DuckDB
 # with a binder error instead of reaching ledgr's own missing-column message.
 #
+# Null tokens. An empty field is missing and ledgr rejects it where the column
+# must be non-empty. A literal `NA` is the two-character string, not a missing
+# value, because `NA` is a real ticker and CSV says missing with an empty
+# field. `utils::read.csv()` read it as missing, so this widens the accepted
+# domain deliberately; see W9-F3 in the cut 5 closeout.
+#
 # LDG-2801. Replaces utils::read.csv(), which took about 4.9 seconds on a
-# 630,000-row bars file against about 0.3 seconds here, and which silently
-# read a leading-zero instrument id as an integer.
-ledgr_csv_identity_columns <- function() {
-  c("instrument_id", "ts_utc", "symbol")
+# 630,000-row bars file against about 0.3 seconds here.
+ledgr_csv_text_columns <- function() {
+  c(
+    "instrument_id", "ts_utc",
+    "symbol", "currency", "asset_class",
+    "meta_json", "metadata"
+  )
 }
 
 ledgr_csv_duckdb_path <- function(path) {
@@ -62,7 +80,7 @@ ledgr_read_csv_strict <- function(path, encoding = "UTF-8", strict = TRUE) {
     error = fail
   )
 
-  forced <- intersect(ledgr_csv_identity_columns(), present)
+  forced <- intersect(ledgr_csv_text_columns(), present)
   sql <- if (length(forced) > 0L) {
     sprintf(
       "SELECT * FROM read_csv_auto('%s', types = {%s})",
