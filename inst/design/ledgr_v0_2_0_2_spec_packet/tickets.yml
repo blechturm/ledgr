@@ -36,6 +36,15 @@ cuts:
     workstreams: [8]
     closeout: "pending"
     status: "cut"
+  - id: 5
+    name: "Ingestion reader"
+    cut: "2026-09-22"
+    cut_review: "compressed into the close review; see README cut 5"
+    authority: "maintainer decision 2026-09-22 (horizon entry '[product] DuckDB reads the ingestion CSV'); inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L03; inst/design/ledgr_v0_2_0_2_spec_packet/ingestion_consolidation_closeout.md section 7"
+    source_table: "none; the compatibility matrix registered by LDG-2800 is the source table"
+    workstreams: [9]
+    closeout: "pending"
+    status: "cut"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -107,6 +116,13 @@ workstreams:
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a surface the horizon measured. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, and that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes. Workstream 8 has no dependency on workstream 7; staffing decides which opens first."}
+  - id: 9
+    name: "Ingestion reader"
+    cut: 5
+    status: "pending"
+    depends_on_workstream: 7
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 9", reason: "A reader substitution changes inferred types, accepted inputs and error timing, which OPT-L03 put on the RFC side of its line. The maintainer decided it directly, so the review carries the weight the cut review would have: it checks the registered compatibility matrix against the tree, that every behaviour change in it is intended rather than inherited from DuckDB's defaults, and that the pinned snapshot hash moved only where the old reader was wrong."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -688,3 +704,33 @@ tickets:
     dependencies: ["LDG-2792", "LDG-2793", "LDG-2794", "LDG-2796", "LDG-2797", "LDG-2798"]
     scope: "Governance synthesis D4. Closeout section for cut 4: what shipped; LDG-2795 named as deferred to a maintenance cut with its candidate-id note; the before and after on the profiled sweep shape and on the availability read; the parity witnesses by ticket; review invocations against the 0.5 gate; declined items with reasons: list.files in the worker-setup dry run (R/parallel-workers.R:276; confirm on an installed package first), the feature accessor family (a design question), the derived-context spike (parked). Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the declined items are listed with their reason"]
+
+  - id: "LDG-2800"
+    title: "Register the CSV reader compatibility matrix"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Before the reader is swapped, record what the current reader does for every input shape the swap could move, as a checked-in test that runs against the tree. Shapes: normal bars with and without volume; a leading-zero instrument id; whole-number prices; each accepted ts_utc form (date-only, ISO with Z, ISO without Z, mixed); an extra column; a UTF-8 BOM header; a quoted field with an embedded comma; a malformed numeric; a ragged row; a header-only file; an empty file; a missing required column; a missing instrument_id or ts_utc column; a nonexistent path. For each: the columns and classes the reader returns, and, where the shape reaches ledgr_snapshot_from_csv(), the outcome, condition class and message. This matrix is the witness for LDG-2801 and is the cut's source table."
+    acceptance: ["every listed shape has a recorded outcome, and a class and message where it fails", "the matrix is a test that fails when a recorded outcome changes, not a document", "the leading-zero shape records the current corruption as the pre-change behaviour, with a comment naming it a defect"]
+
+  - id: "LDG-2801"
+    title: "Read the ingestion CSV with DuckDB"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2800"]
+    scope: "ledgr_read_csv_strict() reads with duckdb::read_csv_auto() instead of utils::read.csv(). duckdb is already an Import, so no dependency moves. The reader stays a reader: instrument_id, ts_utc and symbol are forced to VARCHAR so ledgr keeps owning instrument identity and all six accepted timestamp forms, and DuckDB never parses a timestamp. Columns are sniffed first so the type map names only columns that exist, which keeps ledgr's own missing-column message instead of a DuckDB binder error. Every DuckDB failure is caught and re-raised with the ledgr_invalid_args class the surface already uses. Two consequences are intended: a leading-zero instrument id is preserved rather than silently becoming an integer, which fixes a live defect; and numeric columns are always double, which makes ledgr_csv_normalize_numeric_columns() from LDG-2788 dead and it is deleted. The encoding argument is validated as UTF-8 rather than passed through, because that is the only encoding the surface now supports."
+    acceptance: ["every row of the LDG-2800 matrix is re-recorded, and each difference is listed with a reason; an unlisted difference fails the ticket", "a leading-zero instrument id survives to the sealed snapshot", "LTB-0018 still holds: the pinned fixture hash is unchanged", "ledgr_csv_normalize_numeric_columns is deleted and no caller remains", "the release-shape read is measured before and after"]
+
+  - id: "LDG-2802"
+    title: "Workstream closeout"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2801"]
+    scope: "Governance synthesis D4. A closeout section for cut 5: what shipped; the reader clock and the from_csv end-to-end clock before and after; the compatibility matrix differences with their reasons; which hashes moved and why each old value was wrong; review invocations against the 0.5 gate, stating that the cut review was compressed into the close review and why; the amendment to cut 3's closeout, whose declined list did not consider DuckDB. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "every hash that moved is named with the reason the old value was wrong", "cut 3's closeout carries a pointer to this cut"]

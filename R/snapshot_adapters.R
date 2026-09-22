@@ -597,6 +597,15 @@ ledgr_snapshot_normalize_ts_utc <- function(ts_raw) {
   list(ts_utc = ts_utc, ts_posix = ts_posix)
 }
 
+# The bars reader for the snapshot surface. One seam so the compatibility
+# matrix registered by LDG-2800 has something stable to test while LDG-2801
+# changes what reads the file.
+ledgr_csv_read_bars_for_snapshot <- function(path) {
+  ledgr_csv_normalize_numeric_columns(
+    ledgr_read_csv_strict(path, encoding = "UTF-8", strict = TRUE)
+  )
+}
+
 ledgr_csv_normalize_numeric_columns <- function(df) {
   # read.csv infers integer columns for whole-number prices. from_df treats the
   # supplied column type as the user's own, and records it verbatim in a
@@ -618,8 +627,7 @@ ledgr_snapshot_from_csv <- function(csv_path,
                                     facts = NULL,
                                     invalid_observations = c("error", "quarantine")) {
   ledgr_validate_snapshot_id(snapshot_id)
-  bars_df <- ledgr_read_csv_strict(csv_path, encoding = "UTF-8", strict = TRUE)
-  bars_df <- ledgr_csv_normalize_numeric_columns(bars_df)
+  bars_df <- ledgr_csv_read_bars_for_snapshot(csv_path)
 
   instruments_df <- NULL
   if (!is.null(instruments_csv_path)) {
