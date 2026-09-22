@@ -21,16 +21,16 @@ cuts:
   - id: 3
     name: "Ingestion consolidation"
     cut: "2026-09-22"
-    cut_review: "pending"
+    cut_review: "cut_review_3_4.md; PASS_AFTER_PATCHES at 8747c64; patched in place"
     authority: "maintainer decision 2026-09-22 (horizon entry '[product] One CSV ingestion surface'); dev/bench/notes/durable_path_observations.md decisions 1 and 2; inst/design/ledgr_v0_2_0_1_spec_packet/remaining-optimization-options-inventory.md OPT-L02 and OPT-L03"
     source_table: "dev/bench/notes/durable_path_observations.md observations 4, 6 and 7; the 2026-09-22 release-shape probe recorded in README.md cut 3"
     workstreams: [7]
     closeout: "pending"
     status: "cut"
   - id: 4
-    name: "Sweep-side exact-parity optimizations"
+    name: "Exact-parity and workflow corrections"
     cut: "2026-09-22"
-    cut_review: "pending"
+    cut_review: "cut_review_3_4.md; PASS_AFTER_PATCHES at 8747c64; patched in place"
     authority: "inst/design/horizon.md 2026-09-18 (per-pulse context and feature accessor costs; duplicated helper families; peer benchmark session alignment defect) and 2026-09-19 (availability result reconstruction is quadratic); remaining-optimization-options-inventory.md OPT-L14; inst/design/research/Sharadar-Workflow-Improvement-Evidence.md LFB-010"
     source_table: "none; each ticket cites its horizon entry and source lines"
     workstreams: [8]
@@ -101,12 +101,12 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 7", reason: "The maintainer chose the surface; the workstream removes the other and makes the kept one exactly faster. One review at close checks that the pinned snapshot hash did not move, that every timestamp branch is identical before and after, that no contract case was lost in test migration, and that the harness record discloses its phase change."}
   - id: 8
-    name: "Sweep-side exact-parity optimizations"
+    name: "Exact-parity and workflow corrections"
     cut: 4
     status: "pending"
-    depends_on_workstream: 7
+    depends_on_workstream: null
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a surface the horizon measured. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, and that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes. Workstream 8 follows 7 for staffing, not dependency; the maintainer may open it earlier."}
+    review: {mode: "Type 1", point: "close of workstream 8", reason: "Every ticket claims exact parity on a surface the horizon measured. One review at close checks each parity witness against its smallest breaking change, that the source guard fails on a reintroduced identity call, and that the availability read's oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes. Workstream 8 has no dependency on workstream 7; staffing decides which opens first."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -555,9 +555,9 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "M"
-    dependencies: []
-    scope: "Maintainer decision 2026-09-22: ledgr_snapshot_from_csv() and ledgr_snapshot_from_df() are the ingestion surface; the connection-first create/import/seal lifecycle from v0.1.1 goes. Tests move first so the suite stays green at every ticket. 26 call sites in eight files. tests/testthat/test-acceptance-v0.1.1.R (419 lines, nine sites) and test-snapshots-import-csv.R (179 lines, eight sites) carry the contract cases: required columns, ISO-Z timestamps, OHLC bounds, duplicate keys, rounding to 8 decimals, encoding and BOM, extra columns ignored, instruments from a second file, mutability. A case that states a contract the kept surface also holds moves to ledgr_snapshot_from_csv() with the ledgr_invalid_args class; a lifecycle case (CREATED status, NOT_MUTABLE, import into an existing envelope) is deleted with a one-line reason in the ticket evidence. The six other files (test-persistence-fresh-connection, test-runner-snapshots, test-snapshot-adapters, test-snapshots-hash, test-snapshots-info, test-snapshots-seal) use the importer as a fixture builder and swap to from_csv or from_df. The census is re-run and claims.yml references checked."
-    acceptance: ["every deleted block is listed with its contract and the reason it has no kept-surface equivalent", "every migrated block still fails on its condition; one mutation each, recorded", "the two-sided census reconciles; block counts before and after are stated", "no test file references ledgr_snapshot_import_bars_csv or ledgr_snapshot_import_instruments_csv"]
+    dependencies: ["LDG-2788"]
+    scope: "Maintainer decision 2026-09-22: ledgr_snapshot_from_csv() and ledgr_snapshot_from_df() are the ingestion surface; the connection-first create/import/seal lifecycle from v0.1.1 goes. Tests migrate after LDG-2788 has given from_csv its instruments_csv_path, so the instruments-file case lands on the public file contract, and before LDG-2787 deletes the old surface, so every commit is green (cut review C3-F2). 27 calls to the two importers in eight files: nine in test-acceptance-v0.1.1.R, nine in test-snapshots-import-csv.R (one of them the instruments importer), nine across the other six. Observed contract cases in the two named files: required bars columns, rounding to 8 decimals, strict no-Z rejection, OHLC bounds, UTF-8 BOM, auto-generated instruments and auto_generate_instruments = FALSE, instruments from a second CSV, CREATED versus SEALED mutability. Cases the kept surface also holds (required columns, rounding, OHLC bounds, BOM, auto-generated instruments, instruments from a file) move to from_csv with the ledgr_invalid_args class. Removed or changed contracts are deleted with a stated reason: strict no-Z rejection (the kept surface accepts the no-Z form by design), auto_generate_instruments = FALSE (no equivalent; from_csv auto-generates unless instruments are supplied), the CREATED/NOT_MUTABLE lifecycle (removed with the lifecycle; the post-seal guard at test-snapshots-seal.R:262-292 goes with it). Duplicate-key, arbitrary-encoding and extra-column cases are not in the old files; if added on from_csv they are labelled newly added evidence, not preserved evidence. In the other six files the importer is a fixture builder except the seal guard above; those swap to from_csv or from_df. The census is re-run and claims.yml references checked."
+    acceptance: ["every deleted block is listed with its contract and the reason it has no kept-surface equivalent; the three removed or changed contracts are named as such", "every migrated block still fails on its condition; one mutation each, recorded", "any duplicate-key or extra-column case on from_csv is labelled newly added evidence", "the two-sided census reconciles; block counts before and after are stated", "no test file references ledgr_snapshot_import_bars_csv or ledgr_snapshot_import_instruments_csv"]
 
   - id: "LDG-2787"
     title: "Remove the strict CSV import lifecycle"
@@ -575,8 +575,8 @@ tickets:
     status: "pending"
     priority: "P1"
     effort: "S"
-    dependencies: ["LDG-2787"]
-    scope: "from_csv exposes what from_df exposes, with file inputs. Signature: ledgr_snapshot_from_csv(csv_path, instruments_csv_path = NULL, db_path = NULL, snapshot_id = NULL, facts = NULL, invalid_observations = c('error', 'quarantine')). instruments_csv_path is read with ledgr_read_csv_strict() and passed as instruments_df; facts and invalid_observations pass through unchanged. Roxygen and vignettes/data-input-and-snapshots.qmd state one contract with two input types: the accepted timestamp forms, the columns, the instruments columns. MAINTAINER-AMENDABLE: the minimum is instruments_csv_path alone, the one capability the removal would otherwise drop."
+    dependencies: []
+    scope: "Lands first in the workstream so the instruments-file test can migrate onto the public contract before the old surface is deleted (cut review C3-F2). from_csv exposes what from_df exposes, with file inputs. Signature: ledgr_snapshot_from_csv(csv_path, instruments_csv_path = NULL, db_path = NULL, snapshot_id = NULL, facts = NULL, invalid_observations = c('error', 'quarantine')). instruments_csv_path is read with ledgr_read_csv_strict() and passed as instruments_df; facts and invalid_observations pass through unchanged. Roxygen and vignettes/data-input-and-snapshots.qmd state one contract with two input types: the accepted timestamp forms, the columns, the instruments columns. MAINTAINER-AMENDABLE: the minimum is instruments_csv_path alone, the one capability the removal would otherwise drop."
     acceptance: ["a bars CSV plus an instruments CSV seals with the metadata present, verified through the sealed snapshot's instruments", "one quarantine case through from_csv equals the same case through from_df", "from_csv's roxygen states the accepted timestamp forms and columns rather than only 'delegates to from_df'"]
 
   - id: "LDG-2789"
@@ -587,7 +587,7 @@ tickets:
     effort: "M"
     dependencies: []
     scope: "OPT-L02, re-measured 2026-09-22 at the release shape (500 instruments by 1,260 sessions, 630,000 rows). POSIXct branch, R/snapshot_adapters.R:104: format distinct values once and map back (4.32 s to 0.03 s). ISO-Z character branch, :127-131: keep ts_raw as ts_utc instead of formatting the parse back (3.23 s to 0) and parse distinct strings once (2.02 s to 0.03 s). Date-only branch :125 and no-Z branch :132-137: append the constant suffix instead of format(). Fallback :139 and :146 and the Yahoo adapter :557: call ledgr_iso_utc() once per distinct value and map back (2.28 s per 20,000 rows today). The duplicate-key check at :193 may move to a numeric pair if measured; not required. Every change is identical() on ts_utc and ts_posix. Nothing touches the hash, the schema, or the seal."
-    acceptance: ["a seven-branch matrix test (POSIXct, Date, date-only character, ISO with Z, ISO without Z, fallback form, invalid or mixed) asserts identical ts_utc and ts_posix against the pre-change branch bodies kept as a reference implementation in a test helper", "one checked-in bars fixture has its snapshot_hash pinned as a literal; the pin is registered in tests/claims.yml and is unchanged by this ticket", "component clocks at the release shape are re-run after the change and recorded in the closeout", "whole-column figures are labelled component clocks, not an end-to-end speedup"]
+    acceptance: ["a seven-branch matrix test asserts identical ts_utc and ts_posix for the six producing branches (POSIXct, Date, date-only character, ISO with Z, ISO without Z, mixed-form fallback) against the pre-change branch bodies kept as a reference implementation in a test helper", "the mixed-form fallback case carries literal expected outputs, for example c('2020-01-01', '2020-01-02T00:00:00Z') to c('2020-01-01T00:00:00Z', '2020-01-02T00:00:00Z'), not a reference call to ledgr_iso_utc(), so a change to that shared helper is detected", "the invalid branch (an unsupported form, a non-time column) asserts the rejection class and message and its order relative to the column checks, before and after", "one checked-in bars fixture has its snapshot_hash pinned as a literal; the pin is registered in tests/claims.yml and is unchanged by this ticket", "component clocks at the release shape are re-run after the change and recorded in the closeout", "whole-column figures are labelled component clocks, not an end-to-end speedup"]
 
   - id: "LDG-2790"
     title: "Peer harness calls ledgr_snapshot_from_csv()"
@@ -605,7 +605,7 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "S"
-    dependencies: ["LDG-2788", "LDG-2789", "LDG-2790"]
+    dependencies: ["LDG-2787", "LDG-2789", "LDG-2790"]
     scope: "Governance synthesis D4. Closeout section for cut 3: what shipped; the after-state at the release shape (from_df POSIXct and ISO-Z character, from_csv) beside the 2026-09-22 before-state of 10.39, 12.09 and 20.07 s; the hash pin; blocks deleted and migrated; review invocations against the 0.5 gate; the roadmap row for the product decision (the horizon entry was written at cut); declined items with reasons: colClasses on the reader (0.9 s, changes which error fires first), hash chunk widening (bounded-memory question), raw-bytes hashing (own RFC). Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the declined items are listed with their reason", "the roadmap row exists and cites the horizon entry"]
 
@@ -617,7 +617,7 @@ tickets:
     effort: "M"
     dependencies: []
     scope: "Horizon 2026-09-18, per-pulse context and feature accessor costs. Three exact-output changes. ledgr_feature_lookup_map() at R/feature-alias-map.R:179 calls ledgr_normalize_alias_map() instead of ledgr_alias_map_storage(), which it called for a value it discarded: 100 microseconds per call, 362,880 calls, 56.73 percent of the profiled sweep under the ctx$features(id) idiom. The five other callers of ledgr_alias_map_storage() are untouched. R/runtime-projection.R:337 replaces replicate(n_pulses, schema()) with rep(list(schema()), n_pulses), 309 ms per sweep. ledgr_projection_pulse_views() at R/runtime-projection.R:287 replaces match.arg() with a direct two-option check, 8.10 percent of sweep time. Each is identical() on the populated and empty branches."
-    acceptance: ["identical() results on the populated and null alias-map branches, on the schema list, and on both feature_table options with the same error class on an invalid one", "the profiled sweep shape (40 instruments, 756 days, two SMA features, twelve candidates) is re-run before and after with commit, environment, command, and result", "the promoted peer records are not claimed to move; the entry's limit is restated"]
+    acceptance: ["identical() results on the populated and null alias-map branches, on the schema list, and on both feature_table options with the same error class on an invalid one", "three recorded mutations each fail a witness: alias normalization bypassed; one schema column's type or order altered; a third feature_table value accepted", "the profiled sweep shape (40 instruments, 756 days, two SMA features, twelve candidates) is re-run before and after with commit, environment, command, and result", "the promoted peer records are not claimed to move; the entry's limit is restated"]
 
   - id: "LDG-2793"
     title: "ledgr_features_wide() fills by index, not by name"
@@ -627,7 +627,7 @@ tickets:
     effort: "S"
     dependencies: []
     scope: "R/pulse-context.R:196-198 fills the wide matrix one cell at a time with character row and column indices; measured superlinear at about the 1.24 power (30 vs 20 microseconds at 40 by 2; 2,450 vs 100 at 563 by 5). Replace with one match() pair and a single matrix assignment. Exact on values, dimnames, NA placement, and column order."
-    acceptance: ["identical() matrices at the three measured shapes and at a shape with missing feature values", "the per-cell cost no longer rises with universe size across the three shapes"]
+    acceptance: ["identical() matrices at the three measured shapes and at a shape with missing feature values", "duplicate (instrument_id, feature_name) rows with distinct values reproduce the current last-write result", "the per-cell cost no longer rises with universe size across the three shapes"]
 
   - id: "LDG-2794"
     title: "Source guard: no identity helper reachable from the per-pulse path"
@@ -642,11 +642,11 @@ tickets:
   - id: "LDG-2795"
     title: "One parameterized matrix validator"
     workstream: 8
-    status: "pending"
+    status: "deferred"
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Horizon 2026-09-18, duplicated helper families. Six members in the tree, one more than the entry counted: ledgr_pbo_validate_matrix (R/validation-pbo.R:137), ledgr_dsr_validate_matrix (R/validation-dsr.R:351), ledgr_effective_trials_validate_matrix (R/validation-dsr.R:280), ledgr_k_ratio_validate_matrix (R/validation-k-ratio.R:116), ledgr_min_track_record_validate_matrix (R/validation-min-track-record.R:117), ledgr_return_panel_validate_matrix (R/sweep-retention.R:615). One validator taking the metric label, minimum rows, minimum columns, and the non-constant and allow-missing flags replaces them; every message, class, and error ordering is preserved exactly. The six names may stay as one-line wrappers or be replaced at their call sites; the ticket states which."
+    scope: "DEFERRED at the cut review (Type 2): unmeasured code-health consolidation with a broader error-contract surface than the rest of the workstream; it moves to a maintenance cut. Carry forward C4-F3: ledgr_return_panel_validate_matrix() also requires non-empty unique candidate ids in column names (R/sweep-retention.R:641-650, class ledgr_return_panel_missing_candidate_ids), so a shared validator needs an explicit candidate-id rule with its position in the error ordering and must preserve condition fields such as n_candidates, n_observations and candidate_ids. Original scope follows. Horizon 2026-09-18, duplicated helper families. Six members in the tree, one more than the entry counted: ledgr_pbo_validate_matrix (R/validation-pbo.R:137), ledgr_dsr_validate_matrix (R/validation-dsr.R:351), ledgr_effective_trials_validate_matrix (R/validation-dsr.R:280), ledgr_k_ratio_validate_matrix (R/validation-k-ratio.R:116), ledgr_min_track_record_validate_matrix (R/validation-min-track-record.R:117), ledgr_return_panel_validate_matrix (R/sweep-retention.R:615). One validator taking the metric label, minimum rows, minimum columns, and the non-constant and allow-missing flags replaces them; every message, class, and error ordering is preserved exactly. The six names may stay as one-line wrappers or be replaced at their call sites; the ticket states which."
     acceptance: ["for each of the six, every abort in the old body is reproduced by a test asserting the identical class and message on the same input", "no metric result changes on the validation fixtures", "the feature accessor family named in the same entry is explicitly not touched"]
 
   - id: "LDG-2796"
@@ -657,7 +657,7 @@ tickets:
     effort: "L"
     dependencies: []
     scope: "Horizon 2026-09-19 and OPT-L14, marks half only. ledgr_availability_marks_at() at R/availability-results.R:271 allocates a matrix per pulse and calls provider$history() (R/availability-provider.R:212) once per instrument per pulse, one DuckDB query each over a growing prefix: 382,288 queries returning about 144.9 million rows at 757 pulses and 505 instruments, read amplification (P+1)/2. Replace with one query for all instruments to the final pulse, pivoted once into an instrument-by-pulse matrix, and a forward walk that reuses the valuation state. Public results, causal behavior, and reopen behavior unchanged. ledgr_availability_positions_asof() (inventory S15) is not in scope; it becomes a consumer of the accounting-core replay under LDG-2779."
-    acceptance: ["identical ledgr_results(run, 'availability') on the existing parity fixtures and on a run with fills", "oracle cases for point-in-time, terminal-event, reopen, and missing-evidence shapes exist before the query shape changes and pass after", "one measured before and after on a 757-pulse run with commit, environment, command, and result; the sister repository's 799.56 s is cited as orientation only", "the query count per read is stated before and after"]
+    acceptance: ["identical ledgr_results(run, 'availability') on the existing parity fixtures and on a run with fills", "oracle cases for point-in-time, terminal-event, reopen, and missing-evidence shapes exist before the query shape changes and pass after", "a cutoff-boundary mutation (< in place of <=, or one skipped forward advance) fails the point-in-time witness; recorded", "one measured before and after on a 757-pulse run with commit, environment, command, and result; the sister repository's 799.56 s is cited as orientation only", "the query count per read is stated before and after"]
 
   - id: "LDG-2797"
     title: "Opening cash: constructor and execution agree"
@@ -666,8 +666,8 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: []
-    scope: "LFB-010. ledgr_opening() at R/experiment.R:29-30 accepts cash >= 0; config validation at R/config-validate.R:199-200 rejects initial_cash <= 0. A zero-cash opening therefore constructs and fails later. Unless a supported opening requires zero cash, ledgr_opening() rejects cash <= 0 with ledgr_invalid_opening; if one does, the run-side check is relaxed to match instead. The ticket states which and why. No financing semantics change."
-    acceptance: ["ledgr_opening(cash = 0) and ledgr_run() with it either both reject with a named class or both accept; the pair is tested through the public constructor and execution", "the .Machine$double.eps workaround in the research note is no longer needed and is not documented"]
+    scope: "LFB-010. ledgr_opening() at R/experiment.R:29-30 accepts cash >= 0; config validation at R/config-validate.R:199-200 rejects initial_cash <= 0. A zero-cash opening therefore constructs and fails later. Bound at the cut review (C4-F2): ledgr_opening() rejects cash <= 0 with ledgr_invalid_opening; the run-side check is unchanged. No supported zero-cash opening exists in the tree, and allowing zero would widen the public domain rather than align two validators. No financing semantics change."
+    acceptance: ["ledgr_opening(cash = 0) rejects with ledgr_invalid_opening; a positive opening constructs and runs; the run-side check still rejects initial_cash <= 0 unchanged; all three tested through the public constructor and execution", "the .Machine$double.eps workaround in the research note is no longer needed and is not documented"]
 
   - id: "LDG-2798"
     title: "Peer benchmark: zipline session alignment and retention check"
@@ -685,6 +685,6 @@ tickets:
     status: "pending"
     priority: "P0"
     effort: "S"
-    dependencies: ["LDG-2792", "LDG-2793", "LDG-2794", "LDG-2795", "LDG-2796", "LDG-2797", "LDG-2798"]
-    scope: "Governance synthesis D4. Closeout section for cut 4: what shipped; the before and after on the profiled sweep shape and on the availability read; the parity witnesses by ticket; review invocations against the 0.5 gate; declined items with reasons: list.files in the worker-setup dry run (R/parallel-workers.R:276; confirm on an installed package first), the feature accessor family (a design question), the derived-context spike (parked). Owner: the maintainer; the draft is agent-provisional."
+    dependencies: ["LDG-2792", "LDG-2793", "LDG-2794", "LDG-2796", "LDG-2797", "LDG-2798"]
+    scope: "Governance synthesis D4. Closeout section for cut 4: what shipped; LDG-2795 named as deferred to a maintenance cut with its candidate-id note; the before and after on the profiled sweep shape and on the availability read; the parity witnesses by ticket; review invocations against the 0.5 gate; declined items with reasons: list.files in the worker-setup dry run (R/parallel-workers.R:276; confirm on an installed package first), the feature accessor family (a design question), the derived-context spike (parked). Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the declined items are listed with their reason"]

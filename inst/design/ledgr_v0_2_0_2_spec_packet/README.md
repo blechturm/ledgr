@@ -7,9 +7,10 @@ next version inherits it. Cut 2, the accounting-core consolidation, was cut
 on 2026-09-22; its cut review (`cut_review_2.md`) returned
 `PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
 opens on the maintainer's word. Cuts 3 (ingestion consolidation) and 4
-(sweep-side exact-parity optimizations) were cut on 2026-09-22 and await
-their cut reviews. Cuts are independent of one another; workstreams are
-serial within a cut.
+(exact-parity and workflow corrections) were cut on 2026-09-22; their joint
+cut review (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for each at
+`8747c64` and was patched in place. Cuts are independent of one another;
+workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
 cut, and sequencing authority. Each cut names its own RFC authority there;
@@ -102,7 +103,7 @@ removing the per-lot list allocation in pack/unpack; no runtime-default
 decision; no compiled-execution RFC work. Nothing is edited before the cut
 review is accepted.
 
-## Cut 3: Ingestion consolidation (cut review pending)
+## Cut 3: Ingestion consolidation (cut review passed after patches)
 
 Authority: the maintainer's decision of 2026-09-22 that
 `ledgr_snapshot_from_csv()` and `ledgr_snapshot_from_df()` are the ingestion
@@ -114,7 +115,7 @@ maintainer. Tickets LDG-2786 through LDG-2791, one workstream.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 7 Ingestion consolidation | 2786–2791 | migrate the strict importer's 26 test sites; remove `ledgr_snapshot_import_bars_csv()`, `ledgr_snapshot_import_instruments_csv()` and five dead helpers; `from_csv` gains the file-side arguments (`instruments_csv_path`, `facts`, `invalid_observations`); exact-output timestamp handling in `from_df` with a seven-branch identity matrix and a pinned snapshot hash; the peer harness calls `from_csv`; closeout | the pinned hash did not move; every timestamp branch identical before and after; no contract case lost in migration; the harness record discloses its phase change |
+| 7 Ingestion consolidation | 2786–2791 | migrate the strict importer's 27 test call sites; remove `ledgr_snapshot_import_bars_csv()`, `ledgr_snapshot_import_instruments_csv()` and five dead helpers; `from_csv` gains the file-side arguments (`instruments_csv_path`, `facts`, `invalid_observations`); exact-output timestamp handling in `from_df` with a seven-branch identity matrix and a pinned snapshot hash; the peer harness calls `from_csv`; closeout | the pinned hash did not move; every timestamp branch identical before and after; no contract case lost in migration; the harness record discloses its phase change |
 
 Before-state, measured 2026-09-22 at the release shape (500 instruments by
 1,260 sessions, 630,000 rows), `pkgload`, R 4.6.1:
@@ -131,16 +132,29 @@ to 0.03; ISO-Z round-trip format 3.23 s to 0; ISO-Z parse 2.02 s to 0.03;
 scalar fallback 2.28 s per 20,000 rows. These are component clocks, not an
 end-to-end forecast; the closeout records the after-state.
 
-Ticket order: tests first (2786) so the suite stays green, then removal
-(2787), then the widened `from_csv` (2788); the timestamp work (2789) is
-independent of the removal; the harness switch (2790) follows it; closeout
-(2791). Two reviews over six tickets, 0.33.
+Ticket order: the widened `from_csv` first (2788) so the instruments-file
+test has a public contract to land on, then test migration (2786), then
+removal (2787), so every commit is green and no commit drops a capability;
+the timestamp work (2789) is independent of the removal; the harness switch
+(2790) follows it; closeout (2791). Two reviews over six tickets, 0.33.
 
 **Maintainer-amendable assumptions:** straight removal with no deprecation
 shim (LDG-2787); `from_csv` gains all three pass-throughs rather than only
 `instruments_csv_path` (LDG-2788).
 
-**The cut review** asks, in order: does every contract case the removed
+**What the cut review added.** Three bounded patches, applied in place.
+C3-F1: the census is 27 calls, not 26, and LDG-2786 now lists the cases the
+old files actually test; the strict no-Z rejection,
+`auto_generate_instruments = FALSE`, and the CREATED/NOT_MUTABLE lifecycle
+are named as removed or changed contracts with reasons, and any duplicate-key
+or extra-column case is labelled newly added evidence. C3-F2: the order is
+2788 then 2786 then 2787, and closeout depends on 2787. C3-F3: the fallback
+case carries literal expected outputs rather than a reference call to the
+shared scalar helper, and the invalid branch asserts its rejection class,
+message, and order. The Type 2 question was answered: one workstream of six
+with one close review is the honest grain.
+
+**The cut review** asked, in order: does every contract case the removed
 surface tested have either a kept-surface owner in LDG-2786 or a stated
 reason for deletion (Type 1); is the hash pin plus seven-branch matrix an
 adequate identity witness for LDG-2789, and what smallest change would it
@@ -151,7 +165,7 @@ the honest grain (Type 2).
 error fires first); hash chunk widening; raw-bytes hashing (own RFC); any
 change to the seal, the schema, or snapshot identity.
 
-## Cut 4: Sweep-side exact-parity optimizations (cut review pending)
+## Cut 4: Exact-parity and workflow corrections (review passed after patches)
 
 Authority: horizon entries of 2026-09-18 (per-pulse context and feature
 accessor costs; duplicated helper families; peer benchmark session
@@ -163,17 +177,32 @@ public-boundary bug fix. Tickets LDG-2792 through LDG-2799, one workstream.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 8 Sweep-side optimizations | 2792–2799 | discarded identity work in the per-pulse path (alias-map accessor, `replicate`, `match.arg`); `features_wide` fill by index; a source guard keeping identity helpers out of the pulse loop; one parameterized matrix validator for six clones; forward reconstruction of availability marks (OPT-L14, marks half); opening-cash validation agreement (LFB-010); zipline alignment and a retention check; closeout | each parity witness fails on its smallest breaking change; the source guard fails on a reintroduced identity call; the availability oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes; before and after clocks on the profiled sweep shape and the availability read |
+| 8 Exact-parity and workflow corrections | 2792–2799 | discarded identity work in the per-pulse path (alias-map accessor, `replicate`, `match.arg`); `features_wide` fill by index; a source guard keeping identity helpers out of the pulse loop; forward reconstruction of availability marks (OPT-L14, marks half); zero opening cash rejected at construction (LFB-010); zipline alignment and a retention check; closeout. LDG-2795, the matrix-validator consolidation, is deferred to a maintenance cut | each parity witness fails on its smallest breaking change; the source guard fails on a reintroduced identity call; the availability oracle cases cover point-in-time, terminal-event, reopen and missing-evidence shapes; before and after clocks on the profiled sweep shape and the availability read |
 
 The alias-map item was 56.73 percent of the profiled sweep under the
 `ctx$features(id)` idiom and none of the peer benchmark's, which reads
 `ctx$features_wide`; the cut states that limit rather than claiming a peer
 number. `ledgr_availability_positions_asof()` is excluded: it is inventory
 site S15 and becomes a consumer of the accounting-core replay under
-LDG-2779. Two reviews over eight tickets, 0.25.
+LDG-2779. Two reviews over seven tickets, 0.29.
 
-Workstream 8 is sequenced after workstream 7 for staffing, not dependency.
-The maintainer may open it earlier.
+Workstream 8 has no dependency on workstream 7; staffing decides which
+opens first. The workstream is named for its actual outcome: five tickets
+sit on the sweep or result path and one (zipline) corrects peer evidence
+this packet already scheduled.
+
+**What the cut review added.** Four bounded patches, applied in place.
+C4-F1: LDG-2792, LDG-2793 and LDG-2796 now name the smallest breaking
+change per witness (alias normalization bypassed, a schema column altered,
+a third `feature_table` value accepted; duplicate feature rows reproducing
+last-write; a cutoff-boundary mutation). C4-F2: LDG-2797 is bound to
+rejection, since no supported zero-cash opening exists and allowing zero
+would widen the public domain. C4-F3: the return-panel validator's
+candidate-id rule is recorded on LDG-2795 for whoever picks it up. C4-F4:
+workstream 8's dependency on 7 is `null`, matching the independence the
+packet claimed. Type 2: LDG-2795 is deferred as unmeasured code health;
+LDG-2798 stays because it corrects peer evidence already scheduled here;
+the workstream is renamed.
 
 **The cut review** asks, in order: does each ticket name a parity witness
 and the smallest change that breaks it (Type 1); is the marks-only scope of
@@ -181,9 +210,11 @@ LDG-2796 cleanly separable from the positions half owned by LDG-2779
 (Type 1); and should the validator consolidation and the zipline chore be
 in this workstream at all, or held for a maintenance cut (Type 2).
 
-**Not in this cut:** the derived-context spike; the feature accessor
-family; `list.files` in the worker-setup dry run until confirmed on an
-installed package; the article's 0.99 weak-return threshold.
+**Not in this cut:** the matrix-validator consolidation (LDG-2795,
+deferred with its candidate-id note); the derived-context spike; the
+feature accessor family; `list.files` in the worker-setup dry run until
+confirmed on an installed package; the article's 0.99 weak-return
+threshold.
 
 ## Pilot
 
