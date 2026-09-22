@@ -258,6 +258,16 @@ testthat::test_that("write-triggered migration is additive and preserves v0.1.4 
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = 'legacy-run'")$n[[1]],
     1
   )
+  testthat::expect_error(
+    DBI::dbExecute(
+      con,
+      paste(
+        "INSERT INTO ledger_events",
+        "(event_id, run_id, ts_utc, event_type, event_seq)",
+        "VALUES ('fee-after-migration', 'legacy-run', CURRENT_TIMESTAMP, 'FEE', 2)"
+      )
+    )
+  )
   testthat::expect_identical(
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM features WHERE run_id = 'legacy-run'")$n[[1]],
     1
@@ -294,6 +304,45 @@ testthat::test_that("write-triggered migration is additive and preserves v0.1.4 
     con,
     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
   )$table_name)
+})
+
+testthat::test_that("legacy FEE is preserved for manual remediation and remains unsupported", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  legacy_v014_store(con)
+  DBI::dbExecute(
+    con,
+    paste(
+      "INSERT INTO ledger_events",
+      "(event_id, run_id, ts_utc, event_type, meta_json, event_seq)",
+      paste0(
+        "VALUES ('legacy-fee', 'legacy-run', CURRENT_TIMESTAMP, 'FEE', ",
+        "'{\"cash_delta\":0,\"position_delta\":0}', 2)"
+      )
+    )
+  )
+
+  ledgr_create_schema(con)
+  testthat::expect_identical(
+    DBI::dbGetQuery(
+      con,
+      "SELECT COUNT(*) AS n FROM ledger_events WHERE event_type = 'FEE'"
+    )$n[[1]],
+    1
+  )
+  fee_row <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "WHERE event_type = 'FEE'"
+    )
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_prepare_accounting_events(fee_row),
+    "Unsupported accounting event_type: FEE",
+    class = "ledgr_invalid_accounting_event"
+  )
 })
 
 testthat::test_that("schema 115 preserves candidate evidence and admits incomplete outcomes", {

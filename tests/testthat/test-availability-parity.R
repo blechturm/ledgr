@@ -801,7 +801,7 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("walk-forward hydrates heterogeneous gaps on the session calendar", {
+testthat::test_that("[LTB-0023] walk-forward hydrates heterogeneous gaps on the session calendar", {
   dates <- as.Date("2020-01-01") + 0:9
   sessions <- ledgr_facts_sessions(
     data.frame(

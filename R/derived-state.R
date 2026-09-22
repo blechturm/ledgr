@@ -1,83 +1,3 @@
-ledgr_reconstruct_positions <- function(con, run_id) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  rows <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT instrument_id, meta_json
-    FROM ledger_events
-    WHERE run_id = ?
-    ORDER BY event_seq
-    ",
-    params = list(run_id)
-  )
-
-  pos <- numeric(0)
-  if (nrow(rows) == 0) {
-    return(pos)
-  }
-
-  for (i in seq_len(nrow(rows))) {
-    instrument_id <- rows$instrument_id[[i]]
-    if (is.na(instrument_id) || !nzchar(instrument_id)) next
-
-    meta <- ledgr_json_read_nested(rows$meta_json[[i]])
-    delta <- meta$position_delta
-    if (!is.numeric(delta) || length(delta) != 1 || is.na(delta) || !is.finite(delta)) {
-      rlang::abort("ledger_events.meta_json must include a finite numeric scalar `position_delta`.", class = "ledgr_invalid_ledger_meta")
-    }
-
-    if (is.null(names(pos)) || !(instrument_id %in% names(pos))) pos[instrument_id] <- 0
-    pos[instrument_id] <- pos[instrument_id] + as.numeric(delta)
-  }
-
-  pos
-}
-
-ledgr_reconstruct_cash <- function(con, run_id, initial_cash) {
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
-  }
-  if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
-    rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-  if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {
-    rlang::abort("`initial_cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
-  }
-
-  rows <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT meta_json
-    FROM ledger_events
-    WHERE run_id = ?
-    ORDER BY event_seq
-    ",
-    params = list(run_id)
-  )
-
-  cash <- as.numeric(initial_cash)
-  if (nrow(rows) == 0) {
-    return(cash)
-  }
-
-  for (i in seq_len(nrow(rows))) {
-    meta <- ledgr_json_read_nested(rows$meta_json[[i]])
-    delta <- meta$cash_delta
-    if (!is.numeric(delta) || length(delta) != 1 || is.na(delta) || !is.finite(delta)) {
-      rlang::abort("ledger_events.meta_json must include a finite numeric scalar `cash_delta`.", class = "ledgr_invalid_ledger_meta")
-    }
-    cash <- cash + as.numeric(delta)
-  }
-
-  cash
-}
-
 ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transaction = TRUE) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
@@ -149,6 +69,8 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     con,
     "
     SELECT
+      event_id,
+      run_id,
       event_seq,
       ts_utc,
       event_type,
@@ -208,95 +130,33 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     assign(key, close_by_id[instrument_ids], envir = close_map)
   }
 
-  cash <- as.numeric(initial_cash)
-  positions <- numeric(0)
-  lot_state <- ledgr_lot_state(instrument_ids)
-  realized_pnl <- 0
+  prepared <- ledgr_prepare_accounting_events(events, instrument_ids)
+  replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
+  event_at_pulse <- findInterval(
+    as.numeric(as.POSIXct(pulses, tz = "UTC")),
+    as.numeric(prepared$ts_utc)
+  )
 
-  event_idx <- 1L
-  n_events <- nrow(events)
+  cash_at <- rep(as.numeric(initial_cash), length(pulses))
+  realized_at <- numeric(length(pulses))
+  basis_at <- numeric(length(pulses))
+  has_event <- event_at_pulse > 0L
+  cash_at[has_event] <- replay$cash_after[event_at_pulse[has_event]]
+  realized_at[has_event] <- replay$event_realized[event_at_pulse[has_event]]
+  basis_at[has_event] <- replay$event_cost_basis[event_at_pulse[has_event]]
 
-  apply_event <- function(row) {
-    meta <- ledgr_json_read_nested(row$meta_json[[1]])
-    cash_delta <- meta$cash_delta
-    position_delta <- meta$position_delta
-    if (!is.numeric(cash_delta) || length(cash_delta) != 1 || is.na(cash_delta) || !is.finite(cash_delta)) {
-      rlang::abort("ledger_events.meta_json must include a finite numeric scalar `cash_delta`.", class = "ledgr_invalid_ledger_meta")
-    }
-    if (!is.numeric(position_delta) || length(position_delta) != 1 || is.na(position_delta) || !is.finite(position_delta)) {
-      rlang::abort("ledger_events.meta_json must include a finite numeric scalar `position_delta`.", class = "ledgr_invalid_ledger_meta")
-    }
-
-    cash <<- cash + as.numeric(cash_delta)
-
-    instrument_id <- row$instrument_id[[1]]
-    if (!is.na(instrument_id) && nzchar(instrument_id)) {
-      if (is.null(names(positions)) || !(instrument_id %in% names(positions))) positions[instrument_id] <<- 0
-      positions[instrument_id] <<- positions[instrument_id] + as.numeric(position_delta)
-    }
-
-    if (identical(row$event_type[[1]], "CASHFLOW")) {
-      lot_res <- ledgr_lot_apply_event(
-        lot_state,
-        event_type = row$event_type[[1]],
-        instrument_id = instrument_id,
-        meta = meta
-      )
-      lot_state <<- lot_res$state
-      realized_pnl <<- lot_state$realized_pnl
-      return(invisible(TRUE))
-    }
-
-    if (!(row$event_type[[1]] %in% c("FILL", "FILL_PARTIAL")) || is.na(instrument_id) || !nzchar(instrument_id)) {
-      return(invisible(TRUE))
-    }
-
-    side <- row$side[[1]]
-    qty <- as.numeric(row$qty[[1]])
-    price <- as.numeric(row$price[[1]])
-    fee <- as.numeric(row$fee[[1]])
-
-    if (!is.character(side) || length(side) != 1 || is.na(side) || !(side %in% c("BUY", "SELL"))) {
-      rlang::abort("ledger_events.side must be 'BUY' or 'SELL' for FILL events.", class = "ledgr_invalid_ledger_event")
-    }
-    if (!is.numeric(qty) || length(qty) != 1 || is.na(qty) || !is.finite(qty) || qty <= 0) {
-      rlang::abort("ledger_events.qty must be a finite numeric scalar > 0 for FILL events.", class = "ledgr_invalid_ledger_event")
-    }
-    if (!is.numeric(price) || length(price) != 1 || is.na(price) || !is.finite(price) || price <= 0) {
-      rlang::abort("ledger_events.price must be a finite numeric scalar > 0 for FILL events.", class = "ledgr_invalid_ledger_event")
-    }
-    if (!is.numeric(fee) || length(fee) != 1 || is.na(fee) || !is.finite(fee) || fee < 0) {
-      rlang::abort("ledger_events.fee must be a finite numeric scalar >= 0 for FILL events.", class = "ledgr_invalid_ledger_event")
-    }
-
-    lot_res <- ledgr_lot_apply_event(
-      lot_state,
-      event_type = row$event_type[[1]],
-      instrument_id = instrument_id,
-      side = side,
-      qty = qty,
-      price = price,
-      fee = fee,
-      meta = meta
-    )
-    lot_state <<- lot_res$state
-    realized_pnl <<- lot_state$realized_pnl
-    invisible(TRUE)
-  }
+  positions_mat <- ledgr_accounting_positions_at_pulses(
+    replay,
+    pulses,
+    instrument_ids
+  )
 
   eq_rows <- vector("list", length(pulses))
   eq_idx <- 1L
 
   for (i in seq_along(pulses)) {
     t <- pulses[i]
-    while (event_idx <= n_events) {
-      ev_ts <- as.POSIXct(events$ts_utc[[event_idx]], tz = "UTC")
-      if (is.na(ev_ts)) rlang::abort("ledger_events.ts_utc contains an invalid timestamp.", class = "ledgr_invalid_ledger_event")
-      if (ev_ts > t) break
-      apply_event(events[event_idx, , drop = FALSE])
-      event_idx <- event_idx + 1L
-    }
-
+    positions <- stats::setNames(positions_mat[, i], instrument_ids)
     held <- positions[abs(positions) > 0]
     close_by_id <- get(format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), envir = close_map, inherits = FALSE)
     positions_value <- 0
@@ -305,23 +165,14 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
       positions_value <- sum(as.numeric(held) * close_by_id[ids])
     }
 
-    cost_basis_remaining <- 0
-    if (length(lot_state$lots) > 0) {
-      for (id in names(lot_state$lots)) {
-        for (lot in lot_state$lots[[id]]) {
-          cost_basis_remaining <- cost_basis_remaining + (as.numeric(lot$qty) * as.numeric(lot$price))
-        }
-      }
-    }
-
     eq_rows[[eq_idx]] <- list(
       run_id = run_id,
       ts_utc = t,
-      cash = cash,
+      cash = cash_at[[i]],
       positions_value = positions_value,
-      equity = cash + positions_value,
-      realized_pnl = realized_pnl,
-      unrealized_pnl = positions_value - cost_basis_remaining
+      equity = cash_at[[i]] + positions_value,
+      realized_pnl = realized_at[[i]],
+      unrealized_pnl = positions_value - basis_at[[i]]
     )
     eq_idx <- eq_idx + 1L
   }
@@ -338,26 +189,25 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   )
 
   # Internal invariant checks (I1/I2 level).
-  total_cash_delta <- 0
-  pos_deltas <- numeric(0)
-  for (i in seq_len(nrow(events))) {
-    meta <- ledgr_json_read_nested(events$meta_json[[i]])
-    total_cash_delta <- total_cash_delta + as.numeric(meta$cash_delta)
-    instrument_id <- events$instrument_id[[i]]
-    if (!is.na(instrument_id) && nzchar(instrument_id)) {
-      if (is.null(names(pos_deltas)) || !(instrument_id %in% names(pos_deltas))) pos_deltas[instrument_id] <- 0
-      pos_deltas[instrument_id] <- pos_deltas[instrument_id] + as.numeric(meta$position_delta)
-    }
-  }
-  expected_cash <- as.numeric(initial_cash) + total_cash_delta
+  expected_cash <- as.numeric(initial_cash) + sum(prepared$cash_delta)
   if (!isTRUE(all.equal(eq_df$cash[[nrow(eq_df)]], expected_cash, tolerance = 1e-10))) {
     rlang::abort("Cash identity violated: cash != initial_cash + sum(cash_delta).", class = "ledgr_invariant_violation")
   }
-  final_positions <- positions
-  if (length(pos_deltas) > 0) {
-    for (id in names(pos_deltas)) {
-      final_val <- if (is.null(names(final_positions)) || !(id %in% names(final_positions))) 0 else as.numeric(final_positions[[id]])
-      if (!isTRUE(all.equal(final_val, as.numeric(pos_deltas[[id]]), tolerance = 1e-10))) {
+  final_positions <- replay$positions
+  valid_position <- !is.na(prepared$instrument_id) & nzchar(prepared$instrument_id)
+  position_totals <- if (any(valid_position)) {
+    tapply(
+      prepared$position_delta[valid_position],
+      prepared$instrument_id[valid_position],
+      sum
+    )
+  } else {
+    numeric()
+  }
+  if (length(position_totals) > 0) {
+    for (id in names(position_totals)) {
+      final_val <- if (!(id %in% names(final_positions))) 0 else as.numeric(final_positions[[id]])
+      if (!isTRUE(all.equal(final_val, as.numeric(position_totals[[id]]), tolerance = 1e-10))) {
         rlang::abort("Position identity violated: positions != cumulative position_delta.", class = "ledgr_invariant_violation")
       }
     }
@@ -375,6 +225,11 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ?", params = list(run_id))
     DBI::dbAppendTable(con, "equity_curve", eq_df)
   }
+
+  touched_ids <- unique(prepared$instrument_id[
+    !is.na(prepared$instrument_id) & nzchar(prepared$instrument_id)
+  ])
+  positions <- if (length(touched_ids) > 0L) replay$positions[touched_ids] else numeric()
 
   structure(
     list(

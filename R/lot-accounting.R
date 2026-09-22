@@ -1,9 +1,17 @@
 ledgr_lot_state <- function(instrument_ids = character()) {
   instrument_ids <- as.character(instrument_ids)
   instrument_ids <- instrument_ids[!is.na(instrument_ids) & nzchar(instrument_ids)]
+  instrument_ids <- unique(instrument_ids)
+  n_inst <- length(instrument_ids)
   list(
-    lots = stats::setNames(vector("list", length(instrument_ids)), instrument_ids),
-    cost_basis_by_inst = stats::setNames(rep(0, length(instrument_ids)), instrument_ids),
+    instrument_ids = instrument_ids,
+    instrument_index = stats::setNames(seq_len(n_inst), instrument_ids),
+    lot_qty = rep(list(numeric()), n_inst),
+    lot_price = rep(list(numeric()), n_inst),
+    lot_head = stats::setNames(rep(1L, n_inst), instrument_ids),
+    lot_tail = stats::setNames(rep(0L, n_inst), instrument_ids),
+    net_by_inst = stats::setNames(rep(0, n_inst), instrument_ids),
+    cost_basis_by_inst = stats::setNames(rep(0, n_inst), instrument_ids),
     total_cost_basis = 0,
     realized_pnl = 0,
     realized_comp = 0
@@ -13,21 +21,93 @@ ledgr_lot_state <- function(instrument_ids = character()) {
 ledgr_lot_direction <- function(side) {
   side <- toupper(as.character(side))
   if (length(side) != 1L || is.na(side)) return(NA_integer_)
-  if (side %in% c("BUY", "COVER", "BUY_TO_COVER")) return(1L)
-  if (side %in% c("SELL", "SHORT", "SELL_SHORT")) return(-1L)
+  if (identical(side, "BUY")) return(1L)
+  if (identical(side, "SELL")) return(-1L)
   NA_integer_
 }
 
-ledgr_lot_basis <- function(lots) {
-  if (length(lots) < 1L) return(0)
-  sum(vapply(lots, function(lot) {
-    as.numeric(lot$qty) * as.numeric(lot$price)
-  }, numeric(1)))
+ledgr_lot_ensure_instrument <- function(state, instrument_id) {
+  idx <- unname(state$instrument_index[instrument_id])
+  if (length(idx) == 1L && !is.na(idx)) {
+    return(list(state = state, index = as.integer(idx)))
+  }
+
+  idx <- length(state$instrument_ids) + 1L
+  state$instrument_ids[[idx]] <- instrument_id
+  state$instrument_index[[instrument_id]] <- idx
+  state$lot_qty[[idx]] <- numeric()
+  state$lot_price[[idx]] <- numeric()
+  state$lot_head[[instrument_id]] <- 1L
+  state$lot_tail[[instrument_id]] <- 0L
+  state$net_by_inst[[instrument_id]] <- 0
+  state$cost_basis_by_inst[[instrument_id]] <- 0
+  list(state = state, index = idx)
 }
 
-ledgr_lot_get <- function(state, instrument_id) {
-  lots <- state$lots[[instrument_id]]
-  if (is.null(lots)) list() else lots
+ledgr_lot_values <- function(state, instrument_id) {
+  idx <- unname(state$instrument_index[instrument_id])
+  if (length(idx) != 1L || is.na(idx)) {
+    return(list(qty = numeric(), price = numeric()))
+  }
+  head <- as.integer(state$lot_head[[idx]])
+  tail <- as.integer(state$lot_tail[[idx]])
+  if (tail < head) {
+    return(list(qty = numeric(), price = numeric()))
+  }
+  live <- seq.int(head, tail)
+  list(
+    qty = as.numeric(state$lot_qty[[idx]][live]),
+    price = as.numeric(state$lot_price[[idx]][live])
+  )
+}
+
+ledgr_lot_count <- function(state, instrument_id) {
+  values <- ledgr_lot_values(state, instrument_id)
+  length(values$qty)
+}
+
+ledgr_lot_compact <- function(qty, price, head, tail, force = FALSE) {
+  live_n <- if (tail >= head) tail - head + 1L else 0L
+  if (live_n == 0L) {
+    return(list(qty = qty, price = price, head = 1L, tail = 0L))
+  }
+  dead_n <- head - 1L
+  if (!isTRUE(force) && dead_n <= live_n) {
+    return(list(qty = qty, price = price, head = head, tail = tail))
+  }
+  live <- seq.int(head, tail)
+  qty[seq_len(live_n)] <- qty[live]
+  price[seq_len(live_n)] <- price[live]
+  if (live_n < length(qty)) {
+    qty[seq.int(live_n + 1L, length(qty))] <- NA_real_
+    price[seq.int(live_n + 1L, length(price))] <- NA_real_
+  }
+  list(qty = qty, price = price, head = 1L, tail = live_n)
+}
+
+ledgr_lot_append_vectors <- function(qty, price, head, tail, value_qty, value_price) {
+  if (tail >= length(qty) && head > 1L) {
+    compacted <- ledgr_lot_compact(qty, price, head, tail, force = TRUE)
+    qty <- compacted$qty
+    price <- compacted$price
+    head <- compacted$head
+    tail <- compacted$tail
+  }
+  if (tail >= length(qty)) {
+    old_capacity <- length(qty)
+    new_capacity <- max(4L, old_capacity * 2L)
+    length(qty) <- new_capacity
+    length(price) <- new_capacity
+    if (new_capacity > old_capacity) {
+      idx <- seq.int(old_capacity + 1L, new_capacity)
+      qty[idx] <- NA_real_
+      price[idx] <- NA_real_
+    }
+  }
+  tail <- tail + 1L
+  qty[[tail]] <- as.numeric(value_qty)
+  price[[tail]] <- as.numeric(value_price)
+  list(qty = qty, price = price, head = head, tail = tail)
 }
 
 ledgr_lot_dust_tolerance <- function(...) {
@@ -51,22 +131,6 @@ ledgr_fill_leg_fees <- function(fee, close_qty, open_qty) {
   c(close = close_fee, open = open_fee)
 }
 
-ledgr_lot_set <- function(state, instrument_id, lots) {
-  if (is.null(state$lots[[instrument_id]])) {
-    state$lots[[instrument_id]] <- list()
-  }
-  if (is.null(names(state$cost_basis_by_inst)) || !(instrument_id %in% names(state$cost_basis_by_inst))) {
-    state$cost_basis_by_inst[[instrument_id]] <- 0
-  }
-
-  old_basis <- as.numeric(state$cost_basis_by_inst[[instrument_id]])
-  new_basis <- ledgr_lot_basis(lots)
-  state$lots[[instrument_id]] <- lots
-  state$cost_basis_by_inst[[instrument_id]] <- new_basis
-  state$total_cost_basis <- as.numeric(state$total_cost_basis) - old_basis + new_basis
-  state
-}
-
 ledgr_lot_add_realized <- function(state, delta) {
   y <- as.numeric(delta) - as.numeric(state$realized_comp)
   t <- as.numeric(state$realized_pnl) + y
@@ -87,9 +151,27 @@ ledgr_lot_apply_opening <- function(state, instrument_id, qty, cost_basis) {
     return(state)
   }
 
-  lots <- ledgr_lot_get(state, instrument_id)
-  lots[[length(lots) + 1L]] <- list(qty = qty, price = cost_basis)
-  ledgr_lot_set(state, instrument_id, lots)
+  ensured <- ledgr_lot_ensure_instrument(state, instrument_id)
+  state <- ensured$state
+  idx <- ensured$index
+  appended <- ledgr_lot_append_vectors(
+    state$lot_qty[[idx]],
+    state$lot_price[[idx]],
+    as.integer(state$lot_head[[idx]]),
+    as.integer(state$lot_tail[[idx]]),
+    qty,
+    cost_basis
+  )
+  state$lot_qty[[idx]] <- appended$qty
+  state$lot_price[[idx]] <- appended$price
+  state$lot_head[[idx]] <- appended$head
+  state$lot_tail[[idx]] <- appended$tail
+  old_basis <- as.numeric(state$cost_basis_by_inst[[idx]])
+  new_basis <- old_basis + qty * cost_basis
+  state$net_by_inst[[idx]] <- as.numeric(state$net_by_inst[[idx]]) + qty
+  state$cost_basis_by_inst[[idx]] <- new_basis
+  state$total_cost_basis <- as.numeric(state$total_cost_basis) - old_basis + new_basis
+  state
 }
 
 ledgr_lot_state_from_opening <- function(instrument_ids,
@@ -115,36 +197,21 @@ ledgr_lot_state_from_opening <- function(instrument_ids,
 }
 
 ledgr_lot_state_from_events <- function(events, instrument_ids = character()) {
-  state <- ledgr_lot_state(instrument_ids)
   if (is.null(events) || nrow(events) == 0L) {
-    return(state)
+    return(ledgr_lot_state(instrument_ids))
   }
-  events <- events[order(events$event_seq), , drop = FALSE]
-  for (i in seq_len(nrow(events))) {
-    meta <- ledgr_lot_parse_meta(events$meta_json[[i]])
-    out <- ledgr_lot_apply_event(
-      state,
-      event_type = events$event_type[[i]],
-      instrument_id = events$instrument_id[[i]],
-      side = events$side[[i]],
-      qty = events$qty[[i]],
-      price = events$price[[i]],
-      fee = events$fee[[i]],
-      meta = meta
-    )
-    state <- out$state
-  }
-  state
+  prepared <- ledgr_prepare_accounting_events(events, instrument_ids)
+  ledgr_replay_accounting_events(prepared)$lot_state
 }
 
 ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
+    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
-      AND event_type IN ('CASHFLOW', 'FILL', 'FILL_PARTIAL')
+      AND event_type IN ('CASHFLOW', 'FILL')
     ORDER BY event_seq
     ",
     params = list(run_id, ts_utc)
@@ -169,70 +236,121 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
     )
   }
 
-  lots <- ledgr_lot_get(state, instrument_id)
-  net_pos <- if (length(lots) > 0L) {
-    sum(vapply(lots, function(lot) as.numeric(lot$qty), numeric(1)))
-  } else {
-    0
-  }
+  ensured <- ledgr_lot_ensure_instrument(state, instrument_id)
+  state <- ensured$state
+  idx <- ensured$index
+  lot_qty <- state$lot_qty[[idx]]
+  lot_price <- state$lot_price[[idx]]
+  lot_head <- as.integer(state$lot_head[[idx]])
+  lot_tail <- as.integer(state$lot_tail[[idx]])
+  net_pos <- as.numeric(state$net_by_inst[[idx]])
+  old_basis <- as.numeric(state$cost_basis_by_inst[[idx]])
+  basis_delta <- 0
   close_qty <- 0
-  if (direction > 0L && net_pos < 0) {
-    close_qty <- min(qty, abs(net_pos))
-  } else if (direction < 0L && net_pos > 0) {
-    close_qty <- min(qty, net_pos)
-  }
-  open_qty <- qty - close_qty
-
-  remaining_close <- close_qty
+  remaining_fill <- qty
   realized_close <- 0
-  if (remaining_close > 0) {
+  if (remaining_fill > 0 && lot_tail >= lot_head) {
     if (direction > 0L) {
-      while (remaining_close > 0 && length(lots) > 0 && as.numeric(lots[[1]]$qty) < 0) {
-        lot_qty <- abs(as.numeric(lots[[1]]$qty))
-        lot_price <- as.numeric(lots[[1]]$price)
-        take <- min(lot_qty, remaining_close)
-        realized_close <- realized_close + (lot_price - price) * take
-        lot_qty <- lot_qty - take
-        remaining_close <- remaining_close - take
-        tol <- ledgr_lot_dust_tolerance(take, lot_qty, remaining_close)
-        if (abs(remaining_close) <= tol) {
-          remaining_close <- 0
+      while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] < 0) {
+        current_qty <- abs(as.numeric(lot_qty[[lot_head]]))
+        current_price <- as.numeric(lot_price[[lot_head]])
+        take <- min(current_qty, remaining_fill)
+        realized_close <- realized_close + (current_price - price) * take
+        basis_delta <- basis_delta + take * current_price
+        current_qty <- current_qty - take
+        remaining_fill <- remaining_fill - take
+        close_qty <- close_qty + take
+        tol <- ledgr_lot_dust_tolerance(qty, take, current_qty, remaining_fill)
+        if (abs(remaining_fill) <= tol) {
+          remaining_fill <- 0
         }
-        if (lot_qty <= tol) {
-          lots <- lots[-1]
+        if (current_qty <= tol) {
+          lot_qty[[lot_head]] <- NA_real_
+          lot_price[[lot_head]] <- NA_real_
+          lot_head <- lot_head + 1L
         } else {
-          lots[[1]]$qty <- -lot_qty
+          lot_qty[[lot_head]] <- -current_qty
         }
       }
     } else {
-      while (remaining_close > 0 && length(lots) > 0 && as.numeric(lots[[1]]$qty) > 0) {
-        lot_qty <- as.numeric(lots[[1]]$qty)
-        lot_price <- as.numeric(lots[[1]]$price)
-        take <- min(lot_qty, remaining_close)
-        realized_close <- realized_close + (price - lot_price) * take
-        lot_qty <- lot_qty - take
-        remaining_close <- remaining_close - take
-        tol <- ledgr_lot_dust_tolerance(take, lot_qty, remaining_close)
-        if (abs(remaining_close) <= tol) {
-          remaining_close <- 0
+      while (remaining_fill > 0 && lot_tail >= lot_head && lot_qty[[lot_head]] > 0) {
+        current_qty <- as.numeric(lot_qty[[lot_head]])
+        current_price <- as.numeric(lot_price[[lot_head]])
+        take <- min(current_qty, remaining_fill)
+        realized_close <- realized_close + (price - current_price) * take
+        basis_delta <- basis_delta - take * current_price
+        current_qty <- current_qty - take
+        remaining_fill <- remaining_fill - take
+        close_qty <- close_qty + take
+        tol <- ledgr_lot_dust_tolerance(qty, take, current_qty, remaining_fill)
+        if (abs(remaining_fill) <= tol) {
+          remaining_fill <- 0
         }
-        if (lot_qty <= tol) {
-          lots <- lots[-1]
+        if (current_qty <= tol) {
+          lot_qty[[lot_head]] <- NA_real_
+          lot_price[[lot_head]] <- NA_real_
+          lot_head <- lot_head + 1L
         } else {
-          lots[[1]]$qty <- lot_qty
+          lot_qty[[lot_head]] <- current_qty
         }
       }
     }
   }
 
-  if (open_qty > 0) {
-    lots[[length(lots) + 1L]] <- list(
-      qty = if (direction > 0L) open_qty else -open_qty,
-      price = price
-    )
+  open_qty <- remaining_fill
+
+  if (lot_head > lot_tail) {
+    lot_head <- 1L
+    lot_tail <- 0L
+  } else {
+    compacted <- ledgr_lot_compact(lot_qty, lot_price, lot_head, lot_tail)
+    lot_qty <- compacted$qty
+    lot_price <- compacted$price
+    lot_head <- compacted$head
+    lot_tail <- compacted$tail
   }
 
-  state <- ledgr_lot_set(state, instrument_id, lots)
+  book_empty_before_open <- lot_head > lot_tail
+  if (open_qty > 0 && !book_empty_before_open &&
+      sign(lot_qty[[lot_head]]) != direction) {
+    rlang::abort(
+      "Lot accounting cannot open through an unconsumed opposing lot.",
+      class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+    )
+  }
+  if (open_qty > 0) {
+    signed_open <- if (direction > 0L) open_qty else -open_qty
+    appended <- ledgr_lot_append_vectors(
+      lot_qty,
+      lot_price,
+      lot_head,
+      lot_tail,
+      signed_open,
+      price
+    )
+    lot_qty <- appended$qty
+    lot_price <- appended$price
+    lot_head <- appended$head
+    lot_tail <- appended$tail
+    basis_delta <- basis_delta + signed_open * price
+  }
+
+  new_basis <- old_basis + basis_delta
+  new_net <- if (book_empty_before_open) {
+    direction * open_qty
+  } else {
+    net_pos + direction * qty
+  }
+  tol <- ledgr_lot_dust_tolerance(new_basis, new_net, qty, price)
+  if (abs(new_basis) <= tol) new_basis <- 0
+  if (abs(new_net) <= tol) new_net <- 0
+  state$lot_qty[[idx]] <- lot_qty
+  state$lot_price[[idx]] <- lot_price
+  state$lot_head[[idx]] <- lot_head
+  state$lot_tail[[idx]] <- lot_tail
+  state$net_by_inst[[idx]] <- new_net
+  state$cost_basis_by_inst[[idx]] <- new_basis
+  state$total_cost_basis <- as.numeric(state$total_cost_basis) - old_basis + new_basis
   realized_delta <- realized_close - fee
   state <- ledgr_lot_add_realized(state, realized_delta)
 
@@ -272,7 +390,7 @@ ledgr_lot_apply_event <- function(state,
                                   meta = NULL) {
   event_type <- as.character(event_type)
   if (length(event_type) != 1L || is.na(event_type)) {
-    return(list(state = state, kind = "ignored"))
+    ledgr_accounting_event_error("Accounting event_type must be a non-missing scalar.")
   }
 
   if (identical(event_type, "CASHFLOW") && ledgr_lot_meta_is_opening(meta)) {
@@ -285,7 +403,11 @@ ledgr_lot_apply_event <- function(state,
     return(list(state = state, kind = "opening"))
   }
 
-  if (event_type %in% c("FILL", "FILL_PARTIAL")) {
+  if (identical(event_type, "CASHFLOW")) {
+    return(list(state = state, kind = "cashflow"))
+  }
+
+  if (identical(event_type, "FILL")) {
     out <- ledgr_lot_apply_fill(
       state,
       instrument_id = instrument_id,
@@ -298,5 +420,8 @@ ledgr_lot_apply_event <- function(state,
     return(out)
   }
 
-  list(state = state, kind = "ignored")
+  ledgr_accounting_event_error(sprintf(
+    "Unsupported accounting event_type: %s.",
+    event_type
+  ))
 }

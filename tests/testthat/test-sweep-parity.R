@@ -79,7 +79,7 @@ ledgr_parity_final_positions <- function(fills) {
   stats::setNames(vapply(instruments, function(instrument_id) {
     rows <- fills[as.character(fills$instrument_id) == instrument_id, , drop = FALSE]
     side <- toupper(as.character(rows$side))
-    direction <- ifelse(side %in% c("BUY", "COVER", "BUY_TO_COVER"), 1, -1)
+    direction <- ifelse(side == "BUY", 1, -1)
     sum(direction * as.numeric(rows$qty), na.rm = TRUE)
   }, numeric(1)), instruments)
 }

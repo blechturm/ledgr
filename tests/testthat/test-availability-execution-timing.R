@@ -56,7 +56,7 @@ availability_make_legacy_timing_run <- function(path, run_id) {
     opened$con,
     paste(
       "SELECT event_seq, ts_utc FROM ledger_events",
-      "WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')",
+      "WHERE run_id = ? AND event_type = 'FILL'",
       "ORDER BY event_seq"
     ),
     params = list(run_id)
@@ -84,7 +84,7 @@ availability_make_legacy_timing_run <- function(path, run_id) {
     opened$con,
     paste(
       "SELECT MAX(ts_utc) AS ts_utc FROM ledger_events",
-      "WHERE run_id = ? AND event_type IN ('FILL', 'FILL_PARTIAL')"
+      "WHERE run_id = ? AND event_type = 'FILL'"
     ),
     params = list(run_id)
   )$ts_utc[[1L]]

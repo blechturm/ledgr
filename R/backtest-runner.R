@@ -1479,7 +1479,7 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
+    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
     ORDER BY event_seq
@@ -1487,25 +1487,16 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
     params = list(run_id, ts_utc)
   )
 
-  cash <- as.numeric(initial_cash)
-  pos <- numeric(0)
-  if (nrow(rows) > 0) {
-    for (i in seq_len(nrow(rows))) {
-      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
-      cash <- cash + as.numeric(meta$cash_delta)
-      instrument_id <- rows$instrument_id[[i]]
-      if (!is.na(instrument_id) && nzchar(instrument_id)) {
-        if (is.null(names(pos)) || !(instrument_id %in% names(pos))) pos[instrument_id] <- 0
-        pos[instrument_id] <- pos[instrument_id] + as.numeric(meta$position_delta)
-      }
-    }
-  }
+  prepared <- ledgr_prepare_accounting_events(rows, instrument_ids)
+  replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
+  cash <- replay$cash
+  pos <- replay$positions
 
   held <- pos[abs(pos) > 0]
   positions_value <- 0
   if (length(held) > 0) {
-    instrument_ids <- names(held)
-    ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
+    held_ids <- names(held)
+    ids_sql <- paste(DBI::dbQuoteString(con, held_ids), collapse = ", ")
     bars <- DBI::dbGetQuery(
       con,
       paste0(
@@ -1516,54 +1507,14 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc, instrument_ids =
       params = list(ts_utc)
     )
     close_by_id <- stats::setNames(as.numeric(bars$close), bars$instrument_id)
-    positions_value <- sum(as.numeric(held) * close_by_id[instrument_ids])
+    positions_value <- sum(as.numeric(held) * close_by_id[held_ids])
   }
 
   list(
     cash = cash,
     positions = pos,
     equity = cash + positions_value,
-    lot_state = ledgr_lot_state_from_events(rows, instrument_ids = instrument_ids)
-  )
-}
-
-ledgr_update_state_incremental <- function(con, run_id, last_event_seq, ts_utc, current_state) {
-  if (!is.list(current_state) || is.null(current_state$cash) || is.null(current_state$positions)) {
-    rlang::abort("`current_state` must include cash and positions.", class = "ledgr_invalid_args")
-  }
-
-  rows <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT event_seq, instrument_id, meta_json
-    FROM ledger_events
-    WHERE run_id = ? AND event_seq > ? AND ts_utc <= ?
-    ORDER BY event_seq
-    ",
-    params = list(run_id, as.integer(last_event_seq), ts_utc)
-  )
-
-  cash <- as.numeric(current_state$cash)
-  pos <- current_state$positions
-  if (!is.numeric(pos)) pos <- as.numeric(pos)
-  if (is.null(names(pos))) names(pos) <- character(0)
-
-  if (nrow(rows) > 0) {
-    for (i in seq_len(nrow(rows))) {
-      meta <- ledgr_json_read_nested(rows$meta_json[[i]])
-      cash <- cash + as.numeric(meta$cash_delta)
-      instrument_id <- rows$instrument_id[[i]]
-      if (!is.na(instrument_id) && nzchar(instrument_id)) {
-        if (is.null(names(pos)) || !(instrument_id %in% names(pos))) pos[instrument_id] <- 0
-        pos[instrument_id] <- pos[instrument_id] + as.numeric(meta$position_delta)
-      }
-    }
-    last_event_seq <- rows$event_seq[[nrow(rows)]]
-  }
-
-  list(
-    state = list(cash = cash, positions = pos),
-    last_event_seq = as.integer(last_event_seq)
+    lot_state = replay$lot_state
   )
 }
 

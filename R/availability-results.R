@@ -244,28 +244,17 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
   events <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT instrument_id, meta_json FROM ledger_events",
+      paste(
+        "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+        "qty, price, fee, meta_json, event_seq FROM ledger_events"
+      ),
       "WHERE run_id = ? AND ts_utc <= ? ORDER BY event_seq"
     ),
     params = list(run_id, ts_utc)
   )
-  positions <- numeric()
-  if (nrow(events) == 0L) return(positions)
-  for (i in seq_len(nrow(events))) {
-    id <- as.character(events$instrument_id[[i]])
-    if (is.na(id) || !nzchar(id)) next
-    meta <- ledgr_json_read_nested(events$meta_json[[i]])
-    delta <- meta$position_delta
-    if (!is.numeric(delta) || length(delta) != 1L || is.na(delta) || !is.finite(delta)) {
-      rlang::abort(
-        "ledger_events.meta_json must include a finite numeric scalar `position_delta`.",
-        class = "ledgr_invalid_ledger_meta"
-      )
-    }
-    if (!(id %in% names(positions))) positions[[id]] <- 0
-    positions[[id]] <- positions[[id]] + as.numeric(delta)
-  }
-  positions
+  if (nrow(events) == 0L) return(numeric())
+  prepared <- ledgr_prepare_accounting_events(events)
+  ledgr_replay_accounting_events(prepared)$positions
 }
 
 ledgr_availability_marks_at <- function(provider, axis, calendar, pulse_idx) {

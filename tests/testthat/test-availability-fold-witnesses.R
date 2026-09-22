@@ -82,6 +82,10 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
   surfaces <- c(
     "diagnostics", "events", "equity", "state", "completion", "identity"
   )
+  # LDG-2403 registered 1e-10 for harmless accounting-order noise. Keep exact
+  # identity for every frozen field except the one derived value whose summation
+  # order changed with delta-maintained basis.
+  accounting_tolerance <- 1e-10
   for (surface in surfaces) {
     expected <- utils::read.csv(
       file.path(fixture_dir, paste0(surface, ".csv")),
@@ -96,7 +100,26 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       actual$engine_version <- NULL
       expected$engine_version <- NULL
     }
-    testthat::expect_identical(actual, expected, info = surface)
+    if (identical(surface, "equity")) {
+      tolerant_column <- "unrealized_pnl"
+      testthat::expect_identical(
+        actual[, setdiff(names(actual), tolerant_column), drop = FALSE],
+        expected[, setdiff(names(expected), tolerant_column), drop = FALSE],
+        info = surface
+      )
+      actual_value <- suppressWarnings(as.numeric(actual[[tolerant_column]]))
+      expected_value <- suppressWarnings(as.numeric(expected[[tolerant_column]]))
+      actual_value[actual[[tolerant_column]] == "<NA>"] <- NA_real_
+      expected_value[expected[[tolerant_column]] == "<NA>"] <- NA_real_
+      testthat::expect_equal(
+        actual_value,
+        expected_value,
+        tolerance = accounting_tolerance,
+        info = paste(surface, tolerant_column)
+      )
+    } else {
+      testthat::expect_identical(actual, expected, info = surface)
+    }
     perturbed <- expected
     perturbed[[1L]][[1L]] <- paste0(perturbed[[1L]][[1L]], "-perturbed")
     testthat::expect_error(

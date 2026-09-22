@@ -91,26 +91,30 @@ ledgr_require_compiled_spot_fifo_dispatch <- function(execution, output_handler)
 }
 
 ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
-  lots <- lot_state$lots %||% stats::setNames(vector("list", length(instrument_ids)), instrument_ids)
-  n_lots <- sum(vapply(instrument_ids, function(instrument_id) {
-    length(lots[[instrument_id]])
-  }, integer(1)))
+  state_idx <- unname(lot_state$instrument_index[instrument_ids])
+  lot_counts <- vapply(state_idx, function(idx) {
+    if (is.na(idx)) return(0L)
+    max(0L, as.integer(lot_state$lot_tail[[idx]]) -
+      as.integer(lot_state$lot_head[[idx]]) + 1L)
+  }, integer(1))
+  n_lots <- sum(lot_counts)
   lot_inst_idx <- integer(n_lots)
   lot_qty <- numeric(n_lots)
   lot_price <- numeric(n_lots)
   out_idx <- 0L
   for (inst_idx in seq_along(instrument_ids)) {
-    instrument_id <- instrument_ids[[inst_idx]]
-    inst_lots <- lots[[instrument_id]]
-    if (length(inst_lots) == 0L) {
-      next
-    }
-    for (lot in inst_lots) {
-      out_idx <- out_idx + 1L
-      lot_inst_idx[[out_idx]] <- as.integer(inst_idx)
-      lot_qty[[out_idx]] <- as.numeric(lot$qty)
-      lot_price[[out_idx]] <- as.numeric(lot$price)
-    }
+    state_i <- state_idx[[inst_idx]]
+    count <- lot_counts[[inst_idx]]
+    if (is.na(state_i) || count == 0L) next
+    live <- seq.int(
+      as.integer(lot_state$lot_head[[state_i]]),
+      as.integer(lot_state$lot_tail[[state_i]])
+    )
+    target <- seq.int(out_idx + 1L, out_idx + count)
+    lot_inst_idx[target] <- as.integer(inst_idx)
+    lot_qty[target] <- as.numeric(lot_state$lot_qty[[state_i]][live])
+    lot_price[target] <- as.numeric(lot_state$lot_price[[state_i]][live])
+    out_idx <- out_idx + count
   }
   list(
     lot_inst_idx = lot_inst_idx,
@@ -122,13 +126,19 @@ ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
 ledgr_compiled_spot_fifo_unpack_lots <- function(batch, instrument_ids) {
   state <- ledgr_lot_state(instrument_ids)
   if (length(batch$lot_inst_idx) > 0L) {
-    for (i in seq_along(batch$lot_inst_idx)) {
-      inst_idx <- as.integer(batch$lot_inst_idx[[i]])
-      instrument_id <- instrument_ids[[inst_idx]]
-      state$lots[[instrument_id]][[length(state$lots[[instrument_id]]) + 1L]] <- list(
-        qty = as.numeric(batch$lot_qty[[i]]),
-        price = as.numeric(batch$lot_price[[i]])
-      )
+    grouped <- split(
+      seq_along(batch$lot_inst_idx),
+      factor(batch$lot_inst_idx, levels = seq_along(instrument_ids)),
+      drop = FALSE
+    )
+    for (inst_idx in seq_along(grouped)) {
+      rows <- grouped[[inst_idx]]
+      if (length(rows) == 0L) next
+      state$lot_qty[[inst_idx]] <- as.numeric(batch$lot_qty[rows])
+      state$lot_price[[inst_idx]] <- as.numeric(batch$lot_price[rows])
+      state$lot_head[[inst_idx]] <- 1L
+      state$lot_tail[[inst_idx]] <- length(rows)
+      state$net_by_inst[[inst_idx]] <- sum(state$lot_qty[[inst_idx]])
     }
   }
   state$cost_basis_by_inst <- stats::setNames(

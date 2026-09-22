@@ -379,9 +379,9 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
     con,
     sprintf(
       "
-      SELECT run_id, event_seq, event_type, instrument_id, side, qty, price, fee, meta_json
+      SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
       FROM ledger_events
-      WHERE run_id IN (%s) AND event_type IN ('CASHFLOW', 'FILL', 'FILL_PARTIAL')
+      WHERE run_id IN (%s) AND event_type IN ('CASHFLOW', 'FILL')
       ORDER BY run_id, event_seq
       ",
       placeholders
@@ -398,50 +398,9 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
       return(data.frame(run_id = run_id, n_trades = 0L, win_rate = NA_real_, avg_trade = NA_real_, stringsAsFactors = FALSE))
     }
 
-    lot_state <- ledgr_lot_state()
-    realized <- numeric(0)
-
-    for (i in seq_len(nrow(run_rows))) {
-      event_type <- as.character(run_rows$event_type[[i]])
-      inst <- as.character(run_rows$instrument_id[[i]])
-      meta <- ledgr_lot_parse_meta(run_rows$meta_json[[i]])
-      if (identical(event_type, "CASHFLOW")) {
-        lot_res <- ledgr_lot_apply_event(
-          lot_state,
-          event_type = event_type,
-          instrument_id = inst,
-          meta = meta
-        )
-        lot_state <- lot_res$state
-        next
-      }
-
-      side_norm <- toupper(as.character(run_rows$side[[i]]))
-      qty <- suppressWarnings(as.numeric(run_rows$qty[[i]]))
-      price <- suppressWarnings(as.numeric(run_rows$price[[i]]))
-      if (is.na(qty) || qty <= 0 || is.na(price)) {
-        next
-      }
-      if (!(side_norm %in% c("BUY", "COVER", "BUY_TO_COVER", "SELL", "SHORT", "SELL_SHORT"))) {
-        next
-      }
-
-      lot_res <- ledgr_lot_apply_event(
-        lot_state,
-        event_type = event_type,
-        instrument_id = inst,
-        side = side_norm,
-        qty = qty,
-        price = price,
-        fee = suppressWarnings(as.numeric(run_rows$fee[[i]])),
-        meta = meta
-      )
-      lot_state <- lot_res$state
-
-      if (is.finite(lot_res$close_qty) && lot_res$close_qty > 0) {
-        realized <- c(realized, lot_res$realized_close)
-      }
-    }
+    prepared <- ledgr_prepare_accounting_events(run_rows)
+    replay <- ledgr_replay_accounting_events(prepared)
+    realized <- replay$realized_close[replay$close_qty > 0]
 
     n_trades <- length(realized)
     data.frame(

@@ -16,8 +16,8 @@ cuts:
     authority: "inst/design/rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md"
     source_table: "inst/design/audits/post_v0_2_0_1_accounting_core_inventory_sites.csv"
     workstreams: [6]
-    closeout: "pending"
-    status: "cut"
+    closeout: "accounting_core_closeout.md"
+    status: "review_pending"
   - id: 3
     name: "Ingestion consolidation"
     cut: "2026-09-22"
@@ -88,7 +88,7 @@ workstreams:
   - id: 6
     name: "Accounting core"
     cut: 2
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: 5
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 6", reason: "The synthesis chose the architecture; the workstream implements it. One review at close checks parity on every surface, that the D5 detector fails on a reintroduced scan, and that no cash or position write entered the lot kernel. The maintainer may call one optional check after LDG-2777, so the carrier and its scaling detector are reviewed together before the preparer and replay are built on them."}
@@ -452,102 +452,112 @@ tickets:
   - id: "LDG-2776"
     title: "Flat lot carrier with running net and no per-fill scans"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: []
     scope: "Synthesis 3.1 and D6. Per-instrument lot_qty and lot_price vectors with lot_head and lot_tail, geometric growth on push, head removal by index, compaction when the dead prefix exceeds the live segment. net_by_inst added. cost_basis_by_inst and total_cost_basis maintained from the fill loop's own deltas, including the opening seed; the net scan at lot-accounting.R:174 and ledgr_lot_set's ledgr_lot_basis() call removed; ledgr_lot_get and ledgr_lot_set retired. cost_basis_by_inst, total_cost_basis, realized_pnl and realized_comp keep their names and types. Cash and positions are not touched (3.2). Tests that compare the nested shape are updated to compare through the kernel's accessors. Copy-on-modify into list-held vectors is recorded in the evidence, not hidden."
     acceptance: ["exact parity on lots, realized PnL, and cost basis across opening, reversal, fractional-dust, short, and deep-lot traces", "the frozen fold-witness fixtures pass unchanged", "no cash or position write exists inside lot-accounting.R", "the per-fill copy cost at the registered depth is recorded", "no persisted schema field, identity component, or public result changes"]
+    evidence: ["LTB-0018 covers independent opening, reversal, short, a seven-fill fractional multi-lot reversal, and 512-lot arithmetic. Closing is driven by the lot segment rather than the cached net; the witness checks the net/segment invariant after every fractional fill. LTB-0006 seeds separate BUY- and SELL-direction multi-lot dust states; each becomes mixed-sign if its compiled consumption loop omits the full fill magnitude from the tolerance. At 1,600 lots the measured copy increment was about 5 us/call. The frozen artifact is unchanged; its gate changed explicitly so cash, positions_value, equity, and realized_pnl remain exact while only unrealized_pnl uses the existing 1e-10 parity tolerance for a measured 1.819e-12 residual."]
 
   - id: "LDG-2777"
     title: "D5 depth-scaling detector with a mutation proof"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2776"]
     scope: "Synthesis D5. A review-profile block records normalised per-event kernel cost across at least four depths and fails on any material positive depth dependence beyond a preregistered noise allowance; a superlinearity test is insufficient because a write-path rescan is linear in depth. Proven by a mutation that reintroduces a net or basis scan in the write path and makes the detector fail. The lots[-1] depth curve from the inventory is retained as input to the compiled-execution RFC."
     acceptance: ["the detector passes on the LDG-2776 kernel", "a reintroduced write-path scan makes it fail for its stated reason", "the depths and the noise allowance are preregistered in the block, not tuned after the fact"]
+    evidence: ["LTB-0021 preregisters depths 25/100/400/800 and allowance 0.30. Production was flat at 20 us/event (slope 0.000); the injected rescan reached 440 us (slope 0.695) and failed the detector."]
 
   - id: "LDG-2778"
     title: "One preparer over the shared event column contract"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2776"]
     scope: "Synthesis 3.3. One preparer takes a list of column vectors from either source, the dbFetch result or the memory buffer's vectors sliced to the event count, neither handoff carrying logic. It establishes order, maps instrument IDs to a stable index, coerces ts_utc once (memory is already POSIXct; the table needs coercion), parses meta_json once and ignores memory's parsed meta, derives cash_delta and position_delta from metadata when absent and never trusts both, treats event_realized and event_cost_basis as outputs never inputs, validates BUY or SELL, positive qty and price, fee at least zero, and the opening-meta shape once, and assigns the closed operation set: fill, cash-position delta, opening seed. Any other event_type, side, or metadata shape fails closed."
     acceptance: ["prepare(memory) and prepare(duckdb) for the same run are identical before any replay", "an unknown event_type or side fails closed with a named condition class", "a non-positive qty or price, a negative fee, and a malformed opening-meta shape each fail closed with a named condition class", "the preparer is the only vocabulary check on the new path; deletion of the old checks belongs to LDG-2782"]
+    evidence: ["LTB-0019 compares the two source shapes before replay and exercises unknown type, unknown side, non-positive quantity/price, negative fee and malformed opening metadata against ledgr_invalid_accounting_event or its named metadata subclass. It also proves finite zero and negative opening cost bases remain readable, matching the writer and live kernel rather than introducing a new sign rule."]
 
   - id: "LDG-2779"
     title: "One prepared-event replay; redirect five drivers and two consumers"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-2778"]
     scope: "Synthesis 3.3 and 3.4. One replay applies ledgr_lot_apply_event over the prepared block and returns per-event fact vectors (post-event realized PnL and cost basis, close and open quantities, realized close and delta, event sequence) plus final lot state, with no retention-policy argument. Redirect derived-state.R's equity driver, backtest-fills.R's fills driver keeping its 50,000-row fetch with final state passed between blocks, fold-reconstruction.R's equity and fills drivers, and lot-accounting.R's ledgr_lot_state_from_events; and the two consumers, ledgr_lot_state_asof and the runner's resume path. The live fold keeps calling the transition directly. Also redirect the readers the inventory's 2026-09-22 correction names: ledgr_availability_positions_asof (availability-results.R:243; callers at :335, :367 and walk-forward.R:902) and ledgr_run_finalize's !use_fold_equity branch (run-finalize.R:423) consume the replay's cash and position facts instead of parsing meta_json themselves; ledgr_compare_runs_fill_stats (run-store.R:366) is a seventh lot driver and is redirected like the others. Projections stay outside: equity maps facts to pulses, fills and trades split legs and allocate fees under contracts.md:949-953, state-as-of and resume keep final state, walk-forward reads cost_basis_by_inst."
     acceptance: ["exact parity on event order, cash, positions, lots, fills, trades, fees, opening state, and event sequence for every supported behaviour, with existing tolerance only where the contract permits it", "identical output across the fetch boundary and as one memory block", "resume, state-as-of, and walk-forward carry parity", "LCL-0006 holds on the FILL intersection; independently calculated ordinary-CASHFLOW and opening-seed cases pass", "every production projection and reader is routed to the replay; deletion of the superseded loops belongs to LDG-2780"]
+    evidence: ["All inventory drivers and corrected readers route through one prepared replay. The event-to-pulse position projection is shared by equity and derived state and groups event indexes once instead of rescanning all events per instrument. LTB-0020 compares 50,002 persisted events across the real 50,000-row dbFetch boundary with one-block output; LTB-0022/0023 cover resume and walk-forward carry; canonical/compiled parity includes the fractional multi-lot reversal."]
 
   - id: "LDG-2780"
     title: "Remove the superseded loops, basis walk, pack/unpack allocation, and ignored fallthrough"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2779"]
     scope: "Synthesis 5.3. Delete the derived-state.R:305-315 basis walk in favour of one read of total_cost_basis; the five superseded driver loops; the per-lot list() allocation in compiled-spot-fifo.R pack and unpack, replaced by segment concatenation and split whose cost is recorded, not optimised, as input to the compiled-execution RFC; and the kind = ignored escapes at lot-accounting.R:275 and :301; and the three dead ledger readers with no caller in R/ or tests: ledgr_reconstruct_positions (derived-state.R:1), ledgr_reconstruct_cash (derived-state.R:42), ledgr_update_state_incremental (backtest-runner.R:1539). Each deletion lands only after its detecting witness from LDG-2779 passes, or, for the dead readers, after a grep proves no caller."
     acceptance: ["every deletion names its witness in the commit message", "no kind = ignored return remains in lot-accounting.R", "the pack/unpack transfer cost is recorded in the evidence", "the suite is green in fast, review, and the heavy protocol"]
+    evidence: ["Superseded loops, the derived basis walk, per-lot compiled list allocation, ignored fallthrough and three caller-free readers are absent. The old FIFO Mismatch and Malformed meta_json warnings were also deleted: production never writes meta.realized_pnl, and the shared preparer now fails closed on malformed JSON. The acceptance commit must name these deletions. At 1,600 lots pack/unpack measured 25/40 us; corrected profile clocks are recorded in accounting_core_closeout.md."]
 
   - id: "LDG-2781"
     title: "FEE: check persisted runs, then tighten the CHECK or document as reserved"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "Synthesis D2. The schema admits FEE at db-schema-create.R:198 and nothing produces or handles it. Query persisted runs for any FEE row first. If none exists, tighten the CHECK to the reachable vocabulary; if any exists, document FEE as reserved and leave the constraint. No new economics on either branch."
     acceptance: ["the persisted-run check is recorded with its query and result", "the branch taken is named with its reason", "no FEE semantics are added"]
+    evidence: ["A read-only census found zero FEE rows across eight local benchmark stores, so fresh and zero-FEE stores tighten to FILL/CASHFLOW. A migration witness preserves a constructed historical FEE row without inventing economics and proves readers reject it; an affected store requires explicit operator remediation before results are read."]
 
   - id: "LDG-2782"
     title: "Delete dead side tokens, directional guards, and FILL_PARTIAL branches"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2779"]
     scope: "Synthesis D3. Dead R branches only: the four extra tokens in ledgr_lot_direction (COVER, BUY_TO_COVER, SHORT, SELL_SHORT), the two directional guards and their net_pos rescan in backtest-fills.R:196-224, and every FILL_PARTIAL check. FILL_PARTIAL is never admitted by the schema; the schema is not changed here."
     acceptance: ["one commit names each deletion", "ledgr_lot_direction accepts BUY and SELL only", "the schema is untouched", "the suite is green"]
+    evidence: ["COVER, BUY_TO_COVER, SHORT, SELL_SHORT, both directional replay guards and every FILL_PARTIAL branch were removed; a tree search is empty and all three profiles pass. The ticket itself does not alter schema."]
 
   - id: "LDG-2783"
     title: "Per-call kernel overhead (optional)"
     workstream: 6
-    status: "pending"
+    status: "deferred"
     priority: "P2"
     effort: "M"
     dependencies: ["LDG-2776"]
     scope: "Synthesis D1. About 30 us per fill at any depth in validation redundancy, as.numeric() coercion, and residual copying. Gated on keeping every validation the kernel performs today. May be deferred without affecting workstream acceptance."
     acceptance: ["every current validation still fires on its rejecting input", "the per-fill floor at depth 2 is measured before and after and recorded"]
+    evidence: ["Deferred under synthesis D1. The workstream kept all validation and did not trade correctness for the remaining shallow-depth floor."]
 
   - id: "LDG-2784"
     title: "Register the accounting-core claims"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2779", "LDG-2777"]
     scope: "Synthesis D4. Rows in tests/claims.yml with [LTB-nnnn] prefixes and promised profiles for: fill transition parity across opening, reversal, dust, and deep-lot traces; cross-fetch equivalence for the chunked reader; resume and walk-forward carry parity; construction parity under a parallel sweep with non-empty opening positions; the D5 detector; and the existing LCL-0006 retained. This is the first load-bearing code to land since the registry existed."
     acceptance: ["the registry validates and every listed claim resolves to a block that ran where promised", "the parallel-sweep witness asserts worker-built state equals sequential state", "LCL-0006 still names an independent behavioral detector for both production callers", "the compiled boundary is asserted: optional, fill-only, memory-backed sweep only, default unchanged at NULL, and an unsupported operation fails before execution"]
+    evidence: ["LCL-0015 through LCL-0020 resolve and ran in their promised review or heavy profile. The mirai witness uses non-empty opening positions. LCL-0006 remains registered; LTB-0006 includes the seven-fill fractional multi-lot reversal plus targeted BUY- and SELL-direction full-fill dust-scale states. It compares canonical R lots, prices, per-event realized PnL, and per-event cost basis with the independent C++ kernel and uses the single-sign invariant as the dust mutation detector."]
 
   - id: "LDG-2785"
     title: "Workstream closeout"
     workstream: 6
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2784", "LDG-2780", "LDG-2781", "LDG-2782"]
     scope: "Governance synthesis D4. A closeout section for cut 2: what shipped; which claims are supported; what remains open, naming the D5 curve and the pack/unpack transfer cost as the compiled-execution RFC's inputs; one line per rejected record; review invocations for this cut against the 0.5 gate; the production-validation profile with commit, environment, and command. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the compiled-execution RFC's inputs are named by artifact and section", "prototype multiples are stated as not being thresholds; the production-validation profile is the record", "LDG-2783 is named as landed or deferred"]
+    evidence: ["accounting_core_closeout.md records scope, claims, FEE branch, D5/copy/transfer inputs, corrected profile clocks, rejected records and LDG-2783 deferral. The fifth review passed the two-way dust witness, so code review is complete; five reviews over nine completed tickets (0.56) breach the historical 0.5 gate and require maintainer adjudication. Candidate identity is base commit plus stable patch ID pending maintainer acceptance."]
 
   - id: "LDG-2786"
     title: "Migrate the strict importer's tests to the kept surface"
