@@ -95,10 +95,9 @@ testthat::test_that("run metadata mutations are visible from fresh connections",
   testthat::expect_identical(tags$tag, "release-gate")
 })
 
-testthat::test_that("low-level CSV snapshot workflow survives close, load, and run", {
+testthat::test_that("a directly built snapshot survives close, load, and run", {
   db_path <- tempfile(fileext = ".duckdb")
-  bars_csv <- tempfile(fileext = ".csv")
-  on.exit(unlink(c(db_path, bars_csv)), add = TRUE)
+  on.exit(unlink(db_path), add = TRUE)
 
   bars <- data.frame(
     instrument_id = rep(c("AAA", "BBB"), each = 4L),
@@ -118,8 +117,6 @@ testthat::test_that("low-level CSV snapshot workflow survives close, load, and r
     volume = 1000,
     stringsAsFactors = FALSE
   )
-  utils::write.csv(bars, bars_csv, row.names = FALSE)
-
   con <- ledgr_db_init(db_path)
   on.exit({
     if (DBI::dbIsValid(con)) {
@@ -128,13 +125,7 @@ testthat::test_that("low-level CSV snapshot workflow survives close, load, and r
   }, add = TRUE)
   snapshot_id <- "fresh_csv_snapshot"
   ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
-  ledgr_snapshot_import_bars_csv(
-    con,
-    snapshot_id,
-    bars_csv_path = bars_csv,
-    instruments_csv_path = NULL,
-    auto_generate_instruments = TRUE
-  )
+  ledgr_test_fill_snapshot(con, snapshot_id, bars)
   hash <- ledgr_snapshot_seal(con, snapshot_id)
   DBI::dbDisconnect(con, shutdown = TRUE)
 

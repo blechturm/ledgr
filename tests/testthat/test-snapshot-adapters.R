@@ -85,26 +85,16 @@ make_manual_csv_bars <- function() {
   )
 }
 
-seal_manual_csv_snapshot <- function(bars, meta = list(), snapshot_id = "manual_csv_snapshot") {
-  csv_path <- tempfile(fileext = ".csv")
-  utils::write.csv(bars, csv_path, row.names = FALSE)
-
+seal_manual_snapshot <- function(bars, meta = list(), snapshot_id = "manual_snapshot") {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)
   on.exit(if (DBI::dbIsValid(con)) DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = meta)
-  ledgr_snapshot_import_bars_csv(
-    con,
-    snapshot_id,
-    bars_csv_path = csv_path,
-    instruments_csv_path = NULL,
-    auto_generate_instruments = TRUE
-  )
+  ledgr_test_fill_snapshot(con, snapshot_id, bars)
   hash <- ledgr_snapshot_seal(con, snapshot_id)
   info <- ledgr_snapshot_info(con, snapshot_id)
 
-  unlink(csv_path)
   list(db_path = db_path, snapshot_id = snapshot_id, hash = hash, info = info)
 }
 
@@ -124,8 +114,8 @@ test_that("ledgr_snapshot_from_csv delegates to df adapter", {
 })
 
 # ledgr-test-profile: review
-test_that("create/import/seal CSV snapshots infer runnable metadata", {
-  snapshot <- seal_manual_csv_snapshot(make_manual_csv_bars())
+test_that("a directly built snapshot infers runnable metadata", {
+  snapshot <- seal_manual_snapshot(make_manual_csv_bars())
   on.exit(unlink(snapshot$db_path), add = TRUE)
 
   meta <- ledgr:::ledgr_json_read_nested(snapshot$info$meta_json[[1]])
@@ -156,8 +146,8 @@ test_that("create/import/seal CSV snapshots infer runnable metadata", {
   expect_true(nrow(ledgr_results(bt, "equity")) > 0L)
 })
 
-test_that("CSV seal metadata derivation preserves existing user metadata", {
-  snapshot <- seal_manual_csv_snapshot(
+test_that("seal metadata derivation preserves existing user metadata", {
+  snapshot <- seal_manual_snapshot(
     make_manual_csv_bars(),
     meta = list(description = "manual research fixture", n_bars = 999L)
   )
@@ -172,7 +162,7 @@ test_that("CSV seal metadata derivation preserves existing user metadata", {
 })
 
 # ledgr-test-profile: review
-test_that("low-level CSV sealing preserves high-level snapshot hash identity", {
+test_that("direct snapshot writes preserve high-level snapshot hash identity", {
   bars <- make_manual_csv_bars()
 
   db_path_from_df <- tempfile(fileext = ".duckdb")
@@ -183,7 +173,7 @@ test_that("low-level CSV sealing preserves high-level snapshot hash identity", {
   on.exit(DBI::dbDisconnect(con_from_df, shutdown = TRUE), add = TRUE)
   from_df_info <- ledgr_snapshot_info(con_from_df, from_df$snapshot_id)
 
-  low_level <- seal_manual_csv_snapshot(bars, snapshot_id = "manual_csv_snapshot")
+  low_level <- seal_manual_snapshot(bars, snapshot_id = "manual_snapshot")
   on.exit(unlink(low_level$db_path), add = TRUE)
 
   expect_equal(low_level$hash, from_df_info$snapshot_hash[[1]])

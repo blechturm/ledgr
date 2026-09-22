@@ -10,39 +10,30 @@ make_snapshot_runner_db <- function(status = "SEALED") {
 
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
 
-  instruments_csv <- tempfile(fileext = ".csv")
-  writeLines(
-    c(
-      "instrument_id,symbol,currency,asset_class,multiplier,tick_size",
-      "AAA,AAA,USD,EQUITY,1,0.01",
-      "BBB,BBB,USD,EQUITY,1,0.01"
-    ),
-    instruments_csv,
-    useBytes = TRUE
+  instruments <- data.frame(
+    instrument_id = c("AAA", "BBB"),
+    symbol = c("AAA", "BBB"),
+    currency = "USD",
+    asset_class = "EQUITY",
+    multiplier = 1,
+    tick_size = 0.01,
+    stringsAsFactors = FALSE
   )
-  bars_csv <- tempfile(fileext = ".csv")
-  writeLines(
-    c(
-      "instrument_id,ts_utc,open,high,low,close,volume",
-      "AAA,2020-01-01T00:00:00Z,100,100,100,100,1",
-      "AAA,2020-01-02T00:00:00Z,101,101,101,101,1",
-      "AAA,2020-01-03T00:00:00Z,102,102,102,102,1",
-      "BBB,2020-01-01T00:00:00Z,200,200,200,200,1",
-      "BBB,2020-01-02T00:00:00Z,201,201,201,201,1",
-      "BBB,2020-01-03T00:00:00Z,202,202,202,202,1"
+  bars <- data.frame(
+    instrument_id = rep(c("AAA", "BBB"), each = 3L),
+    ts_utc = rep(
+      c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z"),
+      times = 2L
     ),
-    bars_csv,
-    useBytes = TRUE
+    open = c(100, 101, 102, 200, 201, 202),
+    high = c(100, 101, 102, 200, 201, 202),
+    low = c(100, 101, 102, 200, 201, 202),
+    close = c(100, 101, 102, 200, 201, 202),
+    volume = 1,
+    stringsAsFactors = FALSE
   )
 
-  ledgr_snapshot_import_bars_csv(
-    con,
-    snapshot_id,
-    bars_csv_path = bars_csv,
-    instruments_csv_path = instruments_csv,
-    auto_generate_instruments = FALSE,
-    validate = "fail_fast"
-  )
+  ledgr_test_fill_snapshot(con, snapshot_id, bars, instruments)
 
   if (identical(status, "SEALED")) {
     ledgr_snapshot_seal(con, snapshot_id)

@@ -34,32 +34,22 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   testthat::expect_true(is.na(info0$start_date[[1]]))
   testthat::expect_true(is.na(info0$end_date[[1]]))
 
-  instruments_csv <- tempfile(fileext = ".csv")
-  writeLines(
-    c(
-      "instrument_id,symbol,currency,asset_class,multiplier,tick_size",
-      "AAA,AAA,USD,EQUITY,1,0.01"
-    ),
-    instruments_csv,
-    useBytes = TRUE
+  instruments <- data.frame(
+    instrument_id = "AAA",
+    symbol = "AAA",
+    currency = "USD",
+    asset_class = "EQUITY",
+    multiplier = 1,
+    tick_size = 0.01,
+    stringsAsFactors = FALSE
   )
-  bars_csv <- tempfile(fileext = ".csv")
-  writeLines(
-    c(
-      "instrument_id,ts_utc,open,high,low,close,volume",
-      "AAA,2020-01-01T00:00:00Z,1,1,1,1,1"
-    ),
-    bars_csv,
-    useBytes = TRUE
+  bars <- data.frame(
+    instrument_id = "AAA",
+    ts_utc = "2020-01-01T00:00:00Z",
+    open = 1, high = 1, low = 1, close = 1, volume = 1,
+    stringsAsFactors = FALSE
   )
-  ledgr_snapshot_import_bars_csv(
-    con,
-    snapshot_id,
-    bars_csv_path = bars_csv,
-    instruments_csv_path = instruments_csv,
-    auto_generate_instruments = FALSE,
-    validate = "fail_fast"
-  )
+  ledgr_test_fill_snapshot(con, snapshot_id, bars, instruments)
 
   ledgr_snapshot_seal(con, snapshot_id)
 

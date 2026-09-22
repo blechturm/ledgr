@@ -49,26 +49,21 @@ testthat::test_that("AT1: Snapshot create", {
   testthat::expect_identical(row$status[[1]], "CREATED")
 })
 
-testthat::test_that("AT2: Import bars CSV (format contract) + rounding and missing column failure", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-
-  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
-
+testthat::test_that("AT2: bars CSV format contract: rounding and missing column failure", {
   bars_csv <- v011_make_csv(c(
     "instrument_id,ts_utc,open,high,low,close,volume",
     "AAA,2020-01-01T00:00:00Z,1.000000001,1.000000009,1.000000001,1.000000005,10.000000009"
   ))
 
-  testthat::expect_true(
-    isTRUE(ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE))
-  )
+  snap <- ledgr_snapshot_from_csv(bars_csv)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
+  con <- ledgr_db_init(snap$db_path)
+  on.exit(v011_close_con(con), add = TRUE)
   row <- DBI::dbGetQuery(
     con,
     "SELECT open, high, close, volume FROM snapshot_bars WHERE snapshot_id = ?",
-    params = list(snapshot_id)
+    params = list(snap$snapshot_id)
   )
   testthat::expect_equal(nrow(row), 1L)
   testthat::expect_equal(as.numeric(row$open[[1]]), round(1.000000001, 8), tolerance = 1e-12)
@@ -81,33 +76,34 @@ testthat::test_that("AT2: Import bars CSV (format contract) + rounding and missi
     "AAA,2020-01-01T00:00:00Z,1,1,1"
   ))
   testthat::expect_error(
-    ledgr_snapshot_import_bars_csv(con, snapshot_id, bad_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE),
-    class = "LEDGR_CSV_FORMAT_ERROR"
+    ledgr_snapshot_from_csv(bad_csv),
+    class = "ledgr_invalid_args"
   )
 })
 
-testthat::test_that("AT3: Instruments optional / auto-generate", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-
-  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
-
+testthat::test_that("AT3: instruments are generated from the bars when no instruments file is given", {
   bars_csv <- v011_make_csv(c(
     "instrument_id,ts_utc,open,high,low,close",
     "AAA,2020-01-01T00:00:00Z,1,1,1,1",
     "BBB,2020-01-01T00:00:00Z,2,2,2,2"
   ))
 
-  testthat::expect_true(isTRUE(ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE)))
-  n_inst <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM snapshot_instruments WHERE snapshot_id = ?", params = list(snapshot_id))$n[[1]]
-  testthat::expect_equal(n_inst, 2L)
+  snap <- ledgr_snapshot_from_csv(bars_csv)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+  testthat::expect_equal(snap$metadata$n_instruments, 2L)
 
-  snapshot_id2 <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abce", meta = list())
-  testthat::expect_error(
-    ledgr_snapshot_import_bars_csv(con, snapshot_id2, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = FALSE),
-    class = "LEDGR_CSV_FORMAT_ERROR"
+  con <- ledgr_db_init(snap$db_path)
+  on.exit(v011_close_con(con), add = TRUE)
+  inst <- DBI::dbGetQuery(
+    con,
+    "SELECT instrument_id, symbol, currency, asset_class FROM snapshot_instruments
+     WHERE snapshot_id = ? ORDER BY instrument_id",
+    params = list(snap$snapshot_id)
   )
+  testthat::expect_identical(inst$instrument_id, c("AAA", "BBB"))
+  testthat::expect_identical(inst$symbol, c("AAA", "BBB"))
+  testthat::expect_identical(inst$currency, c("USD", "USD"))
+  testthat::expect_identical(inst$asset_class, c("EQUITY", "EQUITY"))
 })
 
 testthat::test_that("AT4: Seal computes/stores snapshot_hash; instrument metadata differences change hash", {
@@ -212,49 +208,22 @@ testthat::test_that("AT5: Seal is atomic (forced hash failure -> FAILED, no part
   testthat::expect_true(is.character(row$error_msg[[1]]) && nzchar(row$error_msg[[1]]))
 })
 
-testthat::test_that("AT6: Immutability guard (SEALED snapshot rejects writes)", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-
-  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
-  bars_csv <- v011_make_csv(c(
-    "instrument_id,ts_utc,open,high,low,close",
-    "AAA,2020-01-01T00:00:00Z,1,1,1,1"
-  ))
-  ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE)
-  ledgr_snapshot_seal(con, snapshot_id)
-
-  before <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM snapshot_bars WHERE snapshot_id = ?", params = list(snapshot_id))$n[[1]]
-
-  bars_csv2 <- v011_make_csv(c(
-    "instrument_id,ts_utc,open,high,low,close",
-    "AAA,2020-01-02T00:00:00Z,1,1,1,1"
-  ))
-  testthat::expect_error(
-    ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv2, instruments_csv_path = NULL, auto_generate_instruments = TRUE),
-    class = "LEDGR_SNAPSHOT_NOT_MUTABLE"
-  )
-  after <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM snapshot_bars WHERE snapshot_id = ?", params = list(snapshot_id))$n[[1]]
-  testthat::expect_equal(after, before)
-})
-
 # ledgr-test-profile: review
 testthat::test_that("AT7: Tamper detection on load (runner)", {
   db_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(db_path)
 
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
-  instruments_csv <- v011_make_csv(c(
-    "instrument_id,symbol,currency,asset_class,multiplier,tick_size",
-    "AAA,AAA,USD,EQUITY,1,0.01"
-  ))
-  bars_csv <- v011_make_csv(c(
-    "instrument_id,ts_utc,open,high,low,close,volume",
-    "AAA,2020-01-01T00:00:00Z,1,1,1,1,1",
-    "AAA,2020-01-02T00:00:00Z,1,1,1,1,1"
-  ))
-  ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = instruments_csv, auto_generate_instruments = FALSE)
+  ledgr_test_fill_snapshot(
+    con,
+    snapshot_id,
+    data.frame(
+      instrument_id = "AAA",
+      ts_utc = c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"),
+      open = 1, high = 1, low = 1, close = 1, volume = 1,
+      stringsAsFactors = FALSE
+    )
+  )
   ledgr_snapshot_seal(con, snapshot_id)
 
   v011_close_con(con)
@@ -283,20 +252,25 @@ testthat::test_that("AT8: Subset universe allowed", {
   con <- ledgr_db_init(db_path)
 
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
-  instruments_csv <- v011_make_csv(c(
-    "instrument_id,symbol,currency,asset_class,multiplier,tick_size",
-    "AAA,AAA,USD,EQUITY,1,0.01",
-    "BBB,BBB,USD,EQUITY,1,0.01",
-    "CCC,CCC,USD,EQUITY,1,0.01"
-  ))
-  bars_csv <- v011_make_csv(c(
-    "instrument_id,ts_utc,open,high,low,close,volume",
-    "AAA,2020-01-01T00:00:00Z,1,1,1,1,1",
-    "AAA,2020-01-02T00:00:00Z,1,1,1,1,1",
-    "CCC,2020-01-01T00:00:00Z,1,1,1,1,1",
-    "CCC,2020-01-02T00:00:00Z,1,1,1,1,1"
-  ))
-  ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = instruments_csv, auto_generate_instruments = FALSE)
+  ledgr_test_fill_snapshot(
+    con,
+    snapshot_id,
+    data.frame(
+      instrument_id = rep(c("AAA", "CCC"), each = 2L),
+      ts_utc = rep(c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"), times = 2L),
+      open = 1, high = 1, low = 1, close = 1, volume = 1,
+      stringsAsFactors = FALSE
+    ),
+    instruments = data.frame(
+      instrument_id = c("AAA", "BBB", "CCC"),
+      symbol = c("AAA", "BBB", "CCC"),
+      currency = "USD",
+      asset_class = "EQUITY",
+      multiplier = 1,
+      tick_size = 0.01,
+      stringsAsFactors = FALSE
+    )
+  )
   ledgr_snapshot_seal(con, snapshot_id)
 
   v011_close_con(con)
@@ -398,11 +372,6 @@ testthat::test_that("AT11: Empty snapshot seal fails", {
 })
 
 testthat::test_that("AT12: UTF-8 BOM tolerated", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-
-  snapshot_id <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_abcd", meta = list())
   bars_csv <- v011_make_csv(
     c(
       "instrument_id,ts_utc,open,high,low,close",
@@ -410,10 +379,16 @@ testthat::test_that("AT12: UTF-8 BOM tolerated", {
     ),
     bom = TRUE
   )
-  testthat::expect_true(
-    isTRUE(ledgr_snapshot_import_bars_csv(con, snapshot_id, bars_csv, instruments_csv_path = NULL, auto_generate_instruments = TRUE))
-  )
 
-  ids <- DBI::dbGetQuery(con, "SELECT instrument_id FROM snapshot_bars WHERE snapshot_id = ?", params = list(snapshot_id))$instrument_id
+  snap <- ledgr_snapshot_from_csv(bars_csv)
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
+
+  con <- ledgr_db_init(snap$db_path)
+  on.exit(v011_close_con(con), add = TRUE)
+  ids <- DBI::dbGetQuery(
+    con,
+    "SELECT instrument_id FROM snapshot_bars WHERE snapshot_id = ?",
+    params = list(snap$snapshot_id)
+  )$instrument_id
   testthat::expect_identical(as.character(ids), "AAA")
 })

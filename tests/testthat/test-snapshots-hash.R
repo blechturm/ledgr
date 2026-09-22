@@ -1,35 +1,29 @@
-make_csv_file <- function(lines) {
-  path <- tempfile(fileext = ".csv")
-  writeLines(lines, path, useBytes = TRUE)
-  path
-}
-
 make_snapshot_with_data <- function(con, snapshot_id) {
   ledgr_create_schema(con)
   ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
 
-  instruments_csv <- make_csv_file(c(
-    "instrument_id,symbol,currency,asset_class,multiplier,tick_size",
-    "AAA,AAA,USD,EQUITY,1,0.01",
-    "BBB,BBB,USD,EQUITY,1,0.01"
-  ))
-
-  bars_csv <- make_csv_file(c(
-    "instrument_id,ts_utc,open,high,low,close,volume",
-    "BBB,2020-01-01T00:00:00Z,10,11,9,10.5,100",
-    "AAA,2020-01-01T00:00:00Z,1,1.1,0.9,1.05,200",
-    "BBB,2020-01-02T00:00:00Z,10.1,11.1,9.1,10.6,101",
-    "AAA,2020-01-02T00:00:00Z,1.01,1.11,0.91,1.06,201"
-  ))
-
-  ledgr_snapshot_import_bars_csv(
-    con,
-    snapshot_id,
-    bars_csv_path = bars_csv,
-    instruments_csv_path = instruments_csv,
-    auto_generate_instruments = FALSE,
-    validate = "fail_fast"
+  instruments <- data.frame(
+    instrument_id = c("AAA", "BBB"),
+    symbol = c("AAA", "BBB"),
+    currency = "USD",
+    asset_class = "EQUITY",
+    multiplier = 1,
+    tick_size = 0.01,
+    stringsAsFactors = FALSE
   )
+
+  bars <- data.frame(
+    instrument_id = c("BBB", "AAA", "BBB", "AAA"),
+    ts_utc = rep(c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"), each = 2L),
+    open = c(10, 1, 10.1, 1.01),
+    high = c(11, 1.1, 11.1, 1.11),
+    low = c(9, 0.9, 9.1, 0.91),
+    close = c(10.5, 1.05, 10.6, 1.06),
+    volume = c(100, 200, 101, 201),
+    stringsAsFactors = FALSE
+  )
+
+  ledgr_test_fill_snapshot(con, snapshot_id, bars, instruments)
 
   invisible(TRUE)
 }
@@ -171,35 +165,21 @@ testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversari
   s1 <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_p1", meta = list())
   s2 <- ledgr_snapshot_create(con, snapshot_id = "snapshot_20250101_000000_p2", meta = list())
 
-  make_bars_csv <- function(close_val) {
-    path <- tempfile(fileext = ".csv")
-    writeLines(
-      c(
-        "instrument_id,ts_utc,open,high,low,close,volume",
-        sprintf("AAA,2020-01-01T00:00:00Z,0.1,0.1,0.1,%s,0.1", close_val)
-      ),
-      path,
-      useBytes = TRUE
+  make_bars <- function(close_val) {
+    data.frame(
+      instrument_id = "AAA",
+      ts_utc = "2020-01-01T00:00:00Z",
+      open = 0.1,
+      high = 0.1,
+      low = 0.1,
+      close = as.numeric(close_val),
+      volume = 0.1,
+      stringsAsFactors = FALSE
     )
-    path
   }
 
-  ledgr_snapshot_import_bars_csv(
-    con,
-    s1,
-    bars_csv_path = make_bars_csv("0.10000000000000001"),
-    instruments_csv_path = NULL,
-    auto_generate_instruments = TRUE,
-    validate = "fail_fast"
-  )
-  ledgr_snapshot_import_bars_csv(
-    con,
-    s2,
-    bars_csv_path = make_bars_csv("0.10000000000000002"),
-    instruments_csv_path = NULL,
-    auto_generate_instruments = TRUE,
-    validate = "fail_fast"
-  )
+  ledgr_test_fill_snapshot(con, s1, make_bars("0.10000000000000001"))
+  ledgr_test_fill_snapshot(con, s2, make_bars("0.10000000000000002"))
 
   b1 <- DBI::dbGetQuery(
     con,
