@@ -122,7 +122,7 @@ testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects",
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("parallel sweep matches sequential deterministic candidate rows", {
+testthat::test_that("[LTB-0025] parallel sweep constructs opening lots identically to sequential", {
   testthat::skip_if_not_installed("mirai")
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
@@ -137,7 +137,16 @@ testthat::test_that("parallel sweep matches sequential deterministic candidate r
     }
     targets
   }
-  exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+  exp <- ledgr_experiment(
+    snapshot,
+    strategy,
+    opening = ledgr_opening(
+      cash = 10000,
+      positions = c(AAA = 2),
+      cost_basis = c(AAA = 99)
+    ),
+    cost_model = ledgr_cost_zero()
+  )
   grid <- ledgr_param_grid(
     a = list(qty = 1, modulus = 2L),
     b = list(qty = 2, modulus = 3L),

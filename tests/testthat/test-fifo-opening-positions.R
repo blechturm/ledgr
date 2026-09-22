@@ -92,8 +92,8 @@ fifo_opening_equity_detail <- function(db_path, run_id) {
   )
 }
 
-# ledgr-test-profile: review
-testthat::test_that("resume after partial opening-position liquidation does not double-count cost basis", {
+# ledgr-test-profile: heavy_protocol
+testthat::test_that("[LTB-0023] resume after partial opening-position liquidation does not double-count cost basis", {
   setup <- fifo_opening_setup(list(AAA = c(60, 60, 60, 60)))
   on.exit(ledgr_snapshot_close(setup$snapshot), add = TRUE)
   on.exit(unlink(setup$db_path), add = TRUE)

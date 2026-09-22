@@ -16,14 +16,6 @@ struct ledgr_spot_lot {
   double price;
 };
 
-static double ledgr_spot_lot_basis(const std::deque<ledgr_spot_lot>& lots) {
-  double out = 0.0;
-  for (const auto& lot : lots) {
-    out += lot.qty * lot.price;
-  }
-  return out;
-}
-
 static double ledgr_spot_lot_net(const std::deque<ledgr_spot_lot>& lots) {
   double out = 0.0;
   for (const auto& lot : lots) {
@@ -32,8 +24,8 @@ static double ledgr_spot_lot_net(const std::deque<ledgr_spot_lot>& lots) {
   return out;
 }
 
-static double ledgr_spot_dust_tolerance(double a, double b, double c) {
-  double scale = std::max({1.0, std::abs(a), std::abs(b), std::abs(c)});
+static double ledgr_spot_dust_tolerance(double a, double b, double c, double d = 0.0) {
+  double scale = std::max({1.0, std::abs(a), std::abs(b), std::abs(c), std::abs(d)});
   return std::numeric_limits<double>::epsilon() * scale;
 }
 
@@ -195,6 +187,8 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
 
     auto& inst_lots = lots[static_cast<size_t>(inst_idx)];
     double net_pos = ledgr_spot_lot_net(inst_lots);
+    double old_basis = cost_basis_by_inst[static_cast<size_t>(inst_idx)];
+    double basis_delta = 0.0;
     double close_qty = 0.0;
     if (direction > 0 && net_pos < 0) {
       close_qty = std::min(qty, std::abs(net_pos));
@@ -212,9 +206,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           double lot_price = inst_lots.front().price;
           double take = std::min(lot_qty, remaining_close);
           realized_close += (lot_price - price) * take;
+          basis_delta += take * lot_price;
           lot_qty -= take;
           remaining_close -= take;
-          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close, qty);
           if (std::abs(remaining_close) <= tol) {
             remaining_close = 0.0;
           }
@@ -230,9 +225,10 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
           double lot_price = inst_lots.front().price;
           double take = std::min(lot_qty, remaining_close);
           realized_close += (price - lot_price) * take;
+          basis_delta -= take * lot_price;
           lot_qty -= take;
           remaining_close -= take;
-          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close);
+          double tol = ledgr_spot_dust_tolerance(take, lot_qty, remaining_close, qty);
           if (std::abs(remaining_close) <= tol) {
             remaining_close = 0.0;
           }
@@ -246,14 +242,18 @@ SEXP ledgr_cpp_spot_fifo_batch(SEXP run_id_sxp,
     }
 
     if (open_qty > 0) {
+      double signed_open = direction > 0 ? open_qty : -open_qty;
       inst_lots.push_back(ledgr_spot_lot{
-        direction > 0 ? open_qty : -open_qty,
+        signed_open,
         price
       });
+      basis_delta += signed_open * price;
     }
 
-    double old_basis = cost_basis_by_inst[static_cast<size_t>(inst_idx)];
-    double new_basis = ledgr_spot_lot_basis(inst_lots);
+    double new_basis = old_basis + basis_delta;
+    double new_net = ledgr_spot_lot_net(inst_lots);
+    double state_tol = ledgr_spot_dust_tolerance(new_basis, new_net, qty, price);
+    if (std::abs(new_basis) <= state_tol) new_basis = 0.0;
     cost_basis_by_inst[static_cast<size_t>(inst_idx)] = new_basis;
     total_cost_basis = total_cost_basis - old_basis + new_basis;
 

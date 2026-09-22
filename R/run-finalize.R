@@ -447,7 +447,7 @@ ledgr_run_finalize <- function(con,
     events_df <- DBI::dbGetQuery(
       con,
       "
-      SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json
+      SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
       FROM ledger_events
       WHERE run_id = ?
       ORDER BY event_seq
@@ -494,103 +494,7 @@ ledgr_run_finalize <- function(con,
       }
     }
 
-    n_events <- nrow(events_df)
-    event_ts <- if (n_events > 0) as.POSIXct(events_df$ts_utc, tz = "UTC") else as.POSIXct(character(0), tz = "UTC")
-    event_ts_num <- as.numeric(event_ts)
-    pulse_ts_num <- as.numeric(pulses_posix)
-
-    cash_delta <- numeric(n_events)
-    position_delta <- numeric(n_events)
-    event_meta <- vector("list", n_events)
-    if (n_events > 0) {
-      for (i in seq_len(n_events)) {
-        meta <- ledgr_json_read_nested(events_df$meta_json[[i]])
-        event_meta[[i]] <- meta
-        cash_delta[[i]] <- as.numeric(meta$cash_delta)
-        position_delta[[i]] <- as.numeric(meta$position_delta)
-      }
-    }
-
-    idx <- findInterval(pulse_ts_num, event_ts_num)
-    cash_cum <- if (n_events > 0) cumsum(cash_delta) else numeric(0)
-    cash_at <- if (use_fold_equity) {
-      vapply(fold_equity, `[[`, numeric(1), "cash")
-    } else {
-      rep(as.numeric(initial_cash), length(idx))
-    }
-    has_event <- idx > 0
-    if (!use_fold_equity && any(has_event)) {
-      cash_at[has_event] <- as.numeric(initial_cash) + cash_cum[idx[has_event]]
-    }
-
-    n_inst <- length(instrument_ids)
-    n_pulses <- length(pulses_posix)
-    positions_mat <- matrix(0, nrow = n_inst, ncol = n_pulses)
-    if (n_events > 0) {
-      for (j in seq_along(instrument_ids)) {
-        id <- instrument_ids[[j]]
-        ev_idx <- which(events_df$instrument_id == id)
-        if (length(ev_idx) == 0) next
-        pos_cum <- cumsum(position_delta[ev_idx])
-        idx_inst <- findInterval(pulse_ts_num, event_ts_num[ev_idx])
-        has_inst_event <- idx_inst > 0
-        if (any(has_inst_event)) {
-          positions_mat[j, has_inst_event] <- pos_cum[idx_inst[has_inst_event]]
-        }
-      }
-    }
-
-    positions_value <- if (use_fold_equity) {
-      vapply(fold_equity, `[[`, numeric(1), "positions_value")
-    } else if (n_pulses > 0) {
-      colSums(positions_mat * close_mat)
-    } else {
-      numeric(0)
-    }
-
-    reconstruction_lots <- ledgr_lot_state(instrument_ids)
-    event_realized <- numeric(n_events)
-    event_cost_basis <- numeric(n_events)
-
-    if (n_events > 0) {
-      for (i in seq_len(n_events)) {
-        instrument_id <- events_df$instrument_id[[i]]
-        lot_res <- ledgr_lot_apply_event(
-          reconstruction_lots,
-          event_type = events_df$event_type[[i]],
-          instrument_id = instrument_id,
-          side = events_df$side[[i]],
-          qty = events_df$qty[[i]],
-          price = events_df$price[[i]],
-          fee = events_df$fee[[i]],
-          meta = event_meta[[i]]
-        )
-        reconstruction_lots <- lot_res$state
-
-        event_realized[[i]] <- reconstruction_lots$realized_pnl
-        event_cost_basis[[i]] <- reconstruction_lots$total_cost_basis
-      }
-    }
-
-    realized_at <- if (use_fold_equity) {
-      vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
-    } else {
-      numeric(length(idx))
-    }
-    cost_basis_at <- if (use_fold_equity) {
-      vapply(fold_equity, `[[`, numeric(1), "cost_basis")
-    } else {
-      numeric(length(idx))
-    }
-    if (!use_fold_equity && any(has_event)) {
-      realized_at[has_event] <- event_realized[idx[has_event]]
-      cost_basis_at[has_event] <- event_cost_basis[idx[has_event]]
-    }
-
-    equity <- cash_at + positions_value
-    unrealized <- positions_value - cost_basis_at
-
-    if (length(pulses_posix) == 0) {
+    if (length(pulses_posix) == 0L) {
       eq_df <- data.frame(
         run_id = character(0),
         ts_utc = as.POSIXct(character(0), tz = "UTC"),
@@ -601,16 +505,31 @@ ledgr_run_finalize <- function(con,
         unrealized_pnl = numeric(0),
         stringsAsFactors = FALSE
       )
-    } else {
+    } else if (use_fold_equity) {
+      cash_at <- vapply(fold_equity, `[[`, numeric(1), "cash")
+      positions_value <- vapply(fold_equity, `[[`, numeric(1), "positions_value")
+      realized_at <- vapply(fold_equity, `[[`, numeric(1), "realized_pnl")
+      cost_basis_at <- vapply(fold_equity, `[[`, numeric(1), "cost_basis")
       eq_df <- data.frame(
         run_id = rep(run_id, length(pulses_posix)),
         ts_utc = pulses_posix,
         cash = cash_at,
         positions_value = positions_value,
-        equity = equity,
+        equity = cash_at + positions_value,
         realized_pnl = realized_at,
-        unrealized_pnl = unrealized,
+        unrealized_pnl = positions_value - cost_basis_at,
         stringsAsFactors = FALSE
+      )
+    } else {
+      prepared <- ledgr_prepare_accounting_events(events_df, instrument_ids)
+      replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
+      eq_df <- ledgr_accounting_equity_from_replay(
+        replay,
+        pulses_posix,
+        close_mat,
+        initial_cash,
+        instrument_ids,
+        run_id
       )
     }
     if (isTRUE(persist_features) && length(feature_defs) > 0) {

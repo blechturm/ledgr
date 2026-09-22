@@ -133,6 +133,22 @@ ledgr_create_schema <- function(con) {
     TRUE
   }
 
+  ledger_event_type_constraint_matches <- function(expected) {
+    if (!table_exists("ledger_events")) return(FALSE)
+    checks <- DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT expression FROM duckdb_constraints()",
+        "WHERE table_name = 'ledger_events' AND constraint_type = 'CHECK'"
+      )
+    )
+    expressions <- as.character(checks$expression)
+    type_expr <- expressions[grepl("\\bevent_type\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
+    if (length(type_expr) != 1L) return(FALSE)
+    values <- unique(unlist(regmatches(type_expr, gregexpr("'[^']+'", type_expr))))
+    setequal(gsub("^'|'$", "", values), expected)
+  }
+
   ddl_runs <- "
     CREATE TABLE IF NOT EXISTS runs (
       run_id TEXT NOT NULL PRIMARY KEY,
@@ -195,7 +211,7 @@ ledgr_create_schema <- function(con) {
       event_id TEXT NOT NULL PRIMARY KEY,
       run_id TEXT NOT NULL,
       ts_utc TIMESTAMP NOT NULL,
-      event_type TEXT NOT NULL CHECK (event_type IN ('FILL','FEE','CASHFLOW')),
+      event_type TEXT NOT NULL CHECK (event_type IN ('FILL','CASHFLOW')),
       instrument_id TEXT,
       side TEXT CHECK (side IN ('BUY','SELL')),
       qty DOUBLE,
@@ -368,9 +384,32 @@ ledgr_create_schema <- function(con) {
     DBI::dbExecute(con, ddl_ledger_events)
   } else {
     le_cols <- get_columns("ledger_events")
+    fee_rows <- DBI::dbGetQuery(
+      con,
+      "SELECT COUNT(*) AS n FROM ledger_events WHERE event_type = 'FEE'"
+    )$n[[1]]
+    # Preserve unsupported historical FEE rows during migration so migration
+    # never deletes evidence. Accounting readers still fail closed on FEE;
+    # an affected store requires explicit operator remediation before use.
+    event_ddl <- if (fee_rows > 0) {
+      sub(
+        "('FILL','CASHFLOW')",
+        "('FILL','FEE','CASHFLOW')",
+        ddl_ledger_events,
+        fixed = TRUE
+      )
+    } else {
+      ddl_ledger_events
+    }
+    expected_event_types <- if (fee_rows > 0) {
+      c("FILL", "FEE", "CASHFLOW")
+    } else {
+      c("FILL", "CASHFLOW")
+    }
     required_not_null <- c("event_id", "run_id", "ts_utc", "event_type", "event_seq")
     needs_recreate <- any(!(required_not_null %in% le_cols$column_name)) ||
-      any(le_cols$is_nullable[match(required_not_null, le_cols$column_name)] != "NO", na.rm = TRUE)
+      any(le_cols$is_nullable[match(required_not_null, le_cols$column_name)] != "NO", na.rm = TRUE) ||
+      !ledger_event_type_constraint_matches(expected_event_types)
     if (needs_recreate) {
       old_cols <- le_cols$column_name
       expr <- function(col) {
@@ -385,7 +424,7 @@ ledgr_create_schema <- function(con) {
         paste(target_cols, collapse = ", "),
         paste(vapply(target_cols, expr, character(1)), collapse = ", ")
       )
-      recreate_table("ledger_events", ddl_ledger_events, insert_sql = insert_sql)
+      recreate_table("ledger_events", event_ddl, insert_sql = insert_sql)
     } else {
       add_column_if_missing("ledger_events", "side", "TEXT")
       add_column_if_missing("ledger_events", "fee", "DOUBLE")
