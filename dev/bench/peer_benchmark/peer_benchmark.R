@@ -343,10 +343,12 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
                            cost_model = peer_cost_zero_model(),
                            risk_chain = peer_risk_none_model()) {
   t0 <- proc.time()[["elapsed"]]
-  bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
-  bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
+  # LDG-2790: call the exported file surface, so snapshot_prepare_sec measures
+  # the path a user actually calls instead of a hand-rolled read.csv() plus
+  # as.POSIXct() sequence no user writes. This changes what the phase contains.
+  # It is not a like-for-like speedup and the record notes must say so.
   db_path <- tempfile(pattern = paste0("ledgr_peer_", engine, "_"), fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_csv(bars_path, db_path = db_path)
   on.exit({
     try(ledgr_snapshot_close(snapshot), silent = TRUE)
     try(unlink(db_path), silent = TRUE)
@@ -815,10 +817,12 @@ peer_run_ledgr_sweep <- function(engine, bars_path, features, strategy, seed,
                                  cost_model = peer_cost_zero_model(),
                                  risk_chain = peer_risk_none_model()) {
   t0 <- proc.time()[["elapsed"]]
-  bars <- utils::read.csv(bars_path, stringsAsFactors = FALSE)
-  bars$ts_utc <- as.POSIXct(bars$ts_utc, tz = "UTC")
+  # LDG-2790: call the exported file surface, so snapshot_prepare_sec measures
+  # the path a user actually calls instead of a hand-rolled read.csv() plus
+  # as.POSIXct() sequence no user writes. This changes what the phase contains.
+  # It is not a like-for-like speedup and the record notes must say so.
   db_path <- tempfile(pattern = paste0("ledgr_peer_", engine, "_"), fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  snapshot <- ledgr_snapshot_from_csv(bars_path, db_path = db_path)
   on.exit({
     try(ledgr_snapshot_close(snapshot), silent = TRUE)
     try(unlink(db_path), silent = TRUE)

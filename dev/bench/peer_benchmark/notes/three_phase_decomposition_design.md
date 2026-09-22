@@ -31,7 +31,7 @@ NA phases and a single wall time.
 
 | Engine | Ingestion | Engine | Results |
 | --- | --- | --- | --- |
-| `ledgr_ttr_canonical` | shared bars CSV read, timestamp normalization, DuckDB snapshot creation, experiment construction | `ledgr_run()` | `ledgr_results(bt, "equity")`, `ledgr_results(bt, "fills")`, canonical materialization |
+| `ledgr_ttr_canonical` | `ledgr_snapshot_from_csv()` (bars CSV read, timestamp normalization, DuckDB snapshot creation) and experiment construction | `ledgr_run()` | `ledgr_results(bt, "equity")`, `ledgr_results(bt, "fills")`, canonical materialization |
 | `ledgr_ttr_canonical_ephemeral` | shared bars CSV read, timestamp normalization, in-memory bars matrix, feature matrix, runtime projection, pulse views | `ledgr_execute_fold()` with `ledgr_memory_output_handler()` | event-stream equity/fills reconstruction, canonical materialization |
 | `ledgr_builtin_sma` | same durable ledgr boundary, with built-in SMA feature definitions | `ledgr_run()` | `ledgr_results()` plus canonical materialization |
 | `quantstrat` | shared bars CSV read, xts objects, globalenv symbol assignment, `initPortf`, `initAcct`, `initOrders`, strategy setup | `applyStrategy`, `updatePortf`, `updateAcct`, `updateEndEq` | account/transaction extraction and canonical materialization |
@@ -79,3 +79,40 @@ therefore mostly canonical CSV writing.
 
 LEAN CLI phases are not separable from outside the subprocess. The honest local
 row remains UNAVAILABLE until the CLI/project setup runs a real backtest.
+
+## Amendment, 2026-09-22 (LDG-2790)
+
+The durable ledgr engines' ingestion phase changed definition. It previously
+timed a hand-rolled `utils::read.csv()` plus `as.POSIXct()` sequence feeding
+`ledgr_snapshot_from_df()`, which is a path no user writes. It now times
+`ledgr_snapshot_from_csv()`, the exported entry point a user calls, so
+`snapshot_prepare_sec` reports what the public surface costs. Any record
+produced after this change is therefore not comparable with an earlier record
+on that phase, and the difference is partly a change of definition rather than
+a speedup. `engine_sec` and `results_sec` are unaffected, and no promoted
+record is edited.
+
+Two sites were changed, `peer_run_ledgr()` and `peer_run_ledgr_sweep()`. Two
+other `read.csv()` calls stay as they are. The ephemeral path
+(`peer_ledgr_ephemeral_snapshot_prepare()`) builds in-memory bars and pulse
+views and never seals a snapshot, so the file surface does not apply to it.
+`peer_run_quantstrat()` prepares a peer engine's own xts objects, and speeding
+that up with ledgr code would improve a published peer number without
+improving ledgr, which stays declined.
+
+No fixture regeneration was required: `ledgr_snapshot_from_csv()` accepts the
+existing date-only bars fixture.
+
+Verified on that fixture, `peer_benchmark_shared_bars_record.csv`, 630,000
+rows over 500 instruments from 2018-01-01 to 2022-10-28, R 4.6.1:
+
+| ingestion phase | seconds | snapshot hash |
+| --- | ---: | --- |
+| old: `read.csv()` + `as.POSIXct()` + `from_df()` | 15.94 | `89ce4285...afdc` |
+| new: `from_csv()` | 11.36 | `89ce4285...afdc` |
+
+The sealed artifact is byte-identical, so the caveat above is about what the
+phase measures, not about a different snapshot. Part of the 4.6-second drop is
+the LDG-2789 timestamp work, which the old path would also have received; the
+rest is not doing the conversion twice. The figure is orientation for this
+amendment, not a promoted record.
