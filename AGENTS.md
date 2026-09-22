@@ -70,10 +70,10 @@ Current planning context (2026-09-22):
 
 - v0.2.0.1 is published. Its packet, closeout and measurements are historical
   evidence; do not reopen that release or rewrite its measured results.
-- Next scheduled release and planning branch: v0.2.0.2, equity accounting and
-  research-workflow improvements. Read the roadmap's v0.2.0.2 section and
-  `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` plus its
-  corporate-event companion. No v0.2.0.2 implementation packet is open yet.
+- Release and planning branch: v0.2.0.2, equity accounting and research
+  workflow. The packet is open at `inst/design/ledgr_v0_2_0_2_spec_packet/`:
+  cut 1 (test cleanup) is closed; cut 2 (accounting core) awaits its cut
+  review. Read the roadmap's v0.2.0.2 section and the Sharadar research.
 - The governance review, testing-architecture RFC (2026-09-21) and
   accounting-core RFC (2026-09-22) are accepted. v0.2.0.2 runs the five
   test-cleanup workstreams, then the accounting-core workstream, then

@@ -1,44 +1,30 @@
-# v0.2.0.2 Packet: Test-Suite Cleanup
+# v0.2.0.2 Packet
 
-**Status:** Cut on 2026-09-21. Cut review (`cut_review.md`) returned
-`PASS_AFTER_PATCHES` at `6d37eeb`; patched in place. Workstreams 1 through 4
-are complete. Workstream 5's first review returned two bounded corrections
-and its focused re-review passed. The maintainer promoted the governance loop
-for v0.2.0.2, with mandatory reassessment before the next version inherits it.
+**Status:** Two cuts. Cut 1, the test-suite cleanup, is closed: five
+workstreams complete, eleven reviews over thirty-one tickets, and the
+governance loop promoted for v0.2.0.2 with mandatory reassessment before the
+next version inherits it. Cut 2, the accounting-core consolidation, was cut
+on 2026-09-22 and awaits its cut review. Nothing in cut 2 opens until that
+review is accepted.
 
-**Source of truth:** `tickets.yml` in this directory is the only ticket
-and sequencing authority. The workstream table below is a rendered view of
-it and is not separately edited. There is no batch plan and no batch
-evidence essay.
+**Source of truth:** `tickets.yml` in this directory is the only ticket,
+cut, and sequencing authority. Each cut names its own RFC authority there;
+each workstream names its cut. The tables below are rendered views and are
+not separately edited. There is no batch plan and no batch evidence essay.
 
-## What this packet is
+**The loop:**
+`inst/design/rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md` — D1
+briefs, D2 modes, D3 workstreams, D4 artifacts, D8 gate — piloted on cut 1
+and promoted for the rest of this release.
 
-The five test-cleanup workstreams that the accepted testing-architecture
-synthesis (`inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md`)
-binds and says may implement directly without a further RFC. Their content
-is the 930-row audit table at `788bd92`; their order is the synthesis's:
-oracle repair, control plane, shrink, merge, delete. Nothing else in
-v0.2.0.2 is cut here. The accounting-core consolidation RFC and the equity
-settlement work follow after these workstreams land, in that order, not in
-parallel.
+## Cut 1: Test-suite cleanup (closed)
 
-## Authorities
-
-- `inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md` —
-  the bound design and the five workstreams.
-- `inst/design/rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md` —
-  the loop this packet pilots: D1 briefs, D2 modes, D3 workstreams, D4
-  artifacts, D8 gate.
-- `inst/design/audits/post_v0_2_0_1_test_suite_audit.md` and its
-  `_blocks.csv` — the block-level source for every ticket's scope.
-
-## Workstreams
-
-Thirty-one tickets, LDG-2745 through LDG-2775; IDs are stable and the
-`workstream` field, not the ID range, places a ticket. A workstream opens
-only when the previous one's review is accepted; ticket dependencies are
-intra-workstream. Eleven independent reviews closed 31 completed tickets:
-11 / 31 = 0.35 against the pilot gate of at most 0.5.
+The five workstreams the accepted testing-architecture synthesis
+(`inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md`) binds,
+in its order: oracle repair, control plane, shrink, merge, delete. Source
+table: the 930-row audit at `788bd92`. Tickets LDG-2745 through LDG-2775.
+Cut review `cut_review.md`, `PASS_AFTER_PATCHES` at `6d37eeb`, patched in
+place. Closeout and pilot record: `test_cleanup_closeout.md`.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
@@ -48,43 +34,63 @@ intra-workstream. Eleven independent reviews closed 31 completed tickets:
 | 4 Merge | 2766–2770, 2774 | 126 merges: 77 across 37 files by claim family — metrics; public behavior; identity and configuration; snapshot, features, and execution; determinism — and the 49 documentation-surface blocks, each merged into its claim family with an executable oracle or deleted with its own reason | no declared claim loses its detecting block; the overlap question answered per merge; every one of the 49 has a named outcome |
 | 5 Delete and closeout | 2771, 2772, 2775 | the 17 remaining replace-then-delete pins: one current-state artifact, link, logo, and optional-dependency check built in a bound lane, then the pins deleted; the packet closeout with the pilot counters and clocks | the checker passes; the replacement runs where the census sees it; the closeout states the ratio and the maintainer's decision on the loop |
 
-## Where the cut departs from the audit's disposition column
+Two departures from the audit's disposition column, both recorded in the
+cut review and the closeout: the `engine_version` witness got its own
+ticket so the historical-field rule is visible, and the 49
+documentation-surface merges were returned from a render-step reroute to
+claim-family adjudication under LDG-2774. The cut review added owners for
+the 2.5 rules, the D5 review questions, heavy-protocol ownership,
+optional-dependency coverage, the unconditional release run of extended
+parity, the closeout, and workstream gating in the YAML itself.
 
-One place. The audit marks `test-availability-fold-witnesses.R:74` as one
-of the 21 oracle repairs. The synthesis names it: keep the recorded
-`engine_version`, exclude it from the economic comparison, never make it
-dynamic. It has its own ticket so the rule is visible.
+## Cut 2: Accounting-core consolidation (cut review pending)
 
-The first cut also rerouted the 49 documentation-surface merges to a
-render-step check. The cut review refused that: the synthesis binds 126
-merges and 26 deletions and says nothing about a render step, and the 49
-carry heterogeneous guarantees — runnable examples, installed help paths,
-public journeys — that one freshness check cannot replace. They are back in
-Merge under LDG-2774, with per-row outcomes required.
+The one workstream the accepted accounting-core synthesis
+(`inst/design/rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md`)
+binds in its section 5, implementing directly without a further RFC. Source
+table: `inst/design/audits/post_v0_2_0_1_accounting_core_inventory_sites.csv`,
+twelve sites. Tickets LDG-2776 through LDG-2785. It opens after cut 1's
+closeout, which is accepted, and after its own cut review.
 
-## What the cut review added
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 6 Accounting core | 2776–2785 | the flat per-instrument lot carrier with running net and the two per-fill scans removed; the D5 depth detector with its mutation proof; one preparer over the eleven shared event columns; one prepared-event replay with five drivers and two consumers redirected; removal of the superseded loops, the basis walk, the pack/unpack allocation, and the ignored fallthrough; FEE and dead-vocabulary cleanup; optional per-call overhead; claims registration; closeout | exact parity on every surface the synthesis's section 6 lists; block equality across sources; the D5 detector fails on a reintroduced scan; no cash or position write inside the lot kernel; the registry holds the new claims |
 
-Owners for the synthesis's 2.5 rules (LDG-2773), the D5 review questions
-(`review_obligations` in `tickets.yml`), heavy-protocol ownership
-(LDG-2751), optional-dependency coverage (LDG-2755, LDG-2757), the
-unconditional release run of extended parity (LDG-2756, LDG-2758), the
-closeout (LDG-2775), and workstream gating in the YAML itself. The review's
-two preferences — folding the mutation proof into the gate ticket and the
-README into the closeout — are noted and not taken; it called them
-preferences, not findings.
+Ticket order follows synthesis section 5: kernel first (2776, with 2777
+proving the detector on it), then preparer (2778) and replay (2779), then
+removals (2780), cleanup (2781, 2782), the optional overhead ticket (2783),
+registration (2784), and closeout (2785). The synthesis's step 6 also named
+the roadmap correction of the eight-replay premise; that landed with the
+RFC's acceptance at `688ae0b` and is not a ticket here.
 
-## Pilot counters
+Two reviews over ten tickets — the cut review and one Type 1 at close —
+give 2 / 10 = 0.20 against the 0.5 gate. The workstream's review reason in
+`tickets.yml` records that the maintainer may call one extra check after
+LDG-2776, before the replay is built on the new carrier; that would be
+3 / 10 = 0.30.
 
-The agent-provisional closeout (`test_cleanup_closeout.md`, LDG-2775) records:
-workstreams and review invocations;
-maintainer and agent turns and heavy-command runtime attributable to
-governance; findings by mode and whether each changed an outcome; reruns,
-rejected records, and reopenings; retained governance files and lines;
-disputed classifications. The gate is at most 0.5 review invocations per
-completed ticket, measured at close. The closeout ends with a maintainer
-decision to promote, revise, or abandon the loop.
+**Where the cut departs from the synthesis:** nowhere on substance. The
+synthesis's six numbered steps became ten tickets because the D5 detector
+(step 1), the preparer and the replay (step 2), and FEE and dead branches
+(step 4) each carry a distinct acceptance criterion and a distinct
+detecting witness.
 
-## Not in this cut
+**The cut review** asks, in order: does every requirement the synthesis
+binds — sections 3.1 through 3.5, D1 through D6, and every bullet of
+section 6 — have exactly one owning ticket (Type 1); and is one workstream
+of ten tickets with a single close review the honest grain, or should the
+carrier be reviewed before the replay is built on it (Type 2).
 
-No test is edited before workstream 1 opens. No FIFO or equity ticket. No
-spec document beyond this page; the synthesis is the spec.
+**Not in this cut:** no equity-settlement ticket; no C++ change beyond
+removing the per-lot list allocation in pack/unpack; no runtime-default
+decision; no compiled-execution RFC work. Nothing is edited before the cut
+review is accepted.
+
+## Pilot
+
+Cut 1 was the pilot. `test_cleanup_closeout.md` records the counters: 11
+reviews over 31 tickets, 0.35 against the 0.5 gate; correction rounds on
+three of five workstreams; the runtime, rejected records, retained surface,
+and disputed classifications. The maintainer's decision: promote for
+v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
+piloted, and its closeout adds its own counters to that record.

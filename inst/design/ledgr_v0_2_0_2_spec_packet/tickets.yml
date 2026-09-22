@@ -1,8 +1,23 @@
 packet: "v0.2.0.2"
-cut: "2026-09-21"
-cut_review: "cut_review.md; PASS_AFTER_PATCHES at 6d37eeb; patched in place"
-authority: "inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md"
-source_table: "inst/design/audits/post_v0_2_0_1_test_suite_audit_blocks.csv"
+cuts:
+  - id: 1
+    name: "Test-suite cleanup"
+    cut: "2026-09-21"
+    cut_review: "cut_review.md; PASS_AFTER_PATCHES at 6d37eeb; patched in place"
+    authority: "inst/design/rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md"
+    source_table: "inst/design/audits/post_v0_2_0_1_test_suite_audit_blocks.csv"
+    workstreams: [1, 2, 3, 4, 5]
+    closeout: "test_cleanup_closeout.md"
+    status: "closed"
+  - id: 2
+    name: "Accounting-core consolidation"
+    cut: "2026-09-22"
+    cut_review: "pending"
+    authority: "inst/design/rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md"
+    source_table: "inst/design/audits/post_v0_2_0_1_accounting_core_inventory_sites.csv"
+    workstreams: [6]
+    closeout: "pending"
+    status: "cut"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -18,34 +33,46 @@ review_obligations: >-
 workstreams:
   - id: 1
     name: "Oracle repair"
+    cut: 1
     status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "Repairs precede every other change so the baseline is trustworthy before anything is moved."}
   - id: 2
     name: "Control plane"
+    cut: 1
     status: "complete"
     depends_on_workstream: 1
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 2", reason: "The runner, census, and gates must prove their own failure sensitivity before shrink or merge is measured against them."}
   - id: 3
     name: "Shrink"
+    cut: 1
     status: "complete"
     depends_on_workstream: 2
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 3", reason: "Fixture reduction is where the time is and where a defect can be lost; each reduction must still fail on its condition."}
   - id: 4
     name: "Merge"
+    cut: 1
     status: "complete"
     depends_on_workstream: 3
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 4", reason: "Merging by claim family answers the overlap question the registry cannot; the reviewer asks it per merge."}
   - id: 5
     name: "Delete and closeout"
+    cut: 1
     status: "complete"
     depends_on_workstream: 4
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 5", reason: "Deletion is last so every replacement is named and executable in a bound lane first; the closeout is reviewed with it."}
+  - id: 6
+    name: "Accounting core"
+    cut: 2
+    status: "pending"
+    depends_on_workstream: 5
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 6", reason: "The synthesis chose the architecture; the workstream implements it. One review at close checks parity on every surface, that the D5 detector fails on a reintroduced scan, and that no cash or position write entered the lot kernel. The maintainer may call one extra check after LDG-2776 before the replay is built on the new carrier."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -386,3 +413,104 @@ tickets:
     scope: "Governance synthesis D4 and D8. One closeout: what shipped; which claims are supported; what remains open; one line per rejected approach or record and why. The pilot counters: workstreams and review invocations; maintainer and agent turns and heavy-command runtime attributable to governance; findings by mode and whether each changed an outcome; reruns, rejected records, reopenings; retained governance files and lines; disputed classifications. The fast and CRAN clocks with commit, environment, and reproduction command. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the review-invocation ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the closeout ends with the maintainer's decision to promote, revise, or abandon the loop"]
     evidence: ["test_cleanup_closeout.md records shipped scope, supported claims, open work, deletion reasons, clocks, and pilot counters. After focused Type 1 re-review passed, the maintainer promoted the loop for v0.2.0.2 with mandatory reassessment before the next version inherits it."]
+
+  # ---------------------------------------------------------- 6 Accounting core
+  - id: "LDG-2776"
+    title: "Flat lot carrier with running net and no per-fill scans"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: []
+    scope: "Synthesis 3.1 and D6. Per-instrument lot_qty and lot_price vectors with lot_head and lot_tail, geometric growth on push, head removal by index, compaction when the dead prefix exceeds the live segment. net_by_inst added. cost_basis_by_inst and total_cost_basis maintained from the fill loop's own deltas, including the opening seed; the net scan at lot-accounting.R:174 and ledgr_lot_set's ledgr_lot_basis() call removed; ledgr_lot_get and ledgr_lot_set retired. cost_basis_by_inst, total_cost_basis, realized_pnl and realized_comp keep their names and types. Cash and positions are not touched (3.2). Tests that compare the nested shape are updated to compare through the kernel's accessors. Copy-on-modify into list-held vectors is recorded in the evidence, not hidden."
+    acceptance: ["exact parity on lots, realized PnL, and cost basis across opening, reversal, fractional-dust, short, and deep-lot traces", "the frozen fold-witness fixtures pass unchanged", "no cash or position write exists inside lot-accounting.R", "the per-fill copy cost at the registered depth is recorded"]
+
+  - id: "LDG-2777"
+    title: "D5 depth-scaling detector with a mutation proof"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2776"]
+    scope: "Synthesis D5. A review-profile block records normalised per-event kernel cost across at least four depths and fails on any material positive depth dependence beyond a preregistered noise allowance; a superlinearity test is insufficient because a write-path rescan is linear in depth. Proven by a mutation that reintroduces a net or basis scan in the write path and makes the detector fail. The lots[-1] depth curve from the inventory is retained as input to the compiled-execution RFC."
+    acceptance: ["the detector passes on the LDG-2776 kernel", "a reintroduced write-path scan makes it fail for its stated reason", "the depths and the noise allowance are preregistered in the block, not tuned after the fact"]
+
+  - id: "LDG-2778"
+    title: "One preparer over the shared event column contract"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2776"]
+    scope: "Synthesis 3.3. One preparer takes a list of column vectors from either source, the dbFetch result or the memory buffer's vectors sliced to the event count, neither handoff carrying logic. It establishes order, maps instrument IDs to a stable index, coerces ts_utc once (memory is already POSIXct; the table needs coercion), parses meta_json once and ignores memory's parsed meta, derives cash_delta and position_delta from metadata when absent and never trusts both, treats event_realized and event_cost_basis as outputs never inputs, validates BUY or SELL, positive qty and price, fee at least zero, and the opening-meta shape once, and assigns the closed operation set: fill, cash-position delta, opening seed. Any other event_type, side, or metadata shape fails closed."
+    acceptance: ["prepare(memory) and prepare(duckdb) for the same run are identical before any replay", "an unknown event_type or side fails closed with a named condition class", "no side or event-type vocabulary check survives outside the preparer"]
+
+  - id: "LDG-2779"
+    title: "One prepared-event replay; redirect five drivers and two consumers"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2778"]
+    scope: "Synthesis 3.3 and 3.4. One replay applies ledgr_lot_apply_event over the prepared block and returns per-event fact vectors (post-event realized PnL and cost basis, close and open quantities, realized close and delta, event sequence) plus final lot state, with no retention-policy argument. Redirect derived-state.R's equity driver, backtest-fills.R's fills driver keeping its 50,000-row fetch with final state passed between blocks, fold-reconstruction.R's equity and fills drivers, and lot-accounting.R's ledgr_lot_state_from_events; and the two consumers, ledgr_lot_state_asof and the runner's resume path. The live fold keeps calling the transition directly. Projections stay outside: equity maps facts to pulses, fills and trades split legs and allocate fees under contracts.md:949-953, state-as-of and resume keep final state, walk-forward reads cost_basis_by_inst."
+    acceptance: ["exact parity on event order, cash, positions, lots, fills, trades, fees, opening state, and event sequence for every supported behaviour, with existing tolerance only where the contract permits it", "identical output across the fetch boundary and as one memory block", "resume, state-as-of, and walk-forward carry parity", "LCL-0006 holds on the FILL intersection; independently calculated ordinary-CASHFLOW and opening-seed cases pass", "no projection owns a second event loop"]
+
+  - id: "LDG-2780"
+    title: "Remove the superseded loops, basis walk, pack/unpack allocation, and ignored fallthrough"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2779"]
+    scope: "Synthesis 5.3. Delete the derived-state.R:305-315 basis walk in favour of one read of total_cost_basis; the five superseded driver loops; the per-lot list() allocation in compiled-spot-fifo.R pack and unpack, replaced by segment concatenation and split whose cost is recorded, not optimised, as input to the compiled-execution RFC; and the kind = ignored escapes at lot-accounting.R:275 and :301. Each deletion lands only after its detecting witness from LDG-2779 passes."
+    acceptance: ["every deletion names its witness in the commit message", "no kind = ignored return remains in lot-accounting.R", "the pack/unpack transfer cost is recorded in the evidence", "the suite is green in fast, review, and the heavy protocol"]
+
+  - id: "LDG-2781"
+    title: "FEE: check persisted runs, then tighten the CHECK or document as reserved"
+    workstream: 6
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "Synthesis D2. The schema admits FEE at db-schema-create.R:198 and nothing produces or handles it. Query persisted runs for any FEE row first. If none exists, tighten the CHECK to the reachable vocabulary; if any exists, document FEE as reserved and leave the constraint. No new economics on either branch."
+    acceptance: ["the persisted-run check is recorded with its query and result", "the branch taken is named with its reason", "no FEE semantics are added"]
+
+  - id: "LDG-2782"
+    title: "Delete dead side tokens, directional guards, and FILL_PARTIAL branches"
+    workstream: 6
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2779"]
+    scope: "Synthesis D3. Dead R branches only: the four extra tokens in ledgr_lot_direction (COVER, BUY_TO_COVER, SHORT, SELL_SHORT), the two directional guards and their net_pos rescan in backtest-fills.R:196-224, and every FILL_PARTIAL check. FILL_PARTIAL is never admitted by the schema; the schema is not changed here."
+    acceptance: ["one commit names each deletion", "ledgr_lot_direction accepts BUY and SELL only", "the schema is untouched", "the suite is green"]
+
+  - id: "LDG-2783"
+    title: "Per-call kernel overhead (optional)"
+    workstream: 6
+    status: "pending"
+    priority: "P2"
+    effort: "M"
+    dependencies: ["LDG-2776"]
+    scope: "Synthesis D1. About 30 us per fill at any depth in validation redundancy, as.numeric() coercion, and residual copying. Gated on keeping every validation the kernel performs today. May be deferred without affecting workstream acceptance."
+    acceptance: ["every current validation still fires on its rejecting input", "the per-fill floor at depth 2 is measured before and after and recorded"]
+
+  - id: "LDG-2784"
+    title: "Register the accounting-core claims"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2779", "LDG-2777"]
+    scope: "Synthesis D4. Rows in tests/claims.yml with [LTB-nnnn] prefixes and promised profiles for: fill transition parity across opening, reversal, dust, and deep-lot traces; cross-fetch equivalence for the chunked reader; resume and walk-forward carry parity; construction parity under a parallel sweep with non-empty opening positions; the D5 detector; and the existing LCL-0006 retained. This is the first load-bearing code to land since the registry existed."
+    acceptance: ["the registry validates and every listed claim resolves to a block that ran where promised", "the parallel-sweep witness asserts worker-built state equals sequential state", "LCL-0006 still names an independent behavioral detector for both production callers"]
+
+  - id: "LDG-2785"
+    title: "Workstream closeout"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2784", "LDG-2780"]
+    scope: "Governance synthesis D4. A closeout section for cut 2: what shipped; which claims are supported; what remains open, naming the D5 curve and the pack/unpack transfer cost as the compiled-execution RFC's inputs; one line per rejected record; review invocations for this cut against the 0.5 gate; the production-validation profile with commit, environment, and command. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "the compiled-execution RFC's inputs are named by artifact and section"]
