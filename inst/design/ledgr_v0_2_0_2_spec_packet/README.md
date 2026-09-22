@@ -1,6 +1,6 @@
 # v0.2.0.2 Packet
 
-**Status:** Four cuts. Cut 1, the test-suite cleanup, is closed: five
+**Status:** Five cuts. Cut 1, the test-suite cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2, the accounting-core consolidation, was cut
@@ -8,8 +8,10 @@ on 2026-09-22; its cut review (`cut_review_2.md`) returned
 `PASS_AFTER_PATCHES` at `e87d441` and was patched in place. Workstream 6
 opens on the maintainer's word. Cut 3, the ingestion
 consolidation, is complete: six tickets, one CSV ingestion surface, two
-reviews over six tickets. Cut 4 (exact-parity and workflow corrections) was
-cut on 2026-09-22 and awaits its workstream. The joint cut review
+reviews over six tickets. Cut 5, the ingestion
+reader, is complete: DuckDB reads the ingestion CSV, and a silent
+leading-zero corruption is fixed. Cut 4 (exact-parity and workflow
+corrections) was cut on 2026-09-22 and awaits its workstream. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cuts are independent of one another;
 workstreams are serial within a cut.
@@ -225,6 +227,34 @@ deferred with its candidate-id note); the derived-context spike; the
 feature accessor family; `list.files` in the worker-setup dry run until
 confirmed on an installed package; the article's 0.99 weak-return
 threshold.
+
+## Cut 5: Ingestion reader (closed)
+
+Authority: the maintainer's decision of 2026-09-22 that DuckDB reads the
+ingestion CSV, recorded in the horizon as `[product] DuckDB reads the
+ingestion CSV`, together with OPT-L03 and section 7 of cut 3's closeout.
+Tickets LDG-2800 through LDG-2802, one workstream.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 9 Ingestion reader | 2800–2802 | register the reader's compatibility matrix as a test; read with `duckdb::read_csv_auto()`, forcing the identity columns to text so ledgr keeps owning instrument ids and every timestamp form; delete the numeric coercion it makes dead; closeout | exactly the matrix rows named in the closeout moved, and each has a reason; the pinned fixture hash is unchanged; a leading-zero instrument id survives to the sealed snapshot |
+
+The reader went from 4.91 s to 0.26 s at the release shape and
+`ledgr_snapshot_from_csv()` from 10.72 s to 7.23 s, so across cuts 3 and 5 it
+went from 20.07 s to 7.23 s. Exactly one compatibility row moved: a CSV
+declaring instrument ids `0001` and `0002` used to seal with ids `1` and `2`,
+silently, because R's CSV reader inferred an integer column. Snapshots sealed
+from such a file before this cut carry wrong identifiers and a hash computed
+from them.
+
+**The cut review is compressed into the close review.** The cut implements a
+decision already taken, it is three tickets, and its witness was registered as
+a test before any code moved. The compression is recorded in `tickets.yml` and
+in `ingestion_reader_closeout.md` so a reviewer can reject it.
+
+**Not in this cut:** letting DuckDB parse timestamps, which would hand the
+accepted-form contract to a dependency; `utils::read.csv()` in the indicator
+adapter, a different surface; reading bars straight into the snapshot database.
 
 ## Pilot
 

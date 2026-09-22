@@ -162,9 +162,10 @@ FALSE`, which asked for neither a file nor generated instruments.
 
 | item | reason |
 | --- | --- |
-| `colClasses` on the bars reader | 0.9 s at the release shape, and it moves the malformed-numeric error from `ledgr_csv_parse_num()` to `read.csv()`, changing which error fires and what it says. Not worth a contract change. |
+| `colClasses` on the bars reader | 0.9 s at the release shape, and it moves the malformed-numeric error from `ledgr_csv_parse_num()` to `read.csv()`, changing which error fires and what it says. Not worth a contract change. **Moot after cut 5**, which replaced the reader outright. |
 | Widening the hash chunk window | A bounded-memory question for datasets whose timestamps are mostly unique, not a free change. Keeps its earlier disposition. |
 | Raw-bytes canonical hashing | Changes durable identity; needs its own version-matrix RFC, not an optimization ticket. |
+| Reading the CSV with DuckDB | **Superseded.** Not considered here at all, which was a gap rather than a decision; OPT-L03's rule had put a reader substitution on the RFC side of its line and the option was carried forward unmeasured. The maintainer asked after this cut closed, the measurement was run, and it became cut 5. See `ingestion_reader_closeout.md`. |
 | Speeding the peer harness's own `read.csv()` for peer engines | Would improve a published peer number without improving ledgr. Declined in the durable-path note and still declined. |
 | Deduplicating the adapter's duplicate-key check against the primary key | The two layers are both real and the app-level check gives a clear message before any write. Recorded, not changed. |
 

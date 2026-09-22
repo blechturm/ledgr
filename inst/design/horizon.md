@@ -108,6 +108,39 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-22 [product] DuckDB reads the ingestion CSV
+
+Maintainer decision: `duckdb::read_csv_auto()` replaces `utils::read.csv()`
+inside `ledgr_read_csv_strict()`. duckdb is already an Import, so nothing
+moves in the dependency stance.
+
+The reader stays a reader. `instrument_id`, `ts_utc` and `symbol` are forced
+to text, so ledgr keeps owning instrument identity and all six accepted
+timestamp forms and DuckDB never parses a timestamp. That boundary is the
+whole design: the alternative, letting DuckDB infer everything, would hand a
+documented and tested contract to a dependency.
+
+The v0.2.0.1 inventory's OPT-L03 had put reader substitution on the RFC side
+of its line, because accepted inputs, inferred types and error timing all
+change. Cut 3 inherited that and declined it without measuring, which its
+closeout records as a gap. Measured afterwards, the read is 4.91 seconds
+against 0.26 at the release shape, and `ledgr_snapshot_from_csv()` falls from
+10.72 to 7.23 seconds.
+
+Speed was not the decisive argument. The comparison found that
+`ledgr_snapshot_from_csv()` silently corrupted leading-zero instrument ids:
+a file declaring `0001` sealed with `1`, because R's CSV reader infers an
+integer column for all-numeric ids, into a column the schema types `TEXT`.
+The snapshot sealed without error over wrong identifiers and hashed them.
+That is a correctness fix that happens to be faster, not an optimization.
+
+What this costs: snapshots previously sealed from such a file have wrong ids
+and wrong hashes, and non-UTF-8 files are now rejected explicitly rather than
+silently mis-decoded. Both are deliberate, and the package is pre-release
+with no external consumers. The generalizable lesson is that a compatibility
+matrix registered as a test before the change, rather than as a document,
+turned a fourteen-shape risk into a single declared difference.
+
 ### 2026-09-22 [product] One CSV ingestion surface
 
 Maintainer decision: `ledgr_snapshot_from_csv()` and

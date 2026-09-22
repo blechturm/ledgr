@@ -49,11 +49,12 @@ datetime with a trailing \code{Z}, and the same datetime without the \code{Z}. A
 date-only value becomes midnight UTC. Timestamps are whole seconds by
 contract.
 
-Whole-number price and volume columns are read as integers by R's CSV
-reader. ledgr coerces the canonical numeric bar columns to double before
-sealing, so a snapshot's identity depends on the data rather than on the
-reader's column-type inference, and a bars CSV and the equivalent
-\code{data.frame} seal to the same snapshot hash.
+ledgr reads the file with DuckDB, as UTF-8, tolerating a byte-order mark.
+\code{instrument_id}, \code{ts_utc} and \code{symbol} are read as text and price columns as
+double, so an all-numeric instrument id such as \code{0001} keeps its leading
+zeros and a snapshot's identity depends on the data rather than on a
+reader's column-type inference. A bars CSV and the equivalent \code{data.frame}
+seal to the same snapshot hash.
 
 The instruments CSV must contain \code{instrument_id}. \code{symbol}, \code{currency},
 \code{asset_class}, \code{multiplier}, and \code{tick_size} are optional and default to the

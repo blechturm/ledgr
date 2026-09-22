@@ -167,13 +167,14 @@ test_that("a ragged row fails through the file surface", {
   expect_identical(out$class, "ledgr_invalid_args")
 })
 
-# DEFECT, recorded as pre-change behaviour per LDG-2800. R's CSV reader infers
-# an integer column for all-numeric instrument ids, so "0001" is read as 1 and
-# as.character() seals it as "1", silently. The snapshot_bars schema types the
-# column TEXT and the ids are identifiers, not numbers, so the snapshot is
-# sealed over the wrong identifiers with no error. LDG-2801 fixes this and
-# flips the expectation below to c("0001", "0002").
-test_that("leading-zero instrument ids are corrupted by the current reader", {
+# The one matrix row LDG-2801 moved, and the reason the swap was worth making
+# on correctness grounds alone. utils::read.csv() inferred an integer column
+# for all-numeric instrument ids, so "0001" was read as 1 and as.character()
+# sealed it as "1", silently, over a snapshot_bars column the schema types
+# TEXT. DuckDB reads the identity columns as VARCHAR, so the ids survive.
+# Snapshots sealed from such a file before LDG-2801 carry wrong instrument ids
+# and a hash computed from them.
+test_that("leading-zero instrument ids survive to the sealed snapshot", {
   out <- csvc_seal_outcome(c(
     csvc_header,
     "0001,2020-01-01T00:00:00Z,1,1,1,1,10",
@@ -182,5 +183,5 @@ test_that("leading-zero instrument ids are corrupted by the current reader", {
     "0002,2020-01-02T00:00:00Z,2,2,2,2,10"
   ))
   expect_true(out$ok)
-  expect_identical(out$ids, c("1", "2"))
+  expect_identical(out$ids, c("0001", "0002"))
 })

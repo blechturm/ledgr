@@ -451,11 +451,12 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' date-only value becomes midnight UTC. Timestamps are whole seconds by
 #' contract.
 #'
-#' Whole-number price and volume columns are read as integers by R's CSV
-#' reader. ledgr coerces the canonical numeric bar columns to double before
-#' sealing, so a snapshot's identity depends on the data rather than on the
-#' reader's column-type inference, and a bars CSV and the equivalent
-#' `data.frame` seal to the same snapshot hash.
+#' ledgr reads the file with DuckDB, as UTF-8, tolerating a byte-order mark.
+#' `instrument_id`, `ts_utc` and `symbol` are read as text and price columns as
+#' double, so an all-numeric instrument id such as `0001` keeps its leading
+#' zeros and a snapshot's identity depends on the data rather than on a
+#' reader's column-type inference. A bars CSV and the equivalent `data.frame`
+#' seal to the same snapshot hash.
 #'
 #' The instruments CSV must contain `instrument_id`. `symbol`, `currency`,
 #' `asset_class`, `multiplier`, and `tick_size` are optional and default to the
@@ -601,23 +602,7 @@ ledgr_snapshot_normalize_ts_utc <- function(ts_raw) {
 # matrix registered by LDG-2800 has something stable to test while LDG-2801
 # changes what reads the file.
 ledgr_csv_read_bars_for_snapshot <- function(path) {
-  ledgr_csv_normalize_numeric_columns(
-    ledgr_read_csv_strict(path, encoding = "UTF-8", strict = TRUE)
-  )
-}
-
-ledgr_csv_normalize_numeric_columns <- function(df) {
-  # read.csv infers integer columns for whole-number prices. from_df treats the
-  # supplied column type as the user's own, and records it verbatim in a
-  # quarantined row's original_row_json, so an inferred integer would make a
-  # snapshot's identity depend on the reader rather than on the data. Coerce the
-  # canonical numeric bar columns to double so the file and frame surfaces agree.
-  for (col in c("open", "high", "low", "close", "volume")) {
-    if (col %in% names(df) && is.integer(df[[col]])) {
-      df[[col]] <- as.numeric(df[[col]])
-    }
-  }
-  df
+  ledgr_read_csv_strict(path, encoding = "UTF-8", strict = TRUE)
 }
 
 ledgr_snapshot_from_csv <- function(csv_path,
