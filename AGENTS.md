@@ -66,7 +66,7 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-09-20):
+Current planning context (2026-09-22):
 
 - v0.2.0.1 is published. Its packet, closeout and measurements are historical
   evidence; do not reopen that release or rewrite its measured results.
@@ -74,11 +74,12 @@ Current planning context (2026-09-20):
   research-workflow improvements. Read the roadmap's v0.2.0.2 section and
   `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md` plus its
   corporate-event companion. No v0.2.0.2 implementation packet is open yet.
-- The governance review and the testing-architecture RFC are accepted
-  (2026-09-21). v0.2.0.2 opens with the five test-cleanup workstreams, then
-  accounting consolidation, then equity settlement, in that order and not
-  in parallel; the loop pilots on this packet. Reader work and validation
-  fixes do not require new RFC cycles. See `inst/design/rfc_cycle.md`.
+- The governance review, the testing-architecture RFC (2026-09-21), and the
+  accounting-core consolidation RFC (2026-09-22) are accepted. v0.2.0.2 runs
+  the five test-cleanup workstreams, then the accounting-core workstream,
+  then equity settlement, in that order and not in parallel; the loop
+  pilots on this packet. Reader work and validation fixes do not require
+  new RFC cycles. See `inst/design/rfc_cycle.md`.
 - Reuse public capabilities and production semantics. Design only the missing
   behavior; do not add research-specific manifests or a parallel provenance
   system. Prefer small detecting examples and concrete workflow improvements.

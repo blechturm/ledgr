@@ -108,6 +108,47 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-22 [architecture] Accounting core accepted; what it deferred
+
+The accounting-core consolidation RFC is accepted
+(`rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md`) and
+implements as one workstream after the test cleanup and before equity
+settlement. Its inventory refuted the "eight independent FIFO replays"
+premise: one R kernel, one C++ reimplementation, six driver loops, one
+duplicated projection. Six things it left open.
+
+The C++ boundary. With the carrier bound, the R-to-C++ transfer becomes a
+segment concatenation and split instead of per-lot list allocation, which
+was 98% of the compiled path. That is cheaper, not priced. The
+compiled-execution RFC owns it, together with the C++ event envelope for
+CASHFLOW and opening seeds, which call sites the kernel may serve, and any
+runtime default. Its inputs are the D5 depth curve and inventory section 9.
+
+Equity settlement's lot attributes. Acquisitions, spin-offs and unsettled
+claims transform lots and will add aligned per-lot columns under their own
+accepted semantics. Nothing is added in anticipation; unknown operations
+fail closed until that design binds.
+
+FEE. Schema-admitted and never produced. Its ticket checks persisted runs
+for any row before tightening the CHECK; if one exists, FEE is documented
+as reserved instead.
+
+Per-call kernel overhead. About 30 us per fill at any depth, in validation,
+coercion and copies; most of the measured 28x was this, not the scans. A
+separate optional ticket, gated on keeping every validation the kernel
+performs today.
+
+The carrier itself. Per-instrument segments with a head index are bound;
+linked queues and environments are not. A later RFC may replace it if the
+D5 curve or a depth profile justifies it. Copy-on-modify into list-held
+vectors is recorded, with `collapse::setv` as the escape.
+
+A process observation for the pilot closeout. Two inherited premises,
+deferring the carrier and preparing per source, survived seed, response
+and synthesis and were caught at maintainer review. Both agents carried
+them forward from a prior artifact rather than deriving them from the
+tree. That is where agent checking was weakest this cycle.
+
 ### 2026-09-21 [infrastructure] Testing architecture accepted; what it deferred
 
 The testing-architecture RFC is accepted
