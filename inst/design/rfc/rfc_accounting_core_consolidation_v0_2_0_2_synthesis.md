@@ -236,8 +236,9 @@ One workstream, one Type 1 review at its close, direct tickets in order:
 
 1. The carrier, `net_by_inst`, and scan removal on the kernel together
    (sections 3.1, D6), with section 6's parity evidence and the D5 detector.
-2. The preparer and replay (3.3) and redirection of the five replay
-   drivers and two consumers; the fold keeps calling the transition.
+2. The preparer and replay (3.3) and redirection of every ledger reader
+   the inventory names, including its 2026-09-22 correction; the fold
+   keeps calling the transition.
 3. Removal of the derived-state basis walk (`derived-state.R:305-315`), the
    superseded loops, the pack/unpack list allocation, and the `kind =
    "ignored"` fallthrough, each after its detecting witness passes.
@@ -327,6 +328,15 @@ or positions inside the lot kernel. Design failure routes to `NEEDS_TYPE_2`.
 
 ## Revision History
 
+- 2026-09-22 - Post-acceptance correction: the inventory's driver count was
+  low. A full census of `ledger_events` readers found one more lot driver
+  (`ledgr_compare_runs_fill_stats`, `run-store.R:366`), two live
+  position/cash replays (`ledgr_availability_positions_asof`,
+  `availability-results.R:243`; `ledgr_run_finalize`'s reconstruction
+  branch, `run-finalize.R:423`), and three dead ones with no callers
+  (`derived-state.R:1`, `:42`; `backtest-runner.R:1539`). The bound
+  design is unchanged: the replay's cash/position facts serve the live
+  ones. Operative scope is in `tickets.yml` LDG-2779 and LDG-2780.
 - 2026-09-22 - Accepted by the maintainer. Indexed; horizon entry added;
   roadmap row corrected; AGENTS.md current state updated.
 - 2026-09-22 - Type 1 final-review patches (Codex, PASS_AFTER_PATCHES):

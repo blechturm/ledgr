@@ -37,6 +37,38 @@ So the consolidation problem is not "collapse eight loops into one." It is:
 **six driver loops around one shared kernel, plus one compiled kernel that
 supports a strict subset of what the shared kernel supports.**
 
+### Correction, 2026-09-22: six ledger readers the inventory missed
+
+The site search above keyed on lot consumption and `realized_pnl`. A later
+census of every `FROM ledger_events` read in `R/` found six readers it did
+not cover. One of them, S17, calls `ledgr_lot_apply_event` and was missed
+because the callers listing in section 1 was truncated with `head -6`; the
+other five are position-only or cash-only replays the lot-keyed search
+could not see. Three of the six are dead: internal, with no caller in `R/`
+or `tests/`.
+
+| site | file:line | entry function | live? | shape |
+| --- | --- | --- | --- | --- |
+| S13 | `derived-state.R:1` | `ledgr_reconstruct_positions` | dead | per-event `meta_json` parse, accumulates `position_delta` |
+| S14 | `derived-state.R:42` | `ledgr_reconstruct_cash` | dead | per-event `meta_json` parse, accumulates `cash_delta` |
+| S15 | `availability-results.R:243` | `ledgr_availability_positions_asof` | live, 3 callers | per-event `meta_json` parse, positions; re-read per pulse (see OPT-L14) |
+| S16 | `backtest-runner.R:1539` | `ledgr_update_state_incremental` | dead | per-event `meta_json` parse, cash and positions |
+| S17 | `run-store.R:366` | `ledgr_compare_runs_fill_stats` | live | lot replay via S02 for `n_trades`, `win_rate`, `avg_trade` |
+| S18 | `run-finalize.R:423` | `ledgr_run_finalize`, `!use_fold_equity` branch | live | per-event `meta_json` parse into `cash_delta`/`position_delta` vectors, `cumsum`, then `ledgr_lot_state` |
+
+S13, S14, S15 and S16 each carry their own copy of the `position_delta` or
+`cash_delta` validation that S05 also carries (`derived-state.R:32`, `:73`,
+`:227`; `availability-results.R:261`). That is four copies of one check.
+
+The consequence for section 1's counts: drivers that call the kernel are
+seven, not six (S17 added); position-only and cash-only replays are two
+live (S15, S18) and three dead (S13, S14, S16); the synthesis's "cash and
+position delta" operation is exactly what the two live ones compute by
+hand. The remaining readers found by the census are not replays:
+`backtest-results.R:991` returns the raw table for
+`ledgr_results(bt, "ledger")`; `ledger-writer.R:93` and `run-resume.R:87`
+select `MAX(event_seq)`; `run-store.R:281` and `:373` test for the table.
+
 ## 2. The real duplication is the driver pair, not the kernel
 
 The six drivers form three pairs by purpose, each pair differing only in where
@@ -414,6 +446,9 @@ criteria for any change on these paths.
 
 ## Revision history
 
+- 2026-09-22 — Correction: six `ledger_events` readers added as S13-S18
+  after a full census; one lot driver was lost to a truncated listing,
+  five position/cash replays to a lot-keyed search. Three are dead.
 - 2026-09-22 — Section 9 extended: compiled kernel measured against the
   fixed R prototype. Marshalling is 98% of the compiled path and scales with
   open lots; the compiled path buys 1.4x over default R as wired.
