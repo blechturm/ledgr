@@ -4,7 +4,7 @@
 #' experiment-first workflow. It records starting cash and, optionally, existing
 #' long positions and cost basis.
 #'
-#' @param cash Finite non-negative cash balance.
+#' @param cash Finite positive cash balance.
 #' @param date Optional opening timestamp. `NULL` lets ledgr choose the first
 #'   valid pulse after indicator warmup.
 #' @param positions Optional named numeric vector of starting long positions.
@@ -26,8 +26,8 @@ ledgr_opening <- function(cash,
   if (!is.numeric(cash) || length(cash) != 1L || is.na(cash) || !is.finite(cash)) {
     rlang::abort("`cash` must be a finite numeric scalar.", class = "ledgr_invalid_opening")
   }
-  if (cash < 0) {
-    rlang::abort("`cash` must be >= 0.", class = "ledgr_invalid_opening")
+  if (cash <= 0) {
+    rlang::abort("`cash` must be > 0.", class = "ledgr_invalid_opening")
   }
 
   date_iso <- NULL

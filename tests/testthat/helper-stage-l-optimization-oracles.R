@@ -2,23 +2,6 @@
 # These helpers deliberately preserve the Stage L implementation shape so the
 # later candidate paths have an independent current-arm oracle.
 
-ledgr_stage_l_source_sha256 <- c(
-  availability_ingest =
-    "5d23be381943affbdce6f51bf61022723f01247ab9ae8012286109264eb46559",
-  precompute_features =
-    "cb9f6c8ed78084f9c4c1a3a2641e7335455dc8516d55ba484553de3032c6a311",
-  snapshots_hash =
-    "5eb67ec6663db24109df96d1e31ca45187618cbf703212c5181157d61a42547b"
-)
-
-ledgr_stage_l_normalized_source_sha256 <- function(path) {
-  digest::digest(
-    paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n"),
-    algo = "sha256",
-    serialize = FALSE
-  )
-}
-
 ledgr_stage_l_dense_ts_key_oracle <- function(x) {
   vapply(
     as.POSIXct(x, tz = "UTC"),

@@ -257,31 +257,79 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
   ledgr_replay_accounting_events(prepared)$positions
 }
 
-ledgr_availability_marks_at <- function(provider, axis, calendar, pulse_idx) {
+ledgr_availability_marks_rows <- function(con,
+                                          snapshot_id,
+                                          instrument_ids,
+                                          cutoff) {
+  instrument_ids <- unique(as.character(instrument_ids))
+  if (length(instrument_ids) == 0L) {
+    return(data.frame(
+      instrument_id = character(),
+      ts_utc = as.POSIXct(character(), tz = "UTC"),
+      close = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  placeholders <- paste(rep("?", length(instrument_ids)), collapse = ", ")
+  DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, ts_utc, close FROM snapshot_bars ",
+      "WHERE snapshot_id = ? AND instrument_id IN (", placeholders, ") ",
+      "AND ts_utc <= ? ORDER BY instrument_id, ts_utc"
+    ),
+    params = c(
+      list(snapshot_id),
+      as.list(instrument_ids),
+      list(as.POSIXct(cutoff, tz = "UTC"))
+    )
+  )
+}
+
+ledgr_availability_marks_state <- function(con,
+                                           snapshot_id,
+                                           instrument_ids,
+                                           calendar,
+                                           final_pulse_idx,
+                                           max_sessions) {
+  instrument_ids <- ledgr_availability_stable_ids(instrument_ids)
+  pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
+  final_pulse_idx <- as.integer(final_pulse_idx)
+  if (length(final_pulse_idx) != 1L || is.na(final_pulse_idx) ||
+      final_pulse_idx < 1L || final_pulse_idx > length(pulses)) {
+    rlang::abort(
+      "Availability result marks require a final pulse inside the sealed calendar.",
+      class = "ledgr_invalid_run"
+    )
+  }
+  pulses <- pulses[seq_len(final_pulse_idx)]
+  rows <- ledgr_availability_marks_rows(
+    con,
+    snapshot_id,
+    instrument_ids,
+    pulses[[final_pulse_idx]]
+  )
   close <- matrix(
     NA_real_,
-    nrow = length(axis),
-    ncol = pulse_idx,
-    dimnames = list(axis, NULL)
+    nrow = length(instrument_ids),
+    ncol = final_pulse_idx,
+    dimnames = list(instrument_ids, NULL)
   )
-  pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
-  for (i in seq_along(axis)) {
-    history <- provider$history(axis[[i]], pulses[[pulse_idx]])
-    if (nrow(history) == 0L) next
-    index <- match(
-      as.numeric(as.POSIXct(history$ts_utc, tz = "UTC")),
-      as.numeric(pulses[seq_len(pulse_idx)])
+  if (nrow(rows) > 0L) {
+    row_index <- match(as.character(rows$instrument_id), instrument_ids)
+    column_index <- match(
+      as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC")),
+      as.numeric(pulses)
     )
-    keep <- !is.na(index)
-    close[i, index[keep]] <- as.numeric(history$close[keep])
+    keep <- !is.na(row_index) & !is.na(column_index)
+    close[cbind(row_index[keep], column_index[keep])] <- as.numeric(rows$close[keep])
   }
-  state <- ledgr_availability_valuation_state(
+  ledgr_availability_valuation_state(
     bars_mat = list(close = close),
-    instrument_ids = axis,
-    pulses_posix = pulses[seq_len(pulse_idx)],
-    max_sessions = as.integer(provider$valuation_policy$max_sessions)
+    instrument_ids = instrument_ids,
+    pulses_posix = pulses,
+    max_sessions = as.integer(max_sessions)
   )
-  state$advance(pulse_idx, axis)
 }
 
 ledgr_backtest_availability_active <- function(bt, con) {
@@ -312,7 +360,8 @@ ledgr_backtest_availability_active <- function(bt, con) {
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
 
   times <- sort(unique(as.POSIXct(diagnostics$ts_utc, tz = "UTC")))
-  rows <- vector("list", length(times))
+  prepared <- vector("list", length(times))
+  mark_axis <- character()
   for (i in seq_along(times)) {
     pulse_idx <- match(as.numeric(times[[i]]), as.numeric(pulses))
     if (is.na(pulse_idx)) {
@@ -324,7 +373,29 @@ ledgr_backtest_availability_active <- function(bt, con) {
     positions <- ledgr_availability_positions_asof(con, bt$run_id, times[[i]])
     view <- provider$decision_view(times[[i]], positions)
     ids <- as.character(view$axis)
-    valuation <- ledgr_availability_marks_at(provider, ids, calendar, pulse_idx)
+    mark_axis <- c(mark_axis, ids)
+    prepared[[i]] <- list(
+      pulse_idx = pulse_idx,
+      view = view,
+      ids = ids
+    )
+  }
+  final_pulse_idx <- max(vapply(prepared, `[[`, integer(1L), "pulse_idx"))
+  valuation_state <- ledgr_availability_marks_state(
+    snapshot$con,
+    snapshot_id,
+    mark_axis,
+    calendar,
+    final_pulse_idx,
+    provider$valuation_policy$max_sessions
+  )
+
+  rows <- vector("list", length(times))
+  for (i in seq_along(times)) {
+    item <- prepared[[i]]
+    ids <- item$ids
+    view <- item$view
+    valuation <- valuation_state$advance(item$pulse_idx, ids)
     rows[[i]] <- data.frame(
       ts_utc = rep(as.POSIXct(times[[i]], tz = "UTC"), length(ids)),
       instrument_id = ids,

@@ -3,18 +3,21 @@ ledgr_availability_validate_inputs <- function(facts,
                                                instruments_df,
                                                invalid_observations) {
   facts <- ledgr_facts_assert(facts)
+  session_family <- ledgr_session_family(facts)
+  session_rows <- ledgr_session_open_rows_validated(facts)
   instruments <- ledgr_availability_prepare_instruments(bars_df, instruments_df)
   observations <- ledgr_availability_prepare_observations(
     bars_df,
     instruments$instrument_id,
-    facts
+    facts,
+    session_rows = session_rows
   )
   fact_rows <- ledgr_availability_fact_report(facts, instruments$instrument_id)
 
   structural_observation <- observations$report$outcome == "rejected"
   quarantine_candidate <- observations$report$outcome == "quarantine_candidate"
   fact_rejected <- fact_rows$outcome == "rejected"
-  sessions_declared <- !is.null(ledgr_session_family(facts))
+  sessions_declared <- !is.null(session_family)
   quarantine_allowed <- identical(invalid_observations, "quarantine") && sessions_declared
   observation_blocked <- any(structural_observation) ||
     (any(quarantine_candidate) && !isTRUE(quarantine_allowed))
@@ -90,7 +93,10 @@ ledgr_availability_prepare_instruments <- function(bars_df, instruments_df) {
   instruments_df
 }
 
-ledgr_availability_prepare_observations <- function(bars_df, instrument_ids, facts) {
+ledgr_availability_prepare_observations <- function(bars_df,
+                                                    instrument_ids,
+                                                    facts,
+                                                    session_rows = ledgr_session_open_rows(facts)) {
   required <- c("instrument_id", "ts_utc", "open", "high", "low", "close")
   missing <- setdiff(required, names(bars_df))
   if (length(missing) > 0L) {
@@ -105,7 +111,12 @@ ledgr_availability_prepare_observations <- function(bars_df, instrument_ids, fac
     rlang::abort("`bars_df` must contain at least one row.", class = c("ledgr_observation_invalid_shape", "ledgr_invalid_args"))
   }
   instrument_id <- enc2utf8(as.character(bars_df$instrument_id))
-  ts <- ledgr_availability_observation_times(bars_df$ts_utc, facts)
+  ts <- ledgr_availability_observation_times(
+    bars_df$ts_utc,
+    facts,
+    session_rows = session_rows
+  )
+  ts_token <- ledgr_fact_time_token(ts)
   numeric_values <- lapply(c("open", "high", "low", "close"), function(field) suppressWarnings(as.numeric(bars_df[[field]])))
   names(numeric_values) <- c("open", "high", "low", "close")
   volume <- if ("volume" %in% names(bars_df)) suppressWarnings(as.numeric(bars_df$volume)) else rep(NA_real_, n)
@@ -123,10 +134,15 @@ ledgr_availability_prepare_observations <- function(bars_df, instrument_ids, fac
   max_ohlc <- pmax(numeric_values$open, numeric_values$close, numeric_values$low, na.rm = TRUE)
   min_ohlc <- pmin(numeric_values$open, numeric_values$close, numeric_values$high, na.rm = TRUE)
   set_reason(numeric_values$high < max_ohlc | numeric_values$low > min_ohlc, "ohlc_invalid")
-  outside_expectation <- !is.na(ts) & !ledgr_availability_times_are_session_closes(ts, facts)
+  outside_expectation <- !is.na(ts) & !ledgr_availability_times_are_session_closes(
+    ts,
+    facts,
+    session_rows = session_rows,
+    tokens = ts_token
+  )
 
   valid_before_duplicates <- reason == ""
-  key <- paste(instrument_id, ledgr_fact_time_token(ts), sep = "\r")
+  key <- paste(instrument_id, ts_token, sep = "\r")
   duplicate_key <- duplicated(key) | duplicated(key, fromLast = TRUE)
   structural_duplicate <- valid_before_duplicates & duplicate_key
   set_reason(structural_duplicate, "duplicate_valid_observation_key")
@@ -136,7 +152,7 @@ ledgr_availability_prepare_observations <- function(bars_df, instrument_ids, fac
   report <- tibble::tibble(
     row = seq_len(n),
     instrument_id = instrument_id,
-    ts_utc = ledgr_fact_time_token(ts),
+    ts_utc = ts_token,
     outcome = outcome,
     reason = ifelse(
       reason == "" & outside_expectation,
@@ -183,34 +199,40 @@ ledgr_availability_prepare_observations <- function(bars_df, instrument_ids, fac
   list(accepted = accepted, quarantine = quarantine, report = report)
 }
 
-ledgr_availability_observation_times <- function(x, facts) {
-  session_family <- ledgr_session_family(facts)
+ledgr_availability_observation_times <- function(x,
+                                                 facts,
+                                                 session_rows = NULL) {
+  if (is.null(session_rows)) {
+    session_family <- ledgr_session_family(facts)
+    session_rows <- if (is.null(session_family)) NULL else session_family$rows
+  }
   date_labels <- inherits(x, "Date") ||
     (is.character(x) && all(is.na(x) | grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)))
-  if (isTRUE(date_labels) && !is.null(session_family)) {
+  if (isTRUE(date_labels) && !is.null(session_rows)) {
     dates <- suppressWarnings(as.Date(as.character(x), format = "%Y-%m-%d"))
-    rows <- session_family$rows
-    idx <- match(as.character(dates), as.character(rows$session_date))
+    idx <- match(as.character(dates), as.character(session_rows$session_date))
     out <- as.POSIXct(rep(NA_real_, length(dates)), origin = "1970-01-01", tz = "UTC")
-    mapped <- !is.na(idx) & rows$status[idx] == "open"
-    out[mapped] <- rows$session_close[idx[mapped]]
+    mapped <- !is.na(idx) & session_rows$status[idx] == "open"
+    out[mapped] <- session_rows$session_close[idx[mapped]]
     return(out)
   }
-  out <- as.POSIXct(rep(NA_real_, length(x)), origin = "1970-01-01", tz = "UTC")
-  for (i in seq_along(x)) {
-    out[[i]] <- tryCatch(
-      ledgr_fact_time(x[i], "ts_utc", allow_missing = TRUE)[[1L]],
+  distinct <- unique(x)
+  parsed <- vapply(seq_along(distinct), function(i) {
+    as.numeric(tryCatch(
+      ledgr_fact_time(distinct[i], "ts_utc", allow_missing = TRUE)[[1L]],
       error = function(e) as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-    )
-  }
-  out
+    ))
+  }, numeric(1L))
+  as.POSIXct(parsed[match(x, distinct)], origin = "1970-01-01", tz = "UTC")
 }
 
-ledgr_availability_times_are_session_closes <- function(ts, facts) {
-  rows <- ledgr_session_open_rows(facts)
-  if (is.null(rows)) return(rep(TRUE, length(ts)))
-  tokens <- ledgr_fact_time_token(ts)
-  tokens %in% ledgr_fact_time_token(rows$session_close)
+ledgr_availability_times_are_session_closes <- function(
+    ts,
+    facts,
+    session_rows = ledgr_session_open_rows(facts),
+    tokens = ledgr_fact_time_token(ts)) {
+  if (is.null(session_rows)) return(rep(TRUE, length(ts)))
+  tokens %in% ledgr_fact_time_token(session_rows$session_close)
 }
 
 ledgr_availability_original_row_json <- function(row) {

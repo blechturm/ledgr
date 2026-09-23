@@ -1,0 +1,33 @@
+measured_at_utc,arm,operation,repetition,seconds,rows,detail,git_sha,dirty,r,duckdb,collapse
+2026-09-22T22:48:27Z,baseline,cold,1,59.73,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:49:30Z,candidate,cold,1,32.39,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:50:59Z,baseline,cold,2,58.90,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:52:03Z,candidate,cold,2,33.21,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:53:33Z,baseline,cold,3,59.56,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:54:37Z,candidate,cold,3,32.53,426191,cold snapshot_from_df,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T23:13:40Z,baseline,marks,1,732.70,426191,availability result read,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T23:15:20Z,candidate,marks,1,10.76,426191,availability result read,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:37:49Z,baseline,normalizer,1,16.28,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:38:20Z,candidate,normalizer,1,0.05,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:39:07Z,baseline,normalizer,2,16.31,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:39:38Z,candidate,normalizer,2,0.04,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:40:25Z,baseline,normalizer,3,16.56,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:40:56Z,candidate,normalizer,3,0.03,426191,observation timestamps,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:55:57Z,baseline,sweep,1,62.80,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:56:23Z,candidate,sweep,1,23.25,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:57:28Z,baseline,sweep,2,63.07,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:57:54Z,candidate,sweep,2,23.50,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:59:01Z,baseline,sweep,3,64.18,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:59:27Z,candidate,sweep,3,23.29,30240,12 candidates,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:42:19Z,baseline,validation,1,36.79,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:43:01Z,candidate,validation,1,10.72,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:44:08Z,baseline,validation,2,36.42,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:44:49Z,candidate,validation,2,10.62,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:45:56Z,baseline,validation,3,36.58,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:46:38Z,candidate,validation,3,10.75,426191,complete validation,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:35:53Z,baseline,wide,1,0.0904,3895,40x2=0.0020;200x5=0.0217;563x5=0.0667,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:36:03Z,candidate,wide,1,0.0813,3895,40x2=0.0020;200x5=0.0204;563x5=0.0589,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:36:13Z,baseline,wide,2,0.0903,3895,40x2=0.0020;200x5=0.0217;563x5=0.0666,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:36:23Z,candidate,wide,2,0.0811,3895,40x2=0.0019;200x5=0.0203;563x5=0.0589,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:36:34Z,baseline,wide,3,0.0906,3895,40x2=0.0022;200x5=0.0218;563x5=0.0666,9cb8c2e692c821cd7fb57831fc81865ffc96b080,FALSE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8
+2026-09-22T22:36:43Z,candidate,wide,3,0.0811,3895,40x2=0.0018;200x5=0.0207;563x5=0.0586,9cb8c2e692c821cd7fb57831fc81865ffc96b080,TRUE,R version 4.6.1 (2026-06-24 ucrt),1.5.2,2.1.8

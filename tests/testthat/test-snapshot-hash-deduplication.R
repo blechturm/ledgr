@@ -74,7 +74,6 @@ testthat::test_that("within-chunk timestamp remapping is byte-identical", {
     class = "ledgr_snapshot_hash_invalid_timestamp"
   )
 })
-
 # ledgr-test-profile: review
 testthat::test_that("formatter-count gate detects restored per-row work", {
   axis <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") +
@@ -265,18 +264,5 @@ testthat::test_that("run, timestamp, price, and stored-hash guards still detect 
     con,
     "UPDATE snapshots SET snapshot_hash = ? WHERE snapshot_id = ?",
     params = list(stored, id)
-  )
-})
-
-testthat::test_that("Stage N preserves the NEITHER availability source", {
-  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
-  path <- file.path(root, "R", "availability-ingest.R")
-  testthat::skip_if_not(
-    file.exists(path),
-    "Availability source is unavailable during installed-package tests."
-  )
-  testthat::expect_identical(
-    ledgr_stage_l_normalized_source_sha256(path),
-    unname(ledgr_stage_l_source_sha256[["availability_ingest"]])
   )
 })

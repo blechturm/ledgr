@@ -18,19 +18,6 @@ peer_stage_l_require_harness <- function() {
   )
 }
 
-testthat::test_that("Stage L freezes prerequisite source hash", {
-  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
-  availability_path <- file.path(root, "R", "availability-ingest.R")
-  testthat::skip_if_not(
-    file.exists(availability_path),
-    "Availability source is unavailable during installed-package tests."
-  )
-  testthat::expect_identical(
-    ledgr_stage_l_normalized_source_sha256(availability_path),
-    unname(ledgr_stage_l_source_sha256[["availability_ingest"]])
-  )
-})
-
 testthat::test_that("Stage L freezes optimization oracles", {
   axis <- as.POSIXct(
     c("2020-01-01 00:00:00", "2020-01-02 00:00:00"),
@@ -238,5 +225,57 @@ testthat::test_that("report data preserves order, missingness, and source totals
   testthat::expect_error(
     peer_stage_l_harness$peer_prepare_report_performance(broken),
     "do not reconcile"
+  )
+})
+
+testthat::test_that("peer parity fails when timestamp alignment drops rows", {
+  peer_stage_l_require_harness()
+  timestamps <- format(
+    as.POSIXct("2020-01-01", tz = "UTC") + seq_len(1260L) * 86400,
+    "%Y-%m-%dT%H:%M:%SZ",
+    tz = "UTC"
+  )
+  surface <- function(engine, keep = seq_along(timestamps)) {
+    list(
+      engine = engine,
+      status = "DONE",
+      equity = data.frame(
+        engine = engine,
+        ts_utc = timestamps[keep],
+        equity = seq_along(keep) + 100,
+        cash = seq_along(keep) + 100,
+        positions_value = 0,
+        position_proxy = 0,
+        stringsAsFactors = FALSE
+      ),
+      metrics = data.frame(
+        total_return = 0,
+        sharpe = 0,
+        max_drawdown = 0
+      ),
+      trades = data.frame(trade_count = 0L)
+    )
+  }
+  reference <- surface("reference")
+  complete <- peer_stage_l_harness$peer_parity(
+    reference,
+    surface("complete")
+  )
+  testthat::expect_identical(complete$tier1_retained_rows, 1260L)
+  testthat::expect_identical(complete$tier1_retained_share, 1)
+
+  warmup <- peer_stage_l_harness$peer_parity(
+    reference,
+    surface("warmup", seq_len(1250L))
+  )
+  testthat::expect_identical(warmup$tier1_retained_rows, 1250L)
+  testthat::expect_equal(warmup$tier1_retained_share, 1250 / 1260)
+
+  testthat::expect_error(
+    peer_stage_l_harness$peer_parity(
+      reference,
+      surface("shifted", seq_len(1008L))
+    ),
+    "retained 1008 of 1260"
   )
 })

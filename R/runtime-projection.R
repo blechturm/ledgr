@@ -284,7 +284,12 @@ ledgr_projection_features_wide <- function(projection, pulse_idx, feature_ids = 
 ledgr_projection_pulse_views <- function(projection,
                                          feature_ids = NULL,
                                          feature_table = c("schema", "full")) {
-  feature_table <- match.arg(feature_table)
+  if (missing(feature_table)) {
+    feature_table <- "schema"
+  } else if (!is.character(feature_table) || length(feature_table) != 1L ||
+             is.na(feature_table) || !feature_table %in% c("schema", "full")) {
+    stop("'arg' should be one of \"schema\", \"full\"", call. = FALSE)
+  }
   n_pulses <- length(projection$pulses_posix)
   feature_table_views <- vector("list", n_pulses)
   features_wide <- vector("list", n_pulses)
@@ -334,7 +339,8 @@ ledgr_projection_pulse_views <- function(projection,
       n_pulses
     )
   } else {
-    feature_table_views <- replicate(n_pulses, ledgr_projection_feature_table_schema(), simplify = FALSE)
+    schema <- ledgr_projection_feature_table_schema()
+    feature_table_views <- rep(list(schema), n_pulses)
   }
 
   feature_mats <- unname(projection$feature_values[feature_ids])

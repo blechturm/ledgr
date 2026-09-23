@@ -1439,11 +1439,16 @@ peer_prepare_report_performance <- function(performance, tolerance = 0.5) {
   )
 }
 
+peer_parity_retention_floor <- 0.99
+
 peer_parity <- function(reference, peer) {
   if (!identical(peer$status, "DONE") || nrow(peer$equity) == 0L) {
     return(data.frame(
       peer = peer$engine,
       status = "UNAVAILABLE",
+      tier1_retained_rows = NA_integer_,
+      tier1_reference_rows = nrow(reference$equity),
+      tier1_retained_share = NA_real_,
       tier1_equity_cor = NA_real_,
       tier1_max_single_bar_divergence_pct = NA_real_,
       tier1_daily_return_cor = NA_real_,
@@ -1465,6 +1470,17 @@ peer_parity <- function(reference, peer) {
     all = FALSE,
     sort = TRUE
   )
+  retained_share <- nrow(merged) / nrow(reference$equity)
+  if (!isTRUE(retained_share >= peer_parity_retention_floor)) {
+    stop(sprintf(
+      "Peer `%s` retained %d of %d reference rows (%.6f), below the %.6f floor.",
+      peer$engine,
+      nrow(merged),
+      nrow(reference$equity),
+      retained_share,
+      peer_parity_retention_floor
+    ), call. = FALSE)
+  }
   if (nrow(merged) < 2L) {
     eq_cor <- NA_real_
     ret_cor <- NA_real_
@@ -1488,6 +1504,9 @@ peer_parity <- function(reference, peer) {
   data.frame(
     peer = peer$engine,
     status = "DONE",
+    tier1_retained_rows = nrow(merged),
+    tier1_reference_rows = nrow(reference$equity),
+    tier1_retained_share = retained_share,
     tier1_equity_cor = eq_cor,
     tier1_max_single_bar_divergence_pct = max_div,
     tier1_daily_return_cor = ret_cor,
@@ -1817,11 +1836,12 @@ peer_write_markdown <- function(parity, raw, status, performance, env, bars_path
       raw$engine[[i]], raw$status[[i]], raw$wall_sec[[i]], raw$reason[[i]] %||% ""
     ), con)
   }
-  writeLines(c("", "## Parity", "", "| Peer | Status | Equity cor | Max div pct | Return cor | Attribution |", "| --- | --- | ---: | ---: | ---: | --- |"), con)
+  writeLines(c("", "## Parity", "", "| Peer | Status | Retained | Equity cor | Max div pct | Return cor | Attribution |", "| --- | --- | ---: | ---: | ---: | ---: | --- |"), con)
   for (i in seq_len(nrow(parity))) {
     writeLines(sprintf(
-      "| `%s` | `%s` | %.6f | %.6f | %.6f | %s |",
+      "| `%s` | `%s` | %.6f | %.6f | %.6f | %.6f | %s |",
       parity$peer[[i]], parity$status[[i]],
+      parity$tier1_retained_share[[i]],
       parity$tier1_equity_cor[[i]], parity$tier1_max_single_bar_divergence_pct[[i]],
       parity$tier1_daily_return_cor[[i]], parity$attribution[[i]]
     ), con)

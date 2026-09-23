@@ -169,7 +169,21 @@ def run_zipline_full(bars: pd.DataFrame, fast: int, slow: int):
     )
 
 
-def write_equity(path: str, perf: pd.DataFrame) -> None:
+def source_session_labels(perf: pd.DataFrame, bars: pd.DataFrame) -> dict[pd.Timestamp, pd.Timestamp]:
+    source = pd.DatetimeIndex(
+        pd.to_datetime(bars["ts_utc"], utc=True).drop_duplicates().sort_values()
+    )
+    if len(source) != len(perf.index):
+        raise ValueError(
+            "zipline output sessions do not align one-for-one with the shared bars"
+        )
+    return {
+        pd.Timestamp(zipline_ts): pd.Timestamp(source_ts)
+        for zipline_ts, source_ts in zip(perf.index, source)
+    }
+
+
+def write_equity(path: str, perf: pd.DataFrame, session_labels: dict[pd.Timestamp, pd.Timestamp]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(
             fh,
@@ -177,6 +191,7 @@ def write_equity(path: str, perf: pd.DataFrame) -> None:
         )
         writer.writeheader()
         for ts, row in perf.iterrows():
+            source_ts = session_labels[pd.Timestamp(ts)]
             equity = float(row["portfolio_value"])
             cash_raw = row["cash"] if "cash" in row.index else row.get("ending_cash", math.nan)
             cash = float(cash_raw) if pd.notna(cash_raw) else math.nan
@@ -184,7 +199,7 @@ def write_equity(path: str, perf: pd.DataFrame) -> None:
             writer.writerow(
                 {
                     "engine": ENGINE,
-                    "ts_utc": pd.Timestamp(ts).tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "ts_utc": source_ts.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "equity": equity,
                     "cash": cash,
                     "positions_value": positions_value,
@@ -211,7 +226,7 @@ def write_trades(path: str, perf: pd.DataFrame) -> None:
             }
         )
 
-def write_fills(path: str, perf: pd.DataFrame) -> None:
+def write_fills(path: str, perf: pd.DataFrame, session_labels: dict[pd.Timestamp, pd.Timestamp]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(
             fh,
@@ -219,6 +234,7 @@ def write_fills(path: str, perf: pd.DataFrame) -> None:
         )
         writer.writeheader()
         for ts, txns in perf.get("transactions", []).items():
+            source_ts = session_labels[pd.Timestamp(ts)]
             if not isinstance(txns, list):
                 continue
             for txn in txns:
@@ -230,7 +246,7 @@ def write_fills(path: str, perf: pd.DataFrame) -> None:
                 writer.writerow(
                     {
                         "engine": ENGINE,
-                        "ts_utc": pd.Timestamp(ts).tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "ts_utc": source_ts.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
                         "instrument_id": parse_asset_key(txn),
                         "side": "BUY" if amount > 0 else "SELL",
                         "qty": abs(amount),
@@ -273,8 +289,9 @@ def main() -> int:
     ) = run_zipline_full(bars, args.fast, args.slow)
     engine_done = time.perf_counter()
 
-    write_equity(args.equity_out, perf)
-    write_fills(args.fills_out, perf)
+    session_labels = source_session_labels(perf, bars)
+    write_equity(args.equity_out, perf, session_labels)
+    write_fills(args.fills_out, perf, session_labels)
     write_trades(args.trades_out, perf)
     results_done = time.perf_counter()
     phase_sec = {
@@ -294,6 +311,8 @@ def main() -> int:
                 "ingest_sec": ingest_sec,
                 "bundle_teardown_sec": teardown_sec,
                 "run_algorithm_sec": run_sec,
+                "session_alignment": "positionally mapped to the shared bars after asserting equal session counts",
+                "aligned_session_count": len(session_labels),
                 "zipline_reloaded": importlib.metadata.version("zipline-reloaded"),
                 "pandas": importlib.metadata.version("pandas"),
                 "execution_boundary": "zipline-reloaded csvdir bundle ingestion plus run_algorithm on a temporary 24/5 bundle",

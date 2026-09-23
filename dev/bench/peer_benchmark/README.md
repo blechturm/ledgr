@@ -73,6 +73,20 @@ Render the Markdown report from the package root:
 & "C:\Program Files\RStudio\resources\app\bin\quarto\bin\quarto.exe" render dev/bench/peer_benchmark/peer_benchmark.qmd -P run_harness:false -P results_preset:record
 ```
 
+## v0.2.0.2 Workstream 8 Alignment Record
+
+The tracked report now renders the ignored local prefix
+`dev/bench/results/peer_benchmark_record_20260923T001439Z`. It uses the same
+500-instrument, 1,260-day workload and dependencies as the v0.2.0.1 record.
+The Zipline adapter maps its 1,260 output sessions positionally to the 1,260
+source-bar sessions after asserting equal counts. The corrected row retains
+all 1,260 reference sessions and records daily-return correlation 0.987974.
+The prior 0.146064 result remains historical evidence of the one-day label
+misalignment; it was not rewritten. A 0.99 retained-row floor accepts the
+known 1,250-row Backtrader warm-up boundary and rejects the regressed
+1,008-row Zipline join. The complete sampled process tree peaked at
+1,753.8 MiB across 892 one-second samples.
+
 ## Strategy Semantics
 
 All engines use SMA crossover-event semantics:

@@ -193,18 +193,14 @@ ledgr_features_wide <- function(features) {
     dimnames = list(instruments, feature_names)
   )
 
-  for (i in seq_along(feature_value)) {
-    values[instrument_id[[i]], feature_name[[i]]] <- feature_value[[i]]
-  }
+  row_index <- match(instrument_id, instruments)
+  column_index <- match(feature_name, feature_names)
+  values[cbind(row_index, column_index)] <- feature_value
 
   out <- data.frame(instrument_id = instruments, stringsAsFactors = FALSE)
   if ("ts_utc" %in% names(features)) {
     ts_utc <- vapply(features[["ts_utc"]][valid], ledgr_iso_utc, character(1))
-    out$ts_utc <- vapply(
-      instruments,
-      function(inst) ts_utc[which(instrument_id == inst)[[1]]],
-      character(1)
-    )
+    out$ts_utc <- ts_utc[match(instruments, instrument_id)]
   }
 
   out <- cbind(out, as.data.frame(values, check.names = FALSE, stringsAsFactors = FALSE))

@@ -10,9 +10,9 @@ consolidation, is **accepted**: nine tickets over two workstreams, four
 review invocations, 0.44 against the gate. One CSV ingestion surface,
 DuckDB reads it, and three silent corruptions are fixed. Its second
 workstream ran as a separate cut 5 and was folded back into cut 3 after its
-re-review; see below. Cut 4 (exact-parity and workflow corrections) was cut
-on 2026-09-22
-and awaits its workstream. The joint review
+re-review; see below. Cut 4 (exact-parity and workflow corrections) is
+**accepted** after one corrective review round; its record is
+`exact_parity_workflow_closeout.md`. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cuts are independent of one another;
 workstreams are serial within a cut.
@@ -194,7 +194,7 @@ the honest grain (Type 2).
 error fires first); hash chunk widening; raw-bytes hashing (own RFC); any
 change to the seal, the schema, or snapshot identity.
 
-## Cut 4: Exact-parity and workflow corrections (review passed after patches;
+## Cut 4: Exact-parity and workflow corrections (accepted after patches;
 maintainer-amended before implementation)
 
 Authority: horizon entries of 2026-09-18 (per-pulse context and feature
@@ -216,12 +216,20 @@ The alias-map item was 56.73 percent of the profiled sweep under the
 `ctx$features_wide`; the cut states that limit rather than claiming a peer
 number. `ledgr_availability_positions_asof()` is excluded: it is inventory
 site S15 and becomes a consumer of the accounting-core replay under
-LDG-2779. Two reviews over eight tickets, 0.25.
+LDG-2779. Three review invocations over eight tickets, 0.375: the cut review,
+the close review, and its focused re-review.
 
 Workstream 8 has no dependency on workstream 7; staffing decides which
 opens first. Its package work stays on measured ingestion, sweep, result and
 validation boundaries; one ticket (zipline) corrects peer evidence this
 packet already scheduled.
+
+**Implementation state.** Workstream 8 and Cut 4 are accepted and closed.
+The closeout records a 2.71x registered sweep improvement, a
+68.1x full availability-marks read improvement, a 1.83x cold snapshot
+improvement, and a sampled peer record with all 1,260 Zipline rows retained.
+The Type 1 review required two record corrections, both passed focused
+re-review, and the maintainer accepted the work on 2026-09-23.
 
 **Post-review maintainer amendment.** On 2026-09-22 the maintainer added
 LDG-2803 before implementation after reconciling the prior-cycle records with

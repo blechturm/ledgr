@@ -7,7 +7,7 @@
 ledgr_opening(cash, date = NULL, positions = NULL, cost_basis = NULL)
 }
 \arguments{
-\item{cash}{Finite non-negative cash balance.}
+\item{cash}{Finite positive cash balance.}
 
 \item{date}{Optional opening timestamp. \code{NULL} lets ledgr choose the first
 valid pulse after indicator warmup.}

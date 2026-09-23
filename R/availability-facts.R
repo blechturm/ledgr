@@ -1534,7 +1534,11 @@ ledgr_session_family <- function(facts) {
 }
 
 ledgr_session_open_rows <- function(facts) {
-  family <- ledgr_session_family(ledgr_facts_assert(facts))
+  ledgr_session_open_rows_validated(ledgr_facts_assert(facts))
+}
+
+ledgr_session_open_rows_validated <- function(facts) {
+  family <- ledgr_session_family(facts)
   if (is.null(family)) return(NULL)
   family$rows[family$rows$status == "open", , drop = FALSE]
 }

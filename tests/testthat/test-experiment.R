@@ -12,6 +12,7 @@ testthat::test_that("ledgr_opening validates cash, positions, and cost basis", {
   testthat::expect_identical(names(opening$cost_basis), c("AAA", "BBB"))
   testthat::expect_equal(opening$cost_basis, c(AAA = 101, BBB = 99))
 
+  testthat::expect_error(ledgr_opening(cash = 0), class = "ledgr_invalid_opening")
   testthat::expect_error(ledgr_opening(cash = -1), class = "ledgr_invalid_opening")
   testthat::expect_error(ledgr_opening(cash = NA_real_), class = "ledgr_invalid_opening")
   testthat::expect_error(ledgr_opening(cash = 1, positions = c(10)), class = "ledgr_invalid_opening")

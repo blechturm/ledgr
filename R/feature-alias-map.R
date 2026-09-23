@@ -176,14 +176,14 @@ ledgr_alias_map_from_config <- function(config) {
 
 ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL) {
   if (missing(feature_map) || is.null(feature_map)) {
-    storage <- ledgr_alias_map_storage(active_alias_map)
-    if (is.null(storage$alias_map)) {
+    alias_map <- ledgr_normalize_alias_map(active_alias_map)
+    if (is.null(alias_map)) {
       rlang::abort(
         "`ctx$features(instrument_id)` requires an active alias map. Use `ctx$features(instrument_id, feature_map)` or `ctx$feature(instrument_id, feature_id)` for exact-ID lookup.",
         class = c("ledgr_no_active_alias_map", "ledgr_invalid_pulse_context")
       )
     }
-    return(storage$alias_map)
+    return(alias_map)
   }
 
   if (is.character(feature_map)) {
