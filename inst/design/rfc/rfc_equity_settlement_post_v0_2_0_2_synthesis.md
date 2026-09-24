@@ -1,9 +1,9 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Patched three times on
-2026-09-24, after final review and two rounds of external product review. The
-posting decision in 3.4 is drafted and binds on maintainer acceptance. See the
-revision history.
+**Status:** Binding for v0.2.0.2 once accepted. Patched four times on
+2026-09-24, after final review and three rounds of external product review.
+The posting decision in 3.4 is accepted by the maintainer. Awaiting focused
+Type 1 verification of the changed economic rules. See the revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -185,24 +185,33 @@ ex-date keeps the distribution; a buyer on the ex-date does not receive one.
 Knowledge timing stays separate: a fact learned after the boundary may not
 retroactively influence an earlier decision.
 
-**[maintainer decision required] Recognition versus spendable cash.** Between
-the entitlement boundary and posting, the portfolio owns something it cannot
-spend. Three options were costed: a receivable in equity, which is
+**Recognition versus spendable cash: maintainer decision, 2026-09-24.**
+Between the entitlement boundary and posting, the portfolio owns something it
+cannot spend. Three options were costed: a receivable in equity, which is
 economically cleanest but adds a third term to the equity identity and touches
 every result surface; posting at the ex-dividend close, which removes the
 missing-asset dip at no structural cost; and delayed posting with no
 receivable, which leaves one pulse of understated equity and was never
 acceptable.
 
-The synthesis author and the external reviewer both recommend the second for
-this release, and the receivable is deferred to section 9. The decision is
-drafted below and binds on the maintainer's acceptance; it is not inherited
-from seed v7 by silence.
+The maintainer accepted the second: `effective_close` is the research preset
+for this release, with its early-cash assumption disclosed. Receivables and
+actual payment-date handling remain future work. The decision is the
+maintainer's, not inherited from seed v7 and not the reviewer's or the
+synthesis author's, both of whom recommended it.
+
+Two reasons beyond cost. Reliable historical payment dates are not a
+prerequisite anyone should have to meet to use ledgr, and it is not a given
+that vendor data supplies them at all. And a vendor that does supply a payment
+date has not thereby established when that date became knowable; a supplied
+clock is a fact, and an assumed one must never be presented as observed.
 
 Posting at the close is still an approximation and must be disclosed as one.
 It removes the dip. It also makes cash spendable at the ex-date close, which
-is earlier than any real payment, so reinvestment timing is optimistic. That
-is the assumed cash timing the result and the vignette state.
+may precede actual payment, so reinvestment timing is optimistic. That is the
+assumed cash timing the result and the vignette state. The trigger for
+implementing a receivable is research that depends materially on precisely
+when cash becomes spendable.
 
 The bound rules for a supported ordinary dividend under `effective_close`:
 
@@ -447,9 +456,10 @@ under interruption on both handlers.
     cash with no availability setup;
 12. an existing holder selling on the ex-date and a new buyer entering on it,
     where only the seller is credited;
-13. a stock acquisition raising both a terminal and a quantity effect, with
-    one disposition, no double-credited cash leg, `unsupported` fidelity and
-    all four reported quantities; and
+13. a mixed cash-and-stock acquisition with both legs nonzero, raising both a
+    terminal and a quantity effect, with one disposition, the supplied cash
+    leg named but not double credited, `unsupported` fidelity and all four
+    reported quantities including both legs of the consideration; and
 14. the real `DISPOSITION` event through replay, results and reopen on the
     durable handler, with interruption occurring after a disposition is
     recorded and resume applying it once; and, on the memory handler, failure
@@ -514,8 +524,10 @@ or suppressed cells.
   no configured convention, which requires complete source clocks.
 - A new policy-value version wherever the exact-quantity release narrows what
   an existing value covers.
-- A distribution receivable in equity, deferred by the posting decision in
-  3.4, for a release that can afford a third term in the equity identity.
+- A distribution receivable in equity with payment-date handling, deferred by
+  the posting decision in 3.4. Its trigger is research that depends materially
+  on when cash becomes spendable, and its data requirement is a payment clock
+  whose own knowledge time is established, not merely supplied.
 - The evidence requirement for exact quantity transformation, stated by that
   RFC rather than pre-empted by a provenance label here.
 
@@ -585,3 +597,11 @@ decisions are where to start, and the first of them was already refuted once.
   removed. Gate case 14 is scoped to durable reopen plus memory-handler
   failure containment so it cannot quietly require durable recovery of memory
   sweeps.
+- **2026-09-24** maintainer accepted `effective_close` as the research preset
+  with its early-cash assumption disclosed, receivables and payment-date
+  handling deferred. Recorded in 3.4 with the maintainer's own reasoning that
+  reliable payment dates cannot be a prerequisite and a supplied date does not
+  establish its own knowability. Two edits from the third external review, of
+  `6c05ad2`: gate 13 now specifies a mixed acquisition with both legs nonzero,
+  since a stock-only case could pass while the formula omitted the cash leg;
+  and "earlier than any real payment" becomes "may precede actual payment".
