@@ -193,7 +193,8 @@ ledgr_fold_apply_net_feasibility_noop <- function(pulse_plan, state) {
   pulse_plan
 }
 
-ledgr_fold_pulse_plan_accounting_events <- function(pulse_plan) {
+ledgr_fold_pulse_plan_accounting_events <- function(pulse_plan,
+                                                    canonical_event_kinds = NULL) {
   fills <- pulse_plan$fills %||% list()
   event_kinds <- unique(as.character(
     pulse_plan$economic_event_kinds %||% character()
@@ -203,6 +204,18 @@ ledgr_fold_pulse_plan_accounting_events <- function(pulse_plan) {
       "A pulse plan containing fills must declare the FILL economic-event kind.",
       class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
     )
+  }
+  if (!is.null(canonical_event_kinds)) {
+    unsupported <- setdiff(event_kinds, canonical_event_kinds)
+    if (length(unsupported) > 0L) {
+      rlang::abort(
+        paste0(
+          "Canonical R accounting cannot execute pulse-plan economic event ",
+          "kind(s): ", paste(unsupported, collapse = ", "), "."
+        ),
+        class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+      )
+    }
   }
   list(fills = fills, kinds = event_kinds)
 }
@@ -754,7 +767,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
         )
         ledgr_fold_apply_net_feasibility_noop(plan, state)
       }
-      accounting_events <- ledgr_fold_pulse_plan_accounting_events(pulse_plan)
+      accounting_events <- ledgr_fold_pulse_plan_accounting_events(
+        pulse_plan,
+        canonical_event_kinds = if (use_compiled_spot_fifo) NULL else "FILL"
+      )
       if (use_compiled_spot_fifo) {
         ledgr_require_compiled_spot_fifo_event_kinds(accounting_events$kinds)
       }

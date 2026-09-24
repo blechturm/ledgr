@@ -6,15 +6,17 @@ and maintainer acceptance.
 **Authority:** cut 6, Workstream 10, LDG-2804 through LDG-2808 in
 `tickets.yml`, under the accepted equity-settlement synthesis.
 
-**Implementation range:** `ea22976` through `0b758c5`. The commit containing
-this draft changes only test routing and governance artifacts.
+**Initial implementation range:** `ea22976` through `c109e7e`. The focused
+correction after the first close review is committed separately under
+LDG-2808 and is part of the range supplied to the re-reviewer.
 
 ## What Shipped
 
 - Pulse plans declare their economic-event kinds. Both accounting arms read
-  the same prepared event source. Compiled spot-FIFO refuses `CASHFLOW`,
-  `DISPOSITION`, and every other non-`FILL` kind before accounting; it cannot
-  complete while silently dropping one.
+  the same prepared event source. Canonical R refuses every kind for which it
+  has no handler, and compiled spot-FIFO separately refuses `CASHFLOW`,
+  `DISPOSITION`, and every other non-`FILL` kind before accounting. Neither
+  arm can complete while silently dropping a declared event.
 - The public `ledgr_facts_equity_corporate_actions()` constructor validates a
   vendor-neutral typed family. Its header keeps stable fact and parent
   identity, four optional clocks, completeness, one refusal reason, and a
@@ -32,7 +34,8 @@ this draft changes only test routing and governance artifacts.
 - Snapshot constructors accept an optional `price_basis` declaration.
   `split_adjusted` and absence reach experiment and config identity;
   `distribution_adjusted` refuses at experiment construction, with or without
-  corporate-action facts.
+  corporate-action facts. A declared basis is read from the verified snapshot
+  handle rather than queried again from storage.
 
 No posting policy, `CASHFLOW`, `DISPOSITION`, fidelity summary, or account
 mutation shipped in this workstream. It establishes the boundary and sealed
@@ -42,7 +45,7 @@ inputs on which those later workstreams depend.
 
 | Claim | Detector | Profile | Protected result |
 | --- | --- | --- | --- |
-| LCL-0022 | LTB-0026 | fast | every non-`FILL` kind refuses at the compiled envelope |
+| LCL-0022 | LTB-0026 | fast | both accounting envelopes refuse every unhandled kind |
 | LCL-0023 | LTB-0027, LTB-0029 | fast | terms validate independently and facts stay runtime-inert |
 | LCL-0024 | LTB-0030 | review | the fictional adapter produces canonical sealed facts |
 | LCL-0025 | LTB-0031 | review | declared price basis prevents distribution double counting |
@@ -84,9 +87,12 @@ and fails.
 
 ## Failure Sensitivity
 
-- Before LDG-2804, all three non-`FILL` table rows completed with their event
-  dropped. A `CASHFLOW`-only guard left `DISPOSITION` and the synthetic unknown
-  kind green; LTB-0026 failed both rows.
+- Before LDG-2804, all three non-`FILL` table rows completed on the compiled
+  arm with their event dropped. The first close review found that the new
+  declaration layer still allowed the canonical arm to do the same. A
+  `CASHFLOW`-only compiled guard leaves `DISPOSITION` and the synthetic unknown
+  kind exposed; removing the canonical handler-set check exposes all three.
+  LTB-0026 detects both mutations independently.
 - Disabling any supplied-term validation flag made LTB-0027's three term
   witnesses fail. Adding the fact family to availability activation made all
   three LTB-0029 activation and construction assertions fail.
@@ -94,6 +100,9 @@ and fails.
   sealed-hash parity.
 - Disabling the execution price-basis guard made exactly the two
   distribution-adjusted LTB-0031 rows fail, one with facts and one without.
+- Closing a split-adjusted handle and replacing the persisted-metadata reader
+  with an abort still returns the declared basis, proving the redundant query
+  is absent rather than merely fast.
 - Corrupting a persisted validation flag makes the seal validator fail, while
   changed cash or a copied missing clock moves the rule-2 hash.
 
@@ -103,11 +112,11 @@ introduced.
 ## Test Gate And Performance
 
 The final exact-tree fast profile used R 4.6.1, duckdb 1.5.2, testthat 3.3.2,
-collapse 2.1.8, and yyjsonr 0.1.22. It passed 441 of 441 blocks in 87.940
+collapse 2.1.8, and yyjsonr 0.1.22. It passed 441 of 441 blocks in 87.360
 seconds. The registered checker passed the one-run rule against the 90-second
 bound. Records:
 
-`C:/Users/maxth/ledgr-research/.tmp/ws10/ldg-2808-final-fast-v4`
+`C:/Users/maxth/ledgr-research/.tmp/ws10/ldg-2808-correction-fast-v2`
 
 Earlier per-ticket clocks remain in `tickets.yml`, including the red medians.
 They are not overwritten by the final pass. An earlier exact-tree attempt with
@@ -147,10 +156,12 @@ maintainer checklist.
   the table once and applies vector predicates. Work grows linearly with fact
   rows through the existing table/hash boundary.
 - The fold still loops over actual fills as before. The new per-pulse work is
-  the constant-size kind normalization and compiled allow-list check measured
-  above; it neither scans events nor grows with open lots.
-- Price-basis resolution performs one construction-boundary metadata query.
-  It is not inside ingest row loops, the fold, finalization, or result readers.
+  constant-size kind normalization plus canonical and compiled handler-set
+  checks; it neither scans events nor grows with open lots.
+- Price-basis resolution uses the verified handle metadata when a basis is
+  declared and retains the construction-boundary query as the absence and
+  legacy fallback. It is not inside ingest row loops, the fold, finalization,
+  or result readers.
 - The fictional adapter is evidence code at the ingestion boundary. Frames
   are appropriate there and it is not a production hot path.
 
@@ -159,10 +170,10 @@ O(instruments times pulses squared) path was found in the workstream delta.
 
 ## Governance And Declined Work
 
-Before this close review, cut 6 has two review invocations over fifteen
-tickets, ratio 0.133. The requested close review would make three over
-fifteen, ratio 0.20, below the 0.5 gate. The denominator is the fifteen
-tickets present at cut; it does not grow as tickets are completed.
+The initial close review was the cut's third review invocation and found the
+canonical silent-drop gap. The requested focused re-review would be the fourth
+over fifteen tickets, ratio 0.267, below the 0.5 gate. The denominator is the
+fifteen tickets present at cut; it does not grow as tickets are completed.
 
 Declined here:
 

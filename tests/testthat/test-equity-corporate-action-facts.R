@@ -401,4 +401,16 @@ testthat::test_that("[LTB-0031] experiment construction enforces the declared pr
     ledgr_snapshot_from_df(bars, price_basis = "total_return"),
     class = "ledgr_invalid_price_basis"
   )
+
+  ledgr_snapshot_close(snapshots$split)
+  testthat::local_mocked_bindings(
+    ledgr_snapshot_info = function(...) {
+      rlang::abort("persisted metadata query should not run")
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_snapshot_price_basis(snapshots$split),
+    "split_adjusted"
+  )
 })

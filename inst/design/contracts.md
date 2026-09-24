@@ -95,6 +95,9 @@ The strategy preflight boundary originated in
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
+- Pulse plans declare every economic-event kind they carry. Each accounting
+  arm must handle every declared kind or fail closed before accounting; neither
+  canonical nor compiled execution may complete after silently dropping one.
 - Compiled accounting dispatch is closed by accounting model. In v0.1.8.10 the
   only scoped public opt-in model is
   `compiled_accounting_model = "spot_fifo"` for memory-backed sweep execution;

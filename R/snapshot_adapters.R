@@ -797,6 +797,12 @@ ledgr_snapshot_price_basis <- function(snapshot) {
       class = "ledgr_invalid_snapshot"
     )
   }
+  metadata_price_basis <- ledgr_price_basis_normalize(
+    snapshot$metadata$price_basis
+  )
+  if (!is.null(metadata_price_basis)) {
+    return(metadata_price_basis)
+  }
   opened <- ledgr_snapshot_connection(snapshot)
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

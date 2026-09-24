@@ -505,11 +505,11 @@ testthat::test_that("compiled accounting model enum fails closed", {
   )
 })
 
-testthat::test_that("[LTB-0026] compiled accounting refuses every non-fill pulse event", {
+testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event kind", {
   event_kinds <- c("CASHFLOW", "DISPOSITION", "SYNTHETIC_UNKNOWN")
   original_builder <- ledgr:::ledgr_fold_build_pulse_plan
 
-  run_with_kind <- function(event_kind) {
+  run_with_kind <- function(event_kind, compiled_accounting_model) {
     testthat::local_mocked_bindings(
       ledgr_fold_build_pulse_plan = function(...) {
         plan <- original_builder(...)
@@ -519,12 +519,17 @@ testthat::test_that("[LTB-0026] compiled accounting refuses every non-fill pulse
       },
       .package = "ledgr"
     )
-    ledgr_compiled_spot_fifo_test_run("spot_fifo")
+    ledgr_compiled_spot_fifo_test_run(compiled_accounting_model)
   }
 
   for (event_kind in event_kinds) {
     testthat::expect_error(
-      run_with_kind(event_kind),
+      run_with_kind(event_kind, NULL),
+      class = "ledgr_invalid_pulse_plan",
+      info = paste("canonical R envelope must reject", event_kind)
+    )
+    testthat::expect_error(
+      run_with_kind(event_kind, "spot_fifo"),
       class = "ledgr_compiled_spot_fifo_unavailable",
       info = paste("compiled envelope must reject", event_kind)
     )
