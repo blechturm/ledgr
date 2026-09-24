@@ -1,12 +1,13 @@
 # Workstream 11 Closeout: Policy, Fidelity And Cash
 
-**Status:** Agent-provisional; awaiting independent Type 1 close review and
-maintainer acceptance.
+**Status:** Agent-provisional; the first Type 1 close review returned
+`CHANGES_REQUIRED`. Its four bounded corrections are implemented and await a
+focused re-review and maintainer acceptance.
 
 **Authority:** cut 6, Workstream 11, LDG-2809 through LDG-2813 in
 `tickets.yml`, under the accepted equity-settlement synthesis.
 
-**Implementation range:** `7a63979` through `8eac8c7`, after the accepted
+**Implementation range:** `7a63979` through `75d1bb1`, after the accepted
 Workstream 10 transition at `319060f`. This closeout is the LDG-2813 record
 and does not open Workstream 12.
 
@@ -35,6 +36,10 @@ and does not open Workstream 12.
   compiled spot-FIFO continues to refuse it before accounting.
 - The executable cash-distribution vignette demonstrates the modeled
   research path, its early-spendability limitation, and strict refusal.
+- `ledgr_snapshot_from_yahoo()` now declares its adjusted bars
+  `split_adjusted` by default, retaining an explicit `NULL` override. The
+  quick path therefore does not silently disable distribution double-counting
+  detection.
 
 No terminal disposition, lot consumption, acquisition composition, exact
 recipient quantity, or new compiled economic-event implementation shipped.
@@ -49,6 +54,7 @@ recipient quantity, or new compiled economic-event implementation shipped.
 | LCL-0030 | LTB-0035 | fast | fixed entitlement and one identified posting |
 | LCL-0031 | LTB-0036 | review | public durable cash path and exact result evidence |
 | LCL-0032 | LTB-0037 | fast | executable modeled and strict quick paths |
+| LCL-0033 | LTB-0038 | review | Yahoo declares its adjusted price basis |
 
 LTB-0026 under LCL-0022 was also updated deliberately: canonical R admits
 the now-implemented `CASHFLOW`, while compiled spot-FIFO still refuses it.
@@ -56,8 +62,9 @@ the now-implemented `CASHFLOW`, while compiled spot-FIFO still refuses it.
 - Gate case 2 is the split-normalized cash term in LTB-0036. A later parent
   split changes price and not the already canonical cash term.
 - Gate case 3 is LTB-0035 and LTB-0036: each posting convention has exact
-  cash and clock expectations, and the public durable run observes cash in
-  strategy context before valuation completes for the pulse.
+  cash and clock expectations, public seller and buyer runs execute real
+  ex-date fills, and strategy context observes cash before valuation completes
+  for the pulse.
 - Gate case 11 is complete across LTB-0034 and LTB-0036: bars-only runs say
   `not_supplied`; a dividend-only snapshot needs no availability calendar or
   staleness policy and reports exact modeled evidence.
@@ -111,19 +118,29 @@ specialist-only reader.
 - A duplicate source-fact posting is rejected. Removing either entitlement
   timing, knowledge timing, or either policy identity changes LTB-0035.
 - Removing canonical `CASHFLOW` handling fails LTB-0026; allowing compiled
-  `CASHFLOW` execution fails its separate compiled-arm expectation.
+  `CASHFLOW` execution fails LTB-0036's public compiled-sweep expectation.
+- Moving the fold's entitlement bind after ex-date fills made LTB-0036 fail
+  for both the seller and buyer. Counting equal-time ordinary fills during
+  resume made its interrupted seller lose the expected gross cash. Restoring
+  lexical timestamp grouping made LTB-0035 fail at the one-billion-second
+  boundary.
+- Restoring Yahoo's `NULL` default made LTB-0038 fail while its explicit
+  `NULL` override remained valid.
 
 No whole-file source hash was introduced as a behavioral oracle.
 
 ## Test Gate And Performance
 
-The final exact-tree fast profile used R 4.6.1 and testthat 3.3.2. All three
-runs passed 444 of 444 selected blocks with zero failures and zero skips:
-90.360, 88.270, and 88.380 seconds. The registered ordinary gate passed on
-the required three-run median of 88.380 seconds against the 90-second bound.
-Records:
+The corrected final exact-tree fast profile used R 4.6.1 and testthat 3.3.2.
+It passed 444 of 444 selected blocks with zero failures and zero skips in
+87.810 seconds. Because run one was below the 90-second bound, the registered
+ordinary gate passed under its one-run rule. Records:
 
-`C:/Users/maxth/ledgr-research/.tmp/ws11/ldg-2813-final-fast`
+`C:/Users/maxth/ledgr-research/.tmp/ws11/ldg-2813-correction-fast-r1`
+
+The pre-review provisional record remains historical evidence: its three
+runs passed 444 of 444 at a median of 88.380 seconds. It is not substituted
+for the corrected-tree gate above.
 
 The vignette render completed in about nine seconds, but that is a document
 build rather than a performance benchmark. The corporate-action family still
@@ -131,36 +148,57 @@ has no registered full-population workload, so this closeout makes no
 full-scale settlement speed claim and does not convert focused test clocks
 into one.
 
+The independent close reviewer ran an interleaved warm clock over 100
+instruments, 500 pulses, and 20 fills per pulse, with one untimed warm-up and
+three measured rounds. Against base `319060f`, the initial Workstream 11 tree
+at `ee564f0` moved bars-only execution from 10.06 to 10.23 seconds (1.7%) and
+the 100-fact, 29-posting case from 10.26 to 10.56 seconds (2.9%). These are
+reviewer-measured warm clocks, not peer results or full-population claims. The
+focused correction subsequently removed rather than added scale-growing work.
+
 ## Hot-Path And Complexity Audit
 
 The production delta was walked against the seven optimization shapes.
 
 - Fact selection and validation are column operations. Knowledge-to-pulse
-  mapping uses one vectorized `findInterval`, not a fact-by-pulse scan.
+  mapping uses one vectorized `findInterval`; entitlement and due facts are
+  indexed by pulse once rather than selected by a fact scan every pulse.
 - Resume entitlement groups existing corporate cash deltas by instrument and
   takes cumulative values once. It does not rescan the event stream for each
   prior fact.
-- Entitlement uses prepared position vectors. Per-pulse work is a null check
-  plus the facts due at that pulse; it does not scan all past facts.
-- Due events are prepared as one typed block and appended through the existing
-  handler boundary, not as one-row frames or one database call per event.
+- Entitlement matches all due parent identities to the prepared position
+  vector once, then replaces the two state vectors once per batch. There is no
+  per-fact write into an environment-held vector.
+- Due events manifest as one data frame per posting pulse and use one
+  `append_event_rows()` call, which is one durable append per posting pulse.
+  Unique canonical event metadata still requires one JSON encoding per held
+  fact; no one-row frame or final `rbind` remains.
 - The ordinary result summarizes the persisted corporate cash rows linearly
   at the result boundary. No nested event or instrument rescan was added.
 - Sweep workers receive prepared immutable settlement rows and own their fold
   state locally. No mutable cursor is shared across candidates.
-- No row-wise timestamp formatting, JSON parsing, growing-vector append,
-  pairwise validator, or environment-held vector write was added.
+- No row-wise timestamp formatting or parsing, growing-vector append,
+  pairwise validator, or per-element environment-held vector write remains.
 
-The audit initially found a fact-by-pulse lookup and a fact-by-event resume
-scan before close. LDG-2811 replaced both before this record was frozen. No
-hidden quadratic path remains in the Workstream 11 delta.
+The pre-close audit found a fact-by-pulse knowledge lookup and fact-by-event
+resume scans. The close review additionally found one-row frames, a final
+`rbind`, scalar environment writes, and pulse-time fact scans. All were
+removed before this revised record. The remaining event-metadata encoding and
+result summarization are linear in actual corporate-action events.
 
 ## Governance And Declined Work
 
-Four review invocations have completed over the cut's fifteen tickets: two
-cut-review rounds and two Workstream 10 close-review rounds. The requested
-Workstream 11 close review is the fifth, giving 5/15 = 0.333 if completed,
-below the 0.5 gate. The denominator is the fifteen tickets present at cut.
+Five review invocations have completed over the cut's fifteen tickets: two
+cut-review rounds, two Workstream 10 close-review rounds, and the initial
+Workstream 11 close review. The requested focused re-review is the sixth,
+giving 6/15 = 0.400 if completed, below the 0.5 gate. The denominator is the
+fifteen tickets present at cut.
+
+The first Workstream 11 review found: the primary entitlement rule lacked a
+public-path detector; resume sorted numeric timestamps lexically; two hot-path
+claims contradicted the implementation; and Yahoo left a known price basis
+undeclared. Commit `75d1bb1` closes all four. The closeout retains those
+findings rather than rewriting the first review as a pass.
 
 Declined here:
 

@@ -18,8 +18,8 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 `8747c64` and was patched in place. Cut 6, usable equity corporate actions,
 is **open** under the synthesis accepted 2026-09-24: three serial
 workstreams, fifteen tickets, cut review accepted after two rounds, Workstream
-10 accepted after one correction round, and Workstream 11 pending close
-review. Cuts
+10 accepted after one correction round, and Workstream 11 pending focused
+re-review after four bounded close-review corrections. Cuts
 are independent of one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
@@ -317,7 +317,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; workstream 11 review pending)
+## Cut 6: Usable equity corporate actions (open; workstream 11 re-review pending)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -337,9 +337,11 @@ corrected census are external dependencies in `ledgr-research`; synthetic
 work here does not wait for them and real-data integration cannot precede
 an accepted upstream build. The cut review (`cut_review_6.md`) returned
 `CHANGES_REQUIRED` at `8a1fb15` with five findings, all patched in place;
-the grouping and review points passed unchanged. Planned review
-invocations: the cut review, its focused re-review and three close reviews
-over fifteen tickets, 0.33 against the 0.5 gate.
+the grouping and review points passed unchanged. Planned review invocations:
+the cut review, its focused re-review, the Workstream 10 close review and
+correction round, the Workstream 11 close review and focused correction
+round, and the Workstream 12 close review over fifteen tickets, 0.47 against
+the 0.5 gate.
 
 **Pre-ticket note.** `schema_ceremony_note.md` records a measured finding
 outside cut 6: every store open pays about 200 catalogue queries in
