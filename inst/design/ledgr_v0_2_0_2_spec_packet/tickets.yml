@@ -72,6 +72,16 @@ review_obligations: >-
   protects; whether its oracle is independent enough; what smallest change
   makes it fail; why this is the cheapest adequate lane; which existing
   evidence overlaps it. No block carries these as boilerplate.
+  Maintainer rule, 2026-09-24, after the v0.2.0.0 regressions: every close
+  review also walks the changed code against the seven shapes and the
+  maintainer checklist in inst/design/manual/optimization_coding_style.qmd,
+  naming each loop whose iteration count grows with bars, fact rows,
+  instruments x pulses, events, diagnostics or candidates, with its stated
+  reason or a finding; and no workstream is accepted before its performance
+  is measured on the registered shape it touches, before and after,
+  interleaved, with the clock named as cold or warm per spike_protocol.md
+  section 10. This binds the review, not the tickets; ticket text is
+  unchanged.
 workstreams:
   - id: 1
     name: "Oracle repair"
