@@ -317,37 +317,50 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; workstream 12 open)
+## Cut 6: Usable equity corporate actions (open; Workstream 14 queued)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
 three bounded spikes, one returned and one passed Type 1 final review, and
 three rounds of external product review. Full RFC route: it adds a fact
 family, a public policy object, a ledger event type and a headline result
-field. Tickets LDG-2804 through LDG-2818, three workstreams, serial.
+field. The original cut contains LDG-2804 through LDG-2818. A maintainer
+amendment adds LDG-2821 through LDG-2823, making eighteen active tickets in
+four serial workstreams. Deferred LDG-2820 is not an active cut ticket.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
 | 10 Boundary and sealed facts | 2804–2808 | compiled envelope refusal, first; the `equity_corporate_actions` family with tiered provenance and no guessed leg, excluded from availability activation; the fictional-adapter witness; declared price basis with double-counting refusal; closeout | the compiled arm refuses rather than drops; the constructor decodes no vendor; declaring the family alone compels no session calendar; the witness is executable |
 | 11 Policy, fidelity and cash | 2809–2813 | `corporate_action_policy` with research and strict presets entering identity; `corporate_action_fidelity` and the ordinary summary; gross `CASHFLOW` with entitlement fixed before the ex-dividend boundary and credited at the ex-date close; the quick-path vignette; closeout | entitlement uses the entitlement clock and fails on the effective clock; cash is in state before valuation and context; late facts post at knowledge time and are counted; `not_supplied` is distinguishable from `none` |
+| 14 Fact-family scaling | 2821–2823 | typed canonical fact preparation; set-wise persisted identity verification that retains the corruption guard; registered 20,000-row and 100,000-row clocks; closeout | all existing hashes, duplicate outcomes and tamper detection remain exact while constructor, seal and run-start row-wise encoding is removed |
 | 12 Disposition, composition and gate | 2814–2818 | canonical-R `DISPOSITION` with lot consumption and the schema migration; the composition rule and four-quantity report; durable resume and reopen plus memory failure containment; the fourteen-case gate and the adapter article; cut closeout | zero position means zero live lots; the four-row witness reconciles numerically; durable and memory guarantees are asserted as different things; every gate case names its clause and its smallest breaking change |
 
 Workstreams 10 and 11 are accepted. Workstream 11 passed focused Type 1
 re-review at `af5bdc6` after one bounded correction round and was accepted by
-the maintainer on 2026-09-24, which opens Workstream 12. Deferred LDG-2820
-records the review's resume-only metadata-parsing optimization; it was added
-after the cut and is not part of the fifteen-ticket review denominator.
+the maintainer on 2026-09-24. The subsequent scaling finding inserts
+Workstream 14 before Workstream 12. Its ticket review returned
+`PASS_AFTER_PATCHES`; the maintainer accepted the patched amendment on
+2026-09-24. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
+Deferred LDG-2820 records the review's resume-only metadata-parsing
+optimization; it remains outside both the original and amended active-ticket
+denominators.
 
 The upstream private gate, the Sharadar producer specification and the
 corrected census are external dependencies in `ledgr-research`; synthetic
 work here does not wait for them and real-data integration cannot precede
 an accepted upstream build. The cut review (`cut_review_6.md`) returned
 `CHANGES_REQUIRED` at `8a1fb15` with five findings, all patched in place;
-the grouping and review points passed unchanged. Planned review invocations:
-the cut review, its focused re-review, the Workstream 10 close review and
-correction round, the Workstream 11 close review and focused correction
-round, and the Workstream 12 close review over fifteen tickets, 0.47 against
-the 0.5 gate.
+the grouping and review points passed unchanged. Six reviews were completed
+against the original fifteen tickets. The amendment review plus the planned
+Workstream 14 and Workstream 12 close reviews project nine reviews over the
+amended eighteen active tickets, 0.500 against the 0.5 gate. A correction
+round would exceed the gate and must be recorded rather than hidden.
+
+The three-ticket split is technical rather than arithmetic padding: LDG-2821
+owns in-memory R fact objects, LDG-2822 owns the typed DuckDB round trip and
+persisted corruption guard, and LDG-2823 is the packet's standard closeout
+unit. Without the closeout unit the projected gate would be 9/17 = 0.529,
+which is why the boundary is stated explicitly rather than inferred.
 
 **Pre-ticket note.** `schema_ceremony_note.md` records a measured finding
 outside cut 6: every store open pays about 200 catalogue queries in
@@ -356,6 +369,13 @@ in production code that the test lanes exercise on nearly every block.
 Gutting it saved 12 percent of the fast lane and 33 percent of review. It is
 cut as LDG-2819 in cut 7, workstream 13, which opens after workstream 10 is
 accepted.
+
+`fact_family_scaling_note.md` records the second measured maintenance
+finding. At 100,000 complete corporate-action facts, construction took 97.9
+seconds, sealing 112.9 seconds and a public run 18.3 seconds against a
+1.26-second no-fact control. Workstream 14 owns exact hash and corruption
+parity plus the scale correction; it is an output-preserving amendment only
+while those identities remain byte-identical.
 
 ## Cut 7: Maintenance, schema ceremony (open; opens after workstream 10)
 
