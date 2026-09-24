@@ -17,6 +17,10 @@ The input object, invisibly.
 \description{
 Print a backtest result
 }
+\details{
+The ordinary print includes the headline corporate-action fidelity and
+declares when the execution-bar price basis was not supplied.
+}
 \examples{
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,

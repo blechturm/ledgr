@@ -66,6 +66,10 @@ When that evidence says performance is incomplete, the achieved-window block
 keeps prefix total return and maximum drawdown visible, but withholds
 annualized return, annualized volatility, and Sharpe ratio with an explicit
 explanation.
+
+The summary also prints the corporate-action fidelity, selected versioned
+policy identities, exercised-choice and refusal counts, and explicit zeros
+for settlement fields that were not exercised.
 }
 \section{Articles}{
 

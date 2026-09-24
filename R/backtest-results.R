@@ -482,6 +482,8 @@ ledgr_compute_metrics <- function(bt,
 #' @param x A `ledgr_backtest` object.
 #' @param ... Unused.
 #' @return The input object, invisibly.
+#' @details The ordinary print includes the headline corporate-action fidelity
+#'   and declares when the execution-bar price basis was not supplied.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
@@ -532,6 +534,7 @@ print.ledgr_backtest <- function(x, ...) {
     params = list(x$run_id)
   )$equity[[1]]
   final_equity <- as.numeric(final_equity)
+  corporate_actions <- ledgr_corporate_action_summary(x, con = con)
 
   pnl <- final_equity - initial_cash
   pnl_pct <- (pnl / initial_cash) * 100
@@ -545,6 +548,8 @@ print.ledgr_backtest <- function(x, ...) {
   cat("Initial Cash:  ", sprintf("$%.2f", initial_cash), "\n")
   cat("Final Equity:  ", sprintf("$%.2f", final_equity), "\n")
   cat("P&L:           ", sprintf("$%.2f (%.2f%%)", pnl, pnl_pct), "\n\n")
+  ledgr_print_corporate_action_headline(corporate_actions)
+  cat("\n")
   cat("Use summary(bt) for detailed metrics\n")
   cat("Use plot(bt) for equity curve visualization\n")
 
@@ -602,6 +607,9 @@ ledgr_summary_prefix_only <- function(completion) {
 #' keeps prefix total return and maximum drawdown visible, but withholds
 #' annualized return, annualized volatility, and Sharpe ratio with an explicit
 #' explanation.
+#' The summary also prints the corporate-action fidelity, selected versioned
+#' policy identities, exercised-choice and refusal counts, and explicit zeros
+#' for settlement fields that were not exercised.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -658,6 +666,9 @@ summary.ledgr_backtest <- function(object,
 
   completion <- ledgr_backtest_completion_info(object)
   ledgr_print_completion_info(completion)
+  ledgr_print_corporate_action_summary(
+    ledgr_corporate_action_summary(object)
+  )
 
   prefix_only <- ledgr_summary_prefix_only(completion)
   withheld_reason <- "withheld (achieved window is shorter than requested)"
