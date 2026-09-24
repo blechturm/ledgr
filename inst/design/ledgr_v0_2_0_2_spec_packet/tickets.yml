@@ -835,12 +835,13 @@ tickets:
   - id: "LDG-2806"
     title: "Vendor-neutrality witness: a fictional adapter"
     workstream: 10
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2805"]
     scope: "Synthesis 3.8; gate case 1. A synthetic adapter with different source column names and action codes that builds the same canonical facts and passes the same constructor and validator, calling no Sharadar helper and reproducing no Sharadar formula. It is a release deliverable, not documentation. Whether it ships in the package or only in the vignette is promoted to spec-cut; this ticket decides and records why."
     acceptance: ["the fictional adapter's output seals identically to hand-constructed canonical facts for the same events", "a source guard fails if the adapter references any ledgr.sharadar symbol or field name", "the adapter is exercised by an executing block, not described in a document"]
+    evidence: ["LTB-0030 sources the vignette-local fictional adapter, rejects ledgr.sharadar and its source identifiers, translates differently named columns and PAYMENT/CHILD_GRANT codes, and proves identical canonical families and sealed snapshot hashes against independently hand-constructed facts. Deliberately mapping PAYMENT to spin_off failed both family and sealed-hash parity. The spec-cut placement is vignette-only: the executable teaching adapter ships with the article source but does not become a supported package API or vendor integration; LDG-2817 will consume it in the adapter-authoring article. The final fast lane passed 443/443 blocks in 115.730, 99.060 and 95.280 seconds; its 99.060-second median exceeded the registered 90-second gate. Record directory: C:/Users/maxth/ledgr-research/.tmp/ws10/ldg-2806-fast."]
 
   - id: "LDG-2807"
     title: "Declare the price basis and detect distribution double counting"

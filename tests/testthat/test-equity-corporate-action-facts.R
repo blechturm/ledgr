@@ -256,3 +256,68 @@ testthat::test_that("[LTB-0029] corporate-action facts do not activate availabil
   )
   testthat::expect_false(validated$active)
 })
+
+testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", {
+  adapter_path <- testthat::test_path(
+    "..", "..", "vignettes", "fictional-corporate-action-adapter.R"
+  )
+  adapter_source <- paste(readLines(adapter_path, warn = FALSE), collapse = "\n")
+  forbidden <- c(
+    "ledgr[.]sharadar", "sharadar", "ticker", "permaticker",
+    "actiontype", "date", "action", "name", "value",
+    "contraticker", "contrapermaticker", "contraname"
+  )
+  for (token in forbidden) {
+    testthat::expect_no_match(
+      adapter_source,
+      paste0("\\b", token, "\\b"),
+      perl = TRUE,
+      ignore.case = TRUE,
+      info = paste("fictional adapter must not reference", token)
+    )
+  }
+
+  adapter_env <- new.env(parent = globalenv())
+  sys.source(adapter_path, envir = adapter_env)
+  canonical_rows <- equity_corporate_action_rows()
+  fictional_rows <- data.frame(
+    record_key = canonical_rows$fact_id,
+    effect_code = c("PAYMENT", "CHILD_GRANT"),
+    subject_key = canonical_rows$parent_instrument_id,
+    rights_at = canonical_rows$entitlement_time,
+    changes_at = canonical_rows$effective_time,
+    seen_at = canonical_rows$knowledge_time,
+    settles_at = canonical_rows$payment_time,
+    terms_ready = canonical_rows$complete,
+    why_refused = canonical_rows$refusal_reason,
+    lineage_level = canonical_rows$provenance_tier,
+    source_build = canonical_rows$upstream_build_id,
+    price_release = canonical_rows$bar_vintage_id,
+    cash_units = canonical_rows$gross_cash_per_parent_unit,
+    cash_checked = canonical_rows$gross_cash_validated,
+    destination_key = canonical_rows$recipient_instrument_id,
+    destination_checked = canonical_rows$recipient_identity_validated,
+    share_units = canonical_rows$recipient_quantity_per_parent_unit,
+    share_units_checked = canonical_rows$recipient_quantity_validated,
+    stringsAsFactors = FALSE
+  )
+  expected <- ledgr_facts_equity_corporate_actions(canonical_rows)
+  actual <- adapter_env$fictional_corporate_action_adapter(fictional_rows)
+  testthat::expect_identical(actual, expected)
+
+  bars <- equity_corporate_action_bars()
+  expected_snapshot <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(expected)
+  )
+  withr::defer(ledgr_snapshot_close(expected_snapshot))
+  actual_snapshot <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(actual)
+  )
+  withr::defer(ledgr_snapshot_close(actual_snapshot))
+  testthat::expect_identical(
+    ledgr_snapshot_info(actual_snapshot)$snapshot_hash[[1L]],
+    ledgr_snapshot_info(expected_snapshot)$snapshot_hash[[1L]]
+  )
+})
