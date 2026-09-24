@@ -317,7 +317,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; workstream 11 re-review pending)
+## Cut 6: Usable equity corporate actions (open; workstream 12 open)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -331,6 +331,12 @@ field. Tickets LDG-2804 through LDG-2818, three workstreams, serial.
 | 10 Boundary and sealed facts | 2804–2808 | compiled envelope refusal, first; the `equity_corporate_actions` family with tiered provenance and no guessed leg, excluded from availability activation; the fictional-adapter witness; declared price basis with double-counting refusal; closeout | the compiled arm refuses rather than drops; the constructor decodes no vendor; declaring the family alone compels no session calendar; the witness is executable |
 | 11 Policy, fidelity and cash | 2809–2813 | `corporate_action_policy` with research and strict presets entering identity; `corporate_action_fidelity` and the ordinary summary; gross `CASHFLOW` with entitlement fixed before the ex-dividend boundary and credited at the ex-date close; the quick-path vignette; closeout | entitlement uses the entitlement clock and fails on the effective clock; cash is in state before valuation and context; late facts post at knowledge time and are counted; `not_supplied` is distinguishable from `none` |
 | 12 Disposition, composition and gate | 2814–2818 | canonical-R `DISPOSITION` with lot consumption and the schema migration; the composition rule and four-quantity report; durable resume and reopen plus memory failure containment; the fourteen-case gate and the adapter article; cut closeout | zero position means zero live lots; the four-row witness reconciles numerically; durable and memory guarantees are asserted as different things; every gate case names its clause and its smallest breaking change |
+
+Workstreams 10 and 11 are accepted. Workstream 11 passed focused Type 1
+re-review at `af5bdc6` after one bounded correction round and was accepted by
+the maintainer on 2026-09-24, which opens Workstream 12. Deferred LDG-2820
+records the review's resume-only metadata-parsing optimization; it was added
+after the cut and is not part of the fifteen-ticket review denominator.
 
 The upstream private gate, the Sharadar producer specification and the
 corrected census are external dependencies in `ledgr-research`; synthetic

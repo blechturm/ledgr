@@ -1,15 +1,15 @@
 # Workstream 11 Closeout: Policy, Fidelity And Cash
 
-**Status:** Agent-provisional; the first Type 1 close review returned
-`CHANGES_REQUIRED`. Its four bounded corrections are implemented and await a
-focused re-review and maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-09-24 after the focused Type 1
+re-review returned `PASS`. The first close review's `CHANGES_REQUIRED` and its
+four bounded corrections remain part of this record.
 
 **Authority:** cut 6, Workstream 11, LDG-2809 through LDG-2813 in
 `tickets.yml`, under the accepted equity-settlement synthesis.
 
-**Implementation range:** `7a63979` through `75d1bb1`, after the accepted
+**Implementation range:** `7a63979` through `af5bdc6`, after the accepted
 Workstream 10 transition at `319060f`. This closeout is the LDG-2813 record
-and does not open Workstream 12.
+and its acceptance opens Workstream 12.
 
 ## What Shipped
 
@@ -188,11 +188,12 @@ result summarization are linear in actual corporate-action events.
 
 ## Governance And Declined Work
 
-Five review invocations have completed over the cut's fifteen tickets: two
-cut-review rounds, two Workstream 10 close-review rounds, and the initial
-Workstream 11 close review. The requested focused re-review is the sixth,
-giving 6/15 = 0.400 if completed, below the 0.5 gate. The denominator is the
-fifteen tickets present at cut.
+Six review invocations have completed over the cut's fifteen tickets: two
+cut-review rounds, two Workstream 10 close-review rounds, the initial
+Workstream 11 close review, and its focused re-review. That is 6/15 = 0.400,
+below the 0.5 gate. The denominator is the fifteen tickets present at cut;
+deferred LDG-2820 records a post-cut optimization observation and does not
+rewrite that historical denominator.
 
 The first Workstream 11 review found: the primary entitlement rule lacked a
 public-path detector; resume sorted numeric timestamps lexically; two hot-path
@@ -213,5 +214,5 @@ Declined here:
 - vendor decoding, price adjustment, or quantity normalization inside ledgr:
   those remain adapter responsibilities.
 
-Maintainer acceptance after the independent close review closes Workstream 11
-and opens Workstream 12.
+The focused re-review returned `PASS` at `af5bdc6`. Maintainer acceptance on
+2026-09-24 closes Workstream 11 and opens Workstream 12.

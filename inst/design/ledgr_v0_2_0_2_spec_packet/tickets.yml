@@ -52,7 +52,7 @@ cuts:
   - id: 6
     name: "Usable equity corporate actions"
     cut: "2026-09-24"
-    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24. Workstream 10 passed its close review after one bounded correction and was accepted on 2026-09-24; workstream 11 is open. Grouping and review points passed the Type 2 half unchanged."
+    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24. Workstream 10 passed its close review after one bounded correction and was accepted on 2026-09-24. Workstream 11 passed focused re-review at af5bdc6 after one bounded correction and was accepted on 2026-09-24; workstream 12 is open. Grouping and review points passed the Type 2 half unchanged."
     authority: "inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md, accepted 2026-09-24"
     source_table: "synthesis section 6, the fourteen gate cases; dev/spikes/settlement_quantity_primitive, settlement_axis_density and terminal_disposition_policy evidence; corrected Tier 2 census aggregates in ledgr-research"
     workstreams: [10, 11, 12]
@@ -167,7 +167,7 @@ workstreams:
   - id: 11
     name: "Policy, fidelity and cash"
     cut: 6
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 10
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 11", reason: "Entitlement and posting are the rules the second final review found the gate could not see violated. One review at close runs the table-driven cases against their ordering claims at R/fold-engine.R:458 and :506, checks the policy's identity behaviour in both directions (a changed value changes the hash; an omitted argument equals the explicit preset), and that not_supplied cannot be confused with none in the ordinary result. Type 1 because the public semantics were bound after Type 2 review of seed v7; the research default may not become the default before strict mode, identity, fidelity and ordinary reporting exist, which the dependency order enforces."}
@@ -930,13 +930,24 @@ tickets:
   - id: "LDG-2813"
     title: "Workstream 11 closeout"
     workstream: 11
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2809", "LDG-2810", "LDG-2811", "LDG-2812"]
     scope: "Governance synthesis D4. Closeout section for workstream 11: what shipped; gate cases 2, 3, 11 in full and 12 named with their registered blocks; the identity behaviour of the policy in both directions; the spec-cut decisions on spellings and summary layout; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
-    evidence: ["policy_fidelity_cash_closeout.md records the shipped policy, fidelity and cash boundary; LTB-0035 and LTB-0036 for gate cases 2, 3, 11 and 12; policy identity in both directions; the public spelling and summary-layout decisions; failure-sensitive boundary, resume, compiled-refusal, timestamp and Yahoo-default mutations; the initial close review's four findings and their correction at 75d1bb1; the corrected 444/444 one-run fast gate at 87.810 seconds; the corrected seven-shape audit; the reviewer-measured warm clock; the pending sixth review invocation over fifteen tickets; and declined work. The record remains agent-provisional until focused Type 1 re-review and maintainer acceptance."]
+    evidence: ["policy_fidelity_cash_closeout.md records the shipped policy, fidelity and cash boundary; LTB-0035 and LTB-0036 for gate cases 2, 3, 11 and 12; policy identity in both directions; the public spelling and summary-layout decisions; failure-sensitive boundary, resume, compiled-refusal, timestamp and Yahoo-default mutations; the initial close review's four findings and their correction at 75d1bb1; the corrected 444/444 one-run fast gate at 87.810 seconds; the corrected seven-shape audit; the reviewer-measured warm clock; the focused Type 1 re-review PASS at af5bdc6; the sixth review invocation over the fifteen tickets present at the cut; maintainer acceptance on 2026-09-24; and declined work."]
+
+  - id: "LDG-2820"
+    title: "Prepare corporate-action resume metadata once"
+    workstream: 11
+    status: "deferred"
+    priority: "P2"
+    effort: "S"
+    dependencies: ["LDG-2811"]
+    scope: "Non-blocking Workstream 11 review observation. On resume, ledgr_corporate_action_plan() decodes every existing ledger event's meta_json to recover posted corporate-action fact ids, then ledgr_corporate_action_past_quantities() decodes the same rows again to reconstruct entitlement quantities. The reviewer measured 3-4 microseconds per event, about 0.72 seconds for each pass over 200,000 events, in addition to the accounting replay's existing metadata pass. Prepare the corporate-action resume metadata once and reuse it for both consumers, or reduce the decoded set with an equivalently bounded typed query. Preserve event ordering, opening-position treatment, the strict-before-boundary rule for ordinary events, duplicate source-fact refusal and every durable resume result. No schema, identity, event vocabulary or settlement-policy change; no cross-run cache. Deferred so the accepted Workstream 11 behavior and review record are not reopened for a resume-only optimization."
+    acceptance: ["a decode-count detector over a resumed run fails if the corporate-action resume path decodes any selected existing event more than once; the detector distinguishes an empty history, histories containing unrelated events, opening-position events, ordinary fills and prior corporate-action CASHFLOW events", "the uninterrupted and interrupted-then-resumed public runs in LTB-0036 remain identical on corporate-action cash, entitlement quantity and exactly-once posting, and the one-billion-second ordering witness in LTB-0035 remains green", "interleaved before-and-after warm resume clocks at 200,000 events report the metadata-preparation phase separately; the optimization does not regress the total resume clock", "a source guard or equivalent structural detector fails if a second full-event ledgr_corporate_action_event_meta() pass returns inside corporate-action plan construction", "no database schema, persisted event, run identity, policy identity, fidelity value, error class or public API changes"]
+    evidence: ["Deferred from the focused Workstream 11 re-review at af5bdc6. The reviewer found two corporate-action metadata decodes on resume, measured each at about 0.72 seconds for 200,000 events, and confirmed the observation was non-blocking for the accepted cash-settlement behavior."]
 
   # ------------------------------------------------ 12 Disposition, composition and gate
   - id: "LDG-2814"
