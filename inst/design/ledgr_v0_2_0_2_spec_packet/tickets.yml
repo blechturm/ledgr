@@ -167,7 +167,7 @@ workstreams:
   - id: 11
     name: "Policy, fidelity and cash"
     cut: 6
-    status: "in_progress"
+    status: "review_pending"
     depends_on_workstream: 10
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 11", reason: "Entitlement and posting are the rules the second final review found the gate could not see violated. One review at close runs the table-driven cases against their ordering claims at R/fold-engine.R:458 and :506, checks the policy's identity behaviour in both directions (a changed value changes the hash; an omitted argument equals the explicit preset), and that not_supplied cannot be confused with none in the ordinary result. Type 1 because the public semantics were bound after Type 2 review of seed v7; the research default may not become the default before strict mode, identity, fidelity and ordinary reporting exist, which the dependency order enforces."}
@@ -930,12 +930,13 @@ tickets:
   - id: "LDG-2813"
     title: "Workstream 11 closeout"
     workstream: 11
-    status: "open"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2809", "LDG-2810", "LDG-2811", "LDG-2812"]
     scope: "Governance synthesis D4. Closeout section for workstream 11: what shipped; gate cases 2, 3, 11 in full and 12 named with their registered blocks; the identity behaviour of the policy in both directions; the spec-cut decisions on spellings and summary layout; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
+    evidence: ["policy_fidelity_cash_closeout.md records the shipped policy, fidelity and cash boundary; LTB-0035 and LTB-0036 for gate cases 2 and 3; LTB-0034 plus LTB-0036 for gate case 11 in full; LTB-0035 for gate case 12; policy identity in both directions; the public spelling and summary-layout decisions; mutation results; the final 444/444 three-run fast gate at an 88.380-second median; the seven-shape audit; the pending fifth review invocation over fifteen tickets; and declined work. The record remains agent-provisional until independent Type 1 review and maintainer acceptance."]
 
   # ------------------------------------------------ 12 Disposition, composition and gate
   - id: "LDG-2814"
