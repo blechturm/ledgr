@@ -1,6 +1,6 @@
 # v0.2.0.2 Packet
 
-**Status:** Four cuts. Cut 1, the test-suite cleanup, is closed: five
+**Status:** Five cuts, four closed and one open. Cut 1, the test-suite cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2's accounting-core workstream is closed at
@@ -14,8 +14,10 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 **accepted** after one corrective review round; its record is
 `exact_parity_workflow_closeout.md`. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
-`8747c64` and was patched in place. Cuts are independent of one another;
-workstreams are serial within a cut.
+`8747c64` and was patched in place. Cut 6, usable equity corporate actions,
+is **open** under the synthesis accepted 2026-09-24: three serial
+workstreams, fifteen tickets, cut review pending. Cuts are independent of
+one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
 cut, and sequencing authority. Each cut names its own RFC authority there;
@@ -311,3 +313,24 @@ three of five workstreams; the runtime, rejected records, retained surface,
 and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
+
+## Cut 6: Usable equity corporate actions (open; cut review pending)
+
+Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
+accepted 2026-09-24 after seven seeds, seven responses with two addenda,
+three bounded spikes, one returned and one passed Type 1 final review, and
+three rounds of external product review. Full RFC route: it adds a fact
+family, a public policy object, a ledger event type and a headline result
+field. Tickets LDG-2804 through LDG-2818, three workstreams, serial.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 10 Boundary and sealed facts | 2804–2808 | compiled envelope refusal, first; the `equity_corporate_actions` family with tiered provenance and no guessed leg, excluded from availability activation; the fictional-adapter witness; declared price basis with double-counting refusal; closeout | the compiled arm refuses rather than drops; the constructor decodes no vendor; declaring the family alone compels no session calendar; the witness is executable |
+| 11 Policy, fidelity and cash | 2809–2813 | `corporate_action_policy` with research and strict presets entering identity; `corporate_action_fidelity` and the ordinary summary; gross `CASHFLOW` with entitlement fixed before the ex-dividend boundary and credited at the ex-date close; the quick-path vignette; closeout | entitlement uses the entitlement clock and fails on the effective clock; cash is in state before valuation and context; late facts post at knowledge time and are counted; `not_supplied` is distinguishable from `none` |
+| 12 Disposition, composition and gate | 2814–2818 | canonical-R `DISPOSITION` with lot consumption and the schema migration; the composition rule and four-quantity report; durable resume and reopen plus memory failure containment; the fourteen-case gate and the adapter article; cut closeout | zero position means zero live lots; the four-row witness reconciles numerically; durable and memory guarantees are asserted as different things; every gate case names its clause and its smallest breaking change |
+
+The upstream private gate, the Sharadar producer specification and the
+corrected census are external dependencies in `ledgr-research`; synthetic
+work here does not wait for them and real-data integration cannot precede
+an accepted upstream build. Planned review invocations: one cut review and
+three close reviews over fifteen tickets, 0.27 against the 0.5 gate.

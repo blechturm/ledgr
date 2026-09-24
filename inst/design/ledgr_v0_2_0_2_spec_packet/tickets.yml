@@ -49,6 +49,16 @@ cuts:
     reason: "Three tickets could not carry a cut review, a close review and a re-review and stay under the D8 gate; at 3/3 the ratio was measuring the cut's size, not wasted review effort. The work is a direct continuation of workstream 7 on the same surface. Retained here so the chronology stays honest: this ran as its own cut and its shape is what prompted the fold."
     historical_gate: "3 review invocations over 3 completed tickets, 1.00, against a 0.5 gate"
     workstreams: [9]
+  - id: 6
+    name: "Usable equity corporate actions"
+    cut: "2026-09-24"
+    cut_review: "pending; Codex ticket-cut review per rfc_cycle.md: does every accepted requirement have an owner (Type 1), are the grouping and review points sensible (Type 2)"
+    authority: "inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md, accepted 2026-09-24"
+    source_table: "synthesis section 6, the fourteen gate cases; dev/spikes/settlement_quantity_primitive, settlement_axis_density and terminal_disposition_policy evidence; corrected Tier 2 census aggregates in ledgr-research"
+    workstreams: [10, 11, 12]
+    closeout: "equity_corporate_actions_closeout.md"
+    external_dependency: "The Sharadar producer specification, the distribution-population reconciliation and the corrected census live in ledgr-research and are not part of this cut's evidence. Real-data integration cannot precede an accepted upstream build; synthetic ledgr work does not wait for it."
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -127,6 +137,28 @@ workstreams:
     depends_on_workstream: 7
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 9", reason: "A reader substitution changes inferred types, accepted inputs and error timing, which OPT-L03 put on the RFC side of its line. The maintainer decided it directly, so the review carries the weight the cut review would have: it checks the registered compatibility matrix against the tree, that every behaviour change in it is intended rather than inherited from DuckDB's defaults, and that the pinned snapshot hash moved only where the old reader was wrong."}
+
+  - id: 10
+    name: "Boundary and sealed facts"
+    cut: 6
+    status: "open"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 10", reason: "The compiled refusal is the prerequisite every seed since v4 named and nobody owned; it lands first by ticket dependency so the first new economic event kind cannot be silently dropped. The fact family is architecture the synthesis bound after Type 2 review, so the workstream implements it. One review at close checks that the constructor and validator decode no vendor, that the fictional adapter is a witness rather than a demo, that the activation exclusion is defended by a detecting block rather than a comment, and that the double-counting refusal fires on a declared distribution-adjusted basis."}
+  - id: 11
+    name: "Policy, fidelity and cash"
+    cut: 6
+    status: "open"
+    depends_on_workstream: 10
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 11", reason: "Entitlement and posting are the rules the second final review found the gate could not see violated. One review at close runs the table-driven cases against their ordering claims at R/fold-engine.R:458 and :506, checks the policy's identity behaviour in both directions (a changed value changes the hash; an omitted argument equals the explicit preset), and that not_supplied cannot be confused with none in the ordinary result. Type 1 because the public semantics were bound after Type 2 review of seed v7; the research default may not become the default before strict mode, identity, fidelity and ordinary reporting exist, which the dependency order enforces."}
+  - id: 12
+    name: "Disposition, composition and gate"
+    cut: 6
+    status: "open"
+    depends_on_workstream: 11
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 12", reason: "DISPOSITION is the only new event type and the only path that consumes lots outside a fill. One review at close checks that the schema migration recreates existing stores without loss, that zero position means zero live lots rather than opposing ones, that the four-row composition witness reconciles numerically to the 3.5 formula rather than asserting field presence, that durable recovery and memory failure containment are asserted as the different guarantees they are, and that all fourteen gate cases are registered claims each naming the synthesis clause it protects. The cut closeout is reviewed with it."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -766,3 +798,156 @@ tickets:
     dependencies: ["LDG-2801"]
     scope: "Governance synthesis D4. A closeout section for cut 5: what shipped; the reader clock and the from_csv end-to-end clock before and after; the compatibility matrix differences with their reasons; which hashes moved and why each old value was wrong; review invocations against the 0.5 gate, stating that the cut review was compressed into the close review and why; the amendment to cut 3's closeout, whose declined list did not consider DuckDB. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each clock names commit, environment, command, and result", "every hash that moved is named with the reason the old value was wrong", "cut 3's closeout carries a pointer to this cut"]
+
+  # ------------------------------------------------ 10 Boundary and sealed facts
+  - id: "LDG-2804"
+    title: "Refuse economic events at the compiled envelope"
+    workstream: 10
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "Synthesis 3.7; inventory section 9. Give the pulse plan an explicit economic-event kind set. When compiled_accounting_model = \"spot_fifo\" is selected and the plan contains CASHFLOW, DISPOSITION or any non-FILL economic kind, abort before execution with the existing ledgr_compiled_spot_fifo_unavailable class. Pair with a source guard asserting both accounting arms in R/fold-engine.R read the same event sources, so a kind cannot be added to the canonical R arm alone. Named as a prerequisite in every seed since v4 and unticketed until this cut; it lands first."
+    acceptance: ["a plan containing a CASHFLOW at a pulse with no fill aborts before the first pulse under compiled spot-FIFO with the named class; with the envelope check removed the run completes with the event dropped, and the block detects that", "the source guard fails when an event kind is added to the canonical R arm alone", "the canonical R path is unchanged: fast-profile parity blocks pass"]
+
+  - id: "LDG-2805"
+    title: "Seal the equity_corporate_actions fact family with tiered provenance"
+    workstream: 10
+    status: "open"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2804"]
+    scope: "Synthesis 3.2 and 3.6. Public constructor, provisionally ledgr_facts_equity_corporate_actions(), consistent with the family-first surface; storage in ledgr_snapshot_write_fact_family(); read, seal validator, hash rule version, migration and compilation. Header: stable fact identity, subtype, parent identity, the four clocks when supplied, knowledge time, completeness, one closed refusal reason, and a provenance tier of snapshot_bound or upstream_vintage_bound. Terms (gross cash per canonical parent unit, recipient identity, normalized recipient quantity per parent unit) only when independently validated; an incomplete fact keeps its header and reason and carries no guessed leg. The constructor and validator own row shape, keys, finite domains, identity references and clock ordering and decode no vendor. The family is excluded from ledgr_availability_activation()'s runtime_families in R/availability-policy.R with the reason recorded beside the list: declaring it alone must not compel a session calendar or a valuation policy, or the second rung of the published ladder is false. Whether the refusal-reason set is closed by enumeration or by validator is promoted to spec-cut; this ticket decides and records why."
+    acceptance: ["a snapshot_bound fact with no build or vintage validates and seals; an upstream_vintage_bound fact without a named build and bar vintage is rejected", "an incomplete fact carrying a guessed recipient leg is rejected at construction with a named class", "declaring only equity_corporate_actions leaves availability inactive: ledgr_availability_validate_experiment() requires neither sessions nor a valuation policy; a block that adds the family to runtime_families fails", "the snapshot hash moves when a fact row changes and is unchanged for a snapshot that never declared the family", "clock ordering violations are rejected with a named class; an unavailable clock stays unavailable and no other clock is copied into it"]
+
+  - id: "LDG-2806"
+    title: "Vendor-neutrality witness: a fictional adapter"
+    workstream: 10
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2805"]
+    scope: "Synthesis 3.8; gate case 1. A synthetic adapter with different source column names and action codes that builds the same canonical facts and passes the same constructor and validator, calling no Sharadar helper and reproducing no Sharadar formula. It is a release deliverable, not documentation. Whether it ships in the package or only in the vignette is promoted to spec-cut; this ticket decides and records why."
+    acceptance: ["the fictional adapter's output seals identically to hand-constructed canonical facts for the same events", "a source guard fails if the adapter references any ledgr.sharadar symbol or field name", "the adapter is exercised by an executing block, not described in a document"]
+
+  - id: "LDG-2807"
+    title: "Declare the price basis and detect distribution double counting"
+    workstream: 10
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2805"]
+    scope: "Synthesis 4. Split-adjusted bars are the supported basis; distribution-adjusted bars are not admitted as execution bars. Bars carry a declared price basis. When the declared basis already incorporates distributions and distribution facts are also supplied, the experiment refuses at construction; when the basis is undeclared and facts are supplied, the run completes and the ordinary result names the undeclared basis. Silent double counting is the failure scenario this ticket closes."
+    acceptance: ["a snapshot declaring a distribution-adjusted basis with distribution facts supplied refuses at experiment construction with a named class", "an undeclared basis with facts supplied completes and the ordinary result names the undeclared basis", "the split-adjusted basis with facts supplied posts each distribution exactly once"]
+
+  - id: "LDG-2808"
+    title: "Workstream 10 closeout"
+    workstream: 10
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2804", "LDG-2805", "LDG-2806", "LDG-2807"]
+    scope: "Governance synthesis D4. Closeout section for workstream 10: what shipped; gate cases 1, 10 and the bars-only half of 11 named with their registered blocks; the activation exclusion and its recorded reason; the spec-cut decisions on refusal-reason closure and adapter placement; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
+
+  # ------------------------------------------------ 11 Policy, fidelity and cash
+  - id: "LDG-2809"
+    title: "The corporate_action_policy object and presets"
+    workstream: 11
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Synthesis 3.3. A constructor-built policy object joining the six ledgr_experiment() already takes. Omission resolves to the versioned research preset: gross, effective_close, last_permissible, report_only. ledgr_corporate_actions_strict() sets every choice to refuse. Values are drawn from closed sets; arbitrary callbacks are not accepted. The resolved policy including defaults enters experiment and run identity, so a historical run never acquires a default implicitly. Each value carries a versioned identifier bound to its scope as well as its behaviour (the synthesis-only decision in 3.3); the identifier is what is hashed, the user-facing spelling is a short word. Argument and preset spellings are promoted to spec-cut; this ticket decides and records them."
+    acceptance: ["two experiments differing only in one policy value have different config hashes", "an experiment with the argument omitted has the same identity as one passing the research preset explicitly", "a run store written before the policy existed does not acquire it on reopen", "an out-of-set value or a callback is rejected at construction with a named class", "the strict preset resolves every choice to refuse", "the hashed identifier is the versioned form, not the user-facing word"]
+
+  - id: "LDG-2810"
+    title: "Headline fidelity and the ordinary summary"
+    workstream: 11
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2809"]
+    scope: "Synthesis 3.5. corporate_action_fidelity with exactly four values: not_supplied, none, modeled, unsupported; severity monotone across the last three; not_supplied outside the ladder and printed in the ordinary result as \"Corporate actions: NOT SUPPLIED - returns may omit distributions\". The ordinary summary shows selected settings and identities, counts by exercised choice and refusal reason, the late-arrival count, aggregate affected marked exposure, gross cash posted, modeled terminal proceeds as a figure, positions disposed, realized model PnL and unsupported facts, with zero printed as zero. The field speaks only about supplied facts and never claims the source was complete. Summary layout is promoted to spec-cut; this ticket decides it."
+    acceptance: ["a bars-only run prints not_supplied with the bound wording; a run with facts none of which affect a holding prints none", "gutting the fidelity path changes the ordinary result and a block detects the change", "the ordinary print method carries the field; it is not confined to a specialist reader", "the field cannot take a fifth value"]
+
+  - id: "LDG-2811"
+    title: "Gross cash distributions with fixed entitlement and explicit posting"
+    workstream: 11
+    status: "open"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-2809", "LDG-2810"]
+    scope: "Synthesis 3.4, rules 1 through 7, and the maintainer's posting decision. Entitlement is the eligible holding immediately before the ex-dividend boundary taken from the validated entitlement clock, never a generic effective date, and is not recomputed at posting. effective_close means the ex-dividend session's close; the amount is credited before that pulse's valuation at R/fold-engine.R:458 and context at :506, so the dropped price and the cash land together. next_open remains an explicit alternative. A fact and every term the posting needs must be knowable by the cutoff under the declared knowledge policy; a fact known only afterwards posts at the first pulse at or after its knowledge time with the original entitled quantity and is counted in the fidelity summary. One existing CASHFLOW per admitted fact carrying source-fact, amount-policy and posting-policy identity. The amount is gross; no payment-date, withholding, investor-tax or broker-net claim. Gate cases 2, 3, 12 and the dividend half of 11."
+    acceptance: ["table-driven: with the entitlement clock and the generic effective clock on different sessions, a holder selling on the ex-date is credited and a buyer entering on it is not, and using the effective clock fails the block", "exact cash, equity and strategy-context values at the ex-date pulse and the next under both conventions; cash posted after valuation or after the strategy has run fails the block", "a fact with knowledge time after the cutoff posts at its first eligible pulse with the pre-boundary quantity, is not backdated, and increments the late-arrival count", "a dividend across a later parent split normalizes to the snapshot unit basis", "a dividend-only snapshot with no session calendar and no valuation policy posts cash", "the CASHFLOW carries all three identities and is applied once through resume and reopen"]
+
+  - id: "LDG-2812"
+    title: "Quick-path vignette"
+    workstream: 11
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2811"]
+    scope: "Synthesis 3.8, first vignette. One executing vignette: one dividend under the research preset, its result, its stated limitation (the assumed cash timing), then the same case under strict refusal. Nothing else; adapter authoring, provenance tiers and closure belong to the second article under LDG-2817. Real chunk execution per the house rule; no eval=FALSE skeleton."
+    acceptance: ["the vignette executes in the fast profile and its rendered output shows both the modeled result and the strict refusal", "a change to the preset default changes the rendered output"]
+
+  - id: "LDG-2813"
+    title: "Workstream 11 closeout"
+    workstream: 11
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2809", "LDG-2810", "LDG-2811", "LDG-2812"]
+    scope: "Governance synthesis D4. Closeout section for workstream 11: what shipped; gate cases 2, 3, 12 and the dividend half of 11 named with their registered blocks; the identity behaviour of the policy in both directions; the spec-cut decisions on spellings and summary layout; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
+
+  # ------------------------------------------------ 12 Disposition, composition and gate
+  - id: "LDG-2814"
+    title: "Canonical-R DISPOSITION with lot consumption"
+    workstream: 12
+    status: "open"
+    priority: "P0"
+    effort: "L"
+    dependencies: []
+    scope: "Synthesis 3.4. A new top-level DISPOSITION event type: the ledger_events CHECK in R/db-schema-create.R admits it, which is a table-recreation migration on existing stores per lines 382 through 427; a new operation in ledgr_prepare_accounting_events(); lot consumption under canonical FIFO with realized model PnL through the same realization the fill path uses, position removal and cash movement. The payload carries source-fact and policy identity, quantity, mark, source timestamp, age, before and after position and realized model PnL, and no equity or vendor subtype. Marks: last_permissible (preset), last_mark (explicit opt-in, beyond the staleness horizon, age reported), refuse. No finite qualifying mark means refusal with an intentional class and no mutation; never ledgr_config_non_finite. Strict mode retains terminal_settlement_unsupported and preserves the holding. Modeled terminal proceeds are a figure in the ordinary summary. Gate cases 4, 5 and 6."
+    acceptance: ["a held terminal under the research preset disposes at the current mark, realizes model PnL through the fill-path realization, reaches zero position with zero live lots rather than opposing lots, and moves cash", "current, permitted-stale and opt-in beyond-horizon marks each dispose with source age recorded, and last_mark is not what the preset selects", "with no finite qualifying mark: no event appended, no mutation, no fabricated price, an intentional refusal class, and never ledgr_config_non_finite", "the strict preset on the same fixture stops with terminal_settlement_unsupported and the holding preserved", "the CHECK rejects an unknown event type and accepts DISPOSITION; the migration recreates an existing store without loss", "the payload carries no equity subtype field"]
+
+  - id: "LDG-2815"
+    title: "Composition rule and the four-quantity omitted-value report"
+    workstream: 12
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2814"]
+    scope: "Synthesis 3.4 composition table and 3.5. One source-fact identity governs a transaction that raises both a terminal and a quantity effect; a supplied cash leg credited alongside modeled disposition proceeds for the same source identity is a validation failure. report_only changes no account state and raises fidelity to unsupported; strict mode stops when the affected parent is held. The summary reports, where terms permit: modeled cash credited; estimated contractual consideration as entitled parent quantity times the sum of cash per parent unit and the normalized recipient ratio times a named recipient mark at a named timestamp, in one currency; the difference at a common timestamp; successor exposure not represented. Each is an effective-date estimate, never the eventual return bias; unavailable where an observation does not exist. Retrospective only; never in the strategy context. Gate cases 8 and 13."
+    acceptance: ["a four-row witness (cash acquisition, stock acquisition, mixed acquisition with both legs nonzero, spin-off with the parent surviving) asserts per row the exact event count, the exact final cash proving no supplied leg was credited beside modeled proceeds, the fidelity value, and the four quantities reconciled numerically to the formula including sign, ratio, common timestamp and total; field presence is not an assertion", "report_only on a held spin-off: zero account mutation, fidelity unsupported, omitted child value reported; the same fact under strict mode stops", "a supplied cash leg credited alongside disposition proceeds for one source identity fails validation with a named class", "no reported estimate appears in the strategy context"]
+
+  - id: "LDG-2816"
+    title: "Recovery: durable resume and reopen, memory failure containment"
+    workstream: 12
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2814"]
+    scope: "Gate cases 7 and 14. Durable: interruption after a DISPOSITION is recorded; resume applies it once; replay, results and reopen match an uninterrupted control after run and event identity exclusions. Relies on the fold transaction at R/backtest-runner.R:265, accounting before persisted strategy state at R/fold-engine.R:957, and resume restarting after the last state and deleting only the replaceable tail at R/run-resume.R:53. Memory: failure injected after the disposition has entered the memory buffer; a failed candidate with no final equity and no retained artifacts; an unaffected sibling candidate. No memory reopen or rollback guarantee is added; the passthrough at R/sweep.R:1670 stays by design. The terminal-disposition spike's interruption fired before the terminal pulse and its event was a FILL, so neither half is inherited from that evidence."
+    acceptance: ["the interrupted and resumed durable run equals the uninterrupted control on events, equity, diagnostics and availability after identity exclusions, with exactly one disposition", "memory: a failed candidate row, no final equity, no retained artifact, and an unaffected sibling; a block that asserts only that an error occurred fails review", "a source guard fails if a transaction or reopen is introduced on the memory handler"]
+
+  - id: "LDG-2817"
+    title: "Register the fourteen-case gate and the adapter-authoring article"
+    workstream: 12
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2815", "LDG-2816"]
+    scope: "Synthesis 6. Every one of the fourteen gate cases is a registered claim in tests/claims.yml with block ids, under the review profile where heavy, each naming the synthesis clause it protects and its smallest breaking change per the packet's review obligations. Case 9, physical closure leaving membership, pre-event features and fills intact, is built here with a closure fixture and a cross-sectional feature so the feature-leak scenario is exercised, not only membership. The upstream private gate is out of scope. The second article: adapter authoring, provenance tiers, physical-axis closure and the private-to-canonical boundary, on fictional vendor data, teaching identity resolution and refusal as ordinary outcomes; executing, calling no Sharadar helper."
+    acceptance: ["all fourteen cases are registered claims, each naming the clause it protects and its smallest breaking change", "case 9: the same experiment over a closed and an unclosed snapshot has identical membership, pre-event features and fills up to the first settlement, and a cross-sectional feature over the axis is either refused or declared", "the article executes and a source guard fails if it references a ledgr.sharadar symbol"]
+
+  - id: "LDG-2818"
+    title: "Workstream 12 and cut 6 closeout"
+    workstream: 12
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2814", "LDG-2815", "LDG-2816", "LDG-2817"]
+    scope: "Governance synthesis D4. Closeout for workstream 12 and for cut 6 as a whole: what shipped; the fourteen cases and their blocks; review invocations against the 0.5 gate across the three workstreams; declined items with reasons; the release claims and non-claims from synthesis section 11 restated verbatim; the upstream private gate named as an external dependency outside this cut's evidence; the pilot counters rfc_cycle.md requires (findings by mode and whether each changed an outcome, reruns and rejected records, disputed classifications). Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the ratio is stated and is at most 0.5 for the cut", "the release claims and non-claims are restated verbatim from synthesis section 11", "the upstream gate is named as not part of this cut's evidence", "the pilot counters are stated"]
