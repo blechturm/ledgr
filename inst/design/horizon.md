@@ -112,6 +112,50 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-24 [data] Equity corporate actions post-v0.2.0.2 direction
+
+`rfc_equity_settlement_post_v0_2_0_2_synthesis.md`, accepted 2026-09-24,
+binds v0.2.0.2's corporate-action slice: sealed vendor-neutral facts,
+evidenced gross cash distributions, modeled terminal disposition, explicit
+refusal and a headline fidelity signal. "v1" here means dividends post and
+terminal holdings dispose under a named convention; nothing transforms a
+parent holding into a recipient holding. This entry records what the
+synthesis deferred and where each piece would be owned.
+
+**Exact quantity settlement.** Already on the roadmap as its own RFC:
+atomic parent consumption and recipient creation, mixed cash legs,
+model-basis transfer, fractions, off-axis valuation and compiled handling.
+Its evidence requirement is stated by that RFC, not pre-empted by the
+provenance tier. A policy value whose scope it narrows mints a new version.
+
+**Receivable and payment-date accounting.** Deferred by the maintainer's
+posting decision. Trigger: research that depends materially on when cash
+becomes spendable. Data requirement: a payment clock whose own knowledge
+time is established, not merely supplied.
+
+**Lifetime-only terminal disposition.** Disposition without a session
+calendar and a valuation policy changes missing-bar semantics and needs its
+own runnable probe before it is promised. Availability activation is
+retained until then.
+
+**Total-return series.** Derived on the feature plane from sealed
+split-adjusted bars plus sealed distribution facts. Not sealed as bars.
+
+**Fidelity beyond `modeled`.** An `evidenced` state, reserved for a release
+that can exercise an effect with no configured convention, which requires
+complete source clocks.
+
+Promoted roadmap hooks: the exact-quantity RFC (next equity-accounting
+release); the receivable RFC (when the trigger above fires); the
+lifetime-only disposition probe (bounded spike, before any such claim).
+
+Immediate cross-cycle obligations: the Sharadar producer specification in
+`ledgr-research` must be revised to the accepted synthesis before its facts
+become release evidence; the upstream private gate reconciles the
+distribution population and the corrected census outside this packet.
+
+This entry does not authorize any of the above; it records the direction.
+
 ### 2026-09-24 [data] Exact equity quantity settlement remains a product gap
 
 v0.2.0.2 deliberately stops short of transforming a held parent position into

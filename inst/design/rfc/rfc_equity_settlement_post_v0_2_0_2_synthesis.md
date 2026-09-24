@@ -1,9 +1,9 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Type 1 final review passed
-at `065f3a3` (Codex, 2026-09-24) after two rounds. Awaiting maintainer
-acceptance, then ticket cut with the compiled envelope guard first. See the
-revision history.
+**Status:** Accepted by the maintainer on 2026-09-24. Binding for v0.2.0.2.
+Type 1 final review passed at `065f3a3` (Codex) after two rounds. Cut 6 in
+`ledgr_v0_2_0_2_spec_packet/tickets.yml` implements it, compiled envelope
+guard first. See the revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -645,3 +645,7 @@ decisions are where to start, and the first of them was already refuted once.
   unchanged; only the synthesis changed. The review verifies the checks the
   document binds, not that unimplemented behaviour has passed executable
   tests. No further synthesis revision required.
+- **2026-09-24** accepted by the maintainer. Cut 6, workstreams 10 through
+  12, tickets LDG-2804 through LDG-2818. Topic Decision Index row added;
+  horizon entry `[data] Equity corporate actions post-v0.2.0.2 direction`
+  records the deferrals.
