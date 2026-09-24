@@ -919,12 +919,13 @@ tickets:
   - id: "LDG-2812"
     title: "Quick-path vignette"
     workstream: 11
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2811"]
     scope: "Synthesis 3.8, first vignette. One executing vignette: one dividend under the research preset, its result, its stated limitation (the assumed cash timing), then the same case under strict refusal. Nothing else; adapter authoring, provenance tiers and closure belong to the second article under LDG-2817. Real chunk execution per the house rule; no eval=FALSE skeleton."
     acceptance: ["the vignette executes in the fast profile and its rendered output shows both the modeled result and the strict refusal", "a change to the preset default changes the rendered output"]
+    evidence: ["vignettes/corporate-action-cash.qmd executes the public sealed-snapshot, experiment and durable-run workflow in real chunks under ledgr_corporate_actions_research(), reports one gross/effective-close choice and 2.5 gross cash with the early-spendability limitation, then executes the same facts under ledgr_corporate_actions_strict() and records its named refusal. The checked-in GFM sibling was produced by the package render helper. Fast LTB-0037 binds both public preset calls, prohibits eval: false and checks the literal modeled and refusal outputs; changing gross cash in the rendered record to zero made it fail. The exact-tree fast profile passed 444/444 in 89.950 seconds and its ordinary gate passed from C:/Users/maxth/ledgr-research/.tmp/ws11/ldg-2812-fast-r1."]
 
   - id: "LDG-2813"
     title: "Workstream 11 closeout"

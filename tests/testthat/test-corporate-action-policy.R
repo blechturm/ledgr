@@ -61,6 +61,41 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
   )
 })
 
+testthat::test_that("[LTB-0037] cash-distribution vignette records both presets", {
+  root <- testthat::test_path("..", "..")
+  source_path <- file.path(root, "vignettes", "corporate-action-cash.qmd")
+  rendered_path <- file.path(root, "vignettes", "corporate-action-cash.md")
+  testthat::expect_true(file.exists(source_path))
+  testthat::expect_true(file.exists(rendered_path))
+  source <- paste(readLines(source_path, warn = FALSE), collapse = "\n")
+  rendered <- paste(readLines(rendered_path, warn = FALSE), collapse = "\n")
+  testthat::expect_no_match(source, "eval: false", fixed = TRUE)
+  testthat::expect_match(
+    source,
+    "corporate_action_policy = ledgr_corporate_actions_research()",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    source,
+    "corporate_action_policy = ledgr_corporate_actions_strict()",
+    fixed = TRUE
+  )
+  expected_output <- c(
+    "Corporate actions: MODELED - configured settlement conventions were exercised",
+    "cash_amount.gross: 1",
+    "cash_posting.effective_close: 1",
+    "Gross cash posted:           2.5",
+    "Strict policy refused: Corporate-action cash settlement is refused by the selected policy."
+  )
+  testthat::expect_true(all(vapply(
+    expected_output,
+    grepl,
+    logical(1),
+    x = rendered,
+    fixed = TRUE
+  )))
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0033] legacy runs do not acquire a policy on reopen", {
   db_path <- tempfile(fileext = ".duckdb")
