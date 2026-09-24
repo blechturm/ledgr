@@ -1,9 +1,10 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Patched four times on
-2026-09-24, after final review and three rounds of external product review.
-The posting decision in 3.4 is accepted by the maintainer. Awaiting focused
-Type 1 verification of the changed economic rules. See the revision history.
+**Status:** Binding for v0.2.0.2 once accepted. Patched five times on
+2026-09-24. The second Type 1 round found the economics sound and section 6
+not yet failure-sensitive for all of it; the three gate corrections are
+applied below. Awaiting verification of that focused diff, then ticket cut.
+See the revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -441,9 +442,20 @@ claims the product makes. Four are added: the second rung of the ladder,
 dividend entitlement, acquisition composition, and the real disposition event
 under interruption on both handlers.
 
+Ordering makes several cases material and the gate asserts against it. Per
+pulse the fold reads positions for valuation at `R/fold-engine.R:458`, builds
+the strategy context at `:506`, runs the strategy, and applies the fills that
+decision produces at the next pulse at `:882`. So under `effective_close` the
+credited cash must be in state before line 458, and entitlement must be fixed
+before boundary fills land. A case that only checks the eventual cash balance
+cannot see either.
+
 1. a fictional non-Sharadar adapter producing the canonical fact shape;
 2. dividend normalization across a later parent split;
-3. distinct identified `next_open` and `effective_close` cash results;
+3. table-driven posting: one dividend under `effective_close` and under
+   `next_open`, asserting the exact cash, equity and strategy-context values
+   at the ex-date pulse and the following pulse, so that cash posted after
+   the strategy has run, or after valuation, fails the case;
 4. current, permitted-stale and opt-in beyond-horizon marks with source age;
 5. strict refusal versus research disposition on one held terminal;
 6. no finite mark causing no mutation and no fabricated value;
@@ -454,24 +466,38 @@ under interruption on both handlers.
 10. compiled execution refusing the economic-event envelope before running;
 11. a bars-only run printing `not_supplied`, and a dividend-only run posting
     cash with no availability setup;
-12. an existing holder selling on the ex-date and a new buyer entering on it,
-    where only the seller is credited;
-13. a mixed cash-and-stock acquisition with both legs nonzero, raising both a
-    terminal and a quantity effect, with one disposition, the supplied cash
-    leg named but not double credited, `unsupported` fidelity and all four
-    reported quantities including both legs of the consideration; and
+12. table-driven entitlement with the entitlement clock and the generic
+    effective clock set to different sessions: an existing holder selling on
+    the ex-date and a new buyer entering on it, where only the seller is
+    credited and only if the entitlement clock is used; plus one fact whose
+    knowledge time falls after the cutoff, which posts at the first eligible
+    pulse with the pre-boundary quantity, is not backdated, and appears in the
+    fidelity summary's late-arrival count;
+13. a four-row composition witness, one row per case in the 3.4 table: cash
+    acquisition, stock acquisition, mixed acquisition with both legs nonzero,
+    and spin-off with the parent surviving. Each row asserts the exact event
+    count, the exact final cash proving no supplied leg was credited beside
+    modeled proceeds, the fidelity value, and the four reported quantities
+    reconciled numerically to the formula in 3.5 including sign, ratio,
+    common timestamp and total. Presence of a field is not an assertion; and
 14. the real `DISPOSITION` event through replay, results and reopen on the
     durable handler, with interruption occurring after a disposition is
-    recorded and resume applying it once; and, on the memory handler, failure
-    containment only, since memory sweeps have no durable reopen and this
-    case must not quietly require one.
+    recorded and resume applying it once, compared against an uninterrupted
+    control; and, on the memory handler, failure injected after the
+    disposition has entered the memory buffer, asserting a failed candidate
+    with no final equity and no retained artifacts and an unaffected sibling
+    candidate. No memory reopen or rollback guarantee is added; the memory
+    handler's transaction is a passthrough at `R/sweep.R:1670` by design.
 
 Case 14 exists because the terminal-disposition spike wrote a `FILL` with side
 `SELL`, which the current preparer accepts and `DISPOSITION` is not. The spike
 established sale mechanics, not this event. Its interruption also fired before
-the terminal pulse, so recovery after a recorded disposition is unproven, and
-the durable fold transaction at `R/backtest-runner.R:266` has no memory-handler
-equivalent.
+the terminal pulse, so recovery after a recorded disposition is unproven. The
+durable half is well founded: the fold is transactional at
+`R/backtest-runner.R:265`, accounting precedes persisted strategy state at
+`R/fold-engine.R:957`, and resume restarts after the last state and deletes
+only the replaceable tail at `R/run-resume.R:53`. The memory half is a
+different guarantee, not a weaker version of the same one.
 
 The upstream private gate separately reconciles the distribution population
 and the corrected census without publishing identifiers, prices, action values
@@ -605,3 +631,13 @@ decisions are where to start, and the first of them was already refuted once.
   `6c05ad2`: gate 13 now specifies a mixed acquisition with both legs nonzero,
   since a stock-only case could pass while the formula omitted the cash leg;
   and "earlier than any real payment" becomes "may precede actual payment".
+- **2026-09-24** patched after the second Type 1 final review (Codex,
+  `CHANGES_REQUIRED`, concurred by the external reviewer). The economics were
+  found sound; section 6 was not failure-sensitive for all of it. Cases 3 and
+  12 become table-driven with distinct entitlement and effective clocks, exact
+  pulse-level cash, equity and context values, and a late-known fact. Case 13
+  becomes a four-row composition witness with numerical reconciliation to the
+  3.5 formula, exact event counts and final cash. Case 14's memory half names
+  its failure point and observables. The per-pulse ordering the gate depends
+  on is cited in the section preamble. All nine code citations in the review
+  were verified before patching.
