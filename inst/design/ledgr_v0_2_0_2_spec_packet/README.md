@@ -314,7 +314,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; cut review pending)
+## Cut 6: Usable equity corporate actions (open; patched after cut review)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -332,5 +332,8 @@ field. Tickets LDG-2804 through LDG-2818, three workstreams, serial.
 The upstream private gate, the Sharadar producer specification and the
 corrected census are external dependencies in `ledgr-research`; synthetic
 work here does not wait for them and real-data integration cannot precede
-an accepted upstream build. Planned review invocations: one cut review and
-three close reviews over fifteen tickets, 0.27 against the 0.5 gate.
+an accepted upstream build. The cut review (`cut_review_6.md`) returned
+`CHANGES_REQUIRED` at `8a1fb15` with five findings, all patched in place;
+the grouping and review points passed unchanged. Planned review
+invocations: the cut review, its focused re-review and three close reviews
+over fifteen tickets, 0.33 against the 0.5 gate.
