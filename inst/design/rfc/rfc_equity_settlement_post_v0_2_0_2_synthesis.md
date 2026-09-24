@@ -1,10 +1,9 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Patched five times on
-2026-09-24. The second Type 1 round found the economics sound and section 6
-not yet failure-sensitive for all of it; the three gate corrections are
-applied below. Awaiting verification of that focused diff, then ticket cut.
-See the revision history.
+**Status:** Binding for v0.2.0.2 once accepted. Type 1 final review passed
+at `065f3a3` (Codex, 2026-09-24) after two rounds. Awaiting maintainer
+acceptance, then ticket cut with the compiled envelope guard first. See the
+revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -641,3 +640,8 @@ decisions are where to start, and the first of them was already refuted once.
   its failure point and observables. The per-pulse ordering the gate depends
   on is cited in the section preamble. All nine code citations in the review
   were verified before patching.
+- **2026-09-24** Type 1 final review of the focused diff `a874776..065f3a3`
+  returned `PASS` (Codex). All three findings resolved; accepted economics
+  unchanged; only the synthesis changed. The review verifies the checks the
+  document binds, not that unimplemented behaviour has passed executable
+  tests. No further synthesis revision required.
