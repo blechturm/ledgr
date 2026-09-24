@@ -665,6 +665,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     availability_active = availability_active
   )
   snapshot_hash_for_features <- snapshot$snapshot_hash
+  corporate_action_rows <- ledgr_corporate_action_rows(con, snapshot_id)
   availability_provider <- ledgr_availability_provider(
     con,
     cfg,
@@ -1073,6 +1074,14 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   state_env$current$positions <- full_positions
   risk_chain <- ledgr_risk_plan_reconstruct(cfg$risk_chain$risk_plan_json)
   risk_plan <- ledgr_risk_plan_compile(risk_chain, params = strategy_params)
+  corporate_action_plan <- ledgr_corporate_action_plan(
+    rows = corporate_action_rows,
+    policy_identity = cfg$corporate_actions %||% NULL,
+    pulses_posix = pulses_posix,
+    instrument_ids = instrument_ids,
+    existing_events = ledgr_corporate_action_existing_events(con, run_id),
+    start_idx = start_idx
+  )
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -1109,7 +1118,8 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       calendar$execution_opportunities_posix
     } else {
       NULL
-    }
+    },
+    corporate_action_plan = corporate_action_plan
   )
 
   fold_result <- tryCatch(

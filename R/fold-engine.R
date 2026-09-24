@@ -267,6 +267,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   availability_provider <- execution$availability_provider
   availability_active <- !is.null(availability_provider)
   execution_opportunities_posix <- execution$execution_opportunities_posix
+  corporate_action_plan <- execution$corporate_action_plan
   max_stale_sessions <- if (availability_active) {
     as.integer(availability_provider$valuation_policy$max_sessions)
   } else {
@@ -284,6 +285,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
   }
   if (use_compiled_spot_fifo) {
     ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
+    if (!is.null(corporate_action_plan) &&
+        isTRUE(corporate_action_plan$has_cashflow())) {
+      ledgr_require_compiled_spot_fifo_event_kinds("CASHFLOW")
+    }
   }
 
   if (!is.null(execution_seed)) {
@@ -382,6 +387,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
       return(invisible(NULL))
     }
 
+    if (!is.null(corporate_action_plan)) {
+      corporate_action_plan$bind_boundary(
+        start_idx,
+        ledgr_fold_positions_snapshot(state$positions, instrument_ids)
+      )
+    }
+
     for (i in seq(from = start_idx, to = length(pulses_posix))) {
       ts <- pulses_posix[[i]]
       ts_iso <- pulses_iso[[i]]
@@ -408,6 +420,20 @@ ledgr_execute_fold <- function(execution, output_handler) {
       features_wide_current <- features_wide_views[[i]]
       if (!is.data.frame(features_wide_current)) {
         features_wide_current <- empty_df
+      }
+
+      if (!is.null(corporate_action_plan)) {
+        marks <- stats::setNames(as.numeric(bars_mat$close[, i]), instrument_ids)
+        posted <- corporate_action_plan$post(
+          index = i,
+          run_id = run_id,
+          event_seq = event_seq,
+          output_handler = output_handler,
+          state_value = state,
+          marks = marks
+        )
+        state <- posted$state
+        event_seq <- posted$next_event_seq
       }
 
       availability_view <- NULL
@@ -769,7 +795,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       }
       accounting_events <- ledgr_fold_pulse_plan_accounting_events(
         pulse_plan,
-        canonical_event_kinds = if (use_compiled_spot_fifo) NULL else "FILL"
+        canonical_event_kinds = if (use_compiled_spot_fifo) NULL else c("FILL", "CASHFLOW")
       )
       if (use_compiled_spot_fifo) {
         ledgr_require_compiled_spot_fifo_event_kinds(accounting_events$kinds)
@@ -847,6 +873,12 @@ ledgr_execute_fold <- function(execution, output_handler) {
       # plan is complete. Event order still follows the validated target vector
       # so sweep and durable replay see the same canonical stream.
       current_fold_stage <<- "accounting"
+      if (!is.null(corporate_action_plan) && i < length(pulses_posix)) {
+        corporate_action_plan$bind_boundary(
+          i + 1L,
+          ledgr_fold_positions_snapshot(state$positions, instrument_ids)
+        )
+      }
       if (use_compiled_spot_fifo) {
         compiled_fills <- ledgr_fold_pulse_plan_fill_intents(accounting_events)
         if (length(compiled_fills) > 0L) {

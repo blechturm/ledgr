@@ -101,10 +101,41 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     integer(length(facts$refusal_reasons)),
     facts$refusal_reasons
   )
+  event_rows <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT meta_json FROM ledger_events",
+      "WHERE run_id = ? AND event_type = 'CASHFLOW' ORDER BY event_seq"
+    ),
+    params = list(bt$run_id)
+  )
+  event_meta <- ledgr_corporate_action_event_meta(event_rows)
+  cash_meta <- Filter(
+    function(value) identical(value$source, "corporate_action_cash"),
+    event_meta
+  )
+  if (length(cash_meta) > 0L) {
+    amount_ids <- vapply(cash_meta, `[[`, character(1), "amount_policy_id")
+    posting_ids <- vapply(cash_meta, `[[`, character(1), "posting_policy_id")
+    ids <- ledgr_corporate_action_policy_ids()
+    choice_counts[["cash_amount.gross"]] <- sum(
+      amount_ids == ids$cash_amount[["gross"]]
+    )
+    choice_counts[["cash_posting.effective_close"]] <- sum(
+      posting_ids == ids$cash_posting[["effective_close"]]
+    )
+    choice_counts[["cash_posting.next_open"]] <- sum(
+      posting_ids == ids$cash_posting[["next_open"]]
+    )
+  }
+  sum_meta <- function(name) {
+    if (length(cash_meta) == 0L) return(0)
+    sum(vapply(cash_meta, function(value) as.numeric(value[[name]] %||% 0), numeric(1)))
+  }
 
   out <- list(
     corporate_action_fidelity = ledgr_corporate_action_fidelity(
-      if (facts$supplied) "none" else "not_supplied"
+      if (length(cash_meta) > 0L) "modeled" else if (facts$supplied) "none" else "not_supplied"
     ),
     facts_supplied = facts$supplied,
     price_basis = config$data$price_basis %||% "undeclared",
@@ -112,9 +143,9 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     selected_identities = identities,
     choice_counts = choice_counts,
     refusal_counts = refusal_counts,
-    late_arrival_count = 0L,
-    affected_marked_exposure = 0,
-    gross_cash_posted = 0,
+    late_arrival_count = as.integer(sum_meta("late_arrival")),
+    affected_marked_exposure = sum_meta("affected_marked_exposure"),
+    gross_cash_posted = sum_meta("cash_delta"),
     modeled_terminal_proceeds = 0,
     positions_disposed = 0L,
     realized_model_pnl = 0,

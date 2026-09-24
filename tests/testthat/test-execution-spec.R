@@ -523,11 +523,15 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
   }
 
   for (event_kind in event_kinds) {
-    testthat::expect_error(
-      run_with_kind(event_kind, NULL),
-      class = "ledgr_invalid_pulse_plan",
-      info = paste("canonical R envelope must reject", event_kind)
-    )
+    if (identical(event_kind, "CASHFLOW")) {
+      testthat::expect_no_error(suppressWarnings(run_with_kind(event_kind, NULL)))
+    } else {
+      testthat::expect_error(
+        run_with_kind(event_kind, NULL),
+        class = "ledgr_invalid_pulse_plan",
+        info = paste("canonical R envelope must reject", event_kind)
+      )
+    }
     testthat::expect_error(
       run_with_kind(event_kind, "spot_fifo"),
       class = "ledgr_compiled_spot_fifo_unavailable",

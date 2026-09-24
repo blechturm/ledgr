@@ -72,7 +72,8 @@ ledgr_execution_spec <- function(run_id,
                                  use_fast_context = FALSE,
                                  compiled_accounting_model = NULL,
                                  availability_provider = NULL,
-                                 execution_opportunities_posix = NULL) {
+                                 execution_opportunities_posix = NULL,
+                                 corporate_action_plan = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -114,6 +115,9 @@ ledgr_execution_spec <- function(run_id,
     use_fast_context = isTRUE(use_fast_context),
     compiled_accounting_model = compiled_accounting_model
   )
+  if (!is.null(corporate_action_plan)) {
+    spec$corporate_action_plan <- corporate_action_plan
+  }
   if (!is.null(availability_provider)) {
     spec$availability_provider <- availability_provider
     spec$execution_opportunities_posix <- execution_opportunities_posix
@@ -239,6 +243,14 @@ ledgr_validate_execution_spec <- function(spec) {
       "Dense execution must not declare availability execution opportunities."
     )
   }
+  ledgr_execution_spec_check(
+    is.null(spec$corporate_action_plan) ||
+      inherits(spec$corporate_action_plan, "ledgr_corporate_action_plan"),
+    paste(
+      "`execution$corporate_action_plan` must be NULL or a ledgr",
+      "corporate-action plan."
+    )
+  )
   ledgr_execution_spec_check(
     is.list(spec$feature_defs),
     "`execution$feature_defs` must be a list."

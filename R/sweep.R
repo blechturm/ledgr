@@ -222,10 +222,17 @@ ledgr_sweep_impl <- function(exp,
   availability_data <- NULL
   availability_config <- NULL
   execution_opportunities_posix <- NULL
+  opened_snapshot <- ledgr_run_store_open(exp$snapshot$db_path)
+  on.exit(ledgr_run_store_close(opened_snapshot), add = TRUE)
+  corporate_action_rows <- ledgr_corporate_action_rows(
+    opened_snapshot$con,
+    exp$snapshot$snapshot_id
+  )
   if (availability_active) {
-    opened <- ledgr_run_store_open(exp$snapshot$db_path)
-    on.exit(ledgr_run_store_close(opened), add = TRUE)
-    availability_data <- ledgr_availability_provider_data(opened$con, exp$snapshot$snapshot_id)
+    availability_data <- ledgr_availability_provider_data(
+      opened_snapshot$con,
+      exp$snapshot$snapshot_id
+    )
     availability_config <- ledgr_sweep_availability_config(exp)
     provider <- ledgr_availability_provider_portable(
       availability_data,
@@ -320,7 +327,8 @@ ledgr_sweep_impl <- function(exp,
     execution_seed_override = execution_seed_override,
     availability_data = availability_data,
     availability_config = availability_config,
-    execution_opportunities_posix = execution_opportunities_posix
+    execution_opportunities_posix = execution_opportunities_posix,
+    corporate_action_rows = corporate_action_rows
   )
   results <- if (workers <= 1L) {
     lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
@@ -1019,7 +1027,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
                                         execution_seed_override = NULL,
                                         availability_data = NULL,
                                         availability_config = NULL,
-                                        execution_opportunities_posix = NULL) {
+                                        execution_opportunities_posix = NULL,
+                                        corporate_action_rows = NULL) {
   exp_payload <- ledgr_sweep_exp_payload(exp)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   execution_seed_override <- ledgr_sweep_validate_execution_seed_override(
@@ -1063,7 +1072,8 @@ ledgr_sweep_candidate_tasks <- function(exp,
       compiled_accounting_model = compiled_accounting_model,
       availability_data = availability_data,
       availability_config = availability_config,
-      execution_opportunities_posix = execution_opportunities_posix
+      execution_opportunities_posix = execution_opportunities_posix,
+      corporate_action_rows = corporate_action_rows
     )
   }
   tasks
@@ -1206,7 +1216,8 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         compiled_accounting_model = task$compiled_accounting_model,
         availability_data = task$availability_data,
         availability_config = task$availability_config,
-        execution_opportunities_posix = task$execution_opportunities_posix
+        execution_opportunities_posix = task$execution_opportunities_posix,
+        corporate_action_rows = task$corporate_action_rows
       ),
       warning = function(w) {
         warnings <<- c(warnings, list(w))
@@ -1345,7 +1356,8 @@ ledgr_sweep_run_candidate <- function(exp,
                                       compiled_accounting_model = NULL,
                                       availability_data = NULL,
                                       availability_config = NULL,
-                                      execution_opportunities_posix = NULL) {
+                                      execution_opportunities_posix = NULL,
+                                      corporate_action_rows = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (is.null(runtime_projection)) {
@@ -1390,6 +1402,16 @@ ledgr_sweep_run_candidate <- function(exp,
   cost_resolver <- ledgr_cost_resolver_from_plan_json(exp$cost_plan_json)
   risk_plan <- ledgr_risk_plan_compile(exp$risk_chain, params = params)
   signature <- ledgr_strategy_signature(exp$strategy)
+  corporate_action_plan <- ledgr_corporate_action_plan(
+    rows = corporate_action_rows,
+    policy_identity = ledgr_corporate_action_policy_identity(
+      exp$corporate_action_policy
+    ),
+    pulses_posix = pulses_posix,
+    instrument_ids = exp$universe,
+    existing_events = opening_rows,
+    start_idx = 1L
+  )
   execution <- ledgr_execution_spec(
     run_id = run_id,
     instrument_ids = exp$universe,
@@ -1421,7 +1443,8 @@ ledgr_sweep_run_candidate <- function(exp,
     use_fast_context = TRUE,
     compiled_accounting_model = compiled_accounting_model,
     availability_provider = availability_provider,
-    execution_opportunities_posix = execution_opportunities_posix
+    execution_opportunities_posix = execution_opportunities_posix,
+    corporate_action_plan = corporate_action_plan
   )
   engine_start <- ledgr_time_now()
   fold_result <- ledgr_execute_fold(execution, output_handler)
