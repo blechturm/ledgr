@@ -6,6 +6,7 @@
 \alias{ledgr_facts_membership_snapshots}
 \alias{ledgr_facts_trading_status}
 \alias{ledgr_facts_lifetime}
+\alias{ledgr_facts_equity_corporate_actions}
 \alias{ledgr_facts_sessions}
 \title{Point-in-time availability facts}
 \usage{
@@ -25,6 +26,8 @@ ledgr_facts_membership_snapshots(
 ledgr_facts_trading_status(df, knowledge = c("evidenced", "assume_effective"))
 
 ledgr_facts_lifetime(df, knowledge = c("evidenced", "assume_effective"))
+
+ledgr_facts_equity_corporate_actions(df)
 
 ledgr_facts_sessions(
   df,
@@ -58,10 +61,10 @@ A classed fact-family object, or a \code{ledgr_facts} bundle.
 }
 \description{
 These constructors normalize point-in-time membership, trading-status,
-session-calendar, and lifetime evidence before snapshot creation. Effective
-intervals are half-open: \code{effective_from} is included and \code{effective_to} is
-excluded. Missing knowledge time remains audit-only unless
-\code{knowledge = "assume_effective"} is declared.
+session-calendar, lifetime, and equity corporate-action evidence before
+snapshot creation. Effective intervals are half-open: \code{effective_from} is
+included and \code{effective_to} is excluded. Missing knowledge time remains
+audit-only unless \code{knowledge = "assume_effective"} is declared.
 }
 \details{
 Membership intervals require \code{instrument_id}, \code{effective_from}, and
@@ -77,6 +80,17 @@ and \code{supersedes_fact_id}. Lifetime rows require \code{instrument_id},
 \code{effective_from}, and \code{assertion}, where assertion is \code{known_active},
 \code{known_inactive}, or \code{unknown}.
 
+Equity corporate-action rows require \code{subtype}, \code{parent_instrument_id},
+\code{complete}, and \code{provenance_tier}. The optional clocks are
+\code{entitlement_time}, \code{effective_time}, \code{knowledge_time}, and
+\code{payment_time}. Optional normalized terms are
+\code{gross_cash_per_parent_unit}, \code{recipient_instrument_id}, and
+\code{recipient_quantity_per_parent_unit}; each supplied term requires its
+matching \code{*_validated} flag. Incomplete rows require one lower-snake-case
+\code{refusal_reason}. Provenance is either \code{snapshot_bound}, with no upstream
+identifiers, or \code{upstream_vintage_bound}, with both \code{upstream_build_id}
+and \code{bar_vintage_id}.
+
 Session rows require \code{session_date}, \code{status}, \code{session_open}, and
 \code{session_close}; \code{knowledge_time} is required under evidenced knowledge and
 may be omitted only with \code{knowledge = "assume_effective"}. Every civil date
@@ -89,7 +103,8 @@ and close times.
 Structural input failures inherit from \code{ledgr_invalid_args}. The primary
 classes are \code{ledgr_fact_invalid_shape}, \code{ledgr_fact_invalid_interval},
 \code{ledgr_fact_identity_conflict}, \code{ledgr_fact_structural_conflict},
-\code{ledgr_fact_invalid_supersession}, \code{ledgr_session_invalid},
+\code{ledgr_fact_invalid_supersession}, \code{ledgr_fact_invalid_completeness},
+\code{ledgr_fact_unvalidated_term}, \code{ledgr_session_invalid},
 \code{ledgr_session_time_ambiguous}, and \code{ledgr_session_time_nonexistent}.
 }
 

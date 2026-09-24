@@ -491,6 +491,29 @@ ledgr_validate_schema <- function(con) {
         "assertion", "provenance_json"
       )
     ),
+    snapshot_equity_corporate_actions = list(
+      columns = c(
+        snapshot_id = "TEXT", fact_id = "TEXT", subtype = "TEXT",
+        parent_instrument_id = "TEXT", entitlement_time = "TIMESTAMP",
+        effective_time = "TIMESTAMP", knowledge_time = "TIMESTAMP",
+        payment_time = "TIMESTAMP", complete = "BOOLEAN",
+        refusal_reason = "TEXT", provenance_tier = "TEXT",
+        upstream_build_id = "TEXT", bar_vintage_id = "TEXT",
+        gross_cash_per_parent_unit = "DOUBLE",
+        gross_cash_validated = "BOOLEAN",
+        recipient_instrument_id = "TEXT",
+        recipient_identity_validated = "BOOLEAN",
+        recipient_quantity_per_parent_unit = "DOUBLE",
+        recipient_quantity_validated = "BOOLEAN", provenance_json = "TEXT"
+      ),
+      pk = c("snapshot_id", "fact_id"),
+      not_null = c(
+        "snapshot_id", "fact_id", "subtype", "parent_instrument_id",
+        "complete", "provenance_tier", "gross_cash_validated",
+        "recipient_identity_validated", "recipient_quantity_validated",
+        "provenance_json"
+      )
+    ),
     snapshot_sessions = list(
       columns = c(
         snapshot_id = "TEXT", venue_id = "TEXT", session_date = "DATE",
@@ -767,6 +790,12 @@ ledgr_validate_schema <- function(con) {
     "assertion",
     c("known_active", "known_inactive", "unknown"),
     "snapshot_lifetime.assertion"
+  )
+  check_enum_constraint_metadata(
+    "snapshot_equity_corporate_actions",
+    "provenance_tier",
+    c("snapshot_bound", "upstream_vintage_bound"),
+    "snapshot_equity_corporate_actions.provenance_tier"
   )
   check_enum_constraint_metadata(
     "snapshot_sessions",

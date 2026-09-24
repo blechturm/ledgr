@@ -103,6 +103,19 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
       "knowledge_time", "assertion", "terminal_event", "provenance_json"
     ), drop = FALSE]
     DBI::dbAppendTable(con, "snapshot_lifetime", rows)
+  } else if (identical(family$family, "equity_corporate_actions")) {
+    rows$snapshot_id <- snapshot_id
+    rows <- rows[, c(
+      "snapshot_id", "fact_id", "subtype", "parent_instrument_id",
+      "entitlement_time", "effective_time", "knowledge_time",
+      "payment_time", "complete", "refusal_reason", "provenance_tier",
+      "upstream_build_id", "bar_vintage_id",
+      "gross_cash_per_parent_unit", "gross_cash_validated",
+      "recipient_instrument_id", "recipient_identity_validated",
+      "recipient_quantity_per_parent_unit",
+      "recipient_quantity_validated", "provenance_json"
+    ), drop = FALSE]
+    DBI::dbAppendTable(con, "snapshot_equity_corporate_actions", rows)
   } else if (identical(family$family, "sessions")) {
     rows$snapshot_id <- snapshot_id
     rows <- rows[, c(
@@ -147,6 +160,7 @@ ledgr_snapshot_availability_tables <- function() {
     snapshot_membership = "fact_id",
     snapshot_trading_status = "fact_id",
     snapshot_lifetime = "fact_id",
+    snapshot_equity_corporate_actions = "fact_id",
     snapshot_sessions = "venue_id, session_date",
     snapshot_observation_quarantine = "quarantine_id"
   )
@@ -408,7 +422,10 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
       class = c("ledgr_snapshot_fact_family_missing", "ledgr_invalid_state")
     )
   }
-  valid_families <- c("membership", "trading_status", "lifetime", "sessions", "observation_quarantine")
+  valid_families <- c(
+    "membership", "trading_status", "lifetime",
+    "equity_corporate_actions", "sessions", "observation_quarantine"
+  )
   if (any(!families$family %in% valid_families) ||
       any(families$family_schema_version != ledgr_fact_schema_version)) {
     rlang::abort(
@@ -429,6 +446,7 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     snapshot_membership = "provenance_json",
     snapshot_trading_status = "provenance_json",
     snapshot_lifetime = "provenance_json",
+    snapshot_equity_corporate_actions = "provenance_json",
     snapshot_sessions = "provenance_json",
     snapshot_observation_quarantine = c("original_row_json", "provenance_json")
   )
@@ -465,6 +483,9 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     )),
     trading_status = if (nrow(data$snapshot_trading_status) > 0L) "instrument" else character(),
     lifetime = if (nrow(data$snapshot_lifetime) > 0L) "instrument" else character(),
+    equity_corporate_actions = if (
+      nrow(data$snapshot_equity_corporate_actions) > 0L
+    ) "equity" else character(),
     sessions = unique(data$snapshot_sessions$venue_id)
   )
   for (family_name in names(required_headers)) {
@@ -492,6 +513,24 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
       )
     }
   }
+  corporate_actions <- data$snapshot_equity_corporate_actions
+  if (nrow(corporate_actions) > 0L) {
+    parent_unknown <- !corporate_actions$parent_instrument_id %in% known
+    recipient_unknown <- !is.na(corporate_actions$recipient_instrument_id) &
+      !corporate_actions$recipient_instrument_id %in% known
+    if (any(parent_unknown) || any(recipient_unknown)) {
+      rlang::abort(
+        paste(
+          "snapshot_equity_corporate_actions references an instrument",
+          "absent from the snapshot master."
+        ),
+        class = c(
+          "ledgr_snapshot_fact_referential_integrity",
+          "ledgr_invalid_state"
+        )
+      )
+    }
+  }
 
   intervals <- c(instrument_tables, "snapshot_sessions")
   for (table_name in intervals) {
@@ -509,6 +548,9 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     snapshot_membership = c("effective_from", "effective_to", "knowledge_time"),
     snapshot_trading_status = c("effective_from", "effective_to", "knowledge_time"),
     snapshot_lifetime = c("effective_from", "effective_to", "knowledge_time"),
+    snapshot_equity_corporate_actions = c(
+      "entitlement_time", "effective_time", "knowledge_time", "payment_time"
+    ),
     snapshot_sessions = c(
       "effective_from", "effective_to", "knowledge_time", "session_open", "session_close"
     ),
@@ -554,6 +596,12 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
       as.character(ledgr_json_read_nested(x)$source %||% "")
     }, character(1))
     ledgr_fact_validate_lifetime_conflicts(lifetime_rows)
+  }
+  if (nrow(corporate_actions) > 0L) {
+    ledgr_validate_equity_corporate_action_rows(
+      corporate_actions,
+      state = TRUE
+    )
   }
 
   sessions <- data$snapshot_sessions

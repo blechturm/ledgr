@@ -92,6 +92,9 @@ ledgr_snapshot_fact_headers <- function(snapshot) {
 
 ledgr_availability_activation <- function(snapshot, valuation_policy = NULL) {
   headers <- ledgr_snapshot_fact_headers(snapshot)
+  # Corporate-action facts are sealed evidence, not an availability provider.
+  # Activating on that family alone would incorrectly require a full session
+  # calendar and a staleness policy before settlement policy is even chosen.
   runtime_families <- c("membership", "sessions", "trading_status", "lifetime")
   declared <- if (nrow(headers) > 0L) {
     runtime_families[runtime_families %in% as.character(headers$family)]

@@ -36,6 +36,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_feature_id",
     "ledgr_feature_map",
     "ledgr_facts",
+    "ledgr_facts_equity_corporate_actions",
     "ledgr_facts_history",
     "ledgr_facts_lifetime",
     "ledgr_facts_membership_intervals",

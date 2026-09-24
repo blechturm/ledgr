@@ -3,10 +3,10 @@ ledgr_fact_schema_version <- 1L
 #' Point-in-time availability facts
 #'
 #' These constructors normalize point-in-time membership, trading-status,
-#' session-calendar, and lifetime evidence before snapshot creation. Effective
-#' intervals are half-open: `effective_from` is included and `effective_to` is
-#' excluded. Missing knowledge time remains audit-only unless
-#' `knowledge = "assume_effective"` is declared.
+#' session-calendar, lifetime, and equity corporate-action evidence before
+#' snapshot creation. Effective intervals are half-open: `effective_from` is
+#' included and `effective_to` is excluded. Missing knowledge time remains
+#' audit-only unless `knowledge = "assume_effective"` is declared.
 #'
 #' @param df A data frame containing one fact row per assertion. See Details.
 #' @param universe_id A non-empty identifier for the membership universe.
@@ -33,6 +33,17 @@ ledgr_fact_schema_version <- 1L
 #' `effective_from`, and `assertion`, where assertion is `known_active`,
 #' `known_inactive`, or `unknown`.
 #'
+#' Equity corporate-action rows require `subtype`, `parent_instrument_id`,
+#' `complete`, and `provenance_tier`. The optional clocks are
+#' `entitlement_time`, `effective_time`, `knowledge_time`, and `payment_time`.
+#' Optional normalized terms are `gross_cash_per_parent_unit`,
+#' `recipient_instrument_id`, and `recipient_quantity_per_parent_unit`; each
+#' supplied term requires its matching `*_validated` flag. Incomplete rows
+#' require one lower-snake-case `refusal_reason`. Provenance is either
+#' `snapshot_bound`, with no upstream identifiers, or
+#' `upstream_vintage_bound`, with both `upstream_build_id` and
+#' `bar_vintage_id`.
+#'
 #' Session rows require `session_date`, `status`, `session_open`, and
 #' `session_close`; `knowledge_time` is required under evidenced knowledge and
 #' may be omitted only with `knowledge = "assume_effective"`. Every civil date
@@ -44,7 +55,8 @@ ledgr_fact_schema_version <- 1L
 #' Structural input failures inherit from `ledgr_invalid_args`. The primary
 #' classes are `ledgr_fact_invalid_shape`, `ledgr_fact_invalid_interval`,
 #' `ledgr_fact_identity_conflict`, `ledgr_fact_structural_conflict`,
-#' `ledgr_fact_invalid_supersession`, `ledgr_session_invalid`,
+#' `ledgr_fact_invalid_supersession`, `ledgr_fact_invalid_completeness`,
+#' `ledgr_fact_unvalidated_term`, `ledgr_session_invalid`,
 #' `ledgr_session_time_ambiguous`, and `ledgr_session_time_nonexistent`.
 #'
 #' @return A classed fact-family object, or a `ledgr_facts` bundle.
@@ -337,6 +349,270 @@ ledgr_facts_lifetime <- function(df,
     "instrument",
     rows,
     metadata = ledgr_fact_knowledge_metadata(knowledge)
+  )
+}
+
+ledgr_equity_corporate_action_abort <- function(message,
+                                                 subclass,
+                                                 state = FALSE) {
+  rlang::abort(
+    message,
+    class = c(
+      subclass,
+      if (isTRUE(state)) "ledgr_invalid_state" else "ledgr_invalid_args"
+    )
+  )
+}
+
+ledgr_validate_equity_corporate_action_rows <- function(rows,
+                                                         state = FALSE) {
+  required <- c(
+    "fact_id", "subtype", "parent_instrument_id", "entitlement_time",
+    "effective_time", "knowledge_time", "payment_time", "complete",
+    "refusal_reason", "provenance_tier", "upstream_build_id",
+    "bar_vintage_id", "gross_cash_per_parent_unit",
+    "gross_cash_validated", "recipient_instrument_id",
+    "recipient_identity_validated", "recipient_quantity_per_parent_unit",
+    "recipient_quantity_validated"
+  )
+  missing <- setdiff(required, names(rows))
+  if (length(missing) > 0L) {
+    ledgr_equity_corporate_action_abort(
+      sprintf(
+        "Equity corporate-action rows are missing required field(s): %s.",
+        paste(missing, collapse = ", ")
+      ),
+      "ledgr_fact_invalid_shape",
+      state
+    )
+  }
+
+  valid_code <- function(x) {
+    !is.na(x) & grepl("^[a-z][a-z0-9_]*$", x)
+  }
+  if (anyNA(rows$fact_id) || any(!nzchar(rows$fact_id)) ||
+      anyDuplicated(rows$fact_id)) {
+    ledgr_equity_corporate_action_abort(
+      "Equity corporate-action `fact_id` values must be non-empty and unique.",
+      "ledgr_fact_identity_conflict",
+      state
+    )
+  }
+  if (any(!valid_code(rows$subtype))) {
+    ledgr_equity_corporate_action_abort(
+      "Equity corporate-action `subtype` must be a stable lower-snake-case code.",
+      "ledgr_fact_invalid_subtype",
+      state
+    )
+  }
+  if (anyNA(rows$parent_instrument_id) ||
+      any(!nzchar(rows$parent_instrument_id))) {
+    ledgr_equity_corporate_action_abort(
+      "Equity corporate-action parent identities must be non-empty strings.",
+      "ledgr_fact_invalid_instrument",
+      state
+    )
+  }
+
+  logical_fields <- c(
+    "complete", "gross_cash_validated", "recipient_identity_validated",
+    "recipient_quantity_validated"
+  )
+  logical_ok <- vapply(logical_fields, function(field) {
+    is.logical(rows[[field]]) && !anyNA(rows[[field]])
+  }, logical(1))
+  if (!all(logical_ok)) {
+    ledgr_equity_corporate_action_abort(
+      "Equity corporate-action completeness and validation flags must be logical.",
+      "ledgr_fact_invalid_logical",
+      state
+    )
+  }
+
+  refusal <- as.character(rows$refusal_reason)
+  has_refusal <- !is.na(refusal) & nzchar(refusal)
+  invalid_reason <- has_refusal & !valid_code(refusal)
+  if (any(rows$complete & has_refusal) ||
+      any(!rows$complete & !has_refusal) || any(invalid_reason)) {
+    ledgr_equity_corporate_action_abort(
+      paste(
+        "Complete corporate-action facts must have no refusal reason;",
+        "incomplete facts require one stable lower-snake-case reason."
+      ),
+      "ledgr_fact_invalid_completeness",
+      state
+    )
+  }
+
+  allowed_tiers <- c("snapshot_bound", "upstream_vintage_bound")
+  tier <- as.character(rows$provenance_tier)
+  build <- as.character(rows$upstream_build_id)
+  vintage <- as.character(rows$bar_vintage_id)
+  has_build <- !is.na(build) & nzchar(build)
+  has_vintage <- !is.na(vintage) & nzchar(vintage)
+  weak <- tier == "snapshot_bound"
+  strong <- tier == "upstream_vintage_bound"
+  invalid_tier <- is.na(tier) | !tier %in% allowed_tiers |
+    (weak & (has_build | has_vintage)) |
+    (strong & (!has_build | !has_vintage))
+  if (any(invalid_tier)) {
+    ledgr_equity_corporate_action_abort(
+      paste(
+        "`snapshot_bound` facts omit upstream build and bar vintage;",
+        "`upstream_vintage_bound` facts require both."
+      ),
+      "ledgr_fact_invalid_provenance_tier",
+      state
+    )
+  }
+
+  entitlement <- rows$entitlement_time
+  effective <- rows$effective_time
+  payment <- rows$payment_time
+  bad_order <- (!is.na(entitlement) & !is.na(effective) &
+    entitlement > effective) |
+    (!is.na(effective) & !is.na(payment) & effective > payment) |
+    (!is.na(entitlement) & !is.na(payment) & entitlement > payment)
+  if (any(bad_order)) {
+    ledgr_equity_corporate_action_abort(
+      "Corporate-action clocks must preserve entitlement <= effective <= payment when supplied.",
+      "ledgr_fact_invalid_clock_order",
+      state
+    )
+  }
+
+  check_term <- function(value, validated, label, valid_value) {
+    present <- !is.na(value)
+    if (any(present != validated) || any(present & !valid_value(value))) {
+      ledgr_equity_corporate_action_abort(
+        sprintf("Corporate-action term `%s` must be valid and independently validated.", label),
+        "ledgr_fact_unvalidated_term",
+        state
+      )
+    }
+  }
+  check_term(
+    rows$gross_cash_per_parent_unit,
+    rows$gross_cash_validated,
+    "gross_cash_per_parent_unit",
+    function(x) is.finite(x) & x >= 0
+  )
+  check_term(
+    rows$recipient_instrument_id,
+    rows$recipient_identity_validated,
+    "recipient_instrument_id",
+    function(x) nzchar(x)
+  )
+  check_term(
+    rows$recipient_quantity_per_parent_unit,
+    rows$recipient_quantity_validated,
+    "recipient_quantity_per_parent_unit",
+    function(x) is.finite(x) & x > 0
+  )
+  invisible(TRUE)
+}
+
+ledgr_equity_corporate_action_optional_numeric <- function(df, field) {
+  if (!field %in% names(df)) return(rep(NA_real_, nrow(df)))
+  raw <- df[[field]]
+  out <- suppressWarnings(as.numeric(raw))
+  invalid <- !is.na(raw) & is.na(out)
+  if (any(invalid)) {
+    ledgr_equity_corporate_action_abort(
+      sprintf("Corporate-action term `%s` must be numeric when supplied.", field),
+      "ledgr_fact_unvalidated_term"
+    )
+  }
+  out
+}
+
+ledgr_equity_corporate_action_validation_flag <- function(df, field) {
+  if (!field %in% names(df)) return(rep(FALSE, nrow(df)))
+  ledgr_fact_logical(df[[field]], field)
+}
+
+#' @rdname ledgr_facts
+#' @export
+ledgr_facts_equity_corporate_actions <- function(df) {
+  df <- ledgr_fact_data_frame(df, "equity corporate actions")
+  ledgr_fact_require_columns(
+    df,
+    c("subtype", "parent_instrument_id", "complete", "provenance_tier"),
+    "equity corporate actions"
+  )
+  source <- ledgr_fact_source(df)
+  rows <- data.frame(
+    fact_id = rep("", nrow(df)),
+    subtype = tolower(enc2utf8(as.character(df$subtype))),
+    parent_instrument_id = ledgr_fact_instrument_ids(
+      df$parent_instrument_id,
+      allow_missing = FALSE
+    ),
+    entitlement_time = ledgr_fact_optional_time(df, "entitlement_time"),
+    effective_time = ledgr_fact_optional_time(df, "effective_time"),
+    knowledge_time = ledgr_fact_optional_time(df, "knowledge_time"),
+    payment_time = ledgr_fact_optional_time(df, "payment_time"),
+    complete = ledgr_fact_logical(df$complete, "complete"),
+    refusal_reason = ledgr_fact_optional_character(df, "refusal_reason"),
+    provenance_tier = tolower(enc2utf8(as.character(df$provenance_tier))),
+    upstream_build_id = ledgr_fact_optional_character(df, "upstream_build_id"),
+    bar_vintage_id = ledgr_fact_optional_character(df, "bar_vintage_id"),
+    gross_cash_per_parent_unit =
+      ledgr_equity_corporate_action_optional_numeric(
+        df,
+        "gross_cash_per_parent_unit"
+      ),
+    gross_cash_validated = ledgr_equity_corporate_action_validation_flag(
+      df,
+      "gross_cash_validated"
+    ),
+    recipient_instrument_id = ledgr_fact_optional_character(
+      df,
+      "recipient_instrument_id"
+    ),
+    recipient_identity_validated =
+      ledgr_equity_corporate_action_validation_flag(
+        df,
+        "recipient_identity_validated"
+      ),
+    recipient_quantity_per_parent_unit =
+      ledgr_equity_corporate_action_optional_numeric(
+        df,
+        "recipient_quantity_per_parent_unit"
+      ),
+    recipient_quantity_validated =
+      ledgr_equity_corporate_action_validation_flag(
+        df,
+        "recipient_quantity_validated"
+      ),
+    source = source,
+    provenance_json = ledgr_fact_provenance(df, source, "evidenced"),
+    stringsAsFactors = FALSE
+  )
+  supplied_id <- ledgr_fact_optional_character(df, "fact_id")
+  rows$fact_id <- ledgr_fact_ids(
+    "equity_corporate_actions",
+    rows,
+    supplied_id
+  )
+  ledgr_validate_equity_corporate_action_rows(rows)
+  rows <- ledgr_fact_deduplicate(rows, "equity corporate actions")
+  rows <- rows[order(
+    rows$parent_instrument_id,
+    rows$entitlement_time,
+    rows$effective_time,
+    rows$fact_id
+  ), , drop = FALSE]
+  rownames(rows) <- NULL
+
+  ledgr_new_fact_family(
+    "equity_corporate_actions",
+    "equity",
+    rows,
+    metadata = list(
+      contract = "vendor_neutral_normalized_terms_v1",
+      provenance_tiers = sort(unique(rows$provenance_tier))
+    )
   )
 }
 

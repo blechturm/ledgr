@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 115L
+ledgr_experiment_store_schema_version <- 116L
 ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
@@ -42,6 +42,7 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "snapshot_membership",
     "snapshot_trading_status",
     "snapshot_lifetime",
+    "snapshot_equity_corporate_actions",
     "snapshot_sessions",
     "snapshot_observation_quarantine",
     "run_provenance",

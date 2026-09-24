@@ -89,6 +89,36 @@ ledgr_experiment_store_ensure_availability_tables <- function(con) {
   DBI::dbExecute(
     con,
     "
+    CREATE TABLE IF NOT EXISTS snapshot_equity_corporate_actions (
+      snapshot_id TEXT NOT NULL,
+      fact_id TEXT NOT NULL,
+      subtype TEXT NOT NULL,
+      parent_instrument_id TEXT NOT NULL,
+      entitlement_time TIMESTAMP,
+      effective_time TIMESTAMP,
+      knowledge_time TIMESTAMP,
+      payment_time TIMESTAMP,
+      complete BOOLEAN NOT NULL,
+      refusal_reason TEXT,
+      provenance_tier TEXT NOT NULL CHECK (
+        provenance_tier IN ('snapshot_bound','upstream_vintage_bound')
+      ),
+      upstream_build_id TEXT,
+      bar_vintage_id TEXT,
+      gross_cash_per_parent_unit DOUBLE,
+      gross_cash_validated BOOLEAN NOT NULL,
+      recipient_instrument_id TEXT,
+      recipient_identity_validated BOOLEAN NOT NULL,
+      recipient_quantity_per_parent_unit DOUBLE,
+      recipient_quantity_validated BOOLEAN NOT NULL,
+      provenance_json TEXT NOT NULL,
+      PRIMARY KEY (snapshot_id, fact_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
     CREATE TABLE IF NOT EXISTS snapshot_sessions (
       snapshot_id TEXT NOT NULL,
       venue_id TEXT NOT NULL,
@@ -134,6 +164,12 @@ ledgr_experiment_store_ensure_availability_tables <- function(con) {
     con,
     "CREATE INDEX IF NOT EXISTS idx_snapshot_lifetime_cutoff
      ON snapshot_lifetime (snapshot_id, instrument_id, effective_from, knowledge_time)"
+  )
+  DBI::dbExecute(
+    con,
+    "CREATE INDEX IF NOT EXISTS idx_snapshot_corporate_action_cutoff
+     ON snapshot_equity_corporate_actions
+       (snapshot_id, parent_instrument_id, entitlement_time, knowledge_time)"
   )
   DBI::dbExecute(
     con,

@@ -258,7 +258,13 @@ ledgr_availability_fact_report <- function(facts, instrument_ids) {
     } else {
       paste0(fact_family$family, "_", seq_len(nrow(rows)))
     }
-    instrument <- if ("instrument_id" %in% names(rows)) rows$instrument_id else rep(NA_character_, nrow(rows))
+    instrument <- if ("instrument_id" %in% names(rows)) {
+      rows$instrument_id
+    } else if (identical(fact_family$family, "equity_corporate_actions")) {
+      rows$parent_instrument_id
+    } else {
+      rep(NA_character_, nrow(rows))
+    }
     outcome <- rep("accepted", nrow(rows))
     reason <- rep("accepted", nrow(rows))
     audit <- "knowledge_time" %in% names(rows) & is.na(rows$knowledge_time)
@@ -267,6 +273,12 @@ ledgr_availability_fact_report <- function(facts, instrument_ids) {
     unknown <- !is.na(instrument) & !instrument %in% instrument_ids
     outcome[unknown] <- "rejected"
     reason[unknown] <- "instrument_unknown"
+    if (identical(fact_family$family, "equity_corporate_actions")) {
+      recipient <- rows$recipient_instrument_id
+      recipient_unknown <- !is.na(recipient) & !recipient %in% instrument_ids
+      outcome[recipient_unknown] <- "rejected"
+      reason[recipient_unknown] <- "recipient_instrument_unknown"
+    }
     if (identical(fact_family$family, "trading_status")) {
       conflict <- fact_ids %in% ledgr_status_runtime_conflicts(rows)
       retained_conflict <- conflict & !unknown & outcome == "accepted"
