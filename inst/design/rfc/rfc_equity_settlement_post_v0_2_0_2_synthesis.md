@@ -1,8 +1,9 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Patched twice on 2026-09-24,
-after final review and after an external product review. One decision in 3.4
-needs the maintainer before this can be accepted. See the revision history.
+**Status:** Binding for v0.2.0.2 once accepted. Patched three times on
+2026-09-24, after final review and two rounds of external product review. The
+posting decision in 3.4 is drafted and binds on maintainer acceptance. See the
+revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -130,7 +131,7 @@ historical run never acquires a default implicitly.
 | Choice | Research preset | Other admitted values |
 | --- | --- | --- |
 | cash amount | `gross` | `refuse` |
-| cash posting | `next_open` | `effective_close`, `refuse` |
+| cash posting | `effective_close` | `next_open`, `refuse` |
 | held terminal position | `last_permissible` | `last_mark`, `refuse` |
 | unsupported quantity event | `report_only` | `refuse` |
 
@@ -186,22 +187,43 @@ retroactively influence an earlier decision.
 
 **[maintainer decision required] Recognition versus spendable cash.** Between
 the entitlement boundary and posting, the portfolio owns something it cannot
-spend. Three options, and this release must choose one explicitly rather than
-inherit seed v7's exclusion by silence.
+spend. Three options were costed: a receivable in equity, which is
+economically cleanest but adds a third term to the equity identity and touches
+every result surface; posting at the ex-dividend close, which removes the
+missing-asset dip at no structural cost; and delayed posting with no
+receivable, which leaves one pulse of understated equity and was never
+acceptable.
 
-| Option | Effect |
-| --- | --- |
-| Receivable in equity | Economically right. Adds a third term to the equity identity and touches every result surface. |
-| Post at `effective_close` | No gap, because the dropped price and the cash land in the same pulse. Cheapest. |
-| Delay with no receivable | One pulse of understated equity under `next_open`, visible in volatility and drawdown. |
+The synthesis author and the external reviewer both recommend the second for
+this release, and the receivable is deferred to section 9. The decision is
+drafted below and binds on the maintainer's acceptance; it is not inherited
+from seed v7 by silence.
 
-The gap is one pulse, not weeks, because this release models no payment date.
-Under `effective_close` there is no artifact at all. The preset currently
-selects `next_open`, which is the only one of the two supported conventions
-that produces the artifact. My recommendation is to move the preset to
-`effective_close` and record the receivable as a future obligation, which
-removes the artifact at no structural cost. The reviewer recommends the
-receivable. Either is defensible; silently keeping the third is not.
+Posting at the close is still an approximation and must be disclosed as one.
+It removes the dip. It also makes cash spendable at the ex-date close, which
+is earlier than any real payment, so reinvestment timing is optimistic. That
+is the assumed cash timing the result and the vignette state.
+
+The bound rules for a supported ordinary dividend under `effective_close`:
+
+1. `effective_close` means the ex-dividend session's close, taken from the
+   validated entitlement clock, never an unspecified corporate-action
+   effective date.
+2. The entitled quantity is fixed immediately before the ex-dividend boundary
+   and is not recomputed at posting.
+3. The amount is credited before that pulse's equity and strategy context are
+   computed, so the dropped price and the cash land together.
+4. The fact and every term the posting needs must be knowable by that cutoff
+   under the declared knowledge policy.
+5. A fact known only after the cutoff is never silently backdated. It posts at
+   the first pulse at or after its knowledge time, with the entitled quantity
+   still fixed at the original boundary, and the late arrival is counted in
+   the fidelity summary. The one-pulse claim above assumes timely knowledge
+   and does not cover this case.
+6. Fidelity is `modeled`, and the summary names the assumed cash timing.
+7. `next_open` remains an explicit alternative with its equity-timing
+   limitation documented: one pulse in which the price has dropped and the
+   cash has not arrived.
 
 **Modeled terminal disposition** consumes live lots at the selected evidenced
 mark under canonical FIFO, realizes model PnL, removes the position and moves
@@ -272,9 +294,11 @@ recipient value is not an uncompensated loss, and for a spin-off it is.
 Where terms permit, the summary reports:
 
 - modeled cash credited;
-- estimated contractual consideration, from entitled parent quantity times the
-  normalized conversion ratio times a named recipient mark at a named
-  timestamp;
+- estimated contractual consideration, in consistent units and one currency:
+  entitled parent quantity times the sum of cash per parent unit and the
+  normalized recipient ratio times a named recipient mark at a named
+  timestamp. A formula covering only the security leg understates a mixed
+  acquisition; the mixed case in gate 13 exercises both legs;
 - the difference between them at a common valuation timestamp; and
 - successor exposure not represented.
 
@@ -426,9 +450,11 @@ under interruption on both handlers.
 13. a stock acquisition raising both a terminal and a quantity effect, with
     one disposition, no double-credited cash leg, `unsupported` fidelity and
     all four reported quantities; and
-14. the real `DISPOSITION` event through replay, results and reopen, with
-    interruption occurring after a disposition is recorded, on the memory
-    handler as well as the durable one.
+14. the real `DISPOSITION` event through replay, results and reopen on the
+    durable handler, with interruption occurring after a disposition is
+    recorded and resume applying it once; and, on the memory handler, failure
+    containment only, since memory sweeps have no durable reopen and this
+    case must not quietly require one.
 
 Case 14 exists because the terminal-disposition spike wrote a `FILL` with side
 `SELL`, which the current preparer accepts and `DISPOSITION` is not. The spike
@@ -459,9 +485,10 @@ or suppressed cells.
   hazardous one.
 - Dynamic runtime axis growth: static preseal closure covered every observed
   case.
-- Dividend-adjusted execution bars: not tradable prices, and retroactively
-  mutable.
-- Strict refusal only: multi-year walk-forwards halt and produce nothing.
+- Distribution-adjusted execution bars: not tradable prices, and they already
+  contain the distributions.
+- Strict refusal only: a multi-year walk-forward halts before it can answer
+  the full-horizon question it was run for.
 - Cash distributions only: leaves the halting problem untouched.
 - Broad decoupling of availability activation: the prerequisites are a real
   semantic dependency for terminal disposition.
@@ -487,8 +514,8 @@ or suppressed cells.
   no configured convention, which requires complete source clocks.
 - A new policy-value version wherever the exact-quantity release narrows what
   an existing value covers.
-- A distribution receivable, if the maintainer selects the posting convention
-  rather than the asset in 3.4.
+- A distribution receivable in equity, deferred by the posting decision in
+  3.4, for a release that can afford a third term in the equity identity.
 - The evidence requirement for exact quantity transformation, stated by that
   RFC rather than pre-empted by a provenance label here.
 
@@ -548,3 +575,13 @@ decisions are where to start, and the first of them was already refuted once.
   decision rather than inherited from seed v7. Two further errors of mine are
   recorded in section 1: response v5 was wrong that no writer has a
   transaction, and the compensation claim was mine.
+- **2026-09-24** patched after the second external product review, of
+  `7e1283d`. The posting decision is drafted: `effective_close` becomes the
+  research preset with seven bound rules including a late-knowledge rule, the
+  receivable is deferred, and the earlier claim of "no artifact at all" is
+  corrected to a disclosed cash-timing approximation. The contractual
+  consideration formula in 3.5 gains the cash leg it was missing for mixed
+  acquisitions. Two superseded arguments still repeated in section 7 are
+  removed. Gate case 14 is scoped to durable reopen plus memory-handler
+  failure containment so it cannot quietly require durable recovery of memory
+  sweeps.
