@@ -1,7 +1,8 @@
 # Synthesis: Usable Equity Corporate Actions for v0.2.0.2
 
-**Status:** Binding for v0.2.0.2 once accepted. Patched 2026-09-24 after
-final review returned `NEEDS_TYPE_2`; see the revision history.
+**Status:** Binding for v0.2.0.2 once accepted. Patched twice on 2026-09-24,
+after final review and after an external product review. One decision in 3.4
+needs the maintainer before this can be accepted. See the revision history.
 **Author:** Claude (synthesis). **Date:** 2026-09-24
 **Seeds:** v1 through v7, Codex. **Responses:** v1 through v7 plus two
 addenda, Claude. **Maintainer decisions:** 2026-09-23 and 2026-09-24.
@@ -23,10 +24,13 @@ dense close matrix. I read one branch as the general rule. The axis-density
 spike falsified it for the public availability path, and I reviewed that
 spike's evidence and confirmed the refutation.
 
-**The transaction claim.** Response v4 offered multi-row grouping with
-atomicity coming free from "one transaction". Response v5 found that no such
-transaction exists on either writer. I proposed a property and then charged
-the seed with failing to provide it.
+**The transaction claim, twice.** Response v4 offered multi-row grouping with
+atomicity coming free from "one transaction". Response v5 then found no
+transaction on either writer, and that finding was itself wrong:
+`R/backtest-runner.R:266` wraps the durable fold in `dbWithTransaction()`. I
+proposed a property, charged the seed with failing to provide it, and was
+mistaken about whether it existed. What survives is narrower and still true:
+the memory handler has no equivalent, so the guarantee differs by handler.
 
 **The product frame.** Responses v1 through v7 reviewed each seed against the
 user it declared. Only after the maintainer stated the two-path constraint did
@@ -39,8 +43,20 @@ which I had read, records that zipline can create recipient shares from a
 stock dividend. I generalised a real gap into a false absolute. Section 4
 carries the correction.
 
+**The compensation claim.** Patching after the first external review I wrote
+that a disposed holder "was compensated" so nothing was omitted. Modeled cash
+is not the consideration. If the real consideration is successor shares worth
+more or less than the modeled proceeds, the difference is real and so is the
+divergent path afterwards. Section 3.5 now reports four quantities instead of
+one verdict.
+
+**The entitlement rule.** I proposed fixing entitlement at the effective
+date's decision point. In a close-decision workflow that falls after trading
+on the ex-dividend date, so it would credit a buyer who is not entitled and
+deny a seller who is. Exactly inverted. Section 3.4 carries the correct rule.
+
 The cycle ran seven seeds. Two were caused by measurements contradicting
-belief, which is the system working. Two were caused by my errors.
+belief, which is the system working. Four were caused by my errors.
 
 ## 2. Decision
 
@@ -51,8 +67,11 @@ into recipient holdings, and it may not describe itself as corporate-action
 complete.
 
 The release exists because a multi-year walk-forward that halts at the first
-held terminal produces nothing, and because omitted distributions are the
-largest systematic economic error in the package for equity research.
+held terminal cannot answer the full-horizon portfolio question it was run to
+answer. Its partial output is still evidence; completion under a declared
+convention is not by itself a methodological improvement. It exists also
+because omitted distributions are the largest systematic economic error in
+the package for equity research.
 
 Exact quantity settlement is scheduled product work under its own RFC, not an
 unowned deferral. The corrected census is its empirical input: 41 candidates,
@@ -83,9 +102,15 @@ incomplete fact keeps its header and reason and carries no guessed leg.
 **Provenance is tiered, not required.** `snapshot_bound` means the facts are
 user-supplied, sealed, and covered by snapshot identity. The stronger tier,
 `upstream_vintage_bound`, adds a named canonical build and bar vintage.
-Both validate. The weaker tier stays reproducible and is ineligible for
-work that genuinely requires vintage, exact quantity transformation above
-all.
+Both validate and both are sealed, so both are reproducible.
+
+The tier records provenance strength. It is not a capability gate. What exact
+quantity transformation will require is demonstrable consistency between event
+terms, price units and quantity units; a named upstream build is one way to
+establish that, neither proof on its own nor the only route. The
+exact-quantity RFC states its own evidence requirement. Using the label as a
+premature gate would recreate the vendor-infrastructure lock-out the v7
+addendum removed, one level higher.
 
 This resolves the lock-out in the v7 addendum. A vendor that cannot express a
 canonical build no longer bars its user from the rigorous path entirely.
@@ -117,6 +142,11 @@ repository's own prior-art review calls stale-price liquidation hazardous in
 zipline; the default must not reproduce it. `last_mark` remains available as
 explicit opt-in and keeps its gate case.
 
+It bounds staleness, not error. A recent mark can still be a poor settlement
+proxy, and nothing here validates recovery value. It is a declared research
+convention, which is why modeled terminal proceeds must appear as a figure in
+ordinary results rather than only as a count of dispositions.
+
 **[synthesis-only] A policy value's version covers its scope, not only its
 behaviour.** The first draft claimed the unsupported-quantity knob would
 disappear when exact settlement lands. Final review refuted that: unknown
@@ -141,17 +171,73 @@ adds no mechanism.
 convention, carrying source-fact, amount-policy and posting-policy identity.
 No payment-date, withholding, investor-tax or broker-net claim is asserted.
 
+**Entitlement is fixed before the boundary and never recomputed.** For a
+supported ordinary cash dividend, the entitled quantity is the eligible
+holding immediately before the ex-dividend boundary. That boundary comes from
+the supplied and validated entitlement clock. It is not derived from a generic
+corporate-action effective date, and a subtype whose entitlement rule differs
+needs its own supported interpretation or a refusal.
+
+Posting happens later under the selected convention and retains the entitled
+quantity even if the position has since changed. A holder who sells on the
+ex-date keeps the distribution; a buyer on the ex-date does not receive one.
+Knowledge timing stays separate: a fact learned after the boundary may not
+retroactively influence an earlier decision.
+
+**[maintainer decision required] Recognition versus spendable cash.** Between
+the entitlement boundary and posting, the portfolio owns something it cannot
+spend. Three options, and this release must choose one explicitly rather than
+inherit seed v7's exclusion by silence.
+
+| Option | Effect |
+| --- | --- |
+| Receivable in equity | Economically right. Adds a third term to the equity identity and touches every result surface. |
+| Post at `effective_close` | No gap, because the dropped price and the cash land in the same pulse. Cheapest. |
+| Delay with no receivable | One pulse of understated equity under `next_open`, visible in volatility and drawdown. |
+
+The gap is one pulse, not weeks, because this release models no payment date.
+Under `effective_close` there is no artifact at all. The preset currently
+selects `next_open`, which is the only one of the two supported conventions
+that produces the artifact. My recommendation is to move the preset to
+`effective_close` and record the receivable as a future obligation, which
+removes the artifact at no structural cost. The reviewer recommends the
+receivable. Either is defensible; silently keeping the third is not.
+
 **Modeled terminal disposition** consumes live lots at the selected evidenced
 mark under canonical FIFO, realizes model PnL, removes the position and moves
 cash. It persists `DISPOSITION`, not `FILL`: no exchange, broker, order, fee
-or executable trade is asserted. **The payload is asset-neutral.** Position
-removal at a mark is a cross-asset concept and option exercise or physical
-delivery must be able to inherit the event. Equity subtype lives in the source
-fact and the policy, never in the shared ledger event.
+or executable trade is asserted.
+
+**The payload carries no equity or vendor subtype.** Those live in the source
+fact and the policy. What `DISPOSITION` means in this release is bounded to
+that: remove a position at a stated mark, realize model PnL, move cash. It is
+not promised as the event option exercise or physical delivery will inherit.
+Those involve strike payments, delivery and linked positions whose economics
+nobody has designed, and a future operation may reuse these mechanics where
+they fit without being constrained by a promise made in their absence.
 
 **Unsupported quantity effects** change no account state under `report_only`
 and raise fidelity to `unsupported`. Strict mode stops when the affected
 parent is held.
+
+**Composition is bound, because one transaction can raise both.** A stock
+acquisition supplies a terminal fact and a quantity fact for the same economic
+event. Without a rule the preset both disposes the holding and reports its
+recipient value as omitted.
+
+| Case | Account effect | Fidelity | Reported |
+| --- | --- | --- | --- |
+| Cash acquisition | Disposition at mark | `modeled` | Modeled proceeds; contractual cash where supplied, and the difference |
+| Stock acquisition | Disposition at mark | `unsupported` | All four quantities in 3.5; successor exposure not represented |
+| Mixed acquisition | Disposition at mark | `unsupported` | As stock acquisition, with the cash leg named separately |
+| Spin-off, parent survives | None | `unsupported` | Omitted child value only; no compensating cash exists |
+
+One source-fact identity governs the whole transaction and prevents a supplied
+cash leg from being credited alongside modeled disposition proceeds for the
+same event. Double crediting is a validation failure, not a rounding concern.
+Fidelity is `unsupported` whenever a security leg went unrepresented, even
+though a modeled cash exit occurred, because the portfolio does not hold what
+the transaction delivered.
 
 ### 3.5 Fidelity
 
@@ -179,13 +265,26 @@ ladder rather than at its clean end, and prints unambiguously, for example
 the most common state the package will ever report and the one case where a
 reassuring word would be wrong.
 
-**Omitted value is reported, not merely counted.** Where terms permit, the
-summary reports the omitted recipient value as recipient quantity times the
-recipient mark at the effective session, in currency and as a share of
-affected exposure. It is labelled an effective-date estimate and explicitly
-not the eventual return bias, because the value at distribution is not what
-holding the recipient would have earned. Where terms do not permit it, report
-`unavailable` rather than nothing.
+**Omitted value is reported as four quantities, not one.** Reporting a single
+number was wrong: for an acquisition the holder received modeled cash, so the
+recipient value is not an uncompensated loss, and for a spin-off it is.
+
+Where terms permit, the summary reports:
+
+- modeled cash credited;
+- estimated contractual consideration, from entitled parent quantity times the
+  normalized conversion ratio times a named recipient mark at a named
+  timestamp;
+- the difference between them at a common valuation timestamp; and
+- successor exposure not represented.
+
+Each is labelled an effective-date estimate and explicitly not the eventual
+return bias, because value at distribution is not what holding the successor
+would have earned. Any quantity whose required observation does not exist
+reports `unavailable` rather than nothing or zero.
+
+The estimate is retrospective reporting. It is never visible to the strategy
+and never enters a decision.
 
 This makes the sealed recipient terms load-bearing in this release rather than
 schema built for deferred work.
@@ -229,12 +328,15 @@ executable authority.
 
 ### 3.8 Documentation as product
 
-An executable vignette teaches the private-to-canonical boundary using
-fictional vendor data: headers, terms, keys, clocks, units, refusal states,
-physical axis versus membership, construction, sealing, reopening, policy
-presets, and the difference between preserved facts, executed effects and
-unsupported effects. It teaches identity resolution and refusal as ordinary
-outcomes, not failures, because the census could not resolve every recipient
+The first vignette is small and demonstrates the quick path rather than
+asserting it: one dividend under the research preset, its result, its stated
+limitation, then the same case under strict refusal. Nothing else.
+
+Adapter authoring, provenance tiers, physical-axis closure and the
+private-to-canonical boundary belong in a second article, using fictional
+vendor data to teach headers, terms, keys, clocks, units and refusal states.
+That article teaches identity resolution and refusal as ordinary outcomes
+rather than failures, because the census could not resolve every recipient
 even with full vendor data.
 
 A synthetic adapter with different source column names and codes must build
@@ -247,12 +349,26 @@ teaching that cannot drift independently.
 
 ## 4. Open Decisions Resolved
 
-**Adjusted prices are not sealed as execution bars.** An adjusted price is not
-a price anyone could trade at, and sealing one corrupts cash, basis and
-affordability while leaving returns roughly right. Adjusted series are also
-retroactively mutable, which breaks the reproducibility this package exists
-for. Total-return series are derived later from sealed split-adjusted bars
-plus sealed distribution facts, on the feature plane, not in the bars.
+**The supported price basis is split-adjusted, and distribution-adjusted bars
+are not admitted.** The first draft said "adjusted prices are not sealed",
+which prohibited this design's own canonical input. Split-adjusted bars with
+consistently normalized quantities are the basis; bars that already
+incorporate distributions are not.
+
+The reason is not mutability. Sealing a vintage preserves reproducibility
+whatever the vendor does afterwards. The reasons are that a
+distribution-adjusted price is not a price anyone could trade at, so cash,
+basis and affordability are corrupted while returns stay roughly right, and
+that such a series already contains the distributions.
+
+That second reason is a trap on the quick path. A user whose bars already
+include distributions, who later supplies distribution facts, counts them
+twice. The release must detect the combination where it can, from the declared
+price basis on the bars, and refuse or declare it where it cannot. Silent
+double counting is the worst available outcome.
+
+Total-return series are derived later from sealed split-adjusted bars plus
+sealed distribution facts, on the feature plane, not in the bars.
 
 **The product serves two paths deliberately.** Quick path: bars in, run, no
 ceremony, coverage explicitly absent. Rigorous path: facts, tiers, policy,
@@ -286,10 +402,11 @@ ordinary reporting exist. No exact-quantity ticket enters this workstream.
 
 ## 6. Evidence Before Old Paths Leave
 
-**[synthesis-only] The gate covers eleven cases, not ten.** Seed v7 capped at
-ten and none of them exercises a published product claim: that the second rung
-works. A cap is a discipline against speculative cases, not against testing a
-claim the documentation makes.
+**[synthesis-only] The gate covers fourteen cases, not ten.** Seed v7 capped
+at ten. A cap is a discipline against speculative cases, not against testing
+claims the product makes. Four are added: the second rung of the ladder,
+dividend entitlement, acquisition composition, and the real disposition event
+under interruption on both handlers.
 
 1. a fictional non-Sharadar adapter producing the canonical fact shape;
 2. dividend normalization across a later parent split;
@@ -303,7 +420,22 @@ claim the documentation makes.
 9. physical closure leaving membership, pre-event features and fills intact;
 10. compiled execution refusing the economic-event envelope before running;
 11. a bars-only run printing `not_supplied`, and a dividend-only run posting
-    cash with no availability setup.
+    cash with no availability setup;
+12. an existing holder selling on the ex-date and a new buyer entering on it,
+    where only the seller is credited;
+13. a stock acquisition raising both a terminal and a quantity effect, with
+    one disposition, no double-credited cash leg, `unsupported` fidelity and
+    all four reported quantities; and
+14. the real `DISPOSITION` event through replay, results and reopen, with
+    interruption occurring after a disposition is recorded, on the memory
+    handler as well as the durable one.
+
+Case 14 exists because the terminal-disposition spike wrote a `FILL` with side
+`SELL`, which the current preparer accepts and `DISPOSITION` is not. The spike
+established sale mechanics, not this event. Its interruption also fired before
+the terminal pulse, so recovery after a recorded disposition is unproven, and
+the durable fold transaction at `R/backtest-runner.R:266` has no memory-handler
+equivalent.
 
 The upstream private gate separately reconciles the distribution population
 and the corrected census without publishing identifiers, prices, action values
@@ -355,6 +487,10 @@ or suppressed cells.
   no configured convention, which requires complete source clocks.
 - A new policy-value version wherever the exact-quantity release narrows what
   an existing value covers.
+- A distribution receivable, if the maintainer selects the posting convention
+  rather than the asset in 3.4.
+- The evidence requirement for exact quantity transformation, stated by that
+  RFC rather than pre-empted by a provenance label here.
 
 ## 10. Failure Scenarios
 
@@ -366,6 +502,10 @@ or suppressed cells.
   stops. This is intended and is the price of not inventing a price.
 - `equity_corporate_actions` is added to the activation families for
   consistency and the second rung silently disappears.
+- A quick-path user supplies distribution facts over bars that already include
+  them and the run double counts undetected.
+- A supplied cash leg is credited alongside modeled disposition proceeds for
+  one acquisition.
 
 ## 11. Release Boundary And Final Review
 
@@ -394,3 +534,17 @@ decisions are where to start, and the first of them was already refuted once.
   section 4 contradicted the 2026-09-24 horizon entry and is corrected. A
   fourth error the review did not raise is also fixed: the preamble claimed
   three synthesis-only decisions and marked two.
+- **2026-09-24** patched after an external product review of the pushed branch
+  at `485905d`. Six findings and two product points, all upheld. Dividend
+  entitlement is now bound to the ex-dividend boundary rather than the
+  effective date's decision point, which was inverted. Acquisition composition
+  is bound in a table and the omitted-value report becomes four quantities,
+  because calling a disposed holder compensated was too strong. The
+  adjusted-price decision no longer prohibits this design's own split-adjusted
+  input and now requires double-counting detection. The provenance tier stops
+  gating future capability. `DISPOSITION` is bounded to this release rather
+  than promised to option exercise and physical delivery. The gate grows to
+  fourteen cases. Recognition versus spendable cash is raised as a maintainer
+  decision rather than inherited from seed v7. Two further errors of mine are
+  recorded in section 1: response v5 was wrong that no writer has a
+  transaction, and the compensation claim was mine.
