@@ -10,6 +10,7 @@ ledgr_snapshot_from_yahoo(
   to,
   db_path = NULL,
   snapshot_id = NULL,
+  price_basis = NULL,
   ...
 )
 }
@@ -23,6 +24,9 @@ ledgr_snapshot_from_yahoo(
 \item{db_path}{Optional DuckDB file path (default: tempfile).}
 
 \item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
+
+\item{price_basis}{Optional declaration of the economic basis of the bars.
+See \code{ledgr_snapshot_from_df()}.}
 
 \item{...}{Additional arguments passed to \code{quantmod::getSymbols()}.}
 }

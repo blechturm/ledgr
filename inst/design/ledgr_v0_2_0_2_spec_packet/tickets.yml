@@ -846,12 +846,13 @@ tickets:
   - id: "LDG-2807"
     title: "Declare the price basis and detect distribution double counting"
     workstream: 10
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2805"]
     scope: "Synthesis 4, boundary half only. Split-adjusted bars are the supported basis; declared distribution-adjusted bars are not admitted as execution bars at all, with or without distribution facts. Bars carry a declared price basis, and the declaration is carried forward into experiment identity so later workstreams can act on it. The ordinary-result disclosure for an undeclared basis is owned by LDG-2810 and exactly-once posting on split-adjusted bars by LDG-2811; this ticket requires no completed run, so workstream 10 can close on its own terms."
     acceptance: ["a snapshot declaring a distribution-adjusted basis refuses at experiment construction with a named class, both with distribution facts supplied and without", "a snapshot with an undeclared basis and one with a split-adjusted basis are each admitted at construction, and the declaration (or its absence) is carried forward and readable from experiment identity", "no acceptance criterion in this ticket requires a completed run or an ordinary result"]
+    evidence: ["LTB-0031 seals undeclared, split-adjusted and two distribution-adjusted snapshots from identical bars; the latter pair differs only in whether corporate-action facts are present. Both distribution cases refuse at ledgr_experiment() construction with ledgr_distribution_adjusted_bars_unsupported, while the admitted cases retain NULL or split_adjusted in experiment data identity and config identity without completing a run. A deliberate mutation disabling the execution-basis guard made exactly the two distribution rows fail. Unknown bases fail with ledgr_invalid_price_basis. Focused fact, config, snapshot-adapter, CSV, snapshot-info, documentation and control-plane files pass under R 4.6.1. The fast lane passed 444/444 blocks in 93.870, 93.550 and 93.310 seconds; its 93.550-second median exceeded the 90-second gate. Record directory: C:/Users/maxth/ledgr-research/.tmp/ws10/ldg-2807-fast."]
 
   - id: "LDG-2808"
     title: "Workstream 10 closeout"

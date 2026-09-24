@@ -130,6 +130,7 @@ ledgr_config <- function(snapshot,
   }
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  price_basis <- ledgr_snapshot_execution_price_basis(snapshot)
 
   if (!is.null(control$execution_mode)) {
     execution_mode <- control$execution_mode
@@ -264,7 +265,8 @@ ledgr_config <- function(snapshot,
     data = list(
       source = "snapshot",
       snapshot_id = snapshot$snapshot_id,
-      snapshot_db_path = snapshot$db_path
+      snapshot_db_path = snapshot$db_path,
+      price_basis = price_basis
     )
   )
 

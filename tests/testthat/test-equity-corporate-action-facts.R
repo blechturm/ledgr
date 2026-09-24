@@ -321,3 +321,81 @@ testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", 
     ledgr_snapshot_info(expected_snapshot)$snapshot_hash[[1L]]
   )
 })
+
+testthat::test_that("[LTB-0031] experiment construction enforces the declared price basis", {
+  bars <- equity_corporate_action_bars()
+  facts <- ledgr_facts(
+    ledgr_facts_equity_corporate_actions(equity_corporate_action_rows())
+  )
+  snapshots <- list(
+    undeclared = ledgr_snapshot_from_df(bars),
+    split = ledgr_snapshot_from_df(bars, price_basis = "split_adjusted"),
+    distribution_without_facts = ledgr_snapshot_from_df(
+      bars,
+      price_basis = "distribution_adjusted"
+    ),
+    distribution_with_facts = ledgr_snapshot_from_df(
+      bars,
+      facts = facts,
+      price_basis = "distribution_adjusted"
+    )
+  )
+  withr::defer(lapply(snapshots, ledgr_snapshot_close))
+
+  strategy <- function(ctx, params) ctx$flat()
+  make_experiment <- function(snapshot) {
+    ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      cost_model = ledgr_cost_zero()
+    )
+  }
+
+  undeclared <- make_experiment(snapshots$undeclared)
+  split <- make_experiment(snapshots$split)
+  testthat::expect_null(undeclared$data_identity$price_basis)
+  testthat::expect_identical(split$data_identity$price_basis, "split_adjusted")
+  testthat::expect_null(snapshots$undeclared$metadata$price_basis)
+  testthat::expect_identical(
+    snapshots$split$metadata$price_basis,
+    "split_adjusted"
+  )
+  make_config <- function(experiment) {
+    ledgr:::ledgr_config(
+      snapshot = experiment$snapshot,
+      universe = experiment$universe,
+      strategy = experiment$strategy,
+      backtest = ledgr:::ledgr_backtest_config(
+        start = experiment$snapshot$metadata$start_date,
+        end = experiment$snapshot$metadata$end_date,
+        initial_cash = experiment$opening$cash
+      ),
+      cost_model_hash = experiment$cost_model_hash,
+      cost_plan_json = experiment$cost_plan_json
+    )
+  }
+  undeclared_config <- make_config(undeclared)
+  split_config <- make_config(split)
+  testthat::expect_null(undeclared_config$data$price_basis)
+  testthat::expect_identical(
+    split_config$data$price_basis,
+    "split_adjusted"
+  )
+  testthat::expect_false(identical(
+    ledgr:::config_hash(undeclared_config),
+    ledgr:::config_hash(split_config)
+  ))
+
+  for (name in c("distribution_without_facts", "distribution_with_facts")) {
+    testthat::expect_error(
+      make_experiment(snapshots[[name]]),
+      class = "ledgr_distribution_adjusted_bars_unsupported",
+      info = paste("distribution-adjusted execution must refuse", name)
+    )
+  }
+
+  testthat::expect_error(
+    ledgr_snapshot_from_df(bars, price_basis = "total_return"),
+    class = "ledgr_invalid_price_basis"
+  )
+})

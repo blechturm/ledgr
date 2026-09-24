@@ -10,7 +10,8 @@ ledgr_snapshot_from_csv(
   db_path = NULL,
   snapshot_id = NULL,
   facts = NULL,
-  invalid_observations = c("error", "quarantine")
+  invalid_observations = c("error", "quarantine"),
+  price_basis = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ ledgr_snapshot_from_csv(
 \item{invalid_observations}{Either \code{"error"} (the default) or the explicit
 \code{"quarantine"} acknowledgement. Quarantine requires declared sessions in
 \code{facts}.}
+
+\item{price_basis}{Optional declaration of the economic basis of the bars.
+See \code{ledgr_snapshot_from_df()}.}
 }
 \value{
 A \code{ledgr_snapshot} object.

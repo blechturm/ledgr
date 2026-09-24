@@ -69,7 +69,9 @@ annual risk-free rate shorthand. \code{NULL} uses the default metric context.}
 Supply either \code{metric_context} or \code{risk_free_rate}, not both.}
 }
 \value{
-A \code{ledgr_experiment} object.
+A \code{ledgr_experiment} object. Its \code{data_identity$price_basis} field
+records \code{"split_adjusted"} or \code{NULL} when the sealed bars did not declare
+a basis. Distribution-adjusted bars are refused at construction.
 }
 \description{
 \code{ledgr_experiment()} bundles a sealed snapshot, strategy, features, opening

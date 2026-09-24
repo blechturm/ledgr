@@ -11,6 +11,10 @@
 #' @param invalid_observations Either `"error"` (the default) or the explicit
 #'   `"quarantine"` acknowledgement. Quarantine requires declared sessions in
 #'   `facts`.
+#' @param price_basis Optional declaration of the economic basis of the bars.
+#'   Supported values are `"split_adjusted"` and `"distribution_adjusted"`.
+#'   `NULL` leaves the basis undeclared. Distribution-adjusted bars can be
+#'   sealed for inspection but are refused by [ledgr_experiment()].
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
 #' @return A `ledgr_snapshot` object.
@@ -40,8 +44,10 @@ ledgr_snapshot_from_df <- function(bars_df,
                                    db_path = NULL,
                                    snapshot_id = NULL,
                                    facts = NULL,
-                                   invalid_observations = c("error", "quarantine")) {
+                                   invalid_observations = c("error", "quarantine"),
+                                   price_basis = NULL) {
   invalid_observations <- match.arg(invalid_observations)
+  price_basis <- ledgr_price_basis_normalize(price_basis)
   if (!is.data.frame(bars_df)) {
     rlang::abort("`bars_df` must be a data.frame (or tibble).", class = "ledgr_invalid_args")
   }
@@ -405,6 +411,9 @@ ledgr_snapshot_from_df <- function(bars_df,
     end_date = end_date,
     created_at = ledgr_normalize_ts_utc(created_at)
   )
+  if (!is.null(price_basis)) {
+    metadata$price_basis <- price_basis
+  }
   if (!is.null(availability_report)) {
     metadata$snapshot_hash_rule_version <- 2L
     metadata$fact_family_count <- length(facts$families) +
@@ -439,6 +448,8 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' @param invalid_observations Either `"error"` (the default) or the explicit
 #'   `"quarantine"` acknowledgement. Quarantine requires declared sessions in
 #'   `facts`.
+#' @param price_basis Optional declaration of the economic basis of the bars.
+#'   See [ledgr_snapshot_from_df()].
 #' @return A `ledgr_snapshot` object.
 #' @details
 #' The bars CSV must contain `instrument_id`, `ts_utc`, `open`, `high`, `low`,
@@ -610,7 +621,8 @@ ledgr_snapshot_from_csv <- function(csv_path,
                                     db_path = NULL,
                                     snapshot_id = NULL,
                                     facts = NULL,
-                                    invalid_observations = c("error", "quarantine")) {
+                                    invalid_observations = c("error", "quarantine"),
+                                    price_basis = NULL) {
   ledgr_validate_snapshot_id(snapshot_id)
   bars_df <- ledgr_csv_read_bars_for_snapshot(csv_path)
 
@@ -629,7 +641,8 @@ ledgr_snapshot_from_csv <- function(csv_path,
     db_path = db_path,
     snapshot_id = snapshot_id,
     facts = facts,
-    invalid_observations = invalid_observations
+    invalid_observations = invalid_observations,
+    price_basis = price_basis
   )
 }
 
@@ -690,6 +703,8 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param to End date (character, Date, or POSIXct).
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
+#' @param price_basis Optional declaration of the economic basis of the bars.
+#'   See [ledgr_snapshot_from_df()].
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
 #' @return A sealed `ledgr_snapshot` object.
 #' @section Articles:
@@ -717,6 +732,7 @@ ledgr_snapshot_from_yahoo <- function(symbols,
                                       to,
                                       db_path = NULL,
                                       snapshot_id = NULL,
+                                      price_basis = NULL,
                                       ...) {
   if (!requireNamespace("quantmod", quietly = TRUE)) {
     rlang::abort(
@@ -748,7 +764,64 @@ ledgr_snapshot_from_yahoo <- function(symbols,
   })
 
   bars_df <- do.call(rbind, bars_list)
-  ledgr_snapshot_from_df(bars_df = bars_df, db_path = db_path, snapshot_id = snapshot_id)
+  ledgr_snapshot_from_df(
+    bars_df = bars_df,
+    db_path = db_path,
+    snapshot_id = snapshot_id,
+    price_basis = price_basis
+  )
+}
+
+ledgr_price_basis_normalize <- function(price_basis) {
+  if (is.null(price_basis)) {
+    return(NULL)
+  }
+  if (!is.character(price_basis) || length(price_basis) != 1L ||
+      is.na(price_basis) || !nzchar(price_basis) ||
+      !price_basis %in% c("split_adjusted", "distribution_adjusted")) {
+    rlang::abort(
+      paste0(
+        "`price_basis` must be NULL, \"split_adjusted\", or ",
+        "\"distribution_adjusted\"."
+      ),
+      class = c("ledgr_invalid_price_basis", "ledgr_invalid_args")
+    )
+  }
+  price_basis
+}
+
+ledgr_snapshot_price_basis <- function(snapshot) {
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    rlang::abort(
+      "`snapshot` must be a ledgr_snapshot object.",
+      class = "ledgr_invalid_snapshot"
+    )
+  }
+  opened <- ledgr_snapshot_connection(snapshot)
+  if (isTRUE(opened$opened_new)) {
+    on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  }
+  info <- ledgr_snapshot_info(opened$con, snapshot$snapshot_id)
+  metadata <- ledgr_snapshot_info_parse_meta(info$meta_json[[1L]])
+  ledgr_price_basis_normalize(metadata$price_basis)
+}
+
+ledgr_snapshot_execution_price_basis <- function(snapshot) {
+  price_basis <- ledgr_snapshot_price_basis(snapshot)
+  if (identical(price_basis, "distribution_adjusted")) {
+    rlang::abort(
+      paste0(
+        "Distribution-adjusted bars are not supported for execution because ",
+        "their prices already include distributions. Seal split-adjusted bars ",
+        "or leave the basis undeclared."
+      ),
+      class = c(
+        "ledgr_distribution_adjusted_bars_unsupported",
+        "ledgr_invalid_experiment"
+      )
+    )
+  }
+  price_basis
 }
 
 ledgr_validate_snapshot_id <- function(snapshot_id) {

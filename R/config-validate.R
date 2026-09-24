@@ -326,6 +326,17 @@ validate_ledgr_config <- function(config) {
 
   assert_scalar_chr(snapshot_id, "data.snapshot_id")
 
+  price_basis <- ledgr_price_basis_normalize(config$data$price_basis)
+  if (identical(price_basis, "distribution_adjusted")) {
+    rlang::abort(
+      "Config field data.price_basis cannot be distribution_adjusted for execution.",
+      class = c(
+        "ledgr_distribution_adjusted_bars_unsupported",
+        "ledgr_invalid_config"
+      )
+    )
+  }
+
   if (!is.null(config$data$snapshot_db_path)) {
     assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
   }

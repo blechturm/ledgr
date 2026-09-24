@@ -10,7 +10,8 @@ ledgr_snapshot_from_df(
   db_path = NULL,
   snapshot_id = NULL,
   facts = NULL,
-  invalid_observations = c("error", "quarantine")
+  invalid_observations = c("error", "quarantine"),
+  price_basis = NULL
 )
 }
 \arguments{
@@ -29,6 +30,11 @@ canonical bar columns are persisted and hashed.}
 \item{invalid_observations}{Either \code{"error"} (the default) or the explicit
 \code{"quarantine"} acknowledgement. Quarantine requires declared sessions in
 \code{facts}.}
+
+\item{price_basis}{Optional declaration of the economic basis of the bars.
+Supported values are \code{"split_adjusted"} and \code{"distribution_adjusted"}.
+\code{NULL} leaves the basis undeclared. Distribution-adjusted bars can be
+sealed for inspection but are refused by \code{ledgr_experiment()}.}
 }
 \value{
 A \code{ledgr_snapshot} object.

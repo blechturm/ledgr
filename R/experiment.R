@@ -176,7 +176,9 @@ print.ledgr_opening <- function(x, ...) {
 #'   annual risk-free rate shorthand. `NULL` uses the default metric context.
 #' @param risk_free_rate Optional shorthand for the annual risk-free rate.
 #'   Supply either `metric_context` or `risk_free_rate`, not both.
-#' @return A `ledgr_experiment` object.
+#' @return A `ledgr_experiment` object. Its `data_identity$price_basis` field
+#'   records `"split_adjusted"` or `NULL` when the sealed bars did not declare
+#'   a basis. Distribution-adjusted bars are refused at construction.
 #' @section Articles:
 #' Strategy authoring:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -235,7 +237,7 @@ ledgr_experiment <- function(snapshot,
   } else {
     ledgr_metric_context_resolve(metric_context)
   }
-  ledgr_experiment_validate_snapshot(snapshot)
+  price_basis <- ledgr_experiment_validate_snapshot(snapshot)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
   availability <- ledgr_availability_validate_experiment(
@@ -305,7 +307,8 @@ ledgr_experiment <- function(snapshot,
       risk_plan_json = risk_identity$risk_plan_json,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
-      metric_context = metric_context
+      metric_context = metric_context,
+      data_identity = list(price_basis = price_basis)
     )
   if (isTRUE(availability$active)) {
     out$availability <- list(
@@ -332,7 +335,7 @@ ledgr_experiment_validate_snapshot <- function(snapshot) {
       class = "ledgr_invalid_experiment"
     )
   }
-  invisible(TRUE)
+  invisible(ledgr_snapshot_execution_price_basis(snapshot))
 }
 
 ledgr_experiment_snapshot_universe <- function(snapshot) {
@@ -562,6 +565,12 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Opening:     cash=", format(x$opening$cash, scientific = FALSE, trim = TRUE),
       ", positions=", length(x$opening$positions), "\n", sep = "")
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
+  cat(
+    "Price basis: ",
+    if (is.null(x$data_identity$price_basis)) "<undeclared>" else x$data_identity$price_basis,
+    "\n",
+    sep = ""
+  )
   cat("Metrics:     ", ledgr_calendar_display(x$metric_context$calendar), "\n", sep = "")
   invisible(x)
 }
