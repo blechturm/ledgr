@@ -68,6 +68,10 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.2.0.1** -- availability hot- and cold-path productionization, the
   resumed-run correctness repair, and release-closeout measurements under the
   accepted synthesis and maintainer decisions.
+- **Post-v0.2.0.2 exact equity quantity settlement** -- atomic parent-to-
+  recipient position and model-basis transformation for stock acquisitions,
+  mixed consideration and spin-offs. Promoted to the roadmap on 2026-09-24;
+  a focused RFC is required before ticket cut.
 - **After v0.2.0.1** -- the refreshed spot-crypto readiness probe and
   conditional measurement spike. No prior crypto spike was executed; the
   roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
@@ -107,6 +111,51 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   currently holds. Incremental B2 expansion (per-pulse equity, durable
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
+
+### 2026-09-24 [data] Exact equity quantity settlement remains a product gap
+
+v0.2.0.2 deliberately stops short of transforming a held parent position into
+recipient securities and cash consideration. Its bounded usability answer is
+evidenced cash distributions plus an identified modeled disposition for a
+terminal holding, with strict refusal still available. That lets ordinary
+research finish; it does not reproduce the economics of holding through a
+stock acquisition, mixed acquisition or spin-off.
+
+The corrected private census makes the gap concrete. It found 41 candidate
+transformations, 24 recipients already inside the measured physical axis and
+22 cases normalized into the snapshot's split-adjusted unit basis. Ten of the
+22 are clean single-recipient stock acquisitions; twelve combine mixed
+acquisitions and parent spin-offs. No case is broker-exact. Event counts are
+not exposure rates: the effect on a strategy depends on whether it held the
+parent. The gap is usually bounded for frequently rebalanced factor research,
+but it is material for buy-and-hold and index replication and disqualifying
+for spin-off, merger-arbitrage, tax-lot or broker-reconciliation claims.
+
+This is not a unique shortcoming of ledgr's current direction. LEAN's public
+portfolio implementation applies splits and cash dividends, while its
+documented delisting path liquidates disappearing holdings; its public
+corporate-action contract does not establish an atomic recipient-share and
+basis transformation. Zipline has the stronger partial primitive: a stock
+dividend can create recipient shares from a payment asset and ratio, but the
+visible ledger path increments quantity rather than expressing the complete
+parent reduction, mixed cash leg and basis allocation required here.
+Backtrader commonly consumes adjusted prices instead. Competitor limitations
+bound the market gap; they do not lower ledgr's correctness target.
+
+The roadmap schedules a focused RFC for one of the next equity-accounting
+releases. It owns atomic multi-instrument persistence, parent consumption,
+recipient creation, cash legs, model-basis transfer, fractions, replay and
+reopen, off-axis valuation and compiled refusal or support. Until it lands,
+ledgr must preserve the canonical source facts, make every omission or modeled
+disposition unavoidable in ordinary results, and avoid any claim of complete
+corporate-action settlement.
+
+Primary comparison references checked for this decision:
+
+- <https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions>
+- <https://github.com/QuantConnect/Lean/blob/master/Common/Securities/SecurityPortfolioManager.cs>
+- <https://github.com/quantopian/zipline/blob/master/zipline/data/adjustments.py>
+- <https://github.com/quantopian/zipline/blob/master/zipline/finance/ledger.py>
 
 ### 2026-09-22 [product] A quarantined row's copy is a diagnostic, not identity
 

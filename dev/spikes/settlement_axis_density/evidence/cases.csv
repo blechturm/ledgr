@@ -1,0 +1,4 @@
+"case_id","status","stop_reason","error_class","error_message","equity_rows","final_positions_value","final_equity","child_ledger_rows","child_position","child_view_rows","child_pre_entitlement_view_rows","child_member_any","child_held_at_entitlement","child_priced_at_entitlement","child_mark_source_at_entitlement","child_first_view_ts_utc","reopen_equity_identical","reopen_availability_identical","evidence_source"
+"complete_control","DONE",,"","",5,40,100040,1,2,3,0,FALSE,TRUE,TRUE,"current_close","2024-01-04T21:00:00Z",TRUE,TRUE,"public_ledgr_run"
+"late_start_at_entitlement","DONE",,"","",5,40,100040,1,2,3,0,FALSE,TRUE,TRUE,"current_close","2024-01-04T21:00:00Z",TRUE,TRUE,"public_ledgr_run"
+"missing_at_entitlement","ERROR","","ledgr_config_non_finite","canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).",,,,,,,,,,,"","",FALSE,FALSE,"public_ledgr_run"

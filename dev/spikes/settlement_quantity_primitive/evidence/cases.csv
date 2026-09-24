@@ -1,0 +1,10 @@
+"case_id","arm","fold_status","error_class","processed","event_count","operation_sequence","operation3_count","fill_count","source_identities","parent_position","child_position","parent_lot_net","child_lot_net","parent_lot_count","child_lot_count","total_cost_basis","position_lot_agree","reopened","evidence_source","literal_excluded"
+"case_1","canonical_r","DONE","",3,1,"3",1,0,"baseline",5,0,5,0,1,0,50,TRUE,FALSE,"fold_output",FALSE
+"case_2","canonical_r","DONE","",3,1,"3",1,0,"case_2",3,0,3,0,1,0,33,TRUE,FALSE,"fold_output",FALSE
+"case_3","canonical_r","DONE","",3,2,"1|3",1,1,"case_3",5,0,5,0,2,0,55,TRUE,FALSE,"fold_output",FALSE
+"case_4","canonical_r","DONE","",3,1,"3",1,0,"case_4",0,2,0,2,0,1,42,TRUE,FALSE,"fold_output",FALSE
+"case_5","canonical_r","DONE","",3,1,"3",1,0,"case_5",0,0,0,0,2,0,0,TRUE,FALSE,"fold_output",FALSE
+"case_6","canonical_r","DONE","",3,2,"3|3",2,0,"multi-leg-source|multi-leg-source",0,1,0,1,2,1,21,TRUE,FALSE,"fold_output",FALSE
+"case_7","canonical_r","ERROR","ledgr_invalid_accounting_event",,1,"3",1,0,"malformed-source",2,1,2,1,1,1,41,TRUE,FALSE,"fold_output",FALSE
+"case_8","spot_fifo","DONE","",3,0,"",0,0,"",0,0,0,0,0,0,0,TRUE,FALSE,"fold_output",FALSE
+"case_9","canonical_r","DONE","",3,1,"3",1,0,"case_9",0,2,0,2,0,1,42,TRUE,TRUE,"fold_output",FALSE

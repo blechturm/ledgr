@@ -1,0 +1,6 @@
+"case_id","first_status","final_status","stop_reason","equity_rows","ledger_rows","disposition_fill_rows","settlement_diagnostic_rows","stopped_diagnostic_rows","quantity","price","mark_source","mark_age","position_before","position_after","policy_id_recorded","final_cash","final_equity","reopen_error_class","reopen_events_identical","reopen_equity_identical","reopen_diagnostics_identical","evidence_source"
+"strict_control","INCOMPLETE","INCOMPLETE","terminal_settlement_unsupported",1,1,0,0,1,,,"",,,,FALSE,1000,1200,"",TRUE,TRUE,TRUE,"public_ledgr_run"
+"current_mark","DONE","DONE",,4,2,1,1,0,2,100,"current_close",0,2,0,TRUE,1200,1200,"",TRUE,TRUE,TRUE,"public_ledgr_run"
+"stale_mark","DONE","DONE",,4,2,1,1,0,2,100,"stale_close",1,2,0,TRUE,1200,1200,"",TRUE,TRUE,TRUE,"public_ledgr_run"
+"no_permissible_mark","INCOMPLETE","INCOMPLETE","terminal_settlement_unsupported",1,1,0,0,1,,,"",,,,FALSE,1000,1200,"",TRUE,TRUE,TRUE,"public_ledgr_run"
+"resumed_current_mark","RUNNING","DONE",,4,2,1,1,0,2,100,"current_close",0,2,0,TRUE,1200,1200,"",TRUE,TRUE,TRUE,"public_ledgr_run"
