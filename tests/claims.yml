@@ -146,3 +146,15 @@ claims:
     detecting_blocks: ["LTB-0025"]
     promised_profile: "heavy_protocol"
     owner: "maintainer"
+  - id: "LCL-0022"
+    source: "Equity-settlement synthesis: section 3.7"
+    scope: "Compiled spot-FIFO rejects every non-FILL pulse event before accounting"
+    oracle_class: "negative witness"
+    detecting_blocks: ["LTB-0026"]
+    promised_profile: "fast"
+    owner: "maintainer"
+    protected_contract_or_defect: "A completed pulse plan must not lose an economic event when the compiled arm handles only fills."
+    oracle_independence: "The test injects three event kinds into the completed plan without using the production kind predicate."
+    smallest_failing_change: "Remove the envelope guard, narrow it to CASHFLOW, or let either accounting arm read pulse_plan directly."
+    cheapest_adequate_lane: "One tiny in-memory fold per table row exercises the real dispatch boundary in the fast lane."
+    overlapping_evidence: "LCL-0006 proves compiled fill parity but contains no non-FILL event."

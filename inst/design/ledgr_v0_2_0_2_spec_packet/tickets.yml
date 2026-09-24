@@ -813,12 +813,13 @@ tickets:
   - id: "LDG-2804"
     title: "Refuse economic events at the compiled envelope"
     workstream: 10
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Synthesis 3.7; inventory section 9. Give the pulse plan an explicit economic-event kind set. When compiled_accounting_model = \"spot_fifo\" is selected and the plan contains CASHFLOW, DISPOSITION or any non-FILL economic kind, abort before execution with the existing ledgr_compiled_spot_fifo_unavailable class. Pair with a source guard asserting both accounting arms in R/fold-engine.R read the same event sources, so a kind cannot be added to the canonical R arm alone. Named as a prerequisite in every seed since v4 and unticketed until this cut; it lands first."
     acceptance: ["table-driven over CASHFLOW, DISPOSITION and a synthetic unknown non-FILL kind: a plan containing any of them at a pulse with no fill aborts before the first pulse under compiled spot-FIFO with the named class; every row must abort", "removing the envelope check makes a row complete with its event dropped, and narrowing the predicate to CASHFLOW alone makes the DISPOSITION and unknown-kind rows complete; the block fails in both cases", "the source guard fails when an event kind is added to the canonical R arm alone", "the canonical R path is unchanged: fast-profile parity blocks pass"]
+    evidence: ["LTB-0026 injects CASHFLOW, DISPOSITION and SYNTHETIC_UNKNOWN into the completed pulse plan with no fill and observes ledgr_compiled_spot_fifo_unavailable for every row. Before the guard existed all three rows completed; a deliberate CASHFLOW-only predicate mutation made the DISPOSITION and unknown rows complete and failed the block. The same block pins both accounting arms to the shared accounting_events source. The focused execution-spec file passes. The R 4.6.1 fast lane passed 439/439 blocks on all three confirmation runs, but its 104.950-second median exceeded the registered 90-second gate; LTB-0026 itself took 0.28 seconds in run 1. Record directory: C:/Users/maxth/ledgr-research/.tmp/ws10/ldg-2804-fast."]
 
   - id: "LDG-2805"
     title: "Seal the equity_corporate_actions fact family with tiered provenance"

@@ -181,7 +181,8 @@ ledgr_fold_build_pulse_plan <- function(targets,
     list(
       targets = targets,
       actionable_idx = as.integer(actionable_idx),
-      fills = fills
+      fills = fills,
+      economic_event_kinds = if (length(fills) > 0L) "FILL" else character()
     ),
     class = c("ledgr_pulse_plan", "list")
   )
@@ -192,8 +193,22 @@ ledgr_fold_apply_net_feasibility_noop <- function(pulse_plan, state) {
   pulse_plan
 }
 
-ledgr_fold_pulse_plan_fill_intents <- function(pulse_plan) {
-  lapply(pulse_plan$fills, function(entry) entry$fill)
+ledgr_fold_pulse_plan_accounting_events <- function(pulse_plan) {
+  fills <- pulse_plan$fills %||% list()
+  event_kinds <- unique(as.character(
+    pulse_plan$economic_event_kinds %||% character()
+  ))
+  if (length(fills) > 0L && !"FILL" %in% event_kinds) {
+    rlang::abort(
+      "A pulse plan containing fills must declare the FILL economic-event kind.",
+      class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+    )
+  }
+  list(fills = fills, kinds = event_kinds)
+}
+
+ledgr_fold_pulse_plan_fill_intents <- function(accounting_events) {
+  lapply(accounting_events$fills, function(entry) entry$fill)
 }
 
 ledgr_execute_fold <- function(execution, output_handler) {
@@ -739,6 +754,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
         )
         ledgr_fold_apply_net_feasibility_noop(plan, state)
       }
+      accounting_events <- ledgr_fold_pulse_plan_accounting_events(pulse_plan)
+      if (use_compiled_spot_fifo) {
+        ledgr_require_compiled_spot_fifo_event_kinds(accounting_events$kinds)
+      }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
         t_fill <- t_fill + ledgr_time_elapsed(sample_start, sample_now)
@@ -813,7 +832,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       # so sweep and durable replay see the same canonical stream.
       current_fold_stage <<- "accounting"
       if (use_compiled_spot_fifo) {
-        compiled_fills <- ledgr_fold_pulse_plan_fill_intents(pulse_plan)
+        compiled_fills <- ledgr_fold_pulse_plan_fill_intents(accounting_events)
         if (length(compiled_fills) > 0L) {
           if (sample_telemetry) sample_start <- ledgr_time_now()
           batch <- ledgr_run_compiled_spot_fifo_batch(
@@ -838,7 +857,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           }
         }
       } else {
-        for (entry in pulse_plan$fills) {
+        for (entry in accounting_events$fills) {
           if (sample_telemetry) sample_start <- ledgr_time_now()
           fill <- entry$fill
           instrument_id <- entry$instrument_id

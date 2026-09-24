@@ -505,6 +505,44 @@ testthat::test_that("compiled accounting model enum fails closed", {
   )
 })
 
+testthat::test_that("[LTB-0026] compiled accounting refuses every non-fill pulse event", {
+  event_kinds <- c("CASHFLOW", "DISPOSITION", "SYNTHETIC_UNKNOWN")
+  original_builder <- ledgr:::ledgr_fold_build_pulse_plan
+
+  run_with_kind <- function(event_kind) {
+    testthat::local_mocked_bindings(
+      ledgr_fold_build_pulse_plan = function(...) {
+        plan <- original_builder(...)
+        plan$fills <- list()
+        plan$economic_event_kinds <- event_kind
+        plan
+      },
+      .package = "ledgr"
+    )
+    ledgr_compiled_spot_fifo_test_run("spot_fifo")
+  }
+
+  for (event_kind in event_kinds) {
+    testthat::expect_error(
+      run_with_kind(event_kind),
+      class = "ledgr_compiled_spot_fifo_unavailable",
+      info = paste("compiled envelope must reject", event_kind)
+    )
+  }
+
+  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  testthat::expect_match(
+    fold_source,
+    "ledgr_fold_pulse_plan_fill_intents(accounting_events)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    fold_source,
+    "for (entry in accounting_events$fills)",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold outputs", {
   r_path <- ledgr_compiled_spot_fifo_test_run(NULL)
   compiled_path <- ledgr_compiled_spot_fifo_test_run("spot_fifo")

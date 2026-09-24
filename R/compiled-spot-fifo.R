@@ -90,6 +90,25 @@ ledgr_require_compiled_spot_fifo_dispatch <- function(execution, output_handler)
   invisible(TRUE)
 }
 
+ledgr_require_compiled_spot_fifo_event_kinds <- function(event_kinds) {
+  event_kinds <- unique(as.character(event_kinds))
+  if (anyNA(event_kinds) || any(!nzchar(event_kinds))) {
+    rlang::abort(
+      "Pulse-plan economic-event kinds must be non-empty strings.",
+      class = c("ledgr_invalid_pulse_plan", "ledgr_invalid_fold_execution")
+    )
+  }
+  unsupported <- setdiff(event_kinds, "FILL")
+  if (length(unsupported) > 0L) {
+    ledgr_compiled_spot_fifo_unavailable_error(paste0(
+      "Compiled spot-FIFO cannot execute pulse-plan economic event kind(s): ",
+      paste(unsupported, collapse = ", "),
+      ". Canonical R is required for every non-FILL economic event."
+    ))
+  }
+  invisible(TRUE)
+}
+
 ledgr_compiled_spot_fifo_pack_lots <- function(lot_state, instrument_ids) {
   state_idx <- unname(lot_state$instrument_index[instrument_ids])
   lot_counts <- vapply(state_idx, function(idx) {

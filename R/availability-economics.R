@@ -390,7 +390,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
       actionable_idx = as.integer(actionable_idx),
       fills = accepted,
       rejected = rejected,
-      expected_final_cash = affordability$final_cash
+      expected_final_cash = affordability$final_cash,
+      economic_event_kinds = if (length(accepted) > 0L) "FILL" else character()
     ),
     class = c("ledgr_pulse_plan", "list")
   )
