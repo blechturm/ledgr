@@ -1,7 +1,7 @@
 # Workstream 10 Closeout: Boundary And Sealed Facts
 
-**Status:** Agent-provisional; awaiting the independent Type 1 close review
-and maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-09-24 after the independent
+Type 1 close review and one focused correction round.
 
 **Authority:** cut 6, Workstream 10, LDG-2804 through LDG-2808 in
 `tickets.yml`, under the accepted equity-settlement synthesis.
@@ -171,8 +171,8 @@ O(instruments times pulses squared) path was found in the workstream delta.
 ## Governance And Declined Work
 
 The initial close review was the cut's third review invocation and found the
-canonical silent-drop gap. The requested focused re-review would be the fourth
-over fifteen tickets, ratio 0.267, below the 0.5 gate. The denominator is the
+canonical silent-drop gap. The focused re-review passed as the fourth over
+fifteen tickets, ratio 0.267, below the 0.5 gate. The denominator is the
 fifteen tickets present at cut; it does not grow as tickets are completed.
 
 Declined here:
@@ -188,5 +188,4 @@ Declined here:
 - vendor decoding or adjustment formulas in ledgr: the adapter boundary owns
   them.
 
-Maintainer acceptance may close Workstream 10 and open Workstream 11. This
-agent-provisional draft does neither.
+Maintainer acceptance closes Workstream 10 and opens Workstream 11.

@@ -52,7 +52,7 @@ cuts:
   - id: 6
     name: "Usable equity corporate actions"
     cut: "2026-09-24"
-    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24; workstream 10 is open. Grouping and review points passed the Type 2 half unchanged."
+    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24. Workstream 10 passed its close review after one bounded correction and was accepted on 2026-09-24; workstream 11 is open. Grouping and review points passed the Type 2 half unchanged."
     authority: "inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md, accepted 2026-09-24"
     source_table: "synthesis section 6, the fourteen gate cases; dev/spikes/settlement_quantity_primitive, settlement_axis_density and terminal_disposition_policy evidence; corrected Tier 2 census aggregates in ledgr-research"
     workstreams: [10, 11, 12]
@@ -160,14 +160,14 @@ workstreams:
   - id: 10
     name: "Boundary and sealed facts"
     cut: 6
-    status: "in_progress"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 10", reason: "The compiled refusal is the prerequisite every seed since v4 named and nobody owned; it lands first by ticket dependency so the first new economic event kind cannot be silently dropped. The fact family is architecture the synthesis bound after Type 2 review, so the workstream implements it. One review at close checks that the constructor and validator decode no vendor, that the fictional adapter is a witness rather than a demo, that the activation exclusion is defended by a detecting block rather than a comment, and that the double-counting refusal fires on a declared distribution-adjusted basis."}
   - id: 11
     name: "Policy, fidelity and cash"
     cut: 6
-    status: "open"
+    status: "in_progress"
     depends_on_workstream: 10
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 11", reason: "Entitlement and posting are the rules the second final review found the gate could not see violated. One review at close runs the table-driven cases against their ordering claims at R/fold-engine.R:458 and :506, checks the policy's identity behaviour in both directions (a changed value changes the hash; an omitted argument equals the explicit preset), and that not_supplied cannot be confused with none in the ordinary result. Type 1 because the public semantics were bound after Type 2 review of seed v7; the research default may not become the default before strict mode, identity, fidelity and ordinary reporting exist, which the dependency order enforces."}
@@ -880,7 +880,7 @@ tickets:
     dependencies: ["LDG-2804", "LDG-2805", "LDG-2806", "LDG-2807"]
     scope: "Governance synthesis D4. Closeout section for workstream 10: what shipped; gate cases 1 and 10 named with their registered blocks; the activation exclusion and its recorded reason; the spec-cut decisions on refusal-reason closure and adapter placement; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
-    evidence: ["boundary_sealed_facts_closeout.md is agent-provisional and records shipped scope, LTB-0030 as gate case 1, LTB-0026 as gate case 10 on both accounting arms, the activation exclusion, both spec-cut decisions, detector mutations, the final fast gate, interleaved boundary and cold-seal clocks, the seven-shape audit, the first close-review correction, the projected 4/15 focused-re-review ratio and declined work."]
+    evidence: ["boundary_sealed_facts_closeout.md records shipped scope, LTB-0030 as gate case 1, LTB-0026 as gate case 10 on both accounting arms, the activation exclusion, both spec-cut decisions, detector mutations, the final fast gate, interleaved boundary and cold-seal clocks, the seven-shape audit, the first close-review correction, the passing focused re-review, the 4/15 ratio and declined work. Maintainer accepted Workstream 10 on 2026-09-24."]
 
   # ------------------------------------------------ 11 Policy, fidelity and cash
   - id: "LDG-2809"

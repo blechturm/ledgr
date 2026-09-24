@@ -17,9 +17,9 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cut 6, usable equity corporate actions,
 is **open** under the synthesis accepted 2026-09-24: three serial
-workstreams, fifteen tickets, cut review accepted after two rounds and
-workstream 10 implemented with close review pending. Cuts are independent of
-one another; workstreams are serial within a cut.
+workstreams, fifteen tickets, cut review accepted after two rounds, Workstream
+10 accepted after one correction round, and Workstream 11 in progress. Cuts
+are independent of one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
 cut, and sequencing authority. Each cut names its own RFC authority there;
@@ -316,7 +316,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; workstream 10 close review pending)
+## Cut 6: Usable equity corporate actions (open; workstream 11 in progress)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
