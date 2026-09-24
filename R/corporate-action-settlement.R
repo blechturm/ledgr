@@ -32,27 +32,65 @@ ledgr_corporate_action_event_meta <- function(events) {
   })
 }
 
-ledgr_corporate_action_positions_before <- function(events,
-                                                      instrument_ids,
-                                                      boundary) {
-  out <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
-  if (is.null(events) || nrow(events) == 0L) return(out)
+ledgr_corporate_action_cumulative_at <- function(times,
+                                                 deltas,
+                                                 boundaries,
+                                                 include_equal) {
+  if (length(times) == 0L) return(rep(0, length(boundaries)))
+  grouped <- rowsum(
+    as.numeric(deltas),
+    group = as.character(as.numeric(times)),
+    reorder = TRUE
+  )
+  unique_times <- as.numeric(rownames(grouped))
+  cumulative <- cumsum(as.numeric(grouped[, 1L]))
+  idx <- findInterval(as.numeric(boundaries), unique_times)
+  if (!isTRUE(include_equal)) {
+    equal <- idx > 0L & unique_times[pmax(idx, 1L)] == as.numeric(boundaries)
+    idx[equal] <- idx[equal] - 1L
+  }
+  ifelse(idx > 0L, cumulative[pmax(idx, 1L)], 0)
+}
+
+ledgr_corporate_action_past_quantities <- function(events,
+                                                    rows,
+                                                    selected,
+                                                    instrument_ids) {
+  out <- rep(0, length(selected))
+  if (length(selected) == 0L || is.null(events) || nrow(events) == 0L) {
+    return(out)
+  }
   meta <- ledgr_corporate_action_event_meta(events)
   event_time <- as.POSIXct(events$ts_utc, tz = "UTC")
   opening <- vapply(meta, function(x) identical(x$source, "opening_position"), logical(1))
-  include <- (opening & event_time <= boundary) | (!opening & event_time < boundary)
-  if (!any(include)) return(out)
-  for (i in which(include)) {
-    instrument_id <- as.character(events$instrument_id[[i]])
-    if (!instrument_id %in% instrument_ids) next
-    delta <- as.numeric(meta[[i]]$position_delta %||% 0)
-    if (!is.finite(delta)) {
-      rlang::abort(
-        "Corporate-action entitlement encountered a non-finite position delta.",
-        class = c("ledgr_invalid_corporate_action_event", "ledgr_invalid_state")
+  delta <- vapply(meta, function(x) as.numeric(x$position_delta %||% 0), numeric(1))
+  if (any(!is.finite(delta))) {
+    rlang::abort(
+      "Corporate-action entitlement encountered a non-finite position delta.",
+      class = c("ledgr_invalid_corporate_action_event", "ledgr_invalid_state")
+    )
+  }
+  event_instrument <- as.character(events$instrument_id)
+  fact_instrument <- as.character(rows$parent_instrument_id[selected])
+  boundaries <- as.POSIXct(rows$entitlement_time[selected], tz = "UTC")
+  for (instrument_id in intersect(unique(fact_instrument), instrument_ids)) {
+    fact_idx <- which(fact_instrument == instrument_id)
+    event_idx <- which(event_instrument == instrument_id)
+    opening_idx <- event_idx[opening[event_idx]]
+    ordinary_idx <- event_idx[!opening[event_idx]]
+    out[fact_idx] <-
+      ledgr_corporate_action_cumulative_at(
+        event_time[opening_idx],
+        delta[opening_idx],
+        boundaries[fact_idx],
+        include_equal = TRUE
+      ) +
+      ledgr_corporate_action_cumulative_at(
+        event_time[ordinary_idx],
+        delta[ordinary_idx],
+        boundaries[fact_idx],
+        include_equal = FALSE
       )
-    }
-    out[[instrument_id]] <- out[[instrument_id]] + delta
   }
   out
 }
@@ -94,10 +132,13 @@ ledgr_corporate_action_plan <- function(rows,
     posting_idx <- posting_idx + 1L
     posting_idx[posting_idx > length(pulses_posix)] <- NA_integer_
   }
-  knowledge_idx <- vapply(knowledge_time, function(value) {
-    match_idx <- which(pulses_posix >= value)
-    if (length(match_idx) == 0L) NA_integer_ else as.integer(match_idx[[1L]])
-  }, integer(1))
+  pulse_number <- as.numeric(pulses_posix)
+  knowledge_number <- as.numeric(knowledge_time)
+  knowledge_idx <- findInterval(knowledge_number, pulse_number)
+  exact <- knowledge_idx > 0L &
+    pulse_number[pmax(knowledge_idx, 1L)] == knowledge_number
+  knowledge_idx <- knowledge_idx + as.integer(!exact)
+  knowledge_idx[knowledge_idx < 1L | knowledge_idx > length(pulses_posix)] <- NA_integer_
   due_idx <- pmax(posting_idx, knowledge_idx, na.rm = FALSE)
   late <- !is.na(posting_idx) & !is.na(knowledge_idx) & knowledge_idx > posting_idx
 
@@ -136,15 +177,14 @@ ledgr_corporate_action_plan <- function(rows,
       entitlement_idx <= as.integer(start_idx) &
       as.integer(start_idx) > 1L
   )
-  for (j in past) {
-    positions <- ledgr_corporate_action_positions_before(
+  if (length(past) > 0L) {
+    state$quantity[past] <- ledgr_corporate_action_past_quantities(
       existing_events,
-      instrument_ids,
-      entitlement_time[[j]]
+      rows,
+      past,
+      instrument_ids
     )
-    id <- as.character(rows$parent_instrument_id[[j]])
-    state$quantity[[j]] <- as.numeric(positions[[id]] %||% 0)
-    state$bound[[j]] <- TRUE
+    state$bound[past] <- TRUE
   }
 
   bind_boundary <- function(index, positions) {
