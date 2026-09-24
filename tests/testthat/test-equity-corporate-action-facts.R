@@ -133,6 +133,7 @@ testthat::test_that("[LTB-0027] corporate-action facts validate each sealed fiel
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move identity", {
   bars <- equity_corporate_action_bars()
   facts <- ledgr_facts(
@@ -257,6 +258,7 @@ testthat::test_that("[LTB-0029] corporate-action facts do not activate availabil
   testthat::expect_false(validated$active)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", {
   adapter_path <- testthat::test_path(
     "..", "..", "vignettes", "fictional-corporate-action-adapter.R"
@@ -322,6 +324,7 @@ testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", 
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0031] experiment construction enforces the declared price basis", {
   bars <- equity_corporate_action_bars()
   facts <- ledgr_facts(

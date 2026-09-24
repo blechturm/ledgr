@@ -857,12 +857,13 @@ tickets:
   - id: "LDG-2808"
     title: "Workstream 10 closeout"
     workstream: 10
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2804", "LDG-2805", "LDG-2806", "LDG-2807"]
     scope: "Governance synthesis D4. Closeout section for workstream 10: what shipped; gate cases 1 and 10 named with their registered blocks; the activation exclusion and its recorded reason; the spec-cut decisions on refusal-reason closure and adapter placement; review invocations against the 0.5 gate; declined items with reasons. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5", "each gate case the workstream owns is named with its registered block", "each spec-cut decision is recorded with its reason"]
+    evidence: ["boundary_sealed_facts_closeout.md is agent-provisional and records shipped scope, LTB-0030 as gate case 1, LTB-0026 as gate case 10, the activation exclusion, both spec-cut decisions, detector mutations, the final 87.940-second fast gate, interleaved boundary and cold-seal clocks, the seven-shape audit, the 2/15 pre-review ratio and declined work."]
 
   # ------------------------------------------------ 11 Policy, fidelity and cash
   - id: "LDG-2809"
