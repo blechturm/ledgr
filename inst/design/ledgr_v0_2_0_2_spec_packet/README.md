@@ -1,6 +1,7 @@
 # v0.2.0.2 Packet
 
-**Status:** Five cuts, four closed and one open. Cut 1, the test-suite cleanup, is closed: five
+**Status:** Six cuts, four closed and two open. Cut 1, the test-suite
+cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
 next version inherits it. Cut 2's accounting-core workstream is closed at
@@ -344,5 +345,18 @@ outside cut 6: every store open pays about 200 catalogue queries in
 `ledgr_create_schema()` and `ledgr_validate_schema()`, a shape-5 antipattern
 in production code that the test lanes exercise on nearly every block.
 Gutting it saved 12 percent of the fast lane and 33 percent of review. It is
-authority for one direct exact-parity ticket in a maintenance cut after
-workstream 10 closes; the maintainer cuts it then.
+cut as LDG-2819 in cut 7, workstream 13, which opens after workstream 10 is
+accepted.
+
+## Cut 7: Maintenance, schema ceremony (open; opens after workstream 10)
+
+Authority: `schema_ceremony_note.md` and the review obligations as amended
+2026-09-24. No RFC: one exact-parity chore on `ledgr_create_schema()` and
+`ledgr_validate_schema()`, every observable output unchanged. One ticket,
+LDG-2819, one workstream; the cut review is compressed into the close review
+so a one-ticket cut does not carry two invocations. LDG-2795 is the standing
+candidate to join.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 13 Schema ceremony | 2819 | one catalogue read per call compared in memory; a version-marker fast path for create on reopen only; a DBI-count detector; interleaved clocks on run open, db_init, fast and review lanes | the detector fails on a reintroduced per-table query; the five gut-failure blocks pass; the fast path is keyed on the stored version; outputs identical before and after |

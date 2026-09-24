@@ -1,7 +1,7 @@
 # Architecture Note: Schema Ceremony on Every Store Open
 
-**Status:** Pre-ticket note for a maintenance cut after workstream 10.
-Authority for a direct exact-parity ticket; not a design change.
+**Status:** Authority for LDG-2819, cut 7, workstream 13, cut 2026-09-24;
+opens after workstream 10 is accepted. Not a design change.
 **Author:** Claude. **Date:** 2026-09-24. **Route:** direct ticket, no RFC.
 **Measured at:** `ea22976`, in an isolated worktree, this session. Every
 number here is orientation for sizing the ticket; the ticket's own

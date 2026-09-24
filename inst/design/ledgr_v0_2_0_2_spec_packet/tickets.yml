@@ -59,6 +59,15 @@ cuts:
     closeout: "equity_corporate_actions_closeout.md"
     external_dependency: "The Sharadar producer specification, the distribution-population reconciliation and the corrected census live in ledgr-research and are not part of this cut's evidence. Real-data integration cannot precede an accepted upstream build; synthetic ledgr work does not wait for it."
     status: "open"
+  - id: 7
+    name: "Maintenance: schema ceremony"
+    cut: "2026-09-24"
+    cut_review: "compressed into the close review of workstream 13, as cut 5 was, so a one-ticket cut does not carry two invocations against the 0.5 gate; LDG-2795 is the standing candidate to join this cut by maintainer decision"
+    authority: "inst/design/ledgr_v0_2_0_2_spec_packet/schema_ceremony_note.md; review_obligations as amended 2026-09-24"
+    source_table: "schema_ceremony_note.md sections 1 and 3: traced query counts and the per-lane gut measurements at ea22976"
+    workstreams: [13]
+    closeout: "schema_ceremony_closeout.md"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -169,6 +178,14 @@ workstreams:
     depends_on_workstream: 11
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 12", reason: "DISPOSITION is the only new event type and the only path that consumes lots outside a fill. One review at close checks that the schema migration recreates existing stores without loss, that zero position means zero live lots rather than opposing ones, that the four-row composition witness reconciles numerically to the 3.5 formula rather than asserting field presence, that durable recovery and memory failure containment are asserted as the different guarantees they are, and that all fourteen gate cases are registered claims each naming the synthesis clause it protects. The cut closeout is reviewed with it."}
+
+  - id: 13
+    name: "Schema ceremony"
+    cut: 7
+    status: "open"
+    depends_on_workstream: 10
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 13", reason: "An exact-parity chore on the two schema functions every store open calls. One review at close walks the diff against the seven shapes per the amended obligations and accepts only with the interleaved clocks in hand. It checks that the DBI-count detector fails on a reintroduced per-table catalogue query, that the five blocks which failed under the gut pass unchanged, that the fast path is keyed on the stored schema version and never on a table's presence, and that every observable output is identical before and after. Opens after workstream 10 is accepted; the fast lane's headroom against its 90-second bound is why it is not deferred further."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -966,3 +983,14 @@ tickets:
     dependencies: ["LDG-2814", "LDG-2815", "LDG-2816", "LDG-2817"]
     scope: "Governance synthesis D4. Closeout for workstream 12 and for cut 6 as a whole: what shipped; the fourteen cases and their blocks; review invocations against the 0.5 gate across the three workstreams; declined items with reasons; the release claims and non-claims from synthesis section 11 restated verbatim; the upstream private gate named as an external dependency outside this cut's evidence; the pilot counters rfc_cycle.md requires (findings by mode and whether each changed an outcome, reruns and rejected records, disputed classifications); and a release-facing documentation check over README, NEWS and both new articles, so the boundary is defended on every surface a user reads rather than restated in one file. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5 for the cut", "the release claims and non-claims are restated verbatim from synthesis section 11", "a registered check over README, NEWS and both new articles fails if any prohibited claim (corporate-action completeness, broker-exact settlement, net cash, tax correctness, exact recipient exposure) appears without its stated limitation, and passes on the shipped text", "the upstream gate is named as not part of this cut's evidence", "the pilot counters are stated"]
+
+  # ------------------------------------------------ 13 Schema ceremony
+  - id: "LDG-2819"
+    title: "Read the catalogue once in schema create and validate"
+    workstream: 13
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "schema_ceremony_note.md sections 5 through 7. ledgr_validate_schema() walks information_schema once per required table for existence, columns, primary key and unique constraints, 105 queries and 0.33 s on a 31-table schema; ledgr_create_schema() queries existence and columns per table before every CREATE IF NOT EXISTS, 92 queries and 32 DDL executes even when nothing is missing. Both run on every ledgr_run() open (R/backtest-runner.R:615-616 at ea22976) and every ledgr_db_init(). Two output-preserving changes. First, fetch the schema's tables, columns and constraints from information_schema once per call into R frames and have the per-table helpers filter those frames; every loop and every check stays, so a dropped table or column is still detected. Second, a fast path for create on reopen only: when ledgr_schema_metadata holds the current experiment_store_schema_version, create returns after that one read. Validation keeps running in full because the marker cannot certify that nothing was dropped afterwards. The gut in the note showed that keying the skip on a table's presence breaks migration of an older store; the key is the stored version and nothing else. No caller, schema definition, migration rule or marker semantics changes. Priority P0 because the fast lane sits within four seconds of its 90-second bound and workstream 10 has added blocks to it."
+    acceptance: ["a DBI-call trace shows ledgr_validate_schema issuing at most four catalogue queries and zero DDL executes on a complete schema, and ledgr_create_schema on a store whose stored schema version equals the current one issuing at most two catalogue queries and zero DDL executes; a registered detector that counts DBI calls fails if a per-table catalogue query returns inside either loop", "every existing schema, validation and migration block passes unchanged, including the three that drop a table or column and expect rejection and the two that migrate an older store, which are the five that failed under the gut recorded in schema_ceremony_note.md section 5", "the fast path never fires when the marker is absent or differs: a store one schema version behind migrates fully, with every added table and column present afterwards, and a store with the marker removed is validated in full", "before and after on the same fixtures: identical information_schema listings for a fresh store and a migrated store, identical error classes and messages for a dropped table and a dropped column, the pinned snapshot hash unchanged (LTB-0018), and identical run outputs on one registered run", "interleaved before-and-after clocks on ledgr_run open, ledgr_db_init, the fast lane and the review lane, three runs each with medians reported and named cold or warm per spike_protocol.md section 10; the fast lane median is stated against the 90-second bound", "a source guard fails if the fast path tests a table's presence rather than the stored schema version, or if a caller, the schema definition, a migration rule or the marker's write site changes"]
