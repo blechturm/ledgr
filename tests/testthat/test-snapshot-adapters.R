@@ -180,30 +180,53 @@ test_that("direct snapshot writes preserve high-level snapshot hash identity", {
 })
 
 # ledgr-test-profile: review
-test_that("ledgr_snapshot_from_yahoo works offline with CSV fixture", {
+test_that("[LTB-0038] Yahoo snapshots declare their adjusted price basis", {
   skip_if_not_installed("quantmod")
-
-  fixture_path <- system.file("testdata", "yahoo_mock.csv", package = "ledgr")
-  if (!nzchar(fixture_path)) {
-    skip("Yahoo mock fixture not found.")
-  }
-
-  db_path <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(db_path), add = TRUE)
-
+  skip_if_not_installed("xts")
+  dates <- as.Date("2020-01-01") + 0:4
+  yahoo_rows <- xts::xts(
+    cbind(
+      yahoo_mock.Open = 100 + 0:4,
+      yahoo_mock.High = 101 + 0:4,
+      yahoo_mock.Low = 99 + 0:4,
+      yahoo_mock.Close = 100 + 0:4,
+      yahoo_mock.Volume = rep(1000, 5L),
+      yahoo_mock.Adjusted = 100 + 0:4
+    ),
+    order.by = dates
+  )
+  observed <- new.env(parent = emptyenv())
+  observed$calls <- 0L
+  testthat::local_mocked_bindings(
+    getSymbols = function(...) {
+      observed$calls <- observed$calls + 1L
+      yahoo_rows
+    },
+    .package = "quantmod"
+  )
   snap <- ledgr_snapshot_from_yahoo(
     symbols = "yahoo_mock",
     from = "2020-01-01",
     to = "2020-01-05",
-    db_path = db_path,
-    src = "csv",
-    dir = dirname(fixture_path)
+    db_path = tempfile(fileext = ".duckdb")
   )
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
-
   expect_s3_class(snap, "ledgr_snapshot")
   expect_equal(snap$metadata$n_bars, 5L)
   expect_equal(snap$metadata$n_instruments, 1L)
+  expect_identical(snap$metadata$price_basis, "split_adjusted")
+  expect_identical(observed$calls, 1L)
+
+  undeclared <- ledgr_snapshot_from_yahoo(
+    symbols = "yahoo_mock",
+    from = "2020-01-01",
+    to = "2020-01-05",
+    db_path = tempfile(fileext = ".duckdb"),
+    price_basis = NULL
+  )
+  on.exit(ledgr_snapshot_close(undeclared), add = TRUE)
+  expect_null(undeclared$metadata$price_basis)
+  expect_identical(observed$calls, 2L)
 })
 
 # ledgr-test-profile: review

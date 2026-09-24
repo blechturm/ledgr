@@ -37,12 +37,15 @@ ledgr_corporate_action_cumulative_at <- function(times,
                                                  boundaries,
                                                  include_equal) {
   if (length(times) == 0L) return(rep(0, length(boundaries)))
+  time_number <- as.numeric(times)
+  time_order <- order(time_number)
+  time_number <- time_number[time_order]
+  unique_times <- unique(time_number)
   grouped <- rowsum(
-    as.numeric(deltas),
-    group = as.character(as.numeric(times)),
-    reorder = TRUE
+    as.numeric(deltas)[time_order],
+    group = match(time_number, unique_times),
+    reorder = FALSE
   )
-  unique_times <- as.numeric(rownames(grouped))
   cumulative <- cumsum(as.numeric(grouped[, 1L]))
   idx <- findInterval(as.numeric(boundaries), unique_times)
   if (!isTRUE(include_equal)) {
@@ -154,6 +157,8 @@ ledgr_corporate_action_plan <- function(rows,
   state$settings <- settings
   state$identity <- policy_identity
   state$instrument_ids <- instrument_ids
+  state$entitlement_by_pulse <- split(seq_len(nrow(rows)), entitlement_idx)
+  state$due_by_pulse <- split(seq_len(nrow(rows)), due_idx)
 
   meta <- ledgr_corporate_action_event_meta(existing_events)
   posted_fact_ids <- vapply(meta, function(x) {
@@ -178,21 +183,25 @@ ledgr_corporate_action_plan <- function(rows,
       as.integer(start_idx) > 1L
   )
   if (length(past) > 0L) {
-    state$quantity[past] <- ledgr_corporate_action_past_quantities(
+    past_quantity <- ledgr_corporate_action_past_quantities(
       existing_events,
       rows,
       past,
       instrument_ids
     )
-    state$bound[past] <- TRUE
+    state$quantity <- replace(state$quantity, past, past_quantity)
+    state$bound <- replace(state$bound, past, TRUE)
   }
 
   bind_boundary <- function(index, positions) {
-    selected <- which(!state$bound & state$entitlement_idx == as.integer(index))
-    for (j in selected) {
-      id <- as.character(state$rows$parent_instrument_id[[j]])
-      state$quantity[[j]] <- as.numeric(positions[[id]] %||% 0)
-      state$bound[[j]] <- TRUE
+    selected <- state$entitlement_by_pulse[[as.character(index)]] %||% integer()
+    selected <- selected[!state$bound[selected]]
+    if (length(selected) > 0L) {
+      ids <- as.character(state$rows$parent_instrument_id[selected])
+      quantity <- as.numeric(positions[match(ids, names(positions))])
+      quantity[is.na(quantity)] <- 0
+      state$quantity <- replace(state$quantity, selected, quantity)
+      state$bound <- replace(state$bound, selected, TRUE)
     }
     invisible(TRUE)
   }
@@ -201,10 +210,8 @@ ledgr_corporate_action_plan <- function(rows,
 
   post <- function(index, run_id, event_seq, output_handler, state_value,
                    marks = NULL) {
-    selected <- which(
-      !state$posted & state$bound & !is.na(state$due_idx) &
-        state$due_idx == as.integer(index)
-    )
+    selected <- state$due_by_pulse[[as.character(index)]] %||% integer()
+    selected <- selected[!state$posted[selected] & state$bound[selected]]
     if (length(selected) == 0L) {
       return(list(state = state_value, next_event_seq = as.integer(event_seq)))
     }
@@ -218,51 +225,49 @@ ledgr_corporate_action_plan <- function(rows,
       )
     }
     if (length(held) == 0L) {
-      state$posted[selected] <- TRUE
+      state$posted <- replace(state$posted, selected, TRUE)
       return(list(state = state_value, next_event_seq = as.integer(event_seq)))
     }
-    rows_out <- vector("list", length(held))
-    cash_delta <- numeric(length(held))
-    for (k in seq_along(held)) {
-      j <- held[[k]]
-      source_row <- state$rows[j, , drop = FALSE]
-      cash_delta[[k]] <- state$quantity[[j]] *
-        as.numeric(source_row$gross_cash_per_parent_unit[[1L]])
-      id <- as.character(source_row$parent_instrument_id[[1L]])
-      mark <- as.numeric(marks[[id]] %||% NA_real_)
-      meta_value <- list(
+    source_rows <- state$rows[held, , drop = FALSE]
+    ids <- as.character(source_rows$parent_instrument_id)
+    quantity <- state$quantity[held]
+    cash_delta <- quantity * as.numeric(source_rows$gross_cash_per_parent_unit)
+    mark <- rep(NA_real_, length(held))
+    if (!is.null(marks)) mark <- as.numeric(marks[match(ids, names(marks))])
+    affected_exposure <- ifelse(is.finite(mark), abs(quantity * mark), 0)
+    meta_json <- vapply(seq_along(held), function(k) {
+      canonical_json(list(
         source = "corporate_action_cash",
-        source_fact_id = as.character(source_row$fact_id[[1L]]),
+        source_fact_id = as.character(source_rows$fact_id[[k]]),
         cash_delta = cash_delta[[k]],
         position_delta = 0,
-        entitled_quantity = state$quantity[[j]],
-        gross_cash_per_parent_unit = as.numeric(source_row$gross_cash_per_parent_unit[[1L]]),
+        entitled_quantity = quantity[[k]],
+        gross_cash_per_parent_unit = as.numeric(source_rows$gross_cash_per_parent_unit[[k]]),
         amount_policy_id = state$identity$cash_amount,
         posting_policy_id = state$identity$cash_posting,
-        late_arrival = isTRUE(state$late[[j]]),
-        affected_marked_exposure = if (is.finite(mark)) abs(state$quantity[[j]] * mark) else 0
-      )
-      seq_value <- as.integer(event_seq) + k - 1L
-      rows_out[[k]] <- data.frame(
-        event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
-        run_id = run_id,
-        ts_utc = pulses_posix[[index]],
-        event_type = "CASHFLOW",
-        instrument_id = id,
-        side = NA_character_,
-        qty = NA_real_,
-        price = NA_real_,
-        fee = 0,
-        meta_json = canonical_json(meta_value),
-        event_seq = seq_value,
-        stringsAsFactors = FALSE
-      )
-    }
-    event_rows <- do.call(rbind, rows_out)
+        late_arrival = isTRUE(state$late[[held[[k]]]]),
+        affected_marked_exposure = affected_exposure[[k]]
+      ))
+    }, character(1))
+    seq_value <- as.integer(event_seq) + seq_along(held) - 1L
+    event_rows <- data.frame(
+      event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
+      run_id = rep(run_id, length(held)),
+      ts_utc = rep(pulses_posix[[index]], length(held)),
+      event_type = rep("CASHFLOW", length(held)),
+      instrument_id = ids,
+      side = rep(NA_character_, length(held)),
+      qty = rep(NA_real_, length(held)),
+      price = rep(NA_real_, length(held)),
+      fee = rep(0, length(held)),
+      meta_json = meta_json,
+      event_seq = seq_value,
+      stringsAsFactors = FALSE
+    )
     ledgr_prepare_accounting_events(event_rows, instrument_ids)
     output_handler$append_event_rows(event_rows)
     state_value$cash <- as.numeric(state_value$cash) + sum(cash_delta)
-    state$posted[selected] <- TRUE
+    state$posted <- replace(state$posted, selected, TRUE)
     list(
       state = state_value,
       next_event_seq = as.integer(event_seq) + nrow(event_rows)

@@ -703,7 +703,8 @@ ledgr_yahoo_extract_bars <- function(x, symbol) {
 #' @param to End date (character, Date, or POSIXct).
 #' @param db_path Optional DuckDB file path (default: tempfile).
 #' @param snapshot_id Optional snapshot id. When `NULL`, ledgr generates one.
-#' @param price_basis Optional declaration of the economic basis of the bars.
+#' @param price_basis Declaration of the economic basis of the bars. Yahoo's
+#'   adjusted series defaults to `"split_adjusted"`; callers may override it.
 #'   See [ledgr_snapshot_from_df()].
 #' @param ... Additional arguments passed to `quantmod::getSymbols()`.
 #' @return A sealed `ledgr_snapshot` object.
@@ -732,7 +733,7 @@ ledgr_snapshot_from_yahoo <- function(symbols,
                                       to,
                                       db_path = NULL,
                                       snapshot_id = NULL,
-                                      price_basis = NULL,
+                                      price_basis = "split_adjusted",
                                       ...) {
   if (!requireNamespace("quantmod", quietly = TRUE)) {
     rlang::abort(

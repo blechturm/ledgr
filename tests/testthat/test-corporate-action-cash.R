@@ -141,6 +141,21 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
     ),
     class = "ledgr_duplicate_corporate_action_event"
   )
+
+  straddling_times <- as.POSIXct(
+    c(999999999, 1000000000, 1000000001),
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_cumulative_at(
+      straddling_times,
+      c(1, 2, 4),
+      straddling_times,
+      include_equal = TRUE
+    ),
+    c(1, 3, 7)
+  )
 })
 
 # ledgr-test-profile: review
@@ -254,4 +269,124 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     params = list(reopened$run_id)
   )$n[[1L]]
   testthat::expect_identical(as.integer(posted_count), 1L)
+
+  boundary_strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(ctx$ts_utc, params$decision_ts)) {
+      target[["AAA"]] <- params$target
+    }
+    list(targets = target, state_update = list(observed_cash = ctx$cash))
+  }
+  boundary_experiment <- function(opening_quantity, snapshot_value = snapshot) {
+    opening <- if (opening_quantity == 0) {
+      ledgr_opening(cash = 1000)
+    } else {
+      ledgr_opening(
+        cash = 1000,
+        positions = c(AAA = opening_quantity),
+        cost_basis = c(AAA = 100)
+      )
+    }
+    ledgr_experiment(
+      snapshot_value,
+      boundary_strategy,
+      opening = opening,
+      cost_model = ledgr_cost_zero()
+    )
+  }
+  decision_params <- function(target) list(
+    decision_ts = ledgr:::ledgr_normalize_ts_utc(bars$ts_utc[[1L]]),
+    target = target
+  )
+
+  seller <- ledgr_run(
+    boundary_experiment(4),
+    params = decision_params(0),
+    run_id = "corporate-action-ex-date-seller"
+  )
+  withr::defer(close(seller))
+  buyer <- ledgr_run(
+    boundary_experiment(0),
+    params = decision_params(4),
+    run_id = "corporate-action-ex-date-buyer"
+  )
+  withr::defer(close(buyer))
+  seller_fills <- ledgr_run_fills(seller)
+  buyer_fills <- ledgr_run_fills(buyer)
+  testthat::expect_identical(seller_fills$side, "SELL")
+  testthat::expect_identical(buyer_fills$side, "BUY")
+  testthat::expect_identical(seller_fills$ts_utc, bars$ts_utc[[2L]])
+  testthat::expect_identical(buyer_fills$ts_utc, bars$ts_utc[[2L]])
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_summary(seller)$gross_cash_posted,
+    5
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_summary(buyer)$gross_cash_posted,
+    0
+  )
+
+  late_rows <- corporate_action_cash_rows(
+    entitlement = bars$ts_utc[[2L]],
+    knowledge = bars$ts_utc[[3L]],
+    effective = bars$ts_utc[[4L]]
+  )
+  late_snapshot <- ledgr_snapshot_from_df(
+    bars,
+    facts = ledgr_facts(ledgr_facts_equity_corporate_actions(late_rows)),
+    price_basis = "split_adjusted"
+  )
+  withr::defer(ledgr_snapshot_close(late_snapshot))
+  late_config <- ledgr_config(
+    snapshot = late_snapshot,
+    universe = "AAA",
+    strategy = boundary_strategy,
+    strategy_params = decision_params(0),
+    backtest = ledgr_backtest_config(
+      start = late_snapshot$metadata$start_date,
+      end = late_snapshot$metadata$end_date,
+      initial_cash = 1000
+    ),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 4),
+      cost_basis = c(AAA = 100)
+    ),
+    cost_model_hash = ledgr:::ledgr_cost_model_hash(ledgr_cost_zero()),
+    cost_plan_json = ledgr:::ledgr_cost_plan_json(ledgr_cost_zero()),
+    db_path = late_snapshot$db_path
+  )
+  partial <- ledgr:::ledgr_run_fold(
+    late_config,
+    run_id = "corporate-action-ex-date-resume",
+    control = list(max_pulses = 2L)
+  )
+  if (inherits(partial, "ledgr_backtest")) close(partial)
+  ledgr_run_config(
+    late_config,
+    run_id = "corporate-action-ex-date-resume"
+  )
+  resumed_boundary <- ledgr_run_open(
+    late_snapshot,
+    "corporate-action-ex-date-resume"
+  )
+  withr::defer(close(resumed_boundary))
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_summary(resumed_boundary)$gross_cash_posted,
+    5
+  )
+  testthat::expect_identical(
+    ledgr_run_fills(resumed_boundary)$ts_utc,
+    bars$ts_utc[[2L]]
+  )
+
+  testthat::expect_error(
+    ledgr_sweep(
+      experiment,
+      ledgr_param_grid(candidate = list()),
+      stop_on_error = TRUE,
+      compiled_accounting_model = "spot_fifo"
+    ),
+    class = "ledgr_compiled_spot_fifo_unavailable"
+  )
 })

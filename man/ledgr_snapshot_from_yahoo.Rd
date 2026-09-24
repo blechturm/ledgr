@@ -10,7 +10,7 @@ ledgr_snapshot_from_yahoo(
   to,
   db_path = NULL,
   snapshot_id = NULL,
-  price_basis = NULL,
+  price_basis = "split_adjusted",
   ...
 )
 }
@@ -25,7 +25,8 @@ ledgr_snapshot_from_yahoo(
 
 \item{snapshot_id}{Optional snapshot id. When \code{NULL}, ledgr generates one.}
 
-\item{price_basis}{Optional declaration of the economic basis of the bars.
+\item{price_basis}{Declaration of the economic basis of the bars. Yahoo's
+adjusted series defaults to \code{"split_adjusted"}; callers may override it.
 See \code{ledgr_snapshot_from_df()}.}
 
 \item{...}{Additional arguments passed to \code{quantmod::getSymbols()}.}
