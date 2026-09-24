@@ -338,3 +338,11 @@ an accepted upstream build. The cut review (`cut_review_6.md`) returned
 the grouping and review points passed unchanged. Planned review
 invocations: the cut review, its focused re-review and three close reviews
 over fifteen tickets, 0.33 against the 0.5 gate.
+
+**Pre-ticket note.** `schema_ceremony_note.md` records a measured finding
+outside cut 6: every store open pays about 200 catalogue queries in
+`ledgr_create_schema()` and `ledgr_validate_schema()`, a shape-5 antipattern
+in production code that the test lanes exercise on nearly every block.
+Gutting it saved 12 percent of the fast lane and 33 percent of review. It is
+authority for one direct exact-parity ticket in a maintenance cut after
+workstream 10 closes; the maintainer cuts it then.
