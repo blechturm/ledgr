@@ -23,7 +23,8 @@ ledgr_backtest(
   db_path = NULL,
   control = list(),
   run_id = NULL,
-  data = NULL
+  data = NULL,
+  corporate_action_policy = ledgr_corporate_actions_research()
 )
 }
 \arguments{
@@ -56,6 +57,9 @@ for explicit zero-cost execution.}
 
 \item{risk_chain}{Target-risk chain object. Defaults to
 \code{ledgr_risk_none()} for explicit no-risk execution.}
+
+\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
+to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
 
 \item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
 with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus

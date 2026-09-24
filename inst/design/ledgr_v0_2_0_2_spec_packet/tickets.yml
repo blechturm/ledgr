@@ -886,12 +886,13 @@ tickets:
   - id: "LDG-2809"
     title: "The corporate_action_policy object and presets"
     workstream: 11
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Synthesis 3.3. A constructor-built policy object joining the six ledgr_experiment() already takes. Omission resolves to the versioned research preset: gross, effective_close, last_permissible, report_only. ledgr_corporate_actions_strict() sets every choice to refuse. Values are drawn from closed sets; arbitrary callbacks are not accepted. The resolved policy including defaults enters experiment and run identity, so a historical run never acquires a default implicitly. Each value carries a versioned identifier bound to its scope as well as its behaviour (the synthesis-only decision in 3.3); the identifier is what is hashed, the user-facing spelling is a short word. Argument and preset spellings are promoted to spec-cut; this ticket decides and records them."
     acceptance: ["two experiments differing only in one policy value have different config hashes", "an experiment with the argument omitted has the same identity as one passing the research preset explicitly", "a run store written before the policy existed does not acquire it on reopen", "an out-of-set value or a callback is rejected at construction with a named class", "the strict preset resolves every choice to refuse", "the hashed identifier is the versioned form, not the user-facing word"]
+    evidence: ["LTB-0032 binds the public spellings ledgr_corporate_actions(), ledgr_corporate_actions_research() and ledgr_corporate_actions_strict(), the research values gross/effective_close/last_permissible/report_only, closed-set rejection, versioned identifiers and four independent one-axis hash mutations. LTB-0033 removes corporate_actions from a real persisted run, recomputes its historical config hash and proves public reopen and reread do not inject the contemporary default. Temporarily changing the research cash default to refuse made LTB-0032 fail in two assertions. The exact-tree fast profile passed 442/442 in 88.440 seconds and its ordinary gate passed from C:/Users/maxth/ledgr-research/.tmp/ws11/ldg-2809-fast-r1."]
 
   - id: "LDG-2810"
     title: "Headline fidelity and the ordinary summary"

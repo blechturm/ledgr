@@ -91,7 +91,8 @@ ledgr_config <- function(snapshot,
                           compiled_accounting_model = NULL,
                           availability = NULL,
                           universe_rule = NULL,
-                          valuation_policy = NULL) {
+                          valuation_policy = NULL,
+                          corporate_action_policy = ledgr_corporate_actions_research()) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -130,6 +131,7 @@ ledgr_config <- function(snapshot,
   }
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
+  ledgr_validate_corporate_action_policy(corporate_action_policy)
   price_basis <- ledgr_snapshot_execution_price_basis(snapshot)
 
   if (!is.null(control$execution_mode)) {
@@ -267,6 +269,9 @@ ledgr_config <- function(snapshot,
       snapshot_id = snapshot$snapshot_id,
       snapshot_db_path = snapshot$db_path,
       price_basis = price_basis
+    ),
+    corporate_actions = ledgr_corporate_action_policy_identity(
+      corporate_action_policy
     )
   )
 

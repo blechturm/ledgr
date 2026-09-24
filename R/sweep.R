@@ -1131,7 +1131,9 @@ ledgr_sweep_exp_payload <- function(exp) {
     risk_plan_json = exp$risk_plan_json %||% ledgr_risk_plan_json(risk_chain),
     availability = exp$availability %||% NULL,
     universe_rule = exp$universe_rule %||% NULL,
-    valuation_policy = exp$valuation_policy %||% NULL
+    valuation_policy = exp$valuation_policy %||% NULL,
+    corporate_action_policy = exp$corporate_action_policy %||%
+      ledgr_corporate_actions_research()
   )
 }
 

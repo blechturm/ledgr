@@ -157,6 +157,8 @@ print.ledgr_opening <- function(x, ...) {
 #'   instruments in the snapshot, or a rule from [ledgr_universe_members()].
 #' @param valuation_policy Optional policy from [ledgr_valuation_stale()]. It is
 #'   required whenever availability facts or a membership rule are active.
+#' @param corporate_action_policy Corporate-action settlement policy. Defaults
+#'   to [ledgr_corporate_actions_research()].
 #' @param timing_model Timing model object. Defaults to
 #'   `ledgr_timing_next_open()`. The timing model proposes fills; cost models
 #'   resolve fill prices and explicit fees.
@@ -222,7 +224,8 @@ ledgr_experiment <- function(snapshot,
                              persist_features = TRUE,
                              execution_mode = "audit_log",
                              metric_context = NULL,
-                             risk_free_rate = NULL) {
+                             risk_free_rate = NULL,
+                             corporate_action_policy = ledgr_corporate_actions_research()) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_experiment")
   }
@@ -238,6 +241,7 @@ ledgr_experiment <- function(snapshot,
     ledgr_metric_context_resolve(metric_context)
   }
   price_basis <- ledgr_experiment_validate_snapshot(snapshot)
+  ledgr_validate_corporate_action_policy(corporate_action_policy)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
   availability <- ledgr_availability_validate_experiment(
@@ -308,6 +312,7 @@ ledgr_experiment <- function(snapshot,
       persist_features = isTRUE(persist_features),
       execution_mode = execution_mode,
       metric_context = metric_context,
+      corporate_action_policy = corporate_action_policy,
       data_identity = list(price_basis = price_basis)
     )
   if (isTRUE(availability$active)) {

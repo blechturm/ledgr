@@ -281,7 +281,8 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     compiled_accounting_model = NULL,
     availability = exp$availability,
     universe_rule = exp$universe_rule,
-    valuation_policy = exp$valuation_policy
+    valuation_policy = exp$valuation_policy,
+    corporate_action_policy = exp$corporate_action_policy
   )
 }
 

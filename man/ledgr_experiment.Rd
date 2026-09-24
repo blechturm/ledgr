@@ -18,7 +18,8 @@ ledgr_experiment(
   persist_features = TRUE,
   execution_mode = "audit_log",
   metric_context = NULL,
-  risk_free_rate = NULL
+  risk_free_rate = NULL,
+  corporate_action_policy = ledgr_corporate_actions_research()
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ instruments in the snapshot, or a rule from \code{\link[=ledgr_universe_members]
 
 \item{valuation_policy}{Optional policy from \code{\link[=ledgr_valuation_stale]{ledgr_valuation_stale()}}. It is
 required whenever availability facts or a membership rule are active.}
+
+\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
+to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
 
 \item{timing_model}{Timing model object. Defaults to
 \code{ledgr_timing_next_open()}. The timing model proposes fills; cost models

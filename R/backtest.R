@@ -21,6 +21,8 @@
 #'   for explicit zero-cost execution.
 #' @param risk_chain Target-risk chain object. Defaults to
 #'   `ledgr_risk_none()` for explicit no-risk execution.
+#' @param corporate_action_policy Corporate-action settlement policy. Defaults
+#'   to [ledgr_corporate_actions_research()].
 #' @param fill_model Legacy v0.1.8 fill model argument. Supplying it now fails
 #'   with `ledgr_legacy_fill_model_shape`; use `timing_model` plus
 #'   `cost_model`.
@@ -103,7 +105,8 @@ ledgr_backtest <- function(snapshot = NULL,
                            db_path = NULL,
                            control = list(),
                            run_id = NULL,
-                           data = NULL) {
+                           data = NULL,
+                           corporate_action_policy = ledgr_corporate_actions_research()) {
   ledgr_set_preflight_start(ledgr_time_now())
   if (!is.null(snapshot) && !is.null(data)) {
     rlang::abort(
@@ -198,6 +201,7 @@ ledgr_backtest <- function(snapshot = NULL,
   timing_model <- ledgr_experiment_normalize_timing_model(timing_model)
   cost_model <- ledgr_experiment_normalize_cost_model(cost_model)
   risk_chain <- ledgr_experiment_normalize_risk_chain(risk_chain)
+  ledgr_validate_corporate_action_policy(corporate_action_policy)
   cost_model_hash <- ledgr_cost_model_hash(cost_model)
   cost_plan_json <- ledgr_cost_plan_json(cost_model)
   risk_chain_hash <- ledgr_risk_chain_hash(risk_chain)
@@ -250,7 +254,8 @@ ledgr_backtest <- function(snapshot = NULL,
     risk_plan_json = risk_plan_json,
     db_path = db_path,
     control = control,
-    run_id = run_id
+    run_id = run_id,
+    corporate_action_policy = corporate_action_policy
   )
 
   result <- ledgr_run_config(config)
@@ -469,7 +474,8 @@ ledgr_run_experiment <- function(exp,
     compiled_accounting_model = compiled_accounting_model,
     availability = exp$availability,
     universe_rule = exp$universe_rule,
-    valuation_policy = exp$valuation_policy
+    valuation_policy = exp$valuation_policy,
+    corporate_action_policy = exp$corporate_action_policy
   )
 
   result <- ledgr_run_config(config, metric_context = exp$metric_context)

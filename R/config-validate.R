@@ -79,6 +79,12 @@ validate_ledgr_config <- function(config) {
   }
   ledgr_public_compiled_accounting_model(config$engine$compiled_accounting_model)
 
+  # Historical configs predate corporate-action policy identity. They remain
+  # valid and must not acquire a contemporary default when reopened.
+  if (!is.null(config$corporate_actions)) {
+    ledgr_validate_corporate_action_policy_identity(config$corporate_actions)
+  }
+
   if (!is.null(config$availability)) {
     availability <- config$availability
     allowed_families <- c("membership", "sessions", "trading_status", "lifetime")
