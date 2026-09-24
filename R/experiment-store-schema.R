@@ -28,7 +28,7 @@ ledgr_experiment_store_columns <- function(con, table_name) {
   )$column_name
 }
 
-ledgr_experiment_store_has_artifacts <- function(con) {
+ledgr_experiment_store_has_artifacts <- function(con, table_names = NULL) {
   known_tables <- c(
     "runs",
     "ledger_events",
@@ -60,6 +60,9 @@ ledgr_experiment_store_has_artifacts <- function(con) {
     "walk_forward_scores",
     "ledgr_schema_metadata"
   )
+  if (!is.null(table_names)) {
+    return(any(known_tables %in% table_names))
+  }
   any(vapply(known_tables, function(table_name) ledgr_experiment_store_table_exists(con, table_name), logical(1)))
 }
 
@@ -475,8 +478,13 @@ ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
   invisible(TRUE)
 }
 
-ledgr_experiment_store_version <- function(con) {
-  if (!ledgr_experiment_store_table_exists(con, "ledgr_schema_metadata")) {
+ledgr_experiment_store_version <- function(con, table_names = NULL) {
+  has_metadata <- if (is.null(table_names)) {
+    ledgr_experiment_store_table_exists(con, "ledgr_schema_metadata")
+  } else {
+    "ledgr_schema_metadata" %in% table_names
+  }
+  if (!has_metadata) {
     return(0L)
   }
   row <- DBI::dbGetQuery(
@@ -500,8 +508,8 @@ ledgr_experiment_store_version <- function(con) {
   version
 }
 
-ledgr_experiment_store_assert_supported <- function(con) {
-  version <- ledgr_experiment_store_version(con)
+ledgr_experiment_store_assert_supported <- function(con, table_names = NULL) {
+  version <- ledgr_experiment_store_version(con, table_names = table_names)
   if (version > ledgr_experiment_store_schema_version) {
     rlang::abort(
       sprintf(
@@ -515,8 +523,14 @@ ledgr_experiment_store_assert_supported <- function(con) {
   invisible(version)
 }
 
-ledgr_experiment_store_check_schema <- function(con, write = FALSE, inform = FALSE) {
-  version <- ledgr_experiment_store_assert_supported(con)
+ledgr_experiment_store_check_schema <- function(con,
+                                                write = FALSE,
+                                                inform = FALSE,
+                                                table_names = NULL) {
+  version <- ledgr_experiment_store_assert_supported(
+    con,
+    table_names = table_names
+  )
   if (!isTRUE(write)) {
     return(invisible(list(
       schema_version = version,

@@ -15,10 +15,21 @@ ledgr_create_schema <- function(con) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
 
-  ledgr_experiment_store_check_schema(con, write = FALSE)
-  existing_experiment_store <- ledgr_experiment_store_has_artifacts(con)
+  schema_state <- ledgr_experiment_store_check_schema(con, write = FALSE)
+  if (identical(
+    as.integer(schema_state$schema_version),
+    as.integer(ledgr_experiment_store_schema_version)
+  )) {
+    return(invisible(TRUE))
+  }
 
   schema <- "main"
+  catalogue <- ledgr_schema_catalogue(con, schema = schema)
+  existing_experiment_store <- ledgr_experiment_store_has_artifacts(
+    con,
+    table_names = catalogue$tables$table_name
+  )
+  current_tables <- character()
 
   normalize_type <- function(x) {
     normalize_one <- function(one) {
@@ -35,27 +46,25 @@ ledgr_create_schema <- function(con) {
   }
 
   table_exists <- function(table_name) {
-    q <- "
-      SELECT COUNT(*) AS n
-      FROM information_schema.tables
-      WHERE table_schema = ?
-        AND table_name = ?
-    "
-    DBI::dbGetQuery(con, q, params = list(schema, table_name))$n[[1]] > 0
+    table_name %in% current_tables ||
+      ledgr_schema_catalogue_table_exists(catalogue, table_name)
   }
 
   get_columns <- function(table_name) {
-    q <- "
-      SELECT column_name, data_type, is_nullable
-      FROM information_schema.columns
-      WHERE table_schema = ?
-        AND table_name = ?
-      ORDER BY ordinal_position
-    "
-    DBI::dbGetQuery(con, q, params = list(schema, table_name))
+    ledgr_schema_catalogue_columns(catalogue, table_name)
+  }
+
+  create_current_table <- function(table_name, ddl) {
+    existed <- table_exists(table_name)
+    DBI::dbExecute(con, ddl)
+    if (!existed) {
+      current_tables <<- union(current_tables, table_name)
+    }
+    invisible(!existed)
   }
 
   add_column_if_missing <- function(table_name, column_name, sql_def) {
+    if (table_name %in% current_tables) return(invisible(FALSE))
     cols <- get_columns(table_name)$column_name
     if (column_name %in% cols) return(invisible(FALSE))
     DBI::dbExecute(con, sprintf("ALTER TABLE %s ADD COLUMN %s %s", table_name, column_name, sql_def))
@@ -71,28 +80,22 @@ ledgr_create_schema <- function(con) {
     }
     DBI::dbExecute(con, sprintf("DROP TABLE %s", table_name))
     DBI::dbExecute(con, sprintf("ALTER TABLE %s RENAME TO %s", tmp, table_name))
+    current_tables <<- union(current_tables, table_name)
     invisible(TRUE)
   }
 
   runs_status_constraint_matches <- function() {
     if (!table_exists("runs")) return(FALSE)
-    checks <- tryCatch(
-      DBI::dbGetQuery(
-        con,
-        "
-        SELECT expression
-        FROM duckdb_constraints()
-        WHERE table_name = 'runs'
-          AND constraint_type = 'CHECK'
-        "
-      ),
-      error = function(e) {
-        stop(
-          sprintf("Cannot inspect runs.status constraint metadata: %s", conditionMessage(e)),
-          call. = FALSE
-        )
-      }
-    )
+    if (!is.null(catalogue$checks_error)) {
+      stop(
+        sprintf(
+          "Cannot inspect runs.status constraint metadata: %s",
+          conditionMessage(catalogue$checks_error)
+        ),
+        call. = FALSE
+      )
+    }
+    checks <- ledgr_schema_catalogue_checks(catalogue, "runs")
     expressions <- as.character(checks$expression)
     status_expr <- expressions[grepl("\\bstatus\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
     if (length(status_expr) == 0L) {
@@ -135,13 +138,8 @@ ledgr_create_schema <- function(con) {
 
   ledger_event_type_constraint_matches <- function(expected) {
     if (!table_exists("ledger_events")) return(FALSE)
-    checks <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT expression FROM duckdb_constraints()",
-        "WHERE table_name = 'ledger_events' AND constraint_type = 'CHECK'"
-      )
-    )
+    if (!is.null(catalogue$checks_error)) stop(catalogue$checks_error)
+    checks <- ledgr_schema_catalogue_checks(catalogue, "ledger_events")
     expressions <- as.character(checks$expression)
     type_expr <- expressions[grepl("\\bevent_type\\b\\s+IN\\s*\\(", expressions, ignore.case = TRUE)]
     if (length(type_expr) != 1L) return(FALSE)
@@ -286,13 +284,13 @@ ledgr_create_schema <- function(con) {
     )
   "
 
-  DBI::dbExecute(con, ddl_instruments)
-  DBI::dbExecute(con, ddl_features)
-  DBI::dbExecute(con, ddl_equity_curve)
-  DBI::dbExecute(con, ddl_strategy_state)
-  DBI::dbExecute(con, ddl_snapshots)
-  DBI::dbExecute(con, ddl_snapshot_instruments)
-  DBI::dbExecute(con, ddl_snapshot_bars)
+  create_current_table("instruments", ddl_instruments)
+  create_current_table("features", ddl_features)
+  create_current_table("equity_curve", ddl_equity_curve)
+  create_current_table("strategy_state", ddl_strategy_state)
+  create_current_table("snapshots", ddl_snapshots)
+  create_current_table("snapshot_instruments", ddl_snapshot_instruments)
+  create_current_table("snapshot_bars", ddl_snapshot_bars)
 
   if (!runs_is_compliant()) {
     if (table_exists("runs")) {
@@ -327,7 +325,7 @@ ledgr_create_schema <- function(con) {
 
       recreate_table("runs", ddl_runs, insert_sql = insert_sql)
     } else {
-      DBI::dbExecute(con, ddl_runs)
+      create_current_table("runs", ddl_runs)
     }
   }
 
@@ -346,7 +344,7 @@ ledgr_create_schema <- function(con) {
 
   # bars: recreate if volume is NOT NULL to allow NULL per spec; otherwise add missing columns
   if (!table_exists("bars")) {
-    DBI::dbExecute(con, ddl_bars)
+    create_current_table("bars", ddl_bars)
   } else {
     bars_cols <- get_columns("bars")
     if ("volume" %in% bars_cols$column_name) {
@@ -376,12 +374,12 @@ ledgr_create_schema <- function(con) {
 
   # features: ensure exists (no destructive migration)
   if (!table_exists("features")) {
-    DBI::dbExecute(con, ddl_features)
+    create_current_table("features", ddl_features)
   }
 
   # ledger_events: add missing columns; enforce unique+not-null semantics by recreating when needed
   if (!table_exists("ledger_events")) {
-    DBI::dbExecute(con, ddl_ledger_events)
+    create_current_table("ledger_events", ddl_ledger_events)
   } else {
     le_cols <- get_columns("ledger_events")
     fee_rows <- DBI::dbGetQuery(
@@ -435,7 +433,7 @@ ledgr_create_schema <- function(con) {
 
   # equity_curve: ensure required columns exist (no destructive migration)
   if (!table_exists("equity_curve")) {
-    DBI::dbExecute(con, ddl_equity_curve)
+    create_current_table("equity_curve", ddl_equity_curve)
   } else {
     add_column_if_missing("equity_curve", "cash", "DOUBLE")
     add_column_if_missing("equity_curve", "positions_value", "DOUBLE")
@@ -446,12 +444,12 @@ ledgr_create_schema <- function(con) {
 
   # strategy_state: ensure exists (no destructive migration)
   if (!table_exists("strategy_state")) {
-    DBI::dbExecute(con, ddl_strategy_state)
+    create_current_table("strategy_state", ddl_strategy_state)
   }
 
   # snapshots: ensure exists (no destructive migration)
   if (!table_exists("snapshots")) {
-    DBI::dbExecute(con, ddl_snapshots)
+    create_current_table("snapshots", ddl_snapshots)
   } else {
     add_column_if_missing("snapshots", "sealed_at_utc", "TIMESTAMP")
     add_column_if_missing("snapshots", "snapshot_hash", "TEXT")
@@ -460,7 +458,7 @@ ledgr_create_schema <- function(con) {
   }
 
   if (!table_exists("snapshot_instruments")) {
-    DBI::dbExecute(con, ddl_snapshot_instruments)
+    create_current_table("snapshot_instruments", ddl_snapshot_instruments)
   } else {
     add_column_if_missing("snapshot_instruments", "symbol", "TEXT")
     add_column_if_missing("snapshot_instruments", "currency", "TEXT")
@@ -471,7 +469,7 @@ ledgr_create_schema <- function(con) {
   }
 
   if (!table_exists("snapshot_bars")) {
-    DBI::dbExecute(con, ddl_snapshot_bars)
+    create_current_table("snapshot_bars", ddl_snapshot_bars)
   } else {
     add_column_if_missing("snapshot_bars", "volume", "DOUBLE")
   }

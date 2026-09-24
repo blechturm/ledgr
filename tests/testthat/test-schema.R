@@ -1,3 +1,90 @@
+trace_schema_dbi_calls <- function(code) {
+  calls <- new.env(parent = emptyenv())
+  calls$get <- character()
+  calls$execute <- character()
+  callback <- function(kind, statement) {
+    calls[[kind]] <- c(calls[[kind]], as.character(statement)[[1L]])
+    invisible(NULL)
+  }
+  option_name <- "ledgr.test.schema_dbi_trace"
+  prior <- options(structure(list(callback), names = option_name))
+  on.exit(options(prior), add = TRUE)
+  get_tracer <- quote({
+    callback <- getOption("ledgr.test.schema_dbi_trace")
+    if (is.function(callback)) callback("get", statement)
+  })
+  execute_tracer <- quote({
+    callback <- getOption("ledgr.test.schema_dbi_trace")
+    if (is.function(callback)) callback("execute", statement)
+  })
+  suppressMessages(trace(
+    "dbGetQuery",
+    where = asNamespace("DBI"),
+    tracer = get_tracer,
+    print = FALSE
+  ))
+  on.exit(suppressMessages(untrace(
+    "dbGetQuery",
+    where = asNamespace("DBI")
+  )), add = TRUE)
+  suppressMessages(trace(
+    "dbExecute",
+    where = asNamespace("DBI"),
+    tracer = execute_tracer,
+    print = FALSE
+  ))
+  on.exit(suppressMessages(untrace(
+    "dbExecute",
+    where = asNamespace("DBI")
+  )), add = TRUE)
+
+  force(code)
+  list(get = calls$get, execute = calls$execute)
+}
+
+schema_catalogue_calls <- function(statements) {
+  statements[grepl(
+    "information_schema|duckdb_constraints",
+    statements,
+    ignore.case = TRUE
+  )]
+}
+
+schema_information_shape <- function(con) {
+  list(
+    tables = DBI::dbGetQuery(
+      con,
+      "SELECT table_name
+       FROM information_schema.tables
+       WHERE table_schema = 'main'
+       ORDER BY table_name"
+    ),
+    columns = DBI::dbGetQuery(
+      con,
+      "SELECT table_name, column_name, data_type, is_nullable,
+              ordinal_position
+       FROM information_schema.columns
+       WHERE table_schema = 'main'
+       ORDER BY table_name, ordinal_position"
+    ),
+    keys = DBI::dbGetQuery(
+      con,
+      "SELECT tc.table_name, tc.constraint_type, kcu.column_name,
+              kcu.ordinal_position
+       FROM information_schema.table_constraints tc
+       LEFT JOIN information_schema.key_column_usage kcu
+         ON tc.constraint_catalog = kcu.constraint_catalog
+        AND tc.constraint_schema = kcu.constraint_schema
+        AND tc.constraint_name = kcu.constraint_name
+        AND tc.table_schema = kcu.table_schema
+        AND tc.table_name = kcu.table_name
+       WHERE tc.table_schema = 'main'
+         AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+       ORDER BY tc.table_name, tc.constraint_type, kcu.ordinal_position"
+    )
+  )
+}
+
 testthat::test_that("schema can be created on an empty DuckDB", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -17,6 +104,130 @@ testthat::test_that("schema can be created on an empty DuckDB", {
   for (t in c("runs", "instruments", "bars", "features", "ledger_events", "equity_curve", "strategy_state", "run_promotion_context")) {
     testthat::expect_true(t %in% tables, info = sprintf("expected table %s to exist", t))
   }
+})
+
+testthat::test_that("[LTB-0039] schema catalogue work is bounded per call", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+
+  validate_calls <- trace_schema_dbi_calls(ledgr_validate_schema(con))
+  create_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
+
+  testthat::expect_lte(
+    length(schema_catalogue_calls(validate_calls$get)),
+    4L
+  )
+  testthat::expect_lte(length(validate_calls$get), 5L)
+  testthat::expect_length(validate_calls$execute, 0L)
+  testthat::expect_lte(length(create_calls$get), 2L)
+  testthat::expect_length(create_calls$execute, 0L)
+})
+
+testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
+  db_path <- tempfile(fileext = ".duckdb")
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+  on.exit({
+    DBI::dbDisconnect(con, shutdown = TRUE)
+    unlink(c(db_path, paste0(db_path, ".wal")), force = TRUE)
+  }, add = TRUE)
+  ledgr_create_schema(con)
+  current_shape <- schema_information_shape(con)
+  testthat::expect_identical(
+    digest::digest(current_shape, algo = "sha256"),
+    "4f2a099ad5ddc3b205e54ae0d9e5bd435047c7df18cda7fa67c5d9e6457f79e0"
+  )
+
+  DBI::dbExecute(
+    con,
+    "DELETE FROM ledgr_schema_metadata
+     WHERE key = 'experiment_store_schema_version'"
+  )
+  missing_marker_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
+  restored <- DBI::dbGetQuery(
+    con,
+    "SELECT value FROM ledgr_schema_metadata
+     WHERE key = 'experiment_store_schema_version'"
+  )$value[[1L]]
+  testthat::expect_identical(
+    as.integer(restored),
+    ledgr:::ledgr_experiment_store_schema_version
+  )
+  testthat::expect_gt(length(missing_marker_calls$execute), 0L)
+  testthat::expect_no_error(ledgr_validate_schema(con))
+
+  DBI::dbExecute(
+    con,
+    "UPDATE ledgr_schema_metadata
+     SET value = ?
+     WHERE key = 'experiment_store_schema_version'",
+    params = list(as.character(
+      ledgr:::ledgr_experiment_store_schema_version - 1L
+    ))
+  )
+  DBI::dbExecute(con, "DROP TABLE snapshot_equity_corporate_actions")
+  older_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
+  tables <- DBI::dbGetQuery(
+    con,
+    "SELECT table_name FROM information_schema.tables
+     WHERE table_schema = 'main'"
+  )$table_name
+  testthat::expect_true("snapshot_equity_corporate_actions" %in% tables)
+  testthat::expect_gt(length(older_calls$execute), 0L)
+  testthat::expect_no_error(ledgr_validate_schema(con))
+  testthat::expect_identical(schema_information_shape(con), current_shape)
+})
+
+testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", {
+  create_source <- paste(
+    readLines(testthat::test_path("..", "..", "R", "db-schema-create.R")),
+    collapse = "\n"
+  )
+  runner_source <- paste(
+    readLines(testthat::test_path("..", "..", "R", "backtest-runner.R")),
+    collapse = "\n"
+  )
+  public_source <- paste(
+    readLines(testthat::test_path("..", "..", "R", "public-api.R")),
+    collapse = "\n"
+  )
+  marker_source <- readLines(testthat::test_path(
+    "..", "..", "R", "experiment-store-schema.R"
+  ))
+
+  testthat::expect_match(
+    create_source,
+    "schema_state\\$schema_version[\\s\\S]+experiment_store_schema_version",
+    perl = TRUE
+  )
+  testthat::expect_no_match(
+    create_source,
+    "if \\(table_exists\\([^)]*\\)\\) \\{[\\s\\S]{0,120}return\\(invisible\\(TRUE\\)\\)",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    runner_source,
+    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema\\(con\\)",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    public_source,
+    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema\\(con\\)",
+    perl = TRUE
+  )
+  failure_line <- grep("if \\(isTRUE\\(simulate_failure\\)\\)", marker_source)
+  marker_line <- grep("INSERT OR REPLACE INTO ledgr_schema_metadata", marker_source)
+  testthat::expect_length(failure_line, 1L)
+  testthat::expect_length(marker_line, 1L)
+  testthat::expect_gt(marker_line, failure_line)
+  migration_body <- paste(
+    deparse(body(ledgr:::ledgr_experiment_store_migrate)),
+    collapse = "\n"
+  )
+  testthat::expect_identical(
+    digest::digest(migration_body, algo = "sha256", serialize = FALSE),
+    "1b836d6b78a2c24621bb8bcc0275075c6f8ba8ab570f93af9c8d4cff8b384f10"
+  )
 })
 
 testthat::test_that("schema creation is idempotent", {

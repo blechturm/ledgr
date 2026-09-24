@@ -17,6 +17,7 @@ ledgr_validate_schema <- function(con) {
   }
 
   schema <- "main"
+  catalogue <- ledgr_schema_catalogue(con, schema = schema)
 
   required <- list(
     runs = list(
@@ -554,76 +555,39 @@ ledgr_validate_schema <- function(con) {
   }
 
   table_exists <- function(table_name) {
-    q <- "
-      SELECT COUNT(*) AS n
-      FROM information_schema.tables
-      WHERE table_schema = ?
-        AND table_name = ?
-    "
-    DBI::dbGetQuery(con, q, params = list(schema, table_name))$n[[1]] > 0
+    ledgr_schema_catalogue_table_exists(catalogue, table_name)
   }
 
-  ledgr_experiment_store_check_schema(con, write = FALSE)
+  ledgr_experiment_store_check_schema(
+    con,
+    write = FALSE,
+    table_names = catalogue$tables$table_name
+  )
 
   get_columns <- function(table_name) {
-    q <- "
-      SELECT column_name, data_type, is_nullable
-      FROM information_schema.columns
-      WHERE table_schema = ?
-        AND table_name = ?
-      ORDER BY ordinal_position
-    "
-    DBI::dbGetQuery(con, q, params = list(schema, table_name))
+    ledgr_schema_catalogue_columns(catalogue, table_name)
   }
 
   get_pk_columns <- function(table_name) {
-    q <- "
-      SELECT kcu.column_name
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-       AND tc.table_schema = kcu.table_schema
-       AND tc.table_name = kcu.table_name
-      WHERE tc.table_schema = ?
-        AND tc.table_name = ?
-        AND tc.constraint_type = 'PRIMARY KEY'
-      ORDER BY kcu.ordinal_position
-    "
-    DBI::dbGetQuery(con, q, params = list(schema, table_name))$column_name
+    ledgr_schema_catalogue_key_columns(
+      catalogue,
+      table_name,
+      "PRIMARY KEY"
+    )$column_name
   }
 
   get_unique_sets <- function(table_name) {
-    q <- "
-      SELECT tc.constraint_name, kcu.column_name, kcu.ordinal_position
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-       AND tc.table_schema = kcu.table_schema
-       AND tc.table_name = kcu.table_name
-      WHERE tc.table_schema = ?
-        AND tc.table_name = ?
-        AND tc.constraint_type = 'UNIQUE'
-      ORDER BY tc.constraint_name, kcu.ordinal_position
-    "
-    out <- DBI::dbGetQuery(con, q, params = list(schema, table_name))
+    out <- ledgr_schema_catalogue_key_columns(
+      catalogue,
+      table_name,
+      "UNIQUE"
+    )
     if (nrow(out) == 0) return(list())
     split(out$column_name, out$constraint_name)
   }
 
   check_enum_constraint_metadata <- function(table_name, column_name, expected_values, label) {
-    checks <- tryCatch(
-      DBI::dbGetQuery(
-        con,
-        "
-        SELECT expression
-        FROM duckdb_constraints()
-        WHERE table_name = ?
-          AND constraint_type = 'CHECK'
-        ",
-        params = list(table_name)
-      ),
-      error = function(e) data.frame(expression = character())
-    )
+    checks <- ledgr_schema_catalogue_checks(catalogue, table_name)
     expressions <- as.character(checks$expression)
     enum_pattern <- sprintf('"?%s"?\\s+IN\\s*\\(', column_name)
     status_expr <- expressions[grepl(enum_pattern, expressions, ignore.case = TRUE)]
