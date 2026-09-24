@@ -52,7 +52,7 @@ cuts:
   - id: 6
     name: "Usable equity corporate actions"
     cut: "2026-09-24"
-    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place here. Two review rounds; a third goes to the maintainer per rfc_cycle.md, so workstream 10 opens on maintainer acceptance of this patch. Grouping and review points passed the Type 2 half unchanged."
+    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24; workstream 10 is open. Grouping and review points passed the Type 2 half unchanged."
     authority: "inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md, accepted 2026-09-24"
     source_table: "synthesis section 6, the fourteen gate cases; dev/spikes/settlement_quantity_primitive, settlement_axis_density and terminal_disposition_policy evidence; corrected Tier 2 census aggregates in ledgr-research"
     workstreams: [10, 11, 12]
@@ -141,7 +141,7 @@ workstreams:
   - id: 10
     name: "Boundary and sealed facts"
     cut: 6
-    status: "open"
+    status: "in_progress"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 10", reason: "The compiled refusal is the prerequisite every seed since v4 named and nobody owned; it lands first by ticket dependency so the first new economic event kind cannot be silently dropped. The fact family is architecture the synthesis bound after Type 2 review, so the workstream implements it. One review at close checks that the constructor and validator decode no vendor, that the fictional adapter is a witness rather than a demo, that the activation exclusion is defended by a detecting block rather than a comment, and that the double-counting refusal fires on a declared distribution-adjusted basis."}
