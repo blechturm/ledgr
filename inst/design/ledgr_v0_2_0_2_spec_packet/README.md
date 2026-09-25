@@ -380,16 +380,19 @@ while those identities remain byte-identical.
 ## Cut 7: Maintenance, schema ceremony (review pending)
 
 Authority: `schema_ceremony_note.md` and the review obligations as amended
-2026-09-24. No RFC: one exact-parity chore on `ledgr_create_schema()` and
-`ledgr_validate_schema()`, every observable output unchanged. One ticket,
-LDG-2819, one workstream; the cut review is compressed into the close review
-so a one-ticket cut does not carry two invocations. LDG-2795 is the standing
-candidate to join.
+2026-09-24. No RFC: one healthy-store exact-parity chore on
+`ledgr_create_schema()` and `ledgr_validate_schema()`. A current-marker store
+missing a create-owned table now fails closed instead of silently recreating
+an empty table. One ticket, LDG-2819, one workstream; the cut review is
+compressed into the close review. LDG-2795 is the standing candidate to join.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 13 Schema ceremony | 2819 | one catalogue read per call compared in memory; a version-marker fast path for create on reopen only; a DBI-count detector; interleaved clocks on run open, db_init, fast and review lanes | the detector fails on a reintroduced per-table query; the five gut-failure blocks pass; the fast path is keyed on the stored version; outputs identical before and after |
+| 13 Schema ceremony | 2819 | one catalogue read per call compared in memory; a version-marker fast path for create on reopen only; a DBI-count detector; interleaved clocks on run open, db_init, fast and review lanes | the detector fails on a reintroduced per-table query; the five gut-failure blocks pass; the fast path is keyed on the exact stored version; healthy-store outputs are identical and current-marker damage fails closed |
 
-Implementation and agent-provisional closeout are complete. The optimized fast
-profile median is 75.35 seconds against the 90-second bound; the compressed
-Cut 7 Type 1 close review is pending.
+Implementation and agent-provisional closeout are complete. The unmatched fast
+profile medians are not used as an effect estimate; the matched quiet-end pair
+improved from 87.82 to 70.77 seconds, and the ordinary gate passed at 75.73
+seconds against the 90-second bound. The initial Cut 7 Type 1 close review
+required four bounded corrections. Focused re-review and the maintainer's
+historical-gate decision are pending.

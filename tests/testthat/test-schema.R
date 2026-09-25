@@ -166,16 +166,28 @@ testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
     ))
   )
   DBI::dbExecute(con, "DROP TABLE snapshot_equity_corporate_actions")
+  DBI::dbExecute(con, "DROP TABLE bars")
   older_calls <- trace_schema_dbi_calls(ledgr_create_schema(con))
   tables <- DBI::dbGetQuery(
     con,
     "SELECT table_name FROM information_schema.tables
      WHERE table_schema = 'main'"
   )$table_name
-  testthat::expect_true("snapshot_equity_corporate_actions" %in% tables)
+  testthat::expect_true(all(c(
+    "snapshot_equity_corporate_actions",
+    "bars"
+  ) %in% tables))
   testthat::expect_gt(length(older_calls$execute), 0L)
   testthat::expect_no_error(ledgr_validate_schema(con))
   testthat::expect_identical(schema_information_shape(con), current_shape)
+
+  DBI::dbExecute(con, "DROP TABLE bars")
+  ledgr_create_schema(con)
+  testthat::expect_error(
+    ledgr_validate_schema(con),
+    "Missing table: bars",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", {
@@ -197,7 +209,12 @@ testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", 
 
   testthat::expect_match(
     create_source,
-    "schema_state\\$schema_version[\\s\\S]+experiment_store_schema_version",
+    paste0(
+      "if \\(identical\\(\\s*",
+      "as.integer\\(schema_state\\$schema_version\\),\\s*",
+      "as.integer\\(ledgr_experiment_store_schema_version\\)\\s*",
+      "\\)\\) \\{\\s*return\\(invisible\\(TRUE\\)\\)"
+    ),
     perl = TRUE
   )
   testthat::expect_no_match(
