@@ -20,7 +20,7 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 `8747c64` and was patched in place. Cut 6, usable equity corporate actions,
 is **open** under the synthesis accepted 2026-09-24: four serial workstreams,
 eighteen active tickets, cut review accepted after two rounds, Workstreams 10,
-11 and 14 accepted, and Workstream 12 open. Cuts
+11 and 14 accepted, and Workstream 12 awaiting Type 1 close review. Cuts
 are independent of one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
@@ -318,7 +318,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; Workstream 12 open)
+## Cut 6: Usable equity corporate actions (close review pending)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -344,9 +344,10 @@ Workstream 14 before Workstream 12. Its ticket review returned
 2026-09-24. LDG-2821 and LDG-2822 are implemented at `3d1ffbf` and `d93314e`;
 LDG-2823 passed Type 1 close review with three record-only corrections and
 Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12 has
-implemented LDG-2814 through LDG-2817; LDG-2818 remains open for the
-workstream and cut closeout. Workstream 13 is an independent Cut 7 chore, not
-a prerequisite.
+implemented LDG-2814 through LDG-2818. Its agent-provisional
+`equity_corporate_actions_closeout.md` and the cut now await the independent
+Type 1 close review. Workstream 13 is an independent Cut 7 chore, not a
+prerequisite.
 Deferred LDG-2820 records the review's resume-only metadata-parsing
 optimization; it remains outside both the original and amended active-ticket
 denominators.

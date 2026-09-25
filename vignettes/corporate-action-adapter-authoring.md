@@ -156,3 +156,6 @@ At execution time, strict policy stops on a relevant unsupported effect.
 Research policy may report a quantity effect without changing account
 state. Neither path claims exact recipient exposure, broker settlement,
 withholding, tax treatment, or completeness of the upstream source.
+
+This release does not claim corporate-action completeness, broker-exact
+settlement, net cash, tax correctness, or exact recipient exposure.

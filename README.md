@@ -20,6 +20,20 @@ ledgr is research software, not investment advice. Backtests and audit trails
 are evidence tools; they do not predict future returns or provide compliance
 guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
 
+## Corporate-Action Boundary
+
+ledgr can seal vendor-neutral equity corporate-action facts, post evidenced
+gross cash distributions under a named timing convention, model a held
+terminal disposition at a policy-admitted mark, and report fidelity over the
+facts supplied to the snapshot. Unsupported security-quantity effects remain
+visible in the result instead of being silently treated as absent.
+
+This release does not claim corporate-action completeness, broker-exact
+settlement, net cash, tax correctness, or exact recipient exposure. See
+[Cash Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
+and [Authoring A Corporate-Action Adapter](https://blechturm.github.io/ledgr/articles/corporate-action-adapter-authoring.html)
+for the supported boundary and data contract.
+
 ## Install
 
 ``` r

@@ -153,6 +153,54 @@ testthat::test_that("[LTB-0057] adapter-authoring article records a vendor-neutr
   )))
 })
 
+testthat::test_that("[LTB-0060] release surfaces limit corporate-action claims", {
+  root <- testthat::test_path("..", "..")
+  paths <- c(
+    file.path(root, "README.md"),
+    file.path(root, "NEWS.md"),
+    file.path(root, "vignettes", "corporate-action-cash.qmd"),
+    file.path(root, "vignettes", "corporate-action-cash.md"),
+    file.path(root, "vignettes", "corporate-action-adapter-authoring.qmd"),
+    file.path(root, "vignettes", "corporate-action-adapter-authoring.md")
+  )
+  testthat::expect_true(all(file.exists(paths)))
+  terms <- c(
+    "corporate-action completeness",
+    "broker-exact settlement",
+    "net cash",
+    "tax correctness",
+    "exact recipient exposure"
+  )
+  boundary <- paste(
+    "This release does not claim corporate-action completeness,",
+    "broker-exact settlement, net cash, tax correctness, or exact",
+    "recipient exposure."
+  )
+  for (path in paths) {
+    text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+    compact <- gsub("[[:space:]]+", " ", text)
+    testthat::expect_match(
+      compact,
+      boundary,
+      fixed = TRUE,
+      info = paste("missing release boundary in", basename(path))
+    )
+    paragraphs <- strsplit(text, "\n[[:space:]]*\n", perl = TRUE)[[1L]]
+    paragraphs <- gsub("[[:space:]]+", " ", paragraphs)
+    for (term in terms) {
+      hits <- paragraphs[grepl(term, paragraphs, fixed = TRUE)]
+      testthat::expect_true(
+        length(hits) > 0L,
+        info = paste("missing named non-claim", term, "in", basename(path))
+      )
+      testthat::expect_true(
+        all(grepl("\\b(does not|not|no|unsupported|without)\\b", hits)),
+        info = paste("unlimited claim", term, "in", basename(path))
+      )
+    }
+  }
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0033] legacy runs do not acquire a policy on reopen", {
   db_path <- tempfile(fileext = ".duckdb")

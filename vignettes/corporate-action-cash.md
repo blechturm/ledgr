@@ -132,6 +132,9 @@ The modeled result reports one `cash_amount.gross` choice, one
 does not claim a payment date, withholding, investor tax or broker-net
 amount.
 
+This release does not claim corporate-action completeness, broker-exact
+settlement, net cash, tax correctness, or exact recipient exposure.
+
 ## Strict Refusal
 
 The strict preset uses the same facts and refuses to model the cash

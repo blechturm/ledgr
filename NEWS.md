@@ -8,6 +8,12 @@
   and clear unsupported-economics explanations, in that order. Scope becomes
   binding only when the packet spec is accepted, which follows the test-suite
   audit and the testing-architecture RFC; the governance review is accepted.
+- Added vendor-neutral sealed equity corporate-action facts, evidenced gross
+  cash distributions under named timing, modeled held-terminal disposition,
+  explicit unsupported-quantity reporting, and ordinary-result fidelity over
+  supplied facts.
+- This release does not claim corporate-action completeness, broker-exact
+  settlement, net cash, tax correctness, or exact recipient exposure.
 
 # ledgr 0.2.0.1
 

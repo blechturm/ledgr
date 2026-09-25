@@ -52,14 +52,14 @@ cuts:
   - id: 6
     name: "Usable equity corporate actions"
     cut: "2026-09-24"
-    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24. Workstream 10 passed its close review after one bounded correction and was accepted on 2026-09-24. Workstream 11 passed focused re-review at af5bdc6 after one bounded correction and was accepted on 2026-09-24. A post-acceptance maintainer amendment adds Workstream 14 before Workstream 12; its independent ticket review returned PASS_AFTER_PATCHES and F1 through F7 plus the Type 2 boundary corrections were applied in place. Workstream 14 passed Type 1 close review with three record-only corrections and was accepted by the maintainer on 2026-09-25; Workstream 12 is open. Grouping and review points of the original cut passed the Type 2 half unchanged."
+    cut_review: "cut_review_6.md; CHANGES_REQUIRED at 8a1fb15 (Codex), five findings patched in place at 7c5898e; focused re-review closed F1, F2, F4 and F5 and returned CHANGES_REQUIRED on one F3 residual (LDG-2810 asserted field presence, not exact values, for settings, identities and choice and refusal counts), patched in place at 06db538. Two review rounds; a third goes to the maintainer per rfc_cycle.md. Maintainer accepted the patched cut on 2026-09-24. Workstream 10 passed its close review after one bounded correction and was accepted on 2026-09-24. Workstream 11 passed focused re-review at af5bdc6 after one bounded correction and was accepted on 2026-09-24. A post-acceptance maintainer amendment adds Workstream 14 before Workstream 12; its independent ticket review returned PASS_AFTER_PATCHES and F1 through F7 plus the Type 2 boundary corrections were applied in place. Workstream 14 passed Type 1 close review with three record-only corrections and was accepted by the maintainer on 2026-09-25; Workstream 12 awaits Type 1 close review. Grouping and review points of the original cut passed the Type 2 half unchanged."
     amendment_review: "Inline Type 1 and Type 2 review of LDG-2821 through LDG-2823 returned PASS_AFTER_PATCHES on 2026-09-24; all seven ticket findings and the two Type 2 boundary corrections were applied, and the maintainer accepted the amendment on 2026-09-24."
     authority: "inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md, accepted 2026-09-24; maintainer sequencing decision 2026-09-24 adding output-preserving fact-family scaling before Workstream 12"
     source_table: "synthesis section 6, the fourteen gate cases; dev/spikes/settlement_quantity_primitive, settlement_axis_density and terminal_disposition_policy evidence; corrected Tier 2 census aggregates in ledgr-research; fact_family_scaling_note.md"
     workstreams: [10, 11, 14, 12]
     closeout: "equity_corporate_actions_closeout.md"
     external_dependency: "The Sharadar producer specification, the distribution-population reconciliation and the corrected census live in ledgr-research and are not part of this cut's evidence. Real-data integration cannot precede an accepted upstream build; synthetic ledgr work does not wait for it."
-    status: "open"
+    status: "review_pending"
   - id: 7
     name: "Maintenance: schema ceremony"
     cut: "2026-09-24"
@@ -211,7 +211,7 @@ workstreams:
   - id: 12
     name: "Disposition, composition and gate"
     cut: 6
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 14
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 12", reason: "DISPOSITION is the only new event type and the only path that consumes lots outside a fill. One review at close checks that the schema migration recreates existing stores without loss, that zero position means zero live lots rather than opposing ones, that the four-row composition witness reconciles numerically to the 3.5 formula rather than asserting field presence, that durable recovery and memory failure containment are asserted as the different guarantees they are, and that all fourteen gate cases are registered claims each naming the synthesis clause it protects. The cut closeout is reviewed with it."}
@@ -1090,12 +1090,13 @@ tickets:
   - id: "LDG-2818"
     title: "Workstream 12 and cut 6 closeout"
     workstream: 12
-    status: "open"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2814", "LDG-2815", "LDG-2816", "LDG-2817"]
     scope: "Governance synthesis D4. Closeout for workstream 12 and for cut 6 as a whole: what shipped; the fourteen cases and their blocks; review invocations against the 0.5 gate across the three workstreams; declined items with reasons; the release claims and non-claims from synthesis section 11 restated verbatim; the upstream private gate named as an external dependency outside this cut's evidence; the pilot counters rfc_cycle.md requires (findings by mode and whether each changed an outcome, reruns and rejected records, disputed classifications); and a release-facing documentation check over README, NEWS and both new articles, so the boundary is defended on every surface a user reads rather than restated in one file. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the ratio is stated and is at most 0.5 for the cut", "the release claims and non-claims are restated verbatim from synthesis section 11", "a registered check over README, NEWS and both new articles fails if any prohibited claim (corporate-action completeness, broker-exact settlement, net cash, tax correctness, exact recipient exposure) appears without its stated limitation, and passes on the shipped text", "the upstream gate is named as not part of this cut's evidence", "the pilot counters are stated"]
+    evidence: ["equity_corporate_actions_closeout.md is the agent-provisional Workstream 12 and cut-6 record. It maps all fourteen synthesis cases to LCL-0045 through LCL-0058 and their registered blocks, restates the synthesis section-11 release boundary verbatim, names the upstream private gate as external, records declined work and carries the required pilot counters.", "LCL-0060 registers LTB-0060 over README, NEWS and the source and rendered forms of both corporate-action articles. Replacing README's negative limiter with a positive claim made six assertions fail: the exact boundary sentence and each of the five prohibited claims.", "The exact-tree R 4.6.1 fast profile passed 454/454 blocks with zero failures and skips in 74.780 seconds from .tmp/ws12-close-fast. The corrected review profile passed 265/265 with zero failures in 351.640 seconds and one declared optional quantmod skip from .tmp/ws12-close-review.", "The first review record exposed a stale v0.2.0.1 identity fixture: all economic outputs matched, while the expected schema and config identity predated schema 117 and the explicit corporate-action policy. The literal was regenerated from the public path with its historical engine label retained; the fixture's independent perturbation still fails, and the complete review profile was rerun."]
 
   # ------------------------------------------------ 13 Schema ceremony
   - id: "LDG-2819"

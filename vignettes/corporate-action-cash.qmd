@@ -101,6 +101,9 @@ The modeled result reports one `cash_amount.gross` choice, one
 `cash_posting.effective_close` choice and gross cash posted of 2.5. It does
 not claim a payment date, withholding, investor tax or broker-net amount.
 
+This release does not claim corporate-action completeness, broker-exact
+settlement, net cash, tax correctness, or exact recipient exposure.
+
 ## Strict Refusal
 
 The strict preset uses the same facts and refuses to model the cash effect.
