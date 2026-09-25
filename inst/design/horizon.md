@@ -112,6 +112,48 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-25 [ux] Availability evidence has no convenient reader
+
+Writing the missing-data article surfaced two accessor gaps. Both are
+convenience only: the evidence is already persisted and hash-bound, and the
+article works around each in one line. They are recorded here rather than
+solved with boilerplate in the vignette, per the styleguide rule that clutter
+in a worked example is the API asking for a helper.
+
+**Quarantined observations have no reader.** `invalid_observations =
+"quarantine"` sets rows aside with a reason into
+`snapshot_observation_quarantine`, but nothing exposes them. The article opens
+the store with `ledgr_db_init()` and issues SQL. A user who admits a panel
+this way cannot see what was excluded without knowing the table name. Shape:
+one reader taking a snapshot and returning the quarantined rows, alongside the
+existing `ledgr_snapshot_info()`.
+
+**`ledgr_run_explain()` answers one timestamp per call.** Its signature is
+`(bt, instrument_id, ts_utc)` and `ts_utc` is required, so "what happened to
+this instrument across the run" needs a loop over sessions. The article asks
+about two chosen sessions instead, which is fine for teaching and wrong for
+diagnosis. Shape: make `ts_utc` optional and return every decision row for the
+instrument, which is how the underlying evidence is already stored.
+
+**Completion evidence is assembled by hand.** A stopped run reports
+`status`, `completion_status`, `stop_reason` and `complete_performance` as
+four fields among the fifty-two that `ledgr_run_info()` returns. There is no
+summary object for "did this run cover the window I asked for, and if not
+why". The article prints three fields in sequence. Shape: one completion
+accessor, or a `summary()` section, that answers the question in one call.
+
+**Every strategy hand-rolls its own eligibility test.** An availability-aware
+strategy cannot set a single target before intersecting the `admissible` and
+`priced` planes and indexing `id` by the result. That is four lines of plumbing
+in front of every strategy, and it is the same four lines every time. Shape:
+`ctx$tradable()` beside the existing `ctx$flat()` and `ctx$hold()`, returning
+the identifiers the strategy may size at this pulse, and composing into
+`ledgr_weight_equal()` and `ledgr_target_rebalance()`.
+
+Route: cut 9, workstream 16, LDG-2826 through LDG-2830, cut 2026-09-25. None
+of the four changes a contract; each adds a reader or a selector over evidence
+that already exists.
+
 ### 2026-09-24 [data] Equity corporate actions post-v0.2.0.2 direction
 
 `rfc_equity_settlement_post_v0_2_0_2_synthesis.md`, accepted 2026-09-24,
