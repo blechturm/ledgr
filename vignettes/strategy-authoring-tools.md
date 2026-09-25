@@ -35,6 +35,7 @@ IDs (`vignette("indicators", package = "ledgr")`).
 ``` r
 library(ledgr)
 library(dplyr)
+library(tibble)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
@@ -265,6 +266,101 @@ still occur at the configured later fill point, so fill value can drift
 from decision-time sizing. Residual allocation after whole-share
 flooring remains cash and is reflected in the ledger-backed equity rows.
 
+## Read Planes, Not One Instrument At A Time
+
+Both accessor forms above return the same numbers, and they do not cost
+the same. `ctx$vec$close` hands back a vector the engine already
+assembled for this pulse. `ctx$close(id)` is a function call that
+validates its argument and looks up one position. Call it once and the
+difference is invisible. Call it once per instrument and you pay that
+overhead for every name, every pulse, and the cost grows with your
+universe while the plane’s does not.
+
+The two strategies below make the same decision. One reads the plane;
+the other loops the scalar accessor over the universe.
+
+``` r
+read_the_plane <- function(ctx, params) {
+  prices <- ctx$vec$close
+  targets <- ctx$hold()
+  targets[prices > 0] <- 1
+  targets
+}
+
+loop_the_scalar <- function(ctx, params) {
+  prices <- vapply(ctx$universe, ctx$close, numeric(1))
+  targets <- ctx$hold()
+  targets[prices > 0] <- 1
+  targets
+}
+```
+
+Two thousand instruments over thirty pulses is enough to show the
+effect. Each form runs once to warm up, then once on the clock.
+
+``` r
+wide_bars <- ledgr_sim_bars(n_instruments = 2000L, n_days = 30L, seed = 11L) |>
+  as.data.frame()
+
+wide_snapshot <- ledgr_snapshot_from_df(
+  wide_bars,
+  db_path = tempfile(fileext = ".duckdb")
+)
+
+time_strategy <- function(strategy, label) {
+  experiment <- ledgr_experiment(
+    wide_snapshot,
+    strategy,
+    opening = ledgr_opening(cash = 1e7),
+    cost_model = ledgr_cost_zero()
+  )
+  warm <- ledgr_run(experiment, run_id = paste0(label, "-warm"))
+  close(warm)
+  timing <- system.time(bt <- ledgr_run(experiment, run_id = label))
+  elapsed <- timing[["elapsed"]]
+  close(bt)
+  elapsed
+}
+
+tibble(
+  form = c("ctx$vec$close", "vapply(ctx$universe, ctx$close, numeric(1))"),
+  seconds = c(
+    time_strategy(read_the_plane, "plane"),
+    time_strategy(loop_the_scalar, "loop")
+  )
+) |>
+  mutate(added_ms_per_pulse = 1000 * (seconds - min(seconds)) / 30)
+#> # A tibble: 2 x 3
+#>   form                                        seconds added_ms_per_pulse
+#>   <chr>                                         <dbl>              <dbl>
+#> 1 ctx$vec$close                                  3.34                0
+#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.3                32.0
+```
+
+Read the last column rather than the ratio. The two strategies differ in
+one line, so the whole gap is the loop, and it is spent before the
+strategy has made a single decision. That per-pulse cost scales with the
+universe, because the loop pays once per instrument while the plane is
+one read whatever the universe size, and it multiplies by every pulse in
+the run. On a longer backtest over a wider universe the same line is
+minutes, not milliseconds.
+
+> [!WARNING]
+>
+> ### The most expensive mistake available to a strategy
+>
+> `ctx$close(id)`, `ctx$feature(id, feature_id)`, and `ctx$position(id)`
+> are for asking about one instrument you have already singled out.
+> Reaching for them inside `vapply()`, `sapply()`, or a `for` loop over
+> `ctx$universe` is the most expensive habit available to a ledgr
+> strategy, and it hides well: the numbers are right and the run is simply
+> slow. When you want a value for everyone, read the plane.
+
+
+Every helper in the pipeline below already reads planes, so a strategy
+written as `signal |> selection |> weights |> target` never has this
+problem. The trap is only open to hand-written pulse logic.
+
 ## Turn The Idea Into A Strategy
 
 The same transformations become an ordinary strategy function.
@@ -423,6 +519,38 @@ summary(bt_mapped)
 #>   Fill Timing:         dense_bar_timestamp
 #>   Timing Version:      N/A
 #>
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Setting cash_amount:              gross
+#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
+#>   Setting cash_posting:             effective_close
+#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
+#>   Setting held_terminal_position:   last_permissible
+#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
+#>   Setting unsupported_quantity:     report_only
+#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Exercised choices:
+#>     cash_amount.gross: 0
+#>     cash_amount.refuse: 0
+#>     cash_posting.effective_close: 0
+#>     cash_posting.next_open: 0
+#>     cash_posting.refuse: 0
+#>     held_terminal_position.last_permissible: 0
+#>     held_terminal_position.last_mark: 0
+#>     held_terminal_position.refuse: 0
+#>     unsupported_quantity.report_only: 0
+#>     unsupported_quantity.refuse: 0
+#>   Refusal reasons:
+#>     none declared: 0
+#>   Late arrivals:               0
+#>   Affected marked exposure:    0
+#>   Gross cash posted:           0
+#>   Modeled terminal proceeds:   0
+#>   Positions disposed:          0
+#>   Realized model P&L:          0
+#>   Unsupported facts:           0
 #> Performance Metrics:
 #>   Total Return:        0.64%
 #>   Annualized Return:   1.26%

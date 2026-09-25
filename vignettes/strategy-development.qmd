@@ -184,6 +184,17 @@ accessing those values. It is deliberately not the full future dataset.
 
 For the installed accessor reference, see `?ledgr_strategy_context`.
 
+::: {.ledgr-callout .ledgr-callout-tip}
+**One instrument or everyone**
+
+The `ctx$vec$` forms return a value for the whole universe in one read. The
+scalar forms answer for one instrument you have already singled out. Both are
+correct; only the first is cheap when you want every name, because the scalar
+form costs per call and a universe-wide loop pays it once per instrument per
+pulse. `vignette("strategy-authoring-tools", package = "ledgr")` measures the
+difference.
+:::
+
 The pulse loop is the contract in motion:
 
 ::: {.ledgr-diagram .ledgr-pulse-loop}

@@ -139,6 +139,19 @@ full future dataset.
 
 For the installed accessor reference, see `?ledgr_strategy_context`.
 
+> [!TIP]
+>
+> ### One instrument or everyone
+>
+> The `ctx$vec$` forms return a value for the whole universe in one read.
+> The scalar forms answer for one instrument you have already singled out.
+> Both are correct; only the first is cheap when you want every name,
+> because the scalar form costs per call and a universe-wide loop pays it
+> once per instrument per pulse.
+> `vignette("strategy-authoring-tools", package = "ledgr")` measures the
+> difference.
+
+
 The pulse loop is the contract in motion:
 
 <div class="ledgr-diagram ledgr-pulse-loop">
@@ -388,6 +401,38 @@ summary(bt_top_1)
 #>   Fill Timing:         dense_bar_timestamp
 #>   Timing Version:      N/A
 #>
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Setting cash_amount:              gross
+#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
+#>   Setting cash_posting:             effective_close
+#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
+#>   Setting held_terminal_position:   last_permissible
+#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
+#>   Setting unsupported_quantity:     report_only
+#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Exercised choices:
+#>     cash_amount.gross: 0
+#>     cash_amount.refuse: 0
+#>     cash_posting.effective_close: 0
+#>     cash_posting.next_open: 0
+#>     cash_posting.refuse: 0
+#>     held_terminal_position.last_permissible: 0
+#>     held_terminal_position.last_mark: 0
+#>     held_terminal_position.refuse: 0
+#>     unsupported_quantity.report_only: 0
+#>     unsupported_quantity.refuse: 0
+#>   Refusal reasons:
+#>     none declared: 0
+#>   Late arrivals:               0
+#>   Affected marked exposure:    0
+#>   Gross cash posted:           0
+#>   Modeled terminal proceeds:   0
+#>   Positions disposed:          0
+#>   Realized model P&L:          0
+#>   Unsupported facts:           0
 #> Performance Metrics:
 #>   Total Return:        0.45%
 #>   Annualized Return:   0.89%
