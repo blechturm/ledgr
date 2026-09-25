@@ -435,6 +435,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
         )
         state <- posted$state
         event_seq <- posted$next_event_seq
+        corporate_action_plan$check_quantity_effects(i)
       }
 
       availability_view <- NULL

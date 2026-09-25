@@ -155,7 +155,12 @@ ledgr_corporate_action_plan <- function(rows,
   disposition_eligible <- rows$subtype %in% c(
     "cash_acquisition", "stock_acquisition", "mixed_acquisition"
   ) & rows$complete
-  if (!any(cash_eligible | disposition_eligible)) return(NULL)
+  quantity_eligible <- rows$subtype %in% c(
+    "stock_acquisition", "mixed_acquisition", "spin_off"
+  ) & rows$complete
+  if (!any(cash_eligible | disposition_eligible | quantity_eligible)) {
+    return(NULL)
+  }
 
   entitlement_idx <- ledgr_corporate_action_clock_index(
     rows$entitlement_time,
@@ -180,6 +185,8 @@ ledgr_corporate_action_plan <- function(rows,
   cash_due_idx[!cash_eligible] <- NA_integer_
   disposition_due_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
   disposition_due_idx[!disposition_eligible] <- NA_integer_
+  quantity_due_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
+  quantity_due_idx[!quantity_eligible] <- NA_integer_
   late <- !is.na(posting_idx) & !is.na(knowledge_idx) & knowledge_idx > posting_idx
 
   state <- new.env(parent = emptyenv())
@@ -188,13 +195,16 @@ ledgr_corporate_action_plan <- function(rows,
   state$posting_idx <- as.integer(posting_idx)
   state$cash_eligible <- cash_eligible
   state$disposition_eligible <- disposition_eligible
+  state$quantity_eligible <- quantity_eligible
   state$cash_due_idx <- as.integer(cash_due_idx)
   state$disposition_due_idx <- as.integer(disposition_due_idx)
+  state$quantity_due_idx <- as.integer(quantity_due_idx)
   state$late <- as.logical(late)
   state$quantity <- rep(NA_real_, nrow(rows))
   state$bound <- rep(FALSE, nrow(rows))
   state$cash_posted <- rep(FALSE, nrow(rows))
   state$disposition_posted <- rep(FALSE, nrow(rows))
+  state$quantity_checked <- rep(FALSE, nrow(rows))
   state$settings <- settings
   state$identity <- policy_identity
   state$instrument_ids <- instrument_ids
@@ -204,6 +214,7 @@ ledgr_corporate_action_plan <- function(rows,
     seq_len(nrow(rows)),
     disposition_due_idx
   )
+  state$quantity_due_by_pulse <- split(seq_len(nrow(rows)), quantity_due_idx)
 
   meta <- ledgr_corporate_action_event_meta(existing_events)
   cash_fact_ids <- vapply(meta, function(x) {
@@ -222,6 +233,20 @@ ledgr_corporate_action_plan <- function(rows,
     }
   }, character(1))
   disposition_fact_ids <- disposition_fact_ids[nzchar(disposition_fact_ids)]
+  duplicated_effect <- intersect(cash_fact_ids, disposition_fact_ids)
+  if (length(duplicated_effect) > 0L) {
+    rlang::abort(
+      paste(
+        "A corporate-action source fact cannot credit a supplied cash leg",
+        "and modeled disposition proceeds."
+      ),
+      class = c(
+        "ledgr_corporate_action_double_credit",
+        "ledgr_invalid_state"
+      ),
+      source_fact_ids = duplicated_effect
+    )
+  }
   if (anyDuplicated(cash_fact_ids) || anyDuplicated(disposition_fact_ids)) {
     rlang::abort(
       "A corporate-action source fact was posted more than once.",
@@ -266,6 +291,33 @@ ledgr_corporate_action_plan <- function(rows,
     if (has_cashflow()) "CASHFLOW",
     if (has_disposition()) "DISPOSITION"
   )
+
+  check_quantity_effects <- function(index) {
+    selected <- state$quantity_due_by_pulse[[as.character(index)]] %||%
+      integer()
+    selected <- selected[
+      !state$quantity_checked[selected] & state$bound[selected]
+    ]
+    if (length(selected) == 0L) return(invisible(integer()))
+    held <- selected[state$quantity[selected] != 0]
+    if (length(held) > 0L &&
+        identical(state$settings[["unsupported_quantity"]], "refuse")) {
+      rlang::abort(
+        paste(
+          "Corporate-action quantity effects are unsupported for held",
+          "positions under the selected policy."
+        ),
+        class = c(
+          "ledgr_corporate_action_quantity_unsupported",
+          "ledgr_corporate_action_unsupported",
+          "ledgr_invalid_fold_execution"
+        ),
+        source_fact_ids = as.character(state$rows$fact_id[held])
+      )
+    }
+    state$quantity_checked <- replace(state$quantity_checked, selected, TRUE)
+    invisible(held)
+  }
 
   post_cash <- function(index, run_id, event_seq, output_handler, state_value,
                         marks = NULL) {
@@ -460,7 +512,8 @@ ledgr_corporate_action_plan <- function(rows,
         position_after = 0,
         position_delta = position_delta[[k]],
         cash_delta = cash_delta[[k]],
-        realized_model_pnl = realized[[k]]
+        realized_model_pnl = realized[[k]],
+        affected_marked_exposure = abs(before[[k]] * mark[[k]])
       ))
     }, character(1))
     seq_value <- as.integer(event_seq) + seq_along(selected) - 1L
@@ -498,6 +551,7 @@ ledgr_corporate_action_plan <- function(rows,
       post = post_cash,
       post_cash = post_cash,
       post_disposition = post_disposition,
+      check_quantity_effects = check_quantity_effects,
       has_cashflow = has_cashflow,
       has_disposition = has_disposition,
       event_kinds = event_kinds,
