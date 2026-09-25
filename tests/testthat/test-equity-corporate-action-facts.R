@@ -218,7 +218,7 @@ testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move id
   DBI::dbDisconnect(con, shutdown = TRUE)
   testthat::expect_message(
     con <- ledgr_db_init(no_facts_path),
-    "Upgraded ledgr experiment-store schema from version 115 to 116"
+    "Upgraded ledgr experiment-store schema from version 115 to 117"
   )
   testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(
     con,
@@ -226,7 +226,7 @@ testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move id
   ))
   testthat::expect_identical(
     ledgr:::ledgr_experiment_store_version(con),
-    116L
+    117L
   )
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash(con, no_facts$snapshot_id),
@@ -296,6 +296,7 @@ testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", 
     source_build = canonical_rows$upstream_build_id,
     price_release = canonical_rows$bar_vintage_id,
     cash_units = canonical_rows$gross_cash_per_parent_unit,
+    parent_unit_multiplier = c(1, 1),
     cash_checked = canonical_rows$gross_cash_validated,
     destination_key = canonical_rows$recipient_instrument_id,
     destination_checked = canonical_rows$recipient_identity_validated,
@@ -306,6 +307,15 @@ testthat::test_that("[LTB-0030] a fictional adapter seals the canonical facts", 
   expected <- ledgr_facts_equity_corporate_actions(canonical_rows)
   actual <- adapter_env$fictional_corporate_action_adapter(fictional_rows)
   testthat::expect_identical(actual, expected)
+
+  later_split <- fictional_rows[1L, , drop = FALSE]
+  later_split$cash_units <- 2.5
+  later_split$parent_unit_multiplier <- 0.5
+  normalized <- adapter_env$fictional_corporate_action_adapter(later_split)
+  testthat::expect_identical(
+    normalized$rows$gross_cash_per_parent_unit,
+    1.25
+  )
 
   bars <- equity_corporate_action_bars()
   expected_snapshot <- ledgr_snapshot_from_df(

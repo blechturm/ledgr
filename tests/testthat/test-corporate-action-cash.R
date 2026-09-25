@@ -229,6 +229,59 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     1L
   )
 
+  next_open_experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 2),
+      cost_basis = c(AAA = 100)
+    ),
+    cost_model = ledgr_cost_zero(),
+    corporate_action_policy = ledgr_corporate_actions(
+      cash_posting = "next_open"
+    )
+  )
+  next_open_run <- ledgr_run(
+    next_open_experiment,
+    run_id = "corporate-action-cash-next-open"
+  )
+  withr::defer(close(next_open_run))
+  next_open_con <- ledgr:::ledgr_backtest_read_connection(next_open_run)
+  withr::defer(next_open_con$close())
+  next_open_equity <- DBI::dbGetQuery(
+    next_open_con$con,
+    paste(
+      "SELECT cash, equity FROM equity_curve",
+      "WHERE run_id = ? ORDER BY ts_utc"
+    ),
+    params = list(next_open_run$run_id)
+  )
+  next_open_state <- DBI::dbGetQuery(
+    next_open_con$con,
+    "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
+    params = list(next_open_run$run_id)
+  )
+  next_open_context_cash <- vapply(
+    next_open_state$state_json,
+    function(value) {
+      as.numeric(ledgr:::ledgr_json_read_nested(value)$observed_cash)
+    },
+    numeric(1)
+  )
+  testthat::expect_identical(
+    unname(next_open_equity$cash),
+    c(1000, 1000, 1002.5, 1002.5)
+  )
+  testthat::expect_identical(
+    unname(next_open_equity$equity),
+    c(1200, 1180, 1092.5, 1094.5)
+  )
+  testthat::expect_identical(
+    unname(next_open_context_cash),
+    c(1000, 1000, 1002.5, 1002.5)
+  )
+
   config <- ledgr_config(
     snapshot = snapshot,
     universe = "AAA",

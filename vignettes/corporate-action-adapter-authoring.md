@@ -1,0 +1,158 @@
+# Authoring A Corporate-Action Adapter
+
+
+An adapter has one job: translate a source’s vocabulary and units into
+ledgr’s canonical, vendor-neutral corporate-action facts. It must not
+make portfolio policy decisions. Sealing then validates and binds those
+facts to the snapshot; execution policy is selected later by the
+experiment.
+
+The boundary is:
+
+    private source rows -> adapter -> canonical facts -> sealed snapshot
+                                                  |
+                                                  +-> experiment policy -> run
+
+## The Canonical Header
+
+Every row needs a stable `fact_id`, a closed `subtype`, and a
+`parent_instrument_id`. Four clocks have distinct meanings:
+
+- `entitlement_time` determines which holding is entitled;
+- `effective_time` records when the source says the event takes effect;
+- `knowledge_time` is the first instant the terms may be used without
+  look-ahead; and
+- `payment_time` is optional evidence, not the research preset’s posting
+  clock.
+
+`complete` says whether the required terms are present. An incomplete
+row must carry a declared `refusal_reason`; it is evidence of an
+unsupported event, not an absent event.
+
+## Terms, Units, And Validation Flags
+
+Cash is expressed as `gross_cash_per_parent_unit`. A security leg uses
+`recipient_instrument_id` and `recipient_quantity_per_parent_unit`. Each
+leg has its own validation flag. An adapter sets a flag only after it
+has checked the source meaning and converted the term to the unit basis
+of the sealed bars.
+
+ledgr does not redo a vendor adjustment. The snapshot therefore declares
+a `price_basis`. Corporate-action settlement requires `split_adjusted`;
+bars that already include distributions are refused because posting cash
+again would double count it.
+
+The fictional source below reports its dividend as 2.5 old parent units
+and declares a 0.5 parent-unit multiplier for a later split. The
+canonical term is therefore 1.25 in the same unit basis as the sealed
+bars. The source adapter, not ledgr execution, owns that conversion.
+
+## Provenance
+
+`provenance_tier = "snapshot_bound"` is the portable tier. It binds the
+canonical facts to the sealed snapshot without requiring a provider
+build. `build_and_vintage_bound` is stronger: it additionally requires
+`upstream_build_id` and `bar_vintage_id`. The tier records evidence
+strength; it does not select a settlement capability.
+
+Keep the original source locator or record key in `fact_id` or
+source-owned lineage before translation. Never place licensed
+identifiers or raw payloads in public examples or error messages.
+
+## A Fictional Source
+
+This example intentionally uses source names that do not resemble the
+canonical names. That makes the adapter boundary visible instead of
+merely copying a data frame.
+
+``` r
+times <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:2
+records <- data.frame(
+  record_key = c("notice-1", "notice-2"),
+  effect_code = c("PAYMENT", "CHILD_GRANT"),
+  subject_key = c("AAA", "AAA"),
+  rights_at = c(times[[2]], times[[3]]),
+  changes_at = c(times[[2]], times[[3]]),
+  seen_at = c(times[[1]], times[[1]]),
+  settles_at = as.POSIXct(c(NA, NA), origin = "1970-01-01", tz = "UTC"),
+  terms_ready = c(TRUE, TRUE),
+  why_refused = c(NA_character_, NA_character_),
+  lineage_level = c("snapshot_bound", "snapshot_bound"),
+  source_build = c(NA_character_, NA_character_),
+  price_release = c(NA_character_, NA_character_),
+  cash_units = c(2.5, NA_real_),
+  parent_unit_multiplier = c(0.5, 1),
+  cash_checked = c(TRUE, FALSE),
+  destination_key = c(NA_character_, "BBB"),
+  destination_checked = c(FALSE, TRUE),
+  share_units = c(NA_real_, 0.5),
+  share_units_checked = c(FALSE, TRUE),
+  stringsAsFactors = FALSE
+)
+
+facts <- fictional_corporate_action_adapter(records)
+facts
+#> ledgr fact family
+#> Family: equity_corporate_actions
+#> Scope:  equity
+#> Rows:   2
+```
+
+The adapter owns the mapping from `PAYMENT` and `CHILD_GRANT`, the clock
+interpretation, unit normalization, and the validation flags. ledgr owns
+the canonical validator. Unknown source codes fail in the adapter;
+invalid canonical combinations fail in
+`ledgr_facts_equity_corporate_actions()`.
+
+## Seal The Result
+
+The physical axis must contain any recipient whose value may be needed
+later, even when that recipient is not a member of the strategy
+universe. Physical axis closure does not grant membership and does not
+make the recipient visible to features before the event.
+
+``` r
+bars <- do.call(rbind, lapply(c("AAA", "BBB"), function(id) {
+  data.frame(
+    instrument_id = id,
+    ts_utc = times,
+    open = if (id == "AAA") 10:12 else 20:22,
+    high = if (id == "AAA") 10:12 else 20:22,
+    low = if (id == "AAA") 10:12 else 20:22,
+    close = if (id == "AAA") 10:12 else 20:22,
+    volume = 1000
+  )
+}))
+store <- tempfile(fileext = ".duckdb")
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+  facts = ledgr_facts(facts),
+  price_basis = "split_adjusted",
+  db_path = store
+)
+info <- ledgr_snapshot_info(snapshot)
+c(
+  status = info$status[[1]],
+  bar_count = info$bar_count[[1]],
+  instrument_count = info$instrument_count[[1]]
+)
+#>           status        bar_count instrument_count
+#>         "SEALED"              "6"              "2"
+```
+
+The snapshot hash now covers the canonical facts and their declared
+provenance. Reopening verifies that identity; a consumer does not need
+the private source or adapter to reproduce the sealed input.
+
+## Refusal Is A Result
+
+An adapter should preserve a known event whose terms cannot be
+validated. Set `complete = FALSE`, provide the applicable refusal
+reason, and leave unvalidated terms unavailable. Do not infer a ratio,
+fabricate a mark, or turn an unsupported event into absence.
+
+At execution time, strict policy stops on a relevant unsupported effect.
+Research policy may report a quantity effect without changing account
+state. Neither path claims exact recipient exposure, broker settlement,
+withholding, tax treatment, or completeness of the upstream source.

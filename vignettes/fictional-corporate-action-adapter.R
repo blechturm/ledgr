@@ -3,7 +3,7 @@ fictional_corporate_action_adapter <- function(records) {
     "record_key", "effect_code", "subject_key", "rights_at",
     "changes_at", "seen_at", "settles_at", "terms_ready",
     "why_refused", "lineage_level", "source_build", "price_release",
-    "cash_units", "cash_checked", "destination_key",
+    "cash_units", "parent_unit_multiplier", "cash_checked", "destination_key",
     "destination_checked", "share_units", "share_units_checked"
   )
   if (!is.data.frame(records) || !all(required %in% names(records))) {
@@ -31,7 +31,9 @@ fictional_corporate_action_adapter <- function(records) {
     provenance_tier = as.character(records$lineage_level),
     upstream_build_id = as.character(records$source_build),
     bar_vintage_id = as.character(records$price_release),
-    gross_cash_per_parent_unit = as.numeric(records$cash_units),
+    gross_cash_per_parent_unit = as.numeric(
+      records$cash_units * records$parent_unit_multiplier
+    ),
     gross_cash_validated = as.logical(records$cash_checked),
     recipient_instrument_id = as.character(records$destination_key),
     recipient_identity_validated = as.logical(records$destination_checked),

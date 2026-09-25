@@ -343,8 +343,10 @@ Workstream 14 before Workstream 12. Its ticket review returned
 `PASS_AFTER_PATCHES`; the maintainer accepted the patched amendment on
 2026-09-24. LDG-2821 and LDG-2822 are implemented at `3d1ffbf` and `d93314e`;
 LDG-2823 passed Type 1 close review with three record-only corrections and
-Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12 is
-now open. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
+Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12 has
+implemented LDG-2814 through LDG-2817; LDG-2818 remains open for the
+workstream and cut closeout. Workstream 13 is an independent Cut 7 chore, not
+a prerequisite.
 Deferred LDG-2820 records the review's resume-only metadata-parsing
 optimization; it remains outside both the original and amended active-ticket
 denominators.

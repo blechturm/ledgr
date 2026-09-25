@@ -96,6 +96,63 @@ testthat::test_that("[LTB-0037] cash-distribution vignette records both presets"
   )))
 })
 
+testthat::test_that("[LTB-0057] adapter-authoring article records a vendor-neutral seal", {
+  root <- testthat::test_path("..", "..")
+  source_path <- file.path(
+    root,
+    "vignettes",
+    "corporate-action-adapter-authoring.qmd"
+  )
+  rendered_path <- file.path(
+    root,
+    "vignettes",
+    "corporate-action-adapter-authoring.md"
+  )
+  adapter_path <- file.path(
+    root,
+    "vignettes",
+    "fictional-corporate-action-adapter.R"
+  )
+  testthat::expect_true(file.exists(source_path))
+  testthat::expect_true(file.exists(rendered_path))
+  testthat::expect_true(file.exists(adapter_path))
+  source <- paste(readLines(source_path, warn = FALSE), collapse = "\n")
+  rendered <- paste(readLines(rendered_path, warn = FALSE), collapse = "\n")
+  adapter <- paste(readLines(adapter_path, warn = FALSE), collapse = "\n")
+  testthat::expect_no_match(source, "eval: false", fixed = TRUE)
+  testthat::expect_no_match(
+    paste(source, rendered, adapter, sep = "\n"),
+    "sharadar",
+    ignore.case = TRUE
+  )
+  required_source <- c(
+    "fictional_corporate_action_adapter(records)",
+    "facts = ledgr_facts(facts)",
+    "price_basis = \"split_adjusted\"",
+    "ledgr_snapshot_info(snapshot)"
+  )
+  testthat::expect_true(all(vapply(
+    required_source,
+    grepl,
+    logical(1),
+    x = source,
+    fixed = TRUE
+  )))
+  required_output <- c(
+    "Family: equity_corporate_actions",
+    "Rows:   2",
+    "#>           status        bar_count instrument_count",
+    "#>         \"SEALED\"              \"6\"              \"2\""
+  )
+  testthat::expect_true(all(vapply(
+    required_output,
+    grepl,
+    logical(1),
+    x = rendered,
+    fixed = TRUE
+  )))
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0033] legacy runs do not acquire a policy on reopen", {
   db_path <- tempfile(fileext = ".duckdb")
