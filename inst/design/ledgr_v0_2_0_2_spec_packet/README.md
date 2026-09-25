@@ -1,6 +1,6 @@
 # v0.2.0.2 Packet
 
-**Status:** Ten cuts: five closed, one folded, three open, and one awaiting
+**Status:** Ten cuts: six closed, one folded, two open, and one awaiting
 ticket-cut review. Cut 1, the
 test-suite
 cleanup, is closed: five
@@ -18,9 +18,9 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 `exact_parity_workflow_closeout.md`. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cut 6, usable equity corporate actions,
-is **open** under the synthesis accepted 2026-09-24: four serial workstreams,
-eighteen active tickets, cut review accepted after two rounds, Workstreams 10,
-11 and 14 accepted, and Workstream 12 awaiting Type 1 close review. Cuts
+is **accepted** under the synthesis accepted 2026-09-24: four serial
+workstreams, eighteen completed tickets, and nine review invocations, exactly
+0.500 against the gate. Cuts
 are independent of one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
@@ -318,7 +318,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (close review pending)
+## Cut 6: Usable equity corporate actions (closed)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -336,18 +336,19 @@ four serial workstreams. Deferred LDG-2820 is not an active cut ticket.
 | 14 Fact-family scaling | 2821–2823 | typed canonical fact preparation; set-wise persisted identity verification that retains the corruption guard; registered 20,000-row and 100,000-row clocks; closeout | all existing hashes, duplicate outcomes and tamper detection remain exact while constructor, seal and run-start row-wise encoding is removed |
 | 12 Disposition, composition and gate | 2814–2818 | canonical-R `DISPOSITION` with lot consumption and the schema migration; the composition rule and four-quantity report; durable resume and reopen plus memory failure containment; the fourteen-case gate and the adapter article; cut closeout | zero position means zero live lots; the four-row witness reconciles numerically; durable and memory guarantees are asserted as different things; every gate case names its clause and its smallest breaking change |
 
-Workstreams 10 and 11 are accepted. Workstream 11 passed focused Type 1
+All four workstreams are accepted. Workstream 11 passed focused Type 1
 re-review at `af5bdc6` after one bounded correction round and was accepted by
 the maintainer on 2026-09-24. The subsequent scaling finding inserts
 Workstream 14 before Workstream 12. Its ticket review returned
 `PASS_AFTER_PATCHES`; the maintainer accepted the patched amendment on
 2026-09-24. LDG-2821 and LDG-2822 are implemented at `3d1ffbf` and `d93314e`;
 LDG-2823 passed Type 1 close review with three record-only corrections and
-Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12 has
-implemented LDG-2814 through LDG-2818. Its agent-provisional
-`equity_corporate_actions_closeout.md` and the cut now await the independent
-Type 1 close review. Workstream 13 is an independent Cut 7 chore, not a
-prerequisite.
+Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12
+implemented LDG-2814 through LDG-2818 and passed independent Type 1 close
+review at `3adb8bd`. Its three closeout-only corrections were applied under
+the accepted ninth invocation, and the maintainer accepted Workstream 12 and
+closed the cut on 2026-09-25. Workstream 13 is an independent Cut 7 chore, not
+a prerequisite.
 Deferred LDG-2820 records the review's resume-only metadata-parsing
 optimization; it remains outside both the original and amended active-ticket
 denominators.
@@ -359,10 +360,10 @@ an accepted upstream build. The cut review (`cut_review_6.md`) returned
 `CHANGES_REQUIRED` at `8a1fb15` with five findings, all patched in place;
 the grouping and review points passed unchanged. Six reviews were completed
 against the original fifteen tickets. The amendment review and accepted
-Workstream 14 close review bring the count to eight; the planned Workstream 12
-close review makes nine over the amended eighteen active tickets, 0.500 against
-the 0.5 gate. A correction
-round would exceed the gate and must be recorded rather than hidden.
+Workstream 14 close review brought the count to eight; the accepted Workstream
+12 close review made nine over the amended eighteen active tickets, 0.500
+against the 0.5 gate. Its three record corrections were applied under that
+PASS rather than creating a tenth invocation.
 
 The three-ticket split is technical rather than arithmetic padding: LDG-2821
 owns in-memory R fact objects, LDG-2822 owns the typed DuckDB round trip and
@@ -383,10 +384,11 @@ finding. At 100,000 complete corporate-action facts, construction took 97.9
 seconds, sealing 112.9 seconds and a public run 18.3 seconds against a
 1.26-second no-fact control. Workstream 14 owns exact hash and corruption
 parity plus the scale correction; it is an output-preserving amendment only
-while those identities remain byte-identical. The agent-provisional closeout's
+while those identities remain byte-identical. The accepted closeout's
 three-run medians are 95.93 to 9.08 seconds for construction, 110.44 to 7.40
 for sealing, and 17.18 to 3.26 seconds for fact-attributable public-run
-overhead. All registered ceilings pass; maintainer acceptance remains open.
+overhead. All registered ceilings passed, and the maintainer accepted
+Workstream 14 before Workstream 12 opened.
 
 ## Cut 7: Maintenance, schema ceremony (closed)
 

@@ -1,8 +1,9 @@
 # Cut 6 Closeout: Usable Equity Corporate Actions
 
-**Status:** Agent-provisional. Workstreams 10, 11 and 14 are accepted.
-Workstream 12 awaits its independent Type 1 close review and maintainer
-acceptance.
+**Status:** Accepted 2026-09-25. All four workstreams are accepted.
+Workstream 12 passed independent Type 1 close review at `3adb8bd`; the
+maintainer accepted it and the three closeout-only corrections were applied
+under the same ninth review invocation.
 
 **Authority:** cut 6, Workstreams 10, 11, 14 and 12, under the accepted
 equity-settlement synthesis. The active cut contains eighteen tickets.
@@ -70,14 +71,19 @@ limiter is removed.
 
 ## Failure Sensitivity Added In Workstream 12
 
-- Removing the `DISPOSITION` lot branch made LTB-0050 fail on the independent
-  replay and left an invalid live-lot state.
+- Removing the `DISPOSITION` lot branch failed LTB-0050, LTB-0054 and
+  LTB-0056. The direct replay exposed the invalid live-lot state; the durable
+  recovery and physical-axis scenarios independently exposed the same missing
+  accounting behavior through their public outputs.
 - Removing the cash leg from acquisition consideration made four LTB-0052
   assertions fail, including both mixed-case totals. Removing the strict
   quantity check made LTB-0053 fail.
-- Dropping the durable disposition append made LTB-0054 reject the partial
-  and finalized ledgers. Giving a failed memory candidate zero final equity
-  instead of `NA` made LTB-0055 fail.
+- Dropping the disposition append failed LTB-0050, LTB-0051, LTB-0052,
+  LTB-0054 and LTB-0055 across twelve assertions: direct emission, public
+  summary, composition, durable recovery and memory observation all detected
+  the missing event. Giving a failed memory candidate zero final equity
+  instead of `NA` made LTB-0055 fail. An independent double-credit gut also
+  made LTB-0053 fail.
 - Replacing the membership axis with the complete physical axis changed the
   cross-sectional feature means from 10.5 and 11.5 to 15.5 and 16.5 and made
   LTB-0056 fail twice.
@@ -114,15 +120,19 @@ accepted and its output passes ledgr's public constructor and seal boundary.
 
 The exact-tree R 4.6.1 fast profile passed 454 of 454 selected blocks with
 zero failures and zero skips in 74.780 seconds. The ordinary 90-second gate
-passed under its one-run rule. Record:
+passed under its one-run rule. The corrected full review profile passed 265
+selected blocks in 351.640 seconds: 264 passed and one declared optional
+Yahoo-adapter block skipped because `quantmod` was unavailable.
 
-`.tmp/ws12-close-fast`
-
-The corrected full review profile passed 265 of 265 selected blocks with zero
-failures in 351.640 seconds. One declared optional Yahoo-adapter block skipped
-because `quantmod` was unavailable. Record:
-
-`.tmp/ws12-close-review`
+The operator session named `.tmp/ws12-close-fast` and
+`.tmp/ws12-close-review`, but neither directory was retained and neither
+exists in the reviewed tree. Those two timings are session-output evidence,
+not durable record artifacts. The independent Type 1 close-review session at
+`3adb8bd` reran both lanes and reproduced the claims: fast 454 of 454, zero
+non-passed, 75.060 seconds, ordinary gate green; review 265 selected, 264
+passed, the same optional block skipped, 439.990 seconds. That independent
+session likewise did not retain a record directory. No later release gate may
+cite either absent path as artifact-backed evidence.
 
 The first review-profile run was rejected after one frozen identity witness
 still expected schema 115 and a pre-policy config. Every economic table and
@@ -140,6 +150,17 @@ one event frame is appended per posting pulse, and retrospective summaries
 are computed at the result boundary. DISPOSITION delegates lot mutation to
 the consolidated canonical accounting core rather than introducing a second
 lot engine.
+
+One scale-growing result-boundary loop remains and is disclosed rather than
+hidden: `ledgr_corporate_action_summary()` maps each selected source fact to
+`which(source_fact_id == fact_id)`, a full corporate-action event scan per
+fact, or O(selected facts x corporate-action events). The close reviewer
+measured that expression at 0.010 seconds for 2,000 by 2,000 and 0.380 seconds
+for 10,000 by 10,000, versus below clock resolution for grouped
+`rowsum()`/`match()`. It is retained in this release because it is outside the
+fold, is immaterial at the evidenced fact counts, and changing the accepted
+result path was not needed for settlement correctness. A grouped replacement
+is a bounded result-reader optimization, not a performance claim of this cut.
 
 The fast lane remained between 73.25 and 74.78 seconds across the five
 Workstream 12 ticket records. These are gate clocks, not an end-to-end
