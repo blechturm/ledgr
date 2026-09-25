@@ -58,12 +58,15 @@ ledgr_corporate_action_cumulative_at <- function(times,
 ledgr_corporate_action_past_quantities <- function(events,
                                                     rows,
                                                     selected,
-                                                    instrument_ids) {
+                                                    instrument_ids,
+                                                    meta = NULL) {
   out <- rep(0, length(selected))
   if (length(selected) == 0L || is.null(events) || nrow(events) == 0L) {
     return(out)
   }
-  meta <- ledgr_corporate_action_event_meta(events)
+  if (is.null(meta)) {
+    meta <- ledgr_corporate_action_event_meta(events)
+  }
   event_time <- as.POSIXct(events$ts_utc, tz = "UTC")
   opening <- vapply(meta, function(x) identical(x$source, "opening_position"), logical(1))
   delta <- vapply(meta, function(x) as.numeric(x$position_delta %||% 0), numeric(1))

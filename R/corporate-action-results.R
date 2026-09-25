@@ -79,6 +79,28 @@ ledgr_corporate_action_fact_state <- function(con, snapshot_id) {
   )
 }
 
+ledgr_corporate_action_result_events <- function(con,
+                                                  run_id,
+                                                  instrument_ids) {
+  instrument_ids <- unique(as.character(instrument_ids))
+  instrument_ids <- instrument_ids[!is.na(instrument_ids) &
+    nzchar(instrument_ids)]
+  if (length(instrument_ids) == 0L) {
+    return(data.frame())
+  }
+  placeholders <- paste(rep("?", length(instrument_ids)), collapse = ",")
+  DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT ts_utc, event_type, instrument_id, meta_json, event_seq ",
+      "FROM ledger_events WHERE run_id = ? ",
+      "AND event_type IN ('FILL','CASHFLOW','DISPOSITION') ",
+      "AND instrument_id IN (", placeholders, ") ORDER BY event_seq"
+    ),
+    params = c(list(run_id), as.list(instrument_ids))
+  )
+}
+
 ledgr_corporate_action_composition_report <- function(con,
                                                        snapshot_id,
                                                        run_id,
@@ -106,7 +128,14 @@ ledgr_corporate_action_composition_report <- function(con,
   selected <- which(rows$complete & rows$subtype %in% subtypes)
   if (length(selected) == 0L) return(empty)
 
-  events <- ledgr_corporate_action_existing_events(con, run_id)
+  source_rows <- rows[selected, , drop = FALSE]
+  events <- ledgr_corporate_action_result_events(
+    con,
+    run_id,
+    source_rows$parent_instrument_id
+  )
+  if (nrow(events) == 0L) return(empty)
+  meta <- ledgr_corporate_action_event_meta(events)
   instrument_ids <- DBI::dbGetQuery(
     con,
     paste(
@@ -119,29 +148,39 @@ ledgr_corporate_action_composition_report <- function(con,
     events,
     rows,
     selected,
-    as.character(instrument_ids)
+    as.character(instrument_ids),
+    meta = meta
   )
   relevant <- quantity != 0
   if (!any(relevant)) return(empty)
   selected <- selected[relevant]
   quantity <- quantity[relevant]
-  source_rows <- rows[selected, , drop = FALSE]
-
-  meta <- ledgr_corporate_action_event_meta(events)
+  source_rows <- source_rows[relevant, , drop = FALSE]
   source_fact_id <- vapply(
     meta,
     function(value) as.character(value$source_fact_id %||% ""),
     character(1)
   )
-  modeled_cash <- vapply(source_rows$fact_id, function(fact_id) {
-    matched <- which(source_fact_id == fact_id)
-    if (length(matched) == 0L) return(0)
-    sum(vapply(
-      meta[matched],
-      function(value) as.numeric(value$cash_delta %||% 0),
-      numeric(1)
-    ))
-  }, numeric(1))
+  cash_delta <- vapply(
+    meta,
+    function(value) as.numeric(value$cash_delta %||% 0),
+    numeric(1)
+  )
+  usable_cash <- nzchar(source_fact_id)
+  cash_keys <- unique(source_fact_id[usable_cash])
+  cash_by_source <- if (length(cash_keys) == 0L) {
+    numeric()
+  } else {
+    as.numeric(rowsum(
+      cash_delta[usable_cash],
+      group = match(source_fact_id[usable_cash], cash_keys),
+      reorder = FALSE
+    )[, 1L])
+  }
+  cash_idx <- match(as.character(source_rows$fact_id), cash_keys)
+  modeled_cash <- rep(0, nrow(source_rows))
+  matched_cash <- !is.na(cash_idx)
+  modeled_cash[matched_cash] <- cash_by_source[cash_idx[matched_cash]]
 
   bar_rows <- DBI::dbGetQuery(
     con,

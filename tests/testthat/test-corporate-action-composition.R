@@ -64,7 +64,11 @@ corporate_action_composition_fixture <- function(subtype) {
   list(snapshot = snapshot, pulses = pulses)
 }
 
-corporate_action_composition_run <- function(subtype, policy, run_id) {
+corporate_action_composition_run <- function(subtype,
+                                               policy,
+                                               run_id,
+                                               opening_positions = c(AAA = 2),
+                                               opening_cost_basis = c(AAA = 100)) {
   fixture <- corporate_action_composition_fixture(subtype)
   strategy <- function(ctx, params) {
     forbidden <- grepl(
@@ -79,8 +83,8 @@ corporate_action_composition_run <- function(subtype, policy, run_id) {
     strategy,
     opening = ledgr_opening(
       cash = 1000,
-      positions = c(AAA = 2),
-      cost_basis = c(AAA = 100)
+      positions = opening_positions,
+      cost_basis = opening_cost_basis
     ),
     valuation_policy = ledgr_valuation_stale(1L),
     cost_model = ledgr_cost_zero(),
@@ -160,6 +164,110 @@ testthat::test_that("[LTB-0052] acquisition composition reports four reconciled 
     close(value$run)
     ledgr_snapshot_close(value$snapshot)
   }
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0068] composition evidence is filtered and prepared once", {
+  value <- corporate_action_composition_run(
+    "mixed_acquisition",
+    ledgr_corporate_actions_research(),
+    "composition-prepared-once",
+    opening_positions = c(AAA = 2, BBB = 1),
+    opening_cost_basis = c(AAA = 100, BBB = 49)
+  )
+  withr::defer(close(value$run))
+  withr::defer(ledgr_snapshot_close(value$snapshot))
+  opened <- ledgr:::ledgr_backtest_read_connection(value$run)
+  withr::defer(opened$close())
+  facts <- ledgr:::ledgr_corporate_action_rows(
+    opened$con,
+    value$run$config$data$snapshot_id
+  )
+  all_events <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT instrument_id FROM ledger_events WHERE run_id = ?",
+    params = list(value$run$run_id)
+  )
+  testthat::expect_true("BBB" %in% all_events$instrument_id)
+
+  query_calls <- 0L
+  decode_calls <- 0L
+  decoded_events <- list()
+  original_query <- ledgr:::ledgr_corporate_action_result_events
+  original_decode <- ledgr:::ledgr_corporate_action_event_meta
+  testthat::local_mocked_bindings(
+    ledgr_corporate_action_result_events = function(...) {
+      query_calls <<- query_calls + 1L
+      original_query(...)
+    },
+    ledgr_corporate_action_event_meta = function(events) {
+      decode_calls <<- decode_calls + 1L
+      decoded_events[[decode_calls]] <<- events
+      original_decode(events)
+    },
+    .package = "ledgr"
+  )
+  report <- ledgr:::ledgr_corporate_action_composition_report(
+    opened$con,
+    value$run$config$data$snapshot_id,
+    value$run$run_id,
+    facts
+  )
+  testthat::expect_identical(query_calls, 1L)
+  testthat::expect_identical(decode_calls, 1L)
+  testthat::expect_true(nrow(decoded_events[[1L]]) > 0L)
+  testthat::expect_true(all(decoded_events[[1L]]$instrument_id == "AAA"))
+  testthat::expect_identical(report$entitled_parent_quantity, 2)
+  testthat::expect_identical(report$modeled_cash_credited, 180)
+  testthat::expect_identical(
+    report$estimated_contractual_consideration,
+    180
+  )
+  testthat::expect_identical(report$difference, 0)
+  testthat::expect_identical(
+    report$successor_exposure_not_represented,
+    50
+  )
+  testthat::expect_identical(report$recipient_mark, 50)
+  testthat::expect_identical(
+    report$valuation_ts_utc,
+    as.POSIXct("2020-01-02 16:00:00", tz = "UTC")
+  )
+  testthat::expect_identical(report$estimate_label, "effective-date estimate")
+
+  plain <- ledgr:::ledgr_corporate_action_composition_report(
+    opened$con,
+    value$run$config$data$snapshot_id,
+    value$run$run_id,
+    data.frame()
+  )
+  dividend <- facts
+  dividend$subtype <- "ordinary_cash_dividend"
+  dividend <- ledgr:::ledgr_corporate_action_composition_report(
+    opened$con,
+    value$run$config$data$snapshot_id,
+    value$run$run_id,
+    dividend
+  )
+  unheld <- facts
+  unheld$parent_instrument_id <- "CCC"
+  unheld <- ledgr:::ledgr_corporate_action_composition_report(
+    opened$con,
+    value$run$config$data$snapshot_id,
+    value$run$run_id,
+    unheld
+  )
+  testthat::expect_identical(nrow(plain), 0L)
+  testthat::expect_identical(nrow(dividend), 0L)
+  testthat::expect_identical(nrow(unheld), 0L)
+  testthat::expect_identical(query_calls, 2L)
+  testthat::expect_identical(decode_calls, 1L)
+
+  body_text <- paste(deparse(
+    body(ledgr:::ledgr_corporate_action_composition_report)
+  ), collapse = "\n")
+  testthat::expect_false(grepl("which(source_fact_id ==", body_text, fixed = TRUE))
+  testthat::expect_true(grepl("rowsum", body_text, fixed = TRUE))
 })
 
 # ledgr-test-profile: review
