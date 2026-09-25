@@ -1,23 +1,26 @@
-ledgr_sweep_persistence_parity_bars <- function() {
-  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:7
+ledgr_sweep_persistence_parity_bars <- function(n_days = 8L) {
+  n_days <- as.integer(n_days)
+  stopifnot(length(n_days) == 1L, !is.na(n_days), n_days >= 6L, n_days <= 8L)
+  take <- seq_len(n_days)
+  dates <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * (take - 1L)
   rbind(
     data.frame(
       instrument_id = "AAA",
       ts_utc = dates,
-      open = c(100, 101, 103, 102, 104, 107, 106, 108),
-      high = c(101, 103, 104, 103, 106, 108, 108, 109),
-      low = c(99, 100, 101, 101, 103, 106, 105, 107),
-      close = c(100, 102, 103, 102, 105, 107, 106, 108),
+      open = c(100, 101, 103, 102, 104, 107, 106, 108)[take],
+      high = c(101, 103, 104, 103, 106, 108, 108, 109)[take],
+      low = c(99, 100, 101, 101, 103, 106, 105, 107)[take],
+      close = c(100, 102, 103, 102, 105, 107, 106, 108)[take],
       volume = 1000,
       stringsAsFactors = FALSE
     ),
     data.frame(
       instrument_id = "BBB",
       ts_utc = dates,
-      open = c(50, 51, 50, 49, 48, 50, 52, 51),
-      high = c(51, 52, 51, 50, 49, 51, 53, 52),
-      low = c(49, 50, 49, 48, 47, 49, 51, 50),
-      close = c(50, 51, 50, 49, 48, 50, 52, 51),
+      open = c(50, 51, 50, 49, 48, 50, 52, 51)[take],
+      high = c(51, 52, 51, 50, 49, 51, 53, 52)[take],
+      low = c(49, 50, 49, 48, 47, 49, 51, 50)[take],
+      close = c(50, 51, 50, 49, 48, 50, 52, 51)[take],
       volume = 2000,
       stringsAsFactors = FALSE
     )
@@ -49,22 +52,26 @@ ledgr_sweep_persistence_parity_exp <- function(snapshot) {
   )
 }
 
-ledgr_sweep_persistence_parity_grid <- function() {
-  ledgr_param_grid(
+ledgr_sweep_persistence_parity_grid <- function(candidate_ids = NULL) {
+  cases <- list(
     flat = list(aaa_qty = 0, aaa_partial_qty = 0, bbb_qty = 0, close_day5 = TRUE),
     partial = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day5 = TRUE),
     open_end = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day5 = FALSE)
   )
+  if (!is.null(candidate_ids)) cases <- cases[candidate_ids]
+  do.call(ledgr_param_grid, cases)
 }
 
-ledgr_sweep_persistence_parity_fixture <- function(compiled_accounting_model = NULL) {
+ledgr_sweep_persistence_parity_fixture <- function(compiled_accounting_model = NULL,
+                                                    n_days = 8L,
+                                                    candidate_ids = NULL) {
   db_path <- tempfile(fileext = ".duckdb")
-  bars <- ledgr_sweep_persistence_parity_bars()
+  bars <- ledgr_sweep_persistence_parity_bars(n_days)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
   exp <- ledgr_sweep_persistence_parity_exp(snapshot)
   sweep <- ledgr_sweep(
     exp,
-    ledgr_sweep_persistence_parity_grid(),
+    ledgr_sweep_persistence_parity_grid(candidate_ids),
     seed = 2591L,
     retain = ledgr_sweep_retention("completed"),
     compiled_accounting_model = compiled_accounting_model
@@ -212,14 +219,21 @@ testthat::test_that("retained series match ordered-event reconstruction on R acc
 # ledgr-test-profile: fast
 testthat::test_that("[LTB-0014] retained series match ordered-event reconstruction on compiled spot FIFO", {
   fixture <- ledgr_sweep_persistence_with_compiled(
-    ledgr_sweep_persistence_parity_fixture(compiled_accounting_model = "spot_fifo")
+    ledgr_sweep_persistence_parity_fixture(
+      compiled_accounting_model = "spot_fifo",
+      n_days = 6L,
+      candidate_ids = c("partial", "open_end")
+    )
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   on.exit(unlink(fixture$db_path), add = TRUE)
 
   # Durable compiled ledgr_run() is not available in v0.1.9.2. This compares
   # compiled sweep retained series with the canonical R ordered-event
-  # reconstruction for the same candidate reproduction key.
+  # reconstruction for the same candidate reproduction key. The partial case
+  # retains OPEN, REDUCE and CLOSE transitions; open_end retains a live lot at
+  # the horizon. LTB-0017 keeps the full flat/partial/open_end, eight-pulse
+  # compiled retained-series matrix in review.
   for (candidate_id in as.character(fixture$sweep$candidate_id)) {
     ledgr_sweep_persistence_expect_ordered_event_parity(fixture, candidate_id, "compiled-reconstructed")
   }
