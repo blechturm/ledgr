@@ -377,7 +377,7 @@ seconds, sealing 112.9 seconds and a public run 18.3 seconds against a
 parity plus the scale correction; it is an output-preserving amendment only
 while those identities remain byte-identical.
 
-## Cut 7: Maintenance, schema ceremony (review pending)
+## Cut 7: Maintenance, schema ceremony (closed)
 
 Authority: `schema_ceremony_note.md` and the review obligations as amended
 2026-09-24. No RFC: one healthy-store exact-parity chore on
@@ -390,9 +390,10 @@ compressed into the close review. LDG-2795 is the standing candidate to join.
 | --- | --- | --- | --- |
 | 13 Schema ceremony | 2819 | one catalogue read per call compared in memory; a version-marker fast path for create on reopen only; a DBI-count detector; interleaved clocks on run open, db_init, fast and review lanes | the detector fails on a reintroduced per-table query; the five gut-failure blocks pass; the fast path is keyed on the exact stored version; healthy-store outputs are identical and current-marker damage fails closed |
 
-Implementation and agent-provisional closeout are complete. The unmatched fast
+Implementation and closeout are accepted. The unmatched fast
 profile medians are not used as an effect estimate; the matched quiet-end pair
 improved from 87.82 to 70.77 seconds, and the ordinary gate passed at 75.73
-seconds against the 90-second bound. The initial Cut 7 Type 1 close review
-required four bounded corrections. Focused re-review and the maintainer's
-historical-gate decision are pending.
+seconds against the 90-second bound. The initial Type 1 close review required
+four bounded corrections; focused re-review returned PASS. The maintainer
+accepted the honest historical exception of two review invocations over one
+ticket, 2.0, rather than padding the cut with unrelated work.

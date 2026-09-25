@@ -1,7 +1,7 @@
 # Workstream 13: Schema Ceremony Closeout
 
-**Status:** Agent-provisional; awaiting the compressed Cut 7 Type 1 close
-review. **Ticket:** LDG-2819. **Baseline:** `8fa1184`.
+**Status:** Accepted by the maintainer on 2026-09-25 after focused Type 1
+re-review PASS at `82fcfce`. **Ticket:** LDG-2819. **Baseline:** `8fa1184`.
 
 ## What Shipped
 
@@ -130,11 +130,8 @@ Declined: skipping validation on the version marker; keying creation on a
 table; changing callers, DDL, migrations, hashes or marker semantics;
 parallelizing tests; and any Workstream 14 or Workstream 12 behavior.
 
-Cut 7 has one ticket and compressed its cut review into this close review. At
-the correction stage it has one completed review; focused re-review will make
-two invocations over one completed ticket, 2.0, against the 0.5 gate. Adding
-unrelated work now cannot make either review cover that work, so it would not
-repair the ratio. The cut remains open pending the maintainer's explicit choice
-either to record the honest historical exception, following Cut 5's precedent,
-or to amend the cut for independently justified work. This closeout does not
-silently count or implement LDG-2795.
+Cut 7 has one ticket and compressed its cut review into this close review. The
+initial review and focused re-review are two invocations over one completed
+ticket, 2.0, against the 0.5 gate. The maintainer accepted that honest
+historical exception on 2026-09-25 rather than padding the cut with unrelated
+work. This closeout does not silently count or implement LDG-2795.
