@@ -1,6 +1,8 @@
 # v0.2.0.2 Packet
 
-**Status:** Six cuts, four closed and two open. Cut 1, the test-suite
+**Status:** Ten cuts: five closed, one folded, three open, and one awaiting
+ticket-cut review. Cut 1, the
+test-suite
 cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
 governance loop promoted for v0.2.0.2 with mandatory reassessment before the
@@ -402,3 +404,106 @@ seconds against the 90-second bound. The initial Type 1 close review required
 four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
+
+## Cut 8: Release gate (open; opens after workstream 17)
+
+Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
+Requirements and What Counts as Green sections, and its CI Tiers section added
+2026-09-25 when `R-CMD-check.yaml` was tiered. No RFC: the playbook already
+binds the process and requires that every release-gate ticket name it and the
+exact local gates. Two tickets, LDG-2824 and LDG-2825, one workstream; the cut
+review is compressed into the close review, so one invocation over two tickets
+is 0.500.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 15 Release gate | 2824–2825 | `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+
+The two tickets are not a split for the ratio. `NEWS.md` is wrong in the tree
+today and would need writing even if the release slipped; the gate execution is
+separate work with its own evidence. A correction round would make the cut
+2 over 2, 1.00, and is to be recorded rather than hidden, as cut 7 recorded its
+own. This workstream ships no production code, so the amended obligations'
+seven-shape walk and before-and-after clock do not apply to its review.
+
+## Cut 9: Availability and evidence accessors (open; opens after workstream 12)
+
+Authority: `../horizon.md`, the 2026-09-25 `[ux]` entry, and
+`../vignette_styleguide.md` section 5, which routes visual clutter in a worked
+example to an API gap rather than to boilerplate in the article. No RFC: five
+additive readers over evidence the engine already produces. Tickets LDG-2826
+through LDG-2832, one workstream; the cut review is compressed into the close
+review, so one invocation over seven tickets is 0.143.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 16 Availability and evidence accessors | 2826–2832 | `ctx$tradable()` beside `ctx$flat()` and `ctx$hold()`; a reader for quarantined observations; `ledgr_run_explain()` over a whole instrument history; one completion answer per run; removal of the unreachable scalar fallbacks; a warning when a strategy loops a scalar accessor over the universe; closeout | each accessor agrees with the state the engine already computed rather than recomputing it; an empty axis needs no special case; no contract, schema, hash or error class moves; the missing-data article loses the clutter that motivated the cut |
+
+The trigger was writing `missing-data-and-sessions.qmd`. Its strategy needed
+four lines to answer "which instruments may I size now", it read quarantined
+rows with raw SQL, it asked `ledgr_run_explain()` about one timestamp at a
+time, and it printed three completion fields in sequence. Each of those is the
+API asking for a reader. Workstream 15, the release gate, now runs after this
+workstream so the release ships the articles on the accessors rather than on
+the workaround.
+
+A measured scan of the strategy helpers on 2026-09-25 added the last two
+tickets. The helper layer itself is 1.3 to 2.8 percent of a run and its share
+falls as the universe grows, so there is nothing to optimize there. The cost
+that matters is the accessor a strategy author reaches for: at two thousand
+instruments, looping a scalar accessor over the universe adds tens of
+milliseconds per pulse against effectively nothing for the vector plane, and
+nothing warns.
+
+## Cut 10: Indicator source parity and timing attribution (ticket-cut review pending)
+
+Authority: the maintainer's 2026-09-25 decision that indicator source is not
+a semantic axis for missing observations or session calendars, together with
+the Availability Contract in `../contracts.md` and the first-party indicator
+investigation already registered in `../horizon.md`. Six tickets,
+LDG-2833 through LDG-2838, one workstream. The cut receives an independent
+Type 1 and Type 2 ticket-cut review before any measurement or implementation,
+then one Type 1 close review. Two planned invocations over six tickets is
+0.333 against the 0.5 gate; one correction round would make it exactly 0.500.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 17 Indicator source parity and timing attribution | 2833–2838 | order-controlled attribution of the recorded TTR/built-in gap; strict-window propagation through direct, sweep, resume and cache paths; public TTR SMA certification; isolated-process peer boundary; missing-data and indicator documentation; closeout | implementation source does not alter expected sessions, gap NA positions, warmup or recovery, and no TTR performance difference is claimed until fresh-process, order-balanced evidence localizes it |
+
+The measurement is deliberately first. The current record's durable TTR row
+is 61.54 seconds against 51.97 for built-in SMA, with 8.71 of the 9.57-second
+difference inside `ledgr_run()`. That record cannot attribute the difference:
+the TTR row always ran first, earlier releases changed the sign, and the
+horizon's 1,000-call primitive comparison explained about 0.04 seconds. The
+registered probe compares three arms: native built-in SMA, the private
+benchmark wrapper, and public TTR SMA. It runs all six arm-order permutations
+in fresh child processes over copied stores with one snapshot identity, so
+every arm occupies the first, second, and third position twice. Position cells
+remain separate. A pairwise structural finding must keep its direction in all
+three positions, exceed one second and five percent, exceed the largest
+within-position spread, and be localized. Otherwise no production optimization
+is authorized.
+
+The semantic correction is independent of that timing outcome, but is
+sequenced after the measurement so it cannot contaminate the baseline. A direct
+availability-aware run with `ledgr_ind_sma(2)` currently succeeds while a
+one-candidate sweep fails because the precompute conversion drops
+`gap_contract`. The workstream fixes that representation loss and proves one
+expected-session matrix across direct run, sequential and parallel sweep,
+resume and cache. Public `ledgr_ind_ttr("SMA")` becomes the external
+strict-window certification case only for the exact post-resolution predicate
+in LDG-2835. The output-bundle constructor, EMA, RSI, and all other recursive
+or unassessed TTR families remain unsupported in availability mode; similar
+names do not establish equivalent mathematics. The same ticket updates the
+Availability Contract and checks it against the executable support matrix.
+
+After the semantic work, all six published rows currently fed by the shared
+private TTR wrapper must call the public adapter. The public TTR and built-in
+rows run in isolated R processes, and cold results are compared only with the
+attribution probe's first-position cells. The record and ggplot report are
+regenerated, and any change is described as a boundary correction rather than
+a package speedup. The missing-data article then documents dense implicit
+calendars, declared expected sessions, strict-window contamination and
+recovery, late listings, stale valuation separation, and the executable
+support matrix. Workstream 17 follows Workstream 16 so both edits to that
+article are serial; the release gate follows Workstream 17.
