@@ -361,7 +361,10 @@ asking about one instrument you have already singled out. Reaching for them
 inside `vapply()`, `sapply()`, or a `for` loop over `ctx$universe` is the most
 expensive habit available to a ledgr strategy, and it hides well: the numbers
 are right and the run is simply slow. When you want a value for everyone, read
-the plane.
+the plane. For universes of at least 100 instruments, ledgr emits one
+`ledgr_scalar_accessor_loop` warning per run when one scalar accessor reaches a
+full-universe call count in a pulse. The warning names the vector plane to use;
+it is diagnostic only and changes no target, fill, result, or run identity.
 :::
 
 Every helper in the pipeline below already reads planes, so a strategy written

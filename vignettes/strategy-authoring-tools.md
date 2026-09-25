@@ -334,7 +334,7 @@ tibble(
 #>   form                                        seconds added_ms_per_pulse
 #>   <chr>                                         <dbl>              <dbl>
 #> 1 ctx$vec$close                                  3.42                0
-#> 2 vapply(ctx$universe, ctx$close, numeric(1))    3.92               16.7
+#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.58               38.7
 ```
 
 Read the last column rather than the ratio. The two strategies differ in
@@ -354,7 +354,12 @@ minutes, not milliseconds.
 > Reaching for them inside `vapply()`, `sapply()`, or a `for` loop over
 > `ctx$universe` is the most expensive habit available to a ledgr
 > strategy, and it hides well: the numbers are right and the run is simply
-> slow. When you want a value for everyone, read the plane.
+> slow. When you want a value for everyone, read the plane. For universes
+> of at least 100 instruments, ledgr emits one
+> `ledgr_scalar_accessor_loop` warning per run when one scalar accessor
+> reaches a full-universe call count in a pulse. The warning names the
+> vector plane to use; it is diagnostic only and changes no target, fill,
+> result, or run identity.
 
 
 Every helper in the pipeline below already reads planes, so a strategy

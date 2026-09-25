@@ -1,0 +1,89 @@
+testthat::test_that("[LTB-0067] universe-wide scalar access warns once without changing output", {
+  ids <- sprintf("I%03d", seq_len(100L))
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
+  bars <- data.frame(
+    instrument_id = rep(ids, times = length(pulses)),
+    ts_utc = rep(pulses, each = length(ids)),
+    open = 100,
+    high = 101,
+    low = 99,
+    close = 100,
+    volume = 1000,
+    stringsAsFactors = FALSE
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  loop_strategy <- function(ctx, params) {
+    values <- vapply(ctx$universe, ctx$close, numeric(1))
+    targets <- ctx$hold()
+    if (all(is.finite(values))) targets[[1L]] <- 1
+    targets
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    loop_strategy,
+    opening = ledgr_opening(cash = 10000),
+    cost_model = ledgr_cost_zero()
+  )
+  observed <- list()
+  warned <- withCallingHandlers(
+    ledgr_run(experiment, run_id = "scalar-warning"),
+    ledgr_scalar_accessor_loop = function(condition) {
+      observed[[length(observed) + 1L]] <<- condition
+      invokeRestart("muffleWarning")
+    }
+  )
+  on.exit(close(warned), add = TRUE)
+  suppressed <- suppressWarnings(ledgr_run(experiment, run_id = "scalar-suppressed"))
+  on.exit(close(suppressed), add = TRUE)
+
+  testthat::expect_length(observed, 1L)
+  testthat::expect_s3_class(observed[[1L]], "ledgr_scalar_accessor_loop")
+  testthat::expect_identical(observed[[1L]]$accessor, "close")
+  testthat::expect_identical(observed[[1L]]$observed_call_count, 100L)
+  testthat::expect_identical(observed[[1L]]$vector_form, "ctx$vec$close")
+  testthat::expect_match(conditionMessage(observed[[1L]]), "100 times", fixed = TRUE)
+
+  testthat::expect_identical(
+    ledgr_results(warned, "fills"),
+    ledgr_results(suppressed, "fills")
+  )
+  testthat::expect_identical(
+    ledgr_results(warned, "equity"),
+    ledgr_results(suppressed, "equity")
+  )
+  warned_info <- ledgr_run_info(snapshot, warned$run_id)
+  suppressed_info <- ledgr_run_info(snapshot, suppressed$run_id)
+  testthat::expect_identical(warned_info$config_hash, suppressed_info$config_hash)
+  testthat::expect_identical(warned_info$strategy_hash, suppressed_info$strategy_hash)
+
+  no_warning <- function(strategy, run_id) {
+    conditions <- list()
+    bt <- withCallingHandlers(
+      ledgr_run(
+        ledgr_experiment(
+          snapshot,
+          strategy,
+          opening = ledgr_opening(cash = 10000),
+          cost_model = ledgr_cost_zero()
+        ),
+        run_id = run_id
+      ),
+      ledgr_scalar_accessor_loop = function(condition) {
+        conditions[[length(conditions) + 1L]] <<- condition
+        invokeRestart("muffleWarning")
+      }
+    )
+    on.exit(close(bt), add = TRUE)
+    testthat::expect_length(conditions, 0L)
+  }
+  no_warning(function(ctx, params) {
+    invisible(ctx$vec$close)
+    ctx$flat()
+  }, "plane-only")
+  no_warning(function(ctx, params) {
+    invisible(vapply(ctx$universe[seq_len(5L)], ctx$close, numeric(1)))
+    ctx$flat()
+  }, "small-scalar-set")
+})

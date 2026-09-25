@@ -149,7 +149,8 @@ For the installed accessor reference, see `?ledgr_strategy_context`.
 > because the scalar form costs per call and a universe-wide loop pays it
 > once per instrument per pulse.
 > `vignette("strategy-authoring-tools", package = "ledgr")` measures the
-> difference.
+> difference and documents the `ledgr_scalar_accessor_loop` warning
+> emitted for that shape on large universes.
 
 
 The pulse loop is the contract in motion:

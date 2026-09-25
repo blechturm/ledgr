@@ -382,6 +382,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
   } else {
     NULL
   }
+  scalar_access_state <- ledgr_pulse_context_scalar_access_state()
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
@@ -619,7 +620,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           universe = instrument_ids,
           pulse_idx = i,
           active_alias_map = active_alias_map,
-          id_to_idx = id_to_idx
+          id_to_idx = id_to_idx,
+          scalar_access_state = scalar_access_state
         )
       } else {
         ledgr_update_pulse_context_helpers(
@@ -634,7 +636,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           features_wide = features_wide_current,
           active_alias_map = active_alias_map,
           id_to_idx = if (availability_active) NULL else id_to_idx,
-          availability = availability_view
+          availability = availability_view,
+          scalar_access_state = scalar_access_state
         )
       }
       if (availability_active) {
