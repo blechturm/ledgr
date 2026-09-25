@@ -26,6 +26,18 @@
   num_specials = "null"
 )
 
+# Fact identity prepares typed columns before encoding, then embeds the
+# resulting JSON without parsing it back into per-row R objects.
+.ledgr_json_write_canonical_v2_verbatim_opts <- yyjsonr::opts_write_json(
+  pretty = FALSE,
+  auto_unbox = TRUE,
+  dataframe = "rows",
+  digits = -1L,
+  null = "null",
+  num_specials = "null",
+  json_verbatim = TRUE
+)
+
 .ledgr_json_cache_get <- function(key) {
   if (!exists(key, envir = .ledgr_json_cache, inherits = FALSE)) return(NULL)
   get(key, envir = .ledgr_json_cache, inherits = FALSE)
@@ -66,6 +78,13 @@ ledgr_json_write_canonical_v2 <- function(x) {
   yyjsonr::write_json_str(
     x,
     opts = .ledgr_json_write_canonical_v2_opts
+  )
+}
+
+ledgr_json_write_canonical_v2_verbatim <- function(x) {
+  yyjsonr::write_json_str(
+    x,
+    opts = .ledgr_json_write_canonical_v2_verbatim_opts
   )
 }
 

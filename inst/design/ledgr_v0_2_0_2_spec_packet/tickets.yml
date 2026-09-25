@@ -963,17 +963,18 @@ tickets:
   - id: "LDG-2821"
     title: "Vectorize canonical fact preparation"
     workstream: 14
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "fact_family_scaling_note.md. Replace the row-wise data-frame slicing, timestamp formatting and canonical-JSON loop in ledgr_fact_deduplicate() and ledgr_fact_family_hash() with typed column preparation and a set-wise canonical payload. The frozen matrix enumerates six registered inputs: membership with membership_sets headers, trading_status, lifetime, equity_corporate_actions, sessions and observation_quarantine with original_row_json. Retain current row order and canonical null, Date, POSIXct, numeric, logical and character representations. This is an implementation change only: ledgr_fact_family_v1, ledgr_facts_v1, every existing fact_hash and bundle_hash, duplicate choice, error ordering, class and condition field remain exact. ledgr_fact_ids() and provenance normalization are touched only if the registered profile proves they contribute materially on the same fixture; otherwise they remain out of scope."
     acceptance: ["before implementation, record the af5bdc6 family and bundle hashes for the complete six-input matrix as literal expected values inside the detector; the expected side is never recomputed by the production helper under test, and every literal remains byte-identical after the change", "compatible duplicate rows retain the same first row and ordering; one incompatible payload per input family raises the identical class, message and fact_ids field before and after", "at two row counts differing by ten times, ledgr_fact_row_payload is called zero times on the new dedupe and family-hash paths (or is removed), while canonical_json and ledgr_fact_time_token call counts are fixed by columns and tables rather than rows; restoring a per-row slice, conversion or encoding fails the detector", "constructor clocks at 20,000 and 100,000 complete corporate-action rows are recorded in a same-session interleaved before-and-after design against af5bdc6; the note's 97.9 seconds is expected magnitude only, and the 100,000-row after median must be at most one tenth of its paired before median", "for each input family, a fixture that is both invalid under a pre-deduplication validator and identity-conflicting raises the same validator class and condition fields before the identity conflict, preserving error ordering", "no schema, hash-rule version, public API, family vocabulary or persisted representation changes"]
+    evidence: ["LTB-0042 freezes all five fact-family hashes, the bundle hash and generated membership identities from af5bdc6; LTB-0043 exercises compatible and incompatible duplicates over every identity-bearing family and proves row-payload, canonical-JSON and timestamp-token work is independent of row count on the changed paths; LTB-0044 freezes constructor validation precedence across membership, trading status, lifetime, equity corporate actions and sessions", "the first registered-shape run measured 20,000 rows at 17.10 seconds before and 2.23 seconds after, and 100,000 rows at 95.92 seconds before and 9.06 seconds after; the final interleaved record belongs to LDG-2823", "the fast profile passed 450 of 450 blocks in 89.270 seconds and the ordinary gate passed against 90 seconds at .tmp/ws14-2821-fast"]
 
   - id: "LDG-2822"
     title: "Verify persisted fact identity set-wise"
     workstream: 14
-    status: "complete"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2821"]

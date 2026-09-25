@@ -1049,21 +1049,65 @@ ledgr_facts_assert <- function(x) {
 }
 
 ledgr_fact_family_hash <- function(family, scope_id, rows, headers, metadata) {
-  frame_payload <- function(df) {
-    if (is.null(df) || nrow(df) == 0L) return(list())
-    lapply(seq_len(nrow(df)), function(i) ledgr_fact_row_payload(df[i, , drop = FALSE]))
-  }
   digest::digest(
-    as.character(canonical_json(list(
-      schema = "ledgr_fact_family_v1",
+    ledgr_fact_family_payload_json(
       family = family,
       scope_id = scope_id,
       metadata = metadata,
-      headers = frame_payload(headers),
-      rows = frame_payload(rows)
-    ))),
+      rows = rows,
+      headers = headers
+    ),
     algo = "sha256"
   )
+}
+
+ledgr_fact_json_verbatim <- function(x) {
+  structure(as.character(x), class = "json")
+}
+
+ledgr_fact_canonical_frame <- function(df) {
+  if (is.null(df) || nrow(df) == 0L) return(data.frame())
+  out <- as.data.frame(df, stringsAsFactors = FALSE)
+  out <- out[order(names(out))]
+  for (name in names(out)) {
+    column <- out[[name]]
+    if (inherits(column, "POSIXt")) {
+      out[[name]] <- ledgr_fact_time_token(column)
+    } else if (inherits(column, "Date")) {
+      out[[name]] <- as.character(column)
+    } else if (is.factor(column)) {
+      out[[name]] <- as.character(column)
+    } else {
+      out[[name]] <- unname(column)
+    }
+  }
+  out
+}
+
+ledgr_fact_frame_payload_json <- function(df) {
+  if (is.null(df) || nrow(df) == 0L) return("[]")
+  as.character(ledgr_json_write_canonical_v2_verbatim(
+    ledgr_fact_canonical_frame(df)
+  ))
+}
+
+ledgr_fact_family_payload_json <- function(
+  family,
+  scope_id,
+  rows,
+  headers,
+  metadata
+) {
+  # Field order is the canonical name order used by ledgr_fact_family_v1.
+  payload <- list(
+    family = family,
+    headers = ledgr_fact_json_verbatim(ledgr_fact_frame_payload_json(headers)),
+    metadata = ledgr_fact_json_verbatim(canonical_json(metadata)),
+    rows = ledgr_fact_json_verbatim(ledgr_fact_frame_payload_json(rows)),
+    schema = "ledgr_fact_family_v1",
+    scope_id = scope_id
+  )
+  as.character(ledgr_json_write_canonical_v2_verbatim(payload))
 }
 
 ledgr_fact_data_frame <- function(df, label) {
@@ -1213,13 +1257,25 @@ ledgr_fact_provenance <- function(df, source, knowledge) {
 ledgr_fact_ids <- function(family, rows, supplied_id) {
   vapply(seq_len(nrow(rows)), function(i) {
     source_id <- supplied_id[[i]]
-    payload <- if (!is.na(source_id) && nzchar(source_id)) {
-      list(family = family, source = rows$source[[i]], source_id = source_id)
+    payload_json <- if (!is.na(source_id) && nzchar(source_id)) {
+      # These names are already in canonical order. Avoid populating and
+      # probing the general config cache for identities used exactly once.
+      as.character(ledgr_json_write_canonical_v2(list(
+        family = family,
+        source = rows$source[[i]],
+        source_id = source_id
+      )))
     } else {
       one <- rows[i, setdiff(names(rows), "fact_id"), drop = FALSE]
-      list(family = family, assertion = ledgr_fact_row_payload(one))
+      as.character(canonical_json(list(
+        family = family,
+        assertion = ledgr_fact_row_payload(one)
+      )))
     }
-    paste0("fact_", substr(digest::digest(as.character(canonical_json(payload)), algo = "sha256"), 1L, 32L))
+    paste0(
+      "fact_",
+      substr(digest::digest(payload_json, algo = "sha256"), 1L, 32L)
+    )
   }, character(1))
 }
 
@@ -1235,11 +1291,10 @@ ledgr_fact_row_payload <- function(row) {
 }
 
 ledgr_fact_deduplicate <- function(rows, family) {
-  payload <- vapply(seq_len(nrow(rows)), function(i) {
-    as.character(canonical_json(ledgr_fact_row_payload(rows[i, , drop = FALSE])))
-  }, character(1))
-  by_id <- split(seq_len(nrow(rows)), rows$fact_id)
-  incompatible <- names(by_id)[vapply(by_id, function(idx) length(unique(payload[idx])) > 1L, logical(1))]
+  prepared <- ledgr_fact_canonical_frame(rows)
+  distinct_payload <- !duplicated(prepared)
+  distinct_ids <- rows$fact_id[distinct_payload]
+  incompatible <- sort(unique(distinct_ids[duplicated(distinct_ids)]))
   if (length(incompatible) > 0L) {
     rlang::abort(
       sprintf("%s contains incompatible payloads for the same canonical fact identity.", family),
