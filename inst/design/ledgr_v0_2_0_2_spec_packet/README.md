@@ -18,10 +18,9 @@ re-review; see below. Cut 4 (exact-parity and workflow corrections) is
 `exact_parity_workflow_closeout.md`. The joint review
 (`cut_review_3_4.md`) returned `PASS_AFTER_PATCHES` for both cuts at
 `8747c64` and was patched in place. Cut 6, usable equity corporate actions,
-is **open** under the synthesis accepted 2026-09-24: three serial
-workstreams, fifteen tickets, cut review accepted after two rounds, Workstream
-10 accepted after one correction round, and Workstream 11 pending focused
-re-review after four bounded close-review corrections. Cuts
+is **open** under the synthesis accepted 2026-09-24: four serial workstreams,
+eighteen active tickets, cut review accepted after two rounds, Workstreams 10,
+11 and 14 accepted, and Workstream 12 open. Cuts
 are independent of one another; workstreams are serial within a cut.
 
 **Source of truth:** `tickets.yml` in this directory is the only ticket,
@@ -319,7 +318,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; Workstream 14 review pending)
+## Cut 6: Usable equity corporate actions (open; Workstream 12 open)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -343,8 +342,9 @@ the maintainer on 2026-09-24. The subsequent scaling finding inserts
 Workstream 14 before Workstream 12. Its ticket review returned
 `PASS_AFTER_PATCHES`; the maintainer accepted the patched amendment on
 2026-09-24. LDG-2821 and LDG-2822 are implemented at `3d1ffbf` and `d93314e`;
-LDG-2823 and the Workstream 14 closeout are agent-provisional pending Type 1
-review. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
+LDG-2823 passed Type 1 close review with three record-only corrections and
+Workstream 14 was accepted by the maintainer on 2026-09-25. Workstream 12 is
+now open. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
 Deferred LDG-2820 records the review's resume-only metadata-parsing
 optimization; it remains outside both the original and amended active-ticket
 denominators.
@@ -355,9 +355,10 @@ work here does not wait for them and real-data integration cannot precede
 an accepted upstream build. The cut review (`cut_review_6.md`) returned
 `CHANGES_REQUIRED` at `8a1fb15` with five findings, all patched in place;
 the grouping and review points passed unchanged. Six reviews were completed
-against the original fifteen tickets. The amendment review plus the planned
-Workstream 14 and Workstream 12 close reviews project nine reviews over the
-amended eighteen active tickets, 0.500 against the 0.5 gate. A correction
+against the original fifteen tickets. The amendment review and accepted
+Workstream 14 close review bring the count to eight; the planned Workstream 12
+close review makes nine over the amended eighteen active tickets, 0.500 against
+the 0.5 gate. A correction
 round would exceed the gate and must be recorded rather than hidden.
 
 The three-ticket split is technical rather than arithmetic padding: LDG-2821
@@ -417,14 +418,19 @@ is 0.500.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 15 Release gate | 2824–2825 | `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+| 15 Release gate | 2824–2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
 
-The two tickets are not a split for the ratio. `NEWS.md` is wrong in the tree
-today and would need writing even if the release slipped; the gate execution is
-separate work with its own evidence. A correction round would make the cut
-2 over 2, 1.00, and is to be recorded rather than hidden, as cut 7 recorded its
-own. This workstream ships no production code, so the amended obligations'
-seven-shape walk and before-and-after clock do not apply to its review.
+The maintainer promoted the release target to v0.2.1.0 on 2026-09-25 because
+the accumulated public capability and architecture changes are no longer
+patch-sized. The `v0_2_0_2` packet path and historical RFC, audit, spike and
+ticket names remain unchanged; LDG-2824 records the promotion and updates only
+active release identity. The two tickets are not a split for the ratio.
+`NEWS.md` is wrong in the tree today and would need writing even if the release
+slipped; the gate execution is separate work with its own evidence. A
+correction round would make the cut 2 over 2, 1.00, and is to be recorded rather
+than hidden, as cut 7 recorded its own. This workstream ships no production
+code, so the amended obligations' seven-shape walk and before-and-after clock
+do not apply to its review.
 
 ## Cut 9: Availability and evidence accessors (open; opens after workstream 12)
 

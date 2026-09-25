@@ -1,7 +1,7 @@
 # Workstream 14 Closeout: Fact-Family Scaling
 
-**Status:** Agent-provisional; awaiting one Type 1 close review and maintainer
-acceptance. **Tickets:** LDG-2821 through LDG-2823. **Baseline:** `af5bdc6`.
+**Status:** Accepted by the maintainer on 2026-09-25 after Type 1 PASS.
+**Tickets:** LDG-2821 through LDG-2823. **Baseline:** `af5bdc6`.
 
 ## What Shipped
 
@@ -69,14 +69,15 @@ and public validation remain unchanged.
 Four isolated guts were run against `d93314e`, then discarded.
 
 - Restoring one row slice and `ledgr_fact_row_payload()` call per family row
-  made LTB-0043 fail twice: observed calls became 20 and 200 instead of zero
-  and the tenfold counts no longer matched.
+  made LTB-0043 fail twice and LTB-0046 fail twice: observed calls became 20
+  and 200 instead of zero and the tenfold counts no longer matched.
 - Omitting `snapshot_lifetime` from rule-2 identity made exactly its LTB-0048
   public-run mutation escape; the other seven table mutations still failed.
 - Passing the raw bundle from the public adapter to ingest and persistence
   changed LTB-0047's assertion count from one to three and failed it.
-- Removing persisted-table `ORDER BY` keys made LTB-0049 produce two failures:
-  the hash moved after reverse insertion and snapshot validation rejected it.
+- Removing persisted-table `ORDER BY` keys made LTB-0049 produce two failures
+  and also failed LTB-0045: the hash moved after reverse insertion, the frozen
+  rule-2 identity moved, and snapshot validation rejected it.
 
 These guts cover the old preparation shape, omission from identity, repeated
 validation and physical-order dependence. Frozen literal hashes separately
@@ -122,11 +123,13 @@ subtracts each arm's own control, so that separate gain is not attributed to
 Workstream 14. The raw whole-call clocks remain reported and are not replaced
 by the subtraction.
 
-The final exact-tree fast gate record is `.tmp/ws14-close-fast-final`. It
+The final exact-tree fast gate record is `.tmp/ws14-close-fast`. It
 passed 451 of 451 blocks in 78.630 seconds, and the ordinary gate passed
 against the 90-second one-run bound. The LDG-2822 gate separately passed 451
-of 451 blocks in 73.390 seconds. The full Workstream 14 file, including all
-review blocks and the 100,000-row identity witness, passed before closeout.
+of 451 blocks in 73.390 seconds. Its record directory was not retained; that
+figure is transcribed from the session log. The full Workstream 14 file,
+including all review blocks and the 100,000-row identity witness, passed before
+closeout.
 
 An earlier exact-tree attempt wrote through an elevated filesystem execution
 context and produced three all-green records at 97.31, 94.56 and 96.85 seconds;
@@ -134,7 +137,10 @@ their median failed the timing gate. The slowdown was suite-wide rather than
 concentrated in Workstream 14: block-time totals were 91.98 to 94.32 seconds,
 versus 71.07 in the LDG-2822 record. Repeating the unchanged tree in the
 ordinary execution context produced the binding 78.630-second record above.
-Both outcomes are disclosed; no threshold or test assignment changed.
+The elevated-context record directories were not retained; those figures are
+also transcribed from the session log. Only the binding ordinary-context record
+remains on disk. Both outcomes are disclosed; no threshold or test assignment
+changed.
 
 ## Seven-Shape Audit And Declined Work
 
@@ -171,6 +177,9 @@ with its own evidence. Those inherited labels are not treated as evidence.
 
 Six reviews covered the original fifteen cut-6 tickets. The amendment ticket
 review is the seventh invocation against eighteen active tickets. This close
-review will be the eighth; the planned Workstream 12 review will be the ninth.
+review was the eighth; the planned Workstream 12 review will be the ninth.
 The projected final ratio remains 9/18 = 0.500. A correction round would exceed
-the gate and must be recorded rather than hidden.
+the gate and must be recorded rather than hidden. The Type 1 close review
+returned PASS with three record-only corrections: the binding record path, the
+retention disclosure and the two broader gut results above. They were applied
+under that review without a second review invocation.
