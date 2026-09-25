@@ -601,3 +601,47 @@ five completed tickets, 0.400. A focused correction re-review followed by the
 close review would make the historical count three over five, 0.600. If that
 route is taken, the closeout records the breach honestly rather than merging or
 padding tickets to hide it.
+
+## Cut 12: Restore fast-profile headroom (reviewed; awaiting acceptance)
+
+Authority: the accepted testing-architecture synthesis and the maintainer's
+2026-09-25 decision to recover the fast lane without weakening its 90-second
+gate or hiding unrelated test work inside Cut 9. Four tickets, LDG-2845 through
+LDG-2848, one test-only workstream. The independent Type 1 then Type 2 review
+returned `PASS_AFTER_PATCHES`; its six ticket-text corrections are applied, and
+implementation waits for maintainer acceptance.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 19 Fast-profile headroom | 2845-2848 | claim-based routing of two rare recovery integrations; scalar-warning evidence split by feedback value; fixture shrinking for expensive core fast gates; exact ordinary and CRAN-mode censuses, mutations, clocks and closeout | fast retains legacy migration plus the smallest failure-sensitive evidence needed on ordinary changes, every moved guarantee runs nightly and at release, core parity and corruption guards remain fast, and measured headroom is recovered without changing production code or either time bound |
+
+The triggering record is not a correctness failure. At `c83e4dc`, all 456
+fast blocks pass, but the exact post-correction profile records 102.94, 103.81
+and 104.02 seconds, median 103.81. An earlier run of the reviewed tree took
+83.61 seconds and the independent reviewer reproduced 86.36, so cross-session
+clocks cannot identify one regression. The per-block census does identify the
+work: the scalar-warning block is about seven seconds; two rare walk-forward
+failure integrations total about six; compiled parity and rule-2 scaling total
+about eight and must stay fast but may have smaller fixtures. Legacy metadata
+migration stays fast because current-schema evidence cannot replace its upgrade
+guarantee.
+
+The cut therefore uses two different tools deliberately. The two rare recovery
+integrations move only when the nightly and release review lane demonstrably
+executes them with the same mutations. High-feedback core and migration claims
+stay fast and lose setup rather than evidence. The scalar-warning claim is
+split: ordinary development keeps the warning and false-positive detectors,
+while review keeps the full durable non-interference comparison. Slowness alone
+authorizes no deletion.
+
+The named savings may land close to, rather than below, the ordinary bound.
+LDG-2848 therefore owns both the 90-second ordinary and 105-second isolated
+CRAN-mode gates. An ordinary median from 90 through 95 seconds is a stop for an
+explicit maintainer decision on a bounded second pass or deferral, never an
+excuse to raise the bound or route more tests post hoc. The 75-to-80-second
+figure remains a non-binding engineering target.
+
+One cut review and one close review over four real units is 2/4, 0.500. The
+workstream opens from completed Workstream 12 and must close before Workstream
+16 returns for focused correction review; Workstream 17 remains downstream of
+Workstream 16.

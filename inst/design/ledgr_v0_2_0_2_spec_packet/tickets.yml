@@ -109,6 +109,15 @@ cuts:
     workstreams: [18]
     closeout: "point_in_time_inputs_closeout.md"
     status: "review_pending"
+  - id: 12
+    name: "Maintenance: restore fast-profile headroom"
+    cut: "2026-09-25"
+    cut_review: "Independent Type 1 and Type 2 review returned PASS_AFTER_PATCHES on 2026-09-25. The cut was patched in place to keep legacy-store migration in fast, run review on the nightly schedule, own both ordinary and CRAN-mode fast gates, remove already-present setup reuse from the claimed saving, bind the scaling detector's absolute population and mutation margin, and stop for a maintainer decision if the named work still lands at 90 to 95 seconds. One cut review plus one close review is 2 over 4 completed tickets, 0.500 against the gate."
+    authority: "accepted testing-architecture synthesis; maintainer decision 2026-09-25 to recover the fast lane without deleting an oracle, weakening the 90-second gate or hiding work inside Cut 9"
+    source_table: ".tmp/ws16-fast-final and .tmp/ws16-fast-review-correction-v2 per-block censuses; tests/claims.yml; post_v0_2_0_1_test_suite_audit_blocks.csv"
+    workstreams: [19]
+    closeout: "fast_profile_headroom_closeout.md"
+    status: "review_pending"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -239,7 +248,7 @@ workstreams:
     name: "Availability and evidence accessors"
     cut: 9
     status: "open"
-    depends_on_workstream: 12
+    depends_on_workstream: 19
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16", reason: "Five additive readers over evidence that already exists, so the review is about whether each one tells the truth about state the engine computes elsewhere rather than recomputing it independently. One review at close checks that ctx$tradable() agrees with the planes it summarizes in both the dense and availability-aware modes and returns an empty axis without a special case, that the quarantine and completion readers report exactly the persisted rows with no derived judgement added, that ledgr_run_explain() returns the same row for a given timestamp whether asked alone or as part of a full history, and that no contract, schema, hash or error class moved. The workstream also re-cuts the missing-data article onto the new accessors, so the review reads the rendered article as part of the evidence."}
   - id: 17
@@ -264,6 +273,14 @@ workstreams:
     depends_on_workstream: 17
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 18", reason: "The claim is that a user can learn what data ledgr needs, in what form, from one place, and can load a working composable example. One review at close seals the committed bundle through the documented constructors, checks that its matching bars and fact inputs need no undocumented filtering or timestamp rewrite, verifies that the session declaration is independent of observations, walks deterministic generation and every switchable case, reads the checklist as a decision map linked to constructor help rather than as a duplicated schema, verifies that the entity diagram distinguishes membership scope from the physical instrument master, and confirms that each specialist article retains its teaching output whether it uses the shared bundle or a justified minimal fixture. Shipped data is a public surface, so the review also checks documentation contracts and byte-for-byte regeneration from data-raw."}
+
+  - id: 19
+    name: "Fast-profile headroom"
+    cut: 12
+    status: "open"
+    depends_on_workstream: 12
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 19", reason: "One evidence-boundary claim joins the tickets: the fast lane retains the smallest failure-sensitive evidence for core behavior while two rare recovery integrations remain executable in the nightly and release review lane, and fixture shrinking changes no oracle. The close review reruns every affected mutation, reconciles the block census and claims registry, verifies that nightly and release CI execute every moved block, and accepts only with exact three-run ordinary and CRAN-mode records below the unchanged 90-second and 105-second gates."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -1350,3 +1367,44 @@ tickets:
     dependencies: ["LDG-2839", "LDG-2843", "LDG-2840", "LDG-2841"]
     scope: "Close workstream 18 and cut 11. Record the shipped bundle and generator seed, its matching-bars boundary, the decision-map and diagram surfaces, which specialist articles use the shared bundle and which retain a local fixture with its reason, the executable public-workflow checks that keep the example composable, review invocations against the 0.5 gate, and anything considered and declined. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout names ledgr_demo_pit_inputs, its generator seed and window, every default teaching case, and the rule that its facts compose with its bundled bars rather than arbitrary ledgr_demo_bars slices", "it names the executable checks that fail when the bundle no longer constructs, seals, reopens or runs through the documented public workflow; it does not claim automatic discovery of every optional constructor column", "it records which specialist articles use the shared bundle and which keep a local fixture with the reason", "it records the Type 2 cut review and any focused re-review separately; the arithmetic is reported even if a correction re-review plus close review produces 3 over 5, 0.600, and no ticket merger or padding is used to hide it", "it states that this cut ships inside v0.2.0.2 and names the release-gate ticket that verifies the shipped bundle and rendered articles"]
+
+  # ------------------------------------------ 19 Fast-profile headroom
+  - id: "LDG-2845"
+    title: "Route rare recovery integrations out of the fast lane"
+    workstream: 19
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "Move only two currently default-fast integration blocks to the review profile: walk-forward preserves incomplete status when prefix metrics fail, and terminal cleanup closes test handles without masking the terminal error. These are real rare-recovery guarantees, not deletion candidates. Keep legacy metadata migration in fast because it is upgrade safety and has no equivalent current-schema detector. Preserve every assertion and fixture unless an independently mutation-sensitive smaller fixture is substituted. Use profile markers, never skip_if or environment-dependent suppression. Extend the review-profile CI condition from release tags to the nightly schedule, while retaining the release backstop. Record the exact before/after block census and prove that the nightly and release workflows execute both moved blocks."
+    acceptance: ["the two named recovery blocks execute and pass in the review profile, execute zero times in fast, and are never skipped by CRAN, environment or optional-dependency predicates", "the assertions and smallest breaking mutations for incomplete metric classification and terminal handle cleanup with error masking still fail after routing", "the legacy metadata migration block remains in fast and its registered mutation still fails", "tests/claims.yml and the block census name the resulting profiles; no claim is deleted, merged into prose or left without an executable lane", "the nightly CI and release commands are shown to select the moved blocks before a release tag rather than merely assuming that the review lane runs"]
+
+  - id: "LDG-2846"
+    title: "Split scalar-warning evidence by feedback value"
+    workstream: 19
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2845"]
+    scope: "Split LTB-0067 without weakening LCL-0066. Fast keeps the minimum two-pulse warning multiplicity and payload witness, plane-only and fixed-small false-positive controls, and the five-instrument single-candidate fast-context mutation witness. Review owns the full durable warning-versus-suppressed comparison of fills, equity, config hash, strategy hash and stored artifacts. Move the second approximately 1.77-second scalar-loop execution used solely for durable identity comparison; the block already reuses one snapshot, so setup reuse is not a claimed saving. Use the smallest public execution boundary adequate for each claim. Do not replace the public fast-context witness with a direct helper test, and do not make a warning conditional on the test profile."
+    acceptance: ["resetting the once-per-run flag, lowering the threshold, counting a plane read or restoring the small-universe fast-context tracker fails a fast block", "allowing the warning to change targets, fills, equity, config hash, strategy hash or another stored artifact fails a review block", "the split introduces no skip and both blocks have separate LTB ids under one LCL claim with complete five-field registry entries", "same-session block clocks show that the fast portion is materially cheaper than the current approximately seven-second combined block while the union of assertions is at least as strong", "the production warning path and every production file remain byte-identical"]
+
+  - id: "LDG-2847"
+    title: "Shrink expensive fast fixtures without moving core gates"
+    workstream: 19
+    status: "open"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2845"]
+    scope: "Keep canonical-R versus compiled spot-FIFO parity, rule-2 fixed-work hashing, schema exact-version enforcement, basic snapshot ingestion and event-buffer growth in fast. Reduce only fixture and setup cost. For LTB-0046, find the smallest two populations that retain a tenfold row-count contrast and the same helper-call oracle; do not replace execution with source inspection. For LTB-0014, remove a pulse or candidate only when the surviving fixture still exercises every accounting transition and retained-series comparison the claim names. Inventory other fast blocks above one second and change one only when its existing smallest-failing mutation still fails. Fixture reuse must not couple expected and actual values or let one block inherit mutable state from another."
+    acceptance: ["LTB-0046 retains a tenfold population contrast, fixed helper-call counts and a failing mutation for restored per-row payload, timestamp or JSON work; the chosen absolute lower population is stated and justified, and the record reports the mutation's timing margin over the baseline so fixture shrinkage cannot hide it in clock noise", "LTB-0014 remains in fast and preserves canonical-R versus compiled parity for every accounting transition and retained-series surface currently covered; any removed row, pulse or candidate is mapped to surviving evidence", "no test is moved from fast by this ticket and no literal expected value is replaced by a production helper", "each changed block has same-session before/after time, identical passing assertions and a rerun of its registered smallest mutation", "the inventory lists every fast block above one second and records why unchanged blocks were retained"]
+
+  - id: "LDG-2848"
+    title: "Close fast-profile headroom maintenance"
+    workstream: 19
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2845", "LDG-2846", "LDG-2847"]
+    scope: "Close Workstream 19 and Cut 12. Reconcile expected versus executed blocks in fast and review, list every moved or split claim and its surviving mutations, and record per-block before/after clocks. Run three exact ordinary fast profiles on the same normal host regardless of run 1, then the independent ordinary gate checker. Compare their median with a same-session three-run baseline from c83e4dc rather than attributing cross-session variation. Also run three isolated CRAN-mode fast profiles and their independent gate checker against the existing 105-second bound. The binding bounds remain 90 seconds ordinary and 105 seconds CRAN mode and are never raised; 75 to 80 seconds ordinary is the engineering target, not a reason to falsify the record. If the ordinary after-median is 90 to 95 seconds, do not close: present the measured long-tail inventory to the maintainer for an explicit bounded second routing or shrinking decision, or defer release. No unreviewed post-hoc movement is authorized. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["fast and review expected-block censuses reconcile exactly with actual execution, with zero unexpected skip or missing block", "the closeout names every moved and split block, its claim, its lane, its smallest failing mutation and why that lane is the cheapest adequate one", "three same-session ordinary baseline and three after runs use the same R, library and host conditions; the after median is below 90 seconds, which against the triggering 103.81-second median requires more than 13.3 percent improvement rather than a weaker independent percentage target", "three isolated CRAN-mode fast runs use one documented R, library and host setup; their median is below the unchanged 105-second bound and the CRAN-mode checker passes", "both independent gate checkers pass without changing tests/test-gates.yml or any timeout, and the closeout reports the 75 to 80 second ordinary target separately from the binding results", "an ordinary after-median from 90 through 95 seconds blocks closure and records the maintainer's explicit second-pass or deferral decision; it is not treated as success", "no production file changes, no oracle is deleted or weakened, and review plus heavy remain executable through the documented nightly CI and release commands", "the cut review and close review total two invocations over four completed tickets, exactly 0.500 unless a correction round is honestly recorded"]
