@@ -211,7 +211,7 @@ ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
     SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
-      AND event_type IN ('CASHFLOW', 'FILL')
+      AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
     ORDER BY event_seq
     ",
     params = list(run_id, ts_utc)
@@ -417,6 +417,48 @@ ledgr_lot_apply_event <- function(state,
       fee = fee
     )
     out$kind <- "fill"
+    return(out)
+  }
+
+  if (identical(event_type, "DISPOSITION")) {
+    before <- as.numeric(meta$position_before %||% NA_real_)
+    quantity <- as.numeric(meta$quantity %||% NA_real_)
+    mark <- as.numeric(meta$mark %||% NA_real_)
+    if (!is.finite(before) || before == 0 || !is.finite(quantity) ||
+        quantity <= 0 || !isTRUE(all.equal(abs(before), quantity, tolerance = 0)) ||
+        !is.finite(mark) || mark <= 0) {
+      ledgr_accounting_event_error(
+        "DISPOSITION lot metadata is malformed.",
+        "ledgr_invalid_ledger_meta"
+      )
+    }
+    out <- ledgr_lot_apply_fill(
+      state,
+      instrument_id = instrument_id,
+      side = if (before > 0) "SELL" else "BUY",
+      qty = quantity,
+      price = mark,
+      fee = 0
+    )
+    remaining <- as.numeric(out$state$net_by_inst[[instrument_id]] %||% NA_real_)
+    live_lots <- ledgr_lot_count(out$state, instrument_id)
+    if (!identical(remaining, 0) || live_lots != 0L) {
+      rlang::abort(
+        "DISPOSITION must consume the position and every live lot exactly.",
+        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+      )
+    }
+    if (!isTRUE(all.equal(
+      as.numeric(out$realized_delta),
+      as.numeric(meta$realized_model_pnl),
+      tolerance = ledgr_lot_dust_tolerance(out$realized_delta)
+    ))) {
+      ledgr_accounting_event_error(
+        "DISPOSITION realized model PnL does not match canonical FIFO realization.",
+        "ledgr_invalid_ledger_meta"
+      )
+    }
+    out$kind <- "disposition"
     return(out)
   }
 

@@ -209,7 +209,7 @@ ledgr_create_schema <- function(con) {
       event_id TEXT NOT NULL PRIMARY KEY,
       run_id TEXT NOT NULL,
       ts_utc TIMESTAMP NOT NULL,
-      event_type TEXT NOT NULL CHECK (event_type IN ('FILL','CASHFLOW')),
+      event_type TEXT NOT NULL CHECK (event_type IN ('FILL','CASHFLOW','DISPOSITION')),
       instrument_id TEXT,
       side TEXT CHECK (side IN ('BUY','SELL')),
       qty DOUBLE,
@@ -391,8 +391,8 @@ ledgr_create_schema <- function(con) {
     # an affected store requires explicit operator remediation before use.
     event_ddl <- if (fee_rows > 0) {
       sub(
-        "('FILL','CASHFLOW')",
-        "('FILL','FEE','CASHFLOW')",
+        "('FILL','CASHFLOW','DISPOSITION')",
+        "('FILL','FEE','CASHFLOW','DISPOSITION')",
         ddl_ledger_events,
         fixed = TRUE
       )
@@ -400,9 +400,9 @@ ledgr_create_schema <- function(con) {
       ddl_ledger_events
     }
     expected_event_types <- if (fee_rows > 0) {
-      c("FILL", "FEE", "CASHFLOW")
+      c("FILL", "FEE", "CASHFLOW", "DISPOSITION")
     } else {
-      c("FILL", "CASHFLOW")
+      c("FILL", "CASHFLOW", "DISPOSITION")
     }
     required_not_null <- c("event_id", "run_id", "ts_utc", "event_type", "event_seq")
     needs_recreate <- any(!(required_not_null %in% le_cols$column_name)) ||

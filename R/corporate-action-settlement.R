@@ -98,6 +98,36 @@ ledgr_corporate_action_past_quantities <- function(events,
   out
 }
 
+ledgr_corporate_action_clock_index <- function(clock,
+                                                pulses_posix,
+                                                label) {
+  clock <- as.POSIXct(clock, tz = "UTC")
+  idx <- match(as.numeric(clock), as.numeric(pulses_posix))
+  inside <- !is.na(clock) & clock >= min(pulses_posix) &
+    clock <= max(pulses_posix)
+  if (any(inside & is.na(idx))) {
+    rlang::abort(
+      sprintf("Corporate-action %s time must match a run pulse.", label),
+      class = c(
+        "ledgr_corporate_action_clock_mismatch",
+        "ledgr_invalid_state"
+      )
+    )
+  }
+  as.integer(idx)
+}
+
+ledgr_corporate_action_knowledge_index <- function(knowledge_time,
+                                                    pulses_posix) {
+  pulse_number <- as.numeric(pulses_posix)
+  knowledge_number <- as.numeric(as.POSIXct(knowledge_time, tz = "UTC"))
+  idx <- findInterval(knowledge_number, pulse_number)
+  exact <- idx > 0L & pulse_number[pmax(idx, 1L)] == knowledge_number
+  idx <- idx + as.integer(!exact)
+  idx[idx < 1L | idx > length(pulses_posix)] <- NA_integer_
+  as.integer(idx)
+}
+
 ledgr_corporate_action_plan <- function(rows,
                                         policy_identity,
                                         pulses_posix,
@@ -106,76 +136,100 @@ ledgr_corporate_action_plan <- function(rows,
                                         start_idx = 1L) {
   if (is.null(policy_identity) || is.null(rows) || nrow(rows) == 0L) return(NULL)
   settings <- ledgr_corporate_action_policy_settings(policy_identity)
-  rows <- rows[
-    rows$subtype == "ordinary_cash_dividend" &
-      rows$complete & rows$gross_cash_validated &
-      is.finite(rows$gross_cash_per_parent_unit),
-    ,
-    drop = FALSE
-  ]
-  if (nrow(rows) == 0L) return(NULL)
   if (anyDuplicated(rows$fact_id)) {
     rlang::abort(
       "Corporate-action source fact identifiers must be unique.",
       class = c("ledgr_duplicate_corporate_action_fact", "ledgr_invalid_state")
     )
   }
-  entitlement_time <- as.POSIXct(rows$entitlement_time, tz = "UTC")
-  knowledge_time <- as.POSIXct(rows$knowledge_time, tz = "UTC")
-  entitlement_idx <- match(as.numeric(entitlement_time), as.numeric(pulses_posix))
-  inside <- entitlement_time >= min(pulses_posix) & entitlement_time <= max(pulses_posix)
-  if (any(inside & is.na(entitlement_idx))) {
-    rlang::abort(
-      "Corporate-action entitlement time must match a run pulse.",
-      class = c("ledgr_corporate_action_clock_mismatch", "ledgr_invalid_state")
-    )
-  }
+  cash_eligible <- rows$subtype == "ordinary_cash_dividend" & rows$complete
+  cash_eligible <- cash_eligible &
+    if (all(c(
+      "gross_cash_validated",
+      "gross_cash_per_parent_unit"
+    ) %in% names(rows))) {
+      rows$gross_cash_validated & is.finite(rows$gross_cash_per_parent_unit)
+    } else {
+      rep(FALSE, nrow(rows))
+    }
+  disposition_eligible <- rows$subtype %in% c(
+    "cash_acquisition", "stock_acquisition", "mixed_acquisition"
+  ) & rows$complete
+  if (!any(cash_eligible | disposition_eligible)) return(NULL)
+
+  entitlement_idx <- ledgr_corporate_action_clock_index(
+    rows$entitlement_time,
+    pulses_posix,
+    "entitlement"
+  )
+  effective_idx <- ledgr_corporate_action_clock_index(
+    rows$effective_time,
+    pulses_posix,
+    "effective"
+  )
+  knowledge_idx <- ledgr_corporate_action_knowledge_index(
+    rows$knowledge_time,
+    pulses_posix
+  )
   posting_idx <- entitlement_idx
   if (identical(settings[["cash_posting"]], "next_open")) {
     posting_idx <- posting_idx + 1L
     posting_idx[posting_idx > length(pulses_posix)] <- NA_integer_
   }
-  pulse_number <- as.numeric(pulses_posix)
-  knowledge_number <- as.numeric(knowledge_time)
-  knowledge_idx <- findInterval(knowledge_number, pulse_number)
-  exact <- knowledge_idx > 0L &
-    pulse_number[pmax(knowledge_idx, 1L)] == knowledge_number
-  knowledge_idx <- knowledge_idx + as.integer(!exact)
-  knowledge_idx[knowledge_idx < 1L | knowledge_idx > length(pulses_posix)] <- NA_integer_
-  due_idx <- pmax(posting_idx, knowledge_idx, na.rm = FALSE)
+  cash_due_idx <- pmax(posting_idx, knowledge_idx, na.rm = FALSE)
+  cash_due_idx[!cash_eligible] <- NA_integer_
+  disposition_due_idx <- pmax(effective_idx, knowledge_idx, na.rm = FALSE)
+  disposition_due_idx[!disposition_eligible] <- NA_integer_
   late <- !is.na(posting_idx) & !is.na(knowledge_idx) & knowledge_idx > posting_idx
 
   state <- new.env(parent = emptyenv())
   state$rows <- rows
   state$entitlement_idx <- as.integer(entitlement_idx)
   state$posting_idx <- as.integer(posting_idx)
-  state$due_idx <- as.integer(due_idx)
+  state$cash_eligible <- cash_eligible
+  state$disposition_eligible <- disposition_eligible
+  state$cash_due_idx <- as.integer(cash_due_idx)
+  state$disposition_due_idx <- as.integer(disposition_due_idx)
   state$late <- as.logical(late)
   state$quantity <- rep(NA_real_, nrow(rows))
   state$bound <- rep(FALSE, nrow(rows))
-  state$posted <- rep(FALSE, nrow(rows))
+  state$cash_posted <- rep(FALSE, nrow(rows))
+  state$disposition_posted <- rep(FALSE, nrow(rows))
   state$settings <- settings
   state$identity <- policy_identity
   state$instrument_ids <- instrument_ids
   state$entitlement_by_pulse <- split(seq_len(nrow(rows)), entitlement_idx)
-  state$due_by_pulse <- split(seq_len(nrow(rows)), due_idx)
+  state$cash_due_by_pulse <- split(seq_len(nrow(rows)), cash_due_idx)
+  state$disposition_due_by_pulse <- split(
+    seq_len(nrow(rows)),
+    disposition_due_idx
+  )
 
   meta <- ledgr_corporate_action_event_meta(existing_events)
-  posted_fact_ids <- vapply(meta, function(x) {
+  cash_fact_ids <- vapply(meta, function(x) {
     if (identical(x$source, "corporate_action_cash")) {
       as.character(x$source_fact_id %||% "")
     } else {
       ""
     }
   }, character(1))
-  posted_fact_ids <- posted_fact_ids[nzchar(posted_fact_ids)]
-  if (anyDuplicated(posted_fact_ids)) {
+  cash_fact_ids <- cash_fact_ids[nzchar(cash_fact_ids)]
+  disposition_fact_ids <- vapply(meta, function(x) {
+    if (identical(x$source, "corporate_action_disposition")) {
+      as.character(x$source_fact_id %||% "")
+    } else {
+      ""
+    }
+  }, character(1))
+  disposition_fact_ids <- disposition_fact_ids[nzchar(disposition_fact_ids)]
+  if (anyDuplicated(cash_fact_ids) || anyDuplicated(disposition_fact_ids)) {
     rlang::abort(
       "A corporate-action source fact was posted more than once.",
       class = c("ledgr_duplicate_corporate_action_event", "ledgr_invalid_state")
     )
   }
-  state$posted <- rows$fact_id %in% posted_fact_ids
+  state$cash_posted <- rows$fact_id %in% cash_fact_ids
+  state$disposition_posted <- rows$fact_id %in% disposition_fact_ids
 
   past <- which(
     !is.na(entitlement_idx) &
@@ -206,12 +260,17 @@ ledgr_corporate_action_plan <- function(rows,
     invisible(TRUE)
   }
 
-  has_cashflow <- function() nrow(state$rows) > 0L
+  has_cashflow <- function() any(state$cash_eligible)
+  has_disposition <- function() any(state$disposition_eligible)
+  event_kinds <- function() c(
+    if (has_cashflow()) "CASHFLOW",
+    if (has_disposition()) "DISPOSITION"
+  )
 
-  post <- function(index, run_id, event_seq, output_handler, state_value,
-                   marks = NULL) {
-    selected <- state$due_by_pulse[[as.character(index)]] %||% integer()
-    selected <- selected[!state$posted[selected] & state$bound[selected]]
+  post_cash <- function(index, run_id, event_seq, output_handler, state_value,
+                        marks = NULL) {
+    selected <- state$cash_due_by_pulse[[as.character(index)]] %||% integer()
+    selected <- selected[!state$cash_posted[selected] & state$bound[selected]]
     if (length(selected) == 0L) {
       return(list(state = state_value, next_event_seq = as.integer(event_seq)))
     }
@@ -225,7 +284,7 @@ ledgr_corporate_action_plan <- function(rows,
       )
     }
     if (length(held) == 0L) {
-      state$posted <- replace(state$posted, selected, TRUE)
+      state$cash_posted <- replace(state$cash_posted, selected, TRUE)
       return(list(state = state_value, next_event_seq = as.integer(event_seq)))
     }
     source_rows <- state$rows[held, , drop = FALSE]
@@ -267,18 +326,181 @@ ledgr_corporate_action_plan <- function(rows,
     ledgr_prepare_accounting_events(event_rows, instrument_ids)
     output_handler$append_event_rows(event_rows)
     state_value$cash <- as.numeric(state_value$cash) + sum(cash_delta)
-    state$posted <- replace(state$posted, selected, TRUE)
+    state$cash_posted <- replace(state$cash_posted, selected, TRUE)
     list(
       state = state_value,
       next_event_seq = as.integer(event_seq) + nrow(event_rows)
     )
   }
 
+  post_disposition <- function(index,
+                               run_id,
+                               event_seq,
+                               output_handler,
+                               state_value,
+                               valuation) {
+    selected <- state$disposition_due_by_pulse[[as.character(index)]] %||%
+      integer()
+    selected <- selected[
+      !state$disposition_posted[selected] & state$bound[selected]
+    ]
+    if (length(selected) == 0L ||
+        identical(state$settings[["held_terminal_position"]], "refuse")) {
+      return(list(
+        state = state_value,
+        next_event_seq = as.integer(event_seq),
+        dispositions = 0L
+      ))
+    }
+
+    ids <- as.character(state$rows$parent_instrument_id[selected])
+    position_names <- names(state_value$positions)
+    if (is.null(position_names) &&
+        length(state_value$positions) == length(state$instrument_ids)) {
+      position_names <- state$instrument_ids
+    }
+    position_index <- match(ids, position_names)
+    before <- as.numeric(state_value$positions[position_index])
+    before[is.na(before)] <- 0
+    held <- which(before != 0)
+    if (length(held) == 0L) {
+      state$disposition_posted <- replace(
+        state$disposition_posted,
+        selected,
+        TRUE
+      )
+      return(list(
+        state = state_value,
+        next_event_seq = as.integer(event_seq),
+        dispositions = 0L
+      ))
+    }
+    selected <- selected[held]
+    ids <- ids[held]
+    position_index <- position_index[held]
+    before <- before[held]
+    if (anyDuplicated(ids)) {
+      rlang::abort(
+        "One pulse cannot dispose the same parent instrument more than once.",
+        class = c(
+          "ledgr_duplicate_corporate_action_event",
+          "ledgr_invalid_fold_execution"
+        )
+      )
+    }
+
+    choice <- state$settings[["held_terminal_position"]]
+    mark <- if (identical(choice, "last_mark")) {
+      as.numeric(valuation$reference[ids])
+    } else {
+      as.numeric(valuation$mark[ids])
+    }
+    age <- as.integer(valuation$age[ids])
+    source <- as.character(valuation$source[ids])
+    source_ts <- as.POSIXct(valuation$source_ts[ids], tz = "UTC")
+    unavailable <- !is.finite(mark) | mark <= 0 | is.na(source_ts)
+    if (any(unavailable)) {
+      rlang::abort(
+        sprintf(
+          "Corporate-action disposition has no finite qualifying mark for: %s.",
+          paste(ids[unavailable], collapse = ", ")
+        ),
+        class = c(
+          "ledgr_corporate_action_disposition_mark_unavailable",
+          "ledgr_corporate_action_unsupported",
+          "ledgr_invalid_fold_execution"
+        ),
+        instrument_ids = ids[unavailable]
+      )
+    }
+
+    candidate <- state_value
+    realized <- numeric(length(selected))
+    for (k in seq_along(selected)) {
+      lot_result <- ledgr_lot_apply_fill(
+        candidate$lot_state,
+        instrument_id = ids[[k]],
+        side = if (before[[k]] > 0) "SELL" else "BUY",
+        qty = abs(before[[k]]),
+        price = mark[[k]],
+        fee = 0
+      )
+      candidate$lot_state <- lot_result$state
+      realized[[k]] <- as.numeric(lot_result$realized_delta)
+      candidate$positions[[position_index[[k]]]] <- 0
+      candidate$cash <- as.numeric(candidate$cash) + before[[k]] * mark[[k]]
+    }
+    remaining_lots <- vapply(
+      ids,
+      function(id) ledgr_lot_count(candidate$lot_state, id),
+      integer(1)
+    )
+    if (any(remaining_lots != 0L)) {
+      rlang::abort(
+        "Corporate-action disposition left live lots after reaching zero position.",
+        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
+      )
+    }
+
+    source_rows <- state$rows[selected, , drop = FALSE]
+    position_delta <- -before
+    cash_delta <- before * mark
+    disposition_id <- state$identity$held_terminal_position
+    meta_json <- vapply(seq_along(selected), function(k) {
+      canonical_json(list(
+        source = "corporate_action_disposition",
+        source_fact_id = as.character(source_rows$fact_id[[k]]),
+        disposition_policy_id = disposition_id,
+        quantity = abs(before[[k]]),
+        mark = mark[[k]],
+        mark_source = source[[k]],
+        mark_source_ts_utc = ledgr_normalize_ts_utc(source_ts[[k]]),
+        mark_age = age[[k]],
+        position_before = before[[k]],
+        position_after = 0,
+        position_delta = position_delta[[k]],
+        cash_delta = cash_delta[[k]],
+        realized_model_pnl = realized[[k]]
+      ))
+    }, character(1))
+    seq_value <- as.integer(event_seq) + seq_along(selected) - 1L
+    event_rows <- data.frame(
+      event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
+      run_id = rep(run_id, length(selected)),
+      ts_utc = rep(pulses_posix[[index]], length(selected)),
+      event_type = rep("DISPOSITION", length(selected)),
+      instrument_id = ids,
+      side = rep(NA_character_, length(selected)),
+      qty = abs(before),
+      price = mark,
+      fee = rep(0, length(selected)),
+      meta_json = meta_json,
+      event_seq = seq_value,
+      stringsAsFactors = FALSE
+    )
+    ledgr_prepare_accounting_events(event_rows, instrument_ids)
+    output_handler$append_event_rows(event_rows)
+    state$disposition_posted <- replace(
+      state$disposition_posted,
+      selected,
+      TRUE
+    )
+    list(
+      state = candidate,
+      next_event_seq = as.integer(event_seq) + nrow(event_rows),
+      dispositions = as.integer(nrow(event_rows))
+    )
+  }
+
   structure(
     list(
       bind_boundary = bind_boundary,
-      post = post,
+      post = post_cash,
+      post_cash = post_cash,
+      post_disposition = post_disposition,
       has_cashflow = has_cashflow,
+      has_disposition = has_disposition,
+      event_kinds = event_kinds,
       state = state
     ),
     class = "ledgr_corporate_action_plan"

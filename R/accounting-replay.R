@@ -169,6 +169,56 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
       } else {
         operation[[i]] <- 2L
       }
+    } else if (identical(type, "DISPOSITION")) {
+      forbidden <- intersect(
+        names(meta[[i]]),
+        c("subtype", "equity_subtype", "vendor_subtype")
+      )
+      required_meta <- c(
+        "source", "source_fact_id", "position_delta", "cash_delta",
+        "quantity", "mark", "mark_source_ts_utc", "mark_age",
+        "position_before", "position_after", "realized_model_pnl",
+        "disposition_policy_id"
+      )
+      if (length(forbidden) > 0L ||
+          !identical(meta[[i]]$source, "corporate_action_disposition") ||
+          any(!required_meta %in% names(meta[[i]])) ||
+          is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]]) ||
+          !is.numeric(meta[[i]]$quantity) || length(meta[[i]]$quantity) != 1L ||
+          !is.finite(meta[[i]]$quantity) || meta[[i]]$quantity <= 0 ||
+          !is.numeric(meta[[i]]$mark) || length(meta[[i]]$mark) != 1L ||
+          !is.finite(meta[[i]]$mark) || meta[[i]]$mark <= 0 ||
+          !is.numeric(meta[[i]]$position_before) ||
+          length(meta[[i]]$position_before) != 1L ||
+          !is.finite(meta[[i]]$position_before) ||
+          !is.numeric(meta[[i]]$position_after) ||
+          length(meta[[i]]$position_after) != 1L ||
+          !identical(as.numeric(meta[[i]]$position_after), 0) ||
+          !is.numeric(meta[[i]]$realized_model_pnl) ||
+          length(meta[[i]]$realized_model_pnl) != 1L ||
+          !is.finite(meta[[i]]$realized_model_pnl) ||
+          !is.character(meta[[i]]$source_fact_id) ||
+          length(meta[[i]]$source_fact_id) != 1L ||
+          is.na(meta[[i]]$source_fact_id) || !nzchar(meta[[i]]$source_fact_id) ||
+          !is.character(meta[[i]]$disposition_policy_id) ||
+          length(meta[[i]]$disposition_policy_id) != 1L ||
+          is.na(meta[[i]]$disposition_policy_id) ||
+          !nzchar(meta[[i]]$disposition_policy_id)) {
+        ledgr_accounting_event_error(
+          "DISPOSITION metadata is malformed or carries a forbidden subtype.",
+          "ledgr_invalid_ledger_meta"
+        )
+      }
+      expected_position <- -as.numeric(meta[[i]]$position_before)
+      expected_cash <- -expected_position * as.numeric(meta[[i]]$mark)
+      if (!isTRUE(all.equal(position_delta[[i]], expected_position, tolerance = 0)) ||
+          !isTRUE(all.equal(cash_delta[[i]], expected_cash, tolerance = 0))) {
+        ledgr_accounting_event_error(
+          "DISPOSITION cash and position deltas do not reconcile to its position and mark.",
+          "ledgr_invalid_ledger_meta"
+        )
+      }
+      operation[[i]] <- 4L
     } else {
       ledgr_accounting_event_error(sprintf(
         "Unsupported accounting event_type: %s.",
@@ -250,7 +300,7 @@ ledgr_replay_accounting_events <- function(prepared,
       meta = prepared$meta[[i]]
     )
     lot_state <- result$state
-    if (prepared$operation[[i]] == 1L) {
+    if (prepared$operation[[i]] %in% c(1L, 4L)) {
       close_qty[[i]] <- result$close_qty
       open_qty[[i]] <- result$open_qty
       realized_close[[i]] <- result$realized_close

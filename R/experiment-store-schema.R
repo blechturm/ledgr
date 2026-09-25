@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 116L
+ledgr_experiment_store_schema_version <- 117L
 ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {

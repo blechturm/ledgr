@@ -124,7 +124,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL) {
     SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
     FROM ledger_events
     WHERE run_id = ?
-      AND event_type IN ('CASHFLOW', 'FILL')
+      AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
     ORDER BY event_seq
     ",
     params = list(bt$run_id)

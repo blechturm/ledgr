@@ -105,13 +105,18 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     con,
     paste(
       "SELECT meta_json FROM ledger_events",
-      "WHERE run_id = ? AND event_type = 'CASHFLOW' ORDER BY event_seq"
+      "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
+      "ORDER BY event_seq"
     ),
     params = list(bt$run_id)
   )
   event_meta <- ledgr_corporate_action_event_meta(event_rows)
   cash_meta <- Filter(
     function(value) identical(value$source, "corporate_action_cash"),
+    event_meta
+  )
+  disposition_meta <- Filter(
+    function(value) identical(value$source, "corporate_action_disposition"),
     event_meta
   )
   if (length(cash_meta) > 0L) {
@@ -128,14 +133,39 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       posting_ids == ids$cash_posting[["next_open"]]
     )
   }
-  sum_meta <- function(name) {
-    if (length(cash_meta) == 0L) return(0)
-    sum(vapply(cash_meta, function(value) as.numeric(value[[name]] %||% 0), numeric(1)))
+  if (length(disposition_meta) > 0L) {
+    disposition_ids <- vapply(
+      disposition_meta,
+      `[[`,
+      character(1),
+      "disposition_policy_id"
+    )
+    ids <- ledgr_corporate_action_policy_ids()
+    choice_counts[["held_terminal_position.last_permissible"]] <- sum(
+      disposition_ids == ids$held_terminal_position[["last_permissible"]]
+    )
+    choice_counts[["held_terminal_position.last_mark"]] <- sum(
+      disposition_ids == ids$held_terminal_position[["last_mark"]]
+    )
+  }
+  sum_meta <- function(values, name) {
+    if (length(values) == 0L) return(0)
+    sum(vapply(
+      values,
+      function(value) as.numeric(value[[name]] %||% 0),
+      numeric(1)
+    ))
   }
 
   out <- list(
     corporate_action_fidelity = ledgr_corporate_action_fidelity(
-      if (length(cash_meta) > 0L) "modeled" else if (facts$supplied) "none" else "not_supplied"
+      if (length(cash_meta) > 0L || length(disposition_meta) > 0L) {
+        "modeled"
+      } else if (facts$supplied) {
+        "none"
+      } else {
+        "not_supplied"
+      }
     ),
     facts_supplied = facts$supplied,
     price_basis = config$data$price_basis %||% "undeclared",
@@ -143,12 +173,12 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     selected_identities = identities,
     choice_counts = choice_counts,
     refusal_counts = refusal_counts,
-    late_arrival_count = as.integer(sum_meta("late_arrival")),
-    affected_marked_exposure = sum_meta("affected_marked_exposure"),
-    gross_cash_posted = sum_meta("cash_delta"),
-    modeled_terminal_proceeds = 0,
-    positions_disposed = 0L,
-    realized_model_pnl = 0,
+    late_arrival_count = as.integer(sum_meta(cash_meta, "late_arrival")),
+    affected_marked_exposure = sum_meta(cash_meta, "affected_marked_exposure"),
+    gross_cash_posted = sum_meta(cash_meta, "cash_delta"),
+    modeled_terminal_proceeds = sum_meta(disposition_meta, "cash_delta"),
+    positions_disposed = as.integer(length(disposition_meta)),
+    realized_model_pnl = sum_meta(disposition_meta, "realized_model_pnl"),
     unsupported_facts = 0L
   )
   class(out) <- c("ledgr_corporate_action_summary", "list")

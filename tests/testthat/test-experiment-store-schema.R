@@ -352,7 +352,7 @@ testthat::test_that("schema 115 preserves candidate evidence and admits incomple
 
   testthat::expect_message(
     ledgr_create_schema(con),
-    "Upgraded ledgr experiment-store schema from version 114 to 116"
+    "Upgraded ledgr experiment-store schema from version 114 to 117"
   )
 
   candidate <- DBI::dbGetQuery(
@@ -381,7 +381,7 @@ testthat::test_that("schema 115 preserves candidate evidence and admits incomple
     con,
     "UPDATE walk_forward_scores SET status = 'INCOMPLETE', completion_json = '{}'"
   ))
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 116L)
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 117L)
 })
 
 testthat::test_that("failed schema 115 migration restores schema 114 candidate tables", {

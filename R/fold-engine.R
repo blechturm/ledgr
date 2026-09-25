@@ -285,9 +285,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
   }
   if (use_compiled_spot_fifo) {
     ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
-    if (!is.null(corporate_action_plan) &&
-        isTRUE(corporate_action_plan$has_cashflow())) {
-      ledgr_require_compiled_spot_fifo_event_kinds("CASHFLOW")
+    if (!is.null(corporate_action_plan)) {
+      ledgr_require_compiled_spot_fifo_event_kinds(
+        corporate_action_plan$event_kinds()
+      )
     }
   }
 
@@ -449,6 +450,36 @@ ledgr_execute_fold <- function(execution, output_handler) {
         availability_view$risk_mark <- valuation$mark
         availability_view$mark_source <- valuation$source
         held_ids <- context_ids[as.logical(availability_view$held)]
+        if (!is.null(corporate_action_plan) &&
+            isTRUE(corporate_action_plan$has_disposition())) {
+          disposed <- corporate_action_plan$post_disposition(
+            index = i,
+            run_id = run_id,
+            event_seq = event_seq,
+            output_handler = output_handler,
+            state_value = state,
+            valuation = valuation
+          )
+          state <- disposed$state
+          event_seq <- disposed$next_event_seq
+          if (disposed$dispositions > 0L) {
+            full_positions <- ledgr_fold_positions_snapshot(
+              state$positions,
+              instrument_ids
+            )
+            availability_view <- availability_provider$decision_view(
+              ts,
+              full_positions
+            )
+            context_ids <- as.character(availability_view$axis)
+            valuation <- valuation_state$advance(i, context_ids)
+            availability_view$priced <- valuation$priced
+            availability_view$mark_age <- valuation$age
+            availability_view$risk_mark <- valuation$mark
+            availability_view$mark_source <- valuation$source
+            held_ids <- context_ids[as.logical(availability_view$held)]
+          }
+        }
         terminal_ids <- held_ids[nzchar(as.character(availability_view$terminal_event[held_ids]))]
         expired_ids <- setdiff(held_ids[!valuation$permissible[held_ids]], terminal_ids)
         if (length(terminal_ids) > 0L || length(expired_ids) > 0L) {
