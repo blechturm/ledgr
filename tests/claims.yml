@@ -41,6 +41,11 @@ claims:
     detecting_blocks: ["LTB-0006", "LTB-0013", "LTB-0014"]
     promised_profile: "fast"
     owner: "maintainer"
+    protected_contract_or_defect: "Canonical R and compiled spot-FIFO accounting agree on events, lot state, fills, retained equity and returns across reversal, multi-instrument, open, reduce, close and open-horizon cases."
+    oracle_independence: "The canonical R kernel is the normative executable oracle; LTB-0014 additionally reconstructs each retained compiled candidate from its separately persisted ordered events."
+    smallest_failing_change: "Change one compiled transition or truncate one retained return series; the latter fails all four surviving LTB-0014 comparisons."
+    cheapest_adequate_lane: "Direct kernel blocks cover adversarial arithmetic, while the six-pulse partial and open-horizon public sweep is the smallest continuous retained-series boundary in fast."
+    overlapping_evidence: "Review LTB-0017 retains the full eight-pulse flat, partial and open-end compiled matrix, including the no-event candidate and two post-transition tail pulses removed from fast."
   - id: "LCL-0007"
     source: "contracts.md: Persistence Contract"
     scope: "Post-fold failure evidence and deterministic finalization resume"
@@ -357,11 +362,6 @@ claims:
     detecting_blocks: ["LTB-0050"]
     promised_profile: "fast"
     owner: "maintainer"
-    protected_contract_or_defect: "Canonical R and compiled spot-FIFO accounting agree on events, lot state, fills, retained equity and returns across reversal, multi-instrument, open, reduce, close and open-horizon cases."
-    oracle_independence: "The canonical R kernel is the normative executable oracle; LTB-0014 additionally reconstructs each retained compiled candidate from its separately persisted ordered events."
-    smallest_failing_change: "Change one compiled transition or truncate one retained return series; the latter fails all four surviving LTB-0014 comparisons."
-    cheapest_adequate_lane: "Direct kernel blocks cover adversarial arithmetic, while the six-pulse partial and open-horizon public sweep is the smallest continuous retained-series boundary in fast."
-    overlapping_evidence: "Review LTB-0017 retains the full eight-pulse flat, partial and open-end compiled matrix, including the no-event candidate and two post-transition tail pulses removed from fast."
     protected_contract_or_defect: "A modeled terminal disposition must move cash, remove the position and every live lot, realize model P&L through canonical FIFO, reject subtype leakage, and preserve existing ledger rows while admitting only the new event kind."
     oracle_independence: "Literal opening lots and expected cash, position and realized values are checked through both the fold-facing plan and the independent accounting replay; an old two-kind DuckDB table is constructed directly before migration."
     smallest_failing_change: "Treat DISPOSITION as cash-only, leave one live lot, compute realization outside FIFO, admit a subtype field, omit DISPOSITION from the CHECK, or recreate the table without copying its old row."
