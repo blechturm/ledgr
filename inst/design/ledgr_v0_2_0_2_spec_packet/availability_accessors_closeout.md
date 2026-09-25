@@ -1,12 +1,14 @@
 # Cut 9 Closeout: Availability And Evidence Accessors
 
-**Status:** Agent-provisional and ready for Type 1 close review. Implementation
-and the registered fast timing gate are complete; independent close review has
-not run.
+**Status:** Agent-provisional. The first Type 1 close review returned
+`CHANGES_REQUIRED`; its evidence correction is implemented, but the exact
+post-correction fast timing record is red, so focused re-review is not yet
+requested.
 
-**Implementation range:** `5373433..058d569` on
-`codex/ws16-v0.2.1.0`. The range contains one commit per ticket plus three
-corrections found by the full gate and its anti-pattern audit:
+**Implementation range:** `5373433..eec4458` on
+`codex/ws16-v0.2.1.0`. The range contains one commit per ticket, three
+corrections found by the full gate and its anti-pattern audit, and one review
+correction:
 
 | Ticket | Commit | Claim and detector |
 | --- | --- | --- |
@@ -15,7 +17,7 @@ corrections found by the full gate and its anti-pattern audit:
 | LDG-2828 | `11cb5fb` | LCL-0063 / LTB-0063 |
 | LDG-2829 | `658e2b8`, `874bc3a` | LCL-0064 and LCL-0068 / LTB-0063 through LTB-0065 |
 | LDG-2831 | `bb9c7e2` | LCL-0065 / LTB-0066 |
-| LDG-2832 | `3457ce7`, `ea11db4`, `058d569` | LCL-0066 / LTB-0067 |
+| LDG-2832 | `3457ce7`, `ea11db4`, `058d569`, `eec4458` | LCL-0066 / LTB-0067 |
 | LDG-2844 | `fdbbcce` | LCL-0067 / LTB-0068 |
 
 ## What Shipped
@@ -55,7 +57,8 @@ completion evidence with their independent persistence states.
 LTB-0066 poisons the obsolete scalar helper paths. LTB-0067 observes the
 warning through a public run, compares warned and suppressed outputs and
 hashes, checks plane-only and fixed-small access, and poisons the tracking
-function below the universe threshold. LTB-0068 observes one metadata decode
+function below the universe threshold through both a public single-candidate
+sweep and a direct refreshed context. LTB-0068 observes one metadata decode
 over selected events, includes an unrelated held instrument, asserts literal
 composition values, and rejects the old per-fact `which()` scan.
 
@@ -74,9 +77,14 @@ unnecessary tracking call below 100 instruments. The helper bundle now installs
 the original closures there, and LTB-0067 fails if the tracker returns. The
 follow-up anti-pattern audit found the same impossible path one level higher:
 the fold still allocated mutable tracking state and advanced it every pulse for
-small universes. Those runs now carry no tracking state. LTB-0067 asserts the
-absence, and its public run fixture uses the minimum two pulses needed to
-distinguish once-per-run from once-per-pulse behavior.
+small universes. Those runs now carry no attached tracking state. The first
+Type 1 review found that LTB-0067 did not reach the fast-context helper guard
+and that the record overstated its coverage of the one-time fold allocation.
+The correction adds a five-instrument single-candidate sweep whose poisoned
+tracker fails if the fast-context guard is removed. The direct context still
+detects the helper and per-pulse state guards. The one-time fold allocation
+guard remains structurally inspected and is no longer claimed as
+mutation-detected.
 
 ## Documentation Result
 
@@ -110,19 +118,28 @@ resolution. These are composition-report gains and are not extrapolated to
 The first anti-pattern correction still left the registered fast gate red:
 `.tmp/ws16-fast-corrected` recorded 101.83, 101.00 and 103.07 seconds, median
 101.83. A same-host run of the exact pre-workstream commit `5373433` took 98.46
-seconds. Inspection then found the impossible state allocation and per-pulse
-advance described above, plus one redundant detector pulse. After both were
-removed, `.tmp/ws16-fast-final` passed all 456 blocks with no skips or failures
-in 83.61 seconds. The independent checker reported
-`LEDGR_TEST_GATE_OK mode=ordinary runs=1 median=83.610 bound=90.000`; the
-one-run rule therefore applies and no favorable median was selected.
+seconds. After the impossible state work and one redundant detector pulse were
+removed, `.tmp/ws16-fast-final` passed all 456 blocks in 83.61 seconds; the
+reviewer's independent run took 86.36 seconds. Those observations establish a
+green gate for the reviewed tree, but their improvement is not attributed to
+the correction alone: the clocks show material host-wide variance.
 
-The test audit did not remove or move any oracle. LTB-0067's four public runs
+The exact post-review detector set in
+`.tmp/ws16-fast-review-correction-v2` passed all 456 blocks with no skips or
+failures in 102.94, 103.81 and 104.02 seconds, median 103.81. The checker
+rejected that median against the 90-second bound. The new LTB-0067 witness took
+6.68 seconds versus 4.30 in the 83.61-second record, accounting for 2.38 of the
+21.26-second block-time difference; unrelated snapshot, sweep and walk-forward
+blocks also moved. This record is red and is not replaced by the earlier green
+observations.
+
+The test audit did not remove or move any oracle. LTB-0067's four durable runs
 cover distinct claims: warning multiplicity, output identity, plane-only
 silence and fixed-small-access silence. Two pulses are the minimum for the
-first claim. The remaining longest fast blocks predate this cut and protect
-schema migration, fixed-work hashing, compiled parity and walk-forward error
-recovery; they were not weakened under cover of this timing correction.
+first claim. Its fifth execution is the single-candidate fast-context witness
+required by the review. The remaining longest fast blocks predate this cut and
+protect schema migration, fixed-work hashing, compiled parity and walk-forward
+error recovery; they were not weakened under cover of this timing correction.
 
 ## Boundaries And Declined Additions
 
@@ -139,5 +156,7 @@ resume-path optimization LDG-2820.
 
 ## Governance
 
-No review invocation has run yet. The requested close review is one invocation
-over eight completed tickets, 0.125 against the 0.5 gate.
+One review invocation over eight completed tickets returned
+`CHANGES_REQUIRED`, 0.125 against the 0.5 gate. A focused correction review
+would make the ratio 2/8, 0.250, but is not requested while the exact timing
+record is red.

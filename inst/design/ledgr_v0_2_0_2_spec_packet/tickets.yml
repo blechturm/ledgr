@@ -90,7 +90,7 @@ cuts:
     source_table: "vignettes/missing-data-and-sessions.qmd as first written: the four-line eligibility computation in its strategy, the direct SQL read of snapshot_observation_quarantine, the single-timestamp ledgr_run_explain() call, and the three-field completion inspection; runtime trace of ledgr_corporate_action_composition_report() over 20,000, 100,000 and 300,000 ledger events"
     workstreams: [16]
     closeout: "availability_accessors_closeout.md"
-    status: "review_pending"
+    status: "open"
   - id: 10
     name: "Indicator source parity and timing attribution"
     cut: "2026-09-25"
@@ -238,7 +238,7 @@ workstreams:
   - id: 16
     name: "Availability and evidence accessors"
     cut: 9
-    status: "review_pending"
+    status: "open"
     depends_on_workstream: 12
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 16", reason: "Five additive readers over evidence that already exists, so the review is about whether each one tells the truth about state the engine computes elsewhere rather than recomputing it independently. One review at close checks that ctx$tradable() agrees with the planes it summarizes in both the dense and availability-aware modes and returns an empty axis without a special case, that the quarantine and completion readers report exactly the persisted rows with no derived judgement added, that ledgr_run_explain() returns the same row for a given timestamp whether asked alone or as part of a full history, and that no contract, schema, hash or error class moved. The workstream also re-cuts the missing-data article onto the new accessors, so the review reads the rendered article as part of the evidence."}
@@ -1198,13 +1198,13 @@ tickets:
   - id: "LDG-2830"
     title: "Workstream 16 and cut 9 closeout"
     workstream: 16
-    status: "review_pending"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2826", "LDG-2827", "LDG-2828", "LDG-2829", "LDG-2831", "LDG-2832", "LDG-2844"]
     scope: "Close workstream 16 and cut 9. Record what each accessor reads, the detector for each and its smallest breaking change, the article changes the accessors made possible, the review invocations against the 0.5 gate, and any accessor considered and declined. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["each accessor is named with its detector and the observed failure when its rule is broken", "the closeout states that no contract, schema, hash or error class changed, with the evidence for that claim", "the cut ratio is stated and is at most 0.5", "the article diff is named as evidence, since removing the clutter it documented is what the cut is for"]
-    evidence: ["Agent-provisional closeout is availability_accessors_closeout.md over 5373433..058d569. It names LCL-0061 through LCL-0068, the three LDG-2844 mutation failures, both scalar-tracking anti-pattern corrections, the article changes and declined additions.", "The final ordinary fast record in .tmp/ws16-fast-final passed 456 of 456 blocks with no skips or failures in 83.61 seconds. The independent checker accepted the one-run record against the 90-second bound. One planned Type 1 close review over eight completed tickets is 0.125 against the 0.5 gate."]
+    evidence: ["Agent-provisional closeout is availability_accessors_closeout.md over 5373433..eec4458. It names LCL-0061 through LCL-0068, the three LDG-2844 mutation failures, both scalar-tracking anti-pattern corrections, the Type 1 evidence finding, the article changes and declined additions.", "The first Type 1 review returned CHANGES_REQUIRED because two scalar guard sites were not mutation-sensitive despite the record claiming that they were. LTB-0067 now reaches the fast-context guard through a five-instrument single-candidate sweep; removing that guard fails with ledgr_test_unnecessary_scalar_tracking. The one-time fold allocation is no longer claimed as mutation-detected.", "The exact post-correction ordinary fast record in .tmp/ws16-fast-review-correction-v2 passed 456 of 456 blocks with no skips or failures in 102.94, 103.81 and 104.02 seconds, median 103.81. The independent checker rejected it against the 90-second bound. One completed review invocation over eight tickets is 0.125; focused re-review is not requested while the gate is red."]
 
   - id: "LDG-2831"
     title: "Remove the scalar fallbacks the helpers no longer use"
