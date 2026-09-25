@@ -1068,12 +1068,13 @@ tickets:
   - id: "LDG-2816"
     title: "Recovery: durable resume and reopen, memory failure containment"
     workstream: 12
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2814"]
     scope: "Gate cases 7 and 14. Durable: interruption after a DISPOSITION is recorded; resume applies it once; replay, results and reopen match an uninterrupted control after run and event identity exclusions. Relies on the fold transaction at R/backtest-runner.R:265, accounting before persisted strategy state at R/fold-engine.R:957, and resume restarting after the last state and deleting only the replaceable tail at R/run-resume.R:53. Memory: failure injected after the disposition has entered the memory buffer; a failed candidate with no final equity and no retained artifacts; an unaffected sibling candidate. No memory reopen or rollback guarantee is added; the passthrough at R/sweep.R:1670 stays by design. The terminal-disposition spike's interruption fired before the terminal pulse and its event was a FILL, so neither half is inherited from that evidence."
     acceptance: ["the interrupted and resumed durable run equals the uninterrupted control on events, equity, diagnostics and availability after identity exclusions, with exactly one disposition", "memory: a failed candidate row, no final equity, no retained artifact, and an unaffected sibling; a block that asserts only that an error occurred fails review", "a source guard fails if a transaction or reopen is introduced on the memory handler"]
+    evidence: ["LCL-0043 registers LTB-0054: the partial durable ledger contains one DISPOSITION before resume; the resumed and uninterrupted controls are equal on ledger, equity, diagnostics and availability after only run, event and creation identity exclusions; exactly one disposition survives and public reopen returns the same ledger. Removing the disposition append produced the intended partial-count failure and an invalid finalized prefix.", "LCL-0044 registers LTB-0055: an instrumented real memory handler observes a DISPOSITION append in both candidates; the second then fails, has no final equity or retained returns, and leaves the completed sibling intact. A source guard keeps transaction, rollback and reopen semantics out of the handler. Changing failed-row final equity from NA to zero made the registered assertion fail.", "The exact-tree R 4.6.1 fast profile passed 452/452 blocks in 74.710 seconds and the ordinary 90-second gate passed from .tmp/ws12-ldg2816-fast."]
 
   - id: "LDG-2817"
     title: "Register the fourteen-case gate and the adapter-authoring article"
