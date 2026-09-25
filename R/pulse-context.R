@@ -385,7 +385,10 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
   lookup <- new.env(parent = emptyenv())
   feature_state <- new.env(parent = emptyenv())
   feature_state$pulse_idx <- 1L
-  helpers <- ledgr_pulse_context_helper_bundle(lookup)
+  helpers <- ledgr_pulse_context_helper_bundle(
+    lookup,
+    track_scalar_access = length(universe) >= 100L
+  )
   out <- list(
     lookup = lookup,
     feature_state = feature_state,
@@ -499,41 +502,55 @@ ledgr_pulse_context_record_scalar_access <- function(lookup,
   invisible(NULL)
 }
 
-ledgr_pulse_context_helper_bundle <- function(lookup) {
-  record <- function(accessor, vector_form) {
-    ledgr_pulse_context_record_scalar_access(lookup, accessor, vector_form)
-  }
-  bar <- function(id) {
-    record("bar", "ctx$bars")
-    ledgr_pulse_context_bar(lookup, id)
-  }
-  open <- function(id) {
-    record("open", "ctx$vec$open")
-    ledgr_pulse_context_scalar(lookup, id, "open")
-  }
-  high <- function(id) {
-    record("high", "ctx$vec$high")
-    ledgr_pulse_context_scalar(lookup, id, "high")
-  }
-  low <- function(id) {
-    record("low", "ctx$vec$low")
-    ledgr_pulse_context_scalar(lookup, id, "low")
-  }
-  close <- function(id) {
-    record("close", "ctx$vec$close")
-    ledgr_pulse_context_scalar(lookup, id, "close")
-  }
-  volume <- function(id) {
-    record("volume", "ctx$vec$volume")
-    ledgr_pulse_context_scalar(lookup, id, "volume")
-  }
-  position <- function(id) {
-    record("position", "ctx$vec$positions")
-    ledgr_pulse_context_position(lookup, id)
-  }
-  idx <- function(id, missing = c("error", "na")) {
-    record("idx", "match(id, ctx$universe)")
-    ledgr_pulse_context_idx(lookup, id, missing = missing)
+ledgr_pulse_context_helper_bundle <- function(lookup,
+                                               track_scalar_access = FALSE) {
+  if (isTRUE(track_scalar_access)) {
+    record <- function(accessor, vector_form) {
+      ledgr_pulse_context_record_scalar_access(lookup, accessor, vector_form)
+    }
+    bar <- function(id) {
+      record("bar", "ctx$bars")
+      ledgr_pulse_context_bar(lookup, id)
+    }
+    open <- function(id) {
+      record("open", "ctx$vec$open")
+      ledgr_pulse_context_scalar(lookup, id, "open")
+    }
+    high <- function(id) {
+      record("high", "ctx$vec$high")
+      ledgr_pulse_context_scalar(lookup, id, "high")
+    }
+    low <- function(id) {
+      record("low", "ctx$vec$low")
+      ledgr_pulse_context_scalar(lookup, id, "low")
+    }
+    close <- function(id) {
+      record("close", "ctx$vec$close")
+      ledgr_pulse_context_scalar(lookup, id, "close")
+    }
+    volume <- function(id) {
+      record("volume", "ctx$vec$volume")
+      ledgr_pulse_context_scalar(lookup, id, "volume")
+    }
+    position <- function(id) {
+      record("position", "ctx$vec$positions")
+      ledgr_pulse_context_position(lookup, id)
+    }
+    idx <- function(id, missing = c("error", "na")) {
+      record("idx", "match(id, ctx$universe)")
+      ledgr_pulse_context_idx(lookup, id, missing = missing)
+    }
+  } else {
+    bar <- function(id) ledgr_pulse_context_bar(lookup, id)
+    open <- function(id) ledgr_pulse_context_scalar(lookup, id, "open")
+    high <- function(id) ledgr_pulse_context_scalar(lookup, id, "high")
+    low <- function(id) ledgr_pulse_context_scalar(lookup, id, "low")
+    close <- function(id) ledgr_pulse_context_scalar(lookup, id, "close")
+    volume <- function(id) ledgr_pulse_context_scalar(lookup, id, "volume")
+    position <- function(id) ledgr_pulse_context_position(lookup, id)
+    idx <- function(id, missing = c("error", "na")) {
+      ledgr_pulse_context_idx(lookup, id, missing = missing)
+    }
   }
   flat <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
   hold <- function() ledgr_pulse_context_current_targets(lookup)
@@ -587,7 +604,10 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
   if (!is.environment(lookup)) {
     lookup <- new.env(parent = emptyenv())
   }
-  helpers <- ledgr_pulse_context_helper_bundle(lookup)
+  helpers <- ledgr_pulse_context_helper_bundle(
+    lookup,
+    track_scalar_access = length(ctx$universe %||% character()) >= 100L
+  )
 
   if (is.environment(ctx)) {
     for (name in names(helpers)) {

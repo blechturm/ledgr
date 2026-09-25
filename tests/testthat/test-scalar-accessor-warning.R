@@ -86,4 +86,27 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without c
     invisible(vapply(ctx$universe[seq_len(5L)], ctx$close, numeric(1)))
     ctx$flat()
   }, "small-scalar-set")
+  testthat::local_mocked_bindings(
+    ledgr_pulse_context_record_scalar_access = function(...) {
+      rlang::abort(
+        "Small universes must keep the untracked scalar closures.",
+        class = "ledgr_test_unnecessary_scalar_tracking"
+      )
+    },
+    .package = "ledgr"
+  )
+  small_ctx <- list(
+    universe = ids[seq_len(5L)],
+    positions = stats::setNames(numeric(5L), ids[seq_len(5L)]),
+    .pulse_lookup = new.env(parent = emptyenv()),
+    .feature_vector = NULL
+  )
+  small_ctx <- ledgr:::ledgr_ensure_pulse_context_accessors(small_ctx)
+  small_ctx <- ledgr:::ledgr_refresh_pulse_context_lookup(
+    small_ctx,
+    bars = bars[seq_len(5L), , drop = FALSE],
+    positions = small_ctx$positions,
+    universe = small_ctx$universe
+  )
+  testthat::expect_identical(small_ctx$close(ids[[1L]]), 100)
 })
