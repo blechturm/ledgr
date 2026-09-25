@@ -317,7 +317,7 @@ and disputed classifications. The maintainer's decision: promote for
 v0.2.0.2, reassess before the next version. Cut 2 runs under the loop as
 piloted, and its closeout adds its own counters to that record.
 
-## Cut 6: Usable equity corporate actions (open; Workstream 14 queued)
+## Cut 6: Usable equity corporate actions (open; Workstream 14 review pending)
 
 Authority: `../rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`,
 accepted 2026-09-24 after seven seeds, seven responses with two addenda,
@@ -340,7 +340,9 @@ re-review at `af5bdc6` after one bounded correction round and was accepted by
 the maintainer on 2026-09-24. The subsequent scaling finding inserts
 Workstream 14 before Workstream 12. Its ticket review returned
 `PASS_AFTER_PATCHES`; the maintainer accepted the patched amendment on
-2026-09-24. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
+2026-09-24. LDG-2821 and LDG-2822 are implemented at `3d1ffbf` and `d93314e`;
+LDG-2823 and the Workstream 14 closeout are agent-provisional pending Type 1
+review. Workstream 13 is an independent Cut 7 chore, not a prerequisite.
 Deferred LDG-2820 records the review's resume-only metadata-parsing
 optimization; it remains outside both the original and amended active-ticket
 denominators.
@@ -375,7 +377,10 @@ finding. At 100,000 complete corporate-action facts, construction took 97.9
 seconds, sealing 112.9 seconds and a public run 18.3 seconds against a
 1.26-second no-fact control. Workstream 14 owns exact hash and corruption
 parity plus the scale correction; it is an output-preserving amendment only
-while those identities remain byte-identical.
+while those identities remain byte-identical. The agent-provisional closeout's
+three-run medians are 95.93 to 9.08 seconds for construction, 110.44 to 7.40
+for sealing, and 17.18 to 3.26 seconds for fact-attributable public-run
+overhead. All registered ceilings pass; maintainer acceptance remains open.
 
 ## Cut 7: Maintenance, schema ceremony (closed)
 

@@ -177,7 +177,7 @@ workstreams:
   - id: 14
     name: "Fact-family scaling"
     cut: 6
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 11
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 14", reason: "One correctness claim joins the three tickets: every existing fact, bundle and snapshot identity and every corruption and duplicate detector stays exact while row-wise preparation is removed from construction, seal and run startup. The review walks all registered families, guts persisted-row tamper detection, checks frozen old hashes byte-for-byte, audits the seven shapes and accepts the work only with the registered 20,000-row and 100,000-row clocks. Workstream 13 is an independent Cut 7 chore and is not a prerequisite."}
@@ -985,12 +985,13 @@ tickets:
   - id: "LDG-2823"
     title: "Gate fact-family scaling and close Workstream 14"
     workstream: 14
-    status: "open"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2821", "LDG-2822"]
     scope: "Close Workstream 14 before Workstream 12 opens. Register the identity, duplicate, corruption and scale detectors in tests/claims.yml with the packet's five review obligations. Record interleaved constructor, seal and public-run clocks at 20,000 and 100,000 facts, the no-fact run control, all detector guts, the seven-shape audit, declined changes and review invocations. Preserve the Workstream 10 review miss: its bars-only clock did not measure the populated family. Owner: the maintainer; the closeout is agent-provisional."
     acceptance: ["the closeout names each detector, its smallest breaking change and the observed gut failure", "the before-and-after record uses the same fixture and code baseline as fact_family_scaling_note.md, names cold and warm clocks per spike_protocol.md section 10, and reconciles component and public-call times without subtracting overlapping intervals", "all hash and output parity gates pass and all three registered 100,000-row performance ceilings pass; failure of an identity, corruption or performance gate leaves the workstream open", "the cut's historical six reviews over fifteen original tickets remain recorded, the amendment review and projected Workstream 14 and 12 reviews are counted against eighteen active tickets, and the projected final ratio is 9/18 = 0.500", "no Workstream 12 settlement behavior is implemented"]
+    evidence: ["fact_family_scaling_closeout.md is the agent-provisional Workstream 14 record; LCL-0035 through LCL-0038 register LTB-0042 through LTB-0049 with all five review obligations", "dev/bench/workstream14_fact_scaling.R and results/workstream14_fact_scaling_20260925.csv record three alternated repetitions against af5bdc6: 100,000-row medians 95.93 to 9.08 seconds constructor, 110.44 to 7.40 seal, and fact-attributable public-run overhead 17.18 to 3.26; all ceilings pass", "four isolated guts reintroduced row-wise preparation, omitted one persisted table, restored three full-path assertions and removed physical ordering; their intended registered blocks failed before restoration", "the final exact-tree ordinary fast gate at .tmp/ws14-close-fast-final passed 451 of 451 blocks in 78.630 seconds against the 90-second bound; the closeout also discloses an earlier elevated-context three-run timing failure without changing the threshold or profile"]
 
   # ------------------------------------------------ 12 Disposition, composition and gate
   - id: "LDG-2814"
