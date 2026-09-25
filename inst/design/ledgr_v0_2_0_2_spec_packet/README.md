@@ -602,18 +602,18 @@ close review would make the historical count three over five, 0.600. If that
 route is taken, the closeout records the breach honestly rather than merging or
 padding tickets to hide it.
 
-## Cut 12: Restore fast-profile headroom (reviewed; awaiting acceptance)
+## Cut 12: Restore fast-profile headroom (accepted; implementation in progress)
 
 Authority: the accepted testing-architecture synthesis and the maintainer's
 2026-09-25 decision to recover the fast lane without weakening its 90-second
-gate or hiding unrelated test work inside Cut 9. Four tickets, LDG-2845 through
-LDG-2848, one test-only workstream. The independent Type 1 then Type 2 review
+gate or hiding unrelated test work inside Cut 9. Five tickets, LDG-2845 through
+LDG-2849, one test-only workstream. The independent Type 1 then Type 2 review
 returned `PASS_AFTER_PATCHES`; its six ticket-text corrections are applied, and
-implementation waits for maintainer acceptance.
+the maintainer accepted the cut.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 19 Fast-profile headroom | 2845-2848 | claim-based routing of two rare recovery integrations; scalar-warning evidence split by feedback value; fixture shrinking for expensive core fast gates; exact ordinary and CRAN-mode censuses, mutations, clocks and closeout | fast retains legacy migration plus the smallest failure-sensitive evidence needed on ordinary changes, every moved guarantee runs nightly and at release, core parity and corruption guards remain fast, and measured headroom is recovered without changing production code or either time bound |
+| 19 Fast-profile headroom | 2845-2849 | claim-based routing of two rare recovery integrations; scalar-warning evidence split by feedback value; fixture shrinking for expensive core fast gates; explicit cleanup for directly owned test drivers; exact ordinary and CRAN-mode censuses, mutations, clocks and closeout | fast retains legacy migration plus the smallest failure-sensitive evidence needed on ordinary changes, every moved guarantee runs nightly and at release, core parity and corruption guards remain fast, and measured headroom is recovered without changing production code or either time bound |
 
 The triggering record is not a correctness failure. At `c83e4dc`, all 456
 fast blocks pass, but the exact post-correction profile records 102.94, 103.81
@@ -641,7 +641,15 @@ explicit maintainer decision on a bounded second pass or deferral, never an
 excuse to raise the bound or route more tests post hoc. The 75-to-80-second
 figure remains a non-binding engineering target.
 
-One cut review and one close review over four real units is 2/4, 0.500. The
+The first post-implementation CRAN record exposed a separate test-lifecycle
+defect: three isolated runs took 108.56, 107.61 and 107.68 seconds because
+anonymous DuckDB drivers were left to deferred cleanup. The same anomalous
+block took 0.32 seconds alone and 0.24 seconds when instrumentation perturbed
+collector timing. The maintainer authorized LDG-2849 as a bounded second pass;
+it changes no product code, lane membership or time bound, and the failed
+record remains part of the closeout rather than being replaced silently.
+
+One cut review and one close review over five real units is 2/5, 0.400. The
 workstream opens from completed Workstream 12 and must close before Workstream
 16 returns for focused correction review; Workstream 17 remains downstream of
 Workstream 16.
