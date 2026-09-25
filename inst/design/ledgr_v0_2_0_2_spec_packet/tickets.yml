@@ -1372,12 +1372,13 @@ tickets:
   - id: "LDG-2845"
     title: "Route rare recovery integrations out of the fast lane"
     workstream: 19
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Move only two currently default-fast integration blocks to the review profile: walk-forward preserves incomplete status when prefix metrics fail, and terminal cleanup closes test handles without masking the terminal error. These are real rare-recovery guarantees, not deletion candidates. Keep legacy metadata migration in fast because it is upgrade safety and has no equivalent current-schema detector. Preserve every assertion and fixture unless an independently mutation-sensitive smaller fixture is substituted. Use profile markers, never skip_if or environment-dependent suppression. Extend the review-profile CI condition from release tags to the nightly schedule, while retaining the release backstop. Record the exact before/after block census and prove that the nightly and release workflows execute both moved blocks."
     acceptance: ["the two named recovery blocks execute and pass in the review profile, execute zero times in fast, and are never skipped by CRAN, environment or optional-dependency predicates", "the assertions and smallest breaking mutations for incomplete metric classification and terminal handle cleanup with error masking still fail after routing", "the legacy metadata migration block remains in fast and its registered mutation still fails", "tests/claims.yml and the block census name the resulting profiles; no claim is deleted, merged into prose or left without an executable lane", "the nightly CI and release commands are shown to select the moved blocks before a release tag rather than merely assuming that the review lane runs"]
+    evidence: ["LTB-0069 and LTB-0070 are registered review blocks under LCL-0069 and LCL-0070. Static preflight selects 454 fast and 268 review blocks; both new blocks are review-only, while the legacy metadata migration block remains fast. The actual review runner executed 268 blocks in 518.60 seconds: LTB-0069 passed four assertions in 1.98 seconds and LTB-0070 passed three in 3.60 seconds.", "The affected files pass at baseline. Mutating prefix-error propagation to a generic class fails LTB-0069 on the exact class assertion; removing try(..., silent = TRUE) from terminal cleanup fails LTB-0070 because ledgr_close_probe masks the original interrupt. Both production mutations were reverted.", "The GitHub review step now runs on the nightly schedule as well as release tags, while the release-profile backstop remains tag-only. No production file differs from the ticket baseline."]
 
   - id: "LDG-2846"
     title: "Split scalar-warning evidence by feedback value"

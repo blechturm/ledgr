@@ -970,7 +970,8 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
   testthat::expect_identical(second_opening$cost_basis, first_basis)
 })
 
-testthat::test_that("walk-forward preserves incomplete status when prefix metrics fail", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0069] walk-forward preserves incomplete status when prefix metrics fail", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
   calls <- new.env(parent = emptyenv())
