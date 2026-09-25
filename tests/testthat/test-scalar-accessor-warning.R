@@ -95,6 +95,21 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without c
     },
     .package = "ledgr"
   )
+  testthat::expect_silent(ledgr_sweep(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) {
+        invisible(ctx$close(ctx$universe[[1L]]))
+        ctx$flat()
+      },
+      universe = ids[seq_len(5L)],
+      opening = ledgr_opening(cash = 10000),
+      cost_model = ledgr_cost_zero()
+    ),
+    ledgr_param_grid(small = list()),
+    seed = 17L,
+    stop_on_error = TRUE
+  ))
   small_ctx <- list(
     universe = ids[seq_len(5L)],
     positions = stats::setNames(numeric(5L), ids[seq_len(5L)]),
