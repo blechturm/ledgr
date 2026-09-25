@@ -63,9 +63,10 @@ ledgr_snapshot_from_df <- function(bars_df,
       )
     }
   } else {
-    facts <- ledgr_facts_assert(facts)
+    validated_facts <- ledgr_facts_validated(facts)
+    facts <- validated_facts$facts
     availability_report <- ledgr_availability_validate_inputs(
-      facts,
+      validated_facts,
       bars_df,
       instruments_df,
       invalid_observations
@@ -371,7 +372,7 @@ ledgr_snapshot_from_df <- function(bars_df,
       ledgr_snapshot_write_availability(
         con,
         snapshot_id,
-        facts,
+        validated_facts,
         availability_report$quarantine_rows,
         invalid_observations
       )

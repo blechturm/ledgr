@@ -116,6 +116,30 @@ ws14_matrix_bars <- function(include_quarantine = TRUE) {
   rbind(grid, rejected)
 }
 
+ws14_matrix_snapshot <- function(db_path = tempfile(fileext = ".duckdb")) {
+  matrix <- ws14_fact_matrix()
+  ledgr_snapshot_from_df(
+    ws14_matrix_bars(),
+    instruments_df = data.frame(
+      instrument_id = c("AAA", "BBB", "CHILD"),
+      stringsAsFactors = FALSE
+    ),
+    db_path = db_path,
+    facts = matrix$facts,
+    invalid_observations = "quarantine"
+  )
+}
+
+ws14_matrix_experiment <- function(snapshot) {
+  ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    universe = ledgr_universe_members("matrix"),
+    valuation_policy = ledgr_valuation_stale(2L),
+    cost_model = ledgr_cost_zero()
+  )
+}
+
 ws14_scale_action_rows <- function(n) {
   n <- as.integer(n)
   if (n == 0L) return(NULL)

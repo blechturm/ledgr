@@ -14,7 +14,7 @@ ledgr_snapshot_write_availability <- function(con,
       class = "LEDGR_SNAPSHOT_IMMUTABLE"
     )
   }
-  facts <- ledgr_facts_assert(facts)
+  facts <- ledgr_facts_unwrap_validated(facts)
   for (family in facts$families) {
     DBI::dbAppendTable(
       con,
@@ -279,21 +279,17 @@ ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
   }
 
   normalized <- lapply(tables, function(df) {
-    if (nrow(df) == 0L) return(list())
-    for (name in names(df)) {
-      if (inherits(df[[name]], "POSIXt")) {
-        df[[name]] <- ledgr_fact_time_token(df[[name]])
-      } else if (inherits(df[[name]], "Date")) {
-        df[[name]] <- as.character(df[[name]])
-      }
-    }
-    lapply(seq_len(nrow(df)), function(i) ledgr_fact_row_payload(df[i, , drop = FALSE]))
+    ledgr_fact_json_verbatim(ledgr_fact_frame_payload_json(df))
   })
-  list(
-    schema = "ledgr_snapshot_hash_rule_2",
+  normalized <- normalized[order(names(normalized))]
+  payload <- list(
     fact_schema_version = ledgr_fact_schema_version,
+    schema = "ledgr_snapshot_hash_rule_2",
     tables = normalized
   )
+  out <- as.character(ledgr_json_write_canonical_v2_verbatim(payload))
+  attr(out, "ledgr_canonical_json") <- TRUE
+  out
 }
 
 ledgr_snapshot_membership_set_abort <- function(message) {

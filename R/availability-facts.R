@@ -1048,6 +1048,18 @@ ledgr_facts_assert <- function(x) {
   x
 }
 
+ledgr_facts_validated <- function(x) {
+  structure(
+    list(facts = ledgr_facts_assert(x)),
+    class = "ledgr_validated_facts"
+  )
+}
+
+ledgr_facts_unwrap_validated <- function(x) {
+  if (inherits(x, "ledgr_validated_facts")) return(x$facts)
+  ledgr_facts_assert(x)
+}
+
 ledgr_fact_family_hash <- function(family, scope_id, rows, headers, metadata) {
   digest::digest(
     ledgr_fact_family_payload_json(

@@ -2,7 +2,7 @@ ledgr_availability_validate_inputs <- function(facts,
                                                bars_df,
                                                instruments_df,
                                                invalid_observations) {
-  facts <- ledgr_facts_assert(facts)
+  facts <- ledgr_facts_unwrap_validated(facts)
   session_family <- ledgr_session_family(facts)
   session_rows <- ledgr_session_open_rows_validated(facts)
   instruments <- ledgr_availability_prepare_instruments(bars_df, instruments_df)
