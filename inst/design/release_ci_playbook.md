@@ -31,6 +31,42 @@ classes of failure that looked similar from the outside:
 The practical lesson: treat each failed step as a separate signal. Do not call a
 release ready because a similar run passed elsewhere.
 
+## CI Tiers
+
+`R-CMD-check.yaml` tiers its work instead of running the full matrix on every
+push. A `plan` job decides, and its step summary names the event, the ref, the
+tier, and whether the run was skipped.
+
+| Event | Tier | What runs |
+| --- | --- | --- |
+| Branch push touching code | quick | ubuntu only: README cold start, v0.1.x acceptance, ordinary fast profile and gate, `R CMD check` |
+| Branch push touching only `inst/design/**` or `docs/**` | none | no run at all |
+| Push to `main`, tag `v*`, any pull request, nightly 04:17 UTC | full | ubuntu and windows, plus the isolated CRAN library, the CRAN-mode fast profile and gate, and coverage |
+| `workflow_dispatch` | chosen | the `tier` input, defaulting to full |
+
+Three consequences for the release gate:
+
+- **Branch CI no longer proves what it used to.** A green branch run means the
+  ubuntu fast lane and `R CMD check` passed. Windows, CRAN mode, and coverage
+  are not exercised until the branch reaches `main`, opens a pull request, or
+  gets a dispatched full run. Do not treat a quick run as the merge gate for a
+  release branch.
+- **A docs-only push produces no run.** That is not a stuck queue. Read the
+  `plan` job summary before waiting on a run that will never appear.
+- **Cancelled branch runs are expected.** Concurrency supersedes an in-flight
+  run when the same branch is pushed again. `main` and release tags are never
+  cancelled.
+
+The nightly schedule fires only from the default branch, so a release branch
+gets no nightly coverage of its own. The tiering is deliberately asymmetric
+about risk: every failure class recorded above was an ubuntu failure class, and
+ubuntu still runs on every code push, while windows is the platform the
+maintainer and the agents already develop on locally.
+
+The pkgdown site is no longer built inside `R-CMD-check`; `pkgdown.yaml` owns it
+on `main`. The local pkgdown build in the release order below is therefore the
+first place a documentation break surfaces.
+
 ## Release Order
 
 1. Finish the release ticket on the release branch.
@@ -69,13 +105,24 @@ release ready because a similar run passed elsewhere.
 4. Run the local WSL/Ubuntu gate for any change touching executable R code,
    DuckDB persistence, snapshots, file paths, time zones, vignettes, pkgdown, or
    CI.
-5. Push the branch and wait for branch CI.
-6. Merge to `main` only after branch CI is green.
-7. Wait for `main` CI to be green on both workflows.
-8. Move the release tag only after `main` is green.
-9. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
-   is green.
-10. Create or update the GitHub Release for the existing tag and mark it
+5. Push the branch and wait for branch CI. This is the quick tier: the ubuntu
+   fast lane and `R CMD check`, nothing else.
+6. Dispatch the full tier on the release branch and wait for it, so windows,
+   the isolated CRAN profile, and coverage are proven before the merge rather
+   than after it:
+
+   ```sh
+   gh workflow run R-CMD-check.yaml --repo blechturm/ledgr \
+     --ref <release-branch> -f tier=full
+   ```
+
+7. Merge to `main` only after both the branch run and the dispatched full run
+   are green.
+8. Wait for `main` CI to be green on both workflows.
+9. Move the release tag only after `main` is green.
+10. Wait for the tag-triggered CI. The tag is not release-valid until its own CI
+    is green.
+11. Create or update the GitHub Release for the existing tag and mark it
     latest. Do this only after tag CI is green. Do not recreate or force-push the
     tag just to update release notes.
 
@@ -149,8 +196,8 @@ the whole run.
 
 The GitHub Releases page is separate from git tags. Creating or editing a
 GitHub Release for an existing tag does not push code and does not trigger the
-current ledgr CI workflows, because the workflows listen to `push` and
-`workflow_dispatch`, not `release`.
+current ledgr CI workflows, because the workflows listen to `push`,
+`pull_request`, `schedule`, and `workflow_dispatch`, not `release`.
 
 After tag CI is green, create or update the release entry from the existing
 tag:
@@ -327,9 +374,12 @@ this coverage run even when:
 - pkgdown passed;
 - local Ubuntu coverage passed.
 
-The CI coverage step should run one coverage collection attempt per workflow
-job. If a coverage-only native abort or instrumentation read failure happens
-after README, acceptance tests, `R CMD check`, and pkgdown have passed, rerun
+Coverage runs only on the full tier's ubuntu leg, so a coverage failure is a
+`main`, tag, pull-request, nightly, or dispatched-full signal, never a quick
+branch run. The CI coverage step should run one coverage collection attempt per
+workflow job. If a coverage-only native abort or instrumentation read failure
+happens after README, acceptance tests, `R CMD check`, and pkgdown have passed,
+rerun
 the failed job once and record the evidence. Do not hide three expensive
 coverage attempts inside one CI job by default; that makes failures slower and
 less legible.
@@ -347,10 +397,13 @@ A release tag is ready only when all of the following are true:
   prep cycle, and does not contain stale active-cycle instructions;
 - `inst/design/README.md`, when present, reflects all design-document additions,
   moves, removals, and current-cycle context;
-- `main` `R-CMD-check` workflow is green;
+- the dispatched full-tier run on the release branch is green, or the branch
+  reached `main` through a pull request whose run was full tier;
+- `main` `R-CMD-check` workflow is green, which is always the full tier;
 - `main` pkgdown workflow is green;
 - tag `R-CMD-check` workflow is green;
-- no failed run remains unexplained as a real package failure.
+- no failed run remains unexplained as a real package failure. Cancelled branch
+  runs and skipped docs-only pushes are not failures.
 
 Old failed runs can remain in the GitHub history. They are acceptable only when
 a newer run on the same intended release commit or tag is green and the failure
