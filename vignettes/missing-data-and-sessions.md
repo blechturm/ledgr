@@ -442,14 +442,8 @@ quarantined <- ledgr_snapshot_from_df(
   db_path = tempfile(fileext = ".duckdb")
 )
 
-store <- ledgr_db_init(quarantined$db_path)
-
-DBI::dbGetQuery(
-  store,
-  "SELECT supplied_instrument_id, supplied_ts_utc, reason
-     FROM snapshot_observation_quarantine"
-) |>
-  as_tibble()
+ledgr_snapshot_quarantine(quarantined) |>
+  select(supplied_instrument_id, supplied_ts_utc, reason)
 #> # A tibble: 1 x 3
 #>   supplied_instrument_id supplied_ts_utc     reason
 #>   <chr>                  <dttm>              <chr>

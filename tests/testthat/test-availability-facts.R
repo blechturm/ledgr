@@ -463,7 +463,7 @@ testthat::test_that("hash rule 2 is canonical and facts survive reopening", {
 })
 
 # ledgr-test-profile: review
-testthat::test_that("explicit quarantine persists originals and is hash verified", {
+testthat::test_that("[LTB-0062] explicit quarantine is publicly readable and hash verified", {
   db_path <- tempfile(fileext = ".duckdb")
   facts <- availability_test_facts()
   bars <- availability_test_bars()
@@ -520,9 +520,14 @@ testthat::test_that("explicit quarantine persists originals and is hash verified
     params = list(id)
   )
   quarantine <- ledgr:::ledgr_snapshot_availability_read(con, id)$snapshot_observation_quarantine
+  public_quarantine <- ledgr_snapshot_quarantine(reopened)
   testthat::expect_equal(nrow(stored_bars), 2L)
   testthat::expect_equal(nrow(quarantine), 2L)
   testthat::expect_setequal(quarantine$reason, c("ohlc_invalid", "instrument_unknown"))
+  testthat::expect_identical(
+    as.data.frame(public_quarantine),
+    quarantine[, names(public_quarantine), drop = FALSE]
+  )
   testthat::expect_true(any(grepl('"high":8', quarantine$original_row_json, fixed = TRUE)))
   testthat::expect_identical(
     DBI::dbGetQuery(
@@ -540,6 +545,16 @@ testthat::test_that("explicit quarantine persists originals and is hash verified
     params = list(id)
   )
   testthat::expect_error(ledgr_snapshot_validate(reopened), class = "ledgr_invalid_snapshot")
+
+  clean <- ledgr_snapshot_from_df(
+    availability_test_bars(),
+    facts = facts
+  )
+  on.exit(ledgr_snapshot_close(clean), add = TRUE)
+  empty <- ledgr_snapshot_quarantine(clean)
+  testthat::expect_s3_class(empty, "tbl_df")
+  testthat::expect_identical(nrow(empty), 0L)
+  testthat::expect_identical(names(empty), names(public_quarantine))
 })
 
 testthat::test_that("quarantine requires sessions and cannot hide duplicate valid keys", {

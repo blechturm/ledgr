@@ -1165,12 +1165,13 @@ tickets:
   - id: "LDG-2827"
     title: "Read the quarantined observations of a snapshot"
     workstream: 16
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "invalid_observations = \"quarantine\" sets rows aside with a reason into snapshot_observation_quarantine, and nothing exposes them, so a user who admits a panel that way cannot see what was excluded without knowing the table name. Add a reader taking a snapshot and returning the quarantined rows with their supplied identifiers, timestamps and reasons, alongside the existing ledgr_snapshot_info(). It reports the persisted rows and adds no judgement of its own."
     acceptance: ["a snapshot sealed with invalid_observations = \"quarantine\" returns exactly the persisted quarantine rows, with the same identifiers, timestamps and reasons a direct query returns", "a snapshot with no quarantined rows returns a zero-row result of the same shape rather than NULL or an error", "a snapshot sealed under the default policy, where an invalid row fails the seal, is unaffected", "the missing-data article reads quarantined rows through the accessor and no longer opens the store with SQL"]
+    evidence: ["LCL-0062 registers LTB-0062 in the existing review-lane quarantine fixture. ledgr_snapshot_quarantine() matches the direct persisted query exactly on quarantine id, supplied instrument and timestamp, reason, original-row JSON and provenance JSON; a clean snapshot returns a zero-row tibble with the identical columns. Existing default-policy rejection and hash-tamper assertions remain in the same file.", "The focused availability-facts and test-control-plane files passed under R 4.6.1. The source and rendered missing-data article now use the public accessor and contain no raw quarantine-table SQL."]
 
   - id: "LDG-2828"
     title: "ledgr_run_explain() over a whole instrument history"
