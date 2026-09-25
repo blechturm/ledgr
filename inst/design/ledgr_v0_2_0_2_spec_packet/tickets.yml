@@ -1187,12 +1187,13 @@ tickets:
   - id: "LDG-2829"
     title: "One completion answer for a run"
     workstream: 16
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "A stopped run reports status, completion_status, stop_reason and complete_performance as four fields among the fifty-two ledgr_run_info() returns, so the question a user actually asks, did this run cover the window I asked for and if not why, is assembled by hand every time. Add one accessor that answers it: the intended and achieved window, whether performance is complete, the stop reason when there is one, and the affected exposure the completion record already carries. It reads the persisted completion record and derives nothing new."
     acceptance: ["a complete run and a run stopped by an exhausted valuation horizon are distinguishable from the accessor alone, without reading ledgr_run_info() fields individually", "every value the accessor reports matches the persisted completion record, including the affected exposure and its basis", "a run with no completion record returns a typed absent result rather than an error", "the missing-data article reports completion through the accessor instead of printing three fields in sequence"]
+    evidence: ["LCL-0064 registers LTB-0063 through LTB-0065. The incomplete public result matches the direct run_completion row exactly for affected exposure, timestamp and basis, retains the stopped instrument id and names valuation_horizon_exhausted. A separate availability-aware run reports DONE and complete performance; a dense run returns a classed result with completion_evidence_available FALSE and typed missing exposure fields.", "The focused availability-parity and API-export files passed under R 4.6.1. The source and rendered missing-data article now print ledgr_run_completion() for both policies rather than assembling run-info fields."]
 
   - id: "LDG-2830"
     title: "Workstream 16 and cut 9 closeout"

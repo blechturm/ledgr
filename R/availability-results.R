@@ -143,6 +143,68 @@ ledgr_backtest_completion_info <- function(bt) {
   ledgr_run_completion_info(opened$con, bt$run_id)
 }
 
+#' Read one run's completion evidence
+#'
+#' Returns the persisted answer to whether a run covered its requested window,
+#' including the achieved window, stop reason, and affected exposure recorded
+#' at an incomplete boundary. It performs no new completion judgement.
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @return A `ledgr_run_completion` list. When the run has no completion row,
+#'   `completion_evidence_available` is `FALSE` and every evidence field carries
+#'   a typed missing value.
+#' @export
+ledgr_run_completion <- function(bt) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  info <- ledgr_run_completion_info(opened$con, bt$run_id)
+  completion <- ledgr_run_completion_read(opened$con, bt$run_id, required = FALSE)
+  missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  if (is.null(completion) || nrow(completion) == 0L) {
+    info$affected_exposure <- NA_real_
+    info$affected_exposure_ts_utc <- missing_time
+    info$affected_exposure_basis <- NA_character_
+  } else {
+    info$affected_exposure <- as.numeric(completion$affected_exposure[[1L]])
+    info$affected_exposure_ts_utc <- as.POSIXct(
+      completion$affected_exposure_ts_utc[[1L]],
+      tz = "UTC"
+    )
+    info$affected_exposure_basis <- as.character(
+      completion$affected_exposure_basis[[1L]]
+    )
+  }
+  structure(info, class = c("ledgr_run_completion", "list"))
+}
+
+#' @export
+print.ledgr_run_completion <- function(x, ...) {
+  if (!inherits(x, "ledgr_run_completion")) {
+    rlang::abort("`x` must be a ledgr_run_completion object.", class = "ledgr_invalid_args")
+  }
+  if (!isTRUE(x$completion_evidence_available)) {
+    cat("Completion evidence is not available for this run.\n")
+    return(invisible(x))
+  }
+  ledgr_print_completion_info(x)
+  exposure <- if (is.finite(x$affected_exposure)) {
+    format(x$affected_exposure, scientific = FALSE, trim = TRUE)
+  } else {
+    "unknown"
+  }
+  basis <- if (is.na(x$affected_exposure_basis) || !nzchar(x$affected_exposure_basis)) {
+    "unknown"
+  } else {
+    x$affected_exposure_basis
+  }
+  cat("  Affected Exposure: ", exposure, "\n", sep = "")
+  cat("  Exposure Basis:    ", basis, "\n", sep = "")
+  invisible(x)
+}
+
 ledgr_completion_time_label <- function(x) {
   if (length(x) != 1L || is.na(x)) return("unknown")
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")

@@ -310,6 +310,7 @@ tight <- ledgr_experiment(
 )
 
 tight_run <- ledgr_run(tight, run_id = "tolerance-one")
+tight_completion <- ledgr_run_completion(tight_run)
 close(tight_run)
 ```
 
@@ -318,11 +319,7 @@ The call returns without an error, so look at what the run actually claims.
 ```{r}
 #| label: run-tight-status
 
-tight_info <- ledgr_run_info(snapshot, "tolerance-one")
-
-tight_info$status
-tight_info$stop_reason
-tight_info$complete_performance
+tight_completion
 ```
 
 The run is `INCOMPLETE`, and it says why: `valuation_horizon_exhausted`. On
@@ -348,9 +345,7 @@ loose <- ledgr_experiment(
 
 loose_run <- ledgr_run(loose, run_id = "tolerance-five")
 
-loose_info <- ledgr_run_info(snapshot, "tolerance-five")
-loose_info$status
-loose_info$complete_performance
+ledgr_run_completion(loose_run)
 ```
 
 Same data, same strategy, a different answer about whether the result covers

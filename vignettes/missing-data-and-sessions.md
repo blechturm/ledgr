@@ -301,6 +301,7 @@ tight <- ledgr_experiment(
 )
 
 tight_run <- ledgr_run(tight, run_id = "tolerance-one")
+tight_completion <- ledgr_run_completion(tight_run)
 close(tight_run)
 ```
 
@@ -308,14 +309,19 @@ The call returns without an error, so look at what the run actually
 claims.
 
 ``` r
-tight_info <- ledgr_run_info(snapshot, "tolerance-one")
-
-tight_info$status
-#> [1] "INCOMPLETE"
-tight_info$stop_reason
-#> [1] "valuation_horizon_exhausted"
-tight_info$complete_performance
-#> [1] FALSE
+tight_completion
+#> Completion Evidence:
+#>   Status:           INCOMPLETE
+#>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Achieved Window:  2020-01-13T21:00:00Z to 2020-01-16T21:00:00Z
+#>   Stop Reason:      valuation_horizon_exhausted
+#>   Last Fully Valued: 2020-01-16T21:00:00Z
+#>   Last Executed:    2020-01-14T14:30:00Z
+#>   Performance:       incomplete
+#>   Affected IDs:      BBB
+#>
+#>   Affected Exposure: 530
+#>   Exposure Basis:    last_accepted_close_gross
 ```
 
 The run is `INCOMPLETE`, and it says why: `valuation_horizon_exhausted`.
@@ -340,11 +346,19 @@ loose <- ledgr_experiment(
 
 loose_run <- ledgr_run(loose, run_id = "tolerance-five")
 
-loose_info <- ledgr_run_info(snapshot, "tolerance-five")
-loose_info$status
-#> [1] "DONE"
-loose_info$complete_performance
-#> [1] TRUE
+ledgr_run_completion(loose_run)
+#> Completion Evidence:
+#>   Status:           DONE
+#>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Achieved Window:  2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Stop Reason:      none
+#>   Last Fully Valued: 2020-01-24T21:00:00Z
+#>   Last Executed:    2020-01-14T14:30:00Z
+#>   Performance:       complete
+#>   Affected IDs:      none recorded
+#>
+#>   Affected Exposure: unknown
+#>   Exposure Basis:    unknown
 ```
 
 Same data, same strategy, a different answer about whether the result
