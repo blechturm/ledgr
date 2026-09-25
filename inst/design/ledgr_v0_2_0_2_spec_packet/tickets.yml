@@ -1208,12 +1208,13 @@ tickets:
   - id: "LDG-2831"
     title: "Remove the scalar fallbacks the helpers no longer use"
     workstream: 16
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "Hygiene, not performance; the acceptance says so explicitly so that no later record cites this ticket as a speed win. ledgr_signal_return() falls back to vapply(universe, function(id) ctx$feature(id, feature_id)) when ctx$vec$feature is unavailable. A measured scan on 2026-09-25 found ctx$vec$feature is a function in both the dense and the availability-aware context, so the branch never executes in a shipped path while preserving the per-instrument accessor loop inside a helper users read as a model. Delete it and let the vector accessor be the contract. In the same file, replace the per-selected-name loop in ledgr_target_rebalance() that calls ctx$idx(id) per element with one vectorized match() against the universe; the same scan measured that loop flat at 367 to 467 microseconds from ten to a thousand selected names, so this is readability and consistency, not speed. vignettes/strategy-authoring-tools.qmd states that the signal helper falls back to the scalar path; that sentence goes with the branch."
     acceptance: ["ledgr_signal_return() returns identical values before and after on the dense and the availability-aware fixtures, including the all-warmup pulse where every value is NA and the availability pulse where a non-admissible member is masked", "ledgr_target_rebalance() returns identical targets before and after across the registered fixtures, including an empty selection, a single name, and a selection covering the whole universe", "no ctx$feature() or ctx$idx() call remains inside a loop over instruments anywhere in R/strategy-helpers.R", "the sentence describing the scalar fallback is removed from the strategy-authoring-tools article and its rendered sibling is regenerated", "the closeout records this as hygiene with no performance claim attached, and no interleaved clock is requested for it"]
+    evidence: ["LCL-0065 registers LTB-0066. Poisoned scalar feature and close accessors make the direct helper fixture fail if either fallback returns; literal two-name vectors establish the signal and target values for empty, single-name and full-universe selections. R/strategy-helpers.R contains no ctx$feature() or ctx$idx() call inside an instrument loop.", "The focused strategy-reference file passed under R 4.6.1. The source and rendered strategy-authoring article now names the vector feature plane as the shipped contract, and the help example constructs the same vector shape. This ticket is hygiene only; no performance effect is claimed or clocked."]
 
   - id: "LDG-2832"
     title: "Warn when a strategy loops a scalar accessor over the universe"

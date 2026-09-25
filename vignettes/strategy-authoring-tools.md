@@ -177,8 +177,8 @@ The economic idea:
 `ledgr_signal_return()` is a thin helper around the same feature you
 inspected above: it reads `return_N` for every instrument in the pulse
 and returns one universe-wide signal object. It uses the vector accessor
-`ctx$vec$feature(feature_id)` when available, then falls back to the
-scalar `ctx$feature(id, feature_id)` path for compatibility.
+`ctx$vec$feature(feature_id)` directly; shipped pulse contexts always
+provide that aligned vector accessor.
 
 The helper pipeline has four stages:
 
@@ -333,8 +333,8 @@ tibble(
 #> # A tibble: 2 x 3
 #>   form                                        seconds added_ms_per_pulse
 #>   <chr>                                         <dbl>              <dbl>
-#> 1 ctx$vec$close                                  3.34                0
-#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.3                32.0
+#> 1 ctx$vec$close                                  3.42                0
+#> 2 vapply(ctx$universe, ctx$close, numeric(1))    3.92               16.7
 ```
 
 Read the last column rather than the ratio. The two strategies differ in
