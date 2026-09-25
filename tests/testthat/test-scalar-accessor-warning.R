@@ -1,6 +1,6 @@
 testthat::test_that("[LTB-0067] universe-wide scalar access warns once without changing output", {
   ids <- sprintf("I%03d", seq_len(100L))
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
+  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
   bars <- data.frame(
     instrument_id = rep(ids, times = length(pulses)),
     ts_utc = rep(pulses, each = length(ids)),
@@ -108,5 +108,6 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without c
     positions = small_ctx$positions,
     universe = small_ctx$universe
   )
+  testthat::expect_null(small_ctx$.pulse_lookup$scalar_access_state)
   testthat::expect_identical(small_ctx$close(ids[[1L]]), 100)
 })

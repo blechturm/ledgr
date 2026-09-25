@@ -382,7 +382,11 @@ ledgr_execute_fold <- function(execution, output_handler) {
   } else {
     NULL
   }
-  scalar_access_state <- ledgr_pulse_context_scalar_access_state()
+  scalar_access_state <- if (length(instrument_ids) >= 100L) {
+    ledgr_pulse_context_scalar_access_state()
+  } else {
+    NULL
+  }
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {

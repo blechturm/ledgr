@@ -642,14 +642,18 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
   lookup$feature_vector <- ctx$.feature_vector
   lookup$bar_index <- ledgr_pulse_context_bar_index(bars, universe)
   lookup$availability <- availability
-  if (is.null(scalar_access_state)) {
-    scalar_access_state <- lookup$scalar_access_state
+  if (length(universe) >= 100L) {
+    if (is.null(scalar_access_state)) {
+      scalar_access_state <- lookup$scalar_access_state
+    }
+    if (!is.environment(scalar_access_state)) {
+      scalar_access_state <- ledgr_pulse_context_scalar_access_state()
+    }
+    scalar_access_state$pulse <- as.integer(scalar_access_state$pulse + 1L)
+    lookup$scalar_access_state <- scalar_access_state
+  } else {
+    lookup$scalar_access_state <- NULL
   }
-  if (!is.environment(scalar_access_state)) {
-    scalar_access_state <- ledgr_pulse_context_scalar_access_state()
-  }
-  scalar_access_state$pulse <- as.integer(scalar_access_state$pulse + 1L)
-  lookup$scalar_access_state <- scalar_access_state
   ctx$vec <- ledgr_pulse_context_vec(lookup)
 
   if (is.environment(ctx)) {
