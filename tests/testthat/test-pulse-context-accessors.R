@@ -33,6 +33,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_true(is.function(ctx$idx))
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
+  testthat::expect_true(is.function(ctx$tradable))
   testthat::expect_true(is.function(ctx$targets))
   testthat::expect_true(is.function(ctx$current_targets))
 
@@ -63,6 +64,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$flat(default = 2), stats::setNames(c(2, 2), universe))
   testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 3), universe))
+  testthat::expect_identical(ctx$tradable(), universe)
   testthat::expect_error(ctx$targets(), class = "ledgr_context_helper_removed")
   testthat::expect_error(ctx$current_targets(), class = "ledgr_context_helper_removed")
   testthat::expect_error(ctx$targets(), "`ctx$targets()` was removed", fixed = TRUE)
@@ -75,6 +77,82 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
 
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
   testthat::expect_identical(ctx$.pulse_lookup$bar_index, stats::setNames(1:2, universe))
+})
+
+testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse planes", {
+  ids <- c("HALTED", "UNPRICED", "HELD_NONMEMBER", "MEMBER")
+  bars <- data.frame(
+    instrument_id = ids,
+    ts_utc = rep(as.POSIXct("2020-01-02", tz = "UTC"), length(ids)),
+    open = rep(10, length(ids)),
+    high = rep(11, length(ids)),
+    low = rep(9, length(ids)),
+    close = c(10, NA_real_, 8, 12),
+    volume = rep(100, length(ids)),
+    stringsAsFactors = FALSE
+  )
+  ctx <- ledgr:::ledgr_pulse_context(
+    run_id = "tradable",
+    ts_utc = bars$ts_utc[[1L]],
+    universe = ids,
+    bars = bars,
+    positions = stats::setNames(2, "HELD_NONMEMBER"),
+    cash = 1000,
+    equity = 1000
+  )
+  availability <- list(
+    member = stats::setNames(c(TRUE, TRUE, FALSE, TRUE), ids),
+    held = stats::setNames(c(FALSE, FALSE, TRUE, FALSE), ids),
+    target_restricted = stats::setNames(c(TRUE, FALSE, TRUE, FALSE), ids),
+    target_restriction_reason = stats::setNames(c("halted", "", "nonmember", ""), ids),
+    priced = stats::setNames(c(TRUE, FALSE, TRUE, TRUE), ids),
+    mark_age = stats::setNames(rep(0L, length(ids)), ids),
+    risk_mark = stats::setNames(c(10, NA_real_, 8, 12), ids),
+    mark_source = stats::setNames(c("current_close", "", "current_close", "current_close"), ids)
+  )
+  ctx <- ledgr:::ledgr_update_pulse_context_helpers(
+    ctx,
+    bars = bars,
+    positions = ctx$positions,
+    universe = ids,
+    availability = availability
+  )
+
+  expected <- ctx$vec$id[ctx$vec$admissible & ctx$vec$priced]
+  testthat::expect_identical(ctx$tradable(), expected)
+  testthat::expect_identical(ctx$tradable(), "MEMBER")
+
+  weights <- ledgr_weight_equal(ledgr_selection(
+    stats::setNames(ids %in% ctx$tradable(), ids),
+    universe = ids
+  ))
+  testthat::expect_error(
+    ledgr_target_rebalance(weights, ctx),
+    NA
+  )
+
+  dense <- ledgr:::ledgr_pulse_context(
+    run_id = "dense",
+    ts_utc = bars$ts_utc[[1L]],
+    universe = ids,
+    bars = transform(bars, close = c(10, 0, -1, Inf)),
+    cash = 1000,
+    equity = 1000
+  )
+  testthat::expect_identical(dense$tradable(), "HALTED")
+
+  availability$member[] <- FALSE
+  empty <- ledgr:::ledgr_update_pulse_context_helpers(
+    ctx,
+    bars = bars,
+    positions = ctx$positions,
+    universe = ids,
+    availability = availability
+  )
+  targets <- empty$flat()
+  targets[empty$tradable()] <- 1
+  testthat::expect_identical(empty$tradable(), character())
+  testthat::expect_identical(targets, stats::setNames(rep(0, length(ids)), ids))
 })
 
 testthat::test_that("runtime projection helpers preserve feature-table and wide-view semantics", {

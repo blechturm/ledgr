@@ -458,6 +458,7 @@ ledgr_pulse_context_helper_bundle <- function(lookup) {
   idx <- function(id, missing = c("error", "na")) ledgr_pulse_context_idx(lookup, id, missing = missing)
   flat <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
   hold <- function() ledgr_pulse_context_current_targets(lookup)
+  tradable <- function() ledgr_pulse_context_tradable(lookup)
   targets <- function(...) {
     rlang::abort(
       "`ctx$targets()` was removed in v0.1.7. Use `ctx$flat()` for a flat/default target vector.",
@@ -483,9 +484,23 @@ ledgr_pulse_context_helper_bundle <- function(lookup) {
     idx = idx,
     flat = flat,
     hold = hold,
+    tradable = tradable,
     targets = targets,
     current_targets = current_targets
   )
+}
+
+ledgr_pulse_context_tradable <- function(lookup) {
+  vec <- ledgr_pulse_context_vec(lookup)
+  ids <- as.character(vec$id)
+  if (length(ids) == 0L) return(character())
+
+  if (!is.null(vec$admissible) && !is.null(vec$priced)) {
+    return(ids[as.logical(vec$admissible) & as.logical(vec$priced)])
+  }
+
+  close <- as.numeric(vec$close)
+  ids[is.finite(close) & close > 0]
 }
 
 ledgr_ensure_pulse_context_accessors <- function(ctx) {

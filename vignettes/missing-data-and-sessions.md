@@ -264,19 +264,15 @@ An availability-aware strategy receives universe-aligned planes on
   it?
 
 The strategy below buys ten units of everything it is allowed to buy.
-The third line is the one that matters: targets start as the positions
-you already hold, so doing nothing means holding. You then raise a
-target only for instruments that are both priced and unrestricted, which
-leaves anything halted, unlisted, or unpriced at its current quantity
-without writing a branch for each case.
+`ctx$hold()` starts from the positions already held, while
+`ctx$tradable()` returns the current members that are admissible and
+priced. Anything halted, unlisted, or unpriced therefore stays at its
+current quantity without a strategy-side eligibility reconstruction.
 
 ``` r
 buy_what_is_tradable <- function(ctx, params) {
-  availability <- ctx$vec
-  tradable <- availability$priced & !availability$target_restricted
-
-  targets <- ctx$positions
-  targets[availability$id[tradable]] <- 10
+  targets <- ctx$hold()
+  targets[ctx$tradable()] <- 10
   targets
 }
 ```
