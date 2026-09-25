@@ -1,7 +1,7 @@
 # v0.2.0.2 Packet
 
-**Status:** Ten cuts: six closed, one folded, two open, and one awaiting
-ticket-cut review. Cut 1, the
+**Status:** Eleven cuts: six closed, one folded, two open, and two awaiting
+review acceptance. Cut 1, the
 test-suite
 cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the
@@ -411,7 +411,7 @@ four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
 
-## Cut 8: Release gate (open; opens after workstream 17)
+## Cut 8: Release gate (open; opens after workstream 18)
 
 Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
@@ -529,4 +529,75 @@ a package speedup. The missing-data article then documents dense implicit
 calendars, declared expected sessions, strict-window contamination and
 recovery, late listings, stale valuation separation, and the executable
 support matrix. Workstream 17 follows Workstream 16 so both edits to that
-article are serial; the release gate follows Workstream 17.
+article are serial; Workstream 18 follows Workstream 17 for the same reason,
+and the release gate follows Workstream 18.
+
+## Cut 11: Point-in-time input model (awaiting focused cut re-review; opens
+after workstream 17)
+
+Authority: the maintainer's 2026-09-25 decision that the point-in-time input
+model needs one checklist of required data and one inspectable demo input set,
+with `../vignette_styleguide.md` sections 5, 7 and 12 and the fact-family
+constructor contracts in `../contracts.md`. Five tickets, LDG-2839 through
+LDG-2843, one workstream. An inline Type 2 cut review returned
+`CHANGES_REQUIRED`: a fact-only generator could not own observation gaps or
+compose directly with the existing midnight-UTC demo bars, the knowledge rule
+was false for late-known facts, and the proposed checklist detector was
+circular. The tickets were patched in place and await focused re-review.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 18 Point-in-time input model | 2839–2843 | an exported `ledgr_sim_pit_inputs()` parametrized by instruments, window, seed, calendar convention and teaching cases; one committed plain-data bundle containing matching bars, fact inputs, construction recipe and case manifest; the input checklist and an entity diagram in the data-input article; the specialist articles connected to the shared bundle without sacrificing minimal teaching fixtures; closeout | a user can learn what data ledgr needs, in what form, from one place, can load a working composable example, and can generate one for their own instruments and window; the generator declares a session calendar independently of observations and derives matching bars from that declaration |
+
+The gap this closes is visible in the tree. ledgr ships exactly one dataset,
+`ledgr_demo_bars`: ten instruments of OHLCV and nothing else. Every article
+that teaches the point-in-time model therefore hand-builds its own fact
+fixture on its own universe and its own dates, and a reader has nothing to
+load and inspect. `data-input-and-snapshots.qmd`, the canonical article for
+what data goes in, has no facts section at all. The required columns live only
+in the `ledgr_facts_*` constructor Details, which is the right home for the
+contract but leaves someone assembling their own data with no view of the
+whole input set, what is optional, or what each part unlocks.
+
+The generator follows the shape ledgr already uses for demo market data while
+closing a composability gap in that precedent. `ledgr_sim_pit_inputs()` takes
+explicit instrument identifiers, a window and an explicit synthetic calendar
+convention; it does not take bars. It returns one ordinary named list with
+matching bars, optional instrument metadata, the five constructor-input fact
+frames, the explicit scope and knowledge recipe, and a plain case manifest.
+This is necessary because a missing observation is a property of bars, not a
+fact row, and the existing `ledgr_demo_bars` contains every generated weekday
+at midnight UTC. One rule is load-bearing: the generator declares the session
+calendar before it creates observations and never infers that calendar from
+them, because an open session on which the whole universe is missing is
+invisible to an observation-derived calendar.
+
+The committed artifact is one `ledgr_demo_pit_inputs` bundle from a recorded
+seeded call. Its bars and facts compose without undocumented filtering or time
+rewriting. A shorter teaching window is acceptable only because its matching
+bars travel with it; it is not presented as a fact set that users can attach
+directly to an arbitrary slice of `ledgr_demo_bars`.
+
+The entity diagram is included because two facts cannot be shown by a column
+table: the families have different scope keys, instrument against venue
+against universe, and a corporate action references a parent and an optional
+recipient that must both resolve in the snapshot's physical instrument master.
+That is deliberately not the same claim as membership in a universe.
+
+This cut ships inside v0.2.0.2. The point-in-time model is what this release
+adds, and shipping it without one checklist of required inputs and one
+inspectable example would leave users to reverse-engineer the model from three
+worked examples. Workstream 18 opens after Workstream 17, so the three edits to
+the missing-data article stay serial: Workstream 16 puts it on `ctx$tradable()`,
+Workstream 17 adds the expected-session and support-matrix material, and
+Workstream 18 links it to the shared demo input. Specialist articles may retain
+deliberately small local fixtures where those are the clearest behavioral
+detectors; each must state why and link to the canonical input article. The
+release gate follows, so its local gates and CI tiers cover the shipped bundle
+and rendered articles.
+
+The Type 2 cut review plus the planned close review is two invocations over
+five completed tickets, 0.400. A focused correction re-review followed by the
+close review would make the historical count three over five, 0.600. If that
+route is taken, the closeout records the breach honestly rather than merging or
+padding tickets to hide it.
