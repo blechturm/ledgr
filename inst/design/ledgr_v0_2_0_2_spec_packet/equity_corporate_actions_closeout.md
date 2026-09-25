@@ -151,16 +151,25 @@ are computed at the result boundary. DISPOSITION delegates lot mutation to
 the consolidated canonical accounting core rather than introducing a second
 lot engine.
 
-One scale-growing result-boundary loop remains and is disclosed rather than
-hidden: `ledgr_corporate_action_summary()` maps each selected source fact to
-`which(source_fact_id == fact_id)`, a full corporate-action event scan per
-fact, or O(selected facts x corporate-action events). The close reviewer
-measured that expression at 0.010 seconds for 2,000 by 2,000 and 0.380 seconds
-for 10,000 by 10,000, versus below clock resolution for grouped
-`rowsum()`/`match()`. It is retained in this release because it is outside the
-fold, is immaterial at the evidenced fact counts, and changing the accepted
-result path was not needed for settlement correctness. A grouped replacement
-is a bounded result-reader optimization, not a performance claim of this cut.
+One scale-growing result-boundary cost remains and is disclosed rather than
+hidden. `ledgr_corporate_action_composition_report()` fetches the run ledger
+without an event-kind predicate. It decodes every selected event's
+`meta_json` once through `ledgr_corporate_action_past_quantities()` and then
+decodes the same event collection again for source-fact cash attribution.
+Runtime tracing observed the two call stacks separately. One unfiltered parse
+took 0.06 seconds at 20,000 ledger events, 0.33 seconds at 100,000, and 1.19
+seconds at 300,000; the duplicated work therefore costs about 0.7 seconds at
+100,000 and 2.4 seconds at 300,000 events on the measured host.
+
+The same report also maps each selected source fact to
+`which(source_fact_id == fact_id)`, or O(selected facts x events). The close
+reviewer measured that expression at 0.010 seconds for 2,000 by 2,000 and
+0.380 seconds for 10,000 by 10,000, versus 0.06 seconds for grouped work at
+500 facts by 100,000 events. This scan is real but secondary to the duplicate
+whole-ledger parse. Neither cost is in the pulse loop, and plain and
+dividend-only results do not enter the guarded composition report. LDG-2844
+owns preparing the evidence once and replacing the scan before the release
+gate; this cut makes no speed claim for that later work.
 
 The fast lane remained between 73.25 and 74.78 seconds across the five
 Workstream 12 ticket records. These are gate clocks, not an end-to-end
@@ -168,6 +177,13 @@ settlement benchmark or an effect estimate. The cut makes no full-population
 corporate-action speed claim. Workstream 14 separately removed the measured
 row-wise fact-family construction, seal and run-start costs before this
 workstream opened.
+
+A post-review alternating-process check compared `6d70315` with `3adb8bd` at
+100 instruments by 500 days. Plain seal/run clocks were 0.95-0.97/1.18-1.21
+seconds before and after; cash-dividend seal/run clocks were 1.20-1.21/
+1.22-1.25 seconds. No ordinary or dividend-path regression was visible above
+noise. That fixture did not enter the composition report and therefore does
+not measure or excuse the result-boundary cost above.
 
 ## Pilot Counters
 

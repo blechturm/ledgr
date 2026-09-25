@@ -439,16 +439,18 @@ do not apply to its review.
 
 ## Cut 9: Availability and evidence accessors (open; opens after workstream 12)
 
-Authority: `../horizon.md`, the 2026-09-25 `[ux]` entry, and
+Authority: `../horizon.md`, the 2026-09-25 `[ux]` entry,
 `../vignette_styleguide.md` section 5, which routes visual clutter in a worked
-example to an API gap rather than to boilerplate in the article. No RFC: five
-additive readers over evidence the engine already produces. Tickets LDG-2826
-through LDG-2832, one workstream; the cut review is compressed into the close
-review, so one invocation over seven tickets is 0.143.
+example to an API gap rather than to boilerplate in the article, and the
+accepted Workstream 12 close review's corrected result-boundary observation.
+No RFC: additive or simplified readers over evidence the engine already
+produces. Tickets LDG-2826 through LDG-2832 and LDG-2844, one workstream; the
+cut review is compressed into the close review, so one invocation over eight
+tickets is 0.125.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 16 Availability and evidence accessors | 2826–2832 | `ctx$tradable()` beside `ctx$flat()` and `ctx$hold()`; a reader for quarantined observations; `ledgr_run_explain()` over a whole instrument history; one completion answer per run; removal of the unreachable scalar fallbacks; a warning when a strategy loops a scalar accessor over the universe; closeout | each accessor agrees with the state the engine already computed rather than recomputing it; an empty axis needs no special case; no contract, schema, hash or error class moves; the missing-data article loses the clutter that motivated the cut |
+| 16 Availability and evidence accessors | 2826–2832, 2844 | `ctx$tradable()` beside `ctx$flat()` and `ctx$hold()`; a reader for quarantined observations; `ledgr_run_explain()` over a whole instrument history; one completion answer per run; removal of the unreachable scalar fallbacks; a warning when a strategy loops a scalar accessor over the universe; one-pass preparation for the corporate-action composition report; closeout | each accessor agrees with or reuses the state the engine already computed rather than recomputing it; an empty axis needs no special case; the composition report decodes selected persisted events at most once and aggregates source facts in one grouped pass; no contract, schema, hash or error class moves; the missing-data article loses the clutter that motivated the cut |
 
 The trigger was writing `missing-data-and-sessions.qmd`. Its strategy needed
 four lines to answer "which instruments may I size now", it read quarantined
@@ -465,6 +467,16 @@ that matters is the accessor a strategy author reaches for: at two thousand
 instruments, looping a scalar accessor over the universe adds tens of
 milliseconds per pulse against effectively nothing for the vector plane, and
 nothing warns.
+
+The accepted Workstream 12 review later traced a separate result-reader cost.
+`ledgr_corporate_action_composition_report()` decodes an unfiltered ledger
+twice and then scans the decoded source ids once per selected fact. At 100,000
+events the duplicate parses cost about 0.7 seconds per report; at 300,000 they
+cost about 2.4 seconds. LDG-2844 prepares that evidence once and groups the
+source attribution. It is in this workstream because the shared claim is the
+result boundary: expose or reuse evidence already computed without changing
+its meaning. The older LDG-2820 remains a separate deferred resume-path
+optimization.
 
 ## Cut 10: Indicator source parity and timing attribution (ticket-cut review pending)
 
