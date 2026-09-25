@@ -360,13 +360,13 @@ reader can always see which tolerance produced which result.
 ## Reading Back What Happened to One Instrument
 
 After a run, `ledgr_run_explain()` answers "what did you know about this
-instrument at this moment, and what did you do about it?". Ask it about `BBB`
-in the middle of the hole:
+instrument across the run, and what did you do about it?". Omit the timestamp
+to see the full pulse history for `BBB`:
 
 ```{r}
 #| label: explain-hole
 
-ledgr_run_explain(loose_run, "BBB", ts_utc = missing_sessions[2]) |>
+ledgr_run_explain(loose_run, "BBB") |>
   select(mark_source, mark_age, execution_outcome, execution_reason)
 ```
 
@@ -374,7 +374,8 @@ ledgr_run_explain(loose_run, "BBB", ts_utc = missing_sessions[2]) |>
 The mark is doing valuation work only. It is never an execution price, and no
 fill is ever produced on a session where an instrument has no observation.
 
-Now ask the same question about `AAA` on the session it was halted:
+Supplying one timestamp keeps the focused form. Ask about `AAA` on the session
+it was halted:
 
 ```{r}
 #| label: explain-halt

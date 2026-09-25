@@ -1176,12 +1176,13 @@ tickets:
   - id: "LDG-2828"
     title: "ledgr_run_explain() over a whole instrument history"
     workstream: 16
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "ledgr_run_explain(bt, instrument_id, ts_utc) requires one timestamp, so the ordinary diagnostic question, what happened to this instrument across the run, needs a loop over sessions. Make ts_utc optional and return every recorded decision row for the instrument in pulse order when it is omitted. The per-timestamp answer is unchanged, and the full history is the same rows the single-timestamp call already returns, not a recomputation."
     acceptance: ["omitting ts_utc returns one row per pulse for the instrument, in pulse order", "for any pulse in that history, the single-timestamp call returns an identical row", "an instrument absent from the run returns a zero-row result of the same shape rather than an error", "the missing-data article shows a full-history call and keeps at least one single-timestamp call, so both forms are taught"]
+    evidence: ["LCL-0063 registers LTB-0063 in the existing public availability-run fixture. History row count matches persisted decision diagnostics, timestamps are ordered, and every history row is identical to a separate scalar ledgr_run_explain() call. An absent instrument returns a zero-row tibble with the same columns. The existing scalar and reopened-run comparisons remain unchanged.", "The focused availability-parity file passed under R 4.6.1. The source and rendered missing-data article teach the full-history form for the missing instrument and retain a scalar timestamp form for the halt."]
 
   - id: "LDG-2829"
     title: "One completion answer for a run"

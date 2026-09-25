@@ -4,17 +4,21 @@
 \alias{ledgr_run_explain}
 \title{Explain one recorded availability-aware run decision}
 \usage{
-ledgr_run_explain(bt, instrument_id, ts_utc)
+ledgr_run_explain(bt, instrument_id, ts_utc = NULL)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object.}
 
 \item{instrument_id}{One stable instrument identifier.}
 
-\item{ts_utc}{One decision timestamp coercible to POSIXct UTC.}
+\item{ts_utc}{Optional decision timestamp coercible to POSIXct UTC. When
+omitted, every retained decision for \code{instrument_id} is returned in pulse
+order.}
 }
 \value{
-A one-row tibble with:
+A tibble with one row for a requested timestamp or one row per retained
+decision when \code{ts_utc} is omitted. An instrument absent from the retained
+trace returns a zero-row tibble in history mode. Columns are:
 \itemize{
 \item identifiers: \code{run_id}, \code{ts_utc}, and \code{instrument_id};
 \item availability: \code{member}, \code{held}, \code{target_restricted},

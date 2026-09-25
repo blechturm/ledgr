@@ -614,7 +614,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
 })
 
 # ledgr-test-profile: review
-testthat::test_that("availability result views and explanations are durable read-only evidence", {
+testthat::test_that("[LTB-0063] explanation history is durable read-only evidence", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   calls <- new.env(parent = emptyenv())
@@ -663,6 +663,23 @@ testthat::test_that("availability result views and explanations are durable read
     drop = FALSE
   ][1L, ]
   explanation <- ledgr_run_explain(bt, "AAA", decision$ts_utc)
+  history <- ledgr_run_explain(bt, "AAA")
+  decision_rows <- diagnostics[
+    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA",
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(nrow(history), nrow(decision_rows))
+  testthat::expect_true(all(diff(as.numeric(history$ts_utc)) >= 0))
+  for (i in seq_len(nrow(history))) {
+    testthat::expect_identical(
+      history[i, , drop = FALSE],
+      ledgr_run_explain(bt, "AAA", history$ts_utc[[i]])
+    )
+  }
+  absent <- ledgr_run_explain(bt, "ABSENT")
+  testthat::expect_identical(nrow(absent), 0L)
+  testthat::expect_identical(names(absent), names(history))
 
   local({
     altered <- diagnostics

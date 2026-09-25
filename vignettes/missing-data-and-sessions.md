@@ -355,16 +355,24 @@ result.
 ## Reading Back What Happened to One Instrument
 
 After a run, `ledgr_run_explain()` answers “what did you know about this
-instrument at this moment, and what did you do about it?”. Ask it about
-`BBB` in the middle of the hole:
+instrument across the run, and what did you do about it?”. Omit the
+timestamp to see the full pulse history for `BBB`:
 
 ``` r
-ledgr_run_explain(loose_run, "BBB", ts_utc = missing_sessions[2]) |>
+ledgr_run_explain(loose_run, "BBB") |>
   select(mark_source, mark_age, execution_outcome, execution_reason)
-#> # A tibble: 1 x 4
-#>   mark_source mark_age execution_outcome execution_reason
-#>   <chr>          <int> <chr>             <chr>
-#> 1 stale_close        2 no_action         no_target_change
+#> # A tibble: 9 x 4
+#>   mark_source   mark_age execution_outcome execution_reason
+#>   <chr>            <int> <chr>             <chr>
+#> 1 current_close        0 filled            ""
+#> 2 current_close        0 no_action         "no_target_change"
+#> 3 current_close        0 no_action         "no_target_change"
+#> 4 stale_close          1 no_action         "no_target_change"
+#> 5 stale_close          2 no_action         "no_target_change"
+#> 6 stale_close          3 no_action         "no_target_change"
+#> 7 current_close        0 no_action         "no_target_change"
+#> 8 current_close        0 no_action         "no_target_change"
+#> 9 current_close        0 no_action         "no_target_change"
 ```
 
 `BBB` is carried at a `stale_close` two sessions old, and nothing
@@ -372,7 +380,8 @@ executes. The mark is doing valuation work only. It is never an
 execution price, and no fill is ever produced on a session where an
 instrument has no observation.
 
-Now ask the same question about `AAA` on the session it was halted:
+Supplying one timestamp keeps the focused form. Ask about `AAA` on the
+session it was halted:
 
 ``` r
 halted_day <- as.Date(halt_from)
