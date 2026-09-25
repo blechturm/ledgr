@@ -3,20 +3,112 @@ name: R-CMD-check
 on:
   push:
   pull_request:
+  schedule:
+    # Nightly full matrix, so drift on the platforms we cannot run locally
+    # surfaces within a day instead of at release.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Which tier to run"
+        type: choice
+        options: [full, quick]
+        default: full
+
+# Supersede an in-flight run when the same branch is pushed again. Never cancel
+# main or a release tag: those runs are the record.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Decides, in one readable place, whether this event needs a run at all and
+  # which tier it gets. Tiering is by what only CI can prove: a branch push
+  # gets the ubuntu fast lane and R CMD check, while windows, the isolated
+  # CRAN library and coverage wait for main, a release tag, a pull request or
+  # the nightly schedule.
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.tier.outputs.run }}
+      tier: ${{ steps.tier.outputs.tier }}
+      matrix: ${{ steps.tier.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide tier
+        id: tier
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          DISPATCH_TIER: ${{ github.event.inputs.tier }}
+        run: |
+          set -euo pipefail
+          tier=quick
+          run=true
+
+          case "$EVENT" in
+            schedule|pull_request) tier=full ;;
+            workflow_dispatch)     tier="${DISPATCH_TIER:-full}" ;;
+            push)
+              if [ "$REF" = "refs/heads/main" ] || [ "${REF#refs/tags/v}" != "$REF" ]; then
+                tier=full
+              fi
+              ;;
+          esac
+
+          # A branch push that touches only design records or the generated
+          # site needs no run. main, tags and every non-push event are never
+          # skipped, so the release path cannot be filtered away.
+          if [ "$EVENT" = "push" ] && [ "$tier" = "quick" ]; then
+            range=""
+            if [ -n "${BEFORE:-}" ] \
+               && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              range="${BEFORE}..${SHA}"
+            elif git rev-parse -q --verify "${SHA}^" >/dev/null; then
+              range="${SHA}^..${SHA}"
+            fi
+            if [ -n "$range" ]; then
+              changed="$(git diff --name-only "$range")"
+              if [ -n "$changed" ] \
+                 && ! printf '%s\n' "$changed" | grep -qvE '^(inst/design/|docs/)'; then
+                run=false
+              fi
+            fi
+          fi
+
+          if [ "$tier" = "full" ]; then
+            matrix='[{"os":"ubuntu-latest","coverage":true,"cran":true},{"os":"windows-latest","coverage":false,"cran":true}]'
+          else
+            matrix='[{"os":"ubuntu-latest","coverage":false,"cran":false}]'
+          fi
+
+          {
+            echo "run=$run"
+            echo "tier=$tier"
+            echo "matrix=$matrix"
+          } >> "$GITHUB_OUTPUT"
+          echo "event $EVENT, ref $REF, tier $tier, run $run" >> "$GITHUB_STEP_SUMMARY"
+
   R-CMD-check:
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
     runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - { os: ubuntu-latest, coverage: true }
-          - { os: windows-latest, coverage: false }
+        config: ${{ fromJSON(needs.plan.outputs.matrix) }}
 
     env:
       _R_CHECK_FORCE_SUGGESTS_: "false"
@@ -39,7 +131,6 @@ jobs:
             any::rcmdcheck
             any::covr
             any::pkgload
-            any::pkgdown
             any::knitr
             any::quarto
             any::rmarkdown
@@ -75,25 +166,28 @@ jobs:
           Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary
 
       - name: Prepare isolated CRAN library
+        if: matrix.config.cran
         run: |
           Rscript --vanilla tools/prepare-cran-test-library.R --library=.ledgr-cran-test-library
 
       - name: Run isolated CRAN fast profile
         id: cran_fast_1
+        if: matrix.config.cran
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=1
 
       - name: Confirm isolated CRAN fast profile (run 2)
-        if: steps.cran_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.cran && steps.cran_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=2
 
       - name: Confirm isolated CRAN fast profile (run 3)
-        if: steps.cran_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.cran && steps.cran_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=3
 
       - name: Check isolated CRAN-profile gate
+        if: matrix.config.cran
         run: |
           Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=cran --records=test-profile-artifacts/cran
 
@@ -116,11 +210,6 @@ jobs:
       - name: Run R CMD check
         run: |
           Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-build-vignettes'), error_on = 'warning', check_dir = 'check')"
-
-      - name: Build pkgdown site
-        if: runner.os == 'Linux'
-        run: |
-          Rscript -e "pkgdown::build_site(new_process = FALSE)"
 
       - name: Run coverage threshold
         if: matrix.config.coverage
