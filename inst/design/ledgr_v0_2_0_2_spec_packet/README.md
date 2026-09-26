@@ -764,3 +764,41 @@ honestly.
 Governance: one cut review plus the planned close review is two invocations
 over eight completed tickets, 0.250 against the 0.5 gate, leaving room for one
 correction round at 0.375.
+
+## Cut 14: Repair continuous integration (open; opens after workstream 18)
+
+Authority: maintainer decision 2026-09-26 after every continuous-integration
+run that executed the suite was found failing. Four tickets, LDG-2860 through
+LDG-2863, one workstream; the cut review is compressed into the close review,
+so one invocation over four tickets is 0.250.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 21 Repair continuous integration | 2860-2863 | remove the preflight package-loading side effect that warns on headless runners; derive the ordinary fast bound from its declared registered runner; make the profile runner and gate checker report honestly; closeout | continuous integration is green on the registered runner and reports honestly when it is not, with no test moved, skipped or weakened to get there |
+
+This cut is sequenced before Cut 13 deliberately. Cut 13 carries breaking
+surface renames, and landing them while continuous integration cannot report is
+the one ordering that removes the signal exactly when it is most needed.
+
+The diagnosis is recorded here rather than in a separate audit, because it is
+short and because the failures predate the v0.2.1.0 workstreams. Two
+independent
+problems stack. First, `ledgr_strategy_symbol_is_tier1()` resolves symbols with
+`any(vapply(...))` over 29 priority packages, which is not lazy, so all 29 load
+even when the first matches; `tcltk` is `Priority: base`, and loading it on a
+headless runner warns that no DISPLAY variable is available. The census counts
+`warning` as a failure, so one warning fails the gate. This cannot reproduce on
+Windows, where Tk is always present. Second, the ordinary bound of 90 seconds
+was calibrated on a local Windows host while `tests/test-gates.yml` declares
+the
+registered runner to be the GitHub Actions matrix, where the same tree takes a
+median of 92.558 seconds against a local 79.46. Fixing the first alone leaves
+the second failing.
+
+Two tooling signals hid both. The profile runner printed
+`LEDGR_TEST_PROFILE_OK` and exited zero while writing a summary recording one
+failed block, so the step showed a green tick; the gate checker then reported
+`Test timing summaries do not show a passing census`, which covers four
+conditions and named neither the real one nor the block. Right now the system
+can go red for a reason it does not report, which is why the reporting fix is
+in this cut rather than deferred as polish.

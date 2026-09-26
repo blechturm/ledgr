@@ -132,6 +132,15 @@ cuts:
     workstreams: [20]
     closeout: "strategy_context_surface_closeout.md"
     status: "open"
+  - id: 14
+    name: "Maintenance: repair continuous integration"
+    cut: "2026-09-26"
+    cut_review: "compressed into the close review of workstream 21, as cuts 5, 7 and 8 were, so one invocation covers the workstream: 1 review over 4 completed tickets is 0.250 against the gate, leaving room for one correction round at 0.500. The tickets are separable: a production side effect, a gate bound that was never measured against its declared runner, two dishonest signals in the tooling, and the closeout."
+    authority: "maintainer decision 2026-09-26 after every continuous-integration run that executed the suite was found failing. Diagnosis recorded in this cut rather than a separate audit: the failures predate the v0.2.1.0 workstreams and are not caused by them."
+    source_table: "GitHub Actions run 36234756357 on codex/ws16-v0.2.1.0 and its uploaded test-profile evidence; run 36226572400 on v0.2.0.2; tests/test-gates.yml; tools/run-test-profile.R and tools/check-test-gate.R; R/strategy-preflight.R"
+    workstreams: [21]
+    closeout: "ci_repair_closeout.md"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -300,9 +309,17 @@ workstreams:
     name: "Strategy context surface and helper composability"
     cut: 13
     status: "open"
-    depends_on_workstream: 18
+    depends_on_workstream: 21
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 20", reason: "One evidence claim joins the tickets: a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy. The close review reruns the recorded helper probe and its reservation mutant, confirms that the surface gate fails on an added field, a stale documented name and a plane changed to a function in both dense and availability contexts, checks that the two corrected behaviors are mutation-detected rather than asserted, and verifies that no contract sentence names a removed member."}
+
+  - id: 21
+    name: "Repair continuous integration"
+    cut: 14
+    status: "open"
+    depends_on_workstream: 18
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 21", reason: "One claim joins the tickets: continuous integration is green on the registered runner and reports honestly when it is not. The close review confirms that the preflight fix removes the package-loading side effect without changing any tier verdict, that the recomputed bound is derived from three recorded clocks on the registered runner and is recorded as a correction rather than a weakening, that a single warning in one block now makes the profile runner report failure instead of printing OK, and that the gate checker names the condition and the block that failed. It also confirms that no test was moved, skipped, or weakened to reach green."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -1557,3 +1574,44 @@ tickets:
     dependencies: ["LDG-2850", "LDG-2851", "LDG-2852", "LDG-2853", "LDG-2854", "LDG-2855", "LDG-2856"]
     scope: "Close workstream 20 and cut 13. Keep it short by linking the diffs, tests and executed examples that already carry the detail rather than copying inventories into another document: record the shipped claims and the detector that protects each, the unresolved work, the rejected approaches and the review counters, as the RFC cycle already prescribes. Record the two behavior changes as intentional corrections and state which one corrects shipped behavior and which corrects a proposed design. Add the horizon entry the synthesis requires for the deferred inspection boundary, carrying its trigger and its evidence requirement, since naming inspection work as declined is not the same as recording the condition under which it opens. The historical helper probe may be rerun and its expected divergences reported, but it asserts byte-for-byte pre-cut observations, so it is not rewritten and its unchanged result is not a closure gate; current semantic acceptance belongs to the new tests. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout names each shipped claim and the detector that would catch its regression, and links the amendment diff and the test files rather than restating their contents", "the two corrections are distinguished: membership projection of predicates corrects a proposed design before it shipped, while zero-weight sizing corrects existing helper behavior, and the latter is stated as a widening that cannot break a previously succeeding strategy", "the horizon entry for the deferred inspection boundary exists and carries the trigger and the evidence requirement the synthesis names, including parity on a real availability-aware callback", "the recorded helper probe and its reservation mutant are rerun and the result is reported, including any observation that no longer reproduces", "the surface gate's failure sensitivity is demonstrated in dense and availability modes rather than asserted", "the cut ratio is stated and is at most 0.5, and any correction round is recorded rather than hidden", "declined work is named, including inspection-boundary removal, rebalance bands, partial-rebalance behavior, scheduler and causal-frame design, and helper-preflight changes"]
+
+  # -------------------------------------- 21 Repair continuous integration
+  - id: "LDG-2860"
+    title: "Stop strategy preflight loading every priority package"
+    workstream: 21
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "`ledgr_strategy_symbol_is_tier1()` resolves each symbol with `any(vapply(packages, ...))` over the 29 base and recommended priority packages, calling `requireNamespace()` on every one. `vapply` is not lazy, so all 29 load even when the first candidate matches, and `tcltk` carries `Priority: base`. On a headless runner loading it raises `no DISPLAY variable so Tk is not available`; `quietly = TRUE` suppresses a startup message but not a warning raised during load. The block `demo SMA crossover strategy is Tier 1` therefore records status `warning`, the census counts `warning` as a failure, and every continuous-integration run that executes the suite fails at the ordinary gate. This is invisible on Windows, where Tk is always available. Treat the package loading as the defect rather than the warning: a read-only classification query must not load a package as a side effect. Resolve against already-loaded namespaces first, short-circuit on the first match, and muffle load-time diagnostics on the remaining candidates. Tier semantics, the priority-set definition and the allowlist are unchanged."
+    acceptance: ["calling `ledgr_strategy_preflight()` on the demo strategy in a fresh session loads no package that was not already loaded, verified by comparing `loadedNamespaces()` before and after", "every existing preflight verdict is unchanged: the demo strategy remains tier 1 with no unresolved symbols, and the tier-2 and tier-3 classification tests pass unchanged", "a detector fails if symbol resolution reverts to evaluating every priority package rather than stopping at the first match", "the `demo SMA crossover strategy is Tier 1` block records zero warnings, and a headless run of the ordinary fast profile records `failed_blocks` zero", "no change to the priority-package definition, the tier vocabulary, the allowlist, or any public API"]
+
+  - id: "LDG-2861"
+    title: "Derive the ordinary fast bound from its registered runner"
+    workstream: 21
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2860"]
+    scope: "`tests/test-gates.yml` declares `registered_runner: GitHub Actions R-CMD-check matrix`, but `ordinary_fast_max_seconds: 90` was calibrated on a local Windows host. On the registered runner the same tree takes 92.792, 92.252 and 92.558 seconds, median 92.558, against a local median of 79.46: the runner is about seventeen percent slower and the bound has never been measured against the machine that enforces it. The CRAN bound already records its derivation through `cran_initial_seconds` and `cran_bound_basis`; the ordinary bound records nothing. Give it the same treatment: three recorded clocks on the registered runner, a stated fixed headroom, and the local number retained as a non-gating reference. This is a correction of a bound that never matched its declared runner, not the bound-raising that LDG-2848 forbids, and the closeout must say so explicitly or a later reader will correctly read it as a breach. Headroom stays tighter than the CRAN bound's so the gate can still detect growth, which is why workstream 19 existed."
+    acceptance: ["`tests/test-gates.yml` records `ordinary_initial_seconds`, an `ordinary_bound_basis` naming the registered runner, the R version and the commit measured, and the local reference as explicitly non-gating", "the three clocks behind the new bound are recorded by continuous-integration run id, not asserted, and were measured after LDG-2860 so no failing block inflates them", "the chosen headroom is stated as a percentage and is smaller than the CRAN bound's, with the reason given", "the ordinary gate passes on the registered runner and the independent checker is run rather than inferred", "the closeout distinguishes this correction from bound-raising to reach green, cites LDG-2848's rule, and states that no test was moved, skipped or weakened", "no other threshold, timeout or profile membership changes"]
+
+  - id: "LDG-2862"
+    title: "Make the profile runner and gate checker report honestly"
+    workstream: 21
+    status: "open"
+    priority: "P0"
+    effort: "S"
+    dependencies: []
+    scope: "Two signals lied, and together they are why a red suite went unnoticed through several pushes. The profile runner printed `LEDGR_TEST_PROFILE_OK` and exited zero on all three runs while recording `failed_blocks` one in the summary it wrote, so the continuous-integration step displayed a green tick. The gate checker then aborted with `Test timing summaries do not show a passing census`, a message covering four distinct conditions, none of which was the real one: a single warning in one unrelated block. Neither tool is wrong about policy, and `warning` remains a failure status because a passing suite should not warn. Fix the reporting only: the runner must not claim success when its own record shows a failure status, and the checker must name which condition failed and which block caused it."
+    acceptance: ["a profile run containing one warning block reports failure rather than `LEDGR_TEST_PROFILE_OK`, and its exit status reflects that", "the gate checker names the specific condition that failed and the offending block key or file, for each of profile mismatch, mode mismatch, nonzero failures, and executed against expected block disagreement", "an injected warning in one block produces a message that identifies that block, verified by execution rather than by reading", "the definition of a failure status is unchanged and `warning` still counts, so no suite is made to pass by relaxing the policy", "no profile membership, bound, timeout or test content changes"]
+
+  - id: "LDG-2863"
+    title: "Workstream 21 and cut 14 closeout"
+    workstream: 21
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2860", "LDG-2861", "LDG-2862"]
+    scope: "Close workstream 21 and cut 14. Record the diagnosis and its evidence: the run ids that failed, the uploaded summary showing 453 expected, 453 executed, zero skipped and one failed block, the census row naming the warning block, and the warning text. Record that the failures predate the v0.2.1.0 workstreams. State the recomputed bound with its three registered-runner clocks and its headroom, and say plainly that it is a correction rather than a weakening. Link the diffs and tests rather than restating them. Name what was considered and declined, including moving the warning block to another profile, relaxing the failure-status definition, and making the continuous-integration gate advisory. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the closeout names the failing run ids and the exact evidence that identified the block, so the diagnosis can be re-derived without rerunning continuous integration", "it records that the failures predate the v0.2.1.0 workstreams and were not introduced by them", "the recomputed bound appears with its three registered-runner clocks, its headroom and its basis, and is explicitly distinguished from bound-raising", "each declined option is named with its reason, including profile movement, relaxing the failure-status definition and an advisory gate", "the cut ratio is stated and is at most 0.5, and any correction round is recorded rather than hidden", "one continuous-integration run on the registered runner is green end to end and is cited by run id"]
