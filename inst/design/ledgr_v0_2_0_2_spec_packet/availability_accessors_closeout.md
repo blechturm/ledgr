@@ -1,8 +1,9 @@
 # Cut 9 Closeout: Availability And Evidence Accessors
 
-**Status:** Agent-provisional; focused Type 1 re-review requested. The first
-review returned `CHANGES_REQUIRED`, its evidence correction is implemented,
-and accepted Workstream 19 restored the unchanged fast-profile gate.
+**Status:** Agent-provisional; final focused Type 1 re-review requested. The
+first two reviews returned `CHANGES_REQUIRED`; both record corrections are
+implemented, and accepted Workstream 19 restored the unchanged fast-profile
+gate.
 
 **Implementation range:** `5373433..eec4458` on
 `codex/ws16-v0.2.1.0`. The range contains one commit per ticket, three
@@ -141,13 +142,16 @@ workstream reviewable again; it is not retroactive evidence that Workstream 16
 caused the timing improvement, and the red 102.94 / 103.81 / 104.02 record
 remains part of this closeout.
 
-The test audit did not remove or move any oracle. LTB-0067's four durable runs
-cover distinct claims: warning multiplicity, output identity, plane-only
-silence and fixed-small-access silence. Two pulses are the minimum for the
-first claim. Its fifth execution is the single-candidate fast-context witness
-required by the review. The remaining longest fast blocks predate this cut and
-protect schema migration, fixed-work hashing, compiled parity and walk-forward
-error recovery; they were not weakened under cover of this timing correction.
+The test audit did not remove any oracle. Fast LTB-0067 has three two-pulse
+public runs: one proves warning multiplicity and payload, while plane-only and
+fixed-small controls prove silence. Its fourth execution is the
+single-candidate fast-context witness required by the first review. Durable
+output and identity neutrality moved to review LTB-0071, where warned scalar
+runs and an independently authored vector-plane strategy compare fills,
+equity, configuration identity and strategy identity. The remaining longest
+fast blocks predate this cut and protect schema migration, fixed-work hashing,
+compiled parity and walk-forward error recovery; they were not weakened under
+cover of this timing correction.
 
 ## Boundaries And Declined Additions
 
@@ -164,8 +168,8 @@ resume-path optimization LDG-2820.
 
 ## Governance
 
-One review invocation over eight completed tickets returned
-`CHANGES_REQUIRED`, 0.125 against the 0.5 gate. This focused correction review
-makes the ratio 2/8, 0.250. It rechecks the corrected evidence boundary and
-the now-green current-tree gate; it does not reopen already verified accessor
-semantics or claim Workstream 19's maintenance gain for this cut.
+The initial and first focused reviews returned `CHANGES_REQUIRED`. This final
+focused correction review is the third invocation over eight completed
+tickets, 3/8 = 0.375 against the 0.5 gate. It checks only the corrected lane
+record and the now-green current-tree gate; it does not reopen already verified
+accessor semantics or claim Workstream 19's maintenance gain for this cut.
