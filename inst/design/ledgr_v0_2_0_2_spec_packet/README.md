@@ -561,7 +561,7 @@ It was the third invocation over six tickets, exactly 0.500 against the gate.
 A fourth review would have breached the gate. The maintainer accepted the
 corrected work at `5c678ae` on 2026-09-26; Workstream 17 and Cut 10 are closed.
 
-## Cut 11: Point-in-time input model (open)
+## Cut 11: Point-in-time input model (review pending)
 
 Authority: the maintainer's 2026-09-25 decision that the point-in-time input
 model needs one checklist of required data and one inspectable demo input set,
@@ -631,6 +631,18 @@ five completed tickets, 0.400. A focused correction re-review followed by the
 close review would make the historical count three over five, 0.600. If that
 route is taken, the closeout records the breach honestly rather than merging or
 padding tickets to hide it.
+
+Implementation is complete through `de8cf97`, with the agent-provisional
+record in `point_in_time_inputs_closeout.md`. The final ordinary fast record
+passed 455 of 455 blocks in 75.89 seconds and its independent checker passed;
+the review record passed 276 of 276 selected blocks in 402.39 seconds with one
+declared optional missing-package-path skip. The source package built, and the
+touched cash article passed installed-package vignette execution after one
+attachment correction. The overall R CMD check remains red for pre-existing
+source-tree-path tests and the unrelated adapter-authoring vignette, which are
+disclosed rather than attributed to this cut. The later release promotion
+means this historical v0.2.0.2 cut ships under the v0.2.1.0 target verified by
+LDG-2825.
 
 ## Cut 12: Restore fast-profile headroom (accepted)
 
