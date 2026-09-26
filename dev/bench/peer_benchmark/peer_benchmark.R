@@ -20,7 +20,11 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     slow = 10L,
     seed = 20260530L,
     compiled_accounting_model = NULL,
-    engine_set = "all"
+    engine_set = "all",
+    ledgr_order = "ttr-first",
+    child_engine = NULL,
+    bars_path = NULL,
+    result_path = NULL
   )
   i <- 1L
   while (i <= length(args)) {
@@ -56,6 +60,18 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     } else if (identical(key, "--engine-set")) {
       out$engine_set <- val
       i <- i + 2L
+    } else if (identical(key, "--ledgr-order")) {
+      out$ledgr_order <- val
+      i <- i + 2L
+    } else if (identical(key, "--child-engine")) {
+      out$child_engine <- val
+      i <- i + 2L
+    } else if (identical(key, "--bars-path")) {
+      out$bars_path <- val
+      i <- i + 2L
+    } else if (identical(key, "--result-path")) {
+      out$result_path <- val
+      i <- i + 2L
     } else if (key %in% c("--help", "-h")) {
       cat(paste(
         "Usage: Rscript dev/bench/peer_benchmark/peer_benchmark.R [options]",
@@ -71,6 +87,7 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --seed N",
         "  --compiled-accounting-model NULL|spot_fifo",
         "  --engine-set all|ledgr-cost",
+        "  --ledgr-order ttr-first|builtin-first",
         sep = "\n"
       ), "\n")
       quit(status = 0L)
@@ -87,6 +104,13 @@ peer_parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
   }
   if (!out$engine_set %in% c("all", "ledgr-cost")) {
     stop("`--engine-set` must be `all` or `ledgr-cost`.", call. = FALSE)
+  }
+  if (!out$ledgr_order %in% c("ttr-first", "builtin-first")) {
+    stop("`--ledgr-order` must be `ttr-first` or `builtin-first`.", call. = FALSE)
+  }
+  if (!is.null(out$child_engine) &&
+      !out$child_engine %in% c("ttr", "builtin")) {
+    stop("`--child-engine` must be `ttr` or `builtin`.", call. = FALSE)
   }
   if (is.null(out$n_inst)) {
     out$n_inst <- if (identical(out$preset, "record")) 100L else 5L
@@ -122,17 +146,39 @@ peer_hash_file <- function(path) {
   paste0("md5:", unname(tools::md5sum(path)))
 }
 
-peer_sma_ttr <- function(id, n) {
-  force(id); force(n)
-  ledgr_indicator(
-    id = id,
-    fn = function(window) {
-      x <- as.numeric(window$close)
-      if (length(x) < n) return(NA_real_)
-      as.numeric(TTR::SMA(x, n = n))[[length(x)]]
-    },
-    requires_bars = n,
-    series_fn = function(bars, params) as.numeric(TTR::SMA(as.numeric(bars$close), n = n))
+peer_package_root <- function(start = getwd()) {
+  current <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  repeat {
+    description <- file.path(current, "DESCRIPTION")
+    if (file.exists(description) && identical(
+      unname(read.dcf(description)[1L, "Package"]),
+      "ledgr"
+    )) {
+      return(current)
+    }
+    parent <- dirname(current)
+    if (identical(parent, current)) {
+      stop("Could not locate the ledgr package root.", call. = FALSE)
+    }
+    current <- parent
+  }
+}
+
+peer_public_ttr_features <- function(fast, slow) {
+  ledgr_feature_map(
+    fast = ledgr_ind_ttr(
+      "SMA", input = "close", id = "fast", n = as.integer(fast)
+    ),
+    slow = ledgr_ind_ttr(
+      "SMA", input = "close", id = "slow", n = as.integer(slow)
+    )
+  )
+}
+
+peer_builtin_sma_features <- function(fast, slow) {
+  ledgr_feature_map(
+    fast = ledgr_ind_sma(as.integer(fast)),
+    slow = ledgr_ind_sma(as.integer(slow))
   )
 }
 
@@ -401,6 +447,188 @@ peer_run_ledgr <- function(engine, bars_path, features, strategy, seed,
       )
     ),
     reason = NA_character_
+  )
+}
+
+peer_ledgr_runtime_metadata <- function() {
+  packages <- c("ledgr", "TTR", "duckdb", "collapse")
+  versions <- vapply(packages, function(package) {
+    if (!requireNamespace(package, quietly = TRUE)) return(NA_character_)
+    as.character(utils::packageVersion(package))
+  }, character(1L))
+  list(
+    R = R.version.string,
+    platform = R.version$platform,
+    library_paths = normalizePath(.libPaths(), winslash = "/", mustWork = FALSE),
+    packages = as.list(versions)
+  )
+}
+
+peer_run_ledgr_child <- function(args) {
+  if (is.null(args$bars_path) || !file.exists(args$bars_path)) {
+    stop("A child ledgr row requires an existing `--bars-path`.", call. = FALSE)
+  }
+  if (is.null(args$result_path) || !nzchar(args$result_path)) {
+    stop("A child ledgr row requires `--result-path`.", call. = FALSE)
+  }
+  peer_load_ledgr_source()
+  if (identical(args$child_engine, "ttr")) {
+    engine <- "ledgr_ttr_canonical"
+    features <- peer_public_ttr_features(args$fast, args$slow)
+    strategy <- peer_strategy("fast", "slow")
+  } else {
+    engine <- "ledgr_builtin_sma"
+    features <- peer_builtin_sma_features(args$fast, args$slow)
+    strategy <- peer_strategy(
+      sprintf("sma_%d", args$fast),
+      sprintf("sma_%d", args$slow)
+    )
+  }
+  result <- peer_timed(peer_run_ledgr(
+    engine = engine,
+    bars_path = args$bars_path,
+    features = features,
+    strategy = strategy,
+    seed = args$seed,
+    cost_model = peer_cost_zero_model(),
+    risk_chain = peer_risk_none_model()
+  ))
+  result$metadata$fresh_process <- TRUE
+  result$metadata$indicator_source <- args$child_engine
+  result$metadata$runtime <- peer_ledgr_runtime_metadata()
+  saveRDS(result, args$result_path, version = 3L)
+  invisible(args$result_path)
+}
+
+peer_run_ledgr_fresh <- function(kind, bars_path, fast, slow, seed) {
+  package_root <- peer_package_root()
+  script <- normalizePath(
+    file.path(
+      package_root, "dev", "bench", "peer_benchmark", "peer_benchmark.R"
+    ),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  result_path <- tempfile(pattern = paste0("peer_", kind, "_"), fileext = ".rds")
+  log_path <- tempfile(pattern = paste0("peer_", kind, "_"), fileext = ".log")
+  on.exit(unlink(c(result_path, log_path)), add = TRUE)
+  rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") {
+    "Rscript.exe"
+  } else {
+    "Rscript"
+  })
+  child_args <- c(
+    shQuote(script),
+    "--child-engine", kind,
+    "--bars-path", shQuote(normalizePath(bars_path, winslash = "/", mustWork = TRUE)),
+    "--result-path", shQuote(normalizePath(
+      result_path, winslash = "/", mustWork = FALSE
+    )),
+    "--fast", as.character(fast),
+    "--slow", as.character(slow),
+    "--seed", as.character(seed)
+  )
+  old_wd <- setwd(package_root)
+  on.exit(setwd(old_wd), add = TRUE)
+  status <- system2(rscript, child_args, stdout = log_path, stderr = log_path)
+  if (!identical(status, 0L) || !file.exists(result_path)) {
+    output <- if (file.exists(log_path)) readLines(log_path, warn = FALSE) else character()
+    stop(
+      sprintf(
+        "Fresh-process ledgr `%s` row failed (status %s).\n%s",
+        kind,
+        as.character(status),
+        paste(output, collapse = "\n")
+      ),
+      call. = FALSE
+    )
+  }
+  readRDS(result_path)
+}
+
+peer_run_durable_ledgr_pair <- function(bars_path, fast, slow, seed,
+                                        order = "ttr-first") {
+  kinds <- if (identical(order, "ttr-first")) {
+    c("ttr", "builtin")
+  } else if (identical(order, "builtin-first")) {
+    c("builtin", "ttr")
+  } else {
+    stop("Unknown durable ledgr launch order.", call. = FALSE)
+  }
+  results <- stats::setNames(vector("list", length(kinds)), kinds)
+  for (kind in kinds) {
+    results[[kind]] <- peer_run_ledgr_fresh(kind, bars_path, fast, slow, seed)
+    results[[kind]]$metadata$launch_order <- order
+  }
+  if (!identical(
+    results$ttr$metadata$runtime,
+    results$builtin$metadata$runtime
+  )) {
+    stop("Fresh ledgr rows resolved different R or package libraries.", call. = FALSE)
+  }
+  results
+}
+
+peer_indicator_feature_parity <- function(bars_path, fast, slow) {
+  db_path <- tempfile(pattern = "ledgr_peer_feature_parity_", fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_csv(bars_path, db_path = db_path)
+  on.exit({
+    try(ledgr_snapshot_close(snapshot), silent = TRUE)
+    try(unlink(db_path), silent = TRUE)
+  }, add = TRUE)
+  make_experiment <- function(features, strategy) {
+    ledgr_experiment(
+      snapshot = snapshot,
+      strategy = strategy,
+      features = features,
+      opening = ledgr_opening(cash = 1e7),
+      cost_model = peer_cost_zero_model(),
+      risk_chain = peer_risk_none_model(),
+      persist_features = FALSE
+    )
+  }
+  ttr <- ledgr_precompute_features(
+    make_experiment(
+      peer_public_ttr_features(fast, slow),
+      peer_strategy("fast", "slow")
+    ),
+    ledgr_param_grid(only = list())
+  )$projection
+  builtin <- ledgr_precompute_features(
+    make_experiment(
+      peer_builtin_sma_features(fast, slow),
+      peer_strategy(sprintf("sma_%d", fast), sprintf("sma_%d", slow))
+    ),
+    ledgr_param_grid(only = list())
+  )$projection
+  ttr_values <- c(
+    as.numeric(ttr$feature_values$fast),
+    as.numeric(ttr$feature_values$slow)
+  )
+  builtin_values <- c(
+    as.numeric(builtin$feature_values[[sprintf("sma_%d", fast)]]),
+    as.numeric(builtin$feature_values[[sprintf("sma_%d", slow)]])
+  )
+  comparable <- is.finite(ttr_values) & is.finite(builtin_values)
+  delta <- abs(ttr_values[comparable] - builtin_values[comparable])
+  denominator <- pmax(abs(ttr_values[comparable]), 1)
+  data.frame(
+    comparison = "public_ttr_sma_vs_builtin_sma",
+    axis_identical = identical(ttr$instrument_index, builtin$instrument_index) &&
+      identical(ttr$pulses_iso, builtin$pulses_iso),
+    na_mask_identical = identical(is.na(ttr_values), is.na(builtin_values)),
+    tolerance = 1e-8,
+    within_tolerance = isTRUE(all.equal(
+      ttr_values,
+      builtin_values,
+      tolerance = 1e-8,
+      check.attributes = TRUE
+    )),
+    exact_values = identical(ttr_values, builtin_values),
+    max_abs = if (length(delta)) max(delta) else 0,
+    max_relative = if (length(delta)) max(delta / denominator) else 0,
+    rows = length(ttr_values),
+    stringsAsFactors = FALSE
   )
 }
 
@@ -1700,7 +1928,8 @@ peer_divergence <- function(reference, peer) {
   list(rows = div, summary = summary)
 }
 
-peer_write_outputs <- function(results, parity, statuses, performance, bars_path, input_hash, args) {
+peer_write_outputs <- function(results, parity, feature_parity, statuses,
+                               performance, bars_path, input_hash, args) {
   stamp <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
   stem <- file.path(args$out_dir, sprintf("peer_benchmark_%s_%s", args$preset, stamp))
   env <- peer_environment(args, input_hash)
@@ -1746,6 +1975,7 @@ peer_write_outputs <- function(results, parity, statuses, performance, bars_path
   }))
   raw_path <- paste0(stem, "_status.csv")
   parity_path <- paste0(stem, "_parity.csv")
+  feature_parity_path <- paste0(stem, "_feature_parity.csv")
   performance_path <- paste0(stem, "_performance.csv")
   divergence_summary_path <- paste0(stem, "_divergence_summary.csv")
   status_path <- paste0(stem, "_surface_status.csv")
@@ -1753,13 +1983,27 @@ peer_write_outputs <- function(results, parity, statuses, performance, bars_path
   history_path <- peer_append_history(parity, env, args)
   utils::write.csv(raw, raw_path, row.names = FALSE)
   utils::write.csv(parity, parity_path, row.names = FALSE)
+  utils::write.csv(feature_parity, feature_parity_path, row.names = FALSE)
   utils::write.csv(performance, performance_path, row.names = FALSE)
   utils::write.csv(divergence_summary, divergence_summary_path, row.names = FALSE)
   utils::write.csv(status_df, status_path, row.names = FALSE)
   jsonlite::write_json(env, env_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
   md_path <- paste0(stem, "_summary.md")
-  peer_write_markdown(parity, raw, status_df, performance, env, bars_path, history_path, md_path)
-  list(raw = raw_path, parity = parity_path, performance = performance_path, divergence_summary = divergence_summary_path, status = status_path, environment = env_path, markdown = md_path, history = history_path)
+  peer_write_markdown(
+    parity, feature_parity, raw, status_df, performance, env,
+    bars_path, history_path, md_path
+  )
+  list(
+    raw = raw_path,
+    parity = parity_path,
+    feature_parity = feature_parity_path,
+    performance = performance_path,
+    divergence_summary = divergence_summary_path,
+    status = status_path,
+    environment = env_path,
+    markdown = md_path,
+    history = history_path
+  )
 }
 
 peer_environment <- function(args, input_hash) {
@@ -1778,13 +2022,14 @@ peer_environment <- function(args, input_hash) {
     release = args$release,
     preset = args$preset,
     engine_set = args$engine_set,
+    ledgr_launch_order = args$ledgr_order,
     R = R.version.string,
     platform = R.version$platform,
     git_sha = git_sha,
     git_branch = git_branch,
     ledgr_version = as.character(utils::packageVersion("ledgr")),
     input_hash = input_hash,
-    benchmark_method = "public_one_candidate_ledgr_sweep_v002",
+    benchmark_method = "public_ttr_fresh_process_v003",
     harness_sha256 = peer_hash_file(file.path(
       "dev", "bench", "peer_benchmark", "peer_benchmark.R"
     )),
@@ -1811,7 +2056,9 @@ peer_append_history <- function(parity, env, args) {
   path
 }
 
-peer_write_markdown <- function(parity, raw, status, performance, env, bars_path, history_path, path) {
+peer_write_markdown <- function(parity, feature_parity, raw, status,
+                                performance, env, bars_path, history_path,
+                                path) {
   con <- file(path, open = "w", encoding = "UTF-8")
   on.exit(close(con), add = TRUE)
   writeLines(c(
@@ -1844,6 +2091,32 @@ peer_write_markdown <- function(parity, raw, status, performance, env, bars_path
       parity$tier1_retained_share[[i]],
       parity$tier1_equity_cor[[i]], parity$tier1_max_single_bar_divergence_pct[[i]],
       parity$tier1_daily_return_cor[[i]], parity$attribution[[i]]
+    ), con)
+  }
+  writeLines(c(
+    "",
+    "## Indicator Feature Parity",
+    "",
+    paste(
+      "Public TTR SMA and built-in SMA use the same axis and NA mask.",
+      "Numeric values are assessed under the registered 1e-8 tolerance;",
+      "exact identity is reported separately."
+    ),
+    "",
+    "| Comparison | Axis | NA mask | Within tolerance | Exact | Max abs | Max relative | Rows |",
+    "| --- | --- | --- | --- | --- | ---: | ---: | ---: |"
+  ), con)
+  for (i in seq_len(nrow(feature_parity))) {
+    writeLines(sprintf(
+      "| `%s` | `%s` | `%s` | `%s` | `%s` | %.12g | %.12g | %d |",
+      feature_parity$comparison[[i]],
+      feature_parity$axis_identical[[i]],
+      feature_parity$na_mask_identical[[i]],
+      feature_parity$within_tolerance[[i]],
+      feature_parity$exact_values[[i]],
+      feature_parity$max_abs[[i]],
+      feature_parity$max_relative[[i]],
+      feature_parity$rows[[i]]
     ), con)
   }
   writeLines(c("", "## Performance", "", "| Engine | Cost | Risk | Compiled | Full row s | Snapshot prepare s | Experiment setup s | Engine s | Results s | Cold s | Warm s | Phase availability | Core bars/sec | Boundary |", "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |"), con)
@@ -1903,24 +2176,20 @@ peer_main <- function(args = peer_parse_args()) {
   utils::write.csv(bars, bars_path, row.names = FALSE)
   input_hash <- peer_hash_file(bars_path)
 
-  canonical_features <- ledgr_feature_map(
-    fast = peer_sma_ttr("fast", args$fast),
-    slow = peer_sma_ttr("slow", args$slow)
-  )
+  canonical_features <- peer_public_ttr_features(args$fast, args$slow)
   canonical_strategy <- peer_strategy("fast", "slow")
   zero_cost <- peer_cost_zero_model()
   realistic_cost <- peer_cost_realistic_model()
   no_risk <- peer_risk_none_model()
   realistic_risk <- peer_risk_realistic_model()
-  canonical <- peer_timed(peer_run_ledgr(
-    engine = "ledgr_ttr_canonical",
+  durable_pair <- peer_run_durable_ledgr_pair(
     bars_path = bars_path,
-    features = canonical_features,
-    strategy = canonical_strategy,
+    fast = args$fast,
+    slow = args$slow,
     seed = args$seed,
-    cost_model = zero_cost,
-    risk_chain = no_risk
-  ))
+    order = args$ledgr_order
+  )
+  canonical <- durable_pair$ttr
   canonical_ephemeral <- peer_run_ledgr_sweep_with_oracle(
     engine = "ledgr_ttr_canonical_sweep",
     bars_path = bars_path,
@@ -1994,15 +2263,7 @@ peer_main <- function(args = peer_parse_args()) {
     results <- c(results, list(compiled_ephemeral))
   }
   if (identical(args$engine_set, "all")) {
-    builtin <- peer_timed(peer_run_ledgr(
-      engine = "ledgr_builtin_sma",
-      bars_path = bars_path,
-      features = ledgr_feature_map(fast = ledgr_ind_sma(args$fast), slow = ledgr_ind_sma(args$slow)),
-      strategy = peer_strategy(sprintf("sma_%d", args$fast), sprintf("sma_%d", args$slow)),
-      seed = args$seed,
-      cost_model = zero_cost,
-      risk_chain = no_risk
-    ))
+    builtin <- durable_pair$builtin
     quantstrat <- peer_timed(peer_run_quantstrat(bars_path, args$fast, args$slow))
     backtrader <- peer_timed(peer_run_backtrader(bars_path, args$fast, args$slow))
     zipline_full <- peer_timed(peer_run_zipline_full(bars_path, args$fast, args$slow))
@@ -2010,14 +2271,25 @@ peer_main <- function(args = peer_parse_args()) {
     results <- c(results, list(builtin, quantstrat, backtrader, zipline_full, lean))
   }
   parity <- do.call(rbind, lapply(results[-1L], peer_parity, reference = canonical))
+  feature_parity <- peer_indicator_feature_parity(
+    bars_path, args$fast, args$slow
+  )
   statuses <- lapply(results, peer_surface_status)
   performance <- peer_performance_rows(results, args)
-  paths <- peer_write_outputs(results, parity, statuses, performance, bars_path, input_hash, args)
+  paths <- peer_write_outputs(
+    results, parity, feature_parity, statuses, performance,
+    bars_path, input_hash, args
+  )
   message("[peer-benchmark] wrote:")
   for (p in paths) message("  ", p)
   invisible(paths)
 }
 
 if (sys.nframe() == 0L) {
-  peer_main()
+  peer_args <- peer_parse_args()
+  if (is.null(peer_args$child_engine)) {
+    peer_main(peer_args)
+  } else {
+    peer_run_ledgr_child(peer_args)
+  }
 }

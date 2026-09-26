@@ -54,10 +54,7 @@ testthat::test_that("[LTB-0016] public sweep benchmark boundary is executable", 
   path <- tempfile(fileext = ".csv")
   on.exit(unlink(path), add = TRUE)
   utils::write.csv(bars, path, row.names = FALSE)
-  features <- ledgr_feature_map(
-    fast = peer_stage_l_harness$peer_sma_ttr("fast", 2L),
-    slow = peer_stage_l_harness$peer_sma_ttr("slow", 4L)
-  )
+  features <- peer_stage_l_harness$peer_public_ttr_features(2L, 4L)
   result <- peer_stage_l_harness$peer_run_ledgr_sweep_with_oracle(
     engine = "ledgr_ttr_canonical_sweep",
     bars_path = path,
@@ -73,6 +70,59 @@ testthat::test_that("[LTB-0016] public sweep benchmark boundary is executable", 
   testthat::expect_true(result$metadata$parity_oracle_outside_clock)
   testthat::expect_true(is.finite(result$wall_sec))
   testthat::expect_true(result$metadata$parity_oracle_wall_sec >= 0)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0075] peer SMA rows use public fresh-process boundaries", {
+  peer_stage_l_require_harness()
+  testthat::skip_if_not_installed("TTR")
+  source <- paste(readLines(peer_stage_l_harness_path, warn = FALSE), collapse = "\n")
+  testthat::expect_no_match(source, "peer_sma_ttr", fixed = TRUE)
+
+  bars <- as.data.frame(ledgr_sim_bars(
+    n_instruments = 2L,
+    n_days = 25L,
+    seed = 2836L,
+    instrument_prefix = "PEER_PUBLIC_"
+  ))
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  utils::write.csv(bars, path, row.names = FALSE)
+
+  first <- peer_stage_l_harness$peer_run_durable_ledgr_pair(
+    path, 2L, 4L, 2836L, order = "ttr-first"
+  )
+  reversed <- peer_stage_l_harness$peer_run_durable_ledgr_pair(
+    path, 2L, 4L, 2836L, order = "builtin-first"
+  )
+  testthat::expect_identical(
+    first$ttr$metadata$runtime,
+    first$builtin$metadata$runtime
+  )
+  testthat::expect_identical(
+    first$ttr$metadata$runtime,
+    reversed$ttr$metadata$runtime
+  )
+  testthat::expect_silent(
+    peer_stage_l_harness$peer_compare_ledgr_surfaces(first$ttr, reversed$ttr)
+  )
+  testthat::expect_silent(
+    peer_stage_l_harness$peer_compare_ledgr_surfaces(
+      first$builtin, reversed$builtin
+    )
+  )
+  public_parity <- peer_stage_l_harness$peer_compare_ledgr_surfaces(
+    first$ttr, first$builtin
+  )
+  testthat::expect_lte(public_parity$max_relative, 1e-8)
+
+  feature_parity <- peer_stage_l_harness$peer_indicator_feature_parity(
+    path, 2L, 4L
+  )
+  testthat::expect_true(feature_parity$axis_identical)
+  testthat::expect_true(feature_parity$na_mask_identical)
+  testthat::expect_true(feature_parity$within_tolerance)
+  testthat::expect_lte(feature_parity$max_relative, 1e-8)
 })
 
 testthat::test_that("memory parity reference reports residuals and fails loudly", {
