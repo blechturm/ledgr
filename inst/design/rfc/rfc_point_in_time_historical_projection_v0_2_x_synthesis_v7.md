@@ -1,15 +1,7 @@
-# RFC Synthesis v6: Point-in-Time Historical Projection With Missing-Data Policy
+# RFC Synthesis v7: Point-in-Time Historical Projection With Missing-Data Policy
 
-**Status: SUPERSEDED 2026-09-26** by
-[synthesis v7](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v7.md),
-after a Type 2 review required two focused revisions. Its corrected bound and
-clock semantics are carried forward; its checkpoint prescribed a recalculation
-method it should only have permitted, and it left two carry-policy items open
-that the amendment requires the synthesis to settle. Retained as cycle history;
-it binds nothing.
-
-**Status (original):** Decision synthesis, superseding
-[synthesis v5](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v5.md),
+**Status:** Decision synthesis, superseding
+[synthesis v6](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v6.md),
 which required revision. Incorporates the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
 Decisions bind on maintainer acceptance.
@@ -18,14 +10,17 @@ Decisions bind on maintainer acceptance.
 **Baselines:** design `491c4ed`; implementation `ae040e7`. Claims are marked
 verified by reading, verified by execution, or open.
 
-**What changed from v5.** The policy in section 1 is unchanged. v5's section 6
-derived the wrong revision bound twice over: its affected-cell criterion tested
-whether a column falls *inside* the newly knowable inactive interval rather than
-whether a carry *path* crosses it, and its forward reach used the carry age
-limit alone when the indicator window width and any enabled output-carry age
-extend it. Section 6 now states a conservative, derivable bound - confirmed in
-Type 2 review - and claims locality rather than efficiency. Three further v5
-statements are corrected in section 3.3.
+**What changed from v6.** The corrected bound and the settled clock semantics
+are kept. Two things are finished rather than corrected. The checkpoint no
+longer prescribes how revised values are produced: whole-series recalculation of
+an affected instrument during preparation is an admitted candidate, and the
+bound constrains where answers may change rather than where computation happens
+(sections 6.2 and 10(d)). And the carry policy is completed, because v6 left two
+items open that the amendment requires this synthesis to settle: carry barriers
+now include knowable corporate actions and terminal assertions as well as
+inactive intervals (section 5.2), and section 5.7 states which missing outputs
+are fillable. Section 3.4 records both, with the consequence for section 6's
+trigger set.
 
 **What is not reopened.** The maintainer's product direction stands: the ML
 release ships simple carry-forward plus missingness information for prices and
@@ -44,9 +39,10 @@ Every row is a proposal for maintainer acceptance.
 | Which sessions a feature window counts | Venue open sessions. Lifetime facts do not narrow the feature axis. | Features share one axis with valuation, and only one thing in the pipeline depends on knowledge rather than two. Requires amending four authorities including an executable gate (section 4). |
 | Observations inside an accepted inactive interval | **Always admissible.** Inactivity prohibits carry; it does not exclude a real observation. | A genuine print during an asserted inactive period is used, as it is today. Narrowing would have discarded it (section 4.4). |
 | Price-input carry | **On**, bounded by a required declared maximum carry age, default **5 venue open sessions**. | Bounds how stale a filled input can be. It does not by itself separate benign gaps from structural absence, and section 5.1 states what it does and does not guarantee. |
-| Carry across an accepted `known_inactive` interval | **Never**, at any age. | A suspension is never bridged by fabricated prices. This rule is also the one channel that makes padded values depend on the request cutoff, accepted deliberately (section 6). |
+| Carry across a carry barrier | **Never**, at any age. Barriers are an accepted `known_inactive` interval, a knowable price-scale-affecting corporate action, and a knowable terminal assertion. | Suspensions are never bridged, a pre-split price never crosses its split, and nothing carries past a terminal event. Barriers are also what make padded values depend on the request cutoff, accepted deliberately (sections 5.2 and 6). |
 | Indicator-output carry | **Off** by default, available on. | Avoids compounding two treatments by default. Enabling it does not produce a dense series: warm-up, expiry and inactivity still leave holes (section 5.3). |
 | Which fields carry | `open`, `high`, `low`, `close`, each from its own latest admissible earlier value. **`volume` never carries.** | Requires a required-input admission rule the engine does not have today; today's window gate over-blocks and under-blocks (section 5.4). |
+| Which missing outputs are fillable, when output carry is on | Only an output missing because a required input was unavailable after input treatment. | Warm-up, unsatisfied readiness, calculation errors and anything across a barrier are never filled (section 5.7). |
 | Readiness under carry | `stable_after` is satisfied on prepared inputs. No engine threshold on carried share. | After a gap or a resumption a *prepared* window suffices, not a window of real observations. "Ready" changes meaning and the contract must say so (sections 5.5 and 7). |
 | Age clock | Venue open sessions from the carried value's own source time, stated explicitly. | Independent of `ledgr_valuation_stale(max_sessions)`; repeated carry does not refresh age (section 5.6). |
 | Values under a carry policy | Knowledge-dependent by construction. The padded view is separately identified and computed at the request cutoff. | The strict policy remains the only cutoff-invariant one. The dependency has a conservative, derivable bound; whether revised values can be prepared or updated efficiently within it is a checkpoint question (section 6). |
@@ -200,6 +196,31 @@ the first print at or after resumption becomes a new admissible source. And v5
 section 5.1 called the gap query non-blocking while section 13 placed it inside
 the sequence preceding a spec cut; section 13 now runs it in parallel.
 
+### 3.4 From synthesis v6
+
+**The checkpoint prescribed a method it should only have permitted.** v6 framed
+part (d) as whether revised values can be prepared "efficiently within that
+bound" and required each feature's window dependencies as a checkpoint input.
+That presumes a ranged invalidation. Recalculating an affected instrument's
+whole indicator series during preparation is an equally valid candidate and
+needs no window bookkeeping at all: identify which instrument's relevant facts
+changed, prepare its inputs at the applicable cutoff, recalculate its series.
+The bound constrains where *answers* may change, not where an implementation
+performs *calculations*. Sections 6.2 and 10(d) now say so.
+
+**The carry policy was not finished, and section 6's trigger set depended on
+it.** v6 section 11 left lifecycle reset boundaries and fillable output
+categories open, while the amendment requires this synthesis to settle both.
+That mattered beyond tidiness: v6 section 6.1 said inactivity is the only
+knowledge-dependent input, and a later-knowable corporate action that resets
+carry would be a second trigger. `snapshot_equity_corporate_actions` carries
+`knowledge_time` (`R/availability-schema.R:99`, verified), so the question is
+real rather than hypothetical. Section 5.2 now defines carry barriers to include
+corporate actions and terminal assertions, section 5.7 states the fillable
+categories, and section 6.1 generalises its trigger set accordingly. The bound's
+arithmetic is unchanged, because the mechanism is identical: a carry path
+crossing a barrier.
+
 ## 4. The feature session axis
 
 ### 4.1 The divergence, with all four authorities
@@ -336,20 +357,33 @@ substituting an old price requires an explicit
 default stale horizon" (`contracts.md:306-307`). Research inputs do not inherit
 that limit, but they should inherit its shape.
 
-### 5.2 Carry never crosses an accepted inactive interval
+### 5.2 Carry never crosses a carry barrier
 
-**Proposed default: prohibited, at any age, independently of the age limit.**
+**Proposed default: prohibited, at any age, independently of the age limit.** A
+**carry barrier** is a session or interval a carried value may not span. The
+first implementation has three kinds, all derived from knowable facts:
 
-Without it, and with carry on, a suspended instrument's sessions would fill from
-its last pre-suspension close and an average over that span would be computed
-from a fabricated flat series that reads like a real one. The age limit alone
-would stop most of this; the prohibition makes it unconditional.
+1. **An accepted `known_inactive` interval.** Without this, a suspended
+   instrument's sessions would fill from its last pre-suspension close and an
+   average over that span would be computed from a fabricated flat series that
+   reads like a real one.
+2. **A knowable price-scale-affecting corporate action.** Carrying a pre-split
+   close past its split delivers a price on the wrong scale, which is a wrong
+   number rather than a stale one, so the age limit is no protection at all.
+   Refusing is conservative in the right direction: if the series a carry
+   operates on turns out to be already adjusted, refusing was unnecessary but
+   never wrong. Which series that is belongs to the accounting and equity
+   workstreams, not to this cycle, and this rule does not touch accounting
+   semantics - it only decides where a research carry stops.
+3. **A knowable terminal assertion.** After a terminal event there is nothing to
+   carry, and carry never resumes past one.
 
-This rule is also the source of the cutoff dependence in section 6, because
-whether it applies to a given cell depends on whether the asserting fact is
+This is the lifecycle reset decision the amendment requires of this synthesis.
+Barriers are also the source of the cutoff dependence in section 6, because
+whether one applies to a given cell depends on whether the asserting fact is
 knowable at the request cutoff. That consequence is accepted rather than
-avoided: the alternative is to keep filling cells the data owner has said did
-not trade.
+avoided: the alternative is to keep filling cells across a boundary the data
+says exists.
 
 ### 5.3 Indicator-output carry is off by default
 
@@ -416,9 +450,9 @@ decision rather than a repair. The carried count and share travel with the value
 Two consequences to state rather than discover. `stable_after` currently
 promises that many real observations and under carry it promises that many
 prepared inputs; section 7 writes that into the contract. And after a gap or a
-resumption a prepared window suffices, so a value appears as soon as carry can
-complete the window - never after a full window of real observations. Section
-5.2 forbids carrying *across* an accepted inactive interval, not carrying after
+resumption a prepared window suffices, so readiness does not require every input
+in the window to be observed, and a value appears as soon as carry can complete
+the window. Section 5.2 forbids carrying *across* a barrier, not carrying after
 one: once a real observation appears at or after the resumption it becomes a new
 admissible source, and later gaps carry from it normally.
 
@@ -434,6 +468,33 @@ clock is independent of `ledgr_valuation_stale(max_sessions)`: a valuation limit
 is not an implicit research limit and a research limit is not a valuation
 permission.
 
+### 5.7 Which missing outputs are fillable
+
+**Proposed default, when output carry is enabled: exactly one category.** An
+output may be filled only when it is missing *because a required input was
+unavailable after input treatment*, within the declared output carry age and not
+across a barrier.
+
+Never fillable:
+
+- **Leading warm-up and unsatisfied readiness.** No value exists before the
+  first admissible source, and none before `stable_after` is satisfied. The
+  engine returns all-`NA` for a series shorter than the window
+  (`R/features-engine.R:306`, verified) and no carry changes that.
+- **Calculation errors.** An invalid indicator output aborts
+  (`ledgr_normalize_feature_scalar_output()` at `:239-246`, verified) and is
+  never converted into a gap that output carry then fills. This is the
+  amendment's requirement that errors not become fillable gaps, stated as a
+  category rather than a slogan.
+- **Anything across a barrier**, per section 5.2, and anything after a terminal
+  assertion.
+
+So output carry fills exactly the holes that input carry could not close, and
+nothing else. This is the fillable-output decision the amendment requires of
+this synthesis. Which *named* outputs of a multi-output indicator participate is
+a consequence of this rule rather than a separate list: each output is fillable
+on its own missingness cause.
+
 ## 6. Values under a carry policy depend on the request cutoff
 
 This section replaces v4's invariance claim and corrects the bound v5 derived
@@ -448,8 +509,11 @@ carry on facts that carry knowledge times.
 
 With the axis fixed and observations always admissible (section 4.4), bar
 presence does not vary with `t`, and age counts sessions on a fixed axis so it
-does not vary with `t` either. Exactly one input varies: whether an interval is
-*accepted as inactive* at `t`.
+does not vary with `t` either. What varies is which **carry barriers** are
+knowable at `t` (section 5.2): an accepted inactive interval, a price-scale
+corporate action, or a terminal assertion. All three act through one mechanism -
+a carry path crossing a barrier - so the derivation below is stated once and
+applies to each.
 
 **The criterion is the carry path, not the destination.** A cell at session `s`
 is filled from `src(s)`, the latest earlier session holding a real observation,
@@ -457,8 +521,9 @@ which fills the span `(src(s), s]`. A newly knowable inactive interval forbids
 that carry when the span *crosses* the interval, so a destination lying outside
 the interval can still lose its value.
 
-**The bound.** Write `[a, b]` for the venue sessions of the newly knowable
-inactive interval, `A_in` for the declared maximum input carry age, `W_f` for a
+**The bound.** Write `[a, b]` for the venue sessions a newly knowable barrier
+occupies - a single session where the barrier is a point, such as a corporate
+action - with `A_in` for the declared maximum input carry age, `W_f` for a
 feature's `stable_after`, and `A_out` for the declared maximum output carry age.
 A disabled stage contributes zero. For one instrument and one feature, every
 cell whose delivered value can differ between cutoffs `t1 < t2` lies within
@@ -472,6 +537,12 @@ intersects `[a, b]`, which needs `s >= a` and `src(s) + 1 <= b`; with
 `j .. j + W_f - 1` (`R/features-engine.R:304,309`, verified), which extends the
 range by `W_f - 1`. An enabled output carry can then propagate a changed output
 a further `A_out` sessions.
+
+**One barrier kind escapes the formula.** A terminal assertion has no forward
+side, because carry never resumes past it (section 5.2). Its affected range
+therefore runs from `a` to the end of the requested axis, and the arithmetic
+above does not apply. This is a bound, not a prediction: most of those cells
+were already `NA`.
 
 **Output carry can be forbidden on its own.** With price padding disabled and
 output carry enabled, no input changes, yet a carried output whose own path
@@ -498,11 +569,38 @@ revised values are produced, or whether preparation stays practical - and a long
 inactive interval can put most of an instrument's history in range, at which
 point being bounded stops being a useful property. Locality is not efficiency.
 
+**The bound does not prescribe a recalculation method.** It constrains where
+answers may change, not where an implementation performs calculations.
+Recalculating an affected instrument's whole indicator series during preparation
+is an admitted candidate and needs no window bookkeeping: identify which
+instrument's relevant facts changed, prepare its inputs at the applicable
+simulated cutoff, recalculate its series. Finding the affected instrument and
+deriving the exact affected output range are different amounts of bookkeeping,
+and the ranged variant should earn its complexity by measurement rather than by
+assumption.
+
+Neither candidate is free, and nothing here says which wins. At `ae040e7` the
+strict path loops over windows and invokes `series_fn` on each window rather
+than once per series (`R/features-engine.R:308-328`, verified), so whole-series
+recalculation costs roughly window width times series length in R per feature
+today; vectorised whole-series computation is a candidate capability, not a
+property this path has. Equally, per-range invalidation carries bookkeeping that
+may cost more than it saves - the pattern is familiar from spreadsheet
+dependency tracking and from warehouse refresh strategies that choose full or
+incremental recomputation by cost while requiring the same result. Those
+precedents justify allowing different preparation granularities; they establish
+nothing about which is right here.
+
+Instrument-level independence must not be assumed beyond instrument-local
+indicators: multivariate and fitted methods may make one instrument's revision
+affect others, and they are deferred (section 6.1's scope note).
+
 Section 10's failure criterion still applies to whatever mechanism is proposed:
-preparation before execution with bounded indexed retrieval or incremental
-update is compatible, and reconstructing instrument-by-boundary segments at a
-pulse is not. Whether any mechanism meets it is checkpoint part (d), and this
-document does not assert that one does.
+preparation before execution is compatible, and per-callback storage queries,
+reconstructing fact segments at a pulse, or a second execution path are not.
+Whether any mechanism produces correct cutoff-specific values and evidence
+within those constraints is checkpoint part (d), and this document does not
+assert that one does.
 
 ### 6.3 What follows for identity and delivery
 
@@ -539,13 +637,17 @@ valuation marks never enter feature computation.
 > permitted output carry applies after calculation; an error is never a fillable
 > gap. Under a declared carry policy a required input may instead be
 > satisfied by a carried earlier value of the same field for the same stable
-> instrument, within the declared maximum carry age and never across an accepted
-> `known_inactive` interval, never from a later observation, and never for
-> `volume`. A window satisfied in part by carried inputs is delivered with the
+> instrument, within the declared maximum carry age and never across a carry
+> barrier, never from a later observation, and never for `volume`. Carry barriers
+> are an accepted `known_inactive` interval, a knowable price-scale-affecting
+> corporate action, and a knowable terminal assertion. Where output carry is
+> declared it may fill only an output missing because a required input was
+> unavailable after input treatment; warm-up, unsatisfied readiness and
+> calculation errors are never filled. A window satisfied in part by carried inputs is delivered with the
 > count and share of carried inputs, and `stable_after` readiness is satisfied
 > on prepared inputs rather than on observations. Values delivered under a carry
-> policy depend on the request cutoff through the inactivity condition only;
-> such a view is separately identified and never overwrites an earlier output.
+> policy depend on the request cutoff through barrier knowability only; such a
+> view is separately identified and never overwrites an earlier output.
 > Valuation marks never enter feature computation under any policy.
 
 Consequential contract work the packet must also carry, named here rather than
@@ -655,15 +757,20 @@ indexed before the fold alongside (a) and (b). Existing prepared doubles alone
 do not establish this. Default-on means every research run pays whatever this
 costs, so it is answered before the default is fixed.
 
-**(d) Numerical revision, new in v5 and corrected in v6.** Whether revised
-values and their evidence can be prepared or updated efficiently within section
-6.1's conservative bound. Its inputs are the asserted interval, the input carry
-age, each feature's window width and the output carry age where enabled, so this
-part needs the indicator window dependencies and the enabled carry stages
-alongside the lifetime facts, and it must treat a forbidden output carry as its
-own mechanism. A derivable range is not a cost result: a long inactive interval
-can put most of an instrument's history in range, and this part must say what
-happens then.
+**(d) Numerical revision.** Whether correct cutoff-specific values and their
+evidence can be produced at all, under the single failure criterion: prepared
+before execution, with no per-callback storage query, no reconstruction of fact
+segments at a pulse, and no second execution path. This part does not prescribe
+a granularity. Whole-series recalculation of an affected instrument during
+preparation and per-range invalidation inside section 6.1's bound are both
+admitted candidates, and a forbidden output carry is its own trigger that either
+candidate must handle. Section 6.1's bound is available to an implementation
+that wants it and is not a requirement on one.
+
+Performance conclusions stay separate from this semantic result. Any eventual
+measurement covers preparation cost, the evidence in section 8, and worker
+memory under the per-process replication established below, and it follows
+`../spike_protocol.md`. Nothing here charters it.
 
 **The single failure criterion.** Preparation before execution, with bounded
 indexed retrieval or incremental cursor advance, is compatible. Reconstructing
@@ -688,19 +795,23 @@ memory suitability at research scale.
 
 - Expiry behaviour at the age limit beyond returning `NA`: whether crossing the
   limit emits a distinguishable reason.
-- Lifecycle reset boundaries: whether a corporate action or terminal assertion
-  resets the carry chain.
 - The shape of the required-input declaration in section 5.4: a field on the
   indicator definition beside `gap_contract`, or inference from the callback.
-- Which indicator outputs are fillable, if output carry is enabled.
+- Which corporate-action subtypes affect price scale, which the accounting and
+  equity workstreams own. Section 5.2 decides that a price-scale action is a
+  barrier; it does not enumerate the subtypes.
 - Encoding of the section 8 evidence, including `gap_type` vocabulary ownership
   and model-facing view versus canonical storage.
+- The recalculation granularity of section 6.2, which measurement decides rather
+  than this document.
 - Everything the amendment defers: fitted imputers, their algorithm selection
   and the fitting boundary, which stay in the 2026-09-26 horizon entry and
   remain model- and adapter-owned.
 
 Not on this list any more: the age limit's number, which section 5.1 proposes as
-a shipping default with a named tuning measurement.
+a shipping default with a named tuning measurement; lifecycle reset boundaries,
+decided in section 5.2; and which missing outputs are fillable, decided in
+section 5.7.
 
 ## 12. Detecting acceptance requirements
 
@@ -719,21 +830,22 @@ An implementation is acceptable only with detectors that fail on:
    anything.
 3. **Late-knowledge omission** - a fact effective at `s` and knowable at `t` not
    appearing in column `s`. The decision is bidirectional.
-4. **Revision correctness** - a carry whose path crosses an interval asserted
-   inactive by a fact knowable at `t` still delivering a value, including where
-   the destination lies outside that interval; and, in the other direction, a
-   cell losing its carry because of a fact *not* knowable at `t`. Both halves
-   are required, and input carry and output carry are both in scope.
+4. **Revision correctness** - a carry whose path crosses a barrier knowable at
+   `t` still delivering a value, including where the destination lies outside
+   the barrier; and, in the other direction, a cell losing its carry because of
+   a fact *not* knowable at `t`. Both halves are required; input carry and
+   output carry are both in scope; and all three barrier kinds need a fixture.
 5. **Revision locality** - a value differing between two cutoffs outside section
    6.1's conservative bound, which would mean the dependency is wider than the
-   derivation allows. Downstream columns within the bound are expected to
-   differ and must not fail this detector.
+   derivation allows. Cells inside the bound *may* differ and must never fail
+   this detector, since the bound is a superset rather than a prediction.
 6. **Future-value escape** - a supported accessor returning a value beyond the
    invoking pulse, in dense and availability-aware execution.
 7. **Backward carry** - a cell filled from a later observation, in any policy,
    at any age, even when that observation is knowable at `t`.
-8. **Age and interval violation** - a carried value exceeding the declared age
-   limit, or crossing an accepted inactive interval.
+8. **Age and barrier violation** - a carried value exceeding the declared age
+   limit, or crossing any carry barrier, or appearing at all after a knowable
+   terminal assertion.
 9. **Observation suppression** - a real observation inside an accepted inactive
    interval being dropped rather than delivered (section 4.4).
 10. **Input admission** - a window computed when a declared required field is
@@ -744,6 +856,7 @@ An implementation is acceptable only with detectors that fail on:
     or source age is absent or wrong; a disabled operation taking effect; or
     enabling one operation enabling the other. No treatment is inferred from
     `NA`.
+    Also: an output filled outside section 5.7's single eligible category.
 12. **Strict/padded confusion** - a strict artifact satisfying a padded request
     or the reverse; and strict outputs changing where inputs and policy are
     unchanged.
@@ -773,9 +886,10 @@ Accept, or revise the section 1 table. On acceptance:
    certification fixtures encode narrowing. It is a prerequisite for section 10,
    because what counts as a session determines where carry is possible.
 2. Run the section 10 checkpoint, all four parts, against the single failure
-   criterion. Part (d) is corrected in v6 and needs the indicator window
-   dependencies and the enabled carry stages as inputs; part (c) must be
-   answered before the carry default is fixed.
+   criterion. Part (d) asks only whether correct cutoff-specific values and
+   evidence can be produced within the constraints, with recalculation
+   granularity left to measurement; part (c) must be answered before the carry
+   default is fixed.
 3. Choose the section 8 representation with per-worker replication assumed
    (section 10), then measure rather than measuring first.
 
@@ -788,6 +902,20 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-26: v7. Supersedes v6. Keeps the corrected bound and the settled
+  clock semantics. Stops the checkpoint prescribing a recalculation method:
+  whole-series recalculation of an affected instrument during preparation is an
+  admitted candidate beside per-range invalidation, the bound constrains where
+  answers may change rather than where computation happens, and neither
+  candidate is costed here - the strict path invokes `series_fn` per window at
+  `ae040e7`, so whole-series vectorisation is a candidate capability rather than
+  an existing property. Completes the carry policy the amendment requires this
+  synthesis to settle: carry barriers now comprise accepted inactive intervals,
+  knowable price-scale corporate actions and knowable terminal assertions, and
+  section 5.7 states the single category of fillable missing output. Generalises
+  section 6.1's trigger set to barrier knowability, with the bound's arithmetic
+  unchanged because the mechanism is identical. Fixes detector 5 to say cells
+  inside the bound may differ, and section 5.5's readiness wording.
 - 2026-09-26: v6. Supersedes v5. Keeps the section 1 policy. Corrects section
   6's revision bound in two places: the criterion is whether a carry path
   crosses the newly knowable inactive interval rather than whether the
