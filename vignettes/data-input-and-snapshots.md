@@ -33,6 +33,7 @@ experiment-store contract.
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
+data("ledgr_demo_pit_inputs", package = "ledgr")
 ```
 
 ## Snapshot Lifecycle And Data Input
@@ -80,19 +81,207 @@ snapshot <- ledgr_snapshot_from_df(
 )
 ```
 
+## Point-In-Time Input Decision Map
+
+Bars are the only required input. Every other table makes a claim that
+bars alone cannot make: what instruments mean, which dates are sessions,
+which instruments belonged to a research universe, whether they could
+trade or still existed, and which evidenced economic events occurred.
+Choose only the families your research needs, but declare a session
+calendar and a stale-mark policy whenever availability is active.
+
+| Input | Purpose and scope | Required core columns or shape | Knowledge behavior | Capability | Constructor help |
+|----|----|----|----|----|----|
+| Bars | Observations on the physical instrument axis | `instrument_id`, `ts_utc`, OHLC; `volume` optional | Observation time is `ts_utc` | Dense or availability-aware snapshots | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
+| Instruments | Optional physical instrument master | `instrument_id`; descriptive and trading fields optional | Stable identity, not a PIT assertion | Currency, asset class, multiplier and tick size | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
+| Sessions | Expected dates under one `venue_id` | Every civil date; status plus open/close times when open | Open sessions known by open; closures before the civil day | Expected-session pulses and observation gaps | [`ledgr_facts_sessions()`](../reference/ledgr_facts.html) |
+| Membership intervals | Assertions under one `universe_id` | Instrument, half-open effective interval, member flag | Evidenced or explicitly assume-effective | Changing research membership | [`ledgr_facts_membership_intervals()`](../reference/ledgr_facts.html) |
+| Complete membership snapshots | Complete or partial sets under one `universe_id` | Effective time plus row IDs or a `members` list-column | Evidenced or explicitly assume-effective | Omission can mean non-membership only for a complete set | [`ledgr_facts_membership_snapshots()`](../reference/ledgr_facts.html) |
+| Trading status | Instrument-scoped ability to trade | Instrument, half-open interval, status, source | Evidenced or explicitly assume-effective; may be late | Halts and quotation-only periods | [`ledgr_facts_trading_status()`](../reference/ledgr_facts.html) |
+| Lifetime | Instrument-scoped existence evidence | Instrument, half-open interval, assertion | Evidenced or explicitly assume-effective; may be late | Active, inactive or unknown lifetime | [`ledgr_facts_lifetime()`](../reference/ledgr_facts.html) |
+| Equity corporate actions | Economic terms under the equity fact scope | Subtype, parent, completeness, provenance; terms are conditional and validated | Carries entitlement, effective, knowledge and payment clocks separately | Cash settlement and explicit unsupported dispositions | [`ledgr_facts_equity_corporate_actions()`](../reference/ledgr_facts.html) |
+
+Constructor help owns the exhaustive optional-column contract. Three
+rules cut across every row:
+
+- identifiers stay stable for the history being sealed;
+- timestamps are whole-second UTC instants, even when sessions begin as
+  local civil dates and wall times;
+- knowledge is declared per family. It is not universally required to
+  precede effectiveness: non-session facts may become knowable later,
+  while session facts obey the stricter rule in the table.
+
+The scopes are related but not interchangeable.
+
+<div class="ledgr-diagram ledgr-input-entities">
+
+```mermaid
+flowchart LR
+  I[Physical instrument master]
+  B[Bars by instrument]
+  V[Venue scope: sessions]
+  U[Universe scope: membership]
+  S[Instrument scope: status and lifetime]
+  C[Equity scope: corporate actions]
+  P[Sealed snapshot]
+  R[Availability-aware run]
+  C -- parent and optional recipient --> I
+  U -- member identifiers --> I
+  B --> P
+  I --> P
+  V --> P
+  U --> P
+  S --> P
+  C --> P
+  P --> R
+```
+
+</div>
+
+Corporate-action parent and optional recipient identifiers resolve
+against the physical instrument master, not against membership in a
+research universe. A security can therefore be physically known without
+being an eligible member.
+
+### One Composable Bundle
+
+`ledgr_demo_pit_inputs` is plain data, not a prebuilt snapshot. Its New
+York calendar, matching session-close bars, instrument master and five
+fact inputs travel together; they are not a fact overlay for an
+unrelated observation panel. The case manifest locates a weekday
+closure, an open-session observation gap, a delisting, a halt and a cash
+dividend.
+
+``` r
+pit <- ledgr_demo_pit_inputs
+names(pit)
+```
+
+    [1] "bars"              "instruments"       "sessions"          "membership"
+    [5] "lifetime"          "trading_status"    "corporate_actions" "recipe"
+    [9] "cases"
+
+``` r
+pit$cases
+```
+
+                     type instrument_id       date
+    1       venue_closure          <NA> 2020-01-06
+    2 missing_observation       DEMO_04 2020-01-09
+    3           delisting       DEMO_01 2020-01-14
+    4                halt       DEMO_02 2020-01-03
+    5       cash_dividend       DEMO_03 2020-01-10
+
+The recipe carries the scope and knowledge choices needed by the public
+constructors. The small `constructor_args()` helper removes only the
+recipe’s inspectable `enabled` marker; it does not rewrite a fact row.
+
+``` r
+constructor_args <- function(name) {
+  args <- pit$recipe$constructors[[name]]
+  args[names(args) != "enabled"]
+}
+
+session_facts <- do.call(
+  ledgr_facts_sessions,
+  c(list(df = pit$sessions), constructor_args("sessions"))
+)
+membership_facts <- do.call(
+  ledgr_facts_membership_snapshots,
+  c(list(df = pit$membership), constructor_args("membership"))
+)
+lifetime_facts <- do.call(
+  ledgr_facts_lifetime,
+  c(list(df = pit$lifetime), constructor_args("lifetime"))
+)
+status_facts <- do.call(
+  ledgr_facts_trading_status,
+  c(list(df = pit$trading_status), constructor_args("trading_status"))
+)
+corporate_action_facts <- ledgr_facts_equity_corporate_actions(
+  pit$corporate_actions
+)
+pit_facts <- ledgr_facts(
+  session_facts,
+  membership_facts,
+  lifetime_facts,
+  status_facts,
+  corporate_action_facts
+)
+```
+
+Pass those objects through the ordinary public workflow without
+filtering rows or rewriting timestamps.
+
+``` r
+pit_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_pit_demo.duckdb"))
+pit_snapshot <- ledgr_snapshot_from_df(
+  pit$bars,
+  instruments_df = pit$instruments,
+  facts = pit_facts,
+  db_path = pit_path,
+  snapshot_id = "pit_demo_snapshot",
+  price_basis = pit$recipe$price_basis
+)
+pit_snapshot_id <- pit_snapshot$snapshot_id
+ledgr_snapshot_close(pit_snapshot)
+
+pit_snapshot <- ledgr_snapshot_open(
+  pit_path,
+  pit_snapshot_id,
+  verify = TRUE
+)
+flat_strategy <- function(ctx, params) ctx$flat()
+pit_experiment <- ledgr_experiment(
+  pit_snapshot,
+  flat_strategy,
+  universe = ledgr_universe_members(pit$recipe$scopes$universe_id),
+  valuation_policy = ledgr_valuation_stale(2),
+  cost_model = ledgr_cost_zero()
+)
+pit_run <- ledgr_run(pit_experiment, run_id = "pit-demo-run")
+pit_completion <- ledgr_run_completion(pit_run)
+unlist(pit_completion[c("completion_status", "complete_performance")])
+```
+
+       completion_status complete_performance
+                  "DONE"               "TRUE"
+
+The verified reopen proves the sealed artifact can stand on its own. The
+`DONE` result proves the same bundle is executable; it does not imply
+that its flat strategy exercised every teaching event economically.
+
 After snapshot creation, store operations take `snapshot`, not
 `db_path`. In a new R session, recover the handle with
 `ledgr_snapshot_open(db_path, snapshot_id)`.
 
 If your market data starts in CSV, seal the CSV into the same kind of
-durable store. The CSV must contain `instrument_id`, `ts_utc`, `open`,
-`high`, `low`, and `close`; `volume` is optional. ledgr imports only
-those canonical bar columns. Other CSV columns are ignored and do not
-become part of the sealed snapshot or its hash.
+durable store. `ledgr_snapshot_from_csv()` is the file-input form of
+`ledgr_snapshot_from_df()`: one contract, two input types. Both require
+`instrument_id`, `ts_utc`, `open`, `high`, `low`, and `close`, with
+`volume` optional. ledgr imports only those canonical bar columns. Other
+columns are ignored and do not become part of the sealed snapshot or its
+hash. `ts_utc` accepts a date-only value, an ISO 8601 UTC datetime with
+a trailing `Z`, and the same datetime without the `Z`.
 
 ``` r
 snapshot <- ledgr_snapshot_from_csv(
   "data/daily_bars.csv",
+  db_path = "artifacts/ledgr_store.duckdb",
+  snapshot_id = "eod_2019_h1"
+)
+```
+
+Instrument metadata and point-in-time facts take the same arguments they
+take on the data-frame adapter. Supply instruments as a second file with
+`instrument_id` and the optional `symbol`, `currency`, `asset_class`,
+`multiplier`, and `tick_size` columns; without it, ledgr generates
+instruments from the ids the bars carry.
+
+``` r
+snapshot <- ledgr_snapshot_from_csv(
+  "data/daily_bars.csv",
+  instruments_csv_path = "data/instruments.csv",
   db_path = "artifacts/ledgr_store.duckdb",
   snapshot_id = "eod_2019_h1"
 )
@@ -318,6 +507,8 @@ has it open.
 ## Cleanup
 
 ``` r
+close(pit_run)
+ledgr_snapshot_close(pit_snapshot)
 ledgr_snapshot_close(snapshot)
 ```
 
