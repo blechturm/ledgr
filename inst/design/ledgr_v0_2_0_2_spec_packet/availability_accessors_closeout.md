@@ -1,9 +1,8 @@
 # Cut 9 Closeout: Availability And Evidence Accessors
 
-**Status:** Agent-provisional. The first Type 1 close review returned
-`CHANGES_REQUIRED`; its evidence correction is implemented, but the exact
-post-correction fast timing record is red, so focused re-review is not yet
-requested.
+**Status:** Agent-provisional; focused Type 1 re-review requested. The first
+review returned `CHANGES_REQUIRED`, its evidence correction is implemented,
+and accepted Workstream 19 restored the unchanged fast-profile gate.
 
 **Implementation range:** `5373433..eec4458` on
 `codex/ws16-v0.2.1.0`. The range contains one commit per ticket, three
@@ -133,6 +132,15 @@ rejected that median against the 90-second bound. The new LTB-0067 witness took
 blocks also moved. This record is red and is not replaced by the earlier green
 observations.
 
+Workstream 19 subsequently changed only test selection and two bounded test
+fixtures. Its accepted final ordinary record on the current tree passed 453 of
+453 fast blocks in 79.46, 79.72 and 79.23 seconds, median 79.46, and the
+independent checker passed against the unchanged 90-second bound. Its review
+profile still executed the Workstream 16 review claims. That repair makes this
+workstream reviewable again; it is not retroactive evidence that Workstream 16
+caused the timing improvement, and the red 102.94 / 103.81 / 104.02 record
+remains part of this closeout.
+
 The test audit did not remove or move any oracle. LTB-0067's four durable runs
 cover distinct claims: warning multiplicity, output identity, plane-only
 silence and fixed-small-access silence. Two pulses are the minimum for the
@@ -157,6 +165,7 @@ resume-path optimization LDG-2820.
 ## Governance
 
 One review invocation over eight completed tickets returned
-`CHANGES_REQUIRED`, 0.125 against the 0.5 gate. A focused correction review
-would make the ratio 2/8, 0.250, but is not requested while the exact timing
-record is red.
+`CHANGES_REQUIRED`, 0.125 against the 0.5 gate. This focused correction review
+makes the ratio 2/8, 0.250. It rechecks the corrected evidence boundary and
+the now-green current-tree gate; it does not reopen already verified accessor
+semantics or claim Workstream 19's maintenance gain for this cut.
