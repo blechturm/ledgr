@@ -1,14 +1,7 @@
-# RFC Synthesis v5: Point-in-Time Historical Projection With Missing-Data Policy
+# RFC Synthesis v6: Point-in-Time Historical Projection With Missing-Data Policy
 
-**Status: SUPERSEDED 2026-09-26** by
-[synthesis v6](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v6.md),
-after a Type 2 review required revision. Its policy is carried forward; its
-section 6 revision bound was wrong in two places and its required-field rule
-conflated input admission with output availability. Retained as cycle history;
-it binds nothing.
-
-**Status (original):** Decision synthesis, superseding
-[synthesis v4](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v4.md),
+**Status:** Decision synthesis, superseding
+[synthesis v5](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v5.md),
 which required revision. Incorporates the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
 Decisions bind on maintainer acceptance.
@@ -17,13 +10,14 @@ Decisions bind on maintainer acceptance.
 **Baselines:** design `491c4ed`; implementation `ae040e7`. Claims are marked
 verified by reading, verified by execution, or open.
 
-**What changed from v4.** v4 proposed a workable policy and attached a false
-architectural claim to it: that fixing the feature session axis removes the
-knowledge clock from the numbers. It does not, and v4's own carry rules are why
-(section 5.2). Section 6 is new and replaces that claim with a precise statement
-of where values can change with the request cutoff, which turns out to be a
-single identifiable channel. Three further v4 claims cited implementation that
-does not support them. Section 3.2 records each correction.
+**What changed from v5.** The policy in section 1 is unchanged. v5's section 6
+derived the wrong revision bound twice over: its affected-cell criterion tested
+whether a column falls *inside* the newly knowable inactive interval rather than
+whether a carry *path* crosses it, and its forward reach used the carry age
+limit alone when the indicator window width and any enabled output-carry age
+extend it. Section 6 now states a conservative, derivable bound - confirmed in
+Type 2 review - and claims locality rather than efficiency. Three further v5
+statements are corrected in section 3.3.
 
 **What is not reopened.** The maintainer's product direction stands: the ML
 release ships simple carry-forward plus missingness information for prices and
@@ -47,7 +41,7 @@ Every row is a proposal for maintainer acceptance.
 | Which fields carry | `open`, `high`, `low`, `close`, each from its own latest admissible earlier value. **`volume` never carries.** | Requires a required-input admission rule the engine does not have today; today's window gate over-blocks and under-blocks (section 5.4). |
 | Readiness under carry | `stable_after` is satisfied on prepared inputs. No engine threshold on carried share. | After a gap or a resumption a *prepared* window suffices, not a window of real observations. "Ready" changes meaning and the contract must say so (sections 5.5 and 7). |
 | Age clock | Venue open sessions from the carried value's own source time, stated explicitly. | Independent of `ledgr_valuation_stale(max_sessions)`; repeated carry does not refresh age (section 5.6). |
-| Values under a carry policy | Knowledge-dependent by construction. The padded view is separately identified and computed at the request cutoff. | The strict policy remains the only cutoff-invariant one. Revisions are bounded and identifiable, not a per-pulse rebuild (section 6). |
+| Values under a carry policy | Knowledge-dependent by construction. The padded view is separately identified and computed at the request cutoff. | The strict policy remains the only cutoff-invariant one. The dependency has a conservative, derivable bound; whether revised values can be prepared or updated efficiently within it is a checkpoint question (section 6). |
 
 Two rows carry the safety: the age limit and the inactive-interval prohibition.
 One row carries the architecture: the last.
@@ -159,6 +153,44 @@ narrowing *across inactivity*, because section 5.2 forbids exactly that carry,
 so v4's lead argument for gating fails and section 4.3 no longer makes it. And
 enabling output carry cannot promise a dense series; section 5.3 says what it
 does promise.
+
+### 3.3 From synthesis v5
+
+**The affected-cell criterion was wrong in kind.** v5 section 6.1 defined the
+revisable set by whether a column falls inside the newly knowable inactive
+interval. Take Monday observed at 100 with Tuesday and Wednesday missing, and a
+later fact naming Tuesday alone as inactive. Wednesday's carry from Monday fills
+the span through Tuesday, so section 5.2 forbids it and Wednesday's value
+changes - yet Wednesday is outside the interval and a one-session indicator's
+window at Wednesday contains no Tuesday cell, so v5's set excluded it. That also
+made detectors 5 and 8 contradict each other on the same cell. The criterion is
+the carry path, and section 6.1 now states it that way.
+
+**The forward reach omitted the window width and the output-carry stage.** v5
+section 6.2 derived the affected column range from the asserted interval and the
+carry age limit alone. The carry age bounds which *inputs* are filled, not how
+far a filled input propagates: `width <- stable_after` and
+`window <- bars_df[seq.int(i - width + 1L, i), ]`
+(`R/features-engine.R:304,309`, verified) put an input at session `j` inside
+every window ending in `j .. j + W_f - 1`, so a twenty-session average ending at
+session 21 changes when a carried input at session 2 is invalidated under a
+five-session carry limit. Enabled output carry extends the reach again. Section
+6.1 derives the corrected bound.
+
+**Required-field completeness was equated with output availability.** v5 section
+5.4 and its contract draft said a window is unavailable "when and only when" a
+declared field is unavailable. That is wrong in both directions: readiness
+returns all-`NA` when the series is shorter than the window
+(`R/features-engine.R:306`, verified) with every field present, and enabled
+output carry can deliver a value where the calculation was unavailable.
+Sections 5.4 and 7 now state the rule as input admission before calculation,
+with readiness, calculation validity and output carry as separate later stages.
+
+**Two smaller corrections.** v5 section 5.5 again said resumption waits for real
+observations, after v4 was corrected for the same thing; it does not, because
+the first print at or after resumption becomes a new admissible source. And v5
+section 5.1 called the gap query non-blocking while section 13 placed it inside
+the sequence preceding a spec cut; section 13 now runs it in parallel.
 
 ## 4. The feature session axis
 
@@ -284,8 +316,9 @@ carries availability fact families, so it is not answerable by reading here. The
 measurement that should set it is the distribution of run lengths of missing
 expected sessions, split by whether they sit before the first observation,
 inside the active span, inside an accepted inactive interval, or after the last
-observation. That is a query, not a spike, and it tunes the number rather than
-gating the release.
+observation. That is a query, not a spike. It tunes the number and
+blocks nothing: section 13 runs it in parallel with acceptance and the
+checkpoint.
 
 Rejected alternative: unbounded carry. Default-on and unlimited is the one
 combination where a single stale price can propagate through a whole window with
@@ -345,13 +378,21 @@ a volume-dependent indicator is not stopped by missing volume, and whether it
 returns `NA` depends on its own callback.
 
 So this section's promise requires an indicator to **declare its required input
-fields**, the window gate to test exactly those fields, and certification to
-verify that a declared-field indicator returns `NA` when and only when one of
-its declared fields is unavailable. Without that rule, "volume never carries"
-does not imply "volume-dependent indicators are `NA` across gaps". Naming the
-rule is a synthesis decision; its shape - a declaration on the indicator
-definition alongside `gap_contract`, or inference from the callback - is not
-decided here.
+fields** and the window gate to test exactly those fields. The rule is **input
+admission before calculation**, and it does not describe output availability.
+Readiness still returns all-`NA` when the series is shorter than the window
+(`R/features-engine.R:306`, verified) with every field present. Calculation
+validity keeps its own handling, since
+`ledgr_normalize_feature_scalar_output()` aborts on non-numeric and non-finite
+results (`:239-246`, verified). And any permitted output carry applies after
+calculation and can deliver a value where the calculation was unavailable. Input
+admission, readiness, calculation validity and output carry are four stages and
+certification tests them separately; an error is never converted into a fillable
+gap. Without the admission rule, "volume never carries" does not imply
+"volume-dependent indicators are `NA` across gaps". Naming the rule is a
+synthesis decision; its shape - a declaration on the indicator definition
+alongside `gap_contract`, or inference from the callback - is not decided
+here.
 
 ### 5.5 Readiness is satisfied on prepared inputs, with no engine threshold
 
@@ -368,9 +409,10 @@ Two consequences to state rather than discover. `stable_after` currently
 promises that many real observations and under carry it promises that many
 prepared inputs; section 7 writes that into the contract. And after a gap or a
 resumption a prepared window suffices, so a value appears as soon as carry can
-complete the window - not after a full window of real observations. Under
-section 5.2 that does not apply across an accepted inactive interval, where the
-wait is for real observations.
+complete the window - never after a full window of real observations. Section
+5.2 forbids carrying *across* an accepted inactive interval, not carrying after
+one: once a real observation appears at or after the resumption it becomes a new
+admissible source, and later gaps carry from it normally.
 
 ### 5.6 The age clock
 
@@ -386,43 +428,73 @@ permission.
 
 ## 6. Values under a carry policy depend on the request cutoff
 
-This section replaces v4's invariance claim.
+This section replaces v4's invariance claim and corrects the bound v5 derived
+for it.
 
-### 6.1 The statement
+### 6.1 The statement, and the bound
 
 Under the strict policy with the section 4.2 axis, a feature value is a function
 of sealed bars and the venue axis, and does not change with the request cutoff
-`t`. **Under a carry policy it does**, because section 5.2 conditions carry on
-facts that carry knowledge times.
+`t`. **Under a carry policy it does**, because sections 5.2 and 5.3 condition
+carry on facts that carry knowledge times.
 
-The dependence is not diffuse. With the axis fixed and observations always
-admissible (section 4.4), bar presence does not vary with `t`, and age counts
-sessions on a fixed axis so it does not vary with `t` either. Exactly one input
-varies: whether an interval is *accepted as inactive* at `t`.
+With the axis fixed and observations always admissible (section 4.4), bar
+presence does not vary with `t`, and age counts sessions on a fixed axis so it
+does not vary with `t` either. Exactly one input varies: whether an interval is
+*accepted as inactive* at `t`.
 
-So the set of cells whose value can differ between cutoffs `t1 < t2` is exactly:
+**The criterion is the carry path, not the destination.** A cell at session `s`
+is filled from `src(s)`, the latest earlier session holding a real observation,
+which fills the span `(src(s), s]`. A newly knowable inactive interval forbids
+that carry when the span *crosses* the interval, so a destination lying outside
+the interval can still lose its value.
 
-> the columns whose window contains a carried cell falling inside an interval
-> asserted `known_inactive` by a fact whose `knowledge_time` lies in
-> `(t1, t2]`.
+**The bound.** Write `[a, b]` for the venue sessions of the newly knowable
+inactive interval, `A_in` for the declared maximum input carry age, `W_f` for a
+feature's `stable_after`, and `A_out` for the declared maximum output carry age.
+A disabled stage contributes zero. For one instrument and one feature, every
+cell whose delivered value can differ between cutoffs `t1 < t2` lies within
 
-Everything else is identical between the two views. This is a bounded,
-enumerable set derived from the lifetime facts' knowledge times, not a general
-statement that history may change.
+> `[a, b + A_in + W_f - 1 + A_out]`
 
-### 6.2 What follows for preparation
+derived as follows. Carry into `s` is newly forbidden only if `(src(s), s]`
+intersects `[a, b]`, which needs `s >= a` and `src(s) + 1 <= b`; with
+`s - src(s) <= A_in` that gives `s <= b - 1 + A_in`, so affected inputs lie in
+`[a, b + A_in]`. An input at `j` enters every window ending in
+`j .. j + W_f - 1` (`R/features-engine.R:304,309`, verified), which extends the
+range by `W_f - 1`. An enabled output carry can then propagate a changed output
+a further `A_out` sessions.
 
-Revision does not require rebuilding anything at every pulse. It requires that
-preparation be *invalidatable over an identifiable range*: when a lifetime fact
-becomes knowable, the affected instrument and its affected column range are
-derivable from that fact's asserted interval and the carry age limit, which
-bounds how far forward a carried value from inside the interval can reach. That
-is an indexed invalidation, and section 10's failure criterion still holds: a
-per-pulse reconstruction of instrument-by-boundary segments stops the
-checkpoint, while bounded indexed retrieval and incremental update do not.
+**Output carry can be forbidden on its own.** With price padding disabled and
+output carry enabled, no input changes, yet a carried output whose own path
+crosses the interval is still forbidden. The bound covers that case because
+`A_in` is then zero, but the mechanism is separate and the checkpoint must treat
+it separately.
 
-Whether that invalidation can be prepared once per run is now an explicit
-checkpoint part (section 10(d)). This document does not assert that it can.
+**Scope of the derivation.** It holds for features whose entire input dependency
+is bounded by `W_f`, which is what `gap_contract = "strict_window"` commits a
+definition to (`contracts.md:799-801`). It does not automatically cover
+recursive or fitted methods, whose dependency is not a finite window; those
+arrive with the deferred fitted-preprocessing work and must derive their own
+bound.
+
+### 6.2 What this establishes, and what it does not
+
+The dependency has a conservative, derivable bound. The checkpoint must
+establish whether revised values and their evidence can be prepared or updated
+efficiently within that bound.
+
+That is deliberately weaker than v5 claimed. A derivable range says where
+recalculation may be needed. It does not say what recalculation costs, how
+revised values are produced, or whether preparation stays practical - and a long
+inactive interval can put most of an instrument's history in range, at which
+point being bounded stops being a useful property. Locality is not efficiency.
+
+Section 10's failure criterion still applies to whatever mechanism is proposed:
+preparation before execution with bounded indexed retrieval or incremental
+update is compatible, and reconstructing instrument-by-boundary segments at a
+pulse is not. Whether any mechanism meets it is checkpoint part (d), and this
+document does not assert that one does.
 
 ### 6.3 What follows for identity and delivery
 
@@ -452,10 +524,12 @@ valuation marks never enter feature computation.
 
 > Feature windows count venue open sessions. An observation is admissible
 > wherever it exists, including inside an accepted `known_inactive` interval. An
-> indicator declares the input fields it requires, and a window is unavailable
-> when and only when one of those declared fields is unavailable in it. Under
-> the strict policy any missing required input makes the affected window
-> `NA_real_`. Under a declared carry policy a required input may instead be
+> indicator declares the input fields it requires, and input admission tests
+> exactly those fields before calculation. Under the strict policy any missing
+> required input makes the affected window `NA_real_`. Readiness and
+> calculation-validity rules are unchanged and apply after admission, and any
+> permitted output carry applies after calculation; an error is never a fillable
+> gap. Under a declared carry policy a required input may instead be
 > satisfied by a carried earlier value of the same field for the same stable
 > instrument, within the declared maximum carry age and never across an accepted
 > `known_inactive` interval, never from a later observation, and never for
@@ -573,13 +647,15 @@ indexed before the fold alongside (a) and (b). Existing prepared doubles alone
 do not establish this. Default-on means every research run pays whatever this
 costs, so it is answered before the default is fixed.
 
-**(d) Numerical revision, new in v5.** Whether the bounded invalidation of
-section 6.2 can be prepared once per run: given a lifetime fact's knowledge
-time, asserted interval and the declared carry age limit, can the affected
-instrument and column range be derived and its prepared values invalidated by
-index, without reconstructing segments at a pulse. This part exists because
-values are knowledge-dependent under the proposed policy and v4 wrongly claimed
-they were not.
+**(d) Numerical revision, new in v5 and corrected in v6.** Whether revised
+values and their evidence can be prepared or updated efficiently within section
+6.1's conservative bound. Its inputs are the asserted interval, the input carry
+age, each feature's window width and the output carry age where enabled, so this
+part needs the indicator window dependencies and the enabled carry stages
+alongside the lifetime facts, and it must treat a forbidden output carry as its
+own mechanism. A derivable range is not a cost result: a long inactive interval
+can put most of an instrument's history in range, and this part must say what
+happens then.
 
 **The single failure criterion.** Preparation before execution, with bounded
 indexed retrieval or incremental cursor advance, is compatible. Reconstructing
@@ -635,14 +711,15 @@ An implementation is acceptable only with detectors that fail on:
    anything.
 3. **Late-knowledge omission** - a fact effective at `s` and knowable at `t` not
    appearing in column `s`. The decision is bidirectional.
-4. **Revision correctness** - a carried cell inside an interval asserted
-   inactive by a fact knowable at `t` still carrying; and, in the other
-   direction, a cell losing its carry because of a fact *not* knowable at `t`.
-   Both halves are required, and section 6.1's enumerated set is the fixture's
-   basis.
-5. **Revision boundedness** - a value differing between two cutoffs outside
-   section 6.1's set, which would mean the dependence is not confined to the
-   inactivity condition.
+4. **Revision correctness** - a carry whose path crosses an interval asserted
+   inactive by a fact knowable at `t` still delivering a value, including where
+   the destination lies outside that interval; and, in the other direction, a
+   cell losing its carry because of a fact *not* knowable at `t`. Both halves
+   are required, and input carry and output carry are both in scope.
+5. **Revision locality** - a value differing between two cutoffs outside section
+   6.1's conservative bound, which would mean the dependency is wider than the
+   derivation allows. Downstream columns within the bound are expected to
+   differ and must not fail this detector.
 6. **Future-value escape** - a supported accessor returning a value beyond the
    invoking pulse, in dense and availability-aware execution.
 7. **Backward carry** - a cell filled from a later observation, in any policy,
@@ -651,9 +728,10 @@ An implementation is acceptable only with detectors that fail on:
    limit, or crossing an accepted inactive interval.
 9. **Observation suppression** - a real observation inside an accepted inactive
    interval being dropped rather than delivered (section 4.4).
-10. **Required-field admission** - a window returning a value when a declared
-    required field is unavailable, or returning `NA` because an undeclared
-    field is unavailable (section 5.4).
+10. **Input admission** - a window computed when a declared required field is
+    unavailable, or refused because an undeclared field is unavailable; and a
+    readiness outcome or a calculation error being reported as a field-admission
+    outcome or converted into a fillable gap (section 5.4).
 11. **Silent treatment** - a delivered value whose carried status, carried count
     or source age is absent or wrong; a disabled operation taking effect; or
     enabling one operation enabling the other. No treatment is inferred from
@@ -687,18 +765,35 @@ Accept, or revise the section 1 table. On acceptance:
    certification fixtures encode narrowing. It is a prerequisite for section 10,
    because what counts as a session determines where carry is possible.
 2. Run the section 10 checkpoint, all four parts, against the single failure
-   criterion. Part (d) is new and part (c) must be answered before the carry
-   default is fixed.
+   criterion. Part (d) is corrected in v6 and needs the indicator window
+   dependencies and the enabled carry stages as inputs; part (c) must be
+   answered before the carry default is fixed.
 3. Choose the section 8 representation with per-worker replication assumed
    (section 10), then measure rather than measuring first.
-4. Run the section 5.1 gap-distribution query once an availability-aware ingest
-   exists, to tune the age limit.
 
 Only then consider a spec cut. No comparative spike is chartered and no spec
-packet is written here. LDG-2864 and LDG-2850 proceed independently.
+packet is written here.
+
+Not blocking any of the above: run the section 5.1 gap-distribution query once
+an availability-aware ingest exists, to tune the age limit. It is advisory and
+runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-26: v6. Supersedes v5. Keeps the section 1 policy. Corrects section
+  6's revision bound in two places: the criterion is whether a carry path
+  crosses the newly knowable inactive interval rather than whether the
+  destination sits inside it, and the forward reach is
+  `b + A_in + W_f - 1 + A_out` rather than the carry age alone, since an input
+  enters every window ending within `W_f - 1` sessions of it and an enabled
+  output carry propagates further. Records that a forbidden output carry is its
+  own mechanism, limits the derivation to features whose input dependency is
+  bounded by `W_f`, and replaces the claim that revision is an indexed
+  invalidation with the weaker and accurate claim that the dependency is local
+  while its cost is a checkpoint question. Restates the required-field rule as
+  input admission before calculation, with readiness, calculation validity and
+  output carry as separate stages. Fixes the resumption statement and makes the
+  gap query's advisory status consistent.
 - 2026-09-26: v5. Supersedes v4. Withdraws v4's claim that a fixed session axis
   removes the knowledge clock from the numbers, and replaces it with section 6:
   values under a carry policy depend on the request cutoff through the
