@@ -116,6 +116,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_signal",
     "ledgr_signal_strategy",
     "ledgr_sim_bars",
+    "ledgr_sim_pit_inputs",
     "ledgr_snapshot_close",
     "ledgr_snapshot_create",
     "ledgr_snapshot_from_csv",
