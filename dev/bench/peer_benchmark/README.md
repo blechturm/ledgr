@@ -108,13 +108,14 @@ The feature axes and NA masks are exact. Public TTR and built-in values pass
 the registered `1e-8` tolerance over 1,260,000 cells, with maximum absolute
 residual `7.567e-10`; equity, fills and realized trades are exact. Timing does
 not identify an indicator-source cost. The promoted TTR-first warm clocks are
-53.02 seconds for public TTR and 68.33 for built-in; a registered
-built-in-first companion reports 65.50 and 69.23 seconds. The second-launched
-row is slower in both orders and the sign reverses. The old 9.57-second gap is
-therefore recorded as order/load-confounded, consistent with the earlier
-six-permutation attribution spike. The boundary correction is not claimed as
-a package speedup. The sampled process tree peaked at 1,715.7 MiB across
-1,036 one-second samples.
+53.02 seconds for public TTR and 68.33 for built-in. The six-permutation
+attribution spike, not this fixed-order peer pair, establishes that every
+source contrast changes direction by process position and that the old
+9.57-second gap is order-confounded. A later built-in-first diagnostic is
+excluded because its command was not recorded and its first-position clock
+does not reproduce the registered attribution cell. The boundary correction
+is not claimed as a package speedup. The sampled process tree peaked at
+1,715.7 MiB across 1,036 one-second samples.
 
 ## Strategy Semantics
 

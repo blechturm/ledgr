@@ -1,8 +1,9 @@
 # Cut 10 Closeout: Indicator Source Parity And Timing Attribution
 
-**Status:** Agent-provisional; awaiting the one planned Type 1 close review.
+**Status:** Corrected after the focused Type 1 re-review; awaiting maintainer
+acceptance.
 
-**Implementation through LDG-2837:** `010049d..001ece3` on
+**Implementation through LDG-2838:** `010049d..664a127` on
 `codex/ws16-v0.2.1.0`.
 
 | Ticket | Commit | Claim and detector |
@@ -12,6 +13,7 @@
 | LDG-2835 | `5547c3a` | LCL-0074 / LTB-0074 |
 | LDG-2836 | `b47b83f`, `c7d936d`, `f4c0ba5` | LCL-0075 / LTB-0075 and the promoted peer record |
 | LDG-2837 | `001ece3` | documentation checks added to LTB-0073 and LTB-0074 |
+| LDG-2838 | `664a127` | closeout and packet reconciliation |
 
 ## Result In One Sentence
 
@@ -33,11 +35,12 @@ snapshot identity and an empty feature cache.
 | public TTR SMA | 51.295 / 0.990 s | 46.700 / 0.020 s | 45.225 / 0.730 s |
 
 Native minus public TTR was -0.660, +5.040 and +1.730 seconds by position.
-The first-position built-in and public means differed by 0.660 seconds, not
-9.57. No pair kept one direction, exceeded both one second and five percent,
-and cleared the largest within-position spread. Rprof localized no material
-source-specific lane. The spike therefore authorized no indicator
-optimization.
+Its position-2 cell exceeded the largest 4.16-second within-position spread,
+while position 1 reversed direction. Position 3 remained positive but was only
+3.8 percent and below the 4.16-second spread. The other two comparisons also
+failed parts of the threshold conjunction. No pair passed every registered
+condition. Rprof localized no material source-specific lane, so the spike
+authorized no indicator optimization.
 
 All 18 runs produced the same 1,260,000-cell feature axis and 6,500-cell NA
 mask, 1,260 equity rows, 68,201 fills and 33,948 realized trades. Native versus
@@ -87,8 +90,9 @@ All six published TTR-labelled rows now construct features through exported
 `ledgr_ind_ttr()`; built-in rows use exported `ledgr_ind_sma()`. The private
 wrapper is absent from published claims. LTB-0075 guards that source boundary,
 runs the durable built-in and public TTR rows in separate child processes in
-both launch orders, requires equal R and library metadata, and compares their
-feature and economic outputs.
+both launch orders, requires non-null equal R and library metadata, asserts a
+child PID distinct from the parent, compares the helper fingerprints with
+direct public constructors, and compares feature and economic outputs.
 
 The promoted record `peer_benchmark_record_20260926T080725Z` was produced from
 `c7d936d` under R 4.6.1, TTR 0.24.4, DuckDB 1.5.2 and collapse 2.1.8. The
@@ -101,10 +105,12 @@ published warm research clocks are:
 | public canonical sweep | 32.31 s | 29.85 s |
 | compiled spot-FIFO sweep | 17.60 s | 14.71 s |
 
-The built-in-first companion recorded 65.50 seconds for built-in and 69.23
-for public TTR; the second child was slower in both launch orders and the
-source ranking reversed. These are corrected public boundaries, not evidence
-that one source implementation is faster.
+A later built-in-first diagnostic recorded 65.50 seconds for built-in and
+69.23 for public TTR, but its command was not recorded and its first-position
+clock did not reproduce the registered attribution cell. It is excluded from
+the report and supports no source conclusion. The six-permutation spike alone
+carries the order-confounded finding. These are corrected public boundaries,
+not evidence that one source implementation is faster.
 
 ## Documentation And Failure Sensitivity
 
@@ -116,10 +122,15 @@ and compares it with the executable oracle.
 
 The indicator article shows built-in, exported TTR, and custom SMA over that
 gap and publishes the closed support matrix. LTB-0074 derives every matrix
-status from the constructors. Mutating built-in EMA and RSI from Unsupported
-to Supported caused the block to fail. The maintainer feature article records
-the same source-neutral boundary. All qmd sources were rendered to their
-tracked Markdown siblings, and documentation contracts passed.
+status from the constructors. Combined unsupported rows use `any()`, so one
+false certification changes the row. The bundle row constructs a real BBands
+bundle and tests all outputs; other TTR signatures are real WMA, runMean and
+noncanonical SMA constructors rather than one predicate sample. The literal
+predicate table and constructor matrix both include RSI at the matching
+two-session warmup. Certifying RSI or one BBands output produced two LTB-0074
+failures apiece. The maintainer feature article records the same source-neutral
+boundary. All qmd sources were rendered to their tracked Markdown siblings,
+and documentation contracts passed.
 
 ## Seven-Shape Walk
 
@@ -136,6 +147,15 @@ algorithm inside ledgr. Result frames manifest once at the benchmark boundary.
 No rowwise timestamp formatting, repeated JSON decode, full-table subset per
 id, quadratic validator or environment-held scalar buffer write was added.
 
+The one touched data-scale operation is `ledgr_projection_slice()` before
+feature persistence. A warm base-R probe over the release-shape 500-instrument by
+1,260-pulse projection with two features ran 20 batches of ten calls. Median
+per-call elapsed time was 0.029 seconds for the full axis and 0.014 seconds for
+a 630-pulse resume tail; the no-slice reference was below clock resolution.
+Ranges were 0.028 to 0.035 and 0.014 to 0.016 seconds. The spike and peer
+records set `persist_features = FALSE`, so this bounded touched-shape clock is
+reported separately and no end-to-end effect is attributed to it.
+
 ## Gates, Boundaries And Declined Work
 
 The exact LDG-2837 ordinary fast record in `.tmp/ws17-2837-fast` passed 453 of
@@ -149,6 +169,9 @@ without executable gap semantics; retention of a private wrapper in a peer
 claim; treating boundary correction as package speedup; and numerical parity
 claims across different formulas.
 
-The independent cut review is the first invocation. The requested close
-review is the second over six completed tickets, 2/6 = 0.333 against the 0.5
-gate. One correction round would make the honest count 3/6 = 0.500.
+The independent cut review is the first invocation. The initial close review
+is the second and returned five bounded evidence findings. The focused
+re-review is the third and found two residual detector or record errors, now
+corrected. The completed review count remains 3/6 = 0.500 against the gate; a
+fourth review would breach it. The corrections change no production behavior
+or promoted benchmark result and await maintainer acceptance.

@@ -358,6 +358,7 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   predicate_cases <- list(
     certified = list("SMA", "close", NULL, list(n = 2L), 2L, 2L, TRUE),
     wrong_function = list("EMA", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
+    wrong_rsi_function = list("RSI", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
     wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, 2L, FALSE),
     selected_output = list("SMA", "close", "value", list(n = 2L), 2L, 2L, FALSE),
     extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, 2L, FALSE),
@@ -375,19 +376,18 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   }
   testthat::expect_null(ledgr_ind_ttr("EMA", input = "close", n = 2L)$gap_contract)
   testthat::expect_null(ledgr_ind_ttr("RSI", input = "close", n = 2L)$gap_contract)
-  sma_bundle <- tryCatch(
-    ledgr_ind_ttr_outputs("SMA", input = "close", n = 2L),
-    error = identity
+  bbands_bundle <- ledgr_ind_ttr_outputs(
+    "BBands",
+    input = "close",
+    outputs = c("dn", "up"),
+    n = 2L
   )
-  if (inherits(sma_bundle, "error")) {
-    testthat::expect_s3_class(sma_bundle, "ledgr_invalid_args")
-  } else {
-    testthat::expect_true(all(vapply(
-      ledgr:::ledgr_indicator_bundle_indicators(sma_bundle),
-      function(indicator) is.null(indicator$gap_contract),
-      logical(1)
-    )))
-  }
+  testthat::expect_s3_class(bbands_bundle, "ledgr_indicator_bundle")
+  testthat::expect_true(all(vapply(
+    ledgr:::ledgr_indicator_bundle_indicators(bbands_bundle),
+    function(indicator) is.null(indicator$gap_contract),
+    logical(1)
+  )))
   contract_text <- paste(readLines(
     testthat::test_path("..", "..", "inst", "design", "contracts.md"),
     warn = FALSE
@@ -425,19 +425,24 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     requires_bars = 2L,
     gap_contract = "strict_window"
   )
-  bundle <- tryCatch(
-    ledgr_ind_ttr_outputs("SMA", input = "close", n = 2L),
-    error = identity
+  bundle <- ledgr_ind_ttr_outputs(
+    "BBands",
+    input = "close",
+    outputs = c("dn", "up"),
+    n = 2L
   )
-  bundle_supported <- if (inherits(bundle, "error")) {
-    FALSE
-  } else {
-    all(vapply(
-      ledgr:::ledgr_indicator_bundle_indicators(bundle),
-      function(indicator) identical(indicator$gap_contract, "strict_window"),
-      logical(1)
-    ))
-  }
+  bundle_supported <- any(vapply(
+    ledgr:::ledgr_indicator_bundle_indicators(bundle),
+    function(indicator) identical(indicator$gap_contract, "strict_window"),
+    logical(1)
+  ))
+  other_ttr <- list(
+    ledgr_ind_ttr("WMA", input = "close", n = 2L),
+    ledgr_ind_ttr("runMean", input = "close", n = 2L),
+    ledgr_ind_ttr("SMA", input = "close", n = 2L, stable_after = 3L),
+    ledgr_ind_ttr("SMA", input = "close", n = 2L, requires_bars = 3L),
+    ledgr_ind_ttr("SMA", input = "close", n = 2L, extra = TRUE)
+  )
   executable_support <- c(
     "Built-in SMA" = identical(ledgr_ind_sma(2L)$gap_contract, "strict_window"),
     "Built-in returns" = identical(
@@ -446,23 +451,31 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     ),
     "Custom bounded window" = identical(custom$gap_contract, "strict_window"),
     "Public TTR SMA" = identical(ttr_sma$gap_contract, "strict_window"),
-    "Built-in EMA or RSI" = all(vapply(
+    "Built-in EMA or RSI" = any(vapply(
       list(ledgr_ind_ema(2L), ledgr_ind_rsi(2L)),
       function(indicator) identical(indicator$gap_contract, "strict_window"),
       logical(1)
     )),
-    "TTR EMA or RSI" = all(vapply(
+    "TTR EMA or RSI" = any(vapply(
       list(
         ledgr_ind_ttr("EMA", input = "close", n = 2L),
-        ledgr_ind_ttr("RSI", input = "close", n = 2L)
+        ledgr_ind_ttr("RSI", input = "close", n = 2L),
+        ledgr_ind_ttr(
+          "RSI",
+          input = "close",
+          n = 2L,
+          requires_bars = 2L
+        )
       ),
       function(indicator) identical(indicator$gap_contract, "strict_window"),
       logical(1)
     )),
     "TTR output bundle" = bundle_supported,
-    "Other TTR signatures" = ledgr:::ledgr_ttr_strict_window_certified(
-      "SMA", "hl", NULL, list(n = 2L), 2L, 2L
-    )
+    "Other TTR signatures" = any(vapply(
+      other_ttr,
+      function(indicator) identical(indicator$gap_contract, "strict_window"),
+      logical(1)
+    ))
   )
   testthat::expect_identical(documented_support, executable_support)
 
@@ -589,6 +602,8 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
   )
 
   for (unsupported in list(
+    ledgr_ind_ema(2L),
+    ledgr_ind_rsi(2L),
     ledgr_ind_ttr("EMA", input = "close", n = 2L),
     ledgr_ind_ttr("RSI", input = "close", n = 2L)
   )) {
@@ -606,6 +621,23 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     testthat::expect_match(conditionMessage(error), unsupported$id, fixed = TRUE)
     testthat::expect_match(conditionMessage(error), "strict_window", fixed = TRUE)
   }
+
+  bundle_error <- tryCatch(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) stop("strategy must not execute"),
+      features = list(bundle),
+      valuation_policy = ledgr_valuation_stale(1),
+      cost_model = ledgr_cost_zero()
+    ),
+    error = identity
+  )
+  testthat::expect_s3_class(bundle_error, "ledgr_indicator_gap_unsupported")
+  testthat::expect_match(
+    conditionMessage(bundle_error),
+    "strict_window",
+    fixed = TRUE
+  )
 })
 
 testthat::test_that("strict scalar series and active identity contracts agree", {

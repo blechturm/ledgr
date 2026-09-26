@@ -494,6 +494,7 @@ peer_run_ledgr_child <- function(args) {
     risk_chain = peer_risk_none_model()
   ))
   result$metadata$fresh_process <- TRUE
+  result$metadata$child_pid <- Sys.getpid()
   result$metadata$indicator_source <- args$child_engine
   result$metadata$runtime <- peer_ledgr_runtime_metadata()
   saveRDS(result, args$result_path, version = 3L)

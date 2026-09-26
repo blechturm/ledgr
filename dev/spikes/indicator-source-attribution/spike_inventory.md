@@ -32,10 +32,13 @@ pooled in the decision.
 
 Native minus wrapper is -0.415, +3.505 and +1.420 seconds by position. Native
 minus public TTR is -0.660, +5.040 and +1.730 seconds. Wrapper minus public TTR
-is -0.245, +1.535 and +0.310 seconds. Every contrast changes sign, the minimum
-effect is below one second and five percent, and no contrast exceeds the
-largest within-position spread. The first-position native and wrapper means
-differ by only 0.415 seconds, not the historical 9.57 seconds.
+is -0.245, +1.535 and +0.310 seconds. Every contrast changes sign, and the
+minimum effect is below one second and five percent for all three comparisons.
+Only the native-minus-public position-2 cell exceeds the largest
+within-position spread. Position 1 reverses its direction; position 3 remains
+positive but is below five percent and the 4.16-second spread. No comparison
+passes the registered conjunction. The first-position native and wrapper
+means differ by only 0.415 seconds, not the historical 9.57 seconds.
 
 ## Output evidence
 

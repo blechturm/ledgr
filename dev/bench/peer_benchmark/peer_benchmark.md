@@ -55,11 +55,12 @@ records. Their feature axes and NA masks are exact; 1,260,000 numeric
 cells pass the existing `1e-8` tolerance with maximum absolute residual
 `7.567e-10`. Equity, fills and realized trades are exact. Timing does
 not identify a source effect: the promoted TTR-first record reports warm
-clocks of 53.02 and 68.33 seconds, while the registered built-in-first
-companion reports 65.50 and 69.23 seconds. The second-launched row is
-slower in both orders and the sign reverses. Together with the six-order
-attribution spike, that classifies the old 9.57-second chart gap as
-order/load-confounded rather than a package-speed difference.
+clocks of 53.02 and 68.33 seconds. The six-order attribution spike
+independently places every source in every process position twice; each
+contrast changes direction. That spike classifies the old 9.57-second
+chart gap as order-confounded rather than a package-speed difference. A
+later built-in-first diagnostic is excluded because its command was not
+recorded and its first-position clock did not reproduce the spike.
 
 > **Scope of this report**
 >
@@ -99,9 +100,8 @@ The old report always ran a private TTR wrapper before built-in SMA in
 one R process. That row order could not attribute its 9.57-second
 difference. This record replaces the wrapper with exported
 `ledgr_ind_ttr("SMA")` everywhere and runs the two durable rows in
-independent child processes. A companion run reverses their launch order
-at the same 500 by 1,260 shape. The companion is an attribution check,
-not another peer record.
+independent child processes. LTB-0075 also reverses their launch order
+on a small executable fixture; that detector is not another peer record.
 
 | Surface | Standard | Result | Max absolute residual | Max relative residual |
 |----|----|---:|---:|---:|
@@ -109,20 +109,23 @@ not another peer record.
 | feature NA mask | exact | PASS | 0 | 0 |
 | feature values | relative `all.equal()` tolerance `1e-8` | PASS | 7.567e-10 | 1.182e-13 |
 
-| Order          | Source         | Cold s | Warm s | Engine s |
-|----------------|----------------|-------:|-------:|---------:|
-| TTR first      | public TTR SMA |  60.82 |  53.02 |    47.44 |
-| TTR first      | built-in SMA   |  76.16 |  68.33 |    61.67 |
-| built-in first | built-in SMA   |  73.88 |  65.50 |    60.08 |
-| built-in first | public TTR SMA |  78.56 |  69.23 |    61.86 |
+| Order     | Source         | Cold s | Warm s | Engine s |
+|-----------|----------------|-------:|-------:|---------:|
+| TTR first | public TTR SMA |  60.82 |  53.02 |    47.44 |
+| TTR first | built-in SMA   |  76.16 |  68.33 |    61.67 |
 
-The second-launched row is slower in both orders, and the source ranking
-flips. The earlier six-permutation spike likewise found no structural
-source effect: its first-position means were 50.635 seconds for built-in
-SMA, 51.050 for the private wrapper and 51.295 for public TTR. The old
-9.57-second gap therefore did not reproduce as an indicator-source cost.
-The public-adapter correction is a measurement-boundary fix, not a
-package speedup.
+The six-permutation attribution spike carries the source conclusion. Its
+first-position means were 50.635 seconds for built-in SMA, 51.050 for
+the private wrapper and 51.295 for public TTR, and every pair changed
+direction by process position. The old 9.57-second gap therefore did not
+reproduce as an indicator-source cost.
+
+A later built-in-first diagnostic exists beside the promoted record, but
+its command was not recorded and its first-launched built-in row took
+65.50 seconds against the spike’s matching first-position observations
+of 50.530 and 50.740 seconds. It is not loaded by this report and
+supports no attribution claim. The public-adapter correction is a
+measurement-boundary fix, not a package speedup.
 
 ## Why parity comes before timing
 

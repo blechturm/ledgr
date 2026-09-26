@@ -95,6 +95,20 @@ testthat::test_that("[LTB-0075] peer SMA rows use public fresh-process boundarie
   reversed <- peer_stage_l_harness$peer_run_durable_ledgr_pair(
     path, 2L, 4L, 2836L, order = "builtin-first"
   )
+  for (pair in list(first, reversed)) {
+    for (kind in c("ttr", "builtin")) {
+      metadata <- pair[[kind]]$metadata
+      testthat::expect_true(isTRUE(metadata$fresh_process))
+      testthat::expect_type(metadata$runtime, "list")
+      testthat::expect_named(
+        metadata$runtime,
+        c("R", "platform", "library_paths", "packages")
+      )
+      testthat::expect_true(length(metadata$runtime$library_paths) > 0L)
+      testthat::expect_true(is.numeric(metadata$child_pid))
+      testthat::expect_false(identical(metadata$child_pid, Sys.getpid()))
+    }
+  }
   testthat::expect_identical(
     first$ttr$metadata$runtime,
     first$builtin$metadata$runtime
@@ -123,6 +137,28 @@ testthat::test_that("[LTB-0075] peer SMA rows use public fresh-process boundarie
   testthat::expect_true(feature_parity$na_mask_identical)
   testthat::expect_true(feature_parity$within_tolerance)
   testthat::expect_lte(feature_parity$max_relative, 1e-8)
+
+  public <- ledgr:::ledgr_feature_map_indicators(
+    peer_stage_l_harness$peer_public_ttr_features(2L, 4L)
+  )
+  expected <- list(
+    fast = ledgr_ind_ttr("SMA", input = "close", id = "fast", n = 2L),
+    slow = ledgr_ind_ttr("SMA", input = "close", id = "slow", n = 4L)
+  )
+  public_fingerprints <- vapply(
+    public,
+    ledgr_indicator_fingerprint,
+    character(1)
+  )
+  expected_fingerprints <- vapply(
+    expected,
+    ledgr_indicator_fingerprint,
+    character(1)
+  )
+  testthat::expect_identical(
+    unname(public_fingerprints),
+    unname(expected_fingerprints)
+  )
 })
 
 testthat::test_that("memory parity reference reports residuals and fails loudly", {
