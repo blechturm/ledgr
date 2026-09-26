@@ -710,13 +710,14 @@ Authority: the accepted decision synthesis
 `inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
 including its maintainer-requested usability amendment, the Type 1 final review
 at `4e65378` and its focused verification of that amendment, and maintainer
-acceptance on 2026-09-26. Eight tickets, LDG-2850 through LDG-2857, one
-workstream. The RFC artifacts are recorded on the v0.2.0.2 design branch; the
+acceptance on 2026-09-26. Nine tickets, LDG-2850 through LDG-2857 plus
+LDG-2864, one workstream. The RFC artifacts are recorded on the v0.2.0.2
+design branch; the
 two branches must converge before this cut opens.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 20 Strategy context surface | 2850-2857 | settled contract text; duplicate and dead name retirement; context-first entrances with bound alignment, membership projection and error families; empty-domain behavior; the bounded zero-weight sizing correction; one documented-surface gate; authoring examples and closeout | a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy |
+| 20 Strategy context surface | 2850-2857, 2864 | settled contract text; duplicate and dead name retirement; context-first entrances with bound alignment, membership projection and error families; empty-domain behavior; the bounded zero-weight sizing correction; one documented-surface gate; authoring examples and closeout | a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy |
 
 This cut ships inside v0.2.1.0. The synthesis recommends implementing after
 the release gate; the maintainer overruled that on 2026-09-26 and placed the
@@ -761,9 +762,18 @@ the documented-surface contract test, since the accepted question is otherwise
 qualitative and a cycle whose acceptance criterion cannot fail cannot be closed
 honestly.
 
+A ninth ticket was added on 2026-09-26. The historical-projection probe
+reproduced, in both execution modes and by two authors, that the strategy
+context carries future feature values while `contracts.md:113` binds it to
+decision-time information only. The exposure is not the attached field but what
+every feature accessor closure captures, so it is a surface defect in exactly
+the surface this cut owns. Two constraints shape it: interactive inspection
+depends on that private projection today, and R reflection cannot be sandboxed,
+so the guarantee is stated against documented and ordinarily reachable paths.
+
 Governance: one cut review plus the planned close review is two invocations
-over eight completed tickets, 0.250 against the 0.5 gate, leaving room for one
-correction round at 0.375.
+over nine completed tickets, 0.222 against the 0.5 gate, leaving room for one
+correction round at 0.333.
 
 ## Cut 14: Repair continuous integration (open; opens after workstream 18)
 
