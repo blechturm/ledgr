@@ -1,15 +1,7 @@
-# RFC Synthesis v7: Point-in-Time Historical Projection With Missing-Data Policy
+# RFC Synthesis v8: Point-in-Time Historical Projection With Missing-Data Policy
 
-**Status: SUPERSEDED 2026-09-26** by
-[synthesis v8](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v8.md),
-after a Type 2 review requested three corrections inside the barrier rules. Its
-open recalculation method and fillable-output rule are carried forward; its
-corporate-action barrier had the wrong rationale, its terminal prohibition was
-contradicted by the resumption rule and absent from the replacement contract.
-Retained as cycle history; it binds nothing.
-
-**Status (original):** Decision synthesis, superseding
-[synthesis v6](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v6.md),
+**Status:** Decision synthesis, superseding
+[synthesis v7](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v7.md),
 which required revision. Incorporates the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
 Decisions bind on maintainer acceptance.
@@ -18,17 +10,18 @@ Decisions bind on maintainer acceptance.
 **Baselines:** design `491c4ed`; implementation `ae040e7`. Claims are marked
 verified by reading, verified by execution, or open.
 
-**What changed from v6.** The corrected bound and the settled clock semantics
-are kept. Two things are finished rather than corrected. The checkpoint no
-longer prescribes how revised values are produced: whole-series recalculation of
-an affected instrument during preparation is an admitted candidate, and the
-bound constrains where answers may change rather than where computation happens
-(sections 6.2 and 10(d)). And the carry policy is completed, because v6 left two
-items open that the amendment requires this synthesis to settle: carry barriers
-now include knowable corporate actions and terminal assertions as well as
-inactive intervals (section 5.2), and section 5.7 states which missing outputs
-are fillable. Section 3.4 records both, with the consequence for section 6's
-trigger set.
+**What changed from v7.** The open recalculation method and the fillable-output
+rule are kept unchanged. Three corrections, all inside the barrier rules. The
+corporate-action barrier had the wrong rationale: the supported price basis is
+already split-adjusted, so a split creates no scale break in the supported case,
+and v7's blanket barrier would have added avoidable `NA` to consistently
+adjusted data. Section 5.2 now keys the rule on the declared `price_basis`,
+which makes it operational today without a corporate-action subtype vocabulary.
+The permanent terminal prohibition was stated in section 5.2 but contradicted by
+section 5.5's resumption rule and absent from section 7's replacement contract;
+both are fixed. And section 6.2's opening still asked about efficient
+preparation "within that bound", which v7 had already superseded. Section 3.5
+records each.
 
 **What is not reopened.** The maintainer's product direction stands: the ML
 release ships simple carry-forward plus missingness information for prices and
@@ -47,7 +40,7 @@ Every row is a proposal for maintainer acceptance.
 | Which sessions a feature window counts | Venue open sessions. Lifetime facts do not narrow the feature axis. | Features share one axis with valuation, and only one thing in the pipeline depends on knowledge rather than two. Requires amending four authorities including an executable gate (section 4). |
 | Observations inside an accepted inactive interval | **Always admissible.** Inactivity prohibits carry; it does not exclude a real observation. | A genuine print during an asserted inactive period is used, as it is today. Narrowing would have discarded it (section 4.4). |
 | Price-input carry | **On**, bounded by a required declared maximum carry age, default **5 venue open sessions**. | Bounds how stale a filled input can be. It does not by itself separate benign gaps from structural absence, and section 5.1 states what it does and does not guarantee. |
-| Carry across a carry barrier | **Never**, at any age. Barriers are an accepted `known_inactive` interval, a knowable price-scale-affecting corporate action, and a knowable terminal assertion. | Suspensions are never bridged, a pre-split price never crosses its split, and nothing carries past a terminal event. Barriers are also what make padded values depend on the request cutoff, accepted deliberately (sections 5.2 and 6). |
+| Carry across a carry barrier | **Never**, at any age. Barriers are an accepted `known_inactive` interval; any knowable corporate action **where `price_basis` is undeclared**; and a knowable terminal assertion, permanently. | Suspensions are never bridged and nothing carries past a terminal event, while a declared split-adjusted basis lets carry cross a split rather than accruing avoidable `NA`. Barriers are also what make padded values depend on the request cutoff, accepted deliberately (sections 5.2 and 6). |
 | Indicator-output carry | **Off** by default, available on. | Avoids compounding two treatments by default. Enabling it does not produce a dense series: warm-up, expiry and inactivity still leave holes (section 5.3). |
 | Which fields carry | `open`, `high`, `low`, `close`, each from its own latest admissible earlier value. **`volume` never carries.** | Requires a required-input admission rule the engine does not have today; today's window gate over-blocks and under-blocks (section 5.4). |
 | Which missing outputs are fillable, when output carry is on | Only an output missing because a required input was unavailable after input treatment. | Warm-up, unsatisfied readiness, calculation errors and anything across a barrier are never filled (section 5.7). |
@@ -229,6 +222,36 @@ categories, and section 6.1 generalises its trigger set accordingly. The bound's
 arithmetic is unchanged, because the mechanism is identical: a carry path
 crossing a barrier.
 
+### 3.5 From synthesis v7
+
+**The corporate-action barrier had the wrong rationale.** v7 argued that
+carrying a pre-split close past its split delivers a price on the wrong scale,
+and that refusing was conservative because the series "might turn out" to be
+adjusted. The basis is not an open question. The accepted equity synthesis
+section 4 states that "the supported price basis is split-adjusted, and
+distribution-adjusted bars are not admitted", and `price_basis` records the
+declaration, permits `NULL` for an undeclared basis, and refuses
+`distribution_adjusted` for execution with
+`ledgr_distribution_adjusted_bars_unsupported`
+(`R/snapshot_adapters.R:15-16,783-787,819-827`, verified). So in the supported
+case a split introduces no scale break at all, and v7's blanket barrier would
+have inserted avoidable `NA` into consistently adjusted data. Section 5.2 now
+keys the rule on the declared basis.
+
+**The permanent terminal prohibition was contradicted and unstated.** v7 section
+5.2 forbade carry forever after a terminal assertion, while section 5.5
+permitted carry to restart after any new observation and section 7's replacement
+contract prohibited only *crossing* a barrier. With a terminal event at session
+10, an accepted observation at 12 and a missing value at 13, carrying 12 to 13
+crosses no boundary: section 7 permitted it while section 5.2 and detector 8
+forbade it. Section 5.2 now states the permanence as the distinguishing property
+of that barrier kind, section 5.5 exempts it from resumption, and section 7
+carries it.
+
+**One stale sentence.** v7 section 6.2 still opened by asking whether revised
+values can be prepared efficiently "within that bound", which its own later
+paragraph had superseded by admitting whole-series recalculation.
+
 ## 4. The feature session axis
 
 ### 4.1 The divergence, with all four authorities
@@ -375,16 +398,30 @@ first implementation has three kinds, all derived from knowable facts:
    instrument's sessions would fill from its last pre-suspension close and an
    average over that span would be computed from a fabricated flat series that
    reads like a real one.
-2. **A knowable price-scale-affecting corporate action.** Carrying a pre-split
-   close past its split delivers a price on the wrong scale, which is a wrong
-   number rather than a stale one, so the age limit is no protection at all.
-   Refusing is conservative in the right direction: if the series a carry
-   operates on turns out to be already adjusted, refusing was unnecessary but
-   never wrong. Which series that is belongs to the accounting and equity
-   workstreams, not to this cycle, and this rule does not touch accounting
-   semantics - it only decides where a research carry stops.
-3. **A knowable terminal assertion.** After a terminal event there is nothing to
-   carry, and carry never resumes past one.
+2. **A knowable corporate action, but only where `price_basis` is undeclared.**
+   The supported basis is split-adjusted (accepted equity synthesis section 4),
+   and `price_basis` records it, with `NULL` leaving it undeclared and
+   `distribution_adjusted` refused for execution outright
+   (`R/snapshot_adapters.R:15-16,783-787,819-827`, verified). Three cases
+   follow. Under a **declared split-adjusted** basis the series is consistently
+   adjusted, so a split introduces no scale break and is **not** a barrier:
+   carry crosses it, and blocking it would add avoidable `NA` to good data.
+   Under an
+   **undeclared** basis a scale break is possible and undetectable, so **any**
+   knowable corporate action is a barrier, whatever its subtype. A
+   **distribution-adjusted** basis never reaches a run. The asymmetry is
+   deliberate - the conservatism sits where the ignorance is - and it needs no
+   subtype classification, which matters because `subtype` is free text with no
+   enumeration in the schema or in validation (`R/availability-schema.R:95`,
+   verified), so a subtype-keyed rule would require inventing a vocabulary this
+   cycle does not own. A distribution in a split-adjusted series moves the price
+   for real rather than rescaling it, so it is an age question, not a barrier.
+   This rule decides only where a research carry stops; it does not touch
+   accounting semantics.
+3. **A knowable terminal assertion, permanently.** After a terminal event there
+   is nothing to carry. Unlike the other two kinds this is not a boundary that a
+   later observation reopens: a real print after a terminal assertion stays
+   admissible as an observation (section 4.4) but never becomes a carry source.
 
 This is the lifecycle reset decision the amendment requires of this synthesis.
 Barriers are also the source of the cutoff dependence in section 6, because
@@ -460,9 +497,12 @@ promises that many real observations and under carry it promises that many
 prepared inputs; section 7 writes that into the contract. And after a gap or a
 resumption a prepared window suffices, so readiness does not require every input
 in the window to be observed, and a value appears as soon as carry can complete
-the window. Section 5.2 forbids carrying *across* a barrier, not carrying after
-one: once a real observation appears at or after the resumption it becomes a new
-admissible source, and later gaps carry from it normally.
+the window. Section 5.2 forbids carrying *across* an inactive interval or a
+corporate-action barrier, not carrying after one: once a real observation
+appears at or after the resumption it becomes a new admissible source, and later
+gaps carry from it normally. A terminal barrier is the exception, because it is
+permanent: no observation after it becomes a carry source, even though the
+observation itself remains admissible (section 5.2, kind 3).
 
 ### 5.6 The age clock
 
@@ -518,10 +558,10 @@ carry on facts that carry knowledge times.
 With the axis fixed and observations always admissible (section 4.4), bar
 presence does not vary with `t`, and age counts sessions on a fixed axis so it
 does not vary with `t` either. What varies is which **carry barriers** are
-knowable at `t` (section 5.2): an accepted inactive interval, a price-scale
-corporate action, or a terminal assertion. All three act through one mechanism -
-a carry path crossing a barrier - so the derivation below is stated once and
-applies to each.
+knowable at `t` (section 5.2): an accepted inactive interval, a corporate action
+under an undeclared price basis, or a terminal assertion. All three act through
+one mechanism - a carry path crossing a barrier - so the derivation below is
+stated once and applies to each.
 
 **The criterion is the carry path, not the destination.** A cell at session `s`
 is filled from `src(s)`, the latest earlier session holding a real observation,
@@ -568,8 +608,9 @@ bound.
 ### 6.2 What this establishes, and what it does not
 
 The dependency has a conservative, derivable bound. The checkpoint must
-establish whether revised values and their evidence can be prepared or updated
-efficiently within that bound.
+establish whether correct cutoff-specific values and their evidence can be
+produced at all: the bound says where answers may change, and places no
+constraint on where an implementation performs its calculations.
 
 That is deliberately weaker than v5 claimed. A derivable range says where
 recalculation may be needed. It does not say what recalculation costs, how
@@ -647,8 +688,11 @@ valuation marks never enter feature computation.
 > satisfied by a carried earlier value of the same field for the same stable
 > instrument, within the declared maximum carry age and never across a carry
 > barrier, never from a later observation, and never for `volume`. Carry barriers
-> are an accepted `known_inactive` interval, a knowable price-scale-affecting
-> corporate action, and a knowable terminal assertion. Where output carry is
+> are an accepted `known_inactive` interval and, where the price basis is
+> undeclared, any knowable corporate action; under a declared split-adjusted
+> basis a split is not a barrier. After a knowable terminal assertion nothing
+> carries at all, permanently, and no later observation becomes a carry source,
+> although that observation itself remains admissible. Where output carry is
 > declared it may fill only an output missing because a required input was
 > unavailable after input treatment; warm-up, unsatisfied readiness and
 > calculation errors are never filled. A window satisfied in part by carried inputs is delivered with the
@@ -805,9 +849,11 @@ memory suitability at research scale.
   limit emits a distinguishable reason.
 - The shape of the required-input declaration in section 5.4: a field on the
   indicator definition beside `gap_contract`, or inference from the callback.
-- Which corporate-action subtypes affect price scale, which the accounting and
-  equity workstreams own. Section 5.2 decides that a price-scale action is a
-  barrier; it does not enumerate the subtypes.
+- Whether a future release wants finer granularity under an undeclared price
+  basis than "any corporate action is a barrier". That would need a
+  corporate-action subtype vocabulary, which `subtype` does not have today, and
+  it is a refinement rather than a gap: section 5.2's rule is operational as
+  written.
 - Encoding of the section 8 evidence, including `gap_type` vocabulary ownership
   and model-facing view versus canonical storage.
 - The recalculation granularity of section 6.2, which measurement decides rather
@@ -819,7 +865,8 @@ memory suitability at research scale.
 Not on this list any more: the age limit's number, which section 5.1 proposes as
 a shipping default with a named tuning measurement; lifecycle reset boundaries,
 decided in section 5.2; and which missing outputs are fillable, decided in
-section 5.7.
+section 5.7. The price-basis dependency in section 5.2 is decided from an
+existing declared field and needs nothing from another workstream to operate.
 
 ## 12. Detecting acceptance requirements
 
@@ -853,7 +900,8 @@ An implementation is acceptable only with detectors that fail on:
    at any age, even when that observation is knowable at `t`.
 8. **Age and barrier violation** - a carried value exceeding the declared age
    limit, or crossing any carry barrier, or appearing at all after a knowable
-   terminal assertion.
+   terminal assertion. The over-blocking direction fails too: a corporate action
+   acting as a barrier under a declared split-adjusted basis (section 5.2).
 9. **Observation suppression** - a real observation inside an accepted inactive
    interval being dropped rather than delivered (section 4.4).
 10. **Input admission** - a window computed when a declared required field is
@@ -910,6 +958,18 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-26: v8. Supersedes v7. Keeps the open recalculation method and the
+  fillable-output rule. Corrects the corporate-action barrier, whose rationale
+  ignored that the supported price basis is already split-adjusted: the rule is
+  now keyed on the declared `price_basis`, so a split is no barrier under a
+  declared split-adjusted basis and any corporate action is one under an
+  undeclared basis, which is operational today without a subtype vocabulary that
+  `subtype` does not have. States the terminal prohibition's permanence as that
+  barrier kind's distinguishing property, exempts it from section 5.5's
+  resumption rule, and carries it into section 7's replacement contract, which
+  previously prohibited only crossing a barrier and so contradicted section 5.2.
+  Adds the over-blocking direction to detector 8 and removes section 6.2's stale
+  "within that bound".
 - 2026-09-26: v7. Supersedes v6. Keeps the corrected bound and the settled
   clock semantics. Stops the checkpoint prescribing a recalculation method:
   whole-series recalculation of an affected instrument during preparation is an
