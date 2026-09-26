@@ -670,3 +670,57 @@ One cut review and one close review over five real units is 2/5, 0.400. The
 workstream opens from completed Workstream 12 and must close before Workstream
 16 returns for focused correction review; Workstream 17 remains downstream of
 Workstream 16.
+
+## Cut 13: Strategy context surface (open; opens after the release gate)
+
+Authority: the accepted decision synthesis
+`inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
+including its maintainer-requested usability amendment, the Type 1 final review
+at `4e65378` and its focused verification of that amendment, and maintainer
+acceptance on 2026-09-26. Eight tickets, LDG-2850 through LDG-2857, one
+workstream. The RFC artifacts are recorded on the v0.2.0.2 design branch; the
+two branches must converge before this cut opens.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 20 Strategy context surface | 2850-2857 | settled contract text; duplicate and dead name retirement; context-first entrances with bound alignment, membership projection and error families; empty-domain behavior; the bounded zero-weight sizing correction; one documented-surface gate; authoring examples and closeout | a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy |
+
+This cut ships in the version after v0.2.0.2, because the synthesis binds
+implementation to follow the release gate. It is recorded in this packet
+because the RFC that produced it is here, which is the same treatment Cut 11
+originally received. Workstream 20 therefore depends on Workstream 15.
+
+The accepted question is what the cut is measured against: how does a strategy
+read current information and express portfolio intent without alignment tricks
+or hidden allocation policy? Both failure modes are concrete. Four executed
+formulations of equal-weight-everything return identical targets today, and the
+shortest of them abandons the helper pipeline and divides by axis length, which
+silently ignores held-nonmember reservation: on a fixture with NAV 100, AAA at
+10 and two shares of former member OLD marked at 20, the helper returns AAA=6
+with 40 reserved while the hand-written form returns AAA=5. A hidden allocation
+policy is what the original seed would have introduced, and the synthesis
+rejects both candidate defaults by name.
+
+Two existing behaviors are corrected rather than described. A context predicate
+now projects onto current membership, because an ordinary comparison over the
+close plane yields NA at a held nonmember without a current close and the first
+draft would have rejected its own documented example. An explicit zero member
+weight now produces quantity zero without demanding a sizing close, because the
+price loop resolves a price before consulting the weight value, so naming an
+unpriceable member at zero errors under availability while omitting it
+succeeds.
+Both corrections are widenings; neither can break a strategy that already
+worked.
+
+Scope stays narrow deliberately. Scalar reads, feature planes and alias bundles
+are retained; the long and wide feature rectangles stay on the callback because
+removing them was proposed without a replacement design and needs its own seed;
+no axis class, tidy-eval masking, rebalance band, partial-rebalance engine,
+estimator or scheduler work is authorized here. The single mechanical gate is
+the documented-surface contract test, since the accepted question is otherwise
+qualitative and a cycle whose acceptance criterion cannot fail cannot be closed
+honestly.
+
+Governance: one cut review plus the planned close review is two invocations
+over eight completed tickets, 0.250 against the 0.5 gate, leaving room for one
+correction round at 0.375.
