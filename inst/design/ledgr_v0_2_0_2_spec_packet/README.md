@@ -701,16 +701,20 @@ with 40 reserved while the hand-written form returns AAA=5. A hidden allocation
 policy is what the original seed would have introduced, and the synthesis
 rejects both candidate defaults by name.
 
-Two existing behaviors are corrected rather than described. A context predicate
-now projects onto current membership, because an ordinary comparison over the
-close plane yields NA at a held nonmember without a current close and the first
-draft would have rejected its own documented example. An explicit zero member
-weight now produces quantity zero without demanding a sizing close, because the
-price loop resolves a price before consulting the weight value, so naming an
-unpriceable member at zero errors under availability while omitting it
-succeeds.
-Both corrections are widenings; neither can break a strategy that already
-worked.
+Two corrections are carried, and they are different in kind. Membership
+projection of context predicates corrects a proposed design before it ships:
+the
+synthesis's first draft rejected any NA in a predicate, which would have failed
+its own documented example, because an ordinary comparison over the close plane
+yields NA at a held nonmember without a current close. Zero-weight sizing
+corrects behavior that already ships: the rebalance helper resolves a price
+before consulting the weight value, so naming an unpriceable member at zero
+errors under availability while omitting it succeeds. Only the second changes
+shipped behavior, and it is a widening that cannot break a strategy that
+already
+worked. Neither is a change to context-first constructors, which do not yet
+exist; the surrounding renames are intentionally breaking, and no package-wide
+compatibility inference should be drawn from the narrow zero-weight widening.
 
 Scope stays narrow deliberately. Scalar reads, feature planes and alias bundles
 are retained; the long and wide feature rectangles stay on the callback because
