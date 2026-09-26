@@ -223,3 +223,96 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
   testthat::expect_identical(completion$completion_status, "DONE")
   testthat::expect_true(completion$complete_performance)
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
+  generated <- ledgr_sim_pit_inputs(
+    instrument_ids = sprintf("DEMO_%02d", 1:5),
+    from = "2020-01-01",
+    to = "2020-01-31",
+    seed = 1702L,
+    venue_id = "DEMO_XNYS",
+    universe_id = "demo_members",
+    timezone = "America/New_York",
+    session_open = "09:30:00",
+    session_close = "16:00:00",
+    cases = c(
+      "venue_closure", "missing_observation", "delisting", "halt",
+      "cash_dividend"
+    )
+  )
+  testthat::expect_identical(generated, ledgr_demo_pit_inputs)
+
+  regenerated_path <- tempfile(fileext = ".rda")
+  on.exit(unlink(regenerated_path), add = TRUE)
+  data_env <- new.env(parent = emptyenv())
+  assign("ledgr_demo_pit_inputs", generated, envir = data_env)
+  save(
+    list = "ledgr_demo_pit_inputs",
+    file = regenerated_path,
+    envir = data_env,
+    compress = "xz",
+    version = 2
+  )
+  committed_path <- normalizePath(
+    testthat::test_path("..", "..", "data", "ledgr_demo_pit_inputs.rda"),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  testthat::expect_identical(
+    unname(tools::md5sum(regenerated_path)),
+    unname(tools::md5sum(committed_path))
+  )
+
+  closure <- ledgr_demo_pit_inputs$cases$date[
+    ledgr_demo_pit_inputs$cases$type == "venue_closure"
+  ][[1L]]
+  gap <- ledgr_demo_pit_inputs$cases[
+    ledgr_demo_pit_inputs$cases$type == "missing_observation", , drop = FALSE
+  ]
+  bar_dates <- as.Date(ledgr_demo_pit_inputs$bars$ts_utc,
+    tz = "America/New_York"
+  )
+  testthat::expect_false(closure %in% bar_dates)
+  testthat::expect_identical(
+    ledgr_demo_pit_inputs$sessions$status[
+      ledgr_demo_pit_inputs$sessions$session_date == gap$date[[1L]]
+    ],
+    "open"
+  )
+  testthat::expect_false(any(
+    ledgr_demo_pit_inputs$bars$instrument_id == gap$instrument_id[[1L]] &
+      bar_dates == gap$date[[1L]]
+  ))
+
+  facts <- do.call(ledgr_facts, pit_families(ledgr_demo_pit_inputs))
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(
+    ledgr_demo_pit_inputs$bars,
+    instruments_df = ledgr_demo_pit_inputs$instruments,
+    facts = facts,
+    db_path = db_path,
+    price_basis = ledgr_demo_pit_inputs$recipe$price_basis
+  )
+  snapshot_id <- snapshot$snapshot_id
+  ledgr_snapshot_close(snapshot)
+  reopened <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
+  on.exit(ledgr_snapshot_close(reopened), add = TRUE)
+  experiment <- ledgr_experiment(
+    reopened,
+    function(ctx, params) ctx$flat(),
+    universe = ledgr_universe_members(
+      ledgr_demo_pit_inputs$recipe$scopes$universe_id
+    ),
+    valuation_policy = ledgr_valuation_stale(2),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_true(ledgr_experiment_plan(experiment)$availability_active)
+  run <- ledgr_run(experiment, run_id = "committed-pit-input-workflow")
+  on.exit(close(run), add = TRUE)
+  testthat::expect_identical(
+    ledgr_run_completion(run)$completion_status,
+    "DONE"
+  )
+})
