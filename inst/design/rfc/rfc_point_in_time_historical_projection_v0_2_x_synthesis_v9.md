@@ -1,15 +1,8 @@
-# RFC Synthesis v8: Point-in-Time Historical Projection With Missing-Data Policy
+# RFC Synthesis v9: Point-in-Time Historical Projection With Missing-Data Policy
 
-**Status: SUPERSEDED 2026-09-26** by
-[synthesis v9](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v9.md),
-after a Type 2 review asked for one bounded clarification: v8 said which
-corporate actions are barriers but never where on the session axis a barrier
-sits, and the clocks that could locate one are optional. Retained as cycle
-history; it binds nothing.
-
-**Status (original):** Decision synthesis, superseding
-[synthesis v7](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v7.md),
-which required revision. Incorporates the
+**Status:** Decision synthesis, superseding
+[synthesis v8](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v8.md),
+which required one bounded clarification. Incorporates the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
 Decisions bind on maintainer acceptance.
 **Date:** 2026-09-26
@@ -17,18 +10,17 @@ Decisions bind on maintainer acceptance.
 **Baselines:** design `491c4ed`; implementation `ae040e7`. Claims are marked
 verified by reading, verified by execution, or open.
 
-**What changed from v7.** The open recalculation method and the fillable-output
-rule are kept unchanged. Three corrections, all inside the barrier rules. The
-corporate-action barrier had the wrong rationale: the supported price basis is
-already split-adjusted, so a split creates no scale break in the supported case,
-and v7's blanket barrier would have added avoidable `NA` to consistently
-adjusted data. Section 5.2 now keys the rule on the declared `price_basis`,
-which makes it operational today without a corporate-action subtype vocabulary.
-The permanent terminal prohibition was stated in section 5.2 but contradicted by
-section 5.5's resumption rule and absent from section 7's replacement contract;
-both are fixed. And section 6.2's opening still asked about efficient
-preparation "within that bound", which v7 had already superseded. Section 3.5
-records each.
+**What changed from v8.** One bounded clarification and one corrected supporting
+sentence. v8 said which corporate actions are barriers but never said **where on
+the session axis a barrier sits**, and the event clocks that could locate it are
+optional: validation enforces their ordering only when supplied and requires
+none of them to be present. Two implementations could therefore stop carry at
+different sessions and both claim compliance. Section 5.2 now states how a
+supplied boundary locates the barrier and what happens when no boundary can be
+established, and it never substitutes knowledge time. The claim that no
+corporate-action subtype vocabulary exists is also corrected: named subtypes
+exist in settlement, and what is missing is an exhaustive validated enumeration.
+Section 3.6 records both.
 
 **What is not reopened.** The maintainer's product direction stands: the ML
 release ships simple carry-forward plus missingness information for prices and
@@ -47,7 +39,7 @@ Every row is a proposal for maintainer acceptance.
 | Which sessions a feature window counts | Venue open sessions. Lifetime facts do not narrow the feature axis. | Features share one axis with valuation, and only one thing in the pipeline depends on knowledge rather than two. Requires amending four authorities including an executable gate (section 4). |
 | Observations inside an accepted inactive interval | **Always admissible.** Inactivity prohibits carry; it does not exclude a real observation. | A genuine print during an asserted inactive period is used, as it is today. Narrowing would have discarded it (section 4.4). |
 | Price-input carry | **On**, bounded by a required declared maximum carry age, default **5 venue open sessions**. | Bounds how stale a filled input can be. It does not by itself separate benign gaps from structural absence, and section 5.1 states what it does and does not guarantee. |
-| Carry across a carry barrier | **Never**, at any age. Barriers are an accepted `known_inactive` interval; any knowable corporate action **where `price_basis` is undeclared**; and a knowable terminal assertion, permanently. | Suspensions are never bridged and nothing carries past a terminal event, while a declared split-adjusted basis lets carry cross a split rather than accruing avoidable `NA`. Barriers are also what make padded values depend on the request cutoff, accepted deliberately (sections 5.2 and 6). |
+| Carry across a carry barrier | **Never**, at any age. Barriers are an accepted `known_inactive` interval; any knowable corporate action **where `price_basis` is undeclared**, located by its earliest supplied event clock; and a knowable terminal assertion, permanently. | Suspensions are never bridged and nothing carries past a terminal event, while a declared split-adjusted basis lets carry cross a split rather than accruing avoidable `NA`. Barriers are also what make padded values depend on the request cutoff, accepted deliberately (sections 5.2 and 6). |
 | Indicator-output carry | **Off** by default, available on. | Avoids compounding two treatments by default. Enabling it does not produce a dense series: warm-up, expiry and inactivity still leave holes (section 5.3). |
 | Which fields carry | `open`, `high`, `low`, `close`, each from its own latest admissible earlier value. **`volume` never carries.** | Requires a required-input admission rule the engine does not have today; today's window gate over-blocks and under-blocks (section 5.4). |
 | Which missing outputs are fillable, when output carry is on | Only an output missing because a required input was unavailable after input treatment. | Warm-up, unsatisfied readiness, calculation errors and anything across a barrier are never filled (section 5.7). |
@@ -259,6 +251,34 @@ carries it.
 values can be prepared efficiently "within that bound", which its own later
 paragraph had superseded by admitting whole-series recalculation.
 
+### 3.6 From synthesis v8
+
+**A barrier had no stated location.** v8 said which corporate actions are
+barriers and section 6.1 then wrote `[a, b]` for the sessions a barrier
+occupies, but nothing said which clock determines that session. Knowability says
+when a fact may be used, not which historical session its effect sits on, and
+the event clocks are optional: `ledgr_validate_equity_corporate_action_rows()`
+enforces `entitlement <= effective <= payment` only "when supplied" and requires
+none of them to be non-missing (`R/availability-facts.R:469-481`, verified),
+while `*_validated` flags exist for the economic terms and not for the clocks
+(`:374-376`, `R/availability-schema.R`, verified). Nor is there one inherited
+interpretation: the accepted equity synthesis section 3.4 locates the dividend
+boundary on the entitlement clock, and settlement orders and bounds on
+`entitlement_time` while using `effective_time` for other effects
+(`R/corporate-action-settlement.R:9,78,166,171`, verified). Two implementations
+could have stopped carry at different sessions and both claimed compliance.
+Section 5.2 now locates the barrier and states the refusal when it cannot be
+located.
+
+**The subtype claim was too strong.** v8 said `subtype` has no enumeration, and
+inferred that no vocabulary exists. Named subtypes do exist in settlement, which
+tests `subtype == "ordinary_cash_dividend"` and matches subtype sets
+(`R/corporate-action-settlement.R:145,155,158`, verified), while validation
+requires only "a stable lower-snake-case code"
+(`R/availability-facts.R:403`, verified). The accurate claim is that there is no
+exhaustive validated enumeration, which is what makes the subtype-free default
+appropriate; it is not that the vocabulary is absent.
+
 ## 4. The feature session axis
 
 ### 4.1 The divergence, with all four authorities
@@ -420,11 +440,37 @@ first implementation has three kinds, all derived from knowable facts:
    deliberate - the conservatism sits where the ignorance is - and it needs no
    subtype classification, which matters because `subtype` is free text with no
    enumeration in the schema or in validation (`R/availability-schema.R:95`,
-   verified), so a subtype-keyed rule would require inventing a vocabulary this
+   verified), so a subtype-keyed rule would have to rest on a vocabulary this
    cycle does not own. A distribution in a split-adjusted series moves the price
-   for real rather than rescaling it, so it is an age question, not a barrier.
-   This rule decides only where a research carry stops; it does not touch
-   accounting semantics.
+   for real rather than rescaling it, so it is an age question, not a barrier -
+   and that is a product choice rather than an accuracy guarantee, because the
+   age limit bounds how stale a carried value is and not how large the resulting
+   error can be. This rule decides only where a research carry stops; it does
+   not touch accounting semantics.
+
+   **Where the barrier sits.** A corporate-action barrier occupies the **first
+   venue open session at or after the earliest supplied of `entitlement_time`
+   and `effective_time`**, and carry may not reach into or past that session.
+   The earliest of the two is used because it is the earliest session the action
+   could have affected price, which keeps this branch conservative in one
+   direction throughout; their order is already enforced when both are supplied
+   (`R/availability-facts.R:472-481`, verified). `payment_time` never locates a
+   barrier: it is an upper bound on the event, so using it would refuse too
+   little. `knowledge_time` never locates a barrier either - it says when the
+   fact may be used, not when its effect occurred - and substituting it is
+   prohibited rather than merely discouraged.
+
+   **When no boundary can be established.** The clocks are optional: validation
+   enforces their ordering only when supplied and requires none to be present,
+   and no `*_validated` flag covers them, so a fact can be knowable with every
+   event clock missing. Where such a fact is knowable at the request cutoff, the
+   basis is undeclared and carry is enabled, the policy **fails closed** at
+   preparation with a classed condition naming the fact. It does not guess a
+   session, does not fall back to knowledge time, and does not silently deliver
+   carried values under an unlocatable boundary. The two escapes are declaring
+   the price basis, which removes the barrier entirely, and disabling carry, for
+   which barriers are irrelevant. The condition's name and storage are
+   implementation decisions.
 3. **A knowable terminal assertion, permanently.** After a terminal event there
    is nothing to carry. Unlike the other two kinds this is not a boundary that a
    later observation reopens: a real print after a terminal assertion stays
@@ -577,11 +623,13 @@ that carry when the span *crosses* the interval, so a destination lying outside
 the interval can still lose its value.
 
 **The bound.** Write `[a, b]` for the venue sessions a newly knowable barrier
-occupies - a single session where the barrier is a point, such as a corporate
-action - with `A_in` for the declared maximum input carry age, `W_f` for a
-feature's `stable_after`, and `A_out` for the declared maximum output carry age.
-A disabled stage contributes zero. For one instrument and one feature, every
-cell whose delivered value can differ between cutoffs `t1 < t2` lies within
+occupies: an interval for an inactive lifetime assertion, and a single session
+for a corporate action, located by section 5.2's boundary rule rather than by
+knowledge time. With `A_in` for the declared maximum input carry age, `W_f` for
+a feature's `stable_after`, and `A_out` for the declared maximum output carry
+age. A disabled stage contributes zero. For one instrument and one feature,
+every cell whose delivered value can differ between cutoffs `t1 < t2` lies
+within
 
 > `[a, b + A_in + W_f - 1 + A_out]`
 
@@ -697,7 +745,11 @@ valuation marks never enter feature computation.
 > barrier, never from a later observation, and never for `volume`. Carry barriers
 > are an accepted `known_inactive` interval and, where the price basis is
 > undeclared, any knowable corporate action; under a declared split-adjusted
-> basis a split is not a barrier. After a knowable terminal assertion nothing
+> basis a split is not a barrier. A corporate-action barrier occupies the first
+> venue open session at or after the earliest supplied of its entitlement and
+> effective clocks; knowledge time never locates a barrier, and where no such
+> boundary is supplied the request fails rather than carrying under an
+> unlocatable boundary. After a knowable terminal assertion nothing
 > carries at all, permanently, and no later observation becomes a carry source,
 > although that observation itself remains admissible. Where output carry is
 > declared it may fill only an output missing because a required input was
@@ -857,10 +909,14 @@ memory suitability at research scale.
 - The shape of the required-input declaration in section 5.4: a field on the
   indicator definition beside `gap_contract`, or inference from the callback.
 - Whether a future release wants finer granularity under an undeclared price
-  basis than "any corporate action is a barrier". That would need a
-  corporate-action subtype vocabulary, which `subtype` does not have today, and
-  it is a refinement rather than a gap: section 5.2's rule is operational as
-  written.
+  basis than "any corporate action is a barrier". That would need an exhaustive
+  validated subtype enumeration, which does not exist today even though named
+  subtypes do; it is a refinement rather than a gap, since section 5.2's rule is
+  subtype-free.
+- Whether the corporate-action event clocks should gain `*_validated` flags of
+  their own, as the economic terms have. Section 5.2 works with supplied clocks
+  and fails closed without them, so this is a strengthening rather than a
+  prerequisite, and it belongs to the fact-family owner.
 - Encoding of the section 8 evidence, including `gap_type` vocabulary ownership
   and model-facing view versus canonical storage.
 - The recalculation granularity of section 6.2, which measurement decides rather
@@ -909,33 +965,38 @@ An implementation is acceptable only with detectors that fail on:
    limit, or crossing any carry barrier, or appearing at all after a knowable
    terminal assertion. The over-blocking direction fails too: a corporate action
    acting as a barrier under a declared split-adjusted basis (section 5.2).
-9. **Observation suppression** - a real observation inside an accepted inactive
-   interval being dropped rather than delivered (section 4.4).
-10. **Input admission** - a window computed when a declared required field is
+9. **Barrier location** - a corporate-action barrier placed anywhere other than
+   the first venue open session at or after its earliest supplied event clock;
+   a barrier located from `knowledge_time` or `payment_time`; or a knowable fact
+   with no supplied event clock proceeding instead of failing closed
+   (section 5.2).
+10. **Observation suppression** - a real observation inside an accepted inactive
+    interval being dropped rather than delivered (section 4.4).
+11. **Input admission** - a window computed when a declared required field is
     unavailable, or refused because an undeclared field is unavailable; and a
     readiness outcome or a calculation error being reported as a field-admission
     outcome or converted into a fillable gap (section 5.4).
-11. **Silent treatment** - a delivered value whose carried status, carried count
+12. **Silent treatment** - a delivered value whose carried status, carried count
     or source age is absent or wrong; a disabled operation taking effect; or
     enabling one operation enabling the other. No treatment is inferred from
     `NA`.
     Also: an output filled outside section 5.7's single eligible category.
-12. **Strict/padded confusion** - a strict artifact satisfying a padded request
+13. **Strict/padded confusion** - a strict artifact satisfying a padded request
     or the reverse; and strict outputs changing where inputs and policy are
     unchanged.
-13. **Retained-result mutation** - mutating a returned window altering engine
+14. **Retained-result mutation** - mutating a returned window altering engine
     storage, another consumer, or a later result; or a retained result losing
     its axis, cutoff or policy when the fold advances.
-14. **Axis alignment** - row order disagreeing with the contract-defined
+15. **Axis alignment** - row order disagreeing with the contract-defined
     decision axis including held-nonmember placement, or a `0 x L` empty-axis
     result failing.
-15. **Claimed-distinction collapse** - for whatever distinctions the companion
+16. **Claimed-distinction collapse** - for whatever distinctions the companion
     claims to express, a detector fails when two become indistinguishable, and
     any distinction it does not claim fails explicitly rather than returning a
     plausible value.
-16. **Current-value parity** - scalar, plane and bundle reads disagreeing with
+17. **Current-value parity** - scalar, plane and bundle reads disagreeing with
     the pre-change run at any pulse under unchanged policy.
-17. **Inspection preservation** - the interactive reader failing when the long
+18. **Inspection preservation** - the interactive reader failing when the long
     table is empty.
 
 No member-count, timing or memory threshold is an acceptance gate.
@@ -965,6 +1026,19 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-26: v9. Supersedes v8 with one bounded clarification. States where a
+  corporate-action barrier sits: the first venue open session at or after the
+  earliest supplied of the entitlement and effective clocks, with `payment_time`
+  and `knowledge_time` both prohibited as locators, and a fail-closed refusal at
+  preparation when a knowable fact supplies no event clock at all. This was
+  needed because the clocks are optional - validation enforces their order only
+  when supplied and requires none to be present - and because settlement and the
+  accepted equity synthesis use different clocks for different effects, so two
+  implementations could have stopped carry at different sessions. Adds detector
+  9 for barrier location. Corrects v8's claim that no subtype vocabulary exists
+  to the accurate one that no exhaustive validated enumeration exists, and
+  records that allowing carry across a distribution in a split-adjusted series
+  bounds staleness rather than error size.
 - 2026-09-26: v8. Supersedes v7. Keeps the open recalculation method and the
   fillable-output rule. Corrects the corporate-action barrier, whose rationale
   ignored that the supported price basis is already split-adjusted: the rule is
