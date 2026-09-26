@@ -801,12 +801,12 @@ valuation marks never enter feature computation.
 > barrier, never from a later observation, and never for `volume`. Carry barriers
 > are an accepted `known_inactive` interval and, where the price basis is
 > undeclared, any knowable corporate action; under a declared split-adjusted
-> basis a split is not a barrier. Each supplied entitlement or effective clock of
-> a corporate action produces a barrier at the first venue open session at or
-> after it; payment time and knowledge time never produce one; and where no such
-> boundary is supplied the request fails at cutoffs where the fact is knowable
-> rather than carrying under an unlocatable boundary, without affecting earlier
-> cutoffs. After a knowable terminal assertion nothing
+> basis a split is not a barrier. Where the basis is undeclared, each supplied
+> entitlement or effective clock of a corporate action produces a barrier at the
+> first venue open session at or after it; payment time and knowledge time never
+> produce one; and where no such boundary is supplied the request fails at
+> cutoffs where the fact is knowable rather than carrying under an unlocatable
+> boundary, without affecting earlier cutoffs. After a knowable terminal assertion nothing
 > carries at all, permanently, and no later observation becomes a carry source,
 > although that observation itself remains admissible. Where output carry is
 > declared it may fill only an output missing because a required input was
@@ -1025,14 +1025,18 @@ An implementation is acceptable only with detectors that fail on:
    limit, or crossing any carry barrier, or appearing at all after a knowable
    terminal assertion. The over-blocking direction fails too: a corporate action
    acting as a barrier under a declared split-adjusted basis (section 5.2).
-9. **Barrier location** - any supplied entitlement or effective clock of a
-   knowable corporate action not producing a barrier at the first venue open
-   session at or after it; or a barrier located from `payment_time` or
-   `knowledge_time`. The required fixture is the case a single-clock rule
-   misses: an undeclared basis, an entitlement boundary, a real observation on a
-   later session, an effective boundary after that observation, and a missing
-   price at the effective boundary, which must not be filled from the
-   intervening observation. Output carry needs the same fixture.
+9. **Barrier location** - **where the price basis is undeclared and at least one
+   carry operation is enabled**, any supplied entitlement or effective clock of
+   a knowable corporate action not producing a barrier at the first venue open
+   session at or after it; or, in any policy, a barrier located from
+   `payment_time` or `knowledge_time`. The scope qualifier matters: without it
+   this item and detector 8 contradict each other under a declared
+   split-adjusted basis, where a corporate action must *not* act as a barrier.
+   The required fixture is the case a single-clock rule misses: an undeclared
+   basis, an entitlement boundary, a real observation on a later session, an
+   effective boundary after that observation, and a missing price at the
+   effective boundary, which must not be filled from the intervening
+   observation. Output carry needs the same fixture.
 10. **Unlocatable barrier** - a knowable corporate-action fact supplying no
     event clock proceeding instead of failing closed, **where the basis is
     undeclared and at least one carry operation is enabled**; the failure
@@ -1095,6 +1099,12 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-26: v10, corrected in place after Type 2 review of `22b9580`. Detector
+  9's positive barrier requirement and section 7's per-clock sentence now carry
+  the policy scope - undeclared basis, at least one carry operation enabled -
+  which section 5.2 already stated. Without it detector 9 and detector 8
+  contradicted each other under a declared split-adjusted basis. No decision
+  changed; the reviewed text is preserved in git history at that hash.
 - 2026-09-26: v10. Supersedes v9. Corrects the barrier-placement rule: every
   supplied entitlement or effective clock produces its own barrier, rather than
   only the earliest. An earlier barrier is not a more conservative one, because
