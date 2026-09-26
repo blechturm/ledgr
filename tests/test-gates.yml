@@ -1,4 +1,9 @@
-ordinary_fast_max_seconds: 90
+ordinary_fast_max_seconds: 112
+ordinary_initial_seconds: [104.548, 102.755, 103.129]
+ordinary_initial_run_id: "36256894206"
+ordinary_bound_basis: "GitHub Actions ubuntu-latest R-CMD-check matrix, R 4.6.1, commit 1a3cfb9; median 103.129 seconds plus 8.871 seconds fixed headroom (8.60 percent)"
+ordinary_local_reference_seconds: [79.46, 79.72, 79.23]
+ordinary_local_reference_basis: "Workstream 19 Windows R 4.6.1 record; non-gating reference"
 cran_fast_max_seconds: 105
 cran_initial_seconds: 85.300
 cran_bound_basis: "first isolated R 4.6.1 test clock plus 19.700 seconds fixed headroom"
