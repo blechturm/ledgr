@@ -52,13 +52,15 @@ message together hid a consistently red suite.
   merely to classify one symbol.
 - `1a3cfb9` / LDG-2862 makes a recorded warning, error or failure produce a
   nonzero runner exit and gives each checker mismatch its own diagnostic and
-  affected block or census.
+  affected block or census. The correction after independent review also
+  binds every checker failure to a nonzero exit without a false success line.
 - `235848d` / LDG-2861 records the ordinary bound against its declared runner
   rather than a local Windows host.
-- `cf7f64c` / LDG-2865 makes installed checks select evidence from R CMD
-  check's staged source package. It also makes the adapter vignette load the
-  installed package and carry its vignette-local support file through R's
-  documented `.install_extras` mechanism.
+- `cf7f64c` / LDG-2865 adds portable source discovery and vignette support.
+  The correction after independent review makes discovery prefer the nearest
+  staged `00_pkg_src` package over an enclosing checkout. It also makes the
+  adapter vignette load the installed package and carry its vignette-local
+  support file through R's documented `.install_extras` mechanism.
 
 The first registered run after calibration, `36257746909`, passed 456 of 456
 ordinary blocks in 101.464 seconds and passed the independent gate, then
@@ -74,7 +76,19 @@ replays passing.
 Calibration run `36256894206`, after LDG-2860, recorded 104.548, 102.755 and
 103.129 seconds. Every run executed and passed all 456 selected blocks with
 zero skips and zero failure statuses. The registered-runner median is 103.129
-seconds.
+seconds. These repetitions came from one job, so their 1.793-second range
+measures within-instance repeatability, not runner-to-runner variance. Later
+registered jobs ranged from 101.464 to 107.113 seconds, a 5.649-second
+between-job span.
+
+The Workstream 19-era tree cited by LDG-2861 recorded a 92.558-second median
+on the same runner, so the calibrated tree is 10.571 seconds slower. The
+per-block census attributes about 3.29 seconds to new blocks and removes about
+0.89 seconds with one retired block; common blocks add about 8.35 seconds
+broadly rather than through one new hot block. That decomposition and the
+unchanged-file variation support runner-instance variance, not a hidden
+single-test regression. LDG-2848's rule remains controlling: an established
+bound is not raised merely to make a regression green.
 
 The corrected ordinary bound is 112 seconds. Its headroom is 8.871 seconds,
 or 8.60 percent. That is tighter than the isolated CRAN bound's 19.700 seconds
@@ -88,11 +102,13 @@ changed.
 
 Final GitHub Actions run `36264300852` recorded 107.113 seconds, 457 expected
 and executed blocks, zero skips, zero failures, and `gate_passed = TRUE`
-against 112 seconds. Confirmation runs two and three were correctly skipped
-under the one-run rule. The same workflow completed `R CMD check` and ended
-successfully.
+against 112 seconds. Its remaining margin is 4.887 seconds, or 4.36 percent.
+Confirmation runs two and three were correctly skipped under the one-run rule.
+The same workflow completed `R CMD check` and ended successfully.
 
-The exact local ordinary record at
+At reachable commit `cf7f64c`, package and test content is identical to the
+amended local-build predecessor `f64cb0f`; only the LDG-2865 status and
+evidence in `tickets.yml` differ. The exact local ordinary record retained at
 `C:/tmp/ledgr-ws21-final-fast-f64cb0f` passed 457 of 457 in 84.900 seconds;
 the independent checker returned `LEDGR_TEST_GATE_OK`.
 
@@ -101,13 +117,15 @@ the independent checker returned `LEDGR_TEST_GATE_OK`.
 - LTB-0081 observed seventeen extra namespaces under the old eager preflight.
   Restoring eager evaluation fails the namespace-set and exact-call trace.
 - LTB-0082 runs the real profile runner over an injected warning and the real
-  checker over four separately malformed records. Removing the runner's
-  fail-closed branch fails its exit, identity and false-success assertions.
-- LTB-0083 resolves both a live ancestor checkout and a scratch
-  `ledgr.Rcheck/00_pkg_src/ledgr` tree. Removing staged-source discovery makes
-  the detector error.
+  checker over four separately malformed records. Removing either tool's
+  fail-closed behavior fails its exit or false-success assertion as well as
+  the relevant diagnostic assertion.
+- LTB-0083 resolves a live ancestor checkout and chooses a scratch
+  `ledgr.Rcheck/00_pkg_src/ledgr` tree even when it is nested inside a valid
+  but conflicting checkout. Reversing that precedence fails the detector.
 - LTB-0057 binds the installed package load, active-input fallback and
-  vignette-extra rule. Replacing the extra pattern fails the detector.
+  vignette-extra rule. Restoring a package-root fallback or replacing the
+  extra pattern fails the detector.
 - The bound is empirical rather than a source-shape oracle: the three
   calibration records and final registered record are its detecting evidence.
 
@@ -139,8 +157,7 @@ per-pulse validation.
 
 ## Governance
 
-The cut review is compressed into this close review. The requested review is
-the first invocation over five completed tickets: 1/5 = 0.200 against the
-0.5 gate. One correction round would make it 2/5 = 0.400. This draft is
-agent-provisional; only the maintainer may accept and close Workstream 21 and
-Cut 14.
+The cut review is compressed into this close review. The first review plus its
+focused correction round are two invocations over five completed tickets:
+2/5 = 0.400 against the 0.5 gate. This draft is agent-provisional; only the
+maintainer may accept and close Workstream 21 and Cut 14.

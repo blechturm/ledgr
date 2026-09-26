@@ -134,6 +134,11 @@ testthat::test_that("[LTB-0057] adapter-authoring article records a vendor-neutr
     "adapter_dir <- if (length(input_path) == 1L && nzchar(input_path))",
     fixed = TRUE
   )
+  testthat::expect_match(
+    source,
+    "} else {\n  getwd()\n}",
+    fixed = TRUE
+  )
   testthat::expect_identical(
     extras,
     "fictional-corporate-action-adapter[.]R$"

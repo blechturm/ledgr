@@ -344,19 +344,43 @@ testthat::test_that("[LTB-0082] profile tools identify the exact failing conditi
   }
 
   warning_output <- write_gate_case(statuses = "warning")
+  testthat::expect_false(is.null(attr(warning_output, "status")))
+  testthat::expect_no_match(
+    paste(warning_output, collapse = "\n"),
+    "LEDGR_TEST_GATE_OK",
+    fixed = TRUE
+  )
   testthat::expect_match(paste(warning_output, collapse = "\n"), "non-passing", fixed = TRUE)
   testthat::expect_match(paste(warning_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
 
   profile_output <- write_gate_case(profile = "review")
+  testthat::expect_false(is.null(attr(profile_output, "status")))
+  testthat::expect_no_match(
+    paste(profile_output, collapse = "\n"),
+    "LEDGR_TEST_GATE_OK",
+    fixed = TRUE
+  )
   testthat::expect_match(paste(profile_output, collapse = "\n"), "profile mismatch", fixed = TRUE)
   testthat::expect_match(paste(profile_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
 
   mode_output <- write_gate_case(mode = "cran")
+  testthat::expect_false(is.null(attr(mode_output, "status")))
+  testthat::expect_no_match(
+    paste(mode_output, collapse = "\n"),
+    "LEDGR_TEST_GATE_OK",
+    fixed = TRUE
+  )
   testthat::expect_match(paste(mode_output, collapse = "\n"), "mode mismatch", fixed = TRUE)
   testthat::expect_match(paste(mode_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
 
   execution_output <- write_gate_case(
     statuses = c("passed", NA_character_), expected = 2L, executed = 1L
+  )
+  testthat::expect_false(is.null(attr(execution_output, "status")))
+  testthat::expect_no_match(
+    paste(execution_output, collapse = "\n"),
+    "LEDGR_TEST_GATE_OK",
+    fixed = TRUE
   )
   testthat::expect_match(
     paste(execution_output, collapse = "\n"),
@@ -378,11 +402,29 @@ testthat::test_that("[LTB-0083] installed checks resolve the source package", {
   )
 
   sandbox <- tempfile("ledgr-check-layout-")
-  source_root <- file.path(sandbox, "ledgr.Rcheck", "00_pkg_src", "ledgr")
-  check_test_dir <- file.path(sandbox, "ledgr.Rcheck", "tests", "testthat")
+  checkout <- file.path(sandbox, "checkout")
+  source_root <- file.path(
+    checkout,
+    "check",
+    "ledgr.Rcheck",
+    "00_pkg_src",
+    "ledgr"
+  )
+  check_test_dir <- file.path(
+    checkout,
+    "check",
+    "ledgr.Rcheck",
+    "tests",
+    "testthat"
+  )
+  dir.create(file.path(checkout, "tests", "testthat"), recursive = TRUE)
   dir.create(file.path(source_root, "tests", "testthat"), recursive = TRUE)
   dir.create(check_test_dir, recursive = TRUE)
   on.exit(unlink(sandbox, recursive = TRUE), add = TRUE)
+  writeLines(
+    c("Package: ledgr", "Version: 9.9.9"),
+    file.path(checkout, "DESCRIPTION")
+  )
   writeLines(
     c("Package: ledgr", "Version: 0.0.0.1"),
     file.path(source_root, "DESCRIPTION")

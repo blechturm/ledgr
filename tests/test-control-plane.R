@@ -18,11 +18,13 @@ ledgr_test_source_root <- function(start = getwd(), package = "ledgr") {
     if (identical(parent, cursor)) break
     cursor <- parent
   }
-  candidates <- unique(c(
-    ancestors,
-    file.path(ancestors, package),
-    file.path(ancestors, "00_pkg_src", package)
-  ))
+  candidates <- unique(unlist(lapply(ancestors, function(ancestor) {
+    c(
+      file.path(ancestor, "00_pkg_src", package),
+      ancestor,
+      file.path(ancestor, package)
+    )
+  }), use.names = FALSE))
   for (candidate in candidates) {
     description <- file.path(candidate, "DESCRIPTION")
     test_dir <- file.path(candidate, "tests", "testthat")
