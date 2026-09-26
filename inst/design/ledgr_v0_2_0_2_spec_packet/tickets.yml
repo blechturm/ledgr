@@ -142,7 +142,7 @@ cuts:
     source_table: "GitHub Actions runs 36234756357, 36226572400 and 36257746909 and their uploaded test-profile evidence; tests/test-gates.yml; tools/run-test-profile.R and tools/check-test-gate.R; R/strategy-preflight.R"
     workstreams: [21]
     closeout: "ci_repair_closeout.md"
-    status: "open"
+    status: "review_pending"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -318,7 +318,7 @@ workstreams:
   - id: 21
     name: "Repair continuous integration"
     cut: 14
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 18
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 21", reason: "One claim joins the tickets: continuous integration is green on the registered runner and reports honestly when it is not. The close review confirms that the preflight fix removes the package-loading side effect without changing any tier verdict, that the recomputed bound is derived from three recorded clocks on the registered runner and is recorded as a correction rather than a weakening, that a single warning in one block now makes the profile runner report failure instead of printing OK, and that the gate checker names the condition and the block that failed. It also confirms that no test was moved, skipped, or weakened to reach green."}
@@ -1635,9 +1635,10 @@ tickets:
   - id: "LDG-2863"
     title: "Workstream 21 and cut 14 closeout"
     workstream: 21
-    status: "open"
+    status: "review_pending"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2860", "LDG-2861", "LDG-2862", "LDG-2865"]
     scope: "Close workstream 21 and cut 14. Record the diagnosis and its evidence: the run ids that failed, the uploaded summary showing 453 expected, 453 executed, zero skipped and one failed block, the census row naming the warning block, and the warning text. Record that the failures predate the v0.2.1.0 workstreams. State the recomputed bound with its three registered-runner clocks and its headroom, and say plainly that it is a correction rather than a weakening. Link the diffs and tests rather than restating them. Name what was considered and declined, including moving the warning block to another profile, relaxing the failure-status definition, and making the continuous-integration gate advisory. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout names the failing run ids and the exact evidence that identified the block, so the diagnosis can be re-derived without rerunning continuous integration", "it records that the failures predate the v0.2.1.0 workstreams and were not introduced by them", "the recomputed bound appears with its three registered-runner clocks, its headroom and its basis, and is explicitly distinguished from bound-raising", "each declined option is named with its reason, including profile movement, relaxing the failure-status definition and an advisory gate", "the cut ratio is stated and is at most 0.5, and any correction round is recorded rather than hidden", "one continuous-integration run on the registered runner is green end to end and is cited by run id"]
+    evidence: ["The agent-provisional `ci_repair_closeout.md` records runs 36234756357 and 36226572400, their exact three-run censuses and clocks, the warning block and text, and the ancestry proof that both commits precede merge 704864d.", "Calibration run 36256894206 supplies the three registered-runner clocks behind the 112-second correction and its 8.60-percent headroom. The closeout distinguishes that correction from bound-raising and names every declined alternative.", "Final run 36264300852 passed end to end at cf7f64c: 457 of 457 ordinary blocks, zero skips and failures, 107.113 seconds, independent gate true, and R CMD check successful. The first close review will make the cut ratio 1/5 = 0.200; the draft remains agent-provisional."]
