@@ -2007,16 +2007,15 @@ peer_write_outputs <- function(results, parity, feature_parity, statuses,
 }
 
 peer_environment <- function(args, input_hash) {
-  git_head <- tryCatch(readLines(file.path(".git", "HEAD"), n = 1L, warn = FALSE), error = function(e) NA_character_)
-  git_branch <- NA_character_
-  git_sha <- NA_character_
-  if (length(git_head) > 0L && grepl("^ref: ", git_head[[1L]])) {
-    ref <- sub("^ref: ", "", git_head[[1L]])
-    git_branch <- sub("^refs/heads/", "", ref)
-    git_sha <- tryCatch(readLines(file.path(".git", ref), n = 1L, warn = FALSE), error = function(e) NA_character_)[[1L]]
-  } else if (length(git_head) > 0L) {
-    git_sha <- git_head[[1L]]
+  git_value <- function(args) {
+    value <- tryCatch(
+      system2("git", args, stdout = TRUE, stderr = FALSE),
+      error = function(e) character()
+    )
+    if (length(value) == 1L && nzchar(value[[1L]])) value[[1L]] else NA_character_
   }
+  git_sha <- git_value(c("rev-parse", "--verify", "HEAD"))
+  git_branch <- git_value(c("branch", "--show-current"))
   list(
     created_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     release = args$release,
