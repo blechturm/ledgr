@@ -108,6 +108,13 @@ TTR is an adapter mechanism, not a separate feature engine. Once constructed,
 the indicator participates in the same feature-definition validation,
 fingerprinting, projection, and pulse lookup paths as ledgr-native indicators.
 
+Source does not grant gap semantics. Availability-aware certification is
+currently limited to the exact single-output
+`ledgr_ind_ttr("SMA", input = "close", n = ...)` shape. TTR EMA, RSI, output
+bundles, and other signatures remain uncertified, as do the recursive built-in
+EMA and RSI indicators. They fail before strategy execution when availability
+is active.
+
 ## Runtime Lookup
 
 During fold execution, each pulse context receives feature helpers:
@@ -227,11 +234,45 @@ required observation makes the affected window unavailable; ledgr does not
 compress the window to the last observed rows or impute a value. Scalar,
 precomputed, cached, and resumed paths share that rule.
 
+Dense mode instead derives its implicit clock from the rectangular bar panel.
+A market-wide missing dense date is therefore indistinguishable from a venue
+closure and creates no pulse. Once session facts activate availability, each
+declared open session remains on the clock and a missing observation appears
+as an unavailable slot in that instrument's feature window. A declared closed
+session creates no pulse and does not contaminate the next window.
+
+Warmup and a gap can both yield `NA`, but they are different histories. Warmup
+means the instrument's series has not accumulated the bounded number of
+expected observations. A gap means a window that would otherwise be mature
+contains a missing expected observation. A late-start series stays in warmup
+until enough real observations arrive. A mature bounded window recovers only
+after the missing slot has moved completely out of it.
+
+Valuation and features stay separate. A stale mark may keep a held position's
+equity finite under the declared valuation policy, but that mark is never
+inserted into an indicator window. Strategy code must guard a currently
+unavailable feature with an explicit finite-value check before using it.
+
 `ledgr_feature_engine_version(availability_active = TRUE)` adds the strict-gap
 engine declaration to cache identity. Dense feature identity uses canonical
 omission and remains unchanged. Indicators that cannot declare a bounded
 window, or that hide carry or imputation inside their implementation, fail
 before availability-aware strategy execution.
+
+The executable support set is:
+
+| Form | Strict-window availability contract |
+| --- | --- |
+| `ledgr_ind_sma(n)` | certified |
+| `ledgr_ind_returns(n)` | certified |
+| bounded `ledgr_indicator(..., gap_contract = "strict_window")` | accepted as an explicit custom declaration |
+| `ledgr_ind_ttr("SMA", input = "close", n = n)` | certified for this exact single-output shape |
+| built-in or TTR EMA and RSI | unsupported |
+| TTR bundles and every other TTR signature | unsupported |
+
+Equal session handling is not numerical equivalence across different
+formulas. The three-source differential evidence compares built-in, public TTR,
+and custom implementations of the same arithmetic SMA only.
 
 Implementation anchors are `R/availability-policy.R:163` for experiment-time
 validation, `R/feature-cache.R:3` for active engine identity, and

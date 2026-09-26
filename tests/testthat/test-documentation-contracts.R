@@ -781,13 +781,15 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
     start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
     testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
     testthat::expect_match(start_block, "- quickstart", fixed = TRUE)
+    testthat::expect_match(start_block, "- data-input-and-snapshots", fixed = TRUE)
     testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
     testthat::expect_match(start_block, "- leakage", fixed = TRUE)
     testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
     testthat::expect_no_match(start_block, "- survivorship-bias", fixed = TRUE)
 
     core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
-    testthat::expect_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
+    testthat::expect_no_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
+    testthat::expect_match(core_block, "- point-in-time-inputs", fixed = TRUE)
     testthat::expect_match(core_block, "- survivorship-bias", fixed = TRUE)
     testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
     testthat::expect_match(core_block, "- indicators", fixed = TRUE)
@@ -968,6 +970,7 @@ testthat::test_that("package help and help-page links target installed articles"
     "quickstart",
     "research-workflow",
     "data-input-and-snapshots",
+    "point-in-time-inputs",
     "strategy-development",
     "strategy-authoring-tools",
     "indicators",
@@ -1012,6 +1015,7 @@ testthat::test_that("package help and help-page links target installed articles"
   testthat::expect_true("strategy-authoring-tools" %in% installed_articles)
   testthat::expect_true("metric-contexts-and-conventions" %in% installed_articles)
   testthat::expect_true("data-input-and-snapshots" %in% installed_articles)
+  testthat::expect_true("point-in-time-inputs" %in% installed_articles)
   testthat::expect_true("quickstart" %in% installed_articles)
   testthat::expect_true("risk-and-cost" %in% installed_articles)
   testthat::expect_false("ttr-indicators" %in% installed_articles)

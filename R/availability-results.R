@@ -143,6 +143,68 @@ ledgr_backtest_completion_info <- function(bt) {
   ledgr_run_completion_info(opened$con, bt$run_id)
 }
 
+#' Read one run's completion evidence
+#'
+#' Returns the persisted answer to whether a run covered its requested window,
+#' including the achieved window, stop reason, and affected exposure recorded
+#' at an incomplete boundary. It performs no new completion judgement.
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @return A `ledgr_run_completion` list. When the run has no completion row,
+#'   `completion_evidence_available` is `FALSE` and every evidence field carries
+#'   a typed missing value.
+#' @export
+ledgr_run_completion <- function(bt) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  info <- ledgr_run_completion_info(opened$con, bt$run_id)
+  completion <- ledgr_run_completion_read(opened$con, bt$run_id, required = FALSE)
+  missing_time <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
+  if (is.null(completion) || nrow(completion) == 0L) {
+    info$affected_exposure <- NA_real_
+    info$affected_exposure_ts_utc <- missing_time
+    info$affected_exposure_basis <- NA_character_
+  } else {
+    info$affected_exposure <- as.numeric(completion$affected_exposure[[1L]])
+    info$affected_exposure_ts_utc <- as.POSIXct(
+      completion$affected_exposure_ts_utc[[1L]],
+      tz = "UTC"
+    )
+    info$affected_exposure_basis <- as.character(
+      completion$affected_exposure_basis[[1L]]
+    )
+  }
+  structure(info, class = c("ledgr_run_completion", "list"))
+}
+
+#' @export
+print.ledgr_run_completion <- function(x, ...) {
+  if (!inherits(x, "ledgr_run_completion")) {
+    rlang::abort("`x` must be a ledgr_run_completion object.", class = "ledgr_invalid_args")
+  }
+  if (!isTRUE(x$completion_evidence_available)) {
+    cat("Completion evidence is not available for this run.\n")
+    return(invisible(x))
+  }
+  ledgr_print_completion_info(x)
+  exposure <- if (is.finite(x$affected_exposure)) {
+    format(x$affected_exposure, scientific = FALSE, trim = TRUE)
+  } else {
+    "unknown"
+  }
+  basis <- if (is.na(x$affected_exposure_basis) || !nzchar(x$affected_exposure_basis)) {
+    "unknown"
+  } else {
+    x$affected_exposure_basis
+  }
+  cat("  Affected Exposure: ", exposure, "\n", sep = "")
+  cat("  Exposure Basis:    ", basis, "\n", sep = "")
+  invisible(x)
+}
+
 ledgr_completion_time_label <- function(x) {
   if (length(x) != 1L || is.na(x)) return("unknown")
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -463,8 +525,12 @@ ledgr_backtest_availability <- function(bt, con) {
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param instrument_id One stable instrument identifier.
-#' @param ts_utc One decision timestamp coercible to POSIXct UTC.
-#' @return A one-row tibble with:
+#' @param ts_utc Optional decision timestamp coercible to POSIXct UTC. When
+#'   omitted, every retained decision for `instrument_id` is returned in pulse
+#'   order.
+#' @return A tibble with one row for a requested timestamp or one row per
+#'   retained decision when `ts_utc` is omitted. An instrument absent from the
+#'   retained trace returns a zero-row tibble in history mode. Columns are:
 #' - identifiers: `run_id`, `ts_utc`, and `instrument_id`;
 #' - availability: `member`, `held`, `target_restricted`,
 #'   `target_restriction_reason`, and `target_restriction_reasons`;
@@ -484,7 +550,7 @@ ledgr_backtest_availability <- function(bt, con) {
 #' `vignette("survivorship-bias", package = "ledgr")`
 #' `system.file("doc", "survivorship-bias.html", package = "ledgr")`
 #' @export
-ledgr_run_explain <- function(bt, instrument_id, ts_utc) {
+ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
@@ -492,44 +558,61 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc) {
       is.na(instrument_id) || !nzchar(instrument_id)) {
     rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
-  ts <- tryCatch(as.POSIXct(ts_utc, tz = "UTC"), error = function(e) as.POSIXct(NA, tz = "UTC"))
-  if (length(ts) != 1L || is.na(ts)) {
-    rlang::abort("`ts_utc` must be one parseable timestamp.", class = "ledgr_invalid_args")
+  history <- missing(ts_utc) || is.null(ts_utc)
+  ts <- NULL
+  if (!history) {
+    ts <- tryCatch(as.POSIXct(ts_utc, tz = "UTC"), error = function(e) as.POSIXct(NA, tz = "UTC"))
+    if (length(ts) != 1L || is.na(ts)) {
+      rlang::abort("`ts_utc` must be one parseable timestamp.", class = "ledgr_invalid_args")
+    }
   }
   diagnostics <- tibble::as_tibble(bt, what = "diagnostics")
-  decision <- diagnostics[
-    diagnostics$stage == "decision" &
-      diagnostics$instrument_id == instrument_id &
-      as.POSIXct(diagnostics$ts_utc, tz = "UTC") == ts,
-    ,
-    drop = FALSE
-  ]
-  if (nrow(decision) != 1L) {
+  decision_idx <- diagnostics$stage == "decision" &
+    diagnostics$instrument_id == instrument_id
+  if (!history) {
+    decision_idx <- decision_idx &
+      as.POSIXct(diagnostics$ts_utc, tz = "UTC") == ts
+  }
+  decision <- diagnostics[decision_idx, , drop = FALSE]
+  if (!history && nrow(decision) != 1L) {
     rlang::abort(
       "No retained decision trace exists for that instrument and timestamp.",
       class = "ledgr_run_explanation_unavailable"
     )
   }
+  if (history && nrow(decision) > 1L) {
+    decision <- decision[
+      order(as.numeric(as.POSIXct(decision$ts_utc, tz = "UTC"))),
+      ,
+      drop = FALSE
+    ]
+  }
   availability <- tibble::as_tibble(bt, what = "availability")
   available <- availability[
-    availability$instrument_id == instrument_id & availability$ts_utc == ts,
+    availability$instrument_id == instrument_id,
     ,
     drop = FALSE
   ]
-  if (nrow(available) != 1L) {
+  decision_time <- as.POSIXct(decision$ts_utc, tz = "UTC")
+  available_time <- as.POSIXct(available$ts_utc, tz = "UTC")
+  available_idx <- match(as.numeric(decision_time), as.numeric(available_time))
+  if (anyNA(available_idx) || anyDuplicated(as.numeric(available_time))) {
     rlang::abort(
       "The retained decision trace has no matching availability evidence.",
       class = "ledgr_run_explanation_unavailable"
     )
   }
+  available <- available[available_idx, , drop = FALSE]
   execution <- diagnostics[
     diagnostics$stage == "execution" &
-      diagnostics$instrument_id == instrument_id &
-      as.POSIXct(diagnostics$decision_ts_utc, tz = "UTC") == ts,
+      diagnostics$instrument_id == instrument_id,
     ,
     drop = FALSE
   ]
-  if (nrow(execution) > 1L) execution <- execution[1L, , drop = FALSE]
+  execution_idx <- match(
+    as.numeric(decision_time),
+    as.numeric(as.POSIXct(execution$decision_ts_utc, tz = "UTC"))
+  )
   terminal <- ledgr_backtest_terminal_evidence(bt)
   completion <- terminal$completion
   complete_performance <- if (is.null(completion) || nrow(completion) == 0L) {
@@ -538,31 +621,34 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc) {
     isTRUE(completion$complete_performance[[1L]])
   }
   execution_value <- function(column, default) {
-    if (nrow(execution) == 0L) default else execution[[column]][[1L]]
+    out <- default
+    found <- !is.na(execution_idx)
+    out[found] <- execution[[column]][execution_idx[found]]
+    out
   }
+  feature_identity <- as.character(decision$feature_identity_json)
+  missing_identity <- is.na(feature_identity) | !nzchar(feature_identity)
+  feature_identity[missing_identity] <- ledgr_availability_feature_identity_json(bt$config)
   tibble::tibble(
-    run_id = bt$run_id,
-    ts_utc = ts,
-    instrument_id = instrument_id,
-    member = available$member[[1L]],
-    held = available$held[[1L]],
-    target_restricted = available$target_restricted[[1L]],
-    target_restriction_reason = available$target_restriction_reason[[1L]],
-    target_restriction_reasons = available$target_restriction_reasons[[1L]],
-    feature_identity_json = if (
-      !is.na(decision$feature_identity_json[[1L]]) &&
-        nzchar(decision$feature_identity_json[[1L]])
-    ) decision$feature_identity_json[[1L]] else ledgr_availability_feature_identity_json(bt$config),
-    quantity = decision$quantity[[1L]],
-    target_before_risk = decision$target_before_risk[[1L]],
-    target_after_risk = decision$target_after_risk[[1L]],
-    execution_outcome = as.character(execution_value("outcome", "no_action")),
-    execution_reason = as.character(execution_value("reason_code", "no_target_change")),
-    execution_reasons = as.character(execution_value("reasons", "no_target_change")),
-    resulting_position = as.numeric(execution_value("position_after", decision$position_after[[1L]])),
-    mark_source = available$mark_source[[1L]],
-    mark_age = available$mark_age[[1L]],
-    completion_status = terminal$status,
-    complete_performance = complete_performance
+    run_id = rep(bt$run_id, nrow(decision)),
+    ts_utc = decision_time,
+    instrument_id = rep(instrument_id, nrow(decision)),
+    member = as.logical(available$member),
+    held = as.logical(available$held),
+    target_restricted = as.logical(available$target_restricted),
+    target_restriction_reason = as.character(available$target_restriction_reason),
+    target_restriction_reasons = as.character(available$target_restriction_reasons),
+    feature_identity_json = feature_identity,
+    quantity = as.numeric(decision$quantity),
+    target_before_risk = as.numeric(decision$target_before_risk),
+    target_after_risk = as.numeric(decision$target_after_risk),
+    execution_outcome = as.character(execution_value("outcome", rep("no_action", nrow(decision)))),
+    execution_reason = as.character(execution_value("reason_code", rep("no_target_change", nrow(decision)))),
+    execution_reasons = as.character(execution_value("reasons", rep("no_target_change", nrow(decision)))),
+    resulting_position = as.numeric(execution_value("position_after", as.numeric(decision$position_after))),
+    mark_source = as.character(available$mark_source),
+    mark_age = as.integer(available$mark_age),
+    completion_status = rep(terminal$status, nrow(decision)),
+    complete_performance = rep(complete_performance, nrow(decision))
   )
 }

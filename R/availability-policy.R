@@ -177,6 +177,9 @@ ledgr_availability_validate_features <- function(features, features_mode) {
     )
   }
   unsupported <- vapply(indicators, function(indicator) {
+    if (inherits(indicator, "ledgr_unresolved_feature_declaration")) {
+      return(FALSE)
+    }
     !identical(indicator$gap_contract, "strict_window")
   }, logical(1))
   if (any(unsupported)) {

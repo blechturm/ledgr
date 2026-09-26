@@ -36,6 +36,9 @@ universe, aligned to \code{ctx$universe}.
 \item \code{ctx$flat()}: full named target vector initialized to zero.
 \item \code{ctx$hold()}: full named target vector initialized to current
 positions.
+\item \code{ctx$tradable()}: instrument IDs that may be sized now. In an
+availability-aware run these are current members that are admissible and
+priced; in a dense run they are instruments with a finite positive close.
 }
 
 Feature IDs and feature-map aliases are different namespaces.
@@ -55,6 +58,8 @@ treat all context fields and vector views as read-only.
 Strategies should return full named numeric target vectors. The helpers
 \code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because
 they already have one entry for every instrument in \code{ctx$universe}.
+Use \code{ctx$tradable()} to select instruments without reconstructing the
+engine's current eligibility and pricing decision in strategy code.
 }
 \section{Feature Object Compatibility}{
 \code{ledgr_experiment(features = ...)} accepts static indicators, lists of

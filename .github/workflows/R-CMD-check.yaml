@@ -191,8 +191,8 @@ jobs:
         run: |
           Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=cran --records=test-profile-artifacts/cran
 
-      - name: Run release review profile
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Run nightly and release review profile
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=review --mode=ordinary --reporter=summary --census=test-profile-artifacts/review/census.csv --summary=test-profile-artifacts/review/summary.csv
 

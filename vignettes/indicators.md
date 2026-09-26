@@ -82,6 +82,71 @@ The canonical workflow is: register features on `ledgr_experiment()`,
 then read pulse-known values through `ctx$feature()` or `ctx$features()`
 inside the strategy.
 
+## Expected Sessions And Certified Gap Behavior
+
+The declared session calendar, not the indicator’s source package,
+decides which dates belong in an availability-aware window. A missing
+observation on a declared open session invalidates every bounded window
+that contains it. ledgr does not compress that window to the most recent
+observed rows, carry a stale value into it, or treat the gap as ordinary
+startup warmup.
+
+Here are three equivalent declarations for the two-session SMA in the
+strict-gap table in
+`vignette("missing-data-and-sessions", package = "ledgr")`:
+
+``` r
+strict_smas <- ledgr_feature_map(
+  built_in = ledgr_ind_sma(2),
+  public_ttr = ledgr_ind_ttr("SMA", input = "close", n = 2),
+  custom = ledgr_indicator(
+    "custom_sma_2",
+    function(window) mean(window$close),
+    requires_bars = 2,
+    gap_contract = "strict_window"
+  )
+)
+
+ledgr_feature_contracts(strict_smas)
+#> # A tibble: 3 × 5
+#>   alias      feature_id   source requires_bars stable_after
+#>   <chr>      <chr>        <chr>          <int>        <int>
+#> 1 built_in   sma_2        ledgr              2            2
+#> 2 public_ttr ttr_sma_2    TTR                2            2
+#> 3 custom     custom_sma_2 custom             2            2
+```
+
+All three produce the same `NA, 11, NA, NA, 15, 17` path for `AAA` in
+that example. This is a deliberately narrow equivalence: it does not say
+that different indicator formulas become numerically equal merely
+because they share session semantics.
+
+The current availability-aware support boundary is executable and
+closed:
+
+<!-- strict-gap-support:start -->
+
+| Form | Declaration | Availability-aware status |
+|----|----|----|
+| Built-in SMA | `ledgr_ind_sma(n)` | Supported |
+| Built-in returns | `ledgr_ind_returns(n)` | Supported |
+| Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
+| Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
+| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Unsupported |
+| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported |
+| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Unsupported |
+| Other TTR signatures | any shape not matching the public TTR SMA row | Unsupported |
+
+<!-- strict-gap-support:end -->
+
+The recursive EMA and RSI families are unsupported regardless of whether
+the implementation comes from ledgr or TTR. Their state cannot yet be
+reconstructed honestly after an expected-session gap. TTR bundles and
+every other TTR shape also remain uncertified. In an availability-aware
+experiment, those declarations fail with
+`ledgr_indicator_gap_unsupported` before the strategy executes; they are
+not silently evaluated under dense semantics.
+
 ## Feature Lifecycle: From Declaration To Lookup
 
 The feature path has five steps:

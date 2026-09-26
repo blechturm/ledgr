@@ -27,17 +27,18 @@ articles:
     contents:
       - articles/who-ledgr-is-for
       - quickstart
+      - data-input-and-snapshots
       - research-workflow
       - leakage
       - reproducibility
   - title: Core Workflow
     navbar: Core Workflow
     desc: >
-      The end-to-end loop -- seal data, write a strategy, run it, read
-      fills/trades/equity/metrics, apply cost and risk policy, then sweep
-      and walk-forward over candidates.
+      Prepare point-in-time evidence, write a strategy, run it, read
+      fills/trades/equity/metrics, apply cost and risk policy, then sweep and
+      walk-forward over candidates.
     contents:
-      - data-input-and-snapshots
+      - point-in-time-inputs
       - missing-data-and-sessions
       - corporate-action-cash
       - survivorship-bias

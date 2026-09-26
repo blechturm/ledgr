@@ -1,25 +1,25 @@
 # ledgr Peer Parity And Performance Benchmark Report
 
 
-This tracked report records the v0.2.0.2 internal same-host peer
+This tracked report records the v0.2.1.0 internal same-host peer
 workload. Parity is interpreted before timing. The report preserves
 phase boundaries, unavailable engines, and classified divergences
 without turning one host and one fixture into a public engine ranking.
 
-The exact closeout command was:
+The exact sampled record command was:
 
 ``` powershell
-$env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
-$env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.2 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+& dev/bench/peer_benchmark/run_record.ps1 `
+  -RepoRoot "C:\tmp\ledgr-ws12" `
+  -Release "v0.2.1.0" `
+  -LedgrOrder "ttr-first"
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260923T001439Z`. The
-Workstream 8 review candidate was measured over base commit
-`9cb8c2e692c821cd7fb57831fc81865ffc96b080`; the exact uncommitted
-benchmark harness has SHA-256
-`6522879a3be3ac6eed83a64cac8b555be7fdc6b6634bcc330ab9fb4ffef4d9fe`. It
+`dev/bench/results/peer_benchmark_record_20260926T080725Z`. It was
+measured from commit `c7d936ddccbdf7affbdcd1c9be22f7d8fdaa7eb0`; the
+exact benchmark harness has SHA-256
+`9ac0c8f2b5f276000f10028104de9824f106719705307329853f6a2de283edaf`. It
 ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
 from the isolated library with the ticket-pinned blotter 0.17.0,
 FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
@@ -28,9 +28,9 @@ was unavailable because its CLI root uses an obsolete organization
 layout. No hosted LEAN service was used.
 
 The report checks every ledgr row before interpreting its timing. The
-canonical public sweep completed in 37.25 seconds cold and 30.07 seconds
-warm; the public compiled sweep completed in 23.00 seconds cold and
-14.80 seconds warm. The two public sweep rows are exact across all 1,260
+canonical public sweep completed in 39.68 seconds cold and 32.31 seconds
+warm; the public compiled sweep completed in 27.19 seconds cold and
+17.60 seconds warm. The two public sweep rows are exact across all 1,260
 equity rows, 68,201 fills, and the realized-trade row after normalizing
 only the engine label. Against durable ledgr, fills and trades are
 exact; compensated production-inline equity passes the existing relative
@@ -46,6 +46,21 @@ pairs all 1,260 source sessions positionally and records daily-return
 correlation `0.987974`; the v0.2.0.1 report’s `0.146064` was produced by
 the disclosed one-day timestamp misalignment and remains historical
 evidence rather than being rewritten.
+
+Workstream 17 also corrects the indicator boundary. All published TTR
+rows now use exported `ledgr_ind_ttr("SMA")`; the retired private
+wrapper is absent. Durable public TTR and built-in SMA ran in separate
+fresh R processes with identical R, library-path and package-version
+records. Their feature axes and NA masks are exact; 1,260,000 numeric
+cells pass the existing `1e-8` tolerance with maximum absolute residual
+`7.567e-10`. Equity, fills and realized trades are exact. Timing does
+not identify a source effect: the promoted TTR-first record reports warm
+clocks of 53.02 and 68.33 seconds. The six-order attribution spike
+independently places every source in every process position twice; each
+contrast changes direction. That spike classifies the old 9.57-second
+chart gap as order-confounded rather than a package-speed difference. A
+later built-in-first diagnostic is excluded because its command was not
+recorded and its first-position clock did not reproduce the spike.
 
 > **Scope of this report**
 >
@@ -66,9 +81,9 @@ comparison.
 
 | Surface | B2 seconds | Backtrader seconds | B2 / Backtrader | B2 reduction vs Backtrader |
 |:---|:---|:---|:---|:---|
-| Cold end to end | 23.000 | 84.370 | 0.27x | 72.7% |
-| Warm research iteration | 14.800 | 83.793 | 0.18x | 82.3% |
-| Engine phase | 12.970 | 78.257 | 0.17x | 83.4% |
+| Cold end to end | 27.190 | 89.080 | 0.31x | 69.5% |
+| Warm research iteration | 17.600 | 88.498 | 0.20x | 80.1% |
+| Engine phase | 14.710 | 82.605 | 0.18x | 82.2% |
 
 The three clocks answer different questions. Cold includes the reusable
 sealed snapshot. Warm measures the public research iteration over that
@@ -78,6 +93,39 @@ facts and public accessors; the private full-surface parity oracle runs
 outside every reported clock.
 
 ![](peer_benchmark_files/figure-commonmark/unnamed-chunk-3-1.png)
+
+## Indicator source boundary
+
+The old report always ran a private TTR wrapper before built-in SMA in
+one R process. That row order could not attribute its 9.57-second
+difference. This record replaces the wrapper with exported
+`ledgr_ind_ttr("SMA")` everywhere and runs the two durable rows in
+independent child processes. LTB-0075 also reverses their launch order
+on a small executable fixture; that detector is not another peer record.
+
+| Surface | Standard | Result | Max absolute residual | Max relative residual |
+|----|----|---:|---:|---:|
+| feature axis | exact | PASS | 0 | 0 |
+| feature NA mask | exact | PASS | 0 | 0 |
+| feature values | relative `all.equal()` tolerance `1e-8` | PASS | 7.567e-10 | 1.182e-13 |
+
+| Order     | Source         | Cold s | Warm s | Engine s |
+|-----------|----------------|-------:|-------:|---------:|
+| TTR first | public TTR SMA |  60.82 |  53.02 |    47.44 |
+| TTR first | built-in SMA   |  76.16 |  68.33 |    61.67 |
+
+The six-permutation attribution spike carries the source conclusion. Its
+first-position means were 50.635 seconds for built-in SMA, 51.050 for
+the private wrapper and 51.295 for public TTR, and every pair changed
+direction by process position. The old 9.57-second gap therefore did not
+reproduce as an indicator-source cost.
+
+A later built-in-first diagnostic exists beside the promoted record, but
+its command was not recorded and its first-launched built-in row took
+65.50 seconds against the spike’s matching first-position observations
+of 50.530 and 50.740 seconds. It is not loaded by this report and
+supports no attribution claim. The public-adapter correction is a
+measurement-boundary fix, not a package speedup.
 
 ## Why parity comes before timing
 
@@ -111,13 +159,13 @@ prevents reading a compiled opt-in result as a default ledgr claim.
 
 | Engine row | Status | Cost | Risk | Compiled | Full row | Snapshot prepare | Setup / orchestration | Engine phase | Results | Cold | Warm | Bars/sec |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
-| ledgr_ttr_canonical | DONE | cost_zero | risk_none | NA | 61.580 | 7.500 | 0.350 | 48.550 | 5.140 | 61.540 | 54.040 | 10,237.2 |
-| ledgr_ttr_canonical_sweep | DONE | cost_zero | risk_none | NA | 37.330 | 7.180 | 1.670 | 28.400 | 0.000 | 37.250 | 30.070 | 16,912.8 |
-| ledgr_ttr_compiled_spot_fifo_sweep | DONE | cost_zero | risk_none | spot_fifo | 23.050 | 8.200 | 1.750 | 12.970 | 0.080 | 23.000 | 14.800 | 27,391.3 |
-| ledgr_builtin_sma | DONE | cost_zero | risk_none | NA | 51.980 | 7.250 | 0.330 | 39.840 | 4.550 | 51.970 | 44.720 | 12,122.4 |
-| quantstrat | DONE | NA | NA | NA | 357.500 | 8.640 | 1.920 | 345.370 | 1.190 | 357.120 | 348.480 | 1,764.11 |
-| backtrader | DONE | NA | NA | NA | 84.390 | 0.577 | 5.287 | 78.257 | 0.248 | 84.370 | 83.793 | 7,467.11 |
-| zipline-reloaded-full | DONE | NA | NA | NA | 304.570 | 15.908 | 11.560 | 276.562 | 0.540 | 304.570 | 288.662 | 2,068.49 |
+| ledgr_ttr_canonical | DONE | cost_zero | risk_none | NA | 60.860 | 7.800 | 0.360 | 47.440 | 5.220 | 60.820 | 53.020 | 10,358.4 |
+| ledgr_ttr_canonical_sweep | DONE | cost_zero | risk_none | NA | 39.770 | 7.370 | 2.460 | 29.850 | 0.000 | 39.680 | 32.310 | 15,877 |
+| ledgr_ttr_compiled_spot_fifo_sweep | DONE | cost_zero | risk_none | spot_fifo | 27.250 | 9.590 | 2.830 | 14.710 | 0.060 | 27.190 | 17.600 | 23,170.3 |
+| ledgr_builtin_sma | DONE | cost_zero | risk_none | NA | 76.190 | 7.830 | 0.470 | 61.670 | 6.190 | 76.160 | 68.330 | 8,272.06 |
+| quantstrat | DONE | NA | NA | NA | 427.110 | 9.460 | 1.970 | 414.330 | 1.190 | 426.950 | 417.490 | 1,475.58 |
+| backtrader | DONE | NA | NA | NA | 89.110 | 0.582 | 5.627 | 82.605 | 0.266 | 89.080 | 88.498 | 7,072.29 |
+| zipline-reloaded-full | DONE | NA | NA | NA | 338.230 | 17.063 | 14.558 | 305.732 | 0.877 | 338.230 | 321.167 | 1,862.64 |
 | LEAN | UNAVAILABLE | NA | NA | NA | NULL | NULL | NULL | NULL | NULL | NULL | NULL | NA |
 
 Read `Cold` as the sum of snapshot preparation, setup/orchestration,
@@ -417,12 +465,12 @@ are vector operations rather than a per-instrument R loop.
 
 | field | value |
 |:---|:---|
-| created_at | 2026-09-23T00:14:39Z |
-| release | v0.2.0.2 |
+| created_at | 2026-09-26T08:07:25Z |
+| release | v0.2.1.0 |
 | preset | record |
 | input_hash | 0b183457b3fe720d63b02a90fe552e1202fdb31b4e967a75e91304f9d3e416fc |
-| git_sha | 9cb8c2e692c821cd7fb57831fc81865ffc96b080 |
-| process_tree_peak_mib | 1753.8 |
+| git_sha | c7d936ddccbdf7affbdcd1c9be22f7d8fdaa7eb0 |
+| process_tree_peak_mib | 1715.7 |
 | peak_sampling_interval_sec | 1 |
 
 ### Isolated quantstrat environment

@@ -411,19 +411,30 @@ four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
 
-## Cut 8: Release gate (open; opens after workstream 18)
+## Cut 8: Release gate (open; opens after workstream 20)
 
 Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
 2026-09-25 when `R-CMD-check.yaml` was tiered. No RFC: the playbook already
 binds the process and requires that every release-gate ticket name it and the
-exact local gates. Two tickets, LDG-2824 and LDG-2825, one workstream; the cut
-review is compressed into the close review, so one invocation over two tickets
-is 0.500.
+exact local gates. Four tickets, LDG-2824, LDG-2858, LDG-2859 and LDG-2825, one
+workstream; the cut review is compressed into the close review, so one
+invocation over four tickets is 0.250.
+
+The maintainer added the two teaching-surface tickets on 2026-09-26, ahead of
+an
+external review of the tagged release. They sit between the release notes and
+the gate run, because a gate that runs on stale teaching certifies the wrong
+thing. Execution already proves the README example and all articles run; what
+it
+cannot prove is that they still teach the surface this version ships, and this
+version changed a great deal. The audit looks for the drift execution misses: a
+superseded idiom still modelled, a shipped capability an article still works
+around by hand, an overstated claim, and a reference that no longer resolves.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 15 Release gate | 2824–2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+| 15 Release gate | 2824, 2858, 2859, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
 
 The maintainer promoted the release target to v0.2.1.0 on 2026-09-25 because
 the accumulated public capability and architecture changes are no longer
@@ -437,7 +448,7 @@ than hidden, as cut 7 recorded its own. This workstream ships no production
 code, so the amended obligations' seven-shape walk and before-and-after clock
 do not apply to its review.
 
-## Cut 9: Availability and evidence accessors (open; opens after workstream 12)
+## Cut 9: Availability and evidence accessors (accepted)
 
 Authority: `../horizon.md`, the 2026-09-25 `[ux]` entry,
 `../vignette_styleguide.md` section 5, which routes visual clutter in a worked
@@ -478,7 +489,7 @@ result boundary: expose or reuse evidence already computed without changing
 its meaning. The older LDG-2820 remains a separate deferred resume-path
 optimization.
 
-## Cut 10: Indicator source parity and timing attribution (ticket-cut review pending)
+## Cut 10: Indicator source parity and timing attribution (closed)
 
 Authority: the maintainer's 2026-09-25 decision that indicator source is not
 a semantic axis for missing observations or session calendars, together with
@@ -532,8 +543,25 @@ support matrix. Workstream 17 follows Workstream 16 so both edits to that
 article are serial; Workstream 18 follows Workstream 17 for the same reason,
 and the release gate follows Workstream 18.
 
-## Cut 11: Point-in-time input model (awaiting focused cut re-review; opens
-after workstream 17)
+Workstream 17 is implemented through `664a127`. Its agent-provisional record is
+`indicator_source_parity_closeout.md`. The six-permutation attribution found
+the historical 9.57-second gap order-confounded and authorized no source-path
+optimization. The corrected peer record uses only public indicator
+constructors, and the source and rendered articles publish the executable
+expected-session and support matrices. The exact LDG-2837 fast record passed
+453 of 453 blocks in 76.50 seconds against the unchanged 90-second gate.
+The initial Type 1 close review returned five bounded evidence findings. The
+correction makes each combined unsupported row fail on any false
+certification, binds the peer helpers to public-constructor fingerprints and
+fresh child processes, demotes the unregistered reverse-order diagnostic,
+corrects the attribution-spread wording, and clocks the finalization slice at
+0.029 seconds per full-axis call. The focused Type 1 re-review found one real
+bundle/RSI detector gap and one factual attribution error; both are corrected.
+It was the third invocation over six tickets, exactly 0.500 against the gate.
+A fourth review would have breached the gate. The maintainer accepted the
+corrected work at `5c678ae` on 2026-09-26; Workstream 17 and Cut 10 are closed.
+
+## Cut 11: Point-in-time input model (correction review pending)
 
 Authority: the maintainer's 2026-09-25 decision that the point-in-time input
 model needs one checklist of required data and one inspectable demo input set,
@@ -543,11 +571,13 @@ LDG-2843, one workstream. An inline Type 2 cut review returned
 `CHANGES_REQUIRED`: a fact-only generator could not own observation gaps or
 compose directly with the existing midnight-UTC demo bars, the knowledge rule
 was false for late-known facts, and the proposed checklist detector was
-circular. The tickets were patched in place and await focused re-review.
+circular. The tickets were patched in place. On 2026-09-26 the maintainer
+accepted the patched cut without a focused cut re-review and opened Workstream
+18. The cut review plus its planned close review is 2/5 = 0.400.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 18 Point-in-time input model | 2839–2843 | an exported `ledgr_sim_pit_inputs()` parametrized by instruments, window, seed, calendar convention and teaching cases; one committed plain-data bundle containing matching bars, fact inputs, construction recipe and case manifest; the input checklist and an entity diagram in the data-input article; the specialist articles connected to the shared bundle without sacrificing minimal teaching fixtures; closeout | a user can learn what data ledgr needs, in what form, from one place, can load a working composable example, and can generate one for their own instruments and window; the generator declares a session calendar independently of observations and derives matching bars from that declaration |
+| 18 Point-in-time input model | 2839–2843 | an exported `ledgr_sim_pit_inputs()` parametrized by instruments, window, seed, calendar convention and teaching cases; one committed plain-data bundle containing matching bars, fact inputs, construction recipe and case manifest; a short import-and-seal entry point, a progressive point-in-time article with the data dictionary and ERD at the end, and closed-store backup in the experiment-store article; specialist articles connected to the shared bundle without sacrificing minimal teaching fixtures; closeout | a user can enter through the smallest relevant task, load a working composable example, understand the complete input model when needed, and generate one for their own instruments and window; the generator declares a session calendar independently of observations and derives matching bars from that declaration |
 
 The gap this closes is visible in the tree. ledgr ships exactly one dataset,
 `ledgr_demo_bars`: ten instruments of OHLCV and nothing else. Every article
@@ -578,21 +608,23 @@ rewriting. A shorter teaching window is acceptable only because its matching
 bars travel with it; it is not presented as a fact set that users can attach
 directly to an arbitrary slice of `ledgr_demo_bars`.
 
-The entity diagram is included because two facts cannot be shown by a column
+The entity diagram in the point-in-time reference section is included because
+two facts cannot be shown by a column
 table: the families have different scope keys, instrument against venue
 against universe, and a corporate action references a parent and an optional
 recipient that must both resolve in the snapshot's physical instrument master.
 That is deliberately not the same claim as membership in a universe.
 
 This cut ships inside v0.2.0.2. The point-in-time model is what this release
-adds, and shipping it without one checklist of required inputs and one
-inspectable example would leave users to reverse-engineer the model from three
-worked examples. Workstream 18 opens after Workstream 17, so the three edits to
+adds, and shipping it without a short route into the right lesson, one complete
+reference and one inspectable example would leave users to reverse-engineer
+the model from three worked examples. Workstream 18 opens after Workstream 17,
+so the three edits to
 the missing-data article stay serial: Workstream 16 puts it on `ctx$tradable()`,
 Workstream 17 adds the expected-session and support-matrix material, and
 Workstream 18 links it to the shared demo input. Specialist articles may retain
 deliberately small local fixtures where those are the clearest behavioral
-detectors; each must state why and link to the canonical input article. The
+detectors; each must state why and link to the point-in-time input article. The
 release gate follows, so its local gates and CI tiers cover the shipped bundle
 and rendered articles.
 
@@ -601,3 +633,198 @@ five completed tickets, 0.400. A focused correction re-review followed by the
 close review would make the historical count three over five, 0.600. If that
 route is taken, the closeout records the breach honestly rather than merging or
 padding tickets to hide it.
+
+Implementation is complete through `de8cf97`, with the agent-provisional
+record in `point_in_time_inputs_closeout.md`. The final ordinary fast record
+passed 455 of 455 blocks in 75.89 seconds and its independent checker passed;
+the review record passed 276 of 276 selected blocks in 402.39 seconds with one
+declared optional missing-package-path skip. The source package built, and the
+touched cash article passed installed-package vignette execution after one
+attachment correction. The overall R CMD check remains red for pre-existing
+source-tree-path tests and the unrelated adapter-authoring vignette, which are
+disclosed rather than attributed to this cut. The later release promotion
+means this historical v0.2.0.2 cut ships under the v0.2.1.0 target verified by
+LDG-2825.
+
+The first Type 1 close review returned six bounded corrections. The corrected
+bundle has no observations after its delisting boundary or strictly inside its
+halt, and its late-known halt is a higher-precedence override over an
+open-ended base status rather than a row that leaks future knowledge. The
+data-raw recipe is now the callable regeneration path tested byte for byte.
+The original all-in-one article was split after a teachability review.
+**Importing And Sealing Market Data** is the lean entry point; **Preparing
+Point-In-Time Inputs** owns the progressive evidence workflow, dictionary and
+eight-entity ERD; and **Experiment Store** owns closed-store backup. The final
+documentation-focused fast record passed 455 of 455 blocks in 76.86 seconds
+under the unchanged 90-second bound. The teachability review is invocation
+four, so the historical ratio is 4/5 = 0.800 and is recorded as a breach
+rather than hidden through ticket merging or padding.
+
+## Cut 12: Restore fast-profile headroom (accepted)
+
+Authority: the accepted testing-architecture synthesis and the maintainer's
+2026-09-25 decision to recover the fast lane without weakening its 90-second
+gate or hiding unrelated test work inside Cut 9. Five tickets, LDG-2845 through
+LDG-2849, one test-only workstream. The independent Type 1 then Type 2 review
+returned `PASS_AFTER_PATCHES`; its six ticket-text corrections are applied, and
+the maintainer accepted the cut.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 19 Fast-profile headroom | 2845-2849 | claim-based routing of three rare recovery integrations; scalar-warning evidence split by feedback value; fixture shrinking for expensive core fast gates; exact ordinary and CRAN-mode censuses, mutations, clocks and closeout | fast retains legacy migration plus the smallest failure-sensitive evidence needed on ordinary changes, every moved guarantee runs nightly and at release, core parity and corruption guards remain fast, and measured headroom is recovered without changing production code or either time bound |
+
+The triggering record is not a correctness failure. At `c83e4dc`, all 456
+fast blocks pass, but the exact post-correction profile records 102.94, 103.81
+and 104.02 seconds, median 103.81. An earlier run of the reviewed tree took
+83.61 seconds and the independent reviewer reproduced 86.36, so cross-session
+clocks cannot identify one regression. The per-block census does identify the
+work: the scalar-warning block is about seven seconds; two rare walk-forward
+failure integrations total about six; compiled parity and rule-2 scaling total
+about eight and must stay fast but may have smaller fixtures. Legacy metadata
+migration stays fast because current-schema evidence cannot replace its upgrade
+guarantee.
+
+The cut therefore uses two different tools deliberately. The two rare recovery
+integrations move only when the nightly and release review lane demonstrably
+executes them with the same mutations. High-feedback core and migration claims
+stay fast and lose setup rather than evidence. The scalar-warning claim is
+split: ordinary development keeps the warning and false-positive detectors,
+while review keeps the full durable non-interference comparison. Slowness alone
+authorizes no deletion.
+
+The named savings may land close to, rather than below, the ordinary bound.
+LDG-2848 therefore owns both the 90-second ordinary and 105-second isolated
+CRAN-mode gates. An ordinary median from 90 through 95 seconds is a stop for an
+explicit maintainer decision on a bounded second pass or deferral, never an
+excuse to raise the bound or route more tests post hoc. The 75-to-80-second
+figure remains a non-binding engineering target.
+
+The first post-implementation CRAN record exposed a separate test-lifecycle
+instability: three isolated runs took 108.56, 107.61 and 107.68 seconds, with
+about 29 seconds charged to the low-level state-reconstruction integration.
+The same block took 0.32 seconds alone and 0.24 seconds when instrumentation
+perturbed collector timing. Explicit connection-and-driver cleanup did not
+stabilize it and was rejected. The maintainer authorized LDG-2849 as a bounded
+second pass; the recovery integration remains executable nightly and at
+release, while the failed record remains part of the closeout.
+
+The accepted bounded pass routes only that low-level recovery integration.
+Final ordinary runs were 79.46, 79.72 and 79.23 seconds; final isolated
+CRAN-mode runs were 78.94, 79.44 and 79.42 seconds. Both independent gate
+checkers passed their one-run rule without changing either bound. The review
+profile still executed all 270 selected blocks, including the moved recovery
+claim.
+
+One cut review and one close review over five real units is 2/5, 0.400. The
+workstream opens from completed Workstream 12 and must close before Workstream
+16 returns for focused correction review; Workstream 17 remains downstream of
+Workstream 16.
+
+## Cut 13: Strategy context surface (open; opens after workstream 18)
+
+Authority: the accepted decision synthesis
+`inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
+including its maintainer-requested usability amendment, the Type 1 final review
+at `4e65378` and its focused verification of that amendment, and maintainer
+acceptance on 2026-09-26. Nine tickets, LDG-2850 through LDG-2857 plus
+LDG-2864, one workstream. The RFC artifacts are recorded on the v0.2.0.2
+design branch; the
+two branches must converge before this cut opens.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 20 Strategy context surface | 2850-2857, 2864 | settled contract text; duplicate and dead name retirement; context-first entrances with bound alignment, membership projection and error families; empty-domain behavior; the bounded zero-weight sizing correction; one documented-surface gate; authoring examples and closeout | a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy |
+
+This cut ships inside v0.2.1.0. The synthesis recommends implementing after
+the release gate; the maintainer overruled that on 2026-09-26 and placed the
+cut before the tag, so the breaking surface changes land before the release is
+reviewed externally, and the teaching surface is audited once against its final
+shape instead of once now and again after the renames. Workstream 20 therefore
+follows Workstream 18 and the release gate follows Workstream 20. The override
+is recorded in the cut's authority field rather than left implicit; no other
+synthesis decision changes.
+
+The accepted question is what the cut is measured against: how does a strategy
+read current information and express portfolio intent without alignment tricks
+or hidden allocation policy? Both failure modes are concrete. Four executed
+formulations of equal-weight-everything return identical targets today, and the
+shortest of them abandons the helper pipeline and divides by axis length, which
+silently ignores held-nonmember reservation: on a fixture with NAV 100, AAA at
+10 and two shares of former member OLD marked at 20, the helper returns AAA=6
+with 40 reserved while the hand-written form returns AAA=5. A hidden allocation
+policy is what the original seed would have introduced, and the synthesis
+rejects both candidate defaults by name.
+
+Two corrections are carried, and they are different in kind. Membership
+projection of context predicates corrects a proposed design before it ships:
+the synthesis's first draft rejected any NA in a predicate, which would have
+failed its own documented example, because an ordinary comparison over the
+close plane yields NA at a held nonmember without a current close. Zero-weight
+sizing corrects behavior that already ships: the rebalance helper resolves a
+price before consulting the weight value, so naming an unpriceable member at
+zero errors under availability while omitting it succeeds. Only the second
+changes shipped behavior, and it is a widening that cannot break a strategy
+that already worked. Neither is a change to context-first constructors, which
+do not yet exist; the surrounding renames are intentionally breaking, and no
+package-wide compatibility inference should be drawn from the narrow
+zero-weight widening.
+
+Scope stays narrow deliberately. Scalar reads, feature planes and alias bundles
+are retained; the long and wide feature rectangles stay on the callback because
+removing them was proposed without a replacement design and needs its own seed;
+no axis class, tidy-eval masking, rebalance band, partial-rebalance engine,
+estimator or scheduler work is authorized here. The single mechanical gate is
+the documented-surface contract test, since the accepted question is otherwise
+qualitative and a cycle whose acceptance criterion cannot fail cannot be closed
+honestly.
+
+A ninth ticket was added on 2026-09-26. The historical-projection probe
+reproduced, in both execution modes and by two authors, that the strategy
+context carries future feature values while `contracts.md:113` binds it to
+decision-time information only. The exposure is not the attached field but what
+every feature accessor closure captures, so it is a surface defect in exactly
+the surface this cut owns. Two constraints shape it: interactive inspection
+depends on that private projection today, and R reflection cannot be sandboxed,
+so the guarantee is stated against documented and ordinarily reachable paths.
+
+Governance: one cut review plus the planned close review is two invocations
+over nine completed tickets, 0.222 against the 0.5 gate, leaving room for one
+correction round at 0.333.
+
+## Cut 14: Repair continuous integration (open; opens after workstream 18)
+
+Authority: maintainer decision 2026-09-26 after every continuous-integration
+run that executed the suite was found failing. Four tickets, LDG-2860 through
+LDG-2863, one workstream; the cut review is compressed into the close review,
+so one invocation over four tickets is 0.250.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 21 Repair continuous integration | 2860-2863 | remove the preflight package-loading side effect that warns on headless runners; derive the ordinary fast bound from its declared registered runner; make the profile runner and gate checker report honestly; closeout | continuous integration is green on the registered runner and reports honestly when it is not, with no test moved, skipped or weakened to get there |
+
+This cut is sequenced before Cut 13 deliberately. Cut 13 carries breaking
+surface renames, and landing them while continuous integration cannot report is
+the one ordering that removes the signal exactly when it is most needed.
+
+The diagnosis is recorded here rather than in a separate audit, because it is
+short and because the failures predate the v0.2.1.0 workstreams. Two
+independent
+problems stack. First, `ledgr_strategy_symbol_is_tier1()` resolves symbols with
+`any(vapply(...))` over 29 priority packages, which is not lazy, so all 29 load
+even when the first matches; `tcltk` is `Priority: base`, and loading it on a
+headless runner warns that no DISPLAY variable is available. The census counts
+`warning` as a failure, so one warning fails the gate. This cannot reproduce on
+Windows, where Tk is always present. Second, the ordinary bound of 90 seconds
+was calibrated on a local Windows host while `tests/test-gates.yml` declares
+the
+registered runner to be the GitHub Actions matrix, where the same tree takes a
+median of 92.558 seconds against a local 79.46. Fixing the first alone leaves
+the second failing.
+
+Two tooling signals hid both. The profile runner printed
+`LEDGR_TEST_PROFILE_OK` and exited zero while writing a summary recording one
+failed block, so the step showed a green tick; the gate checker then reported
+`Test timing summaries do not show a passing census`, which covers four
+conditions and named neither the real one nor the block. Right now the system
+can go red for a reason it does not report, which is why the reporting fix is
+in this cut rather than deferred as polish.

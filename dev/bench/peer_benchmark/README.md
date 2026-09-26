@@ -87,6 +87,36 @@ known 1,250-row Backtrader warm-up boundary and rejects the regressed
 1,008-row Zipline join. The complete sampled process tree peaked at
 1,753.8 MiB across 892 one-second samples.
 
+## v0.2.1.0 Public TTR Boundary Record
+
+Workstream 17 replaces the private benchmark-only TTR wrapper with exported
+`ledgr_ind_ttr("SMA")` in every published TTR-labelled row. The durable public
+TTR and built-in SMA rows run in separate fresh R processes, and their metadata
+must resolve the same R, library paths and package versions. The tracked report
+renders the sampled prefix
+`dev/bench/results/peer_benchmark_record_20260926T080725Z`, produced from
+commit `c7d936ddccbdf7affbdcd1c9be22f7d8fdaa7eb0` with:
+
+```powershell
+& dev/bench/peer_benchmark/run_record.ps1 `
+  -RepoRoot "C:\tmp\ledgr-ws12" `
+  -Release "v0.2.1.0" `
+  -LedgrOrder "ttr-first"
+```
+
+The feature axes and NA masks are exact. Public TTR and built-in values pass
+the registered `1e-8` tolerance over 1,260,000 cells, with maximum absolute
+residual `7.567e-10`; equity, fills and realized trades are exact. Timing does
+not identify an indicator-source cost. The promoted TTR-first warm clocks are
+53.02 seconds for public TTR and 68.33 for built-in. The six-permutation
+attribution spike, not this fixed-order peer pair, establishes that every
+source contrast changes direction by process position and that the old
+9.57-second gap is order-confounded. A later built-in-first diagnostic is
+excluded because its command was not recorded and its first-position clock
+does not reproduce the registered attribution cell. The boundary correction
+is not claimed as a package speedup. The sampled process tree peaked at
+1,715.7 MiB across 1,036 one-second samples.
+
 ## Strategy Semantics
 
 All engines use SMA crossover-event semantics:
@@ -104,12 +134,14 @@ Backtrader `CrossOver`, quantstrat `sigCrossover`, the full zipline
 
 ## Engine Rows
 
-- `ledgr_ttr_canonical`: canonical ledgr row using TTR-backed SMA features.
+- `ledgr_ttr_canonical`: canonical ledgr row using exported
+  `ledgr_ind_ttr("SMA")` features in a fresh R process.
 - `ledgr_ttr_canonical_sweep`: public one-candidate sweep using the same
   TTR-backed features, with retained returns and trades inside the clock.
 - `ledgr_ttr_compiled_spot_fifo_sweep`: the same public sweep with the explicit
   compiled spot-FIFO selector.
-- `ledgr_builtin_sma`: ledgr diagnostic row using built-in SMA indicators.
+- `ledgr_builtin_sma`: ledgr diagnostic row using `ledgr_ind_sma()` in a
+  separate fresh R process.
 - `quantstrat`: R quantstrat crossover strategy when local packages exist.
 - `backtrader`: uv-managed Backtrader row.
 - `zipline-reloaded-full`: uv-managed zipline-reloaded row that writes a

@@ -10,28 +10,28 @@ params:
   run_harness: false
   preset: "smoke"
   results_preset: "record"
-  results_prefix: "peer_benchmark_record_20260923T001439Z"
+  results_prefix: "peer_benchmark_record_20260926T080725Z"
 ---
 
-This tracked report records the v0.2.0.2 internal same-host peer workload.
+This tracked report records the v0.2.1.0 internal same-host peer workload.
 Parity is interpreted before timing. The report preserves phase boundaries,
 unavailable engines, and classified divergences without turning one host and
 one fixture into a public engine ranking.
 
-The exact closeout command was:
+The exact sampled record command was:
 
 ```powershell
-$env:R_PROFILE_USER = "C:\tmp\ledgr-batch10-profile.R"
-$env:LEDGR_BATCH10_LIB = "C:\tmp\ledgr-quantstrat-batch10-lib"
-& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/bench/peer_benchmark/peer_benchmark.R --preset record --release v0.2.0.2 --engine-set all --n-inst 500 --n-days 1260 --fast 5 --slow 10 --seed 20260530 --compiled-accounting-model spot_fifo
+& dev/bench/peer_benchmark/run_record.ps1 `
+  -RepoRoot "C:\tmp\ledgr-ws12" `
+  -Release "v0.2.1.0" `
+  -LedgrOrder "ttr-first"
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260923T001439Z`. The Workstream 8
-review candidate was measured over base commit
-`9cb8c2e692c821cd7fb57831fc81865ffc96b080`; the exact uncommitted benchmark
+`dev/bench/results/peer_benchmark_record_20260926T080725Z`. It was measured
+from commit `c7d936ddccbdf7affbdcd1c9be22f7d8fdaa7eb0`; the exact benchmark
 harness has SHA-256
-`6522879a3be3ac6eed83a64cac8b555be7fdc6b6634bcc330ab9fb4ffef4d9fe`.
+`9ac0c8f2b5f276000f10028104de9824f106719705307329853f6a2de283edaf`.
 It ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
 from the isolated library with the ticket-pinned blotter 0.17.0,
 FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
@@ -40,8 +40,8 @@ unavailable because its CLI root uses an obsolete organization layout. No
 hosted LEAN service was used.
 
 The report checks every ledgr row before interpreting its timing. The canonical
-public sweep completed in 37.25 seconds cold and 30.07 seconds warm; the public
-compiled sweep completed in 23.00 seconds cold and 14.80 seconds warm. The two
+public sweep completed in 39.68 seconds cold and 32.31 seconds warm; the public
+compiled sweep completed in 27.19 seconds cold and 17.60 seconds warm. The two
 public sweep rows are exact across all 1,260 equity rows, 68,201 fills, and the
 realized-trade row after normalizing only the engine label. Against durable
 ledgr, fills and trades are exact; compensated production-inline equity passes
@@ -56,6 +56,20 @@ tolerance into a claim of full parity. Zipline now pairs all 1,260 source
 sessions positionally and records daily-return correlation `0.987974`; the
 v0.2.0.1 report's `0.146064` was produced by the disclosed one-day timestamp
 misalignment and remains historical evidence rather than being rewritten.
+
+Workstream 17 also corrects the indicator boundary. All published TTR rows now
+use exported `ledgr_ind_ttr("SMA")`; the retired private wrapper is absent.
+Durable public TTR and built-in SMA ran in separate fresh R processes with
+identical R, library-path and package-version records. Their feature axes and
+NA masks are exact; 1,260,000 numeric cells pass the existing `1e-8` tolerance
+with maximum absolute residual `7.567e-10`. Equity, fills and realized trades
+are exact. Timing does not identify a source effect: the promoted TTR-first
+record reports warm clocks of 53.02 and 68.33 seconds. The six-order
+attribution spike independently places every source in every process position
+twice; each contrast changes direction. That spike classifies the old
+9.57-second chart gap as order-confounded rather than a package-speed
+difference. A later built-in-first diagnostic is excluded because its command
+was not recorded and its first-position clock did not reproduce the spike.
 
 > **Scope of this report**
 >
@@ -105,6 +119,7 @@ read_result <- function(suffix) {
 }
 status <- read_result("_status.csv")
 parity <- read_result("_parity.csv")
+feature_parity <- read_result("_feature_parity.csv")
 performance <- read_result("_performance.csv")
 report_performance <- peer_harness$peer_prepare_report_performance(performance)
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -124,6 +139,25 @@ if (!"compiled_accounting_model" %in% names(performance)) {
 divergence_summary <- read_result("_divergence_summary.csv")
 surface <- read_result("_surface_status.csv")
 env <- jsonlite::read_json(paste0(stem, "_environment.json"), simplifyVector = TRUE)
+ttr_metadata <- jsonlite::read_json(
+  paste0(stem, "_ledgr_ttr_canonical_metadata.json"),
+  simplifyVector = FALSE
+)
+builtin_metadata <- jsonlite::read_json(
+  paste0(stem, "_ledgr_builtin_sma_metadata.json"),
+  simplifyVector = FALSE
+)
+if (!identical(ttr_metadata$runtime, builtin_metadata$runtime)) {
+  stop("Fresh public TTR and built-in rows resolved different runtimes.")
+}
+stopifnot(
+  isTRUE(ttr_metadata$fresh_process),
+  isTRUE(builtin_metadata$fresh_process),
+  isTRUE(feature_parity$axis_identical[[1L]]),
+  isTRUE(feature_parity$na_mask_identical[[1L]]),
+  isTRUE(feature_parity$within_tolerance[[1L]]),
+  feature_parity$max_relative[[1L]] <= feature_parity$tolerance[[1L]]
+)
 peer_peak_path <- paste0(stem, "_working_set_peak.csv")
 if (!file.exists(peer_peak_path)) {
   stop("The final peer record requires a process-tree peak-working-set sidecar.")
@@ -321,6 +355,39 @@ if (compiled_engine %in% compare$engine) {
   )
 }
 ```
+
+## Indicator source boundary
+
+The old report always ran a private TTR wrapper before built-in SMA in one R
+process. That row order could not attribute its 9.57-second difference. This
+record replaces the wrapper with exported `ledgr_ind_ttr("SMA")` everywhere
+and runs the two durable rows in independent child processes. LTB-0075 also
+reverses their launch order on a small executable fixture; that detector is
+not another peer record.
+
+| Surface | Standard | Result | Max absolute residual | Max relative residual |
+|---|---|---:|---:|---:|
+| feature axis | exact | PASS | 0 | 0 |
+| feature NA mask | exact | PASS | 0 | 0 |
+| feature values | relative `all.equal()` tolerance `1e-8` | PASS | 7.567e-10 | 1.182e-13 |
+
+| Order | Source | Cold s | Warm s | Engine s |
+|---|---|---:|---:|---:|
+| TTR first | public TTR SMA | 60.82 | 53.02 | 47.44 |
+| TTR first | built-in SMA | 76.16 | 68.33 | 61.67 |
+
+The six-permutation attribution spike carries the source conclusion. Its
+first-position means were 50.635 seconds for built-in SMA, 51.050 for the
+private wrapper and 51.295 for public TTR, and every pair changed direction by
+process position. The old 9.57-second gap therefore did not reproduce as an
+indicator-source cost.
+
+A later built-in-first diagnostic exists beside the promoted record, but its
+command was not recorded and its first-launched built-in row took 65.50
+seconds against the spike's matching first-position observations of 50.530
+and 50.740 seconds. It is not loaded by this report and supports no attribution
+claim. The public-adapter
+correction is a measurement-boundary fix, not a package speedup.
 
 ## Why parity comes before timing
 

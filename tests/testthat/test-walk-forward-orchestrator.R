@@ -539,7 +539,8 @@ testthat::test_that("walk-forward interrupt after a completed fold persists a pa
   testthat::expect_true(all(c("train", "test") %in% score_windows$window))
 })
 
-testthat::test_that("terminal cleanup closes test handles without masking the terminal error", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0070] terminal cleanup closes test handles without masking the terminal error", {
   fx <- ledgr_wfo_exp()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
   withr::local_options(list(ledgr.walk_forward_interrupt_after_completed_folds = 1L))

@@ -177,8 +177,8 @@ The economic idea:
 `ledgr_signal_return()` is a thin helper around the same feature you
 inspected above: it reads `return_N` for every instrument in the pulse
 and returns one universe-wide signal object. It uses the vector accessor
-`ctx$vec$feature(feature_id)` when available, then falls back to the
-scalar `ctx$feature(id, feature_id)` path for compatibility.
+`ctx$vec$feature(feature_id)` directly; shipped pulse contexts always
+provide that aligned vector accessor.
 
 The helper pipeline has four stages:
 
@@ -333,8 +333,8 @@ tibble(
 #> # A tibble: 2 x 3
 #>   form                                        seconds added_ms_per_pulse
 #>   <chr>                                         <dbl>              <dbl>
-#> 1 ctx$vec$close                                  3.34                0
-#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.3                32.0
+#> 1 ctx$vec$close                                  3.42                0
+#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.58               38.7
 ```
 
 Read the last column rather than the ratio. The two strategies differ in
@@ -354,7 +354,12 @@ minutes, not milliseconds.
 > Reaching for them inside `vapply()`, `sapply()`, or a `for` loop over
 > `ctx$universe` is the most expensive habit available to a ledgr
 > strategy, and it hides well: the numbers are right and the run is simply
-> slow. When you want a value for everyone, read the plane.
+> slow. When you want a value for everyone, read the plane. For universes
+> of at least 100 instruments, ledgr emits one
+> `ledgr_scalar_accessor_loop` warning per run when one scalar accessor
+> reaches a full-universe call count in a pulse. The warning names the
+> vector plane to use; it is diagnostic only and changes no target, fill,
+> result, or run identity.
 
 
 Every helper in the pipeline below already reads planes, so a strategy

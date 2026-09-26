@@ -150,7 +150,7 @@ testthat::test_that("ledgr_target_rebalance builds full-universe targets and rej
   )
 })
 
-testthat::test_that("strategy helpers consume ctx vec accessors when available", {
+testthat::test_that("[LTB-0066] strategy helpers consume only vector accessors", {
   ts <- ledgr_utc("2020-01-03")
   bars <- data.frame(
     ts_utc = rep(ts, 2),
@@ -186,6 +186,14 @@ testthat::test_that("strategy helpers consume ctx vec accessors when available",
   testthat::expect_identical(as.numeric(signal), c(0.02, 0.01))
   testthat::expect_identical(as.numeric(target), c(5, 0))
   testthat::expect_identical(names(target), c("AAA", "BBB"))
+
+  empty <- ledgr_target_rebalance(ledgr_weights(numeric()), ctx)
+  all_names <- ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 0.5, BBB = 0.5)),
+    ctx
+  )
+  testthat::expect_identical(as.numeric(empty), c(0, 0))
+  testthat::expect_identical(as.numeric(all_names), c(5, 10))
 })
 
 # ledgr-test-profile: heavy_protocol

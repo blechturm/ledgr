@@ -1,0 +1,2 @@
+"fixture_seed","instruments","pulses","fast_n","slow_n","snapshot_id","snapshot_hash","sealed_store_sha256","permutations"
+20260530,500,1260,5,10,"indicator-source-attribution-500-1260-20260530","170ac16d96a91f5cbcc42f91f20d45f386ed91080a28a5c85f126b6de8ef0652","22ac9e6efaed8838c39d8a7f3b0d4891b171e94b24cc62256a8a55102029e904","ABC;ACB;BAC;BCA;CAB;CBA"

@@ -222,6 +222,18 @@ ledgr_ind_ttr <- function(ttr_fn,
   )
   ledgr_ttr_validate_output_contract(params, requires_bars)
   indicator_params <- params
+  gap_contract <- if (ledgr_ttr_strict_window_certified(
+    ttr_fn = ttr_fn,
+    input = input,
+    output = output,
+    args = args,
+    requires_bars = requires_bars,
+    stable_after = stable_after
+  )) {
+    "strict_window"
+  } else {
+    NULL
+  }
 
   ledgr_indicator(
     id = id,
@@ -235,7 +247,27 @@ ledgr_ind_ttr <- function(ttr_fn,
     requires_bars = requires_bars,
     stable_after = stable_after,
     params = params,
-    source = "TTR"
+    source = "TTR",
+    gap_contract = gap_contract
+  )
+}
+
+ledgr_ttr_strict_window_certified <- function(ttr_fn,
+                                              input,
+                                              output,
+                                              args,
+                                              requires_bars,
+                                              stable_after) {
+  n <- if (is.list(args) && identical(names(args), "n")) args$n else NULL
+  valid_n <- is.numeric(n) && length(n) == 1L && !is.na(n) &&
+    is.finite(n) && n >= 1 && (n %% 1) == 0
+  isTRUE(
+    identical(ttr_fn, "SMA") &&
+      identical(input, "close") &&
+      is.null(output) &&
+      valid_n &&
+      identical(as.integer(requires_bars), as.integer(n)) &&
+      identical(as.integer(stable_after), as.integer(n))
   )
 }
 

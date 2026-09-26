@@ -63,6 +63,37 @@ library(tibble)
 library(qlcal)
 ```
 
+## Relationship To The Composable Bundle
+
+The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
+owns the complete data model and the reusable point-in-time bundle. This
+article keeps its smaller `AAA`/`BBB` fixture because a three-session
+hole is the clearest detector for mark ageing and the no-fill rule.
+Those identifiers are local to this article; they do not describe extra
+history for the shared `DEMO_*` instruments.
+
+The shared bundle carries the same kind of missing-observation input.
+This executable touchpoint locates it and confirms that its bar row is
+genuinely absent rather than padded:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_gap <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "missing_observation"
+)
+shared_gap_has_bar <- with(
+  ledgr_demo_pit_inputs$bars,
+  any(
+    instrument_id == shared_gap$instrument_id[[1L]] &
+      as.Date(ts_utc) == shared_gap$date[[1L]]
+  )
+)
+data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
+#>                  type instrument_id       date observation_row_present
+#> 2 missing_observation       DEMO_04 2020-01-09                   FALSE
+```
+
 ## Step 1: Declare What Sessions Existed
 
 The expected-session clock has to come from somewhere other than your
@@ -185,6 +216,64 @@ bars |> count(instrument_id)
 for `BBB`: that asymmetry is the point, because you are handing ledgr an
 honest panel rather than a rectangular one.
 
+## What The Calendar Means For Indicators
+
+Dense mode has an implicit clock: the dates present in the rectangular
+bar panel. If every instrument is absent on one date, that date is
+indistinguishable from a market closure and there is no pulse.
+Availability mode instead advances on the independently declared
+expected-session calendar. A declared open session remains a pulse even
+when one or every instrument lacks an observation.
+
+The small matrix below is the executable oracle used by ledgr’s
+strict-gap tests. It has one closed date, one missing open-session
+observation for `AAA`, and a `BBB` series that starts late. Both moving
+averages use a two-session window.
+
+<!-- strict-gap-table:start -->
+
+| Date | Session | AAA bar | AAA SMA(2) | BBB bar | BBB SMA(2) | Interpretation |
+|----|----|---:|---:|---:|---:|----|
+| 2020-01-01 | open | 10 | NA | absent | NA | AAA warmup; BBB not yet observed |
+| 2020-01-02 | open | 12 | 11 | absent | NA | AAA ready; BBB not yet observed |
+| 2020-01-03 | closed | no pulse | no pulse | no pulse | no pulse | venue closure |
+| 2020-01-04 | open | missing | NA | absent | NA | expected observation missing; BBB still unseen |
+| 2020-01-05 | open | 14 | NA | 20 | NA | AAA window still contains the gap; BBB warmup |
+| 2020-01-06 | open | 16 | 15 | 22 | 21 | both windows recover |
+| 2020-01-07 | open | 18 | 17 | 24 | 23 | both windows remain available |
+
+<!-- strict-gap-table:end -->
+
+These unavailable windows overlap on 5 January, but for different
+reasons. `AAA` has enough historical observations in total and is
+unavailable because its current window includes the missing open
+session. `BBB` is unavailable because its late-start series has not
+completed warmup. A scalar `NA` alone does not distinguish those
+histories; the calendar and source observations do.
+
+ledgr never substitutes a stale valuation mark into this feature window.
+If a strategy already owns `AAA`, `ledgr_valuation_stale(1)` may use the
+2 January close to value that holding at the 4 January pulse. The `AAA`
+SMA remains `NA`, because valuation continuity is not feature evidence.
+On 6 January the window contains two real observations again and the SMA
+recovers to 15.
+
+A strategy therefore guards the value it intends to use as well as the
+instrument’s current trading permission:
+
+``` r
+signal <- ctx$features(id)[["signal"]]
+if (is.finite(signal) && id %in% ctx$tradable()) {
+  # It is now safe to use `signal` in a target decision.
+}
+```
+
+This is stricter than a generic warmup check in one useful way: it says
+what the strategy actually needs at this pulse. See
+`vignette("indicators", package = "ledgr")` for the built-in, public
+TTR, and custom indicator forms that are certified for this
+strict-window behavior.
+
 ## Step 3: Say Which Instruments Were Tradable
 
 A missing row says an instrument did not trade. It does not say why.
@@ -264,19 +353,15 @@ An availability-aware strategy receives universe-aligned planes on
   it?
 
 The strategy below buys ten units of everything it is allowed to buy.
-The third line is the one that matters: targets start as the positions
-you already hold, so doing nothing means holding. You then raise a
-target only for instruments that are both priced and unrestricted, which
-leaves anything halted, unlisted, or unpriced at its current quantity
-without writing a branch for each case.
+`ctx$hold()` starts from the positions already held, while
+`ctx$tradable()` returns the current members that are admissible and
+priced. Anything halted, unlisted, or unpriced therefore stays at its
+current quantity without a strategy-side eligibility reconstruction.
 
 ``` r
 buy_what_is_tradable <- function(ctx, params) {
-  availability <- ctx$vec
-  tradable <- availability$priced & !availability$target_restricted
-
-  targets <- ctx$positions
-  targets[availability$id[tradable]] <- 10
+  targets <- ctx$hold()
+  targets[ctx$tradable()] <- 10
   targets
 }
 ```
@@ -305,6 +390,7 @@ tight <- ledgr_experiment(
 )
 
 tight_run <- ledgr_run(tight, run_id = "tolerance-one")
+tight_completion <- ledgr_run_completion(tight_run)
 close(tight_run)
 ```
 
@@ -312,14 +398,19 @@ The call returns without an error, so look at what the run actually
 claims.
 
 ``` r
-tight_info <- ledgr_run_info(snapshot, "tolerance-one")
-
-tight_info$status
-#> [1] "INCOMPLETE"
-tight_info$stop_reason
-#> [1] "valuation_horizon_exhausted"
-tight_info$complete_performance
-#> [1] FALSE
+tight_completion
+#> Completion Evidence:
+#>   Status:           INCOMPLETE
+#>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Achieved Window:  2020-01-13T21:00:00Z to 2020-01-16T21:00:00Z
+#>   Stop Reason:      valuation_horizon_exhausted
+#>   Last Fully Valued: 2020-01-16T21:00:00Z
+#>   Last Executed:    2020-01-14T14:30:00Z
+#>   Performance:       incomplete
+#>   Affected IDs:      BBB
+#>
+#>   Affected Exposure: 530
+#>   Exposure Basis:    last_accepted_close_gross
 ```
 
 The run is `INCOMPLETE`, and it says why: `valuation_horizon_exhausted`.
@@ -344,11 +435,19 @@ loose <- ledgr_experiment(
 
 loose_run <- ledgr_run(loose, run_id = "tolerance-five")
 
-loose_info <- ledgr_run_info(snapshot, "tolerance-five")
-loose_info$status
-#> [1] "DONE"
-loose_info$complete_performance
-#> [1] TRUE
+ledgr_run_completion(loose_run)
+#> Completion Evidence:
+#>   Status:           DONE
+#>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Achieved Window:  2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#>   Stop Reason:      none
+#>   Last Fully Valued: 2020-01-24T21:00:00Z
+#>   Last Executed:    2020-01-14T14:30:00Z
+#>   Performance:       complete
+#>   Affected IDs:      none recorded
+#>
+#>   Affected Exposure: unknown
+#>   Exposure Basis:    unknown
 ```
 
 Same data, same strategy, a different answer about whether the result
@@ -359,16 +458,24 @@ result.
 ## Reading Back What Happened to One Instrument
 
 After a run, `ledgr_run_explain()` answers “what did you know about this
-instrument at this moment, and what did you do about it?”. Ask it about
-`BBB` in the middle of the hole:
+instrument across the run, and what did you do about it?”. Omit the
+timestamp to see the full pulse history for `BBB`:
 
 ``` r
-ledgr_run_explain(loose_run, "BBB", ts_utc = missing_sessions[2]) |>
+ledgr_run_explain(loose_run, "BBB") |>
   select(mark_source, mark_age, execution_outcome, execution_reason)
-#> # A tibble: 1 x 4
-#>   mark_source mark_age execution_outcome execution_reason
-#>   <chr>          <int> <chr>             <chr>
-#> 1 stale_close        2 no_action         no_target_change
+#> # A tibble: 9 x 4
+#>   mark_source   mark_age execution_outcome execution_reason
+#>   <chr>            <int> <chr>             <chr>
+#> 1 current_close        0 filled            ""
+#> 2 current_close        0 no_action         "no_target_change"
+#> 3 current_close        0 no_action         "no_target_change"
+#> 4 stale_close          1 no_action         "no_target_change"
+#> 5 stale_close          2 no_action         "no_target_change"
+#> 6 stale_close          3 no_action         "no_target_change"
+#> 7 current_close        0 no_action         "no_target_change"
+#> 8 current_close        0 no_action         "no_target_change"
+#> 9 current_close        0 no_action         "no_target_change"
 ```
 
 `BBB` is carried at a `stale_close` two sessions old, and nothing
@@ -376,7 +483,8 @@ executes. The mark is doing valuation work only. It is never an
 execution price, and no fill is ever produced on a session where an
 instrument has no observation.
 
-Now ask the same question about `AAA` on the session it was halted:
+Supplying one timestamp keeps the focused form. Ask about `AAA` on the
+session it was halted:
 
 ``` r
 halted_day <- as.Date(halt_from)
@@ -446,14 +554,8 @@ quarantined <- ledgr_snapshot_from_df(
   db_path = tempfile(fileext = ".duckdb")
 )
 
-store <- ledgr_db_init(quarantined$db_path)
-
-DBI::dbGetQuery(
-  store,
-  "SELECT supplied_instrument_id, supplied_ts_utc, reason
-     FROM snapshot_observation_quarantine"
-) |>
-  as_tibble()
+ledgr_snapshot_quarantine(quarantined) |>
+  select(supplied_instrument_id, supplied_ts_utc, reason)
 #> # A tibble: 1 x 3
 #>   supplied_instrument_id supplied_ts_utc     reason
 #>   <chr>                  <dttm>              <chr>

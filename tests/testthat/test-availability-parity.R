@@ -38,7 +38,7 @@ availability_incomplete_experiment <- function(path, calls) {
 }
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("achieved incomplete runs reopen and rerun without mutation", {
+testthat::test_that("[LTB-0064] incomplete completion evidence matches persisted record", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
   calls <- new.env(parent = emptyenv())
@@ -69,6 +69,25 @@ testthat::test_that("achieved incomplete runs reopen and rerun without mutation"
   testthat::expect_identical(first_info$affected_instrument_ids, "AAA")
   calls_before_inventory <- calls$n
   store_before_inventory <- availability_store_contents(path, first$run_id)
+  completion <- ledgr_run_completion(first)
+  persisted_completion <- store_before_inventory$run_completion
+  testthat::expect_s3_class(completion, "ledgr_run_completion")
+  testthat::expect_true(completion$completion_evidence_available)
+  testthat::expect_identical(completion$completion_status, "INCOMPLETE")
+  testthat::expect_identical(completion$stop_reason, "valuation_horizon_exhausted")
+  testthat::expect_identical(
+    completion$affected_exposure,
+    as.numeric(persisted_completion$affected_exposure[[1L]])
+  )
+  testthat::expect_identical(
+    completion$affected_exposure_ts_utc,
+    as.POSIXct(persisted_completion$affected_exposure_ts_utc[[1L]], tz = "UTC")
+  )
+  testthat::expect_identical(
+    completion$affected_exposure_basis,
+    as.character(persisted_completion$affected_exposure_basis[[1L]])
+  )
+  testthat::expect_identical(completion$affected_instrument_ids, "AAA")
   inventory <- ledgr_run_list(fixture$snapshot)
   inventory_row <- inventory[inventory$run_id == first$run_id, , drop = FALSE]
   testthat::expect_identical(nrow(inventory_row), 1L)
@@ -614,7 +633,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
 })
 
 # ledgr-test-profile: review
-testthat::test_that("availability result views and explanations are durable read-only evidence", {
+testthat::test_that("[LTB-0063] explanation history is durable read-only evidence", {
   snapshot <- availability_runtime_fixture()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   calls <- new.env(parent = emptyenv())
@@ -634,6 +653,11 @@ testthat::test_that("availability result views and explanations are durable read
   bt <- ledgr_run(exp, run_id = "availability-explain")
   on.exit(close(bt), add = TRUE)
   calls_after_run <- calls$n
+  completion <- ledgr_run_completion(bt)
+  testthat::expect_s3_class(completion, "ledgr_run_completion")
+  testthat::expect_true(completion$completion_evidence_available)
+  testthat::expect_identical(completion$completion_status, "DONE")
+  testthat::expect_true(completion$complete_performance)
   before <- availability_store_contents(snapshot$db_path, bt$run_id)
 
   diagnostics <- tibble::as_tibble(bt, what = "diagnostics")
@@ -663,6 +687,23 @@ testthat::test_that("availability result views and explanations are durable read
     drop = FALSE
   ][1L, ]
   explanation <- ledgr_run_explain(bt, "AAA", decision$ts_utc)
+  history <- ledgr_run_explain(bt, "AAA")
+  decision_rows <- diagnostics[
+    diagnostics$stage == "decision" & diagnostics$instrument_id == "AAA",
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(nrow(history), nrow(decision_rows))
+  testthat::expect_true(all(diff(as.numeric(history$ts_utc)) >= 0))
+  for (i in seq_len(nrow(history))) {
+    testthat::expect_identical(
+      history[i, , drop = FALSE],
+      ledgr_run_explain(bt, "AAA", history$ts_utc[[i]])
+    )
+  }
+  absent <- ledgr_run_explain(bt, "ABSENT")
+  testthat::expect_identical(nrow(absent), 0L)
+  testthat::expect_identical(names(absent), names(history))
 
   local({
     altered <- diagnostics
@@ -719,7 +760,7 @@ testthat::test_that("availability result views and explanations are durable read
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("dense runs expose constant availability and no invented explanation", {
+testthat::test_that("[LTB-0065] dense runs expose typed absent completion evidence", {
   snapshot <- ledgr_snapshot_from_df(utils::head(ledgr_demo_bars, 4L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(
@@ -729,6 +770,15 @@ testthat::test_that("dense runs expose constant availability and no invented exp
   )
   bt <- ledgr_run(exp, run_id = "dense-availability")
   on.exit(close(bt), add = TRUE)
+
+  completion <- ledgr_run_completion(bt)
+  testthat::expect_s3_class(completion, "ledgr_run_completion")
+  testthat::expect_false(completion$completion_evidence_available)
+  testthat::expect_identical(completion$complete_performance, NA)
+  testthat::expect_identical(completion$affected_exposure, NA_real_)
+  testthat::expect_s3_class(completion$affected_exposure_ts_utc, "POSIXct")
+  testthat::expect_true(is.na(completion$affected_exposure_ts_utc))
+  testthat::expect_identical(completion$affected_exposure_basis, NA_character_)
 
   diagnostics <- tibble::as_tibble(bt, what = "diagnostics")
   availability <- tibble::as_tibble(bt, what = "availability")
@@ -920,7 +970,8 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
   testthat::expect_identical(second_opening$cost_basis, first_basis)
 })
 
-testthat::test_that("walk-forward preserves incomplete status when prefix metrics fail", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0069] walk-forward preserves incomplete status when prefix metrics fail", {
   path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(path), add = TRUE)
   calls <- new.env(parent = emptyenv())

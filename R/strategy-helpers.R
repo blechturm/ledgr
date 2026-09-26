@@ -64,7 +64,9 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' @examples
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
-#'   feature = function(id, feature_id) c(AAA = 0.03, BBB = NA_real_)[[id]]
+#'   vec = list(
+#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
+#'   )
 #' )
 #' ledgr_signal_return(ctx, lookback = 5)
 #'
@@ -78,15 +80,7 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
 
-  values <- if (is.list(ctx$vec) && is.function(ctx$vec$feature)) {
-    as.numeric(ctx$vec$feature(feature_id))
-  } else {
-    vapply(
-      universe,
-      function(id) as.numeric(ctx$feature(id, feature_id)),
-      numeric(1)
-    )
-  }
+  values <- as.numeric(ctx$vec$feature(feature_id))
   values <- stats::setNames(as.numeric(values), universe)
   if (isTRUE(ctx$availability_active)) {
     members <- as.character(ctx$members %||% character())
@@ -214,7 +208,7 @@ ledgr_weight_equal <- function(selection) {
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
-#'   close = function(id) c(AAA = 50, BBB = 100)[[id]]
+#'   vec = list(close = c(AAA = 50, BBB = 100))
 #' )
 #' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
 #'
@@ -275,34 +269,29 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
   }
 
-  close_vec <- if (is.list(ctx$vec) && is.numeric(ctx$vec$close) && length(ctx$vec$close) == length(universe)) {
-    as.numeric(ctx$vec$close)
-  } else {
-    NULL
+  close_vec <- as.numeric(ctx$vec$close)
+  weight_ids <- names(weights)
+  price <- close_vec[match(weight_ids, universe)]
+  invalid_price <- is.na(price) | !is.finite(price) | price <= 0
+  if (availability_active && any(invalid_price)) {
+    id <- weight_ids[which(invalid_price)[[1L]]]
+    rlang::abort(
+      sprintf("Cannot size target for `%s`: no positive accepted current close is available.", id),
+      class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
+      instrument_id = id
+    )
   }
-  for (id in names(weights)) {
-    price <- if (!is.null(close_vec) && is.function(ctx$idx)) {
-      close_vec[[ctx$idx(id)]]
-    } else {
-      as.numeric(ctx$close(id))
-    }
-    if (length(price) != 1L || is.na(price) || !is.finite(price) || price <= 0) {
-      if (availability_active) {
-        rlang::abort(
-          sprintf("Cannot size target for `%s`: no positive accepted current close is available.", id),
-          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
-          instrument_id = id
-        )
-      }
-      rlang::warn(
-        sprintf("Cannot size target for `%s`: close price is missing, non-finite, or non-positive. Targeting 0.", id),
-        class = "ledgr_invalid_target_price"
-      )
-      target[[id]] <- 0
-    } else {
-      target[[id]] <- floor((as.numeric(weights[[id]]) * equity_fraction * allocation_equity) / price)
-    }
+  for (id in weight_ids[invalid_price]) {
+    rlang::warn(
+      sprintf("Cannot size target for `%s`: close price is missing, non-finite, or non-positive. Targeting 0.", id),
+      class = "ledgr_invalid_target_price"
+    )
   }
+  valid <- !invalid_price
+  target[weight_ids[valid]] <- floor(
+    (as.numeric(weights[valid]) * equity_fraction * allocation_equity) /
+      price[valid]
+  )
 
   ledgr_target(target, universe = universe, origin = attr(weights, "origin"))
 }

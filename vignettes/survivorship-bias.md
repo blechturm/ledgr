@@ -35,6 +35,35 @@ By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
 positions, fills, and reported horizon differ from what you asked for.
 
+The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
+owns the complete data model and reusable point-in-time bundle. This
+article keeps its smaller `AAA`/`BBB` fixture because the losing company
+and survivor form a direct detector for the bias being taught. `AAA`,
+`BBB`, and the `DEMO` venue are local to this article; they are not
+additions to the shared `DEMO_*` history.
+
+The shared bundle contains the equivalent delisting boundary. Its case
+row points to the lifetime transition that makes the instrument
+inactive:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_delisting <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "delisting"
+)
+shared_lifetime_boundary <- subset(
+  ledgr_demo_pit_inputs$lifetime,
+  instrument_id == shared_delisting$instrument_id[[1L]] &
+    as.Date(effective_from) == shared_delisting$date[[1L]]
+)
+shared_lifetime_boundary[
+  , c("instrument_id", "effective_from", "assertion", "terminal_event")
+]
+#>   instrument_id      effective_from      assertion terminal_event
+#> 6       DEMO_01 2020-01-14 21:00:00 known_inactive       delisted
+```
+
 ## Two Companies, Ten Sessions
 
 The example is synthetic and small enough to read in full. `DEMO` is an
@@ -834,6 +863,38 @@ summary(point_in_time)
 #>   Performance:       incomplete
 #>   Affected IDs:      AAA
 #>
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Setting cash_amount:              gross
+#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
+#>   Setting cash_posting:             effective_close
+#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
+#>   Setting held_terminal_position:   last_permissible
+#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
+#>   Setting unsupported_quantity:     report_only
+#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Exercised choices:
+#>     cash_amount.gross: 0
+#>     cash_amount.refuse: 0
+#>     cash_posting.effective_close: 0
+#>     cash_posting.next_open: 0
+#>     cash_posting.refuse: 0
+#>     held_terminal_position.last_permissible: 0
+#>     held_terminal_position.last_mark: 0
+#>     held_terminal_position.refuse: 0
+#>     unsupported_quantity.report_only: 0
+#>     unsupported_quantity.refuse: 0
+#>   Refusal reasons:
+#>     none declared: 0
+#>   Late arrivals:               0
+#>   Affected marked exposure:    0
+#>   Gross cash posted:           0
+#>   Modeled terminal proceeds:   0
+#>   Positions disposed:          0
+#>   Realized model P&L:          0
+#>   Unsupported facts:           0
 #> Achieved-Prefix Metrics (2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z):
 #>   Total Return (prefix):    -17.10%
 #>   Annualized Return:        withheld (achieved window is shorter than requested)
