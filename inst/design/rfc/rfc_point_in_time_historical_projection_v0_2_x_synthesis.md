@@ -1,6 +1,12 @@
 # RFC Synthesis: Point-in-Time Historical Projection
 
-**Status:** Decision synthesis awaiting maintainer acceptance and final review.
+**Status: SUPERSEDED 2026-09-26** by
+[synthesis v2](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md),
+after a final review returned `NEEDS_TYPE_2`. Section 5 of this document
+over-bound the knowledge clock, and sections 7 and 10 contradicted each other.
+Retained as cycle history; it binds nothing.
+
+**Status (original):** Decision synthesis awaiting maintainer acceptance and final review.
 Decisions bind on acceptance, not on publication of this draft.
 **Date:** 2026-09-26
 **Author:** Claude, per `../rfc_cycle.md` role rotation: synthesis goes to the
