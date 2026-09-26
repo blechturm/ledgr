@@ -1,6 +1,6 @@
 # RFC Synthesis: Strategy Context Surface And Helper Composability
 
-**Status:** Draft decision synthesis awaiting maintainer acceptance and final review.
+**Status:** Amended draft awaiting focused verification and maintainer acceptance.
 **Date:** 2026-09-26
 **Author:** ChatGPT, at the maintainer's request. This is also the response author;
 that requested role reuse overrides the operative seed's third-author preference.
@@ -16,6 +16,11 @@ Citation baseline **D** is design commit `289e13e3e2b516ab50eb89b731f0c7c0f2cee0
 Baseline **I** is implementation commit `b47b83f46db99842955e10e6ccaf88300213a96f`.
 Unprefixed code/contract citations refer to D; I citations are explicitly marked.
 Decisions below bind on acceptance, not by publication of this draft.
+The [final review](rfc_strategy_context_surface_v0_2_x_synthesis_review.md) passed
+the original synthesis at `71c2a3ab`; its evidence and verdict remain unchanged.
+The maintainer requested this amendment after a strategy-family usability exercise.
+It changes predicate projection and zero-weight sizing explicitly; the original
+PASS does not cover those changes. Section 8 bounds the focused follow-up.
 
 ## 1. Decisions and costs
 
@@ -24,7 +29,8 @@ Decisions below bind on acceptance, not by publication of this draft.
 | Inspection boundary, seed D1 | Retain `bars`, `feature_table` and `features_wide` in this cut. No repair by automatic table materialization. A removal needs its own focused seed. | Precise reference text now; no inspection reconstruction or cache redesign. |
 | Empty domains, seed D2 | Allow empty value objects and complete empty targets; distinguish no members from no visible holdings. | Shared validators, constructors and helper early returns; existing classes remain. |
 | Position reads, seed D3 | Remove public `ctx$positions`; rename `vec$positions` to `vec$position`. Keep `position(id)` and `hold()` with distinct roles. | Internal read-site and documentation updates, including the WS16 warning's suggested spelling. |
-| Entrances, seed D4 | Keep value constructors and add context-first forms with named payloads. Default selection is investment membership. | One small shared alignment/validation path; no new object class or execution path. |
+| Entrances, seed D4 | Keep value constructors and add context-first forms with named payloads. Default selection, predicates and scores operate on investment membership. Explicit nonmember IDs and weights still error. | One small shared alignment/validation path; no new object class or execution path. |
+| Zero-weight sizing | An explicit zero member weight produces quantity zero without requiring a sizing close. Positive weights retain their price requirements. | Bounded rebalance-helper correction and detecting examples; no new API. |
 | Scalar and feature reads | Retain scalar accessors, feature planes and alias bundles. | No representation rewrite; document the two feature dimensions. |
 | Other naming | Remove both tombstones, privatize `safety_state`, rename candidate-rule constructors to `ledgr_rule_argmax()` and `ledgr_rule_argmin()`. | Export/help/call-site amendments; rule payload and type stay unchanged. |
 | Disclosure | One documented-surface gate covers actual dense and availability runtime contexts. No member-count target. | Extend the existing documentation-contract tests and reference table. |
@@ -69,6 +75,16 @@ scores and missing logical decisions differ. `select_top_n()` already excludes
 missing scores (`contracts.md:617-623`; `R/strategy-helpers.R:129-156`). Execution
 with two all-missing member scores produces two zero member targets, not a hold.
 The new entrances must disclose that existing ranking policy, not silently change it.
+
+**Executed during the usability exercise:** At D, with NAV 100, AAA close 10
+and two held BBB shares marked at 20 but no current BBB close, weights
+`c(AAA = 1)` produce `AAA=10, BBB=0`; adding `BBB=0` to the weights errors.
+Restoring BBB's quantity afterwards requests exposure 140, not a residual-budget
+allocation. If BBB is instead a nonmember, AAA weights 1 and 0.6 produce 6 and
+3 shares respectively, with BBB held at 2. These are source-level helper probes,
+not fill or full-fold results. The price loop and reservation are visible at
+`R/strategy-helpers.R:252-303`. Section 3 corrects only the sizing-price requirement
+for zero weights; it does not add automatic partial preservation of members.
 
 ## 3. Binding entrance contract
 
@@ -115,14 +131,18 @@ Value forms retain their existing `x`, `universe`, `origin` meanings.
 | Unnamed `values` or `where` | Exactly length(Daxis); positional alignment to Daxis. No recycling or guessing a shorter member axis. |
 | Named `values` or `where` | Unique, nonempty, nonmissing IDs from Daxis; every M ID must occur. Align by ID. Held nonmembers may be omitted. Partial names, unknown IDs or a missing member are errors. |
 | `values` | Numeric; finite values and `NA`/`NaN` missing scores are allowed, infinity is not. Return a named `ledgr_signal` on M in canonical order. Supplied nonmember scores are outside the allocation population and are not ranked. No price/restriction quality mask is added. |
-| `where` | Logical with no `NA`. Return a named `ledgr_selection` on all M, preserving explicit FALSE. TRUE for a held nonmember errors; FALSE for it is ignored because nonmember preservation belongs downstream. |
+| `where` | Logical. Validate type, shape, names and M coverage, then project to M and reject NA on M. Return a named `ledgr_selection` on all M, preserving explicit FALSE. TRUE, FALSE and NA for held nonmembers do not participate in selection; nonmember preservation belongs downstream. |
 | `ids` | Character IDs, unique, nonempty and nonmissing, all in M; `character()` explicitly selects none. Return an all-M logical selection, TRUE exactly for these IDs in M order. |
 | Deliberate subset | Use `ids` in context mode, or an existing standalone named value constructor. A missing named member in `where`/`values` is not a subset declaration. |
 
 No intermediary is required to span Daxis. No constructor silently screens
 members for missing observations, restrictions, valuation age or orderability.
-Validate supplied input before projecting to M. Validation uses vectors and the
-context's prepared axis/index; do not
+Validate supplied type, shape, names and coverage before projecting to M.
+Numeric score validation still rejects infinity anywhere in supplied `values`;
+logical missingness is checked on M because only members receive a decision.
+This changes context-mode `where` only: standalone logical value constructors
+still reject NA. An explicit nonmember `ids` request is an error, not a predicate
+to project. Validation uses vectors and the context's prepared axis/index; do not
 revalidate sealed facts or materialize a frame to perform alignment.
 
 Use existing condition families, with messages naming the argument, reason and
@@ -131,17 +151,38 @@ affected IDs or expected/actual sizes. Exact prose is not an API:
 | Failure | Condition class |
 | --- | --- |
 | Invalid context, missing/conflicting payload, context `universe` override | `ledgr_invalid_strategy_helper` |
-| Wrong payload type/length, invalid or unknown names, missing M entries, infinite score, NA logical, invalid IDs | `ledgr_invalid_strategy_type` |
-| Known nonmember selected TRUE, selected in `ids`, or assigned a weight | `ledgr_invalid_strategy_helper` |
-| Missing accepted sizing close under availability | Existing `ledgr_target_sizing_unavailable` |
+| Wrong payload type/length, invalid or unknown names, missing M entries, infinite score, NA on M in `where`, invalid IDs | `ledgr_invalid_strategy_type` |
+| Explicit `ids` or weights naming a known nonmember | `ledgr_invalid_strategy_helper` |
+| Missing accepted sizing close for a positive member weight under availability | Existing `ledgr_target_sizing_unavailable` |
 | Missing/extra/duplicate final target entries | Existing `ledgr_invalid_strategy_result` |
+
+An ID in Daxis but outside M is a known nonmember, not an unknown name.
+Explicit membership violations use the helper family; nonmember predicate
+entries are projected out and are not membership violations.
 
 `ledgr_target_rebalance()` still completes intent from ctx: unselected members
 get zero; held nonmembers retain quantity and reserve absolute marked exposure
 before member sizing. Nonmember weights error, including explicit zero weights
-bearing a nonmember name; nothing is silently dropped. Whole-share flooring,
-negative/leverage rejection and dense warn-and-zero price behavior stay as bound
+bearing a nonmember name; nothing is silently dropped. Whole-share flooring and
+negative/leverage rejection stay as bound
 (`R/strategy-helpers.R:226-305`; `contracts.md:396-404,614-632`).
+
+**Zero-weight correction:** After validating weights and member eligibility,
+set zero-weight member targets to zero without consulting their sizing close,
+in dense and availability modes. Positive weights keep the availability error
+and dense warn-and-zero price behavior. This is an intentional correction to
+the existing price loop, not a claim of unchanged helper behavior. It neither
+bypasses pre-strategy valuation nor promises that a requested exit will fill.
+
+**Budget meaning:** Weights and `equity_fraction` apply to allocatable capital A,
+not necessarily total NAV. Dense A equals NAV. Under availability, A is
+`max(0, NAV - sum(abs(quantity * mark)))` over preserved held nonmembers.
+For a positive member weight, quantity is `floor(weight * equity_fraction * A / close)`.
+With NAV 100, OLD exposure 40 and AAA close 10, A is 60: weight 1 targets
+6 AAA shares; weight 0.6 allocates 36 before flooring, yielding 3 shares.
+An optimizer's total-NAV weights must not be passed as residual-budget weights
+without conversion. The helper does not infer the optimizer's convention.
+
 After construction, `targets[["OLD"]] <- 0` explicitly requests that held
 nonmember's exit. It does not increase other targets using anticipated proceeds.
 
@@ -149,9 +190,17 @@ nonmember's exit. It does not increase other targets using anticipated proceeds.
 of NA for inadmissible member scores (`R/strategy-helpers.R:90-98`). Document this
 as an explicit convenience-helper policy. It is not identical to the new raw
 feature-plane entrance under restrictions. `select_top_n()` continues its
-missing-score exclusion and tie policy; no new missing-data policy is introduced.
+missing-score exclusion and tie policy; no new ranking policy is introduced.
 If an author wants an unavailable input to skip a rebalance, guard that decision
 and return `ctx$hold()`. Deliberate omission, zero and hold remain distinct.
+
+Teach two authoring paths: the selection/weight pipeline constructs a new member
+allocation; `targets <- ctx$hold()` followed by explicit quantity edits preserves
+other holdings. Returning hold does not bypass downstream risk or guarantee no
+fills. Preserving one current member while reallocating others requires reserving
+its marked exposure before sizing the remainder. Restoring its quantity after
+full-budget sizing is not a safe recipe. Explicit targets can express that policy;
+this cut adds no partial-rebalance engine or richer missing-intent object.
 
 ## 4. Empty-domain contract
 
@@ -229,11 +278,11 @@ current contract file is not silently rewritten by this draft.
 | Contract location at D | Required amendment |
 | --- | --- |
 | Public Naming, lines 17-31 | Bind `ledgr_rule_argmax/min` as constructors of the unchanged `ledgr_selection_rule`; remove the old exported spellings without aliases. Rule payload, selection behavior and hashes are unchanged. |
-| Availability, lines 375-400 | Keep axis, preservation and reservation rules. Clarify that both helper pipelines honor the existing empty-axis promise and that context selection defaults to M without screening. |
-| Strategy, lines 600-632 | Add section 3's two constructor modes, exact validation, error classes and section 4's empty objects. Preserve final-target completeness, ranking policy, flooring and the single execution path. |
+| Availability, lines 375-400 | Keep axis, preservation and reservation rules. Clarify M projection for context predicates/scores, empty-axis behavior and the residual-capital budget. No quality screening. Missing sizing evidence applies to positive weights; zero member weights need no sizing close. |
+| Strategy, lines 600-632 | Add section 3's constructor modes, validation, error classes and explicit zero-weight correction, plus section 4's empty objects. Preserve final-target completeness, ranking policy, flooring and the single execution path. |
 | Context, lines 743-762 | State unnamed alignment to Daxis; bind `vec$position`, remove the public `positions` view, retain its read-only semantics on the plane, and distinguish `hold()` as intent. Remove tombstone entries from active contracts/help; `safety_state` becomes private. |
 | Context, lines 738-742,763-783 | Retain rectangles and the feature routes, disclose the long table's schema-only runtime mode, and document `tradable()`'s exact predicate and limits if WS16 is merged. No inspection equivalence is claimed. |
-| Documentation, lines 1197-1247 | Add section 7's surface-table gate; shape and availability conditions are contracts, not an export/member-count target. |
+| Documentation, lines 1197-1247 | Add section 7's surface-table gate and representative authoring examples. Teach residual-budget units and allocation versus hold-and-edit paths; no export/member-count target. |
 
 ## 7. Binding documented-surface gate and acceptance
 
@@ -257,23 +306,25 @@ The following are detecting acceptance checks, not claims that new APIs ran:
 | Check and existing owner | Required result / defect it detects |
 | --- | --- |
 | Surface gate: `test-documentation-contracts.R` | An added public field or a plane changed to a function fails; a stale documented name fails. Dense and availability variants cannot pass by checking only their intersection. |
-| Composition: `test-strategy-types.R` | Dense equity 300, closes 10/20: 15/7 shares. Equity 100, AAA close 10 and two OLD shares marked 20: default member target AAA=6, OLD=2. Gut reservation: AAA=10 must fail. Explicit none: AAA=0, OLD=2; explicit OLD zero remains zero. |
-| Alignment/errors: `test-strategy-types.R` | Named reversed member scores realign; equivalent full-axis unnamed scores agree. Missing member, short unnamed vector, duplicate/unknown name, NA `where`, NULL/conflicting payload and nonmember selection fail with section 3's classes. |
-| Missingness: `test-strategy-types.R` | A selected member lacking a current close fails under availability even when `priced=TRUE`. All-NA scores yield zero member targets through top-N; an explicit hold guard preserves quantities. No default quality screen may make these cases identical. |
+| Composition: `test-strategy-types.R` | Dense equity 300, closes 10/20: 15/7 shares. Equity 100, AAA close 10 and two OLD shares marked 20: default member target AAA=6, OLD=2; AAA weight 0.6 yields AAA=3, OLD=2. Gut reservation: AAA=10 must fail. Explicit none: AAA=0, OLD=2; explicit OLD zero remains zero. |
+| Alignment/errors: `test-strategy-types.R` | Named reversed member scores realign; equivalent full-axis unnamed scores agree. Missing member, short unnamed vector, duplicate/unknown name, NA on M in `where`, NULL/conflicting payload and explicit nonmember IDs/weights fail with section 3's classes. |
+| Predicate projection: `test-strategy-types.R` | With M=AAA and Daxis=AAA,OLD, where=(TRUE,TRUE), (TRUE,FALSE) and (TRUE,NA) all select AAA and preserve held OLD after rebalance. Check named reversed order and positional forms. NA for AAA errors; explicit `ids="OLD"` errors. With empty M, logical predicates on held nonmembers yield an empty selection, not an error or liquidation. |
+| Zero-weight correction: `test-strategy-types.R` | Members AAA/BBB, AAA close 10, BBB close unavailable but its held mark permissible: weights (AAA=1,BBB=0) and (AAA=1) produce identical full targets, BBB=0, without a price warning/error. Cover dense and availability helper contexts. Weights (AAA=0.5,BBB=0.5) still trigger the existing mode-specific price behavior; zero weight for nonmember OLD still errors. |
+| Missingness: `test-strategy-types.R` | A positive-weight member lacking a current close fails under availability even when `priced=TRUE`. All-NA scores yield zero member targets through top-N; an explicit hold guard preserves quantities. No default quality screen may make these cases identical. |
 | Empty domains: `test-strategy-types.R` | Both pipelines distinguish Daxis empty, M empty with OLD held, and explicit none with members present. Empty final intent passes only for an empty allowed axis; missing AAA is still rejected. |
 | Read/naming parity: `test-pulse-context-accessors.R`, `test-api-exports.R`, `test-walk-forward-selection.R` | Scalar/plane quantities agree; editing hold leaves state unchanged; feature aliases and warmup survive. Old names are absent; renamed rule constructors reproduce the same payload/hash and selection. |
-| Runtime/teaching: existing documentation and execution tests | Run and sweep use the same helper outcomes. New entrances and changed state reads create no frames or history queries inside callbacks. Canonical taught examples render, including the first equal-member example and the missing-input hold guard. |
+| Runtime/teaching: existing documentation and execution tests | Run and sweep use the same helper outcomes. New entrances and changed state reads create no frames or history queries inside callbacks. Teach equal-member allocation and predicates with held OLD, momentum with an explicit missing-input hold guard, custom weights containing zeros, and stateful entry/exit using hold. Use existing example/test owners; no new strategy harness. |
 
 No equity-invariance condition for fewer fills, timing ratio, or maximum member
 count is an acceptance gate. Feature-frame removal and rebalance bands are absent.
 
 ## 8. Scope, next step and future obligations
 
-A focused final verification can now check five things: constructor dispatch and
-alignment; membership/reserved-budget semantics; empty domains; the position
-amendment; and the failure sensitivity of the documented-surface gate. Then cut
-one scoped implementation workstream after maintainer acceptance. No new broad
-spike or repeated full-suite campaign is needed to decide this design.
+The original final review stands for `71c2a3ab`. Focused verification of this
+amendment checks predicate projection, zero-weight sizing and their detecting
+examples, plus consistency of budget teaching, contract amendments and scope.
+Then cut one scoped implementation workstream after maintainer acceptance.
+No new broad spike, full review cycle or package campaign is required here.
 
 Implement only after the v0.2.0.2 release gate. First align contract/reference
 text with these decisions, then change constructor/empty-domain behavior and
@@ -282,10 +333,22 @@ gate and executed teaching examples. Current-release articles teach shipped APIs
 
 After acceptance, record the inspection-boundary deferral in `horizon.md` with
 section 5's trigger and evidence requirement. Rebalance bands remain in existing
-portfolio-policy work; history panels/estimators remain in their own cycle;
-warning effectiveness remains with its owning workflow. None blocks this cut.
-Historical seeds, responses and recorded evidence remain unchanged. No schema,
-cache, ledger, provenance, availability-policy or financing redesign is authorized.
+portfolio-policy work. The [scheduler seed](rfc_strategy_schedule_decorator_v0_1_9_x_seed.md)
+remains separate; this RFC neither chooses decision dates nor adds scheduler state.
+Per the maintainer's sequencing, causal frames for ML, clustering and estimation
+are the next separate RFC after this one; their design and APIs are not bound here.
+Warning effectiveness remains with its owning workflow. None blocks this cut.
+
+This work improves composition of supported context and helper surfaces; it does
+not change preflight rules for arbitrary user-defined helper functions.
+`contracts.md:678-695` and `tests/testthat/test-strategy-preflight.R:82-93`
+document the current external-helper restriction. A later wrapped-strategy or
+estimator design must address that boundary explicitly, not silently exempt it.
+No dependency registry, new weight constructor mode or provenance layer is added.
+
+Historical seeds, responses, the original review and recorded evidence remain
+unchanged. No schema, cache, ledger, provenance, availability-policy or financing
+redesign is authorized.
 Rewriting strategy source may change its normal provenance;
 this RFC does not rewrite stored run identities or promise old-source replay.
 
@@ -294,3 +357,10 @@ this RFC does not rewrite stored run identities or promise old-source replay.
 - 2026-09-26: Initial decision synthesis at D/I. Retains the revised seed's
   question, defers the response's inspection removal, selects one position
   read surface, and binds alignment, dispatch, empty domains and detecting gates.
+- 2026-09-26: Maintainer-requested usability amendment following the strategy-family
+  exercise, after Claude's PASS on `71c2a3ab` (review committed at `4e65378`).
+  Supersedes the rule that TRUE on a nonmember predicate errors: predicates now
+  project to M, with NA rejected on M. Explicit nonmember IDs/weights still error.
+  Adds the bounded zero-weight sizing correction, residual-budget teaching and
+  representative examples. Records the helper-preflight boundary and separate
+  scheduler/causal-frame work. Original review preserved; focused verification pending.
