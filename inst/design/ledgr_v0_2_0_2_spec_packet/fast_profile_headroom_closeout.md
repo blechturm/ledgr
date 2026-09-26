@@ -1,7 +1,7 @@
 # Workstream 19: Fast-Profile Headroom Closeout
 
-**Status:** Agent-provisional; awaiting independent Type 1 close review.
-**Tickets:** LDG-2845 through LDG-2849. **Baseline:** `c83e4dc`.
+**Status:** Independent Type 1 close review PASS; awaiting maintainer
+acceptance. **Tickets:** LDG-2845 through LDG-2849. **Baseline:** `c83e4dc`.
 
 ## What Changed
 
@@ -68,7 +68,13 @@ The same-session `c83e4dc` ordinary baseline was 175.20, 104.69 and 100.74
 seconds, median 104.69. The first run included a 67.48-second finalizer stall;
 it is retained in the record and is not used as an effect estimate. Final
 ordinary runs were 79.46, 79.72 and 79.23 seconds, median 79.46. The median
-improvement is 24.1 percent, and the result meets both the binding 90-second
+session difference is 24.1 percent, but it is not an effect estimate: 194
+untouched blocks had a median after/before ratio of 0.848, and 11.8 seconds of
+the 22.8-second summed block reduction occurred in untouched blocks. The
+block census therefore attributes about 11 seconds to this workstream. The
+close reviewer independently measured 86.36 seconds at the Workstream 16 head
+and 73.03 at this head, a 13.3-second difference consistent with the cut's
+approximately 12-second estimate. The result meets both the binding 90-second
 gate and the non-binding 75-to-80-second engineering target. The independent
 ordinary checker passed its registered one-run rule at 79.46 seconds.
 

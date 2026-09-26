@@ -602,7 +602,7 @@ close review would make the historical count three over five, 0.600. If that
 route is taken, the closeout records the breach honestly rather than merging or
 padding tickets to hide it.
 
-## Cut 12: Restore fast-profile headroom (close review pending)
+## Cut 12: Restore fast-profile headroom (close review PASS; acceptance pending)
 
 Authority: the accepted testing-architecture synthesis and the maintainer's
 2026-09-25 decision to recover the fast lane without weakening its 90-second
