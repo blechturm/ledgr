@@ -1,0 +1,4 @@
+"permutation","pair","feature_axis_identical","feature_na_mask_identical","feature_values_equal","feature_max_abs","feature_max_relative","equity_equal","equity_max_abs","equity_max_relative","fills_equal","fills_max_abs","fills_max_relative","trades_equal","trades_max_abs","trades_max_relative"
+"ABC","A_B",TRUE,TRUE,TRUE,7.56699591875076e-10,1.18187104482482e-13,TRUE,0,0,TRUE,0,0,TRUE,0,0
+"ABC","A_C",TRUE,TRUE,TRUE,7.56699591875076e-10,1.18187104482482e-13,TRUE,0,0,TRUE,0,0,TRUE,0,0
+"ABC","B_C",TRUE,TRUE,TRUE,0,0,TRUE,0,0,TRUE,0,0,TRUE,0,0
