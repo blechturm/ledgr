@@ -112,6 +112,65 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-26 [research] Fitted imputers after the simple missingness policy
+
+The maintainer's
+[historical-projection missingness amendment](rfc/rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md)
+sets the ML-release direction: simple carry-forward plus missingness
+information for prices and indicators. Fitted imputers need a separate design
+pass; they must not delay that simple capability. This entry extends the
+2026-06-14 "General ML-strategy preparedness" direction and the availability
+synthesis's deferred preprocessing obligation. It does not select a fitted
+method or assign the ML work a numbered release.
+
+**Fitting regime and information bounds.** Distinguish deterministic causal
+treatment, rolling/expanding re-estimation and transformations frozen on a
+training set. Define the fit population and cutoff at each outer evaluation and
+inner candidate-selection boundary. Fitted preprocessing cannot learn from the
+scored test period. A rolling refit has its own admissible history and use
+interval; it is not a whole-snapshot fit. Cross-sectional inputs need a declared
+point-in-time population, and historical requests retain their simulated
+decision-time knowledge cutoff. Missing labels and immature outcomes remain
+separate from imputable predictors.
+
+**Composition and delivery.** Support source-domain transformations before
+indicators and feature-domain transformations afterward without conflating
+their effects. Preserve original missingness, transformed-input provenance,
+direct output filling and readiness separately. Models that accept native `NA`
+must be able to bypass filling. Review recipe adapters, cross-instrument
+dependencies, stable feature schemas and all-missing columns rather than
+assuming every transformation fits a per-instrument finite rolling window.
+Training export and prediction must share the same declared transformation
+semantics at the same information bounds. Generic recipe steps are not proof of
+temporal safety; verify their fit and application behavior.
+
+**Artifacts, preparation and replay.** Keep frozen fitted state in the
+model/adapter layer and compose its recipe/state identity with ledgr's source,
+feature and policy lineage. Reuse the existing ML artifact direction rather
+than introducing an imputation registry. Distinguish replay of a stored fitted
+artifact from refitting it, including RNG, package versions and declared use
+intervals. Prepare work at the declared fit/refit boundaries and cache outputs
+where appropriate; ordinary pulse access must not fit a model, query historical
+storage or reconstruct a full panel. Inspect memory and worker replication for
+multivariate methods before claiming a scalable representation.
+
+**Methods and research usability.** Consider simple training-statistic fills,
+nearest neighbours, regression/tree imputers and models with native missingness
+through existing R tools such as recipes. More complex reconstruction is not
+automatically a better predictor. Compare against the shipped strict and carry
+policies, retain missingness information, and examine sample retention and
+downstream research results as well as reconstruction error. Keep fitted
+algorithm selection explicit and outside the execution fold.
+
+Route: a focused fitted-preprocessing/imputation RFC in the v0.2.x ML design
+window, coordinated with the existing ML-architecture and historical-projection
+cycles. Its requirements should inform the simple preparation boundary before
+that boundary is frozen; its implementation may follow the simple release.
+The immediate no-lock-in constraints belong to the amendment's section 4, so
+they are not deferred here. Any probe or comparative work follows
+`spike_protocol.md`; this entry records direction and authorizes neither a
+spike nor implementation.
+
 ### 2026-09-25 [ux] Availability evidence has no convenient reader
 
 Writing the missing-data article surfaced two accessor gaps. Both are
