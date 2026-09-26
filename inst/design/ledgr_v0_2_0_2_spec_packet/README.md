@@ -478,7 +478,7 @@ result boundary: expose or reuse evidence already computed without changing
 its meaning. The older LDG-2820 remains a separate deferred resume-path
 optimization.
 
-## Cut 10: Indicator source parity and timing attribution (accepted; open)
+## Cut 10: Indicator source parity and timing attribution (close review pending)
 
 Authority: the maintainer's 2026-09-25 decision that indicator source is not
 a semantic axis for missing observations or session calendars, together with
@@ -531,6 +531,15 @@ recovery, late listings, stale valuation separation, and the executable
 support matrix. Workstream 17 follows Workstream 16 so both edits to that
 article are serial; Workstream 18 follows Workstream 17 for the same reason,
 and the release gate follows Workstream 18.
+
+Workstream 17 is implemented through `001ece3`. Its agent-provisional record is
+`indicator_source_parity_closeout.md`. The six-permutation attribution found
+the historical 9.57-second gap order-confounded and authorized no source-path
+optimization. The corrected peer record uses only public indicator
+constructors, and the source and rendered articles publish the executable
+expected-session and support matrices. The exact LDG-2837 fast record passed
+453 of 453 blocks in 76.50 seconds against the unchanged 90-second gate.
+Independent Type 1 close review is pending.
 
 ## Cut 11: Point-in-time input model (awaiting focused cut re-review; opens
 after workstream 17)

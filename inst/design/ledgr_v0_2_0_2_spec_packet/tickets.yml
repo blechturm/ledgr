@@ -102,7 +102,7 @@ cuts:
     workstreams: [17]
     closeout: "indicator_source_parity_closeout.md"
     accepted: "2026-09-25 by the maintainer, at 66ccb06"
-    status: "open"
+    status: "review_pending"
   - id: 11
     name: "Point-in-time input model: composable demo input and checklist"
     cut: "2026-09-25"
@@ -1320,12 +1320,13 @@ tickets:
   - id: "LDG-2838"
     title: "Close indicator source parity and timing attribution"
     workstream: 17
-    status: "open"
+    status: "review_pending"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2833", "LDG-2834", "LDG-2835", "LDG-2836", "LDG-2837"]
     scope: "Close workstream 17 and cut 10. Record the order-controlled attribution outcome, the supported and deliberately unsupported indicator families, the direct/sweep/resume/cache parity record, the corrected peer boundary and final phase clocks, documentation surfaces, every declined optimization, and review invocations against the 0.5 gate. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout states in one sentence whether the old TTR gap was order-confounded, structural or inconclusive and cites the registered cells rather than a single peer row", "every semantic claim names its detecting block, independent oracle and smallest breaking change, including the sweep-propagation mutation and the TTR-certification mutation", "the seven-shape walk names every changed loop on hydration or benchmark paths and the registered before-and-after clocks are reported as cold or warm", "the closeout lists unsupported EMA, RSI and other TTR availability behavior as a deliberate boundary unless executable evidence in this cut changed that list", "the final peer report is named as a corrected boundary record, not as proof that all external indicators share one performance profile", "the cut-review and close-review invocations are counted honestly and remain at or below 0.5 per completed ticket"]
+    evidence: ["indicator_source_parity_closeout.md is the agent-provisional Workstream 17 record. It classifies the historical 9.57-second gap as order-confounded from all six registered position cells; maps LCL-0073 through LCL-0075 to their independent oracles and smallest breaking changes; lists the supported and deliberately unsupported families; records the corrected public peer boundary and phase clocks; names the documentation surfaces and declined work; and audits every changed production and benchmark loop against the seven shapes.", "The promoted peer record is peer_benchmark_record_20260926T080725Z from c7d936d. The exact LDG-2837 ordinary fast record in .tmp/ws17-2837-fast passed 453 of 453 blocks in 76.50 seconds and its independent gate check passed against 90 seconds. The cut review plus the requested close review is two invocations over six tickets, 0.333; the closeout remains agent-provisional until maintainer acceptance."]
 
   # ------------------------- 18 Point-in-time input model
   - id: "LDG-2839"
