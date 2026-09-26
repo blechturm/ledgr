@@ -7,8 +7,8 @@ and LDG-2863. **Baseline:** `d34c3b4`.
 ## Outcome
 
 Continuous integration is green on its declared `ubuntu-latest`, R 4.6.1
-runner and now reports the reason when it is not. GitHub Actions run
-`36264300852` passed end to end at `cf7f64c`: its ordinary fast record
+runner and now reports the reason when it is not. Correction run
+`36268077108` passed end to end at `b35f417`: its ordinary fast record
 executed 457 of 457 blocks with no skip or failure, its independent gate
 passed, and `R CMD check` passed.
 
@@ -61,6 +61,9 @@ message together hid a consistently red suite.
   staged `00_pkg_src` package over an enclosing checkout. It also makes the
   adapter vignette load the installed package and carry its vignette-local
   support file through R's documented `.install_extras` mechanism.
+- `b35f417` closes the first review's five bounded findings: checker exit
+  status, staged-source precedence, the vignette fallback detector, complete
+  calibration disclosure and reachable local-record provenance.
 
 The first registered run after calibration, `36257746909`, passed 456 of 456
 ordinary blocks in 101.464 seconds and passed the independent gate, then
@@ -100,17 +103,26 @@ runner. It is not the prohibited practice of raising a previously calibrated
 bound until a regression passes. No other threshold, timeout or membership
 changed.
 
-Final GitHub Actions run `36264300852` recorded 107.113 seconds, 457 expected
-and executed blocks, zero skips, zero failures, and `gate_passed = TRUE`
-against 112 seconds. Its remaining margin is 4.887 seconds, or 4.36 percent.
-Confirmation runs two and three were correctly skipped under the one-run rule.
-The same workflow completed `R CMD check` and ended successfully.
+The pre-review GitHub Actions run `36264300852` recorded 107.113 seconds,
+457 expected and executed blocks, zero skips and zero failures. Its gate
+record says `gate_passed = TRUE` against 112 seconds. The remaining margin is
+4.887 seconds, or 4.36 percent. Confirmation runs two and three were correctly
+skipped under the one-run rule. The same workflow completed `R CMD check` and
+ended successfully.
 
-At reachable commit `cf7f64c`, package and test content is identical to the
-amended local-build predecessor `f64cb0f`; only the LDG-2865 status and
-evidence in `tickets.yml` differ. The exact local ordinary record retained at
-`C:/tmp/ledgr-ws21-final-fast-f64cb0f` passed 457 of 457 in 84.900 seconds;
-the independent checker returned `LEDGR_TEST_GATE_OK`.
+Correction run `36268077108` at `b35f417` recorded 104.500 seconds, 457
+expected and executed blocks, zero skips and failures. Its gate record says
+`gate_passed = TRUE`; its 7.500-second margin is 6.70 percent. `R CMD check`
+returned `Status: OK` with zero errors, warnings and notes, and all 24
+vignette code replays passed, including the adapter-authoring article through
+the staged package source.
+
+The matching local correction record at
+`C:/tmp/ledgr-ws21-correction-fast-b35f417` passed 457 of 457 in 78.350
+seconds; the independent checker returned `LEDGR_TEST_GATE_OK`. Historical
+local record `C:/tmp/ledgr-ws21-final-fast-f64cb0f` was produced from amended
+predecessor `f64cb0f`; reachable `cf7f64c` has identical package and test
+content, differing only in LDG-2865 status and evidence in `tickets.yml`.
 
 ## Failure Sensitivity
 

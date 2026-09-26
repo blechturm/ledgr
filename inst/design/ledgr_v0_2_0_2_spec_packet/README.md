@@ -803,13 +803,15 @@ close review, so one invocation over five tickets is 0.200.
 | --- | --- | --- | --- |
 | 21 Repair continuous integration | 2860-2863, 2865 | remove the preflight package-loading side effect that warns on headless runners; derive the ordinary fast bound from its declared registered runner; make the profile runner and gate checker report honestly; make source evidence portable to R CMD check; closeout | continuous integration is green on the registered runner and reports honestly when it is not, with no test moved, skipped or weakened to get there |
 
-Implementation is complete through `cf7f64c`. Registered-runner calibration
+Implementation is complete through `b35f417`. Registered-runner calibration
 `36256894206` recorded a 103.129-second median and produced the corrected
-112-second bound with 8.60-percent headroom. Final run `36264300852` passed
-end to end: 457 of 457 ordinary blocks, zero skips and failures, 107.113
-seconds, the independent gate green and R CMD check successful. The
-agent-provisional record is `ci_repair_closeout.md`; independent Type 1 close
-review is pending.
+112-second bound with 8.60-percent headroom. Correction run `36268077108`
+passed end to end after the first Type 1 review: 457 of 457 ordinary blocks,
+zero skips and failures, 104.500 seconds, the independent gate green, R CMD
+check successful and all 24 vignette replays passing through the staged
+source package. The agent-provisional record is `ci_repair_closeout.md`; the
+focused second and final Type 1 close review is pending. The two review
+invocations over five tickets produce 0.400 against the 0.5 gate.
 
 This cut is sequenced before Cut 13 deliberately. Cut 13 carries breaking
 surface renames, and landing them while continuous integration cannot report is
