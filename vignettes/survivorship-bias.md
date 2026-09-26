@@ -35,12 +35,12 @@ By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
 positions, fills, and reported horizon differ from what you asked for.
 
-The [Data Input And Snapshots](data-input-and-snapshots.qmd) article
-owns the complete input decision map and reusable point-in-time bundle.
-This article keeps its smaller `AAA`/`BBB` fixture because the losing
-company and survivor form a direct detector for the bias being taught.
-`AAA`, `BBB`, and the `DEMO` venue are local to this article; they are
-not additions to the shared `DEMO_*` history.
+The [Data Model And Point-In-Time Inputs](data-input-and-snapshots.qmd)
+article owns the complete input decision map and reusable point-in-time
+bundle. This article keeps its smaller `AAA`/`BBB` fixture because the
+losing company and survivor form a direct detector for the bias being
+taught. `AAA`, `BBB`, and the `DEMO` venue are local to this article;
+they are not additions to the shared `DEMO_*` history.
 
 The shared bundle contains the equivalent delisting boundary. Its case
 row points to the lifetime transition that makes the instrument

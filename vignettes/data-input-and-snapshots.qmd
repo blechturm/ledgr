@@ -1,5 +1,5 @@
 ---
-title: "Data Input And Snapshots"
+title: "Data Model And Point-In-Time Inputs"
 format:
   html:
     toc: false
@@ -8,7 +8,7 @@ format:
 execute:
   echo: true
 vignette: >
-  %\VignetteIndexEntry{Data Input And Snapshots}
+  %\VignetteIndexEntry{Data Model And Point-In-Time Inputs}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
@@ -115,59 +115,115 @@ snapshot <- ledgr_snapshot_from_df(
 )
 ```
 
-## Point-In-Time Input Decision Map
+## Data Model And Point-In-Time Decision Map
 
 Bars are the only required input. Every other table makes a claim that bars
 alone cannot make: what instruments mean, which dates are sessions, which
 instruments belonged to a research universe, whether they could trade or still
-existed, and which evidenced economic events occurred. Choose only the families
-your research needs, but declare a session calendar and a stale-mark policy
-whenever availability is active.
+existed, and which evidenced economic events occurred.
 
-| Input | Purpose and scope | Required core columns or shape | Knowledge behavior | Capability | Constructor help |
-|---|---|---|---|---|---|
-| Bars | Observations on the physical instrument axis | `instrument_id`, `ts_utc`, OHLC; `volume` optional | Observation time is `ts_utc` | Dense or availability-aware snapshots | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Instruments | Optional physical instrument master | `instrument_id`; descriptive and trading fields optional | Stable identity, not a PIT assertion | Currency, asset class, multiplier and tick size | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Sessions | Expected dates under one `venue_id` | Every civil date; status plus open/close times when open | Open sessions known by open; closures before the civil day | Expected-session pulses and observation gaps | [`ledgr_facts_sessions()`](../reference/ledgr_facts.html) |
-| Membership intervals | Assertions under one `universe_id` | Instrument, half-open effective interval, member flag | Evidenced or explicitly assume-effective | Changing research membership | [`ledgr_facts_membership_intervals()`](../reference/ledgr_facts.html) |
-| Complete membership snapshots | Complete or partial sets under one `universe_id` | Effective time plus row IDs or a `members` list-column | Evidenced or explicitly assume-effective | Omission can mean non-membership only for a complete set | [`ledgr_facts_membership_snapshots()`](../reference/ledgr_facts.html) |
-| Trading status | Instrument-scoped ability to trade | Instrument, half-open interval, status, source | Evidenced or explicitly assume-effective; may be late | Halts and quotation-only periods | [`ledgr_facts_trading_status()`](../reference/ledgr_facts.html) |
-| Lifetime | Instrument-scoped existence evidence | Instrument, half-open interval, assertion | Evidenced or explicitly assume-effective; may be late | Active, inactive or unknown lifetime | [`ledgr_facts_lifetime()`](../reference/ledgr_facts.html) |
-| Equity corporate actions | Economic terms under the equity fact scope | Subtype, parent, completeness, provenance; terms are conditional and validated | Carries entitlement, effective, knowledge and payment clocks separately | Cash settlement and explicit unsupported dispositions | [`ledgr_facts_equity_corporate_actions()`](../reference/ledgr_facts.html) |
+### Choose The Smallest Honest Input Set
 
-Constructor help owns the exhaustive optional-column contract. Three rules cut
-across every row:
+| Research shape | Minimum sealed inputs | Runtime declaration |
+|---|---|---|
+| Dense static panel | Bars | A strategy and ordinary experiment settings |
+| Described physical panel | Bars plus instruments | Same as dense; metadata becomes inspectable |
+| Session-aware data gaps | Bars plus sessions | A stale-mark valuation policy |
+| Point-in-time universe | Bars, sessions and one membership shape | A matching universe selector and stale-mark policy |
+| Tradeability or lifetime restrictions | Bars, sessions, and status or lifetime facts | A stale-mark policy; membership only when selection needs it |
+| Demonstrated full equity bundle | Bars, instruments, sessions, complete membership, status, lifetime and corporate actions | Universe, valuation and settlement policy choices |
+
+An availability family currently requires a complete declared session calendar
+and a stale-mark policy. Corporate-action facts do not activate availability by
+themselves. Adding more fact families is not automatically more honest: include
+only evidence that your source can support.
+
+### Rows, Keys And Required Columns
+
+This table is the package-level data dictionary. Constructor help remains the
+versioned authority for exhaustive optional columns and accepted values.
+
+| Input | Row grain and identity | Required core columns or shape | Scope and time | Constructor help |
+|---|---|---|---|---|
+| Bars | One row per `(instrument_id, ts_utc)`; the pair is unique | `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`; `volume` optional | Physical instrument; observation clock | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
+| Instruments | One row per unique `instrument_id` | `instrument_id`; symbol, currency, asset class, multiplier and tick size are optional | Physical master; identity is stable, not time-varying | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
+| Sessions | One row per civil date in one declared venue range | `session_date`, `status`; open rows also need `session_open`, `session_close` | `venue_id`; knowledge clock plus local calendar time | [`ledgr_facts_sessions()`](../reference/ledgr_facts.html) |
+| Membership intervals | One assertion per instrument interval | `instrument_id`, `effective_from`, `member`; optional `effective_to` | `universe_id`; half-open effective interval plus knowledge clock | [`ledgr_facts_membership_intervals()`](../reference/ledgr_facts.html) |
+| Complete membership snapshots | One set header per effective/knowledge/source group plus member rows | `effective_from` and row-wise `instrument_id` or one `members` list-column; `complete` is declared | `universe_id`; omission means non-membership only in a complete set | [`ledgr_facts_membership_snapshots()`](../reference/ledgr_facts.html) |
+| Trading status | One sourced assertion per instrument interval and precedence | `instrument_id`, `effective_from`, `status`, `source`; optional `effective_to`, `precedence` and supersession fields | Physical instrument; effective and knowledge clocks | [`ledgr_facts_trading_status()`](../reference/ledgr_facts.html) |
+| Lifetime | One assertion per instrument interval | `instrument_id`, `effective_from`, `assertion`; optional `effective_to`, `terminal_event` | Physical instrument; effective and knowledge clocks | [`ledgr_facts_lifetime()`](../reference/ledgr_facts.html) |
+| Equity corporate actions | One identified economic fact | `subtype`, `parent_instrument_id`, `complete`, `provenance_tier`; terms and refusal reason are conditional | Physical parent and optional recipient; four distinct clocks | [`ledgr_facts_equity_corporate_actions()`](../reference/ledgr_facts.html) |
+
+Every interval is half-open: `effective_from` is included and `effective_to` is
+excluded. Three cross-cutting rules apply:
 
 - identifiers stay stable for the history being sealed;
 - timestamps are whole-second UTC instants, even when sessions begin as local
   civil dates and wall times;
 - knowledge is declared per family. It is not universally required to precede
-  effectiveness: non-session facts may become knowable later, while session
-  facts obey the stricter rule in the table.
+  effectiveness: status and lifetime evidence may arrive late, while session
+  facts obey their stricter constructor rule.
 
-The scopes are related but not interchangeable.
+Corporate actions distinguish entitlement (who qualifies), effective time
+(when the market state changes), knowledge time (when the evidence is usable),
+and payment time (when cash is due). Do not collapse those clocks into one
+vendor date during preparation.
+
+### Entity Relationships
+
+The physical instrument master, venue calendar and research universe are
+different scopes. The diagram shows keys and cardinalities, not the order in
+which helpers happen to be called.
 
 ::: {.ledgr-diagram .ledgr-input-entities}
 
 ```{mermaid}
-flowchart LR
-  I[Physical instrument master]
-  B[Bars by instrument]
-  V[Venue scope: sessions]
-  U[Universe scope: membership]
-  S[Instrument scope: status and lifetime]
-  C[Equity scope: corporate actions]
-  P[Sealed snapshot]
-  R[Availability-aware run]
-  C -- parent and optional recipient --> I
-  U -- member identifiers --> I
-  B --> P
-  I --> P
-  V --> P
-  U --> P
-  S --> P
-  C --> P
-  P --> R
+%%| echo: false
+erDiagram
+  SNAPSHOT ||--o{ INSTRUMENT : contains
+  INSTRUMENT ||--o{ BAR : observed_as
+  SNAPSHOT ||--o{ SESSION : seals
+  SNAPSHOT ||--o{ MEMBERSHIP : seals
+  INSTRUMENT ||--o{ MEMBERSHIP : referenced_by
+  INSTRUMENT ||--o{ TRADING_STATUS : constrained_by
+  INSTRUMENT ||--o{ LIFETIME : described_by
+  INSTRUMENT ||--o{ CORPORATE_ACTION : parent_or_recipient
+  SNAPSHOT {
+    string snapshot_id PK
+    string snapshot_hash
+  }
+  INSTRUMENT {
+    string instrument_id PK
+  }
+  BAR {
+    string instrument_id FK
+    datetime ts_utc PK
+  }
+  SESSION {
+    string venue_id PK
+    date session_date PK
+  }
+  MEMBERSHIP {
+    string universe_id PK
+    string instrument_id FK
+    datetime effective_from
+    datetime knowledge_time
+  }
+  TRADING_STATUS {
+    string instrument_id FK
+    datetime effective_from
+    datetime knowledge_time
+  }
+  LIFETIME {
+    string instrument_id FK
+    datetime effective_from
+    datetime knowledge_time
+  }
+  CORPORATE_ACTION {
+    string fact_id PK
+    string parent_instrument_id FK
+    string recipient_instrument_id FK
+  }
 ```
 
 :::
@@ -175,14 +231,29 @@ flowchart LR
 Corporate-action parent and optional recipient identifiers resolve against the
 physical instrument master, not against membership in a research universe. A
 security can therefore be physically known without being an eligible member.
+Trading-status and lifetime facts also resolve through that master; neither is
+a substitute for universe membership.
+
+### What Sealing Establishes
+
+After a successful seal, ledgr can rely on stable physical identifiers,
+whole-second bar timestamps, unique bar keys, fact referential integrity,
+validated family structure, and an immutable snapshot hash. Reopening with
+`verify = TRUE` rechecks that artifact identity.
+
+Sealing does not imply a dense instrument-by-session rectangle, current
+universe membership, continuously fresh prices, inferred corporate-action
+terms, or knowledge before effectiveness. Those remain explicit data or policy
+questions at execution time.
 
 ### One Composable Bundle
 
-`ledgr_demo_pit_inputs` is plain data, not a prebuilt snapshot. Its New York
-calendar, matching session-close bars, instrument master and five fact inputs
-travel together; they are not a fact overlay for an unrelated observation
-panel. The case manifest locates a weekday closure, an open-session observation
-gap, a delisting, a halt and a cash dividend.
+`ledgr_demo_pit_inputs` is plain data, not a prebuilt snapshot. Its synthetic
+`DEMO_VENUE` calendar uses the `America/New_York` timezone. Matching
+session-close bars, the instrument master and five fact inputs travel together;
+they are not a fact overlay for an unrelated observation panel. The case
+manifest locates a weekday closure, an open-session observation gap, a
+delisting, a late-known halt and a cash dividend.
 
 ```{r}
 #| label: pit-input-shape
@@ -229,6 +300,63 @@ pit_facts <- ledgr_facts(
   lifetime_facts,
   status_facts,
   corporate_action_facts
+)
+```
+
+The bundle makes three important boundaries executable. Its halt is already
+effective before it becomes knowable. Sub-second observations fail before
+sealing, and a fact that names an instrument outside the physical master fails
+the public pre-seal validation with a classed error. The seal independently
+retains its lower-level `ledgr_snapshot_fact_referential_integrity` guard; the
+public constructor normally refuses the bad bundle before reaching it.
+
+```{r}
+#| label: pit-boundary-failures
+
+halt_clock <- pit$trading_status[
+  pit$trading_status$status == "halted",
+  c("effective_from", "knowledge_time")
+]
+data.frame(
+  boundary = "halt knowledge arrives after effectiveness",
+  observed = halt_clock$knowledge_time > halt_clock$effective_from
+)
+
+capture_condition_class <- function(value) {
+  result <- tryCatch(force(value), error = identity)
+  if (inherits(result, "condition")) return(class(result)[[1L]])
+  if (inherits(result, "ledgr_snapshot")) ledgr_snapshot_close(result)
+  "NO_ERROR"
+}
+
+subsecond_bars <- pit$bars[1:2, , drop = FALSE]
+subsecond_bars$ts_utc[[1L]] <- subsecond_bars$ts_utc[[1L]] + 0.5
+
+orphan_lifetime <- pit$lifetime
+orphan_lifetime$instrument_id[[1L]] <- "NOT_IN_MASTER"
+orphan_lifetime_facts <- do.call(
+  ledgr_facts_lifetime,
+  c(list(df = orphan_lifetime), constructor_args("lifetime"))
+)
+orphan_facts <- ledgr_facts(
+  session_facts,
+  membership_facts,
+  orphan_lifetime_facts,
+  status_facts,
+  corporate_action_facts
+)
+
+data.frame(
+  boundary = c("sub-second bar", "fact outside instrument master"),
+  condition_class = c(
+    capture_condition_class(ledgr_snapshot_from_df(subsecond_bars)),
+    capture_condition_class(ledgr_snapshot_from_df(
+      pit$bars,
+      instruments_df = pit$instruments,
+      facts = orphan_facts,
+      price_basis = pit$recipe$price_basis
+    ))
+  )
 )
 ```
 

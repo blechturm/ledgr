@@ -36,6 +36,9 @@
 #' intervals are half-open. Missing knowledge stays audit-only under
 #' `"evidenced"`; selecting `"assume_effective"` is recorded in the recipe and
 #' delegates that substitution to the public fact constructor.
+#' The delisting retains its boundary observation and emits no later bars. The
+#' halt retains its effective-boundary bar, omits observations strictly inside
+#' the halted interval, and resumes at the excluded interval end.
 #'
 #' A changed seed changes prices and volumes, not calendar, facts, case
 #' placement, columns, or scope. The returned facts and bars belong together;
@@ -130,7 +133,11 @@ ledgr_sim_pit_inputs <- function(
   }
 
   closure_date <- if ("venue_closure" %in% cases) weekdays[[4L]] else as.Date(NA)
-  status <- ifelse(weekday & dates != closure_date, "open", "closed")
+  status <- ifelse(
+    weekday & !(dates %in% closure_date),
+    "open",
+    "closed"
+  )
   sessions <- data.frame(
     session_date = dates,
     status = status,
@@ -163,6 +170,28 @@ ledgr_sim_pit_inputs <- function(
     bars <- bars[keep, , drop = FALSE]
     rownames(bars) <- NULL
   }
+  if ("delisting" %in% cases) {
+    delisting_close <- ledgr_sim_pit_time_for_date(
+      weekdays[[10L]], session_close_utc, sessions
+    )
+    bars <- bars[!(
+      bars$instrument_id == instrument_ids[[1L]] &
+        bars$ts_utc > delisting_close
+    ), , drop = FALSE]
+  }
+  if ("halt" %in% cases) {
+    halt_from <- ledgr_sim_pit_time_for_date(
+      weekdays[[3L]], session_close_utc, sessions
+    )
+    halt_to <- ledgr_sim_pit_time_for_date(
+      weekdays[[6L]], session_close_utc, sessions
+    )
+    bars <- bars[!(
+      bars$instrument_id == instrument_ids[[2L]] &
+        bars$ts_utc > halt_from & bars$ts_utc < halt_to
+    ), , drop = FALSE]
+  }
+  rownames(bars) <- NULL
 
   instruments <- if (isTRUE(include_instruments)) {
     data.frame(
@@ -480,18 +509,25 @@ ledgr_sim_pit_status <- function(instrument_ids,
                                  sessions,
                                  cases,
                                  mode) {
+  effective_to <- as.POSIXct(
+    rep(NA_real_, length(instrument_ids)),
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  if ("delisting" %in% cases) {
+    effective_to[[1L]] <- ledgr_sim_pit_time_for_date(
+      weekdays[[10L]], session_close_utc, sessions
+    )
+  }
   rows <- data.frame(
     instrument_id = instrument_ids,
     effective_from = rep(first_close, length(instrument_ids)),
-    effective_to = as.POSIXct(
-      rep(NA_real_, length(instrument_ids)),
-      origin = "1970-01-01",
-      tz = "UTC"
-    ),
+    effective_to = effective_to,
     knowledge_time = ledgr_sim_pit_knowledge_column(
       rep(prior_knowledge, length(instrument_ids)), mode
     ),
     status = "active",
+    precedence = 0L,
     source = "ledgr_sim_pit",
     stringsAsFactors = FALSE
   )
@@ -506,19 +542,19 @@ ledgr_sim_pit_status <- function(instrument_ids,
   known_at <- ledgr_sim_pit_time_for_date(
     weekdays[[5L]], session_close_utc, sessions
   )
-  rows$effective_to[rows$instrument_id == instrument_ids[[2L]]] <- halt_from
   extra <- data.frame(
-    instrument_id = rep(instrument_ids[[2L]], 2L),
-    effective_from = c(halt_from, halt_to),
+    instrument_id = instrument_ids[[2L]],
+    effective_from = halt_from,
     effective_to = as.POSIXct(
-      c(as.numeric(halt_to), NA_real_),
+      as.numeric(halt_to),
       origin = "1970-01-01",
       tz = "UTC"
     ),
     knowledge_time = ledgr_sim_pit_knowledge_column(
-      c(known_at, halt_to), mode
+      known_at, mode
     ),
-    status = c("halted", "active"),
+    status = "halted",
+    precedence = 1L,
     source = "ledgr_sim_pit",
     stringsAsFactors = FALSE
   )

@@ -119,36 +119,58 @@ testthat::test_that("[LTB-0076] PIT inputs are calendar-first and case-locatable
       inputs$trading_status$effective_from,
     na.rm = TRUE
   ))
-  without_one_session <- inputs$bars[bar_dates != missing_date, , drop = FALSE]
-  testthat::expect_false(missing_date %in% as.Date(without_one_session$ts_utc))
-  testthat::expect_identical(
-    inputs$sessions$status[inputs$sessions$session_date == missing_date],
-    "open"
-  )
 
-  disabled <- do.call(
-    ledgr_sim_pit_inputs,
-    c(args, list(cases = setdiff(inputs$cases$type, "missing_observation")))
-  )
-  testthat::expect_false("missing_observation" %in% disabled$cases$type)
-  expected_cases <- inputs$cases[
-    inputs$cases$type != "missing_observation", , drop = FALSE
+  delisting <- inputs$lifetime[
+    inputs$lifetime$instrument_id == args$instrument_ids[[1L]] &
+      inputs$lifetime$assertion == "known_inactive", , drop = FALSE
   ]
-  rownames(expected_cases) <- NULL
-  testthat::expect_identical(disabled$cases, expected_cases)
-  disabled_dates <- as.Date(disabled$bars$ts_utc, tz = "UTC")
-  testthat::expect_true(all(args$instrument_ids %in%
-    disabled$bars$instrument_id[disabled_dates == missing_date]))
-  testthat::expect_s3_class(do.call(ledgr_facts, pit_families(disabled)), "ledgr_facts")
+  delisting_at <- delisting$effective_from[[1L]]
+  delisted_bars <- inputs$bars$ts_utc[
+    inputs$bars$instrument_id == args$instrument_ids[[1L]]
+  ]
+  testthat::expect_true(delisting_at %in% delisted_bars)
+  testthat::expect_false(any(delisted_bars > delisting_at))
+  delisted_status <- inputs$trading_status[
+    inputs$trading_status$instrument_id == args$instrument_ids[[1L]],
+    , drop = FALSE
+  ]
+  testthat::expect_identical(delisted_status$effective_to, delisting_at)
 
-  no_dividend <- do.call(
+  halted <- inputs$trading_status[
+    inputs$trading_status$status == "halted", , drop = FALSE
+  ]
+  halt_id <- halted$instrument_id[[1L]]
+  halt_bars <- inputs$bars$ts_utc[inputs$bars$instrument_id == halt_id]
+  testthat::expect_gt(halted$knowledge_time[[1L]], halted$effective_from[[1L]])
+  testthat::expect_identical(halted$precedence[[1L]], 1L)
+  testthat::expect_true(halted$effective_from[[1L]] %in% halt_bars)
+  testthat::expect_false(any(
+    halt_bars > halted$effective_from[[1L]] &
+      halt_bars < halted$effective_to[[1L]]
+  ))
+  testthat::expect_true(halted$effective_to[[1L]] %in% halt_bars)
+
+  all_cases <- inputs$cases$type
+  for (disabled_case in all_cases) {
+    disabled <- do.call(
+      ledgr_sim_pit_inputs,
+      c(args, list(cases = setdiff(all_cases, disabled_case)))
+    )
+    testthat::expect_false(disabled_case %in% disabled$cases$type)
+    testthat::expect_s3_class(
+      do.call(ledgr_facts, pit_families(disabled)),
+      "ledgr_facts"
+    )
+  }
+  no_cases <- do.call(
     ledgr_sim_pit_inputs,
-    c(args, list(cases = setdiff(inputs$cases$type, "cash_dividend")))
+    c(args, list(cases = character()))
   )
-  testthat::expect_identical(nrow(no_dividend$corporate_actions), 0L)
-  testthat::expect_false(no_dividend$recipe$constructors$corporate_actions$enabled)
+  testthat::expect_identical(nrow(no_cases$cases), 0L)
+  testthat::expect_identical(nrow(no_cases$corporate_actions), 0L)
+  testthat::expect_false(no_cases$recipe$constructors$corporate_actions$enabled)
   testthat::expect_s3_class(
-    do.call(ledgr_facts, pit_families(no_dividend)),
+    do.call(ledgr_facts, pit_families(no_cases)),
     "ledgr_facts"
   )
 })
@@ -188,7 +210,8 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
     venue_id = "FLOW_VENUE",
     universe_id = "FLOW_UNIVERSE"
   )
-  facts <- do.call(ledgr_facts, pit_families(inputs))
+  families <- pit_families(inputs)
+  facts <- do.call(ledgr_facts, families)
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(
@@ -222,38 +245,114 @@ testthat::test_that("[LTB-0077] PIT inputs seal, reopen, and run publicly", {
   completion <- ledgr_run_completion(run)
   testthat::expect_identical(completion$completion_status, "DONE")
   testthat::expect_true(completion$complete_performance)
+
+  session_rows <- families[[1L]]$rows
+  halted <- inputs$trading_status[
+    inputs$trading_status$status == "halted", , drop = FALSE
+  ]
+  before_known <- ledgr_run_explain(
+    run, halted$instrument_id[[1L]], halted$effective_from[[1L]]
+  )
+  when_known <- ledgr_run_explain(
+    run, halted$instrument_id[[1L]], halted$knowledge_time[[1L]]
+  )
+  after_halt <- ledgr_run_explain(
+    run, halted$instrument_id[[1L]], halted$effective_to[[1L]]
+  )
+  testthat::expect_false(before_known$target_restricted[[1L]])
+  testthat::expect_true(when_known$target_restricted[[1L]])
+  testthat::expect_identical(
+    when_known$target_restriction_reason[[1L]],
+    "trading_halted"
+  )
+  testthat::expect_false(after_halt$target_restricted[[1L]])
+
+  delisting_at <- inputs$lifetime$effective_from[
+    inputs$lifetime$assertion == "known_inactive"
+  ][[1L]]
+  after_delisting <- session_rows$session_close[
+    session_rows$status == "open" &
+      session_rows$session_close > delisting_at
+  ]
+  first_stale <- ledgr_run_explain(
+    run, inputs$instruments$instrument_id[[1L]], after_delisting[[1L]]
+  )
+  first_expired <- ledgr_run_explain(
+    run, inputs$instruments$instrument_id[[1L]], after_delisting[[3L]]
+  )
+  testthat::expect_true(first_stale$target_restricted[[1L]])
+  testthat::expect_identical(first_stale$mark_source[[1L]], "stale_close")
+  testthat::expect_identical(first_stale$mark_age[[1L]], 1L)
+  testthat::expect_identical(first_expired$mark_source[[1L]], "expired_close")
+  testthat::expect_identical(first_expired$mark_age[[1L]], 3L)
+
+  gap_date <- inputs$cases$date[
+    inputs$cases$type == "missing_observation"
+  ][[1L]]
+  gap_close <- session_rows$session_close[
+    session_rows$session_date == gap_date
+  ][[1L]]
+  gap_inputs <- inputs
+  gap_inputs$bars <- gap_inputs$bars[
+    as.Date(gap_inputs$bars$ts_utc, tz = "UTC") != gap_date,
+    , drop = FALSE
+  ]
+  gap_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(gap_path), add = TRUE)
+  gap_snapshot <- ledgr_snapshot_from_df(
+    gap_inputs$bars,
+    instruments_df = gap_inputs$instruments,
+    facts = facts,
+    db_path = gap_path,
+    price_basis = gap_inputs$recipe$price_basis
+  )
+  gap_experiment <- ledgr_experiment(
+    gap_snapshot,
+    function(ctx, params) ctx$flat(),
+    universe = ledgr_universe_members(
+      gap_inputs$recipe$scopes$universe_id
+    ),
+    valuation_policy = ledgr_valuation_stale(2),
+    cost_model = ledgr_cost_zero()
+  )
+  gap_run <- ledgr_run(gap_experiment, run_id = "pit-empty-session")
+  on.exit(close(gap_run), add = TRUE)
+  gap_equity <- tibble::as_tibble(gap_run, what = "equity")
+  testthat::expect_true(gap_close %in% gap_equity$ts_utc)
+  gap_explain <- ledgr_run_explain(
+    gap_run, inputs$instruments$instrument_id[[3L]], gap_close
+  )
+  testthat::expect_identical(gap_explain$mark_source[[1L]], "stale_close")
+  testthat::expect_identical(gap_explain$mark_age[[1L]], 1L)
+  testthat::expect_identical(
+    ledgr_run_completion(gap_run)$completion_status,
+    "DONE"
+  )
 })
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
-  generated <- ledgr_sim_pit_inputs(
-    instrument_ids = sprintf("DEMO_%02d", 1:5),
-    from = "2020-01-01",
-    to = "2020-01-31",
-    seed = 1702L,
-    venue_id = "DEMO_XNYS",
-    universe_id = "demo_members",
-    timezone = "America/New_York",
-    session_open = "09:30:00",
-    session_close = "16:00:00",
-    cases = c(
-      "venue_closure", "missing_observation", "delisting", "halt",
-      "cash_dividend"
-    )
+  script_path <- normalizePath(
+    testthat::test_path("..", "..", "data-raw", "make_demo_pit_inputs.R"),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  package_root <- normalizePath(
+    testthat::test_path("..", ".."),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  regenerated_path <- tempfile(fileext = ".rda")
+  on.exit(unlink(regenerated_path), add = TRUE)
+  script_env <- new.env(parent = globalenv())
+  sys.source(script_path, envir = script_env)
+  testthat::expect_true(is.function(script_env$make_ledgr_demo_pit_inputs))
+  generated <- script_env$make_ledgr_demo_pit_inputs(
+    output_path = regenerated_path,
+    package_root = package_root
   )
   testthat::expect_identical(generated, ledgr_demo_pit_inputs)
 
-  regenerated_path <- tempfile(fileext = ".rda")
-  on.exit(unlink(regenerated_path), add = TRUE)
-  data_env <- new.env(parent = emptyenv())
-  assign("ledgr_demo_pit_inputs", generated, envir = data_env)
-  save(
-    list = "ledgr_demo_pit_inputs",
-    file = regenerated_path,
-    envir = data_env,
-    compress = "xz",
-    version = 2
-  )
   committed_path <- normalizePath(
     testthat::test_path("..", "..", "data", "ledgr_demo_pit_inputs.rda"),
     winslash = "/",
@@ -263,6 +362,29 @@ testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
     unname(tools::md5sum(regenerated_path)),
     unname(tools::md5sum(committed_path))
   )
+
+  data_help_path <- normalizePath(
+    testthat::test_path("..", "..", "man", "ledgr_demo_pit_inputs.Rd"),
+    winslash = "/",
+    mustWork = TRUE
+  )
+  data_help <- paste(readLines(data_help_path, warn = FALSE), collapse = "\n")
+  for (label in c(
+    "DEMO_01", "DEMO_05", "DEMO_VENUE", "demo_members"
+  )) {
+    testthat::expect_match(data_help, label, fixed = TRUE)
+  }
+  for (constructor in c(
+    "ledgr_facts_sessions", "ledgr_facts_membership_snapshots",
+    "ledgr_facts_lifetime", "ledgr_facts_trading_status",
+    "ledgr_facts_equity_corporate_actions"
+  )) {
+    testthat::expect_match(
+      data_help,
+      paste0("\\link[=", constructor, "]"),
+      fixed = TRUE
+    )
+  }
 
   closure <- ledgr_demo_pit_inputs$cases$date[
     ledgr_demo_pit_inputs$cases$type == "venue_closure"

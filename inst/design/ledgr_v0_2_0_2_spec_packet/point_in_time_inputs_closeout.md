@@ -1,57 +1,82 @@
 # Cut 11 Closeout: Point-In-Time Input Model
 
-**Status:** Agent-provisional; awaiting the independent Type 1 close review.
+**Status:** Agent-provisional; awaiting the focused Type 1 re-review.
 
-**Implementation:** `5c9c944..de8cf97` on
+**Implementation:** `5c9c944..07ac360`, corrected after the first close
+review by the current LDG-2842 correction commit on
 `codex/ws16-v0.2.1.0`.
 
 | Ticket | Commit | Claim and detector |
 | --- | --- | --- |
-| LDG-2839 | `5c9c944` | LCL-0076 / LTB-0076; LCL-0077 / LTB-0077 |
-| LDG-2843 | `7b23a97` | LCL-0078 / LTB-0078 |
-| LDG-2840 | `8320690` | LCL-0079 / LTB-0079 |
-| LDG-2841 | `a61e8ee`, `de8cf97` | LCL-0080 / LTB-0080 |
-| LDG-2842 | pending close-review acceptance | this record |
+| LDG-2839 | `5c9c944` plus correction | LCL-0076 / LTB-0076; LCL-0077 / LTB-0077 |
+| LDG-2843 | `7b23a97` plus correction | LCL-0078 / LTB-0078 |
+| LDG-2840 | `8320690` plus correction | LCL-0079 / LTB-0079 |
+| LDG-2841 | `a61e8ee`, `de8cf97` plus correction | LCL-0080 / LTB-0080 |
+| LDG-2842 | pending maintainer acceptance | this record |
 
 ## Result In One Sentence
 
-ledgr now ships one deterministic, inspectable point-in-time input bundle and
-one decision map that carry matching observations and facts through the public
-construct, seal, reopen and run workflow without undocumented rewriting.
+ledgr now ships one deterministic point-in-time input bundle and one canonical
+data-model article whose plain observations and facts pass through public
+construction, sealing, reopening and execution without undocumented rewriting.
 
 ## Shipped Input
 
 `ledgr_sim_pit_inputs()` is an exported synthetic-data generator. It accepts
 instrument identifiers, a date window, a seed, an explicit venue calendar and
 switchable teaching cases. It declares the calendar before observations and
-returns an ordinary named list of plain data: bars, instruments, sessions,
-membership, lifetime, trading status, corporate actions, a constructor recipe
-and a case manifest. It never infers sessions from generated bars.
+returns an ordinary named list of bars, instruments, sessions, membership,
+lifetime, trading status, corporate actions, a construction recipe and a case
+manifest. It never infers sessions from generated bars.
 
 `ledgr_demo_pit_inputs` is the committed output for `DEMO_01` through
-`DEMO_05`, 2020-01-01 through 2020-01-31, seed 1702, venue `DEMO_XNYS` in
-`America/New_York`, and session times 09:30 through 16:00. Its default cases
-are a weekday venue closure, an observation missing on a declared open
-session, a delisting, a halt with late knowledge, and an ordinary cash
-dividend. The facts compose with the bars in this bundle. They are not an
-overlay for an arbitrary slice of `ledgr_demo_bars`.
+`DEMO_05`, 2020-01-01 through 2020-01-31, seed 1702, synthetic venue
+`DEMO_VENUE` in `America/New_York`, and session times 09:30 through 16:00.
+Its cases are a weekday venue closure, an observation missing on a declared
+open session, a delisting, a halt with late knowledge, and an ordinary cash
+dividend. Delisting retains the effective-boundary observation but has no
+later bars. The halt retains its effective boundary, omits observations
+strictly inside the interval and resumes at the excluded end. Its open-ended
+base status and higher-precedence late-known halt make the same historical
+cutoff unrestricted before knowledge, halted once known and active at the
+interval end.
 
-The recorded data-raw call reproduces the xz version-2 `.rda` byte for byte.
-LTB-0076 independently locates each case and detects loss of the observation
-gap. LTB-0077 sends the generated plain frames through public constructors,
-seal, verified reopen, availability activation and persisted DONE completion.
-LTB-0078 repeats that proof for the committed bytes.
+The facts compose with the bundled bars. They are not an overlay for an
+arbitrary slice of `ledgr_demo_bars`. The callable data-raw recipe regenerates
+the object and its xz version-2 `.rda` byte for byte. Dataset help names all
+elements, the five instrument identifiers, the synthetic venue, the universe
+and direct constructor links. LTB-0078 sources and executes that script rather
+than restating its call in the test.
+
+LTB-0076 independently locates all five cases, constructs every enabled or
+individually disabled family, and detects post-delisting or in-halt bars.
+LTB-0077 seals and runs the plain frames through public APIs, checks the
+late-known halt at three cutoffs, and proves that deleting every bar on one
+declared open session preserves that session and produces a stale mark rather
+than deleting the pulse.
 
 ## Documentation Spine
 
-`data-input-and-snapshots.qmd` is the canonical decision map. It distinguishes
-bars, the physical instrument master, venue sessions, both membership shapes,
-trading status, lifetime and equity corporate actions. Constructor help owns
-the exhaustive optional-column contracts. The article states the shared
-stable-identifier, whole-second-UTC and per-family-knowledge rules, diagrams
-the distinct physical, venue and universe scopes, and executes the committed
-bundle through DONE. LTB-0079 protects the map, links, exact eight-node diagram
-and rendered completion.
+`data-input-and-snapshots.qmd`, rendered to its tracked GFM sibling, is now
+**Data Model And Point-In-Time Inputs**. It gives readers the smallest honest
+input set for six common goals, then one detailed data dictionary for every
+accepted input shape. The table names grain, keys, required columns, scope,
+time semantics, capability and the constructor help that owns the exhaustive
+contract.
+
+Its eight-entity Mermaid ERD separates snapshot, physical instrument, bar,
+venue session, universe membership, trading status, lifetime and corporate
+action. Membership resolves both universe and instrument; status and lifetime
+resolve the physical instrument; a corporate action resolves its parent and
+optional recipient against that same physical master. The article also names
+the four corporate-action clocks and the guarantees a consumer may and may
+not inherit from a sealed snapshot.
+
+The article executes three boundaries rather than merely describing them:
+the late-known halt, a public whole-second timestamp refusal, and a public
+missing-master refusal. It then constructs, seals, reopens and runs the
+committed bundle to DONE. LTB-0079 checks the minimum-set map, exact ERD entity
+and edge set, boundary outputs and completed public workflow.
 
 All three specialist articles retain deliberately smaller local fixtures:
 
@@ -62,36 +87,69 @@ All three specialist articles retain deliberately smaller local fixtures:
 - cash distributions keeps two opening `AAA` units because gross cash 2.5 and
   the later price change make the settlement rule visible.
 
-Each article says those identifiers are local, links to the canonical map,
+Each article labels those identifiers local, links to the canonical data model,
 loads the committed bundle and executes a touchpoint against the corresponding
-gap, delisting or cash-dividend row. LTB-0080 protects that relationship and
-the three retained teaching outputs. Renaming one canonical-map link made the
-block fail. All three sources rendered with every chunk successful.
+gap, delisting or cash-dividend row. LTB-0080 protects those links and rendered
+teaching outputs, including the missing-observation row's literal `FALSE`.
+
+## First Review And Corrections
+
+The first Type 1 close review returned `CHANGES_REQUIRED` with six findings.
+The correction:
+
+- replaced the invalid Date-versus-NA closure predicate and exercised every
+  case disabled alone;
+- represented the late-known halt as a precedence override rather than a
+  foresight-leaking sequence of replacement rows;
+- removed observations after delisting and strictly inside the halt;
+- added the independently empty declared-session run and covered all cases;
+- made the source data-raw recipe callable and tested the real script;
+- expanded the canonical article into the requested data dictionary and ERD,
+  with executable timestamp, referential-integrity and late-knowledge edges;
+- replaced misleading MIC-like demo naming with `DEMO_VENUE`; and
+- corrected the ticket statement from a later listing to the losing delisted
+  instrument actually demonstrated by the survivorship article.
+
+These changes are corrections to the accepted input-model claim, not a new
+fact family or runtime contract.
 
 ## Gates And Check Boundary
 
-The final ordinary fast profile selected and passed 455 of 455 blocks in
-75.89 seconds. The independent one-run checker passed against the unchanged
-90-second bound. The review profile selected and passed 276 of 276 blocks in
-402.39 seconds; its only skip was the declared missing-package-path test under
-an installed `quantmod`.
+The corrected focused suites passed: `test-sim-pit-inputs.R` produced 77
+expectations, `test-pit-input-documentation.R` 87,
+`test-documentation-contracts.R` 817 and `test-test-control-plane.R` 29, with
+no failure, error, warning or skip. The ordinary fast profile passed 455 of
+455 blocks in 75.17 seconds, and its independent one-run checker passed the
+unchanged 90-second bound. The records are in
+`.tmp/ws18-correction-fast-final`.
 
-A source tarball built successfully under R 4.6.1. R CMD check reported no
-missing documentation, data or code/documentation mismatch. Its first run
-found that the touched cash article relied on source-tree `load_all()`; adding
-`library(ledgr)` made that article pass under installed-package vignette
-execution. The repeated overall check remains red for the pre-existing
-source-tree-path test failures and the unrelated
-`corporate-action-adapter-authoring.qmd` lookup of a vignette helper through an
-`NA` source root. Those failures are not presented as a green package check or
-absorbed into this workstream. The release gate in LDG-2825 owns the final
-package check.
+The full review-profile attempt selected 276 blocks in 402.4 seconds. Both
+WS18 blocks passed, but the profile finished red: 272 passed, one declared
+optional missing-package-path block skipped, and three unrelated blocks failed
+in walk-forward and Workstream 8 mock counters. Each of those three files
+passed alone immediately afterward. This is recorded as a cross-file isolation
+failure, not hidden and not attributed to WS18. The earlier pre-correction
+review record remains 276 of 276 passed in 402.39 seconds with the one declared
+skip.
+
+The R CMD check boundary remains the one disclosed in the first closeout: the
+touched cash article executes installed, while pre-existing source-tree-path
+tests and the unrelated adapter-authoring vignette keep the overall check red.
+LDG-2825 owns the final package check; this record does not convert either red
+boundary into a pass.
+
+The generator is offline example-data construction, not a fold, ingest, seal,
+hydration, finalisation or result-reader hot path. Its column-wise `vapply()`
+use does not introduce any of the seven scale-growing production shapes. No
+runtime performance claim is made from the documentation gates.
 
 ## Governance And Declined Work
 
-The Type 2 cut review is the first review invocation. The requested Type 1
-close review is the second. No focused cut re-review occurred. If the close
-review passes without a correction round, the final ratio is 2/5 = 0.400.
+The Type 2 cut review is invocation one. The first Type 1 close review is
+invocation two and returned corrections. The requested focused re-review is
+invocation three: 3 / 5 = 0.600, a historical breach of the 0.5 gate recorded
+without merging or padding tickets. It is the final review round for this
+workstream.
 
 The workstream declined automatic prose discovery of every optional
 constructor column, forcing every lesson onto one large fixture, presenting
@@ -100,5 +158,4 @@ synthetic calendar replaces a vendor or exchange calendar.
 
 Cut 11 retains its historical v0.2.0.2 packet identity, but the maintainer
 subsequently promoted the release target to v0.2.1.0. LDG-2825 verifies the
-shipped bundle, rendered articles and final release gates under that promoted
-target.
+shipped bundle, rendered articles and final release gates under that target.

@@ -68,6 +68,9 @@ after its effective time, and one validated gross cash dividend. Effective
 intervals are half-open. Missing knowledge stays audit-only under
 \code{"evidenced"}; selecting \code{"assume_effective"} is recorded in the
 recipe and delegates that substitution to the public fact constructor.
+The delisting retains its boundary observation and emits no later bars. The
+halt retains its effective-boundary bar, omits observations strictly inside
+the halted interval, and resumes at the excluded interval end.
 
 A changed seed changes prices and volumes, not calendar, facts, case placement,
 columns, or scope. The returned facts and bars belong together; they are not a

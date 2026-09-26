@@ -19,10 +19,11 @@
 #'
 #' A deterministic, offline teaching bundle whose bars and point-in-time facts
 #' form one self-contained input unit. It covers five synthetic equity
-#' instruments over 2020-01-01 through 2020-01-31 under the `DEMO_XNYS` venue
-#' and `demo_members` universe scopes. The matching observations use New York
-#' session-close timestamps and travel with the facts; the facts must not be
-#' attached to an arbitrary slice of [ledgr_demo_bars].
+#' instruments (`DEMO_01` through `DEMO_05`) over 2020-01-01 through
+#' 2020-01-31 under the synthetic `DEMO_VENUE` venue and `demo_members`
+#' universe scopes. The matching observations use New York session-close
+#' timestamps and travel with the facts; the facts must not be attached to an
+#' arbitrary slice of [ledgr_demo_bars].
 #'
 #' @format An ordinary named list with nine elements:
 #' \describe{

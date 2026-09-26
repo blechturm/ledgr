@@ -9,15 +9,15 @@ An ordinary named list with nine elements:
 \describe{
 \item{bars}{Matching synthetic OHLCV observations.}
 \item{instruments}{Optional physical instrument-master rows.}
-\item{sessions}{Raw input for \code{ledgr_facts_sessions()}.}
+\item{sessions}{Raw input for \code{\link[=ledgr_facts_sessions]{ledgr_facts_sessions()}}.}
 \item{membership}{Raw complete-snapshot input for
-\code{ledgr_facts_membership_snapshots()}.}
-\item{lifetime}{Raw input for \code{ledgr_facts_lifetime()}.}
-\item{trading_status}{Raw input for \code{ledgr_facts_trading_status()}.}
+\code{\link[=ledgr_facts_membership_snapshots]{ledgr_facts_membership_snapshots()}}.}
+\item{lifetime}{Raw input for \code{\link[=ledgr_facts_lifetime]{ledgr_facts_lifetime()}}.}
+\item{trading_status}{Raw input for \code{\link[=ledgr_facts_trading_status]{ledgr_facts_trading_status()}}.}
 \item{corporate_actions}{Raw input for
-\code{ledgr_facts_equity_corporate_actions()}.}
-\item{recipe}{Scope IDs, price basis, knowledge modes, and exact constructor
-arguments for the five fact frames.}
+\code{\link[=ledgr_facts_equity_corporate_actions]{ledgr_facts_equity_corporate_actions()}}.}
+\item{recipe}{Scope IDs, price basis, knowledge modes, and exact
+constructor arguments for the five fact frames.}
 \item{cases}{A manifest locating the weekday venue closure, open-session
 observation gap, delisting, halt, and validated gross cash dividend.}
 }
@@ -31,10 +31,11 @@ ledgr_demo_pit_inputs
 }
 \description{
 A deterministic, offline teaching bundle whose bars and point-in-time facts
-form one self-contained input unit. It covers five synthetic equity instruments
-over 2020-01-01 through 2020-01-31 under the \code{DEMO_XNYS} venue and
-\code{demo_members} universe scopes. The matching observations use New York
-session-close timestamps and travel with the facts; the facts must not be
-attached to an arbitrary slice of \code{ledgr_demo_bars}.
+form one self-contained input unit. It covers five synthetic equity
+instruments (\code{DEMO_01} through \code{DEMO_05}) over 2020-01-01 through
+2020-01-31 under the synthetic \code{DEMO_VENUE} venue and \code{demo_members}
+universe scopes. The matching observations use New York session-close
+timestamps and travel with the facts; the facts must not be attached to an
+arbitrary slice of \link{ledgr_demo_bars}.
 }
 \keyword{datasets}

@@ -561,7 +561,7 @@ It was the third invocation over six tickets, exactly 0.500 against the gate.
 A fourth review would have breached the gate. The maintainer accepted the
 corrected work at `5c678ae` on 2026-09-26; Workstream 17 and Cut 10 are closed.
 
-## Cut 11: Point-in-time input model (review pending)
+## Cut 11: Point-in-time input model (correction review pending)
 
 Authority: the maintainer's 2026-09-25 decision that the point-in-time input
 model needs one checklist of required data and one inspectable demo input set,
@@ -643,6 +643,17 @@ source-tree-path tests and the unrelated adapter-authoring vignette, which are
 disclosed rather than attributed to this cut. The later release promotion
 means this historical v0.2.0.2 cut ships under the v0.2.1.0 target verified by
 LDG-2825.
+
+The first Type 1 close review returned six bounded corrections. The corrected
+bundle has no observations after its delisting boundary or strictly inside its
+halt, and its late-known halt is a higher-precedence override over an
+open-ended base status rather than a row that leaks future knowledge. The
+data-raw recipe is now the callable regeneration path tested byte for byte.
+The canonical article is now **Data Model And Point-In-Time Inputs**, with a
+detailed data dictionary, an eight-entity ERD, sealed-snapshot guarantees and
+executable boundary failures. The focused re-review is the third invocation,
+so the historical ratio is 3/5 = 0.600 and is recorded as a breach rather than
+hidden through ticket merging or padding.
 
 ## Cut 12: Restore fast-profile headroom (accepted)
 

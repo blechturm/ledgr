@@ -89,7 +89,7 @@ library(qlcal)
 
 ## Relationship To The Composable Bundle
 
-The [Data Input And Snapshots](data-input-and-snapshots.qmd) article owns
+The [Data Model And Point-In-Time Inputs](data-input-and-snapshots.qmd) article owns
 the complete input decision map and the reusable point-in-time bundle. This
 article keeps its smaller `AAA`/`BBB` fixture because a three-session hole is
 the clearest detector for mark ageing and the no-fill rule. Those identifiers

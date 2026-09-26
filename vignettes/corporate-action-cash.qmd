@@ -34,7 +34,7 @@ gross amount and credits it at the ex-dividend session close.
 That timing is a model assumption. It prevents a missing-asset dip on the
 ex-date, but makes cash spendable before a broker might actually pay it.
 
-The [Data Input And Snapshots](data-input-and-snapshots.qmd) article owns
+The [Data Model And Point-In-Time Inputs](data-input-and-snapshots.qmd) article owns
 the complete input decision map and reusable point-in-time bundle. This
 article keeps a local `AAA` fixture because an opening position of two units
 makes the gross cash result of 2.5 directly visible and because the later

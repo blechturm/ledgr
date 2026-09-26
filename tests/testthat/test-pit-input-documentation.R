@@ -47,26 +47,58 @@ testthat::test_that("[LTB-0079] input map binds scopes to the runnable bundle", 
     testthat::expect_match(qmd, rule, fixed = TRUE)
   }
 
-  node_lines <- c(
-    "I[Physical instrument master]", "B[Bars by instrument]",
-    "V[Venue scope: sessions]", "U[Universe scope: membership]",
-    "S[Instrument scope: status and lifetime]",
-    "C[Equity scope: corporate actions]", "P[Sealed snapshot]",
-    "R[Availability-aware run]"
+  testthat::expect_match(qmd, "Choose The Smallest Honest Input Set", fixed = TRUE)
+  testthat::expect_match(qmd, "Rows, Keys And Required Columns", fixed = TRUE)
+  testthat::expect_match(qmd, "What Sealing Establishes", fixed = TRUE)
+  for (shape in c(
+    "Dense static panel", "Session-aware data gaps",
+    "Point-in-time universe", "Demonstrated full equity bundle"
+  )) {
+    testthat::expect_match(qmd, shape, fixed = TRUE)
+    testthat::expect_match(md, shape, fixed = TRUE)
+  }
+
+  entities <- c(
+    "SNAPSHOT", "INSTRUMENT", "BAR", "SESSION", "MEMBERSHIP",
+    "TRADING_STATUS", "LIFETIME", "CORPORATE_ACTION"
   )
-  for (node in node_lines) {
-    testthat::expect_match(qmd, node, fixed = TRUE)
+  testthat::expect_match(qmd, "erDiagram", fixed = TRUE)
+  for (entity in entities) {
+    testthat::expect_match(
+      qmd,
+      paste0("(?m)^  ", entity, " \\{$"),
+      perl = TRUE
+    )
   }
   testthat::expect_match(
     qmd,
-    "C -- parent and optional recipient --> I",
+    "INSTRUMENT ||--o{ CORPORATE_ACTION : parent_or_recipient",
     fixed = TRUE
   )
-  testthat::expect_match(qmd, "U -- member identifiers --> I", fixed = TRUE)
+  testthat::expect_match(
+    qmd,
+    "INSTRUMENT ||--o{ MEMBERSHIP : referenced_by",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    qmd,
+    "INSTRUMENT ||--o{ TRADING_STATUS : constrained_by",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    qmd,
+    "INSTRUMENT ||--o{ LIFETIME : described_by",
+    fixed = TRUE
+  )
   testthat::expect_identical(
-    length(regmatches(qmd, gregexpr("(?m)^[ ]{2}[A-Z]\\[", qmd,
-      perl = TRUE
-    ))[[1L]]),
+    length(regmatches(
+      qmd,
+      gregexpr(
+        paste0("(?m)^  (", paste(entities, collapse = "|"), ") \\{$"),
+        qmd,
+        perl = TRUE
+      )
+    )[[1L]]),
     8L
   )
 
@@ -76,6 +108,17 @@ testthat::test_that("[LTB-0079] input map binds scopes to the runnable bundle", 
   )) {
     testthat::expect_match(qmd, call, fixed = TRUE)
   }
+  testthat::expect_match(
+    md,
+    "(?m)^\\s*1 halt knowledge arrives after effectiveness\\s+TRUE\\s*$",
+    perl = TRUE
+  )
+  testthat::expect_match(md, "LEDGR_SUBSECOND_TIMESTAMP", fixed = TRUE)
+  testthat::expect_match(
+    md,
+    "ledgr_availability_validation_failed",
+    fixed = TRUE
+  )
   testthat::expect_match(md, '"DONE"               "TRUE"', fixed = TRUE)
   testthat::expect_match(
     qmd_flat,
@@ -109,7 +152,11 @@ testthat::test_that("[LTB-0080] specialist articles join the input map", {
   })
   for (article in articles) {
     for (text in article) {
-      testthat::expect_match(text, "Data Input And Snapshots", fixed = TRUE)
+      testthat::expect_match(
+        text,
+        "Data Model And Point-In-Time Inputs",
+        fixed = TRUE
+      )
       testthat::expect_match(text, "ledgr_demo_pit_inputs", fixed = TRUE)
     }
     testthat::expect_match(
@@ -122,8 +169,11 @@ testthat::test_that("[LTB-0080] specialist articles join the input map", {
 
   testthat::expect_match(
     articles[[1L]]$md,
-    "observation_row_present",
-    fixed = TRUE
+    paste0(
+      "(?m)^#>\\s+[0-9]+\\s+missing_observation\\s+DEMO_04\\s+",
+      "2020-01-09\\s+FALSE\\s*$"
+    ),
+    perl = TRUE
   )
   testthat::expect_match(
     articles[[1L]]$md,

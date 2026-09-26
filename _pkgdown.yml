@@ -27,6 +27,7 @@ articles:
     contents:
       - articles/who-ledgr-is-for
       - quickstart
+      - data-input-and-snapshots
       - research-workflow
       - leakage
       - reproducibility
@@ -37,7 +38,6 @@ articles:
       fills/trades/equity/metrics, apply cost and risk policy, then sweep
       and walk-forward over candidates.
     contents:
-      - data-input-and-snapshots
       - missing-data-and-sessions
       - corporate-action-cash
       - survivorship-bias
