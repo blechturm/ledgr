@@ -1,6 +1,13 @@
 # RFC Synthesis v4: Point-in-Time Historical Projection With Missing-Data Policy
 
-**Status:** Decision synthesis, superseding
+**Status: SUPERSEDED 2026-09-26** by
+[synthesis v5](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v5.md),
+after a Type 2 review required revision. Its proposed defaults are carried
+forward; its claim that a fixed session axis removes the knowledge clock from
+the numbers is withdrawn there, together with three claims that cited
+implementation not supporting them. Retained as cycle history; it binds nothing.
+
+**Status (original):** Decision synthesis, superseding
 [synthesis v3](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v3.md),
 which required revision, and incorporating the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
