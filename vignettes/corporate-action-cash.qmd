@@ -24,6 +24,7 @@ pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIP
 if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
   pkgload::load_all(pkg_root, quiet = TRUE)
 }
+library(ledgr)
 ```
 
 ledgr can post a fully evidenced ordinary cash distribution without enabling
