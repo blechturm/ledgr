@@ -417,13 +417,24 @@ Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
 2026-09-25 when `R-CMD-check.yaml` was tiered. No RFC: the playbook already
 binds the process and requires that every release-gate ticket name it and the
-exact local gates. Two tickets, LDG-2824 and LDG-2825, one workstream; the cut
-review is compressed into the close review, so one invocation over two tickets
-is 0.500.
+exact local gates. Four tickets, LDG-2824, LDG-2858, LDG-2859 and LDG-2825, one
+workstream; the cut review is compressed into the close review, so one
+invocation over four tickets is 0.250.
+
+The maintainer added the two teaching-surface tickets on 2026-09-26, ahead of
+an
+external review of the tagged release. They sit between the release notes and
+the gate run, because a gate that runs on stale teaching certifies the wrong
+thing. Execution already proves the README example and all articles run; what
+it
+cannot prove is that they still teach the surface this version ships, and this
+version changed a great deal. The audit looks for the drift execution misses: a
+superseded idiom still modelled, a shipped capability an article still works
+around by hand, an overstated claim, and a reference that no longer resolves.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 15 Release gate | 2824–2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+| 15 Release gate | 2824, 2858, 2859, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
 
 The maintainer promoted the release target to v0.2.1.0 on 2026-09-25 because
 the accumulated public capability and architecture changes are no longer
@@ -478,7 +489,7 @@ result boundary: expose or reuse evidence already computed without changing
 its meaning. The older LDG-2820 remains a separate deferred resume-path
 optimization.
 
-## Cut 10: Indicator source parity and timing attribution (close review pending)
+## Cut 10: Indicator source parity and timing attribution (maintainer acceptance pending)
 
 Authority: the maintainer's 2026-09-25 decision that indicator source is not
 a semantic axis for missing observations or session calendars, together with
@@ -532,14 +543,23 @@ support matrix. Workstream 17 follows Workstream 16 so both edits to that
 article are serial; Workstream 18 follows Workstream 17 for the same reason,
 and the release gate follows Workstream 18.
 
-Workstream 17 is implemented through `001ece3`. Its agent-provisional record is
+Workstream 17 is implemented through `664a127`. Its agent-provisional record is
 `indicator_source_parity_closeout.md`. The six-permutation attribution found
 the historical 9.57-second gap order-confounded and authorized no source-path
 optimization. The corrected peer record uses only public indicator
 constructors, and the source and rendered articles publish the executable
 expected-session and support matrices. The exact LDG-2837 fast record passed
 453 of 453 blocks in 76.50 seconds against the unchanged 90-second gate.
-Independent Type 1 close review is pending.
+The initial Type 1 close review returned five bounded evidence findings. The
+correction makes each combined unsupported row fail on any false
+certification, binds the peer helpers to public-constructor fingerprints and
+fresh child processes, demotes the unregistered reverse-order diagnostic,
+corrects the attribution-spread wording, and clocks the finalization slice at
+0.029 seconds per full-axis call. The focused Type 1 re-review found one real
+bundle/RSI detector gap and one factual attribution error; both are corrected.
+It was the third invocation over six tickets, exactly 0.500 against the gate.
+A fourth review would breach the gate, so the corrected work awaits maintainer
+acceptance.
 
 ## Cut 11: Point-in-time input model (awaiting focused cut re-review; opens
 after workstream 17)
@@ -703,18 +723,17 @@ rejects both candidate defaults by name.
 
 Two corrections are carried, and they are different in kind. Membership
 projection of context predicates corrects a proposed design before it ships:
-the
-synthesis's first draft rejected any NA in a predicate, which would have failed
-its own documented example, because an ordinary comparison over the close plane
-yields NA at a held nonmember without a current close. Zero-weight sizing
-corrects behavior that already ships: the rebalance helper resolves a price
-before consulting the weight value, so naming an unpriceable member at zero
-errors under availability while omitting it succeeds. Only the second changes
-shipped behavior, and it is a widening that cannot break a strategy that
-already
-worked. Neither is a change to context-first constructors, which do not yet
-exist; the surrounding renames are intentionally breaking, and no package-wide
-compatibility inference should be drawn from the narrow zero-weight widening.
+the synthesis's first draft rejected any NA in a predicate, which would have
+failed its own documented example, because an ordinary comparison over the
+close plane yields NA at a held nonmember without a current close. Zero-weight
+sizing corrects behavior that already ships: the rebalance helper resolves a
+price before consulting the weight value, so naming an unpriceable member at
+zero errors under availability while omitting it succeeds. Only the second
+changes shipped behavior, and it is a widening that cannot break a strategy
+that already worked. Neither is a change to context-first constructors, which
+do not yet exist; the surrounding renames are intentionally breaking, and no
+package-wide compatibility inference should be drawn from the narrow
+zero-weight widening.
 
 Scope stays narrow deliberately. Scalar reads, feature planes and alias bundles
 are retained; the long and wide feature rectangles stay on the callback because
