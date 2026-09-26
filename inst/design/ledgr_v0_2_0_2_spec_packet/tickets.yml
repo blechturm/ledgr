@@ -253,7 +253,7 @@ workstreams:
   - id: 13
     name: "Schema ceremony"
     cut: 7
-    status: "open"
+    status: "complete"
     depends_on_workstream: 10
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 13", reason: "An exact-parity chore on the two schema functions every store open calls. One review at close walks the diff against the seven shapes per the amended obligations and accepts only with the interleaved clocks in hand. It checks that the DBI-count detector fails on a reintroduced per-table catalogue query, that the five blocks which failed under the gut pass unchanged, that the fast path is keyed on the stored schema version and never on a table's presence, and that every observable output is identical before and after. Opens after workstream 10 is accepted; the fast lane's headroom against its 90-second bound is why it is not deferred further."}
