@@ -96,12 +96,13 @@ cuts:
   - id: 10
     name: "Indicator source parity and timing attribution"
     cut: "2026-09-25"
-    cut_review: "pending independent Type 1 and Type 2 review before any measurement or implementation; the planned cut review plus one close review is 2 over 6 completed tickets, 0.333 against the 0.5 gate, and one correction round would make it 3 over 6, exactly 0.500"
+    cut_review: "Independent Type 1 and Type 2 review returned PASS_AFTER_PATCHES on 2026-09-25. Six bounded corrections are present at 66ccb06: parameterized multi-candidate gap propagation, an exact public-TTR-SMA certification predicate, all six published peer rows, contracts.md ownership, the third attribution arm, and open status plus explicit measurement-first sequencing. The maintainer accepted the patched cut on 2026-09-25. The cut review plus one close review is 2 over 6 completed tickets, 0.333 against the 0.5 gate; one correction round would make it 3 over 6, exactly 0.500."
     authority: "maintainer decision 2026-09-25 that internal and external indicators share one missing-data and session-calendar contract and that the recorded TTR-versus-built-in timing gap is measured before v0.2.0.2 ships; inst/design/contracts.md Availability Contract; inst/design/horizon.md first-party indicator-path investigation"
     source_table: "dev/bench/results/peer_benchmark_record_20260923T001439Z_performance.csv; dev/bench/peer_benchmark/peer_benchmark.R; the executed direct-run versus sweep reproduction recorded in LDG-2834"
     workstreams: [17]
     closeout: "indicator_source_parity_closeout.md"
-    status: "review_pending"
+    accepted: "2026-09-25 by the maintainer, at 66ccb06"
+    status: "open"
   - id: 11
     name: "Point-in-time input model: composable demo input and checklist"
     cut: "2026-09-25"

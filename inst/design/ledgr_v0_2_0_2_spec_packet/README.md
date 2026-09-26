@@ -478,7 +478,7 @@ result boundary: expose or reuse evidence already computed without changing
 its meaning. The older LDG-2820 remains a separate deferred resume-path
 optimization.
 
-## Cut 10: Indicator source parity and timing attribution (ticket-cut review pending)
+## Cut 10: Indicator source parity and timing attribution (accepted; open)
 
 Authority: the maintainer's 2026-09-25 decision that indicator source is not
 a semantic axis for missing observations or session calendars, together with
