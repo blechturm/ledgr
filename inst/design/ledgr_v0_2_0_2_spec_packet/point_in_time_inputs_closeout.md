@@ -16,8 +16,8 @@ review by the current LDG-2842 correction commit on
 
 ## Result In One Sentence
 
-ledgr now ships one deterministic point-in-time input bundle and one canonical
-data-model article whose plain observations and facts pass through public
+ledgr now ships one deterministic point-in-time input bundle and a progressive
+documentation spine whose plain observations and facts pass through public
 construction, sealing, reopening and execution without undocumented rewriting.
 
 ## Shipped Input
@@ -58,11 +58,18 @@ than deleting the pulse.
 ## Documentation Spine
 
 `data-input-and-snapshots.qmd`, rendered to its tracked GFM sibling, is now
-**Data Model And Point-In-Time Inputs**. It gives readers the smallest honest
-input set for six common goals, then one detailed data dictionary for every
-accepted input shape. The table names grain, keys, required columns, scope,
-time semantics, capability and the constructor help that owns the exhaustive
-contract.
+**Importing And Sealing Market Data**. It establishes the required bar shape,
+seals a minimal snapshot early, and routes readers to CSV, Yahoo, quarantine
+and point-in-time evidence without making them cross the complete data model.
+
+`point-in-time-inputs.qmd` is **Preparing Point-In-Time Inputs**. It starts
+from an open session with a missing observation, then adds membership, a
+late-known halt, lifetime and corporate actions from the committed demo
+bundle. Only after it has sealed, reopened and run that bundle does it present
+the detailed
+data dictionary and ERD as reference material. The dictionary names grain,
+keys, required columns, scope, time semantics, capability and the constructor
+help that owns the exhaustive contract.
 
 Its eight-entity Mermaid ERD separates snapshot, physical instrument, bar,
 venue session, universe membership, trading status, lifetime and corporate
@@ -72,11 +79,12 @@ optional recipient against that same physical master. The article also names
 the four corporate-action clocks and the guarantees a consumer may and may
 not inherit from a sealed snapshot.
 
-The article executes three boundaries rather than merely describing them:
-the late-known halt, a public whole-second timestamp refusal, and a public
-missing-master refusal. It then constructs, seals, reopens and runs the
-committed bundle to DONE. LTB-0079 checks the minimum-set map, exact ERD entity
-and edge set, boundary outputs and completed public workflow.
+The progressive article executes the late-known halt rather than merely
+describing it, then constructs, seals, reopens and runs the committed bundle
+to DONE. `experiment-store.qmd` now owns closed-store backup alongside reopen,
+recovery and archive guidance. LTB-0079 checks this three-document division,
+the progressive section order, exact ERD entity and edge set, rendered halt
+evidence and completed public workflow.
 
 All three specialist articles retain deliberately smaller local fixtures:
 
@@ -87,7 +95,8 @@ All three specialist articles retain deliberately smaller local fixtures:
 - cash distributions keeps two opening `AAA` units because gross cash 2.5 and
   the later price change make the settlement rule visible.
 
-Each article labels those identifiers local, links to the canonical data model,
+Each article labels those identifiers local, links to Preparing Point-In-Time
+Inputs,
 loads the committed bundle and executes a touchpoint against the corresponding
 gap, delisting or cash-dividend row. LTB-0080 protects those links and rendered
 teaching outputs, including the missing-observation row's literal `FALSE`.
@@ -104,24 +113,26 @@ The correction:
 - removed observations after delisting and strictly inside the halt;
 - added the independently empty declared-session run and covered all cases;
 - made the source data-raw recipe callable and tested the real script;
-- expanded the canonical article into the requested data dictionary and ERD,
-  with executable timestamp, referential-integrity and late-knowledge edges;
+- first expanded the canonical article into the requested data dictionary and
+  ERD, then split that dense result by user task after a teachability review;
 - replaced misleading MIC-like demo naming with `DEMO_VENUE`; and
 - corrected the ticket statement from a later listing to the losing delisted
   instrument actually demonstrated by the survivorship article.
 
-These changes are corrections to the accepted input-model claim, not a new
-fact family or runtime contract.
+The final split is deliberately a documentation-only correction: it changes
+neither the public bundle nor any fact family or runtime contract.
 
 ## Gates And Check Boundary
 
-The corrected focused suites passed: `test-sim-pit-inputs.R` produced 77
-expectations, `test-pit-input-documentation.R` 87,
-`test-documentation-contracts.R` 817 and `test-test-control-plane.R` 29, with
-no failure, error, warning or skip. The ordinary fast profile passed 455 of
-455 blocks in 75.17 seconds, and its independent one-run checker passed the
-unchanged 90-second bound. The records are in
-`.tmp/ws18-correction-fast-final`.
+The corrected focused suites passed. After the documentation split,
+`test-pit-input-documentation.R` and `test-documentation-contracts.R` passed
+again with no failure, error, warning or skip. Changing only the progressive
+article's registered title made LTB-0079 fail on that exact mismatch; restoring
+it returned the block to green.
+
+The final ordinary fast profile passed 455 of 455 blocks in 76.86 seconds,
+and its independent one-run checker passed the unchanged 90-second bound. The
+records are in `.tmp/ws18-teachability-fast`.
 
 The full review-profile attempt selected 276 blocks in 402.4 seconds. Both
 WS18 blocks passed, but the profile finished red: 272 passed, one declared
@@ -147,9 +158,10 @@ runtime performance claim is made from the documentation gates.
 
 The Type 2 cut review is invocation one. The first Type 1 close review is
 invocation two and returned corrections. The requested focused re-review is
-invocation three: 3 / 5 = 0.600, a historical breach of the 0.5 gate recorded
-without merging or padding tickets. It is the final review round for this
-workstream.
+invocation three. A later teachability review is invocation four and produced
+the documentation-only split. The total is 4 / 5 = 0.800, a historical breach
+of the 0.5 gate recorded without merging or padding tickets. No fifth review
+is required for the mechanical split unless the maintainer requests one.
 
 The workstream declined automatic prose discovery of every optional
 constructor column, forcing every lesson onto one large fixture, presenting

@@ -428,6 +428,31 @@ public roadmap tracks that work in the v0.2.x point-in-time data line so
 vintage semantics, lineage, ASOF lookup, and leakage prevention can be designed
 explicitly rather than smuggled into CSV bars or active aliases.
 
+## Back Up A Closed Store
+
+The experiment store is an ordinary DuckDB file. Back it up only after every
+run and snapshot handle using it has been closed.
+
+::: {.ledgr-callout .ledgr-callout-warning}
+**Back up closed stores**
+
+Close live handles, then copy or sync the store with the rest of the project's
+research artifacts.
+
+```r
+dir.create("backups", showWarnings = FALSE)
+file.copy(
+  "artifacts/ledgr_store.duckdb",
+  file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+  overwrite = TRUE
+)
+```
+
+Do not copy a file while another ledgr process has it open. For a larger
+project, keep the same closed-file rule and use your normal versioned backup or
+sync system.
+:::
+
 ## Resource Cleanup
 
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run

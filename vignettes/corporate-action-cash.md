@@ -10,13 +10,13 @@ That timing is a model assumption. It prevents a missing-asset dip on
 the ex-date, but makes cash spendable before a broker might actually pay
 it.
 
-The [Data Model And Point-In-Time Inputs](data-input-and-snapshots.qmd)
-article owns the complete input decision map and reusable point-in-time
-bundle. This article keeps a local `AAA` fixture because an opening
-position of two units makes the gross cash result of 2.5 directly
-visible and because the later price change demonstrates that ledgr does
-not reapply a vendor adjustment. `AAA` is local to this article, not an
-alias for a shared `DEMO_*` instrument.
+The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
+owns the complete data model and reusable point-in-time bundle. This
+article keeps a local `AAA` fixture because an opening position of two
+units makes the gross cash result of 2.5 directly visible and because
+the later price change demonstrates that ledgr does not reapply a vendor
+adjustment. `AAA` is local to this article, not an alias for a shared
+`DEMO_*` instrument.
 
 The shared bundle carries the equivalent cash-dividend fact. This
 executable touchpoint locates the case and its sealed input terms:

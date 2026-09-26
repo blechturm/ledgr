@@ -183,14 +183,14 @@ info
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:     b190e633e8578f0878db276141700b747fd58e9107d76f9f8f1835377b1f4ca7
+    Config Hash:     b3639301f11003569e65ace43159c249eb796244bd3a673c6a18780cbde12f8a
     Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
     Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility: tier_1
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     1.31
+    Elapsed Sec:     0.93
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -404,6 +404,38 @@ summary(reopened)
       Fill Timing:         dense_bar_timestamp
       Timing Version:      N/A
 
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Setting cash_amount:              gross
+      Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
+      Setting cash_posting:             effective_close
+      Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
+      Setting held_terminal_position:   last_permissible
+      Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
+      Setting unsupported_quantity:     report_only
+      Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+      Exercised choices:
+        cash_amount.gross: 0
+        cash_amount.refuse: 0
+        cash_posting.effective_close: 0
+        cash_posting.next_open: 0
+        cash_posting.refuse: 0
+        held_terminal_position.last_permissible: 0
+        held_terminal_position.last_mark: 0
+        held_terminal_position.refuse: 0
+        unsupported_quantity.report_only: 0
+        unsupported_quantity.refuse: 0
+      Refusal reasons:
+        none declared: 0
+      Late arrivals:               0
+      Affected marked exposure:    0
+      Gross cash posted:           0
+      Modeled terminal proceeds:   0
+      Positions disposed:          0
+      Realized model P&L:          0
+      Unsupported facts:           0
     Performance Metrics:
       Total Return:        0.42%
       Annualized Return:   0.82%
@@ -533,6 +565,32 @@ line so vintage semantics, lineage, ASOF lookup, and leakage prevention
 can be designed explicitly rather than smuggled into CSV bars or active
 aliases.
 
+## Back Up A Closed Store
+
+The experiment store is an ordinary DuckDB file. Back it up only after
+every run and snapshot handle using it has been closed.
+
+> [!WARNING]
+>
+> ### Back up closed stores
+>
+> Close live handles, then copy or sync the store with the rest of the
+> project’s research artifacts.
+>
+> ``` r
+> dir.create("backups", showWarnings = FALSE)
+> file.copy(
+>   "artifacts/ledgr_store.duckdb",
+>   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
+>   overwrite = TRUE
+> )
+> ```
+>
+> Do not copy a file while another ledgr process has it open. For a larger
+> project, keep the same closed-file rule and use your normal versioned
+> backup or sync system.
+
+
 ## Resource Cleanup
 
 `ledgr_run()` and `ledgr_run_open()` return live handles for durable run
@@ -546,14 +604,14 @@ when the workflow is finished.
 
 Use this map when you know the task but not the function name:
 
-| Intent | Start here |
-|----|----|
-| Seal in-memory bars | `ledgr_snapshot_from_df()` |
-| Seal a local CSV | `ledgr_snapshot_from_csv()` |
+| Intent                    | Start here                    |
+|---------------------------|-------------------------------|
+| Seal in-memory bars       | `ledgr_snapshot_from_df()`    |
+| Seal a local CSV          | `ledgr_snapshot_from_csv()`   |
 | Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
-| Reopen an existing store | `ledgr_snapshot_open()` |
-| List stored runs | `ledgr_run_list()` |
-| Compare durable runs | `ledgr_run_compare()` |
+| Reopen an existing store  | `ledgr_snapshot_open()`       |
+| List stored runs          | `ledgr_run_list()`            |
+| Compare durable runs      | `ledgr_run_compare()`         |
 
 Yahoo data is a convenience source. The sealed snapshot is the ledgr
 artifact; the remote Yahoo endpoint remains outside ledgr’s

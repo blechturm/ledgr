@@ -1,404 +1,126 @@
-# Data Model And Point-In-Time Inputs
+# Importing And Sealing Market Data
 
 
-This article focuses on bringing data into ledgr and sealing it into a
-snapshot. Runs, labels, reopening, and recovery evidence live in
-`vignette("experiment-store", package = "ledgr")`.
+You have market data in memory or in a file. This article takes the
+shortest path from that data to a sealed ledgr snapshot you can inspect
+and reopen. Point-in-time facts are a separate concern; add them only
+when your research question needs them.
+
+By the end, you will have sealed a small bar panel, inspected its public
+metadata, seen the equivalent CSV and Yahoo entry points, and made one
+explicit decision about malformed observations.
 
 > [!NOTE]
 >
 > ### Running this yourself
 >
-> This article is evaluated when rendered. It writes to temporary DuckDB
-> stores so package builds and local previews do not leave project
-> artifacts behind. In real work, use a project-local path such as
-> `artifacts/ledgr_store.duckdb`.
+> The runnable examples use temporary DuckDB files. In real work, choose a
+> project path such as `artifacts/ledgr_store.duckdb`.
 
-
-> [!WARNING]
->
-> ### Pre-CRAN compatibility
->
-> ledgr is pre-CRAN. Store schemas, config hashes, provenance formats, and
-> experimental APIs may change before the first CRAN release. Treat stores
-> created with pre-CRAN ledgr as research artifacts for the version that
-> produced them, and expect to rerun experiments after upgrading.
-
-
-The examples use `dplyr` for data preparation and compact display. It is
-a suggested package used by the vignettes, not part of the
-experiment-store contract.
 
 ``` r
 library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
-data("ledgr_demo_pit_inputs", package = "ledgr")
 ```
 
-## Snapshot Lifecycle And Data Input
+## The Required Bar Shape
 
-Market data and derived data have different lifecycle rules in ledgr. A
-sealed snapshot freezes the real market-data input and its hash. If you
-need more instruments, more dates, corrected bars, or tick-derived bars,
-create a new snapshot. Indicators, runs, labels, tags, comparisons, and
-telemetry are derived from sealed market data and can be added later
-without mutating the snapshot.
-
-Snapshot lifecycle anti-patterns:
-
-- appending bars to a sealed snapshot in place;
-- resealing different data under the same snapshot ID;
-- deleting snapshots that stored runs still reference;
-- mixing live ticks into a backtest snapshot;
-- filling data gaps with undocumented synthetic corrections.
-
-If the evidence changes, create a new snapshot. That is what makes later
-comparison meaningful.
-
-This vignette uses `ledgr_temp_store()` so it can run without writing
-into your project directory. For real research, use
-`artifacts/ledgr_store.duckdb` and a snapshot ID you will recognize
-later.
+Bars are the only required input. Each row identifies one physical
+instrument at one UTC observation time and supplies open, high, low, and
+close. Volume is optional.
 
 ``` r
-db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_store_demo.duckdb"))
-
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(
-      ts_utc,
-      ledgr_utc("2019-01-01"),
-      ledgr_utc("2019-06-30")
-    )
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-01-31"))
   )
+
+bars |>
+  select(instrument_id, ts_utc, open, high, low, close, volume) |>
+  slice_head(n = 4)
+```
+
+    # A tibble: 4 x 7
+      instrument_id ts_utc               open  high   low close volume
+      <chr>         <dttm>              <dbl> <dbl> <dbl> <dbl>  <dbl>
+    1 DEMO_01       2019-01-01 00:00:00  89.7  91.8  89.7  91.5 468600
+    2 DEMO_01       2019-01-02 00:00:00  91.5  91.6  91.0  91.3 438315
+    3 DEMO_01       2019-01-03 00:00:00  91.3  92.1  89.6  90.5 576390
+    4 DEMO_01       2019-01-04 00:00:00  90.7  91.1  89.5  89.8 458921
+
+The `(instrument_id, ts_utc)` pair must be unique. Timestamps are
+whole-second UTC instants. If your source uses local exchange times,
+normalize them before calling ledgr rather than leaving the timezone
+implicit.
+
+## Seal A Snapshot
+
+`ledgr_snapshot_from_df()` validates, stores, and seals the data in one
+call.
+
+``` r
+db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_import_demo.duckdb"))
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
   db_path = db_path,
-  snapshot_id = "store_demo_snapshot"
+  snapshot_id = "import_demo"
 )
 ```
 
-## Data Model And Point-In-Time Decision Map
-
-Bars are the only required input. Every other table makes a claim that
-bars alone cannot make: what instruments mean, which dates are sessions,
-which instruments belonged to a research universe, whether they could
-trade or still existed, and which evidenced economic events occurred.
-
-### Choose The Smallest Honest Input Set
-
-| Research shape | Minimum sealed inputs | Runtime declaration |
-|----|----|----|
-| Dense static panel | Bars | A strategy and ordinary experiment settings |
-| Described physical panel | Bars plus instruments | Same as dense; metadata becomes inspectable |
-| Session-aware data gaps | Bars plus sessions | A stale-mark valuation policy |
-| Point-in-time universe | Bars, sessions and one membership shape | A matching universe selector and stale-mark policy |
-| Tradeability or lifetime restrictions | Bars, sessions, and status or lifetime facts | A stale-mark policy; membership only when selection needs it |
-| Demonstrated full equity bundle | Bars, instruments, sessions, complete membership, status, lifetime and corporate actions | Universe, valuation and settlement policy choices |
-
-An availability family currently requires a complete declared session
-calendar and a stale-mark policy. Corporate-action facts do not activate
-availability by themselves. Adding more fact families is not
-automatically more honest: include only evidence that your source can
-support.
-
-### Rows, Keys And Required Columns
-
-This table is the package-level data dictionary. Constructor help
-remains the versioned authority for exhaustive optional columns and
-accepted values.
-
-| Input | Row grain and identity | Required core columns or shape | Scope and time | Constructor help |
-|----|----|----|----|----|
-| Bars | One row per `(instrument_id, ts_utc)`; the pair is unique | `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`; `volume` optional | Physical instrument; observation clock | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Instruments | One row per unique `instrument_id` | `instrument_id`; symbol, currency, asset class, multiplier and tick size are optional | Physical master; identity is stable, not time-varying | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Sessions | One row per civil date in one declared venue range | `session_date`, `status`; open rows also need `session_open`, `session_close` | `venue_id`; knowledge clock plus local calendar time | [`ledgr_facts_sessions()`](../reference/ledgr_facts.html) |
-| Membership intervals | One assertion per instrument interval | `instrument_id`, `effective_from`, `member`; optional `effective_to` | `universe_id`; half-open effective interval plus knowledge clock | [`ledgr_facts_membership_intervals()`](../reference/ledgr_facts.html) |
-| Complete membership snapshots | One set header per effective/knowledge/source group plus member rows | `effective_from` and row-wise `instrument_id` or one `members` list-column; `complete` is declared | `universe_id`; omission means non-membership only in a complete set | [`ledgr_facts_membership_snapshots()`](../reference/ledgr_facts.html) |
-| Trading status | One sourced assertion per instrument interval and precedence | `instrument_id`, `effective_from`, `status`, `source`; optional `effective_to`, `precedence` and supersession fields | Physical instrument; effective and knowledge clocks | [`ledgr_facts_trading_status()`](../reference/ledgr_facts.html) |
-| Lifetime | One assertion per instrument interval | `instrument_id`, `effective_from`, `assertion`; optional `effective_to`, `terminal_event` | Physical instrument; effective and knowledge clocks | [`ledgr_facts_lifetime()`](../reference/ledgr_facts.html) |
-| Equity corporate actions | One identified economic fact | `subtype`, `parent_instrument_id`, `complete`, `provenance_tier`; terms and refusal reason are conditional | Physical parent and optional recipient; four distinct clocks | [`ledgr_facts_equity_corporate_actions()`](../reference/ledgr_facts.html) |
-
-Every interval is half-open: `effective_from` is included and
-`effective_to` is excluded. Three cross-cutting rules apply:
-
-- identifiers stay stable for the history being sealed;
-- timestamps are whole-second UTC instants, even when sessions begin as
-  local civil dates and wall times;
-- knowledge is declared per family. It is not universally required to
-  precede effectiveness: status and lifetime evidence may arrive late,
-  while session facts obey their stricter constructor rule.
-
-Corporate actions distinguish entitlement (who qualifies), effective
-time (when the market state changes), knowledge time (when the evidence
-is usable), and payment time (when cash is due). Do not collapse those
-clocks into one vendor date during preparation.
-
-### Entity Relationships
-
-The physical instrument master, venue calendar and research universe are
-different scopes. The diagram shows keys and cardinalities, not the
-order in which helpers happen to be called.
-
-<div class="ledgr-diagram ledgr-input-entities">
-
-```mermaid
-erDiagram
-  SNAPSHOT ||--o{ INSTRUMENT : contains
-  INSTRUMENT ||--o{ BAR : observed_as
-  SNAPSHOT ||--o{ SESSION : seals
-  SNAPSHOT ||--o{ MEMBERSHIP : seals
-  INSTRUMENT ||--o{ MEMBERSHIP : referenced_by
-  INSTRUMENT ||--o{ TRADING_STATUS : constrained_by
-  INSTRUMENT ||--o{ LIFETIME : described_by
-  INSTRUMENT ||--o{ CORPORATE_ACTION : parent_or_recipient
-  SNAPSHOT {
-    string snapshot_id PK
-    string snapshot_hash
-  }
-  INSTRUMENT {
-    string instrument_id PK
-  }
-  BAR {
-    string instrument_id FK
-    datetime ts_utc PK
-  }
-  SESSION {
-    string venue_id PK
-    date session_date PK
-  }
-  MEMBERSHIP {
-    string universe_id PK
-    string instrument_id FK
-    datetime effective_from
-    datetime knowledge_time
-  }
-  TRADING_STATUS {
-    string instrument_id FK
-    datetime effective_from
-    datetime knowledge_time
-  }
-  LIFETIME {
-    string instrument_id FK
-    datetime effective_from
-    datetime knowledge_time
-  }
-  CORPORATE_ACTION {
-    string fact_id PK
-    string parent_instrument_id FK
-    string recipient_instrument_id FK
-  }
-```
-
-</div>
-
-Corporate-action parent and optional recipient identifiers resolve
-against the physical instrument master, not against membership in a
-research universe. A security can therefore be physically known without
-being an eligible member. Trading-status and lifetime facts also resolve
-through that master; neither is a substitute for universe membership.
-
-### What Sealing Establishes
-
-After a successful seal, ledgr can rely on stable physical identifiers,
-whole-second bar timestamps, unique bar keys, fact referential
-integrity, validated family structure, and an immutable snapshot hash.
-Reopening with `verify = TRUE` rechecks that artifact identity.
-
-Sealing does not imply a dense instrument-by-session rectangle, current
-universe membership, continuously fresh prices, inferred
-corporate-action terms, or knowledge before effectiveness. Those remain
-explicit data or policy questions at execution time.
-
-### One Composable Bundle
-
-`ledgr_demo_pit_inputs` is plain data, not a prebuilt snapshot. Its
-synthetic `DEMO_VENUE` calendar uses the `America/New_York` timezone.
-Matching session-close bars, the instrument master and five fact inputs
-travel together; they are not a fact overlay for an unrelated
-observation panel. The case manifest locates a weekday closure, an
-open-session observation gap, a delisting, a late-known halt and a cash
-dividend.
+The returned handle is already sealed. Inspect the stable public fields
+rather than the raw metadata envelope.
 
 ``` r
-pit <- ledgr_demo_pit_inputs
-names(pit)
-```
-
-    [1] "bars"              "instruments"       "sessions"          "membership"
-    [5] "lifetime"          "trading_status"    "corporate_actions" "recipe"
-    [9] "cases"
-
-``` r
-pit$cases
-```
-
-                     type instrument_id       date
-    1       venue_closure          <NA> 2020-01-06
-    2 missing_observation       DEMO_04 2020-01-09
-    3           delisting       DEMO_01 2020-01-14
-    4                halt       DEMO_02 2020-01-03
-    5       cash_dividend       DEMO_03 2020-01-10
-
-The recipe carries the scope and knowledge choices needed by the public
-constructors. The small `constructor_args()` helper removes only the
-recipe’s inspectable `enabled` marker; it does not rewrite a fact row.
-
-``` r
-constructor_args <- function(name) {
-  args <- pit$recipe$constructors[[name]]
-  args[names(args) != "enabled"]
-}
-
-session_facts <- do.call(
-  ledgr_facts_sessions,
-  c(list(df = pit$sessions), constructor_args("sessions"))
-)
-membership_facts <- do.call(
-  ledgr_facts_membership_snapshots,
-  c(list(df = pit$membership), constructor_args("membership"))
-)
-lifetime_facts <- do.call(
-  ledgr_facts_lifetime,
-  c(list(df = pit$lifetime), constructor_args("lifetime"))
-)
-status_facts <- do.call(
-  ledgr_facts_trading_status,
-  c(list(df = pit$trading_status), constructor_args("trading_status"))
-)
-corporate_action_facts <- ledgr_facts_equity_corporate_actions(
-  pit$corporate_actions
-)
-pit_facts <- ledgr_facts(
-  session_facts,
-  membership_facts,
-  lifetime_facts,
-  status_facts,
-  corporate_action_facts
-)
-```
-
-The bundle makes three important boundaries executable. Its halt is
-already effective before it becomes knowable. Sub-second observations
-fail before sealing, and a fact that names an instrument outside the
-physical master fails the public pre-seal validation with a classed
-error. The seal independently retains its lower-level
-`ledgr_snapshot_fact_referential_integrity` guard; the public
-constructor normally refuses the bad bundle before reaching it.
-
-``` r
-halt_clock <- pit$trading_status[
-  pit$trading_status$status == "halted",
-  c("effective_from", "knowledge_time")
-]
-data.frame(
-  boundary = "halt knowledge arrives after effectiveness",
-  observed = halt_clock$knowledge_time > halt_clock$effective_from
-)
-```
-
-                                        boundary observed
-    1 halt knowledge arrives after effectiveness     TRUE
-
-``` r
-capture_condition_class <- function(value) {
-  result <- tryCatch(force(value), error = identity)
-  if (inherits(result, "condition")) return(class(result)[[1L]])
-  if (inherits(result, "ledgr_snapshot")) ledgr_snapshot_close(result)
-  "NO_ERROR"
-}
-
-subsecond_bars <- pit$bars[1:2, , drop = FALSE]
-subsecond_bars$ts_utc[[1L]] <- subsecond_bars$ts_utc[[1L]] + 0.5
-
-orphan_lifetime <- pit$lifetime
-orphan_lifetime$instrument_id[[1L]] <- "NOT_IN_MASTER"
-orphan_lifetime_facts <- do.call(
-  ledgr_facts_lifetime,
-  c(list(df = orphan_lifetime), constructor_args("lifetime"))
-)
-orphan_facts <- ledgr_facts(
-  session_facts,
-  membership_facts,
-  orphan_lifetime_facts,
-  status_facts,
-  corporate_action_facts
-)
-
-data.frame(
-  boundary = c("sub-second bar", "fact outside instrument master"),
-  condition_class = c(
-    capture_condition_class(ledgr_snapshot_from_df(subsecond_bars)),
-    capture_condition_class(ledgr_snapshot_from_df(
-      pit$bars,
-      instruments_df = pit$instruments,
-      facts = orphan_facts,
-      price_basis = pit$recipe$price_basis
-    ))
+ledgr_snapshot_info(snapshot) |>
+  select(
+    status,
+    snapshot_hash,
+    bar_count,
+    instrument_count,
+    start_date,
+    end_date
   )
-)
 ```
 
-                            boundary                      condition_class
-    1                 sub-second bar            LEDGR_SUBSECOND_TIMESTAMP
-    2 fact outside instrument master ledgr_availability_validation_failed
+    # A tibble: 1 x 6
+      status snapshot_hash                      bar_count instrument_count start_date end_date
+      <chr>  <chr>                                  <int>            <int> <chr>      <chr>
+    1 SEALED 4f1bf4da9712ff45a0a7d8dae496b2851~        46                2 2019-01-0~ 2019-01~
 
-Pass those objects through the ordinary public workflow without
-filtering rows or rewriting timestamps.
+Sealing gives you validated bar keys, an immutable snapshot hash, and a
+stable physical instrument master. It does not invent missing sessions,
+infer historical universe membership, or repair prices.
 
-``` r
-pit_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_pit_demo.duckdb"))
-pit_snapshot <- ledgr_snapshot_from_df(
-  pit$bars,
-  instruments_df = pit$instruments,
-  facts = pit_facts,
-  db_path = pit_path,
-  snapshot_id = "pit_demo_snapshot",
-  price_basis = pit$recipe$price_basis
-)
-pit_snapshot_id <- pit_snapshot$snapshot_id
-ledgr_snapshot_close(pit_snapshot)
+If the source evidence changes, create a new snapshot. Do not append
+bars to a sealed snapshot or reseal different data under the same
+identity.
 
-pit_snapshot <- ledgr_snapshot_open(
-  pit_path,
-  pit_snapshot_id,
-  verify = TRUE
-)
-flat_strategy <- function(ctx, params) ctx$flat()
-pit_experiment <- ledgr_experiment(
-  pit_snapshot,
-  flat_strategy,
-  universe = ledgr_universe_members(pit$recipe$scopes$universe_id),
-  valuation_policy = ledgr_valuation_stale(2),
-  cost_model = ledgr_cost_zero()
-)
-pit_run <- ledgr_run(pit_experiment, run_id = "pit-demo-run")
-pit_completion <- ledgr_run_completion(pit_run)
-unlist(pit_completion[c("completion_status", "complete_performance")])
-```
+## Choose The Smallest Honest Input Set
 
-       completion_status complete_performance
-                  "DONE"               "TRUE"
+Most users should start with bars and add facts only when the question
+requires them.
 
-The verified reopen proves the sealed artifact can stand on its own. The
-`DONE` result proves the same bundle is executable; it does not imply
-that its flat strategy exercised every teaching event economically.
+| Research shape | Minimum sealed inputs | Read next |
+|----|----|----|
+| Dense static panel | Bars | Continue below |
+| Described physical panel | Bars plus instruments | Constructor help |
+| Session-aware gaps | Bars plus sessions | Point-in-time inputs |
+| Point-in-time universe | Bars, sessions, membership | Point-in-time inputs |
+| Trading or lifetime restrictions | Bars, sessions, status or lifetime | Point-in-time inputs |
+| Equity economic events | Bars, instruments, corporate actions | Point-in-time inputs |
 
-After snapshot creation, store operations take `snapshot`, not
-`db_path`. In a new R session, recover the handle with
-`ledgr_snapshot_open(db_path, snapshot_id)`.
+Use `vignette("point-in-time-inputs", package = "ledgr")` when bars
+alone cannot say what existed, what was eligible, or what was known.
+That article owns the complete data dictionary and entity diagram.
 
-If your market data starts in CSV, seal the CSV into the same kind of
-durable store. `ledgr_snapshot_from_csv()` is the file-input form of
-`ledgr_snapshot_from_df()`: one contract, two input types. Both require
-`instrument_id`, `ts_utc`, `open`, `high`, `low`, and `close`, with
-`volume` optional. ledgr imports only those canonical bar columns. Other
-columns are ignored and do not become part of the sealed snapshot or its
-hash. `ts_utc` accepts a date-only value, an ISO 8601 UTC datetime with
-a trailing `Z`, and the same datetime without the `Z`.
+## Start From A CSV Instead
+
+`ledgr_snapshot_from_csv()` has the same snapshot contract as the
+data-frame form. It requires `instrument_id`, `ts_utc`, `open`, `high`,
+`low`, and `close`; `volume` is optional.
 
 ``` r
 snapshot <- ledgr_snapshot_from_csv(
@@ -408,11 +130,9 @@ snapshot <- ledgr_snapshot_from_csv(
 )
 ```
 
-Instrument metadata and point-in-time facts take the same arguments they
-take on the data-frame adapter. Supply instruments as a second file with
-`instrument_id` and the optional `symbol`, `currency`, `asset_class`,
-`multiplier`, and `tick_size` columns; without it, ledgr generates
-instruments from the ids the bars carry.
+Supply a separate instrument file when you have stable metadata. It
+needs an `instrument_id`; `symbol`, `currency`, `asset_class`,
+`multiplier`, and `tick_size` are optional.
 
 ``` r
 snapshot <- ledgr_snapshot_from_csv(
@@ -423,22 +143,10 @@ snapshot <- ledgr_snapshot_from_csv(
 )
 ```
 
-In any later session, recover the handle without re-sealing the data:
+## Or Fetch Yahoo Data
 
-``` r
-snapshot <- ledgr_snapshot_open(
-  "artifacts/ledgr_store.duckdb",
-  snapshot_id = "eod_2019_h1"
-)
-```
-
-CSV and local data validation happens while the snapshot is created and
-sealed, before a strategy can run. Missing columns, unparseable
-timestamps, duplicate `instrument_id`/`ts_utc` rows, and OHLC violations
-are snapshot import problems. They are not strategy execution errors.
-
-Yahoo imports follow the same lifecycle, but the adapter downloads bars
-before sealing the snapshot:
+The Yahoo adapter downloads bars through `quantmod` and seals the
+result.
 
 ``` r
 snapshot <- ledgr_snapshot_from_yahoo(
@@ -450,67 +158,24 @@ snapshot <- ledgr_snapshot_from_yahoo(
 )
 ```
 
-The returned handle is already sealed. Calling
-`ledgr_snapshot_seal(snapshot)` again is an idempotent verification
-step: on a snapshot handle it returns an invisible structured list with
-`$hash` and `$snapshot`; on a low-level DBI connection plus
-`snapshot_id` it returns the hash string. Use
-`ledgr_snapshot_info(snapshot)` to inspect `status`, `snapshot_hash`,
-`bar_count`, `instrument_count`, `start_date`, `end_date`, and raw
-`meta_json`. The dates are ISO UTC values. `meta_json` is envelope
-metadata; snapshot identity comes from normalized bars and instruments,
-not from human descriptions.
-
 > [!WARNING]
 >
-> ### Yahoo data boundary
+> ### Yahoo is a convenience source
 >
-> Yahoo support is a convenience adapter, not a data-vendor guarantee. It
-> uses `quantmod::getSymbols()` and therefore requires the suggested
-> `quantmod` package and network access. Package startup or S3
-> method-overwrite messages printed while quantmod loads are not ledgr
-> snapshot warnings. The adapter seals the Yahoo `.Open`, `.High`, `.Low`,
-> `.Close`, and `.Volume` columns as returned by quantmod; it does not
-> rewrite OHLC values from Yahoo’s adjusted-close column. If your research
-> requires split/dividend-adjusted OHLC bars, prepare those bars
-> explicitly and seal them with `ledgr_snapshot_from_df()` or
-> `ledgr_snapshot_from_csv()`.
+> Yahoo and the remote endpoint are outside ledgr’s reproducibility
+> boundary. The adapter seals the OHLCV values returned by `quantmod`; it
+> does not rebuild adjusted OHLC bars from adjusted close. Prepare and
+> seal your own panel when the research requires a different adjustment
+> policy.
 
 
-``` r
-yahoo_info <- ledgr_snapshot_info(snapshot)
-yahoo_seal <- ledgr_snapshot_seal(snapshot)
-yahoo_hash <- yahoo_seal$hash
-stopifnot(identical(yahoo_info$snapshot_hash[[1]], yahoo_hash))
-```
+## Refuse Or Quarantine A Bad Observation
 
-Snapshot metadata uses these public field names:
-
-| Field | Meaning |
-|----|----|
-| `status` | snapshot lifecycle state, usually `SEALED` after helper creation |
-| `snapshot_hash` | hash of normalized bars and instruments |
-| `bar_count` | current count of rows in `snapshot_bars` |
-| `instrument_count` | current count of rows in `snapshot_instruments` |
-| `start_date`, `end_date` | seal-time date range parsed from metadata |
-| `meta_json` | raw JSON envelope containing user metadata plus seal metadata |
-
-Seal metadata inside `meta_json` may use internal names such as `n_bars`
-and `n_instruments`. The structured columns from `ledgr_snapshot_info()`
-are `bar_count` and `instrument_count`; use those names in programmatic
-code.
-
-## Invalid Observations: Refuse First, Quarantine Deliberately
-
-A malformed bar is not a data gap. ledgr refuses to seal one by default
-rather than guess what it meant. The alternative is available, but you
-have to ask for it by name.
-
-This example corrupts one bar so its high sits below its open.
+A malformed bar is not a missing bar. ledgr refuses it by default rather
+than guess what it meant. This row has a high below its open.
 
 ``` r
 session_dates <- as.Date("2019-01-01") + 0:4
-
 invalid_bars <- tibble(
   instrument_id = "DEMO_01",
   ts_utc = session_dates,
@@ -521,23 +186,11 @@ invalid_bars <- tibble(
   volume = 1000
 )
 invalid_bars$high[[3]] <- invalid_bars$open[[3]] - 5
-
-invalid_bars
 ```
 
-    # A tibble: 5 x 7
-      instrument_id ts_utc      open  high   low close volume
-      <chr>         <date>     <int> <dbl> <int> <int>  <dbl>
-    1 DEMO_01       2019-01-01   100   101    99   100   1000
-    2 DEMO_01       2019-01-02   101   102   100   101   1000
-    3 DEMO_01       2019-01-03   102    97   101   102   1000
-    4 DEMO_01       2019-01-04   103   104   102   103   1000
-    5 DEMO_01       2019-01-05   104   105   103   104   1000
-
-Quarantine is a decision about an *expected* observation, so it requires
-a declared session calendar. Without one there is no assertion that the
-session happened, and a dropped row would be indistinguishable from a
-date that never existed.
+Quarantine is meaningful only when an independent calendar says the
+observation was expected. Otherwise a dropped row is indistinguishable
+from a date that never existed.
 
 ``` r
 session_facts <- ledgr_facts_sessions(
@@ -548,114 +201,86 @@ session_facts <- ledgr_facts_sessions(
     session_close = "21:00:00",
     knowledge_time = ledgr_utc("2018-12-01")
   ),
-  venue_id = "DEMO",
+  venue_id = "DEMO_VENUE",
   timezone = "UTC"
 )
-```
 
-The default refuses the entire seal:
-
-``` r
 strict <- tryCatch(
   ledgr_snapshot_from_df(
     invalid_bars,
     instruments_df = tibble(instrument_id = "DEMO_01"),
     facts = ledgr_facts(session_facts),
-    db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict_demo.duckdb")),
-    snapshot_id = "strict_demo"
+    db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict.duckdb"))
   ),
-  error = function(e) e
+  error = identity
 )
 
-class(strict)[1:2]
-```
-
-    [1] "ledgr_availability_validation_failed" "ledgr_invalid_args"
-
-``` r
 conditionMessage(strict)
 ```
 
     [1] "Availability input cannot be sealed: ohlc_invalid."
 
-Nothing was sealed. One bad row stopped the whole snapshot, which is the
-point: you find out before the evidence is frozen, not afterwards. To
-proceed you must say so explicitly.
+Nothing was sealed. If you have decided that the source row should
+remain in the audit record but must not reach runtime, ask for
+quarantine explicitly.
 
 ``` r
 quarantined <- ledgr_snapshot_from_df(
   invalid_bars,
   instruments_df = tibble(instrument_id = "DEMO_01"),
   facts = ledgr_facts(session_facts),
-  db_path = ledgr_temp_store(
-    file.path(tempdir(), "ledgr_quarantine_demo.duckdb")
-  ),
-  snapshot_id = "quarantine_demo",
+  db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_quarantine.duckdb")),
   invalid_observations = "quarantine"
 )
 
-ledgr_snapshot_info(quarantined, "quarantine_demo")$bar_count
+ledgr_snapshot_info(quarantined)$bar_count
 ```
 
     [1] 4
 
-Four bars of five reached runtime. The fifth was not deleted: it is
-hashed as part of the sealed evidence, so the snapshot still records
-what the source actually supplied. The expected session stays on the
-calendar, which is what keeps the gap visible instead of silently
-shortening the history.
+Four of five observations reached runtime. The invalid source row
+remains bound into the snapshot evidence; quarantine is not deletion or
+repair.
 
-Quarantine is a statement about one observation, not a repair. It
-interpolates no price and asserts nothing about whether the instrument
-was tradeable. Correcting the data means a new snapshot, as it does for
-every other change to sealed evidence.
+## Reopen The Same Artifact
+
+Record the path and snapshot id, close the live handle, and reopen with
+hash verification in a later session.
 
 ``` r
-ledgr_snapshot_close(quarantined)
+snapshot_id <- snapshot$snapshot_id
+ledgr_snapshot_close(snapshot)
+
+snapshot <- ledgr_snapshot_open(
+  db_path,
+  snapshot_id = snapshot_id,
+  verify = TRUE
+)
+
+ledgr_snapshot_info(snapshot) |>
+  select(status, snapshot_hash, bar_count)
 ```
 
-## Backup Conventions
+    # A tibble: 1 x 3
+      status snapshot_hash                                                    bar_count
+      <chr>  <chr>                                                                <int>
+    1 SEALED 4f1bf4da9712ff45a0a7d8dae496b285181e96ec2435aaccb6ba5a3a0090fc94        46
 
-The store is an ordinary DuckDB file. Back it up when no ledgr process
-has it open.
-
-> [!WARNING]
->
-> ### Back up closed stores
->
-> Close run and snapshot handles, then copy or sync the closed store file.
-> A simple project pattern is:
->
-> ``` r
-> dir.create("backups", showWarnings = FALSE)
-> file.copy(
->   "artifacts/ledgr_store.duckdb",
->   file.path("backups", paste0("ledgr_store_", Sys.Date(), ".duckdb")),
->   overwrite = TRUE
-> )
-> ```
->
-> For larger projects, use the same closed-file rule with your normal
-> backup or sync tool. Do not rely on the phrase “ordinary backup
-> discipline” without a specific copy/sync pattern for the store file.
-
+For backup, recovery, live handles, and stored runs, continue with
+`vignette("experiment-store", package = "ledgr")`.
 
 ## Cleanup
 
 ``` r
-close(pit_run)
-ledgr_snapshot_close(pit_snapshot)
+ledgr_snapshot_close(quarantined)
 ledgr_snapshot_close(snapshot)
 ```
 
 ## Where Next
 
-- `vignette("survivorship-bias", package = "ledgr")` shows how
-  membership, sessions, and stable instrument identity become one
-  point-in-time workflow.
-- `vignette("experiment-store", package = "ledgr")` shows how sealed
-  snapshots are used by committed runs and recovery workflows.
-- `vignette("research-workflow", package = "ledgr")` puts snapshots in
-  the larger research project workflow.
+- `vignette("point-in-time-inputs", package = "ledgr")` adds sessions,
+  membership, trading status, lifetime, and economic events.
 - `vignette("strategy-development", package = "ledgr")` uses a sealed
   snapshot in a complete backtest.
+- `vignette("experiment-store", package = "ledgr")` covers stored runs,
+  handles, backup, and recovery.

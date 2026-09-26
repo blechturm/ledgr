@@ -577,7 +577,7 @@ accepted the patched cut without a focused cut re-review and opened Workstream
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 18 Point-in-time input model | 2839–2843 | an exported `ledgr_sim_pit_inputs()` parametrized by instruments, window, seed, calendar convention and teaching cases; one committed plain-data bundle containing matching bars, fact inputs, construction recipe and case manifest; the input checklist and an entity diagram in the data-input article; the specialist articles connected to the shared bundle without sacrificing minimal teaching fixtures; closeout | a user can learn what data ledgr needs, in what form, from one place, can load a working composable example, and can generate one for their own instruments and window; the generator declares a session calendar independently of observations and derives matching bars from that declaration |
+| 18 Point-in-time input model | 2839–2843 | an exported `ledgr_sim_pit_inputs()` parametrized by instruments, window, seed, calendar convention and teaching cases; one committed plain-data bundle containing matching bars, fact inputs, construction recipe and case manifest; a short import-and-seal entry point, a progressive point-in-time article with the data dictionary and ERD at the end, and closed-store backup in the experiment-store article; specialist articles connected to the shared bundle without sacrificing minimal teaching fixtures; closeout | a user can enter through the smallest relevant task, load a working composable example, understand the complete input model when needed, and generate one for their own instruments and window; the generator declares a session calendar independently of observations and derives matching bars from that declaration |
 
 The gap this closes is visible in the tree. ledgr ships exactly one dataset,
 `ledgr_demo_bars`: ten instruments of OHLCV and nothing else. Every article
@@ -608,21 +608,23 @@ rewriting. A shorter teaching window is acceptable only because its matching
 bars travel with it; it is not presented as a fact set that users can attach
 directly to an arbitrary slice of `ledgr_demo_bars`.
 
-The entity diagram is included because two facts cannot be shown by a column
+The entity diagram in the point-in-time reference section is included because
+two facts cannot be shown by a column
 table: the families have different scope keys, instrument against venue
 against universe, and a corporate action references a parent and an optional
 recipient that must both resolve in the snapshot's physical instrument master.
 That is deliberately not the same claim as membership in a universe.
 
 This cut ships inside v0.2.0.2. The point-in-time model is what this release
-adds, and shipping it without one checklist of required inputs and one
-inspectable example would leave users to reverse-engineer the model from three
-worked examples. Workstream 18 opens after Workstream 17, so the three edits to
+adds, and shipping it without a short route into the right lesson, one complete
+reference and one inspectable example would leave users to reverse-engineer
+the model from three worked examples. Workstream 18 opens after Workstream 17,
+so the three edits to
 the missing-data article stay serial: Workstream 16 puts it on `ctx$tradable()`,
 Workstream 17 adds the expected-session and support-matrix material, and
 Workstream 18 links it to the shared demo input. Specialist articles may retain
 deliberately small local fixtures where those are the clearest behavioral
-detectors; each must state why and link to the canonical input article. The
+detectors; each must state why and link to the point-in-time input article. The
 release gate follows, so its local gates and CI tiers cover the shipped bundle
 and rendered articles.
 
@@ -649,11 +651,14 @@ bundle has no observations after its delisting boundary or strictly inside its
 halt, and its late-known halt is a higher-precedence override over an
 open-ended base status rather than a row that leaks future knowledge. The
 data-raw recipe is now the callable regeneration path tested byte for byte.
-The canonical article is now **Data Model And Point-In-Time Inputs**, with a
-detailed data dictionary, an eight-entity ERD, sealed-snapshot guarantees and
-executable boundary failures. The focused re-review is the third invocation,
-so the historical ratio is 3/5 = 0.600 and is recorded as a breach rather than
-hidden through ticket merging or padding.
+The original all-in-one article was split after a teachability review.
+**Importing And Sealing Market Data** is the lean entry point; **Preparing
+Point-In-Time Inputs** owns the progressive evidence workflow, dictionary and
+eight-entity ERD; and **Experiment Store** owns closed-store backup. The final
+documentation-focused fast record passed 455 of 455 blocks in 76.86 seconds
+under the unchanged 90-second bound. The teachability review is invocation
+four, so the historical ratio is 4/5 = 0.800 and is recorded as a breach
+rather than hidden through ticket merging or padding.
 
 ## Cut 12: Restore fast-profile headroom (accepted)
 

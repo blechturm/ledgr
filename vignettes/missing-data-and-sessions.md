@@ -65,12 +65,12 @@ library(qlcal)
 
 ## Relationship To The Composable Bundle
 
-The [Data Model And Point-In-Time Inputs](data-input-and-snapshots.qmd)
-article owns the complete input decision map and the reusable
-point-in-time bundle. This article keeps its smaller `AAA`/`BBB` fixture
-because a three-session hole is the clearest detector for mark ageing
-and the no-fill rule. Those identifiers are local to this article; they
-do not describe extra history for the shared `DEMO_*` instruments.
+The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
+owns the complete data model and the reusable point-in-time bundle. This
+article keeps its smaller `AAA`/`BBB` fixture because a three-session
+hole is the clearest detector for mark ageing and the no-fill rule.
+Those identifiers are local to this article; they do not describe extra
+history for the shared `DEMO_*` instruments.
 
 The shared bundle carries the same kind of missing-observation input.
 This executable touchpoint locates it and confirms that its bar row is
