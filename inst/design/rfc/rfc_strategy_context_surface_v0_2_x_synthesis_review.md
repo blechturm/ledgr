@@ -27,7 +27,8 @@ the full-axis form errors on `OLD` with `ledgr_invalid_strategy_helper`, which
 matches the synthesis's own error mapping.
 
 **1. Constructor dispatch and alignment.** Sound. The dispatch premise holds at
-runtime: the fold classes its own context (`R/fold-engine.R:610`), so a strategy
+runtime: the fold classes its own context (`R/fold-engine.R:610`), so a
+strategy
 receives a `ledgr_pulse_context` in both the dense fast path
 (`use_fast_context <- !availability_active`, `R/backtest-runner.R:851`) and the
 general path. I hunted for ordinary inputs with ambiguous meaning and the
@@ -112,5 +113,89 @@ unimplemented APIs already pass. It corrects both prior documents where they
 were wrong, including its own author's inspection proposal and four
 over-corrections in my withdrawal ledger. Neither nonblocking finding touches a
 decision, a contract amendment or a detector.
+
+PASS
+
+---
+
+# Focused Verification Of The Amendment
+
+**Target:** `d9daa4d1bbfffe81180297a52c7baf4bc8e03d3f`, synthesis only
+(+97/-27). **Date:** 2026-09-26. The PASS above stands for `71c2a3ab` and does
+not cover predicate projection or zero-weight sizing; this section covers only
+those changes and their consequences.
+
+Both amended behaviours fix real defects that my original review missed. I
+verified the `where` row and the error mapping and called them consistent; the
+amendment was found by a strategy-authoring exercise, which is a method
+citation-checking does not substitute for.
+
+**Zero-weight sizing - confirmed in both modes.** The price loop iterates
+`names(weights)` and resolves a price before consulting the weight value
+(`R/strategy-helpers.R:282-300`), so a zero weight requires a usable close
+while
+omitting the ID does not. Executed at D on a dense source-level context with
+`close = c(10, NA)`: weights `(AAA=1, BBB=0)` fire a spurious
+`ledgr_invalid_target_price` warning, weights `(AAA=1)` alone do not, and both
+produce `AAA=10, BBB=0`. Two spellings of one intent, identical targets,
+different diagnostics. The availability half is structurally certain from the
+same branch, which aborts rather than warns. The correction is a widening, so
+it
+cannot break a strategy that previously worked, and the synthesis states
+plainly
+that helper behaviour changes.
+
+**Predicate projection - confirmed.** `ctx$vec$close` is an anticipated `NA`
+carrier on the axis (the price loop tests `is.na(price)`), so
+`where = ctx$vec$close > 100` yields `NA` at a held nonmember with no close. The
+original rule rejected any `NA`, which would have made the documented predicate
+example fail for an ordinary portfolio state. Projecting to M before checking
+`NA` is correct, and the accompanying asymmetry is deliberate and coherent:
+infinity is rejected anywhere, a missing numeric score stays meaningful and is
+excluded by `select_top_n()`, and a missing logical decision on a member is
+fail-closed rather than imputed.
+
+**Budget arithmetic - exact.** `allocation_equity <- max(0, equity -
+sum(abs(quantities * marks)))` (`R/strategy-helpers.R:258-272`) is the
+amendment's
+formula verbatim, and sizing is `floor(weight * equity_fraction * A / close)`.
+NAV 100 with OLD exposure 40 gives A = 60, so AAA at close 10 yields 6 shares
+at
+weight 1 and `floor(3.6) = 3` at weight 0.6, matching the new gate row. The
+consequence the amendment draws is right and matters beyond this cut: an
+optimizer emitting total-NAV weights must convert before passing them here.
+
+**Consistency.** The correction reached the places it had to. Section 6 binds
+it
+in both the Availability and Strategy amendment rows; section 7 adds separate
+predicate-projection and zero-weight gate rows whose cases would fail against
+current behaviour, which is the right property for a gate written before
+implementation. My earlier N2 is resolved explicitly: an ID in Daxis outside M
+is a known nonmember, not an unknown name. The three new citations check out -
+`contracts.md:678-686`, `tests/testthat/test-strategy-preflight.R:82`, and the
+referenced scheduler seed exists.
+
+## Nonblocking finding
+
+**N3. The member-side missing predicate stays fatal and needs a taught guard.**
+The amendment fixes `NA` at nonmember positions, but a *member* with no current
+close still makes `where = ctx$vec$close > 100` an error ("NA for AAA errors").
+That is the correct fail-closed choice, since imputing `FALSE` would be the
+silent negative selection this cut forbids. The cost is that the most natural
+predicate an author writes is fragile in exactly the availability mode this RFC
+exists to serve, and the same data gap is graceful through `values` and fatal
+through `where`. *Smallest correction:* have the representative authoring
+examples show the guard - `where = !is.na(ctx$vec$close) & ctx$vec$close >
+100` -
+and state the values-versus-where difference in the documentation row, so the
+pattern is taught rather than discovered by hitting the error.
+
+## Disposition
+
+The amendment is accurate, correctly scoped to two behavioural changes plus
+teaching, bound in the contract table, and covered by gates that detect the
+uncorrected behaviour. It keeps scheduling, causal frames and helper-preflight
+redesign out, and records the preflight boundary rather than silently exempting
+it. N3 is a documentation obligation and touches no decision or detector.
 
 PASS
