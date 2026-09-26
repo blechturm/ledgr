@@ -19,7 +19,8 @@ testthat::test_that("ledgr_db_init() opens DB and ensures schema", {
   testthat::expect_true("strategy_state" %in% tables)
 })
 
-testthat::test_that("ledgr_state_reconstruct() returns derived artifacts and rebuilds equity_curve", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0072] ledgr_state_reconstruct() rebuilds derived state", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
