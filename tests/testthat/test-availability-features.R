@@ -264,6 +264,236 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
   )
 })
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract", {
+  testthat::skip_if_not_installed("TTR")
+  snapshot <- availability_strict_matrix_fixture()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  opening <- ledgr_opening(
+    cash = 100000,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 10)
+  )
+  ttr_sma <- ledgr_ind_ttr("SMA", input = "close", n = 2L)
+  custom_sma <- ledgr_indicator(
+    "custom_sma_2",
+    function(window) mean(window$close),
+    requires_bars = 2L,
+    gap_contract = "strict_window"
+  )
+  indicators <- list(
+    built_in = ledgr_ind_sma(2L),
+    public_ttr = ttr_sma,
+    custom = custom_sma
+  )
+  testthat::expect_identical(
+    vapply(indicators, `[[`, character(1), "gap_contract"),
+    c(built_in = "strict_window", public_ttr = "strict_window", custom = "strict_window")
+  )
+
+  dense_ttr <- ttr_sma
+  dense_ttr$gap_contract <- NULL
+  testthat::expect_identical(
+    ledgr_indicator_fingerprint(ttr_sma),
+    ledgr_indicator_fingerprint(dense_ttr)
+  )
+  dense_bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+    close = c(10, 12, 14, 16)
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_compute_feature_series(dense_bars, ttr_sma),
+    ledgr:::ledgr_compute_feature_series(dense_bars, dense_ttr)
+  )
+
+  predicate_cases <- list(
+    certified = list("SMA", "close", NULL, list(n = 2L), 2L, 2L, TRUE),
+    wrong_function = list("EMA", "close", NULL, list(n = 2L), 2L, 2L, FALSE),
+    wrong_input = list("SMA", "hl", NULL, list(n = 2L), 2L, 2L, FALSE),
+    selected_output = list("SMA", "close", "value", list(n = 2L), 2L, 2L, FALSE),
+    extra_argument = list("SMA", "close", NULL, list(n = 2L, extra = TRUE), 2L, 2L, FALSE),
+    wrong_requires = list("SMA", "close", NULL, list(n = 2L), 3L, 3L, FALSE),
+    wrong_stability = list("SMA", "close", NULL, list(n = 2L), 2L, 3L, FALSE)
+  )
+  for (case in predicate_cases) {
+    actual <- do.call(
+      ledgr:::ledgr_ttr_strict_window_certified,
+      stats::setNames(case[1:6], c(
+        "ttr_fn", "input", "output", "args", "requires_bars", "stable_after"
+      ))
+    )
+    testthat::expect_identical(actual, case[[7L]])
+  }
+  testthat::expect_null(ledgr_ind_ttr("EMA", input = "close", n = 2L)$gap_contract)
+  testthat::expect_null(ledgr_ind_ttr("RSI", input = "close", n = 2L)$gap_contract)
+  sma_bundle <- tryCatch(
+    ledgr_ind_ttr_outputs("SMA", input = "close", n = 2L),
+    error = identity
+  )
+  if (inherits(sma_bundle, "error")) {
+    testthat::expect_s3_class(sma_bundle, "ledgr_invalid_args")
+  } else {
+    testthat::expect_true(all(vapply(
+      ledgr:::ledgr_indicator_bundle_indicators(sma_bundle),
+      function(indicator) is.null(indicator$gap_contract),
+      logical(1)
+    )))
+  }
+  contract_text <- paste(readLines(
+    testthat::test_path("..", "..", "inst", "design", "contracts.md"),
+    warn = FALSE
+  ), collapse = "\n")
+  testthat::expect_match(
+    contract_text,
+    'single-output `ledgr_ind_ttr\\("SMA", input = "close", n = \\.\\.\\.\\)`'
+  )
+  testthat::expect_match(
+    contract_text,
+    "TTR bundles and all\\n  other TTR families remain uncertified"
+  )
+
+  source_messages <- list()
+  source_runs <- list()
+  for (source in names(indicators)) {
+    experiment <- ledgr_experiment(
+      snapshot,
+      availability_strict_probe_strategy,
+      features = ledgr_feature_map(signal = indicators[[source]]),
+      opening = opening,
+      valuation_policy = ledgr_valuation_stale(1),
+      cost_model = ledgr_cost_zero()
+    )
+    captured <- availability_strict_capture(ledgr_run(
+      experiment,
+      params = list(window = 2L),
+      run_id = paste0("strict-source-", source)
+    ))
+    on.exit(close(captured$value), add = TRUE)
+    source_runs[[source]] <- list(experiment = experiment, backtest = captured$value)
+    source_messages[[source]] <- availability_strict_matrix(captured$messages)
+    testthat::expect_identical(
+      unname(is.na(as.matrix(source_messages[[source]][, c("AAA", "BBB")]))),
+      unname(is.na(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])))
+    )
+    testthat::expect_equal(
+      unname(as.matrix(source_messages[[source]][, c("AAA", "BBB")])),
+      unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+      tolerance = 1e-8
+    )
+  }
+  testthat::expect_equal(
+    unname(as.matrix(source_messages$public_ttr[, c("AAA", "BBB")])),
+    unname(as.matrix(source_messages$built_in[, c("AAA", "BBB")])),
+    tolerance = 1e-8
+  )
+  testthat::expect_equal(
+    unname(as.matrix(source_messages$custom[, c("AAA", "BBB")])),
+    unname(as.matrix(source_messages$built_in[, c("AAA", "BBB")])),
+    tolerance = 1e-8
+  )
+
+  ttr_experiment <- source_runs$public_ttr$experiment
+  ledgr_feature_cache_clear()
+  ttr_cold <- availability_strict_capture(ledgr_run(
+    ttr_experiment,
+    params = list(window = 2L),
+    run_id = "strict-ttr-cold"
+  ))
+  on.exit(close(ttr_cold$value), add = TRUE)
+  cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
+  ttr_warm <- availability_strict_capture(ledgr_run(
+    ttr_experiment,
+    params = list(window = 2L),
+    run_id = "strict-ttr-warm"
+  ))
+  on.exit(close(ttr_warm$value), add = TRUE)
+  testthat::expect_identical(
+    availability_strict_matrix(ttr_warm$messages),
+    availability_strict_matrix(ttr_cold$messages)
+  )
+  testthat::expect_identical(
+    ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE),
+    cache_keys
+  )
+
+  ttr_one <- ledgr_sweep(
+    ttr_experiment,
+    ledgr_param_grid(one = list(window = 2L)),
+    stop_on_error = TRUE
+  )
+  testthat::expect_identical(ttr_one$status, "DONE")
+  testthat::expect_equal(
+    unname(as.matrix(availability_strict_matrix(
+      availability_strict_sweep_messages(ttr_one)
+    )[, c("AAA", "BBB")])),
+    unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+    tolerance = 1e-8
+  )
+
+  ttr_parameterized <- ledgr_experiment(
+    snapshot,
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(
+      signal = ledgr_ind_ttr("SMA", input = "close", n = ledgr_param("n"))
+    ),
+    opening = opening,
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  ttr_grid <- ledgr_grid_named(
+    two = list(feature = list(n = 2L), strategy = list(window = 2L)),
+    three = list(feature = list(n = 3L), strategy = list(window = 3L))
+  )
+  ttr_sweep <- ledgr_sweep(ttr_parameterized, ttr_grid, stop_on_error = TRUE)
+  testthat::expect_identical(ttr_sweep$status, c("DONE", "DONE"))
+  testthat::expect_equal(
+    unname(as.matrix(availability_strict_matrix(
+      availability_strict_sweep_messages(ttr_sweep)
+    )[, c("AAA", "BBB")])),
+    unname(as.matrix(rbind(
+      availability_strict_expected(2L)[, c("AAA", "BBB")],
+      availability_strict_expected(3L)[, c("AAA", "BBB")]
+    ))),
+    tolerance = 1e-8
+  )
+
+  partial <- availability_strict_capture(ledgr:::ledgr_run_fold(
+    ttr_cold$value$config,
+    run_id = "strict-ttr-resume",
+    control = list(max_pulses = 3L)
+  ))
+  resumed <- availability_strict_capture(ledgr_run_config(
+    ttr_cold$value$config,
+    run_id = "strict-ttr-resume"
+  ))
+  testthat::expect_equal(
+    unname(as.matrix(availability_strict_matrix(
+      c(partial$messages, resumed$messages)
+    )[, c("AAA", "BBB")])),
+    unname(as.matrix(availability_strict_expected(2L)[, c("AAA", "BBB")])),
+    tolerance = 1e-8
+  )
+
+  for (unsupported in list(
+    ledgr_ind_ttr("EMA", input = "close", n = 2L),
+    ledgr_ind_ttr("RSI", input = "close", n = 2L)
+  )) {
+    error <- tryCatch(
+      ledgr_experiment(
+        snapshot,
+        function(ctx, params) stop("strategy must not execute"),
+        features = list(unsupported),
+        valuation_policy = ledgr_valuation_stale(1),
+        cost_model = ledgr_cost_zero()
+      ),
+      error = identity
+    )
+    testthat::expect_s3_class(error, "ledgr_indicator_gap_unsupported")
+    testthat::expect_match(conditionMessage(error), unsupported$id, fixed = TRUE)
+    testthat::expect_match(conditionMessage(error), "strict_window", fixed = TRUE)
+  }
+})
+
 testthat::test_that("strict scalar series and active identity contracts agree", {
   bars <- data.frame(
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,

@@ -798,8 +798,12 @@ The strategy preflight boundary originated in
 - Availability-aware indicators declare `gap_contract = "strict_window"` on
   the existing indicator definition. The declaration commits the definition to
   a finite window with no internal carry or imputation. Omission fails with
-  `ledgr_indicator_gap_unsupported` before strategy execution; v0.2.0.0
-  initially certifies only built-in SMA and returns.
+  `ledgr_indicator_gap_unsupported` before strategy execution. The certified
+  set is built-in SMA and returns, custom indicators that explicitly accept the
+  contract, and single-output `ledgr_ind_ttr("SMA", input = "close", n = ...)`
+  definitions whose only forwarded argument is one positive integer `n` and
+  whose `requires_bars` and `stable_after` both equal `n`. TTR bundles and all
+  other TTR families remain uncertified until separately evidenced.
 - Strict feature windows count expected sessions. Any missing required
   observation makes the affected window `NA_real_`; valuation marks never enter
   feature computation. Scalar `fn` and the terminal value from `series_fn`
