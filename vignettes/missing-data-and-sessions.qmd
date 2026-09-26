@@ -195,6 +195,60 @@ bars |> count(instrument_id)
 `BBB`: that asymmetry is the point, because you are handing ledgr an honest
 panel rather than a rectangular one.
 
+## What The Calendar Means For Indicators
+
+Dense mode has an implicit clock: the dates present in the rectangular bar
+panel. If every instrument is absent on one date, that date is
+indistinguishable from a market closure and there is no pulse. Availability
+mode instead advances on the independently declared expected-session
+calendar. A declared open session remains a pulse even when one or every
+instrument lacks an observation.
+
+The small matrix below is the executable oracle used by ledgr's strict-gap
+tests. It has one closed date, one missing open-session observation for
+`AAA`, and a `BBB` series that starts late. Both moving averages use a
+two-session window.
+
+<!-- strict-gap-table:start -->
+| Date | Session | AAA bar | AAA SMA(2) | BBB bar | BBB SMA(2) | Interpretation |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| 2020-01-01 | open | 10 | NA | absent | NA | AAA warmup; BBB not yet observed |
+| 2020-01-02 | open | 12 | 11 | absent | NA | AAA ready; BBB not yet observed |
+| 2020-01-03 | closed | no pulse | no pulse | no pulse | no pulse | venue closure |
+| 2020-01-04 | open | missing | NA | absent | NA | expected observation missing; BBB still unseen |
+| 2020-01-05 | open | 14 | NA | 20 | NA | AAA window still contains the gap; BBB warmup |
+| 2020-01-06 | open | 16 | 15 | 22 | 21 | both windows recover |
+| 2020-01-07 | open | 18 | 17 | 24 | 23 | both windows remain available |
+<!-- strict-gap-table:end -->
+
+These unavailable windows overlap on 5 January, but for different reasons.
+`AAA` has enough historical observations in total and is unavailable because
+its current window includes the missing open session. `BBB` is unavailable
+because its late-start series has not completed warmup. A scalar `NA` alone
+does not distinguish those histories; the calendar and source observations
+do.
+
+ledgr never substitutes a stale valuation mark into this feature window. If a
+strategy already owns `AAA`, `ledgr_valuation_stale(1)` may use the 2 January
+close to value that holding at the 4 January pulse. The `AAA` SMA remains
+`NA`, because valuation continuity is not feature evidence. On 6 January the
+window contains two real observations again and the SMA recovers to 15.
+
+A strategy therefore guards the value it intends to use as well as the
+instrument's current trading permission:
+
+```r
+signal <- ctx$features(id)[["signal"]]
+if (is.finite(signal) && id %in% ctx$tradable()) {
+  # It is now safe to use `signal` in a target decision.
+}
+```
+
+This is stricter than a generic warmup check in one useful way: it says what
+the strategy actually needs at this pulse. See
+`vignette("indicators", package = "ledgr")` for the built-in, public TTR, and
+custom indicator forms that are certified for this strict-window behavior.
+
 ## Step 3: Say Which Instruments Were Tradable
 
 A missing row says an instrument did not trade. It does not say why. Trading

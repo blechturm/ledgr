@@ -262,6 +262,55 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
     defs$candidate_features$feature_ids,
     list("sma_2", "sma_3")
   )
+
+  article <- readLines(
+    testthat::test_path("..", "..", "vignettes", "missing-data-and-sessions.qmd"),
+    warn = FALSE
+  )
+  table_start <- match("<!-- strict-gap-table:start -->", article)
+  table_end <- match("<!-- strict-gap-table:end -->", article)
+  testthat::expect_true(!is.na(table_start) && !is.na(table_end))
+  table_lines <- article[(table_start + 1L):(table_end - 1L)]
+  table_lines <- table_lines[grepl("^\\| 2020-[0-9]{2}-[0-9]{2} \\|", table_lines)]
+  cells <- lapply(table_lines, function(line) {
+    trimws(strsplit(sub("^\\||\\|$", "", line), "|", fixed = TRUE)[[1L]])
+  })
+  documented <- as.data.frame(
+    do.call(rbind, cells),
+    stringsAsFactors = FALSE
+  )
+  names(documented) <- c(
+    "date", "session", "AAA_bar", "AAA", "BBB_bar", "BBB", "meaning"
+  )
+  testthat::expect_identical(
+    documented$date,
+    format(as.Date("2020-01-01") + 0:6, "%Y-%m-%d")
+  )
+  testthat::expect_identical(
+    documented$session,
+    c("open", "open", "closed", "open", "open", "open", "open")
+  )
+  testthat::expect_identical(
+    documented$AAA_bar,
+    c("10", "12", "no pulse", "missing", "14", "16", "18")
+  )
+  testthat::expect_identical(
+    documented$BBB_bar,
+    c("absent", "absent", "no pulse", "absent", "20", "22", "24")
+  )
+  open_rows <- documented$session == "open"
+  value <- function(x) {
+    out <- suppressWarnings(as.numeric(x))
+    out[x == "NA"] <- NA_real_
+    out
+  }
+  expected_two <- availability_strict_expected(2L)
+  testthat::expect_identical(
+    documented$date[open_rows],
+    substr(expected_two$ts_utc, 1L, 10L)
+  )
+  testthat::expect_equal(value(documented$AAA[open_rows]), expected_two$AAA)
+  testthat::expect_equal(value(documented$BBB[open_rows]), expected_two$BBB)
 })
 
 # ledgr-test-profile: review
@@ -351,6 +400,71 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     contract_text,
     "TTR bundles and all\\n  other TTR families remain uncertified"
   )
+
+  indicator_article <- readLines(
+    testthat::test_path("..", "..", "vignettes", "indicators.qmd"),
+    warn = FALSE
+  )
+  support_start <- match("<!-- strict-gap-support:start -->", indicator_article)
+  support_end <- match("<!-- strict-gap-support:end -->", indicator_article)
+  testthat::expect_true(!is.na(support_start) && !is.na(support_end))
+  support_lines <- indicator_article[(support_start + 1L):(support_end - 1L)]
+  support_lines <- support_lines[
+    grepl("^\\| ", support_lines) & !grepl("^\\| ---", support_lines)
+  ]
+  support_cells <- lapply(support_lines[-1L], function(line) {
+    trimws(strsplit(sub("^\\||\\|$", "", line), "|", fixed = TRUE)[[1L]])
+  })
+  documented_support <- stats::setNames(
+    vapply(support_cells, function(x) startsWith(x[[3L]], "Supported"), logical(1)),
+    vapply(support_cells, `[[`, character(1), 1L)
+  )
+  custom <- ledgr_indicator(
+    "documented_custom_sma",
+    function(window) mean(window$close),
+    requires_bars = 2L,
+    gap_contract = "strict_window"
+  )
+  bundle <- tryCatch(
+    ledgr_ind_ttr_outputs("SMA", input = "close", n = 2L),
+    error = identity
+  )
+  bundle_supported <- if (inherits(bundle, "error")) {
+    FALSE
+  } else {
+    all(vapply(
+      ledgr:::ledgr_indicator_bundle_indicators(bundle),
+      function(indicator) identical(indicator$gap_contract, "strict_window"),
+      logical(1)
+    ))
+  }
+  executable_support <- c(
+    "Built-in SMA" = identical(ledgr_ind_sma(2L)$gap_contract, "strict_window"),
+    "Built-in returns" = identical(
+      ledgr_ind_returns(2L)$gap_contract,
+      "strict_window"
+    ),
+    "Custom bounded window" = identical(custom$gap_contract, "strict_window"),
+    "Public TTR SMA" = identical(ttr_sma$gap_contract, "strict_window"),
+    "Built-in EMA or RSI" = all(vapply(
+      list(ledgr_ind_ema(2L), ledgr_ind_rsi(2L)),
+      function(indicator) identical(indicator$gap_contract, "strict_window"),
+      logical(1)
+    )),
+    "TTR EMA or RSI" = all(vapply(
+      list(
+        ledgr_ind_ttr("EMA", input = "close", n = 2L),
+        ledgr_ind_ttr("RSI", input = "close", n = 2L)
+      ),
+      function(indicator) identical(indicator$gap_contract, "strict_window"),
+      logical(1)
+    )),
+    "TTR output bundle" = bundle_supported,
+    "Other TTR signatures" = ledgr:::ledgr_ttr_strict_window_certified(
+      "SMA", "hl", NULL, list(n = 2L), 2L, 2L
+    )
+  )
+  testthat::expect_identical(documented_support, executable_support)
 
   source_messages <- list()
   source_runs <- list()
