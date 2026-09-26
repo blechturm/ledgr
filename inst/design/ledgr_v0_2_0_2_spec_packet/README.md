@@ -411,7 +411,7 @@ four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
 
-## Cut 8: Release gate (open; opens after workstream 18)
+## Cut 8: Release gate (open; opens after workstream 20)
 
 Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
@@ -691,7 +691,7 @@ workstream opens from completed Workstream 12 and must close before Workstream
 16 returns for focused correction review; Workstream 17 remains downstream of
 Workstream 16.
 
-## Cut 13: Strategy context surface (open; opens after the release gate)
+## Cut 13: Strategy context surface (open; opens after workstream 18)
 
 Authority: the accepted decision synthesis
 `inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
@@ -705,10 +705,14 @@ two branches must converge before this cut opens.
 | --- | --- | --- | --- |
 | 20 Strategy context surface | 2850-2857 | settled contract text; duplicate and dead name retirement; context-first entrances with bound alignment, membership projection and error families; empty-domain behavior; the bounded zero-weight sizing correction; one documented-surface gate; authoring examples and closeout | a strategy reads current state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy |
 
-This cut ships in the version after v0.2.0.2, because the synthesis binds
-implementation to follow the release gate. It is recorded in this packet
-because the RFC that produced it is here, which is the same treatment Cut 11
-originally received. Workstream 20 therefore depends on Workstream 15.
+This cut ships inside v0.2.1.0. The synthesis recommends implementing after
+the release gate; the maintainer overruled that on 2026-09-26 and placed the
+cut before the tag, so the breaking surface changes land before the release is
+reviewed externally, and the teaching surface is audited once against its final
+shape instead of once now and again after the renames. Workstream 20 therefore
+follows Workstream 18 and the release gate follows Workstream 20. The override
+is recorded in the cut's authority field rather than left implicit; no other
+synthesis decision changes.
 
 The accepted question is what the cut is measured against: how does a strategy
 read current information and express portfolio intent without alignment tricks
