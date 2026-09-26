@@ -589,7 +589,7 @@ ledgr_sim_pit_corporate_actions <- function(instrument_ids,
     weekdays[[9L]], session_close_utc, sessions
   )
   data.frame(
-    subtype = "cash_dividend",
+    subtype = "ordinary_cash_dividend",
     parent_instrument_id = instrument_ids[[3L]],
     entitlement_time = entitlement,
     effective_time = entitlement,

@@ -437,4 +437,54 @@ testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
     ledgr_run_completion(run)$completion_status,
     "DONE"
   )
+
+  cash_row <- ledgr_demo_pit_inputs$corporate_actions[
+    ledgr_demo_pit_inputs$corporate_actions$parent_instrument_id ==
+      "DEMO_03", , drop = FALSE
+  ]
+  testthat::expect_identical(
+    cash_row$subtype,
+    "ordinary_cash_dividend"
+  )
+  hold_strategy <- function(ctx, params) ctx$hold()
+  held_opening <- ledgr_opening(
+    cash = 1000,
+    positions = c(DEMO_03 = 2),
+    cost_basis = c(DEMO_03 = 100)
+  )
+  research_experiment <- ledgr_experiment(
+    reopened,
+    hold_strategy,
+    universe = ledgr_universe_members(
+      ledgr_demo_pit_inputs$recipe$scopes$universe_id
+    ),
+    opening = held_opening,
+    valuation_policy = ledgr_valuation_stale(2),
+    cost_model = ledgr_cost_zero()
+  )
+  research_run <- ledgr_run(
+    research_experiment,
+    run_id = "committed-pit-cash-research"
+  )
+  on.exit(close(research_run), add = TRUE)
+  testthat::expect_identical(
+    ledgr:::ledgr_corporate_action_summary(research_run)$gross_cash_posted,
+    1.5
+  )
+
+  strict_experiment <- ledgr_experiment(
+    reopened,
+    hold_strategy,
+    universe = ledgr_universe_members(
+      ledgr_demo_pit_inputs$recipe$scopes$universe_id
+    ),
+    opening = held_opening,
+    valuation_policy = ledgr_valuation_stale(2),
+    cost_model = ledgr_cost_zero(),
+    corporate_action_policy = ledgr_corporate_actions_strict()
+  )
+  testthat::expect_error(
+    ledgr_run(strict_experiment, run_id = "committed-pit-cash-strict"),
+    class = "ledgr_corporate_action_unsupported"
+  )
 })

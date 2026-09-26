@@ -35,35 +35,6 @@ By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
 positions, fills, and reported horizon differ from what you asked for.
 
-The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
-owns the complete data model and reusable point-in-time bundle. This
-article keeps its smaller `AAA`/`BBB` fixture because the losing company
-and survivor form a direct detector for the bias being taught. `AAA`,
-`BBB`, and the `DEMO` venue are local to this article; they are not
-additions to the shared `DEMO_*` history.
-
-The shared bundle contains the equivalent delisting boundary. Its case
-row points to the lifetime transition that makes the instrument
-inactive:
-
-``` r
-data("ledgr_demo_pit_inputs", package = "ledgr")
-shared_delisting <- subset(
-  ledgr_demo_pit_inputs$cases,
-  type == "delisting"
-)
-shared_lifetime_boundary <- subset(
-  ledgr_demo_pit_inputs$lifetime,
-  instrument_id == shared_delisting$instrument_id[[1L]] &
-    as.Date(effective_from) == shared_delisting$date[[1L]]
-)
-shared_lifetime_boundary[
-  , c("instrument_id", "effective_from", "assertion", "terminal_event")
-]
-#>   instrument_id      effective_from      assertion terminal_event
-#> 6       DEMO_01 2020-01-14 21:00:00 known_inactive       delisted
-```
-
 ## Two Companies, Ten Sessions
 
 The example is synthetic and small enough to read in full. `DEMO` is an
@@ -1064,6 +1035,37 @@ workflow, read
 > rose. Full allocation is not what rejects an order; the overnight move
 > against you is.
 
+
+## Relationship To The Composable Bundle
+
+`vignette("point-in-time-inputs", package = "ledgr")` owns the complete
+data model and reusable point-in-time bundle. This article keeps its
+smaller `AAA`/`BBB` fixture because the losing company and survivor form
+a direct detector for the bias being taught. `AAA`, `BBB`, and the
+`DEMO` venue are local to this article; they are not additions to the
+shared `DEMO_*` history.
+
+The shared bundle contains the equivalent delisting boundary. Its case
+row points to the lifetime transition that makes the instrument
+inactive:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_delisting <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "delisting"
+)
+shared_lifetime_boundary <- subset(
+  ledgr_demo_pit_inputs$lifetime,
+  instrument_id == shared_delisting$instrument_id[[1L]] &
+    as.Date(effective_from) == shared_delisting$date[[1L]]
+)
+shared_lifetime_boundary[
+  , c("instrument_id", "effective_from", "assertion", "terminal_event")
+]
+#>   instrument_id      effective_from      assertion terminal_event
+#> 6       DEMO_01 2020-01-14 21:00:00 known_inactive       delisted
+```
 
 ## What This Does And Does Not Establish
 

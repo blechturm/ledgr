@@ -34,9 +34,9 @@ articles:
   - title: Core Workflow
     navbar: Core Workflow
     desc: >
-      Prepare point-in-time evidence, write a strategy, run it, read
-      fills/trades/equity/metrics, apply cost and risk policy, then sweep and
-      walk-forward over candidates.
+      Add point-in-time evidence when the research needs it, write a strategy,
+      run it, read fills/trades/equity/metrics, apply cost and risk policy,
+      then sweep and walk-forward over candidates.
     contents:
       - point-in-time-inputs
       - missing-data-and-sessions

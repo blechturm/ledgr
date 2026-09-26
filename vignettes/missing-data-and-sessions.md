@@ -63,37 +63,6 @@ library(tibble)
 library(qlcal)
 ```
 
-## Relationship To The Composable Bundle
-
-The [Preparing Point-In-Time Inputs](point-in-time-inputs.qmd) article
-owns the complete data model and the reusable point-in-time bundle. This
-article keeps its smaller `AAA`/`BBB` fixture because a three-session
-hole is the clearest detector for mark ageing and the no-fill rule.
-Those identifiers are local to this article; they do not describe extra
-history for the shared `DEMO_*` instruments.
-
-The shared bundle carries the same kind of missing-observation input.
-This executable touchpoint locates it and confirms that its bar row is
-genuinely absent rather than padded:
-
-``` r
-data("ledgr_demo_pit_inputs", package = "ledgr")
-shared_gap <- subset(
-  ledgr_demo_pit_inputs$cases,
-  type == "missing_observation"
-)
-shared_gap_has_bar <- with(
-  ledgr_demo_pit_inputs$bars,
-  any(
-    instrument_id == shared_gap$instrument_id[[1L]] &
-      as.Date(ts_utc) == shared_gap$date[[1L]]
-  )
-)
-data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
-#>                  type instrument_id       date observation_row_present
-#> 2 missing_observation       DEMO_04 2020-01-09                   FALSE
-```
-
 ## Step 1: Declare What Sessions Existed
 
 The expected-session clock has to come from somewhere other than your
@@ -597,6 +566,37 @@ price you patch.
 
 What is not yours to decide is whether a missing price may become a
 traded price. It may not, and no setting changes that.
+
+## Relationship To The Composable Bundle
+
+`vignette("point-in-time-inputs", package = "ledgr")` owns the complete
+data model and the reusable point-in-time bundle. This article keeps its
+smaller `AAA`/`BBB` fixture because a three-session hole is the clearest
+detector for mark ageing and the no-fill rule. Those identifiers are
+local to this article; they do not describe extra history for the shared
+`DEMO_*` instruments.
+
+The shared bundle carries the same kind of missing-observation input.
+This executable touchpoint locates it and confirms that its bar row is
+genuinely absent rather than padded:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_gap <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "missing_observation"
+)
+shared_gap_has_bar <- with(
+  ledgr_demo_pit_inputs$bars,
+  any(
+    instrument_id == shared_gap$instrument_id[[1L]] &
+      as.Date(ts_utc) == shared_gap$date[[1L]]
+  )
+)
+data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
+#>                  type instrument_id       date observation_row_present
+#> 2 missing_observation       DEMO_04 2020-01-09                   FALSE
+```
 
 ## Where Next
 

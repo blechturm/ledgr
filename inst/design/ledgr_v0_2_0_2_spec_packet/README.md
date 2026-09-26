@@ -561,7 +561,7 @@ It was the third invocation over six tickets, exactly 0.500 against the gate.
 A fourth review would have breached the gate. The maintainer accepted the
 corrected work at `5c678ae` on 2026-09-26; Workstream 17 and Cut 10 are closed.
 
-## Cut 11: Point-in-time input model (correction review pending)
+## Cut 11: Point-in-time input model (accepted)
 
 Authority: the maintainer's 2026-09-25 decision that the point-in-time input
 model needs one checklist of required data and one inspectable demo input set,
@@ -628,11 +628,12 @@ detectors; each must state why and link to the point-in-time input article. The
 release gate follows, so its local gates and CI tiers cover the shipped bundle
 and rendered articles.
 
-The Type 2 cut review plus the planned close review is two invocations over
-five completed tickets, 0.400. A focused correction re-review followed by the
-close review would make the historical count three over five, 0.600. If that
-route is taken, the closeout records the breach honestly rather than merging or
-padding tickets to hide it.
+The completed cut used six review invocations over five tickets, 1.200 against
+the gate. The final two rounds found an inert committed dividend subtype, five
+undetected documentation mutations, false primary-key markings and an
+over-broad session knowledge rule. All were corrected in place. The maintainer
+accepted Workstream 18 on 2026-09-26 without a seventh review; the closeout
+records the historical breach without merging or padding tickets.
 
 Implementation is complete through `de8cf97`, with the agent-provisional
 record in `point_in_time_inputs_closeout.md`. The final ordinary fast record

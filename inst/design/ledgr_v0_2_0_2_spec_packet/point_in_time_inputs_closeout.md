@@ -1,10 +1,10 @@
 # Cut 11 Closeout: Point-In-Time Input Model
 
-**Status:** Agent-provisional; awaiting the focused Type 1 re-review.
+**Status:** Accepted by the maintainer on 2026-09-26.
 
-**Implementation:** `5c9c944..07ac360`, corrected after the first close
-review by the current LDG-2842 correction commit on
-`codex/ws16-v0.2.1.0`.
+**Implementation:** `5c9c944..07ac360`, first corrections at `0354467`,
+teaching split at `b14579f`, and integration at `704864d`; the fifth-review
+correction is the current uncommitted LDG-2842 work.
 
 | Ticket | Commit | Claim and detector |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ review by the current LDG-2842 correction commit on
 | LDG-2843 | `7b23a97` plus correction | LCL-0078 / LTB-0078 |
 | LDG-2840 | `8320690` plus correction | LCL-0079 / LTB-0079 |
 | LDG-2841 | `a61e8ee`, `de8cf97` plus correction | LCL-0080 / LTB-0080 |
-| LDG-2842 | pending maintainer acceptance | this record |
+| LDG-2842 | maintainer acceptance, 2026-09-26 | this record |
 
 ## Result In One Sentence
 
@@ -40,6 +40,12 @@ strictly inside the interval and resumes at the excluded end. Its open-ended
 base status and higher-precedence late-known halt make the same historical
 cutoff unrestricted before knowledge, halted once known and active at the
 interval end.
+
+The dividend subtype is the settlement vocabulary's
+`ordinary_cash_dividend`. LTB-0078 holds two `DEMO_03` units across that
+committed fact: the research preset posts exactly 1.5 gross cash and the strict
+preset refuses the same event. This catches an inert or misspelled subtype at
+the public workflow boundary rather than merely checking that the fact seals.
 
 The facts compose with the bundled bars. They are not an overlay for an
 arbitrary slice of `ledgr_demo_bars`. The callable data-raw recipe regenerates
@@ -71,6 +77,13 @@ data dictionary and ERD as reference material. The dictionary names grain,
 keys, required columns, scope, time semantics, capability and the constructor
 help that owns the exhaustive contract.
 
+The article also states the runtime prerequisites that the reference table
+alone cannot teach safely: availability requires a complete session calendar
+and a stale-mark policy; corporate actions alone do not activate it;
+membership, status and lifetime rows with missing evidenced knowledge remain
+audit-only; and sessions require knowledge times under the evidenced policy
+and follow stricter timing rules.
+
 Its eight-entity Mermaid ERD separates snapshot, physical instrument, bar,
 venue session, universe membership, trading status, lifetime and corporate
 action. Membership resolves both universe and instrument; status and lifetime
@@ -80,11 +93,14 @@ the four corporate-action clocks and the guarantees a consumer may and may
 not inherit from a sealed snapshot.
 
 The progressive article executes the late-known halt rather than merely
-describing it, then constructs, seals, reopens and runs the committed bundle
-to DONE. `experiment-store.qmd` now owns closed-store backup alongside reopen,
+describing it, shows the halt's base and overriding rows, shows the delisted
+instrument's last observation beside its lifetime fact, and points to the
+specialist lessons for changing membership and held-position cash effects. It
+then constructs, seals, reopens and runs the committed bundle to DONE.
+`experiment-store.qmd` alone owns closed-store backup alongside reopen,
 recovery and archive guidance. LTB-0079 checks this three-document division,
-the progressive section order, exact ERD entity and edge set, rendered halt
-evidence and completed public workflow.
+the progressive section order, the exact ERD entity, edge and scope-key sets
+in source and render, output-only halt evidence and the completed workflow.
 
 All three specialist articles retain deliberately smaller local fixtures:
 
@@ -95,11 +111,12 @@ All three specialist articles retain deliberately smaller local fixtures:
 - cash distributions keeps two opening `AAA` units because gross cash 2.5 and
   the later price change make the settlement rule visible.
 
-Each article labels those identifiers local, links to Preparing Point-In-Time
-Inputs,
-loads the committed bundle and executes a touchpoint against the corresponding
-gap, delisting or cash-dividend row. LTB-0080 protects those links and rendered
-teaching outputs, including the missing-observation row's literal `FALSE`.
+Each article labels those identifiers local, uses the installed-vignette call
+for Preparing Point-In-Time Inputs, loads the committed bundle and executes a
+touchpoint against the corresponding gap, delisting or cash-dividend row.
+LTB-0080 rejects raw `.qmd` targets and protects the exact call and rendered
+teaching outputs, including the missing-observation row's literal `FALSE` and
+the committed dividend's `ordinary_cash_dividend`, `DEMO_03` and 0.75 terms.
 
 ## First Review And Corrections
 
@@ -119,20 +136,39 @@ The correction:
 - corrected the ticket statement from a later listing to the losing delisted
   instrument actually demonstrated by the survivorship article.
 
-The final split is deliberately a documentation-only correction: it changes
-neither the public bundle nor any fact family or runtime contract.
+The split itself was documentation-only. The fifth review then found that the
+bundle emitted an unrecognized dividend subtype. The correction aligns that
+synthetic input with the already shipped settlement vocabulary, regenerates
+the committed artifact, and adds public research and strict workflow evidence;
+it changes no settlement rule or fact-family contract.
+
+The sixth review found two factual reference errors introduced during that
+correction. The ERD no longer marks membership, status or lifetime revision
+coordinates as primary keys, and the knowledge guidance now distinguishes the
+session family's required evidenced timestamp from the audit-only behavior of
+missing membership, status and lifetime knowledge.
 
 ## Gates And Check Boundary
 
-The corrected focused suites passed. After the documentation split,
-`test-pit-input-documentation.R` and `test-documentation-contracts.R` passed
-again with no failure, error, warning or skip. Changing only the progressive
-article's registered title made LTB-0079 fail on that exact mismatch; restoring
-it returned the block to green.
+The corrected focused suites passed. After the fifth-review correction,
+`test-pit-input-documentation.R`, `test-sim-pit-inputs.R` and
+`test-documentation-contracts.R` passed with no failure, error, warning or
+skip. LTB-0079 now compares the exact ERD and output-only evidence in both
+source and render and proves backup absent from both input articles. LTB-0080
+checks the installed-vignette target and the cash touchpoint's rendered row.
+Changing only the rendered known-halt row produced one LTB-0079 failure. A
+combined gut that retargeted one specialist call, miswired the corporate-action
+edge, copied backup guidance into the import article and changed the rendered
+cash terms produced five failures across LTB-0079 and LTB-0080. Both guts were
+fully restored before the final green run.
+An alternate-cardinality edge plus a universe key moved from membership to
+session produced three additional LTB-0079 failures: one for the relationship
+set and one for each corrupted entity block. That gut was also fully restored.
 
-The final ordinary fast profile passed 455 of 455 blocks in 76.86 seconds,
-and its independent one-run checker passed the unchanged 90-second bound. The
-records are in `.tmp/ws18-teachability-fast`.
+The final corrected ordinary fast profile passed 455 of 455 blocks in 76.32
+seconds, and its independent one-run checker passed the unchanged 90-second
+bound. The records are in
+`.tmp/ws18-integrated-review-correction-fast`.
 
 The full review-profile attempt selected 276 blocks in 402.4 seconds. Both
 WS18 blocks passed, but the profile finished red: 272 passed, one declared
@@ -157,11 +193,15 @@ runtime performance claim is made from the documentation gates.
 ## Governance And Declined Work
 
 The Type 2 cut review is invocation one. The first Type 1 close review is
-invocation two and returned corrections. The requested focused re-review is
-invocation three. A later teachability review is invocation four and produced
-the documentation-only split. The total is 4 / 5 = 0.800, a historical breach
-of the 0.5 gate recorded without merging or padding tickets. No fifth review
-is required for the mechanical split unless the maintainer requests one.
+invocation two and returned corrections. The focused re-review is invocation
+three. The teachability review is invocation four and produced the
+documentation split. The integrated Type 1 review is invocation five and
+found the inert dividend, five detector gaps, broken specialist targets and
+lost family-specific teaching. The focused re-review is invocation six; it
+confirmed all ten earlier findings closed and found two factual reference
+errors: false primary-key markings on revision-bearing fact rows and a session
+knowledge rule stated too broadly. The total is 6 / 5 = 1.200, a historical
+breach of the 0.5 gate recorded without merging or padding tickets.
 
 The workstream declined automatic prose discovery of every optional
 constructor column, forcing every lesson onto one large fixture, presenting
@@ -171,3 +211,5 @@ synthetic calendar replaces a vendor or exchange calendar.
 Cut 11 retains its historical v0.2.0.2 packet identity, but the maintainer
 subsequently promoted the release target to v0.2.1.0. LDG-2825 verifies the
 shipped bundle, rendered articles and final release gates under that target.
+The maintainer accepted the corrected workstream after the sixth review and
+waived a seventh review for the two final factual corrections.

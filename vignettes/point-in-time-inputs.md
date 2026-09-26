@@ -79,6 +79,11 @@ pit$sessions |>
 
 The closure is declared `closed`; the gap date remains `open`. ledgr can
 now advance the expected-session clock without manufacturing a price.
+Declaring any availability family requires a complete session calendar.
+Under `knowledge = "evidenced"`, every session row needs a
+`knowledge_time`: an open session must be known by its open, and a
+closure before its civil day starts. Use `"assume_effective"` only when
+that assumption is part of the research design.
 
 ## Add A Point-In-Time Universe
 
@@ -109,6 +114,15 @@ Because the set is complete, omission means non-membership for that
 effective set. Use interval assertions instead when your source supplies
 individual membership changes rather than complete lists.
 
+For membership under `knowledge = "evidenced"`, a missing knowledge time
+is kept for audit but cannot affect resolution. Membership evidence may
+become knowable after it took effect; `"assume_effective"` deliberately
+removes that distinction.
+
+This bundle keeps all five instruments in the set. To see membership
+changes alter a result, continue with
+`vignette("survivorship-bias", package = "ledgr")`.
+
 ## Effective Time Is Not Knowledge Time
 
 `DEMO_02` was halted from 3 January, but the bundle says that evidence
@@ -116,10 +130,14 @@ became knowable only on 7 January. The fact must not change decisions
 made earlier.
 
 ``` r
-halt <- pit$trading_status |>
+halt_case <- pit$cases |>
+  filter(type == "halt")
+halt_rows <- pit$trading_status |>
+  filter(instrument_id == halt_case$instrument_id[[1L]])
+halt <- halt_rows |>
   filter(status == "halted")
 
-halt |>
+halt_rows |>
   select(
     instrument_id,
     effective_from,
@@ -131,9 +149,11 @@ halt |>
 ```
 
       instrument_id      effective_from        effective_to      knowledge_time status
-    1       DEMO_02 2020-01-03 21:00:00 2020-01-08 21:00:00 2020-01-07 21:00:00 halted
+    1       DEMO_02 2020-01-01 21:00:00                <NA> 2019-12-31 05:00:00 active
+    2       DEMO_02 2020-01-03 21:00:00 2020-01-08 21:00:00 2020-01-07 21:00:00 halted
       precedence
-    1          1
+    1          0
+    2          1
 
 The open-ended active assertion has precedence zero. The overlapping
 halt has precedence one and wins only after it is known.
@@ -147,7 +167,9 @@ status_facts <- ledgr_facts_trading_status(
 
 This separation is the core point-in-time rule: effective time says when
 the world changed; knowledge time says when the backtest may use the
-evidence.
+evidence. Status evidence may arrive late. A status row with missing
+evidenced knowledge stays audit-only rather than becoming an active
+restriction.
 
 ## Add Lifetime And Economic Events When Needed
 
@@ -165,13 +187,25 @@ corporate_action_facts <- ledgr_facts_equity_corporate_actions(
   pit$corporate_actions
 )
 
-pit$lifetime |>
-  filter(assertion == "known_inactive") |>
-  select(instrument_id, effective_from, knowledge_time, terminal_event)
+inactive <- pit$lifetime |>
+  filter(assertion == "known_inactive")
+inactive_id <- inactive$instrument_id[[1L]]
+
+tibble(
+  instrument_id = inactive_id,
+  last_observation = max(
+    pit$bars$ts_utc[pit$bars$instrument_id == inactive_id]
+  ),
+  known_inactive_from = inactive$effective_from[[1L]],
+  knowledge_time = inactive$knowledge_time[[1L]],
+  terminal_event = inactive$terminal_event[[1L]]
+)
 ```
 
-      instrument_id      effective_from      knowledge_time terminal_event
-    1       DEMO_01 2020-01-14 21:00:00 2020-01-14 21:00:00       delisted
+    # A tibble: 1 x 5
+      instrument_id last_observation    known_inactive_from knowledge_time      terminal_event
+      <chr>         <dttm>              <dttm>              <dttm>              <chr>
+    1 DEMO_01       2020-01-14 21:00:00 2020-01-14 21:00:00 2020-01-14 21:00:00 delisted
 
 ``` r
 pit$corporate_actions |>
@@ -185,14 +219,22 @@ pit$corporate_actions |>
   )
 ```
 
-            subtype parent_instrument_id    entitlement_time      effective_time
-    1 cash_dividend              DEMO_03 2020-01-10 21:00:00 2020-01-10 21:00:00
+                     subtype parent_instrument_id    entitlement_time      effective_time
+    1 ordinary_cash_dividend              DEMO_03 2020-01-10 21:00:00 2020-01-10 21:00:00
            knowledge_time        payment_time
     1 2020-01-09 21:00:00 2020-01-13 21:00:00
 
+Lifetime follows the same late-knowledge rule as status: a missing
+evidenced knowledge time leaves the row audit-only rather than changing
+the run.
+
 Corporate actions have four clocks because entitlement, market effect,
 knowledge, and payment need not coincide. Do not collapse them into one
-vendor date during preparation.
+vendor date during preparation. The flat run below holds no instrument,
+so it verifies the terms and clocks rather than a cash effect. The
+held-position consequence is demonstrated in
+`vignette("corporate-action-cash", package = "ledgr")`. Corporate-action
+facts alone do not activate the availability model.
 
 ## Seal And Run The Combined Evidence
 
@@ -228,9 +270,15 @@ pit_snapshot <- ledgr_snapshot_open(
 )
 ```
 
+`price_basis = "split_adjusted"` declares how this synthetic panel was
+prepared; it does not adjust prices. Do not copy that declaration onto
+raw or fully adjusted vendor bars.
+
 Availability-aware runs require an explicit stale-mark policy. The flat
 strategy below makes no trades; its purpose is to show what the decision
-view knows at the three halt boundaries.
+view knows at the three halt boundaries. `ledgr_valuation_stale(2)`
+permits a held instrument’s last real close to value it for at most two
+declared sessions; it does not create an execution price.
 
 ``` r
 flat_strategy <- function(ctx, params) ctx$flat()
@@ -294,16 +342,16 @@ Use this section as a reference after you understand why each family
 exists. Constructor help remains authoritative for exhaustive optional
 columns and accepted values.
 
-| Input | Row grain and identity | Required core columns or shape | Scope and time | Constructor help |
-|----|----|----|----|----|
-| Bars | One row per `(instrument_id, ts_utc)` | `instrument_id`, `ts_utc`, OHLC; `volume` optional | Physical instrument; observation clock | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Instruments | One row per `instrument_id` | `instrument_id`; descriptive fields optional | Physical master; stable identity | [`ledgr_snapshot_from_df()`](../reference/ledgr_snapshot_from_df.html) |
-| Sessions | One row per civil date in a venue range | `session_date`, `status`; open/close times for open rows | `venue_id`; calendar and knowledge time | [`ledgr_facts_sessions()`](../reference/ledgr_facts.html) |
-| Membership intervals | One assertion per instrument interval | `instrument_id`, `effective_from`, `member`; optional `effective_to` | `universe_id`; effective and knowledge time | [`ledgr_facts_membership_intervals()`](../reference/ledgr_facts.html) |
-| Complete membership snapshots | One complete set per effective/knowledge/source group | `effective_from` plus row-wise ids or one `members` list-column | `universe_id`; omission has meaning only when complete | [`ledgr_facts_membership_snapshots()`](../reference/ledgr_facts.html) |
-| Trading status | One sourced assertion per instrument interval and precedence | `instrument_id`, `effective_from`, `status`, `source` | Physical instrument; effective and knowledge time | [`ledgr_facts_trading_status()`](../reference/ledgr_facts.html) |
-| Lifetime | One assertion per instrument interval | `instrument_id`, `effective_from`, `assertion` | Physical instrument; effective and knowledge time | [`ledgr_facts_lifetime()`](../reference/ledgr_facts.html) |
-| Equity corporate actions | One identified economic fact | `subtype`, parent id, completeness, provenance; conditional terms | Physical parent/recipient; four event clocks | [`ledgr_facts_equity_corporate_actions()`](../reference/ledgr_facts.html) |
+| Input | Row grain and identity | Required core columns or shape | Scope and time | What it unlocks | Constructor help |
+|----|----|----|----|----|----|
+| Bars | One row per unique `(instrument_id, ts_utc)` | `instrument_id`, `ts_utc`, `open`, `high`, `low`, `close`; `volume` optional | Physical instrument; observation clock | Prices, valuation and execution inputs | `ledgr_snapshot_from_df()` |
+| Instruments | One row per unique `instrument_id` | `instrument_id`; descriptive fields optional | Physical master; stable identity | Metadata and referential integrity | `ledgr_snapshot_from_df()` |
+| Sessions | One row per civil date in a venue range | `session_date`, `status`, `knowledge_time` (unless `assume_effective`); open rows also require `session_open`, `session_close` | `venue_id`; local calendar plus knowledge time | Expected-session gaps and mark ageing | `ledgr_facts_sessions()` |
+| Membership intervals | One assertion per instrument interval | `instrument_id`, `effective_from`, `member`; optional `effective_to` | `universe_id`; half-open effective interval plus knowledge time | Point-in-time eligibility changes | `ledgr_facts_membership_intervals()` |
+| Complete membership snapshots | One set per effective/knowledge/source group | `effective_from` plus row-wise `instrument_id` or one `members` list-column; `complete` is declared | `universe_id`; omission means non-membership only when complete | Complete point-in-time populations | `ledgr_facts_membership_snapshots()` |
+| Trading status | One sourced assertion per interval and precedence | `instrument_id`, `effective_from`, `status`, `source`; optional `effective_to`, `precedence` and supersession fields | Physical instrument; effective and knowledge times | Hold/exit restrictions such as halts | `ledgr_facts_trading_status()` |
+| Lifetime | One assertion per instrument interval | `instrument_id`, `effective_from`, `assertion`; optional `effective_to`, `terminal_event` | Physical instrument; effective and knowledge times | Listing and terminal-state restrictions | `ledgr_facts_lifetime()` |
+| Equity corporate actions | One identified economic fact | `subtype`, `parent_instrument_id`, `complete`, `provenance_tier`; terms and `refusal_reason` are conditional | Physical parent/recipient; entitlement, effective, knowledge and payment times | Supported settlement or explicit refusal | `ledgr_facts_equity_corporate_actions()` |
 
 Every interval is half-open: `effective_from` is included and
 `effective_to` is excluded. Across families:
@@ -311,7 +359,10 @@ Every interval is half-open: `effective_from` is included and
 - identifiers stay stable for the history being sealed;
 - observation and fact timestamps are whole-second UTC instants; and
 - knowledge is declared per family rather than assumed to precede
-  effect.
+  effect; for membership, status and lifetime, missing evidenced
+  knowledge remains audit-only unless `assume_effective` is declared.
+  Sessions instead require a valid knowledge time under the evidenced
+  policy.
 
 ## Entity Relationships
 
@@ -338,7 +389,7 @@ erDiagram
     string instrument_id PK
   }
   BAR {
-    string instrument_id FK
+    string instrument_id PK,FK
     datetime ts_utc PK
   }
   SESSION {
@@ -346,7 +397,7 @@ erDiagram
     date session_date PK
   }
   MEMBERSHIP {
-    string universe_id PK
+    string universe_id
     string instrument_id FK
     datetime effective_from
     datetime knowledge_time
@@ -403,3 +454,5 @@ ledgr_snapshot_close(pit_snapshot)
   distribution changing portfolio accounting.
 - `vignette("data-input-and-snapshots", package = "ledgr")` covers CSV
   and Yahoo imports, quarantine, and reopening.
+- `vignette("strategy-development", package = "ledgr")` continues from
+  sealed inputs to a strategy and its first run.

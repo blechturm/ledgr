@@ -177,7 +177,7 @@ than guess what it meant. This row has a high below its open.
 ``` r
 session_dates <- as.Date("2019-01-01") + 0:4
 invalid_bars <- tibble(
-  instrument_id = "DEMO_01",
+  instrument_id = "IMPORT_01",
   ts_utc = session_dates,
   open = 100:104,
   high = 101:105,
@@ -201,14 +201,14 @@ session_facts <- ledgr_facts_sessions(
     session_close = "21:00:00",
     knowledge_time = ledgr_utc("2018-12-01")
   ),
-  venue_id = "DEMO_VENUE",
+  venue_id = "IMPORT_VENUE",
   timezone = "UTC"
 )
 
 strict <- tryCatch(
   ledgr_snapshot_from_df(
     invalid_bars,
-    instruments_df = tibble(instrument_id = "DEMO_01"),
+    instruments_df = tibble(instrument_id = "IMPORT_01"),
     facts = ledgr_facts(session_facts),
     db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict.duckdb"))
   ),
@@ -227,7 +227,7 @@ quarantine explicitly.
 ``` r
 quarantined <- ledgr_snapshot_from_df(
   invalid_bars,
-  instruments_df = tibble(instrument_id = "DEMO_01"),
+  instruments_df = tibble(instrument_id = "IMPORT_01"),
   facts = ledgr_facts(session_facts),
   db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_quarantine.duckdb")),
   invalid_observations = "quarantine"
