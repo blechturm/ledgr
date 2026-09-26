@@ -1612,12 +1612,13 @@ tickets:
   - id: "LDG-2862"
     title: "Make the profile runner and gate checker report honestly"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Two signals lied, and together they are why a red suite went unnoticed through several pushes. The profile runner printed `LEDGR_TEST_PROFILE_OK` and exited zero on all three runs while recording `failed_blocks` one in the summary it wrote, so the continuous-integration step displayed a green tick. The gate checker then aborted with `Test timing summaries do not show a passing census`, a message covering four distinct conditions, none of which was the real one: a single warning in one unrelated block. Neither tool is wrong about policy, and `warning` remains a failure status because a passing suite should not warn. Fix the reporting only: the runner must not claim success when its own record shows a failure status, and the checker must name which condition failed and which block caused it."
     acceptance: ["a profile run containing one warning block reports failure rather than `LEDGR_TEST_PROFILE_OK`, and its exit status reflects that", "the gate checker names the specific condition that failed and the offending block key or file, for each of profile mismatch, mode mismatch, nonzero failures, and executed against expected block disagreement", "an injected warning in one block produces a message that identifies that block, verified by execution rather than by reading", "the definition of a failure status is unchanged and `warning` still counts, so no suite is made to pass by relaxing the policy", "no profile membership, bound, timeout or test content changes"]
+    evidence: ["LTB-0082 executes the real runner against a temporary one-block package whose only block emits an injected warning. The runner exits nonzero, names LTB-9001 and does not print LEDGR_TEST_PROFILE_OK. Removing the fail-closed branch makes the registered detector fail three ways: zero exit status, missing block identity and false success output.", "The same block executes the real gate checker over four independent summary-and-census pairs. Profile mismatch, mode mismatch, one warning status and one missing execution each produce a distinct message naming the affected block key or census. Warning remains in the unchanged failure-status set; no membership, threshold, timeout or test assertion was relaxed."]
 
   - id: "LDG-2863"
     title: "Workstream 21 and cut 14 closeout"

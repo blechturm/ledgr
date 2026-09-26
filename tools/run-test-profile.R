@@ -101,6 +101,17 @@ if (identical(profile, "fast")) {
   cat(sprintf("LEDGR_TEST_PROFILE_GATE_HINT exceeded=%s bound=%.3f\n",
               tolower(as.character(exceeded)), bound))
 }
+failure_status <- c("failed", "error", "warning")
+failed <- run$actual[run$actual$status %in% failure_status, , drop = FALSE]
+if (nrow(failed) > 0L) {
+  ledgr_test_abort(
+    sprintf(
+      "Test profile has %d non-passing block(s); first is %s with status %s.",
+      nrow(failed), failed$key[[1L]], failed$status[[1L]]
+    ),
+    "ledgr_test_profile_failed"
+  )
+}
 cat(sprintf(
   "LEDGR_TEST_PROFILE_OK profile=%s mode=%s blocks=%d seconds=%.3f\n",
   profile, mode, nrow(run$actual), run$elapsed_seconds

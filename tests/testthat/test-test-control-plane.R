@@ -246,6 +246,130 @@ testthat::test_that("deliberately slow timing and missing release evidence fail 
   )))
 })
 
+testthat::test_that("[LTB-0082] profile tools identify the exact failing condition", {
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  rscript <- file.path(R.home("bin"), "Rscript")
+  run_tool <- function(script, args) {
+    suppressWarnings(system2(
+      rscript,
+      c("--vanilla", shQuote(script), args),
+      stdout = TRUE,
+      stderr = TRUE
+    ))
+  }
+
+  probe <- tempfile("ledgr-runner-failure-")
+  dir.create(file.path(probe, "R"), recursive = TRUE)
+  dir.create(file.path(probe, "tests", "testthat"), recursive = TRUE)
+  on.exit(unlink(probe, recursive = TRUE), add = TRUE)
+  file.copy(
+    file.path(root, "tests", "test-control-plane.R"),
+    file.path(probe, "tests", "test-control-plane.R")
+  )
+  writeLines(c(
+    "Package: ledgr",
+    "Title: Test Profile Probe",
+    "Version: 0.0.0.1",
+    "Authors@R: person('Test', 'Probe', role = c('aut', 'cre'), email = 'test@example.com')",
+    "Description: A minimal package used to execute the profile runner.",
+    "License: MIT",
+    "Encoding: UTF-8"
+  ), file.path(probe, "DESCRIPTION"))
+  writeLines(character(), file.path(probe, "NAMESPACE"))
+  writeLines(
+    "testthat::test_that('[LTB-9001] injected warning', { warning('injected warning'); testthat::succeed() })",
+    file.path(probe, "tests", "testthat", "test-warning.R")
+  )
+  yaml::write_yaml(list(claims = list(list(
+    id = "LCL-probe",
+    source = "defect:runner-reporting",
+    scope = "injected warning",
+    oracle_class = "negative witness",
+    detecting_blocks = list("LTB-9001"),
+    promised_profile = "fast",
+    owner = "maintainer"
+  ))), file.path(probe, "tests", "claims.yml"))
+  yaml::write_yaml(list(
+    ordinary_fast_max_seconds = 100,
+    cran_fast_max_seconds = 100,
+    confirmation_runs_above_bound = 2L
+  ), file.path(probe, "tests", "test-gates.yml"))
+  runner_records <- file.path(probe, "records")
+  runner_output <- run_tool(
+    file.path(root, "tools", "run-test-profile.R"),
+    c(
+      shQuote(paste0("--root=", probe)),
+      "--profile=fast", "--mode=ordinary",
+      shQuote(paste0("--records=", runner_records)),
+      "--run-index=1", "--reporter=silent"
+    )
+  )
+  testthat::expect_false(is.null(attr(runner_output, "status")))
+  testthat::expect_match(paste(runner_output, collapse = "\n"), "LTB-9001", fixed = TRUE)
+  testthat::expect_no_match(
+    paste(runner_output, collapse = "\n"),
+    "LEDGR_TEST_PROFILE_OK",
+    fixed = TRUE
+  )
+
+  write_gate_case <- function(profile = "fast", mode = "ordinary",
+                              statuses = "passed", expected = length(statuses),
+                              executed = sum(!is.na(statuses))) {
+    records <- tempfile("ledgr-gate-case-")
+    dir.create(records)
+    keys <- sprintf("test-probe.R::block-%d::1", seq_along(statuses))
+    census <- data.frame(
+      profile = rep(profile, length(statuses)),
+      key = keys,
+      status = statuses,
+      stringsAsFactors = FALSE
+    )
+    summary <- data.frame(
+      profile = profile,
+      mode = mode,
+      elapsed_seconds = 1,
+      expected_blocks = expected,
+      executed_blocks = executed,
+      skipped_blocks = sum(statuses == "skipped", na.rm = TRUE),
+      failed_blocks = sum(statuses %in% c("failed", "error", "warning"), na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+    utils::write.csv(census, file.path(records, "run-1-census.csv"), row.names = FALSE)
+    utils::write.csv(summary, file.path(records, "run-1-summary.csv"), row.names = FALSE)
+    on.exit(unlink(records, recursive = TRUE), add = TRUE)
+    run_tool(
+      file.path(root, "tools", "check-test-gate.R"),
+      c("--profile=fast", "--mode=ordinary", shQuote(paste0("--records=", records)))
+    )
+  }
+
+  warning_output <- write_gate_case(statuses = "warning")
+  testthat::expect_match(paste(warning_output, collapse = "\n"), "non-passing", fixed = TRUE)
+  testthat::expect_match(paste(warning_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
+
+  profile_output <- write_gate_case(profile = "review")
+  testthat::expect_match(paste(profile_output, collapse = "\n"), "profile mismatch", fixed = TRUE)
+  testthat::expect_match(paste(profile_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
+
+  mode_output <- write_gate_case(mode = "cran")
+  testthat::expect_match(paste(mode_output, collapse = "\n"), "mode mismatch", fixed = TRUE)
+  testthat::expect_match(paste(mode_output, collapse = "\n"), "test-probe.R::block-1::1", fixed = TRUE)
+
+  execution_output <- write_gate_case(
+    statuses = c("passed", NA_character_), expected = 2L, executed = 1L
+  )
+  testthat::expect_match(
+    paste(execution_output, collapse = "\n"),
+    "executed/expected mismatch",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    paste(execution_output, collapse = "\n"),
+    "test-probe.R::block-2::1",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("heavy protocols require an owner invocation and checker", {
   registry <- tempfile(fileext = ".yml")
   writeLines(c(
