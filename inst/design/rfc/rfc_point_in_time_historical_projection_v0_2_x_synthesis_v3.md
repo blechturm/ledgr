@@ -1,6 +1,14 @@
 # RFC Synthesis v3: Point-in-Time Historical Projection
 
-**Status:** Decision synthesis, superseding
+**Status: SUPERSEDED 2026-09-26** by
+[synthesis v4](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v4.md),
+which repairs the four findings a Type 2 review accepted here and incorporates
+the maintainer missingness amendment. Its settled knowledge clock and column
+clock are carried forward; its recomputation prohibition, mixed-clock section
+and cost arguments are withdrawn there. Retained as cycle history; it binds
+nothing.
+
+**Status (original):** Decision synthesis, superseding
 [synthesis v2](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md),
 which returned `NEEDS_TYPE_2`. Decisions bind on maintainer acceptance.
 **Date:** 2026-09-26
