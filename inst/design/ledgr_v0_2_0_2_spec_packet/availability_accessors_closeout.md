@@ -1,9 +1,9 @@
 # Cut 9 Closeout: Availability And Evidence Accessors
 
-**Status:** Agent-provisional; final focused Type 1 re-review requested. The
-first two reviews returned `CHANGES_REQUIRED`; both record corrections are
-implemented, and accepted Workstream 19 restored the unchanged fast-profile
-gate.
+**Status:** Accepted by the maintainer on 2026-09-26 after two Type 1 review
+invocations. Both record corrections are implemented, and accepted Workstream
+19 restored the unchanged fast-profile gate. The maintainer accepted the
+second review's one-sentence lane correction without another review.
 
 **Implementation range:** `5373433..eec4458` on
 `codex/ws16-v0.2.1.0`. The range contains one commit per ticket, three
@@ -168,8 +168,9 @@ resume-path optimization LDG-2820.
 
 ## Governance
 
-The initial and first focused reviews returned `CHANGES_REQUIRED`. This final
-focused correction review is the third invocation over eight completed
-tickets, 3/8 = 0.375 against the 0.5 gate. It checks only the corrected lane
-record and the now-green current-tree gate; it does not reopen already verified
-accessor semantics or claim Workstream 19's maintenance gain for this cut.
+The initial and focused reviews returned `CHANGES_REQUIRED`. The focused
+review's only residual was the stale pre-split lane sentence corrected above;
+the maintainer accepted that bounded edit without a third review. The final
+count is therefore two invocations over eight completed tickets, 2/8 = 0.250
+against the 0.5 gate. No accessor semantics were reopened, and this cut claims
+none of Workstream 19's maintenance gain.

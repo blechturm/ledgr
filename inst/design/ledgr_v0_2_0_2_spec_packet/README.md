@@ -437,7 +437,7 @@ than hidden, as cut 7 recorded its own. This workstream ships no production
 code, so the amended obligations' seven-shape walk and before-and-after clock
 do not apply to its review.
 
-## Cut 9: Availability and evidence accessors (final re-review pending)
+## Cut 9: Availability and evidence accessors (accepted)
 
 Authority: `../horizon.md`, the 2026-09-25 `[ux]` entry,
 `../vignette_styleguide.md` section 5, which routes visual clutter in a worked
