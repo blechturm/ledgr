@@ -489,7 +489,7 @@ result boundary: expose or reuse evidence already computed without changing
 its meaning. The older LDG-2820 remains a separate deferred resume-path
 optimization.
 
-## Cut 10: Indicator source parity and timing attribution (maintainer acceptance pending)
+## Cut 10: Indicator source parity and timing attribution (closed)
 
 Authority: the maintainer's 2026-09-25 decision that indicator source is not
 a semantic axis for missing observations or session calendars, together with
@@ -558,11 +558,10 @@ corrects the attribution-spread wording, and clocks the finalization slice at
 0.029 seconds per full-axis call. The focused Type 1 re-review found one real
 bundle/RSI detector gap and one factual attribution error; both are corrected.
 It was the third invocation over six tickets, exactly 0.500 against the gate.
-A fourth review would breach the gate, so the corrected work awaits maintainer
-acceptance.
+A fourth review would have breached the gate. The maintainer accepted the
+corrected work at `5c678ae` on 2026-09-26; Workstream 17 and Cut 10 are closed.
 
-## Cut 11: Point-in-time input model (awaiting focused cut re-review; opens
-after workstream 17)
+## Cut 11: Point-in-time input model (open)
 
 Authority: the maintainer's 2026-09-25 decision that the point-in-time input
 model needs one checklist of required data and one inspectable demo input set,
@@ -572,7 +571,9 @@ LDG-2843, one workstream. An inline Type 2 cut review returned
 `CHANGES_REQUIRED`: a fact-only generator could not own observation gaps or
 compose directly with the existing midnight-UTC demo bars, the knowledge rule
 was false for late-known facts, and the proposed checklist detector was
-circular. The tickets were patched in place and await focused re-review.
+circular. The tickets were patched in place. On 2026-09-26 the maintainer
+accepted the patched cut without a focused cut re-review and opened Workstream
+18. The cut review plus its planned close review is 2/5 = 0.400.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |

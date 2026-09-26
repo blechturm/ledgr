@@ -1,7 +1,6 @@
 # Cut 10 Closeout: Indicator Source Parity And Timing Attribution
 
-**Status:** Corrected after the focused Type 1 re-review; awaiting maintainer
-acceptance.
+**Status:** Accepted by the maintainer on 2026-09-26 at `5c678ae`.
 
 **Implementation through LDG-2838:** `010049d..664a127` on
 `codex/ws16-v0.2.1.0`.
@@ -174,4 +173,5 @@ is the second and returned five bounded evidence findings. The focused
 re-review is the third and found two residual detector or record errors, now
 corrected. The completed review count remains 3/6 = 0.500 against the gate; a
 fourth review would breach it. The corrections change no production behavior
-or promoted benchmark result and await maintainer acceptance.
+or promoted benchmark result. The maintainer accepted the corrected record on
+2026-09-26.
