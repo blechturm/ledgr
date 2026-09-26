@@ -117,7 +117,9 @@ cuts:
     source_table: ".tmp/ws16-fast-final and .tmp/ws16-fast-review-correction-v2 per-block censuses; tests/claims.yml; post_v0_2_0_1_test_suite_audit_blocks.csv"
     workstreams: [19]
     closeout: "fast_profile_headroom_closeout.md"
-    status: "review_pending"
+    close_review: "Independent Type 1 close review returned PASS at d9a9090. Its one record-only finding corrected the raw 24.1-percent session difference into an approximately 11-second census attribution, independently consistent with a 13.3-second same-host pair and the cut's approximately 12-second estimate. The maintainer accepted Workstream 19 on 2026-09-26 at 9f4d2d7. Two review invocations over five tickets is 0.400."
+    accepted: "2026-09-26 by the maintainer, at 9f4d2d7"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -277,7 +279,7 @@ workstreams:
   - id: 19
     name: "Fast-profile headroom"
     cut: 12
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 12
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 19", reason: "One evidence-boundary claim joins the tickets: the fast lane retains the smallest failure-sensitive evidence for core behavior while three rare recovery integrations remain executable in the nightly and release review lane, and fixture shrinking changes no oracle. The close review reruns every affected mutation, reconciles the block census and claims registry, verifies that nightly and release CI execute every moved block, and accepts only with exact three-run ordinary and CRAN-mode records below the unchanged 90-second and 105-second gates."}

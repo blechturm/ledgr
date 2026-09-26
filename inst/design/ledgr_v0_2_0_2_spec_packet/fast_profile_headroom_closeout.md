@@ -1,7 +1,8 @@
 # Workstream 19: Fast-Profile Headroom Closeout
 
-**Status:** Independent Type 1 close review PASS; awaiting maintainer
-acceptance. **Tickets:** LDG-2845 through LDG-2849. **Baseline:** `c83e4dc`.
+**Status:** Accepted by the maintainer on 2026-09-26 after independent Type 1
+close-review PASS. **Tickets:** LDG-2845 through LDG-2849. **Baseline:**
+`c83e4dc`.
 
 ## What Changed
 
