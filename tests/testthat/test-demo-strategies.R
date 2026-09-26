@@ -1,4 +1,4 @@
-testthat::test_that("demo SMA crossover strategy is Tier 1", {
+testthat::test_that("[LTB-0081] demo SMA crossover strategy is Tier 1 without loading packages", {
   testthat::skip_if(
     requireNamespace("covr", quietly = TRUE) && covr::in_covr(),
     "Demo strategy preflight tier is a normal-runtime invariant; covr instruments closures."
@@ -6,10 +6,27 @@ testthat::test_that("demo SMA crossover strategy is Tier 1", {
 
   strategy <- ledgr_demo_sma_crossover_strategy()
 
+  namespaces_before <- loadedNamespaces()
   preflight <- ledgr_strategy_preflight(strategy)
+  namespaces_after <- loadedNamespaces()
   testthat::expect_identical(preflight$tier, "tier_1")
   testthat::expect_true(preflight$allowed)
   testthat::expect_identical(preflight$unresolved_symbols, character())
+  testthat::expect_setequal(namespaces_after, namespaces_before)
+
+  checked <- character()
+  testthat::local_mocked_bindings(
+    ledgr_strategy_priority_packages = function() c("first", "second"),
+    ledgr_strategy_priority_package_has_symbol = function(package, symbol) {
+      checked <<- c(checked, package)
+      identical(package, "first")
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_true(
+    ledgr_strategy_symbol_is_tier1("synthetic_priority_symbol")
+  )
+  testthat::expect_identical(checked, "first")
 })
 
 testthat::test_that("demo SMA crossover strategy holds through warmup", {

@@ -405,6 +405,19 @@ ledgr_strategy_package_is_tier1 <- function(package) {
     (identical(package, "ledgr") || package %in% ledgr_strategy_priority_packages())
 }
 
+ledgr_strategy_priority_package_has_symbol <- function(package, symbol) {
+  available <- if (package %in% loadedNamespaces()) {
+    TRUE
+  } else {
+    suppressWarnings(suppressMessages(tryCatch(
+      requireNamespace(package, quietly = TRUE),
+      error = function(e) FALSE
+    )))
+  }
+  isTRUE(available) &&
+    exists(symbol, envir = asNamespace(package), inherits = FALSE)
+}
+
 ledgr_strategy_symbol_is_tier1 <- function(symbol) {
   if (!is.character(symbol) || length(symbol) != 1L || is.na(symbol) || !nzchar(symbol)) {
     return(FALSE)
@@ -412,17 +425,15 @@ ledgr_strategy_symbol_is_tier1 <- function(symbol) {
   if (symbol %in% getNamespaceExports("ledgr")) {
     return(TRUE)
   }
-  any(vapply(
-    ledgr_strategy_priority_packages(),
-    function(package) {
-      tryCatch(
-        requireNamespace(package, quietly = TRUE) &&
-          exists(symbol, envir = asNamespace(package), inherits = FALSE),
-        error = function(e) FALSE
-      )
-    },
-    logical(1)
-  ))
+  packages <- ledgr_strategy_priority_packages()
+  loaded <- packages %in% loadedNamespaces()
+  packages <- c(packages[loaded], packages[!loaded])
+  for (package in packages) {
+    if (ledgr_strategy_priority_package_has_symbol(package, symbol)) {
+      return(TRUE)
+    }
+  }
+  FALSE
 }
 
 ledgr_strategy_symbol_resolves_to_external_object <- function(symbol, env) {
