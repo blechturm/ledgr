@@ -113,13 +113,36 @@ testthat::test_that("[LTB-0057] adapter-authoring article records a vendor-neutr
     "vignettes",
     "fictional-corporate-action-adapter.R"
   )
+  extras_path <- file.path(root, "vignettes", ".install_extras")
   testthat::expect_true(file.exists(source_path))
   testthat::expect_true(file.exists(rendered_path))
   testthat::expect_true(file.exists(adapter_path))
+  testthat::expect_true(file.exists(extras_path))
   source <- paste(readLines(source_path, warn = FALSE), collapse = "\n")
   rendered <- paste(readLines(rendered_path, warn = FALSE), collapse = "\n")
   adapter <- paste(readLines(adapter_path, warn = FALSE), collapse = "\n")
+  extras <- readLines(extras_path, warn = FALSE)
   testthat::expect_no_match(source, "eval: false", fixed = TRUE)
+  testthat::expect_match(source, "library(ledgr)", fixed = TRUE)
+  testthat::expect_match(
+    source,
+    "input_path <- knitr::current_input(dir = TRUE)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    source,
+    "adapter_dir <- if (length(input_path) == 1L && nzchar(input_path))",
+    fixed = TRUE
+  )
+  testthat::expect_identical(
+    extras,
+    "fictional-corporate-action-adapter[.]R$"
+  )
+  testthat::expect_no_match(
+    source,
+    "file.path(pkg_root, \"vignettes\", \"fictional-corporate-action-adapter.R\")",
+    fixed = TRUE
+  )
   testthat::expect_no_match(
     paste(source, rendered, adapter, sep = "\n"),
     "sharadar",

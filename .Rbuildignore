@@ -4,6 +4,7 @@
 ^dev(/|$)
 ^data-raw$
 ^\.github$
+^\.git$
 ^\.claude$
 ^\.understand-anything$
 ^docs$

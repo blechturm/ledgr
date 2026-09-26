@@ -11,7 +11,7 @@ library(ledgr)
 
 source("test-control-plane.R", local = TRUE)
 ledgr_test_run_profile(
-  root = normalizePath("..", winslash = "/"),
+  root = ledgr_test_source_root(normalizePath(".", winslash = "/")),
   profile = "fast",
   mode = "ordinary",
   reporter = "summary",

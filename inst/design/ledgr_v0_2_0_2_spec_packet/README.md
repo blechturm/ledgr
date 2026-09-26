@@ -795,13 +795,13 @@ correction round at 0.333.
 ## Cut 14: Repair continuous integration (open; opens after workstream 18)
 
 Authority: maintainer decision 2026-09-26 after every continuous-integration
-run that executed the suite was found failing. Four tickets, LDG-2860 through
-LDG-2863, one workstream; the cut review is compressed into the close review,
-so one invocation over four tickets is 0.250.
+run that executed the suite was found failing. Five tickets, LDG-2860 through
+LDG-2863 plus LDG-2865, one workstream; the cut review is compressed into the
+close review, so one invocation over five tickets is 0.200.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 21 Repair continuous integration | 2860-2863 | remove the preflight package-loading side effect that warns on headless runners; derive the ordinary fast bound from its declared registered runner; make the profile runner and gate checker report honestly; closeout | continuous integration is green on the registered runner and reports honestly when it is not, with no test moved, skipped or weakened to get there |
+| 21 Repair continuous integration | 2860-2863, 2865 | remove the preflight package-loading side effect that warns on headless runners; derive the ordinary fast bound from its declared registered runner; make the profile runner and gate checker report honestly; make source evidence portable to R CMD check; closeout | continuous integration is green on the registered runner and reports honestly when it is not, with no test moved, skipped or weakened to get there |
 
 This cut is sequenced before Cut 13 deliberately. Cut 13 carries breaking
 surface renames, and landing them while continuous integration cannot report is

@@ -9,6 +9,38 @@ ledgr_test_profiles <- function() {
   c("fast", "review", "heavy_protocol")
 }
 
+ledgr_test_source_root <- function(start = getwd(), package = "ledgr") {
+  cursor <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  ancestors <- character()
+  repeat {
+    ancestors <- c(ancestors, cursor)
+    parent <- dirname(cursor)
+    if (identical(parent, cursor)) break
+    cursor <- parent
+  }
+  candidates <- unique(c(
+    ancestors,
+    file.path(ancestors, package),
+    file.path(ancestors, "00_pkg_src", package)
+  ))
+  for (candidate in candidates) {
+    description <- file.path(candidate, "DESCRIPTION")
+    test_dir <- file.path(candidate, "tests", "testthat")
+    if (!file.exists(description) || !dir.exists(test_dir)) next
+    package_name <- tryCatch(
+      read.dcf(description, fields = "Package")[[1L]],
+      error = function(...) NA_character_
+    )
+    if (identical(package_name, package)) {
+      return(normalizePath(candidate, winslash = "/", mustWork = TRUE))
+    }
+  }
+  ledgr_test_abort(
+    sprintf("Cannot locate the %s source package from %s.", package, start),
+    "ledgr_test_source_root_missing"
+  )
+}
+
 ledgr_test_heavy_protocols_read <- function(path) {
   if (!file.exists(path)) {
     ledgr_test_abort("Heavy-protocol registry is missing.", "ledgr_test_heavy_registry_invalid")

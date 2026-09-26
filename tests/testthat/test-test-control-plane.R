@@ -370,6 +370,40 @@ testthat::test_that("[LTB-0082] profile tools identify the exact failing conditi
   )
 })
 
+testthat::test_that("[LTB-0083] installed checks resolve the source package", {
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  testthat::expect_identical(
+    ledgr_test_source_root(file.path(root, "tests", "testthat")),
+    root
+  )
+
+  sandbox <- tempfile("ledgr-check-layout-")
+  source_root <- file.path(sandbox, "ledgr.Rcheck", "00_pkg_src", "ledgr")
+  check_test_dir <- file.path(sandbox, "ledgr.Rcheck", "tests", "testthat")
+  dir.create(file.path(source_root, "tests", "testthat"), recursive = TRUE)
+  dir.create(check_test_dir, recursive = TRUE)
+  on.exit(unlink(sandbox, recursive = TRUE), add = TRUE)
+  writeLines(
+    c("Package: ledgr", "Version: 0.0.0.1"),
+    file.path(source_root, "DESCRIPTION")
+  )
+  testthat::expect_identical(
+    ledgr_test_source_root(check_test_dir),
+    normalizePath(source_root, winslash = "/")
+  )
+
+  entry <- paste(
+    readLines(file.path(root, "tests", "testthat.R"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(entry, "root = ledgr_test_source_root(", fixed = TRUE)
+  testthat::expect_no_match(
+    entry,
+    "root = normalizePath(\"..\", winslash = \"/\")",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("heavy protocols require an owner invocation and checker", {
   registry <- tempfile(fileext = ".yml")
   writeLines(c(

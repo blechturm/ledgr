@@ -24,7 +24,14 @@ pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIP
 if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
   pkgload::load_all(pkg_root, quiet = TRUE)
 }
-adapter_path <- file.path(pkg_root, "vignettes", "fictional-corporate-action-adapter.R")
+library(ledgr)
+input_path <- knitr::current_input(dir = TRUE)
+adapter_dir <- if (length(input_path) == 1L && nzchar(input_path)) {
+  dirname(input_path)
+} else {
+  getwd()
+}
+adapter_path <- file.path(adapter_dir, "fictional-corporate-action-adapter.R")
 source(adapter_path)
 ```
 
