@@ -83,3 +83,66 @@ testthat::test_that("[LTB-0079] input map binds scopes to the runnable bundle", 
     fixed = TRUE
   )
 })
+
+testthat::test_that("[LTB-0080] specialist articles join the input map", {
+  article_names <- c(
+    "missing-data-and-sessions",
+    "survivorship-bias",
+    "corporate-action-cash"
+  )
+  paths <- lapply(article_names, function(name) {
+    c(
+      qmd = testthat::test_path("..", "..", "vignettes", paste0(name, ".qmd")),
+      md = testthat::test_path("..", "..", "vignettes", paste0(name, ".md"))
+    )
+  })
+  all_paths <- unlist(paths, use.names = FALSE)
+  testthat::expect_true(all(file.exists(all_paths)),
+    info = "all three source and rendered specialist articles are required"
+  )
+  if (!all(file.exists(all_paths))) return(invisible())
+
+  articles <- lapply(paths, function(article_paths) {
+    lapply(article_paths, function(path) {
+      paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    })
+  })
+  for (article in articles) {
+    for (text in article) {
+      testthat::expect_match(text, "Data Input And Snapshots", fixed = TRUE)
+      testthat::expect_match(text, "ledgr_demo_pit_inputs", fixed = TRUE)
+    }
+    testthat::expect_match(
+      article$qmd,
+      "data(\"ledgr_demo_pit_inputs\", package = \"ledgr\")",
+      fixed = TRUE
+    )
+    testthat::expect_match(article$qmd, "local to this article", fixed = TRUE)
+  }
+
+  testthat::expect_match(
+    articles[[1L]]$md,
+    "observation_row_present",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    articles[[1L]]$md,
+    "stale_close          2 no_action",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    articles[[2L]]$md,
+    "known_inactive       delisted",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    articles[[2L]]$md,
+    "Point-in-time (AAA and BBB)               -0.19",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    articles[[3L]]$md,
+    "Gross cash posted:           2.5",
+    fixed = TRUE
+  )
+})

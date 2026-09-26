@@ -10,6 +10,40 @@ That timing is a model assumption. It prevents a missing-asset dip on
 the ex-date, but makes cash spendable before a broker might actually pay
 it.
 
+The [Data Input And Snapshots](data-input-and-snapshots.qmd) article
+owns the complete input decision map and reusable point-in-time bundle.
+This article keeps a local `AAA` fixture because an opening position of
+two units makes the gross cash result of 2.5 directly visible and
+because the later price change demonstrates that ledgr does not reapply
+a vendor adjustment. `AAA` is local to this article, not an alias for a
+shared `DEMO_*` instrument.
+
+The shared bundle carries the equivalent cash-dividend fact. This
+executable touchpoint locates the case and its sealed input terms:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_cash_case <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "cash_dividend"
+)
+shared_cash_terms <- subset(
+  ledgr_demo_pit_inputs$corporate_actions,
+  parent_instrument_id == shared_cash_case$instrument_id[[1L]] &
+    as.Date(entitlement_time) == shared_cash_case$date[[1L]]
+)
+shared_cash_terms[
+  , c(
+    "subtype", "parent_instrument_id", "entitlement_time",
+    "gross_cash_per_parent_unit", "provenance_tier"
+  )
+]
+#>         subtype parent_instrument_id    entitlement_time gross_cash_per_parent_unit
+#> 1 cash_dividend              DEMO_03 2020-01-10 21:00:00                       0.75
+#>   provenance_tier
+#> 1  snapshot_bound
+```
+
 ## A Minimal Evidenced Dividend
 
 ``` r
