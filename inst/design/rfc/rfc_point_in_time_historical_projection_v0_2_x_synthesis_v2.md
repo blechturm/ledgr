@@ -1,6 +1,13 @@
 # RFC Synthesis v2: Point-in-Time Historical Projection
 
-**Status:** Decision synthesis, superseding
+**Status: SUPERSEDED 2026-09-26** by
+[synthesis v3](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v3.md),
+after a Type 2 review returned `NEEDS_TYPE_2`. Its organising decision was
+accepted and is carried forward; three supporting claims in sections 3 and 6
+were not, and its detector 1 was necessary but not sufficient. Retained as
+cycle history; it binds nothing.
+
+**Status (original):** Decision synthesis, superseding
 [synthesis v1](rfc_point_in_time_historical_projection_v0_2_x_synthesis.md),
 which returned `NEEDS_TYPE_2`. Decisions bind on maintainer acceptance.
 **Date:** 2026-09-26
