@@ -514,7 +514,8 @@ ledgr_precompute_feature_def_from_indicator <- function(indicator) {
     stable_after = indicator$stable_after,
     source = ledgr_indicator_source(indicator),
     params = indicator$params,
-    fingerprint = ledgr_indicator_fingerprint(indicator)
+    fingerprint = ledgr_indicator_fingerprint(indicator),
+    gap_contract = indicator$gap_contract
   )
 }
 

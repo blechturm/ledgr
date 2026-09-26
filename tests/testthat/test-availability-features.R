@@ -1,45 +1,266 @@
-# ledgr-test-profile: review
-testthat::test_that("strict features expose whole-feed gaps and recover by window", {
-  snapshot <- availability_runtime_fixture(days = 5L, bar_days = c(1L, 2L, 4L, 5L))
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  strategy <- function(ctx, params) {
-    history <- if (is.null(ctx$state_prev$history)) list() else ctx$state_prev$history
-    values <- c(
-      sma = ctx$feature("AAA", "sma_2"),
-      ret = ctx$feature("AAA", "return_1")
-    )
-    history[[length(history) + 1L]] <- ifelse(is.na(values), "NA", format(values, digits = 17))
-    list(targets = ctx$hold(), state_update = list(history = history))
+availability_strict_matrix_fixture <- function() {
+  dates <- as.Date("2020-01-01") + 0:6
+  is_open <- seq_along(dates) != 3L
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = ifelse(is_open, "open", "closed"),
+      session_open = ifelse(is_open, "09:30:00", NA_character_),
+      session_close = ifelse(is_open, "16:00:00", NA_character_),
+      knowledge_time = as.POSIXct("2019-12-01", tz = "UTC"),
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  observations <- data.frame(
+    instrument_id = c(rep("AAA", 5L), rep("BBB", 3L)),
+    day = c(1L, 2L, 5L, 6L, 7L, 5L, 6L, 7L),
+    close = c(10, 12, 14, 16, 18, 20, 22, 24),
+    stringsAsFactors = FALSE
+  )
+  observations$ts_utc <- as.POSIXct(
+    paste(dates[observations$day], "16:00:00"),
+    tz = "UTC"
+  )
+  observations$open <- observations$close
+  observations$high <- observations$close + 1
+  observations$low <- observations$close - 1
+  observations$volume <- 1000
+  bars <- observations[, c(
+    "ts_utc", "instrument_id", "open", "high", "low", "close", "volume"
+  )]
+  ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+    facts = ledgr_facts(sessions)
+  )
+}
+
+availability_strict_probe_strategy <- function(ctx, params) {
+  encode <- function(value) {
+    if (is.na(value)) "NA" else format(value, digits = 17, trim = TRUE)
   }
-  exp <- ledgr_experiment(
+  values <- vapply(
+    c("AAA", "BBB"),
+    function(id) ctx$features(id)[["signal"]],
+    numeric(1)
+  )
+  warning(
+    sprintf(
+      "STRICT_MATRIX|%d|%s|%s|%s",
+      as.integer(params$window),
+      ctx$ts_utc,
+      encode(values[[1L]]),
+      encode(values[[2L]])
+    ),
+    call. = FALSE
+  )
+  ctx$hold()
+}
+
+availability_strict_capture <- function(expr) {
+  messages <- character()
+  value <- withCallingHandlers(
+    force(expr),
+    warning = function(condition) {
+      message <- conditionMessage(condition)
+      if (startsWith(message, "STRICT_MATRIX|")) {
+        messages <<- c(messages, message)
+      }
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(value = value, messages = messages)
+}
+
+availability_strict_sweep_messages <- function(sweep) {
+  unlist(lapply(
+    sweep$warnings,
+    function(conditions) vapply(conditions, conditionMessage, character(1))
+  ), use.names = FALSE)
+}
+
+availability_strict_matrix <- function(messages) {
+  messages <- messages[startsWith(messages, "STRICT_MATRIX|")]
+  fields <- strsplit(messages, "|", fixed = TRUE)
+  out <- data.frame(
+    window = as.integer(vapply(fields, `[[`, character(1), 2L)),
+    ts_utc = vapply(fields, `[[`, character(1), 3L),
+    AAA = suppressWarnings(as.numeric(vapply(fields, `[[`, character(1), 4L))),
+    BBB = suppressWarnings(as.numeric(vapply(fields, `[[`, character(1), 5L))),
+    stringsAsFactors = FALSE
+  )
+  out[order(out$window, out$ts_utc), , drop = FALSE]
+}
+
+availability_strict_expected <- function(window) {
+  pulses <- paste0(
+    c("2020-01-01", "2020-01-02", "2020-01-04", "2020-01-05", "2020-01-06", "2020-01-07"),
+    "T16:00:00Z"
+  )
+  values <- switch(
+    as.character(window),
+    `2` = list(
+      AAA = c(NA, 11, NA, NA, 15, 17),
+      BBB = c(NA, NA, NA, NA, 21, 23)
+    ),
+    `3` = list(
+      AAA = c(NA, NA, NA, NA, NA, 16),
+      BBB = c(NA, NA, NA, NA, NA, 22)
+    ),
+    stop("unsupported expected window")
+  )
+  data.frame(
+    window = rep(as.integer(window), length(pulses)),
+    ts_utc = pulses,
+    AAA = values$AAA,
+    BBB = values$BBB,
+    stringsAsFactors = FALSE
+  )
+}
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0073] strict feature matrices survive every execution route", {
+  snapshot <- availability_strict_matrix_fixture()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  opening <- ledgr_opening(
+    cash = 100000,
+    positions = c(AAA = 1),
+    cost_basis = c(AAA = 10)
+  )
+  concrete <- ledgr_experiment(
     snapshot,
-    strategy,
-    features = list(ledgr_ind_sma(2), ledgr_indicator_get("return_1")),
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(signal = ledgr_ind_sma(2)),
+    opening = opening,
     valuation_policy = ledgr_valuation_stale(1),
     cost_model = ledgr_cost_zero()
   )
-  ledgr_feature_cache_clear()
-  bt <- ledgr_run(exp)
-  on.exit(close(bt), add = TRUE)
-  encoded <- do.call(rbind, availability_last_state(bt)$history)
-  values <- apply(encoded, 2L, function(x) suppressWarnings(as.numeric(x)))
-  # Day 3 has no bar, so the strict window stays unmet on days 3 and 4. The
-  # fifth session restores a complete two-bar window (104, 105) and both
-  # features recover.
-  testthat::expect_equal(values[, "sma"], c(NA, 101.5, NA, NA, 104.5))
-  testthat::expect_equal(values[, "ret"], c(NA, 1 / 101, NA, NA, 1 / 104))
-  cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
-  testthat::expect_length(cache_keys, 2L)
-
-  cached <- ledgr_run(exp)
-  on.exit(close(cached), add = TRUE)
-  testthat::expect_identical(
-    availability_last_state(cached)$history,
-    availability_last_state(bt)$history
+  parameterized <- ledgr_experiment(
+    snapshot,
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(signal = ledgr_ind_sma(ledgr_param("n"))),
+    opening = opening,
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
   )
+  grid <- ledgr_grid_named(
+    two = list(feature = list(n = 2L), strategy = list(window = 2L)),
+    three = list(feature = list(n = 3L), strategy = list(window = 3L))
+  )
+
+  ledgr_feature_cache_clear()
+  direct_cold <- availability_strict_capture(ledgr_run(
+    concrete,
+    params = list(window = 2L),
+    run_id = "strict-direct-cold"
+  ))
+  on.exit(close(direct_cold$value), add = TRUE)
+  cache_keys <- ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE)
+  direct_warm <- availability_strict_capture(ledgr_run(
+    concrete,
+    params = list(window = 2L),
+    run_id = "strict-direct-warm"
+  ))
+  on.exit(close(direct_warm$value), add = TRUE)
   testthat::expect_identical(
     ls(ledgr:::.ledgr_feature_cache_registry, all.names = TRUE),
     cache_keys
+  )
+  testthat::expect_identical(
+    direct_warm$value$config$config_hash,
+    direct_cold$value$config$config_hash
+  )
+
+  one <- ledgr_sweep(
+    concrete,
+    ledgr_param_grid(one = list(window = 2L)),
+    stop_on_error = TRUE
+  )
+  sequential <- ledgr_sweep(parameterized, grid, stop_on_error = TRUE)
+  parallel <- NULL
+  if (requireNamespace("mirai", quietly = TRUE)) {
+    parallel <- ledgr_sweep(
+      parameterized,
+      grid,
+      workers = 2L,
+      stop_on_error = TRUE
+    )
+  }
+
+  partial <- availability_strict_capture(ledgr:::ledgr_run_fold(
+    direct_cold$value$config,
+    run_id = "strict-resume",
+    control = list(max_pulses = 3L)
+  ))
+  resumed <- availability_strict_capture(ledgr_run_config(
+    direct_cold$value$config,
+    run_id = "strict-resume"
+  ))
+  resume_messages <- c(partial$messages, resumed$messages)
+
+  observed <- list(
+    direct_cold = direct_cold$messages,
+    direct_warm = direct_warm$messages,
+    one_candidate_sequential = availability_strict_sweep_messages(one),
+    multi_candidate_sequential = availability_strict_sweep_messages(sequential),
+    interrupted_resume = resume_messages
+  )
+  if (!is.null(parallel)) {
+    observed$multi_candidate_parallel <- availability_strict_sweep_messages(parallel)
+  }
+  expected_windows <- list(
+    direct_cold = 2L,
+    direct_warm = 2L,
+    one_candidate_sequential = 2L,
+    multi_candidate_sequential = c(2L, 3L),
+    interrupted_resume = 2L,
+    multi_candidate_parallel = c(2L, 3L)
+  )
+  for (route in names(observed)) {
+    actual <- availability_strict_matrix(observed[[route]])
+    expected <- do.call(rbind, lapply(
+      expected_windows[[route]],
+      availability_strict_expected
+    ))
+    rownames(expected) <- NULL
+    testthat::expect_identical(
+      actual[, c("window", "ts_utc")],
+      expected[, c("window", "ts_utc")],
+      info = paste(route, "keeps the expected-session pulse and window identity")
+    )
+    testthat::expect_identical(
+      unname(is.na(as.matrix(actual[, c("AAA", "BBB")]))),
+      unname(is.na(as.matrix(expected[, c("AAA", "BBB")]))),
+      info = paste(route, "keeps warmup, gap, recovery and late-start NA positions")
+    )
+    testthat::expect_equal(
+      actual[, c("AAA", "BBB")],
+      expected[, c("AAA", "BBB")],
+      tolerance = 1e-12,
+      info = paste(route, "keeps finite strict-window values")
+    )
+  }
+
+  equity <- ledgr_results(direct_cold$value, "equity")
+  missing_pulse <- format(
+    as.POSIXct(equity$ts_utc, tz = "UTC"),
+    "%Y-%m-%dT%H:%M:%SZ",
+    tz = "UTC"
+  ) == "2020-01-04T16:00:00Z"
+  testthat::expect_identical(sum(missing_pulse), 1L)
+  testthat::expect_true(is.finite(equity$positions_value[missing_pulse]))
+  direct_matrix <- availability_strict_matrix(direct_cold$messages)
+  testthat::expect_true(is.na(direct_matrix$AAA[direct_matrix$ts_utc == "2020-01-04T16:00:00Z"]))
+
+  defs <- ledgr:::ledgr_resolve_feature_candidates(parameterized, grid, stop_on_error = TRUE)
+  testthat::expect_identical(
+    vapply(defs$candidates, function(x) x$feature_defs[[1L]]$gap_contract, character(1)),
+    c("strict_window", "strict_window")
+  )
+  testthat::expect_identical(
+    defs$candidate_features$feature_ids,
+    list("sma_2", "sma_3")
   )
 })
 

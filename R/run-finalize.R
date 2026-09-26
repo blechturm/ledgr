@@ -537,13 +537,17 @@ ledgr_run_finalize <- function(con,
       n_def <- length(def_ids)
       n_p <- length(pulses_posix)
       if (n_p > 0 && n_def > 0) {
+        persisted_projection <- ledgr_projection_slice(
+          runtime_projection,
+          pulses_posix
+        )
         DBI::dbWithTransaction(con, {
           DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ?", params = list(run_id))
           for (j in seq_along(instrument_ids)) {
             id <- instrument_ids[[j]]
             feat_vals <- matrix(NA_real_, nrow = n_def, ncol = n_p)
             for (d in seq_len(n_def)) {
-              feat_vals[d, ] <- runtime_projection$feature_values[[def_ids[[d]]]][j, ]
+              feat_vals[d, ] <- persisted_projection$feature_values[[def_ids[[d]]]][j, ]
             }
             out <- data.frame(
               run_id = rep(run_id, n_def * n_p),
