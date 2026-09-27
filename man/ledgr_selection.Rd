@@ -4,7 +4,13 @@
 \alias{ledgr_selection}
 \title{Create a strategy selection vector}
 \usage{
-ledgr_selection(x, universe = NULL, origin = NULL, ...)
+ledgr_selection(
+  x,
+  universe = NULL,
+  origin = NULL,
+  ...,
+  missing = c("error", "exclude")
+)
 }
 \arguments{
 \item{x}{Named logical vector where \code{TRUE} means selected, or a pulse context.}
@@ -14,6 +20,13 @@ ledgr_selection(x, universe = NULL, origin = NULL, ...)
 \item{origin}{Optional helper/source label for printing.}
 
 \item{...}{In context mode, at most one named \code{ids} or \code{where} payload.}
+
+\item{missing}{In context mode, whether missing current-member decisions
+fail (\code{"error"}, the default) or count as not selected (\code{"exclude"}). A
+subsequent rebalance targets excluded held members to zero; use
+\code{ctx$hold()} when the intended action is to preserve positions. This is a
+decision policy, unlike \code{ctx$idx(id, missing = "na")}, which controls a
+missing instrument lookup.}
 }
 \value{
 A \code{ledgr_selection} object.

@@ -642,7 +642,10 @@ The strategy preflight boundary originated in
   A named `values` or `where` payload uses unique known Daxis IDs and covers
   every M ID; names are aligned before projection to M. Numeric values admit
   finite numbers and missing scores but reject infinity anywhere. Logical
-  `where` rejects missing decisions on M. `ids` are unique nonmissing members.
+  `where` rejects missing decisions on M by default; context-mode
+  `missing = "exclude"` treats them as not selected, which means a later
+  rebalance targets a held member to zero rather than preserving it. `ids` are
+  unique nonmissing members.
   Type, length, name, coverage, score and ID failures use
   `ledgr_invalid_strategy_type`; an explicit known nonmember ID or weight uses
   `ledgr_invalid_strategy_helper`.

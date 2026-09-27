@@ -393,6 +393,90 @@ testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
   )
 })
 
+testthat::test_that("[LTB-0098] missing selection decisions require an explicit policy", {
+  ids <- c("AAA", "BBB", "CCC")
+  ts <- as.POSIXct("2026-01-02 21:00:00", tz = "UTC")
+  bars <- data.frame(
+    instrument_id = ids,
+    ts_utc = rep(ts, length(ids)),
+    open = c(10, 20, 30),
+    high = c(10, 20, 30),
+    low = c(10, 20, 30),
+    close = c(10, 20, 30),
+    volume = c(100, 100, 100),
+    stringsAsFactors = FALSE
+  )
+  ctx <- ledgr:::ledgr_pulse_context(
+    run_id = "missing-decisions",
+    ts_utc = ts,
+    universe = ids,
+    bars = bars,
+    features = ledgr:::ledgr_projection_feature_table_schema(),
+    positions = c(AAA = 2),
+    cash = 80,
+    equity = 100
+  )
+  expected <- c(AAA = TRUE, BBB = FALSE, CCC = FALSE)
+
+  named <- ledgr_selection(
+    ctx,
+    where = c(CCC = NA, BBB = FALSE, AAA = TRUE),
+    missing = "exclude"
+  )
+  positional <- ledgr_selection(
+    ctx,
+    where = c(TRUE, FALSE, NA),
+    missing = "exclude"
+  )
+  testthat::expect_identical(unclass(named), expected)
+  testthat::expect_identical(named, positional)
+
+  strict <- tryCatch(
+    ledgr_selection(ctx, where = c(TRUE, FALSE, NA)),
+    error = identity
+  )
+  testthat::expect_s3_class(strict, "ledgr_invalid_strategy_type")
+  testthat::expect_match(
+    conditionMessage(strict),
+    "`where` contains missing decisions for current members: CCC.",
+    fixed = TRUE
+  )
+  testthat::expect_match(conditionMessage(strict), 'missing = "exclude"', fixed = TRUE)
+  testthat::expect_match(conditionMessage(strict), "targets those instruments to zero", fixed = TRUE)
+
+  available <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    positions = c(OLD = 2),
+    equity = 100
+  )
+  nonmember_missing <- c(OLD = NA, AAA = TRUE)
+  testthat::expect_identical(
+    ledgr_selection(available, where = nonmember_missing),
+    ledgr_selection(
+      available,
+      where = nonmember_missing,
+      missing = "exclude"
+    )
+  )
+  testthat::expect_identical(
+    unclass(ledgr_selection(available, where = c(TRUE, NA))),
+    c(AAA = TRUE)
+  )
+
+  testthat::expect_error(
+    ledgr_selection(c(AAA = NA)),
+    class = "ledgr_invalid_strategy_type"
+  )
+  testthat::expect_error(
+    ledgr_selection(c(AAA = TRUE), missing = "exclude"),
+    class = "ledgr_invalid_strategy_helper"
+  )
+  testthat::expect_error(
+    ledgr_selection(ctx, where = c(TRUE, FALSE, NA), missing = "ignore"),
+    class = "ledgr_invalid_strategy_helper"
+  )
+})
+
 testthat::test_that("[LTB-0090] empty helper domains keep their distinct meanings", {
   holdings_only <- strategy_context_entrance_fixture(
     availability = TRUE,

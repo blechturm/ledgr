@@ -162,7 +162,9 @@ ledgr_strategy_context_align <- function(payload,
                                          argument,
                                          expected_type,
                                          axis,
-                                         members) {
+                                         members,
+                                         missing_decisions = c("error", "exclude")) {
+  missing_decisions <- match.arg(missing_decisions)
   valid_type <- switch(
     expected_type,
     numeric = is.numeric(payload),
@@ -223,11 +225,22 @@ ledgr_strategy_context_align <- function(payload,
   projected <- aligned[match(members, names(aligned))]
   names(projected) <- members
   if (identical(expected_type, "logical") && anyNA(projected)) {
-    ledgr_strategy_context_abort(
-      sprintf("`%s` contains missing decisions for current members: %s.",
-              argument, paste(members[is.na(projected)], collapse = ", ")),
-      class = "ledgr_invalid_strategy_type"
-    )
+    if (identical(missing_decisions, "exclude")) {
+      projected[is.na(projected)] <- FALSE
+    } else {
+      ledgr_strategy_context_abort(
+        sprintf(
+          paste0(
+            "`%s` contains missing decisions for current members: %s. ",
+            "Use `missing = \"exclude\"` to treat them as not selected; ",
+            "a rebalance then targets those instruments to zero."
+          ),
+          argument,
+          paste(members[is.na(projected)], collapse = ", ")
+        ),
+        class = "ledgr_invalid_strategy_type"
+      )
+    }
   }
   projected
 }
@@ -343,6 +356,12 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
 #' @param ... In context mode, at most one named `ids` or `where` payload.
+#' @param missing In context mode, whether missing current-member decisions
+#'   fail (`"error"`, the default) or count as not selected (`"exclude"`). A
+#'   subsequent rebalance targets excluded held members to zero; use
+#'   `ctx$hold()` when the intended action is to preserve positions. This is a
+#'   decision policy, unlike `ctx$idx(id, missing = "na")`, which controls a
+#'   missing instrument lookup.
 #' @return A `ledgr_selection` object.
 #' @examples
 #' ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
@@ -352,7 +371,12 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_selection <- function(x, universe = NULL, origin = NULL, ...) {
+ledgr_selection <- function(x,
+                            universe = NULL,
+                            origin = NULL,
+                            ...,
+                            missing = c("error", "exclude")) {
+  missing_supplied <- !missing(missing)
   dots <- list(...)
   if (inherits(x, "ledgr_pulse_context")) {
     if (!missing(universe)) {
@@ -361,6 +385,15 @@ ledgr_selection <- function(x, universe = NULL, origin = NULL, ...) {
       )
     }
     parts <- ledgr_strategy_context_parts(x, "ledgr_selection")
+    missing <- tryCatch(
+      match.arg(missing),
+      error = function(err) {
+        ledgr_strategy_context_abort(
+          "`missing` must be one of \"error\" or \"exclude\".",
+          class = "ledgr_invalid_strategy_helper"
+        )
+      }
+    )
     dots <- ledgr_strategy_context_dots(
       dots, "ledgr_selection", allowed = c("ids", "where")
     )
@@ -370,7 +403,12 @@ ledgr_selection <- function(x, universe = NULL, origin = NULL, ...) {
       ledgr_strategy_context_ids(dots$ids, parts$axis, parts$members)
     } else {
       ledgr_strategy_context_align(
-        dots$where, "where", "logical", parts$axis, parts$members
+        dots$where,
+        "where",
+        "logical",
+        parts$axis,
+        parts$members,
+        missing_decisions = missing
       )
     }
     return(ledgr_selection(values, origin = origin))
@@ -378,6 +416,11 @@ ledgr_selection <- function(x, universe = NULL, origin = NULL, ...) {
   if ((is.list(x) || is.environment(x)) && !inherits(x, "ledgr_selection")) {
     ledgr_strategy_context_abort(
       "`x` resembles a strategy context but is not a valid ledgr pulse context."
+    )
+  }
+  if (isTRUE(missing_supplied)) {
+    ledgr_strategy_context_abort(
+      "`missing` is available only when `x` is a ledgr pulse context."
     )
   }
   if (length(dots) > 0L) {
