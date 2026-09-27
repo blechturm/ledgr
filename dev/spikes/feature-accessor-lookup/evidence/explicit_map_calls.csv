@@ -1,0 +1,4 @@
+"arm","calls","bytes_per_call","microseconds_per_call","accessor_bytecode","lookup_bytecode"
+"production",5000,0,145.02,TRUE,TRUE
+"validate_once",5000,0,71.38,TRUE,TRUE
+"memo",5000,0,11.39,TRUE,TRUE

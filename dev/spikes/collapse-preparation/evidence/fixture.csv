@@ -1,0 +1,14 @@
+"case","site","source","rows","groups","min_group_rows","max_group_rows","columns","ts_tzone","compact_row_names","na_cells","key_sorted_c_locale"
+"c1_baseline","precompute","production capture",30,3,10,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,1,TRUE
+"c1_baseline","runner","production capture",30,3,10,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,1,TRUE
+"c2_collation","precompute","production capture",40,4,10,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,1,TRUE
+"c2_collation","runner","production capture",40,4,10,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,1,TRUE
+"c3_uneven","precompute","production capture",32,4,6,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,1,TRUE
+"c3_uneven","runner","production capture",32,4,6,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,1,TRUE
+"c4_absent","precompute","production capture",9,3,3,3,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,0,TRUE
+"c4_absent","runner","derived row subset of c3 capture",9,3,3,3,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,0,TRUE
+"c5_single","precompute","production capture",10,1,10,10,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,0,TRUE
+"scale_even","precompute","production capture",1250000,500,2500,2500,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,0,TRUE
+"scale_uneven","precompute","production capture",1155962,500,1668,2500,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric>","UTC",TRUE,0,TRUE
+"scale_even","runner","production capture",1250000,500,2500,2500,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,0,TRUE
+"scale_uneven","runner","production capture",1155962,500,1668,2500,"instrument_id<character> ts_utc<POSIXct> open<numeric> high<numeric> low<numeric> close<numeric> volume<numeric> gap_type<character> is_synthetic<logical>","UTC",TRUE,0,TRUE

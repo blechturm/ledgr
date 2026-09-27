@@ -1,0 +1,40 @@
+"case","workflow","surface","rows_base","rows_block","identical"
+"p1_sma_zero_cost","ledgr_run","fills",327,327,TRUE
+"p1_sma_zero_cost","ledgr_run","equity",150,150,TRUE
+"p1_sma_zero_cost","ledgr_run","trades",158,158,TRUE
+"p1_sma_zero_cost","ledgr_run","ledger_events",327,327,TRUE
+"p1_sma_zero_cost","ledgr_sweep","columns",2,2,TRUE
+"p1_sma_zero_cost","ledgr_sweep","returns",300,300,TRUE
+"p1_sma_zero_cost","ledgr_sweep","trades",280,280,TRUE
+"p1_sma_zero_cost","ledgr_sweep","attributes",1,1,TRUE
+"p1_sma_zero_cost","ledgr_sweep base vs base (comparator check)","columns",2,2,TRUE
+"p1_sma_zero_cost","ledgr_sweep base vs base (comparator check)","returns",300,300,TRUE
+"p1_sma_zero_cost","ledgr_sweep base vs base (comparator check)","trades",280,280,TRUE
+"p1_sma_zero_cost","ledgr_sweep base vs base (comparator check)","attributes",1,1,TRUE
+"p2_reversals_with_fees","ledgr_run","fills",4106,4106,TRUE
+"p2_reversals_with_fees","ledgr_run","equity",150,150,TRUE
+"p2_reversals_with_fees","ledgr_run","trades",1854,1854,TRUE
+"p2_reversals_with_fees","ledgr_run","ledger_events",2936,2936,TRUE
+"p3_availability_uneven","ledgr_run","fills",220,220,TRUE
+"p3_availability_uneven","ledgr_run","equity",114,114,TRUE
+"p3_availability_uneven","ledgr_run","trades",103,103,TRUE
+"p3_availability_uneven","ledgr_run","ledger_events",220,220,TRUE
+"p3_availability_uneven","ledgr_sweep","columns",2,2,TRUE
+"p3_availability_uneven","ledgr_sweep","returns",228,228,TRUE
+"p3_availability_uneven","ledgr_sweep","trades",176,176,TRUE
+"p3_availability_uneven","ledgr_sweep","attributes",1,1,TRUE
+"p4_db_live_mode","ledgr_run","fills",327,327,TRUE
+"p4_db_live_mode","ledgr_run","equity",150,150,TRUE
+"p4_db_live_mode","ledgr_run","trades",158,158,TRUE
+"p4_db_live_mode","ledgr_run","ledger_events",327,327,TRUE
+"p5_checkpoint_every_2","ledgr_backtest","fills",4106,4106,TRUE
+"p5_checkpoint_every_2","ledgr_backtest","equity",150,150,TRUE
+"p5_checkpoint_every_2","ledgr_backtest","ledger_events",2936,2936,TRUE
+"s1_release_shape","ledgr_run","fills",68201,68201,TRUE
+"s1_release_shape","ledgr_run","equity",1260,1260,TRUE
+"s1_release_shape","ledgr_run","trades",33948,33948,TRUE
+"s1_release_shape","ledgr_run","ledger_events",68201,68201,TRUE
+"s1_release_shape","ledgr_sweep","columns",1,1,TRUE
+"s1_release_shape","ledgr_sweep","returns",0,0,TRUE
+"s1_release_shape","ledgr_sweep","trades",0,0,TRUE
+"s1_release_shape","ledgr_sweep","attributes",1,1,TRUE

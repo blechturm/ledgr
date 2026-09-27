@@ -291,6 +291,26 @@ Route: the next release, with the fixture, after the historical-projection
 checkpoint establishes whether bounded revision is buildable. The roadmap row
 carries the commitment; this entry carries the reasoning.
 
+### 2026-09-27 [execution] Writer and accessor levers measured
+
+Four spikes measured hot-path levers on the release line at `b14579f`: 500 instruments × 1,260
+sessions, SMA 5/10, 68,201 fills. Report:
+`inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md`; evidence under
+`dev/spikes/`. The findings bind no design.
+
+- A per-pulse block write of fill events plus prepared fast-context feature accessors gave
+  byte-identical results. Warm `ledgr_run` −22%, one-candidate `ledgr_sweep` −38%, compiled
+  `spot_fifo` sweep −25%, 8-candidate sweep −38%. The two savings add up, and a mid-pulse failure
+  still leaves a durable run FAILED with nothing persisted.
+- `ctx$features(id, feature_map)`, the form the indicators vignette teaches, validates the map
+  twice on every call: about 160 µs, against 19 µs for the alias form. Remembering the last validated map cuts an
+  explicit-map run from 155.7 s to 58.8 s, with identical results and errors.
+- A cold availability-path run spends 58% of its time in per-bar strict feature computation
+  (`ledgr_compute_feature_series_strict()`), which calls `fn` and `series_fn` on every window.
+- `collapse::rsplit()` for bar preparation was rejected: about 60 ms per call, under 1% of a run.
+- This corrects the 2026-09-18 accessor entry: the dense path builds `features_wide` once per run,
+  not on every pulse. Availability runs subset it per pulse with `%in%`.
+
 ### 2026-09-26 [research] Fitted imputers after the simple missingness policy
 
 The maintainer's
@@ -349,6 +369,32 @@ The immediate no-lock-in constraints belong to the amendment's section 4, so
 they are not deferred here. Any probe or comparative work follows
 `spike_protocol.md`; this entry records direction and authorizes neither a
 spike nor implementation.
+
+### 2026-09-26 [data] Latent behaviours surfaced by the preparation spike
+
+Base `split()` orders groups by the session's `LC_COLLATE`. On an English locale it orders
+`aaa|b_1|B2|BBB`; under C collation it orders `B2|BBB|aaa|b_1`. Because of that, the order of
+`payload` values and `warmup` rows in the public `ledgr_precomputed_features` object depends on the
+machine for mixed-case or punctuated instrument ids. Sweep metrics are unaffected, because the
+projection indexes values by universe id.
+
+User indicator callbacks (`fn`, `series_fn`) receive bar frames whose `row.names` are each row's
+position in the whole universe query result. Those values depend on which other instruments were
+queried. `contracts.md` promises only ascending time order. A callback that reads `rownames()` gets
+universe-dependent values today.
+
+The availability hydration path (the bars-cache block in `ledgr_run_fold()`) aligns rows by
+timestamp and then overwrites `instrument_id` with the group key. A misgrouped split therefore
+passes silently: under a deliberately misgrouping candidate, `bars_mat` and the pulse views changed
+without any error. Dense hydration and precompute coverage validation do stop on misalignment. Any
+future change to the split or grouping on that path needs an external oracle.
+
+`ledgr_fill_row_buffer_add_many()` (`R/fold-reconstruction.R`, called on the compiled path at
+`R/sweep.R:1795`) writes through environment-held base subassignment. That is style shape 7: a full
+column copy on every call. It measured about 3% of a compiled sweep.
+
+`ledgr_with_collapse_deterministic()` has no call sites. Any value-bearing collapse adoption still
+needs pinned options at the call, as the collapse optimization map requires.
 
 ### 2026-09-25 [ux] Availability evidence has no convenient reader
 

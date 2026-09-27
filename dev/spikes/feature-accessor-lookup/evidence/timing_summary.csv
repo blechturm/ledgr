@@ -1,0 +1,4 @@
+"instruments","workflow","reps","base_median_s","base_rel_iqr","prepared_median_s","prepared_rel_iqr","ratio_prepared_to_base","paired_saving_median_s","paired_saving_q25_s","paired_saving_q75_s","paired_saving_median_pct"
+500,"ledgr_run",7,66.738,0.021,59.471,0.026,0.891,6.868,6.582,7.533,10.29
+500,"ledgr_sweep",7,44.354,0.062,36.144,0.014,0.815,8.246,7.18,10.749,18.59
+500,"ledgr_sweep spot_fifo",7,28.751,0.158,22.262,0.279,0.774,7.082,6.468,8.416,24.63

@@ -1,0 +1,68 @@
+"case","workflow","surface","rows_base","rows_combined","identical"
+"c1_alias_sma","ledgr_run","fills",327,327,TRUE
+"c1_alias_sma","ledgr_run","equity",150,150,TRUE
+"c1_alias_sma","ledgr_run","trades",158,158,TRUE
+"c1_alias_sma","ledgr_run","ledger_events",327,327,TRUE
+"c1_alias_sma","ledgr_sweep","columns",2,2,TRUE
+"c1_alias_sma","ledgr_sweep","returns",300,300,TRUE
+"c1_alias_sma","ledgr_sweep","trades",280,280,TRUE
+"c1_alias_sma","ledgr_sweep","attributes",1,1,TRUE
+"c1_alias_sma","ledgr_sweep spot_fifo","columns",2,2,TRUE
+"c1_alias_sma","ledgr_sweep spot_fifo","returns",300,300,TRUE
+"c1_alias_sma","ledgr_sweep spot_fifo","trades",280,280,TRUE
+"c1_alias_sma","ledgr_sweep spot_fifo","attributes",1,1,TRUE
+"c2_reversals_with_fees","ledgr_run","fills",4106,4106,TRUE
+"c2_reversals_with_fees","ledgr_run","equity",150,150,TRUE
+"c2_reversals_with_fees","ledgr_run","trades",1854,1854,TRUE
+"c2_reversals_with_fees","ledgr_run","ledger_events",2936,2936,TRUE
+"c3_explicit_feature_map","ledgr_run","fills",327,327,TRUE
+"c3_explicit_feature_map","ledgr_run","equity",150,150,TRUE
+"c3_explicit_feature_map","ledgr_run","trades",158,158,TRUE
+"c3_explicit_feature_map","ledgr_run","ledger_events",327,327,TRUE
+"c3_explicit_feature_map","ledgr_sweep","columns",2,2,TRUE
+"c3_explicit_feature_map","ledgr_sweep","returns",300,300,TRUE
+"c3_explicit_feature_map","ledgr_sweep","trades",316,316,TRUE
+"c3_explicit_feature_map","ledgr_sweep","attributes",1,1,TRUE
+"c4_availability_uneven","ledgr_run","fills",220,220,TRUE
+"c4_availability_uneven","ledgr_run","equity",114,114,TRUE
+"c4_availability_uneven","ledgr_run","trades",103,103,TRUE
+"c4_availability_uneven","ledgr_run","ledger_events",220,220,TRUE
+"c4_availability_uneven","ledgr_sweep","columns",2,2,TRUE
+"c4_availability_uneven","ledgr_sweep","returns",228,228,TRUE
+"c4_availability_uneven","ledgr_sweep","trades",176,176,TRUE
+"c4_availability_uneven","ledgr_sweep","attributes",1,1,TRUE
+"c5_db_live_mode","ledgr_run","fills",327,327,TRUE
+"c5_db_live_mode","ledgr_run","equity",150,150,TRUE
+"c5_db_live_mode","ledgr_run","trades",158,158,TRUE
+"c5_db_live_mode","ledgr_run","ledger_events",327,327,TRUE
+"c6_checkpoint_every_2","ledgr_backtest","fills",4106,4106,TRUE
+"c6_checkpoint_every_2","ledgr_backtest","equity",150,150,TRUE
+"c6_checkpoint_every_2","ledgr_backtest","ledger_events",2936,2936,TRUE
+"c7_monthly_rebalance","ledgr_run","fills",33,33,TRUE
+"c7_monthly_rebalance","ledgr_run","equity",150,150,TRUE
+"c7_monthly_rebalance","ledgr_run","trades",11,11,TRUE
+"c7_monthly_rebalance","ledgr_run","ledger_events",33,33,TRUE
+"c7_monthly_rebalance","ledgr_sweep","columns",1,1,TRUE
+"c7_monthly_rebalance","ledgr_sweep","returns",150,150,TRUE
+"c7_monthly_rebalance","ledgr_sweep","trades",11,11,TRUE
+"c7_monthly_rebalance","ledgr_sweep","attributes",1,1,TRUE
+"c8_eight_candidates","ledgr_sweep","columns",8,8,TRUE
+"c8_eight_candidates","ledgr_sweep","returns",1200,1200,TRUE
+"c8_eight_candidates","ledgr_sweep","trades",447,447,TRUE
+"c8_eight_candidates","ledgr_sweep","attributes",1,1,TRUE
+"s1_release_shape","ledgr_run","fills",68201,68201,TRUE
+"s1_release_shape","ledgr_run","equity",1260,1260,TRUE
+"s1_release_shape","ledgr_run","trades",33948,33948,TRUE
+"s1_release_shape","ledgr_run","ledger_events",68201,68201,TRUE
+"s1_release_shape","ledgr_sweep","columns",1,1,TRUE
+"s1_release_shape","ledgr_sweep","returns",0,0,TRUE
+"s1_release_shape","ledgr_sweep","trades",0,0,TRUE
+"s1_release_shape","ledgr_sweep","attributes",1,1,TRUE
+"s1_release_shape","ledgr_sweep spot_fifo","columns",1,1,TRUE
+"s1_release_shape","ledgr_sweep spot_fifo","returns",0,0,TRUE
+"s1_release_shape","ledgr_sweep spot_fifo","trades",0,0,TRUE
+"s1_release_shape","ledgr_sweep spot_fifo","attributes",1,1,TRUE
+"s2_monthly_release_shape","ledgr_run","fills",9002,9002,TRUE
+"s2_monthly_release_shape","ledgr_run","equity",1260,1260,TRUE
+"s2_monthly_release_shape","ledgr_run","trades",4369,4369,TRUE
+"s2_monthly_release_shape","ledgr_run","ledger_events",9002,9002,TRUE

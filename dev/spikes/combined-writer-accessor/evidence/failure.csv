@@ -1,0 +1,11 @@
+"arm","workflow","candidate","error_class","injected_message","status","persisted_ledger_events","n_trades","final_equity","events_before_failing_pulse","events_before_failing_fill","failing_fill_rank_in_pulse","fills_in_failing_pulse"
+"base","ledgr_run",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"base","ledgr_run db_live",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"base","ledgr_backtest checkpoint_every = 2",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"base","ledgr_sweep",1,"simpleError","TRUE","FAILED",NA,NA,NA,NA,NA,NA,NA
+"base","ledgr_sweep",2,NA,"FALSE","DONE",NA,1854,9999213.35697841,NA,NA,NA,NA
+"combined","ledgr_run",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"combined","ledgr_run db_live",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"combined","ledgr_backtest checkpoint_every = 2",NA,"simpleError|error|condition","TRUE","FAILED",0,NA,NA,36,44,9,20
+"combined","ledgr_sweep",1,"simpleError","TRUE","FAILED",NA,NA,NA,NA,NA,NA,NA
+"combined","ledgr_sweep",2,NA,"FALSE","DONE",NA,1854,9999213.35697841,NA,NA,NA,NA

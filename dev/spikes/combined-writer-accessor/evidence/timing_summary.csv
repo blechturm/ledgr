@@ -1,0 +1,7 @@
+"instruments","workflow","reps","base_median_s","base_rel_iqr","combined_median_s","combined_rel_iqr","ratio_combined_to_base","paired_saving_median_s","paired_saving_q25_s","paired_saving_q75_s","paired_saving_median_pct"
+500,"ledgr_run",7,67.556,0.079,52.03,0.033,0.77,14.753,13.98,19.509,22.09
+500,"ledgr_sweep",7,44.246,0.082,27.701,0.064,0.626,16.545,15.862,18.926,38.19
+500,"ledgr_sweep spot_fifo",7,27.805,0.022,20.817,0.011,0.749,7.034,6.986,7.467,25.35
+500,"ledgr_sweep 8 candidates",3,242.515,0.031,146.188,0.029,0.603,90.705,88.479,94.58,37.57
+500,"ledgr_run monthly",5,18.583,0.021,17.312,0.021,0.932,1.37,0.831,1.531,7.37
+500,"ledgr_sweep monthly",5,6.05,0.038,4.538,0.01,0.75,1.566,1.405,1.578,25.71

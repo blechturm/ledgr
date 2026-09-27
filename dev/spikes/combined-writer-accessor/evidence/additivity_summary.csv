@@ -1,0 +1,11 @@
+"workflow","arm","reps","median_s","saving_median_s","saving_min_s","saving_max_s","saving_median_pct"
+"ledgr_run","base",4,65.788,NA,NA,NA,NA
+"ledgr_run","block",4,59.298,6.416,3.366,6.846,9.78
+"ledgr_run","prepared",4,63.128,2.502,2.353,3.81,3.8
+"ledgr_run","combined",4,51.903,13.695,12.473,14.268,20.88
+"ledgr_run","interaction",4,NA,4.809,3.612,6.691,NA
+"ledgr_sweep","base",4,43.293,NA,NA,NA,NA
+"ledgr_sweep","block",4,34.119,9.031,8.524,9.714,20.92
+"ledgr_sweep","prepared",4,39.894,3.368,2.91,3.678,7.77
+"ledgr_sweep","combined",4,27.025,16.206,15.799,16.506,37.43
+"ledgr_sweep","interaction",4,NA,3.8,3.15,4.342,NA

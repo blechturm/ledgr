@@ -1,0 +1,13 @@
+"case","site","op","reps","base_median_ms","base_rel_iqr","rsplit_median_ms","rsplit_rel_iqr","ratio_rsplit_to_base","paired_saving_median_ms","paired_saving_q25_ms","paired_saving_q75_ms","base_gc_median_ms","rsplit_gc_median_ms"
+"scale_even","precompute","split",15,67.38,0.102,9.88,0.162,0.147,56.86,55.52,59.74,0,0
+"scale_even","precompute","post_query_convert_and_split",15,69.89,0.081,11.36,0.095,0.163,58.92,54.73,60.83,0,0
+"scale_even","precompute","fetch_bars_including_duckdb_query",15,163.37,0.092,90.01,0.043,0.551,68.5,61.1,78.52,0,0
+"scale_even","runner","split",15,76.83,0.112,11.67,0.112,0.152,64.57,61.41,67.93,0,0
+"scale_even","runner","hydration_block_dense_path",7,352.4,0.064,279.19,0.099,0.792,54.08,39.6,93.31,0,0
+"scale_even","runner","ledgr_run_flat_end_to_end_context",3,15740.54,0.016,15736.03,0.004,1,71.03,29.25,261.59,3480,3360
+"scale_even","precompute","ledgr_precompute_features_sma_end_to_end_context",3,1189.69,0.011,1032.24,0.076,0.868,157.45,97.15,162.22,60,60
+"scale_uneven","precompute","split",15,63.64,0.102,9.67,0.086,0.152,54.45,53.54,59.57,0,0
+"scale_uneven","precompute","post_query_convert_and_split",15,63.49,0.097,11.07,0.092,0.174,52.62,51.05,55.86,0,0
+"scale_uneven","precompute","fetch_bars_including_duckdb_query",15,147.52,0.103,84.86,0.065,0.575,65.16,55.84,69.84,0,0
+"scale_uneven","runner","split",15,72.39,0.11,11.17,0.133,0.154,61.62,59.27,67.11,0,0
+"scale_uneven","runner","hydration_block_availability_path",7,955.37,0.022,870.92,0.022,0.912,82.98,56.7,91.05,30,30

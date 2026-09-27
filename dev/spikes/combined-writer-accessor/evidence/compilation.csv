@@ -1,0 +1,15 @@
+"arm","fn","bytecode"
+"combined","ledgr_execute_fold",TRUE
+"combined","ledgr_memory_output_handler",TRUE
+"combined","ledgr_persistent_output_handler",TRUE
+"combined","ledgr_projection_feature_accessor_state",TRUE
+"combined","ledgr_projection_feature_bundle_accessor_state",TRUE
+"combined","returned ctx$feature closure",TRUE
+"combined","returned ctx$features closure",TRUE
+"block","ledgr_execute_fold",TRUE
+"block","ledgr_memory_output_handler",TRUE
+"block","ledgr_persistent_output_handler",TRUE
+"prepared","ledgr_projection_feature_accessor_state",TRUE
+"prepared","ledgr_projection_feature_bundle_accessor_state",TRUE
+"prepared","returned ctx$feature closure",TRUE
+"prepared","returned ctx$features closure",TRUE

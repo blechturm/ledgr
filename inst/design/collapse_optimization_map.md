@@ -9,6 +9,29 @@ for the hot-path lanes. This maps what it buys *beyond* the event-buffer fix —
 checked against the full 382-export surface — ranked by impact on ledgr's actual
 code, with the determinism gate attached.
 
+## 2026-09-26/27 re-measurement against the release line
+
+This map predates the v0.1.9 primitive-internals work. It was re-measured at `b14579f`, at release
+shape; see `inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md`.
+
+- ledgr now calls collapse only through `setv()`. The profiled fold, runner and sweep lanes no
+  longer contain the grouped base reductions that Tier 1 targeted.
+- A few grouped base reductions remain, all off the profiled hot paths. They are unmeasured
+  GRP/`fsum` candidates:
+  - `R/snapshot_adapters.R:135` (`tapply`);
+  - `R/availability-facts.R:1728` (`ave`);
+  - `rowsum` in corporate-action settlement and results;
+  - `R/derived-state.R:199` (`tapply`);
+  - `R/sweep-retention.R:769` (`ave`).
+- `collapse::rsplit()` for bars by instrument was rejected: about 60 ms per call.
+- A per-pulse block write of fill events with one `setv()` per column is green:
+  - `ledgr_run` −10%;
+  - one-candidate sweep −21%;
+  - byte-identical results.
+- The largest non-collapse lever is plain R: prepared fast-context feature accessors.
+- The v0.1.9 gate still applies: more than 5% wall clock on the reference workload, pinned options
+  and parity.
+
 ## Tier 1 — vectorize the loop-heavy, value-bearing lanes
 
 ### Reconstruction (Lane C) — `R/fold-core.R:445-901`
@@ -40,7 +63,9 @@ buffer (~137s) or the wall. Corrected findings:
   saves only ~0.4s/run — justified by API/contract cleanliness + primitives-in-core,
   **not speed**. Belongs in the v0.1.8.7 *contract* RFC, not the perf lanes.
 - `rsplit` remains the separate ~3x v0.1.9 "Phase B" win for the
-  `feature_table="full"` path (not measured here).
+  `feature_table="full"` path (not measured here). The 2026-09-26 spike measured
+  `rsplit` at the two bars-by-instrument sites instead and rejected it there;
+  this `feature_table="full"` site is still unmeasured.
 
 ## Tier 2 — clean, modest wins
 

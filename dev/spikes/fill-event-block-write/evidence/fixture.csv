@@ -1,0 +1,7 @@
+"case","instruments","bars"
+"p1_sma_zero_cost",20,3000
+"p2_reversals_with_fees",20,3000
+"p3_availability_uneven",20,2661
+"p4_db_live_mode",20,3000
+"p5_checkpoint_every_2",20,3000
+"s1_release_shape",500,630000
