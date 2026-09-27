@@ -57,10 +57,13 @@ pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = "AAA",
   ts_utc = "2020-01-03T00:00:00Z",
-  features = list(ledgr_ind_sma(2))
+  features = list(ledgr_ind_sma(2)),
+  positions = c(AAA = 2),
+  state_prev = list(pulses_seen = 1)
 )
 pulse$close("AAA")
 pulse$feature("AAA", "sma_2")
+pulse$state_prev
 close(pulse)
 ledgr_snapshot_close(snapshot)
 }

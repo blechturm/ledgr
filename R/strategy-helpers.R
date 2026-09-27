@@ -63,6 +63,7 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' @examples
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
+#'   availability_active = FALSE,
 #'   vec = list(
 #'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
 #'   )
@@ -167,6 +168,7 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
 #' @examples
 #' signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
 #' ledgr_select_top_n(signal, n = 1)
+#' ledgr_select_top_n(signal, n = 3, partial = "allow")
 #'
 #' @section Articles:
 #' Strategy helper pipelines:
@@ -283,13 +285,16 @@ ledgr_weight_equal <- function(selection) {
 #'   also appear in `weights`, even at zero weight.
 #' @return A full-universe `ledgr_target` object.
 #' @examples
-#' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
+#' weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
-#'   vec = list(close = c(AAA = 50, BBB = 100))
+#'   vec = list(
+#'     close = c(AAA = 50, BBB = 100),
+#'     position = c(AAA = 2, BBB = 0)
+#'   )
 #' )
-#' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+#' ledgr_target_rebalance(weights, ctx, keep = "AAA")
 #'
 #' @section Articles:
 #' Strategy helper pipelines:

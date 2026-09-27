@@ -162,6 +162,109 @@ testthat::test_that("current documentation artifacts, links, and optional bounda
   }
 })
 
+testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper policies", {
+  authoring_qmd <- paste(
+    readLines(
+      ledgr_test_source_vignette("strategy-authoring-tools.qmd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  authoring_md <- paste(
+    readLines(
+      ledgr_test_source_vignette("strategy-authoring-tools.md"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  development_qmd <- paste(
+    readLines(
+      ledgr_test_source_vignette("strategy-development.qmd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  root <- testthat::test_path("..", "..")
+  help_files <- c(
+    "ledgr_signal_feature.Rd",
+    "ledgr_select_top_n.Rd",
+    "ledgr_target_rebalance.Rd",
+    "ledgr_selection.Rd",
+    "ledgr_pulse_snapshot.Rd"
+  )
+  help <- vapply(help_files, function(path) {
+    paste(
+      readLines(file.path(root, "man", path), warn = FALSE),
+      collapse = "\n"
+    )
+  }, character(1))
+
+  for (needle in c(
+    'ledgr_select_top_n(params$n, partial = "allow")',
+    'ledgr_signal_feature()` for another',
+    'ledgr_target_rebalance(ctx, keep = "DEMO_04")',
+    'ledgr_selection(where = rising, missing = "exclude")',
+    'state_prev = list(pulses_seen = 1)',
+    'weights |>\n    ledgr_target_rebalance(ctx'
+  )) {
+    testthat::expect_match(authoring_qmd, needle, fixed = TRUE, info = needle)
+  }
+  testthat::expect_no_match(authoring_qmd, "rising <- !is.na", fixed = TRUE)
+  testthat::expect_no_match(
+    authoring_qmd,
+    "equity_fraction = 0.6",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    authoring_qmd,
+    'targets[["DEMO_04"]]',
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    development_qmd,
+    '`ledgr_target_rebalance(..., keep = )`',
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    development_qmd,
+    "The weights carry only relative allocations.",
+    fixed = TRUE
+  )
+
+  for (outcome in c(
+    "nrow(top_momentum_fills)\n#> [1] 136",
+    'nrow(ledgr_results(trend_momentum_run, what = "fills"))\n#> [1] 177',
+    paste0(
+      "weekly_trend_momentum(exit_pulse, weekly_params)\n",
+      "#> $targets\n",
+      "#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n",
+      "#>       0       0       0       0\n",
+      "#>\n",
+      "#> $state_update\n",
+      "#> $state_update$pulses_seen\n",
+      "#> [1] 2"
+    )
+  )) {
+    testthat::expect_match(authoring_md, outcome, fixed = TRUE, info = outcome)
+  }
+
+  example_needles <- c(
+    "ledgr_signal_feature(ctx, \"return_5\")",
+    "partial = \"allow\"",
+    "keep = \"AAA\"",
+    "missing = \"exclude\"",
+    "state_prev = list(pulses_seen = 1)"
+  )
+  for (i in seq_along(help)) {
+    testthat::expect_match(
+      help[[i]],
+      example_needles[[i]],
+      fixed = TRUE,
+      info = help_files[[i]]
+    )
+  }
+})
+
 
 testthat::test_that("feature documentation teaches discovery, aliases, and materialization boundaries", {
   local({
@@ -204,8 +307,9 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
   testthat::expect_no_match(strategy_doc, "feature factory", ignore.case = TRUE)
   testthat::expect_match(strategy_doc, "a call to your own function defined outside the\\s+strategy, such as `trend_momentum\\(\\)`, is rejected before the run starts")
   testthat::expect_match(strategy_doc, "returning `ctx\\$hold\\(\\)` does not guarantee that no fill occurs")
-  testthat::expect_match(strategy_doc, "!is.na(close) & momentum > 0 & close > trend", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "broke_trend <- !is.na(close) & close < trend", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "rising <- momentum > 0 & close > trend", fixed = TRUE)
+  testthat::expect_match(strategy_doc, 'where = close < trend,\n      missing = "exclude"', fixed = TRUE)
+  testthat::expect_no_match(strategy_doc, "rising <- !is.na", fixed = TRUE)
   testthat::expect_match(strategy_doc, "`vignette\\(\"reproducibility\", package = \"ledgr\"\\)` explains why")
   testthat::expect_match(strategy_doc, "Test A Strategy On One Pulse", fixed = TRUE)
   testthat::expect_match(strategy_doc, "builds an inspection context for one timestamp", fixed = TRUE)

@@ -45,5 +45,6 @@ Strategy helper pipelines:
 \examples{
 signal <- ledgr_signal(c(AAA = 0.03, BBB = NA, CCC = 0.01), origin = "return_5")
 ledgr_select_top_n(signal, n = 1)
+ledgr_select_top_n(signal, n = 3, partial = "allow")
 
 }

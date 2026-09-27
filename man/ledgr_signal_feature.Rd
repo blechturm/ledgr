@@ -35,6 +35,7 @@ Strategy helper pipelines:
 \examples{
 ctx <- list(
   universe = c("AAA", "BBB"),
+  availability_active = FALSE,
   vec = list(
     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
   )

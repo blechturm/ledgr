@@ -436,11 +436,13 @@ feature, not warmup.
 #| label: helper-strategy
 
 top_return_strategy <- function(ctx, params) {
-  signal <- ledgr_signal_return(ctx, lookback = params$lookback)
-  selection <- ledgr_select_top_n(signal, n = params$n)
+  weights <- ctx |>
+    ledgr_signal_return(lookback = params$lookback) |>
+    ledgr_select_top_n(n = params$n, partial = "allow") |>
+    ledgr_weight_equal()
 
-  weights <- ledgr_weight_equal(selection)
-  ledgr_target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
+  weights |>
+    ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
 }
 ```
 
@@ -448,6 +450,17 @@ Economically, this scores each instrument by recent return, keeps the top name,
 splits the selected allocation equally, and converts the weights into floored
 share targets. No helper registers indicators automatically; the experiment
 must still declare `features`.
+
+| Step | Use |
+|---|---|
+| `ledgr_signal_return()` or `ledgr_signal_feature()` | read one registered feature as comparable scores |
+| `ledgr_select_top_n(..., partial = )` or `ledgr_selection(..., missing = )` | choose instruments and state how incomplete inputs behave |
+| `ledgr_weight_equal()` or `ledgr_weights()` | divide the allocation budget |
+| `ledgr_target_rebalance(..., keep = )` | convert weights into shares using the current account context |
+
+The weights carry only relative allocations. Rebalancing needs `ctx` again
+because current equity, prices, and holdings determine the share quantities.
+The focused authoring article develops each step and its missing-input policy.
 
 ```{r}
 #| label: experiment

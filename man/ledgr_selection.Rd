@@ -45,5 +45,14 @@ Strategy helper pipelines:
 
 \examples{
 ledgr_selection(c(AAA = TRUE, BBB = FALSE), universe = c("AAA", "BBB"))
+ctx <- structure(
+  list(
+    universe = c("AAA", "BBB"),
+    vec = list(id = c("AAA", "BBB")),
+    availability_active = FALSE
+  ),
+  class = "ledgr_pulse_context"
+)
+ledgr_selection(ctx, where = c(TRUE, NA), missing = "exclude")
 
 }

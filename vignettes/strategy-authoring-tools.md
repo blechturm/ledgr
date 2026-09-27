@@ -65,10 +65,12 @@ instruments with the highest 5-day return, using half of the account.
 
 ``` r
 top_momentum <- function(ctx, params) {
-  ctx |>
+  weights <- ctx |>
     ledgr_signal_return(lookback = 5) |>
-    ledgr_select_top_n(params$n) |>
-    ledgr_weight_equal() |>
+    ledgr_select_top_n(params$n, partial = "allow") |>
+    ledgr_weight_equal()
+
+  weights |>
     ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
 
@@ -77,9 +79,10 @@ params <- list(n = 2, invested = 0.5)
 
 The next section takes that pipeline apart. First, check what it
 decides. `ledgr_pulse_snapshot()` builds an inspection context for one
-timestamp. It offers the same strategy reads as the `ctx` a dense
-backtest passes in, so you can call the strategy yourself. Start by
-looking at the inputs:
+timestamp. Its cash, positions, and equity follow the same rules as the
+`ctx` a dense backtest passes in; equity is cash plus the current value
+of the supplied positions. You can therefore call the strategy yourself.
+Start by looking at the inputs:
 
 ``` r
 pulse <- ledgr_pulse_snapshot(
@@ -169,12 +172,14 @@ weights
 ```
 
 `ledgr_signal_return()` reads the registered `return_5` feature; it
-never registers a feature for you. For any other score, pass the values
-yourself with `ledgr_signal(ctx, values = ...)`.
+never registers a feature for you. Use `ledgr_signal_feature()` for
+another registered feature. Use `ledgr_signal(ctx, values = ...)` only
+when you have already transformed the values into a genuinely custom
+score.
 
 | Object | What it holds | Made by |
 |----|----|----|
-| signal | one score per instrument | `ledgr_signal_return()`, `ledgr_signal(ctx, values = ...)` |
+| signal | one score per instrument | `ledgr_signal_return()`, `ledgr_signal_feature()` |
 | selection | `TRUE` or `FALSE`: which instruments are chosen | `ledgr_select_top_n()`, `ledgr_selection()` |
 | weights | each chosen instrument’s share of the budget | `ledgr_weight_equal()`, `ledgr_weights()` |
 | target | whole-share quantities for every instrument | `ledgr_target_rebalance()` |
@@ -184,11 +189,13 @@ objects: returning a signal, selection, or weights from a strategy is an
 error.
 
 Weights are relative. `0.5` means “half of the budget”, not a number of
-shares. Turning weights into shares needs today’s prices and today’s
-account value, which is why `ctx` is passed again:
+shares. The weights say how to divide a budget. They do not contain the
+budget, current prices, or current holdings. Turning them into shares
+therefore needs the current `ctx` again:
 
 ``` r
-target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.5)
+target <- weights |>
+  ledgr_target_rebalance(pulse, equity_fraction = 0.5)
 target
 #> <ledgr_target> [4 assets]
 #> origin: return_5
@@ -227,17 +234,19 @@ longer wants.
 >
 > ### Keeping one position while rebalancing the rest
 >
-> `ledgr_target_rebalance()` sizes the chosen instruments from the whole
-> account. If you then put an existing position back by hand, you ask for
-> more than the account holds. With equity 100, a kept position worth 40,
-> and `equity_fraction = 1`, the new allocation alone uses 100, so the
-> targets add up to 140. Shrink the budget first; `equity_fraction = 0.6`
-> leaves room for the 40 you keep:
+> Name a position in `keep` when you want to preserve it while rebalancing
+> the rest. ledgr keeps its current quantity, reserves its marked exposure
+> once, and sizes the new weights from the capital that remains. With
+> equity 100 and a kept position worth 40, weight 1 sizes from 60:
 >
 > ``` r
-> targets <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.6)
-> targets[["DEMO_04"]] <- ctx$position("DEMO_04")
+> targets <- weights |>
+>   ledgr_target_rebalance(ctx, keep = "DEMO_04")
 > ```
+>
+> `equity_fraction` applies to that remaining capital. Do not shrink it by
+> hand to make room for the kept position; doing both would reserve the
+> exposure twice and underinvest the account.
 
 
 ## Run The First Version
@@ -273,9 +282,11 @@ top_momentum_fills |>
 Nothing trades during the first week. Until five prior bars exist, every
 5-day return is `NA`; ranking skips missing scores, finds nothing to
 choose, and returns an empty selection without a warning, so the target
-is all zeros. After that, the strategy trades almost every day, because
-the two highest 5-day returns keep changing. Each decision fills at the
-next open, so a fill’s date is the pulse after the decision.
+is all zeros. If only one score is available, `partial = "allow"`
+deliberately accepts that short selection. After warmup, the strategy
+trades almost every day because the two highest returns keep changing.
+Each decision fills at the next open, so a fill’s date is the pulse
+after the decision.
 
 If a whole run finishes with no fills, test the strategy on a late
 pulse. A feature that never warms up looks exactly like this first week,
@@ -316,7 +327,7 @@ tryCatch(
   ledgr_selection(first_pulse, where = rising),
   error = conditionMessage
 )
-#> [1] "`where` contains missing decisions for current members: DEMO_01, DEMO_02, DEMO_03, DEMO_04."
+#> [1] "`where` contains missing decisions for current members: DEMO_01, DEMO_02, DEMO_03, DEMO_04. Use `missing = \"exclude\"` to treat them as not selected; a rebalance then targets those instruments to zero."
 ```
 
 At the first pulse neither feature has enough history, so every
@@ -335,12 +346,13 @@ trend_momentum <- function(ctx, params) {
   momentum <- ctx$vec$feature("return_5")
   trend <- ctx$vec$feature("sma_10")
   close <- ctx$vec$close
-  rising <- !is.na(momentum) & !is.na(trend) & !is.na(close) &
-    momentum > 0 & close > trend
+  rising <- momentum > 0 & close > trend
 
-  ctx |>
-    ledgr_selection(where = rising) |>
-    ledgr_weight_equal() |>
+  weights <- ctx |>
+    ledgr_selection(where = rising, missing = "exclude") |>
+    ledgr_weight_equal()
+
+  weights |>
     ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
 
@@ -356,8 +368,10 @@ trend_momentum(pulse, params)
 #>       0     739       0       0
 ```
 
-The first pulse now selects nothing. On 12 March the rule keeps only
-`DEMO_02` and gives it the whole invested half of the account.
+The first pulse now selects nothing. `missing = "exclude"` is the
+deliberate policy: an unknown decision counts as not selected. On 12
+March the rule keeps only `DEMO_02` and gives it the whole invested half
+of the account.
 
 ``` r
 trend_momentum_run <- ledgr_experiment(
@@ -467,15 +481,20 @@ weekly_trend_momentum <- function(ctx, params) {
   if (!ledgr_passed_warmup(trend)) {
     targets <- ctx$hold()
   } else if (pulses_seen %% params$every == 0) {
-    rising <- !is.na(momentum) & !is.na(close) & momentum > 0 & close > trend
-    targets <- ctx |>
-      ledgr_selection(where = rising) |>
-      ledgr_weight_equal() |>
+    rising <- momentum > 0 & close > trend
+    weights <- ctx |>
+      ledgr_selection(where = rising, missing = "exclude") |>
+      ledgr_weight_equal()
+    targets <- weights |>
       ledgr_target_rebalance(ctx, equity_fraction = params$invested)
   } else {
     targets <- ctx$hold()
-    broke_trend <- !is.na(close) & close < trend
-    targets[broke_trend] <- 0
+    exits <- ledgr_selection(
+      ctx,
+      where = close < trend,
+      missing = "exclude"
+    )
+    targets[as.logical(exits)] <- 0
   }
 
   list(targets = targets, state_update = list(pulses_seen = pulses_seen + 1))
@@ -514,6 +533,31 @@ weekly_trend_momentum(pulse, weekly_params)
 #> $state_update
 #> $state_update$pulses_seen
 #> [1] 1
+```
+
+Supply previous state and holdings to test the other branch without
+running a backtest. Here `pulses_seen = 1` makes this a holding pulse;
+the strategy keeps the book except for a position whose close broke
+below its trend:
+
+``` r
+exit_pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = instruments,
+  ts_utc = ledgr_utc("2019-03-12"),
+  features = features,
+  positions = c(DEMO_03 = 10),
+  state_prev = list(pulses_seen = 1)
+)
+
+weekly_trend_momentum(exit_pulse, weekly_params)
+#> $targets
+#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+#>       0       0       0       0
+#>
+#> $state_update
+#> $state_update$pulses_seen
+#> [1] 2
 ```
 
 Now run it and compare the three versions:
@@ -605,11 +649,11 @@ Four things then work differently:
   that are currently eligible.
 - `ledgr_selection()`, `ledgr_signal()`, and `ledgr_select_top_n()`
   choose only among members. Values you supply for held nonmembers are
-  ignored, not ranked. `ledgr_signal_return()`, used by the first
-  version, also marks scores of members that cannot be traded as
-  missing; a score you build yourself with
-  `ledgr_signal(ctx, values = ...)` does not, so set unusable scores to
-  `NA` in your own rule.
+  ignored, not ranked. `ledgr_signal_return()` and
+  `ledgr_signal_feature()` also mark scores of target-inadmissible
+  members as missing. A score you build yourself with
+  `ledgr_signal(ctx, values = ...)` deliberately bypasses that
+  convenience mask.
 - `ledgr_target_rebalance()` keeps each held nonmember’s quantity and
   reserves its value before sizing, so weights apply to what remains.
   With equity 100 and a held nonmember worth 40, weight 1 allocates 60,
@@ -634,6 +678,7 @@ close(weekly_run)
 close(pulse)
 close(first_pulse)
 close(holding_pulse)
+close(exit_pulse)
 ledgr_snapshot_close(snapshot)
 ```
 
