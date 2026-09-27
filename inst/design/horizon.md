@@ -180,8 +180,9 @@ its non-claims rather than imply a retrospective point-in-time guarantee.
 Accepted 2026-09-27: the documentation reports what the engine does. Feature
 windows count venue open sessions, and lifetime facts do not narrow the feature
 axis. Reaching the stated design goal - instrument expected sessions excluding
-accepted `known_inactive` intervals - is intended for a later version, and this
-entry keeps the reasoning so it is not re-derived from scratch.
+accepted `known_inactive` intervals - is scheduled for the next release in
+`ledgr_roadmap.md`, and this entry keeps the reasoning so it is not re-derived
+from scratch.
 
 The disagreement. Four authorities say feature windows exclude known inactivity:
 the availability synthesis ("expected sessions, which drive feature windows...
@@ -242,9 +243,9 @@ the historical-projection checkpoint exists to evaluate. Under every current
 adapter the two clocks coincide, so the trip-wire does not fire today - which is
 exactly why it should be checked before narrowing lands rather than after.
 
-Route: a later version, with the fixture, after the historical-projection
-checkpoint establishes whether bounded revision is buildable. The roadmap rather
-than this file is where that intent becomes a commitment.
+Route: the next release, with the fixture, after the historical-projection
+checkpoint establishes whether bounded revision is buildable. The roadmap row
+carries the commitment; this entry carries the reasoning.
 
 ### 2026-09-26 [research] Fitted imputers after the simple missingness policy
 

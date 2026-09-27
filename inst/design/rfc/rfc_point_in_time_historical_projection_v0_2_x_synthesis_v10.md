@@ -4,8 +4,8 @@
 accepted as written. The section 4 session-axis proposal is accepted with a
 direction: the documentation reports the engine's current behaviour, and
 reaching the stated design goal of instrument-narrowed expected sessions is
-intended for a later version, recorded in `../horizon.md` (2026-09-27, both
-`[data]` entries) so the reasoning is not re-derived. Acceptance settles
+scheduled for the next release, in `../ledgr_roadmap.md` with the reasoning kept
+in `../horizon.md` (2026-09-27, both `[data]` entries). Acceptance settles
 semantics; it authorizes no implementation, spec packet or spike.
 
 **Status (drafting):** Decision synthesis, superseding
@@ -353,13 +353,13 @@ to `NA` on any non-finite value in the window (`R/features-engine.R:286-320`).
 facts do not narrow the feature axis. The documentation is corrected to report
 what the engine does rather than what was aspired to, and the engine stands.
 
-**The door stays open.** Instrument-narrowed expected sessions remain the stated
-design goal for a later version. This is a decision about what the documents
-claim now, not a rejection of the semantics. The reasoning on both sides, the
-measured cost each way, the two arguments that were made and do not hold, and
-the trip-wire that makes narrowing expensive are recorded in `../horizon.md`
-(2026-09-27) so that a later version reinstates it from the reasoning rather
-than from scratch.
+**The door stays open, and it is scheduled.** Instrument-narrowed expected
+sessions remain the stated design goal and are scheduled for the next release in
+`../ledgr_roadmap.md`. This is a decision about what the documents claim now, not
+a rejection of the semantics. The reasoning on both sides, the measured cost each
+way, the two arguments that were made and do not hold, and the trip-wire that
+makes narrowing expensive are recorded in `../horizon.md` (2026-09-27) so that
+the next release reinstates it from the reasoning rather than from scratch.
 
 **What the correction touches, and what it must not.** The live authority is
 `contracts.md:803`. The availability synthesis, the v0.2.0.0 packet and gate 21
