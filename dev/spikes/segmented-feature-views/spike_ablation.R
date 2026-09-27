@@ -200,6 +200,132 @@ panel_revisions <- function(n_inst, width = 3L, style = "rolling_mean",
 for (n in c(4L, 40L, 200L)) panel_revisions(n)
 for (n in c(4L, 40L, 200L)) panel_revisions(n, cross_sectional = TRUE)
 
+# ======================================= block D: the bias of not revising
+# What the pragmatic shortcut costs in correctness. Three series over the axis,
+# all read the way a run reads them - the value at session t:
+#
+#   reference  prepared at t for every t. The diagonal of the correct behaviour.
+#   full       one preparation using every fact in the snapshot, reused at every
+#              pulse. What a backtester does when it loads today's data and runs
+#              history through it. This is lookahead.
+#   stale      one preparation at the run's first cutoff, never revised. This is
+#              staleness, and carries no lookahead.
+#
+# The two shortcuts fail in opposite directions, so both are measured against the
+# same reference. No clock here either: this block measures bias, not cost.
+bias_of_shortcut <- function(style, width) {
+  name <- sprintf("D_%s_w%d", style, width)
+  inputs <- base_inputs(11L)
+  subject <- inputs$instruments$instrument_id[[4L]]
+  sealed <- seal_with_barrier(inputs, subject, FROM_I, TO_I, KNOWN_I)
+  on.exit({
+    ledgr_snapshot_close(sealed$snapshot)
+    unlink(sealed$db)
+  }, add = TRUE)
+  v <- views(sealed, subject, AGE, width, style = style)
+  n <- v$n_axis
+
+  reference <- vapply(seq_len(n), function(t)
+    v$feature(v$prepare(sealed$axis[[t]]))[[t]], numeric(1))
+  full <- v$feature(v$prepare(Inf))
+  stale <- v$feature(v$prepare(sealed$axis[[1L]]))
+
+  record(name, "axis_sessions", n, "count", "venue axis length")
+  record(name, "full_diag_cells_biased", length(revised(reference, full)),
+         "count", "diagonal cells where the full-knowledge shortcut differs")
+  record(name, "stale_diag_cells_biased", length(revised(reference, stale)),
+         "count", "diagonal cells where the never-revised shortcut differs")
+
+  # Direction. A lost signal is a session the point-in-time run could act on and
+  # the shortcut cannot; a fabricated signal is the reverse.
+  record(name, "full_signals_lost", sum(!is.na(reference) & is.na(full)),
+         "count", "reference has a value where the shortcut has none")
+  record(name, "full_signals_fabricated", sum(is.na(reference) & !is.na(full)),
+         "count", "shortcut has a value where the reference has none")
+  record(name, "stale_signals_lost", sum(!is.na(reference) & is.na(stale)),
+         "count", "reference has a value where the shortcut has none")
+  record(name, "stale_signals_fabricated", sum(is.na(reference) & !is.na(stale)),
+         "count", "shortcut has a value where the reference has none")
+
+  # Magnitude, where the shortcut produces a value at all.
+  both <- !is.na(reference) & !is.na(full)
+  if (any(both)) {
+    rel <- abs(full[both] - reference[both]) / pmax(abs(reference[both]), 1e-12)
+    record(name, "full_cells_both_present", sum(both), "count",
+           "diagonal cells where reference and shortcut both have values")
+    record(name, "full_max_rel_bias", signif(max(rel), 4), "ratio",
+           "largest relative difference where both have values")
+    record(name, "full_mean_rel_bias", signif(mean(rel), 4), "ratio",
+           "mean relative difference where both have values")
+  }
+
+  # Section 6.2's segmentation payoff, from the same preparations: how many
+  # distinct barrier states the axis actually visits.
+  pats <- vapply(seq_len(n), function(t)
+    paste(as.integer(v$prepare(sealed$axis[[t]])$barrier), collapse = ""),
+    character(1))
+  record(name, "cutoffs_on_axis", n, "count", "one per pulse")
+  record(name, "distinct_views_needed", length(unique(pats)), "count",
+         "distinct barrier states over those cutoffs")
+  invisible(NULL)
+}
+
+bias_of_shortcut("rolling_mean", 3L)
+bias_of_shortcut("rolling_mean", 5L)
+bias_of_shortcut("ema", 3L)
+bias_of_shortcut("expanding_mean", 3L)
+
+# ================================== block E: when the shortcut stops being free
+# Block D found the never-revised shortcut unbiased on the decision diagonal, but
+# that is a property of the geometry rather than of the shortcut. A pulse at
+# session t reads the value at t, and by the time this fixture's fact becomes
+# knowable the window has already moved past the barrier, so no decision ever
+# sees the revision. Move the fact earlier and it must.
+#
+# The crossover is the measurement: the shortcut is free while the fact arrives
+# later than the feature's own reach past the barrier, and biased once it arrives
+# inside it. If the crossover tracks the window width, the condition is a
+# knowledge lag against `W_f` and can be stated in the synthesis.
+knowledge_lag_sweep <- function(known_i, width) {
+  name <- sprintf("E_known%02d_w%d", known_i, width)
+  inputs <- base_inputs(11L)
+  subject <- inputs$instruments$instrument_id[[4L]]
+  sealed <- seal_with_barrier(inputs, subject, FROM_I, TO_I, known_i)
+  on.exit({
+    ledgr_snapshot_close(sealed$snapshot)
+    unlink(sealed$db)
+  }, add = TRUE)
+  v <- views(sealed, subject, AGE, width)
+  n <- v$n_axis
+  reference <- vapply(seq_len(n), function(t)
+    v$feature(v$prepare(sealed$axis[[t]]))[[t]], numeric(1))
+  stale <- v$feature(v$prepare(sealed$axis[[1L]]))
+  full <- v$feature(v$prepare(Inf))
+  d <- revised(v$feature(v$prepare(sealed$axis[[1L]])), full)
+  record(name, "knowledge_session", known_i, "index",
+         "session whose close is the barrier's knowledge time")
+  record(name, "lag_past_barrier_end", known_i - TO_I, "sessions",
+         sprintf("knowledge session minus barrier end %d", TO_I))
+  record(name, "history_revised_cells", length(d), "count",
+         "cells a history view revises, whatever the diagonal does")
+  # The crossover is relative to the affected observation, not to the barrier's
+  # end, so the first revised cell is recorded rather than asserted.
+  record(name, "first_history_revised_index", if (length(d) > 0L) d[[1L]] else NA,
+         "index", "earliest cell a history view revises")
+  record(name, "last_history_revised_index",
+         if (length(d) > 0L) d[[length(d)]] else NA, "index",
+         "latest cell a history view revises")
+  record(name, "stale_diag_cells_biased", length(revised(reference, stale)),
+         "count", "decisions the never-revised shortcut gets wrong")
+  record(name, "full_diag_cells_biased", length(revised(reference, full)),
+         "count", "decisions the full-knowledge shortcut gets wrong")
+  invisible(NULL)
+}
+
+for (w in c(3L, 5L)) {
+  for (k in c(7L, 8L, 9L, 10L, 11L, 14L)) knowledge_lag_sweep(k, w)
+}
+
 evidence <- do.call(rbind, rows)
 utils::write.csv(evidence, file.path(OUT, "spike_ablation_evidence.csv"),
                  row.names = FALSE)

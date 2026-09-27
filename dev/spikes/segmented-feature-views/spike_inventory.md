@@ -2,7 +2,7 @@
 
 **Ran:** 2026-09-27, branch `spike/segmented-feature-views` from `0cf20e7`.
 **Charter:** `charter.md`. **Probe:** `probe_findings.md`. **Evidence:**
-`spike_evidence.csv`, 49 rows, and `spike_ablation_evidence.csv`, 91 rows, all
+`spike_evidence.csv`, 49 rows, and `spike_ablation_evidence.csv`, 223 rows, all
 derived from the sealed store or from the candidate's own resolution. No row is a
 narrated literal.
 
@@ -143,6 +143,70 @@ same rolling mean over each instrument's close demeaned by the panel at that
 session - every instrument revises and the work is `3N`, linear in the universe.
 Section 6.2 states this as a limit in prose; it is a factor of 200 here.
 
+### Blocks D and E, the bias of not revising: it is conserved, not avoided
+
+The synthesis does not ask whether revising earns its cost. These blocks do, by
+reading the series the way a run reads it - the value at session `t` - and
+comparing the correct behaviour against both available shortcuts:
+
+- **reference**, prepared at `t` for every `t`: the diagonal of the correct
+  behaviour;
+- **full**, one preparation using every fact in the snapshot, reused at every
+  pulse. What a backtester does when it loads today's data. This is lookahead;
+- **stale**, one preparation at the run's first cutoff, never revised. This is
+  staleness, and carries no lookahead.
+
+**For a rolling window the bias is presence, not magnitude.** Against `full`, the
+rolling mean showed 3 biased decisions at width three and 5 at width five, and
+every one of them was a *lost* signal: the reference had a value where the
+shortcut had none, never the reverse, and the relative difference where both had
+values was exactly zero. The mechanism is survivorship, made concrete. Knowing
+the suspension refuses the carry, so there is no window, so there is no
+indicator, so the strategy does not trade a position the point-in-time run would
+have taken and would have had to live with.
+
+**For a recursive or expanding style the bias is permanent and small.** The EMA
+biased 12 of 22 decisions but by at most 0.14% and 0.013% on average; the
+expanding mean, 12 decisions at most 0.030%. Values are always present, so
+nothing is lost or fabricated - the series is simply slightly wrong forever.
+Whether 0.14% flips a ranking is a question about a strategy, not about a
+feature, and this spike does not answer it.
+
+**The total bias is conserved. The knowledge lag only decides who pays it.** Block
+E moves the barrier's knowledge time across the revised range at two widths:
+
+| knowledge session | revised range | history cells | `stale` wrong | `full` wrong |
+| --- | --- | --- | --- | --- |
+| 7 | 6-8 | 3 | 2 | 1 |
+| 8 | 6-8 | 3 | 1 | 2 |
+| 9 and later | 6-8 | 3 | 0 | 3 |
+| 7 | 6-10 | 5 | 4 | 1 |
+| 8 | 6-10 | 5 | 3 | 2 |
+| 9 | 6-10 | 5 | 2 | 3 |
+| 10 | 6-10 | 5 | 1 | 4 |
+| 11 and later | 6-10 | 5 | 0 | 5 |
+
+In all twelve rows `stale + full` equals the history revision exactly. A revised
+cell is wrong under `stale` when the run already knew the fact at that session and
+wrong under `full` when it did not, and every revised cell is one or the other.
+So **no choice of shortcut reduces the total**; the fact's arrival time decides
+how it splits.
+
+That yields the practical rule, and it is the opposite of the intuition. **A fact
+arriving promptly makes the full-knowledge shortcut nearly correct** and the
+never-revised one nearly all wrong. A fact arriving late - a restatement, a
+delisting notice filed weeks after the event - is where using today's data bites.
+The `stale` shortcut costs nothing on decisions once the fact arrives at least
+`W_f` sessions after the affected observation: session 9 at width three and 11 at
+width five, both `6 + W_f`, so the crossover tracks the window exactly.
+
+Two consequences for section 6.2's candidate. The diagonal a run consumes is much
+cheaper to get right than a history view, because only 2 distinct barrier states
+are visited across all 22 cutoffs in every block D case - the segmentation payoff,
+measured. And the decision bias and the research bias are different sizes: the
+history view revises `W_f` cells per event regardless of lag, while the decisions
+lose only the part of that range the run had already passed.
+
 ### What the ablation does not establish
 
 **The fixture's barrier density does not scale.** `ledgr_sim_pit_inputs()` places
@@ -153,6 +217,21 @@ teaching fixture, not a density model. So these rows test section 6.2's
 admissibility facts number "one or two". Reading confirmation of the multiplier
 into a fixture that hard-codes two facts would be circular. The real density was
 measured separately on the Sharadar lake and belongs in that record.
+
+**The knowledge lag distribution is the missing input, and it is measurable.**
+Block E shows the bias splits by how late a fact arrives, so the size of the real
+bias is that split applied to the lags a data vendor actually delivers. The lags
+here were chosen to cross the boundary, not sampled from anything. Sharadar
+carries the clocks needed to measure the real distribution, which makes this the
+one open quantity that needs no new machinery to answer.
+
+**No decision or outcome is simulated.** Every number above is a count of cells or
+a relative difference in an indicator. Whether a biased indicator changes a
+position, and whether that changes a return, needs both views run through the
+engine against a strategy. The `full` shortcut losing only *lost* signals suggests
+a direction - a backtest that skips positions the point-in-time run would have
+taken reports flattered results - but direction is not magnitude, and this spike
+measures neither.
 
 ### The ablation's own gutted path
 
@@ -175,7 +254,7 @@ itself, and block B is the control that shows it.
 The fixture and candidate moved to `spike_core.R`, shared by the runner and the
 ablation. The extraction is proved behaviour preserving by the checker: the
 runner's 49 recorded rows reproduce unchanged. The checker now gates both parts,
-140 rows in total.
+272 rows in total.
 
 ## What remains open
 

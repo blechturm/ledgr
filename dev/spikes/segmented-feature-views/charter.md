@@ -123,6 +123,12 @@ quantities, so each has its own kill condition:
 - Section 6.2 claims a breakpoint recomputes one series rather than the panel.
   **Kill:** a non-subject instrument revising under an instrument-scoped barrier.
 
+A third claim was added on the same brief, and the synthesis does not make it:
+that revising is worth its cost at all. Blocks D and E measure the bias of not
+revising, against the point-in-time diagonal, for both available shortcuts. It is
+a correctness measurement and still reports no clock. Three questions on one
+charter is the limit; a fourth becomes its own spike.
+
 ## Boundaries
 
 - The throwaway knowledge-dependent rule is **throwaway**. It is not a draft of
