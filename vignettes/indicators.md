@@ -353,37 +353,45 @@ known feature that is not ready yet.
 > Why does that fail while `ids[["ret_5"]]` works?
 
 
-Inside a strategy, loop over `ctx$universe` so the rule works for every
-instrument in the run.
+A strategy decides for every instrument at once. `ctx$vec$feature()`
+reads one feature for the whole universe in a single call, one value per
+instrument in the order of `ctx$universe`. It takes the engine ID, which
+is what `ids` already holds:
 
 ``` r
 strategy <- function(ctx, params) {
+  ret_5 <- ctx$vec$feature(ids[["ret_5"]])
+  sma_10 <- ctx$vec$feature(ids[["sma_10"]])
+  qualifies <- !is.na(ret_5) & !is.na(sma_10) &
+    ret_5 > params$min_return & ctx$vec$close > sma_10
+
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    x <- ctx$features(id, features)
-
-    if (
-      ledgr_passed_warmup(x) &&
-        x[["ret_5"]] > params$min_return &&
-        ctx$close(id) > x[["sma_10"]]
-    ) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[qualifies] <- params$qty
   targets
 }
 ```
 
 That pattern keeps the signal logic readable:
 
-- `features` is where feature identity and aliases live.
-- `ctx$features()` reads the current mapped values for one instrument.
-- `ledgr_passed_warmup()` is the warmup gate for the mapped feature
-  vector.
-- The condition after the warmup gate is the economic rule.
+- `features` is where feature identity and aliases live; `ids` turns an
+  alias into the engine ID.
+- `!is.na()` is the warmup gate: an instrument qualifies only once both
+  of its features are usable. For one instrument,
+  `ledgr_passed_warmup()` asks the same question of the vector
+  `ctx$features()` returns.
+- The rest of the condition is the economic rule.
 - The strategy still returns ordinary target quantities.
+
+`ctx$features()` in a loop over `ctx$universe` would give the same
+targets, but it repeats per-instrument work at every pulse. Keep the
+scalar and mapped accessors for inspecting one instrument.
+
+The strategy reads `ids` from the code around it, so it closes over a
+value built from the feature map. The run records the registered feature
+definitions, but the stored strategy source refers to `ids` only by
+name. Keep the code that builds `features` and `ids` with your research
+record; `vignette("reproducibility", package = "ledgr")` explains why
+such a strategy is Tier 2.
 
 ## Run The Example
 
@@ -474,16 +482,10 @@ swept_features <- ledgr_feature_map(
 feature_ids <- ledgr_feature_id(swept_features)
 
 parameterized_strategy <- function(ctx, params) {
+  ret <- ctx$vec$feature(feature_ids[[paste0("ret_", params$lookback)]])
+
   targets <- ctx$flat()
-  feature_id <- feature_ids[[paste0("ret_", params$lookback)]]
-
-  for (id in ctx$universe) {
-    ret <- ctx$feature(id, feature_id)
-    if (is.finite(ret) && ret > params$min_return) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[is.finite(ret) & ret > params$min_return] <- params$qty
   targets
 }
 

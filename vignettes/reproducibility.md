@@ -469,8 +469,8 @@ strategy depended on.
 
 For the end-to-end research loop and the selection-validation
 distinction, read `vignette("research-workflow", package = "ledgr")`.
-For strategy-authoring patterns that use helper pipelines, feature maps,
-and pulse debugging, read
+For strategy-authoring patterns that use helper pipelines, one-pulse
+testing, and strategy state, read
 `vignette("strategy-authoring-tools", package = "ledgr")`. For
 store-level source inspection and reopen workflows, read
 `vignette("experiment-store", package = "ledgr")`.

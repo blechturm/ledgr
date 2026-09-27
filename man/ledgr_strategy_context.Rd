@@ -35,6 +35,8 @@ instrument, returned as a named numeric vector keyed by feature-map aliases.
 \item \code{ctx$vec$position}: current simulated positions for the full
 universe, aligned to \code{ctx$universe}.
 \item \code{ctx$cash} and \code{ctx$equity}: current simulated portfolio state.
+\item \code{ctx$state_prev}: the \code{state_update} the strategy returned at
+the previous pulse.
 \item \code{ctx$flat()}: full named target vector initialized to zero.
 \item \code{ctx$hold()}: full named target vector initialized to current
 positions.
@@ -60,6 +62,16 @@ sentinel is part of the strategy logic.
 \code{ctx$idx(id)} to cross between them. \code{ctx$hold()} constructs named
 portfolio intent from that state; editing its result does not mutate either
 state read.
+
+A strategy that returns \code{list(targets = ..., state_update = ...)} receives
+that \code{state_update} as \code{ctx$state_prev} at the next pulse; returning a
+bare target keeps the previous state. State must be JSON-serializable plain
+data. In a dense run \code{ctx$state_prev} is \code{NULL} on the first pulse. In
+an availability-aware run it is a list from the first pulse and carries
+\code{asset_state}, a list keyed by the instrument IDs in \code{ctx$universe}:
+entries for instruments that leave the axis are dropped, returning instruments
+start from \code{list()}, and a returned entry for an ID outside the axis fails
+with \code{ledgr_invalid_strategy_state}.
 
 Strategies should return full named numeric target vectors. The helpers
 \code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because
@@ -88,7 +100,7 @@ top | cash | all | numeric_scalar | portfolio | currency | never | none
 top | equity | all | numeric_scalar | portfolio | currency | never | none
 top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
-top | state_prev | all | nullable_list | portfolio_and_Daxis | strategy_state | NULL_on_first_pulse | none
+top | state_prev | all | nullable_list | portfolio_and_Daxis | strategy_state | NULL_on_first_dense_pulse | none
 top | availability_active | availability | logical_scalar | none | flag | never | none
 top | members | availability | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
 top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars

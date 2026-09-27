@@ -62,8 +62,9 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 
 This article teaches the strategy contract from the user side: what a
 strategy can see, what it must return, and how to run a first backtest
-without hidden lookahead. For feature maps, helper pipelines, and pulse-level
-debugging, read `vignette("strategy-authoring-tools", package = "ledgr")`.
+without hidden lookahead. For testing a strategy on one pulse, helper
+pipelines, share sizing, and strategy state, read
+`vignette("strategy-authoring-tools", package = "ledgr")`.
 
 ## Prerequisites
 
@@ -179,6 +180,7 @@ accessing those values. It is deliberately not the full future dataset.
 | `ctx$position(id)` | current simulated position |
 | `ctx$vec$position` | current simulated positions aligned to `ctx$universe` |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
+| `ctx$state_prev` | what the strategy returned as `state_update` at the previous pulse |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |
 
@@ -297,6 +299,31 @@ validated targets before fill timing and cost resolution -- for example
 can cap per-instrument target exposure. It is not a cash-affordability,
 margin, liquidity, or broker-risk engine.
 :::
+
+### Remembering Between Pulses
+
+Most strategies decide from the current pulse alone. A strategy that has to
+remember something, such as how many pulses have passed or the price at which
+it bought, returns `list(targets = ..., state_update = ...)` instead of a bare
+target. ledgr stores `state_update` with the run and hands it back as
+`ctx$state_prev` at the next pulse.
+
+- `state_update` is plain data: a list of numbers, strings, logical values, and
+  lists of them. It must be representable as JSON, so functions and
+  environments are rejected.
+- A new `state_update` replaces the previous state. Returning a bare target
+  keeps the previous state unchanged.
+- In a dense run, `ctx$state_prev` is `NULL` on the first pulse. In an
+  availability-aware run it is a list from the first pulse, because ledgr adds
+  `asset_state`: one entry per instrument in `ctx$universe`, keyed by instrument
+  ID, for state that belongs to one instrument. An instrument that leaves the
+  universe loses its entry, one that returns starts again from `list()`, and an
+  entry for an instrument outside the universe is an error.
+- Check a field for `NULL` before using it, because it is missing on the first
+  pulse in both kinds of run.
+
+`vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
+that uses state step by step.
 
 ## A First Trading Rule
 
@@ -517,7 +544,7 @@ ledgr_snapshot_close(snapshot)
 ## Where Next
 
 - `vignette("strategy-authoring-tools", package = "ledgr")` goes deeper on
-  helper pipelines, feature maps, and pulse-level debugging.
+  testing on one pulse, helper pipelines, share sizing, and strategy state.
 - `vignette("indicators", package = "ledgr")` explains feature identity and
   strategy-time feature access.
 - `vignette("execution-semantics", package = "ledgr")` explains the fold

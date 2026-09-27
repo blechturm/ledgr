@@ -429,4 +429,5 @@ deterministic indicator contract.
 - `vignette("custom-indicators", package = "ledgr")` covers custom
   package indicators when an adapter is not enough.
 - `vignette("strategy-authoring-tools", package = "ledgr")` shows how
-  adapter-backed features enter feature maps and strategy helpers.
+  registered features feed a strategy’s helper pipeline, from one pulse
+  to a full run.

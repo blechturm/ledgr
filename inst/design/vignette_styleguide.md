@@ -444,7 +444,8 @@ Use article links for workflow depth:
 
 - Data Input And Snapshots for snapshot creation and sealed-data boundaries;
 - Strategy Basics for first-pass strategy authoring;
-- Strategy Authoring Tools for feature maps, helper pipelines, and preflight;
+- Strategy Authoring Tools for one-pulse testing, helper pipelines, share
+  sizing, and strategy state;
 - Indicators And Features for feature declarations and alias identity;
 - TTR And Adapter Indicators for adapter-backed indicator declarations;
 - Sweeps for candidate grids, failure rows, and promotion mechanics;
