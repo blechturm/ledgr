@@ -197,7 +197,7 @@ testthat::test_that("[LTB-0066] strategy helpers consume only vector accessors",
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("reference helper pipeline runs through ledgr_run", {
+testthat::test_that("[LTB-0092] context helper pipeline agrees across run and sweep", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -214,7 +214,10 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   strategy <- function(ctx, params) {
-    signal <- ledgr_signal_return(ctx, lookback = params$lookback)
+    signal <- ledgr_signal(
+      ctx,
+      values = ctx$vec$feature(paste0("return_", params$lookback))
+    )
     selection <- ledgr_select_top_n(signal, params$n)
     weights <- ledgr_weight_equal(selection)
     ledgr_target_rebalance(weights, ctx, equity_fraction = params$equity_fraction)
@@ -228,10 +231,25 @@ testthat::test_that("reference helper pipeline runs through ledgr_run", {
   )
   bt <- ledgr_run(exp, params = list(lookback = 2, n = 1, equity_fraction = 0.5), run_id = "helper-reference")
   on.exit(close(bt), add = TRUE)
+  sweep <- ledgr_sweep(
+    exp,
+    ledgr_param_grid(candidate = list(
+      lookback = 2,
+      n = 1,
+      equity_fraction = 0.5
+    ))
+  )
 
   fills <- ledgr_results(bt, what = "fills")
+  equity <- ledgr_results(bt, what = "equity")
   testthat::expect_gt(nrow(fills), 0L)
   testthat::expect_true(all(fills$instrument_id %in% c("AAA", "BBB")))
+  testthat::expect_identical(sweep$status, "DONE")
+  testthat::expect_equal(
+    sweep$final_equity[[1L]],
+    equity$equity[[nrow(equity)]],
+    tolerance = 1e-12
+  )
 })
 
 testthat::test_that("tune execution API is not exported with strategy helpers", {

@@ -235,6 +235,160 @@ target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
 target
 ```
 
+## Choose One Of Two Authoring Paths
+
+Strategy code has three jobs. Read current state from `ctx`, choose and weight
+the current members, then return complete portfolio intent. The first two jobs
+use pulse-known inputs. Only the last object is executable.
+
+| Job | Usual surface | Result |
+|---|---|---|
+| Read current state | `ctx$vec$close`, `ctx$vec$feature()`, `ctx$vec$position` | positional values on `ctx$universe` |
+| Choose and weight members | `ledgr_selection()`, `ledgr_signal()`, ranking and weight helpers | sparse authoring objects on current members |
+| Return complete intent | `ledgr_target_rebalance()` or `ctx$hold()` followed by edits | one named quantity for every instrument in `ctx$universe` |
+
+Use a selection pipeline when this pulse constructs a new member allocation.
+For example, this allocates ten percent of the available budget equally across
+all current members:
+
+```{r}
+#| label: equal-member-allocation
+
+equal_target <- pulse |>
+  ledgr_selection() |>
+  ledgr_weight_equal() |>
+  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+
+equal_target
+```
+
+`ledgr_selection(ctx)` selects current investment members. In a dense run that
+is the full decision axis. In an availability-aware run, the decision axis can
+also contain a held nonmember. Predicates are supplied on the decision axis and
+then projected to current members; the held nonmember does not enter ranking or
+weighting, and the target constructor preserves its quantity.
+
+Missing numeric scores and missing logical decisions are deliberately
+different. Ranking excludes an `NA` score. A logical `NA` for a current member
+is not a decision and fails instead of silently excluding the member:
+
+```{r}
+#| label: missing-predicate-guard
+
+prices_with_gap <- pulse$vec$close
+prices_with_gap[[2L]] <- NA_real_
+
+bare_predicate_failed <- inherits(try(
+  ledgr_selection(pulse, where = prices_with_gap > 0),
+  silent = TRUE
+), "try-error")
+
+guarded_selection <- ledgr_selection(
+  pulse,
+  where = !is.na(prices_with_gap) & prices_with_gap > 0
+)
+
+missing_score_selection <- ledgr_signal(
+  pulse,
+  values = setNames(c(0.2, NA_real_), pulse$universe)
+) |>
+  ledgr_select_top_n(1)
+
+c(bare_predicate_failed = bare_predicate_failed,
+  predicate_selected = sum(unclass(guarded_selection)),
+  score_selected = sum(unclass(missing_score_selection)))
+```
+
+Guarding with `!is.na()` means "do not select the member whose decision input
+is missing." If missing input means "do not rebalance at all," guard the whole
+decision and return `ctx$hold()` instead. This momentum strategy does that
+during feature warmup:
+
+```{r}
+#| label: momentum-hold-guard
+
+momentum_with_hold_guard <- function(ctx, params) {
+  scores <- ctx$vec$feature(paste0("return_", params$lookback))
+  if (anyNA(scores)) return(ctx$hold())
+
+  ctx |>
+    ledgr_signal(values = scores) |>
+    ledgr_select_top_n(params$n) |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
+}
+
+warmup_pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = min(bars$ts_utc),
+  features = features
+)
+
+momentum_with_hold_guard(
+  warmup_pulse,
+  list(lookback = 5, n = 1, equity_fraction = 0.1)
+)
+```
+
+An explicit zero weight is also meaningful. It validates the member name and
+requests a zero target without requiring a sizing price. Omitting a current
+member from the weights also leaves it unallocated, so both forms produce zero
+for that member. Returning `ctx$hold()` is different: it preserves the current
+quantity, subject to downstream risk processing.
+
+```{r}
+#| label: deliberate-zero-weight
+
+custom_weights <- ledgr_weights(
+  c(DEMO_01 = 1, DEMO_02 = 0),
+  universe = pulse$universe
+)
+
+ledgr_target_rebalance(custom_weights, pulse, equity_fraction = 0.1)
+```
+
+Use hold-and-edit when the strategy is changing selected quantities rather
+than replacing the member allocation. State can decide which edit applies; it
+does not replace the required complete target:
+
+```{r}
+#| label: stateful-hold-and-edit
+
+stateful_entry_exit <- function(ctx, params) {
+  targets <- ctx$hold()
+  entered <- isTRUE(ctx$state_prev$entered)
+  targets[[ctx$universe[[1L]]]] <- if (entered) 0 else 1
+  list(targets = targets, state_update = list(entered = !entered))
+}
+
+stateful_entry_exit(pulse, list())
+```
+
+Returning hold does not bypass a risk chain and does not guarantee that no fill
+occurs. It states portfolio intent at this decision; downstream rules still
+apply.
+
+### Know Which Budget The Weights Use
+
+In a dense run, allocatable capital equals portfolio net asset value. In an
+availability-aware run, a held nonmember is preserved and its absolute marked
+exposure is reserved first. Weights and `equity_fraction` apply to the residual
+allocatable capital, not automatically to total NAV.
+
+For example, NAV 100 with two held OLD shares marked at 20 leaves 60 of
+allocatable capital. With AAA at 10, AAA weight 1 targets six shares. AAA weight
+0.6 allocates 36 and targets three shares. An optimizer intending AAA to be 60%
+of total NAV must convert that intent to the residual budget before passing it
+to the helper; in this example the residual weight is `(0.6 * 100) / 60 = 1`.
+
+The helper automatically reserves held *nonmembers*. It does not implement a
+partial-rebalance policy for current members. If a full-budget allocation sizes
+AAA to ten shares and code then restores two current-member BBB shares marked
+at 20, requested exposure becomes 140. Reserve that 40 before sizing, or express
+the complete quantities directly. Restoring the quantity afterwards is not a
+budget-preserving shortcut.
+
 `ledgr_target_rebalance()` sizes with current pulse equity and current close prices,
 using `ctx$vec$close` when available, then floors to whole shares. For the
 selected `DEMO_01` pulse above, 10% of equity is allocated to the one selected
