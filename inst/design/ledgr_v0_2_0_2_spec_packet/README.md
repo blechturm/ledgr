@@ -869,7 +869,7 @@ conditions and named neither the real one nor the block. Right now the system
 can go red for a reason it does not report, which is why the reporting fix is
 in this cut rather than deferred as polish.
 
-## Cut 15: Session-axis documentation repair (open)
+## Cut 15: Session-axis documentation repair (review pending)
 
 Authority: maintainer decision 2026-09-27 after the accepted point-in-time
 historical-projection cycle established that the shipped feature session axis
@@ -894,3 +894,10 @@ Workstream 22 depends on accepted Workstream 20 and blocks the release gate.
 It changes no engine code, feature value, warm-up rule, identity input or
 per-pulse cost. The accepted synthesis, the 2026-09-27 horizon record and the
 roadmap row are the recoverable design trail.
+
+Implementation is complete through `180413a`. LTB-0093 pins the venue-axis
+rule and the admissibility of real observations inside accepted inactive
+intervals. The ordinary fast profile passed 466 of 466 blocks in 87.500
+seconds and its independent checker passed the 112-second gate. The
+agent-provisional record is `session_axis_documentation_repair_closeout.md`;
+Cut 15 stays open until its Type 1 close review and maintainer acceptance.

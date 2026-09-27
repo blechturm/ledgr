@@ -339,7 +339,7 @@ workstreams:
   - id: 22
     name: "Session-axis documentation repair"
     cut: 15
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 20
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 22", reason: "One claim joins the two tickets: the shipped feature session axis is the venue open-session axis, and no live document, example or article may say otherwise before the tag. The review reads the amended contract statement against the engine rather than against the accepted design corpus, confirms the new fixture fails when the axis is narrowed and passes as shipped, confirms a real observation inside an accepted inactive interval is still delivered, checks that the accepted availability synthesis, the v0.2.0.0 packet spec and availability gate 21 keep their original text under the LDG-2851 convention, and checks that the closeout records gate 21's feature clause as superseded rather than silently dropped. This workstream ships no engine change, so the amended review obligations' seven-shape walk and before-and-after clock do not apply; the reviewer records that they were not required rather than leaving the omission unexplained."}
@@ -1687,9 +1687,10 @@ tickets:
   - id: "LDG-2867"
     title: "Close workstream 22 and cut 15"
     workstream: 22
-    status: "open"
+    status: "review_pending"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2866"]
     scope: "Close workstream 22 and cut 15. Record which live contract sentence changed and what it now says, that availability gate 21's feature clause is superseded by that statement rather than silently dropped, and that the accepted availability synthesis and v0.2.0.0 packet keep their original text by convention. Name the fixture that now pins the axis and state that its absence is why the divergence survived two tagged releases. Point at the 2026-09-27 horizon entries for the reasoning and at the roadmap row that schedules instrument-narrowed expected sessions for the next release, so a later reader finds out why the gate changed and what would bring it back. Record review invocations against the 0.5 gate, and that the seven-shape walk and the before-and-after clock were not required because the workstream ships no engine change. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout names the amended contract sentence, records gate 21's feature clause as superseded with its reason, and states that accepted RFC and packet text was deliberately left unchanged", "the closeout names the new fixture and records that the missing fixture is the mechanism by which the engine and four authorities disagreed through v0.2.0.0 and v0.2.0.1", "the closeout links the 2026-09-27 horizon entries and the roadmap row that schedules the narrowing goal, so the deferred design goal is recoverable from the record", "review invocations are recorded against the 0.5 gate, and the non-application of the seven-shape walk and the before-and-after clock is stated with its reason rather than omitted"]
+    evidence: ["The agent-provisional `session_axis_documentation_repair_closeout.md` names the amended live contract, the superseded feature clause in availability gate 21, and the accepted synthesis and v0.2.0.0 packet text deliberately retained as history.", "The closeout names LTB-0093, records the missing lifetime-plus-feature fixture as the mechanism that allowed two tagged releases to diverge from their authorities, and links the 2026-09-27 horizon reasoning and the post-v0.2.0.2 roadmap row.", "At review request time the count is zero completed invocations; the planned compressed Type 1 review makes one over two completed tickets, 0.500. The closeout states that the seven-shape walk and before-and-after clock do not apply because this workstream changes no engine code."]
