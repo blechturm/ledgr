@@ -1048,10 +1048,54 @@ Two things the candidate does not settle and this part must still answer: what
 happens when a feature reads across instruments, since the candidate's cost
 argument depends on per-instrument locality that cross-sectional features break;
 and whether a forbidden output carry, which is its own trigger, is handled by
-the same segmentation. Whole-series recalculation and per-range invalidation
-inside section 6.1's bound remain admitted alternatives if the candidate fails.
-Section 6.1's bound is available to an implementation that wants it and is not a
-requirement on one.
+the same segmentation.
+
+**The bound is also the recompute target.** Section 6.1 derives `[a, b + A_in +
+W_f - 1 + A_out]` as the set of cells whose value may differ between cutoffs. It
+is simultaneously the set of rows a segment change needs to recompute, so the
+same interval serves as a claim and as an instruction. The locality is strict
+rather than heuristic: a window ending at `s` reads only `W_f` expected sessions
+back from `s`, so if none of those lie in the changed region the value cannot
+change and the row needs no check at all.
+
+That gives a second, cheaper form of the candidate. Rather than recomputing an
+instrument's whole series per segment, recompute only the banded rows, with the
+band table built before the fold from the sealed facts. The expensive part of
+partial updating is normally discovering what to invalidate, and sealed facts
+remove that problem entirely: the trigger table is static, so nothing resolves
+dependencies at a pulse, and the update is an indexed write into a typed buffer
+rather than new machinery.
+
+**Two stages, in this order, because the cheap form has a failure mode the
+expensive form does not.** Banding that gets its arithmetic wrong ships a stale
+value silently - no error and no `NA`, just a number from the previous knowledge
+state - whereas whole-series recomputation either runs correctly or does not
+run. So whole-series per segment is implemented first and serves as the
+normative oracle, matching this project's existing rule that canonical R is the
+oracle for an optimised path; banding is then implemented against it with a
+differential test asserting cell-for-cell agreement over a fixture carrying
+every breakpoint kind. The measurement decides whether banding ships at all.
+
+**A measured prior, so the measurement does not start from nothing.** Against
+the 2026-09-05 Sharadar acquisition over 2015-01-01 to 2024-12-31, breakpoint
+density is 1.11 lifetime events per instrument across 11,474 instruments whose
+price coverage overlaps the window, and 0.451 across the 1,586 large and mega
+caps. On whole-series-per-segment that is a prepare-phase multiplier of about
+2.11x and 1.45x respectively; terminal assertions alone are about 0.62 per
+instrument, so a declared split-adjusted basis, under which corporate actions
+are not barriers, sits nearer 1.6x. The same window holds 2,473 distinct
+breakpoint dates against roughly 2,520 trading days, so a panel-wide recompute
+per breakpoint date is unaffordable and per-instrument locality is load-bearing
+rather than an optimisation. Universe choice moves the cost more than the
+algorithm does, which makes universe churn an input to this part rather than a
+detail. The full record, with method and queries, is in the research repo's
+`docs/governance/ledgr-upstream-state.md`.
+
+Note what the prior does not say. It is zero under the semantics this version
+ships, because the engine consults no lifetime fact for a feature window. These
+figures price the next release, and they are a multiplier on the prepare phase
+rather than on a run, so the absolute cost still needs the existing phase
+clocks.
 
 Performance conclusions stay separate from this semantic result. Any eventual
 measurement covers preparation cost, the evidence in section 8, and worker
@@ -1217,6 +1261,16 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-27: v10, checkpoint part (d) records that section 6.1's bound is also
+  the recompute target, adds the banded form of the candidate with its static
+  pre-fold trigger table, and orders the two forms: whole-series per segment as
+  the normative oracle first, banding against it second with a differential
+  test, because banding can ship a stale value silently and whole-series cannot.
+  Adds the measured breakpoint density from the 2026-09-05 Sharadar acquisition
+  as the measurement's starting prior, including that 2,473 distinct breakpoint
+  dates in ten years make per-instrument locality load-bearing rather than
+  optional, and that the figures are zero under the semantics this version
+  ships.
 - 2026-09-27: v10, section 6.2 and checkpoint part (d) gain a named preparation
   candidate on a maintainer proposal. Because the snapshot is sealed, every
   fact's knowledge time is known before the run and admissibility changes only
