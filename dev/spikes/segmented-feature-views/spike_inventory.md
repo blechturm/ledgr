@@ -246,13 +246,18 @@ delisted tickers. Those are vendor onboarding and last-modified stamps, not mark
 knowledge. Recorded because they are the obvious thing to reach for and the
 numbers foreclose it.
 
-**The barrier facts carry no knowledge clock, so the lag is zero by
-construction.** `ACTIONS` has only `date`. With no evidence column the fact
-constructors take `knowledge = "assume_effective"`, which sets
-`knowledge_time <- effective_from` (`R/availability-facts.R:1193-1199`), and under
-the default `evidenced` such a fact is never applicable at all
-(`R/availability-provider.R:53`). So for every carry barrier ledgr can build from
-Sharadar today, knowable equals effective.
+**The barrier families as this adapter builds them carry no independent knowledge
+clock.** `ACTIONS` has only `date`. **Corrected after review 2026-09-27:** the
+decisive evidence is the adapter's explicit assignments, not the `knowledge`
+argument, because `assume_effective` in ledgr only fills a knowledge time that is
+*missing* (`R/availability-facts.R:1193-1199`). Read at source in
+`ledgr-research/packages/ledgr.sharadar/`: lifetime facts assign `knowledge_time`
+from the effective clock (`R/lifetime-facts.R:99,113`), and membership snapshots
+assign *both* clocks from source availability boundaries with a declared one-day lag
+(`R/membership-facts.R:108-120`) rather than preserving an index-effective clock.
+Membership intervals are prohibited outright. So neither family presents two
+distinct clocks - though for membership that is because both are set to availability,
+which is a different representation from lifetime's collapse onto effective.
 
 **At zero lag there is no revision at all.** A barrier that becomes knowable
 exactly when it becomes effective can only affect cells at or after its own
@@ -264,7 +269,7 @@ So block E's split resolves, for price barriers, to its endpoint:
 
 | lag | source | `stale` wrong | `full` wrong |
 | --- | --- | --- | --- |
-| 0 sessions | every barrier ledgr builds from Sharadar | all of `W_f` | none |
+| 0 sessions | the barrier families as this adapter builds them | all of `W_f` | none |
 | ~1 session | dividends, from first appearance | `W_f - 1` | 1 |
 | -4 sessions | splits, knowable before effective | all of `W_f` | none |
 | ~30 sessions | SF1 quarterly filing lag | 0 if `W_f <= 30` | all of `W_f` |
@@ -281,9 +286,17 @@ never revising is nearly right.
 
 Sharadar's fundamentals do carry two genuine clocks, and ledgr's snapshot has no
 fundamentals table. So the one family that would make revision matter is the one
-family ledgr cannot yet store. **Checkpoint part (d)'s cost does not need paying
-until a two-clock source lands**, and when one does it will arrive with
-fundamentals rather than with prices.
+family ledgr cannot yet store.
+
+**Withdrawn after review: "checkpoint part (d)'s cost does not need paying until a
+two-clock source lands."** That conflates a source not exercising an obligation with
+the package not owing it. ledgr's public constructors accept an explicit
+`knowledge_time`, so late-known facts are constructible through the public API today
+regardless of what any adapter supplies, and part (d) stays owed for every supported
+carry configuration. What the measurement does support is narrower: part (c) is
+default-sensitive by its own text - "default-on means every research run pays
+whatever this costs, so it is answered before the default is fixed" - while parts
+(a), (b) and (d) are not.
 
 **A thin tail exists and is not measurable from one capture gap.** Across the two
 captures 17 hours apart, 72 `tickerchange` rows dated back to 1998 appeared, along
@@ -294,62 +307,76 @@ ingested. One capture gap detects arrivals and cannot estimate a distribution; a
 real one needs captures accumulated over months, which is the forward-looking item
 already open in the research repo.
 
-### The magnitude, measured: the carry already happened upstream
+### Row coverage and zero-volume sessions, corrected after review
 
-`vendor_carry_measurement.R`, recorded in `vendor_carry_evidence.csv`. Window
-2020-01-01 to 2024-12-31, acquisition `20260905T092008Z`: 9,448 tickers, 1,258
-sessions, and 8,367,777 sessions inside instrument coverage of which 8,367,776
-printed. Read-only.
+`zero_volume_measurement.R`, recorded in `zero_volume_evidence.csv`. Window
+2020-01-01 to 2024-12-31, price and action acquisitions both pinned to
+`20260905T092008Z`: 9,448 tickers, 1,258 sessions, and 8,367,777 sessions inside
+instrument coverage of which 8,367,776 printed. Read-only.
 
-The question the ablation left was how big the bias is in magnitude. The answer is
-that the mechanism this spike models is close to inert on this data, and a much
-larger effect sits beside it.
+**Restated at revision 2.** Adversarial review on 2026-09-27 returned this section.
+The measurements stand; several of the claims drawn from them did not. What is
+withdrawn is marked as withdrawn rather than quietly edited.
 
-**There is nothing to carry into.** Counting sessions inside each ticker's own
-coverage that carry no row at all: **1**, out of 8,367,777. Sharadar does not omit
-a session. ledgr's carry policy fills an absent observation, and absent
-observations do not occur here, so the policy never fires.
+**Internal row coverage is almost complete under the stated definitions.** Sessions
+inside a ticker's own coverage that carry no row at all: **1**, out of 8,367,777.
+Duplicate `(ticker, date)` keys, null OHLC fields and non-positive prices are each
+measured at **0**, so the two qualifications that could have let absence hide - keys
+that are not unique, and rows present but unusable - do not bite here.
 
-**The reason is that the vendor already carried.** 270,949 sessions - **3.24% of
-the panel**, across 2,735 tickers - are printed with zero volume, and on
-**99.32%** of them the close equals the previous close, against a **5.76%**
-control for sessions that did trade. Nothing traded, and a price was published
-anyway.
+**Withdrawn: "the vendor omits nothing" and "the population is empty."** Coverage is
+defined from each ticker's first and last observed print, so leading and trailing
+omissions and entirely absent instruments cannot be seen by construction, and a
+session absent from the whole panel disappears from a calendar derived from observed
+dates. Section 5.1 asked for run lengths of missing expected sessions split across
+four lifecycle locations - before the first observation, inside the active span,
+inside an accepted inactive interval, after the last observation. This speaks to the
+second only, and the run lengths below are of zero-volume rows, a different
+population. Section 5.1 also states the query "blocks nothing", so taking it late
+was a prioritisation mistake, not a missed gate.
+
+**An association, with no mechanism established.** 270,949 sessions - **3.238% of
+the panel**, across 2,735 tickers - are printed with zero recorded volume, and on
+**99.32%** of them the close equals the previous close, against a **5.76%** control
+for sessions that did trade. That is consistent with vendor imputation, with an
+official or reference close published without trading, and with other publication
+conventions. This measurement does not distinguish them. **Withdrawn: "the vendor
+already carried."**
 
 | Quantity | Sessions | Share of panel |
 | --- | --- | --- |
-| Absent, what the carry policy is for | 1 | 0.00% |
-| Zero-volume runs spanning a barrier event | 861 | 0.010% |
-| Zero-volume, in runs longer than 20 sessions | 31,303 | 0.374% |
-| Zero-volume, in runs longer than 5 sessions | 100,500 | 1.201% |
-| Zero-volume, all | 270,949 | 3.238% |
+| Absent inside coverage | 1 | 0.00% |
+| In zero-volume runs spanning a selected action date (upper envelope) | 861 | 0.010% |
+| Beyond an age-20 limit | 13,863 | 0.166% |
+| Beyond an age-5 limit | 59,270 | 0.708% |
+| In runs longer than 5 sessions | 100,500 | 1.201% |
+| Zero recorded volume, all | 270,949 | 3.238% |
 
-**The controls this spike has been designing govern the smallest row.** The carry
-age limit and the barrier rule exist to refuse a stale price. The longest thing
-they could refuse here is 861 sessions; the stale prices actually present number
-270,949, of which 100,500 sit in runs longer than five sessions and 31,303 in runs
-longer than twenty. The longest unbroken run of sessions with no trading and a
-published price is **663**. A five-session carry age is a rule about 0.01% of the
-panel while 1.2% of it is already carried past that age, upstream, unlabelled.
+**Two numbers were wrong in revision 1.** Sessions *beyond* an age-five limit is
+**59,270**, since a seven-session run exceeds an age of five by two and not by
+seven; 100,500 is the count *in* such runs and was misreported as the count beyond
+the age. And the 861 applies no price-basis rule, no knowledge cutoff, no actual
+carry path and no lifecycle barrier, so it is an upper envelope and **not** the set
+the proposed controls would govern. The longest unbroken zero-volume run is **663**
+sessions.
 
-**ledgr cannot currently see the difference.** Section 4.4 makes observations
-always admissible, and a zero-volume print is an observation. Volume is carried
-into the execution bar and exposed to strategies as `ctx$vec$volume`
-(`R/fill-model.R:52,86`, `R/pulse-context.R:229`), but no fill path gates on it:
-there is no participation cap and no zero-volume refusal, so a fill at the open of
-a session on which nothing traded is produced without comment. That is a
-tradability question rather than a data-fabrication one - a zero-volume close can
-be a legitimate official close - but a backtest filling against it assumes
-liquidity that did not exist.
+**The execution-side question, narrowed.** Volume does survive downstream: into the
+execution bar and to strategies as `ctx$vec$volume` (`R/fill-model.R:52,86`,
+`R/pulse-context.R:229,550`). **Withdrawn: "indistinguishable downstream."** What is
+supported is narrower - the built-in cost resolver prices from the open with no
+volume gate (`R/cost-model.R:396`), and no default path refuses a fill on a session
+with no recorded volume. Section 4.4 separates research-input admission from trading
+permission, so this belongs to execution policy and source provenance, and research
+admission must not change merely because a price lacks recorded volume.
 
 **One clean negative.** Rows dated after a ticker's terminal action: **0**. The
-vendor does not print past a delisting, so the phantom-history worry is refuted
-rather than left open.
+vendor does not print past a delisting, so the phantom-history worry is refuted.
 
-**What this does not say.** It does not price the effect in returns; that needs a
-strategy. It does not establish that a zero-volume close is wrong, only that it is
-indistinguishable downstream from a traded one. And it is one vendor over one
-five-year window, so it bounds nothing about other sources.
+**What this does not say.** It does not price anything in returns. It does not
+establish that a zero-volume close is wrong, nor that it would be unexecutable.
+And it is one vendor and one captured vintage, which cannot establish that
+default-on lacks benefit across other sources, asset classes, field-level gaps or
+ingestion failures.
 
 ### The ablation's own gutted path
 
