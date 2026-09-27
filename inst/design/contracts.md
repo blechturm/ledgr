@@ -865,11 +865,15 @@ The strategy preflight boundary originated in
   definitions whose only forwarded argument is one positive integer `n` and
   whose `requires_bars` and `stable_after` both equal `n`. TTR bundles and all
   other TTR families remain uncertified until separately evidenced.
-- Strict feature windows count expected sessions. Any missing required
-  observation makes the affected window `NA_real_`; valuation marks never enter
-  feature computation. Scalar `fn` and the terminal value from `series_fn`
-  receive the same bounded fully observed window and must agree on certification
-  fixtures.
+- Strict feature windows count venue open sessions on the shared pulse axis.
+  Accepted lifetime facts, including `known_inactive`, do not remove sessions
+  from that feature axis. A missing required observation inside an inactive
+  interval therefore makes the affected window `NA_real_` rather than bridging
+  across the interval. A real observation inside the interval remains an
+  admissible feature input even when trading is restricted. Valuation marks
+  never enter feature computation. Scalar `fn` and the terminal value from
+  `series_fn` receive the same bounded fully observed window and must agree on
+  certification fixtures.
 - Active feature fingerprints and cache keys include strict expected-session
   and cutoff-causal history semantics. Future-known facts cannot rewrite cached
   earlier feature values. Dense indicator fingerprints and feature-engine

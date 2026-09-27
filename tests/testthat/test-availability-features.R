@@ -36,6 +36,52 @@ availability_strict_matrix_fixture <- function() {
   )
 }
 
+availability_session_axis_fixture <- function() {
+  dates <- as.Date("2020-01-01") + 0:4
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = as.POSIXct("2019-12-01", tz = "UTC"),
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  lifetime <- ledgr_facts_lifetime(data.frame(
+    instrument_id = c("AAA", "BBB"),
+    effective_from = as.POSIXct("2020-01-03 00:00:00", tz = "UTC"),
+    effective_to = as.POSIXct("2020-01-05 00:00:00", tz = "UTC"),
+    knowledge_time = as.POSIXct("2020-01-02 23:00:00", tz = "UTC"),
+    assertion = "known_inactive",
+    source = "session_axis_fixture",
+    stringsAsFactors = FALSE
+  ))
+  observations <- data.frame(
+    instrument_id = c(rep("AAA", 3L), rep("BBB", 5L)),
+    day = c(1L, 2L, 5L, 1L, 2L, 3L, 4L, 5L),
+    close = c(10, 12, 18, 20, 22, 24, 26, 28),
+    stringsAsFactors = FALSE
+  )
+  observations$ts_utc <- as.POSIXct(
+    paste(dates[observations$day], "16:00:00"),
+    tz = "UTC"
+  )
+  observations$open <- observations$close
+  observations$high <- observations$close + 1
+  observations$low <- observations$close - 1
+  observations$volume <- 1000
+  bars <- observations[, c(
+    "ts_utc", "instrument_id", "open", "high", "low", "close", "volume"
+  )]
+  ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+    facts = ledgr_facts(sessions, lifetime)
+  )
+}
+
 availability_strict_probe_strategy <- function(ctx, params) {
   encode <- function(value) {
     if (is.na(value)) "NA" else format(value, digits = 17, trim = TRUE)
@@ -118,6 +164,50 @@ availability_strict_expected <- function(window) {
     stringsAsFactors = FALSE
   )
 }
+
+# ledgr-test-profile: fast
+testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions", {
+  snapshot <- availability_session_axis_fixture()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    availability_strict_probe_strategy,
+    features = ledgr_feature_map(signal = ledgr_ind_sma(2L)),
+    valuation_policy = ledgr_valuation_stale(1L),
+    cost_model = ledgr_cost_zero()
+  )
+  captured <- availability_strict_capture(ledgr_run(
+    experiment,
+    params = list(window = 2L),
+    run_id = "lifetime-feature-session-axis"
+  ))
+  on.exit(close(captured$value), add = TRUE)
+
+  actual <- availability_strict_matrix(captured$messages)
+  expected <- data.frame(
+    window = rep(2L, 5L),
+    ts_utc = paste0(
+      format(as.Date("2020-01-01") + 0:4, "%Y-%m-%d"),
+      "T16:00:00Z"
+    ),
+    AAA = c(NA, 11, NA, NA, NA),
+    BBB = c(NA, 21, 23, 25, 27),
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_identical(
+    actual[, c("window", "ts_utc")],
+    expected[, c("window", "ts_utc")]
+  )
+  testthat::expect_equal(actual[, c("AAA", "BBB")], expected[, c("AAA", "BBB")])
+
+  post_interval <- actual$ts_utc == "2020-01-05T16:00:00Z"
+  testthat::expect_true(is.na(actual$AAA[post_interval]))
+  inactive_interval <- actual$ts_utc %in% c(
+    "2020-01-03T16:00:00Z",
+    "2020-01-04T16:00:00Z"
+  )
+  testthat::expect_equal(actual$BBB[inactive_interval], c(23, 25))
+})
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0073] strict feature matrices survive every execution route", {
