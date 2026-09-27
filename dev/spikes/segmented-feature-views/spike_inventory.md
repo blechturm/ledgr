@@ -218,12 +218,11 @@ admissibility facts number "one or two". Reading confirmation of the multiplier
 into a fixture that hard-codes two facts would be circular. The real density was
 measured separately on the Sharadar lake and belongs in that record.
 
-**The knowledge lag distribution is the missing input, and it is measurable.**
-Block E shows the bias splits by how late a fact arrives, so the size of the real
-bias is that split applied to the lags a data vendor actually delivers. The lags
-here were chosen to cross the boundary, not sampled from anything. Sharadar
-carries the clocks needed to measure the real distribution, which makes this the
-one open quantity that needs no new machinery to answer.
+**The knowledge lag distribution is now partly supplied, and the rest is not
+reachable from one capture.** The lags in block E were chosen to cross the
+boundary, not sampled. The section below measures the real ones where the vendor
+exposes them; what it cannot give is a distribution of late arrivals, because
+that needs captures accumulated over months rather than two a day apart.
 
 **No decision or outcome is simulated.** Every number above is a count of cells or
 a relative difference in an indicator. Whether a biased indicator changes a
@@ -232,6 +231,68 @@ engine against a strategy. The `full` shortcut losing only *lost* signals sugges
 a direction - a backtest that skips positions the point-in-time run would have
 taken reports flattered results - but direction is not magnitude, and this spike
 measures neither.
+
+### The lags, measured: the revision problem is a fundamentals problem
+
+`lag_measurement.R`, recorded in `lag_measurement_evidence.csv`, against the lake
+at acquisitions `20260905T092008Z` and `20260905T092856Z`. Read-only; no
+acquisition was run. Not part of the checker's set, because it reads a 15 GB
+external path that exists on one machine.
+
+**Two columns that look like knowledge clocks are not.** `firstadded` minus
+`firstpricedate` has a median of 4,821 days and 3,076 of 20,961 tickers are
+non-positive; `lastupdated` minus `lastpricedate` has a median of 3,366 days for
+delisted tickers. Those are vendor onboarding and last-modified stamps, not market
+knowledge. Recorded because they are the obvious thing to reach for and the
+numbers foreclose it.
+
+**The barrier facts carry no knowledge clock, so the lag is zero by
+construction.** `ACTIONS` has only `date`. With no evidence column the fact
+constructors take `knowledge = "assume_effective"`, which sets
+`knowledge_time <- effective_from` (`R/availability-facts.R:1193-1199`), and under
+the default `evidenced` such a fact is never applicable at all
+(`R/availability-provider.R:53`). So for every carry barrier ledgr can build from
+Sharadar today, knowable equals effective.
+
+**At zero lag there is no revision at all.** A barrier that becomes knowable
+exactly when it becomes effective can only affect cells at or after its own
+effective session - cells no earlier cutoff could have delivered. Nothing already
+returned ever changes. Section 6.1's mechanism is "which barriers are knowable at
+`t`", and with the two clocks collapsed that set never gains a barrier retroactively.
+
+So block E's split resolves, for price barriers, to its endpoint:
+
+| lag | source | `stale` wrong | `full` wrong |
+| --- | --- | --- | --- |
+| 0 sessions | every barrier ledgr builds from Sharadar | all of `W_f` | none |
+| ~1 session | dividends, from first appearance | `W_f - 1` | 1 |
+| -4 sessions | splits, knowable before effective | all of `W_f` | none |
+| ~30 sessions | SF1 quarterly filing lag | 0 if `W_f <= 30` | all of `W_f` |
+
+**The direction reverses between the two, and that is the result.** For price
+barriers the full-knowledge preparation is not a shortcut at all - it is the
+correct answer, and the dangerous implementation is the naive one that prepares
+once at the run's start and never revises, which is wrong across the whole window.
+For fundamentals it inverts: the SF1 as-reported filing lag is 44 days median and
+93 to 101 days at the 95th percentile - about 30 and 64 sessions - so
+today's-data preparation is wrong across the entire window of any feature shorter
+than about 30 sessions, which is the classic restated-fundamentals lookahead, and
+never revising is nearly right.
+
+Sharadar's fundamentals do carry two genuine clocks, and ledgr's snapshot has no
+fundamentals table. So the one family that would make revision matter is the one
+family ledgr cannot yet store. **Checkpoint part (d)'s cost does not need paying
+until a two-clock source lands**, and when one does it will arrive with
+fundamentals rather than with prices.
+
+**A thin tail exists and is not measurable from one capture gap.** Across the two
+captures 17 hours apart, 72 `tickerchange` rows dated back to 1998 appeared, along
+with one restated `delisted` row for a 2002 event at 8,900 days and one
+`adrratiosplit` at 270 days. Those are genuine late arrivals - vendor backfill
+corrections rather than market knowledge, but they would drive revision if
+ingested. One capture gap detects arrivals and cannot estimate a distribution; a
+real one needs captures accumulated over months, which is the forward-looking item
+already open in the research repo.
 
 ### The ablation's own gutted path
 
@@ -265,10 +326,14 @@ overclaim.
 directory. It shows the seam exists and is separable; it does not show that
 ledgr's hydration path can produce it.
 
-**Nothing is costed.** No clock is reported, deliberately: the charter asks for
-no cost number. What eager preparation costs against a declared workload and
-memory envelope needs its own charter with those quantities stated, which is the
-question this spike unblocks.
+**Nothing is costed, and the lag measurement says it need not be yet.** No clock
+is reported, deliberately: the charter asks for no cost number. What eager
+preparation costs against a declared workload and memory envelope still needs its
+own charter with those quantities stated. But the measured lags put that charter
+behind a data prerequisite rather than in front of it: every barrier ledgr can
+build from Sharadar has knowable equal to effective, so nothing revises, and the
+cost of revising is not yet a cost anyone pays. The charter becomes due when a
+two-clock source lands, which the same measurement says will be fundamentals.
 
 **Output carry.** Whether a forbidden output carry falls out of the same seam is
 untested. It was named in the charter as expected to remain open, and still is.
