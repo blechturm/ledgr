@@ -605,35 +605,30 @@ testthat::test_that("public result and helper documentation states current seman
   selection_type_help <- paste(readLines(file.path(root, "man", "ledgr_selection.Rd"), warn = FALSE), collapse = "\n")
   context_help <- paste(readLines(file.path(root, "man", "ledgr_strategy_context.Rd"), warn = FALSE), collapse = "\n")
 
-  testthat::expect_match(strategy_doc, "Execution semantics begin only at the target stage", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "floors to whole shares", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "floor\\(equity_fraction \\* ctx\\$equity / ctx\\$close\\(instrument_id\\)\\)")
+  testthat::expect_match(strategy_authoring_doc, "Choose An Authoring Path", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "derive weights, then rebalance", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "hold, then edit", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "current investment members", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "decision axis", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Affordability is not automatic", fixed = TRUE)
   testthat::expect_match(strategy_doc, "does not check affordability", fixed = TRUE)
   testthat::expect_match(strategy_doc, "`risk_chain` can transform", fixed = TRUE)
   testthat::expect_match(strategy_doc, "not a cash-affordability", fixed = TRUE)
   testthat::expect_match(strategy_doc, "classed empty selection", fixed = TRUE)
   testthat::expect_match(strategy_doc, "No warning suppression is needed", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "Troubleshoot Helper Pipelines", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "signal --> selection --> weights --> target_obj --> target_vec", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "Make Missing And Zero Intent Explicit", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "intent_cases <- tibble", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "hold during warmup", fixed = TRUE)
+  testthat::expect_match(strategy_authoring_doc, "Read Planes, Not One Instrument At A Time", fixed = TRUE)
   testthat::expect_match(strategy_doc, "vignette\\(\"data-input-and-snapshots\",\\s+package = \"ledgr\"\\)")
   testthat::expect_no_match(strategy_development_doc, "\\*\\*Definition\\*\\*")
-  testthat::expect_match(strategy_doc, "Only the final target vector is executable", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "Returning\\s+a `ledgr_signal`, `ledgr_selection`, `ledgr_weights`")
-  testthat::expect_match(strategy_doc, "zero fills or zero trades", fixed = TRUE)
   testthat::expect_match(strategy_doc, "ledgr_results\\(bt_top_1, what = \"fills\"\\)")
   testthat::expect_match(strategy_doc, "Zero fills means no execution occurred", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Non-empty fills with zero trades", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "inspect a late pulse", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "setdiff\\(pulse\\$universe, names\\(target\\)\\)")
-  testthat::expect_match(strategy_doc, "Strategy functions are preflighted before execution", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "`ledgr_signal_strategy\\(\\)` is a separate compatibility\\s+wrapper")
-  testthat::expect_match(strategy_doc, "A preflight tier is ledgr's static reproducibility classification", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "For the full tier model, read", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "compact Tier 3 hard-failure example", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "outside_helper", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "preflight\\$reason")
-  testthat::expect_match(strategy_doc, "There is no force override", fixed = TRUE)
+  testthat::expect_match(strategy_doc, "inspect a late\\s+pulse")
+  testthat::expect_match(strategy_authoring_doc, "setdiff\\(pulse\\$universe, names\\(equal_target\\)\\)")
+  testthat::expect_match(strategy_authoring_doc, "vignette\\(\"reproducibility\", package = \"ledgr\"\\)")
+  testthat::expect_match(strategy_authoring_doc, "top_return_run <- ledgr_run", fixed = TRUE)
   testthat::expect_match(strategy_doc, "If you want to compare variants", fixed = TRUE)
   testthat::expect_match(strategy_doc, "strategy authoring question separate", fixed = TRUE)
   testthat::expect_match(strategy_doc, "?ledgr_strategy_context", fixed = TRUE)
@@ -1259,17 +1254,17 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   )
   testthat::expect_match(
     docs$strategy_qmd,
-    "target_values <- c(target)\ntarget_values",
+    "intent_cases <- tibble",
     fixed = TRUE
   )
   testthat::expect_match(
     docs$strategy,
-    "target_values <- c(target)\ntarget_values\n#> DEMO_01 DEMO_02",
+    "hold during warmup | preserve every current quantity | DEMO_01=0, DEMO_02=3",
     fixed = TRUE
   )
   testthat::expect_match(
     docs$strategy_qmd,
-    "c(pre_floor = raw_qty, target_qty = target[[\"DEMO_01\"]])",
+    "top_return_run <- ledgr_run",
     fixed = TRUE
   )
   testthat::expect_no_match(

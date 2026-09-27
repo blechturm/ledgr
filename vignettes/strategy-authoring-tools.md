@@ -1,29 +1,59 @@
 # Strategy Authoring Tools
 
 
-<style>
-.ledgr-diagram {
-  margin: 1.25rem auto 1.5rem auto;
-  text-align: center;
-}
-.ledgr-diagram .mermaid {
-  display: inline-block;
-  max-width: 760px;
-  width: 100%;
-}
-.ledgr-diagram .node text,
-.ledgr-diagram .edgeLabel {
-  font-size: 18px !important;
-}
-</style>
-
 After the raw `function(ctx, params) -> target vector` contract is
 clear, strategy work shifts to composing decisions you can inspect: read
 current state, derive weights, turn them into complete intent, and debug
 one pulse before running. This companion article teaches that workflow
-together with feature aliases and reproducibility preflight. For the
-first-pass strategy contract and leakage boundary, read
+together with feature aliases. For the first-pass strategy contract and
+leakage boundary, read
 `vignette("strategy-development", package = "ledgr")`.
+
+## Choose An Authoring Path
+
+At each pulse, strategy code reads current state, makes a decision from
+pulse-known inputs, and returns complete portfolio intent. Two paths
+cover most strategies:
+
+| Path | Use it when | Authoring result | Executable result |
+|----|----|----|----|
+| derive weights, then rebalance | this pulse constructs a member allocation | relative weights over current investment members | complete quantities from `ledgr_target_rebalance()` |
+| hold, then edit | existing quantities should remain unless this pulse changes them | a copy from `ctx$hold()` with named edits | the edited complete target |
+
+The **decision axis** is `ctx$universe`: every instrument for which the
+strategy must return intent. **Current investment members** are the
+instruments eligible to enter selection and weighting. In an
+availability-aware run, the decision axis can also include a held
+nonmember needed for valuation or disposition. It stays out of ranking
+and weighting. Neither membership nor `ctx$tradable()` promises
+execution at the next open.
+
+Both paths finish with one named quantity for every instrument on the
+decision axis. The introductory target-vector contract and the
+difference between `ctx$flat()` and `ctx$hold()` live in
+`vignette("strategy-development", package = "ledgr")`.
+
+> [!WARNING]
+>
+> ### Reserve a kept member before sizing the rest
+>
+> Do not size against the full budget and then restore a current member’s
+> position. If two `DEMO_02` shares consume 40% of NAV, allocate only the
+> remaining 60%, then restore that named quantity:
+>
+> ``` r
+> targets <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.6)
+> targets[["DEMO_02"]] <- ctx$position("DEMO_02")
+> ```
+>
+> The value `0.6` is the strategy’s explicit budget decision, not a magic
+> default. Held *nonmembers* are reserved automatically; kept current
+> members are not. With NAV 100, two shares marked at 20 consume 40 and
+> leave 60 for the rest of the book. At a price of 10, weight 1 over that
+> residual budget targets six shares; weight 0.6 targets three. A strategy
+> intending 60% of total NAV in the new allocation therefore uses residual
+> weight 1, not 0.6.
+
 
 ## Prerequisites
 
@@ -128,7 +158,7 @@ pulse$vec$feature("return_5")
 `ctx$idx(id)` gives the instrument’s position in `ctx$universe`. Values
 in `ctx$vec$close`, `ctx$vec$position`, and
 `ctx$vec$feature(feature_id)` use that same order, so a strategy can
-score the whole universe without repeating scalar lookups. By default,
+inspect the decision axis without repeating scalar lookups. By default,
 `ctx$idx(id)` also fails loudly for an unknown instrument; use its
 `missing` argument only when a deliberate `NA` path is part of the rule.
 The vector feature accessor still uses exact engine feature IDs: warmup
@@ -160,92 +190,11 @@ ledgr_pulse_wide(pulse) |>
 ```
 
 The wide row and the scalar accessors are two ways of looking at the
-same pulse-known data. The wide row is good for inspection and
-model-like thinking. The rest of this vignette uses the non-wide
-accessors because they keep the step-by-step strategy logic easier to
-read.
+same pulse-known data. The rest of this article uses vector accessors
+because they keep cross-sectional strategy logic both readable and
+inexpensive.
 
-Raw loops are the clearest way to learn the contract. Once that contract
-is clear, larger strategies usually read better as a pipeline: score the
-universe, select names, assign weights, then convert those weights into
-target quantities.
-
-The economic idea:
-
-> Rank instruments by recent return, keep the top names, split capital
-> equally, and convert those weights into share quantities.
-
-`ledgr_signal_return()` is a thin helper around the same feature you
-inspected above: it reads `return_N` for every instrument in the pulse
-and returns one universe-wide signal object. It uses the vector accessor
-`ctx$vec$feature(feature_id)` directly; shipped pulse contexts always
-provide that aligned vector accessor.
-
-The helper pipeline has four stages:
-
-| Stage | Input | Output | Question answered |
-|----|----|----|----|
-| signal | pulse context | numeric scores with origin metadata | What looks attractive? |
-| selection | signal | logical inclusion with the same origin | What should be considered? |
-| weights | selection | allocation weights with the same origin | How should capital be split? |
-| target | weights and context | full-universe share quantities | What should the portfolio hold? |
-
-Execution semantics begin only at the target stage. `signal`,
-`selection`, and `weights` are research objects that help author the
-strategy; `target` is the ordinary full named target vector shape the
-runner validates and executes.
-
-``` r
-signal <- ledgr_signal_return(pulse, lookback = 5)
-signal
-#> <ledgr_signal> [2 assets]
-#> origin: return_5
-#> non-NA: 2/2
-#>     DEMO_01     DEMO_02
-#> 0.085318770 0.004018771
-
-selection <- ledgr_select_top_n(signal, n = 1)
-selection
-#> <ledgr_selection> [2 assets]
-#> origin: return_5
-#> 1 selected
-#> DEMO_01 DEMO_02
-#>    TRUE   FALSE
-
-weights <- ledgr_weight_equal(selection)
-weights
-#> <ledgr_weights> [1 asset]
-#> origin: return_5
-#> non-NA: 1/1
-#> DEMO_01
-#>       1
-
-target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
-target
-#> <ledgr_target> [2 assets]
-#> origin: return_5
-#> non-NA: 2/2
-#> DEMO_01 DEMO_02
-#>      93       0
-```
-
-## Choose An Authoring Path
-
-At each pulse, read current state from `ctx`, make a decision from
-pulse-known inputs, and return complete portfolio intent. There are two
-common paths:
-
-| Path | Use it when | Authoring result | Executable result |
-|----|----|----|----|
-| derive weights, then rebalance | the pulse constructs a member allocation | relative weights over current investment members | complete quantities from `ledgr_target_rebalance()` |
-| hold, then edit | existing quantities should remain unless the pulse changes them | a copy from `ctx$hold()` with named edits | the edited complete target |
-
-Both paths finish with one named quantity for every instrument on the
-decision axis. For the introductory target-vector contract and the
-difference between `ctx$flat()` and `ctx$hold()`, read
-`vignette("strategy-development", package = "ledgr")`.
-
-### Derive Weights, Then Rebalance In Context
+## Derive Weights, Then Rebalance In Context
 
 A helper pipeline produces a relative allocation. Keep that research
 object separate from the economic conversion into share quantities:
@@ -282,11 +231,11 @@ quantities.
 run that is the full decision axis. In an availability-aware run,
 `ctx$universe` can also contain a held nonmember needed for valuation or
 disposition. That nonmember does not enter ranking or weighting; the
-rebalance reserves its marked exposure and preserves its quantity. This
-is an allocation population, not a promise of execution at the next
-open.
+rebalance reserves its marked exposure and preserves its quantity. The
+member set defines who can enter the allocation; it is not a promise of
+execution at the next open.
 
-### Hold, Then Edit
+## Hold, Then Edit
 
 Use hold-and-edit when most quantities should remain unchanged. State
 can decide which edit applies, but the strategy still returns complete
@@ -295,86 +244,67 @@ intent:
 ``` r
 stateful_entry_exit <- function(ctx, params) {
   targets <- ctx$hold()
-  entered <- isTRUE(ctx$state_prev$entered)
-  targets[[ctx$universe[[1L]]]] <- if (entered) 0 else 1
-  list(targets = targets, state_update = list(entered = !entered))
+  id <- params$instrument_id
+  phase <- ctx$state_prev$phase
+  if (is.null(phase)) phase <- "waiting"
+
+  if (phase == "waiting" && ctx$close(id) < params$entry_below) {
+    targets[[id]] <- 1
+    phase <- "holding"
+  } else if (
+    phase == "holding" &&
+      ctx$position(id) > 0 &&
+      ctx$close(id) > params$exit_above
+  ) {
+    targets[[id]] <- 0
+    phase <- "done"
+  }
+
+  list(targets = targets, state_update = list(phase = phase))
 }
 
 stateful_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = stateful_entry_exit,
-  opening = ledgr_opening(cash = 10000),
+  opening = ledgr_opening(
+    cash = 10000,
+    positions = c(DEMO_02 = 2),
+    cost_basis = c(DEMO_02 = 180)
+  ),
   cost_model = ledgr_cost_zero()
 )
-stateful_run <- ledgr_run(stateful_exp)
+stateful_run <- ledgr_run(
+  stateful_exp,
+  params = list(
+    instrument_id = "DEMO_01",
+    entry_below = 90,
+    exit_above = 91
+  )
+)
 
 ledgr_results(stateful_run, what = "fills") |>
-  select(ts_utc, instrument_id, side, qty) |>
-  slice_head(n = 2)
+  select(ts_utc, instrument_id, side, qty)
 #> # A tibble: 2 x 4
 #>   ts_utc     instrument_id side    qty
 #>   <date>     <chr>         <chr> <dbl>
-#> 1 2019-01-02 DEMO_01       BUY       1
-#> 2 2019-01-03 DEMO_01       SELL      1
+#> 1 2019-01-07 DEMO_01       BUY       1
+#> 2 2019-01-25 DEMO_01       SELL      1
 
 close(stateful_run)
 ```
 
-The first fill enters the position and the second exits it after the
-state update reaches the next pulse. Returning hold does not bypass a
-risk chain or guarantee that no fill occurs. It states portfolio intent
-at this decision; downstream rules still apply.
+`DEMO_01` enters below 90 and exits above 91. The state prevents a later
+re-entry, while `ctx$hold()` preserves the two opening `DEMO_02` shares
+without special-case code. Returning hold does not bypass a risk chain
+or guarantee that no fill occurs. It states portfolio intent at this
+decision; downstream rules still apply.
 
 ## Make Missing And Zero Intent Explicit
 
-Missing numeric scores and missing logical decisions mean different
-things. Ranking excludes an `NA` score. A logical `NA` for a current
-member is not a decision and fails instead of silently excluding the
-member. This example deliberately injects one missing close to show the
-distinction:
-
-``` r
-prices_with_gap <- pulse$vec$close
-prices_with_gap[[2L]] <- NA_real_
-
-bare_predicate_error <- tryCatch(
-  {
-    ledgr_selection(pulse, where = prices_with_gap > 0)
-    NA_character_
-  },
-  error = function(err) class(err)[[1L]]
-)
-
-guarded_selection <- ledgr_selection(
-  pulse,
-  where = !is.na(prices_with_gap) & prices_with_gap > 0
-)
-
-missing_score_selection <- ledgr_signal(
-  pulse,
-  values = setNames(c(0.2, NA_real_), pulse$universe)
-) |>
-  ledgr_select_top_n(1)
-
-tibble(
-  case = c("bare logical predicate", "guarded predicate", "missing score"),
-  outcome = c(
-    bare_predicate_error,
-    paste(sum(unclass(guarded_selection)), "member selected"),
-    paste(sum(unclass(missing_score_selection)), "member selected")
-  )
-)
-#> # A tibble: 3 x 2
-#>   case                   outcome
-#>   <chr>                  <chr>
-#> 1 bare logical predicate ledgr_invalid_strategy_type
-#> 2 guarded predicate      1 member selected
-#> 3 missing score          1 member selected
-```
-
-Guarding with `!is.na()` means “do not select the member whose decision
-input is missing.” If missing input means “do not rebalance at all,”
-guard the whole decision and return `ctx$hold()` instead:
+Five cases look similar in compact code and mean different things. This
+example keeps an existing `DEMO_02` position so hold is visibly
+different from zero. It also injects one missing value deliberately; the
+sealed data itself is unchanged.
 
 ``` r
 momentum_with_hold_guard <- function(ctx, params) {
@@ -397,200 +327,130 @@ warmup_pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
   ts_utc = min(bars$ts_utc),
-  features = features
+  features = features,
+  positions = c(DEMO_01 = 0, DEMO_02 = 3)
 )
 
-momentum_with_hold_guard(
+prices_with_gap <- pulse$vec$close
+prices_with_gap[[2L]] <- NA_real_
+
+bare_predicate_error <- tryCatch(
+  {
+    ledgr_selection(pulse, where = prices_with_gap > 0)
+    NA_character_
+  },
+  error = function(err) class(err)[[1L]]
+)
+
+guarded_selection <- ledgr_selection(
+  pulse,
+  where = !is.na(prices_with_gap) & prices_with_gap > 0
+)
+
+missing_score_target <- ledgr_signal(
+  pulse,
+  values = setNames(c(0.2, NA_real_), pulse$universe)
+) |>
+  ledgr_select_top_n(1) |>
+  ledgr_weight_equal() |>
+  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+
+explicit_zero_target <- ledgr_weights(
+  c(DEMO_01 = 1, DEMO_02 = 0),
+  universe = pulse$universe
+) |>
+  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+
+omitted_target <- ledgr_weights(
+  c(DEMO_01 = 1),
+  universe = pulse$universe
+) |>
+  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+
+hold_target <- momentum_with_hold_guard(
   warmup_pulse,
   list(lookback = 5, n = 1, equity_fraction = 0.1)
 )
-#> DEMO_01 DEMO_02
-#>       0       0
+
+show_target <- function(x) {
+  paste(paste(names(x), c(x), sep = "="), collapse = ", ")
+}
+
+intent_cases <- tibble(
+  input = c(
+    "missing logical decision",
+    "missing numeric score",
+    "explicit zero weight",
+    "omitted weight",
+    "hold during warmup"
+  ),
+  meaning = c(
+    "not a decision; guard it explicitly",
+    "exclude that score from ranking",
+    "validate the name and request zero",
+    "leave that member unallocated",
+    "preserve every current quantity"
+  ),
+  resulting_target = c(
+    paste0(
+      "error: ", bare_predicate_error, "; guarded: ",
+      names(guarded_selection)[unclass(guarded_selection)]
+    ),
+    show_target(missing_score_target),
+    show_target(explicit_zero_target),
+    show_target(omitted_target),
+    show_target(hold_target)
+  )
+)
+
+knitr::kable(intent_cases)
+```
+
+| input | meaning | resulting_target |
+|:---|:---|:---|
+| missing logical decision | not a decision; guard it explicitly | error: ledgr_invalid_strategy_type; guarded: DEMO_01 |
+| missing numeric score | exclude that score from ranking | DEMO_01=93, DEMO_02=0 |
+| explicit zero weight | validate the name and request zero | DEMO_01=93, DEMO_02=0 |
+| omitted weight | leave that member unallocated | DEMO_01=93, DEMO_02=0 |
+| hold during warmup | preserve every current quantity | DEMO_01=0, DEMO_02=3 |
+
+``` r
 close(warmup_pulse)
 ```
 
-An explicit zero weight validates the member name and requests a zero
-target without requiring a sizing price. Omitting a current member from
-the weights also leaves it unallocated, so both produce zero for that
-member. Returning `ctx$hold()` is different: it preserves the current
-quantity, subject to downstream risk processing.
-
-``` r
-custom_weights <- ledgr_weights(
-  c(DEMO_01 = 1, DEMO_02 = 0),
-  universe = pulse$universe
-)
-
-ledgr_target_rebalance(custom_weights, pulse, equity_fraction = 0.1)
-#> <ledgr_target> [2 assets]
-#> non-NA: 2/2
-#> DEMO_01 DEMO_02
-#>      93       0
-```
-
-## Know Which Budget The Weights Use
-
-In a dense run, allocatable capital equals portfolio net asset value. In
-an availability-aware run, a held nonmember is preserved and its
-absolute marked exposure is reserved first. Weights and
-`equity_fraction` apply to the residual allocatable capital, not
-automatically to total NAV.
-
-For example, NAV 100 with two held OLD shares marked at 20 leaves 60 of
-allocatable capital. With AAA at 10, weight 1 targets six shares. Weight
-0.6 allocates 36 and targets three shares. An optimizer intending AAA to
-be 60% of total NAV must convert that intent to the residual budget
-first; here the residual weight is `(0.6 * 100) / 60 = 1`.
-
-> [!WARNING]
->
-> ### Do not restore positions after full-budget sizing
->
-> The helper reserves held *nonmembers*. It does not implement partial
-> rebalancing for current members. If a full-budget allocation sizes AAA
-> to ten shares and code then restores two current-member BBB shares
-> marked at 20, requested exposure becomes 140. Reserve that 40 before
-> sizing, or express the complete quantities directly. Restoring the
-> quantity afterwards does not preserve the budget.
-
-
-`ledgr_target_rebalance()` sizes with current pulse equity and current
-close prices, using `ctx$vec$close` when available, then floors to whole
-shares. For the selected `DEMO_01` pulse above, 10% of equity is
-allocated to the one selected instrument:
-
-``` r
-raw_qty <- weights[["DEMO_01"]] * 0.1 * pulse$equity / pulse$close("DEMO_01")
-target_values <- c(target)
-target_values
-#> DEMO_01 DEMO_02
-#>      93       0
-c(pre_floor = raw_qty, target_qty = target[["DEMO_01"]])
-#>  pre_floor target_qty
-#>   93.89208   93.00000
-```
-
-Use ordinary vector operations to inspect a target:
-`target[["DEMO_01"]]` extracts one named quantity, while `c(target)`
-returns the complete named numeric vector in `target_values`.
-
-The general weighted sizing formula is:
-
-``` text
-floor(weight * equity_fraction * ctx$equity / ctx$close(instrument_id))
-```
-
-For a raw target strategy that does not use weights, the same idea
-reduces to:
-
-``` text
-floor(equity_fraction * ctx$equity / ctx$close(instrument_id))
-```
-
-Both formulas use decision-time close and current pulse equity. Fills
-still occur at the configured later fill point, so fill value can drift
-from decision-time sizing. Residual allocation after whole-share
-flooring remains cash and is reflected in the ledger-backed equity rows.
+The guarded logical form turns the missing comparison into an explicit
+exclusion. A missing score is already understood by ranking. Exact zero
+and omission both produce zero here, but zero records a deliberate
+choice and is dropped before price lookup. Hold is different: it keeps
+the three `DEMO_02` shares. If missing input should pause the whole
+rebalance, return hold as the warmup guard does.
 
 ## Read Planes, Not One Instrument At A Time
 
-Both accessor forms above return the same numbers, and they do not cost
-the same. `ctx$vec$close` hands back a vector the engine already
-assembled for this pulse. `ctx$close(id)` is a function call that
-validates its argument and looks up one position. Call it once and the
-difference is invisible. Call it once per instrument and you pay that
-overhead for every name, every pulse, and the cost grows with your
-universe while the plane’s does not.
-
-The two strategies below make the same decision. One reads the plane;
-the other loops the scalar accessor over the universe.
-
-``` r
-read_the_plane <- function(ctx, params) {
-  prices <- ctx$vec$close
-  targets <- ctx$hold()
-  targets[prices > 0] <- 1
-  targets
-}
-
-loop_the_scalar <- function(ctx, params) {
-  prices <- vapply(ctx$universe, ctx$close, numeric(1))
-  targets <- ctx$hold()
-  targets[prices > 0] <- 1
-  targets
-}
-```
-
-Two thousand instruments over thirty pulses is enough to show the
-effect. Each form runs once to warm up, then once on the clock.
-
-``` r
-wide_bars <- ledgr_sim_bars(n_instruments = 2000L, n_days = 30L, seed = 11L) |>
-  as.data.frame()
-
-wide_snapshot <- ledgr_snapshot_from_df(
-  wide_bars,
-  db_path = tempfile(fileext = ".duckdb")
-)
-
-time_strategy <- function(strategy, label) {
-  experiment <- ledgr_experiment(
-    wide_snapshot,
-    strategy,
-    opening = ledgr_opening(cash = 1e7),
-    cost_model = ledgr_cost_zero()
-  )
-  warm <- ledgr_run(experiment, run_id = paste0(label, "-warm"))
-  close(warm)
-  timing <- system.time(bt <- ledgr_run(experiment, run_id = label))
-  elapsed <- timing[["elapsed"]]
-  close(bt)
-  elapsed
-}
-
-tibble(
-  form = c("ctx$vec$close", "vapply(ctx$universe, ctx$close, numeric(1))"),
-  seconds = c(
-    time_strategy(read_the_plane, "plane"),
-    time_strategy(loop_the_scalar, "loop")
-  )
-) |>
-  mutate(added_ms_per_pulse = 1000 * (seconds - min(seconds)) / 30)
-#> # A tibble: 2 x 3
-#>   form                                        seconds added_ms_per_pulse
-#>   <chr>                                         <dbl>              <dbl>
-#> 1 ctx$vec$close                                  2.31                0
-#> 2 vapply(ctx$universe, ctx$close, numeric(1))    4.33               67.3
-```
-
-Read the last column rather than the ratio. The two strategies differ in
-one line, so the whole gap is the loop, and it is spent before the
-strategy has made a single decision. That per-pulse cost scales with the
-universe, because the loop pays once per instrument while the plane is
-one read whatever the universe size, and it multiplies by every pulse in
-the run. On a longer backtest over a wider universe the same line is
-minutes, not milliseconds.
+`ctx$vec$close` returns the aligned vector the engine already prepared
+for this pulse. `ctx$close(id)` validates and looks up one instrument.
+Use the scalar form after singling out an instrument; do not call it
+once for every member.
 
 > [!WARNING]
 >
-> ### The most expensive mistake available to a strategy
+> ### Read the plane for cross-sectional work
 >
 > `ctx$close(id)`, `ctx$feature(id, feature_id)`, and `ctx$position(id)`
 > are for asking about one instrument you have already singled out.
 > Reaching for them inside `vapply()`, `sapply()`, or a `for` loop over
-> `ctx$universe` is the most expensive habit available to a ledgr
-> strategy, and it hides well: the numbers are right and the run is simply
-> slow. When you want a value for everyone, read the plane. For universes
-> of at least 100 instruments, ledgr emits one
-> `ledgr_scalar_accessor_loop` warning per run when one scalar accessor
-> reaches a full-universe call count in a pulse. The warning names the
-> vector plane to use; it is diagnostic only and changes no target, fill,
-> result, or run identity.
+> `ctx$universe` is the most expensive common strategy-authoring habit.
+> When you want a value for everyone, read `ctx$vec$close`,
+> `ctx$vec$feature()`, or `ctx$vec$position` once. For universes of at
+> least 100 instruments, ledgr emits one `ledgr_scalar_accessor_loop`
+> warning per run when one scalar accessor reaches a decision-axis call
+> count in a pulse. The warning names the vector plane to use; it is
+> diagnostic only and changes no target, fill, result, or run identity.
 
 
-Every helper in the pipeline below already reads planes, so a strategy
-written as `signal |> selection |> weights |> target` never has this
-problem. The trap is only open to hand-written pulse logic.
+The optimization manual carries the measurements behind this rule.
+Strategy authors only need the rule: use a plane for a cross-section and
+a scalar for a chosen instrument.
 
 ## Turn The Idea Into A Strategy
 
@@ -600,10 +460,10 @@ The full backtest replays every bar, including the earliest warmup
 pulses. During those first pulses, `return_5` is `NA` for every
 instrument because five prior bars do not exist yet.
 `ledgr_select_top_n()` treats that all-missing signal as a classed empty
-selection, not as a warning. That object still carries the original
-universe and signal origin. `ledgr_weight_equal()` turns it into empty
-weights, and `ledgr_target_rebalance()` turns those weights into a flat
-full-universe target.
+selection, not as a warning. That object still carries the member set
+and signal origin. `ledgr_weight_equal()` turns it into empty weights,
+and `ledgr_target_rebalance()` turns those weights into a flat target
+over the decision axis.
 
 No warning suppression is needed for ordinary early warmup. A
 partial-selection warning can still appear when some signal values are
@@ -651,6 +511,23 @@ exp <- ledgr_experiment(
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
+
+top_return_run <- ledgr_run(
+  exp,
+  params = list(lookback = 5, n = 1, equity_fraction = 0.1),
+  run_id = "top_return"
+)
+
+ledgr_results(top_return_run, what = "fills") |>
+  select(ts_utc, instrument_id, side, qty) |>
+  slice_head(n = 4)
+#> # A tibble: 4 x 4
+#>   ts_utc     instrument_id side    qty
+#>   <date>     <chr>         <chr> <dbl>
+#> 1 2019-01-09 DEMO_02       BUY      13
+#> 2 2019-01-14 DEMO_01       BUY      11
+#> 3 2019-01-14 DEMO_02       SELL     13
+#> 4 2019-01-18 DEMO_01       SELL     11
 ```
 
 ## Feature Maps For Readable Feature Access
@@ -664,7 +541,7 @@ the same feature at the same pulse for every instrument in
 `ctx$universe`. Warmup for a known feature remains `NA`; an unknown
 feature ID fails loudly. The scalar helper stays the clearest teaching
 surface, while the vector helper is the lower-overhead surface for
-universe-wide scoring.
+decision-axis inspection.
 
 When a strategy reads several features per instrument, repeating feature
 ID strings can obscure the trading idea. A feature map bundles indicator
@@ -684,7 +561,7 @@ ledgr_feature_id(mapped_features)
 
 The strategy closes over `mapped_features`. Inside the universe loop,
 `ctx$features(id, mapped_features)` returns a named numeric vector keyed
-by the aliases. `ledgr_passed_warmup()` is a guard for that vector: for
+by the aliases. `ledgr_passed_warmup()` is a guard for that vector. For
 values returned by `ctx$features()`, it means every requested indicator
 is usable at this pulse. It is not a signal pipeline transformation, and
 it is not a data-quality diagnostic for arbitrary vectors.
@@ -836,151 +713,29 @@ For exploratory sweeps over indicator parameters, use active aliases and
 feature grids. The canonical walkthrough is
 `vignette("sweeps", package = "ledgr")`.
 
-## Troubleshoot Helper Pipelines
+## Check Target Names Before A Full Run
 
-The helper pipeline is only an authoring layer:
-
-<div class="ledgr-diagram ledgr-helper-pipeline">
-
-```mermaid
-
-flowchart LR
-  signal["ledgr_signal"]
-  selection["ledgr_selection"]
-  weights["ledgr_weights"]
-  target_obj["ledgr_target"]
-  target_vec["target vector"]
-
-  signal --> selection --> weights --> target_obj --> target_vec
-```
-
-</div>
-
-Only the final target vector is executable. A strategy must return a
-full named numeric target vector, or a `ledgr_target` that unwraps to
-that shape. Returning a `ledgr_signal`, `ledgr_selection`,
-`ledgr_weights`, unnamed numeric vector, data frame, list, or partial
-target is an invalid strategy result.
-
-Common failures usually mean one of four things:
-
-| Symptom | Likely cause | First check |
-|----|----|----|
-| unknown feature ID | the indicator was not registered with the experiment | `ledgr_feature_id(features)` |
-| missing target names | the strategy did not return every `ctx$universe` instrument | compare `names(target)` to `ctx$universe` |
-| non-numeric or unsupported return shape | the strategy returned a helper intermediate or object-like result | make the last line a target vector |
-| zero fills or zero trades | warmup, empty selection, sizing to zero, no exit, or last-bar no-fill | inspect a late pulse and the fills table |
-
-For helper strategies, debug one pulse before rerunning the whole
-experiment:
+When a hand-written target fails validation, compare its names with the
+decision axis before rerunning the experiment:
 
 ``` r
-pulse <- ledgr_pulse_snapshot(
-  snapshot,
-  universe = c("DEMO_01", "DEMO_02"),
-  ts_utc = ledgr_utc("2019-03-01"),
-  features = features
-)
-
-signal <- ledgr_signal_return(pulse, lookback = 5)
-selection <- ledgr_select_top_n(signal, n = 1)
-weights <- ledgr_weight_equal(selection)
-target <- ledgr_target_rebalance(weights, pulse, equity_fraction = 0.1)
-
-signal
-#> <ledgr_signal> [2 assets]
-#> origin: return_5
-#> non-NA: 2/2
-#>     DEMO_01     DEMO_02
-#> 0.085318770 0.004018771
-selection
-#> <ledgr_selection> [2 assets]
-#> origin: return_5
-#> 1 selected
-#> DEMO_01 DEMO_02
-#>    TRUE   FALSE
-weights
-#> <ledgr_weights> [1 asset]
-#> origin: return_5
-#> non-NA: 1/1
-#> DEMO_01
-#>       1
-target
-#> <ledgr_target> [2 assets]
-#> origin: return_5
-#> non-NA: 2/2
-#> DEMO_01 DEMO_02
-#>      93       0
-names(target)
-#> [1] "DEMO_01" "DEMO_02"
-pulse$universe
-#> [1] "DEMO_01" "DEMO_02"
-setdiff(pulse$universe, names(target))
+setdiff(pulse$universe, names(equal_target))
 #> character(0)
-setdiff(names(target), pulse$universe)
+setdiff(names(equal_target), pulse$universe)
 #> character(0)
 ```
 
-If `selection` inherits from `ledgr_empty_selection`, every signal value
-was missing or unusable at that pulse. Early in a run this is usually
-ordinary warmup. Late in a run it points to sample length, feature
-registration, or universe coverage. If `target` is full-universe but
-every quantity is zero, check integer flooring, `equity_fraction`,
-current close prices, and whether an empty selection flowed through
-intentionally.
-
-If `setdiff(pulse$universe, names(target))` is non-empty, the strategy
-would fail target validation because it did not name every instrument.
-If `setdiff(names(target), pulse$universe)` is non-empty, it emitted
-targets for unknown instruments.
-
-## Preflight Catches Non-Reproducible Strategy Code
-
-Strategy functions are preflighted before execution. Keep strategy logic
-self-contained, put research variation in `params`, and avoid hidden
-session state such as unresolved helper functions or mutable globals.
-
-`ledgr_signal_strategy()` is a separate compatibility wrapper for
-tutorial-style signal functions. It explicitly maps an inner signal
-function to target quantities. For the full tier model, read
-`vignette("reproducibility", package = "ledgr")`.
-
-> [!NOTE]
->
-> ### Definition
->
-> A preflight tier is ledgr’s static reproducibility classification for a
-> strategy function. Tier 1 is self-contained, Tier 2 is inspectable with
-> user-managed environment parity, and Tier 3 is rejected before
-> execution.
-
-
-A compact Tier 3 hard-failure example is an unresolved helper reference:
-
-``` r
-tier3_strategy <- function(ctx, params) {
-  outside_helper(ctx)
-}
-
-preflight <- ledgr_strategy_preflight(tier3_strategy)
-preflight$tier
-#> [1] "tier_3"
-preflight$reason
-#> [1] "Strategy references unresolved symbol(s): outside_helper."
-```
-
-`ledgr_run()` and `ledgr_sweep()` reject Tier 3 strategies before
-execution. There is no force override on those public execution paths.
-\## Stored Source
-
-ledgr stores strategy provenance with committed runs. For source
-inspection, hash verification, and trust boundaries, read
+An empty first result means no instrument is missing. An empty second
+result means no unknown instrument was added. For invalid return shapes,
+strategy preflight tiers, stored source, hash verification, and trust
+boundaries, use the canonical guide: read
 `vignette("reproducibility", package = "ledgr")`.
 
 ## Cleanup
 
 ``` r
 close(bt_mapped)
+close(top_return_run)
 close(pulse)
 ledgr_snapshot_close(snapshot)
 ```

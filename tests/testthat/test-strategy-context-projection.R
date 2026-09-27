@@ -3,17 +3,31 @@ strategy_context_projection_capture <- function(ctx, params) {
   if (is.null(previous)) previous <- character()
   previous_exposure <- ctx$state_prev$projection_exposed
   if (is.null(previous_exposure)) previous_exposure <- logical()
+  retired_names <- c(
+    ".feature_projection", ".feature_pulse_idx", ".feature_ids"
+  )
   context_values <- unclass(ctx)
+  exposed_value <- function(value) {
+    !is.function(value) && inherits(value, "ledgr_runtime_projection")
+  }
+  exposed_container <- function(value) {
+    if (is.function(value)) return(FALSE)
+    nested <- if (is.environment(value)) {
+      as.list.environment(value, all.names = TRUE)
+    } else if (is.list(value)) {
+      unclass(value)
+    } else {
+      return(FALSE)
+    }
+    any(c(
+      retired_names %in% names(nested),
+      vapply(nested, exposed_value, logical(1))
+    ))
+  }
   projection_exposed <- any(c(
-    c(".feature_projection", ".feature_pulse_idx", ".feature_ids") %in%
-      names(context_values),
-    vapply(
-      context_values,
-      function(value) {
-        !is.function(value) && inherits(value, "ledgr_runtime_projection")
-      },
-      logical(1)
-    )
+    retired_names %in% names(context_values),
+    vapply(context_values, exposed_value, logical(1)),
+    vapply(context_values, exposed_container, logical(1))
   ))
   scalar <- ctx$feature("AAA", "sma_2")
   plane <- ctx$vec$feature("sma_2")[[1L]]
