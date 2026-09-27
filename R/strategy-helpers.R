@@ -46,6 +46,25 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
   as.numeric(equity)
 }
 
+ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
+  members <- universe
+  if (isTRUE(ctx$availability_active)) {
+    members <- as.character(ctx$members %||% character())
+    if (length(members) == 0L) {
+      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
+    }
+  }
+
+  values <- stats::setNames(as.numeric(ctx$vec$feature(feature_id)), universe)
+  if (isTRUE(ctx$availability_active)) {
+    member_idx <- match(members, universe)
+    values <- values[member_idx]
+    admissible <- as.logical(ctx$vec$admissible[member_idx])
+    values[!admissible] <- NA_real_
+  }
+  ledgr_signal(values, universe = members, origin = feature_id)
+}
+
 #' Build a signal from one registered feature
 #'
 #' `ledgr_signal_feature()` reads one already-registered feature plane. In an
@@ -86,22 +105,7 @@ ledgr_signal_feature <- function(ctx, feature_id) {
     )
   }
 
-  members <- universe
-  if (isTRUE(ctx$availability_active)) {
-    members <- as.character(ctx$members %||% character())
-    if (length(members) == 0L) {
-      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
-    }
-  }
-
-  values <- stats::setNames(as.numeric(ctx$vec$feature(feature_id)), universe)
-  if (isTRUE(ctx$availability_active)) {
-    member_idx <- match(members, universe)
-    values <- values[member_idx]
-    admissible <- as.logical(ctx$vec$admissible[member_idx])
-    values[!admissible] <- NA_real_
-  }
-  ledgr_signal(values, universe = members, origin = feature_id)
+  ledgr_signal_feature_values(ctx, feature_id, universe)
 }
 
 #' Build a return signal from registered return features
@@ -138,10 +142,10 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_signal_return <- function(ctx, lookback = 20L) {
-  ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
-  ledgr_signal_feature(ctx, feature_id)
+  ledgr_signal_feature_values(ctx, feature_id, universe)
 }
 
 #' Select the top instruments from a signal

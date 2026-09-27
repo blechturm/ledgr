@@ -267,6 +267,18 @@ testthat::test_that("[LTB-0095] feature signals apply only the admissibility mas
   testthat::expect_s3_class(signal, "ledgr_signal")
   testthat::expect_length(signal, 0L)
   testthat::expect_identical(attr(signal, "origin"), "return_5")
+
+  validation_calls <- 0L
+  original_validate <- ledgr:::ledgr_validate_strategy_helper_ctx
+  testthat::local_mocked_bindings(
+    ledgr_validate_strategy_helper_ctx = function(ctx, helper) {
+      validation_calls <<- validation_calls + 1L
+      original_validate(ctx, helper)
+    },
+    .package = "ledgr"
+  )
+  ledgr_signal_return(dense, lookback = 5)
+  testthat::expect_identical(validation_calls, 1L)
 })
 
 testthat::test_that("[LTB-0088] explicit zero weights never require sizing prices", {
