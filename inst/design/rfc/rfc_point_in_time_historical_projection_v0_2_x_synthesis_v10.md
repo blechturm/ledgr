@@ -84,7 +84,24 @@ One row carries the architecture: the last.
   lower-projector direction stays closed (verified by execution). Direction 5.4
   is preserved including its `ctx$window()` spelling. The row axis follows
   `contracts.md:348-352`. The access boundary follows the maintainer correction
-  of 2026-09-26, owned by LDG-2864 and LDG-2850.
+  of 2026-09-26 and **shipped in Cut 13** (`82bcb58`, workstream 20 accepted
+  2026-09-27): `LDG-2864` removed `ctx$.feature_projection` and replaced it with
+  `ctx$.feature_table_current`, a closure returning only the invoking pulse's
+  table while retaining the projection in its environment. That is the
+  correction as written - the full dataset stays engine-owned, and the only
+  supported operation is bounded to the decision pulse. `LDG-2850` carried the
+  contract text. So this bullet records shipped behaviour rather than an
+  assumption, verified by reading at that commit.
+
+  The `ctx$window()` spelling is **consistent** with Cut 13 rather than in
+  tension with it. `LDG-2852` made *constructors* polymorphic in their first
+  argument, as `ledgr_signal(ctx, values = ...)` and
+  `ledgr_selection(ctx, ids = ...)`, adding no new exports, while `LDG-2851`
+  kept *readers* on the context,
+  retiring the `ctx$positions` snapshot but preserving `ctx$vec$position` and
+  `ctx$position(id)`. A history window is a reader. The response's R3 preference
+  for `ledgr_window(ctx, feature, lookback)` is therefore withdrawn: it would
+  apply the constructor convention to a reader, against the shipped split.
 - **One causal world.** No second execution engine and no second execution path.
   History serves estimation; `ledgr_run_explain()` serves audit; no second
   replay mode ships (section 9).
@@ -964,6 +981,14 @@ universal "usable" flag may prevent a future consumer from accepting native
 `NA`. These are logical requirements; naming, tokens, tables and plane choices
 are not decided here.
 
+They are not decided in free space either. Cut 13's `LDG-2855` shipped a
+bidirectional surface contract, `[LTB-0091] authored surface table matches real
+callback contexts`, which checks an authored table of scope, member, shape and
+applicability against the members that appear in real callback contexts during a
+run, alongside a documented surface page at `man/ledgr_strategy_context.Rd`. Any
+accessor or missingness plane this section's requirements eventually name is
+entered there or the test fails. Verified by reading at `82bcb58`.
+
 **Identity and parity.** Treatment, ordering, parameters, the carry age limit,
 the applicable cutoff and the implementation version participate in the existing
 identity and cache machinery. Existing feature-cache keys already include
@@ -1325,6 +1350,15 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-27: v10, three standing assumptions about Cut 13 are replaced by
+  verified facts after workstream 20 was accepted at `82bcb58`. The access
+  boundary shipped as the maintainer specified, with `ctx$.feature_projection`
+  removed and a current-pulse closure in its place. The `ctx$window()` spelling
+  is consistent with the shipped convention, which made constructors polymorphic
+  while leaving readers on the context, so the response's R3 preference for a
+  `ledgr_window()` spelling is withdrawn. And section 8's eventual naming lands
+  inside `LTB-0091`, the surface contract test, rather than in free space. No
+  decision changes.
 - 2026-09-27: v10, the preparation candidate is qualified after peer review and
   retained. The bound is a replacement boundary rather than a calculation input,
   since recomputing a band still needs the preceding inputs, the carry source
