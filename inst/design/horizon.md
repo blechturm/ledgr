@@ -182,10 +182,26 @@ surfaced as `assumption_backed / knowledge_assume_effective` with the source
 clocks kept in lineage. And ledgr's point-in-time machinery is forward-looking:
 a knowledge clock can be accumulated from the operator's own timestamped
 captures from now on, but not recovered retrospectively. Every fact family any
-current adapter produces has the two clocks coincident, so the two-clock paths -
-including the `pmax` collapse in the prepared provider, which is lossless only
-while they coincide - have never been exercised against genuinely two-clock
-data.
+current adapter produces has the two clocks coincident.
+
+**Corrected 2026-09-27.** This entry first added that the two-clock paths have
+therefore never been exercised against genuinely two-clock data. That is false.
+`ledgr_sim_pit_inputs(cases = "halt")` emits a bounded `trading_status` interval
+that is effective on one session and knowable two sessions later, and
+`tests/testthat/test-sim-pit-inputs.R` asserts `knowledge_time >
+effective_from` outright, then runs a fold and reads `ledgr_run_explain()` at
+the effective instant, at the knowledge instant and at the interval end to
+confirm the halt appears only once knowable. Workstream 18's `LDG-2842`
+correction introduced that late-known case on purpose. So the two-clock
+resolution path, including the `pmax` start, is exercised end to end by
+synthetic fixtures.
+
+Two narrower statements survive. No *adapter* produces distinct clocks, so the
+paths are tested against constructed cases rather than against a real vendor's
+clock structure, and the first genuinely two-clock vendor family remains an
+integration risk. And the `pmax` collapse is lossy only for an off-diagonal
+query - column `s` under a cutoff `t > s` - which nothing performs today, so
+that loss is latent rather than unexercised for want of data.
 
 Route: its own cycle, once a capture-based or fundamentals-bearing snapshot
 exists to exercise it. Until then the release should state the limitation among
