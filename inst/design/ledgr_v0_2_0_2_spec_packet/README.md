@@ -906,3 +906,31 @@ profile passed 466 of 466 blocks in 87.500
 seconds and its independent checker passed the 112-second gate. The accepted
 record is `session_axis_documentation_repair_closeout.md`. The maintainer
 accepted the PASS on 2026-09-27; Cut 15 and Workstream 22 are closed.
+
+## Cut 16: Strategy authoring helpers (open)
+
+Authority: the accepted strategy-authoring-helpers synthesis, as narrowed by
+the accepted context-surface synthesis and the nine maintainer decisions
+recorded in `tickets.yml`. The maintainer accepted the reviewed cut and opened
+Workstream 23 on 2026-09-27. The cut entry, its decisions and the ticket
+acceptance criteria are the operative brief; there is no duplicate brief file.
+
+Seven active tickets, LDG-2868 and LDG-2870 through LDG-2875, form Workstream
+23. LDG-2869 is deliberately deferred to a later maintenance cut because its
+result-printing defect is outside the authoring-helper claim.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 23 Strategy authoring helpers | 2868, 2870-2875 | correct dense pulse snapshots; add feature-signal, partial-selection, kept-position and missing-decision ergonomics; replace article workarounds; close the cut | the worked strategy needs no hand-written workaround for missing inputs, short rankings, kept positions or pulse sizing, and every helper follows its stage's missing-value rule |
+
+Three independent cut-review invocations produced the recorded API and
+usability decisions. Together with the planned close review, that is four
+invocations over seven active tickets, 0.571. The maintainer accepted the
+review-gate breach in advance because the third review materially changed the
+public UX; the 0.5 threshold itself is unchanged.
+
+Workstream 23 depends on accepted Workstream 22 and blocks the release gate.
+Implementation follows the ticket dependencies: LDG-2868 and LDG-2870 through
+LDG-2873 establish the helper surface, LDG-2874 replaces the worked-example
+workarounds and LDG-2875 closes the cut. One Type 1 review occurs at workstream
+close.

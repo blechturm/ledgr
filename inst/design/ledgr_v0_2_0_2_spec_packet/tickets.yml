@@ -161,7 +161,7 @@ cuts:
   - id: 16
     name: "Strategy authoring helpers"
     cut: "2026-09-27"
-    draft_note: "Agent-drafted on 2026-09-27 at the maintainer's request, after the rewrite of the Strategy Authoring Tools article exposed the gaps below. The maintainer's decisions on the two cut reviews are recorded in `decisions`. The cut, workstream and tickets stay `draft` until the maintainer accepts the cut and writes the workstream brief."
+    opening: "The maintainer accepted the reviewed cut and instructed implementation on 2026-09-27. This cut entry, its recorded decisions and the ticket acceptance criteria are the operative Workstream 23 brief; no duplicate brief artifact is created."
     cut_review: "Two independent Type 1 and Type 2 invocations by Codex on 2026-09-27 against one agent-drafted brief, both CHANGES_REQUIRED. They agreed that LDG-2869 is result-printing maintenance outside the workstream's claim, that the release-gate dependency had to change in the file rather than in prose, that LDG-2873 takes an explicit `missing` policy on the context entrance, and that the acceptance lists of LDG-2868 and LDG-2870 to LDG-2874 admitted plausible wrong implementations. They split on routing. The first read context-surface synthesis lines 199-204 ('this cut adds no partial-rebalance engine or richer missing-intent object') as requiring an RFC amendment for LDG-2872 and LDG-2873, and recommended scheduling after the tag. The second read Pass 2 as authorizing both as direct tickets, and found pre-tag scheduling coherent once the dependency moved. The maintainer decided the split as recorded in `decisions`, and the tickets were patched in place. At the maintainer's request a third invocation, a usability and API-design Type 2 review by Codex on 2026-09-27, returned PASS_AFTER_PATCHES: the `missing` refusal and the partial-selection warning must name their opt-outs and what those opt-outs do, `keep` needs a pinned `NULL` default and should accept already-preserved held nonmembers, and the pulse print hides the fields LDG-2868 corrects. Those patches were applied in place (decisions 8 and 9). Three cut-review invocations plus the planned close review make 4 over 7 active tickets, 0.571, above the 0.5 gate. The maintainer accepted that breach in advance on 2026-09-27 as warranted by the usability evidence, recorded here as Cut 2 recorded its own; the threshold is unchanged, and any focused re-review after the close review adds to the breach."
     authority: "the strategy-authoring-helpers synthesis `inst/design/rfc/rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md`, whose final review bound Pass 2 as design (sections Q2, Q3 and 'v0.1.9 Pass 2') and left the first subset to the ticket writer. Pass 2 was never implemented. Its Q1 unprefixed naming is superseded by the accepted API naming-consistency synthesis, so new helpers carry the `ledgr_` prefix. `inst/design/vignette_styleguide.md` section 5, which routes clutter in a worked example to an API gap, as Cut 9 did. The context-surface synthesis behind Cut 13 is respected: no scheduler state, no alias planes, no change to preflight for user-defined helpers. The maintainer decisions of 2026-09-27 in `decisions`, including a scheduling override of that synthesis's recommendation to implement after the release gate, recorded here as Cut 13 recorded its own."
     decisions: "Maintainer, 2026-09-27, after both cut reviews. (1) LDG-2872 and LDG-2873 are direct Pass 2 tickets: the context-surface synthesis sentence bounds what Cut 13 took on and does not bar later stage helpers, and Pass 2 requires extending `contracts.md` in place. (2) The cut lands before the tag; workstream 15 now depends on workstream 23, so LDG-2858 and LDG-2859 audit the final helper and teaching surface once. (3) `keep` belongs on `ledgr_target_rebalance()`, which already owns positions, marks, equity and the residual-capital calculation; a separate target-edit helper could preserve a quantity but not undo oversizing. (4) `ledgr_pulse_snapshot()`'s `initial_cash` is renamed `cash`: it is the cash held alongside `positions`, not an initial value, and the naming-consistency synthesis binds function names, not argument names. (5) LDG-2873 uses `missing = c('error', 'exclude')` with `'error'` as the default; LDG-2871 uses `partial = c('warn', 'allow')` with `'warn'` as the default. (6) LDG-2869 is deferred to a maintenance cut. (7) One-pulse testing of stateful strategies gets a dense-only `state_prev` input on `ledgr_pulse_snapshot()` inside LDG-2868, rather than routing to the inspection-boundary seed: it completes the article's own testing technique, and a dense mock input stays within context-surface synthesis section 5, which treats pulse snapshots as mock state rather than a substitute for availability-aware callback state. Assigning `pulse$state_prev` works today only because the pulse is an environment; that is not a supported path. (8) After the usability review, a held nonmember named in `keep` is accepted and reserved once instead of rejected, reversing the second cut review's recommendation: rejecting it would make the natural `keep = held` pattern fail only in availability-aware runs, for no economic benefit, because the helper already preserves held nonmembers. (9) The pulse print change the usability review raised as a new ticket is folded into LDG-2868, because the corrected equity is invisible without it."
@@ -169,7 +169,8 @@ cuts:
     out_of_scope: "Alias access on whole feature vectors (the feature-engine RFC the helpers synthesis names under 'Bulk feature-map vector helpers'); a rebalance schedule (the staged seed `inst/design/rfc/rfc_strategy_schedule_decorator_v0_1_9_x_seed.md`); how often `LEDGR_LAST_BAR_NO_FILL` fires (its owning workflow, per context-surface synthesis section 8); sharing user-defined helper functions between strategies (a settled boundary in the same section; `params` rejects functions with `ledgr_invalid_strategy_params`); the result-print defect in LDG-2869 (a maintenance cut); defaults for absent first-pulse state fields (a later state-authoring design; `ctx$state_prev` stays `NULL` on a dense first pulse); the `close()` calls that accumulate in interactive work (later handle-lifecycle work). The eight articles that still loop over `ctx$universe` belong to LDG-2859's audit."
     workstreams: [23]
     closeout: "strategy_authoring_helpers_closeout.md"
-    status: "draft"
+    accepted: "2026-09-27 by the maintainer; implementation opened in this commit"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -361,7 +362,7 @@ workstreams:
   - id: 23
     name: "Strategy authoring helpers"
     cut: 16
-    status: "draft"
+    status: "in_progress"
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23", reason: "One claim joins the tickets: the strategy-authoring worked example needs no hand-written workaround for missing inputs, short rankings, kept positions or pulse sizing, and each helper that removes one follows its stage's missing-value rule from helpers synthesis Q3. The review re-executes the article and confirms each removed workaround was replaced by a shipped helper rather than moved elsewhere, runs every ticket's registered mutation, reads the extended contract text against the engine, and confirms that dense outputs are unchanged whenever the new arguments are not used. These helpers run once per pulse, so the review walks each changed helper against the seven shapes, where a loop over instruments is a finding unless its reason is stated, and measures a helper-pipeline run before and after, interleaved, naming the clock as cold or warm."}
@@ -1719,7 +1720,7 @@ tickets:
   - id: "LDG-2868"
     title: "`ledgr_pulse_snapshot()` values its positions and accepts a previous state"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -1739,7 +1740,7 @@ tickets:
   - id: "LDG-2870"
     title: "A feature signal with the return signal's admissibility policy"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -1749,7 +1750,7 @@ tickets:
   - id: "LDG-2871"
     title: "Top-n that accepts fewer than n when the author says so"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1759,7 +1760,7 @@ tickets:
   - id: "LDG-2872"
     title: "Rebalance around positions the strategy keeps"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -1769,7 +1770,7 @@ tickets:
   - id: "LDG-2873"
     title: "An explicit missing-decision policy for rule selections"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -1779,7 +1780,7 @@ tickets:
   - id: "LDG-2874"
     title: "Teach the helpers where the worked example needed them"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2868", "LDG-2870", "LDG-2871", "LDG-2872", "LDG-2873"]
@@ -1789,7 +1790,7 @@ tickets:
   - id: "LDG-2875"
     title: "Close workstream 23 and cut 16"
     workstream: 23
-    status: "draft"
+    status: "pending"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2874"]
