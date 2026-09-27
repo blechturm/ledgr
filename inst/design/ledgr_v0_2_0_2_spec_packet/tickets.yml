@@ -1557,12 +1557,13 @@ tickets:
   - id: "LDG-2855"
     title: "One documented surface, enforced by contract test"
     workstream: 20
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2851", "LDG-2864"]
     scope: "The accepted question is qualitative, so this cut carries exactly one mechanical gate. The context reference owns a single explicit table listing every public top-level member and every public plane, including conditionally present availability planes, with applicability, shape, axis, units, missingness and counterpart or an explicit not-applicable. Distinguish metadata, data reads and intent constructors, and explain the decision axis against investment membership and named against positional inputs there rather than in prose scattered across articles. Extend the existing documentation-contract test to compare that table against contexts captured from actual dense and availability callbacks, with registered features, a held nonmember and an empty availability axis. The documented expectation must be written, not generated from the observed fixture, or the gate cannot fail. Compare in both directions and on observable shape rather than counts. No new registry, generator or member-count target."
     acceptance: ["an added public member, a removed member left documented, a plane changed to a function, a misaligned length or order and a wrong namedness each fail the gate", "the dense and availability variants cannot both pass by checking only their intersection, and a conditionally present plane documented as unconditional fails", "the documented expectation is authored text; a mutation that derives it from the captured context makes the gate unable to fail and is rejected", "interactive-only metadata is not documented as a runtime field", "no new registry or documentation generator is added, and no acceptance criterion is a member count"]
+    evidence: ["The context reference now contains one authored table for every public top-level callback member and positional plane, including applicability, shape, axis, units, missingness and counterpart. LTB-0091 parses those literal rows and compares them bidirectionally with real dense, held-nonmember and empty-axis callback contexts, including exact order, plane lengths and unnamedness; no registry, generator or count target was added.", "Adding an undocumented public `future_probe` field to the availability helper update made LTB-0091 fail in both availability states. The focused surface, documentation-contract and control-plane suites passed. The ordinary fast profile ran 465 of 465 blocks with zero failures or skips in 93.080 seconds and passed the 112-second gate at `C:/Users/maxth/ledgr-research/.tmp/ledgr-ws20-ldg2855-fast`."]
 
   - id: "LDG-2856"
     title: "Teach the authoring paths, the budget units and the missing-input guard"

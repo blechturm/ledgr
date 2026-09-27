@@ -67,6 +67,60 @@ the explicit convenience predicate for admissible and priced members. A stale
 permissible mark can satisfy that predicate while still failing current-close
 sizing, so it guarantees neither a sizing close nor execution at the next open.
 }
+\section{Complete Public Surface}{
+The table below is authoritative for callback-visible, non-private members.
+\code{Daxis} means \code{ctx$universe}; every plane is positional and unnamed.
+Cross a plane with IDs through \code{ctx$idx()}. Dot-prefixed engine state is
+private and deliberately absent.
+
+\preformatted{
+scope | member | applies | shape | axis | units | missingness | counterpart
+top | run_id | all | character_scalar | none | identifier | never | none
+top | ts_utc | all | character_scalar | none | UTC_time | never | none
+top | universe | all | character_vector | Daxis | instrument_id | empty_allowed | vec.id
+top | bars | all | data_frame | current_Daxis_rows | market_data | rows_may_be_absent | bar
+top | feature_table | all | data_frame | current_Daxis_rows | feature_value | warmup_NA_or_schema_only | feature
+top | cash | all | numeric_scalar | portfolio | currency | never | none
+top | equity | all | numeric_scalar | portfolio | currency | never | none
+top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
+top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
+top | state_prev | all | nullable_list | portfolio_and_Daxis | strategy_state | NULL_on_first_pulse | none
+top | availability_active | availability | logical_scalar | none | flag | never | none
+top | members | availability | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
+top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
+top | open | all | function | instrument_id | price | NA_allowed | vec.open
+top | high | all | function | instrument_id | price | NA_allowed | vec.high
+top | low | all | function | instrument_id | price | NA_allowed | vec.low
+top | close | all | function | instrument_id | price | NA_allowed | vec.close
+top | volume | all | function | instrument_id | source_units | NA_allowed | vec.volume
+top | position | all | function | instrument_id | quantity | never | vec.position
+top | idx | all | function | instrument_id | Daxis_index | optional_NA | vec.id
+top | flat | all | function | Daxis | target_quantity | never | none
+top | hold | all | function | Daxis | target_quantity | never | vec.position
+top | tradable | all | function | Daxis_subset | instrument_id | empty_allowed | mode_specific_planes
+top | features_wide | all | data_frame | current_Daxis_rows | feature_value | warmup_NA | features
+top | feature | all | function | instrument_id | feature_value | warmup_NA | vec.feature
+top | features | all | function | instrument_id | feature_value | warmup_NA | vec.feature
+top | vec | all | list | Daxis | mixed | plane_specific | scalar_counterparts
+plane | id | all | character_vector | Daxis | instrument_id | never | universe
+plane | open | all | numeric_vector | Daxis | price | NA_allowed | open
+plane | high | all | numeric_vector | Daxis | price | NA_allowed | high
+plane | low | all | numeric_vector | Daxis | price | NA_allowed | low
+plane | close | all | numeric_vector | Daxis | price | NA_allowed | close
+plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | volume
+plane | position | all | numeric_vector | Daxis | quantity | never | position
+plane | feature | all | function | Daxis | feature_value | warmup_NA | feature
+plane | member | availability | logical_vector | Daxis | flag | never | members
+plane | held | availability | logical_vector | Daxis | flag | never | none
+plane | target_restricted | availability | logical_vector | Daxis | flag | never | none
+plane | target_restriction_reason | availability | character_vector | Daxis | reason_token | empty_string_allowed | none
+plane | admissible | availability | logical_vector | Daxis | flag | never | tradable
+plane | priced | availability | logical_vector | Daxis | flag | never | tradable
+plane | mark_age | availability | integer_vector | Daxis | sessions | NA_when_unpriced | none
+plane | risk_mark | availability | numeric_vector | Daxis | price | NA_when_unpriced | none
+plane | mark_source | availability | character_vector | Daxis | source_token | empty_when_unpriced | none
+}
+}
 \section{Feature Object Compatibility}{
 \code{ledgr_experiment(features = ...)} accepts static indicators, lists of
 indicators, named lists, and feature maps as the canonical public feature
