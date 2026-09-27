@@ -76,8 +76,9 @@ the last one challenges an accepted document.
 3. **The carry-age default's justifying measurement came back empty.** Section 5.1
    names the age-5 default "the weakest-supported item in this document" and names
    the measurement that should set it: the run-length distribution of missing
-   expected sessions. Measured over 2020-2024, 9,448 tickers, 8,367,776
-   instrument-sessions: **1** missing expected session. The vendor omits nothing.
+   expected sessions. Measured over 2020-2024, 9,448 tickers, 8,367,777 sessions
+   inside coverage of which 8,367,776 printed: **1** missing expected session. The
+   vendor omits nothing.
 
 4. **A default flip is therefore worth considering, and needs a Type 2 round.**
    Section 6.1 makes the strict policy cutoff-invariant and states that cutoff

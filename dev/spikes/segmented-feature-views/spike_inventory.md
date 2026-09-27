@@ -298,14 +298,15 @@ already open in the research repo.
 
 `vendor_carry_measurement.R`, recorded in `vendor_carry_evidence.csv`. Window
 2020-01-01 to 2024-12-31, acquisition `20260905T092008Z`: 9,448 tickers, 1,258
-sessions, 8,367,776 instrument-sessions. Read-only.
+sessions, and 8,367,777 sessions inside instrument coverage of which 8,367,776
+printed. Read-only.
 
 The question the ablation left was how big the bias is in magnitude. The answer is
 that the mechanism this spike models is close to inert on this data, and a much
 larger effect sits beside it.
 
 **There is nothing to carry into.** Counting sessions inside each ticker's own
-coverage that carry no row at all: **1**, out of 8,367,776. Sharadar does not omit
+coverage that carry no row at all: **1**, out of 8,367,777. Sharadar does not omit
 a session. ledgr's carry policy fills an absent observation, and absent
 observations do not occur here, so the policy never fires.
 
