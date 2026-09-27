@@ -374,11 +374,40 @@ cutoff-invariant under the proposed carry policy (section 3.2), and carry does
    open sessions regardless of that instrument's lifetime" (availability
    synthesis section 7.3).
 
-**The cost, stated plainly.** Four authorities change, one of them an executable
-gate, and certification fixtures may encode narrowing - a check this document
-did not run. That is more than v4's "text-only repair" implied. Against it: the
-alternative requires an engine change to a path that currently fails the run on
-per-instrument axes, plus the second knowledge channel in argument 1.
+**The cost, measured rather than estimated.** Both checks v4 and v9 left unrun
+have now been run, and the cost is smaller than this document previously
+claimed.
+
+*Gates.* Gate 21 is the **only** gate that asserts narrowing, and only in one
+clause of a sentence covering several behaviours: "those sessions leave the
+feature and classification expected set". A scan of the whole gate section finds
+that requirement once. The rest of gate 21 - target restriction at decision,
+fills blocked with `lifetime_inactive`, mark ageing on venue sessions,
+`valuation_horizon_exhausted` - is untouched by the axis decision, and section
+4.4 preserves all of it. Gate 22 is terminal-assertion stopping and gate 23 is
+stable-ID continuity, neither of which bears on the axis.
+
+*Fixtures.* **No fixture encodes narrowing.** `known_inactive` appears in eleven
+test files and none of them assert a feature value;
+`tests/testthat/test-availability-features.R`, the strict-feature certification
+file, contains four tests and no lifetime reference at all. Adopting gating
+therefore requires no fixture change.
+
+*And why the divergence survived a release.* Gate 21's narrowing clause has no
+test coverage anywhere. It is design text that nothing executes, which is the
+mechanism by which the engine and four authorities could disagree through two
+tagged versions. The neighbouring guarantee is covered - `:114` of that file
+tests that future facts cannot change earlier features, which is
+`contracts.md:809-810` - so the cutoff-causal protection was wired up and this
+rule was not. Whichever direction is chosen, the repair should add the fixture
+that pins it, or the same drift recurs.
+
+*The other direction is the expensive one.* Keeping narrowing requires an engine
+change to a hydration path that currently **fails the run** on per-instrument
+axes (`R/backtest-runner.R:904-905`), fixtures written from scratch since none
+exist, and possible repair of existing fixtures that today expect `NA` across an
+inactive span - plus the second knowledge channel in argument 1. That cost was
+never stated before this measurement and is larger than gating's.
 
 Gating is not claimed to be better research than narrowing. The two are
 different declared sampling semantics and the choice is a product decision.
@@ -1099,6 +1128,13 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-27: v10, section 4.3 cost paragraph replaced with measured results.
+  The two checks v4 and v9 deferred are run: gate 21 is the only gate asserting
+  narrowing and only in one clause, and no fixture encodes it, so adopting
+  gating costs one clause and no test changes. Recorded alongside: that clause
+  has no test coverage at all, which is how the divergence survived two tagged
+  versions, and the narrowing direction carries an engine change plus fixtures
+  written from scratch. No decision changed; an unpriced cost is now priced.
 - 2026-09-26: v10, corrected in place after Type 2 review of `22b9580`. Detector
   9's positive barrier requirement and section 7's per-clock sentence now carry
   the policy scope - undeclared basis, at least one carry operation enabled -
