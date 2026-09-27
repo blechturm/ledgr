@@ -934,3 +934,11 @@ Implementation follows the ticket dependencies: LDG-2868 and LDG-2870 through
 LDG-2873 establish the helper surface, LDG-2874 replaces the worked-example
 workarounds and LDG-2875 closes the cut. One Type 1 review occurs at workstream
 close.
+
+Implementation is complete through `6714454`. LTB-0094 through LTB-0099 pin
+the corrected pulse snapshot, availability-aware feature signal, explicit
+partial-ranking and missing-decision policies, kept-position sizing and the
+executed teaching. The final ordinary fast record passed 470 of 470 blocks in
+88.140 seconds and its independent checker passed the 112-second gate. The
+agent-provisional record is `strategy_authoring_helpers_closeout.md`;
+Workstream 23 is awaiting its Type 1 close review.
