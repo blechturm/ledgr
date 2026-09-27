@@ -2,8 +2,9 @@
 
 **Ran:** 2026-09-27, branch `spike/segmented-feature-views` from `0cf20e7`.
 **Charter:** `charter.md`. **Probe:** `probe_findings.md`. **Evidence:**
-`spike_evidence.csv`, 49 rows, all derived from the sealed store or from the
-candidate's own resolution. No row is a narrated literal.
+`spike_evidence.csv`, 49 rows, and `spike_ablation_evidence.csv`, 91 rows, all
+derived from the sealed store or from the candidate's own resolution. No row is a
+narrated literal.
 
 ## Verdict
 
@@ -89,9 +90,96 @@ nothing to revise. The checker catches it on values and on the row set.
 - The probe's P3 conclusion, that the payload was the whole question, was
   **withdrawn** rather than deleted, and its arithmetic kept as arithmetic.
 
+## The ablation: universe size and authoring style
+
+Added 2026-09-27 on a maintainer brief. `spike_ablation.R`, 91 evidence rows in
+`spike_ablation_evidence.csv`. No clock is reported here either. **Neither kill
+condition fired**, and two synthesis claims are now executed rather than argued.
+
+### Block A, authoring style: section 6.1's scope fence is load bearing
+
+Same barrier geometry as case A, varying only the style.
+
+| style | width | revised cells | last revised | inside 6.1's bound |
+| --- | --- | --- | --- | --- |
+| `rolling_mean` | 3 | 3 | 8 | yes |
+| `rolling_max` | 3 | 3 | 8 | yes |
+| `rolling_mean` | 5 | 5 | 10 | yes |
+| `rolling_max` | 5 | 5 | 10 | yes |
+| `ema` | 3 | 17 | 22 | **no** |
+| `ema` | 5 | 17 | 22 | **no** |
+| `expanding_mean` | 3 | 17 | 22 | **no** |
+
+Three things follow. **The reach is the window, not the reducer:** `rolling_max`
+reproduces `rolling_mean` exactly at both widths, so the dependency is the window
+and the bound does not care what the window computes. **One revised input revises
+`W_f` cells:** three at width three, five at width five, both beginning at
+session 6, which is `W_f - 1` forward of the affected input. **The bound holds
+with slack:** its limit was session 15 at width three and the last revision was
+at 8, because the `A_in` term assumes a carry this geometry does not realise. It
+is a bound, not a prediction, as section 6.1 says.
+
+And the fence earns its place. A recursive or expanding style revises every cell
+to the end of the axis - 17 of 22, from the first affected session onward - so
+`W_f - 1` is not a property of features generally. Section 6.1 already excludes
+these; the exclusion is now measured rather than assumed, which matters because
+the fitted and multivariate methods this cycle was motivated by sit on that side
+of the fence.
+
+### Blocks B and C, universe size: locality holds, and cross-section breaks it
+
+One instrument's barrier becoming knowable, counted over the whole panel.
+
+| universe | per-instrument feature | cross-sectional feature |
+| --- | --- | --- |
+| 4 | 1 instrument, 3 cells | 4 instruments, 12 cells |
+| 40 | 1 instrument, 3 cells | 40 instruments, 120 cells |
+| 200 | 1 instrument, 3 cells | 200 instruments, 600 cells |
+
+Section 6.2's locality premise is exact for a per-instrument feature: the revised
+set is the barrier's instrument and nothing else at every size, and the revised
+cell count does not move with the universe. Under a cross-sectional feature - the
+same rolling mean over each instrument's close demeaned by the panel at that
+session - every instrument revises and the work is `3N`, linear in the universe.
+Section 6.2 states this as a limit in prose; it is a factor of 200 here.
+
+### What the ablation does not establish
+
+**The fixture's barrier density does not scale.** `ledgr_sim_pit_inputs()` places
+its cases on instruments 1 to 4, so the sealed store holds two barrier knowledge
+times at every universe size, and 198 of 200 instruments have none. That is a
+teaching fixture, not a density model. So these rows test section 6.2's
+*locality* and say nothing about its *multiplier* - the claim that per-instrument
+admissibility facts number "one or two". Reading confirmation of the multiplier
+into a fixture that hard-codes two facts would be circular. The real density was
+measured separately on the Sharadar lake and belongs in that record.
+
+### The ablation's own gutted path
+
+Removing the cross-sectional coupling - `p <- p - m` in `feat_at()` - collapses
+block C onto block B:
+
+```text
+FAIL  C_cross_sectional_200 / instruments_revised: recorded 200 -> fresh 1
+FAIL  C_cross_sectional_200 / panel_revised_cells: recorded 600 -> fresh 3
+FAIL  C_cross_sectional_40  / instruments_revised: recorded 40 -> fresh 1
+FAIL  C_cross_sectional_4   / instruments_revised: recorded 4 -> fresh 1
+CHECKER FAILED: evidence values drifted
+```
+
+So the panel-wide revision is caused by the coupling and not by universe size in
+itself, and block B is the control that shows it.
+
+### Harness note
+
+The fixture and candidate moved to `spike_core.R`, shared by the runner and the
+ablation. The extraction is proved behaviour preserving by the checker: the
+runner's 49 recorded rows reproduce unchanged. The checker now gates both parts,
+140 rows in total.
+
 ## What remains open
 
-Three things this spike does not answer, stated so the closeout does not
+Four things this spike does not answer, stated so the closeout does not
 overclaim.
 
 **The engine does none of this.** The candidate is standalone code in this
@@ -103,7 +191,12 @@ no cost number. What eager preparation costs against a declared workload and
 memory envelope needs its own charter with those quantities stated, which is the
 question this spike unblocks.
 
-**Cross-sectional features and output carry.** The locality that makes the reach
-bounded depends on per-instrument independence, which a feature reading across
-instruments breaks. And whether a forbidden output carry falls out of the same
-seam is untested. Both were named in the charter as expected to remain open.
+**Output carry.** Whether a forbidden output carry falls out of the same seam is
+untested. It was named in the charter as expected to remain open, and still is.
+
+**Cross-sectional features are now measured, not answered.** The ablation shows
+the locality breaks and by how much - every instrument revises, work linear in the
+universe. It does not say what a correct cross-sectional preparation looks like,
+and the `3N` figure is a revision count on a 22-session axis, not a cost. What it
+settles is that the per-instrument candidate in section 6.2 cannot be extended to
+these features by assuming its locality still holds.
