@@ -108,9 +108,16 @@ hydration path can produce it.
 
 **Cross-sectional preparation** is measured as broken, not designed.
 
-**One assumption behind proposal 2 was not verified at the adapter.** That Sharadar
-ingest declares `assume_effective` is taken from the research repo's record, not
-from adapter source read here. The lag-zero conclusion rests on it.
+**Proposal 2's assumption is now verified at adapter source**, in
+`ledgr-research/packages/ledgr.sharadar/`. Lifetime facts pass
+`knowledge = "assume_effective"` and set `knowledge_time` from the effective clock
+(`R/lifetime-facts.R:99,113,147`); membership snapshots pass the same
+(`R/membership-facts.R:126`); membership intervals are prohibited outright. The one
+`evidenced` family is the XNYS session calendar, given a constant knowledge time of
+2018-01-01 (`R/membership-facts.R:158-164`), which is honest for a calendar
+published in advance and is not a carry barrier. So every barrier-bearing family
+collapses its two clocks, and the lag-zero conclusion no longer rests on a record
+read at second hand.
 
 **The late-arrival tail is detected, not sized.** Rows dated 1998 appeared between
 two captures 17 hours apart. A distribution needs captures over months.
