@@ -193,8 +193,13 @@ ledgr_weight_equal <- function(selection) {
 #' `ledgr_target_rebalance()` converts long-only weights into a full-universe
 #' `ledgr_target`. It uses current pulse equity and current close prices at
 #' decision time; fills still occur at the next open, so small drift between
-#' decision-time sizing and fill-time value is expected. Share quantities are
-#' floored to whole numbers with `floor(weight * equity_fraction * equity /
+#' decision-time sizing and fill-time value is expected.
+#'
+#' In a dense run, allocatable equity is current equity. In an
+#' availability-aware run, ledgr first reserves the absolute marked exposure of
+#' held nonmembers and preserves their current quantities. Kept current members
+#' are not reserved automatically. Share quantities are floored to whole
+#' numbers with `floor(weight * equity_fraction * allocation_equity /
 #' close_price)`. An exact zero member weight targets zero without consulting
 #' that instrument's sizing close.
 #'
@@ -209,8 +214,8 @@ ledgr_weight_equal <- function(selection) {
 #'
 #' @param weights A `ledgr_weights` object.
 #' @param ctx ledgr strategy context.
-#' @param equity_fraction Fraction of current equity to allocate, between 0 and
-#'   1.
+#' @param equity_fraction Fraction of allocatable equity to allocate, between 0
+#'   and 1.
 #' @return A full-universe `ledgr_target` object.
 #' @examples
 #' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))

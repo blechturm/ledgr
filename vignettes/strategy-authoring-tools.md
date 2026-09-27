@@ -33,27 +33,9 @@ decision axis. The introductory target-vector contract and the
 difference between `ctx$flat()` and `ctx$hold()` live in
 `vignette("strategy-development", package = "ledgr")`.
 
-> [!WARNING]
->
-> ### Reserve a kept member before sizing the rest
->
-> Do not size against the full budget and then restore a current member’s
-> position. If two `DEMO_02` shares consume 40% of NAV, allocate only the
-> remaining 60%, then restore that named quantity:
->
-> ``` r
-> targets <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.6)
-> targets[["DEMO_02"]] <- ctx$position("DEMO_02")
-> ```
->
-> The value `0.6` is the strategy’s explicit budget decision, not a magic
-> default. Held *nonmembers* are reserved automatically; kept current
-> members are not. With NAV 100, two shares marked at 20 consume 40 and
-> leave 60 for the rest of the book. At a price of 10, weight 1 over that
-> residual budget targets six shares; weight 0.6 targets three. A strategy
-> intending 60% of total NAV in the new allocation therefore uses residual
-> weight 1, not 0.6.
-
+If you keep a current member while rebalancing the rest, reserve its
+exposure in your budget first. The worked example follows the
+hold-and-edit path below.
 
 ## Prerequisites
 
@@ -299,12 +281,35 @@ without special-case code. Returning hold does not bypass a risk chain
 or guarantee that no fill occurs. It states portfolio intent at this
 decision; downstream rules still apply.
 
+> [!WARNING]
+>
+> ### Reserve a kept member before sizing the rest
+>
+> Do not size against the full budget and then restore a current member’s
+> position. If two `DEMO_02` shares consume 40% of NAV, allocate only the
+> remaining 60%, then restore that named quantity:
+>
+> ``` r
+> targets <- ledgr_target_rebalance(weights, ctx, equity_fraction = 0.6)
+> targets[["DEMO_02"]] <- ctx$position("DEMO_02")
+> ```
+>
+> The value `0.6` is the strategy’s explicit budget decision, not a magic
+> default. Held *nonmembers* are reserved automatically; kept current
+> members are not. With NAV 100, two shares marked at 20 consume 40 and
+> leave 60 for the rest of the book. At a price of 10, weight 1 over that
+> residual budget targets six shares; weight 0.6 targets three. A strategy
+> intending 60% of total NAV in the new allocation therefore uses residual
+> weight 1, not 0.6.
+
+
 ## Make Missing And Zero Intent Explicit
 
-Five cases look similar in compact code and mean different things. This
-example keeps an existing `DEMO_02` position so hold is visibly
-different from zero. It also injects one missing value deliberately; the
-sealed data itself is unchanged.
+Five cases look similar in compact code and mean different things. Every
+row below uses the same pulse with an existing three-share `DEMO_02`
+position, so hold is visibly different from zero or omission. The
+example also injects one missing value deliberately; the sealed data
+itself is unchanged.
 
 ``` r
 momentum_with_hold_guard <- function(ctx, params) {
@@ -323,7 +328,7 @@ momentum_with_hold_guard <- function(ctx, params) {
   )
 }
 
-warmup_pulse <- ledgr_pulse_snapshot(
+intent_pulse <- ledgr_pulse_snapshot(
   snapshot,
   universe = c("DEMO_01", "DEMO_02"),
   ts_utc = min(bars$ts_utc),
@@ -331,44 +336,48 @@ warmup_pulse <- ledgr_pulse_snapshot(
   positions = c(DEMO_01 = 0, DEMO_02 = 3)
 )
 
-prices_with_gap <- pulse$vec$close
+prices_with_gap <- intent_pulse$vec$close
 prices_with_gap[[2L]] <- NA_real_
 
 bare_predicate_error <- tryCatch(
   {
-    ledgr_selection(pulse, where = prices_with_gap > 0)
+    ledgr_selection(intent_pulse, where = prices_with_gap > 0)
     NA_character_
   },
   error = function(err) class(err)[[1L]]
 )
 
 guarded_selection <- ledgr_selection(
-  pulse,
+  intent_pulse,
   where = !is.na(prices_with_gap) & prices_with_gap > 0
 )
 
+guarded_target <- guarded_selection |>
+  ledgr_weight_equal() |>
+  ledgr_target_rebalance(intent_pulse, equity_fraction = 0.1)
+
 missing_score_target <- ledgr_signal(
-  pulse,
-  values = setNames(c(0.2, NA_real_), pulse$universe)
+  intent_pulse,
+  values = setNames(c(0.2, NA_real_), intent_pulse$universe)
 ) |>
   ledgr_select_top_n(1) |>
   ledgr_weight_equal() |>
-  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+  ledgr_target_rebalance(intent_pulse, equity_fraction = 0.1)
 
 explicit_zero_target <- ledgr_weights(
   c(DEMO_01 = 1, DEMO_02 = 0),
-  universe = pulse$universe
+  universe = intent_pulse$universe
 ) |>
-  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+  ledgr_target_rebalance(intent_pulse, equity_fraction = 0.1)
 
 omitted_target <- ledgr_weights(
   c(DEMO_01 = 1),
-  universe = pulse$universe
+  universe = intent_pulse$universe
 ) |>
-  ledgr_target_rebalance(pulse, equity_fraction = 0.1)
+  ledgr_target_rebalance(intent_pulse, equity_fraction = 0.1)
 
 hold_target <- momentum_with_hold_guard(
-  warmup_pulse,
+  intent_pulse,
   list(lookback = 5, n = 1, equity_fraction = 0.1)
 )
 
@@ -394,7 +403,7 @@ intent_cases <- tibble(
   resulting_target = c(
     paste0(
       "error: ", bare_predicate_error, "; guarded: ",
-      names(guarded_selection)[unclass(guarded_selection)]
+      show_target(guarded_target)
     ),
     show_target(missing_score_target),
     show_target(explicit_zero_target),
@@ -408,22 +417,23 @@ knitr::kable(intent_cases)
 
 | input | meaning | resulting_target |
 |:---|:---|:---|
-| missing logical decision | not a decision; guard it explicitly | error: ledgr_invalid_strategy_type; guarded: DEMO_01 |
-| missing numeric score | exclude that score from ranking | DEMO_01=93, DEMO_02=0 |
-| explicit zero weight | validate the name and request zero | DEMO_01=93, DEMO_02=0 |
-| omitted weight | leave that member unallocated | DEMO_01=93, DEMO_02=0 |
+| missing logical decision | not a decision; guard it explicitly | error: ledgr_invalid_strategy_type; guarded: DEMO_01=109, DEMO_02=0 |
+| missing numeric score | exclude that score from ranking | DEMO_01=109, DEMO_02=0 |
+| explicit zero weight | validate the name and request zero | DEMO_01=109, DEMO_02=0 |
+| omitted weight | leave that member unallocated | DEMO_01=109, DEMO_02=0 |
 | hold during warmup | preserve every current quantity | DEMO_01=0, DEMO_02=3 |
 
 ``` r
-close(warmup_pulse)
+close(intent_pulse)
 ```
 
 The guarded logical form turns the missing comparison into an explicit
 exclusion. A missing score is already understood by ranking. Exact zero
-and omission both produce zero here, but zero records a deliberate
-choice and is dropped before price lookup. Hold is different: it keeps
-the three `DEMO_02` shares. If missing input should pause the whole
-rebalance, return hold as the warmup guard does.
+and omission both target `DEMO_02` at zero here, which would sell the
+existing three-share position; zero records a deliberate choice and is
+dropped before price lookup. Hold is different: it keeps all three
+shares. If missing input should pause the whole rebalance, return hold
+as the warmup guard does.
 
 ## Read Planes, Not One Instrument At A Time
 
@@ -448,9 +458,8 @@ once for every member.
 > diagnostic only and changes no target, fill, result, or run identity.
 
 
-The optimization manual carries the measurements behind this rule.
-Strategy authors only need the rule: use a plane for a cross-section and
-a scalar for a chosen instrument.
+Use a plane for a cross-section and a scalar accessor for an instrument
+you have already chosen.
 
 ## Turn The Idea Into A Strategy
 
@@ -463,7 +472,8 @@ instrument because five prior bars do not exist yet.
 selection, not as a warning. That object still carries the member set
 and signal origin. `ledgr_weight_equal()` turns it into empty weights,
 and `ledgr_target_rebalance()` turns those weights into a flat target
-over the decision axis.
+over current investment members. In an availability-aware run, any held
+nonmember on the broader decision axis keeps its existing quantity.
 
 No warning suppression is needed for ordinary early warmup. A
 partial-selection warning can still appear when some signal values are
@@ -496,6 +506,13 @@ Read it economically:
 
 No helper registers indicators automatically. The experiment must say
 which features exist.
+
+Use `ledgr_signal_return()` when the score is the registered
+`return_<lookback>` feature: it reads that plane, keeps current
+investment members, and masks inadmissible member scores to `NA`. Use
+`ledgr_signal(ctx, values = ...)` when you computed a custom score
+vector. It aligns and projects the vector to current members, but your
+rule remains responsible for marking unusable scores as `NA`.
 
 Empty selections flow through the pipeline as objects, so expected
 warmup and “no signal today” look the same to your strategy. Diagnostics
@@ -554,33 +571,27 @@ mapped_features <- ledgr_feature_map(
   sma_10 = ledgr_ind_sma(10)
 )
 
-ledgr_feature_id(mapped_features)
+mapped_ids <- ledgr_feature_id(mapped_features)
+mapped_ids
 #>      ret_5     sma_10
 #> "return_5"   "sma_10"
 ```
 
-The strategy closes over `mapped_features`. Inside the universe loop,
-`ctx$features(id, mapped_features)` returns a named numeric vector keyed
-by the aliases. `ledgr_passed_warmup()` is a guard for that vector. For
-values returned by `ctx$features()`, it means every requested indicator
-is usable at this pulse. It is not a signal pipeline transformation, and
-it is not a data-quality diagnostic for arbitrary vectors.
+The map gives readable aliases to exact engine feature IDs. A
+cross-sectional strategy resolves those aliases once and reads each
+feature plane once:
 
 ``` r
 mapped_return_strategy <- function(ctx, params) {
   targets <- ctx$flat()
+  returns <- ctx$vec$feature(mapped_ids[["ret_5"]])
+  trend <- ctx$vec$feature(mapped_ids[["sma_10"]])
+  usable <- is.finite(returns) & is.finite(trend)
+  selected <- usable &
+    returns > params$min_return &
+    ctx$vec$close > trend
 
-  for (id in ctx$universe) {
-    x <- ctx$features(id, mapped_features)
-
-    if (
-      ledgr_passed_warmup(x) &&
-        x[["ret_5"]] > params$min_return &&
-        ctx$close(id) > x[["sma_10"]]
-    ) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[selected] <- params$qty
 
   targets
 }
@@ -588,11 +599,17 @@ mapped_return_strategy <- function(ctx, params) {
 
 Read that as one pulse-time decision:
 
-1.  `ctx$features()` reads the mapped feature values for one instrument.
-2.  `ledgr_passed_warmup()` keeps the rule inactive until the mapped
-    indicators are usable.
-3.  The condition states the trading idea.
-4.  The strategy still returns an ordinary target vector.
+1.  `mapped_ids` turns readable aliases into the registered feature IDs.
+2.  Each `ctx$vec$feature()` call reads one aligned plane for the
+    decision axis.
+3.  `usable` keeps the rule inactive until both indicators are finite.
+4.  The condition states the trading idea.
+5.  The strategy still returns an ordinary target vector.
+
+For a rule about one instrument already singled out,
+`ctx$features(id, mapped_features)` returns values keyed by alias, and
+`ledgr_passed_warmup()` checks whether all requested mapped values are
+usable.
 
 Plain `features = list(...)` remains valid. Use it when exact IDs are
 clearest. Use a feature map when aliases make a feature-heavy strategy
@@ -623,64 +640,16 @@ bt_mapped <- mapped_exp |>
     run_id = "mapped_return"
   )
 
-summary(bt_mapped)
-#> ledgr Backtest Summary
-#> ======================
-#>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
-#>
-#>
-#> Corporate-Action Evidence:
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
-#>   Setting cash_amount:              gross
-#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-#>   Setting cash_posting:             effective_close
-#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-#>   Setting held_terminal_position:   last_permissible
-#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-#>   Setting unsupported_quantity:     report_only
-#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
-#>   Exercised choices:
-#>     cash_amount.gross: 0
-#>     cash_amount.refuse: 0
-#>     cash_posting.effective_close: 0
-#>     cash_posting.next_open: 0
-#>     cash_posting.refuse: 0
-#>     held_terminal_position.last_permissible: 0
-#>     held_terminal_position.last_mark: 0
-#>     held_terminal_position.refuse: 0
-#>     unsupported_quantity.report_only: 0
-#>     unsupported_quantity.refuse: 0
-#>   Refusal reasons:
-#>     none declared: 0
-#>   Late arrivals:               0
-#>   Affected marked exposure:    0
-#>   Gross cash posted:           0
-#>   Modeled terminal proceeds:   0
-#>   Positions disposed:          0
-#>   Realized model P&L:          0
-#>   Unsupported facts:           0
-#> Performance Metrics:
-#>   Total Return:        0.64%
-#>   Annualized Return:   1.26%
-#>   Max Drawdown:        -0.36%
-#>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 0.82%
-#>   Sharpe Ratio:        1.523
-#>
-#> Trade Statistics:
-#>   Closed Trades:       19
-#>   Win Rate:            31.58%
-#>   Avg Trade:           $3.69
-#>
-#> Exposure:
-#>   Time in Market:      62.79%
+ledgr_results(bt_mapped, what = "fills") |>
+  select(ts_utc, instrument_id, side, qty) |>
+  slice_head(n = 4)
+#> # A tibble: 4 x 4
+#>   ts_utc     instrument_id side    qty
+#>   <date>     <chr>         <chr> <dbl>
+#> 1 2019-01-23 DEMO_01       BUY       5
+#> 2 2019-01-30 DEMO_02       BUY       5
+#> 3 2019-02-01 DEMO_02       SELL      5
+#> 4 2019-02-06 DEMO_01       SELL      5
 ```
 
 Feature-map strategies commonly close over the feature map object. Keep

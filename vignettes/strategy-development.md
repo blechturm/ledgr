@@ -20,7 +20,7 @@
 This article teaches the strategy contract from the user side: what a
 strategy can see, what it must return, and how to run a first backtest
 without hidden lookahead. For feature maps, helper pipelines, and
-preflight diagnostics, read
+pulse-level debugging, read
 `vignette("strategy-authoring-tools", package = "ledgr")`.
 
 ## Prerequisites
@@ -148,9 +148,9 @@ For the installed accessor reference, see `?ledgr_strategy_context`.
 > Both are correct; only the first is cheap when you want every name,
 > because the scalar form costs per call and a universe-wide loop pays it
 > once per instrument per pulse.
-> `vignette("strategy-authoring-tools", package = "ledgr")` measures the
-> difference and documents the `ledgr_scalar_accessor_loop` warning
-> emitted for that shape on large universes.
+> `vignette("strategy-authoring-tools", package = "ledgr")` shows the
+> plane-based pattern and documents the `ledgr_scalar_accessor_loop`
+> warning emitted for that shape on large universes.
 
 
 The pulse loop is the contract in motion:
@@ -552,7 +552,7 @@ ledgr_snapshot_close(snapshot)
 ## Where Next
 
 - `vignette("strategy-authoring-tools", package = "ledgr")` goes deeper
-  on helper pipelines, feature maps, and strategy preflight.
+  on helper pipelines, feature maps, and pulse-level debugging.
 - `vignette("indicators", package = "ledgr")` explains feature identity
   and strategy-time feature access.
 - `vignette("execution-semantics", package = "ledgr")` explains the fold

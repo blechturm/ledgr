@@ -149,14 +149,14 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:     fb58d65c64da7b3edf848910dcc52d7cb42d03e8516d6d80c5213756b6dea4b1
+    Config Hash:     a591d498348aaa751c8225c395da6ede98d709475219db59d2810d93860d7e5d
     Strategy Hash:   f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
     Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility: tier_1
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     1.28
+    Elapsed Sec:     0.85
     Persist Features:TRUE
     Cache Hits:      0
     Cache Misses:    2
@@ -469,7 +469,8 @@ strategy depended on.
 
 For the end-to-end research loop and the selection-validation
 distinction, read `vignette("research-workflow", package = "ledgr")`.
-For strategy-authoring patterns that avoid Tier 3 failures, read
+For strategy-authoring patterns that use helper pipelines, feature maps,
+and pulse debugging, read
 `vignette("strategy-authoring-tools", package = "ledgr")`. For
 store-level source inspection and reopen workflows, read
 `vignette("experiment-store", package = "ledgr")`.
