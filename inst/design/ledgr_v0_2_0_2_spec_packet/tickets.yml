@@ -147,6 +147,15 @@ cuts:
     close_review: "Initial Type 1 close review returned CHANGES_REQUIRED at bd7f7e6. The correction at b35f417 closed checker exit status, staged-source precedence and vignette-fallback detection and completed the calibration and provenance disclosures; 76decd1 recorded the evidence. Focused re-review returned PASS. The maintainer accepted Workstream 21 and Cut 14 on 2026-09-27."
     accepted: "2026-09-27 by the maintainer, at 76decd1"
     status: "closed"
+  - id: 15
+    name: "Session-axis documentation repair"
+    cut: "2026-09-27"
+    cut_review: "compressed into the close review of workstream 22. The cut has two tickets and one planned Type 1 close review, exactly 1 over 2, 0.500 against the gate. It changes no engine behaviour: it reconciles the live feature-session contract with the shipped venue-axis implementation, adds the missing failure-sensitive fixture and records the accepted design text it supersedes without rewriting history."
+    authority: "maintainer decision 2026-09-27 after the accepted point-in-time historical-projection cycle established that the shipped feature session axis is the venue open-session axis; instrument-narrowed expected sessions are scheduled for the next release"
+    source_table: "inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md; inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md; inst/design/horizon.md 2026-09-27 instrument-narrowed expected-sessions entry; inst/design/ledgr_roadmap.md post-v0.2.0.2 point-in-time historical-projection row"
+    workstreams: [22]
+    closeout: "session_axis_documentation_repair_closeout.md"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-

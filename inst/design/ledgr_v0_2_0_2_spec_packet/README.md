@@ -868,3 +868,29 @@ failed block, so the step showed a green tick; the gate checker then reported
 conditions and named neither the real one nor the block. Right now the system
 can go red for a reason it does not report, which is why the reporting fix is
 in this cut rather than deferred as polish.
+
+## Cut 15: Session-axis documentation repair (open)
+
+Authority: maintainer decision 2026-09-27 after the accepted point-in-time
+historical-projection cycle established that the shipped feature session axis
+is the venue open-session axis. Instrument-narrowed expected sessions remain
+the accepted next-release goal; they are not an engine change in this cut.
+
+Two tickets, LDG-2866 and LDG-2867, form Workstream 22. One planned Type 1
+close review is one invocation over two completed tickets, exactly 0.500
+against the review gate.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 22 Session-axis documentation repair | 2866-2867 | amend the live feature-session contract; add the missing failure-sensitive fixture; record supersession and close the cut | the shipped feature session axis is the venue open-session axis, real observations inside accepted inactive intervals remain admissible, and no live teaching surface says otherwise |
+
+This cut corrects the live authority without rewriting accepted history. The
+availability synthesis, the v0.2.0.0 packet and availability gate 21 retain
+their original text under the packet's historical-artifact convention. The
+closeout records that gate 21's feature clause is superseded, why the mismatch
+survived two tagged releases and where the deferred narrowing design resumes.
+
+Workstream 22 depends on accepted Workstream 20 and blocks the release gate.
+It changes no engine code, feature value, warm-up rule, identity input or
+per-pulse cost. The accepted synthesis, the 2026-09-27 horizon record and the
+roadmap row are the recoverable design trail.
