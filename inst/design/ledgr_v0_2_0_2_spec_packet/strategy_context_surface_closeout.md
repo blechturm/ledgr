@@ -1,10 +1,10 @@
 # Strategy Context Surface Closeout
 
-**Status:** Agent-provisional; awaiting the focused Type 1 re-review.
+**Status:** Agent-provisional; awaiting maintainer acceptance after correction.
 **Date:** 2026-09-27
 **Cut:** 13
 **Workstream:** 20
-**Implementation range:** `385c10e..7e521aa`, plus this closeout record.
+**Implementation range:** `385c10e..ad584b1`, plus this closeout record.
 
 ## Shipped Claims And Detectors
 
@@ -15,7 +15,7 @@
 | Real dense and availability callbacks expose current feature reads but no indexable future projection. | LTB-0089 | `2cf48cc` plus the close-review correction |
 | Empty membership, empty axis and explicit empty selection remain distinct. | LTB-0090 | `fa2890c` |
 | One authored table matches actual dense and availability callback surfaces. | LTB-0091 | `7295cf2` |
-| The taught context-first helper pipeline agrees across run and sweep. | LTB-0092 and the executed article | `91b9437` |
+| The taught context-first helper pipeline agrees across run and sweep. | LTB-0092 and the executed article | `91b9437`, `ad584b1` |
 
 The implementation tests and claim records carry the exact fixtures, condition
 classes and smallest failing changes. This closeout links them rather than
@@ -87,15 +87,23 @@ canonical Strategy Development article.
 
 The adversarial editorial pass found that the first rewrite still repeated one
 pipeline, hid hold behind flat positions, placed the budget warning too late,
-and retained benchmark and preflight material from other canonical homes. The
-final article is 2,888 words rather than 3,934. It opens with the two paths and
-one terminology boundary, shows a price-conditioned stateful round trip while
-preserving another holding, puts five easily confused intent cases in one
-rendered table, executes the main helper strategy, and removes the repeated
-pipeline, raw sizing formulas, volatile benchmark, duplicated preflight lesson
-and broken stored-source heading. Three stale prose-pin assertions were changed
-to protect that structure and those executed outcomes; the function-level
-flooring and helper-semantic assertions remain.
+and retained benchmark and preflight material from other canonical homes. A
+focused pass then found four remaining defects: the rebalance help still sized
+against total rather than allocatable equity, the five intent cases did not all
+use the held-position pulse, the mapped-feature example taught a scalar loop,
+and three cross-article pointers promised removed material.
+
+The final 3,015-word article opens with the two paths and one terminology
+boundary, shows a price-conditioned stateful round trip while preserving
+another holding, and compares five easily confused intents on the same pulse.
+Zero and omission visibly liquidate its three-share holding while hold
+preserves it. The mapped-feature example reads two vector planes, the main
+helper and mapped-feature strategies both execute and show concise fills, and
+the return-signal convenience policy is distinguished from a custom signal.
+The rebalance help now defines allocatable equity and held-nonmember
+reservation. Stale cross-links and the unsupported optimization-manual claim
+are gone. Documentation-contract assertions protect the resulting structure;
+the function-level flooring and helper-semantic assertions remain.
 
 The same pass found that the causality detector followed context members only
 at the top level. LTB-0089 now also inspects one level of list and environment
@@ -122,11 +130,13 @@ and exposes bounded closures and current planes. It adds no row construction,
 table subset or history replay. Its warm, interleaved 505-instrument,
 400-update clock measured medians of 0.095 seconds before and 0.090 after.
 
-The final correction record is green. The ordinary fast profile ran 465 of 465
-blocks with zero failures or skips in 84.130 seconds, and the independent
-checker passed the 112-second registered-runner bound. All 17 executable
-chunks in the revised Strategy Authoring Tools article ran while regenerating
-its Markdown sibling, and an independent freshness render was byte-identical.
+The final editorial-correction record is green. The ordinary fast profile ran
+465 of 465 blocks with zero failures or skips in 86.140 seconds, and the
+independent checker passed the 112-second registered-runner bound at
+`C:/tmp/ledgr-ws20-editorial-final-fast`. All 17 reader-facing executable
+chunks, plus setup, ran while regenerating the Strategy Authoring Tools
+Markdown sibling. Freshness renders of all three touched articles were
+byte-identical.
 
 ## Deferred And Rejected Work
 
@@ -144,5 +154,7 @@ its Markdown sibling, and an independent freshness render was byte-identical.
 
 The accepted cut contains nine completed tickets. Its independent cut review,
 close review and two correction reviews make four invocations over nine
-tickets, `4 / 9 = 0.444`, below the 0.5 gate. This draft does not accept the
-workstream; acceptance belongs to the maintainer after independent review.
+tickets, `4 / 9 = 0.444`, below the 0.5 gate. The last review requested only
+text corrections; this draft records them without spending a fifth review
+invocation. It does not accept the workstream; acceptance belongs to the
+maintainer.
