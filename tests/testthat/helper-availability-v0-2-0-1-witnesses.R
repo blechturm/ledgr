@@ -327,7 +327,7 @@ availability_v201_fold_strategy <- function(ctx, params) {
   target <- ctx$hold()
   member <- ctx$vec$member
   restricted <- ctx$vec$target_restricted
-  positions <- ctx$vec$positions
+  positions <- ctx$vec$position
   pulse <- as.integer(substr(ctx$ts_utc, 9L, 10L))
   target[member & !restricted] <- 5 + pulse
   reduce <- !member & !restricted & positions != 0

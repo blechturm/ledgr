@@ -134,7 +134,7 @@ wf <- ledgr_walk_forward(
   exp,
   grid = grid,
   folds = folds,
-  selection_rule = ledgr_select_argmax("sharpe_ratio"),
+  selection_rule = ledgr_rule_argmax("sharpe_ratio"),
   seed = 2026L
 )
 

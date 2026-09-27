@@ -296,7 +296,7 @@ testthat::test_that("dense public consumers use the primitive validator", {
     walk_forward_exp,
     grid = ledgr_param_grid(one = list(quantity = 1)),
     folds = folds,
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 2742L
   )
   on.exit(lapply(walk_forward$test_runs, close), add = TRUE)

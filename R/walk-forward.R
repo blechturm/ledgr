@@ -9,8 +9,8 @@
 #' @param exp A `ledgr_experiment`.
 #' @param grid A `ledgr_param_grid`.
 #' @param folds A `ledgr_fold_list`.
-#' @param selection_rule A rule created by [ledgr_select_argmax()] or
-#'   [ledgr_select_argmin()].
+#' @param selection_rule A rule created by [ledgr_rule_argmax()] or
+#'   [ledgr_rule_argmin()].
 #' @param seed Optional master seed for deterministic per-row execution seeds.
 #' @param opening_state_policy Either `"carry_test_state"` or
 #'   `"flat_test_state"`. The default carries selected test-run terminal state

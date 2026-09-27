@@ -144,7 +144,7 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without f
   small_ctx <- ledgr:::ledgr_refresh_pulse_context_lookup(
     small_ctx,
     bars = bars[seq_len(5L), , drop = FALSE],
-    positions = small_ctx$positions,
+    positions = small_ctx$.positions,
     universe = small_ctx$universe
   )
   testthat::expect_null(small_ctx$.pulse_lookup$scalar_access_state)

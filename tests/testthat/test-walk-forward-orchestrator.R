@@ -85,7 +85,7 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 101L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
@@ -200,7 +200,7 @@ testthat::test_that("walk-forward exposes cadence warnings through existing metr
           exp,
           grid = ledgr_wfo_grid(),
           folds = folds,
-          selection_rule = ledgr_select_argmax("sharpe_ratio"),
+          selection_rule = ledgr_rule_argmax("sharpe_ratio"),
           seed = 909L
         )
       },
@@ -230,7 +230,7 @@ testthat::test_that("walk-forward derives fold/window candidate seeds and preser
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 202L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
@@ -298,7 +298,7 @@ testthat::test_that("walk-forward reruns reopen deterministic test runs and repl
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 404L
   )
   run_ids <- wf_first$folds$test_run_id
@@ -326,7 +326,7 @@ testthat::test_that("walk-forward reruns reopen deterministic test runs and repl
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 404L
   )
   on.exit(lapply(wf_second$test_runs, close), add = TRUE)
@@ -378,7 +378,7 @@ testthat::test_that("flat-test state is explicit and marked cold-start distorted
       fx$exp,
       grid = ledgr_wfo_grid(),
       folds = ledgr_wfo_folds(),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 303L,
       opening_state_policy = "flat_test_state"
     ),
@@ -415,7 +415,7 @@ testthat::test_that("walk-forward preserves failed train candidate score rows wh
       list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
       constructor = list(type_id = "explicit")
     ),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 505L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
@@ -447,7 +447,7 @@ testthat::test_that("walk-forward persists no-selection failure evidence", {
         list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
         constructor = list(type_id = "explicit")
       ),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 606L
     ),
     class = "ledgr_walk_forward_no_selection"
@@ -483,7 +483,7 @@ testthat::test_that("walk-forward test-run failure preserves train rows and fail
         list(ledgr_fold("2020-01-01", "2020-01-04", "2020-01-05", "2020-01-07", fold_seq = 1L)),
         constructor = list(type_id = "explicit")
       ),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 707L
     ),
     class = "ledgr_test_run_failure"
@@ -516,7 +516,7 @@ testthat::test_that("walk-forward interrupt after a completed fold persists a pa
       fx$exp,
       grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
       folds = ledgr_wfo_folds(),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 808L
     ),
     interrupt = function(e) e
@@ -560,7 +560,7 @@ testthat::test_that("[LTB-0070] terminal cleanup closes test handles without mas
       fx$exp,
       grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
       folds = ledgr_wfo_folds(),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 809L
     ),
     interrupt = function(e) e,
@@ -581,7 +581,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 41L
   )
   on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)
@@ -635,7 +635,7 @@ testthat::test_that("walk-forward inspection helpers reopen completed and partia
       partial_fx$exp,
       grid = ledgr_param_grid(trade = list(qty = 1, threshold = 101)),
       folds = ledgr_wfo_folds(),
-      selection_rule = ledgr_select_argmax("sharpe_ratio"),
+      selection_rule = ledgr_rule_argmax("sharpe_ratio"),
       seed = 42L
     ),
     interrupt = function(e) e
@@ -678,7 +678,7 @@ testthat::test_that("ledgr_candidate extracts walk-forward candidates through lo
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 45L
   )
   on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)
@@ -736,7 +736,7 @@ testthat::test_that("walk-forward candidate locators verify overrides and missin
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 46L
   )
   invisible(lapply(wf$test_runs, close))
@@ -817,7 +817,7 @@ testthat::test_that("degradation table is classed and prints a curated core view
     fx$exp,
     grid = ledgr_wfo_grid(),
     folds = ledgr_wfo_folds(),
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 41L
   )
   on.exit(invisible(lapply(wf$test_runs, close)), add = TRUE)

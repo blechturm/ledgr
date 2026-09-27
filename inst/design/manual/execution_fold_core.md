@@ -277,7 +277,7 @@ The runtime shape is:
 | `seed` | execution seed or `NULL` | `R/fold-engine.R:519` |
 | `pulse_seed` | deterministic per-pulse seed or `NULL` | `R/fold-engine.R:520` |
 | `state_prev` | prior strategy state object, JSON-derived list, or `NULL` | `R/fold-engine.R:521` |
-| `safety_state` | scalar risk-state label | `R/fold-engine.R:522` |
+| `.safety_state` | private scalar risk-state label | fold context boundary |
 
 `ctx` helper attachment is deliberately a dispatch choice, not a
 semantic choice. Fast helpers are attached at `R/fold-engine.R:530`;
@@ -450,7 +450,7 @@ ctx <- list(
   seed = 2026L,
   pulse_seed = 123456789L,
   state_prev = list(last_signal = "AAA"),
-  safety_state = "GREEN"
+  .safety_state = "GREEN"
 )
 class(ctx) <- "ledgr_pulse_context"
 ```

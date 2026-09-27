@@ -829,7 +829,7 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
     exp,
     grid = ledgr_param_grid(one = list(dummy = 1)),
     folds = folds,
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 44L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)
@@ -930,7 +930,7 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
     exp,
     grid = grid,
     folds = folds,
-    selection_rule = ledgr_select_argmax("sharpe_ratio"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
     seed = 77L
   )
   on.exit(lapply(wf$test_runs, close), add = TRUE)

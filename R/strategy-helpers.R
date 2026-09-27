@@ -244,18 +244,18 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
   }
 
   target <- if (availability_active) {
-    stats::setNames(as.numeric(ctx$vec$positions), universe)
+    stats::setNames(as.numeric(ctx$vec$position), universe)
   } else {
     stats::setNames(rep(0, length(universe)), universe)
   }
   if (availability_active && length(members) > 0L) target[members] <- 0
   allocation_equity <- equity
   if (availability_active) {
-    held_nonmembers <- setdiff(universe[as.numeric(ctx$vec$positions) != 0], members)
+    held_nonmembers <- setdiff(universe[as.numeric(ctx$vec$position) != 0], members)
     if (length(held_nonmembers) > 0L) {
       idx <- match(held_nonmembers, universe)
       marks <- as.numeric(ctx$vec$risk_mark[idx])
-      quantities <- as.numeric(ctx$vec$positions[idx])
+      quantities <- as.numeric(ctx$vec$position[idx])
       if (any(!is.finite(marks))) {
         rlang::abort(
           "Cannot reserve held nonmember exposure without a permissible valuation mark.",

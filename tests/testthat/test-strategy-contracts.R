@@ -68,7 +68,7 @@ testthat::test_that("PulseContext rejects invalid universe, bars, and position s
   )
   })
 
-  # Also covers: PulseContext rejects positions outside universe
+  # Also covers: PulseContext rejects private position state outside universe
   local({
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
@@ -77,7 +77,7 @@ testthat::test_that("PulseContext rejects invalid universe, bars, and position s
   positions <- stats::setNames(c(1), c("C"))
   testthat::expect_error(
     ledgr:::ledgr_pulse_context("run-1", ts, universe, bars, positions = positions, cash = 1, equity = 1),
-    "positions",
+    "position",
     ignore.case = TRUE
   )
   })

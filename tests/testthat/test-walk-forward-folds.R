@@ -323,7 +323,7 @@ testthat::test_that("walk-forward routes every candidate and test through the fo
     experiment,
     grid,
     folds,
-    ledgr_select_argmax("sharpe_ratio"),
+    ledgr_rule_argmax("sharpe_ratio"),
     seed = 123L
   )
   on.exit(lapply(result$test_runs, close), add = TRUE)

@@ -228,7 +228,7 @@ testthat::test_that("sweep-filter evidence is rejected by selection surfaces", {
     class = "ledgr_sweep_filter_promotion_forbidden"
   )
   testthat::expect_error(
-    ledgr:::ledgr_selection_rule_select(ledgr_select_argmax("sharpe_ratio"), result),
+    ledgr:::ledgr_selection_rule_select(ledgr_rule_argmax("sharpe_ratio"), result),
     class = "ledgr_sweep_filter_walk_forward_forbidden"
   )
 })

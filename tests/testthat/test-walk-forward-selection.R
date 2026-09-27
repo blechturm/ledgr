@@ -1,7 +1,7 @@
 testthat::test_that("walk-forward selection rules hash canonical scalar payloads", {
-  rule <- ledgr_select_argmax("sharpe_ratio")
-  same <- ledgr_select_argmax("sharpe_ratio")
-  opposite <- ledgr_select_argmin("sharpe_ratio")
+  rule <- ledgr_rule_argmax("sharpe_ratio")
+  same <- ledgr_rule_argmax("sharpe_ratio")
+  opposite <- ledgr_rule_argmin("sharpe_ratio")
 
   testthat::expect_s3_class(rule, "ledgr_selection_rule")
   testthat::expect_match(rule$selection_rule_hash, "^[0-9a-f]{64}$")
@@ -23,37 +23,37 @@ testthat::test_that("[LTB-0010] walk-forward selection fails closed on metric cl
     stringsAsFactors = FALSE
   )
 
-  selected <- ledgr:::ledgr_selection_rule_select(ledgr_select_argmax("sharpe_ratio"), scores)
+  selected <- ledgr:::ledgr_selection_rule_select(ledgr_rule_argmax("sharpe_ratio"), scores)
   testthat::expect_identical(selected$candidate_key, "a")
 
   selected_min <- ledgr:::ledgr_selection_rule_select(
-    ledgr_select_argmin("sharpe_ratio"),
+    ledgr_rule_argmin("sharpe_ratio"),
     transform(scores, sharpe_ratio = c(0.5, 0.25, 0.25, NA))
   )
   testthat::expect_identical(selected_min$candidate_key, "a")
 
   testthat::expect_error(
-    ledgr:::ledgr_selection_rule_select(ledgr_select_argmax("missing_metric"), scores),
+    ledgr:::ledgr_selection_rule_select(ledgr_rule_argmax("missing_metric"), scores),
     class = "ledgr_walk_forward_metric_missing"
   )
   testthat::expect_error(
-    ledgr:::ledgr_selection_rule_select(ledgr_select_argmax("total_return"), scores),
+    ledgr:::ledgr_selection_rule_select(ledgr_rule_argmax("total_return"), scores),
     class = "ledgr_walk_forward_metric_class_invalid"
   )
   testthat::expect_error(
-    ledgr:::ledgr_selection_rule_select(ledgr_select_argmax("n_trades"), scores),
+    ledgr:::ledgr_selection_rule_select(ledgr_rule_argmax("n_trades"), scores),
     class = "ledgr_walk_forward_metric_class_invalid"
   )
   testthat::expect_error(
     ledgr:::ledgr_selection_rule_select(
-      ledgr_select_argmax("sharpe_ratio"),
+      ledgr_rule_argmax("sharpe_ratio"),
       transform(scores, sharpe_ratio = c(NA, NaN, Inf, -Inf))
     ),
     class = "ledgr_walk_forward_no_selection"
   )
   testthat::expect_error(
     ledgr:::ledgr_selection_rule_select(
-      ledgr_select_argmax("sharpe_ratio"),
+      ledgr_rule_argmax("sharpe_ratio"),
       data.frame(sharpe_ratio = c(1, 2))
     ),
     class = "ledgr_walk_forward_candidate_key_missing"

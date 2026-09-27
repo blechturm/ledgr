@@ -2,7 +2,7 @@ ledgr_selection_rule_schema_version <- "v1"
 
 #' Walk-forward scalar selection rules
 #'
-#' `ledgr_select_argmax()` and `ledgr_select_argmin()` create deterministic
+#' `ledgr_rule_argmax()` and `ledgr_rule_argmin()` create deterministic
 #' scalar selection-rule value objects for walk-forward train-window scores.
 #' V1 supports one classified scalar metric at a time. Composite, override,
 #' top-N, stability-region, and arbitrary-function selectors are deferred.
@@ -10,15 +10,15 @@ ledgr_selection_rule_schema_version <- "v1"
 #' @param metric A single metric name.
 #' @return A `ledgr_selection_rule` object.
 #' @examples
-#' ledgr_select_argmax("sharpe_ratio")
+#' ledgr_rule_argmax("sharpe_ratio")
 #' @export
-ledgr_select_argmax <- function(metric) {
+ledgr_rule_argmax <- function(metric) {
   ledgr_selection_rule(type_id = "argmax", metric = metric, direction = "max")
 }
 
-#' @rdname ledgr_select_argmax
+#' @rdname ledgr_rule_argmax
 #' @export
-ledgr_select_argmin <- function(metric) {
+ledgr_rule_argmin <- function(metric) {
   ledgr_selection_rule(type_id = "argmin", metric = metric, direction = "min")
 }
 
@@ -71,7 +71,7 @@ ledgr_validate_selection_rule <- function(rule) {
 
 ledgr_validate_selection_rule_shape <- function(rule, check_hash = TRUE) {
   if (!inherits(rule, "ledgr_selection_rule") || !is.list(rule)) {
-    rlang::abort("`selection_rule` must be created by ledgr_select_argmax() or ledgr_select_argmin().", class = "ledgr_walk_forward_invalid_selection_rule")
+    rlang::abort("`selection_rule` must be created by ledgr_rule_argmax() or ledgr_rule_argmin().", class = "ledgr_walk_forward_invalid_selection_rule")
   }
   required <- c("type_id", "schema_version", "metric", "direction", "selection_rule_hash")
   if (!all(required %in% names(rule))) {

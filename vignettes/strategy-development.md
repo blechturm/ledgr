@@ -132,7 +132,7 @@ full future dataset.
 | `ctx$vec$feature(feature_id)` | current indicator values for the full universe by engine feature ID |
 | `ctx$features(id, feature_map)` | mapped indicator values for one instrument by alias, using the supplied feature map |
 | `ctx$position(id)` | current simulated position |
-| `ctx$vec$positions` | current simulated positions aligned to `ctx$universe` |
+| `ctx$vec$position` | current simulated positions aligned to `ctx$universe` |
 | `ctx$cash`, `ctx$equity` | current simulated portfolio state |
 | `ctx$flat()` | target zero positions unless changed |
 | `ctx$hold()` | target current positions unless changed |

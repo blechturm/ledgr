@@ -34,8 +34,10 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
   testthat::expect_true(is.function(ctx$tradable))
-  testthat::expect_true(is.function(ctx$targets))
-  testthat::expect_true(is.function(ctx$current_targets))
+  testthat::expect_null(ctx$positions)
+  testthat::expect_null(ctx$targets)
+  testthat::expect_null(ctx$current_targets)
+  testthat::expect_null(ctx$safety_state)
 
   testthat::expect_equal(ctx$open("A"), 10)
   testthat::expect_equal(ctx$high("A"), 11)
@@ -52,7 +54,7 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_equal(ctx$vec$low, c(9, 19))
   testthat::expect_equal(ctx$vec$close, c(10.5, 20.5))
   testthat::expect_equal(ctx$vec$volume, c(100, 200))
-  testthat::expect_equal(ctx$vec$positions, c(0, 3))
+  testthat::expect_equal(ctx$vec$position, c(0, 3))
 
   bar_b <- ctx$bar("B")
   testthat::expect_true(is.data.frame(bar_b))
@@ -65,10 +67,6 @@ testthat::test_that("pulse context exposes narrative scalar accessors", {
   testthat::expect_identical(ctx$flat(default = 2), stats::setNames(c(2, 2), universe))
   testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 3), universe))
   testthat::expect_identical(ctx$tradable(), universe)
-  testthat::expect_error(ctx$targets(), class = "ledgr_context_helper_removed")
-  testthat::expect_error(ctx$current_targets(), class = "ledgr_context_helper_removed")
-  testthat::expect_error(ctx$targets(), "`ctx$targets()` was removed", fixed = TRUE)
-  testthat::expect_error(ctx$current_targets(), "`ctx$current_targets()` was removed", fixed = TRUE)
 
   testthat::expect_true(is.numeric(ctx$cash))
   testthat::expect_true(is.numeric(ctx$equity))
@@ -113,7 +111,7 @@ testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse pla
   ctx <- ledgr:::ledgr_update_pulse_context_helpers(
     ctx,
     bars = bars,
-    positions = ctx$positions,
+    positions = ctx$.positions,
     universe = ids,
     availability = availability
   )
@@ -145,7 +143,7 @@ testthat::test_that("[LTB-0061] ctx$tradable derives only from current pulse pla
   empty <- ledgr:::ledgr_update_pulse_context_helpers(
     ctx,
     bars = bars,
-    positions = ctx$positions,
+    positions = ctx$.positions,
     universe = ids,
     availability = availability
   )
@@ -611,13 +609,12 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
     if (!identical(ctx$close("TEST_A"), unname(ctx$bars$close[ctx$bars$instrument_id == "TEST_A"]))) {
       stop("runtime close accessor does not match ctx$bars")
     }
-    if (!identical(ctx$position("TEST_A"), unname(if ("TEST_A" %in% names(ctx$positions)) ctx$positions[["TEST_A"]] else 0))) {
-      stop("runtime position accessor does not match ctx$positions")
+    if (!identical(ctx$position("TEST_A"), unname(ctx$vec$position[[ctx$idx("TEST_A")]]))) {
+      stop("runtime scalar position does not match ctx$vec$position")
     }
-    expected_current <- stats::setNames(rep(0, length(ctx$universe)), ctx$universe)
-    if (length(ctx$positions) > 0) expected_current[names(ctx$positions)] <- as.numeric(ctx$positions)
+    expected_current <- stats::setNames(as.numeric(ctx$vec$position), ctx$vec$id)
     if (!identical(ctx$hold(), expected_current)) {
-      stop("runtime hold accessor does not match ctx$positions")
+      stop("runtime hold accessor does not match ctx$vec$position")
     }
 
     observed$count <- observed$count + 1L

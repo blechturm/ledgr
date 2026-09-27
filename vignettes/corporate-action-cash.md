@@ -51,7 +51,7 @@ opening <- ledgr_opening(
   positions = c(AAA = 2),
   cost_basis = c(AAA = 100)
 )
-hold <- function(ctx, params) ctx$positions
+hold <- function(ctx, params) ctx$hold()
 ```
 
 The later halving of the price is deliberately present. The canonical

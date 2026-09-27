@@ -174,7 +174,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
   withr::defer(ledgr_snapshot_close(snapshot))
   strategy <- function(ctx, params) {
     list(
-      targets = ctx$positions,
+      targets = ctx$hold(),
       state_update = list(observed_cash = ctx$cash)
     )
   }

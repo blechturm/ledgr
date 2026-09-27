@@ -19,13 +19,13 @@ ledgr_pulse_context <- function(run_id,
     features = function(...) {
       rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
     },
-    positions = positions,
+    .positions = positions,
     cash = cash,
     equity = equity,
     seed = seed,
     pulse_seed = pulse_seed,
     state_prev = state_prev,
-    safety_state = safety_state
+    .safety_state = safety_state
   )
 
   class(ctx) <- "ledgr_pulse_context"
@@ -322,7 +322,7 @@ ledgr_attach_feature_helpers <- function(ctx,
 ledgr_update_pulse_context_helpers <- function(ctx,
                                                bars = ctx$bars,
                                                features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
-                                               positions = ctx$positions,
+                                               positions = ctx$.positions,
                                                universe = ctx$universe,
                                                projection = NULL,
                                                pulse_idx = NULL,
@@ -414,7 +414,7 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
                                                     bars = ctx$bars,
                                                     features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
                                                     features_wide = if (is.data.frame(ctx$features_wide)) ctx$features_wide else NULL,
-                                                    positions = ctx$positions,
+                                                    positions = ctx$.positions,
                                                     universe = ctx$universe,
                                                     pulse_idx = NULL,
                                                     active_alias_map = NULL,
@@ -533,7 +533,7 @@ ledgr_pulse_context_helper_bundle <- function(lookup,
       ledgr_pulse_context_scalar(lookup, id, "volume")
     }
     position <- function(id) {
-      record("position", "ctx$vec$positions")
+      record("position", "ctx$vec$position")
       ledgr_pulse_context_position(lookup, id)
     }
     idx <- function(id, missing = c("error", "na")) {
@@ -555,18 +555,6 @@ ledgr_pulse_context_helper_bundle <- function(lookup,
   flat <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
   hold <- function() ledgr_pulse_context_current_targets(lookup)
   tradable <- function() ledgr_pulse_context_tradable(lookup)
-  targets <- function(...) {
-    rlang::abort(
-      "`ctx$targets()` was removed in v0.1.7. Use `ctx$flat()` for a flat/default target vector.",
-      class = "ledgr_context_helper_removed"
-    )
-  }
-  current_targets <- function(...) {
-    rlang::abort(
-      "`ctx$current_targets()` was removed in v0.1.7. Use `ctx$hold()` to start from current positions.",
-      class = "ledgr_context_helper_removed"
-    )
-  }
 
   list(
     .pulse_lookup = lookup,
@@ -580,9 +568,7 @@ ledgr_pulse_context_helper_bundle <- function(lookup,
     idx = idx,
     flat = flat,
     hold = hold,
-    tradable = tradable,
-    targets = targets,
-    current_targets = current_targets
+    tradable = tradable
   )
 }
 
@@ -624,7 +610,7 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
 
 ledgr_refresh_pulse_context_lookup <- function(ctx,
                                                bars = ctx$bars,
-                                               positions = ctx$positions,
+                                               positions = ctx$.positions,
                                                universe = ctx$universe,
                                                id_to_idx = NULL,
                                                availability = NULL,
@@ -751,7 +737,7 @@ ledgr_pulse_context_vec <- function(lookup) {
     low = ledgr_pulse_context_vector_field(lookup, "low"),
     close = ledgr_pulse_context_vector_field(lookup, "close"),
     volume = ledgr_pulse_context_vector_field(lookup, "volume"),
-    positions = ledgr_pulse_context_vector_positions(lookup),
+    position = ledgr_pulse_context_vector_positions(lookup),
     feature = feature
   )
   availability <- lookup$availability
@@ -1061,22 +1047,22 @@ ledgr_validate_pulse_context <- function(ctx) {
     validate_df_instruments(feature_table, "feature_table")
   }
 
-  if (!is.numeric(ctx$positions)) {
-    rlang::abort("PulseContext `positions` must be a named numeric vector.", class = "ledgr_invalid_pulse_context")
+  if (!is.numeric(ctx$.positions)) {
+    rlang::abort("PulseContext private position state must be a named numeric vector.", class = "ledgr_invalid_pulse_context")
   }
-  if (length(ctx$positions) > 0) {
-    if (is.null(names(ctx$positions)) || any(!nzchar(names(ctx$positions))) || anyDuplicated(names(ctx$positions))) {
-      rlang::abort("PulseContext `positions` must be a named numeric vector with unique, non-empty names.", class = "ledgr_invalid_pulse_context")
+  if (length(ctx$.positions) > 0) {
+    if (is.null(names(ctx$.positions)) || any(!nzchar(names(ctx$.positions))) || anyDuplicated(names(ctx$.positions))) {
+      rlang::abort("PulseContext private position state must have unique, non-empty names.", class = "ledgr_invalid_pulse_context")
     }
-    bad <- setdiff(names(ctx$positions), ctx$universe)
+    bad <- setdiff(names(ctx$.positions), ctx$universe)
     if (length(bad) > 0) {
       rlang::abort(
-        sprintf("PulseContext `positions` contains instrument_ids not in universe: %s", paste(bad, collapse = ", ")),
+        sprintf("PulseContext private position state contains instrument_ids not in universe: %s", paste(bad, collapse = ", ")),
         class = "ledgr_invalid_pulse_context"
       )
     }
-    if (any(!is.finite(ctx$positions))) {
-      rlang::abort("PulseContext `positions` must contain only finite numbers.", class = "ledgr_invalid_pulse_context")
+    if (any(!is.finite(ctx$.positions))) {
+      rlang::abort("PulseContext private position state must contain only finite numbers.", class = "ledgr_invalid_pulse_context")
     }
   }
 
@@ -1109,8 +1095,8 @@ ledgr_validate_pulse_context <- function(ctx) {
     invisible(canonical_json(ctx$state_prev))
   }
 
-  if (!is.character(ctx$safety_state) || length(ctx$safety_state) != 1 || is.na(ctx$safety_state) || !nzchar(ctx$safety_state)) {
-    rlang::abort("PulseContext `safety_state` must be a non-empty character scalar.", class = "ledgr_invalid_pulse_context")
+  if (!is.character(ctx$.safety_state) || length(ctx$.safety_state) != 1 || is.na(ctx$.safety_state) || !nzchar(ctx$.safety_state)) {
+    rlang::abort("PulseContext private safety state must be a non-empty character scalar.", class = "ledgr_invalid_pulse_context")
   }
 
   invisible(TRUE)

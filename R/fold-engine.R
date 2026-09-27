@@ -600,13 +600,13 @@ ledgr_execute_fold <- function(execution, output_handler) {
         universe = context_ids,
         bars = bars_current,
         feature_table = features_current,
-        positions = positions_snapshot,
+        .positions = positions_snapshot,
         cash = state$cash,
         equity = state$cash + positions_value,
         seed = execution_seed,
         pulse_seed = ledgr_derive_pulse_seed(execution_seed, i),
         state_prev = state_prev_mem,
-        safety_state = "GREEN"
+        .safety_state = "GREEN"
       )
       if (availability_active) {
         ctx$availability_active <- TRUE

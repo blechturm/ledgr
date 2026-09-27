@@ -832,8 +832,8 @@ testthat::test_that("fold position valuation aligns shuffled positions by instru
   observed_positions <- list()
   strategy <- function(ctx, params) {
     observed_equity <<- c(observed_equity, ctx$equity)
-    observed_positions[[length(observed_positions) + 1L]] <<- ctx$positions
-    stats::setNames(as.numeric(ctx$positions[ctx$universe]), ctx$universe)
+    observed_positions[[length(observed_positions) + 1L]] <<- ctx$hold()
+    ctx$hold()
   }
   spec <- ledgr_test_execution_spec(
     strategy_fn = strategy,
@@ -852,7 +852,7 @@ testthat::test_that("fold position valuation aligns shuffled positions by instru
 testthat::test_that("fold target deltas align shuffled targets by instrument id", {
   observed_positions <- list()
   strategy <- function(ctx, params) {
-    observed_positions[[length(observed_positions) + 1L]] <<- ctx$positions
+    observed_positions[[length(observed_positions) + 1L]] <<- ctx$hold()
     stats::setNames(c(2, 1), c("BBB", "AAA"))
   }
   spec <- ledgr_test_execution_spec(
@@ -873,8 +873,8 @@ testthat::test_that("fold primitive positions preserve public named ctx snapshot
   observed <- list()
   strategy <- function(ctx, params) {
     observed[[length(observed) + 1L]] <<- list(
-      positions = ctx$positions,
-      vec_positions = ctx$vec$positions,
+      positions = ctx$hold(),
+      vec_positions = ctx$vec$position,
       idx_aaa = ctx$idx("AAA"),
       idx_bad = ctx$idx("ZZZ", missing = "na"),
       idx_error = testthat::capture_error(ctx$idx("ZZZ"))

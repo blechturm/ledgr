@@ -21,8 +21,8 @@ ledgr_walk_forward(
 
 \item{folds}{A \code{ledgr_fold_list}.}
 
-\item{selection_rule}{A rule created by \code{\link[=ledgr_select_argmax]{ledgr_select_argmax()}} or
-\code{\link[=ledgr_select_argmin]{ledgr_select_argmin()}}.}
+\item{selection_rule}{A rule created by \code{\link[=ledgr_rule_argmax]{ledgr_rule_argmax()}} or
+\code{\link[=ledgr_rule_argmin]{ledgr_rule_argmin()}}.}
 
 \item{seed}{Optional master seed for deterministic per-row execution seeds.}
 

@@ -196,7 +196,7 @@ caches, or parallel execution. This enumeration is adapted from
 The strategy-visible per-pulse object is the fold context. The context
 stores `run_id`, `ts_utc`, `universe`, current `bars`, current
 `feature_table`, positions, cash/equity, `seed`, `pulse_seed`, previous
-strategy state, and `safety_state` at `R/fold-engine.R:510`.
+strategy state, and private `.safety_state` at the fold context boundary.
 `ctx$pulse_seed` is assigned at `R/fold-engine.R:520`.
 
 ### Code Anchors

@@ -125,7 +125,7 @@ pulse$vec$feature("return_5")
 ```
 
 `ctx$idx(id)` gives the instrument’s position in `ctx$universe`. Values
-in `ctx$vec$close`, `ctx$vec$positions`, and
+in `ctx$vec$close`, `ctx$vec$position`, and
 `ctx$vec$feature(feature_id)` use that same order, so a strategy can
 score the whole universe without repeating scalar lookups. By default,
 `ctx$idx(id)` also fails loudly for an unknown instrument; use its
