@@ -676,7 +676,8 @@ The strategy preflight boundary originated in
   the return-feature specialization of that entrance. A raw `values` entrance
   through `ledgr_signal()` does not inherit the convenience mask.
   `ledgr_select_top_n()` keeps its missing-score exclusion and stable tie
-  policy.
+  policy. A short ranking warns by default; `partial = "allow"` explicitly
+  accepts fewer than `n` usable scores without changing the selection.
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but
   they must not add a second strategy path: strategies still return full named

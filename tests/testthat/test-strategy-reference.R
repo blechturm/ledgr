@@ -36,7 +36,7 @@ testthat::test_that("ledgr_signal_return reads registered return features", {
   )
 })
 
-testthat::test_that("ledgr_select_top_n handles NA, partial, empty, and ties", {
+testthat::test_that("[LTB-0096] ledgr_select_top_n makes short rankings explicit", {
   signal <- ledgr_signal(c(BBB = 0.3, AAA = 0.3, CCC = NA_real_, DDD = 0.1))
 
   selected <- ledgr_select_top_n(signal, 2)
@@ -45,9 +45,14 @@ testthat::test_that("ledgr_select_top_n handles NA, partial, empty, and ties", {
 
   testthat::expect_warning(
     partial <- ledgr_select_top_n(signal, 4),
+    regexp = 'partial = "allow"',
     class = "ledgr_partial_selection"
   )
   testthat::expect_identical(unclass(partial), c(BBB = TRUE, AAA = TRUE, CCC = FALSE, DDD = TRUE))
+  testthat::expect_no_warning(
+    allowed <- ledgr_select_top_n(signal, 4, partial = "allow")
+  )
+  testthat::expect_identical(allowed, partial)
 
   empty_signal <- ledgr_signal(c(AAA = NA_real_, BBB = NA_real_), origin = "return_60")
   testthat::expect_silent(
@@ -58,6 +63,15 @@ testthat::test_that("ledgr_select_top_n handles NA, partial, empty, and ties", {
   testthat::expect_identical(length(empty), 0L)
   testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
   testthat::expect_identical(attr(empty, "origin"), "return_60")
+  testthat::expect_silent(
+    empty_allowed <- ledgr_select_top_n(empty_signal, 1, partial = "allow")
+  )
+  testthat::expect_identical(empty_allowed, empty)
+  testthat::expect_error(
+    ledgr_select_top_n(signal, 2, partial = "quiet"),
+    regexp = '"warn" or "allow"',
+    class = "ledgr_invalid_strategy_helper"
+  )
 
   weights <- ledgr_weight_equal(empty)
   testthat::expect_s3_class(weights, "ledgr_weights")

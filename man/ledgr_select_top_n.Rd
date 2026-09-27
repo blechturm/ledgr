@@ -4,12 +4,15 @@
 \alias{ledgr_select_top_n}
 \title{Select the top instruments from a signal}
 \usage{
-ledgr_select_top_n(signal, n)
+ledgr_select_top_n(signal, n, partial = c("warn", "allow"))
 }
 \arguments{
 \item{signal}{A \code{ledgr_signal} object.}
 
 \item{n}{Number of instruments to select.}
+
+\item{partial}{Whether a short selection warns (\code{"warn"}, the default) or
+is accepted silently (\code{"allow"}).}
 }
 \value{
 A \code{ledgr_selection} object. When all signal values are missing, the
@@ -29,7 +32,7 @@ Selection and warning classes:
 \item \code{ledgr_empty_selection} for the classed object returned when every signal
 value is missing;
 \item \code{ledgr_partial_selection} for the warning emitted when fewer than \code{n}
-finite values are available.
+finite values are available under \code{partial = "warn"}.
 }
 }
 \section{Articles}{

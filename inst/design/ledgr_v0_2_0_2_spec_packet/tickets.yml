@@ -1750,13 +1750,13 @@ tickets:
   - id: "LDG-2871"
     title: "Top-n that accepts fewer than n when the author says so"
     workstream: 23
-    status: "pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "`ledgr_select_top_n()` warns `ledgr_partial_selection` whenever fewer than `n` scores are usable (`R/strategy-helpers.R:147-152`). For a rule such as 'the best two of whatever passes a filter', fewer than `n` is the expected case, so authors either suppress warnings or avoid the helper; the rewritten article avoids it for that reason. Add `partial = c('warn', 'allow')` with `'warn'` as the default (decision 5), so the author states that a short selection is intended. Missing-score exclusion, the empty-selection result and the tie policy are unchanged (`contracts.md:675-676`). The default warning names the opt-out, so authors reach for `partial = 'allow'` instead of `suppressWarnings()`."
     acceptance: ["with three usable scores and `n = 5`, the default warns `ledgr_partial_selection` and `partial = 'allow'` selects the same three instruments without a warning", "the warning keeps its class and its current first sentence, followed by guidance such as 'If this short selection is intentional, use partial = \"allow\".'", "an all-missing signal returns the classed empty selection without a warning under both settings", "the existing top-N suite passes unchanged apart from assertions on the warning text, including tie order by instrument ID and missing-score exclusion", "an invalid setting fails with `ledgr_invalid_strategy_helper` and a message that lists `\"warn\"` and `\"allow\"`, and a mutation that ignores the setting fails a registered detector", "the help page documents the setting next to the existing warning class"]
-    evidence: []
+    evidence: ["`ledgr_select_top_n()` now accepts `partial = c('warn', 'allow')`. The default warning keeps its class and first sentence and names the opt-out; `allow` changes only warning emission.", "LTB-0096 fixes the ranked values and tie order, compares the warned and allowed objects exactly, keeps both all-missing branches silent and rejects an unknown setting. Ignoring `partial` makes its no-warning assertion fail.", "The contract and help document the policy next to the existing missing-score and tie rules. The focused strategy-reference suite passed after implementation."]
   - id: "LDG-2872"
     title: "Rebalance around positions the strategy keeps"
     workstream: 23

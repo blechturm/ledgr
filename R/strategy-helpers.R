@@ -156,10 +156,12 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
 #' - `ledgr_empty_selection` for the classed object returned when every signal
 #'   value is missing;
 #' - `ledgr_partial_selection` for the warning emitted when fewer than `n`
-#'   finite values are available.
+#'   finite values are available under `partial = "warn"`.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
+#' @param partial Whether a short selection warns (`"warn"`, the default) or
+#'   is accepted silently (`"allow"`).
 #' @return A `ledgr_selection` object. When all signal values are missing, the
 #'   object also inherits from `ledgr_empty_selection`.
 #' @examples
@@ -171,11 +173,21 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_select_top_n <- function(signal, n) {
+ledgr_select_top_n <- function(signal, n, partial = c("warn", "allow")) {
   if (!inherits(signal, "ledgr_signal")) {
     rlang::abort("`signal` must be a ledgr_signal object.", class = "ledgr_invalid_strategy_helper")
   }
   n <- ledgr_strategy_helper_validate_n(n)
+  partial <- tryCatch(
+    match.arg(partial),
+    error = function(err) {
+      rlang::abort(
+        "`partial` must be one of \"warn\" or \"allow\".",
+        class = "ledgr_invalid_strategy_helper",
+        parent = err
+      )
+    }
+  )
 
   values <- as.numeric(signal)
   ids <- names(signal)
@@ -189,9 +201,15 @@ ledgr_select_top_n <- function(signal, n) {
   ord <- order(-available_values, available_ids)
   selected_ids <- available_ids[ord][seq_len(min(n, length(ord)))]
 
-  if (length(selected_ids) < n) {
+  if (length(selected_ids) < n && identical(partial, "warn")) {
     rlang::warn(
-      sprintf("Only %d available signal value(s); selecting all available instruments.", length(selected_ids)),
+      sprintf(
+        paste0(
+          "Only %d available signal value(s); selecting all available instruments. ",
+          "If this short selection is intentional, use `partial = \"allow\"`."
+        ),
+        length(selected_ids)
+      ),
       class = "ledgr_partial_selection"
     )
   }
