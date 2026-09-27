@@ -26,6 +26,18 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-27 [ux] Strategy callback inspection boundary
+
+The strategy-context surface keeps `bars`, `feature_table`, `features_wide`
+and `bar(id)` because the current inspection reader depends on those views and
+no complete replacement was established. Open a focused RFC seed only when
+inspection UX is prioritized enough to remove them. That seed must define the
+state being inspected, preserve its axis and knowledge cutoff, explain how a
+frozen view survives later pulses and place any table materialization outside
+the callback hot path. Its evidence must include parity against a real
+availability-aware callback. This entry does not authorize automatic table
+population or a new inspection subsystem.
+
 **Current planning note (2026-09-20):** v0.2.0.1 is released. The roadmap
 schedules v0.2.0.2 equity accounting and research-workflow improvements from
 Sharadar evidence. No v0.2.0.2 implementation packet is open yet. The roadmap

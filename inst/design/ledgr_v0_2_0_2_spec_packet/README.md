@@ -730,7 +730,7 @@ workstream opens from completed Workstream 12 and must close before Workstream
 16 returns for focused correction review; Workstream 17 remains downstream of
 Workstream 16.
 
-## Cut 13: Strategy context surface (open; opens after workstream 18)
+## Cut 13: Strategy context surface (review pending)
 
 Authority: the accepted decision synthesis
 `inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
@@ -749,6 +749,13 @@ stale checker instruction with direct normal and gut probe runs, and add the
 P0 causality evidence and affected-path clocks to the close review. The review
 is the first of the cut's planned two invocations; Workstream 20 opens after
 these patches at 1/9, with one close review still planned.
+
+Implementation is agent-provisional at the Workstream 20 close. All nine
+tickets are implemented in `385c10e..91b9437` plus the closeout commit, and
+`strategy_context_surface_closeout.md` carries the direct probe, mutations,
+affected-path clocks, final fast record and deferred work. The independent cut
+review plus the requested close review is a planned `2 / 9 = 0.222`; the
+maintainer has not yet accepted the workstream.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
