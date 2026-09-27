@@ -34,6 +34,10 @@ The strategy preflight boundary originated in
   constructor-family support helpers such as `ledgr_ind_ttr_warmup_rules()`;
   `ledgr_indicator_*` names are registry, lookup, development, and
   infrastructure surfaces.
+- Candidate-selection rule constructors use the `ledgr_rule_*` family.
+  `ledgr_rule_argmax()` and `ledgr_rule_argmin()` construct the unchanged
+  `ledgr_selection_rule` payload; the former `ledgr_select_argmax()` and
+  `ledgr_select_argmin()` spellings are not public aliases.
 - Internal helpers may keep implementation-oriented names, but they must not be
   exported merely to avoid writing a narrow public wrapper.
 
@@ -375,8 +379,14 @@ The strategy preflight boundary originated in
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.
-  An empty decision axis still invokes the strategy and accepts a named numeric
-  zero-length target while preserving portfolio-level state.
+  The decision axis Daxis is `ctx$universe` in its existing order. The
+  allocation membership M is Daxis in dense contexts and `ctx$members` in
+  availability contexts; Daxis may additionally contain held nonmembers.
+  Context-mode predicates and scores validate against Daxis and then project to
+  M without quality screening. An empty Daxis still invokes the strategy and
+  accepts a named numeric zero-length target while preserving portfolio-level
+  state. Empty M with nonempty Daxis is a holdings-only decision, not an empty
+  portfolio.
 - Asset-scoped strategy state lives at `ctx$state_prev$asset_state` as a named
   list keyed by stable instrument ID. Entries outside the current axis are
   removed before callback, newly visible and re-entering IDs receive `list()`,
@@ -395,9 +405,19 @@ The strategy preflight boundary originated in
   algebraically holdable and coverable without defining short financing.
 - Availability-aware rebalance helpers initialize held nonmembers at their
   current quantity, reserve their absolute marked exposure, and size only
-  current members from accepted current closes. Missing sizing evidence fails
-  with `ledgr_target_sizing_unavailable`; the dense warn-and-zero path is
-  unchanged. Raw full named numeric target vectors remain literal.
+  current members from accepted current closes. Helper weights and
+  `equity_fraction` apply to allocatable capital A, where dense A is NAV and
+  availability-aware A is
+  `max(0, NAV - sum(abs(quantity * mark)))` over preserved held nonmembers. A
+  positive member weight targets
+  `floor(weight * equity_fraction * A / close)`. For NAV 100, held-nonmember
+  exposure 40 and member close 10, full member weight targets 6 shares and
+  weight 0.6 targets 3; these are residual-budget weights, not total-NAV
+  weights. Missing sizing evidence for a positive member weight fails with
+  `ledgr_target_sizing_unavailable`; an explicit zero member weight targets
+  zero without consulting a sizing close. The dense positive-weight
+  warn-and-zero path is unchanged. Raw full named numeric target vectors remain
+  literal.
 - Fresh and policy-permitted stale closes may value holdings and feed target
   risk through the separate risk-mark plane. Stale marks never become observed
   closes or execution prices. Held marks age on the declared venue-open-session
@@ -611,6 +631,25 @@ The strategy preflight boundary originated in
   `ledgr_weights` as intermediate value types, but those objects are invalid
   direct strategy outputs. Helper pipelines must terminate in `ledgr_target` or
   a plain full named numeric target vector.
+- `ledgr_signal()` and `ledgr_selection()` accept either their established
+  value forms or a `ledgr_pulse_context` first argument. In context mode,
+  signals require named `values`; selections accept no payload, named `ids`, or
+  named `where`. Supplying `universe`, combining payloads, passing explicit
+  `NULL`, or supplying a context payload in value mode fails with
+  `ledgr_invalid_strategy_helper`. Malformed contexts fail closed with the same
+  family rather than falling through to value mode.
+- An unnamed context payload has exactly length(Daxis) and aligns positionally.
+  A named `values` or `where` payload uses unique known Daxis IDs and covers
+  every M ID; names are aligned before projection to M. Numeric values admit
+  finite numbers and missing scores but reject infinity anywhere. Logical
+  `where` rejects missing decisions on M. `ids` are unique nonmissing members.
+  Type, length, name, coverage, score and ID failures use
+  `ledgr_invalid_strategy_type`; an explicit known nonmember ID or weight uses
+  `ledgr_invalid_strategy_helper`.
+- The four helper value types admit an explicit `character()` universe.
+  Zero-length numeric and logical values receive `character()` names, empty
+  signals and targets retain their existing classes, and final target
+  completeness remains strict whenever the allowed axis is nonempty.
 - v0.1.7.2 helper weights are public authoring helpers only. They do not alter
   the execution contract, and target constructors must reject negative weights
   or leverage until explicit short-selling and leverage semantics are specified.
@@ -627,8 +666,14 @@ The strategy preflight boundary originated in
   metadata; `ledgr_target` is the only helper value type that may unwrap into
   executable target quantities.
 - `ledgr_target_rebalance()` floors share quantities to whole numbers after sizing
-  long-only weights from current pulse equity and current close prices. It must
-  not silently create fractional share targets.
+  long-only positive weights from allocatable capital and current close prices.
+  A validated zero member weight becomes a zero target without a price lookup.
+  It must not silently create fractional share targets, and ranking, leverage,
+  negative-weight and final-target rules are unchanged.
+- `ledgr_signal_return()` deliberately masks inadmissible member scores as
+  missing in availability-aware contexts. A raw feature-plane entrance does
+  not inherit that convenience policy. `ledgr_select_top_n()` keeps its
+  missing-score exclusion and stable tie policy.
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but
   they must not add a second strategy path: strategies still return full named
@@ -745,17 +790,17 @@ The strategy preflight boundary originated in
   return `NA_integer_` only when `missing = "na"` is requested explicitly.
 - `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
-  `positions`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
+  `position`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one engine feature ID.
 - Availability-aware pulse contexts restrict bars, feature tables, scalar
   feature access, vector feature access, positions, and errors to the current
   decision axis. Dense contexts retain the existing fixed-universe fields and
   shape.
-- `ctx$positions` remains a public pulse-start snapshot. `ctx$vec$positions`
-  is the aligned vector view of the same pulse-known state. Strategies must
-  treat both as read-only; mutating them is outside the strategy contract and
-  must not be required for any supported workflow. The `ctx$positions` name
-  order is canonicalized to `ctx$universe`.
+- `ctx$position(instrument_id)` and unnamed `ctx$vec$position` are the scalar
+  and Daxis-aligned reads of pulse-start position state. Cross scalar reads to
+  the plane with `ctx$idx()`. There is no public `ctx$positions` snapshot.
+  `ctx$hold()` copies the state into full named portfolio intent; editing that
+  target does not mutate either state read.
 - `ctx$flat(default = 0)` constructs a full target vector initialized to a
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
@@ -768,6 +813,22 @@ The strategy preflight boundary originated in
   over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
   for unregistered mapped feature IDs, and return warmup `NA` for known
   features that are not usable yet.
+- The decision-time guarantee concerns supported context operations. Public
+  accessors may retain engine-owned prepared state internally only when every
+  supported operation enforces the invoking pulse and permitted axis.
+  Dot-prefixed context fields are not API and carry no guarantees; deliberate
+  R introspection of closure environments, call stacks or internal bindings is
+  outside this contract.
+- `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain available.
+  The long feature table may be a schema-only zero-row frame while registered
+  feature accessors and the wide view carry current values. No equivalence is
+  promised between these representations and none is materialized merely to
+  make another look complete.
+- `ctx$tradable()` is a non-default convenience predicate. In availability
+  mode it returns `admissible & priced`; in dense mode it returns IDs with a
+  finite positive close. A permissible stale mark may satisfy `priced` while
+  still failing current-close sizing, so this helper guarantees neither a
+  current sizing close nor execution at the next open.
 - `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
   produced by `ctx$features()`. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
@@ -1249,6 +1310,19 @@ The strategy preflight boundary originated in
 - Installed documentation must not expose stale retired article paths such as
   `ttr-indicators` after `indicators` is the single installed indicator
   article, unless the contract explicitly documents why both are needed.
+- `man/ledgr_strategy_context.Rd` owns one explicit reference table for every
+  public runtime context member and plane. It records dense and availability
+  applicability, shape, axis, units, missingness and counterpart, and
+  distinguishes metadata, state reads and intent constructors. A documentation
+  contract compares the authored table in both directions against real dense
+  and availability callbacks; it is not generated from the observed fixture.
+- Strategy-authoring documentation teaches both allocation pipelines and
+  hold-and-edit intent. Representative executed examples cover equal-member
+  allocation, a predicate with a held nonmember, momentum with an explicit
+  missing-input hold guard, deliberate zero weights, and stateful entry and
+  exit. They state that helper weights use allocatable rather than total NAV
+  when held nonmembers are reserved, and that hold does not bypass risk or
+  guarantee an absence of fills.
 
 ## Verification Contract
 

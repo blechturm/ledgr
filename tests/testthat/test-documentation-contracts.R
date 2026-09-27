@@ -658,7 +658,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(context_help, "\\code{ctx$feature(id, feature_id)}", fixed = TRUE)
   testthat::expect_match(context_help, "\\code{ctx$idx(id)}", fixed = TRUE)
   testthat::expect_match(context_help, "\\code{ctx$vec$feature(feature_id)}", fixed = TRUE)
-  testthat::expect_match(context_help, "\\code{ctx$vec$positions}", fixed = TRUE)
+  testthat::expect_match(context_help, "\\code{ctx$vec$position}", fixed = TRUE)
   testthat::expect_match(context_help, "\\code{ctx$features(id, feature_map)}", fixed = TRUE)
   testthat::expect_match(context_help, "\\code{ctx$flat()}", fixed = TRUE)
   testthat::expect_match(context_help, "\\code{ctx$hold()}", fixed = TRUE)

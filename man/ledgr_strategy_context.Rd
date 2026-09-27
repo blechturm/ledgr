@@ -30,7 +30,7 @@ for the full universe, aligned to \code{ctx$universe}.
 \item \code{ctx$features(id, feature_map)}: mapped feature values for one
 instrument, returned as a named numeric vector keyed by feature-map aliases.
 \item \code{ctx$position(id)}: current simulated position for one instrument.
-\item \code{ctx$vec$positions}: current simulated positions for the full
+\item \code{ctx$vec$position}: current simulated positions for the full
 universe, aligned to \code{ctx$universe}.
 \item \code{ctx$cash} and \code{ctx$equity}: current simulated portfolio state.
 \item \code{ctx$flat()}: full named target vector initialized to zero.
@@ -51,15 +51,21 @@ feature is represented by \code{NA_real_}.
 \code{ctx$idx(id, missing = "na")} only when an explicit \code{NA_integer_}
 sentinel is part of the strategy logic.
 
-\code{ctx$positions} is a public pulse-start snapshot. \code{ctx$vec$positions}
-is the aligned vector view of the same pulse-known state. Strategy code should
-treat all context fields and vector views as read-only.
+\code{ctx$position(id)} is the scalar pulse-start state read and
+\code{ctx$vec$position} is its unnamed decision-axis-aligned plane. Use
+\code{ctx$idx(id)} to cross between them. \code{ctx$hold()} constructs named
+portfolio intent from that state; editing its result does not mutate either
+state read.
 
 Strategies should return full named numeric target vectors. The helpers
 \code{ctx$flat()} and \code{ctx$hold()} are the safest starting points because
 they already have one entry for every instrument in \code{ctx$universe}.
-Use \code{ctx$tradable()} to select instruments without reconstructing the
-engine's current eligibility and pricing decision in strategy code.
+In availability-aware runs, \code{ctx$universe} is the decision axis and
+\code{ctx$members} is the current allocation population; held nonmembers may
+remain on the former without entering the latter. Use \code{ctx$tradable()} as
+the explicit convenience predicate for admissible and priced members. A stale
+permissible mark can satisfy that predicate while still failing current-close
+sizing, so it guarantees neither a sizing close nor execution at the next open.
 }
 \section{Feature Object Compatibility}{
 \code{ledgr_experiment(features = ...)} accepts static indicators, lists of
