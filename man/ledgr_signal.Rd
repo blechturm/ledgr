@@ -4,14 +4,16 @@
 \alias{ledgr_signal}
 \title{Create a strategy signal vector}
 \usage{
-ledgr_signal(x, universe = NULL, origin = NULL)
+ledgr_signal(x, universe = NULL, origin = NULL, ...)
 }
 \arguments{
-\item{x}{Named numeric vector of signal scores.}
+\item{x}{Named numeric vector of signal scores, or a pulse context.}
 
 \item{universe}{Optional universe used to reject extra instrument names.}
 
 \item{origin}{Optional helper/source label for printing.}
+
+\item{...}{In context mode, exactly one named \code{values} payload.}
 }
 \value{
 A \code{ledgr_signal} object.

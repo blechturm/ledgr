@@ -4,14 +4,16 @@
 \alias{ledgr_selection}
 \title{Create a strategy selection vector}
 \usage{
-ledgr_selection(x, universe = NULL, origin = NULL)
+ledgr_selection(x, universe = NULL, origin = NULL, ...)
 }
 \arguments{
-\item{x}{Named logical vector where \code{TRUE} means selected.}
+\item{x}{Named logical vector where \code{TRUE} means selected, or a pulse context.}
 
 \item{universe}{Optional universe used to reject extra instrument names.}
 
 \item{origin}{Optional helper/source label for printing.}
+
+\item{...}{In context mode, at most one named \code{ids} or \code{where} payload.}
 }
 \value{
 A \code{ledgr_selection} object.
