@@ -114,34 +114,50 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 
 ### 2026-09-27 [data] Interval facts cannot express per-endpoint knowledge
 
-An interval fact carries one `knowledge_time`, and it gates only the interval's
-start. The end is applied ungated: `R/availability-provider.R:55` tests
-`is.na(effective_to) | cutoff < effective_to`, while
-`R/availability-provider-prepared.R:52` and `:107` set the segment start to
-`pmax(seconds(effective_from), seconds(knowledge_time))` and the end to
-`seconds(effective_to)` alone. So a bounded interval asserts that its end was
-knowable when its start was, and the engine applies that end at its effective
-date even where it could not yet have been known.
+An interval fact carries one `knowledge_time` for the whole assertion, so it
+cannot express that a start was known earlier while the end was learned later.
+Keeping the earlier knowledge time declares an end that was not yet known;
+moving it to the later one hides the start information that genuinely was known.
+There is no third encoding, because opposing overlapping assertions are rejected
+before execution.
 
-That is correct when the source genuinely published a bounded interval up front,
-such as a halt with a scheduled resumption. It overstates knowledge whenever the
-end became knowable later, and the encoding cannot say so.
+**Corrected 2026-09-27 after peer review.** This entry first claimed the engine
+applies `effective_to` without a knowledge gate, reading
+`R/availability-provider.R:55` in isolation. That stopped one line early:
+`ledgr_availability_applicable()` returns `effective & knowable & before_end` at
+`:56`, so the end test is conjoined with knowability and never applied on its
+own. The prepared builders implement the same joint condition, with `start` as
+`pmax(seconds(effective_from), seconds(knowledge_time))` and eligibility as
+`start <= cutoff & cutoff < end` (`:85` for membership intervals, `:119` for the
+status and lifetime segment builder). A row whose end precedes its knowledge
+time is never applicable at all. `contracts.md:354` requires both clocks and
+these sites implement that rule faithfully, so there is no runtime causality
+defect here. The limitation is the row-level rule itself: one timestamp cannot
+carry two separately learned boundaries.
 
 ledgr-research found this independently against real data and ratified a
 workaround on 2026-09-14 (SHR-D033): for membership, the interval shape "drops a
 member one session before its removal is knowable under the declared lag,
 reporting `unknown_no_usable_evidence` for an instrument the source asserts as a
-member", and `ledgr_fact_validate_membership_conflicts()` rejects the
-open-ended encoding that would have preserved the removal's knowledge time. They
-prohibited `ledgr_facts_membership_intervals()` for that universe and moved to
+member", and `ledgr_fact_validate_membership_conflicts()` rejects the open-ended
+encoding that would have preserved the removal's knowledge time. They prohibited
+`ledgr_facts_membership_intervals()` for that universe and moved to
 `ledgr_facts_membership_snapshots(complete = TRUE)`, calling it "a correctness
 requirement, not a preference between equally faithful encodings."
 
-Successive open-ended assertions are an escape, because `resolve_lifetime()` is
-last-wins over `(effective_from, knowledge_time)`. That escape exists for
-`lifetime` but not for `membership`, whose conflict validator rejects it, and
-only `membership` has an alternative constructor. `lifetime` and
-`trading_status` are interval-only.
+Successive open-ended assertions are **not** an escape, which the same review
+established and which makes the gap worse rather than better.
+`ledgr_fact_validate_lifetime_conflicts()` (`R/availability-facts.R:1813`) calls
+`ledgr_fact_opposing_state_overlap()`, which compares `effective_from` and
+`effective_to` with no knowledge term (`:1693-1695`), so a `known_active`
+interval open from January and a `known_inactive` interval open from June are
+rejected as an incompatible overlap whatever their knowledge times. Validation
+runs at the public constructor (`:343`) and again at sealing
+(`R/availability-persistence.R:594`), so the encoding never reaches the resolver
+and last-wins ordering cannot rescue it. Membership has the one genuine route, a
+later knowable complete set that removes an instrument by omission, and that
+needs real complete-set evidence. `lifetime` and `trading_status` have no route
+at all.
 
 Practical exposure today is low and not zero. The Sharadar adapter emits
 open-ended terminal inactivity and bounded *active* intervals, so it never
@@ -160,16 +176,16 @@ dates, and DAILY is documented point-in-time, but ledgr's snapshot holds bars
 and availability facts with no fundamentals table, so the one place the vendor
 does supply two distinct clocks is the one ledgr cannot currently store.
 
-Two consequences worth keeping. The research adapter's
-`assume_effective` translation policy is forced rather than chosen, and it is
-already declared and surfaced as `assumption_backed /
-knowledge_assume_effective` with the source clocks kept in lineage. And ledgr's
-point-in-time machinery is forward-looking: a knowledge clock can be accumulated
-from the operator's own timestamped captures from now on, but not recovered
-retrospectively. Every fact family any current adapter produces has the two
-clocks coincident, so the two-clock paths - including the `pmax` collapse in the
-prepared provider, which is lossless only while they coincide - have never been
-exercised against genuinely two-clock data.
+Two consequences worth keeping. The research adapter's `assume_effective`
+translation policy is forced rather than chosen, and it is already declared and
+surfaced as `assumption_backed / knowledge_assume_effective` with the source
+clocks kept in lineage. And ledgr's point-in-time machinery is forward-looking:
+a knowledge clock can be accumulated from the operator's own timestamped
+captures from now on, but not recovered retrospectively. Every fact family any
+current adapter produces has the two clocks coincident, so the two-clock paths -
+including the `pmax` collapse in the prepared provider, which is lossless only
+while they coincide - have never been exercised against genuinely two-clock
+data.
 
 Route: its own cycle, once a capture-based or fundamentals-bearing snapshot
 exists to exercise it. Until then the release should state the limitation among
