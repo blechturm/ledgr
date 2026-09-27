@@ -137,12 +137,14 @@ cuts:
   - id: 14
     name: "Maintenance: repair continuous integration"
     cut: "2026-09-26"
-    cut_review: "compressed into the close review of workstream 21, as cuts 5, 7 and 8 were, so one invocation covers the workstream: 1 review over 5 completed tickets is 0.200 against the gate, leaving room for one correction round at 0.400. The fifth ticket was added after registered-runner verification passed the repaired fast gate but exposed source-root assumptions in R CMD check. The tickets are separable: a production side effect, a gate bound that was never measured against its declared runner, two dishonest signals in the tooling, installed-check portability, and the closeout."
+    cut_review: "compressed into the close review of workstream 21, as cuts 5, 7 and 8 were. The initial Type 1 review returned CHANGES_REQUIRED on five bounded findings; the focused re-review at 76decd1 returned PASS after all five corrections and their three escaping mutations were verified. Two review invocations over five completed tickets is 0.400 against the gate. The fifth ticket was added after registered-runner verification passed the repaired fast gate but exposed source-root assumptions in R CMD check. The tickets are separable: a production side effect, a gate bound that was never measured against its declared runner, two dishonest signals in the tooling, installed-check portability, and the closeout."
     authority: "maintainer decision 2026-09-26 after every continuous-integration run that executed the suite was found failing. Diagnosis recorded in this cut rather than a separate audit: the failures predate the v0.2.1.0 workstreams and are not caused by them."
     source_table: "GitHub Actions runs 36234756357, 36226572400 and 36257746909 and their uploaded test-profile evidence; tests/test-gates.yml; tools/run-test-profile.R and tools/check-test-gate.R; R/strategy-preflight.R"
     workstreams: [21]
     closeout: "ci_repair_closeout.md"
-    status: "review_pending"
+    close_review: "Initial Type 1 close review returned CHANGES_REQUIRED at bd7f7e6. The correction at b35f417 closed checker exit status, staged-source precedence and vignette-fallback detection and completed the calibration and provenance disclosures; 76decd1 recorded the evidence. Focused re-review returned PASS. The maintainer accepted Workstream 21 and Cut 14 on 2026-09-27."
+    accepted: "2026-09-27 by the maintainer, at 76decd1"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -318,7 +320,7 @@ workstreams:
   - id: 21
     name: "Repair continuous integration"
     cut: 14
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 18
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 21", reason: "One claim joins the tickets: continuous integration is green on the registered runner and reports honestly when it is not. The close review confirms that the preflight fix removes the package-loading side effect without changing any tier verdict, that the recomputed bound is derived from three recorded clocks on the registered runner and is recorded as a correction rather than a weakening, that a single warning in one block now makes the profile runner report failure instead of printing OK, and that the gate checker names the condition and the block that failed. It also confirms that no test was moved, skipped, or weakened to reach green."}
@@ -1635,10 +1637,10 @@ tickets:
   - id: "LDG-2863"
     title: "Workstream 21 and cut 14 closeout"
     workstream: 21
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2860", "LDG-2861", "LDG-2862", "LDG-2865"]
     scope: "Close workstream 21 and cut 14. Record the diagnosis and its evidence: the run ids that failed, the uploaded summary showing 453 expected, 453 executed, zero skipped and one failed block, the census row naming the warning block, and the warning text. Record that the failures predate the v0.2.1.0 workstreams. State the recomputed bound with its three registered-runner clocks and its headroom, and say plainly that it is a correction rather than a weakening. Link the diffs and tests rather than restating them. Name what was considered and declined, including moving the warning block to another profile, relaxing the failure-status definition, and making the continuous-integration gate advisory. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout names the failing run ids and the exact evidence that identified the block, so the diagnosis can be re-derived without rerunning continuous integration", "it records that the failures predate the v0.2.1.0 workstreams and were not introduced by them", "the recomputed bound appears with its three registered-runner clocks, its headroom and its basis, and is explicitly distinguished from bound-raising", "each declined option is named with its reason, including profile movement, relaxing the failure-status definition and an advisory gate", "the cut ratio is stated and is at most 0.5, and any correction round is recorded rather than hidden", "one continuous-integration run on the registered runner is green end to end and is cited by run id"]
-    evidence: ["The agent-provisional `ci_repair_closeout.md` records runs 36234756357 and 36226572400, their exact three-run censuses and clocks, the warning block and text, and the ancestry proof that both commits precede merge 704864d.", "Calibration run 36256894206 supplies the three registered-runner clocks behind the 112-second correction and its 8.60-percent headroom. The closeout cites LDG-2848, reports the 10.571-second cross-tree delta and its block attribution, distinguishes within-job repeatability from later between-job variation, and records the pre-review final run's 4.887-second margin.", "Correction run 36268077108 passed end to end at b35f417: 457 of 457 ordinary blocks, zero skips and failures, 104.500 seconds, independent gate true, `R CMD check` Status: OK and all 24 vignette replays passed. The first review and focused correction round make the cut ratio 2/5 = 0.400; the draft remains agent-provisional."]
+    evidence: ["The accepted `ci_repair_closeout.md` records runs 36234756357 and 36226572400, their exact three-run censuses and clocks, the warning block and text, and the ancestry proof that both commits precede merge 704864d.", "Calibration run 36256894206 supplies the three registered-runner clocks behind the 112-second correction and its 8.60-percent headroom. The closeout cites LDG-2848, reports the 10.571-second cross-tree delta and its block attribution, distinguishes within-job repeatability from later between-job variation, and records the pre-review final run's 4.887-second margin.", "Correction run 36268077108 passed end to end at b35f417: 457 of 457 ordinary blocks, zero skips and failures, 104.500 seconds, independent gate true, `R CMD check` Status: OK and all 24 vignette replays passed. The focused re-review returned PASS and the maintainer accepted Workstream 21 and Cut 14 on 2026-09-27. Two review invocations over five tickets is 0.400."]

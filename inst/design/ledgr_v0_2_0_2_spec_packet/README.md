@@ -792,12 +792,13 @@ Governance: one cut review plus the planned close review is two invocations
 over nine completed tickets, 0.222 against the 0.5 gate, leaving room for one
 correction round at 0.333.
 
-## Cut 14: Repair continuous integration (review pending)
+## Cut 14: Repair continuous integration (accepted)
 
 Authority: maintainer decision 2026-09-26 after every continuous-integration
 run that executed the suite was found failing. Five tickets, LDG-2860 through
 LDG-2863 plus LDG-2865, one workstream; the cut review is compressed into the
-close review, so one invocation over five tickets is 0.200.
+close review. The initial review and focused re-review are two invocations
+over five tickets, 0.400 against the 0.5 gate.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
@@ -809,9 +810,9 @@ Implementation is complete through `b35f417`. Registered-runner calibration
 passed end to end after the first Type 1 review: 457 of 457 ordinary blocks,
 zero skips and failures, 104.500 seconds, the independent gate green, R CMD
 check successful and all 24 vignette replays passing through the staged
-source package. The agent-provisional record is `ci_repair_closeout.md`; the
-focused second and final Type 1 close review is pending. The two review
-invocations over five tickets produce 0.400 against the 0.5 gate.
+source package. The focused second and final Type 1 close review returned
+PASS, and the maintainer accepted Workstream 21 and Cut 14 on 2026-09-27.
+The accepted record is `ci_repair_closeout.md`.
 
 This cut is sequenced before Cut 13 deliberately. Cut 13 carries breaking
 surface renames, and landing them while continuous integration cannot report is

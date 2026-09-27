@@ -1,6 +1,6 @@
 # Workstream 21: Continuous-Integration Repair Closeout
 
-**Status:** Agent-provisional; awaiting independent Type 1 close review.
+**Status:** Accepted by the maintainer on 2026-09-27 after Type 1 review.
 **Cut:** 14. **Tickets:** LDG-2860, LDG-2861, LDG-2862, LDG-2865
 and LDG-2863. **Baseline:** `d34c3b4`.
 
@@ -171,5 +171,5 @@ per-pulse validation.
 
 The cut review is compressed into this close review. The first review plus its
 focused correction round are two invocations over five completed tickets:
-2/5 = 0.400 against the 0.5 gate. This draft is agent-provisional; only the
-maintainer may accept and close Workstream 21 and Cut 14.
+2/5 = 0.400 against the 0.5 gate. The focused re-review returned PASS, and the
+maintainer accepted Workstream 21 and Cut 14 on 2026-09-27.
