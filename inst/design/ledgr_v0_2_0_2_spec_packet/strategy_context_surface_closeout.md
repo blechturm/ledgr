@@ -4,8 +4,7 @@
 **Date:** 2026-09-27
 **Cut:** 13
 **Workstream:** 20
-**Implementation range:** `385c10e..HEAD`, including the close-review
-correction.
+**Implementation range:** `385c10e..7e521aa`, plus this closeout record.
 
 ## Shipped Claims And Detectors
 
@@ -86,6 +85,23 @@ missing-input example preserves error and count types, and the residual-budget
 trap is a warning callout. Generic target-vector teaching remains linked to its
 canonical Strategy Development article.
 
+The adversarial editorial pass found that the first rewrite still repeated one
+pipeline, hid hold behind flat positions, placed the budget warning too late,
+and retained benchmark and preflight material from other canonical homes. The
+final article is 2,888 words rather than 3,934. It opens with the two paths and
+one terminology boundary, shows a price-conditioned stateful round trip while
+preserving another holding, puts five easily confused intent cases in one
+rendered table, executes the main helper strategy, and removes the repeated
+pipeline, raw sizing formulas, volatile benchmark, duplicated preflight lesson
+and broken stored-source heading. Three stale prose-pin assertions were changed
+to protect that structure and those executed outcomes; the function-level
+flooring and helper-semantic assertions remain.
+
+The same pass found that the causality detector followed context members only
+at the top level. LTB-0089 now also inspects one level of list and environment
+caches. Nesting the projection in `.pulse_lookup` made the dense assertion fail
+at all five pulses; baseline dense and availability folds remain green.
+
 ## Cost And Shape
 
 The new entrance path validates and aligns primitive vectors on the prepared
@@ -106,11 +122,11 @@ and exposes bounded closures and current planes. It adds no row construction,
 table subset or history replay. Its warm, interleaved 505-instrument,
 400-update clock measured medians of 0.095 seconds before and 0.090 after.
 
-The correction record is green. The ordinary fast profile ran 465 of 465
-blocks with zero failures or skips in 84.420 seconds, and the independent
-checker passed the 112-second registered-runner bound. All 55 chunks in the
-revised Strategy Authoring Tools article executed while regenerating its
-Markdown sibling.
+The final correction record is green. The ordinary fast profile ran 465 of 465
+blocks with zero failures or skips in 84.130 seconds, and the independent
+checker passed the 112-second registered-runner bound. All 17 executable
+chunks in the revised Strategy Authoring Tools article ran while regenerating
+its Markdown sibling, and an independent freshness render was byte-identical.
 
 ## Deferred And Rejected Work
 
@@ -127,6 +143,6 @@ Markdown sibling.
 ## Governance
 
 The accepted cut contains nine completed tickets. Its independent cut review,
-close review and requested correction re-review make three invocations over
-nine tickets, `3 / 9 = 0.333`, below the 0.5 gate. This draft does not accept
-the workstream; acceptance belongs to the maintainer after independent review.
+close review and two correction reviews make four invocations over nine
+tickets, `4 / 9 = 0.444`, below the 0.5 gate. This draft does not accept the
+workstream; acceptance belongs to the maintainer after independent review.

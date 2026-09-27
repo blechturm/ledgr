@@ -751,10 +751,10 @@ is the first of the cut's planned two invocations; Workstream 20 opens after
 these patches at 1/9, with one close review still planned.
 
 Implementation is agent-provisional at the Workstream 20 correction close. All
-nine tickets are implemented in `385c10e..HEAD`, and
+nine tickets are implemented in `385c10e..7e521aa`, and
 `strategy_context_surface_closeout.md` carries the direct probe, mutations,
 affected-path clocks, correction record and deferred work. The cut review,
-close review and requested correction re-review make `3 / 9 = 0.333`; the
+close review and two correction reviews make `4 / 9 = 0.444`; the
 maintainer has not yet accepted the workstream.
 
 | Workstream | Tickets | Content | Review claim |
@@ -813,8 +813,8 @@ the surface this cut owns. Two constraints shape it: interactive inspection
 depends on that private projection today, and R reflection cannot be sandboxed,
 so the guarantee is stated against documented and ordinarily reachable paths.
 
-Governance: the cut review, close review and requested correction re-review are
-three invocations over nine completed tickets, 0.333 against the 0.5 gate.
+Governance: the cut review, close review and two correction reviews are four
+invocations over nine completed tickets, 0.444 against the 0.5 gate.
 
 ## Cut 14: Repair continuous integration (accepted)
 
