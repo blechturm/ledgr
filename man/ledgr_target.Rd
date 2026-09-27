@@ -18,7 +18,8 @@ A \code{ledgr_target} object.
 }
 \description{
 \code{ledgr_target()} creates a thin wrapper around the full named numeric target
-quantity vector consumed by ledgr's existing strategy-result validator.
+quantity vector consumed by ledgr's existing strategy-result validator. An
+empty target is valid only with an explicitly empty universe.
 }
 \section{Articles}{
 

@@ -269,3 +269,108 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
     class = "ledgr_invalid_strategy_helper"
   )
 })
+
+testthat::test_that("[LTB-0090] empty helper domains keep their distinct meanings", {
+  holdings_only <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    members = character(),
+    positions = c(OLD = 2),
+    equity = 100
+  )
+  holdings_only$vec$feature <- function(...) {
+    rlang::abort("empty membership must not read a feature")
+  }
+  empty_signal <- ledgr_signal_return(holdings_only, lookback = 5)
+  testthat::expect_s3_class(empty_signal, "ledgr_signal")
+  testthat::expect_length(empty_signal, 0L)
+  testthat::expect_error(
+    ledgr_signal_return(holdings_only, lookback = 0),
+    class = "ledgr_invalid_strategy_helper"
+  )
+  held_target <- holdings_only |>
+    ledgr_selection(where = c(FALSE, TRUE)) |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(holdings_only)
+  testthat::expect_identical(unclass(held_target), c(AAA = 0, OLD = 2))
+
+  empty_bars <- data.frame(
+    instrument_id = character(),
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    open = numeric(), high = numeric(), low = numeric(), close = numeric(),
+    volume = numeric(),
+    stringsAsFactors = FALSE
+  )
+  empty_axis <- list(
+    run_id = "empty-axis",
+    ts_utc = "2026-01-02T21:00:00Z",
+    universe = character(),
+    bars = empty_bars,
+    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
+    .positions = stats::setNames(numeric(), character()),
+    cash = 100,
+    equity = 100,
+    seed = NULL,
+    pulse_seed = NULL,
+    state_prev = NULL,
+    .safety_state = "GREEN",
+    availability_active = TRUE,
+    members = character()
+  )
+  class(empty_axis) <- "ledgr_pulse_context"
+  empty_axis <- ledgr:::ledgr_update_pulse_context_helpers(
+    empty_axis,
+    bars = empty_bars,
+    features = empty_axis$feature_table,
+    positions = empty_axis$.positions,
+    universe = character(),
+    availability = list()
+  )
+  testthat::expect_error(ledgr:::ledgr_validate_pulse_context(empty_axis), NA)
+  cash_before <- empty_axis$cash
+  equity_before <- empty_axis$equity
+  selection_target <- empty_axis |>
+    ledgr_selection() |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(empty_axis)
+  signal_target <- empty_axis |>
+    ledgr_signal(values = numeric()) |>
+    ledgr_select_top_n(1) |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(empty_axis)
+  for (target in list(selection_target, signal_target)) {
+    testthat::expect_s3_class(target, "ledgr_target")
+    testthat::expect_length(target, 0L)
+    testthat::expect_identical(names(target), character())
+  }
+  testthat::expect_identical(empty_axis$cash, cash_before)
+  testthat::expect_identical(empty_axis$equity, equity_before)
+
+  testthat::expect_s3_class(ledgr_signal(numeric(), universe = character()), "ledgr_signal")
+  testthat::expect_s3_class(ledgr_selection(logical(), universe = character()), "ledgr_selection")
+  testthat::expect_s3_class(ledgr_weights(numeric(), universe = character()), "ledgr_weights")
+  testthat::expect_s3_class(ledgr_target(numeric(), universe = character()), "ledgr_target")
+  testthat::expect_s3_class(
+    ledgr_select_top_n(ledgr_signal(numeric()), n = 1),
+    "ledgr_empty_selection"
+  )
+  testthat::expect_error(
+    ledgr_select_top_n(ledgr_signal(numeric()), n = 0),
+    class = "ledgr_invalid_strategy_helper"
+  )
+  testthat::expect_error(
+    ledgr_target(numeric(), universe = "AAA"),
+    class = "ledgr_invalid_strategy_type"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(
+      numeric(), "AAA", allow_empty = TRUE
+    ),
+    class = "ledgr_invalid_strategy_result"
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_validate_strategy_targets(
+      stats::setNames(numeric(), character()), character(), allow_empty = TRUE
+    ),
+    NA
+  )
+})

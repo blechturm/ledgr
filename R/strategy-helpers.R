@@ -3,8 +3,10 @@ ledgr_validate_strategy_helper_ctx <- function(ctx, helper) {
     rlang::abort(sprintf("`ctx` must be a ledgr strategy context for `%s()`.", helper), class = "ledgr_invalid_strategy_helper")
   }
   universe <- ctx$universe
-  if (!is.character(universe) || length(universe) < 1L || anyNA(universe) || any(!nzchar(universe)) || anyDuplicated(universe)) {
-    rlang::abort(sprintf("`ctx$universe` must be a unique non-empty character vector for `%s()`.", helper), class = "ledgr_invalid_strategy_helper")
+  allow_empty <- isTRUE(ctx$availability_active)
+  if (!is.character(universe) || (!allow_empty && length(universe) < 1L) ||
+      anyNA(universe) || any(!nzchar(universe)) || anyDuplicated(universe)) {
+    rlang::abort(sprintf("`ctx$universe` must be a unique character vector for `%s()`.", helper), class = "ledgr_invalid_strategy_helper")
   }
   universe
 }
@@ -50,7 +52,8 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' in `ctx$universe` and returns a `ledgr_signal`. The required indicator must
 #' already be registered on the experiment, for example with
 #' `features = list(ledgr_ind_returns(20))`; this helper never auto-registers
-#' indicators.
+#' indicators. An availability context with no current members returns an empty
+#' signal without reading the feature plane.
 #'
 #' If `lookback` is supplied through `params$lookback` in a strategy or
 #' parameter grid, register every concrete `return_<lookback>` feature before
@@ -80,10 +83,15 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
 
+  if (isTRUE(ctx$availability_active)) {
+    members <- as.character(ctx$members %||% character())
+    if (length(members) == 0L) {
+      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
+    }
+  }
   values <- as.numeric(ctx$vec$feature(feature_id))
   values <- stats::setNames(as.numeric(values), universe)
   if (isTRUE(ctx$availability_active)) {
-    members <- as.character(ctx$members %||% character())
     values <- values[members]
     admissible <- as.logical(ctx$vec$admissible[match(members, universe)])
     values[!admissible] <- NA_real_

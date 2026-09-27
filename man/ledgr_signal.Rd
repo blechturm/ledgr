@@ -21,7 +21,7 @@ A \code{ledgr_signal} object.
 \description{
 \code{ledgr_signal()} creates a named numeric score vector for strategy helper
 pipelines. Signals are intermediate objects; strategies must not return them
-directly.
+directly. A zero-length named signal represents an empty decision domain.
 }
 \section{Articles}{
 

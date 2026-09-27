@@ -3,12 +3,11 @@ ledgr_strategy_type_check_universe <- function(universe) {
     return(NULL)
   }
   if (!is.character(universe) ||
-      length(universe) < 1L ||
       anyNA(universe) ||
       any(!nzchar(universe)) ||
       anyDuplicated(universe)) {
     rlang::abort(
-      "`universe` must be NULL or a unique non-empty character vector.",
+      "`universe` must be NULL or a unique character vector of non-empty IDs.",
       class = "ledgr_invalid_strategy_type"
     )
   }
@@ -87,7 +86,8 @@ ledgr_strategy_context_parts <- function(ctx, helper) {
     )
   }
   axis <- ctx$universe
-  if (!is.character(axis) || length(axis) < 1L || anyNA(axis) ||
+  allow_empty <- isTRUE(ctx$availability_active)
+  if (!is.character(axis) || (!allow_empty && length(axis) < 1L) || anyNA(axis) ||
       any(!nzchar(axis)) || anyDuplicated(axis)) {
     ledgr_strategy_context_abort(
       sprintf("`ctx$universe` is invalid for `%s()`.", helper)
@@ -276,7 +276,7 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
 #'
 #' `ledgr_signal()` creates a named numeric score vector for strategy helper
 #' pipelines. Signals are intermediate objects; strategies must not return them
-#' directly.
+#' directly. A zero-length named signal represents an empty decision domain.
 #'
 #' @param x Named numeric vector of signal scores, or a pulse context.
 #' @param universe Optional universe used to reject extra instrument names.
@@ -318,11 +318,10 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
       "Context payload arguments are not valid in value mode."
     )
   }
-  # Empty selections and weights are meaningful degenerate helper states; an
-  # empty signal has no ranked/scored instruments and is treated as invalid.
-  if (!is.numeric(x) || length(x) < 1L) {
-    rlang::abort("`x` must be a non-empty named numeric vector.", class = "ledgr_invalid_strategy_type")
+  if (!is.numeric(x)) {
+    rlang::abort("`x` must be a named numeric vector.", class = "ledgr_invalid_strategy_type")
   }
+  if (length(x) == 0L && is.null(names(x))) names(x) <- character()
   ledgr_strategy_type_check_names(x, "x", universe = universe, full_universe = FALSE)
   if (any(is.infinite(x))) {
     rlang::abort("`x` must not contain infinite signal values.", class = "ledgr_invalid_strategy_type")
@@ -444,7 +443,8 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
 #' Create a strategy target vector
 #'
 #' `ledgr_target()` creates a thin wrapper around the full named numeric target
-#' quantity vector consumed by ledgr's existing strategy-result validator.
+#' quantity vector consumed by ledgr's existing strategy-result validator. An
+#' empty target is valid only with an explicitly empty universe.
 #'
 #' @param x Full named numeric target-quantity vector.
 #' @param universe Optional universe. When supplied, names must exactly match it.
@@ -461,9 +461,10 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_target <- function(x, universe = NULL, origin = NULL) {
-  if (!is.numeric(x) || length(x) < 1L) {
-    rlang::abort("`x` must be a non-empty named numeric vector.", class = "ledgr_invalid_strategy_type")
+  if (!is.numeric(x)) {
+    rlang::abort("`x` must be a named numeric vector.", class = "ledgr_invalid_strategy_type")
   }
+  if (length(x) == 0L && is.null(names(x))) names(x) <- character()
   ledgr_strategy_type_check_names(x, "x", universe = universe, full_universe = !is.null(universe))
   if (any(!is.finite(x))) {
     rlang::abort("`x` must contain finite numeric target quantities.", class = "ledgr_invalid_strategy_type")
