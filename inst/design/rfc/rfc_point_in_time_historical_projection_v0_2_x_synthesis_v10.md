@@ -355,11 +355,11 @@ what the engine does rather than what was aspired to, and the engine stands.
 
 **The door stays open, and it is scheduled.** Instrument-narrowed expected
 sessions remain the stated design goal and are scheduled for the next release in
-`../ledgr_roadmap.md`. This is a decision about what the documents claim now, not
-a rejection of the semantics. The reasoning on both sides, the measured cost each
-way, the two arguments that were made and do not hold, and the trip-wire that
-makes narrowing expensive are recorded in `../horizon.md` (2026-09-27) so that
-the next release reinstates it from the reasoning rather than from scratch.
+`../ledgr_roadmap.md`. This is a decision about what the documents claim now,
+not a rejection of the semantics. The reasoning on both sides, the measured cost
+each way, the two arguments that were made and do not hold, and the trip-wire
+that makes narrowing expensive are recorded in `../horizon.md` (2026-09-27) so
+that the next release reinstates it from the reasoning rather than from scratch.
 
 **What the correction touches, and what it must not.** The live authority is
 `contracts.md:803`. The availability synthesis, the v0.2.0.0 packet and gate 21
@@ -813,12 +813,58 @@ Instrument-level independence must not be assumed beyond instrument-local
 indicators: multivariate and fitted methods may make one instrument's revision
 affect others, and they are deferred (section 6.1's scope note).
 
-Section 10's failure criterion still applies to whatever mechanism is proposed:
-preparation before execution is compatible, and per-callback storage queries,
-reconstructing fact segments at a pulse, or a second execution path are not.
-Whether any mechanism produces correct cutoff-specific values and evidence
-within those constraints is checkpoint part (d), and this document does not
-assert that one does.
+**A named candidate, added 2026-09-27 on a maintainer proposal.** The preceding
+paragraphs treat the mechanism as unknown. It need not be. The snapshot is
+sealed, so every fact's knowledge time is known before the run starts, which
+means admissibility changes only at a finite and enumerable list of breakpoints,
+and between two breakpoints nothing about it changes. A feature series is
+therefore **piecewise constant in the knowledge clock**. And because pulses
+advance monotonically, the cutoff advances monotonically too, so only the
+current segment's view is ever required.
+
+That yields a concrete preparation strategy rather than a search:
+
+- enumerate each instrument's own admissibility breakpoints from the sealed
+  facts, before the fold;
+- compute that instrument's series once per segment between its breakpoints;
+- serve the current pulse from the segment containing it, and a history view at
+  `t` from the segment containing `t`;
+- hold one view live and advance it forward, discarding the previous segment.
+
+Its cost is bounded by fact sparsity rather than by pulse count. A lifetime fact
+names one instrument, and features are computed per instrument from that
+instrument's own bars today, so a breakpoint recomputes one series rather than
+the panel. The prepare cost is the baseline multiplied by one plus the average
+number of admissibility-affecting facts per instrument, which is typically one
+or two - a listing and a delisting - rather than a multiple of `T`.
+
+Two limits, stated because they decide how far the candidate carries.
+
+Cross-sectional features break the per-instrument locality: if a feature reads
+across instruments, a fact about one changes the values of others and the cheap
+single-series recompute collapses into a panel recompute. The shipped features
+are per-instrument, so the candidate holds for what exists, and the multivariate
+and fitted methods this cycle was motivated by are exactly the case that breaks
+it. Extending it is their work, not this document's.
+
+Warm-up interacts with the breakpoint. Recomputing under a different
+expected-session set moves where warm-up completes, so the affected range is the
+breakpoint plus the window rather than the breakpoint alone. Section 6.1's bound
+already carries the `W_f - 1` term for that reason, and the two derivations
+agree.
+
+The candidate satisfies section 10's failure criterion on its face: preparation
+happens before execution, nothing reconstructs fact segments at a pulse, no
+accessor queries storage per callback, and no second execution path appears. So
+checkpoint part (d) becomes a measurement of a stated design rather than a
+search for one.
+
+Section 10's failure criterion still applies to whatever mechanism is proposed,
+including this one: preparation before execution is compatible, and per-callback
+storage queries, reconstructing fact segments at a pulse, or a second execution
+path are not. Whether the candidate above produces correct cutoff-specific
+values and evidence within those constraints, and at what cost, is checkpoint
+part (d). This document names a candidate; it does not assert that it works.
 
 ### 6.3 What follows for identity and delivery
 
@@ -984,14 +1030,28 @@ do not establish this. Default-on means every research run pays whatever this
 costs, so it is answered before the default is fixed.
 
 **(d) Numerical revision.** Whether correct cutoff-specific values and their
-evidence can be produced at all, under the single failure criterion: prepared
-before execution, with no per-callback storage query, no reconstruction of fact
-segments at a pulse, and no second execution path. This part does not prescribe
-a granularity. Whole-series recalculation of an affected instrument during
-preparation and per-range invalidation inside section 6.1's bound are both
-admitted candidates, and a forbidden output carry is its own trigger that either
-candidate must handle. Section 6.1's bound is available to an implementation
-that wants it and is not a requirement on one.
+evidence can be produced, under the single failure criterion: prepared before
+execution, with no per-callback storage query, no reconstruction of fact
+segments at a pulse, and no second execution path.
+
+Since 2026-09-27 this part has a named candidate rather than an open field, and
+it should be run as a measurement of that candidate first. Section 6.2 states
+it: enumerate each instrument's admissibility breakpoints from the sealed facts,
+compute one series per segment, serve the current pulse and any history view
+from the segment containing its cutoff, and advance one live view forward. What
+the measurement must establish is the prepare cost against the baseline at a
+realistic universe and range, the count of breakpoints per instrument in real
+data rather than in fixtures, the transient memory while a segment is replaced,
+and the same under the per-worker replication established below.
+
+Two things the candidate does not settle and this part must still answer: what
+happens when a feature reads across instruments, since the candidate's cost
+argument depends on per-instrument locality that cross-sectional features break;
+and whether a forbidden output carry, which is its own trigger, is handled by
+the same segmentation. Whole-series recalculation and per-range invalidation
+inside section 6.1's bound remain admitted alternatives if the candidate fails.
+Section 6.1's bound is available to an implementation that wants it and is not a
+requirement on one.
 
 Performance conclusions stay separate from this semantic result. Any eventual
 measurement covers preparation cost, the evidence in section 8, and worker
@@ -1157,6 +1217,16 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-27: v10, section 6.2 and checkpoint part (d) gain a named preparation
+  candidate on a maintainer proposal. Because the snapshot is sealed, every
+  fact's knowledge time is known before the run and admissibility changes only
+  at an enumerable set of breakpoints, so a feature series is piecewise constant
+  in the knowledge clock and a monotone pulse axis needs only the current
+  segment's view. Cost is bounded by fact sparsity rather than pulse count,
+  since a lifetime fact names one instrument. Recorded with its two limits:
+  cross- sectional features break the per-instrument locality, and warm-up
+  extends the affected range by the window. Part (d) becomes a measurement of a
+  stated design rather than a search for one. No accepted semantics change.
 - 2026-09-27: v10, section 4.3 cost paragraph replaced with measured results.
   The two checks v4 and v9 deferred are run: gate 21 is the only gate asserting
   narrowing and only in one clause, and no fixture encodes it, so adopting
