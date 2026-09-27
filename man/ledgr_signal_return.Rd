@@ -46,3 +46,6 @@ ctx <- list(
 ledgr_signal_return(ctx, lookback = 5)
 
 }
+\seealso{
+\code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}, \code{\link[=ledgr_signal]{ledgr_signal()}}
+}

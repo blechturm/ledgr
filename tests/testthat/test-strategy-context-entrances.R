@@ -212,6 +212,63 @@ testthat::test_that("[LTB-0087] raw and convenience signals keep distinct polici
   testthat::expect_identical(guarded, c(AAA = 4, OLD = 2))
 })
 
+testthat::test_that("[LTB-0095] feature signals apply only the admissibility mask", {
+  restricted <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    members = c("AAA", "OLD"),
+    restricted = c(TRUE, FALSE),
+    priced = c(TRUE, TRUE)
+  )
+  feature <- ledgr_signal_feature(restricted, "return_5")
+  raw <- ledgr_signal(
+    restricted,
+    values = restricted$vec$feature("return_5")
+  )
+  testthat::expect_identical(
+    stats::setNames(as.numeric(feature), names(feature)),
+    c(AAA = NA_real_, OLD = 0.9)
+  )
+  testthat::expect_identical(unclass(raw), c(AAA = 0.2, OLD = 0.9))
+
+  unpriced <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    members = c("AAA", "OLD"),
+    restricted = c(FALSE, FALSE),
+    priced = c(FALSE, TRUE)
+  )
+  unpriced_signal <- ledgr_signal_feature(unpriced, "return_5")
+  testthat::expect_identical(
+    stats::setNames(as.numeric(unpriced_signal), names(unpriced_signal)),
+    c(AAA = 0.2, OLD = 0.9)
+  )
+
+  dense <- strategy_context_entrance_fixture()
+  testthat::expect_identical(
+    ledgr_signal_return(dense, lookback = 5),
+    ledgr_signal_feature(dense, "return_5")
+  )
+  testthat::expect_identical(
+    ledgr_signal_return(restricted, lookback = 5),
+    ledgr_signal_feature(restricted, "return_5")
+  )
+  testthat::expect_error(
+    ledgr_signal_feature(dense, "unknown_feature"),
+    class = "ledgr_unknown_feature_id"
+  )
+
+  empty <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    members = character()
+  )
+  empty$vec$feature <- function(...) {
+    rlang::abort("empty membership must not read a feature")
+  }
+  signal <- ledgr_signal_feature(empty, "return_5")
+  testthat::expect_s3_class(signal, "ledgr_signal")
+  testthat::expect_length(signal, 0L)
+  testthat::expect_identical(attr(signal, "origin"), "return_5")
+})
+
 testthat::test_that("[LTB-0088] explicit zero weights never require sizing prices", {
   dense <- strategy_context_entrance_fixture(equity = 100)
   dense$vec$close[[2L]] <- NA_real_

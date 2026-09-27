@@ -46,6 +46,63 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
   as.numeric(equity)
 }
 
+#' Build a signal from one registered feature
+#'
+#' `ledgr_signal_feature()` reads one already-registered feature plane. In an
+#' availability-aware context it projects to current members and masks exactly
+#' the members whose targets are inadmissible. Missing prices alone do not mask
+#' a feature score. An empty current membership returns an empty signal without
+#' reading the feature plane.
+#'
+#' Use [ledgr_signal()] with its raw `values` entrance for transformed or custom
+#' scores that should not receive this convenience mask.
+#'
+#' @param ctx ledgr strategy context.
+#' @param feature_id One non-empty registered feature ID.
+#' @return A `ledgr_signal` object.
+#' @examples
+#' ctx <- list(
+#'   universe = c("AAA", "BBB"),
+#'   vec = list(
+#'     feature = function(feature_id) c(AAA = 0.03, BBB = NA_real_)
+#'   )
+#' )
+#' ledgr_signal_feature(ctx, "return_5")
+#'
+#' @seealso [ledgr_signal()], [ledgr_signal_return()]
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#' @export
+ledgr_signal_feature <- function(ctx, feature_id) {
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_feature")
+  if (!is.character(feature_id) || length(feature_id) != 1L ||
+      is.na(feature_id) || !nzchar(feature_id)) {
+    rlang::abort(
+      "`feature_id` must be one non-empty character scalar.",
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+
+  members <- universe
+  if (isTRUE(ctx$availability_active)) {
+    members <- as.character(ctx$members %||% character())
+    if (length(members) == 0L) {
+      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
+    }
+  }
+
+  values <- stats::setNames(as.numeric(ctx$vec$feature(feature_id)), universe)
+  if (isTRUE(ctx$availability_active)) {
+    member_idx <- match(members, universe)
+    values <- values[member_idx]
+    admissible <- as.logical(ctx$vec$admissible[member_idx])
+    values[!admissible] <- NA_real_
+  }
+  ledgr_signal(values, universe = members, origin = feature_id)
+}
+
 #' Build a return signal from registered return features
 #'
 #' `ledgr_signal_return()` reads the `return_<lookback>` feature for every instrument
@@ -73,31 +130,17 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 #' )
 #' ledgr_signal_return(ctx, lookback = 5)
 #'
+#' @seealso [ledgr_signal_feature()], [ledgr_signal()]
 #' @section Articles:
 #' Strategy helper pipelines:
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
 ledgr_signal_return <- function(ctx, lookback = 20L) {
-  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
+  ledgr_validate_strategy_helper_ctx(ctx, "ledgr_signal_return")
   lookback <- ledgr_strategy_helper_validate_lookback(lookback)
   feature_id <- sprintf("return_%d", lookback)
-
-  if (isTRUE(ctx$availability_active)) {
-    members <- as.character(ctx$members %||% character())
-    if (length(members) == 0L) {
-      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
-    }
-  }
-  values <- as.numeric(ctx$vec$feature(feature_id))
-  values <- stats::setNames(as.numeric(values), universe)
-  if (isTRUE(ctx$availability_active)) {
-    values <- values[members]
-    admissible <- as.logical(ctx$vec$admissible[match(members, universe)])
-    values[!admissible] <- NA_real_
-    universe <- members
-  }
-  ledgr_signal(values, universe = universe, origin = feature_id)
+  ledgr_signal_feature(ctx, feature_id)
 }
 
 #' Select the top instruments from a signal

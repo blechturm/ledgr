@@ -670,10 +670,13 @@ The strategy preflight boundary originated in
   A validated zero member weight becomes a zero target without a price lookup.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
-- `ledgr_signal_return()` deliberately masks inadmissible member scores as
-  missing in availability-aware contexts. A raw feature-plane entrance does
-  not inherit that convenience policy. `ledgr_select_top_n()` keeps its
-  missing-score exclusion and stable tie policy.
+- `ledgr_signal_feature()` reads one registered feature and deliberately masks
+  inadmissible member scores as missing in availability-aware contexts; an
+  admissible but unpriced member keeps its score. `ledgr_signal_return()` is
+  the return-feature specialization of that entrance. A raw `values` entrance
+  through `ledgr_signal()` does not inherit the convenience mask.
+  `ledgr_select_top_n()` keeps its missing-score exclusion and stable tie
+  policy.
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but
   they must not add a second strategy path: strategies still return full named
