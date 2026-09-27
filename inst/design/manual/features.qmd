@@ -150,7 +150,7 @@ anchors; it does not authorize new behavior.
 | materialized feature result | experiment-time list | `features`, `alias_map`, `alias_map_json`, `alias_map_hash`, `alias_map_version` |
 | `ledgr_precomputed_features` | sweep feature artifact | snapshot hash, universe, ranges, grid labels, feature union, candidate features, projection, warmup |
 | runtime projection | matrix-backed feature payload | instrument index, feature IDs, feature value matrices |
-| pulse context | per-pulse list | `feature_table`, `.feature_projection`, `.feature_pulse_idx`, `.feature_ids`, `active_alias_map`, feature helper closures |
+| pulse context | per-pulse list | `feature_table`, `features_wide`, `active_alias_map`, time-bounded feature helper closures, and a private current-pulse inspection closure |
 
 Alias storage is canonicalized by sorting aliases, serializing a payload of
 `alias_map_version` plus `mappings`, and hashing the canonical JSON with

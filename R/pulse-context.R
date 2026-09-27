@@ -279,12 +279,19 @@ ledgr_attach_feature_helpers <- function(ctx,
       feature_ids = feature_ids,
       active_alias_map = active_alias_map
     )
+    current_pulse_idx <- as.integer(pulse_idx)
+    current_feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
+    feature_table_current <- function() {
+      ledgr_projection_feature_table(
+        projection,
+        current_pulse_idx,
+        feature_ids = current_feature_ids
+      )
+    }
     if (is.environment(ctx)) {
       ctx$feature_table <- features
       ctx$features_wide <- features_wide
-      ctx$.feature_projection <- projection
-      ctx$.feature_pulse_idx <- as.integer(pulse_idx)
-      ctx$.feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
+      ctx$.feature_table_current <- feature_table_current
       ctx$feature <- feature
       ctx$.feature_vector <- feature_vector
       ctx$features <- feature_bundle
@@ -293,9 +300,7 @@ ledgr_attach_feature_helpers <- function(ctx,
 
     ctx$feature_table <- features
     ctx$features_wide <- features_wide
-    ctx$.feature_projection <- projection
-    ctx$.feature_pulse_idx <- as.integer(pulse_idx)
-    ctx$.feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
+    ctx$.feature_table_current <- feature_table_current
     ctx$feature <- feature
     ctx$.feature_vector <- feature_vector
     ctx$features <- feature_bundle
@@ -305,6 +310,7 @@ ledgr_attach_feature_helpers <- function(ctx,
   if (is.environment(ctx)) {
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
+    ctx$.feature_table_current <- NULL
     ctx$feature <- ledgr_feature_accessor(features)
     ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
     ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
@@ -313,6 +319,7 @@ ledgr_attach_feature_helpers <- function(ctx,
 
   ctx$feature_table <- features
   ctx$features_wide <- ledgr_features_wide(features)
+  ctx$.feature_table_current <- NULL
   ctx$feature <- ledgr_feature_accessor(features)
   ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
   ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
@@ -377,6 +384,13 @@ ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe)
     feature_vector(feature_name, default = default)[context_index]
   }
   ctx$.pulse_lookup$feature_vector <- ctx$.feature_vector
+  feature_table_current <- ctx$.feature_table_current
+  if (is.function(feature_table_current)) {
+    ctx$.feature_table_current <- function() {
+      table <- feature_table_current()
+      table[as.character(table$instrument_id) %in% universe, , drop = FALSE]
+    }
+  }
   ctx$vec <- ledgr_pulse_context_vec(ctx$.pulse_lookup)
   ctx
 }
@@ -405,6 +419,13 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
       feature_ids = feature_ids,
       active_alias_map = active_alias_map
     )
+    out$feature_table_current <- function() {
+      ledgr_projection_feature_table(
+        projection,
+        as.integer(feature_state$pulse_idx),
+        feature_ids = feature_ids
+      )
+    }
   }
   out
 }
@@ -428,9 +449,7 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
   if (!is.null(projection)) {
     fast_context$feature_state$pulse_idx <- as.integer(pulse_idx)
     ctx$feature_table <- features
-    ctx$.feature_projection <- projection
-    ctx$.feature_pulse_idx <- as.integer(pulse_idx)
-    ctx$.feature_ids <- ledgr_projection_feature_ids(projection, fast_context$feature_ids)
+    ctx$.feature_table_current <- fast_context$feature_table_current
     ctx$.feature_vector <- ledgr_projection_feature_vector_accessor(
       projection,
       pulse_idx,
