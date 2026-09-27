@@ -213,10 +213,17 @@ if (inherits(built, "error")) {
            "logical", "ledgr_run_explain on the late-known-barrier run")
     record("barrier_restricted_at_knowledge_time", e_kno$target_restricted[[1L]],
            "logical", "ledgr_run_explain on the late-known-barrier run")
-    record("barrier_reason_at_knowledge_time",
-           if (is.null(e_kno$target_restriction_reason)) NA_character_
-           else e_kno$target_restriction_reason[[1L]],
-           "reason", "ledgr_run_explain on the late-known-barrier run")
+    pick <- function(x, field) {
+      if (is.null(x[[field]])) NA_character_ else as.character(x[[field]][[1L]])
+    }
+    record("barrier_reason_at_effective_from", pick(e_eff, "target_restriction_reason"),
+           "reason", "ledgr_run_explain, singular reason field")
+    record("barrier_reasons_at_effective_from", pick(e_eff, "target_restriction_reasons"),
+           "reasons", "ledgr_run_explain, complete reasons field")
+    record("barrier_reason_at_knowledge_time", pick(e_kno, "target_restriction_reason"),
+           "reason", "ledgr_run_explain, singular reason field")
+    record("barrier_reasons_at_knowledge_time", pick(e_kno, "target_restriction_reasons"),
+           "reasons", "ledgr_run_explain, complete reasons field")
     close(run2)
     ledgr_snapshot_close(snap2)
   }
@@ -224,20 +231,46 @@ if (inherits(built, "error")) {
 }
 
 # =====================================================================
-# P5  Exercise the backward re-seek the charter would otherwise assert.
+# P5  Exercise the backward re-seek with a test that can fail.
+#
+# An earlier version seeked over boundaries where every instrument resolved to
+# the same code, so skipping the backward seek would also have passed. This
+# picks the halt's own start and end, where the resolved value differs, and
+# guards that it differs before trusting the comparison.
 # =====================================================================
+
 rws <- prov_data$status
-segs <- ledgr_availability_prepared_segments(rws, key, 1L, 1L,
-                                             function(applicable) length(applicable))
-lo <- min(segs$bound[is.finite(segs$bound)])
-hi <- max(segs$bound[is.finite(segs$bound)])
-c1 <- ledgr_availability_prepared_cursor(segs)
-c1$seek(hi); c1$seek(lo)            # forward then backward
-c2 <- ledgr_availability_prepared_cursor(segs)
-c2$seek(lo)                          # fresh forward only
-same <- identical(c1$read(1L, seq_len(length(key))), c2$read(1L, seq_len(length(key))))
-record("cursor_backward_reseek_matches_fresh", same, "logical",
-       "two cursors over the same segments, one re-seeked backward")
+segs <- ledgr_availability_prepared_segments(
+  rws, key, 1L, 1L, function(applicable) as.integer(length(applicable))
+)
+halt_rows <- rws[rws$status == "halted" & !is.na(rws$effective_to), , drop = FALSE]
+stopifnot(nrow(halt_rows) == 1L)
+# The halted row's segment starts at pmax(effective_from, knowledge_time), so the
+# inside point is its knowledge time rather than its effective time.
+t_in <- max(
+  ledgr_availability_prepared_seconds(halt_rows$effective_from[[1L]]),
+  ledgr_availability_prepared_seconds(halt_rows$knowledge_time[[1L]])
+)
+t_out <- ledgr_availability_prepared_seconds(halt_rows$effective_to[[1L]])
+
+fresh <- function(at) {
+  cur <- ledgr_availability_prepared_cursor(segs)
+  cur$seek(at)
+  cur$read(1L, seq_len(length(key)))
+}
+v_in <- fresh(t_in)
+v_out <- fresh(t_out)
+record("reseek_values_differ_at_the_two_boundaries", !identical(v_in, v_out),
+       "logical", "two fresh cursors, the guard against a vacuous test")
+
+walked <- ledgr_availability_prepared_cursor(segs)
+walked$seek(t_out)
+walked$seek(t_in)
+record("cursor_backward_reseek_matches_fresh",
+       identical(walked$read(1L, seq_len(length(key))), v_in), "logical",
+       "one cursor seeked forward then backward, against a fresh forward seek")
+record("cursor_without_reseek_would_differ", !identical(v_out, v_in), "logical",
+       "a cursor left at the later boundary reads the later value")
 
 evidence <- do.call(rbind, rows)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)

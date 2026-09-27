@@ -41,26 +41,24 @@ sessions later: `ledgr_facts_lifetime()` accepted it and
 `ledgr_snapshot_from_df()` sealed it. So the fixture exists through public
 constructors.
 
-**But it must be decoupled.** In P4 the instrument was already restricted at the
-barrier's effective instant, with reason `status_unknown` rather than
-`lifetime_inactive`, because the generator ends the same instrument's
-`trading_status` interval at that same instant. The fixture must separate the
-status expiry from the lifetime boundary before a revision can be attributed to
-the barrier. The reason code is the check that it did.
+**And it is causally gated.** Probe P4: `lifetime_inactive` is absent from the
+complete reasons at the barrier's effective instant and present at its knowledge
+instant. An earlier draft read only the singular reason field, saw
+`status_unknown` at both, and wrongly inferred a confounding status expiry; the
+plural field shows the barrier behaving correctly. What P4 does not establish is
+a revised feature value, because target restriction is a trading gate rather
+than feature-input admissibility. That is what this spike asks.
 
 ## Kill condition
 
-The spike stops and recharters if the revision cannot be exhibited inside the
-one-of-everything scope below: one barrier kind, one feature, one instrument.
-The seam is then not separable at this size, and a spec cut follows.
+The spike stops if the revision cannot be exhibited inside the one-of-everything
+scope below: one barrier kind, one feature, one instrument. The seam is then not
+separable at this size, and the outcome returns to the maintainer as a scope
+decision rather than automatically becoming a spec cut.
 
 Building a throwaway fork is not the failure condition. Protocol section 3 asks
 for the smallest runnable fork and section 6 asks the inventory to show a gutted
 path, so prototyping is the method. The test is proportion, not purity.
-
-It also stops if the fixture cannot be decoupled per P4, because then no
-observed revision can be attributed to the barrier rather than to a status
-expiry.
 
 ## Scope: one of everything
 
@@ -83,9 +81,9 @@ its own charter with those quantities stated.
 
 `ledgr_sim_pit_inputs()` for the calendar, bars, membership and instruments,
 then a hand-built lifetime frame through `ledgr_facts_lifetime()` carrying one
-`known_inactive` interval whose knowledge time is later than its effective time,
-with the `trading_status` family adjusted so its interval does not expire at the
-same instant. Probe P4 established that this constructs and seals.
+`known_inactive` interval whose knowledge time is later than its effective time.
+Probe P4 executed exactly that, with the generator's other families unchanged,
+and it constructs, seals and resolves causally.
 
 No generator refactor. If the fixed case placement turns out to block the work,
 that is a finding for the closeout and a reason to extend the generator
@@ -96,9 +94,9 @@ afterwards.
 Protocol section 6's three, as written there: a runner writing evidence CSVs; a
 checker that reruns into a scratch directory, diffs the recorded CSVs, and
 guards package scope (`R`, `src`, `tests`, `NAMESPACE`, `DESCRIPTION`, `man`,
-`inst/design`); and an inventory showing one gutted path failing and listing what
-was demoted, deleted and learned. Counts of passes are not evidence, and a row
-is evidence only if the fork derived it from provider facts.
+`inst/design`); and an inventory showing one gutted path failing and listing
+what was demoted, deleted and learned. Counts of passes are not evidence, and a
+row is evidence only if the fork derived it from provider facts.
 
 ## Test cases
 
