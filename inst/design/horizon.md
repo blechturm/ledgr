@@ -112,6 +112,140 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-27 [data] Interval facts cannot express per-endpoint knowledge
+
+An interval fact carries one `knowledge_time`, and it gates only the interval's
+start. The end is applied ungated: `R/availability-provider.R:55` tests
+`is.na(effective_to) | cutoff < effective_to`, while
+`R/availability-provider-prepared.R:52` and `:107` set the segment start to
+`pmax(seconds(effective_from), seconds(knowledge_time))` and the end to
+`seconds(effective_to)` alone. So a bounded interval asserts that its end was
+knowable when its start was, and the engine applies that end at its effective
+date even where it could not yet have been known.
+
+That is correct when the source genuinely published a bounded interval up front,
+such as a halt with a scheduled resumption. It overstates knowledge whenever the
+end became knowable later, and the encoding cannot say so.
+
+ledgr-research found this independently against real data and ratified a
+workaround on 2026-09-14 (SHR-D033): for membership, the interval shape "drops a
+member one session before its removal is knowable under the declared lag,
+reporting `unknown_no_usable_evidence` for an instrument the source asserts as a
+member", and `ledgr_fact_validate_membership_conflicts()` rejects the
+open-ended encoding that would have preserved the removal's knowledge time. They
+prohibited `ledgr_facts_membership_intervals()` for that universe and moved to
+`ledgr_facts_membership_snapshots(complete = TRUE)`, calling it "a correctness
+requirement, not a preference between equally faithful encodings."
+
+Successive open-ended assertions are an escape, because `resolve_lifetime()` is
+last-wins over `(effective_from, knowledge_time)`. That escape exists for
+`lifetime` but not for `membership`, whose conflict validator rejects it, and
+only `membership` has an alternative constructor. `lifetime` and
+`trading_status` are interval-only.
+
+Practical exposure today is low and not zero. The Sharadar adapter emits
+open-ended terminal inactivity and bounded *active* intervals, so it never
+produces a bounded inactive interval; a bounded active interval's end only means
+"evidence stops here". The reachable cases are hand-supplied facts and any
+future adapter modelling a suspension with a known end date.
+
+A second finding belongs with this one, because it explains why nobody hit the
+first. Vendor history cannot supply a knowledge clock at all. Research into the
+Sharadar documentation established no first-availability or announcement column
+in ACTIONS or TICKERS, no archive of dated snapshots or prior row versions, and
+`lastupdated` as a last-modified date rather than a first publication - so
+filtering `lastupdated <= D` excludes a corrected row instead of restoring its
+earlier version. SF1's ARQ/ARY/ART are genuinely as-reported against filing
+dates, and DAILY is documented point-in-time, but ledgr's snapshot holds bars
+and availability facts with no fundamentals table, so the one place the vendor
+does supply two distinct clocks is the one ledgr cannot currently store.
+
+Two consequences worth keeping. The research adapter's
+`assume_effective` translation policy is forced rather than chosen, and it is
+already declared and surfaced as `assumption_backed /
+knowledge_assume_effective` with the source clocks kept in lineage. And ledgr's
+point-in-time machinery is forward-looking: a knowledge clock can be accumulated
+from the operator's own timestamped captures from now on, but not recovered
+retrospectively. Every fact family any current adapter produces has the two
+clocks coincident, so the two-clock paths - including the `pmax` collapse in the
+prepared provider, which is lossless only while they coincide - have never been
+exercised against genuinely two-clock data.
+
+Route: its own cycle, once a capture-based or fundamentals-bearing snapshot
+exists to exercise it. Until then the release should state the limitation among
+its non-claims rather than imply a retrospective point-in-time guarantee.
+
+### 2026-09-27 [data] Instrument-narrowed expected sessions, deferred
+
+Accepted 2026-09-27: the documentation reports what the engine does. Feature
+windows count venue open sessions, and lifetime facts do not narrow the feature
+axis. Reaching the stated design goal - instrument expected sessions excluding
+accepted `known_inactive` intervals - is intended for a later version, and this
+entry keeps the reasoning so it is not re-derived from scratch.
+
+The disagreement. Four authorities say feature windows exclude known inactivity:
+the availability synthesis ("expected sessions, which drive feature windows...
+are the venue open sessions minus those inside an accepted `known_inactive`
+lifetime interval"), `contracts.md:803`, the v0.2.0.0 packet ("instrument
+expected sessions exclude known inactivity for features"), and gate 21 ("those
+sessions leave the feature and classification expected set"). The engine narrows
+nowhere: hydration builds one frame per instrument on the venue pulse axis and
+fails the run if any per-instrument axis differs
+(`R/backtest-runner.R:873-907`, gate at `:904-905`), and `known_inactive`
+reaches only trading restriction and terminal handling. The two behaviours
+differ in value, not coverage: across an inactive interval, narrowing reaches
+back past it and returns a number, gating returns `NA`.
+
+Why it survived two tagged releases: gate 21's narrowing clause has no test
+coverage anywhere. `known_inactive` appears in eleven test files and none assert
+a feature value; `tests/testthat/test-availability-features.R` has four tests
+and no lifetime reference. It was design text that nothing executed. The
+neighbouring guarantee is covered, since the same file tests that future facts
+cannot change earlier features. Whichever direction a later version takes, the
+repair adds the fixture that pins it.
+
+Measured cost, 2026-09-27. Documenting current behaviour: one clause in one
+gate, three prose sites, one new fixture, no fixture breakage. Implementing
+narrowing: an engine change to a hydration path that currently refuses
+per-instrument axes, fixtures written from scratch, and possible repair of
+fixtures that expect `NA` across an inactive span. The computation itself is
+easy, because `ledgr_compute_feature_series_strict()` counts rows of whatever
+frame it is handed and narrows correctly when handed a narrowed one; the work is
+deriving per-instrument frames and scattering results back onto the venue axis.
+
+The reasoning that survived review, for whoever reinstates this. Gating keeps
+one knowledge-dependent channel rather than two, since narrowing makes window
+*composition* depend on knowledge as well as carry eligibility, and the two
+interact. Narrowing discards real observations, because a genuine print inside
+an asserted inactive interval exists today and is used, and narrowing removes
+that session from the axis. The availability synthesis already forbids the same
+bridging for a whole-feed outage, where "an observation before and after the
+outage can never masquerade as a complete adjacent-session window". And gating
+puts features on the same axis the valuation clock already uses.
+
+Two arguments that were made and do not hold, recorded so they are not made
+again. Gating does not make feature values cutoff-invariant once carry-forward
+is enabled, because carry eligibility is conditioned on knowledge-timed facts.
+And carry-forward does not provide a disclosed substitute for bridging
+inactivity, because the accepted carry policy forbids carry across an inactive
+interval.
+
+The trip-wire that makes narrowing expensive rather than merely fiddly: expected
+sessions derived from lifetime facts inherit those facts' knowledge times, so a
+fact becoming knowable mid-run changes a past window's contents, and
+`contracts.md:808-810` requires cutoff-causal semantics where future-known facts
+cannot rewrite cached earlier feature values. Features are precomputed once per
+run while lifetime facts resolve per pulse, so narrowing needs either per-pulse
+recomputation, bounded incremental invalidation, or a declared causal deviation.
+The first is the shape the optimization manual bans; the second is the machinery
+the historical-projection checkpoint exists to evaluate. Under every current
+adapter the two clocks coincide, so the trip-wire does not fire today - which is
+exactly why it should be checked before narrowing lands rather than after.
+
+Route: a later version, with the fixture, after the historical-projection
+checkpoint establishes whether bounded revision is buildable. The roadmap rather
+than this file is where that intent becomes a commitment.
+
 ### 2026-09-26 [research] Fitted imputers after the simple missingness policy
 
 The maintainer's

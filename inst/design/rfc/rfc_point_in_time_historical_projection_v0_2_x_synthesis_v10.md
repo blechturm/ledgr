@@ -1,10 +1,17 @@
 # RFC Synthesis v10: Point-in-Time Historical Projection With Missing Data
 
-**Status:** Decision synthesis, superseding
+**Status: ACCEPTED by the maintainer 2026-09-27.** The section 1 policy table is
+accepted as written. The section 4 session-axis proposal is accepted with a
+direction: the documentation reports the engine's current behaviour, and
+reaching the stated design goal of instrument-narrowed expected sessions is
+intended for a later version, recorded in `../horizon.md` (2026-09-27, both
+`[data]` entries) so the reasoning is not re-derived. Acceptance settles
+semantics; it authorizes no implementation, spec packet or spike.
+
+**Status (drafting):** Decision synthesis, superseding
 [synthesis v9](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v9.md),
 which placed a barrier wrongly. Incorporates the
 [maintainer missingness amendment](rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md).
-Decisions bind on maintainer acceptance.
 **Date:** 2026-09-26
 **Author:** Claude, per role rotation.
 **Baselines:** design `491c4ed`; implementation `ae040e7`. Claims are marked
@@ -340,11 +347,33 @@ to `NA` on any non-finite value in the window (`R/features-engine.R:286-320`).
 (`R/availability-provider.R:195-203`) and terminal handling
 (`R/fold-engine.R:505`).
 
-### 4.2 Proposal: adopt gating, amend the four authorities
+### 4.2 Decision: report the engine, keep the goal
 
-**Proposed decision.** Feature windows count venue open sessions. Lifetime facts
-do not narrow the feature axis. The four authorities above are amended,
-including gate 21. The engine stands.
+**Accepted 2026-09-27.** Feature windows count venue open sessions, and lifetime
+facts do not narrow the feature axis. The documentation is corrected to report
+what the engine does rather than what was aspired to, and the engine stands.
+
+**The door stays open.** Instrument-narrowed expected sessions remain the stated
+design goal for a later version. This is a decision about what the documents
+claim now, not a rejection of the semantics. The reasoning on both sides, the
+measured cost each way, the two arguments that were made and do not hold, and
+the trip-wire that makes narrowing expensive are recorded in `../horizon.md`
+(2026-09-27) so that a later version reinstates it from the reasoning rather
+than from scratch.
+
+**What the correction touches, and what it must not.** The live authority is
+`contracts.md:803`. The availability synthesis, the v0.2.0.0 packet and gate 21
+are accepted records of what was decided then, and Cut 13's LDG-2851 states the
+convention directly: "historical closeouts, RFC artifacts, recorded spike
+evidence and negative regression fixtures keep their original text and continue
+to describe the surface they were written against." So the repair amends
+`contracts.md`, records the supersession of gate 21's narrowing clause where
+supersessions are recorded, and does not rewrite accepted RFC or packet text.
+It also adds the fixture that was missing, which is what let the two drift apart
+for two releases.
+
+That scoping is a decision this document makes, not a mechanical consequence,
+and the ticket should carry it explicitly.
 
 ### 4.3 The argument, on what survives
 
