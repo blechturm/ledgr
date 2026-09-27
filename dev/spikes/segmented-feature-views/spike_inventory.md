@@ -294,6 +294,62 @@ ingested. One capture gap detects arrivals and cannot estimate a distribution; a
 real one needs captures accumulated over months, which is the forward-looking item
 already open in the research repo.
 
+### The magnitude, measured: the carry already happened upstream
+
+`vendor_carry_measurement.R`, recorded in `vendor_carry_evidence.csv`. Window
+2020-01-01 to 2024-12-31, acquisition `20260905T092008Z`: 9,448 tickers, 1,258
+sessions, 8,367,776 instrument-sessions. Read-only.
+
+The question the ablation left was how big the bias is in magnitude. The answer is
+that the mechanism this spike models is close to inert on this data, and a much
+larger effect sits beside it.
+
+**There is nothing to carry into.** Counting sessions inside each ticker's own
+coverage that carry no row at all: **1**, out of 8,367,776. Sharadar does not omit
+a session. ledgr's carry policy fills an absent observation, and absent
+observations do not occur here, so the policy never fires.
+
+**The reason is that the vendor already carried.** 270,949 sessions - **3.24% of
+the panel**, across 2,735 tickers - are printed with zero volume, and on
+**99.32%** of them the close equals the previous close, against a **5.76%**
+control for sessions that did trade. Nothing traded, and a price was published
+anyway.
+
+| Quantity | Sessions | Share of panel |
+| --- | --- | --- |
+| Absent, what the carry policy is for | 1 | 0.00% |
+| Zero-volume runs spanning a barrier event | 861 | 0.010% |
+| Zero-volume, in runs longer than 20 sessions | 31,303 | 0.374% |
+| Zero-volume, in runs longer than 5 sessions | 100,500 | 1.201% |
+| Zero-volume, all | 270,949 | 3.238% |
+
+**The controls this spike has been designing govern the smallest row.** The carry
+age limit and the barrier rule exist to refuse a stale price. The longest thing
+they could refuse here is 861 sessions; the stale prices actually present number
+270,949, of which 100,500 sit in runs longer than five sessions and 31,303 in runs
+longer than twenty. The longest unbroken run of sessions with no trading and a
+published price is **663**. A five-session carry age is a rule about 0.01% of the
+panel while 1.2% of it is already carried past that age, upstream, unlabelled.
+
+**ledgr cannot currently see the difference.** Section 4.4 makes observations
+always admissible, and a zero-volume print is an observation. Volume is carried
+into the execution bar and exposed to strategies as `ctx$vec$volume`
+(`R/fill-model.R:52,86`, `R/pulse-context.R:229`), but no fill path gates on it:
+there is no participation cap and no zero-volume refusal, so a fill at the open of
+a session on which nothing traded is produced without comment. That is a
+tradability question rather than a data-fabrication one - a zero-volume close can
+be a legitimate official close - but a backtest filling against it assumes
+liquidity that did not exist.
+
+**One clean negative.** Rows dated after a ticker's terminal action: **0**. The
+vendor does not print past a delisting, so the phantom-history worry is refuted
+rather than left open.
+
+**What this does not say.** It does not price the effect in returns; that needs a
+strategy. It does not establish that a zero-volume close is wrong, only that it is
+indistinguishable downstream from a traded one. And it is one vendor over one
+five-year window, so it bounds nothing about other sources.
+
 ### The ablation's own gutted path
 
 Removing the cross-sectional coupling - `p <- p - m` in `feat_at()` - collapses
