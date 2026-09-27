@@ -150,7 +150,7 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
     universe = c("AAA", "BBB"),
     ts_utc = ledgr_utc("2020-01-06"),
     features = features,
-    initial_cash = 1000
+    cash = 1000
   )
   on.exit(close(pulse), add = TRUE)
 

@@ -6,8 +6,12 @@
 #' @param features List of `ledgr_indicator` objects to compute.
 #' @param feature_params JSON-safe list used to resolve parameterized feature
 #'   declarations when `features` is a feature map.
-#' @param initial_cash Mock cash balance.
+#' @param cash Cash held alongside `positions`. It is not total account value;
+#'   pulse equity is `cash + sum(positions * current close)`.
 #' @param positions Named numeric vector of positions (NULL = flat).
+#' @param state_prev Optional JSON-safe previous strategy state. This supports
+#'   dense one-pulse strategy checks; availability-aware state normalization is
+#'   not simulated.
 #'
 #' @return A `ledgr_pulse_context` object.
 #' @examples
@@ -37,8 +41,9 @@ ledgr_pulse_snapshot <- function(snapshot,
                                  ts_utc,
                                  features = list(),
                                  feature_params = list(),
-                                 initial_cash = 100000,
-                                 positions = NULL) {
+                                 cash = 100000,
+                                 positions = NULL,
+                                 state_prev = NULL) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -66,19 +71,31 @@ ledgr_pulse_snapshot <- function(snapshot,
       rlang::abort("`features` must contain ledgr_indicator objects.", class = "ledgr_invalid_args")
     }
   }
-  if (!is.numeric(initial_cash) || length(initial_cash) != 1 || is.na(initial_cash) || !is.finite(initial_cash)) {
-    rlang::abort("`initial_cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
+  if (!is.numeric(cash) || length(cash) != 1 || is.na(cash) || !is.finite(cash)) {
+    rlang::abort("`cash` must be a finite numeric scalar.", class = "ledgr_invalid_args")
   }
+  if (!is.null(state_prev)) invisible(canonical_json(state_prev))
   ts_norm <- ledgr_normalize_ts_utc(ts_utc)
 
   if (is.null(positions)) {
     positions <- stats::setNames(rep(0, length(universe)), universe)
   } else {
-    if (!is.numeric(positions) || is.null(names(positions)) || any(!nzchar(names(positions)))) {
+    if (!is.numeric(positions) || is.null(names(positions)) || anyNA(names(positions)) ||
+        any(!nzchar(names(positions)))) {
       rlang::abort("`positions` must be a named numeric vector.", class = "ledgr_invalid_args")
     }
     if (anyDuplicated(names(positions))) {
       rlang::abort("`positions` must have unique instrument_id names.", class = "ledgr_invalid_args")
+    }
+    if (anyNA(positions) || any(!is.finite(positions))) {
+      rlang::abort("`positions` must contain finite numeric quantities.", class = "ledgr_invalid_args")
+    }
+    extra <- setdiff(names(positions), universe)
+    if (length(extra) > 0L) {
+      rlang::abort(
+        sprintf("`positions` contains instrument_ids outside `universe`: %s.", paste(extra, collapse = ", ")),
+        class = "ledgr_invalid_args"
+      )
     }
   }
 
@@ -89,8 +106,8 @@ ledgr_pulse_snapshot <- function(snapshot,
   e$ts_utc <- ts_norm
   e$universe <- universe
   e$positions <- positions
-  e$cash <- as.numeric(initial_cash)
-  e$equity <- as.numeric(initial_cash)
+  e$cash <- as.numeric(cash)
+  e$state_prev <- state_prev
   e$feature_params <- feature_params
   e$active_alias_map <- alias_map_info$alias_map
   e$alias_map_json <- alias_map_info$alias_map_json
@@ -133,6 +150,10 @@ ledgr_pulse_snapshot <- function(snapshot,
 
   e$bars <- bars
   e$features <- features_df
+  position_vec <- stats::setNames(rep(0, length(universe)), universe)
+  position_vec[names(positions)] <- as.numeric(positions)
+  close_vec <- as.numeric(bars$close[match(universe, as.character(bars$instrument_id))])
+  e$equity <- as.numeric(cash) + sum(position_vec * close_vec)
   ledgr_update_pulse_context_helpers(
     e,
     bars = bars,
@@ -170,6 +191,10 @@ print.ledgr_pulse_context <- function(x, ...) {
   cat("ledgr Pulse Snapshot\n")
   cat("Timestamp: ", x$ts_utc, "\n", sep = "")
   cat("Universe:  ", paste(x$universe, collapse = ", "), "\n", sep = "")
+  cat("Cash:      ", format(x$cash, scientific = FALSE, trim = TRUE), "\n", sep = "")
+  cat("Equity:    ", format(x$equity, scientific = FALSE, trim = TRUE), "\n", sep = "")
+  cat("Positions: ", sum(as.numeric(x$vec$position) != 0), " nonzero\n", sep = "")
+  cat("State:     ", if (is.null(x$state_prev)) "none" else "supplied", "\n", sep = "")
   cat("Bars:      ", nrow(x$bars), "\n", sep = "")
   cat("Features:  ", nrow(x$features), "\n", sep = "")
   invisible(x)

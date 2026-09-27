@@ -10,8 +10,9 @@ ledgr_pulse_snapshot(
   ts_utc,
   features = list(),
   feature_params = list(),
-  initial_cash = 1e+05,
-  positions = NULL
+  cash = 1e+05,
+  positions = NULL,
+  state_prev = NULL
 )
 }
 \arguments{
@@ -26,9 +27,14 @@ ledgr_pulse_snapshot(
 \item{feature_params}{JSON-safe list used to resolve parameterized feature
 declarations when \code{features} is a feature map.}
 
-\item{initial_cash}{Mock cash balance.}
+\item{cash}{Cash held alongside \code{positions}. It is not total account value;
+pulse equity is \code{cash + sum(positions * current close)}.}
 
 \item{positions}{Named numeric vector of positions (NULL = flat).}
+
+\item{state_prev}{Optional JSON-safe previous strategy state. This supports
+dense one-pulse strategy checks; availability-aware state normalization is
+not simulated.}
 }
 \value{
 A \code{ledgr_pulse_context} object.

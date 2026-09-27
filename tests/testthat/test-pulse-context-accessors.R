@@ -566,7 +566,7 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
     universe = universe,
     ts_utc = ts_utc,
     features = list(ledgr_ind_sma(2)),
-    initial_cash = 1000
+    cash = 1000
   )
   on.exit(close(ctx), add = TRUE)
 
@@ -585,6 +585,127 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
     class = "ledgr_unknown_feature_id"
   )
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
+})
+
+testthat::test_that("[LTB-0094] pulse snapshots match dense fold state and valuation", {
+  ts <- as.POSIXct("2026-01-01", tz = "UTC") + 86400 * 0:2
+  bars <- do.call(rbind, lapply(seq_along(ts), function(i) {
+    data.frame(
+      ts_utc = rep(ts[[i]], 2L),
+      instrument_id = c("AAA", "BBB"),
+      open = c(10, 20),
+      high = c(10, 20),
+      low = c(10, 20),
+      close = c(10, 20),
+      volume = c(1000, 1000),
+      stringsAsFactors = FALSE
+    )
+  }))
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  observed <- new.env(parent = emptyenv())
+  observed$pulse <- 0L
+  weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5))
+  strategy <- function(ctx, params) {
+    observed$pulse <- observed$pulse + 1L
+    if (observed$pulse == 1L) {
+      observed$first <- list(
+        cash = ctx$cash,
+        equity = ctx$equity,
+        positions = ctx$hold(),
+        target = ledgr_target_rebalance(weights, ctx)
+      )
+      state_update <- list(pulses_seen = 3L)
+    } else {
+      observed$state_prev <- ctx$state_prev
+      state_update <- ctx$state_prev
+    }
+    list(targets = ctx$hold(), state_update = state_update)
+  }
+  experiment <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = strategy,
+    opening = ledgr_opening(
+      cash = 100,
+      positions = c(BBB = 2, AAA = 1),
+      cost_basis = c(BBB = 20, AAA = 10)
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  backtest <- ledgr_run(experiment, run_id = "pulse-snapshot-fold-oracle")
+  on.exit(close(backtest), add = TRUE)
+
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = c("AAA", "BBB"),
+    ts_utc = ts[[1L]],
+    cash = 100,
+    positions = c(BBB = 2, AAA = 1)
+  )
+  on.exit(close(pulse), add = TRUE)
+  testthat::expect_identical(pulse$cash, observed$first$cash)
+  testthat::expect_identical(pulse$equity, observed$first$equity)
+  testthat::expect_identical(pulse$hold(), observed$first$positions)
+  testthat::expect_identical(
+    ledgr_target_rebalance(weights, pulse),
+    observed$first$target
+  )
+
+  state_pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = c("AAA", "BBB"),
+    ts_utc = ts[[2L]],
+    cash = 100,
+    positions = c(BBB = 2, AAA = 1),
+    state_prev = list(pulses_seen = 3L)
+  )
+  on.exit(close(state_pulse), add = TRUE)
+  testthat::expect_identical(state_pulse$state_prev, observed$state_prev)
+
+  printed <- capture.output(print(state_pulse))
+  testthat::expect_true(any(grepl("Cash:      100", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Equity:    150", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Positions: 2 nonzero", printed, fixed = TRUE)))
+  testthat::expect_true(any(grepl("State:     supplied", printed, fixed = TRUE)))
+  testthat::expect_false(any(grepl("pulses_seen", printed, fixed = TRUE)))
+
+  testthat::expect_false("initial_cash" %in% names(formals(ledgr_pulse_snapshot)))
+  testthat::expect_error(
+    ledgr_pulse_snapshot(
+      snapshot,
+      universe = c("AAA", "BBB"),
+      ts_utc = ts[[1L]],
+      initial_cash = 100
+    ),
+    regexp = "unused argument"
+  )
+
+  bad_state <- list(callback = function() NULL)
+  bad_strategy <- function(ctx, params) {
+    list(targets = ctx$hold(), state_update = bad_state)
+  }
+  bad_experiment <- ledgr_experiment(
+    snapshot = snapshot,
+    strategy = bad_strategy,
+    opening = ledgr_opening(cash = 100),
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    ledgr_run(bad_experiment, run_id = "pulse-snapshot-bad-state-fold"),
+    class = "ledgr_config_non_deterministic"
+  )
+  testthat::expect_error(
+    ledgr_pulse_snapshot(
+      snapshot,
+      universe = c("AAA", "BBB"),
+      ts_utc = ts[[1L]],
+      state_prev = bad_state
+    ),
+    class = "ledgr_config_non_deterministic"
+  )
 })
 
 # ledgr-test-profile: heavy_protocol

@@ -48,7 +48,7 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
     universe = universe,
     ts_utc = ts_utc,
     features = features,
-    initial_cash = 1000
+    cash = 1000
   )
   on.exit(ledgr:::close.ledgr_pulse_context(ctx), add = TRUE)
 
@@ -82,7 +82,7 @@ testthat::test_that("ledgr_pulse_snapshot computes features in-memory", {
     universe = universe,
     ts_utc = ts_utc,
     features = feature_map,
-    initial_cash = 1000
+    cash = 1000
   )
   on.exit(ledgr:::close.ledgr_pulse_context(ctx2), add = TRUE)
 
