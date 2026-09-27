@@ -1,10 +1,11 @@
 # RFC Synthesis: Strategy Context Surface And Helper Composability
 
-**Status:** Amended draft awaiting focused verification and maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-09-26.
 **Date:** 2026-09-26
 **Author:** ChatGPT, at the maintainer's request. This is also the response author;
 that requested role reuse overrides the operative seed's third-author preference.
-**Implementation window:** After the v0.2.0.2 release gate.
+**Implementation window:** Before the v0.2.1.0 release gate under the maintainer's
+2026-09-26 scheduling override recorded in Cut 13; no design decision changed.
 **Accepted question:** How does a strategy read current information and express
 portfolio intent without alignment tricks or hidden allocation policy?
 **Inputs:** [Operative seed](rfc_strategy_context_surface_v0_2_x_seed_v2.md),

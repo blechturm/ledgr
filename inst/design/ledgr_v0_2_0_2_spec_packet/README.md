@@ -434,7 +434,7 @@ around by hand, an overstated claim, and a reference that no longer resolves.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 15 Release gate | 2824, 2858, 2859, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+| 15 Release gate | 2824, 2858, 2859, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; one release-shaped same-host peer record run and rendered; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; peer correctness, differential parity, retention and registered parity checks pass before timing is interpreted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
 
 The maintainer promoted the release target to v0.2.1.0 on 2026-09-25 because
 the accumulated public capability and architecture changes are no longer
@@ -447,6 +447,15 @@ correction round would make the cut 2 over 2, 1.00, and is to be recorded rather
 than hidden, as cut 7 recorded its own. This workstream ships no production
 code, so the amended obligations' seven-shape walk and before-and-after clock
 do not apply to its review.
+
+The maintainer added one release-shaped peer record to LDG-2825 on 2026-09-27.
+It runs after the local gates and before release-branch CI, using the registered
+500-instrument, 1,260-session all-engine wrapper from the release commit. Its
+correctness, differential-parity, retention and peer-parity checks are gates;
+its clocks are characterization evidence and gain no post-hoc threshold. A
+suspected material regression requires an explicit maintainer disposition
+before the tag. This amendment adds evidence to the existing release-gate
+ticket rather than creating a fifth ticket or changing the review ratio.
 
 ## Cut 9: Availability and evidence accessors (accepted)
 
@@ -731,6 +740,15 @@ acceptance on 2026-09-26. Nine tickets, LDG-2850 through LDG-2857 plus
 LDG-2864, one workstream. The RFC artifacts are recorded on the v0.2.0.2
 design branch; the
 two branches must converge before this cut opens.
+
+The independent Type 1 and Type 2 cut review returned PASS_AFTER_PATCHES on
+2026-09-27. Its record-only corrections make five entrance-contract detectors
+falsifiable, remove an accidental authorization for a new history accessor,
+order the surface gate and teaching after the surfaces they inspect, replace a
+stale checker instruction with direct normal and gut probe runs, and add the
+P0 causality evidence and affected-path clocks to the close review. The review
+is the first of the cut's planned two invocations; Workstream 20 opens after
+these patches at 1/9, with one close review still planned.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
