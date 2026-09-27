@@ -869,35 +869,40 @@ conditions and named neither the real one nor the block. Right now the system
 can go red for a reason it does not report, which is why the reporting fix is
 in this cut rather than deferred as polish.
 
-## Cut 15: Session-axis documentation repair (review pending)
+## Cut 15: Session-axis documentation repair (closed)
 
 Authority: maintainer decision 2026-09-27 after the accepted point-in-time
 historical-projection cycle established that the shipped feature session axis
 is the venue open-session axis. Instrument-narrowed expected sessions remain
 the accepted next-release goal; they are not an engine change in this cut.
 
-Two tickets, LDG-2866 and LDG-2867, form Workstream 22. One planned Type 1
-close review is one invocation over two completed tickets, exactly 0.500
-against the review gate.
+Two tickets, LDG-2866 and LDG-2867, form Workstream 22. The first Type 1 close
+review returned CHANGES_REQUIRED on three bounded documentation and evidence
+findings. The focused re-review returned PASS after verifying their closure and
+the positive-control mutations. The final two invocations over two completed
+tickets is 1.000, a recorded historical breach of the 0.5 review gate.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 22 Session-axis documentation repair | 2866-2867 | amend the live feature-session contract; add the missing failure-sensitive fixture; record supersession and close the cut | the shipped feature session axis is the venue open-session axis, real observations inside accepted inactive intervals remain admissible, and no live teaching surface says otherwise |
+| 22 Session-axis documentation repair | 2866-2867 | amend the live feature-session contract; add the missing failure-sensitive fixture; record supersession and close the cut | the shipped feature session axis is the venue open-session axis, real observations inside accepted inactive intervals remain feature inputs while trading stays restricted, and no live teaching surface says otherwise |
 
 This cut corrects the live authority without rewriting accepted history. The
 availability synthesis, the v0.2.0.0 packet and availability gate 21 retain
 their original text under the packet's historical-artifact convention. The
-closeout records that gate 21's feature clause is superseded, why the mismatch
-survived two tagged releases and where the deferred narrowing design resumes.
+closeout records that gate 21's entire feature-and-classification expected-set
+clause is superseded, why the mismatch survived two tagged releases and where
+the deferred narrowing design resumes.
 
-Workstream 22 depends on accepted Workstream 20 and blocks the release gate.
-It changes no engine code, feature value, warm-up rule, identity input or
-per-pulse cost. The accepted synthesis, the 2026-09-27 horizon record and the
-roadmap row are the recoverable design trail.
+Workstream 22 depended on accepted Workstream 20 and now unblocks Workstream
+23; the release gate remains downstream of that work. This cut changes no
+engine code, feature value, warm-up rule, identity input or per-pulse cost.
+The accepted synthesis, the 2026-09-27 horizon record and the roadmap row are
+the recoverable design trail.
 
 Implementation is complete through `180413a`. LTB-0093 pins the venue-axis
-rule and the admissibility of real observations inside accepted inactive
-intervals. The ordinary fast profile passed 466 of 466 blocks in 87.500
-seconds and its independent checker passed the 112-second gate. The
-agent-provisional record is `session_axis_documentation_repair_closeout.md`;
-Cut 15 stays open until its Type 1 close review and maintainer acceptance.
+rule, the use of real observations inside accepted inactive intervals and the
+positive control that lifetime restriction is active. The ordinary fast
+profile passed 466 of 466 blocks in 87.500
+seconds and its independent checker passed the 112-second gate. The accepted
+record is `session_axis_documentation_repair_closeout.md`. The maintainer
+accepted the PASS on 2026-09-27; Cut 15 and Workstream 22 are closed.

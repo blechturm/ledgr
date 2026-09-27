@@ -867,12 +867,13 @@ The strategy preflight boundary originated in
   other TTR families remain uncertified until separately evidenced.
 - Strict feature windows count venue open sessions on the shared pulse axis.
   Accepted lifetime facts, including `known_inactive`, do not remove sessions
-  from that feature axis. A missing required observation inside an inactive
-  interval therefore makes the affected window `NA_real_` rather than bridging
-  across the interval. A real observation inside the interval remains an
-  admissible feature input even when trading is restricted. Valuation marks
-  never enter feature computation. Scalar `fn` and the terminal value from
-  `series_fn` receive the same bounded fully observed window and must agree on
+  from that feature axis. Any missing required observation on that axis makes
+  the affected window `NA_real_`; an inactive interval is one instance of the
+  general rule and is never bridged. A real observation inside an inactive
+  interval remains a feature input even though the availability plane may
+  restrict target changes for that instrument. Valuation marks never enter
+  feature computation. Scalar `fn` and the terminal value from `series_fn`
+  receive the same bounded fully observed window and must agree on
   certification fixtures.
 - Active feature fingerprints and cache keys include strict expected-session
   and cutoff-causal history semantics. Future-known facts cannot rewrite cached

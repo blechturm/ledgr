@@ -3,15 +3,16 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest released packet:** [v0.2.0.1](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md).
-**Current planning branch / next scheduled release:** `v0.2.0.2`.
-**Current implementation packet:** not yet opened for v0.2.0.2.
-The maintainer scheduled equity accounting and Sharadar-discovered workflow
-improvements on 2026-09-20. Start with the
-[roadmap scope](ledgr_roadmap.md#v0202-equity-accounting-and-research-workflow),
-[corporate-event evidence](research/Sharadar-Corporate-Event-Evidence.md), and
-[workflow evidence](research/Sharadar-Workflow-Improvement-Evidence.md).
-The governance review is accepted (2026-09-21; `rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`, with Seed v3 and its final review) and pilots on the next packet; the test-suite audit still gates v0.2.0.2, and the accounting-core dependency remains explicit.
-API and economic contracts still require scoped design. Spot-crypto stays parked.
+**Current planning branch / release target:** `v0.2.0.2` / `v0.2.1.0`.
+**Current implementation packet:** `ledgr_v0_2_0_2_spec_packet/`; its
+`tickets.yml` is the sole ticket and sequencing authority.
+The active packet carries current scope and status; do not infer either from an
+older planning narrative. The governance, testing-architecture,
+accounting-core and equity-settlement RFCs have been consumed into that packet.
+The maintainer promoted the release target to v0.2.1.0. The following version
+opens with the measured writer/accessor optimizations in
+[`summary_report.md`](spikes/fold_writer_accessor_levers_spike/summary_report.md),
+as scheduled in the roadmap. Spot-crypto stays parked.
 [v0.2.0.1 is published](https://github.com/blechturm/ledgr/releases/tag/v0.2.0.1);
 its packet and measurements are release history, not authorization for new work.
 
@@ -462,6 +463,8 @@ load-bearing for future sweep and fold-core work.
   per-element loop shapes and their replacements, review criteria for
   hot-path, ingest, seal, and reader code)
 - `collapse_optimization_map.md`
+- `spikes/fold_writer_accessor_levers_spike/summary_report.md` (measured input
+  promoted to the v0.2.1.1 opening optimization workstream)
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `spikes/ledgr_optimization_round_spike/README.md`

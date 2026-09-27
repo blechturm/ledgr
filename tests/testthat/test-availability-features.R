@@ -207,6 +207,17 @@ testthat::test_that("[LTB-0093] lifetime inactivity keeps venue feature sessions
     "2020-01-04T16:00:00Z"
   )
   testthat::expect_equal(actual$BBB[inactive_interval], c(23, 25))
+
+  inactive_explanation <- ledgr_run_explain(
+    captured$value,
+    "BBB",
+    as.POSIXct("2020-01-03 16:00:00", tz = "UTC")
+  )
+  testthat::expect_true(inactive_explanation$target_restricted[[1L]])
+  testthat::expect_identical(
+    inactive_explanation$target_restriction_reason[[1L]],
+    "lifetime_inactive"
+  )
 })
 
 # ledgr-test-profile: review

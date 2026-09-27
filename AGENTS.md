@@ -66,19 +66,17 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-09-22):
+Current planning context (2026-09-27):
 
 - v0.2.0.1 is published. Its packet, closeout and measurements are historical
   evidence; do not reopen that release or rewrite its measured results.
-- Release and planning branch: v0.2.0.2, equity accounting and research
-  workflow. The packet is open at `inst/design/ledgr_v0_2_0_2_spec_packet/`:
-  cuts 1 and 3 closed; cuts 2 and 4 open. Read the
-  roadmap's v0.2.0.2 section and the Sharadar research.
+- Release and planning branch: v0.2.0.2, targeting v0.2.1.0. The active packet
+  is `inst/design/ledgr_v0_2_0_2_spec_packet/`; its `tickets.yml` is the sole
+  current status and sequencing authority.
 - The governance review, testing-architecture RFC (2026-09-21) and
-  accounting-core RFC (2026-09-22) are accepted. v0.2.0.2 runs the five
-  test-cleanup workstreams, then the accounting-core workstream, then
-  equity settlement, in that order and not in parallel; the loop pilots
-  on this packet. Reader work and validation fixes need no new RFC cycle.
+  accounting-core RFC (2026-09-22) are accepted. This packet pilots
+  workstream-level review, with `tickets.yml` as authority and no batch
+  evidence essays. Reader work and validation fixes need no new RFC cycle.
 - Reuse public capabilities and production semantics. Design only the missing
   behavior; do not add research-specific manifests or a parallel provenance
   system. Prefer small detecting examples and concrete workflow improvements.
@@ -103,7 +101,7 @@ packets are records, not authorization for new work.
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
 | Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
-| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
+| Sweep performance / optimization | `inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md` for the scheduled v0.2.1.1 opening workstream; `inst/design/exact_parity_internal_optimization_proof_template.md`; `inst/design/manual/optimization_coding_style.qmd`; `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`; relevant projection/accessor syntheses |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |

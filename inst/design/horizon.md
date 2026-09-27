@@ -296,7 +296,9 @@ carries the commitment; this entry carries the reasoning.
 Four spikes measured hot-path levers on the release line at `b14579f`: 500 instruments × 1,260
 sessions, SMA 5/10, 68,201 fills. Report:
 `inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md`; evidence under
-`dev/spikes/`. The findings bind no design.
+`dev/spikes/`. At measurement close the findings bound no design. On 2026-09-27 the maintainer
+promoted the three measured levers to the roadmap as the opening workstream of v0.2.1.1. The
+roadmap now carries the commitment; this entry retains the measurements and rejected routes.
 
 - A per-pulse block write of fill events plus prepared fast-context feature accessors gave
   byte-identical results. Warm `ledgr_run` −22%, one-candidate `ledgr_sweep` −38%, compiled
@@ -310,6 +312,14 @@ sessions, SMA 5/10, 68,201 fills. Report:
 - `collapse::rsplit()` for bar preparation was rejected: about 60 ms per call, under 1% of a run.
 - This corrects the 2026-09-18 accessor entry: the dense path builds `features_wide` once per run,
   not on every pulse. Availability runs subset it per pulse with `%in%`.
+
+Promotion is deliberately narrow: per-pulse fill-event block writes, prepared scalar feature
+accessors, and validate-once plus a run-local exact memo for explicit feature maps. The rejected
+`collapse::rsplit()` route, strict availability feature computation, fill-payload construction,
+lot accounting, snapshot-hash guards and other incidental observations are not authorized by the
+promotion. The measured seams route directly to a ticket cut under the exact-parity proof
+template; a required public API, identity, persistence or failure-semantics change routes back to
+Type 2 design instead of expanding the maintenance workstream.
 
 ### 2026-09-26 [research] Fitted imputers after the simple missingness policy
 
