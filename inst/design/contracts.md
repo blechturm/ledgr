@@ -914,9 +914,6 @@ The strategy preflight boundary originated in
 - In v0.1.7 public workflows, `ctx$hold()` creates a full named target vector
   initialized from current holdings. It is appropriate for hold-unless-signal
   strategies and rebalance throttling.
-- `ctx$targets()` and `ctx$current_targets()` are removed from the v0.1.7
-  public workflow and fail loudly with migration guidance to `ctx$flat()` and
-  `ctx$hold()`.
 - Interactive pulse and indicator tools are read-only against persistent ledgr
   tables.
 

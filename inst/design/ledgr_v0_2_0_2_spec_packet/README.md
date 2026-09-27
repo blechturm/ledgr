@@ -750,11 +750,11 @@ P0 causality evidence and affected-path clocks to the close review. The review
 is the first of the cut's planned two invocations; Workstream 20 opens after
 these patches at 1/9, with one close review still planned.
 
-Implementation is agent-provisional at the Workstream 20 close. All nine
-tickets are implemented in `385c10e..91b9437` plus the closeout commit, and
+Implementation is agent-provisional at the Workstream 20 correction close. All
+nine tickets are implemented in `385c10e..HEAD`, and
 `strategy_context_surface_closeout.md` carries the direct probe, mutations,
-affected-path clocks, final fast record and deferred work. The independent cut
-review plus the requested close review is a planned `2 / 9 = 0.222`; the
+affected-path clocks, correction record and deferred work. The cut review,
+close review and requested correction re-review make `3 / 9 = 0.333`; the
 maintainer has not yet accepted the workstream.
 
 | Workstream | Tickets | Content | Review claim |
@@ -813,9 +813,8 @@ the surface this cut owns. Two constraints shape it: interactive inspection
 depends on that private projection today, and R reflection cannot be sandboxed,
 so the guarantee is stated against documented and ordinarily reachable paths.
 
-Governance: one cut review plus the planned close review is two invocations
-over nine completed tickets, 0.222 against the 0.5 gate, leaving room for one
-correction round at 0.333.
+Governance: the cut review, close review and requested correction re-review are
+three invocations over nine completed tickets, 0.333 against the 0.5 gate.
 
 ## Cut 14: Repair continuous integration (accepted)
 

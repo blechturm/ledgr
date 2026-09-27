@@ -13,7 +13,9 @@ target vectors.
 Common accessors:
 \itemize{
 \item \code{ctx$ts_utc}: current decision timestamp.
-\item \code{ctx$universe}: character vector of instruments in the run.
+\item \code{ctx$universe}: character vector on the current decision axis. In
+availability-aware runs this can include held nonmembers that remain necessary
+for valuation and disposition.
 \item \code{ctx$idx(id)}: 1-based universe position for one instrument.
 \item \code{ctx$open(id)}, \code{ctx$high(id)}, \code{ctx$low(id)},
 \code{ctx$close(id)}, \code{ctx$volume(id)}: current bar values for one
@@ -36,9 +38,11 @@ universe, aligned to \code{ctx$universe}.
 \item \code{ctx$flat()}: full named target vector initialized to zero.
 \item \code{ctx$hold()}: full named target vector initialized to current
 positions.
-\item \code{ctx$tradable()}: instrument IDs that may be sized now. In an
-availability-aware run these are current members that are admissible and
-priced; in a dense run they are instruments with a finite positive close.
+\item \code{ctx$tradable()}: convenience subset of current members that are
+admissible and priced in an availability-aware run; in a dense run it returns
+instruments with a finite positive close. A permissible stale mark can satisfy
+the predicate without supplying a current sizing close, and the result does not
+promise execution at the next open.
 }
 
 Feature IDs and feature-map aliases are different namespaces.

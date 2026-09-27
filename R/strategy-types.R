@@ -443,8 +443,9 @@ ledgr_weights <- function(x, universe = NULL, origin = NULL) {
 #' Create a strategy target vector
 #'
 #' `ledgr_target()` creates a thin wrapper around the full named numeric target
-#' quantity vector consumed by ledgr's existing strategy-result validator. An
-#' empty target is valid only with an explicitly empty universe.
+#' quantity vector consumed by ledgr's existing strategy-result validator. A
+#' zero-length target is valid when no non-empty universe is supplied; a
+#' supplied non-empty universe still requires one target per instrument.
 #'
 #' @param x Full named numeric target-quantity vector.
 #' @param universe Optional universe. When supplied, names must exactly match it.

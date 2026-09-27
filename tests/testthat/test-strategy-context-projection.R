@@ -1,6 +1,20 @@
 strategy_context_projection_capture <- function(ctx, params) {
   previous <- ctx$state_prev$history
   if (is.null(previous)) previous <- character()
+  previous_exposure <- ctx$state_prev$projection_exposed
+  if (is.null(previous_exposure)) previous_exposure <- logical()
+  context_values <- unclass(ctx)
+  projection_exposed <- any(c(
+    c(".feature_projection", ".feature_pulse_idx", ".feature_ids") %in%
+      names(context_values),
+    vapply(
+      context_values,
+      function(value) {
+        !is.function(value) && inherits(value, "ledgr_runtime_projection")
+      },
+      logical(1)
+    )
+  ))
   scalar <- ctx$feature("AAA", "sma_2")
   plane <- ctx$vec$feature("sma_2")[[1L]]
   bundle <- ctx$features("AAA")[["signal"]]
@@ -11,7 +25,10 @@ strategy_context_projection_capture <- function(ctx, params) {
                  collapse = "|")
   list(
     targets = ctx$hold(),
-    state_update = list(history = c(as.character(previous), entry))
+    state_update = list(
+      history = c(as.character(previous), entry),
+      projection_exposed = c(previous_exposure, projection_exposed)
+    )
   )
 }
 
@@ -120,9 +137,19 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     "NA|NA|NA", "101.5|101.5|101.5", "102.5|102.5|102.5",
     "103.5|103.5|103.5", "104.5|104.5|104.5"
   )
-  testthat::expect_identical(availability_last_state(dense_run)$history, expected)
+  dense_state <- availability_last_state(dense_run)
+  availability_state <- availability_last_state(availability_run)
+  testthat::expect_identical(dense_state$history, expected)
   testthat::expect_identical(
-    availability_last_state(availability_run)$history,
+    availability_state$history,
     expected
+  )
+  testthat::expect_identical(
+    dense_state$projection_exposed,
+    rep(FALSE, length(expected))
+  )
+  testthat::expect_identical(
+    availability_state$projection_exposed,
+    rep(FALSE, length(expected))
   )
 })
