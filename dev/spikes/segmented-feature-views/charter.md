@@ -1,8 +1,11 @@
-# Spike charter: segmented feature views
+# Spike charter: the late-known barrier revision seam
 
 **Status:** Draft for maintainer ownership. Binds nothing. Authorizes no
 production change, no spec packet, and no second execution path.
-**Governs:** `../../../inst/design/spike_protocol.md`, which supersedes anything
+**Supersedes:** the first draft of this charter, returned on adversarial review
+2026-09-27 for narrowing checkpoint (d) to payload size on evidence that did not
+support it. The closing section records why.
+**Governs:** `../../../inst/design/spike_protocol.md`, which overrides anything
 here that conflicts with it.
 **Feeds:** checkpoint part (d) of
 `../../../inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md`
@@ -11,120 +14,125 @@ here that conflicts with it.
 `probe_evidence.csv`, run 2026-09-27. Every claim below was executed or is cited
 from `contracts.md`.
 
-## The prerequisite question, already answered
-
-*Does per-instrument segmentation of knowledge-dependent state work at all?*
-
-**Yes, and it ships.** The prepared availability provider compiles canonical
-facts once before the fold into per-instrument piecewise-constant segments in a
-flat CSR layout, one cursor per instrument, advancing vectorised for a
-non-decreasing cutoff and re-seeking by `cumsum` for a decreasing one
-(`R/availability-provider-prepared.R:5-19`, `:99-131`, `:143-160`). A bounded
-fact whose knowledge time falls after its effective time resolves causally
-through the public surface: probe P1 shows the halt unrestricted at its
-effective instant and restricted at its knowledge instant with reason
-`trading_halted`.
-
-So this spike does not ask whether the shape works. It asks whether the shape
-survives a different payload.
-
 ## The one question
 
-> Does per-instrument segmented preparation remain viable when a segment
-> carries a feature series rather than a handful of resolved codes?
+> Does a late-known carry barrier revise an earlier finite-window feature value
+> and its evidence, while a previously returned result stays unchanged?
 
-Viable means both of: total prepared storage stays bounded at research scale,
-and no recomputation happens per pulse.
+This is the semantic seam, not a cost question. Nothing downstream can be sized
+until it is answered, because a representation cannot be measured for a revision
+that has not been shown to occur.
 
-The question exists because the two quantities scale differently, which the
-probe measured. The fact segment store is independent of the pulse axis - 960
-bytes for four instruments and twenty boundaries. A feature plane is instruments
-times pulses times eight bytes. A segmented feature view holds one plane per
-segment, so its storage grows as segments times instruments times pulses times
-features while the store it is modelled on grows as instruments times
-boundaries.
+## Why this is the question, from the probe
+
+**No shipped path produces the revision.** The engine consults no lifetime fact
+when it builds a feature window, so a later-known barrier changes no feature
+value today. The spike must build the smallest rule that makes one occur.
+
+**The default fixture cannot exhibit it.** Probe P4: the generator's only
+barrier-eligible fact is a terminal assertion whose knowledge time equals its
+effective time, and its recipe declares `price_basis = "split_adjusted"`, which
+removes corporate actions from the barrier set. The late-known halt in P1 is
+`trading_status`, which is not a barrier. So the bundle contains no late-known
+barrier.
+
+**One can be built.** Probe P4 moved the inactive row's knowledge time fifteen
+sessions later: `ledgr_facts_lifetime()` accepted it and
+`ledgr_snapshot_from_df()` sealed it. So the fixture exists through public
+constructors.
+
+**But it must be decoupled.** In P4 the instrument was already restricted at the
+barrier's effective instant, with reason `status_unknown` rather than
+`lifetime_inactive`, because the generator ends the same instrument's
+`trading_status` interval at that same instant. The fixture must separate the
+status expiry from the lifetime boundary before a revision can be attributed to
+the barrier. The reason code is the check that it did.
 
 ## Kill condition
 
-The spike stops and recharters if no schedule satisfies both halves at the
-target shape: if eager preparation of all segments exceeds the memory an
-ordinary research machine has, and lazy preparation cannot avoid computing
-inside the fold. A single schedule that satisfies one half while failing the
-other is a red outcome, not a partial pass.
+The spike stops and recharters if a late-known barrier cannot be made to revise
+a feature value without implementing the carry policy itself. That outcome means
+the seam is not separable from the feature, and the next step is a spec cut
+rather than a larger spike.
 
-## Exactly two alternatives
+It also stops if the fixture cannot be decoupled per P4, because then no
+observed revision can be attributed to the barrier rather than to a status
+expiry.
 
-Protocol section 8 returns a charter comparing more than two. The two are:
+## Scope: one of everything
 
-1. **Eager**: compile every segment's feature payload before the fold.
-2. **Lazy**: compile a segment's payload when the fold first reaches it.
+One barrier kind, the inactive lifetime interval. One feature, an existing
+finite-window indicator with its real calculation. One instrument carrying the
+revision. One previously returned result held for the immutability check.
 
-Banding, whole-series recomputation and any hybrid are out of scope here. The
-synthesis already sequences banding behind a measured whole-series cost, and
-measuring a third alternative before this question is answered is what the
-protocol forbids.
+Not in scope: the carry policy, the other barrier kinds, output carry, the
+history accessor, cross-sectional features, and any production API. Those are
+the synthesis's work, not this spike's.
+
+**No cost arm.** The first draft compared eager against lazy preparation. Lazy
+was disqualified by the draft's own viability criterion before any measurement,
+and sizing a revision that has not been demonstrated is premature. What eager
+preparation costs against a declared workload and memory envelope is the
+question this spike unblocks; it is deliberately not chartered here and needs
+its own charter with those quantities stated.
 
 ## Fixture
 
-`ledgr_sim_pit_inputs()`, which the probe exercised. Case placement is fixed:
-one halt on instrument 2, one delisting on instrument 1, one missing observation
-on instrument 4, regardless of how many instruments are requested. So event
-density is varied by composing several bundles, not by scaling one. The spike
-states the composition it used and why.
+`ledgr_sim_pit_inputs()` for the calendar, bars, membership and instruments,
+then a hand-built lifetime frame through `ledgr_facts_lifetime()` carrying one
+`known_inactive` interval whose knowledge time is later than its effective time,
+with the `trading_status` family adjusted so its interval does not expire at the
+same instant. Probe P4 established that this constructs and seals.
 
-No new generator, no generator refactor. If the fixed placement turns out to be
-what blocks the measurement, that is a finding for the closeout and a reason to
-extend the generator afterwards, not a task inside this spike.
-
-## Clocks
-
-Protocol section 10 applies, because the question reaches both boundaries.
-Report separately:
-
-- **cold end to end**: source inputs through the prepared feature views;
-- **warm research iteration**: from an existing unchanged verified snapshot
-  through the same views.
-
-Any preparation rebuilt per experiment belongs to the warm clock whatever it is
-called. If the harness cannot isolate reusable snapshot preparation, it reports
-the cold clock plus phase timings and labels the warm number incomplete. The
-package carries no prepare-phase clock, so phase timing comes from the harness;
-the closeout says so rather than implying package telemetry.
+No generator refactor. If the fixed case placement turns out to block the work,
+that is a finding for the closeout and a reason to extend the generator
+afterwards.
 
 ## Deliverables
 
-Protocol section 6, exactly three:
-
-- a runner that writes evidence CSVs;
-- a checker that reruns into a scratch directory, diffs against the recorded
-  CSVs, and guards package scope (`R`, `src`, `tests`, `NAMESPACE`,
-  `DESCRIPTION`, `man`, `inst/design`);
-- an inventory showing one gutted path failing, and listing what was demoted,
-  deleted, and learned about the package.
-
-Counts of passes are not evidence. A row is evidence only if the fork derived it
-from provider facts; any row narrated as a literal is labelled and excluded.
+Protocol section 6's three, as written there: a runner writing evidence CSVs; a
+checker that reruns into a scratch directory, diffs the recorded CSVs, and
+guards package scope (`R`, `src`, `tests`, `NAMESPACE`, `DESCRIPTION`, `man`,
+`inst/design`); and an inventory showing one gutted path failing and listing what
+was demoted, deleted and learned. Counts of passes are not evidence, and a row
+is evidence only if the fork derived it from provider facts.
 
 ## Test cases
 
-At most ten, and none written before a fork exists that can fail it. The order
-is the protocol's: smallest runnable fork with one seam, run it, let its
-failures generate the cases, then freeze expected answers in git with the
-reviewer named in the commit message. A case the fork cannot fail is a policy
-sentence for the synthesis, not a test.
+At most ten, none written before a fork exists that can fail it. The order is
+the protocol's: smallest runnable fork with one seam, run it, let its failures
+generate the cases, freeze the expected answers in git with the reviewer named
+in the commit message. A case the fork cannot fail is a policy sentence for the
+synthesis, not a test.
+
+The three the question implies, as a floor rather than a list to pre-author: the
+value before the barrier is knowable, the value after, and a result returned
+before the barrier became knowable which must not have changed.
 
 ## Boundaries
 
-- The throwaway knowledge-dependent rule this spike needs in order to have
-  anything to segment is **throwaway**. It is not a first draft of
+- The throwaway knowledge-dependent rule is **throwaway**. It is not a draft of
   instrument-narrowed expected sessions, which is scheduled for the next release
-  on its own recorded reasoning, and it must not be promoted into one.
+  on its own recorded reasoning, and must not be promoted into one.
 - No hash ledger, registry, first-appearance record, gate mode or provenance
   machinery. Git is the ledger. Identity claims use ledgr's own primitives, or
   are labelled `proto:` once.
-- Structural numbers from the small fixture never appear in a ranking.
+- Structural numbers from the small fixture never appear in a ranking, and this
+  charter asks for no cost number at all.
 - Nothing in `R/`, `src/`, `tests/`, `man/`, `NAMESPACE` or `DESCRIPTION`
   changes.
+
+## What the first draft got wrong
+
+Recorded so the narrowing is not re-proposed; the draft is in git.
+
+It asked whether segmented preparation survives a pulse-scaled payload, treating
+the semantic seam as settled. Probe P1 establishes only the diagonal, "January 3
+as known January 3", where the question needs "January 3 as known January 7",
+which nothing requests and `ledgr_run_explain()` cannot serve. Three supporting
+defects: an unquantified kill condition, a lazy arm disqualified by the draft's
+own viability criterion, and the cursor's backward re-seek cited from source
+reading, which section 8 returns and probe P5 now executes.
 
 ## Terminal outcome
 
@@ -132,8 +140,7 @@ One page. What ran, what was learned about the package, what the synthesis may
 consume, what remains open. Green, red or inconclusive in one sentence naming
 the charter clause that decides it.
 
-Two questions the charter expects to remain open afterwards, so the closeout
-does not overclaim: what happens when a feature reads across instruments, since
-the cost argument depends on per-instrument locality that cross-sectional
-features break; and whether a forbidden output carry is handled by the same
-segmentation.
+Two questions the charter expects to remain open, so the closeout does not
+overclaim: what happens when a feature reads across instruments, since locality
+arguments depend on per-instrument independence that cross-sectional features
+break; and whether a forbidden output carry is handled by the same seam.

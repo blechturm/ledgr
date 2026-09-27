@@ -79,3 +79,42 @@ observation on instrument 4 at weekday 7. Requesting more instruments does not
 produce more cases. So varying event density means composing several bundles
 rather than scaling one, and the spike must do that rather than assume a density
 argument exists.
+
+## P4. A late-known barrier is constructible; the fixture confounds it
+
+The halt measured in P1 is a `trading_status` fact. The accepted carry barriers
+are an inactive lifetime interval, a corporate action under an undeclared price
+basis, and a terminal assertion, so a halt is none of them. The generator sets
+its terminal assertion's knowledge time equal to its effective time, and the
+recipe declares `price_basis = "split_adjusted"`, which removes corporate
+actions from the barrier set. So the default bundle contains **no late-known
+barrier at all**, and P1 is evidence about ordinary decision-time causality
+rather than about the two-clock historical view.
+
+Moving the inactive row's knowledge time from 2020-01-14 to 2020-01-29:
+
+| key | value |
+| --- | --- |
+| `late_known_barrier_constructs` | `TRUE` |
+| `late_known_barrier_seals` | `TRUE` |
+| `barrier_restricted_at_effective_from` | `TRUE` |
+| `barrier_restricted_at_knowledge_time` | `TRUE` |
+| `barrier_reason_at_knowledge_time` | `status_unknown` |
+
+Two findings. A late-known inactive interval passes `ledgr_facts_lifetime()` and
+seals, so the fixture the spike needs can be built through the public
+constructor. And this probe cannot observe its causality in isolation: the
+instrument is restricted already at the effective instant, and the reason is
+`status_unknown` rather than `lifetime_inactive`, because the generator ends the
+same instrument's `trading_status` interval at that same instant. The reason
+code is what exposes the confound. Any fixture for the spike must decouple the
+status expiry from the lifetime boundary before it can attribute a revision to
+the barrier.
+
+## P5. The backward re-seek is exercised, not asserted
+
+An earlier draft of the charter cited `ledgr_availability_prepared_cursor()`'s
+backward re-seek from source reading, which protocol section 8 returns. Now
+executed: two cursors over the same segments, one seeked forward to the last
+boundary and then back to the first, the other seeked only forward to the first,
+read identically (`cursor_backward_reseek_matches_fresh` is `TRUE`).

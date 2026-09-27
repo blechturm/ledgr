@@ -143,6 +143,102 @@ close(run)
 ledgr_snapshot_close(snapshot)
 unlink(db_path)
 
+
+# =====================================================================
+# P4  Is a late-known *barrier* constructible and causally resolved?
+#
+# The accepted barriers are an inactive lifetime interval, a corporate action
+# under an undeclared price basis, and a terminal assertion. The halt measured
+# above is `trading_status`, which is none of them, and the generator sets the
+# terminal assertion's knowledge time equal to its effective time. So the
+# default bundle contains no late-known barrier. This asks whether one can be
+# built through the public constructor at all.
+# =====================================================================
+
+life <- inputs$lifetime
+inactive_row <- which(life$assertion == "known_inactive")
+stopifnot(length(inactive_row) == 1L)
+lag_to <- ledgr_sim_pit_time_for_date(
+  inputs$sessions$session_date[inputs$sessions$status == "open"][20L],
+  ledgr_session_times(inputs$sessions$session_close, inputs$sessions$session_date,
+                      "UTC", "session_close"),
+  inputs$sessions
+)
+life$knowledge_time[inactive_row] <- lag_to
+record("barrier_effective_from",
+       format(life$effective_from[inactive_row], "%Y-%m-%d %H:%M:%S"), "utc",
+       "generator lifetime row, unchanged")
+record("barrier_knowledge_time", format(lag_to, "%Y-%m-%d %H:%M:%S"), "utc",
+       "knowledge_time moved later by the probe")
+
+built <- tryCatch(
+  do.call(ledgr_facts_lifetime, c(list(df = life), args_for("lifetime"))),
+  error = function(e) e
+)
+record("late_known_barrier_constructs", !inherits(built, "error"), "logical",
+       "ledgr_facts_lifetime on the edited frame")
+if (inherits(built, "error")) {
+  record("late_known_barrier_error", class(built)[[1L]], "class",
+         "condition class from ledgr_facts_lifetime")
+} else {
+  facts2 <- ledgr_facts(
+    do.call(ledgr_facts_sessions, c(list(df = inputs$sessions), args_for("sessions"))),
+    do.call(ledgr_facts_membership_snapshots,
+            c(list(df = inputs$membership), args_for("membership"))),
+    built,
+    do.call(ledgr_facts_trading_status,
+            c(list(df = inputs$trading_status), args_for("trading_status")))
+  )
+  db2 <- tempfile(fileext = ".duckdb")
+  snap2 <- tryCatch(
+    ledgr_snapshot_from_df(inputs$bars, instruments_df = inputs$instruments,
+                           facts = facts2, db_path = db2,
+                           price_basis = inputs$recipe$price_basis),
+    error = function(e) e
+  )
+  record("late_known_barrier_seals", !inherits(snap2, "error"), "logical",
+         "ledgr_snapshot_from_df with the late-known barrier")
+  if (!inherits(snap2, "error")) {
+    run2 <- ledgr_run(
+      ledgr_experiment(snap2, function(ctx, params) ctx$flat(),
+                       universe = ledgr_universe_members(inputs$recipe$scopes$universe_id),
+                       valuation_policy = ledgr_valuation_stale(2),
+                       cost_model = ledgr_cost_zero()),
+      run_id = "probe-late-barrier"
+    )
+    bid <- life$instrument_id[inactive_row]
+    e_eff <- ledgr_run_explain(run2, bid, life$effective_from[inactive_row])
+    e_kno <- ledgr_run_explain(run2, bid, lag_to)
+    record("barrier_restricted_at_effective_from", e_eff$target_restricted[[1L]],
+           "logical", "ledgr_run_explain on the late-known-barrier run")
+    record("barrier_restricted_at_knowledge_time", e_kno$target_restricted[[1L]],
+           "logical", "ledgr_run_explain on the late-known-barrier run")
+    record("barrier_reason_at_knowledge_time",
+           if (is.null(e_kno$target_restriction_reason)) NA_character_
+           else e_kno$target_restriction_reason[[1L]],
+           "reason", "ledgr_run_explain on the late-known-barrier run")
+    close(run2)
+    ledgr_snapshot_close(snap2)
+  }
+  unlink(db2)
+}
+
+# =====================================================================
+# P5  Exercise the backward re-seek the charter would otherwise assert.
+# =====================================================================
+rws <- prov_data$status
+segs <- ledgr_availability_prepared_segments(rws, key, 1L, 1L,
+                                             function(applicable) length(applicable))
+lo <- min(segs$bound[is.finite(segs$bound)])
+hi <- max(segs$bound[is.finite(segs$bound)])
+c1 <- ledgr_availability_prepared_cursor(segs)
+c1$seek(hi); c1$seek(lo)            # forward then backward
+c2 <- ledgr_availability_prepared_cursor(segs)
+c2$seek(lo)                          # fresh forward only
+same <- identical(c1$read(1L, seq_len(length(key))), c2$read(1L, seq_len(length(key))))
+record("cursor_backward_reseek_matches_fresh", same, "logical",
+       "two cursors over the same segments, one re-seeked backward")
+
 evidence <- do.call(rbind, rows)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(evidence, file.path(out_dir, "probe_evidence.csv"), row.names = FALSE)
