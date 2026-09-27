@@ -50,10 +50,13 @@ the barrier. The reason code is the check that it did.
 
 ## Kill condition
 
-The spike stops and recharters if a late-known barrier cannot be made to revise
-a feature value without implementing the carry policy itself. That outcome means
-the seam is not separable from the feature, and the next step is a spec cut
-rather than a larger spike.
+The spike stops and recharters if the revision cannot be exhibited inside the
+one-of-everything scope below: one barrier kind, one feature, one instrument.
+The seam is then not separable at this size, and a spec cut follows.
+
+Building a throwaway fork is not the failure condition. Protocol section 3 asks
+for the smallest runnable fork and section 6 asks the inventory to show a gutted
+path, so prototyping is the method. The test is proportion, not purity.
 
 It also stops if the fixture cannot be decoupled per P4, because then no
 observed revision can be attributed to the barrier rather than to a status
