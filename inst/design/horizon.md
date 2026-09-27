@@ -124,6 +124,232 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
   path, non-spot accounting models) remains available as a v0.1.9.x+
   forward direction.
 
+### 2026-09-27 [data] Interval facts cannot express per-endpoint knowledge
+
+An interval fact carries one `knowledge_time` for the whole assertion, so it
+cannot express that a start was known earlier while the end was learned later.
+Keeping the earlier knowledge time declares an end that was not yet known;
+moving it to the later one hides the start information that genuinely was known.
+There is no third encoding, because opposing overlapping assertions are rejected
+before execution.
+
+**Corrected 2026-09-27 after peer review.** This entry first claimed the engine
+applies `effective_to` without a knowledge gate, reading
+`R/availability-provider.R:55` in isolation. That stopped one line early:
+`ledgr_availability_applicable()` returns `effective & knowable & before_end` at
+`:56`, so the end test is conjoined with knowability and never applied on its
+own. The prepared builders implement the same joint condition, with `start` as
+`pmax(seconds(effective_from), seconds(knowledge_time))` and eligibility as
+`start <= cutoff & cutoff < end` (`:85` for membership intervals, `:119` for the
+status and lifetime segment builder). A row whose end precedes its knowledge
+time is never applicable at all. `contracts.md:354` requires both clocks and
+these sites implement that rule faithfully, so there is no runtime causality
+defect here. The limitation is the row-level rule itself: one timestamp cannot
+carry two separately learned boundaries.
+
+ledgr-research found this independently against real data and ratified a
+workaround on 2026-09-14 (SHR-D033): for membership, the interval shape "drops a
+member one session before its removal is knowable under the declared lag,
+reporting `unknown_no_usable_evidence` for an instrument the source asserts as a
+member", and `ledgr_fact_validate_membership_conflicts()` rejects the open-ended
+encoding that would have preserved the removal's knowledge time. They prohibited
+`ledgr_facts_membership_intervals()` for that universe and moved to
+`ledgr_facts_membership_snapshots(complete = TRUE)`, calling it "a correctness
+requirement, not a preference between equally faithful encodings."
+
+Successive open-ended assertions are **not** an escape, which the same review
+established and which makes the gap worse rather than better.
+`ledgr_fact_validate_lifetime_conflicts()` (`R/availability-facts.R:1813`) calls
+`ledgr_fact_opposing_state_overlap()`, which compares `effective_from` and
+`effective_to` with no knowledge term (`:1693-1695`), so a `known_active`
+interval open from January and a `known_inactive` interval open from June are
+rejected as an incompatible overlap whatever their knowledge times. Validation
+runs at the public constructor (`:343`) and again at sealing
+(`R/availability-persistence.R:594`), so the encoding never reaches the resolver
+and last-wins ordering cannot rescue it. Membership has the one genuine route, a
+later knowable complete set that removes an instrument by omission, and that
+needs real complete-set evidence. `lifetime` and `trading_status` have no route
+at all.
+
+Practical exposure today is low and not zero. The Sharadar adapter emits
+open-ended terminal inactivity and bounded *active* intervals, so it never
+produces a bounded inactive interval; a bounded active interval's end only means
+"evidence stops here". The reachable cases are hand-supplied facts and any
+future adapter modelling a suspension with a known end date.
+
+A second finding belongs with this one, because it explains why nobody hit the
+first. Vendor history cannot supply a knowledge clock at all. Research into the
+Sharadar documentation established no first-availability or announcement column
+in ACTIONS or TICKERS, no archive of dated snapshots or prior row versions, and
+`lastupdated` as a last-modified date rather than a first publication - so
+filtering `lastupdated <= D` excludes a corrected row instead of restoring its
+earlier version. SF1's ARQ/ARY/ART are genuinely as-reported against filing
+dates, and DAILY is documented point-in-time, but ledgr's snapshot holds bars
+and availability facts with no fundamentals table, so the one place the vendor
+does supply two distinct clocks is the one ledgr cannot currently store.
+
+Two consequences worth keeping. The research adapter's `assume_effective`
+translation policy is forced rather than chosen, and it is already declared and
+surfaced as `assumption_backed / knowledge_assume_effective` with the source
+clocks kept in lineage. And ledgr's point-in-time machinery is forward-looking:
+a knowledge clock can be accumulated from the operator's own timestamped
+captures from now on, but not recovered retrospectively. Every fact family any
+current adapter produces has the two clocks coincident.
+
+**Corrected 2026-09-27.** This entry first added that the two-clock paths have
+therefore never been exercised against genuinely two-clock data. That is false.
+`ledgr_sim_pit_inputs(cases = "halt")` emits a bounded `trading_status` interval
+that is effective on one session and knowable two sessions later, and
+`tests/testthat/test-sim-pit-inputs.R` asserts `knowledge_time >
+effective_from` outright, then runs a fold and reads `ledgr_run_explain()` at
+the effective instant, at the knowledge instant and at the interval end to
+confirm the halt appears only once knowable. Workstream 18's `LDG-2842`
+correction introduced that late-known case on purpose. So the two-clock
+resolution path, including the `pmax` start, is exercised end to end by
+synthetic fixtures.
+
+Two narrower statements survive. No *adapter* produces distinct clocks, so the
+paths are tested against constructed cases rather than against a real vendor's
+clock structure, and the first genuinely two-clock vendor family remains an
+integration risk. And the `pmax` collapse is lossy only for an off-diagonal
+query - column `s` under a cutoff `t > s` - which nothing performs today, so
+that loss is latent rather than unexercised for want of data.
+
+Route: its own cycle, once a capture-based or fundamentals-bearing snapshot
+exists to exercise it. Until then the release should state the limitation among
+its non-claims rather than imply a retrospective point-in-time guarantee.
+
+### 2026-09-27 [data] Instrument-narrowed expected sessions, deferred
+
+Accepted 2026-09-27: the documentation reports what the engine does. Feature
+windows count venue open sessions, and lifetime facts do not narrow the feature
+axis. Reaching the stated design goal - instrument expected sessions excluding
+accepted `known_inactive` intervals - is scheduled for the next release in
+`ledgr_roadmap.md`, and this entry keeps the reasoning so it is not re-derived
+from scratch.
+
+The disagreement. Four authorities say feature windows exclude known inactivity:
+the availability synthesis ("expected sessions, which drive feature windows...
+are the venue open sessions minus those inside an accepted `known_inactive`
+lifetime interval"), `contracts.md:803`, the v0.2.0.0 packet ("instrument
+expected sessions exclude known inactivity for features"), and gate 21 ("those
+sessions leave the feature and classification expected set"). The engine narrows
+nowhere: hydration builds one frame per instrument on the venue pulse axis and
+fails the run if any per-instrument axis differs
+(`R/backtest-runner.R:873-907`, gate at `:904-905`), and `known_inactive`
+reaches only trading restriction and terminal handling. The two behaviours
+differ in value, not coverage: across an inactive interval, narrowing reaches
+back past it and returns a number, gating returns `NA`.
+
+Why it survived two tagged releases: gate 21's narrowing clause has no test
+coverage anywhere. `known_inactive` appears in eleven test files and none assert
+a feature value; `tests/testthat/test-availability-features.R` has four tests
+and no lifetime reference. It was design text that nothing executed. The
+neighbouring guarantee is covered, since the same file tests that future facts
+cannot change earlier features. Whichever direction a later version takes, the
+repair adds the fixture that pins it.
+
+Measured cost, 2026-09-27. Documenting current behaviour: one clause in one
+gate, three prose sites, one new fixture, no fixture breakage. Implementing
+narrowing: an engine change to a hydration path that currently refuses
+per-instrument axes, fixtures written from scratch, and possible repair of
+fixtures that expect `NA` across an inactive span. The computation itself is
+easy, because `ledgr_compute_feature_series_strict()` counts rows of whatever
+frame it is handed and narrows correctly when handed a narrowed one; the work is
+deriving per-instrument frames and scattering results back onto the venue axis.
+
+The reasoning that survived review, for whoever reinstates this. Gating keeps
+one knowledge-dependent channel rather than two, since narrowing makes window
+*composition* depend on knowledge as well as carry eligibility, and the two
+interact. Narrowing discards real observations, because a genuine print inside
+an asserted inactive interval exists today and is used, and narrowing removes
+that session from the axis. The availability synthesis already forbids the same
+bridging for a whole-feed outage, where "an observation before and after the
+outage can never masquerade as a complete adjacent-session window". And gating
+puts features on the same axis the valuation clock already uses.
+
+Two arguments that were made and do not hold, recorded so they are not made
+again. Gating does not make feature values cutoff-invariant once carry-forward
+is enabled, because carry eligibility is conditioned on knowledge-timed facts.
+And carry-forward does not provide a disclosed substitute for bridging
+inactivity, because the accepted carry policy forbids carry across an inactive
+interval.
+
+The trip-wire that makes narrowing expensive rather than merely fiddly: expected
+sessions derived from lifetime facts inherit those facts' knowledge times, so a
+fact becoming knowable mid-run changes a past window's contents, and
+`contracts.md:808-810` requires cutoff-causal semantics where future-known facts
+cannot rewrite cached earlier feature values. Features are precomputed once per
+run while lifetime facts resolve per pulse, so narrowing needs either per-pulse
+recomputation, bounded incremental invalidation, or a declared causal deviation.
+The first is the shape the optimization manual bans; the second is the machinery
+the historical-projection checkpoint exists to evaluate. Under every current
+adapter the two clocks coincide, so the trip-wire does not fire today - which is
+exactly why it should be checked before narrowing lands rather than after.
+
+Route: the next release, with the fixture, after the historical-projection
+checkpoint establishes whether bounded revision is buildable. The roadmap row
+carries the commitment; this entry carries the reasoning.
+
+### 2026-09-26 [research] Fitted imputers after the simple missingness policy
+
+The maintainer's
+[historical-projection missingness amendment](rfc/rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md)
+sets the ML-release direction: simple carry-forward plus missingness
+information for prices and indicators. Fitted imputers need a separate design
+pass; they must not delay that simple capability. This entry extends the
+2026-06-14 "General ML-strategy preparedness" direction and the availability
+synthesis's deferred preprocessing obligation. It does not select a fitted
+method or assign the ML work a numbered release.
+
+**Fitting regime and information bounds.** Distinguish deterministic causal
+treatment, rolling/expanding re-estimation and transformations frozen on a
+training set. Define the fit population and cutoff at each outer evaluation and
+inner candidate-selection boundary. Fitted preprocessing cannot learn from the
+scored test period. A rolling refit has its own admissible history and use
+interval; it is not a whole-snapshot fit. Cross-sectional inputs need a declared
+point-in-time population, and historical requests retain their simulated
+decision-time knowledge cutoff. Missing labels and immature outcomes remain
+separate from imputable predictors.
+
+**Composition and delivery.** Support source-domain transformations before
+indicators and feature-domain transformations afterward without conflating
+their effects. Preserve original missingness, transformed-input provenance,
+direct output filling and readiness separately. Models that accept native `NA`
+must be able to bypass filling. Review recipe adapters, cross-instrument
+dependencies, stable feature schemas and all-missing columns rather than
+assuming every transformation fits a per-instrument finite rolling window.
+Training export and prediction must share the same declared transformation
+semantics at the same information bounds. Generic recipe steps are not proof of
+temporal safety; verify their fit and application behavior.
+
+**Artifacts, preparation and replay.** Keep frozen fitted state in the
+model/adapter layer and compose its recipe/state identity with ledgr's source,
+feature and policy lineage. Reuse the existing ML artifact direction rather
+than introducing an imputation registry. Distinguish replay of a stored fitted
+artifact from refitting it, including RNG, package versions and declared use
+intervals. Prepare work at the declared fit/refit boundaries and cache outputs
+where appropriate; ordinary pulse access must not fit a model, query historical
+storage or reconstruct a full panel. Inspect memory and worker replication for
+multivariate methods before claiming a scalable representation.
+
+**Methods and research usability.** Consider simple training-statistic fills,
+nearest neighbours, regression/tree imputers and models with native missingness
+through existing R tools such as recipes. More complex reconstruction is not
+automatically a better predictor. Compare against the shipped strict and carry
+policies, retain missingness information, and examine sample retention and
+downstream research results as well as reconstruction error. Keep fitted
+algorithm selection explicit and outside the execution fold.
+
+Route: a focused fitted-preprocessing/imputation RFC in the v0.2.x ML design
+window, coordinated with the existing ML-architecture and historical-projection
+cycles. Its requirements should inform the simple preparation boundary before
+that boundary is frozen; its implementation may follow the simple release.
+The immediate no-lock-in constraints belong to the amendment's section 4, so
+they are not deferred here. Any probe or comparative work follows
+`spike_protocol.md`; this entry records direction and authorizes neither a
+spike nor implementation.
+
 ### 2026-09-25 [ux] Availability evidence has no convenient reader
 
 Writing the missing-data article surfaced two accessor gaps. Both are
