@@ -847,11 +847,15 @@ are per-instrument, so the candidate holds for what exists, and the multivariate
 and fitted methods this cycle was motivated by are exactly the case that breaks
 it. Extending it is their work, not this document's.
 
-Warm-up interacts with the breakpoint. Recomputing under a different
-expected-session set moves where warm-up completes, so the affected range is the
-breakpoint plus the window rather than the breakpoint alone. Section 6.1's bound
-already carries the `W_f - 1` term for that reason, and the two derivations
-agree.
+The affected range is the breakpoint plus the window rather than the breakpoint
+alone, because a changed input enters every window ending within `W_f - 1`
+sessions of it. Section 6.1's bound already carries that term. **Corrected
+2026-09-27:** this paragraph previously justified the term by saying
+recomputation happens "under a different expected-session set", which imports
+the deferred narrowing case into a proof about the accepted one. Under the
+accepted fixed axis the expected-session set does not change at all; the term
+follows from ordinary window dependence, and narrowing must not be used to
+support this candidate.
 
 The candidate satisfies section 10's failure criterion on its face: preparation
 happens before execution, nothing reconstructs fact segments at a pulse, no
@@ -1050,52 +1054,112 @@ argument depends on per-instrument locality that cross-sectional features break;
 and whether a forbidden output carry, which is its own trigger, is handled by
 the same segmentation.
 
-**The bound is also the recompute target.** Section 6.1 derives `[a, b + A_in +
-W_f - 1 + A_out]` as the set of cells whose value may differ between cutoffs. It
-is simultaneously the set of rows a segment change needs to recompute, so the
-same interval serves as a claim and as an instruction. The locality is strict
-rather than heuristic: a window ending at `s` reads only `W_f` expected sessions
-back from `s`, so if none of those lie in the changed region the value cannot
-change and the row needs no check at all.
+**The bound is a replacement boundary, not a self-contained calculation input.**
+Section 6.1 derives `[a, b + A_in + W_f - 1 + A_out]` as the set of cells whose
+value may differ between cutoffs, and peer review confirmed no path outside it
+for the finite-window, instrument-local features section 6.1 scopes, with the
+terminal exception still required. So the band is the set of rows that need
+**replacing**.
 
-That gives a second, cheaper form of the candidate. Rather than recomputing an
-instrument's whole series per segment, recompute only the banded rows, with the
-band table built before the fold from the sealed facts. The expensive part of
-partial updating is normally discovering what to invalidate, and sealed facts
-remove that problem entirely: the trigger table is static, so nothing resolves
-dependencies at a pulse, and the update is an indexed write into a typed buffer
-rather than new machinery.
+It is not the set of rows a recomputation needs to **read**, and an earlier
+version of this part said it was. Recomputing a band starting at session 100 for
+a twenty-session feature still needs inputs from sessions 81 through 100; carry
+may need an earlier source and its original timestamp; output carry may need an
+earlier computed output and its provenance. Those rows need not change, but
+their information must be present. Handing only the band to
+`ledgr_compute_feature_series_strict()` would also restart its warm-up, since it
+initialises an all-`NA` result and begins at its own local `width` index
+(`R/features-engine.R:303-308`, verified). The safe statement is therefore: only
+the band needs replacement, provided the recalculation receives the required
+preceding inputs, carry-source state and original-axis position.
 
-**Two stages, in this order, because the cheap form has a failure mode the
-expensive form does not.** Banding that gets its arithmetic wrong ships a stale
-value silently - no error and no `NA`, just a number from the previous knowledge
-state - whereas whole-series recomputation either runs correctly or does not
-run. So whole-series per segment is implemented first and serves as the
-normative oracle, matching this project's existing rule that canonical R is the
-oracle for an optimised path; banding is then implemented against it with a
-differential test asserting cell-for-cell agreement over a fixture carrying
-every breakpoint kind. The measurement decides whether banding ships at all.
+That still gives a second, cheaper form of the candidate. Rather than
+recomputing an instrument's whole series per segment, replace only the banded
+rows, with the band table built before the fold from the sealed facts. The
+expensive part of partial updating is normally discovering what to invalidate,
+and sealed facts remove that problem: the trigger table is static and nothing
+resolves dependencies at a pulse. What sealed facts do not remove is the
+dependency work above, so the banded form is an indexed replacement plus a
+correct input window, not an indexed replacement alone.
 
-**A measured prior, so the measurement does not start from nothing.** Against
-the 2026-09-05 Sharadar acquisition over 2015-01-01 to 2024-12-31, breakpoint
-density is 1.11 lifetime events per instrument across 11,474 instruments whose
-price coverage overlaps the window, and 0.451 across the 1,586 large and mega
-caps. On whole-series-per-segment that is a prepare-phase multiplier of about
-2.11x and 1.45x respectively; terminal assertions alone are about 0.62 per
-instrument, so a declared split-adjusted basis, under which corporate actions
-are not barriers, sits nearer 1.6x. The same window holds 2,473 distinct
-breakpoint dates against roughly 2,520 trading days, so a panel-wide recompute
-per breakpoint date is unaffordable and per-instrument locality is load-bearing
-rather than an optimisation. Universe choice moves the cost more than the
-algorithm does, which makes universe churn an input to this part rather than a
-detail. The full record, with method and queries, is in the research repo's
+**Whole-series first, banding only if measured cost requires it.** Banding that
+gets its arithmetic wrong ships a stale value silently, with no error and no
+`NA`, and whole-series recomputation cannot fail that particular way.
+**Corrected 2026-09-27:** an earlier version generalised that into "whole-series
+either runs correctly or does not run", which is false. It can silently use the
+wrong cutoff, the wrong barrier, the wrong carry source or the wrong evidence,
+so it needs its own semantic fixtures, and differential agreement between the
+two paths cannot catch a mistake they share.
+
+The sequence is therefore: establish correct whole-series-per-segment
+preparation with its own semantic fixtures and measure its full cost; ship it if
+that cost is acceptable; implement banding only if it is not, comparing values
+**and** evidence against the reference. Banding is optional rather than
+mandatory, so no optimisation is written merely to demonstrate that it was
+unnecessary.
+
+**A measured prior, which orders the options without pricing them.** Against the
+2026-09-05 Sharadar acquisition over 2015-01-01 to 2024-12-31, lifetime-event
+density is 1.11 events per instrument across 11,474 instruments whose price
+coverage overlaps the window, and 0.451 across the 1,586 large and mega caps.
+The same window holds 2,473 distinct event dates against roughly 2,520 trading
+days. The full record, with method and queries, is in the research repo's
 `docs/governance/ledgr-upstream-state.md`.
 
-Note what the prior does not say. It is zero under the semantics this version
-ships, because the engine consults no lifetime fact for a feature window. These
-figures price the next release, and they are a multiplier on the prepare phase
-rather than on a run, so the absolute cost still needs the existing phase
-clocks.
+What the prior establishes: a panel-wide recompute per event date is
+unaffordable, so instrument independence is the thing to exploit. That is a
+strong ordering signal and it is why whole-series-per-instrument-per-segment
+goes first.
+
+What it does not establish, corrected 2026-09-27 after peer review. An event
+count is not a count of **policy-relevant knowledge breakpoints**: facts already
+knowable before the run enter the initial view rather than creating a segment,
+simultaneous arrivals share a segment, and a fact that cannot affect the
+requested feature under its policy causes no revision. The counts above are of
+lifetime events, and whether they survive that filtering is unverified here. The
+multiplier is also cost-weighted rather than an unweighted event average - it is
+`sum_i C_i (1 + K_i) / sum_i C_i` for baseline per-instrument cost `C_i` and
+relevant extra segments `K_i` - so `1 + 1.11 = 2.11` holds only where
+per-instrument costs are similar, and short-lived instruments carry most of the
+events while costing least. Evidence preparation and storage sit outside that
+arithmetic entirely. So `2.11x` is an indication, not a price, and affordability
+needs absolute preparation time, feature workload and memory.
+
+Withdrawn outright: the claim that universe choice moves the cost more than the
+algorithm does. That compared a measured quantity against an unmeasured one,
+since no algorithm here has been measured.
+
+Note also what the prior does not cover. It is zero under the semantics this
+version ships, because the engine consults no lifetime fact for a feature
+window, so these figures price the next release rather than this one.
+
+**Monotone cutoffs hold inside one fold and fail as a shared-store assumption.**
+The candidate's "one live view advancing forward" is sound within a single
+forward fold, because the history cutoff is the invoking pulse and a longer
+lookback reaches earlier *columns* rather than an earlier cutoff. Consumers
+collectively are not monotone. Each sweep candidate starts at pulse 1, including
+when candidates run sequentially (`R/sweep.R:1413`, `start_idx = 1L`, verified).
+`ledgr_pulse_snapshot(snapshot, universe, ts_utc, ...)` takes an arbitrary
+timestamp with no requirement that successive calls advance
+(`R/pulse-snapshot.R:35-37`, verified). A reopen or a second execution cannot
+depend on where an earlier in-memory consumer left a cursor. And section 8
+requires that a previously returned window stay unchanged.
+
+So the candidate must distinguish a **consumer's cursor** from **reusable
+prepared data**, which is what the existing prepared cursor already does: it
+advances vectorised for non-decreasing cutoffs and re-seeks backwards otherwise
+(`R/availability-provider-prepared.R:133-162`). This does not require arbitrary
+historical-cutoff requests inside a running strategy; it requires that prepared
+data not be consumed destructively.
+
+**Where the unused segments live is unanswered.** "One live view" is a statement
+about what a consumer reads, not about total storage. If every segment's values
+are computed before execution, all of them occupy space until used; if each is
+computed when its pulse arrives, that is a different preparation schedule and
+needs saying. This part must measure the complete prepared representation plus
+active views plus replacement payloads, under worker replication - not only the
+transient cost of one replacement. This is the candidate's largest open
+question, and the density figures cannot settle it.
 
 Performance conclusions stay separate from this semantic result. Any eventual
 measurement covers preparation cost, the evidence in section 8, and worker
@@ -1261,6 +1325,24 @@ runs in parallel. LDG-2864 and LDG-2850 also proceed independently.
 
 ## 14. Revision history
 
+- 2026-09-27: v10, the preparation candidate is qualified after peer review and
+  retained. The bound is a replacement boundary rather than a calculation input,
+  since recomputing a band still needs the preceding inputs, the carry source
+  and the original-axis position, and a bare band handed to the strict series
+  function would restart its warm-up. Monotone cutoffs hold inside one fold but
+  fail as a shared-store assumption, because each sweep candidate starts at
+  pulse 1 and `ledgr_pulse_snapshot()` takes an arbitrary timestamp, so a
+  consumer's cursor must be distinguished from reusable prepared data. The
+  densities order the options but do not price them: an event count is not a
+  count of policy-relevant breakpoints, the multiplier is cost-weighted rather
+  than an unweighted average, and the claim that universe choice moves cost more
+  than the algorithm is withdrawn as comparing a measured quantity to an
+  unmeasured one. Whole-series recomputation was wrongly said to run correctly
+  or not at all, when it can silently take the wrong cutoff, barrier, carry
+  source or evidence, so it needs its own semantic fixtures and banding becomes
+  conditional on measured cost. Section 6.2's warm-up justification no longer
+  invokes the deferred narrowing case. Added: where unused segments live is the
+  candidate's largest open question.
 - 2026-09-27: v10, checkpoint part (d) records that section 6.1's bound is also
   the recompute target, adds the banded form of the candidate with its static
   pre-fold trigger table, and orders the two forms: whole-series per segment as
