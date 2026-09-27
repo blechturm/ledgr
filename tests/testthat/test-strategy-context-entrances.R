@@ -211,3 +211,61 @@ testthat::test_that("[LTB-0087] raw and convenience signals keep distinct polici
   testthat::expect_identical(unclass(missing_scores), c(AAA = 0, OLD = 2))
   testthat::expect_identical(guarded, c(AAA = 4, OLD = 2))
 })
+
+testthat::test_that("[LTB-0088] explicit zero weights never require sizing prices", {
+  dense <- strategy_context_entrance_fixture(equity = 100)
+  dense$vec$close[[2L]] <- NA_real_
+  with_zero <- testthat::expect_no_warning(ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 1, BBB = 0), universe = dense$universe),
+    dense
+  ))
+  omitted <- testthat::expect_no_warning(ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 1), universe = dense$universe),
+    dense
+  ))
+  testthat::expect_identical(with_zero, omitted)
+  testthat::expect_identical(unclass(with_zero), c(AAA = 10, BBB = 0))
+  testthat::expect_warning(
+    positive_dense <- ledgr_target_rebalance(
+      ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = dense$universe),
+      dense
+    ),
+    class = "ledgr_invalid_target_price"
+  )
+  testthat::expect_identical(unclass(positive_dense), c(AAA = 5, BBB = 0))
+
+  available <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    members = c("AAA", "OLD"),
+    positions = c(OLD = 2),
+    equity = 100
+  )
+  available$vec$close[[2L]] <- NA_real_
+  available_zero <- testthat::expect_no_condition(ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 1, OLD = 0), universe = available$universe),
+    available
+  ))
+  available_omitted <- testthat::expect_no_condition(ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 1), universe = available$universe),
+    available
+  ))
+  testthat::expect_identical(available_zero, available_omitted)
+  testthat::expect_identical(unclass(available_zero), c(AAA = 10, OLD = 0))
+  testthat::expect_error(
+    ledgr_target_rebalance(
+      ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = available$universe),
+      available
+    ),
+    class = "ledgr_target_sizing_unavailable"
+  )
+
+  nonmember <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    positions = c(OLD = 2),
+    equity = 100
+  )
+  testthat::expect_error(
+    ledgr_target_rebalance(ledgr_weights(c(OLD = 0)), nonmember),
+    class = "ledgr_invalid_strategy_helper"
+  )
+})

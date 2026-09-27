@@ -187,7 +187,8 @@ ledgr_weight_equal <- function(selection) {
 #' decision time; fills still occur at the next open, so small drift between
 #' decision-time sizing and fill-time value is expected. Share quantities are
 #' floored to whole numbers with `floor(weight * equity_fraction * equity /
-#' close_price)`.
+#' close_price)`. An exact zero member weight targets zero without consulting
+#' that instrument's sizing close.
 #'
 #' Warning and error classes:
 #' - `ledgr_invalid_target_price` when a selected instrument has missing,
@@ -269,8 +270,15 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
   }
 
+  weight_values <- as.numeric(weights)
+  positive_weight <- weight_values > 0
+  if (!any(positive_weight)) {
+    return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))
+  }
+
   close_vec <- as.numeric(ctx$vec$close)
-  weight_ids <- names(weights)
+  weight_ids <- names(weights)[positive_weight]
+  weight_values <- weight_values[positive_weight]
   price <- close_vec[match(weight_ids, universe)]
   invalid_price <- is.na(price) | !is.finite(price) | price <= 0
   if (availability_active && any(invalid_price)) {
@@ -289,7 +297,7 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
   }
   valid <- !invalid_price
   target[weight_ids[valid]] <- floor(
-    (as.numeric(weights[valid]) * equity_fraction * allocation_equity) /
+    (weight_values[valid] * equity_fraction * allocation_equity) /
       price[valid]
   )
 

@@ -23,6 +23,8 @@ A full-universe \code{ledgr_target} object.
 decision time; fills still occur at the next open, so small drift between
 decision-time sizing and fill-time value is expected. Share quantities are
 floored to whole numbers with \code{floor(weight * equity_fraction * equity / close_price)}.
+An exact zero member weight targets zero without consulting that instrument's
+sizing close.
 }
 \details{
 Warning and error classes:
