@@ -4,7 +4,7 @@
 \alias{ledgr_target_rebalance}
 \title{Construct full target quantities from weights}
 \usage{
-ledgr_target_rebalance(weights, ctx, equity_fraction = 1)
+ledgr_target_rebalance(weights, ctx, equity_fraction = 1, keep = NULL)
 }
 \arguments{
 \item{weights}{A \code{ledgr_weights} object.}
@@ -13,6 +13,9 @@ ledgr_target_rebalance(weights, ctx, equity_fraction = 1)
 
 \item{equity_fraction}{Fraction of allocatable equity to allocate, between 0
 and 1.}
+
+\item{keep}{Current decision-axis positions to preserve. Kept IDs must not
+also appear in \code{weights}, even at zero weight.}
 }
 \value{
 A full-universe \code{ledgr_target} object.
@@ -25,10 +28,12 @@ decision-time sizing and fill-time value is expected.
 
 In a dense run, allocatable equity is current equity. In an
 availability-aware run, ledgr first reserves the absolute marked exposure of
-held nonmembers and preserves their current quantities. Kept current members
-are not reserved automatically. Share quantities are floored to whole numbers
-with \code{floor(weight * equity_fraction * allocation_equity / close_price)}.
-An exact zero member weight targets zero without consulting that instrument's
+held nonmembers and preserves their current quantities. IDs named in \code{keep}
+are likewise preserved and reserved exactly once. Weights and
+\code{equity_fraction} apply to the residual capital after those reservations.
+Share quantities are floored to whole numbers with
+\code{floor(weight * equity_fraction * allocation_equity / close_price)}. An
+exact zero member weight targets zero without consulting that instrument's
 sizing close.
 }
 \details{

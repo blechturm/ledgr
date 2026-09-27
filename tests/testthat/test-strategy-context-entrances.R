@@ -327,6 +327,72 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   )
 })
 
+testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
+  dense <- strategy_context_entrance_fixture(
+    positions = c(AAA = 4),
+    equity = 100
+  )
+  dense$vec$close[[2L]] <- 10
+  weights <- ledgr_weights(c(BBB = 1), universe = dense$universe)
+
+  kept <- ledgr_target_rebalance(weights, dense, keep = "AAA")
+  half <- ledgr_target_rebalance(
+    weights,
+    dense,
+    equity_fraction = 0.5,
+    keep = "AAA"
+  )
+  testthat::expect_identical(unclass(kept), c(AAA = 4, BBB = 6))
+  testthat::expect_identical(unclass(half), c(AAA = 4, BBB = 3))
+
+  baseline <- ledgr_target_rebalance(weights, dense)
+  testthat::expect_identical(
+    ledgr_target_rebalance(weights, dense, keep = NULL),
+    baseline
+  )
+  testthat::expect_identical(
+    ledgr_target_rebalance(weights, dense, keep = character()),
+    baseline
+  )
+
+  available <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    positions = c(OLD = 2),
+    equity = 100
+  )
+  member_weights <- ledgr_weights(c(AAA = 1), universe = available$universe)
+  testthat::expect_identical(
+    ledgr_target_rebalance(member_weights, available, keep = "OLD"),
+    ledgr_target_rebalance(member_weights, available)
+  )
+
+  testthat::expect_error(
+    ledgr_target_rebalance(
+      ledgr_weights(c(AAA = 0, BBB = 1), universe = dense$universe),
+      dense,
+      keep = "AAA"
+    ),
+    regexp = "both `keep` and `weights`",
+    class = "ledgr_invalid_strategy_helper"
+  )
+  for (invalid_keep in list("ZZZ", c("AAA", "AAA"), NA_character_)) {
+    testthat::expect_error(
+      ledgr_target_rebalance(weights, dense, keep = invalid_keep),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+
+  unavailable <- strategy_context_entrance_fixture(
+    positions = c(AAA = 4),
+    equity = 100
+  )
+  unavailable$vec$close[[1L]] <- NA_real_
+  testthat::expect_error(
+    ledgr_target_rebalance(weights, unavailable, keep = "AAA"),
+    class = "ledgr_target_sizing_unavailable"
+  )
+})
+
 testthat::test_that("[LTB-0090] empty helper domains keep their distinct meanings", {
   holdings_only <- strategy_context_entrance_fixture(
     availability = TRUE,

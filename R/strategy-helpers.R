@@ -258,11 +258,13 @@ ledgr_weight_equal <- function(selection) {
 #'
 #' In a dense run, allocatable equity is current equity. In an
 #' availability-aware run, ledgr first reserves the absolute marked exposure of
-#' held nonmembers and preserves their current quantities. Kept current members
-#' are not reserved automatically. Share quantities are floored to whole
-#' numbers with `floor(weight * equity_fraction * allocation_equity /
-#' close_price)`. An exact zero member weight targets zero without consulting
-#' that instrument's sizing close.
+#' held nonmembers and preserves their current quantities. IDs named in `keep`
+#' are likewise preserved and reserved exactly once. Weights and
+#' `equity_fraction` apply to the residual capital after those reservations.
+#' Share quantities are floored to whole numbers with
+#' `floor(weight * equity_fraction * allocation_equity / close_price)`. An
+#' exact zero member weight targets zero without consulting that instrument's
+#' sizing close.
 #'
 #' Warning and error classes:
 #' - `ledgr_invalid_target_price` when a selected instrument has missing,
@@ -277,6 +279,8 @@ ledgr_weight_equal <- function(selection) {
 #' @param ctx ledgr strategy context.
 #' @param equity_fraction Fraction of allocatable equity to allocate, between 0
 #'   and 1.
+#' @param keep Current decision-axis positions to preserve. Kept IDs must not
+#'   also appear in `weights`, even at zero weight.
 #' @return A full-universe `ledgr_target` object.
 #' @examples
 #' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5), universe = c("AAA", "BBB"))
@@ -292,13 +296,39 @@ ledgr_weight_equal <- function(selection) {
 #' `vignette("strategy-development", package = "ledgr")`
 #' `system.file("doc", "strategy-development.html", package = "ledgr")`
 #' @export
-ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
+ledgr_target_rebalance <- function(weights,
+                                   ctx,
+                                   equity_fraction = 1.0,
+                                   keep = NULL) {
   if (!inherits(weights, "ledgr_weights")) {
     rlang::abort("`weights` must be a ledgr_weights object.", class = "ledgr_invalid_strategy_helper")
   }
   universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_target_rebalance")
   equity <- ledgr_strategy_helper_context_equity(ctx)
   equity_fraction <- ledgr_strategy_helper_validate_equity_fraction(equity_fraction)
+
+  if (is.null(keep)) keep <- character()
+  if (!is.character(keep) || is.factor(keep) || anyNA(keep) ||
+      any(!nzchar(keep)) || anyDuplicated(keep)) {
+    rlang::abort(
+      "`keep` must be NULL or a unique character vector of non-empty instrument IDs.",
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+  unknown_keep <- setdiff(keep, universe)
+  if (length(unknown_keep) > 0L) {
+    rlang::abort(
+      sprintf("`keep` names instruments outside the decision axis: %s.", paste(unknown_keep, collapse = ", ")),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+  overlap <- intersect(keep, names(weights))
+  if (length(overlap) > 0L) {
+    rlang::abort(
+      sprintf("Instruments must not appear in both `keep` and `weights`: %s.", paste(overlap, collapse = ", ")),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
 
   availability_active <- isTRUE(ctx$availability_active)
   members <- if (availability_active) as.character(ctx$members %||% character()) else universe
@@ -318,27 +348,36 @@ ledgr_target_rebalance <- function(weights, ctx, equity_fraction = 1.0) {
     rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
   }
 
+  position_vec <- stats::setNames(as.numeric(ctx$vec$position), universe)
   target <- if (availability_active) {
-    stats::setNames(as.numeric(ctx$vec$position), universe)
+    position_vec
   } else {
     stats::setNames(rep(0, length(universe)), universe)
   }
   if (availability_active && length(members) > 0L) target[members] <- 0
+  if (length(keep) > 0L) target[keep] <- position_vec[keep]
   allocation_equity <- equity
-  if (availability_active) {
-    held_nonmembers <- setdiff(universe[as.numeric(ctx$vec$position) != 0], members)
-    if (length(held_nonmembers) > 0L) {
-      idx <- match(held_nonmembers, universe)
-      marks <- as.numeric(ctx$vec$risk_mark[idx])
-      quantities <- as.numeric(ctx$vec$position[idx])
-      if (any(!is.finite(marks))) {
-        rlang::abort(
-          "Cannot reserve held nonmember exposure without a permissible valuation mark.",
-          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper")
-        )
-      }
-      allocation_equity <- max(0, equity - sum(abs(quantities * marks)))
+  held_nonmembers <- if (availability_active) {
+    setdiff(universe[position_vec != 0], members)
+  } else {
+    character()
+  }
+  reserved_ids <- union(held_nonmembers, keep[position_vec[keep] != 0])
+  if (length(reserved_ids) > 0L) {
+    idx <- match(reserved_ids, universe)
+    marks <- if (availability_active) {
+      as.numeric(ctx$vec$risk_mark[idx])
+    } else {
+      as.numeric(ctx$vec$close[idx])
     }
+    quantities <- position_vec[idx]
+    if (any(!is.finite(marks))) {
+      rlang::abort(
+        "Cannot reserve kept exposure without a permissible valuation mark.",
+        class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper")
+      )
+    }
+    allocation_equity <- max(0, equity - sum(abs(quantities * marks)))
   }
   if (length(weights) == 0L || equity_fraction == 0 || equity == 0) {
     return(ledgr_target(target, universe = universe, origin = attr(weights, "origin")))

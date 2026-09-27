@@ -668,6 +668,9 @@ The strategy preflight boundary originated in
 - `ledgr_target_rebalance()` floors share quantities to whole numbers after sizing
   long-only positive weights from allocatable capital and current close prices.
   A validated zero member weight becomes a zero target without a price lookup.
+  IDs named in `keep` preserve their current quantities and reserve their
+  absolute marked exposure exactly once; weights and `equity_fraction` apply
+  to the remaining capital. A kept ID must not also occur in the weights.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
 - `ledgr_signal_feature()` reads one registered feature and deliberately masks
