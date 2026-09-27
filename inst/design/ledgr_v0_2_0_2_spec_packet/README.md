@@ -730,7 +730,7 @@ workstream opens from completed Workstream 12 and must close before Workstream
 16 returns for focused correction review; Workstream 17 remains downstream of
 Workstream 16.
 
-## Cut 13: Strategy context surface (review pending)
+## Cut 13: Strategy context surface (closed)
 
 Authority: the accepted decision synthesis
 `inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`
@@ -750,16 +750,16 @@ P0 causality evidence and affected-path clocks to the close review. The review
 is the first of the cut's planned two invocations; Workstream 20 opens after
 these patches at 1/9, with one close review still planned.
 
-Implementation is agent-provisional at the Workstream 20 correction close. All
-nine tickets are implemented in `385c10e..ad584b1`, and
+All nine tickets are implemented in `385c10e..ad584b1`, and
 `strategy_context_surface_closeout.md` carries the direct probe, mutations,
 affected-path clocks, correction record and deferred work. The cut review,
 close review and two correction reviews make `4 / 9 = 0.444`; the
-maintainer has not yet accepted the workstream. The last review's text-only
-corrections make the five intent cases directly comparable, teach mapped
-features through vector planes, define the rebalance budget as allocatable
-equity, and remove stale cross-article promises. The final ordinary-fast record
-passed 465 of 465 blocks in 86.140 seconds against the 112-second gate.
+maintainer accepted Workstream 20 and Cut 13 on 2026-09-27. The last review's
+text-only corrections make the five intent cases directly comparable, teach
+mapped features through vector planes, define the rebalance budget as
+allocatable equity, and remove stale cross-article promises. The final
+ordinary-fast record passed 465 of 465 blocks in 86.140 seconds against the
+112-second gate.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |

@@ -128,12 +128,14 @@ cuts:
   - id: 13
     name: "Strategy context surface and helper composability"
     cut: "2026-09-26"
-    cut_review: "Independent Type 1 and Type 2 review returned PASS_AFTER_PATCHES on 2026-09-27. Eight record-only corrections were applied in place: five missing LDG-2852 detectors; removal of LDG-2864's accidental accessor authorization; two dependency edges; executable probe instructions; LDG-2864 and performance coverage in the close-review reason; accepted synthesis metadata; a text-first green-tree guard; and this review record. One cut review plus the planned close review is 2 over 9 completed tickets, 0.222 against the gate, leaving room for one correction round at 0.333. The ninth ticket was added on 2026-09-26 after the historical-projection probe reproduced a decision-time contract violation in the same surface this cut owns. The nine are separable work with distinct acceptance: settled contract text, duplicate and dead surface names, context-first entrance constructors, empty-domain behavior, the bounded rebalance-helper sizing correction, removal of future reach from the context, the binding disclosure gate, authoring examples, and the closeout."
+    cut_review: "Independent Type 1 and Type 2 review returned PASS_AFTER_PATCHES on 2026-09-27. Eight record-only corrections were applied in place: five missing LDG-2852 detectors; removal of LDG-2864's accidental accessor authorization; two dependency edges; executable probe instructions; LDG-2864 and performance coverage in the close-review reason; accepted synthesis metadata; a text-first green-tree guard; and this review record. This was the first review invocation. The ninth ticket was added on 2026-09-26 after the historical-projection probe reproduced a decision-time contract violation in the same surface this cut owns. The nine are separable work with distinct acceptance: settled contract text, duplicate and dead surface names, context-first entrance constructors, empty-domain behavior, the bounded rebalance-helper sizing correction, removal of future reach from the context, the binding disclosure gate, authoring examples, and the closeout."
     authority: "accepted decision synthesis `inst/design/rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md` at `d9daa4d`, including its maintainer-requested usability amendment; the Type 1 final review at `4e65378` and its focused verification of that amendment; maintainer acceptance 2026-09-26. The synthesis recommends implementing after the release gate; the maintainer overruled that scheduling on 2026-09-26 and placed this cut before the tag, so the breaking surface changes land before the release is reviewed externally and the teaching surface is audited once against its final shape rather than twice. That is a scheduling override of an accepted synthesis, recorded here rather than left implicit; no other synthesis decision is affected. The RFC artifacts are recorded on the v0.2.0.2 design branch and arrive on the implementation branch when the two converge, which must happen before this cut opens."
     source_table: "synthesis sections 3 through 7 for the entrance contract, empty-domain contract, state reads, required contract amendments and detecting gates; seed v2 and the Type 2 response in the same directory; the executed observations and reservation mutant in `dev/spikes/strategy-context-surface/`"
     workstreams: [20]
     closeout: "strategy_context_surface_closeout.md"
-    status: "open"
+    close_review: "The Type 1 close review and two focused correction reviews produced four total review invocations for nine tickets, 0.444. The final review verified the nested-cache causality detector and requested text-only teaching corrections. Commit ad584b1 corrected allocatable-equity help, made all five intent cases use one held-position pulse, replaced the mapped-feature scalar loop with plane reads, distinguished return-signal policy from custom scores, removed stale cross-article claims and replaced the verbose mapped-run summary with concise fills. The source and rendered articles executed; the final ordinary-fast record passed 465 of 465 blocks in 86.140 seconds against the 112-second gate. The maintainer accepted Workstream 20 and Cut 13 on 2026-09-27 without a fifth independent invocation."
+    accepted: "2026-09-27 by the maintainer, at 63fcdb7"
+    status: "closed"
   - id: 14
     name: "Maintenance: repair continuous integration"
     cut: "2026-09-26"
@@ -312,7 +314,7 @@ workstreams:
   - id: 20
     name: "Strategy context surface and helper composability"
     cut: 13
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 21
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 20", reason: "One evidence claim joins the tickets: a strategy reads only decision-time state and expresses complete portfolio intent through documented entrances, without alignment tricks and without a hidden allocation policy. The close review runs the historical probe directly through probe.R in normal and gut modes, diffs each output against observations.csv, reports expected census drift and whether the reservation mutant still applies, and treats LDG-2854's registered mutation as the live reservation detector. It confirms that the surface gate fails on an added field, a stale documented name and a plane changed to a function in both dense and availability contexts; checks that the two corrected behaviors are mutation-detected rather than asserted; and verifies that no contract sentence names a removed member. For LDG-2864 it verifies failure on raw-projection reattachment and beyond-pulse reads, full-fold feature-value parity in dense and availability modes, the bounded interactive route and the decision-time contract clarification. The review walks LDG-2852's entrance construction and LDG-2864's feature-access path against the seven optimization shapes and records interleaved before-and-after clocks for both affected paths."}
@@ -1590,7 +1592,7 @@ tickets:
   - id: "LDG-2857"
     title: "Workstream 20 and cut 13 closeout"
     workstream: 20
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2850", "LDG-2851", "LDG-2852", "LDG-2853", "LDG-2854", "LDG-2855", "LDG-2856", "LDG-2864"]

@@ -1,6 +1,6 @@
 # Strategy Context Surface Closeout
 
-**Status:** Agent-provisional; awaiting maintainer acceptance after correction.
+**Status:** Accepted by the maintainer on 2026-09-27.
 **Date:** 2026-09-27
 **Cut:** 13
 **Workstream:** 20
@@ -154,7 +154,8 @@ byte-identical.
 
 The accepted cut contains nine completed tickets. Its independent cut review,
 close review and two correction reviews make four invocations over nine
-tickets, `4 / 9 = 0.444`, below the 0.5 gate. The last review requested only
-text corrections; this draft records them without spending a fifth review
-invocation. It does not accept the workstream; acceptance belongs to the
-maintainer.
+tickets, `4 / 9 = 0.444`, below the 0.5 gate. The final review verified the
+technical corrections and requested bounded teaching edits. After those edits
+executed and the package-wide fast gate passed, the maintainer accepted the
+workstream without another independent review. The review count is recorded as
+an outcome, not as a reason to avoid evidence.
