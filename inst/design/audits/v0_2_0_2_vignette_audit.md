@@ -1,7 +1,7 @@
 # v0.2.0.2 Vignette Audit
 
-**Status:** Agent-provisional final correction record; awaiting the Workstream
-28 Type 1 close review and maintainer acceptance.
+**Status:** Agent-provisional correction revision; awaiting the focused
+Workstream 28 Type 1 re-review and maintainer acceptance.
 
 **Audit date:** 2026-09-28
 
@@ -256,7 +256,7 @@ corrections; P3 and P7 remain routed beyond this release.
 
 | Finding | Verified behavior | Owner | Accepted release disposition |
 | --- | --- | --- | --- |
-| P3: no whole-universe active-alias read | `ctx$vec$feature()` and `ledgr_signal_feature()` take engine IDs; mapped aliases require `ctx$features(id)` | Feature-engine RFC named by the strategy-helper synthesis | Defer to the next feature-engine cycle. This release must disclose the forced loop and must not warn as though a replacement existed. |
+| P3: no whole-universe active-alias read | `ctx$vec$feature()` and `ledgr_signal_feature()` take engine IDs; mapped aliases require `ctx$features(id)` | `inst/design/rfc/rfc_feature_map_read_surface_v0_2_x_seed.md` | Defer to the next feature-engine cycle. This release must disclose the forced loop and must not warn as though a replacement existed. |
 | P4: feature-contract inspection fails opaquely | An unresolved parameterized map raises unclassed `simpleError` instead of an actionable ledgr condition | LDG-2890 | Implemented at `ac69370`: both inspection helpers use the existing materialize-first class and concrete maps remain unchanged. |
 | P5: integer-backed POSIXct masks its cause | `ledgr_snapshot_from_df()` reports likely duplicate keys and an aborted transaction instead of accepting the valid instant representation | LDG-2891 | Implemented at `ac69370`, completed at `55524e5`: integer-backed `POSIXct` bars and fact clocks are canonicalized once before DuckDB registration and seal to the double-backed snapshot hash. |
 | P6: outer alias is discarded for TTR bundles | `bands = bundle` exposes bundle feature IDs such as `bbands_dn`, not `bands`; no warning explains that the outer alias has no effect | LDG-2892 | Implemented at `ac69370`: named bundle entries fail with the existing feature-map class and direct authors to `prefix` or `naming`. |
@@ -327,6 +327,15 @@ code, or test.
 
 ## 7. Final Correction Outcomes
 
+The first Type 1 close review returned `CHANGES_REQUIRED`. It established that
+the Indicators certification-table rewrite broke LTB-0074 after 18 of 48
+assertions, and that thirteen finding cells were only partly corrected or
+overstated in this record. It also found false or incomplete claims in Strategy
+Basics, Missing Data, Adapter Authoring and the README path. The correction
+restores the full certification matrix, fixes the named articles, and adds
+LTB-0116 as a claim-level review detector. The outcomes below describe that
+corrected tree, not the rejected first pass.
+
 The correction pass retained the 26-source census and the 53 failed
 article/category cells. Each changed article was read again as a learner who
 had read only the earlier articles in the style-guide flow. `PASS` below means
@@ -384,12 +393,13 @@ cells: 53 corrected cells, none dropped or silently reclassified.
 
 Verification at the correction tree:
 
-- `test-documentation-contracts.R` passes;
+- all six article-reading test files pass, including the restored LTB-0074
+  certification matrix and new claim-level LTB-0116 detector;
 - `tools/render-vignettes-gfm.R --check --all` executes and verifies all 26
   sources, including both nested articles and the adapter companion file;
 - the checker first caught a process-dependent run ID in Custom Indicators;
   the example now uses fixed IDs and the second complete check passes;
-- the ordinary fast profile passes 483 of 483 blocks in 102.550 seconds, and
+- the ordinary fast profile passes 483 of 483 blocks in 105.170 seconds, and
   the gate checker passes the preregistered 112-second bound; and
 - `git diff --check` is clean.
 

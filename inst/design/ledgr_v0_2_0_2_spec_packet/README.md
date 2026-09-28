@@ -1072,20 +1072,24 @@ LDG-2858 remains the README rewrite for first-time users.
 
 Product or API defects the audit exposes are routed to owners and are not
 implemented under documentation tickets. Workstream 26 closed at 1/1 = 1.000,
-an honest historical breach; Workstream 28 plans one review over six tickets.
-The cut total is 2/7 = 0.286. Workstream 28 opens after accepted Workstream 27
-so the README and articles are corrected once against final product behavior.
-The release gate follows accepted Workstream 28.
+an honest historical breach. Workstream 28's initial close review returned
+`CHANGES_REQUIRED`; its focused re-review will make two reviews over six
+tickets, 0.333. The resulting cut total is three reviews over seven tickets,
+0.429. Workstream 28 opened after accepted Workstream 27 so the README and
+articles are corrected once against final product behavior. The release gate
+follows accepted Workstream 28.
 
 The agent-provisional Workstream 28 implementation is recorded in
 `vignette_correction_closeout.md`. LDG-2858 is at `9edddb8`; LDG-2885 through
 LDG-2888 are at `110606f`, `fec5269`, `6f7cd87` and `e5d5d22`. The accepted
 audit now carries a provisional final-outcomes section reconciling all 53
-cells and the per-article learner reads. Documentation contracts pass, the
-recursive freshness checker executes and verifies all 26 articles, and the
-ordinary fast profile passes 483/483 blocks in 102.550 seconds against the
-112.000-second gate. Tickets and Workstream 28 remain open pending their one
-Type 1 close review and maintainer acceptance.
+cells and the per-article learner reads. The initial close review rejected
+that record and correction `93c93b9` closes its detector, article and reading-
+order findings. Six article-reading test files pass, the recursive freshness
+checker verifies all 26 articles, and the ordinary fast profile passes 483/483
+blocks in 105.170 seconds against the 112.000-second gate. Tickets and
+Workstream 28 remain open pending focused Type 1 re-review and maintainer
+acceptance.
 
 ## Cut 20: Audit-discovered product boundary repairs (open)
 
