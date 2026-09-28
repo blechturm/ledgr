@@ -16,6 +16,26 @@ Markers: **[M]** verified by the main session in source or by execution;
 **[R]** verified by a reviewer's execution and not re-checked; unmarked items
 are reading judgments. Line numbers refer to `b419733` unless stated.
 
+## Maintainer-added audit dimension: the capability ladder
+
+This editorial pass did not systematically score progressive disclosure, so
+LDG-2859 must do so rather than treating this input as evidence that it passed.
+For each article, ask whether it starts at the smallest valid path for the
+reader's task, states what that path does not establish, and introduces
+stricter inputs only when the research claim needs them. A dense bars-only
+snapshot is a valid starting point; sessions, availability facts, membership,
+lifetime and corporate-action evidence are not universal prerequisites.
+Conversely, an article must not let the simple path imply point-in-time
+membership, distribution-complete returns or another guarantee it has not
+earned.
+
+The audit should therefore distinguish three outcomes: the article teaches the
+smallest path honestly; it burdens a simple task with an unnecessarily advanced
+setup; or it understates the inputs required for the claim it makes. Advanced
+articles should say who needs the added evidence and link back to the basic
+path. Basic articles should preserve their short route and link forward to the
+relevant stricter path instead of reproducing it.
+
 ---
 
 ## 1. Product defects the articles expose

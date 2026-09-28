@@ -430,7 +430,11 @@ it
 cannot prove is that they still teach the surface this version ships, and this
 version changed a great deal. The audit looks for the drift execution misses: a
 superseded idiom still modelled, a shipped capability an article still works
-around by hand, an overstated claim, and a reference that no longer resolves.
+around by hand, an overstated claim, a reference that no longer resolves, and
+a broken capability ladder. Each article must begin at the smallest valid path
+for its task, disclose what that path cannot establish, and introduce stricter
+evidence only when its claim requires it. The audit must not turn advanced
+point-in-time inputs into a prerequisite for an ordinary dense backtest.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
