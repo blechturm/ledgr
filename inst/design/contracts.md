@@ -382,8 +382,8 @@ The strategy preflight boundary originated in
   The decision axis Daxis is `ctx$universe` in its existing order. The
   allocation membership M is Daxis in dense contexts and `ctx$members` in
   availability contexts; Daxis may additionally contain held nonmembers.
-  Context-mode predicates and scores validate against Daxis and then project to
-  M without quality screening. An empty Daxis still invokes the strategy and
+  Context-mode helpers keep the full Daxis and apply eligibility as
+  "Decision Axis And Eligibility" in the Strategy Contract states. An empty Daxis still invokes the strategy and
   accepts a named numeric zero-length target while preserving portfolio-level
   state. Empty M with nonempty Daxis is a holdings-only decision, not an empty
   portfolio.
@@ -403,12 +403,13 @@ The strategy preflight boundary originated in
   not increasing its magnitude. New or enlarged short exposure fails before
   any fill from that pulse is accepted; existing short quantities remain
   algebraically holdable and coverable without defining short financing.
-- Availability-aware rebalance helpers initialize held nonmembers at their
-  current quantity, reserve their absolute marked exposure, and size only
-  current members from accepted current closes. Helper weights and
+- Availability-aware rebalance helpers initialize every ineligible axis ID,
+  held nonmember or target-restricted member, at its current quantity,
+  reserve its absolute marked exposure, and size only eligible IDs from
+  accepted current closes. Helper weights and
   `equity_fraction` apply to allocatable capital A, where dense A is NAV and
   availability-aware A is
-  `max(0, NAV - sum(abs(quantity * mark)))` over preserved held nonmembers. A
+  `max(0, NAV - sum(abs(quantity * mark)))` over preserved ineligible holdings. A
   positive member weight targets
   `floor(weight * equity_fraction * A / close)`. For NAV 100, held-nonmember
   exposure 40 and member close 10, full member weight targets 6 shares and
@@ -638,17 +639,14 @@ The strategy preflight boundary originated in
   `NULL`, or supplying a context payload in value mode fails with
   `ledgr_invalid_strategy_helper`. Malformed contexts fail closed with the same
   family rather than falling through to value mode.
-- An unnamed context payload has exactly length(Daxis) and aligns positionally.
-  A named `values` or `where` payload uses unique known Daxis IDs and covers
-  every M ID; names are aligned before projection to M. Numeric values admit
-  finite numbers and missing scores but reject infinity anywhere. Logical
-  `where` rejects missing decisions on M by default; context-mode
-  `missing = "exclude"` treats them as not selected, which means a later
-  rebalance targets a held member to zero rather than preserving it. `ids` are
-  unique nonmissing members.
-  Type, length, name, coverage, score and ID failures use
-  `ledgr_invalid_strategy_type`; an explicit known nonmember ID or weight uses
-  `ledgr_invalid_strategy_helper`.
+- Context payloads, context-mode results and eligibility follow
+  "Decision Axis And Eligibility" below. Numeric values admit finite numbers
+  and missing scores but reject infinity anywhere. Context-mode
+  `missing = "exclude"` treats a missing decision on an eligible ID as not
+  selected, which means a later rebalance targets that held member to zero
+  rather than preserving it. Type, length, name, coverage, score and ID
+  failures use `ledgr_invalid_strategy_type`; a selected or weighted
+  ineligible ID in a target helper uses `ledgr_invalid_strategy_helper`.
 - The four helper value types admit an explicit `character()` universe.
   Zero-length numeric and logical values receive `character()` names, empty
   signals and targets retain their existing classes, and final target
@@ -666,9 +664,9 @@ The strategy preflight boundary originated in
 - The helper composition contract is
   `signal -> selection -> weights -> target quantities -> existing execution
   path`. A fixed-quantity rule may skip the weights: `ledgr_target_quantity()`
-  maps `selection -> target quantities`, giving each selected current member
-  the same non-negative quantity, every other current member zero, and each
-  held nonmember of an availability-aware run its current quantity, as
+  maps `selection -> target quantities`, giving each selected eligible ID
+  the same non-negative quantity, every other eligible ID zero, and every
+  ineligible decision-axis ID its current quantity, as
   `ledgr_target_rebalance()` does. It performs no sizing and needs no price. Signal, selection, and weight objects are research objects with origin
   metadata; `ledgr_target` is the only helper value type that may unwrap into
   executable target quantities.
@@ -683,14 +681,76 @@ The strategy preflight boundary originated in
   fails with `ledgr_invalid_strategy_helper` when that plane is absent.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
-- `ledgr_signal_feature()` reads one registered feature and deliberately masks
-  inadmissible member scores as missing in availability-aware contexts; an
-  admissible but unpriced member keeps its score. `ledgr_signal_return()` is
-  the return-feature specialization of that entrance. A raw `values` entrance
-  through `ledgr_signal()` does not inherit the convenience mask.
-  `ledgr_select_top_n()` keeps its missing-score exclusion and stable tie
-  policy. A short ranking warns by default; `partial = "allow"` explicitly
-  accepts fewer than `n` usable scores without changing the selection.
+- `ledgr_signal_feature()` reads one registered feature over the decision
+  axis, and `ledgr_signal_return()` is its return-feature specialization.
+  Neither masks: ineligible IDs keep their raw score, and eligibility travels
+  in the signal's `eligible` attribute, so ineligible is never reported as
+  missing. `ledgr_select_top_n()` ranks only eligible, non-missing scores with
+  its stable tie policy. A short ranking warns by default, counting eligible
+  usable scores only; `partial = "allow"` explicitly accepts fewer than `n`
+  usable scores without changing the selection.
+### Decision Axis And Eligibility
+
+Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906); binding once the
+LDG-2906 Type 2 review is accepted. One decision axis and one eligibility
+plane hold in dense and availability-aware contexts alike, so a strategy
+written as named-vector manipulation, or as a helper pipeline, means the same
+thing in both. The executable statement of these rules is
+`dev/spikes/strategy-helper-axis/model.R`; `expected_delta.csv` in the same
+directory lists every observation they change.
+
+- **Eligibility.** An ID is eligible when it is a member and not
+  target-restricted. `ctx$vec$admissible` is that plane in every context:
+  availability folds, dense folds, `ledgr_pulse_snapshot()` and interactive
+  contexts. Dense contexts expose `ctx$members` as `ctx$universe`, and
+  `member` (all `TRUE`), `target_restricted` (all `FALSE`),
+  `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
+  allocated once per run. No second eligibility plane exists.
+  `ctx$tradable()` stays a character vector of IDs that also requires a price.
+- **Context payloads.** An unnamed `values`, `where` or warmup payload has
+  exactly length(Daxis) and aligns by position. A named payload uses unique
+  Daxis IDs and covers every eligible ID; an uncovered ineligible ID is `NA`.
+  Unnamed input of any other length, and any ID off the axis, fail with
+  `ledgr_invalid_strategy_type` in both kinds of run.
+- **Enforcement.** The standard pipeline applies eligibility automatically in
+  `ledgr_selection()` and `ledgr_select_top_n()`, and `ledgr_signal_strategy()`
+  applies it itself. Hand-built rules state it with `ctx$vec$admissible`, and
+  the runtime target validators remain the backstop. The `missing` policy
+  covers eligible IDs only. `ids` naming an ineligible axis ID leave it
+  unselected.
+- **Ineligible holdings.** Convenience target helpers
+  (`ledgr_target_rebalance()`, `ledgr_target_quantity()`,
+  `ledgr_signal_strategy()`) keep every ineligible axis ID at its current
+  quantity, whether a held nonmember or a target-restricted member, and
+  rebalancing reserves its absolute marked exposure exactly once, `keep`
+  included. They size or assign eligible IDs only. Raw named targets,
+  `ledgr_target()`, `ctx$flat()` and `ctx$hold()` stay literal and may exit or
+  reduce as the availability contract allows.
+- **Empty axis.** Every context helper returns a zero-length named result.
+  `ledgr_signal_strategy()` still invokes its function and returns a named
+  zero-length target; a zero-length signal is valid whenever no ID is
+  eligible.
+- **Warmup.** `ledgr_passed_warmup(ctx, values)` returns `TRUE` when every
+  eligible value is non-missing, and `TRUE` when no ID is eligible. The
+  one-argument form is unchanged.
+- **Dense results.** Every dense ID is eligible, so dense results of the
+  existing helper pipelines do not change.
+
+Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
+and `AAA` a held nonmember, each holding 5:
+
+| Object | Domain | Names | Ineligible entries | Example |
+|---|---|---|---|---|
+| `ctx$vec` planes | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
+| `ctx$members` | allocation membership M | character IDs | not applicable | `BBB, CCC`; dense: `ctx$universe` |
+| context signals | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
+| context selections | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
+| rankings | the signal's Daxis | named | never selected or counted | `ledgr_select_top_n(signal, 2)` selects `CCC` and warns `ledgr_partial_selection` |
+| weights | selected IDs | named | a weight on one fails | `ledgr_weight_equal()` gives `CCC=1` |
+| helper targets | Daxis | named | current quantity | `ledgr_selection(ctx) \|> ledgr_target_quantity(ctx, 10)` is `BBB=5 CCC=10 AAA=5` |
+| raw targets, `ctx$flat()`, `ctx$hold()` | Daxis | named | literal | `ctx$flat()` exits `AAA`, which the validators allow |
+| value-mode signals, selections, weights | their `universe` | named | none: every entry is eligible | unchanged |
+
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but
   they must not add a second strategy path: strategies still return full named
@@ -709,7 +769,9 @@ The strategy preflight boundary originated in
   explicit shorting semantics are specified.
 - Raw signal strings such as `"LONG"` and `"FLAT"` are invalid core outputs.
   `ledgr_signal_strategy()` is an explicit convenience wrapper that maps signals
-  to normal targets before validation.
+  to normal targets before validation. It maps eligible IDs only and holds
+  every ineligible ID at its current quantity (see "Decision Axis And
+  Eligibility").
 - Functional strategies and configured strategy-list compatibility surfaces use
   the same target validator. Legacy R6 strategy objects are not reauthorized by
   this contract.
@@ -807,7 +869,9 @@ The strategy preflight boundary originated in
   return `NA_integer_` only when `missing = "na"` is requested explicitly.
 - `ctx$vec` exposes universe-aligned vector views for cross-sectional strategy
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
-  `position`, and `feature`. `ctx$vec$feature(feature_id)` returns the current
+  `position`, and `feature`, and in every context the eligibility planes
+  `member`, `target_restricted`, `target_restriction_reason`, and
+  `admissible`. `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one engine feature ID.
 - Availability-aware pulse contexts restrict bars, feature tables, scalar
   feature access, vector feature access, positions, and errors to the current
@@ -849,6 +913,9 @@ The strategy preflight boundary originated in
 - `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
   produced by `ctx$features()`. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
+  The context-aware form `ledgr_passed_warmup(ctx, values)` reads a
+  decision-axis vector and considers eligible IDs only; there, no eligible ID
+  is a pass.
 - `ledgr_feature_contracts()`, `ledgr_pulse_features()`, and
   `ledgr_pulse_wide()` are read-only inspection views over declared features
   and pulse-known data. They must not precompute unavailable data, mutate

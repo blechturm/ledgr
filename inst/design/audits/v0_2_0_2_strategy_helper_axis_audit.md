@@ -9,14 +9,14 @@ way in a dense universe and in a ragged, availability-aware universe?
 
 ## Evidence
 
-`dev/spikes/strategy-helper-axis/probe.R` runs 41 probes on each context:
+`dev/spikes/strategy-helper-axis/probe.R` runs 43 probes on each context:
 every signal,
 selection, weight and target helper; `ledgr_signal_strategy()`; the warmup
-gate; `ctx$vec` planes, `ctx$flat()`, `ctx$hold()`, `ctx$tradable()`,
+gate in its one-argument and proposed context-aware forms; `ctx$vec` planes, `ctx$flat()`, `ctx$hold()`, `ctx$tradable()`,
 `ctx$position()`, `ctx$features()` with an explicit map and with the active
 alias map; `ctx$state_prev$asset_state`; and the input forms of
 `ledgr_signal(ctx, values = ...)`. Two input-only warmup probes, six runtime
-runs and the public pulse snapshot complete the set: 789 observations in
+runs and the public pulse snapshot complete the set: 870 observations in
 `observations.csv`.
 
 - **Constructed contexts.** Built with the internal pulse-context
@@ -45,6 +45,7 @@ runs and the public pulse snapshot complete the set: 789 observations in
   | `real_departed_restricted` | BBB, CCC, AAA | BBB, CCC | BBB, AAA | BBB (halted) |
   | `real_holdings_only` | AAA | none | AAA | none |
   | `real_zero_axis` | none | none | none | none |
+| `real_dense` | AAA, BBB, CCC | not declared (dense) | AAA, BBB, CCC | none |
 
 - **Runtime.** Six strategies are run to completion or failure through
   `ledgr_run()`, with the real strategy preflight. They cover membership
@@ -54,12 +55,13 @@ runs and the public pulse snapshot complete the set: 789 observations in
 - **Public pulse snapshot.** `ledgr_pulse_snapshot()` on the
   availability-bearing snapshot.
 
-`check.R` reruns the probe. It fails on duplicate keys, on a row count that
-differs from the baseline plus the manifest's additions and removals, and on
-any change not listed in `expected_delta.csv`. It also fails on a manifest row
-whose `was` differs from the frozen baseline, or whose change is not realized.
-`observations.csv` stays frozen as the Cut 22 input until LDG-2911 accepts the
-new baseline with `--accept`.
+`model.R` states the LDG-2906 decision executably, and `expected.R` derives
+`expected_delta.csv` from it: every observation the decision changes, with the
+ticket that owns it. `check.R --through <ticket>` reruns the probe and fails
+on duplicate keys, a changed row count, a manifest `was` that differs from the
+frozen baseline, an owned change not yet realized, and any change outside the
+manifest. `observations.csv` stays frozen as the Cut 22 input until LDG-2911
+accepts the new baseline with `--accept`.
 
 ## What Already Works In Both
 
@@ -176,7 +178,9 @@ it.
 
 ## Proposed Principle And Domain Table
 
-LDG-2906 decides this. The proposal, narrowed after the cut review:
+The maintainer decided on 2026-09-29 to take every recommendation below;
+`inst/design/contracts.md`, "Decision Axis And Eligibility", holds the
+decision. The proposal, narrowed after the cut review:
 
 1. **One axis for cross-sectional data.** Context-derived signals, `ctx$vec`
    planes, eligibility masks and final targets cover the decision axis in

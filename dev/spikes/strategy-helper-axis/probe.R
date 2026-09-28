@@ -32,27 +32,42 @@ show <- function(x) {
 ids_text <- function(x) if (is.null(x)) "NULL" else if (length(x) == 0L) "<none>" else paste(x, collapse = ",")
 
 # ---------------------------------------------------------------------------
+# Helper table. Every probe calls the helpers through `H`, and every context
+# passes through `adapt()`. With AXIS_PROBE_MODEL set to model.R, the model
+# replaces the helpers LDG-2906 changes with executable statements of the
+# decided semantics, and states the runtime outcomes; expected.R uses that to
+# write expected_delta.csv. Without it, the probe measures the package.
+# ---------------------------------------------------------------------------
+
+H <- mget(c("ledgr_signal_strategy", "ledgr_signal_return", "ledgr_signal_feature", "ledgr_signal", "ledgr_selection", "ledgr_select_top_n", "ledgr_weight_equal", "ledgr_target_rebalance", "ledgr_target_quantity", "ledgr_target", "ledgr_weights", "ledgr_passed_warmup"), envir = asNamespace("ledgr"))
+adapt <- function(ctx) ctx
+runtime_expected <- NULL
+model_path <- Sys.getenv("AXIS_PROBE_MODEL")
+if (nzchar(model_path)) source(model_path, local = TRUE)
+
+# ---------------------------------------------------------------------------
 # The probes. Each returns one result string; the same probes run on every
 # context, constructed or captured inside a real fold. `threshold` sits
 # between the context's feature values so every mask selects some but not all.
 # ---------------------------------------------------------------------------
 
-member_only_signals <- ledgr_signal_strategy(function(ctx) {
+member_only_signals <- H$ledgr_signal_strategy(function(ctx) {
   m <- ctx$members %||% ctx$universe
   stats::setNames(rep("LONG", length(m)), m)
 }, long_qty = 10)
-axis_signals <- ledgr_signal_strategy(function(ctx) {
+axis_signals <- H$ledgr_signal_strategy(function(ctx) {
   stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe)
 }, long_qty = 10)
 
 probe_ctx <- function(ctx, lookback, threshold) {
+  ctx <- adapt(ctx)
   fid <- sprintf("return_%d", lookback)
   u <- ctx$universe
   m <- ctx$members %||% u
   first <- if (length(u) > 0L) u[[1L]] else NA_character_
   held_nonmembers <- u[ctx$vec$position != 0 & !(u %in% m)]
   feat <- ctx$vec$feature(fid)
-  sig <- try_run(ledgr_signal_return(ctx, lookback = lookback))
+  sig <- try_run(H$ledgr_signal_return(ctx, lookback = lookback))
   on_first <- function(expr) if (is.na(first)) "n/a (empty axis)" else show(try_run(expr))
   out <- c(
     "context: universe" = ids_text(u),
@@ -67,38 +82,40 @@ probe_ctx <- function(ctx, lookback, threshold) {
     "read: ctx$position(first)" = on_first(ctx$position(first)),
     "read: ctx$features(first, explicit map)" = on_first(ctx$features(first, c(ret = fid))),
     "read: ctx$features(first) via active alias" = on_first(ctx$features(first)),
-    "signal: ledgr_signal_feature" = show(try_run(ledgr_signal_feature(ctx, fid))),
+    "signal: ledgr_signal_feature" = show(try_run(H$ledgr_signal_feature(ctx, fid))),
     "signal: ledgr_signal_return" = show(sig),
-    "signal: ledgr_signal(ctx, values = vec$feature)" = show(try_run(ledgr_signal(ctx, values = feat))),
-    "signal: ledgr_signal(ctx, values = named axis)" = show(try_run(ledgr_signal(ctx, values = stats::setNames(feat, u)))),
-    "signal: ledgr_signal(ctx, values = named member-only)" = show(try_run(ledgr_signal(ctx, values = stats::setNames(feat[match(m, u)], m)))),
-    "signal: ledgr_signal(ctx, values = unnamed member-only)" = show(try_run(ledgr_signal(ctx, values = feat[match(m, u)]))),
+    "signal: ledgr_signal(ctx, values = vec$feature)" = show(try_run(H$ledgr_signal(ctx, values = feat))),
+    "signal: ledgr_signal(ctx, values = named axis)" = show(try_run(H$ledgr_signal(ctx, values = stats::setNames(feat, u)))),
+    "signal: ledgr_signal(ctx, values = named member-only)" = show(try_run(H$ledgr_signal(ctx, values = stats::setNames(feat[match(m, u)], m)))),
+    "signal: ledgr_signal(ctx, values = unnamed member-only)" = show(try_run(H$ledgr_signal(ctx, values = feat[match(m, u)]))),
     "hand-built: flat()[signal > threshold] <- 10" = show(try_run({ t <- ctx$flat(); t[sig > threshold] <- 10; t })),
     "hand-built: flat()[vec$feature > threshold] <- 10" = show(try_run({ t <- ctx$flat(); t[feat > threshold] <- 10; t })),
     "hand-built: flat()[vec$member & vec$feature > threshold] <- 10" = show(try_run({ t <- ctx$flat(); t[ctx$vec$member & feat > threshold] <- 10; t })),
     "hand-built: flat()[vec$admissible & vec$feature > threshold] <- 10" = show(try_run({ t <- ctx$flat(); t[ctx$vec$admissible & feat > threshold] <- 10; t })),
-    "selection: ledgr_selection(ctx)" = show(try_run(ledgr_selection(ctx))),
-    "selection: ledgr_selection(ctx, ids = first)" = on_first(ledgr_selection(ctx, ids = first)),
-    "selection: where = vec$feature > threshold" = show(try_run(ledgr_selection(ctx, where = feat > threshold))),
-    "selection: where = signal > threshold" = show(try_run(ledgr_selection(ctx, where = sig > threshold))),
-    "selection: select_top_n(signal, 1)" = show(try_run(ledgr_select_top_n(sig, 1))),
-    "selection: select_top_n(signal, 2)" = show(try_run(ledgr_select_top_n(sig, 2))),
+    "selection: ledgr_selection(ctx)" = show(try_run(H$ledgr_selection(ctx))),
+    "selection: ledgr_selection(ctx, ids = first)" = on_first(H$ledgr_selection(ctx, ids = first)),
+    "selection: where = vec$feature > threshold" = show(try_run(H$ledgr_selection(ctx, where = feat > threshold))),
+    "selection: where = signal > threshold" = show(try_run(H$ledgr_selection(ctx, where = sig > threshold))),
+    "selection: select_top_n(signal, 1)" = show(try_run(H$ledgr_select_top_n(sig, 1))),
+    "selection: select_top_n(signal, 2)" = show(try_run(H$ledgr_select_top_n(sig, 2))),
     "pipeline: top_n -> equal -> rebalance" = show(try_run(
-      ledgr_signal_return(ctx, lookback = lookback) |> ledgr_select_top_n(1) |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx))),
+      H$ledgr_signal_return(ctx, lookback = lookback) |> H$ledgr_select_top_n(1) |> H$ledgr_weight_equal() |> H$ledgr_target_rebalance(ctx))),
     "pipeline: selection(where, exclude) -> target_quantity" = show(try_run(
-      ctx |> ledgr_selection(where = ledgr_signal_return(ctx, lookback = lookback) > threshold, missing = "exclude") |> ledgr_target_quantity(ctx, 10))),
-    "pipeline: selection(ctx) -> target_quantity" = show(try_run(ctx |> ledgr_selection() |> ledgr_target_quantity(ctx, 10))),
-    "pipeline: selection(ids = first) -> target_quantity" = on_first(ledgr_selection(ctx, ids = first) |> ledgr_target_quantity(ctx, 10)),
-    "pipeline: selection(ctx) -> equal -> rebalance" = show(try_run(ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx))),
+      ctx |> H$ledgr_selection(where = H$ledgr_signal_return(ctx, lookback = lookback) > threshold, missing = "exclude") |> H$ledgr_target_quantity(ctx, 10))),
+    "pipeline: selection(ctx) -> target_quantity" = show(try_run(ctx |> H$ledgr_selection() |> H$ledgr_target_quantity(ctx, 10))),
+    "pipeline: selection(ids = first) -> target_quantity" = on_first(H$ledgr_selection(ctx, ids = first) |> H$ledgr_target_quantity(ctx, 10)),
+    "pipeline: selection(ctx) -> equal -> rebalance" = show(try_run(ctx |> H$ledgr_selection() |> H$ledgr_weight_equal() |> H$ledgr_target_rebalance(ctx))),
     "pipeline: selection(ctx) -> equal -> rebalance(keep = held nonmembers)" = show(try_run(
-      ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, keep = held_nonmembers))),
+      ctx |> H$ledgr_selection() |> H$ledgr_weight_equal() |> H$ledgr_target_rebalance(ctx, keep = held_nonmembers))),
     "wrapper: signal_strategy(member-only signals)" = show(try_run(member_only_signals(ctx, list()))),
     "wrapper: signal_strategy(axis signals)" = show(try_run(axis_signals(ctx, list()))),
-    "constructor: ledgr_target(member-only values)" = show(try_run(ledgr_target(stats::setNames(rep(1, length(m)), m), universe = u))),
-    "constructor: ledgr_weights(member-only values)" = show(try_run(ledgr_weights(stats::setNames(rep(0.5, length(m)), m), universe = u))),
+    "constructor: ledgr_target(member-only values)" = show(try_run(H$ledgr_target(stats::setNames(rep(1, length(m)), m), universe = u))),
+    "constructor: ledgr_weights(member-only values)" = show(try_run(H$ledgr_weights(stats::setNames(rep(0.5, length(m)), m), universe = u))),
     "view: ctx$features_wide" = show(ctx$features_wide),
-    "warmup: passed_warmup(ctx$vec$feature)" = show(try_run(ledgr_passed_warmup(feat))),
-    "warmup: passed_warmup(signal)" = show(try_run(ledgr_passed_warmup(unclass(sig))))
+    "warmup: passed_warmup(ctx$vec$feature)" = show(try_run(H$ledgr_passed_warmup(feat))),
+    "warmup: passed_warmup(signal)" = show(try_run(H$ledgr_passed_warmup(unclass(sig)))),
+    "warmup: passed_warmup(ctx, ctx$vec$feature)" = show(try_run(H$ledgr_passed_warmup(ctx, feat))),
+    "warmup: passed_warmup(ctx, signal)" = show(try_run(H$ledgr_passed_warmup(ctx, sig)))
   )
   out
 }
@@ -176,6 +193,7 @@ add_rows("input-only", c(
 #   ended:     AAA member days 1-2 only; CCC is never a member. With AAA
 #              bought, the axis becomes AAA alone (holdings only); without
 #              it, the axis is empty.
+#   plain:     the same bars without facts, run dense.
 # ---------------------------------------------------------------------------
 
 days <- utc("2020-01-01 16:00:00") + 86400 * 0:7
@@ -191,6 +209,10 @@ fixture <- function(kind) {
   sessions <- ledgr_facts_sessions(data.frame(session_date = as.Date(days), status = "open",
     session_open = "09:30:00", session_close = "16:00:00", knowledge_time = utc("2019-12-31 00:00:00"),
     source = "axis_probe", stringsAsFactors = FALSE), venue_id = "PROBE", timezone = "UTC")
+  if (identical(kind, "plain")) {
+    return(ledgr_snapshot_from_df(grid, instruments_df = data.frame(instrument_id = ids),
+      db_path = tempfile(fileext = ".duckdb")))
+  }
   if (identical(kind, "departure")) {
     membership <- data.frame(instrument_id = c("AAA", "BBB", "CCC"),
       effective_from = c(day(1), day(1), day(3)), effective_to = c(day(4), NA, NA), member = TRUE,
@@ -212,7 +234,7 @@ fixture <- function(kind) {
     db_path = tempfile(fileext = ".duckdb"))
 }
 
-snapshots <- list(departure = fixture("departure"), ended = fixture("ended"))
+snapshots <- list(departure = fixture("departure"), ended = fixture("ended"), plain = fixture("plain"))
 
 capture <- new.env()
 real_preflight <- ledgr_strategy_preflight
@@ -220,17 +242,24 @@ recording_strategy <- function(ctx, params) {
   label <- params$record[[substr(format(ctx$ts_utc), 1, 10)]]
   if (!is.null(label)) capture[[label]] <- probe_ctx(ctx, lookback = 1, threshold = 0)
   if (isTRUE(params$buy) && substr(format(ctx$ts_utc), 1, 10) == "2020-01-01") {
-    t <- ctx$flat(); t[ctx$members] <- 5; return(t)
+    buy <- if (isTRUE(ctx$availability_active)) ctx$members else ctx$universe
+    t <- ctx$flat(); t[buy] <- 5; return(t)
   }
   ctx$hold()
 }
 
 run_fixture <- function(snapshot_name, strategy, params = list(), opening = ledgr_opening(cash = 10000),
-                        capture_only = FALSE) {
-  exp <- ledgr_experiment(snapshots[[snapshot_name]], strategy,
-    features = ledgr_feature_map(ret = ledgr_ind_returns(1)),
-    universe = ledgr_universe_members("probe"), valuation_policy = ledgr_valuation_stale(2L),
-    cost_model = ledgr_cost_zero(), opening = opening)
+                        capture_only = FALSE, dense = FALSE) {
+  exp <- if (isTRUE(dense)) {
+    ledgr_experiment(snapshots[[snapshot_name]], strategy,
+      features = ledgr_feature_map(ret = ledgr_ind_returns(1)),
+      cost_model = ledgr_cost_zero(), opening = opening)
+  } else {
+    ledgr_experiment(snapshots[[snapshot_name]], strategy,
+      features = ledgr_feature_map(ret = ledgr_ind_returns(1)),
+      universe = ledgr_universe_members("probe"), valuation_policy = ledgr_valuation_stale(2L),
+      cost_model = ledgr_cost_zero(), opening = opening)
+  }
   run <- function() close(suppressWarnings(ledgr_run(exp, params = params)))
   # The recording strategy calls probe_ctx(), a user helper that preflight
   # rightly classifies Tier 3. Capture runs therefore skip preflight; every
@@ -250,9 +279,11 @@ invisible(run_fixture("departure", recording_strategy, list(buy = TRUE, record =
   "2020-01-02" = "real_members", "2020-01-04" = "real_departed", "2020-01-06" = "real_departed_restricted")), capture_only = TRUE))
 invisible(run_fixture("ended", recording_strategy, list(buy = TRUE, record = list("2020-01-04" = "real_holdings_only")), capture_only = TRUE))
 invisible(run_fixture("ended", recording_strategy, list(buy = FALSE, record = list("2020-01-04" = "real_zero_axis")), capture_only = TRUE))
+invisible(run_fixture("plain", recording_strategy, list(buy = TRUE, record = list("2020-01-04" = "real_dense")),
+  capture_only = TRUE, dense = TRUE))
 for (label in sort(ls(capture))) add_rows(label, get(label, envir = capture))
 
-add_rows("runtime", c(
+runtime_rows <- if (!is.null(runtime_expected)) runtime_expected else c(
   "run: signal_strategy(member-only signals), held nonmember" =
     run_fixture("departure", member_only_signals),
   "run: signal_strategy(axis signals LONG 10), opening nonmember CCC = 2" =
@@ -271,11 +302,12 @@ add_rows("runtime", c(
     }),
   "run: hand-built flat()[signal > -1] <- 5 after departure" =
     run_fixture("departure", function(ctx, params) { t <- ctx$flat(); t[ledgr_signal_return(ctx, 1) > -1] <- 5; t })
-))
+)
+add_rows("runtime", runtime_rows)
 
 # Public pulse snapshot of the availability-bearing fixture.
-pulse <- try_run(ledgr_pulse_snapshot(snapshots$departure, universe = c("AAA", "BBB", "CCC"),
-  ts_utc = day(4), features = list(ledgr_ind_returns(1))))
+pulse <- try_run(adapt(ledgr_pulse_snapshot(snapshots$departure, universe = c("AAA", "BBB", "CCC"),
+  ts_utc = day(4), features = list(ledgr_ind_returns(1)))))
 add_rows("pulse_snapshot", c(
   "context: ctx$members" = if (inherits(pulse, "probe_error")) show(pulse) else ids_text(pulse$members),
   "context: eligibility planes in ctx$vec" = if (inherits(pulse, "probe_error")) show(pulse) else
