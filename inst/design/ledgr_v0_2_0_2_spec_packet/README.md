@@ -987,7 +987,7 @@ whole-universe feature access remains assigned to the feature-engine RFC, and
 rendered-warning visibility remains part of LDG-2859. Neither is authorized by
 this cut.
 
-Implementation is complete through `82bcd1c`. LTB-0100 compares built-in,
+Implementation is complete through `d02b861`. LTB-0100 compares built-in,
 series, scalar-window, parameterized-window and optional recursive TTR values
 between one pulse and a real run. LTB-0102 covers the exact-ID feature-loop
 warning, the below-threshold case, the deliberate mapped-alias exclusion and
@@ -995,8 +995,9 @@ output neutrality. The first close review found that the pulse rebuilt full
 scalar histories for `fn`-only indicators. The correction uses the shared
 single-index helper, and LTB-0104 bounds the user function at one call per
 instrument; its full-series mutation fails. The correction ordinary fast
-record passed 473 of 473 blocks in 99.470 seconds and its checker passed the
-112-second gate. The agent-provisional record is
-`pulse_inspection_parity_closeout.md`; Workstream 24 and Cut 17 await their
-focused second Type 1 review and maintainer acceptance. That review makes the
-historical ratio 2/3 = 0.667 against the 0.5 gate.
+record passed 474 of 474 blocks in 96.390 seconds and its checker passed the
+112-second gate. LTB-0105 proves that changes to scalar windowing or
+normalization move the feature-engine cache identity. The agent-provisional
+record is `pulse_inspection_parity_closeout.md`; Workstream 24 and Cut 17
+await maintainer acceptance. The two reviews make the historical ratio
+2/3 = 0.667 against the 0.5 gate.

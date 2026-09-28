@@ -1,13 +1,13 @@
 # Pulse Inspection Parity Closeout
 
-**Status:** Agent-provisional; awaiting the focused Type 1 re-review.
+**Status:** Agent-provisional; awaiting maintainer acceptance.
 **Date:** 2026-09-28
 **Cut:** 17
 **Workstream:** 24
 **Tickets:** LDG-2876 through LDG-2878
 **Baseline:** `2000332`
-**Implementation:** `15aaaba`, `0d1948e`, `4e0dc91` and `82bcd1c`, plus
-this closeout record.
+**Implementation:** `15aaaba`, `0d1948e`, `4e0dc91`, `82bcd1c` and
+`d02b861`, plus this closeout record.
 
 ## Outcome
 
@@ -50,6 +50,13 @@ four-row means 109.75 and 87.75. Routing that feature back through full-series
 evaluation raises the count to 34 and fails the block. The feature-engine
 identity pin was updated because the shared scalar helper intentionally
 invalidates old feature caches.
+
+The focused re-review found that this repin was not durable: function
+fingerprints do not include called helpers. `ledgr_feature_engine_version()`
+now fingerprints both `ledgr_compute_feature_scalar_at()` and
+`ledgr_normalize_feature_scalar_output()` directly. LCL-0105 and LTB-0105
+replace each binding independently and require the engine identity to change.
+Removing the scalar-at helper from the payload makes that block fail.
 
 LCL-0102 and LTB-0102 run the real fold over a 100-instrument axis. One hundred
 exact-ID `ctx$feature()` reads emit one `ledgr_scalar_accessor_loop` condition
@@ -101,6 +108,11 @@ initial parity implementation. The corrected path measured
 interactive clocks on the same 100-instrument by 2,000-bar shape, not a
 release gate or a general feature-engine claim.
 
+The shared-helper refactor adds one R function call per scalar-series bar. The
+reviewer's alternating 2,000-bar by 25-repetition clock measured medians of
+2.00 seconds before and 2.09 seconds after, about 4%. This small cost is
+disclosed rather than attributed to the pulse optimization.
+
 The warning clock is warm wall time around a single-candidate memory sweep at
 2,000 instruments and 30 pulses, with one exact-ID feature read per instrument
 and pulse. Alternating fresh processes gave:
@@ -115,11 +127,12 @@ is an effect clock, not a performance gate.
 
 ## Verification
 
-The correction ordinary fast profile selected and passed 473 of 473 blocks
-in 99.470 seconds. The independent checker returned `LEDGR_TEST_GATE_OK`
+The final correction ordinary fast profile selected and passed 474 of 474
+blocks in 96.390 seconds. The independent checker returned
+`LEDGR_TEST_GATE_OK`
 against the 112-second bound. Records are at:
 
-`C:/Users/maxth/ledgr-research/.tmp/ws24-correction-fast-2`
+`C:/Users/maxth/ledgr-research/.tmp/ws24-cache-correction-fast`
 
 The first full run caught mixed fast and review blocks under LCL-0100 and
 LCL-0102. The registry was split into LCL-0100 through LCL-0103 without moving
@@ -128,11 +141,12 @@ persist their census in temporary record directories; neither was a package
 failure. The final record uses the explicit writable research workspace.
 
 The first correction profile failed only because the intentional shared-helper
-change moved the feature-engine identity. The cache-version pin was updated;
-the replacement profile above is green.
+change moved the feature-engine identity. The cache-version pin was updated.
+The focused re-review then found the missing helper coverage; its mechanical
+correction and replacement profile above are green.
 
 Focused feature, pulse-context, scalar-warning, documentation and control-plane
-suites pass. All five claims resolve to their registered blocks and actual
+suites pass. All six claims resolve to their registered blocks and actual
 profiles. The three pulse-teaching article pairs are fresh, YAML parses and
 `git diff --check` is clean.
 
@@ -142,5 +156,7 @@ This closeout is agent-provisional. The initial Type 1 close review found the
 `fn`-only regression. The requested focused correction review is the second
 invocation over three completed tickets, a historical ratio of
 `2 / 3 = 0.667` against the 0.5 gate. The breach is recorded rather than
-hidden; adding unrelated work cannot change it. Maintainer acceptance, not
-this draft, closes Workstream 24 and Cut 17 and unblocks Workstream 15.
+hidden; adding unrelated work cannot change it. The second review's cache
+finding is closed by a direct payload correction and a failing mutation. No
+third review is claimed here. Maintainer acceptance, not this draft, closes
+Workstream 24 and Cut 17 and unblocks Workstream 15.
