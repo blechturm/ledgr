@@ -32,6 +32,8 @@ Feature factories of the form \verb{function(params)} are intentionally rejected
 here because the helper cannot know which concrete parameter set to use.
 Materialize the factory first, then pass the resulting indicators or feature
 map. The error class is \code{ledgr_feature_factory_requires_params}.
+Unresolved parameterized feature maps use the same class and must first be
+resolved with concrete \code{feature_params}.
 }
 \section{Articles}{
 

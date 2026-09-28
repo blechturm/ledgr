@@ -281,6 +281,9 @@ ledgr_ttr_strict_window_certified <- function(ttr_fn,
 #' Default bundle IDs are shorter than equivalent hand-written
 #' `ledgr_ind_ttr(output = ...)` IDs; use `naming` or hand-written
 #' single-output calls when exact legacy IDs matter.
+#' When adding a bundle to [ledgr_feature_map()], pass it as an unnamed entry.
+#' A named outer entry is refused because bundle output names come from
+#' `prefix` or `naming`; the outer name would otherwise be discarded.
 #'
 #' @param ttr_fn TTR function name, for example `"BBands"` or `"MACD"`.
 #' @param input ledgr input shape. Supported values are `"close"`, `"hl"`,

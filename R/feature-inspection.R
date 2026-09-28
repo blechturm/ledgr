@@ -5,6 +5,11 @@
 #' named or unnamed list of indicators and indicator bundles, one indicator, or
 #' one indicator bundle.
 #'
+#' Parameterized feature maps must be resolved with concrete `feature_params`
+#' before inspection. Unresolved declarations fail with
+#' `ledgr_feature_factory_requires_params` rather than an internal extraction
+#' error.
+#'
 #' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
 #'   `ledgr_indicator_bundle` objects, one `ledgr_indicator`, or one
 #'   `ledgr_indicator_bundle`.
@@ -52,6 +57,8 @@ ledgr_feature_contracts <- function(features) {
 #' here because the helper cannot know which concrete parameter set to use.
 #' Materialize the factory first, then pass the resulting indicators or feature
 #' map. The error class is `ledgr_feature_factory_requires_params`.
+#' Unresolved parameterized feature maps use the same class and must first be
+#' resolved with concrete `feature_params`.
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
@@ -174,6 +181,20 @@ ledgr_snapshot_bar_counts <- function(snapshot) {
 ledgr_feature_contract_input <- function(features) {
   if (inherits(features, "ledgr_feature_map")) {
     ledgr_validate_feature_map_object(features)
+    unresolved <- vapply(
+      features$indicators,
+      ledgr_feature_declaration_is_unresolved,
+      logical(1)
+    )
+    if (any(unresolved)) {
+      rlang::abort(
+        paste(
+          "`features` must be materialized before feature contracts can be inspected.",
+          "Resolve parameterized declarations with concrete `feature_params`, then pass the resulting indicators or feature map."
+        ),
+        class = c("ledgr_feature_factory_requires_params", "ledgr_invalid_args")
+      )
+    }
     return(list(
       indicators = unname(features$indicators),
       aliases = unname(as.character(features$aliases))

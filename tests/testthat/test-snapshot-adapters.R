@@ -38,6 +38,48 @@ test_that("ledgr_snapshot_from_df rejects sub-second POSIXct bars", {
   )
 })
 
+test_that("[LTB-0113] integer-backed POSIXct seals with canonical identity", {
+  double_bars <- ledgr_test_make_bars(
+    c("AAA", "BBB"),
+    as.Date("2020-01-01") + 0:5
+  )
+  double_bars$ts_utc <- as.POSIXct(double_bars$ts_utc, tz = "UTC")
+  integer_bars <- double_bars
+  storage.mode(integer_bars$ts_utc) <- "integer"
+  expect_identical(typeof(double_bars$ts_utc), "double")
+  expect_identical(typeof(integer_bars$ts_utc), "integer")
+
+  double_snapshot <- ledgr_snapshot_from_df(double_bars)
+  integer_snapshot <- ledgr_snapshot_from_df(integer_bars)
+  on.exit(ledgr_snapshot_close(double_snapshot), add = TRUE)
+  on.exit(ledgr_snapshot_close(integer_snapshot), add = TRUE)
+
+  read_bars <- function(snapshot) {
+    DBI::dbGetQuery(
+      ledgr:::get_connection(snapshot),
+      paste(
+        "SELECT instrument_id, ts_utc, open, high, low, close, volume",
+        "FROM snapshot_bars WHERE snapshot_id = ?",
+        "ORDER BY instrument_id, ts_utc"
+      ),
+      params = list(snapshot$snapshot_id)
+    )
+  }
+  expect_identical(read_bars(integer_snapshot), read_bars(double_snapshot))
+  expect_identical(
+    ledgr_snapshot_info(integer_snapshot)$snapshot_hash,
+    ledgr_snapshot_info(double_snapshot)$snapshot_hash
+  )
+
+  invalid <- integer_bars
+  invalid$ts_utc[[1L]] <- NA_integer_
+  expect_error(
+    ledgr_snapshot_from_df(invalid),
+    "must be valid POSIXt values",
+    class = "ledgr_invalid_args"
+  )
+})
+
 # ledgr-test-profile: review
 test_that("ledgr_snapshot_from_df allows custom snapshot IDs and warns on malformed generated-style IDs", {
   expect_warning(

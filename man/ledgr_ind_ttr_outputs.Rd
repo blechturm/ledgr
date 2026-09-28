@@ -53,6 +53,9 @@ runtime feature computation, so strategies still read scalar feature IDs.
 Default bundle IDs are shorter than equivalent hand-written
 \code{ledgr_ind_ttr(output = ...)} IDs; use \code{naming} or hand-written
 single-output calls when exact legacy IDs matter.
+When adding a bundle to \code{ledgr_feature_map()}, pass it as an unnamed entry.
+A named outer entry is refused because bundle output names come from
+\code{prefix} or \code{naming}; the outer name would otherwise be discarded.
 }
 \section{Articles}{
 

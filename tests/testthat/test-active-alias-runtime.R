@@ -93,7 +93,7 @@ testthat::test_that("parameterized active-alias bundle sweeps resolve concrete o
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
   features <- ledgr_feature_map(
-    bands = ledgr_ind_ttr_outputs(
+    ledgr_ind_ttr_outputs(
       "BBands",
       input = "close",
       outputs = c("dn", "up"),

@@ -9,6 +9,10 @@
 #' Plain lists remain valid; use a feature map when readable aliases make
 #' strategy code clearer. The map is validated at construction time, and
 #' `ledgr_feature_id()` returns a named character vector keyed by alias.
+#' Indicator entries must be named. Bundle entries must be unnamed because
+#' their output feature IDs become the aliases; use the bundle's `prefix` or
+#' `naming` argument to control those names. An alias may equal its own entry's
+#' feature ID, but it may not equal a different entry's feature ID.
 #' Inside a strategy body, `ctx$features(instrument_id, feature_map)` returns a
 #' named numeric vector keyed by the feature-map aliases. The same helper also
 #' accepts a named character vector such as `c(alias = "feature_id")` for
@@ -83,6 +87,7 @@ ledgr_feature_map <- function(...) {
     }
 
     if (inherits(entry, "ledgr_indicator_bundle")) {
+      ledgr_feature_map_refuse_named_bundle(alias)
       bundle_indicators <- ledgr_indicator_bundle_indicators(entry)
       indicators <- c(indicators, bundle_indicators)
       bundle_ids <- ledgr_feature_id(bundle_indicators)
@@ -92,6 +97,7 @@ ledgr_feature_map <- function(...) {
     }
 
     if (inherits(entry, "ledgr_parameterized_indicator_bundle")) {
+      ledgr_feature_map_refuse_named_bundle(alias)
       bundle_aliases <- entry$output_aliases
       indicators <- c(indicators, lapply(bundle_aliases, function(output_alias) {
         ledgr_new_parameterized_bundle_output(entry, output_alias)
@@ -112,6 +118,7 @@ ledgr_feature_map <- function(...) {
   if (length(concrete_ids) > 0L) {
     ledgr_abort_duplicate_feature_ids(concrete_ids)
   }
+  ledgr_validate_feature_map_alias_id_collisions(aliases, feature_ids)
 
   indicators <- stats::setNames(unname(indicators), aliases)
   feature_ids <- stats::setNames(unname(feature_ids), aliases)
@@ -123,6 +130,43 @@ ledgr_feature_map <- function(...) {
       feature_ids = feature_ids
     ),
     class = "ledgr_feature_map"
+  )
+}
+
+ledgr_feature_map_refuse_named_bundle <- function(alias) {
+  if (!nzchar(alias)) return(invisible(TRUE))
+  rlang::abort(
+    sprintf(
+      paste(
+        "Feature map bundle entries must be unnamed; outer alias `%s` would be ignored.",
+        "Use the bundle's `prefix` or `naming` argument to control generated feature names."
+      ),
+      alias
+    ),
+    class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+  )
+}
+
+ledgr_validate_feature_map_alias_id_collisions <- function(aliases,
+                                                           feature_ids) {
+  owners <- match(aliases, feature_ids, nomatch = 0L)
+  collision <- which(owners != 0L & owners != seq_along(aliases))
+  if (length(collision) < 1L) return(invisible(TRUE))
+
+  i <- collision[[1L]]
+  owner <- owners[[i]]
+  rlang::abort(
+    sprintf(
+      paste(
+        "Feature map alias `%s` maps to feature `%s` but also names feature",
+        "`%s` from entry `%s`; aliases must not name another entry's feature."
+      ),
+      aliases[[i]],
+      feature_ids[[i]],
+      feature_ids[[owner]],
+      aliases[[owner]]
+    ),
+    class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
   )
 }
 
@@ -235,6 +279,7 @@ ledgr_validate_feature_map_object <- function(x) {
   if (length(concrete_ids) > 0L) {
     ledgr_abort_duplicate_feature_ids(concrete_ids)
   }
+  ledgr_validate_feature_map_alias_id_collisions(aliases, feature_ids)
   invisible(TRUE)
 }
 

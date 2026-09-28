@@ -548,7 +548,7 @@ testthat::test_that("TTR output bundles flatten at feature boundaries", {
   testthat::skip_if_not_installed("TTR")
 
   bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = 20)
-  feature_map <- ledgr_feature_map(bands = bundle, trend = ledgr_ind_sma(20))
+  feature_map <- ledgr_feature_map(bundle, trend = ledgr_ind_sma(20))
 
   testthat::expect_identical(
     unname(ledgr_feature_id(feature_map)),
@@ -596,7 +596,7 @@ testthat::test_that("parameterized TTR declarations resolve to concrete indicato
 
   features <- ledgr_feature_map(
     signal = rsi,
-    bands = ledgr_ind_ttr_outputs(
+    ledgr_ind_ttr_outputs(
       "BBands",
       input = "close",
       outputs = c("dn", "up"),

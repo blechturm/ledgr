@@ -33,6 +33,10 @@ A feature map is also accepted anywhere \code{features = list(...)} is accepted.
 Plain lists remain valid; use a feature map when readable aliases make
 strategy code clearer. The map is validated at construction time, and
 \code{ledgr_feature_id()} returns a named character vector keyed by alias.
+Indicator entries must be named. Bundle entries must be unnamed because
+their output feature IDs become the aliases; use the bundle's \code{prefix} or
+\code{naming} argument to control those names. An alias may equal its own entry's
+feature ID, but it may not equal a different entry's feature ID.
 Inside a strategy body, \code{ctx$features(instrument_id, feature_map)} returns a
 named numeric vector keyed by the feature-map aliases. The same helper also
 accepts a named character vector such as \code{c(alias = "feature_id")} for

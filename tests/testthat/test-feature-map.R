@@ -66,10 +66,109 @@ testthat::test_that("ledgr_feature_map duplicate bundle aliases suggest prefix c
   testthat::skip_if_not_installed("TTR")
 
   bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), prefix = "same", n = 20)
-  err <- rlang::catch_cnd(ledgr_feature_map(left = bundle, right = bundle))
+  err <- rlang::catch_cnd(do.call(
+    ledgr_feature_map,
+    stats::setNames(list(bundle, bundle), c("", ""))
+  ))
   testthat::expect_s3_class(err, "ledgr_invalid_feature_map")
   testthat::expect_match(conditionMessage(err), "generated feature ID", fixed = TRUE)
   testthat::expect_match(conditionMessage(err), "change the bundle prefix", fixed = TRUE)
+})
+
+testthat::test_that("[LTB-0114] feature maps refuse ignored bundle aliases", {
+  bundle <- ledgr:::ledgr_new_indicator_bundle(list(
+    ledgr_ind_sma(2),
+    ledgr_ind_returns(2)
+  ))
+  parameterized_bundle <- ledgr:::ledgr_new_parameterized_bundle(
+    "test_bundle",
+    args = list(n = ledgr_param("n")),
+    supported_args = "n",
+    output_aliases = c("test_first", "test_second")
+  )
+  expected <- paste(
+    "Feature map bundle entries must be unnamed; outer alias `bands` would be ignored.",
+    "Use the bundle's `prefix` or `naming` argument to control generated feature names."
+  )
+
+  for (entry in list(bundle, parameterized_bundle)) {
+    error <- rlang::catch_cnd(ledgr_feature_map(bands = entry))
+    testthat::expect_s3_class(error, "ledgr_invalid_feature_map")
+    testthat::expect_identical(conditionMessage(error), expected)
+  }
+
+  unnamed <- do.call(
+    ledgr_feature_map,
+    stats::setNames(list(bundle), "")
+  )
+  testthat::expect_identical(
+    ledgr_feature_id(unnamed),
+    c(sma_2 = "sma_2", return_2 = "return_2")
+  )
+})
+
+testthat::test_that("[LTB-0115] feature maps refuse cross-entry alias collisions", {
+  expected <- paste(
+    "Feature map alias `sma_10` maps to feature `sma_5` but also names feature",
+    "`sma_10` from entry `sma_5`; aliases must not name another entry's feature."
+  )
+  error <- rlang::catch_cnd(ledgr_feature_map(
+    sma_10 = ledgr_ind_sma(5),
+    sma_5 = ledgr_ind_sma(10)
+  ))
+  testthat::expect_s3_class(error, "ledgr_invalid_feature_map")
+  testthat::expect_identical(conditionMessage(error), expected)
+  testthat::expect_error(
+    ledgr_feature_map(
+      sma_10 = ledgr_ind_sma(ledgr_param("n")),
+      trend = ledgr_ind_sma(10)
+    ),
+    class = "ledgr_invalid_feature_map"
+  )
+
+  own_id <- ledgr_feature_map(
+    sma_5 = ledgr_ind_sma(5),
+    trend = ledgr_ind_sma(10)
+  )
+  testthat::expect_identical(
+    ledgr_feature_id(own_id),
+    c(sma_5 = "sma_5", trend = "sma_10")
+  )
+
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:23)
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  parameterized <- ledgr_feature_map(
+    sma_10 = ledgr_ind_sma(5),
+    candidate = ledgr_ind_sma(ledgr_param("n"))
+  )
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = parameterized,
+    cost_model = ledgr_cost_zero()
+  )
+  testthat::expect_error(
+    ledgr_run(experiment, feature_params = list(n = 10L)),
+    class = "ledgr_invalid_feature_map"
+  )
+
+  grid <- ledgr_grid_cross(
+    features = ledgr_feature_grid(n = c(10L, 20L)),
+    strategy = ledgr_strategy_grid(qty = 1)
+  )
+  sweep <- ledgr_sweep(experiment, grid)
+  testthat::expect_identical(sweep$status, c("FAILED", "DONE"))
+  testthat::expect_identical(
+    sweep$error_class,
+    c("ledgr_invalid_feature_map", NA_character_)
+  )
+  candidates <- attr(sweep, "candidate_features")
+  testthat::expect_identical(candidates$status, c("failed", "ok"))
+  testthat::expect_identical(
+    candidates$error_class,
+    c("ledgr_invalid_feature_map", NA_character_)
+  )
 })
 
 # ledgr-test-profile: heavy_protocol

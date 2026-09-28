@@ -541,6 +541,11 @@ ledgr_snapshot_normalize_ts_utc <- function(ts_raw) {
       label = "bars_df `ts_utc`",
       class = "ledgr_invalid_args"
     )
+    # DuckDB's data-frame registration expects POSIXct epoch seconds in the
+    # ordinary double-backed representation. Integer-backed POSIXct is valid R
+    # input and denotes the same instants, so canonicalize storage once before
+    # the prepared vector reaches the database boundary.
+    storage.mode(ts_posix) <- "double"
     return(list(ts_utc = ledgr_snapshot_format_distinct_ts_utc(ts_posix), ts_posix = ts_posix))
   }
 

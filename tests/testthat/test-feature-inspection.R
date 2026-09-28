@@ -133,6 +133,54 @@ testthat::test_that("ledgr_feature_contract_check rejects feature factories with
   )
 })
 
+testthat::test_that("[LTB-0112] feature inspection refuses unresolved maps", {
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("fast_n")),
+    baseline = ledgr_ind_sma(4)
+  )
+  expected_message <- paste(
+    "`features` must be materialized before feature contracts can be inspected.",
+    "Resolve parameterized declarations with concrete `feature_params`, then pass the resulting indicators or feature map."
+  )
+
+  contracts_error <- rlang::catch_cnd(ledgr_feature_contracts(features))
+  testthat::expect_s3_class(
+    contracts_error,
+    "ledgr_feature_factory_requires_params"
+  )
+  testthat::expect_identical(conditionMessage(contracts_error), expected_message)
+
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:4)
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  check_error <- rlang::catch_cnd(
+    ledgr_feature_contract_check(snapshot, features)
+  )
+  testthat::expect_s3_class(
+    check_error,
+    "ledgr_feature_factory_requires_params"
+  )
+  testthat::expect_identical(conditionMessage(check_error), expected_message)
+
+  concrete <- ledgr_feature_map(
+    fast = ledgr_ind_sma(2),
+    baseline = ledgr_ind_sma(4)
+  )
+  testthat::expect_identical(
+    ledgr_feature_contracts(concrete),
+    tibble::tibble(
+      alias = c("fast", "baseline"),
+      feature_id = c("sma_2", "sma_4"),
+      source = c("ledgr", "ledgr"),
+      requires_bars = c(2L, 4L),
+      stable_after = c(2L, 4L)
+    )
+  )
+})
+
 testthat::test_that("pulse feature views expose long and wide pulse-known data", {
   bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:5)
   db_path <- tempfile(fileext = ".duckdb")
