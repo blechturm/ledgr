@@ -1095,16 +1095,19 @@ RFC. P7, explicit-map double validation, stays with the scheduled v0.2.1.1
 pulse/accessor optimization cut. Workstream 27 lands between the accepted
 audit in Workstream 26 and the correction phase in Workstream 28; the release
 gate remains downstream of all three. This cut review plus one Type 1 close
-review is 2/5 = 0.400 against the gate. The collision rule adopts Q2 option A
-from the feature-map read-surface seed; that RFC may later refine it.
+review was the planned 2/5 = 0.400. The focused correction review made the
+actual total 3/5 = 0.600, recorded as a historical gate breach. The collision
+rule adopts Q2 option A from the feature-map read-surface seed; that RFC may
+later refine it.
 
 Implementation at `ac69370` received two findings in the planned Type 1 close
-review. Correction `b462cd5` canonicalizes fact clocks as well as bars and
+review. Correction `55524e5` canonicalizes fact clocks as well as bars and
 removes the collision scan from repeated explicit-map reads while keeping it
 at construction and resolution. LCL-0112 through LCL-0115 protect the four
 boundaries. The original exact commit passed 483/483 fast blocks in 102.840
 seconds against the unchanged 112-second gate; the timestamp constructor clock
 showed no median regression. The correction record passed the same 483 blocks
-in 98.410 seconds and its gate checker passed. The cut stands at 2/5 = 0.400;
-a focused correction review would record a historical 3/5 = 0.600 breach.
-Workstream 28 remains blocked until maintainer acceptance.
+in 98.410 seconds and its gate checker passed. It ran at pre-rebase `b462cd5`,
+whose code and tests are identical to release-line `55524e5`. The focused
+correction review was invocation three: 3/5 = 0.600, recorded as a historical
+gate breach. Workstream 28 remains blocked until maintainer acceptance.

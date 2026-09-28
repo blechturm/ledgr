@@ -1,18 +1,18 @@
 # Cut 20 Closeout: Audit-Discovered Product Boundary Repairs
 
-**Status:** Agent-provisional; the first Type 1 close review returned two
-findings. Corrections are implemented and await focused verification and
-maintainer acceptance.
+**Status:** Agent-provisional; the focused Type 1 re-review verified both code
+corrections and returned record-only provenance findings. Those are corrected;
+the workstream awaits maintainer acceptance.
 
-**Implementation:** `ac69370`, corrected at `b462cd5` on `v0.2.0.2`.
+**Implementation:** `ac69370`, corrected at `55524e5` on `v0.2.0.2`.
 
 | Ticket | Commit | Claim and detector |
 | --- | --- | --- |
 | LDG-2890 | `ac69370` | LCL-0112 / LTB-0112 |
-| LDG-2891 | `ac69370`, `b462cd5` | LCL-0113 / LTB-0113 |
+| LDG-2891 | `ac69370`, `55524e5` | LCL-0113 / LTB-0113 |
 | LDG-2892 | `ac69370` | LCL-0114 / LTB-0114 |
-| LDG-2894 | `ac69370`, `b462cd5` | LCL-0115 / LTB-0115 |
-| LDG-2893 | pending | closeout and packet reconciliation |
+| LDG-2894 | `ac69370`, `55524e5` | LCL-0115 / LTB-0115 |
+| LDG-2893 | `2e1e59c` | closeout and packet reconciliation |
 
 ## Result
 
@@ -66,7 +66,7 @@ construction or inspection boundaries over the declared feature set.
 The first Type 1 review found that the collision check had also been placed in
 generic object validation. Explicit-map reads therefore repeated it twice and
 paid about 3.15 microseconds per lookup, roughly two seconds at the registered
-630,000-call shape. Correction `b462cd5` removes that scan from generic reads;
+630,000-call shape. Correction `55524e5` removes that scan from generic reads;
 construction and resolution remain the two enforcing boundaries. LTB-0115
 fails if the scan is reintroduced on lookup.
 
@@ -95,16 +95,17 @@ independent gate checker accepted the one-run record against the unchanged
 The correction record at `C:/tmp/ws27-correction-fast-b462cd5` passed the
 same 483 of 483 blocks in 98.410 seconds. The ordinary checker accepted that
 one-run record against the unchanged 112-second bound. This is gate evidence,
-not a correction speedup claim.
+not a correction speedup claim. The record ran at pre-rebase commit
+`b462cd5`; its code and tests are identical to release-line commit `55524e5`.
 
 The accepted audit routes P4 and P6 to `ac69370`, and P5 to `ac69370` plus
-`b462cd5`. Workstream 28 receives the exact materialize-first instruction,
+`55524e5`. Workstream 28 receives the exact materialize-first instruction,
 bar-and-fact timestamp acceptance, unnamed-bundle rule, and cross-entry alias
 rule; it remains blocked until this closeout is accepted.
 
 The cut review is invocation one. The first Type 1 close review is invocation
-two and returned `CHANGES_REQUIRED`, leaving the cut at 2/5 = 0.400. A focused
-correction review would be invocation three and 3/5 = 0.600, a historical gate
-breach that cannot be repaired by padding this cut. This closeout remains
-agent-provisional until the maintainer decides the verification route and
-accepts the workstream.
+two and returned `CHANGES_REQUIRED`. The focused correction review is
+invocation three: 3/5 = 0.600, a historical gate breach that cannot be repaired
+by padding this cut. Its only remaining findings were the stale pre-rebase SHA
+and conditional arithmetic corrected here. This closeout remains
+agent-provisional until the maintainer accepts the workstream.
