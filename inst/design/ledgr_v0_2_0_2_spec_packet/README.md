@@ -1004,7 +1004,7 @@ historical ratio 2/3 = 0.667 against the 0.5 gate. The maintainer accepted
 Workstream 24 and Cut 17 on 2026-09-28 without a third review because the
 final cache-identity correction was mechanical and mutation-detected.
 
-## Cut 18: Maintenance, result output (open)
+## Cut 18: Maintenance, result output (review pending)
 
 Authority: reader work needs no new RFC cycle; the accepted equity-settlement
 synthesis and `contracts.md` bind what the result prints must keep. The
@@ -1028,6 +1028,15 @@ evidence while their established internal order and incomplete-run rules stay
 unchanged. With the close review that is 2 invocations over 6 tickets, 0.333.
 LDG-2869 joins from its Cut 16 deferral. Workstream 25 follows accepted
 Workstream 24 and blocks Workstream 26.
+
+Implementation is complete and the agent-provisional record is
+`result_output_closeout.md`. On the three reference runs, `print(bt)` changed
+from 16 to 15 lines, `summary(bt)` changed from 57/57/67 to 29/56/39, and the
+metrics print changed from 96 to 12 lines. The first valid fast record passed
+every block but missed the gate at a 115.730-second median. Removing redundant
+test-only DuckDB setup produced the final 479/479 record in 110.560 seconds;
+the checker passed the 112-second bound. No production code changed during
+that correction. Workstream 25 and Cut 18 await their Type 1 close review.
 
 ## Cut 19: Documentation corrections before the tag (open)
 

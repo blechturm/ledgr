@@ -199,7 +199,7 @@ cuts:
     out_of_scope: "The content and semantics of corporate-action evidence, which the equity-settlement synthesis owns; this cut changes only where and how much of it prints. The README rewrite itself, which LDG-2858 owns and which will print `bt` once LDG-2880 lands. The sweep candidate print, which hides candidate parameters behind hashed IDs; it is a separate reader question for the sweep surface."
     workstreams: [25]
     closeout: "result_output_closeout.md"
-    status: "open"
+    status: "review_pending"
   - id: 19
     name: "Documentation corrections before the tag"
     cut: "2026-09-28"
@@ -420,7 +420,7 @@ workstreams:
   - id: 25
     name: "Result output"
     cut: 18
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins the tickets: a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous. The review compares `print()` and `summary()` before and after on a bars-only run, a run with supplied corporate-action facts and an incomplete availability-aware run; confirms the two corporate-action headline lines still print wherever the equity-settlement synthesis requires them; confirms the collapsed policy record is reachable through a public accessor; and runs each ticket's detector against a restored old print. These are print methods, not fold, ingest or reader hot paths, so the seven-shape walk and before-and-after clock are recorded as not required with that reason."}
@@ -1916,13 +1916,13 @@ tickets:
   - id: "LDG-2884"
     title: "Close workstream 25 and cut 18"
     workstream: 25
-    status: "open"
+    status: "review_pending"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2869", "LDG-2880", "LDG-2881", "LDG-2882", "LDG-2883"]
     scope: "Close workstream 25 and cut 18. Record the before-and-after line counts of `print()`, `summary()` and the metrics print on the three reference runs, the cut review's decision on collapsing the NOT SUPPLIED block and where the full policy record is read, that LDG-2869 moved here from its Cut 16 deferral, and whether the release gate waited for this cut. Record review invocations against the 0.5 gate, and that the seven-shape walk and clocks were not required because no hot path changed. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout records the before-and-after output sizes on the three reference runs", "the corporate-action collapse decision and the accessor for the full policy record are recorded", "the move of LDG-2869 and the release-gate sequencing are recorded", "review invocations are recorded against the 0.5 gate, with the non-application of the seven-shape walk stated and explained"]
-    evidence: []
+    evidence: ["Agent-provisional closeout: `result_output_closeout.md`. Across the bars-only, supplied-cash-fact and incomplete-prefix references, `print(bt)` changed from 16 to 15 lines, `summary(bt)` from 57/57/67 to 29/56/39, and the metrics print from 96 to 12 lines. The incomplete-prefix size uses a real run with completion evidence replaced at the reader boundary; review-lane LTB-0064 retains the real incomplete-run witness.", "The accepted cut decision permits the absent-fact block to collapse to the exact corporate-action and price-basis warnings plus `ledgr_corporate_action_summary(bt)`, the exported full-policy accessor. It also permits metric sections before evidence while retaining established internal metric order and incomplete withholding.", "LDG-2869 joined from its Cut 16 deferral. Workstream 25 blocks Workstream 26, which blocks Workstream 15, so the release gate waited and the README and articles can be corrected once against the final output surface.", "The final ordinary fast record at `C:/Users/maxth/ledgr-research/.tmp/ws25-fast-final` passed 479 of 479 blocks in 110.560 seconds and its checker passed the 112-second bound. The first valid record passed all blocks but missed the gate at a 115.730-second median; redundant test-only DuckDB setup was removed without changing production code or moving evidence to a slower lane. One cut review plus the planned close review is 2/6 = 0.333. The seven-shape walk and an interleaved product clock do not apply because only explicit print, format and result-reader boundaries changed; the test setup issue is recorded separately."]
   - id: "LDG-2858"
     title: "Rewrite and verify the README for first-time users"
     workstream: 26
