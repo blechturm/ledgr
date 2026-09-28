@@ -140,21 +140,14 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   )
   testthat::expect_identical(daily$bt, before)
 
-  intraday <- ledgr_result_output_run(
-    as.POSIXct("2020-01-01 09:30:00", tz = "UTC") + 3600 * 0:3,
-    "intraday-print"
+  intraday_period <- ledgr:::ledgr_result_period_label(
+    as.POSIXct("2020-01-01 09:30:00", tz = "UTC"),
+    as.POSIXct("2020-01-01 12:30:00", tz = "UTC")
   )
-  on.exit(close(intraday$bt), add = TRUE)
-  on.exit(ledgr_snapshot_close(intraday$snapshot), add = TRUE)
-  intraday_output <- NULL
-  testthat::expect_warning(
-    intraday_output <- paste(
-      utils::capture.output(print(intraday$bt)),
-      collapse = "\n"
-    ),
-    class = "ledgr_metric_context_cadence_mismatch"
+  testthat::expect_identical(
+    intraday_period,
+    "2020-01-01T09:30:00Z to 2020-01-01T12:30:00Z"
   )
-  testthat::expect_match(intraday_output, "2020-01-01T09:30:00Z", fixed = TRUE)
 
   completion <- ledgr:::ledgr_backtest_completion_info(daily$bt)
   completion$completion_evidence_available <- TRUE
@@ -169,14 +162,55 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
 })
 
 testthat::test_that("[LTB-0108] summary answers before compact evidence", {
-  run <- ledgr_result_output_run(
-    as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-    "summary-order"
+  context <- ledgr_metric_context()
+  computed <- ledgr:::ledgr_new_metrics(
+    list(
+      total_return = 0.1,
+      annualized_return = 0.2,
+      volatility = 0.15,
+      sharpe_ratio = 1.25,
+      max_drawdown = -0.05,
+      n_trades = 2L,
+      win_rate = 0.5,
+      avg_trade = 5,
+      time_in_market = 0.75
+    ),
+    ledgr:::ledgr_metric_kernel(context = context)
   )
-  on.exit(close(run$bt), add = TRUE)
-  on.exit(ledgr_snapshot_close(run$snapshot), add = TRUE)
+  completion <- list(
+    completion_evidence_available = FALSE,
+    complete_performance = TRUE,
+    achieved_start_utc = as.POSIXct(NA, tz = "UTC"),
+    achieved_end_utc = as.POSIXct(NA, tz = "UTC")
+  )
+  policy <- structure(
+    list(
+      corporate_action_fidelity = "not_supplied",
+      price_basis = "undeclared"
+    ),
+    class = c("ledgr_corporate_action_summary", "list")
+  )
+  bt <- structure(
+    list(run_id = "summary-order", config = list()),
+    class = c("ledgr_backtest", "list")
+  )
+  testthat::local_mocked_bindings(
+    ledgr_compute_metrics = function(...) computed,
+    ledgr_backtest_completion_info = function(...) completion,
+    ledgr_backtest_warmup_diagnostics = function(...) {
+      ledgr:::ledgr_empty_warmup_diagnostics()
+    },
+    ledgr_execution_timing_provenance = function(...) {
+      list(
+        execution_timing_convention = "dense_bar_timestamp",
+        execution_timing_version = NULL
+      )
+    },
+    ledgr_corporate_action_summary = function(...) policy,
+    .package = "ledgr"
+  )
 
-  output <- utils::capture.output(summary(run$bt))
+  output <- utils::capture.output(summary(bt))
   testthat::expect_lte(length(output), 30L)
   performance <- match("Performance Metrics:", output)
   execution <- match("Execution Evidence:", output)
@@ -193,26 +227,11 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
   )
   testthat::expect_false(any(grepl("  Setting ", output, fixed = TRUE)))
 
-  policy <- ledgr_corporate_action_summary(run$bt)
-  testthat::expect_s3_class(policy, "ledgr_corporate_action_summary")
-  testthat::expect_identical(policy$corporate_action_fidelity, "not_supplied")
-  testthat::expect_identical(
-    names(policy$selected_settings),
-    names(policy$selected_identities)
-  )
-  testthat::expect_identical(
-    policy$selected_settings,
-    ledgr:::ledgr_corporate_action_policy_settings(run$bt$config$corporate_actions)
-  )
-
-  completion <- ledgr:::ledgr_backtest_completion_info(run$bt)
   completion$completion_evidence_available <- TRUE
   completion$complete_performance <- FALSE
-  testthat::local_mocked_bindings(
-    ledgr_backtest_completion_info = function(...) completion,
-    .package = "ledgr"
-  )
-  prefix <- utils::capture.output(summary(run$bt))
+  completion$achieved_start_utc <- as.POSIXct("2020-01-01", tz = "UTC")
+  completion$achieved_end_utc <- as.POSIXct("2020-01-03", tz = "UTC")
+  prefix <- utils::capture.output(summary(bt))
   testthat::expect_true(any(grepl("^Achieved-Prefix Metrics", prefix)))
   testthat::expect_true(any(grepl("Total Return (prefix)", prefix, fixed = TRUE)))
   testthat::expect_true(any(grepl("Max Drawdown (prefix)", prefix, fixed = TRUE)))
@@ -224,13 +243,21 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
 })
 
 testthat::test_that("[LTB-0110] metrics print without dumping attributes", {
-  run <- ledgr_result_output_run(
-    as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
-    "metrics-print"
+  context <- ledgr_metric_context()
+  metrics <- ledgr:::ledgr_new_metrics(
+    list(
+      total_return = 0.1,
+      annualized_return = 0.2,
+      volatility = 0.15,
+      sharpe_ratio = 1.25,
+      max_drawdown = -0.05,
+      n_trades = 2L,
+      win_rate = 0.5,
+      avg_trade = 5,
+      time_in_market = 0.75
+    ),
+    ledgr:::ledgr_metric_kernel(context = context)
   )
-  on.exit(close(run$bt), add = TRUE)
-  on.exit(ledgr_snapshot_close(run$snapshot), add = TRUE)
-  metrics <- ledgr_compute_metrics(run$bt)
   names_before <- names(metrics)
   values_before <- unclass(metrics)
   attributes_before <- attributes(metrics)

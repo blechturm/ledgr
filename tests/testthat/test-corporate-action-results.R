@@ -56,11 +56,15 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
     ledgr_snapshot_close(supplied$snapshot)
   })
 
-  absent <- ledgr:::ledgr_corporate_action_summary(bars_only$bt)
-  none <- ledgr:::ledgr_corporate_action_summary(supplied$bt)
+  absent <- ledgr_corporate_action_summary(bars_only$bt)
+  none <- ledgr_corporate_action_summary(supplied$bt)
   testthat::expect_identical(absent$corporate_action_fidelity, "not_supplied")
   testthat::expect_identical(none$corporate_action_fidelity, "none")
   testthat::expect_identical(absent$price_basis, "undeclared")
+  testthat::expect_identical(
+    names(absent$selected_settings),
+    names(absent$selected_identities)
+  )
   testthat::expect_identical(
     none$selected_settings,
     c(
