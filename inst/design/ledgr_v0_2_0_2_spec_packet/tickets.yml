@@ -169,8 +169,9 @@ cuts:
     out_of_scope: "Alias access on whole feature vectors (the feature-engine RFC the helpers synthesis names under 'Bulk feature-map vector helpers'); a rebalance schedule (the staged seed `inst/design/rfc/rfc_strategy_schedule_decorator_v0_1_9_x_seed.md`); how often `LEDGR_LAST_BAR_NO_FILL` fires (its owning workflow, per context-surface synthesis section 8); sharing user-defined helper functions between strategies (a settled boundary in the same section; `params` rejects functions with `ledgr_invalid_strategy_params`); the result-print defect in LDG-2869 (a maintenance cut); defaults for absent first-pulse state fields (a later state-authoring design; `ctx$state_prev` stays `NULL` on a dense first pulse); the `close()` calls that accumulate in interactive work (later handle-lifecycle work). The eight articles that still loop over `ctx$universe` belong to LDG-2859's audit."
     workstreams: [23]
     closeout: "strategy_authoring_helpers_closeout.md"
-    accepted: "2026-09-27 by the maintainer; implementation opened in this commit"
-    status: "open"
+    close_review: "The initial Type 1 close review returned CHANGES_REQUIRED. The focused re-review returned PASS after independently verifying all three corrections, every teaching note and the failure sensitivity of the registered mutations. It found one non-blocking open pulse in the article; b419733 closed it and extended LTB-0099 to prevent recurrence. The maintainer accepted Workstream 23 and Cut 16 on 2026-09-28 without another review round."
+    accepted: "2026-09-28 by the maintainer, after the PASS and b419733"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -362,7 +363,7 @@ workstreams:
   - id: 23
     name: "Strategy authoring helpers"
     cut: 16
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23", reason: "One claim joins the tickets: the strategy-authoring worked example needs no hand-written workaround for missing inputs, short rankings, kept positions or pulse sizing, and each helper that removes one follows its stage's missing-value rule from helpers synthesis Q3. The review re-executes the article and confirms each removed workaround was replaced by a shipped helper rather than moved elsewhere, runs every ticket's registered mutation, reads the extended contract text against the engine, and confirms that dense outputs are unchanged whenever the new arguments are not used. These helpers run once per pulse, so the review walks each changed helper against the seven shapes, where a loop over instruments is a finding unless its reason is stated, and measures a helper-pipeline run before and after, interleaved, naming the clock as cold or warm."}
@@ -1790,10 +1791,10 @@ tickets:
   - id: "LDG-2875"
     title: "Close workstream 23 and cut 16"
     workstream: 23
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2874"]
     scope: "Close workstream 23 and cut 16. Record which helper closed which gap, the maintainer decisions recorded on the cut and why, that LDG-2869 was deferred to a maintenance cut, and the out-of-scope routes, so a later reader finds alias planes, scheduling, warning frequency and the result-print defect where they went. Record the seven-shape walk result and the before-and-after helper-pipeline clocks the review obligations require, and review invocations against the 0.5 gate, including the three cut-review invocations and the breach the maintainer accepted in advance. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout maps every gap in the cut to its ticket and helper, or to its named out-of-scope route", "the maintainer decisions are recorded with their reasons, including the scheduling override", "the seven-shape walk and interleaved before-and-after clocks are recorded with the clock named", "review invocations are recorded against the 0.5 gate"]
-    evidence: ["The agent-provisional closeout maps LDG-2868 and LDG-2870 through LDG-2874 to their helper and registered detector, records the maintainer decisions and the LDG-2869 and out-of-scope routes, and leaves acceptance to the maintainer after focused Type 1 re-review.", "The seven-shape walk found and removed one duplicate context validation in the feature-signal path; LTB-0095 counts one validation. The correction removes the unconditional dense position-plane read found by the close review. No remaining changed loop grows with bars, fact rows, instruments x pulses, events, diagnostics or candidates.", "Three interleaved 5,000-call warm clocks at 505 instruments put the ranking-helper delta at +0.080 ms/call and the missing-policy rule delta at +0.092 ms/call, about +0.10 and +0.12 seconds over 1,260 pulses. The correction ordinary fast record passed 470/470 in 87.560 seconds and its checker passed the 112-second gate.", "Three cut reviews, the initial close review and the requested focused re-review are 5/7 = 0.714. The maintainer accepted the first breach before implementation; the correction round is recorded rather than hidden."]
+    evidence: ["The accepted closeout maps LDG-2868 and LDG-2870 through LDG-2874 to their helper and registered detector, records the maintainer decisions and the LDG-2869 and out-of-scope routes. The focused Type 1 re-review returned PASS, and the maintainer accepted the workstream on 2026-09-28.", "The seven-shape walk found and removed one duplicate context validation in the feature-signal path; LTB-0095 counts one validation. The correction removes the unconditional dense position-plane read found by the close review. No remaining changed loop grows with bars, fact rows, instruments x pulses, events, diagnostics or candidates.", "Three interleaved 5,000-call warm clocks at 505 instruments put the ranking-helper delta at +0.080 ms/call and the missing-policy rule delta at +0.092 ms/call, about +0.10 and +0.12 seconds over 1,260 pulses. The correction ordinary fast record passed 470/470 in 87.560 seconds and its checker passed the 112-second gate.", "Three cut reviews, the initial close review and the requested focused re-review are 5/7 = 0.714. The maintainer accepted the first breach before implementation; the correction round is recorded rather than hidden. The review's sole non-blocking observation was corrected at b419733 by closing keep_pulse and extending LTB-0099."]

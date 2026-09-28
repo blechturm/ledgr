@@ -1,12 +1,12 @@
 # Strategy Authoring Helpers Closeout
 
-**Status:** Agent-provisional; awaiting independent Type 1 close review.
+**Status:** Accepted by the maintainer after Type 1 PASS.
 **Date:** 2026-09-28
 **Cut:** 16
 **Workstream:** 23
 **Tickets:** LDG-2868, LDG-2870 through LDG-2875
 **Baseline:** `95936eb`
-**Implementation:** `a25fe37..5382a7d`
+**Implementation:** `a25fe37..b419733`
 
 ## Outcome
 
@@ -124,5 +124,9 @@ The maintainer accepted the first breach before implementation because the
 third review materially changed the public UX; the correction round is
 recorded rather than hidden.
 
-A Type 1 PASS authorizes the maintainer to accept Workstream 23 and Cut 16. It
-does not start the release gate.
+The focused Type 1 re-review returned PASS after verifying all three review
+corrections and every teaching note. It found one non-blocking resource leak in
+the article: `keep_pulse` was not closed. Commit `b419733` closes it and extends
+LTB-0099 so the teaching cannot regress. The maintainer accepted Workstream 23
+and Cut 16 on 2026-09-28. This closes the final implementation dependency of
+the release gate; it does not itself execute that gate.
