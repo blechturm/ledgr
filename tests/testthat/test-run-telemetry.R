@@ -33,7 +33,7 @@ testthat::test_that("successful runs persist compact telemetry outside the resul
   testthat::expect_identical(as.integer(info$feature_cache_misses), 0L)
 
   printed_info <- utils::capture.output(print(info))
-  testthat::expect_true(any(grepl("Execution Mode:  audit_log", printed_info, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Execution Mode:   audit_log", printed_info, fixed = TRUE)))
   testthat::expect_true(any(grepl("Cache Hits:", printed_info, fixed = TRUE)))
   testthat::expect_true(any(grepl("Cache Misses:", printed_info, fixed = TRUE)))
   testthat::expect_true(any(grepl("Persist Features:", printed_info, fixed = TRUE)))

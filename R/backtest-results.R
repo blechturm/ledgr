@@ -422,6 +422,9 @@ ledgr_backtest_bench <- function(bt) {
 #'   decimal. For example, `0.02` means two percent per year. Supply either
 #'   `metric_context` or `risk_free_rate`, not both.
 #' @return A list-like `ledgr_metrics` object.
+#' @details The print method reports metrics over the persisted equity prefix.
+#'   Use `summary(bt)` when completion-aware withholding and achieved-prefix
+#'   labels are required.
 #'
 #' @details
 #' Standard metrics are derived from the ledger and equity curve:
@@ -515,7 +518,11 @@ format.ledgr_metrics <- function(x, ...) {
     ledgr_metric_summary_annualization_display(context),
     substr(ledgr_metric_context_hash(context), 1L, 12L)
   )
-  c(sprintf("  %-22s %s", labels, values), context_line)
+  scope_line <- paste(
+    "Scope: persisted equity prefix; use summary(bt) for",
+    "completion-aware reporting"
+  )
+  c(sprintf("  %-22s %s", labels, values), context_line, scope_line)
 }
 
 #' @rdname ledgr_compute_metrics
@@ -525,6 +532,134 @@ print.ledgr_metrics <- function(x, ...) {
   cat("=============\n")
   cat(paste(format(x), collapse = "\n"), "\n", sep = "")
   invisible(x)
+}
+
+ledgr_headline_closed_trade_count <- function(events) {
+  if (!is.data.frame(events) || nrow(events) == 0L) return(0L)
+  required <- c(
+    "event_type", "instrument_id", "side", "qty", "price", "meta_json",
+    "event_seq"
+  )
+  if (any(!required %in% names(events))) {
+    rlang::abort(
+      "Headline trade events are missing required columns.",
+      class = "ledgr_invalid_ledger_event"
+    )
+  }
+  events <- events[order(as.integer(events$event_seq)), , drop = FALSE]
+  event_instrument <- as.character(events$instrument_id)
+  instrument_ids <- unique(event_instrument[
+    !is.na(event_instrument) & nzchar(event_instrument)
+  ])
+  instrument_index <- match(event_instrument, instrument_ids)
+  positions <- numeric(length(instrument_ids))
+  closed <- 0L
+
+  for (i in seq_len(nrow(events))) {
+    event_type <- as.character(events$event_type[[i]])
+    idx <- instrument_index[[i]]
+    if (identical(event_type, "FILL")) {
+      side <- as.character(events$side[[i]])
+      qty <- suppressWarnings(as.numeric(events$qty[[i]]))
+      price <- suppressWarnings(as.numeric(events$price[[i]]))
+      if (is.na(idx) || !side %in% c("BUY", "SELL") ||
+          !is.finite(qty) || qty <= 0 || !is.finite(price) || price <= 0) {
+        rlang::abort(
+          "Headline trade counting encountered a malformed FILL.",
+          class = "ledgr_invalid_ledger_event"
+        )
+      }
+      delta <- if (identical(side, "BUY")) qty else -qty
+      before <- positions[[idx]]
+      tolerance <- ledgr_lot_dust_tolerance(before, delta, qty, price)
+      if (abs(before) > tolerance && sign(before) != sign(delta)) {
+        closed <- closed + 1L
+      }
+      after <- before + delta
+      if (abs(after) <= tolerance) after <- 0
+      positions[[idx]] <- after
+      next
+    }
+
+    meta_json <- as.character(events$meta_json[[i]])
+    meta <- if (is.na(meta_json) || !nzchar(meta_json)) {
+      list()
+    } else {
+      ledgr_json_read_nested(meta_json)
+    }
+    delta <- as.numeric(meta$position_delta %||% 0)
+    if (length(delta) != 1L || !is.finite(delta)) {
+      rlang::abort(
+        "Headline trade counting encountered a non-finite position delta.",
+        class = "ledgr_invalid_ledger_event"
+      )
+    }
+    if (delta == 0) next
+    if (is.na(idx)) {
+      rlang::abort(
+        "A position-changing accounting event requires an instrument ID.",
+        class = "ledgr_invalid_ledger_event"
+      )
+    }
+    after <- positions[[idx]] + delta
+    tolerance <- ledgr_lot_dust_tolerance(positions[[idx]], delta, after)
+    if (abs(after) <= tolerance) after <- 0
+    positions[[idx]] <- after
+  }
+  as.integer(closed)
+}
+
+ledgr_backtest_headline_metrics <- function(con, run_id) {
+  bounds <- DBI::dbGetQuery(
+    con,
+    "
+    WITH curve AS (
+      SELECT
+        ts_utc,
+        equity,
+        MAX(equity) OVER (
+          ORDER BY ts_utc ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS running_max
+      FROM equity_curve
+      WHERE run_id = ?
+    )
+    SELECT
+      MIN(ts_utc) AS start_ts_utc,
+      MAX(ts_utc) AS end_ts_utc,
+      ARG_MIN(equity, ts_utc) AS initial_equity,
+      ARG_MAX(equity, ts_utc) AS final_equity,
+      MIN(equity / NULLIF(running_max, 0) - 1) AS max_drawdown
+    FROM curve
+    ",
+    params = list(run_id)
+  )
+  initial_equity <- as.numeric(bounds$initial_equity[[1]])
+  final_equity <- as.numeric(bounds$final_equity[[1]])
+  total_return <- if (is.finite(initial_equity) && initial_equity != 0 &&
+      is.finite(final_equity)) {
+    final_equity / initial_equity - 1
+  } else {
+    NA_real_
+  }
+  events <- DBI::dbGetQuery(
+    con,
+    "
+    SELECT event_type, instrument_id, side, qty, price, meta_json, event_seq
+    FROM ledger_events
+    WHERE run_id = ?
+      AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
+    ORDER BY event_seq
+    ",
+    params = list(run_id)
+  )
+  list(
+    start_ts_utc = bounds$start_ts_utc[[1]],
+    end_ts_utc = bounds$end_ts_utc[[1]],
+    final_equity = final_equity,
+    total_return = total_return,
+    max_drawdown = as.numeric(bounds$max_drawdown[[1]]),
+    n_trades = ledgr_headline_closed_trade_count(events)
+  )
 }
 
 #' Print a backtest result
@@ -564,26 +699,13 @@ print.ledgr_backtest <- function(x, ...) {
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
   on.exit(opened$close(), add = TRUE)
-  result_bounds <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT
-      MIN(ts_utc) AS start_ts_utc,
-      MAX(ts_utc) AS end_ts_utc,
-      ARG_MAX(equity, ts_utc) AS final_equity
-    FROM equity_curve
-    WHERE run_id = ?
-    ",
-    params = list(x$run_id)
-  )
-  final_equity <- as.numeric(result_bounds$final_equity[[1]])
+  headline <- ledgr_backtest_headline_metrics(con, x$run_id)
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
-  computed <- ledgr_compute_metrics(x)
   completion <- ledgr_run_completion_info(con, x$run_id)
   prefix_only <- ledgr_summary_prefix_only(completion)
   period <- ledgr_result_period_label(
-    result_bounds$start_ts_utc[[1]],
-    result_bounds$end_ts_utc[[1]]
+    headline$start_ts_utc,
+    headline$end_ts_utc
   )
   return_label <- if (prefix_only) "Total Return (achieved prefix):" else "Total Return:"
   drawdown_label <- if (prefix_only) "Max Drawdown (achieved prefix):" else "Max Drawdown:"
@@ -593,10 +715,10 @@ print.ledgr_backtest <- function(x, ...) {
   cat(sprintf("%-34s %s\n", "Run ID:", x$run_id))
   cat(sprintf("%-34s %s\n", "Period:", period))
   cat(sprintf("%-34s $%.2f\n", "Opening Cash:", initial_cash))
-  cat(sprintf("%-34s $%.2f\n", "Final Equity:", final_equity))
-  cat(sprintf("%-34s %.2f%%\n", return_label, computed$total_return * 100))
-  cat(sprintf("%-34s %.2f%%\n", drawdown_label, computed$max_drawdown * 100))
-  cat(sprintf("%-34s %d\n\n", "Closed Trades:", computed$n_trades))
+  cat(sprintf("%-34s $%.2f\n", "Final Equity:", headline$final_equity))
+  cat(sprintf("%-34s %.2f%%\n", return_label, headline$total_return * 100))
+  cat(sprintf("%-34s %.2f%%\n", drawdown_label, headline$max_drawdown * 100))
+  cat(sprintf("%-34s %d\n\n", "Closed Trades:", headline$n_trades))
   ledgr_print_corporate_action_headline(corporate_actions)
   cat("\n")
   cat("Use summary(bt) for metrics and evidence\n")
@@ -779,7 +901,8 @@ summary.ledgr_backtest <- function(object,
     cat(sprintf("  Timing Version:      %s\n", as.character(timing_version)))
   }
 
-  ledgr_print_completion_info(completion)
+  if (isTRUE(completion$completion_evidence_available)) cat("\n")
+  ledgr_print_completion_info(completion, trailing_blank = FALSE)
   ledgr_print_corporate_action_summary_compact(
     ledgr_corporate_action_summary(object)
   )

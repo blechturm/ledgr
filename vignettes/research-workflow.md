@@ -550,26 +550,26 @@ info
     ledgr Run Info
     ==============
 
-    Run ID:          workflow_promoted_candidate
-    Label:           NA
-    Status:          DONE
-    Archived:        FALSE
-    Tags:            NA
-    Snapshot:        demo_2019_h1
-    Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+    Run ID:           workflow_promoted_candidate
+    Label:            NA
+    Status:           DONE
+    Archived:         FALSE
+    Tags:             NA
+    Snapshot:         demo_2019_h1
+    Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 523c01fdf7e56d6ac24271057fd702deb70c0618d6c1533f97ed6798fe377f31
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:     8fb5fdc895fe7552a9eb5083164ebc12795fb81377994cda2972c3fb67858979
-    Strategy Hash:   1bf04a8ccca8bbaa85f33b05cf3047a11751467ab7a9ca85d02d243c9487788b
-    Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
-    Reproducibility: tier_1
-    Execution Mode:  audit_log
-    Fill Timing:     dense_bar_timestamp
-    Timing Version:  N/A
+    Config Hash:      8fb5fdc895fe7552a9eb5083164ebc12795fb81377994cda2972c3fb67858979
+    Strategy Hash:    1bf04a8ccca8bbaa85f33b05cf3047a11751467ab7a9ca85d02d243c9487788b
+    Params Hash:      dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
+    Reproducibility:  tier_1
+    Execution Mode:   audit_log
+    Fill Timing:      dense_bar_timestamp
+    Timing Version:   N/A
     Elapsed Sec:      0.670
     Persist Features: TRUE
-    Cache Hits:      0
-    Cache Misses:    4
+    Cache Hits:       0
+    Cache Misses:     4
 
 ``` r
 reopened <- ledgr_run_open(snapshot, "workflow_promoted_candidate")

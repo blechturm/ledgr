@@ -270,15 +270,21 @@ print.ledgr_extracted_strategy <- function(x, ...) {
     if (is.null(val) || length(val) == 0L || is.na(val[[1]])) return(default)
     as.character(val[[1]])
   }
+  line <- function(label, field) {
+    cat(sprintf("%-18s%s\n", paste0(label, ":"), field))
+  }
   cat("ledgr Extracted Strategy\n")
   cat("========================\n\n")
-  cat("Run ID:          ", value("run_id"), "\n", sep = "")
-  cat("Reproducibility: ", value("reproducibility_level"), "\n", sep = "")
-  cat("Source Hash:     ", value("strategy_source_hash"), "\n", sep = "")
-  cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
-  cat("Hash Verified:   ", value("hash_verified", "FALSE"), "\n", sep = "")
-  cat("Trust:           ", value("trust", "FALSE"), "\n", sep = "")
-  cat("Source Available: ", if (is.na(x$strategy_source_text[[1]])) "FALSE" else "TRUE", "\n", sep = "")
+  line("Run ID", value("run_id"))
+  line("Reproducibility", value("reproducibility_level"))
+  line("Source Hash", value("strategy_source_hash"))
+  line("Params Hash", value("strategy_params_hash"))
+  line("Hash Verified", value("hash_verified", "FALSE"))
+  line("Trust", value("trust", "FALSE"))
+  line(
+    "Source Available",
+    if (is.na(x$strategy_source_text[[1]])) "FALSE" else "TRUE"
+  )
   if (!is.null(x$strategy_function)) {
     cat("Function:        recovered\n")
   }

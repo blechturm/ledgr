@@ -41,6 +41,10 @@ A list-like \code{ledgr_metrics} object.
 Compute standard metrics from backtest results
 }
 \details{
+The print method reports metrics over the persisted equity prefix. Use
+\code{summary(bt)} when completion-aware withholding and achieved-prefix
+labels are required.
+
 Standard metrics are derived from the ledger and equity curve:
 \itemize{
 \item \code{total_return}: last public equity row divided by the first public equity

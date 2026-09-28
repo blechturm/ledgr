@@ -62,6 +62,24 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
   testthat::expect_identical(none$corporate_action_fidelity, "none")
   testthat::expect_identical(absent$price_basis, "undeclared")
   testthat::expect_identical(
+    absent$selected_settings,
+    c(
+      cash_amount = "gross",
+      cash_posting = "effective_close",
+      held_terminal_position = "last_permissible",
+      unsupported_quantity = "report_only"
+    )
+  )
+  testthat::expect_identical(
+    absent$selected_identities,
+    c(
+      cash_amount = "ledgr.corporate_action.cash_amount.gross.v001",
+      cash_posting = "ledgr.corporate_action.cash_posting.effective_close.v001",
+      held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v001",
+      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001"
+    )
+  )
+  testthat::expect_identical(
     names(absent$selected_settings),
     names(absent$selected_identities)
   )

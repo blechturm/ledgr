@@ -210,7 +210,7 @@ ledgr_completion_time_label <- function(x) {
   format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 }
 
-ledgr_print_completion_info <- function(info) {
+ledgr_print_completion_info <- function(info, trailing_blank = TRUE) {
   if (!isTRUE(info$completion_evidence_available)) return(invisible(FALSE))
   requested <- paste(
     ledgr_completion_time_label(info$requested_start_utc),
@@ -249,7 +249,8 @@ ledgr_print_completion_info <- function(info) {
     sep = ""
   )
   cat("  Performance:       ", performance, "\n", sep = "")
-  cat("  Affected IDs:      ", affected, "\n\n", sep = "")
+  ending <- if (isTRUE(trailing_blank)) "\n\n" else "\n"
+  cat("  Affected IDs:      ", affected, ending, sep = "")
   invisible(TRUE)
 }
 

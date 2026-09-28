@@ -174,26 +174,26 @@ info
     ledgr Run Info
     ==============
 
-    Run ID:          trend_qty_5
-    Label:           Baseline quantity
-    Status:          DONE
-    Archived:        FALSE
-    Tags:            baseline, trend
-    Snapshot:        store_demo_snapshot
-    Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+    Run ID:           trend_qty_5
+    Label:            Baseline quantity
+    Status:           DONE
+    Archived:         FALSE
+    Tags:             baseline, trend
+    Snapshot:         store_demo_snapshot
+    Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:     b3639301f11003569e65ace43159c249eb796244bd3a673c6a18780cbde12f8a
-    Strategy Hash:   c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-    Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
-    Reproducibility: tier_1
-    Execution Mode:  audit_log
-    Fill Timing:     dense_bar_timestamp
-    Timing Version:  N/A
-    Elapsed Sec:      0.890
+    Config Hash:      b3639301f11003569e65ace43159c249eb796244bd3a673c6a18780cbde12f8a
+    Strategy Hash:    c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
+    Reproducibility:  tier_1
+    Execution Mode:   audit_log
+    Fill Timing:      dense_bar_timestamp
+    Timing Version:   N/A
+    Elapsed Sec:      0.860
     Persist Features: TRUE
-    Cache Hits:      0
-    Cache Misses:    2
+    Cache Hits:       0
+    Cache Misses:     2
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
 mode, compact telemetry, status, identity hashes, and reproducibility
@@ -324,12 +324,12 @@ stored_strategy
     ledgr Extracted Strategy
     ========================
 
-    Run ID:          trend_qty_5
-    Reproducibility: tier_1
-    Source Hash:     c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
-    Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
-    Hash Verified:   TRUE
-    Trust:           FALSE
+    Run ID:           trend_qty_5
+    Reproducibility:  tier_1
+    Source Hash:      c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
+    Hash Verified:    TRUE
+    Trust:            FALSE
     Source Available: TRUE
 
 The source text is just data in this mode.

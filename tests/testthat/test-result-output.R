@@ -115,6 +115,12 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   on.exit(close(daily$bt), add = TRUE)
   on.exit(ledgr_snapshot_close(daily$snapshot), add = TRUE)
   metrics <- ledgr_compute_metrics(daily$bt)
+  testthat::local_mocked_bindings(
+    ledgr_compute_metrics = function(...) {
+      rlang::abort("print(bt) must not replay fills", class = "ledgr_print_replayed_fills")
+    },
+    .package = "ledgr"
+  )
   before <- unserialize(serialize(daily$bt, NULL))
   output <- utils::capture.output(print(daily$bt))
   blob <- paste(output, collapse = "\n")
@@ -159,6 +165,35 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   prefix_output <- paste(utils::capture.output(print(daily$bt)), collapse = "\n")
   testthat::expect_match(prefix_output, "Total Return (achieved prefix):", fixed = TRUE)
   testthat::expect_match(prefix_output, "Max Drawdown (achieved prefix):", fixed = TRUE)
+
+  opening_meta <- canonical_json(list(
+    source = "opening_position",
+    cash_delta = 0,
+    position_delta = 4,
+    cost_basis = 10,
+    opening_position = TRUE
+  ))
+  events <- data.frame(
+    event_id = paste0("headline_", 1:3),
+    run_id = "headline",
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 1:3,
+    event_type = c("CASHFLOW", "FILL", "FILL"),
+    instrument_id = "AAA",
+    side = c(NA, "SELL", "BUY"),
+    qty = c(4, 10, 9),
+    price = c(10, 12, 11),
+    fee = 0,
+    meta_json = c(opening_meta, NA, NA),
+    event_seq = 1:3,
+    stringsAsFactors = FALSE
+  )
+  replay <- ledgr:::ledgr_replay_accounting_events(
+    ledgr:::ledgr_prepare_accounting_events(events)
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_headline_closed_trade_count(events),
+    as.integer(sum(replay$close_qty > 0))
+  )
 })
 
 testthat::test_that("[LTB-0108] summary answers before compact evidence", {
@@ -264,7 +299,7 @@ testthat::test_that("[LTB-0110] metrics print without dumping attributes", {
   context_before <- ledgr_metric_context(metrics)
 
   output <- utils::capture.output(returned <- print(metrics))
-  testthat::expect_lte(length(output), 12L)
+  testthat::expect_lte(length(output), 15L)
   testthat::expect_identical(output[1:2], c("ledgr Metrics", "============="))
   expected_labels <- c(
     "Total Return:", "Annualized Return:", "Volatility (annual):",
@@ -275,9 +310,14 @@ testthat::test_that("[LTB-0110] metrics print without dumping attributes", {
     which(grepl(label, output, fixed = TRUE))[[1]]
   }, integer(1))
   testthat::expect_identical(unname(label_rows), 3:11)
-  testthat::expect_match(output[[12]], "^Context: risk-free ")
-  testthat::expect_match(output[[12]], "annualization|periods/year")
-  testthat::expect_match(output[[12]], "hash [0-9a-f]{12}$")
+  context_row <- output[grepl("^Context: risk-free ", output)]
+  testthat::expect_length(context_row, 1L)
+  testthat::expect_match(context_row, "annualization|periods/year")
+  testthat::expect_match(context_row, "hash [0-9a-f]{12}$")
+  testthat::expect_true(
+    "Scope: persisted equity prefix; use summary(bt) for completion-aware reporting" %in%
+      output
+  )
   testthat::expect_identical(returned, metrics)
   testthat::expect_identical(names(metrics), names_before)
   testthat::expect_identical(unclass(metrics), values_before)
@@ -303,6 +343,10 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
   )
   extracted_output <- utils::capture.output(print(extracted))
   testthat::expect_true("Source Available: TRUE" %in% extracted_output)
+  extracted_values <- sub("^[^:]+:[ ]*", "", extracted_output[4:10])
+  extracted_columns <- regexpr("[^ ]+$", extracted_output[4:10])
+  testthat::expect_identical(length(unique(extracted_columns)), 1L)
+  testthat::expect_identical(extracted_values[[7]], "TRUE")
 
   info <- structure(
     list(
@@ -336,6 +380,9 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
   info_output <- utils::capture.output(print(info))
   testthat::expect_true("Elapsed Sec:      0.430" %in% info_output)
   testthat::expect_true("Persist Features: TRUE" %in% info_output)
+  metadata_lines <- info_output[4:21]
+  metadata_columns <- regexpr("[^ ]+$", metadata_lines)
+  testthat::expect_identical(length(unique(metadata_columns)), 1L)
   testthat::expect_false(any(grepl("0.430000000000001", info_output, fixed = TRUE)))
   testthat::expect_identical(info$elapsed_sec, stored_elapsed)
 })

@@ -988,29 +988,32 @@ print.ledgr_run_info <- function(x, ...) {
     if (is.null(val) || length(val) == 0L || is.na(val)) return(default)
     as.character(val[[1]])
   }
+  line <- function(label, field) {
+    cat(sprintf("%-18s%s\n", paste0(label, ":"), field))
+  }
 
   cat("ledgr Run Info\n")
   cat("==============\n\n")
-  cat("Run ID:          ", value("run_id"), "\n", sep = "")
-  cat("Label:           ", value("label"), "\n", sep = "")
-  cat("Status:          ", value("status"), "\n", sep = "")
-  cat("Archived:        ", value("archived", "FALSE"), "\n", sep = "")
-  cat("Tags:            ", value("tags"), "\n", sep = "")
+  line("Run ID", value("run_id"))
+  line("Label", value("label"))
+  line("Status", value("status"))
+  line("Archived", value("archived", "FALSE"))
+  line("Tags", value("tags"))
   if (isTRUE(x$completion_evidence_available)) {
     cat("\n")
     ledgr_print_completion_info(x)
   }
-  cat("Snapshot:        ", value("snapshot_id"), "\n", sep = "")
-  cat("Snapshot Hash:   ", value("snapshot_hash"), "\n", sep = "")
-  cat("Feature Set Hash: ", value("feature_set_hash"), "\n", sep = "")
-  cat("Risk Chain Hash:  ", value("risk_chain_hash"), "\n", sep = "")
-  cat("Config Hash:     ", value("config_hash"), "\n", sep = "")
-  cat("Strategy Hash:   ", value("strategy_source_hash"), "\n", sep = "")
-  cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
-  cat("Reproducibility: ", value("reproducibility_level"), "\n", sep = "")
-  cat("Execution Mode:  ", value("execution_mode"), "\n", sep = "")
-  cat("Fill Timing:     ", value("execution_timing_convention"), "\n", sep = "")
-  cat("Timing Version:  ", value("execution_timing_version", "N/A"), "\n", sep = "")
+  line("Snapshot", value("snapshot_id"))
+  line("Snapshot Hash", value("snapshot_hash"))
+  line("Feature Set Hash", value("feature_set_hash"))
+  line("Risk Chain Hash", value("risk_chain_hash"))
+  line("Config Hash", value("config_hash"))
+  line("Strategy Hash", value("strategy_source_hash"))
+  line("Params Hash", value("strategy_params_hash"))
+  line("Reproducibility", value("reproducibility_level"))
+  line("Execution Mode", value("execution_mode"))
+  line("Fill Timing", value("execution_timing_convention"))
+  line("Timing Version", value("execution_timing_version", "N/A"))
   elapsed <- x$elapsed_sec
   elapsed <- if (
     is.null(elapsed) || length(elapsed) == 0L || is.na(elapsed[[1]])
@@ -1019,10 +1022,10 @@ print.ledgr_run_info <- function(x, ...) {
   } else {
     sprintf("%.3f", as.numeric(elapsed[[1]]))
   }
-  cat("Elapsed Sec:      ", elapsed, "\n", sep = "")
-  cat("Persist Features: ", value("persist_features"), "\n", sep = "")
-  cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
-  cat("Cache Misses:    ", value("feature_cache_misses"), "\n", sep = "")
+  line("Elapsed Sec", elapsed)
+  line("Persist Features", value("persist_features"))
+  line("Cache Hits", value("feature_cache_hits"))
+  line("Cache Misses", value("feature_cache_misses"))
   if (isTRUE(x$legacy_pre_provenance)) {
     cat("\nLegacy/pre-provenance run: strategy provenance is incomplete.\n")
   }
