@@ -1088,7 +1088,7 @@ refine.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 27 Product boundary repairs | 2890-2894 | class unresolved parameterized feature inspection; accept integer-backed POSIXct with hash identity; refuse ignored outer bundle aliases; refuse alias/engine-ID collisions; close and measure | four observed gaps are closed without adding feature-engine capability or changing snapshot identity, with one conservative fail-closed naming rule |
+| 27 Product boundary repairs | 2890-2894 | class unresolved parameterized feature inspection; accept integer-backed POSIXct bars and fact clocks with hash identity; refuse ignored outer bundle aliases; refuse alias/engine-ID collisions; close and measure | four observed gaps are closed without adding feature-engine capability or changing snapshot identity, with one conservative fail-closed naming rule |
 
 P3, the missing whole-universe active-alias read, stays with the feature-engine
 RFC. P7, explicit-map double validation, stays with the scheduled v0.2.1.1
@@ -1098,8 +1098,13 @@ gate remains downstream of all three. This cut review plus one Type 1 close
 review is 2/5 = 0.400 against the gate. The collision rule adopts Q2 option A
 from the feature-map read-surface seed; that RFC may later refine it.
 
-Implementation is complete at `ac69370` and awaits the one planned Type 1
-close review. LCL-0112 through LCL-0115 protect the four boundaries. The exact
-commit passed 483/483 fast blocks in 102.840 seconds against the unchanged
-112-second gate; the timestamp constructor clock showed no median regression.
+Implementation at `ac69370` received two findings in the planned Type 1 close
+review. Correction `b462cd5` canonicalizes fact clocks as well as bars and
+removes the collision scan from repeated explicit-map reads while keeping it
+at construction and resolution. LCL-0112 through LCL-0115 protect the four
+boundaries. The original exact commit passed 483/483 fast blocks in 102.840
+seconds against the unchanged 112-second gate; the timestamp constructor clock
+showed no median regression. The correction record passed the same 483 blocks
+in 98.410 seconds and its gate checker passed. The cut stands at 2/5 = 0.400;
+a focused correction review would record a historical 3/5 = 0.600 breach.
 Workstream 28 remains blocked until maintainer acceptance.
