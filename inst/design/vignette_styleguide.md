@@ -38,19 +38,35 @@ documentation-contract block rather than by review.
    active aliases, which must loop over `ctx$features(id)`; show it with the
    disclosure sentence in Section 9.
 
-   A fixed-quantity rule uses the helper pipeline, whose `missing` argument
-   states what a missing value, such as warmup, means:
-   `ctx |> ledgr_selection(where = ret > 0, missing = "exclude") |>
-   ledgr_target_quantity(ctx, params$qty)`. A rule sized from equity ends in
-   `ledgr_weight_equal()` and `ledgr_target_rebalance()` instead. When a
-   hand-written target is the lesson, name the condition and assign with it,
-   without `which()`: `rising <- ret > 0`, then `targets[rising] <- params$qty`,
-   and handle warmup explicitly. When every instrument shares one history, gate
-   the pulse with `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`; when
-   instruments can warm up at different times, fold a named mask into the
-   condition, `known <- !is.na(ret)`, then `rising <- known & ret > 0`. Do not
-   rely on R skipping `NA` in an assignment; it is invisible to the reader and
-   fails once each instrument gets its own value.
+   Read features for a rule through the signal helpers, which name what is
+   read and, in availability-aware runs, already mark instruments that cannot
+   be targeted as missing: `ledgr_signal_return(ctx, lookback = 20)`, or
+   `ledgr_signal_feature(ctx, "sma_50")` for any registered feature. Name the
+   condition, then let the pipeline turn it into a target; its `missing`
+   argument states what a missing value, such as warmup, means:
+
+   ```r
+   rising <- ledgr_signal_return(ctx, lookback = 20) > 0
+   ctx |>
+     ledgr_selection(where = rising, missing = "exclude") |>
+     ledgr_target_quantity(ctx, params$qty)
+   ```
+
+   A rule sized from equity ends in `ledgr_weight_equal()` and
+   `ledgr_target_rebalance()` instead.
+
+   Strategy Basics also teaches the same rule by hand and shows that both
+   return the same named numeric vector, because a strategy only ever returns
+   shares per instrument: start from `ctx$flat()`, name the condition, assign
+   with it without `which()`, `targets[rising] <- params$qty`, and handle
+   warmup explicitly. Other articles use the hand-built form only when
+   manipulating the vector is the lesson. There, when every instrument shares
+   one history, gate the pulse with
+   `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`; when instruments can
+   warm up at different times, fold a named mask into the condition,
+   `known <- !is.na(ret)`, then `rising <- known & ret > 0`. Do not rely on R
+   skipping `NA` in an assignment; it is invisible to the reader and fails once
+   each instrument gets its own value.
 2. The reader sees every strategy the lesson depends on, and it executes. The
    first strategy a reader runs, in the README and Quickstart, is always
    visible. A later article may run a `ledgr_demo_*` strategy after one
