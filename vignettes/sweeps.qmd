@@ -135,28 +135,7 @@ features <- ledgr_feature_map(
   slow = ledgr_ind_sma(ledgr_param("slow_n"))
 )
 
-strategy <- ledgr_demo_sma_crossover_strategy()
-
-exp <- ledgr_experiment(
-  snapshot = snapshot,
-  strategy = strategy,
-  features = features,
-  opening = ledgr_opening(cash = 100000),
-  cost_model = ledgr_cost_zero()
-)
-
-exp
-```
-
-The strategy function itself does not change across candidates. At each pulse,
-ledgr calls the same `function(ctx, params)`: `ctx` contains the current
-pulse-known market data, positions, cash, equity, and resolved alias values;
-`params` contains the strategy-parameter values for this candidate.
-
-The demo strategy you assigned above follows this shape internally:
-
-```r
-sma_crossover_body <- function(ctx, params) {
+sma_crossover_strategy <- function(ctx, params) {
   targets <- ctx$flat()
 
   for (id in ctx$universe) {
@@ -171,7 +150,25 @@ sma_crossover_body <- function(ctx, params) {
 
   targets
 }
+
+exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = sma_crossover_strategy,
+  features = features,
+  opening = ledgr_opening(cash = 100000),
+  cost_model = ledgr_cost_zero()
+)
+
+exp
 ```
+
+The strategy function itself does not change across candidates. At each pulse,
+ledgr calls the same `function(ctx, params)`: `ctx` contains the current
+pulse-known market data, positions, cash, equity, and resolved alias values;
+`params` contains the strategy-parameter values for this candidate.
+
+The function above is the strategy the experiment executes; it is not a
+separate illustrative approximation.
 
 During a sweep, `ctx$features(id)` returns values for the concrete indicators
 resolved for that candidate. `params$threshold` and `params$qty` come from the
@@ -299,7 +296,14 @@ expanded_grid <- ledgr_grid_cross(
   strategy = strategy_grid
 )
 
-c(original = length(grid$params), expanded = length(expanded_grid$params))
+tibble(
+  grid_name = c("original", "expanded"),
+  candidates = c(length(grid$params), length(expanded_grid$params)),
+  feature_combinations = c(
+    nrow(distinct(bind_rows(grid$feature_params))),
+    nrow(distinct(bind_rows(expanded_grid$feature_params)))
+  )
+)
 ```
 :::
 
@@ -339,11 +343,12 @@ sweep <- ledgr_sweep(
 )
 
 sweep
-bind_cols(
-  sweep |> select(candidate_id, status) |> slice_head(n = 6),
-  bind_rows(lapply(sweep$params[1:6], as.data.frame)),
-  bind_rows(lapply(sweep$feature_params[1:6], as.data.frame))
+candidate_table <- bind_cols(
+  sweep |> select(candidate_id, status),
+  bind_rows(lapply(sweep$params, as.data.frame)),
+  bind_rows(lapply(sweep$feature_params, as.data.frame))
 )
+candidate_table
 ```
 
 The second view connects each status row to the strategy and feature parameters
@@ -467,7 +472,7 @@ Sweeps give you three retention levels. Use the cheapest level
 that answers the question in front of you, then promote only the candidate that
 needs committed-run artifacts.
 
-| Tier | What it keeps | Typical use |
+| Level | What it keeps | Typical use |
 | --- | --- | --- |
 | Scalar row | Candidate params, status, scalar metrics, warnings, and reproduction key | Screen and debug a declared grid |
 | Retained series | Scalar row plus net portfolio equity and period returns for completed candidates | Inspect return shape, rolling behavior, or external metric-package inputs |
@@ -534,7 +539,7 @@ sweep <- ledgr_sweep(
 ```
 
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is a
-memory-backed sweep accelerator only: it is not a general compiled fold core,
+memory-backed sweep accelerator only: it is not a general compiled execution engine,
 not the durable `ledgr_run()` path, not a non-spot accounting model, and not
 enabled by default.
 
@@ -548,15 +553,17 @@ candidate rows, not a second execution engine.
 ## Inspect Before Promotion
 
 Name the ranking rule before selecting. Here the rule is deliberately simple:
-among completed candidates, sort by Sharpe ratio descending. ledgr does not own
-objective functions or automatic candidate ranking; ordinary R code should make
-the selection rule visible.
+among completed candidates, sort by Sharpe ratio descending. ledgr ships
+business-objective helpers for explicit selection rules, as taught in
+`vignette("selection-integrity", package = "ledgr")`; it does not silently
+choose a winner. This example keeps the rule visible as ordinary R code.
 
 ```{r}
 #| label: inspect-candidates
 
 review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
-review$top
+review$top |>
+  select(candidate_id, sharpe_ratio, params, feature_params)
 review$issues
 ranked <- review$ranked
 ```
@@ -565,28 +572,6 @@ ranked <- review$ranked
 rule explicit in the call. `review$top` is for the candidates you want to read
 closely, `review$issues` is for warnings and failures, and `review$ranked`
 retains the full completed-candidate table for deliberate selection.
-
-## Promote One Candidate
-
-Promotion replays one selected candidate as a committed run. This is the slow
-path that explicitly pays to materialize durable ledger and equity artifacts.
-For the full research loop around promotion notes, reopen, and human review, read
-`vignette("research-workflow", package = "ledgr")`.
-
-```{r}
-#| label: promote-selected
-
-candidate <- ledgr_candidate(ranked, 1)
-
-promoted_run <- ledgr_promote(
-  exp,
-  candidate,
-  run_id = "sweep_selected_candidate",
-  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
-)
-
-summary(promoted_run)
-```
 
 ## What A Sweep Does Not Prove
 
@@ -649,6 +634,31 @@ stops immediately so the sweep does not mix incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects failed
 candidates.
 
+## Promote One Candidate
+
+Promotion replays one selected candidate as a committed run. This is the slow
+path that explicitly pays to materialize durable ledger and equity artifacts.
+For the full research loop around promotion notes, reopen, and human review, read
+`vignette("research-workflow", package = "ledgr")`.
+
+```{r}
+#| label: promote-selected
+
+candidate <- ledgr_candidate(ranked, 1)
+
+candidate_table |>
+  filter(candidate_id == candidate$candidate_id)
+
+promoted_run <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "sweep_selected_candidate",
+  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
+)
+
+summary(promoted_run)
+```
+
 ## Cost Models Are Fixed Inputs
 
 Cost models are part of the experiment identity in this release. A sweep varies
@@ -666,7 +676,7 @@ identity deliberately. That API has not shipped, so do not expect
 Sweep mode intentionally leaves some decisions outside the API. It does not
 ship:
 
-- automatic ranking, objective functions, or `ledgr_tune()`;
+- automatic winner selection or `ledgr_tune()`;
 - cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;

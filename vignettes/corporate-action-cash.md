@@ -157,37 +157,15 @@ strict_result
 #> [1] "Strict policy refused: Corporate-action cash settlement is refused by the selected policy."
 ```
 
-## Relationship To The Composable Bundle
+## Where This Fits
 
-`vignette("point-in-time-inputs", package = "ledgr")` owns the complete
-data model and reusable point-in-time bundle. This article keeps a local
-`AAA` fixture because an opening position of two units makes the gross
-cash result of 2.5 directly visible and because the later price change
-demonstrates that ledgr does not reapply a vendor adjustment. `AAA` is
-local to this article, not an alias for a shared `DEMO_*` instrument.
-
-The shared bundle carries the equivalent cash-dividend fact. This
-executable touchpoint locates the case and its sealed input terms:
-
-``` r
-data("ledgr_demo_pit_inputs", package = "ledgr")
-shared_cash_case <- subset(
-  ledgr_demo_pit_inputs$cases,
-  type == "cash_dividend"
-)
-shared_cash_terms <- subset(
-  ledgr_demo_pit_inputs$corporate_actions,
-  parent_instrument_id == shared_cash_case$instrument_id[[1L]] &
-    as.Date(entitlement_time) == shared_cash_case$date[[1L]]
-)
-shared_cash_terms[
-  , c(
-    "subtype", "parent_instrument_id", "gross_cash_per_parent_unit"
-  )
-]
-#>                  subtype parent_instrument_id gross_cash_per_parent_unit
-#> 1 ordinary_cash_dividend              DEMO_03                       0.75
-```
+This article keeps one local `AAA` holding so the gross cash amount and
+the later price change are easy to inspect. The full reusable
+point-in-time model is in
+`vignette("point-in-time-inputs", package = "ledgr")`; use it when the
+same study also needs sessions, membership, status, lifetime or quantity
+events. A dense study that only needs evidenced cash distributions does
+not have to adopt every fact family.
 
 ## Where Next
 

@@ -341,9 +341,11 @@ backtest cannot answer, kept outside the execution contract on purpose.
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
 
-Lower the cap to `ledgr_risk_max_weight(0.3)` and rerun the risk comparison.
-Which opening fill changes, and by how much? Then add a `ledgr_cost_fixed_fee()`
-step to the cost chain and watch the fee column in the opening fill.
+Lower the cap to `ledgr_risk_max_weight(0.3)` and rerun the risk comparison
+with a new run ID such as `"capped_03"`. Which opening fill changes, and by
+how much? Then add a `ledgr_cost_fixed_fee()` step, use another new run ID, and
+watch the fee column in the opening fill. Run IDs are durable identities, so
+do not reuse the article's IDs for changed configurations.
 :::
 
 ## Where Next
@@ -361,5 +363,8 @@ step to the cost chain and watch the fee column in the opening fill.
 #| label: cleanup
 #| include: false
 
+close(uncapped)
+close(capped)
+close(with_cost)
 ledgr_snapshot_close(snapshot)
 ```

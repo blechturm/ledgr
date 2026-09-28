@@ -323,6 +323,10 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
     readLines(ledgr_test_source_vignette("strategy-development.qmd"), warn = FALSE),
     readLines(ledgr_test_source_vignette("strategy-authoring-tools.qmd"), warn = FALSE)
   ), collapse = "\n")
+  leakage_doc <- paste(
+    readLines(ledgr_test_source_vignette("leakage.qmd"), warn = FALSE),
+    collapse = "\n"
+  )
   indicators_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
   feature_map_help <- paste(readLines(file.path(root, "man", "ledgr_feature_map.Rd"), warn = FALSE), collapse = "\n")
@@ -334,10 +338,10 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
   testthat::expect_match(strategy_doc, "strategy\\(ctx, params\\)")
   testthat::expect_match(strategy_doc, "Change `buy_if_up\\(\\)`")
   testthat::expect_match(strategy_doc, "`params` is the run's \\*\\*strategy configuration\\*\\*")
-  testthat::expect_match(strategy_doc, "Wrong And Right: Leakage", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "tomorrow_close = lead\\(close\\)")
-  testthat::expect_match(strategy_doc, "market-data table from which it can\\s+casually index tomorrow's bar")
-  testthat::expect_match(strategy_doc, "does not certify that\\s+snapshots, feature definitions, event timestamps")
+  testthat::expect_match(leakage_doc, "## The Obvious Leak", fixed = TRUE)
+  testthat::expect_match(leakage_doc, "tomorrow_close = lead\\(close\\)")
+  testthat::expect_match(leakage_doc, "does not receive the full future market-data table", fixed = TRUE)
+  testthat::expect_match(leakage_doc, "does not certify that the dataset, event timestamps", fixed = TRUE)
   testthat::expect_match(strategy_doc, "declared on the experiment, never inside the strategy", fixed = TRUE)
   testthat::expect_match(strategy_doc, "vignette\\(\"sweeps\", package = \"ledgr\"\\)")
   testthat::expect_no_match(strategy_doc, "feature factory", ignore.case = TRUE)
@@ -357,7 +361,8 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
   testthat::expect_match(strategy_doc, "top_momentum(pulse, params)", fixed = TRUE)
   testthat::expect_match(indicators_doc, "The strategy still returns ordinary target quantities.", fixed = TRUE)
   testthat::expect_match(indicators_doc, "do not create `ledgr_ind_returns(params$lookback)` lazily inside the strategy", fixed = TRUE)
-  testthat::expect_match(indicators_doc, "register features on `ledgr_experiment\\(\\)`, then read\\s+pulse-known values")
+  testthat::expect_match(indicators_doc, "The canonical strategy workflow is: register features on", fixed = TRUE)
+  testthat::expect_match(indicators_doc, "axis with `ctx$vec$feature()`", fixed = TRUE)
   testthat::expect_match(indicators_doc, "For exploratory sweeps over ledgr-owned indicator parameters", fixed = TRUE)
   testthat::expect_match(indicators_doc, "it closes over a value\\s+built from the feature map")
   testthat::expect_match(indicators_doc, "stored strategy source refers to `ids` only by name", fixed = TRUE)
@@ -840,6 +845,54 @@ testthat::test_that("public result and helper documentation states current seman
   })
 })
 
+testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", {
+  root <- testthat::test_path("..", "..", "vignettes")
+  read_article <- function(name) {
+    paste(readLines(file.path(root, name), warn = FALSE), collapse = "\n")
+  }
+
+  quickstart <- read_article("quickstart.qmd")
+  indicators <- read_article("indicators.qmd")
+  leakage <- read_article("leakage.qmd")
+  strategy_basics <- read_article("strategy-development.qmd")
+  survivorship <- read_article("survivorship-bias.qmd")
+  sweeps <- read_article("sweeps.qmd")
+  execution <- read_article("execution-semantics.qmd")
+  missing <- read_article("missing-data-and-sessions.qmd")
+  adapter <- read_article("corporate-action-adapter-authoring.qmd")
+  reproducibility <- read_article("reproducibility.qmd")
+  ttr <- read_article("ttr-and-adapter-indicators.qmd")
+  walk_forward <- read_article("walk-forward.qmd")
+
+  testthat::expect_match(quickstart, "strategy <- function(ctx, params)", fixed = TRUE)
+  testthat::expect_no_match(quickstart, "ledgr_demo_sma_crossover_strategy", fixed = TRUE)
+  testthat::expect_match(indicators, "ctx$vec$feature(feature_id)", fixed = TRUE)
+  testthat::expect_match(indicators, "#| eval: !expr requireNamespace(\"TTR\"", fixed = TRUE)
+  testthat::expect_match(leakage, "lead(close)", fixed = TRUE)
+  testthat::expect_no_match(strategy_basics, "tomorrow_close = lead(close)", fixed = TRUE)
+  testthat::expect_match(survivorship, 'c("2020-01-06", "2020-01-13")', fixed = TRUE)
+  testthat::expect_match(survivorship, "availability-aware execution outcome", fixed = TRUE)
+  testthat::expect_match(sweeps, "business-objective helpers", fixed = TRUE)
+  testthat::expect_lt(
+    regexpr("## Failure Rows And Contract Errors", sweeps, fixed = TRUE)[[1L]],
+    regexpr("## Promote One Candidate", sweeps, fixed = TRUE)[[1L]]
+  )
+  testthat::expect_match(sweeps, "| Level | What it keeps |", fixed = TRUE)
+  testthat::expect_match(execution, '"opened and still held"', fixed = TRUE)
+  testthat::expect_match(execution, "select(action, realized_pnl)", fixed = TRUE)
+  testthat::expect_match(execution, "select(case, positions_value, equity)", fixed = TRUE)
+  testthat::expect_match(missing, "ledgr_snapshot_quarantine()", fixed = TRUE)
+  testthat::expect_match(missing, "retained pulse history when `ts_utc` is omitted", fixed = TRUE)
+  testthat::expect_match(
+    adapter,
+    "include fictional-corporate-action-adapter.R",
+    fixed = TRUE
+  )
+  testthat::expect_match(reproducibility, "dependency_versions", fixed = TRUE)
+  testthat::expect_match(ttr, "Only the exact public single-output `SMA(close, n)`", fixed = TRUE)
+  testthat::expect_no_match(walk_forward, "answers the generalization question", fixed = TRUE)
+})
+
 testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
   strategy_doc <- paste(
     readLines(
@@ -1024,35 +1077,44 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
     pkgdown_text <- paste(readLines(pkgdown, warn = FALSE), collapse = "\n")
 
     start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
-    core_workflow <- regexpr("  - title: Core Workflow", pkgdown_text, fixed = TRUE)
+    research_workflow <- regexpr("  - title: Research Workflow", pkgdown_text, fixed = TRUE)
+    pit_evidence <- regexpr("  - title: Point-In-Time Evidence", pkgdown_text, fixed = TRUE)
     going_deeper <- regexpr("  - title: Going Deeper", pkgdown_text, fixed = TRUE)
     design <- regexpr("  - title: Design / Background", pkgdown_text, fixed = TRUE)
     testthat::expect_gt(start_here[[1]], 0)
-    testthat::expect_gt(core_workflow[[1]], start_here[[1]])
-    testthat::expect_gt(going_deeper[[1]], core_workflow[[1]])
+    testthat::expect_gt(research_workflow[[1]], start_here[[1]])
+    testthat::expect_gt(pit_evidence[[1]], research_workflow[[1]])
+    testthat::expect_gt(going_deeper[[1]], pit_evidence[[1]])
     testthat::expect_gt(design[[1]], going_deeper[[1]])
 
-    start_block <- substr(pkgdown_text, start_here[[1]], core_workflow[[1]] - 1L)
+    start_block <- substr(pkgdown_text, start_here[[1]], research_workflow[[1]] - 1L)
     testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
     testthat::expect_match(start_block, "- quickstart", fixed = TRUE)
     testthat::expect_match(start_block, "- data-input-and-snapshots", fixed = TRUE)
-    testthat::expect_match(start_block, "- research-workflow", fixed = TRUE)
-    testthat::expect_match(start_block, "- leakage", fixed = TRUE)
-    testthat::expect_match(start_block, "- reproducibility", fixed = TRUE)
+    testthat::expect_match(start_block, "- strategy-development", fixed = TRUE)
+    testthat::expect_match(start_block, "- indicators", fixed = TRUE)
+    testthat::expect_match(start_block, "- metrics-and-accounting", fixed = TRUE)
+    testthat::expect_match(start_block, "- risk-and-cost", fixed = TRUE)
+    testthat::expect_match(start_block, "- experiment-store", fixed = TRUE)
     testthat::expect_no_match(start_block, "- survivorship-bias", fixed = TRUE)
 
-    core_block <- substr(pkgdown_text, core_workflow[[1]], going_deeper[[1]] - 1L)
-    testthat::expect_no_match(core_block, "- data-input-and-snapshots", fixed = TRUE)
-    testthat::expect_match(core_block, "- point-in-time-inputs", fixed = TRUE)
-    testthat::expect_match(core_block, "- survivorship-bias", fixed = TRUE)
-    testthat::expect_match(core_block, "- strategy-development", fixed = TRUE)
-    testthat::expect_match(core_block, "- indicators", fixed = TRUE)
-    testthat::expect_match(core_block, "- metrics-and-accounting", fixed = TRUE)
-    testthat::expect_match(core_block, "- risk-and-cost", fixed = TRUE)
-    testthat::expect_match(core_block, "- experiment-store", fixed = TRUE)
-    testthat::expect_match(core_block, "- sweeps", fixed = TRUE)
-    testthat::expect_match(core_block, "- selection-integrity", fixed = TRUE)
-    testthat::expect_match(core_block, "- walk-forward", fixed = TRUE)
+    research_block <- substr(
+      pkgdown_text,
+      research_workflow[[1]],
+      pit_evidence[[1]] - 1L
+    )
+    testthat::expect_match(research_block, "- sweeps", fixed = TRUE)
+    testthat::expect_match(research_block, "- research-workflow", fixed = TRUE)
+    testthat::expect_match(research_block, "- leakage", fixed = TRUE)
+    testthat::expect_match(research_block, "- reproducibility", fixed = TRUE)
+    testthat::expect_match(research_block, "- selection-integrity", fixed = TRUE)
+    testthat::expect_match(research_block, "- walk-forward", fixed = TRUE)
+
+    pit_block <- substr(pkgdown_text, pit_evidence[[1]], going_deeper[[1]] - 1L)
+    testthat::expect_match(pit_block, "- point-in-time-inputs", fixed = TRUE)
+    testthat::expect_match(pit_block, "- missing-data-and-sessions", fixed = TRUE)
+    testthat::expect_match(pit_block, "- corporate-action-cash", fixed = TRUE)
+    testthat::expect_match(pit_block, "- survivorship-bias", fixed = TRUE)
 
     deeper_block <- substr(pkgdown_text, going_deeper[[1]], design[[1]] - 1L)
     testthat::expect_match(deeper_block, "- strategy-authoring-tools", fixed = TRUE)

@@ -169,9 +169,10 @@ tail(ledgr_results(bt, what = "equity"), 2)
 
 ## Learn More
 
-Start with [Strategy Basics](https://blechturm.github.io/ledgr/articles/strategy-development.html),
-then follow [Research Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html)
-from one checked run through sweep review and promotion. The
+Start with [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html),
+then use [Strategy Basics](https://blechturm.github.io/ledgr/articles/strategy-development.html)
+to write your own rule. [Research Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html)
+takes that rule from one checked run through sweep review and promotion. The
 [article index](https://blechturm.github.io/ledgr/) covers data preparation,
 indicators, accounting, costs, walk-forward evaluation, and durable stores.
 Installed help is available through `vignette(package = "ledgr")` and

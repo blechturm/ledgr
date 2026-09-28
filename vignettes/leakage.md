@@ -1,6 +1,12 @@
 # On Leakage: ledgr Design Choices
 
 
+A backtest is valid only if each decision uses information that was
+knowable at that point in time – and nothing else. By the end of this
+article you will be able to spot an obvious lead, distinguish expanding
+from full-sample preprocessing, and state which leakage risks ledgr
+cannot certify for you.
+
 ``` r
 library(ledgr)
 library(dplyr)
@@ -16,9 +22,6 @@ bars <- ledgr_demo_bars |>
     )
   )
 ```
-
-A backtest is valid only if each decision uses information that was
-knowable at that point in time – and nothing else.
 
 Leakage is what happens when that boundary is violated. It can be
 obvious, or it can be hidden inside preprocessing that looks harmless.

@@ -89,12 +89,12 @@ backtesting, NautilusTrader or institutional platforms are better fits.
 **Quants who need to scan thousands of parameter combinations in
 seconds.** VectorBT is purpose-built for this. It packs configurations
 into arrays and processes them with optimized numerical kernels. ledgr
-supports memory-backed sweeps and a scoped spot-FIFO accelerator for
-that path, but it still optimizes for replayable evidence rather than
-raw array throughput. If you are optimizing for “test 10,000 parameter
-combinations in 30 seconds,” use VectorBT. If you are optimizing for
-“test 100 hypotheses with full provenance and replay any of them in
-three years,” use ledgr.
+supports memory-backed sweeps and an optional compiled accelerator for a
+narrow memory-backed accounting workload, but it still optimizes for
+replayable evidence rather than raw array throughput. If you are
+optimizing for “test 10,000 parameter combinations in 30 seconds,” use
+VectorBT. If you are optimizing for “test 100 hypotheses with full
+provenance and replay any of them in three years,” use ledgr.
 
 **Teams that need a managed institutional platform.** ledgr is a
 research framework, not a hosted product. There is no UI, dashboard,

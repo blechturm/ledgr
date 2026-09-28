@@ -40,16 +40,23 @@ snapshot <- ledgr_snapshot_from_df(
 
 ## Declare The Experiment
 
-The strategy reads stable aliases named `fast` and `slow`. The concrete
-SMA windows can vary later in the sweep.
+Start with a visible rule: hold five units when the current close is
+above its 20-session moving average, otherwise hold zero. The strategy
+reads the whole decision axis at once.
 
 ``` r
-features <- ledgr_feature_map(
-  fast = ledgr_ind_sma(ledgr_param("fast_n")),
-  slow = ledgr_ind_sma(ledgr_param("slow_n"))
-)
+features <- list(ledgr_ind_sma(20))
 
-strategy <- ledgr_demo_sma_crossover_strategy()
+strategy <- function(ctx, params) {
+  sma <- ctx$vec$feature("sma_20")
+  targets <- ctx$flat()
+  selected <- which(
+    is.finite(sma) &
+      (ctx$vec$close / sma - 1) > params$threshold
+  )
+  targets[selected] <- params$qty
+  targets
+}
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -74,7 +81,6 @@ mistakes while the result is still easy to inspect.
 single_run <- ledgr_run(
   exp,
   params = list(qty = 5, threshold = 0),
-  feature_params = list(fast_n = 5L, slow_n = 20L),
   run_id = "quickstart_run",
   seed = 2026L
 )
@@ -86,10 +92,10 @@ single_run
 #> Run ID:                            quickstart_run
 #> Period:                            2019-01-01 to 2019-06-28
 #> Opening Cash:                      $10000.00
-#> Final Equity:                      $10024.04
-#> Total Return:                      0.24%
-#> Max Drawdown:                      -0.53%
-#> Closed Trades:                     6
+#> Final Equity:                      $10041.77
+#> Total Return:                      0.42%
+#> Max Drawdown:                      -0.50%
+#> Closed Trades:                     12
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
@@ -100,44 +106,38 @@ single_run
 If this run has no fills, impossible prices, or surprising exposure,
 stop here. Sweeps amplify a setup; they do not repair it.
 
+The printed warnings are deliberate. `Corporate actions: NOT SUPPLIED`
+means this demo supplied no distribution evidence;
+`Price basis: UNDECLARED` means ledgr cannot rule out dividend double
+counting in the bars. That is acceptable for learning the mechanics, not
+for making an equity-research claim. See
+`vignette("corporate-action-cash", package = "ledgr")` for the modeled
+path.
+
 ## Sweep A Tiny Grid
 
-Build feature parameters and strategy parameters separately, then cross
-them into candidate rows.
+Vary only the strategy threshold. The feature remains the same concrete
+SMA used by the single run, so each candidate is easy to explain.
 
 ``` r
-feature_grid <- ledgr_feature_grid(
-  fast_n = c(5L, 10L),
-  slow_n = c(20L, 40L),
-  .filter = fast_n < slow_n
-)
-
-strategy_grid <- ledgr_strategy_grid(
+grid <- ledgr_strategy_grid(
   qty = 5,
   threshold = c(0, 0.01)
 )
 
-grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
-
 sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 
 sweep |>
-  select(candidate_id, status, total_return, sharpe_ratio) |>
+  select(candidate_id, status, total_return, sharpe_ratio, params) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_bf755e94c8f58f05
-#> # A tibble: 8 x 4
-#>   candidate_id                               status total_return sharpe_ratio
-#>   <chr>                                      <chr>  <chr>               <dbl>
-#> 1 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE   +1.1%               3.08
-#> 2 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE   +0.8%               2.13
-#> 3 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE   +0.7%               2.06
-#> 4 feature_af0f94c90243/strategy_86be010cf688 DONE   +0.8%               1.80
-#> 5 feature_6ff6fe3a1d38/strategy_86be010cf688 DONE   +0.6%               1.38
-#> 6 feature_fa560ccbec9f/strategy_86be010cf688 DONE   +0.5%               1.34
-#> 7 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE   +0.5%               1.30
-#> 8 feature_9a29b31dae19/strategy_86be010cf688 DONE   +0.2%               0.546
+#> # ledgr sweep -- sweep_736b26f659e1283d
+#> # A tibble: 2 x 5
+#>   candidate_id          status total_return sharpe_ratio params
+#>   <chr>                 <chr>  <chr>               <dbl> <list>
+#> 1 strategy_7ccbbefd14d1 DONE   +0.5%               1.25  <named list [2]>
+#> 2 strategy_86be010cf688 DONE   +0.4%               0.838 <named list [2]>
 #>
-#> # i 8 combinations: 8 done, 0 failed.
+#> # i 2 combinations: 2 done, 0 failed.
 #> # i Retention returns: none.
 #> # i Retention trades: none.
 #> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -157,7 +157,7 @@ candidate <- ledgr_candidate(
 )
 
 candidate$candidate_id
-#> [1] "feature_9a29b31dae19/strategy_7ccbbefd14d1"
+#> [1] "strategy_7ccbbefd14d1"
 ```
 
 Promotion is the step that turns one selected candidate into a durable
@@ -179,10 +179,10 @@ promoted
 #> Run ID:                            quickstart_promoted
 #> Period:                            2019-01-01 to 2019-06-28
 #> Opening Cash:                      $10000.00
-#> Final Equity:                      $10112.57
-#> Total Return:                      1.13%
-#> Max Drawdown:                      -0.32%
-#> Closed Trades:                     3
+#> Final Equity:                      $10052.86
+#> Total Return:                      0.53%
+#> Max Drawdown:                      -0.53%
+#> Closed Trades:                     11
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out

@@ -6,10 +6,11 @@ the luckiest parameter on this slice of history? A sweep selects and
 scores on the same data, so its winner is in-sample evidence. It cannot
 tell you whether the rule generalizes.
 
-Walk-forward evaluation answers the generalization question. It splits
-time into folds, and in each one it selects a candidate on a train
-window, then tests only that candidate on the next, untouched window.
-The test window is held-out evidence: the selection never saw it.
+Walk-forward evaluation tests the generalization question under a
+rolling, held-out protocol. It splits time into folds, and in each one
+it selects a candidate on a train window, then tests only that candidate
+on the next, untouched window. The test window is held-out evidence: the
+selection never saw it.
 
 ``` text
 for each fold:

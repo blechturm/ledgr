@@ -236,31 +236,100 @@ means the run opened or adjusted a position but did not close a round
 trip inside the sample.
 
 ``` r
+open_and_hold <- function(ctx, params) {
+  targets <- ctx$flat()
+  if (ledgr_utc(ctx$ts_utc) >= ledgr_utc("2019-01-08")) {
+    targets["DEMO_01"] <- 10
+  }
+  targets
+}
+
+open_exp <- ledgr_experiment(
+  snapshot,
+  open_and_hold,
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+
+open_bt <- ledgr_run(
+  open_exp,
+  run_id = "how_targets_open_position",
+  params = list()
+)
+```
+
+``` r
 tibble(
-  case = c("opened and closed", "final target cannot fill"),
+  case = c(
+    "opened and closed",
+    "opened and still held",
+    "final target cannot fill"
+  ),
   fills = c(
     nrow(ledgr_results(bt, what = "fills")),
+    nrow(ledgr_results(open_bt, what = "fills")),
     nrow(ledgr_results(final_bt, what = "fills"))
   ),
   trades = c(
     nrow(ledgr_results(bt, what = "trades")),
+    nrow(ledgr_results(open_bt, what = "trades")),
     nrow(ledgr_results(final_bt, what = "trades"))
   )
 )
 ```
 
-    # A tibble: 2 x 3
+    # A tibble: 3 x 3
       case                     fills trades
       <chr>                    <int>  <int>
     1 opened and closed            2      1
-    2 final target cannot fill     0      0
+    2 opened and still held        1      0
+    3 final target cannot fill     0      0
 
 The first run has two fills and one realized trade: one fill opens and
-the next closes the position. The final-target run has neither. Start
-with fills when you debug execution. Trades are derived from filled
-round trips, not from target changes: a trade row is the close-action
-fill row that realizes PnL. ledgr does not currently expose a paired
-entry/exit trade table.
+the next closes the position. The open-position run has one fill and
+zero trades because the position remains open. The final-target run has
+neither. Start with fills when you debug execution. Trades are derived
+from filled round trips, not from target changes: a trade row is the
+close-action fill row that realizes PnL. ledgr does not currently expose
+a paired entry/exit trade table.
+
+The distinction is also visible in accounting. A closing fill carries
+`realized_pnl`; an open position remains in the equity curve’s
+`positions_value` even though it has no closed trade.
+
+``` r
+bind_rows(
+  `opened and closed` = ledgr_results(bt, what = "fills") |>
+    select(action, realized_pnl),
+  `opened and still held` = ledgr_results(open_bt, what = "fills") |>
+    select(action, realized_pnl),
+  .id = "case"
+)
+```
+
+    # A tibble: 3 x 3
+      case                  action realized_pnl
+      <chr>                 <chr>         <dbl>
+    1 opened and closed     OPEN           0
+    2 opened and closed     CLOSE          4.10
+    3 opened and still held OPEN           0
+
+``` r
+bind_rows(
+  `opened and closed` = ledgr_results(bt, what = "equity") |>
+    slice_tail(n = 1),
+  `opened and still held` = ledgr_results(open_bt, what = "equity") |>
+    slice_tail(n = 1),
+  .id = "case"
+) |>
+  select(case, positions_value, equity)
+```
+
+    # A tibble: 2 x 3
+      case                  positions_value equity
+      <chr>                           <dbl>  <dbl>
+    1 opened and closed                  0  10004.
+    2 opened and still held            870.  9987.
 
 ## Try It
 

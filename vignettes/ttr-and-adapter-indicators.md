@@ -393,11 +393,13 @@ directly with a `series_fn`. That is the adapter escape hatch: external
 logic remains at the boundary, while the engine keeps the same
 deterministic indicator contract.
 
-Recursive TTR shapes and output bundles are not availability-certified.
-An availability-aware experiment refuses them with
-`ledgr_indicator_gap_unsupported`; supplying `requires_bars` does not
-change that boundary. The general warmup and zero-trade checklist lives
-in `vignette("indicators", package = "ledgr")`.
+Only the exact public single-output `SMA(close, n)` shape is
+availability-certified. Recursive EMA and RSI shapes, output bundles,
+and every other TTR signature are refused by an availability-aware
+experiment with `ledgr_indicator_gap_unsupported`; supplying
+`requires_bars` does not change that boundary. The general warmup and
+zero-trade checklist lives in
+`vignette("indicators", package = "ledgr")`.
 
 ## Where Next
 

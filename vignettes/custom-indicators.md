@@ -53,7 +53,7 @@ The scalar path is the simplest contract:
 ``` r
 range_3 <- ledgr_indicator(
   id = "range_3",
-  fn = function(window, params) {
+  fn = function(window) {
     mean(window$high - window$low)
   },
   requires_bars = 3,
@@ -63,10 +63,12 @@ range_3 <- ledgr_indicator(
 )
 ```
 
-The engine calls `fn(window, params)` on a bounded historical window
-ending at the current bar. Before `stable_after`, ledgr returns
-`NA_real_` for that feature. After warmup, the scalar result must be one
-finite numeric value.
+The documented scalar contract is `fn(window)`: ledgr calls it on a
+bounded historical window ending at the current bar. Before
+`stable_after`, ledgr returns `NA_real_` for that feature. After warmup,
+the scalar result must be one finite numeric value. Put configuration in
+the indicator’s deterministic `params` for identity; do not rely on an
+extra scalar-function argument.
 
 This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
@@ -90,8 +92,8 @@ equivalent after warmup.
 ``` r
 sma_3_custom <- ledgr_indicator(
   id = "sma_3_custom",
-  fn = function(window, params) {
-    mean(utils::tail(window$close, params$n))
+  fn = function(window) {
+    mean(utils::tail(window$close, 3L))
   },
   series_fn = function(bars, params) {
     stats::filter(

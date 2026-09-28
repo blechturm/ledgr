@@ -149,7 +149,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.920
+    Elapsed Sec:      0.880
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -186,6 +186,49 @@ writeLines(stored$strategy_source_text)
         targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
         targets
     }
+
+``` r
+stored[c("R_version", "ledgr_version", "dependency_versions")]
+```
+
+    $R_version
+    [1] "4.6.1"
+
+    $ledgr_version
+    [1] "0.2.0.2"
+
+    $dependency_versions
+    $dependency_versions$collapse
+    [1] "2.1.8"
+
+    $dependency_versions$DBI
+    [1] "1.3.0"
+
+    $dependency_versions$digest
+    [1] "0.6.39"
+
+    $dependency_versions$duckdb
+    [1] "1.5.2"
+
+    $dependency_versions$ledgr
+    [1] "0.2.0.2"
+
+    $dependency_versions$R
+    [1] "4.6.1"
+
+    $dependency_versions$tibble
+    [1] "3.3.1"
+
+    $dependency_versions$TTR
+    [1] "0.24.4"
+
+    $dependency_versions$yyjsonr
+    [1] "0.1.22"
+
+The compact print emphasizes source identity. The explicit list subset
+above shows the recorded runtime versions that the prose claims; they
+are metadata, not a promise that every external system library can be
+reconstructed.
 
 `trust = FALSE` returns source text and metadata without parsing,
 evaluating, or executing the stored source. In this mode, the source

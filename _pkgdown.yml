@@ -14,9 +14,9 @@ home:
         title: New to ledgr?
         text: >
           Start with [Quickstart](articles/quickstart.html) for the shortest
-          runnable path, then [Research Workflow](articles/research-workflow.html)
-          for the full loop. ledgr is pre-CRAN, so APIs and schemas can change
-          without a deprecation cycle.
+          runnable path, then [Strategy Basics](articles/strategy-development.html)
+          to write your own rule. ledgr is pre-CRAN, so APIs and schemas can
+          change without a deprecation cycle.
 
 articles:
   - title: Start Here
@@ -28,28 +28,33 @@ articles:
       - articles/who-ledgr-is-for
       - quickstart
       - data-input-and-snapshots
-      - research-workflow
-      - leakage
-      - reproducibility
-  - title: Core Workflow
-    navbar: Core Workflow
-    desc: >
-      Add point-in-time evidence when the research needs it, write a strategy,
-      run it, read fills/trades/equity/metrics, apply cost and risk policy,
-      then sweep and walk-forward over candidates.
-    contents:
-      - point-in-time-inputs
-      - missing-data-and-sessions
-      - corporate-action-cash
-      - survivorship-bias
       - strategy-development
       - indicators
       - metrics-and-accounting
       - risk-and-cost
       - experiment-store
+  - title: Research Workflow
+    navbar: Research Workflow
+    desc: >
+      Move from a checked run through explicit candidate selection and held-out
+      evaluation without confusing reproducibility with validation.
+    contents:
       - sweeps
+      - research-workflow
+      - leakage
+      - reproducibility
       - selection-integrity
       - walk-forward
+  - title: Point-In-Time Evidence
+    navbar: Point-In-Time Evidence
+    desc: >
+      Add calendars, availability, corporate actions, and historical-universe
+      evidence when the research question requires them.
+    contents:
+      - point-in-time-inputs
+      - missing-data-and-sessions
+      - corporate-action-cash
+      - survivorship-bias
   - title: Going Deeper
     navbar: Going Deeper
     desc: >

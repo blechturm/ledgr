@@ -57,9 +57,9 @@ idea in the order you would explain it to a colleague.
 The same readability argument carries into sweep work. ledgr’s
 exploration path is still ordinary R strategy code evaluated through the
 same fold semantics, with memory-backed candidate summaries and an
-explicit `compiled_accounting_model = "spot_fifo"` opt-in for the scoped
-spot-FIFO accounting accelerator. R remains credible here because the
-package keeps the contract narrow: readable strategy code first,
+explicit `compiled_accounting_model = "spot_fifo"` opt-in for a narrow
+memory-backed accounting accelerator. R remains credible here because
+the package keeps the contract narrow: readable strategy code first,
 targeted low-level acceleration where measurement justified it, and
 durable artifacts only when a candidate is promoted.
 

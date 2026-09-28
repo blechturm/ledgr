@@ -466,20 +466,16 @@ ledger unchanged for that target change.
 
 Default execution uses the canonical R accounting path:
 `compiled_accounting_model = NULL`. The scoped `"spot_fifo"` accelerator
-is an ephemeral sweep opt-in for supported spot-FIFO workloads;
-committed durable runs fail closed if you request it there. Unsupported
-model names raise `ledgr_unsupported_accounting_model`. Missing compiled
-support raises `ledgr_compiled_spot_fifo_unavailable`.
+is an ephemeral sweep opt-in for the supported compiled accounting
+workload; committed durable runs fail closed if you request it there.
+Unsupported model names raise `ledgr_unsupported_accounting_model`.
+Missing compiled support raises `ledgr_compiled_spot_fifo_unavailable`.
 
 Those classes are the stable top-level conditions to assert on in tests.
 The accelerator does not broaden ledgr’s accounting model into futures,
 margin, broker reconciliation, or derivative accounting.
 
 ## Cleanup
-
-``` r
-close(bt)
-```
 
 ## Where Next
 

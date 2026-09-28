@@ -75,10 +75,10 @@ prices
 <div id="fig-prices">
 
 <img src="survivorship-bias_files/figure-commonmark/fig-prices-1.png"
-id="fig-prices"
 data-fig-alt="Observed closes. Both lines break on the 9 January feed outage. AAA falls from 100 to 44 and ends on 10 January; BBB resumes and rises to 59." />
 
-Figure 1
+Figure 1: Observed closes reveal the feed gap, AAA’s decline, and its
+final observation.
 
 </div>
 
@@ -515,12 +515,16 @@ execution behaviour later depends on it.
 - An unfilled target does **not** persist. It is not a standing order
   waiting for liquidity.
 
-The strategy below is deliberately plain: on the first session, put
-equal weight into every company the declared universe offers, then hold.
+The strategy below is deliberately plain: rebalance on January 6 and
+again when the declared membership changes on January 13. The second
+decision makes the point-in-time availability change part of the
+executed strategy path rather than merely something inspected after the
+run.
 
 ``` r
-equal_weight_once <- function(ctx, params) {
-  if (substr(ctx$ts_utc, 1, 10) != "2020-01-06") {
+rebalance_declared_members <- function(ctx, params) {
+  rebalance_dates <- c("2020-01-06", "2020-01-13")
+  if (!substr(ctx$ts_utc, 1, 10) %in% rebalance_dates) {
     return(ctx$hold())
   }
   ctx |>
@@ -530,11 +534,13 @@ equal_weight_once <- function(ctx, params) {
 }
 ```
 
-`equity_fraction` is deliberately below 1. Sizing happens at the
-decision price, but the fill happens at the next session’s open, so the
-cash a target actually requires is not yet known when you ask for it.
-Leaving headroom is a research choice, and the exercise at the end of
-this article shows what happens without it.
+In this availability-aware experiment, `equity_fraction` is deliberately
+below 1. Sizing uses the decision close while execution uses the next
+observed open; the later price and the availability rules together
+determine whether a target can fill. Leaving headroom is a research
+choice, and the exercise at the end of this article shows what happens
+without it. Dense runs share next-open timing, but their refusal reasons
+need not be the same as this availability-aware case.
 
 The path is explicit. `ledgr_universe_members("demo_members")` selects
 the named history. At each decision, its cutoff resolution becomes
@@ -572,7 +578,7 @@ about it. Here is the whole thing, written out once:
 ``` r
 point_in_time_experiment <- ledgr_experiment(
   snapshot,
-  equal_weight_once,
+  rebalance_declared_members,
   universe = ledgr_universe_members("demo_members"),
   valuation_policy = ledgr_valuation_stale(max_sessions = 2),
   cost_model = ledgr_cost_zero(),
@@ -615,7 +621,7 @@ feed gap.
 declare <- function(universe) {
   ledgr_experiment(
     snapshot,
-    equal_weight_once,
+    rebalance_declared_members,
     universe = universe,
     valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     cost_model = ledgr_cost_zero(),
@@ -637,11 +643,12 @@ saw one.
 ``` r
 ledgr_results(point_in_time, "fills") |>
   select(ts_utc, recording_pulse_ts_utc, instrument_id, side, qty, price)
-#> # A tibble: 2 x 6
+#> # A tibble: 3 x 6
 #>   ts_utc              recording_pulse_ts_utc instrument_id side    qty price
 #>   <dttm>              <dttm>                 <chr>         <chr> <dbl> <dbl>
 #> 1 2020-01-07 14:30:00 2020-01-07 21:00:00    AAA           BUY      45    92
 #> 2 2020-01-07 14:30:00 2020-01-07 21:00:00    BBB           BUY      90    51
+#> 3 2020-01-14 14:30:00 2020-01-14 21:00:00    BBB           BUY      11    56
 ```
 
 The decision was made at the January 6 close. The fills are stamped at
@@ -690,7 +697,7 @@ pit_equity_for_join |>
 #> 4 2020-01-09 21:00:00   9460         NA              NA
 #> 5 2020-01-10 21:00:00   8110         NA              NA
 #> 6 2020-01-13 21:00:00   8200         NA              NA
-#> 7 2020-01-14 21:00:00   8290         NA              NA
+#> 7 2020-01-14 21:00:00   8290          1             616
 ```
 
 The aggregation preserves one row per equity pulse even when several
@@ -706,7 +713,7 @@ run_inventory
 #>   run_id            label tags  status     final_equity total_return complete_performance
 #>   <chr>             <chr> <lgl> <chr>             <dbl> <chr>        <lgl>
 #> 1 pit-universe      <NA>  NA    INCOMPLETE         8290 -17.1%       FALSE
-#> 2 survivor-universe <NA>  NA    DONE              11440 +14.4%       TRUE
+#> 2 survivor-universe <NA>  NA    DONE              11425 +14.3%       TRUE
 #>   achieved_end_utc    execution_mode reproducibility_level
 #>   <dttm>              <chr>          <chr>
 #> 1 2020-01-14 21:00:00 audit_log      tier_1
@@ -728,10 +735,10 @@ against the same clock and the point-in-time evidence visibly stops.
 
 <img
 src="survivorship-bias_files/figure-commonmark/fig-comparison-1.png"
-id="fig-comparison"
 data-fig-alt="Two equity lines from 10,000. The survivor line rises and continues to 17 January. The point-in-time line falls and ends at 14 January, where a marker shows the run stopped. The remaining intended horizon is shaded." />
 
-Figure 2
+Figure 2: Survivor-only and point-in-time equity paths diverge, and the
+point-in-time run stops before the requested horizon.
 
 </div>
 
@@ -798,15 +805,20 @@ them, because the instrument is simply absent.
 > bar for a still-held instrument. A feed gap must not become an
 > accidental liquidation; start from holdings and change only the
 > positions your rule intends to change.
+>
+> Expected result: `ctx$hold()` retains the nonzero `AAA` position.
+> Replacing it with a member-only zero vector requests an exit, but with
+> no observed execution bar that request cannot fill and does not become a
+> standing order.
 
 
 <div id="fig-timeline">
 
 <img src="survivorship-bias_files/figure-commonmark/fig-timeline-1.png"
-id="fig-timeline"
 data-fig-alt="Three tracks for AAA against the same dates. Membership goes from member to non-member on 13 January. Position goes from unheld to held and stays held. Valuation goes current, then stale, then expired, where the run stops." />
 
-Figure 3
+Figure 3: Membership, ownership, and valuation for AAA change
+independently.
 
 </div>
 
@@ -858,7 +870,7 @@ summary(point_in_time)
 #>   Achieved Window:  2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z
 #>   Stop Reason:      valuation_horizon_exhausted
 #>   Last Fully Valued: 2020-01-14T21:00:00Z
-#>   Last Executed:    2020-01-07T14:30:00Z
+#>   Last Executed:    2020-01-14T14:30:00Z
 #>   Performance:       incomplete
 #>   Affected IDs:      AAA
 #>
@@ -1020,36 +1032,12 @@ workflow, read
 > broker policy.
 
 
-## Connect This Example To The Full Data Model
+## Where This Fits
 
-The complete reusable data model lives in
-`vignette("point-in-time-inputs", package = "ledgr")`. This article
-keeps its smaller `AAA`/`BBB` fixture because the losing company and
-survivor form a direct detector for the bias being taught. `AAA`, `BBB`,
-and the `DEMO` venue are local to this article; they are not additions
-to the shared `DEMO_*` history.
-
-The shared bundle contains the equivalent delisting boundary. Its case
-row points to the lifetime transition that makes the instrument
-inactive:
-
-``` r
-data("ledgr_demo_pit_inputs", package = "ledgr")
-shared_delisting <- subset(
-  ledgr_demo_pit_inputs$cases,
-  type == "delisting"
-)
-shared_lifetime_boundary <- subset(
-  ledgr_demo_pit_inputs$lifetime,
-  instrument_id == shared_delisting$instrument_id[[1L]] &
-    as.Date(effective_from) == shared_delisting$date[[1L]]
-)
-shared_lifetime_boundary[
-  , c("instrument_id", "effective_from", "assertion", "terminal_event")
-]
-#>   instrument_id      effective_from      assertion terminal_event
-#> 6       DEMO_01 2020-01-14 21:00:00 known_inactive       delisted
-```
+This article keeps a two-company fixture because it makes the bias
+visible. For the complete reusable input model – bars, sessions,
+membership, status, lifetime, and corporate actions – read
+`vignette("point-in-time-inputs", package = "ledgr")`.
 
 ## What This Does And Does Not Establish
 

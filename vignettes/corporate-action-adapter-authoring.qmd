@@ -94,6 +94,17 @@ Keep the original source locator or record key in `fact_id` or source-owned
 lineage before translation. Never place licensed identifiers or raw payloads
 in public examples or error messages.
 
+## The Adapter
+
+The setup chunk sources the same companion file shown below, so the displayed
+function is the function the example executes. It validates the source shape,
+maps the source vocabulary, normalizes cash units, and then hands the canonical
+rows to ledgr's public fact constructor.
+
+```r
+{{< include fictional-corporate-action-adapter.R >}}
+```
+
 ## A Fictional Source
 
 This example intentionally uses source names that do not resemble the

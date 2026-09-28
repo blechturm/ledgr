@@ -50,46 +50,14 @@ For the broader leakage model, including feature-construction leakage
 and remaining user responsibilities, see
 `vignette("leakage", package = "ledgr")`.
 
-## Wrong And Right: Leakage
+## The Causal Boundary
 
-The tempting vectorized pattern is to compute a future-looking column
-first and then trade from it. In the example below, `lead(close)` shifts
-tomorrow’s close onto today’s row. The resulting `buy_signal` looks like
-an ordinary column, but it answers a question the strategy could not
-have answered at today’s decision time: “will tomorrow’s close be higher
-than today’s close?” Trading from that column lets the backtest use
-future market data as if it were already known.
-
-``` r
-leaky_signals <- ledgr_demo_bars |>
-  group_by(instrument_id) |>
-  arrange(ts_utc, .by_group = TRUE) |>
-  mutate(
-    tomorrow_close = lead(close),
-    buy_signal = tomorrow_close > close
-  )
-```
-
-The ledgr version expresses the rule at one pulse. The strategy can read
-the current bar for every instrument, and nothing later. Later sections
-add registered features to the same pulse model. The strategy has no
-market-data table from which it can casually index tomorrow’s bar. That
-is the same information shape a live trading strategy gets as time
-passes: each pulse is a new slice of the knowable universe.
-
-``` r
-no_leak_bar_strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  targets[which(ctx$vec$close > ctx$vec$open)] <- 1
-  targets
-}
-```
-
-The next sections explain each piece of that function.
-
-This removes one common source of leakage, but it does not certify that
-snapshots, feature definitions, event timestamps, universe construction,
-or parameter selection are causally clean.
+Strategy code receives one pulse context rather than a table containing
+future bars. That removes one easy route to accidental look-ahead, but
+it does not certify snapshot construction, feature logic, event
+timestamps, universe history, or parameter selection. The Leakage
+article owns the worked `lead(close)` example and the broader causal
+review; this article now stays on the strategy contract itself.
 
 With that boundary in mind, start with the simplest possible strategy.
 
@@ -433,12 +401,12 @@ count are computed from the completed run. In ledgr, trades are closed
 round trips; the fills table can contain more rows because opening fills
 and closing fills are both recorded.
 
-The annualized volatility is high because this toy strategy switches
-positions often on a tiny two-instrument demo universe. Treat it as a
-warning about the example, not as a property you should expect from the
-same idea on real data. The drawdown is disproportionate to the final
-loss for the same reason: a small, concentrated portfolio can swing hard
-during the run even if it ends roughly flat.
+The rendered result is a short, tiny-universe teaching run. Its
+annualized volatility, drawdown and return describe only that fixture;
+none is evidence that the rule is attractive or that the annualization
+is stable. Read the numbers together: a positive final return can
+coexist with an intra-run drawdown, and one closed trade is far too
+little evidence for a strategy judgment.
 
 Do not expect a teaching strategy to be good. A weak or unattractive
 result is still useful evidence: ledgr records failed ideas with the

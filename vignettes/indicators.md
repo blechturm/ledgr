@@ -75,12 +75,15 @@ The strategy context then exposes the computed values through accessors:
 
 | Accessor | Name type | Use |
 |----|----|----|
+| `ctx$vec$feature(feature_id)` | engine feature ID string | reads one feature across the whole decision axis |
 | `ctx$feature(id, feature_id)` | engine feature ID string | reads one scalar value by exact ID |
 | `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
 
-The canonical workflow is: register features on `ledgr_experiment()`,
-then read pulse-known values through `ctx$feature()` or `ctx$features()`
-inside the strategy.
+The canonical strategy workflow is: register features on
+`ledgr_experiment()`, resolve the engine ID once, then read the whole
+decision axis with `ctx$vec$feature()`. Keep `ctx$feature()` and
+`ctx$features()` for one-instrument inspection and for active aliases,
+whose concrete engine IDs vary by candidate.
 
 ## Feature Lifecycle: From Declaration To Lookup
 
@@ -113,12 +116,13 @@ flowchart LR
 3.  Optional `ledgr_precompute_features()` resolves a parameter grid,
     computes each candidate’s concrete feature set, deduplicates shared
     indicator fingerprints, and records candidate feature-set hashes.
-4.  During `ledgr_run()` or `ledgr_sweep()`, the fold core computes the
+4.  During `ledgr_run()` or `ledgr_sweep()`, the engine computes the
     registered feature values at each pulse without looking past the
     current bar.
-5.  Strategy code reads the current pulse-known values with
-    `ctx$feature()` by engine feature ID, or with `ctx$features()` by
-    feature-map alias.
+5.  Strategy code normally reads one feature across the decision axis
+    with `ctx$vec$feature()`. Scalar accessors remain useful for
+    inspection and for active aliases that have no whole-universe alias
+    accessor yet.
 
 A **fingerprint** identifies the feature definition, not just the name.
 If the calculation, parameters, warmup rule, adapter, or selected output
@@ -152,6 +156,7 @@ crossover_features <- ledgr_feature_map(
   sma_fast = ledgr_ind_sma(10),
   sma_slow = ledgr_ind_sma(30)
 )
+crossover_ids <- ledgr_feature_id(crossover_features)
 
 ledgr_feature_contracts(crossover_features)
 #> # A tibble: 2 × 5
@@ -165,9 +170,14 @@ In a strategy, the crossover condition is just a comparison of the two
 mapped aliases after warmup:
 
 ``` r
-x <- ctx$features(id, crossover_features)
-if (ledgr_passed_warmup(x) && x[["sma_fast"]] > x[["sma_slow"]]) {
-  targets[id] <- params$qty
+crossover_strategy <- function(ctx, params) {
+  fast <- ctx$vec$feature(crossover_ids[["sma_fast"]])
+  slow <- ctx$vec$feature(crossover_ids[["sma_slow"]])
+  ready <- is.finite(fast) & is.finite(slow)
+
+  targets <- ctx$flat()
+  targets[ready & fast > slow] <- params$qty
+  targets
 }
 ```
 
@@ -375,6 +385,11 @@ close(pulse)
 close(bt)
 ```
 
+The fill table is the first execution check: it shows which instruments
+actually crossed from a target into a position, at which next-open
+price. An empty table would be a prompt to inspect warmup and signal
+values before trying more parameters.
+
 ## Read The Feature Contracts
 
 After you have seen the feature values at a pulse, the contract table is
@@ -429,11 +444,39 @@ parameterized_strategy <- function(ctx, params) {
   targets
 }
 
-grid <- ledgr_param_grid(
+return_grid <- ledgr_param_grid(
   ret_5 = list(lookback = 5, min_return = 0, qty = 10),
   ret_10 = list(lookback = 10, min_return = 0, qty = 10),
   ret_20 = list(lookback = 20, min_return = 0, qty = 10)
 )
+
+return_exp <- ledgr_experiment(
+  snapshot,
+  parameterized_strategy,
+  features = swept_features,
+  cost_model = ledgr_cost_zero()
+)
+return_sweep <- ledgr_sweep(return_exp, return_grid)
+bind_cols(
+  return_sweep |> select(candidate_id, status, total_return),
+  bind_rows(lapply(return_sweep$params, as.data.frame))
+)
+#> # ledgr sweep -- sweep_5b7a0003da181ca5
+#> # A tibble: 3 × 6
+#>   candidate_id status total_return lookback min_return   qty
+#>   <chr>        <chr>  <chr>           <dbl>      <dbl> <dbl>
+#> 1 ret_5        DONE   +0.1%               5          0    10
+#> 2 ret_10       DONE   +0.1%              10          0    10
+#> 3 ret_20       DONE   +0.2%              20          0    10
+#>
+#> # i 3 combinations: 3 done, 0 failed.
+#> # i Retention returns: none.
+#> # i Retention trades: none.
+#> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
+#> # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
+#> # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
+#> # i Saved artifact: not saved.
+#> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
 ```
 
 The feature set must cover the whole grid: `lookback = 20` means
@@ -462,7 +505,7 @@ active_exp <- ledgr_experiment(
   cost_model = ledgr_cost_zero()
 )
 
-grid <- ledgr_grid_cross(
+active_grid <- ledgr_grid_cross(
   features = ledgr_feature_grid(
     fast_n = c(10L, 20L),
     slow_n = c(40L, 80L),
@@ -471,12 +514,16 @@ grid <- ledgr_grid_cross(
   strategy = ledgr_strategy_grid(threshold = c(0, 0.01), qty = 10)
 )
 
-precomputed <- ledgr_precompute_features(active_exp, grid)
-results <- ledgr_sweep(active_exp, grid, precomputed_features = precomputed)
+precomputed <- ledgr_precompute_features(active_exp, active_grid)
+results <- ledgr_sweep(
+  active_exp,
+  active_grid,
+  precomputed_features = precomputed
+)
 results |>
   select(status, final_equity, total_return, params, feature_params) |>
   slice_head(n = 4)
-#> # ledgr sweep -- sweep_c4dca513b0156884
+#> # ledgr sweep -- sweep_fb4372338641edba
 #> # A tibble: 4 × 5
 #>   status final_equity total_return params           feature_params
 #>   <chr>         <dbl> <chr>        <list>           <list>
@@ -503,9 +550,12 @@ candidate, not a reason to hide the row or discard the rest of the
 sweep.
 
 For single-output indicators, the feature-map alias is the
-strategy-facing name returned by `ctx$features(id)`. Bundle entries are
-intentionally flat; the TTR companion explains why bundles use `prefix`
-or `naming` rather than one outer alias.
+strategy-facing name returned by `ctx$features(id)`. Active aliases
+currently have no alias-aware whole-universe accessor, so an
+active-alias strategy must use that scalar mapped read per instrument.
+Fixed feature IDs should use `ctx$vec$feature()` instead. Bundle entries
+are intentionally flat; the TTR companion explains why bundles use
+`prefix` or `naming` rather than one outer alias.
 
 For TTR-backed declarations, multi-output bundles, and adapter warmup
 rules, read `vignette("ttr-and-adapter-indicators", package = "ledgr")`.
@@ -594,12 +644,16 @@ identical.
 
 <!-- strict-gap-support:start -->
 
-| Form | Availability-aware status |
-|----|----|
-| Built-in SMA and returns | Supported |
-| Custom bounded window with `gap_contract = "strict_window"` | Supported when the declaration is truthful |
-| Public single-output TTR SMA | Supported |
-| Recursive EMA or RSI, TTR bundles, and other TTR shapes | Unsupported |
+| Form | Declaration | Availability-aware status |
+|----|----|----|
+| Built-in SMA | `ledgr_ind_sma(n)` | Supported |
+| Built-in returns | `ledgr_ind_returns(n)` | Supported |
+| Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
+| Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
+| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Unsupported |
+| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported |
+| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Unsupported |
+| Other TTR signatures | any shape not matching the public TTR SMA row | Unsupported |
 
 <!-- strict-gap-support:end -->
 

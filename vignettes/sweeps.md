@@ -109,11 +109,25 @@ features <- ledgr_feature_map(
   slow = ledgr_ind_sma(ledgr_param("slow_n"))
 )
 
-strategy <- ledgr_demo_sma_crossover_strategy()
+sma_crossover_strategy <- function(ctx, params) {
+  targets <- ctx$flat()
+
+  for (id in ctx$universe) {
+    values <- ctx$features(id)
+    if (
+      ledgr_passed_warmup(values) &&
+        ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
+    ) {
+      targets[id] <- params$qty
+    }
+  }
+
+  targets
+}
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = strategy,
+  strategy = sma_crossover_strategy,
   features = features,
   opening = ledgr_opening(cash = 100000),
   cost_model = ledgr_cost_zero()
@@ -139,25 +153,8 @@ current pulse-known market data, positions, cash, equity, and resolved
 alias values; `params` contains the strategy-parameter values for this
 candidate.
 
-The demo strategy you assigned above follows this shape internally:
-
-``` r
-sma_crossover_body <- function(ctx, params) {
-  targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    values <- ctx$features(id)
-    if (
-      ledgr_passed_warmup(values) &&
-        ((values[["fast"]] / values[["slow"]]) - 1) > params$threshold
-    ) {
-      targets[id] <- params$qty
-    }
-  }
-
-  targets
-}
-```
+The function above is the strategy the experiment executes; it is not a
+separate illustrative approximation.
 
 During a sweep, `ctx$features(id)` returns values for the concrete
 indicators resolved for that candidate. `params$threshold` and
@@ -293,11 +290,21 @@ flowchart TB
 >   strategy = strategy_grid
 > )
 >
-> c(original = length(grid$params), expanded = length(expanded_grid$params))
+> tibble(
+>   grid_name = c("original", "expanded"),
+>   candidates = c(length(grid$params), length(expanded_grid$params)),
+>   feature_combinations = c(
+>     nrow(distinct(bind_rows(grid$feature_params))),
+>     nrow(distinct(bind_rows(expanded_grid$feature_params)))
+>   )
+> )
 > ```
 >
->     original expanded
->           16       24
+>     # A tibble: 2 x 3
+>       grid_name candidates feature_combinations
+>       <chr>          <int>                <int>
+>     1 original          16                    0
+>     2 expanded          24                    0
 
 
 ## Precompute Shared Features
@@ -343,7 +350,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_5a09f6073bb6de5e
+    # ledgr sweep -- sweep_bbe0e24fea59b45c
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -376,25 +383,36 @@ sweep
     # i Hidden columns (18): completion_json, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 ``` r
-bind_cols(
-  sweep |> select(candidate_id, status) |> slice_head(n = 6),
-  bind_rows(lapply(sweep$params[1:6], as.data.frame)),
-  bind_rows(lapply(sweep$feature_params[1:6], as.data.frame))
+candidate_table <- bind_cols(
+  sweep |> select(candidate_id, status),
+  bind_rows(lapply(sweep$params, as.data.frame)),
+  bind_rows(lapply(sweep$feature_params, as.data.frame))
 )
+candidate_table
 ```
 
-    # ledgr sweep -- sweep_5a09f6073bb6de5e
-    # A tibble: 6 x 6
-      candidate_id                               status threshold   qty fast_n slow_n
-      <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
-    1 feature_9a29b31dae19/strategy_86be010cf688 DONE        0        5      5     20
-    2 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE        0.01     5      5     20
-    3 feature_9a29b31dae19/strategy_ab759ad88623 DONE        0       10      5     20
-    4 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
-    5 feature_af0f94c90243/strategy_86be010cf688 DONE        0        5     10     20
-    6 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE        0.01     5     10     20
+    # ledgr sweep -- sweep_bbe0e24fea59b45c
+    # A tibble: 16 x 6
+       candidate_id                               status threshold   qty fast_n slow_n
+       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
+     1 feature_9a29b31dae19/strategy_86be010cf688 DONE        0        5      5     20
+     2 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE        0.01     5      5     20
+     3 feature_9a29b31dae19/strategy_ab759ad88623 DONE        0       10      5     20
+     4 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
+     5 feature_af0f94c90243/strategy_86be010cf688 DONE        0        5     10     20
+     6 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE        0.01     5     10     20
+     7 feature_af0f94c90243/strategy_ab759ad88623 DONE        0       10     10     20
+     8 feature_af0f94c90243/strategy_dc6315936028 DONE        0.01    10     10     20
+     9 feature_6ff6fe3a1d38/strategy_86be010cf688 DONE        0        5      5     40
+    10 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE        0.01     5      5     40
+    11 feature_6ff6fe3a1d38/strategy_ab759ad88623 DONE        0       10      5     40
+    12 feature_6ff6fe3a1d38/strategy_dc6315936028 DONE        0.01    10      5     40
+    13 feature_fa560ccbec9f/strategy_86be010cf688 DONE        0        5     10     40
+    14 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE        0.01     5     10     40
+    15 feature_fa560ccbec9f/strategy_ab759ad88623 DONE        0       10     10     40
+    16 feature_fa560ccbec9f/strategy_dc6315936028 DONE        0.01    10     10     40
 
-    # i 6 combinations: 6 done, 0 failed.
+    # i 16 combinations: 16 done, 0 failed.
     # i Retention returns: none.
     # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -447,14 +465,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_5a7544378fa5cf72 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -538,7 +556,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-28 17:10:10                    4           16          16
+    1 sma_retained_sweep 2026-09-28 18:35:33                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -565,7 +583,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-28 17:10:10.098138
+    Created At:        2026-09-28 18:35:33.691619
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -598,7 +616,7 @@ Sweeps give you three retention levels. Use the cheapest level that
 answers the question in front of you, then promote only the candidate
 that needs committed-run artifacts.
 
-| Tier | What it keeps | Typical use |
+| Level | What it keeps | Typical use |
 |----|----|----|
 | Scalar row | Candidate params, status, scalar metrics, warnings, and reproduction key | Screen and debug a declared grid |
 | Retained series | Scalar row plus net portfolio equity and period returns for completed candidates | Inspect return shape, rolling behavior, or external metric-package inputs |
@@ -666,8 +684,8 @@ sweep <- ledgr_sweep(
 
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is
 a memory-backed sweep accelerator only: it is not a general compiled
-fold core, not the durable `ledgr_run()` path, not a non-spot accounting
-model, and not enabled by default.
+execution engine, not the durable `ledgr_run()` path, not a non-spot
+accounting model, and not enabled by default.
 
 For independent candidates, `workers` can dispatch sweep rows in
 parallel when the required backend and worker package dependencies are
@@ -681,24 +699,25 @@ second execution engine.
 
 Name the ranking rule before selecting. Here the rule is deliberately
 simple: among completed candidates, sort by Sharpe ratio descending.
-ledgr does not own objective functions or automatic candidate ranking;
-ordinary R code should make the selection rule visible.
+ledgr ships business-objective helpers for explicit selection rules, as
+taught in `vignette("selection-integrity", package = "ledgr")`; it does
+not silently choose a winner. This example keeps the rule visible as
+ordinary R code.
 
 ``` r
 review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
-review$top
+review$top |>
+  select(candidate_id, sharpe_ratio, params, feature_params)
 ```
 
-    # A tibble: 5 x 12
-       rank candidate_id           candidate_row status final_equity total_return sharpe_ratio
-      <int> <chr>                          <int> <chr>         <dbl>        <dbl>        <dbl>
-    1     1 feature_9a29b31dae19/~             4 DONE        100225.     0.00225          3.08
-    2     2 feature_9a29b31dae19/~             2 DONE        100113.     0.00113          3.07
-    3     3 feature_6ff6fe3a1d38/~            12 DONE        100165.     0.00165          2.12
-    4     4 feature_6ff6fe3a1d38/~            10 DONE        100082.     0.000823         2.12
-    5     5 feature_af0f94c90243/~             8 DONE        100141.     0.00141          2.05
-    # i 5 more variables: max_drawdown <dbl>, n_trades <int>, execution_seed <int>,
-    #   params <list>, feature_params <list>
+    # A tibble: 5 x 4
+      candidate_id                               sharpe_ratio params           feature_params
+      <chr>                                             <dbl> <list>           <list>
+    1 feature_9a29b31dae19/strategy_dc6315936028         3.08 <named list [2]> <named list>
+    2 feature_9a29b31dae19/strategy_7ccbbefd14d1         3.07 <named list [2]> <named list>
+    3 feature_6ff6fe3a1d38/strategy_dc6315936028         2.12 <named list [2]> <named list>
+    4 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1         2.12 <named list [2]> <named list>
+    5 feature_af0f94c90243/strategy_dc6315936028         2.05 <named list [2]> <named list>
 
 ``` r
 review$issues
@@ -717,57 +736,6 @@ ranking rule explicit in the call. `review$top` is for the candidates
 you want to read closely, `review$issues` is for warnings and failures,
 and `review$ranked` retains the full completed-candidate table for
 deliberate selection.
-
-## Promote One Candidate
-
-Promotion replays one selected candidate as a committed run. This is the
-slow path that explicitly pays to materialize durable ledger and equity
-artifacts. For the full research loop around promotion notes, reopen,
-and human review, read
-`vignette("research-workflow", package = "ledgr")`.
-
-``` r
-candidate <- ledgr_candidate(ranked, 1)
-
-promoted_run <- ledgr_promote(
-  exp,
-  candidate,
-  run_id = "sweep_selected_candidate",
-  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
-)
-
-summary(promoted_run)
-```
-
-    ledgr Backtest Summary
-    ======================
-
-    Performance Metrics:
-      Total Return:        0.23%
-      Annualized Return:   0.44%
-      Max Drawdown:        -0.07%
-
-    Risk Metrics:
-      Risk-Free Rate:      0.00% annual
-      Annualization:       252 periods/year (US equity daily)
-      Volatility (annual): 0.14%
-      Sharpe Ratio:        3.075
-
-    Trade Statistics:
-      Closed Trades:       3
-      Win Rate:            100.00%
-      Avg Trade:           $75.05
-
-    Exposure:
-      Time in Market:      63.57%
-
-    Execution Evidence:
-      Fill Timing:         dense_bar_timestamp
-
-    Corporate-Action Evidence:
-    Corporate actions: NOT SUPPLIED - returns may omit distributions
-    Price basis: UNDECLARED - distribution double counting cannot be ruled out
-      Full policy record: ledgr_corporate_action_summary(bt)
 
 ## What A Sweep Does Not Prove
 
@@ -815,7 +783,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_1f3ca0b5ea2654cd
+    # ledgr sweep -- sweep_2accd9596426174d
     # A tibble: 2 x 6
       candidate_id          candidate_row status error_class          error_msg   params
       <chr>                         <int> <chr>  <chr>                <chr>       <list>
@@ -847,6 +815,77 @@ incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects
 failed candidates.
 
+## Promote One Candidate
+
+Promotion replays one selected candidate as a committed run. This is the
+slow path that explicitly pays to materialize durable ledger and equity
+artifacts. For the full research loop around promotion notes, reopen,
+and human review, read
+`vignette("research-workflow", package = "ledgr")`.
+
+``` r
+candidate <- ledgr_candidate(ranked, 1)
+
+candidate_table |>
+  filter(candidate_id == candidate$candidate_id)
+```
+
+    # ledgr sweep -- sweep_bbe0e24fea59b45c
+    # A tibble: 1 x 6
+      candidate_id                               status threshold   qty fast_n slow_n
+      <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
+    1 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
+
+    # i 1 combinations: 1 done, 0 failed.
+    # i Retention returns: none.
+    # i Retention trades: none.
+    # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
+    # i Cost model hash: 4011132b5979fc370e524ebbc525ac7f4158b4de43639ec985f4c90969b4b9d0.
+    # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
+    # i Saved artifact: not saved.
+    # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
+
+``` r
+promoted_run <- ledgr_promote(
+  exp,
+  candidate,
+  run_id = "sweep_selected_candidate",
+  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
+)
+
+summary(promoted_run)
+```
+
+    ledgr Backtest Summary
+    ======================
+
+    Performance Metrics:
+      Total Return:        0.23%
+      Annualized Return:   0.44%
+      Max Drawdown:        -0.07%
+
+    Risk Metrics:
+      Risk-Free Rate:      0.00% annual
+      Annualization:       252 periods/year (US equity daily)
+      Volatility (annual): 0.14%
+      Sharpe Ratio:        3.075
+
+    Trade Statistics:
+      Closed Trades:       3
+      Win Rate:            100.00%
+      Avg Trade:           $75.05
+
+    Exposure:
+      Time in Market:      63.57%
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Full policy record: ledgr_corporate_action_summary(bt)
+
 ## Cost Models Are Fixed Inputs
 
 Cost models are part of the experiment identity in this release. A sweep
@@ -865,7 +904,7 @@ expect `ledgr_grid_cross()` to accept cost-model dimensions.
 Sweep mode intentionally leaves some decisions outside the API. It does
 not ship:
 
-- automatic ranking, objective functions, or `ledgr_tune()`;
+- automatic winner selection or `ledgr_tune()`;
 - cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;

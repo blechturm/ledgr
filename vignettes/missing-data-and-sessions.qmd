@@ -204,7 +204,7 @@ mode instead advances on the independently declared expected-session
 calendar. A declared open session remains a pulse even when one or every
 instrument lacks an observation.
 
-The small matrix below is the executable oracle used by ledgr's strict-gap
+The small matrix below is the worked comparison used by ledgr's strict-gap
 tests. It has one closed date, one missing open-session observation for
 `AAA`, and a `BBB` series that starts late. Both moving averages use a
 two-session window.
@@ -519,14 +519,13 @@ The quarantined row is not in the panel, so that session behaves exactly like
 the vendor hole earlier: unpriced, ageing, no fill. The difference is that the
 snapshot records why it is missing.
 
-::: {.ledgr-callout .ledgr-callout-important}
-**Two accessors are still missing**
+::: {.ledgr-callout .ledgr-callout-note}
+**Use the public evidence readers**
 
-Quarantined rows are read from the store directly above because there is no
-accessor for them yet, and `ledgr_run_explain()` answers one timestamp per
-call, so a full per-session history still needs a loop. The evidence is
-persisted and hash-bound in both cases; the convenience readers are roadmap
-items.
+`ledgr_snapshot_quarantine()` returns the rows rejected during sealing, as the
+example above shows. `ledgr_run_explain(run, instrument_id)` returns the full
+retained pulse history when `ts_utc` is omitted; supply one timestamp only when
+you want the focused one-row answer. Neither requires direct store access.
 :::
 
 ## What Stays Your Decision
@@ -548,35 +547,13 @@ patch.
 What is not yours to decide is whether a missing price may become a traded
 price. It may not, and no setting changes that.
 
-## Relationship To The Composable Bundle
+## Where This Fits
 
-`vignette("point-in-time-inputs", package = "ledgr")` owns the complete data
-model and the reusable point-in-time bundle. This article keeps its smaller
-`AAA`/`BBB` fixture because a three-session hole is the clearest detector for
-mark ageing and the no-fill rule. Those identifiers are local to this article;
-they do not describe extra history for the shared `DEMO_*` instruments.
-
-The shared bundle carries the same kind of missing-observation input. This
-executable touchpoint locates it and confirms that its bar row is genuinely
-absent rather than padded:
-
-```{r}
-#| label: shared-missing-observation
-
-data("ledgr_demo_pit_inputs", package = "ledgr")
-shared_gap <- subset(
-  ledgr_demo_pit_inputs$cases,
-  type == "missing_observation"
-)
-shared_gap_has_bar <- with(
-  ledgr_demo_pit_inputs$bars,
-  any(
-    instrument_id == shared_gap$instrument_id[[1L]] &
-      as.Date(ts_utc) == shared_gap$date[[1L]]
-  )
-)
-data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
-```
+This article uses a small `AAA`/`BBB` fixture because a three-session hole
+makes mark ageing and the no-fill rule easy to see. For the complete reusable
+data model, including sessions, membership, status, lifetime and corporate
+actions, continue to `vignette("point-in-time-inputs", package = "ledgr")`.
+You do not need that full model for an ordinary dense-bars experiment.
 
 ## Where Next
 

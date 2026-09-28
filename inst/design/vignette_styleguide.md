@@ -531,22 +531,23 @@ README
        Who ledgr is for
        Quickstart
        Importing And Sealing Market Data
-       Research Workflow
-       Leakage
-       Reproducibility
-  -> Core Workflow:
-       Preparing Point-In-Time Inputs
-       Missing Data And Session Calendars
-       Cash Distributions
-       Survivorship Bias And Point-In-Time Universes
        Strategy Basics
        Indicators And Features
        The Accounting Model
        Risk And Cost Execution Policy
        Experiment Store
+  -> Research Workflow:
        Exploratory Sweeps And Candidate Promotion
+       Research Workflow
+       Leakage
+       Reproducibility
        Selection Integrity
        Walk-Forward Evaluation
+  -> Point-In-Time Evidence:
+       Preparing Point-In-Time Inputs
+       Missing Data And Session Calendars
+       Cash Distributions
+       Survivorship Bias And Point-In-Time Universes
   -> Going Deeper:
        Strategy Authoring Tools
        TTR Indicators And Bundles

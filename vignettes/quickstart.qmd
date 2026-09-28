@@ -69,18 +69,25 @@ snapshot <- ledgr_snapshot_from_df(
 
 ## Declare The Experiment
 
-The strategy reads stable aliases named `fast` and `slow`. The concrete SMA
-windows can vary later in the sweep.
+Start with a visible rule: hold five units when the current close is above its
+20-session moving average, otherwise hold zero. The strategy reads the whole
+decision axis at once.
 
 ```{r}
 #| label: experiment
 
-features <- ledgr_feature_map(
-  fast = ledgr_ind_sma(ledgr_param("fast_n")),
-  slow = ledgr_ind_sma(ledgr_param("slow_n"))
-)
+features <- list(ledgr_ind_sma(20))
 
-strategy <- ledgr_demo_sma_crossover_strategy()
+strategy <- function(ctx, params) {
+  sma <- ctx$vec$feature("sma_20")
+  targets <- ctx$flat()
+  selected <- which(
+    is.finite(sma) &
+      (ctx$vec$close / sma - 1) > params$threshold
+  )
+  targets[selected] <- params$qty
+  targets
+}
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -106,7 +113,6 @@ while the result is still easy to inspect.
 single_run <- ledgr_run(
   exp,
   params = list(qty = 5, threshold = 0),
-  feature_params = list(fast_n = 5L, slow_n = 20L),
   run_id = "quickstart_run",
   seed = 2026L
 )
@@ -117,31 +123,29 @@ single_run
 If this run has no fills, impossible prices, or surprising exposure, stop here.
 Sweeps amplify a setup; they do not repair it.
 
+The printed warnings are deliberate. `Corporate actions: NOT SUPPLIED` means
+this demo supplied no distribution evidence; `Price basis: UNDECLARED` means
+ledgr cannot rule out dividend double counting in the bars. That is acceptable
+for learning the mechanics, not for making an equity-research claim. See
+`vignette("corporate-action-cash", package = "ledgr")` for the modeled path.
+
 ## Sweep A Tiny Grid
 
-Build feature parameters and strategy parameters separately, then cross them
-into candidate rows.
+Vary only the strategy threshold. The feature remains the same concrete SMA
+used by the single run, so each candidate is easy to explain.
 
 ```{r}
 #| label: sweep
 
-feature_grid <- ledgr_feature_grid(
-  fast_n = c(5L, 10L),
-  slow_n = c(20L, 40L),
-  .filter = fast_n < slow_n
-)
-
-strategy_grid <- ledgr_strategy_grid(
+grid <- ledgr_strategy_grid(
   qty = 5,
   threshold = c(0, 0.01)
 )
 
-grid <- ledgr_grid_cross(features = feature_grid, strategy = strategy_grid)
-
 sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 
 sweep |>
-  select(candidate_id, status, total_return, sharpe_ratio) |>
+  select(candidate_id, status, total_return, sharpe_ratio, params) |>
   arrange(desc(sharpe_ratio))
 ```
 
