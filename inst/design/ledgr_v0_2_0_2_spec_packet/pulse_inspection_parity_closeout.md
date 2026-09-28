@@ -1,12 +1,13 @@
 # Pulse Inspection Parity Closeout
 
-**Status:** Agent-provisional; awaiting the Type 1 close review.
+**Status:** Agent-provisional; awaiting the focused Type 1 re-review.
 **Date:** 2026-09-28
 **Cut:** 17
 **Workstream:** 24
 **Tickets:** LDG-2876 through LDG-2878
 **Baseline:** `2000332`
-**Implementation:** `15aaaba` and `0d1948e`, plus this closeout record.
+**Implementation:** `15aaaba`, `0d1948e`, `4e0dc91` and `82bcd1c`, plus
+this closeout record.
 
 ## Outcome
 
@@ -15,6 +16,12 @@ same dense feature engine as a real run. The former pulse-only implementation,
 which truncated history to `requires_bars` and called `fn(window)` without
 parameters, is gone. Exact-ID scalar feature loops now join the existing
 slow-access warning when a whole-universe replacement exists.
+
+The first close review found that the initial parity implementation rebuilt
+the full scalar series for an `fn`-only feature and discarded every value but
+the last. Pulse inspection now uses the run engine's shared single-index
+scalar helper for that route. Features with `series_fn`, including recursive
+TTR indicators, still receive the full history they require.
 
 LDG-2869 did not join this cut. Alias-aware whole-universe feature access also
 remains deferred to the feature-engine RFC. The release gate waits for
@@ -37,6 +44,13 @@ only by both paths returning the same accidental value. Restoring the exact
 pre-cut pulse implementation from `2000332` makes LTB-0100 error when the
 parameterized indicator's `params` argument is missing.
 
+LCL-0104 and LTB-0104 count the user scalar function itself. A pulse over two
+instruments calls an `fn`-only indicator exactly twice and returns the literal
+four-row means 109.75 and 87.75. Routing that feature back through full-series
+evaluation raises the count to 34 and fails the block. The feature-engine
+identity pin was updated because the shared scalar helper intentionally
+invalidates old feature caches.
+
 LCL-0102 and LTB-0102 run the real fold over a 100-instrument axis. One hundred
 exact-ID `ctx$feature()` reads emit one `ledgr_scalar_accessor_loop` condition
 with accessor `feature`, count 100 and vector form
@@ -52,7 +66,11 @@ pin the corresponding article and help statements in the review lane.
 
 ## Shape And Cost
 
-The seven-shape walk found no new scale-amplifying collection operation.
+The first seven-shape walk missed one shape-5 regression. The initial pulse
+implementation computed and discarded every prior scalar value for an
+`fn`-only indicator. At 2,000 bars it called the user's function once per
+post-warmup bar per instrument to retain one terminal value. The correction
+computes only that terminal value. The remaining paths are:
 
 1. Pulse results are preallocated vectors manifested as one frame at the
    inspection boundary; there is no one-row-frame accumulation.
@@ -61,8 +79,9 @@ The seven-shape walk found no new scale-amplifying collection operation.
 3. No timestamp is formatted or parsed element by element.
 4. No JSON is parsed or encoded.
 5. Pulse inspection delegates to the run feature engine instead of
-   recomputing a second rule. Each declared feature is still deliberately
-   computed once per requested instrument.
+   recomputing a second rule. An `fn`-only feature uses the shared
+   single-index helper once per requested instrument. A `series_fn` receives
+   full history because its terminal value may depend recursively on it.
 6. No validator or pairwise search was added.
 7. Feature-warning recording uses the existing environment state. Its named
    count vector is bounded by the fixed accessor vocabulary, not by events,
@@ -72,9 +91,15 @@ The seven-shape walk found no new scale-amplifying collection operation.
 
 The pulse clock is interactive wall time around one warm
 `ledgr_pulse_snapshot()` at 100 instruments and 2,000 bars per instrument.
-Three
-runs changed from 0.67/0.54/0.55 seconds (median 0.55) to
-0.39/0.25/0.26 seconds (median 0.26). It is not a release gate.
+For built-in SMA, three runs changed from 0.67/0.54/0.55 seconds (median 0.55)
+to 0.39/0.25/0.26 seconds (median 0.26). It is not a release gate.
+
+The close reviewer then measured a custom `fn`-only mean(20) at
+0.50/0.53/0.50 seconds before the cut and 8.32/8.43/8.45 seconds after the
+initial parity implementation. The corrected path measured
+0.37/0.36/0.36 seconds, with exactly 100 scalar calls in every run. These are
+interactive clocks on the same 100-instrument by 2,000-bar shape, not a
+release gate or a general feature-engine claim.
 
 The warning clock is warm wall time around a single-candidate memory sweep at
 2,000 instruments and 30 pulses, with one exact-ID feature read per instrument
@@ -90,11 +115,11 @@ is an effect clock, not a performance gate.
 
 ## Verification
 
-The final ordinary fast profile selected and passed 472 of 472 blocks in
-96.220 seconds. The independent checker returned `LEDGR_TEST_GATE_OK` against
-the 112-second bound. Records are at:
+The correction ordinary fast profile selected and passed 473 of 473 blocks
+in 99.470 seconds. The independent checker returned `LEDGR_TEST_GATE_OK`
+against the 112-second bound. Records are at:
 
-`C:/Users/maxth/ledgr-research/.tmp/ws24-fast-final`
+`C:/Users/maxth/ledgr-research/.tmp/ws24-correction-fast-2`
 
 The first full run caught mixed fast and review blocks under LCL-0100 and
 LCL-0102. The registry was split into LCL-0100 through LCL-0103 without moving
@@ -102,14 +127,20 @@ any block. Two subsequent test executions passed every assertion but could not
 persist their census in temporary record directories; neither was a package
 failure. The final record uses the explicit writable research workspace.
 
+The first correction profile failed only because the intentional shared-helper
+change moved the feature-engine identity. The cache-version pin was updated;
+the replacement profile above is green.
+
 Focused feature, pulse-context, scalar-warning, documentation and control-plane
-suites pass. All four claims resolve to their registered blocks and actual
+suites pass. All five claims resolve to their registered blocks and actual
 profiles. The three pulse-teaching article pairs are fresh, YAML parses and
 `git diff --check` is clean.
 
 ## Governance
 
-This closeout is agent-provisional. The requested Type 1 close review is the
-first review invocation over three completed tickets, a projected ratio of
-`1 / 3 = 0.333` against the 0.5 gate. Maintainer acceptance, not this draft,
-closes Workstream 24 and Cut 17 and unblocks Workstream 15.
+This closeout is agent-provisional. The initial Type 1 close review found the
+`fn`-only regression. The requested focused correction review is the second
+invocation over three completed tickets, a historical ratio of
+`2 / 3 = 0.667` against the 0.5 gate. The breach is recorded rather than
+hidden; adding unrelated work cannot change it. Maintainer acceptance, not
+this draft, closes Workstream 24 and Cut 17 and unblocks Workstream 15.
