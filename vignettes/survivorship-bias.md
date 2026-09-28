@@ -523,12 +523,10 @@ equal_weight_once <- function(ctx, params) {
   if (substr(ctx$ts_utc, 1, 10) != "2020-01-06") {
     return(ctx$hold())
   }
-  ids <- ctx$members
-  weights <- ledgr_weights(
-    stats::setNames(rep(1 / length(ids), length(ids)), ids),
-    universe = ids
-  )
-  ledgr_target_rebalance(weights, ctx, equity_fraction = params$invested)
+  ctx |>
+    ledgr_selection(where = ctx$universe %in% ctx$members) |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
 ```
 
@@ -791,6 +789,17 @@ them, because the instrument is simply absent.
 > bars.
 
 
+> [!TIP]
+>
+> ### Try it: preserve a held nonmember
+>
+> At the January 13 pulse, compare `ctx$hold()` with a target built only
+> from `ctx$members`. Which one preserves `AAA`? Then remove one current
+> bar for a still-held instrument. A feed gap must not become an
+> accidental liquidation; start from holdings and change only the
+> positions your rule intends to change.
+
+
 <div id="fig-timeline">
 
 <img src="survivorship-bias_files/figure-commonmark/fig-timeline-1.png"
@@ -820,52 +829,6 @@ summary(point_in_time)
 #> ledgr Backtest Summary
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         availability_open_v2
-#>   Timing Version:      2
-#>
-#> Completion Evidence:
-#>   Status:           INCOMPLETE
-#>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
-#>   Achieved Window:  2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z
-#>   Stop Reason:      valuation_horizon_exhausted
-#>   Last Fully Valued: 2020-01-14T21:00:00Z
-#>   Last Executed:    2020-01-07T14:30:00Z
-#>   Performance:       incomplete
-#>   Affected IDs:      AAA
-#>
-#>
-#> Corporate-Action Evidence:
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
-#>   Setting cash_amount:              gross
-#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-#>   Setting cash_posting:             effective_close
-#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-#>   Setting held_terminal_position:   last_permissible
-#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-#>   Setting unsupported_quantity:     report_only
-#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
-#>   Exercised choices:
-#>     cash_amount.gross: 0
-#>     cash_amount.refuse: 0
-#>     cash_posting.effective_close: 0
-#>     cash_posting.next_open: 0
-#>     cash_posting.refuse: 0
-#>     held_terminal_position.last_permissible: 0
-#>     held_terminal_position.last_mark: 0
-#>     held_terminal_position.refuse: 0
-#>     unsupported_quantity.report_only: 0
-#>     unsupported_quantity.refuse: 0
-#>   Refusal reasons:
-#>     none declared: 0
-#>   Late arrivals:               0
-#>   Affected marked exposure:    0
-#>   Gross cash posted:           0
-#>   Modeled terminal proceeds:   0
-#>   Positions disposed:          0
-#>   Realized model P&L:          0
-#>   Unsupported facts:           0
 #> Achieved-Prefix Metrics (2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z):
 #>   Total Return (prefix):    -17.10%
 #>   Annualized Return:        withheld (achieved window is shorter than requested)
@@ -884,6 +847,25 @@ summary(point_in_time)
 #>
 #> Exposure:
 #>   Time in Market:      85.71%
+#>
+#> Execution Evidence:
+#>   Fill Timing:         availability_open_v2
+#>   Timing Version:      2
+#>
+#> Completion Evidence:
+#>   Status:           INCOMPLETE
+#>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#>   Achieved Window:  2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z
+#>   Stop Reason:      valuation_horizon_exhausted
+#>   Last Fully Valued: 2020-01-14T21:00:00Z
+#>   Last Executed:    2020-01-07T14:30:00Z
+#>   Performance:       incomplete
+#>   Affected IDs:      AAA
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
 This is the hand calculation’s quiet assumption coming due. Earlier,
@@ -904,9 +886,9 @@ first availability surface.
 > Rebuild `point_in_time_experiment` with
 > `ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
 > it. Predict first: does the run stop earlier, later, or on the same
-> session? Then compare `achieved_end` and the `mark_age` on the stop row.
-> One fewer permitted stale session moves the boundary. It does not change
-> when `AAA` was delisted.
+> session? Then compare `achieved_end_utc` and the `mark_age` on the stop
+> row. One fewer permitted stale session moves the boundary. It does not
+> change when `AAA` was delisted.
 
 
 ## When The Bar You Need Is Not There
@@ -1033,17 +1015,19 @@ workflow, read
 > Then try the same on `point_in_time`. Its two targets cost 9,700 at that
 > same opening and both fill, because `AAA` fell overnight while `BBB`
 > rose. Full allocation is not what rejects an order; the overnight move
-> against you is.
+> against you is. This is the availability-aware execution outcome in this
+> experiment, not a universal statement about every ledgr path or future
+> broker policy.
 
 
-## Relationship To The Composable Bundle
+## Connect This Example To The Full Data Model
 
-`vignette("point-in-time-inputs", package = "ledgr")` owns the complete
-data model and reusable point-in-time bundle. This article keeps its
-smaller `AAA`/`BBB` fixture because the losing company and survivor form
-a direct detector for the bias being taught. `AAA`, `BBB`, and the
-`DEMO` venue are local to this article; they are not additions to the
-shared `DEMO_*` history.
+The complete reusable data model lives in
+`vignette("point-in-time-inputs", package = "ledgr")`. This article
+keeps its smaller `AAA`/`BBB` fixture because the losing company and
+survivor form a direct detector for the bias being taught. `AAA`, `BBB`,
+and the `DEMO` venue are local to this article; they are not additions
+to the shared `DEMO_*` history.
 
 The shared bundle contains the equivalent delisting boundary. Its case
 row points to the lifetime transition that makes the instrument

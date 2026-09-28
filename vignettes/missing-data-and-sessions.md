@@ -231,11 +231,15 @@ A strategy therefore guards the value it intends to use as well as the
 instrument’s current trading permission:
 
 ``` r
-signal <- ctx$features(id)[["signal"]]
-if (is.finite(signal) && id %in% ctx$tradable()) {
-  # It is now safe to use `signal` in a target decision.
-}
+signal <- ctx$vec$feature("sma_2")
+ready <- is.finite(signal) & ctx$vec$admissible
+targets[which(ready)] <- 1
 ```
+
+This uses one concrete engine feature ID over the full decision axis. A
+mapped active alias currently has no whole-universe vector accessor;
+that separate API gap is scheduled rather than hidden behind a scalar
+loop here.
 
 This is stricter than a generic warmup check in one useful way: it says
 what the strategy actually needs at this pulse. See

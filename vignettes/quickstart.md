@@ -79,40 +79,22 @@ single_run <- ledgr_run(
   seed = 2026L
 )
 
-summary(single_run)
-#> ledgr Backtest Summary
+single_run
+#> ledgr Backtest Results
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
+#> Run ID:                            quickstart_run
+#> Period:                            2019-01-01 to 2019-06-28
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $10024.04
+#> Total Return:                      0.24%
+#> Max Drawdown:                      -0.53%
+#> Closed Trades:                     6
 #>
-#> Performance Metrics:
-#>   Total Return:        0.24%
-#>   Annualized Return:   0.47%
-#>   Max Drawdown:        -0.53%
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 0.87%
-#>   Sharpe Ratio:        0.546
-#>
-#> Trade Statistics:
-#>   Closed Trades:       6
-#>   Win Rate:            33.33%
-#>   Avg Trade:           $4.01
-#>
-#> Exposure:
-#>   Time in Market:      67.44%
-head(ledgr_results(single_run, what = "fills"), 3)
-#> # A tibble: 3 x 10
-#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
-#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#> 1         1 2019-01-29 2019-01-29 00:00:00    DEMO_01       BUY       5  91.9     0
-#> 2         2 2019-02-22 2019-02-22 00:00:00    DEMO_02       BUY       5  69.5     0
-#> 3         3 2019-02-28 2019-02-28 00:00:00    DEMO_02       SELL      5  67.3     0
-#> # i 2 more variables: realized_pnl <dbl>, action <chr>
+#> Use summary(bt) for metrics and evidence
 ```
 
 If this run has no fills, impossible prices, or surprising exposure,
@@ -142,18 +124,18 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_1df74db8e898124d
+#> # ledgr sweep -- sweep_bf755e94c8f58f05
 #> # A tibble: 8 x 4
-#>   candidate_id                               status sharpe_ratio total_return
-#>   <chr>                                      <chr>         <dbl> <chr>
-#> 1 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE          3.08  +1.1%
-#> 2 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE          2.13  +0.8%
-#> 3 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE          2.06  +0.7%
-#> 4 feature_af0f94c90243/strategy_86be010cf688 DONE          1.80  +0.8%
-#> 5 feature_6ff6fe3a1d38/strategy_86be010cf688 DONE          1.38  +0.6%
-#> 6 feature_fa560ccbec9f/strategy_86be010cf688 DONE          1.34  +0.5%
-#> 7 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE          1.30  +0.5%
-#> 8 feature_9a29b31dae19/strategy_86be010cf688 DONE          0.546 +0.2%
+#>   candidate_id                               status total_return sharpe_ratio
+#>   <chr>                                      <chr>  <chr>               <dbl>
+#> 1 feature_9a29b31dae19/strategy_7ccbbefd14d1 DONE   +1.1%               3.08
+#> 2 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1 DONE   +0.8%               2.13
+#> 3 feature_af0f94c90243/strategy_7ccbbefd14d1 DONE   +0.7%               2.06
+#> 4 feature_af0f94c90243/strategy_86be010cf688 DONE   +0.8%               1.80
+#> 5 feature_6ff6fe3a1d38/strategy_86be010cf688 DONE   +0.6%               1.38
+#> 6 feature_fa560ccbec9f/strategy_86be010cf688 DONE   +0.5%               1.34
+#> 7 feature_fa560ccbec9f/strategy_7ccbbefd14d1 DONE   +0.5%               1.30
+#> 8 feature_9a29b31dae19/strategy_86be010cf688 DONE   +0.2%               0.546
 #>
 #> # i 8 combinations: 8 done, 0 failed.
 #> # i Retention returns: none.
@@ -163,7 +145,6 @@ sweep |>
 #> # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
 #> # i Saved artifact: not saved.
 #> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-#> # i Hidden columns (0):
 ```
 
 The sweep table is evidence, not an automatic recommendation. If you
@@ -190,7 +171,28 @@ promoted <- ledgr_promote(
   run_id = "quickstart_promoted",
   note = "Highest Sharpe ratio in the tiny demo sweep."
 )
+
+promoted
+#> ledgr Backtest Results
+#> ======================
+#>
+#> Run ID:                            quickstart_promoted
+#> Period:                            2019-01-01 to 2019-06-28
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $10112.57
+#> Total Return:                      1.13%
+#> Max Drawdown:                      -0.32%
+#> Closed Trades:                     3
+#>
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>
+#> Use summary(bt) for metrics and evidence
 ```
+
+This promotion is safe to execute here because the article uses a
+temporary store. It records the selection; it does not turn the tiny
+in-sample sweep into validation.
 
 ## Where Next
 

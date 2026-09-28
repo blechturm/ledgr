@@ -330,7 +330,6 @@ are being reviewed.
 
 ```{r}
 #| label: promotion-sketch
-#| eval: false
 
 promoted <- ledgr_promote(
   exp,
@@ -338,7 +337,12 @@ promoted <- ledgr_promote(
   run_id = "wf_latest_review",
   note = "Manual review accepted the latest completed fold."
 )
+
+promoted
 ```
+
+This executes safely because the article uses a temporary store. It records the
+chosen fold and rationale; it does not turn the fold into fresh validation.
 
 ## Reading The Evidence Honestly
 
@@ -416,5 +420,6 @@ identity introduced here.
 #| include: false
 
 invisible(lapply(wf$test_runs, close))
+close(promoted)
 ledgr_snapshot_close(snapshot)
 ```

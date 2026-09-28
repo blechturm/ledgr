@@ -151,7 +151,7 @@ wf
 #> 2        2 sharpe_ratio                   2.08             3.64             1.56
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: b0366de684834ad4749de056d1a49a07a6e73d0910f430c0d020f4321ae00563
+#> Session: 326f3581a42051c02ef9fa5a689b07efca6a9d4157e6e3a2ef4a15ee6a71e52e
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 2
@@ -210,7 +210,28 @@ promoted <- ledgr_promote(
   run_id = "wf_latest_review",
   note = "Manual review accepted the latest completed fold."
 )
+
+promoted
+#> ledgr Backtest Results
+#> ======================
+#>
+#> Run ID:                            wf_latest_review
+#> Period:                            2019-01-01 to 2019-12-31
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $10187.68
+#> Total Return:                      1.88%
+#> Max Drawdown:                      -0.79%
+#> Closed Trades:                     10
+#>
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>
+#> Use summary(bt) for metrics and evidence
 ```
+
+This executes safely because the article uses a temporary store. It
+records the chosen fold and rationale; it does not turn the fold into
+fresh validation.
 
 ## Reading The Evidence Honestly
 

@@ -475,7 +475,10 @@ ledgr_results(final_bar_bt, what = "fills")
 
 ## Cleanup
 
-```{r cleanup}
+```{r}
+#| label: cleanup
+#| include: false
+
 close(bt)
 close(flat_bt)
 close(open_bt)

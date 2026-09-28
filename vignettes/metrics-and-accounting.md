@@ -476,6 +476,10 @@ final_bar_bt <- ledgr_backtest(
   run_id = "final_bar_accounting_example",
   cost_model = ledgr_cost_zero()
 )
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 ledgr_results(final_bar_bt, what = "fills")
 #> # A tibble: 0 x 10
@@ -485,13 +489,6 @@ ledgr_results(final_bar_bt, what = "fills")
 ```
 
 ## Cleanup
-
-``` r
-close(bt)
-close(flat_bt)
-close(open_bt)
-close(final_bar_bt)
-```
 
 ## Where Next
 

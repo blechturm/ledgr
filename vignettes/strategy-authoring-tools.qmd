@@ -195,6 +195,9 @@ a time:
 signal <- ledgr_signal_return(pulse, lookback = 5)
 signal
 
+feature_signal <- ledgr_signal_feature(pulse, "return_5")
+identical(as.numeric(signal), as.numeric(feature_signal))
+
 selection <- ledgr_select_top_n(signal, n = 2)
 selection
 
@@ -203,8 +206,9 @@ weights
 ```
 
 `ledgr_signal_return()` reads the registered `return_5` feature; it never
-registers a feature for you. Use `ledgr_signal_feature()` for another
-registered feature. Use `ledgr_signal(ctx, values = ...)` only when you have
+registers a feature for you. The executed comparison shows the generic
+`ledgr_signal_feature()` route for another registered feature. Use
+`ledgr_signal(ctx, values = ...)` only when you have
 already transformed the values into a genuinely custom score.
 
 | Object | What it holds | Made by |

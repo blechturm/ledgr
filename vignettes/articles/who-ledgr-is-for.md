@@ -1,0 +1,163 @@
+# Who ledgr is for
+
+
+ledgr is not for everyone. This article is the honest version of that
+statement: who the package is built for, who it is not built for, and
+what to use instead if you do not fit.
+
+For financial-use boundaries, see the project
+[disclaimer](https://github.com/blechturm/ledgr/blob/main/DISCLAIMER.md):
+ledgr is research software, not investment advice.
+
+## Intended audience
+
+**People who care not just about finding strategies, but about knowing
+when they are wrong.** ledgr’s central goal is not to help you discover
+profitable strategies quickly. It is to make it harder to fool yourself
+about strategies that are not actually good. Sealed snapshots,
+deterministic replay, explicit cost assumptions, and provenance tracking
+all serve one question: when this strategy looks good, do I have reason
+to believe it is actually good? If that question matters to you, ledgr
+is built for you.
+
+**Researchers who care about reproducibility.** ledgr assumes you will
+revisit your work months or years later and need to know exactly what
+data, strategy, and parameters produced a result. Sealed snapshots,
+content hashes, append-only event ledgers, and an experiment store with
+strategy provenance are not nice-to-haves; they are the reason the
+package exists. If you have opened a backtest from six months ago and
+could not remember which version of the data it used, ledgr is built for
+you.
+
+**Individual practitioners and small teams.** ledgr runs on your laptop
+or a small ARM board. There is no cloud requirement, no Kubernetes
+cluster, and no sysadmin team. The DuckDB experiment store is a single
+file. The strategy is an R function. That makes the shipped research
+architecture portable across machines that run R. Paper and live
+execution are roadmap goals, not current deployment modes.
+
+**People who value readable code.** ledgr’s current strategy API uses
+ordinary `function(ctx, params)` functions that return explicit target
+quantities. The strategy helper layer makes that same contract read like
+economic logic:
+
+``` r
+ctx |>
+  ledgr_signal_return(lookback = 20) |>
+  ledgr_select_top_n(10) |>
+  ledgr_weight_equal() |>
+  ledgr_target_rebalance(ctx, equity_fraction = 1)
+```
+
+That helper pipeline is still ordinary ledgr strategy code: it ends in
+target quantities and runs through the same pulse engine. See the
+strategy-development article for a runnable, step-by-step version.
+
+The pulse context appears twice because signal scoring needs current
+feature values, and final sizing needs current prices, cash, and equity.
+
+**Researchers working with agents.** Reproducibility, sealed data, and
+explicit dependency boundaries are useful for humans, and they are also
+what makes a package safer to hand to LLM agents for unattended
+research. ledgr’s design assumes agents may write strategies, run
+experiments, and produce reports, and that you still need to audit
+everything they did. The companion `auditr` package is planned as an
+orchestration layer around that idea; ledgr is the correctness-first
+foundation it sits on.
+
+**People who plan to deploy what they research.** ledgr’s vision is the
+full arc from research to paper trading to live trading on hardware you
+own. The strategy contract, event ledger, and data model are intended to
+carry across that arc. Today ledgr supplies the research part: sealed
+evidence, execution, accounting, and durable results. Broker
+connectivity and operational paper/live runtimes remain future work.
+
+**R users who want quant tooling that respects R conventions.** ledgr is
+tidyverse-adjacent without depending on the tidyverse. It uses S3
+classes, pipe-friendly APIs, roxygen documentation, and a pkgdown site.
+The error messages aim to tell you what went wrong, why it matters, and
+how to fix it. If you expect R packages to have coherent API design and
+documentation, ledgr aims to meet that bar.
+
+## Who ledgr is not for
+
+**High-frequency traders.** ledgr is end-of-day by default. The
+architecture is intraday-capable, but the v0.x focus is daily/EOD
+strategies. If you need microsecond execution or tick-by-tick
+backtesting, NautilusTrader or institutional platforms are better fits.
+
+**Quants who need to scan thousands of parameter combinations in
+seconds.** VectorBT is purpose-built for this. It packs configurations
+into arrays and processes them with optimized numerical kernels. ledgr
+supports memory-backed sweeps and a scoped spot-FIFO accelerator for
+that path, but it still optimizes for replayable evidence rather than
+raw array throughput. If you are optimizing for “test 10,000 parameter
+combinations in 30 seconds,” use VectorBT. If you are optimizing for
+“test 100 hypotheses with full provenance and replay any of them in
+three years,” use ledgr.
+
+**Teams that need a managed institutional platform.** ledgr is a
+research framework, not a hosted product. There is no UI, dashboard,
+support team, or SLA. If you need those, you need a different category
+of tool.
+
+**People who want a one-line backtest with no setup.** ledgr’s
+correctness-first design means there is some setup: a snapshot has to be
+sealed, an experiment has to be configured, and a strategy contract has
+to be followed. Small examples run quickly, but the setup is
+deliberately visible. If you want the fastest possible path to a rough
+number, simpler frameworks such as `backtesting.py` or `bt` may fit
+better.
+
+## What ledgr competes with
+
+The honest comparison:
+
+**vs. quantstrat (R):** quantstrat is the historical R standard for
+backtesting and still works for many users, but its API predates modern
+R conventions. ledgr targets a related research workflow with modern R
+ergonomics and deterministic replay. Its paper/live direction is
+architectural, not a shipped peer-comparison claim.
+
+**vs. VectorBT (Python):** Different categories. VectorBT is a
+vectorized parameter-sweep engine optimized for raw throughput. ledgr is
+an event-driven engine with memory-backed exploratory sweeps, durable
+promotion, and provenance. Choose VectorBT if you are scanning huge
+parameter spaces. Choose ledgr if you care about why a specific result
+is what it is.
+
+**vs. NautilusTrader (Python/Rust):** NautilusTrader is closest in
+design philosophy: event-driven, deterministic, and built around
+backtest-to-live parity. It is also significantly further along,
+supports more asset classes, and has a much heavier operational
+footprint. ledgr trades scope for a smaller, portable research system;
+it does not yet match NautilusTrader’s deployment capability.
+
+**vs. Backtrader / backtesting.py / bt (R):** These are often the first
+backtesting tools users encounter. They are easier to start with but
+less focused on sealed data, provenance, and the path to production.
+ledgr is the next step when those guarantees start to matter.
+
+## Self-test
+
+If you read the description and these comparisons and you are nodding,
+ledgr is probably for you. If you read them and think, “I just want to
+plot an SMA crossover and see if it works,” a simpler backtesting
+framework is probably the right first stop. You can come back to ledgr
+when reproducibility starts to matter.
+
+A note on the strictness: ledgr will feel rigorous, possibly too
+rigorous, when you are early in your research workflow. The strictness
+is intentional. It pays off when you have ten strategies tested, six
+months of work behind a result, or an agent generating hypotheses faster
+than you can review them. If those situations sound far away, ledgr may
+feel heavy now and become valuable later. That is a fine reason to
+bookmark the project and come back to it.
+
+## Reading on
+
+- [Why ledgr is built in R](why-r.html): the design culture argument
+- [Research Workflow](../articles/research-workflow.html): the
+  reproducible research loop
+- [Research to production](../articles/research-to-production.html): the
+  long-term vision

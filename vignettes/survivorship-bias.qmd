@@ -138,7 +138,8 @@ ggplot2::ggplot(price_long, ggplot2::aes(date, close, colour = instrument_id)) +
   ggplot2::labs(
     title = "What was actually observed",
     subtitle = "Lines stop where observations stop. Gaps are not interpolated.",
-    x = NULL, y = "Close", colour = NULL
+    x = NULL, y = "Close", colour = NULL,
+    caption = "Synthetic prices; a missing segment remains missing evidence."
   ) +
   ggplot2::theme_minimal(base_size = 13) +
   ggplot2::theme(
@@ -524,12 +525,10 @@ equal_weight_once <- function(ctx, params) {
   if (substr(ctx$ts_utc, 1, 10) != "2020-01-06") {
     return(ctx$hold())
   }
-  ids <- ctx$members
-  weights <- ledgr_weights(
-    stats::setNames(rep(1 / length(ids), length(ids)), ids),
-    universe = ids
-  )
-  ledgr_target_rebalance(weights, ctx, equity_fraction = params$invested)
+  ctx |>
+    ledgr_selection(where = ctx$universe %in% ctx$members) |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
 ```
 
@@ -797,6 +796,15 @@ A permissible mark values a holding on the equity curve. It says nothing about
 whether an executable price exists. Fills come only from observed bars.
 :::
 
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it: preserve a held nonmember**
+
+At the January 13 pulse, compare `ctx$hold()` with a target built only from
+`ctx$members`. Which one preserves `AAA`? Then remove one current bar for a
+still-held instrument. A feed gap must not become an accidental liquidation;
+start from holdings and change only the positions your rule intends to change.
+:::
+
 ```{r}
 #| label: fig-timeline
 #| echo: false
@@ -830,7 +838,8 @@ ggplot2::ggplot(tracks, ggplot2::aes(ts_utc, track, fill = state)) +
   ggplot2::labs(
     title = "AAA: three independent tracks",
     subtitle = "Leaving the index, still owning it, and being able to value it are separate.",
-    x = NULL, y = NULL
+    x = NULL, y = NULL,
+    caption = "Membership, holdings, and valuation follow separate evidence."
   ) +
   ggplot2::theme_minimal(base_size = 13) +
   ggplot2::theme(
@@ -873,7 +882,7 @@ availability surface.
 
 Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1)`,
 use a new `run_id`, and rerun it. Predict first: does the run
-stop earlier, later, or on the same session? Then compare `achieved_end` and
+stop earlier, later, or on the same session? Then compare `achieved_end_utc` and
 the `mark_age` on the stop row. One fewer permitted stale session moves the
 boundary. It does not change when `AAA` was delisted.
 :::
@@ -991,12 +1000,14 @@ the January 7 open where `BBB` costs 51 and those shares now cost 10,200. Check
 Then try the same on `point_in_time`. Its two targets cost 9,700 at that same
 opening and both fill, because `AAA` fell overnight while `BBB` rose. Full
 allocation is not what rejects an order; the overnight move against you is.
+This is the availability-aware execution outcome in this experiment, not a
+universal statement about every ledgr path or future broker policy.
 :::
 
-## Relationship To The Composable Bundle
+## Connect This Example To The Full Data Model
 
-`vignette("point-in-time-inputs", package = "ledgr")` owns the complete data
-model and reusable point-in-time bundle. This article keeps its smaller
+The complete reusable data model lives in
+`vignette("point-in-time-inputs", package = "ledgr")`. This article keeps its smaller
 `AAA`/`BBB` fixture because the losing company and survivor form a direct
 detector for the bias being taught. `AAA`, `BBB`, and the `DEMO` venue are
 local to this article; they are not additions to the shared `DEMO_*` history.

@@ -48,6 +48,16 @@ flowchart LR
 
 </div>
 
+| Clock | Meaning |
+|----|----|
+| decision at pulse `t` | the strategy sees pulse-known close and feature values and returns desired holdings |
+| execution at pulse `t + 1` | the target delta may fill at the next observed open |
+
+A target produces no fill when there is no position change, when the
+next execution bar is absent, when the target is refused by availability
+or risk policy, or when the decision occurs on the final pulse and no
+next bar exists. The diagnostics surface distinguishes these outcomes.
+
 ``` r
 library(ledgr)
 library(dplyr)
@@ -128,12 +138,23 @@ hold_then_flat <- function(ctx, params) {
   targets
 }
 
-bt <- ledgr_backtest(
-  data = bars,
-  strategy = hold_then_flat,
-  initial_cash = 10000,
-  run_id = "how_targets_holdings",
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = tempfile(fileext = ".duckdb"),
+  snapshot_id = "execution-semantics"
+)
+
+exp <- ledgr_experiment(
+  snapshot,
+  hold_then_flat,
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
+)
+
+bt <- ledgr_run(
+  exp,
+  run_id = "how_targets_holdings",
+  params = list()
 )
 
 ledgr_results(bt, what = "fills") |>
@@ -178,14 +199,26 @@ final_bar_strategy <- function(ctx, params) {
   targets
 }
 
-final_bt <- ledgr_backtest(
-  data = bars,
-  strategy = final_bar_strategy,
-  initial_cash = 10000,
-  run_id = "how_targets_final_bar",
+final_exp <- ledgr_experiment(
+  snapshot,
+  final_bar_strategy,
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
+final_bt <- ledgr_run(
+  final_exp,
+  run_id = "how_targets_final_bar",
+  params = list()
+)
+```
+
+    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+    next-open fill model requires a following bar. No fill was emitted for this target
+    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+    should be fillable.
+
+``` r
 nrow(ledgr_results(final_bt, what = "fills"))
 ```
 
@@ -203,19 +236,31 @@ means the run opened or adjusted a position but did not close a round
 trip inside the sample.
 
 ``` r
-ledgr_results(bt, what = "trades") |>
-  select(ts_utc, qty, realized_pnl)
+tibble(
+  case = c("opened and closed", "final target cannot fill"),
+  fills = c(
+    nrow(ledgr_results(bt, what = "fills")),
+    nrow(ledgr_results(final_bt, what = "fills"))
+  ),
+  trades = c(
+    nrow(ledgr_results(bt, what = "trades")),
+    nrow(ledgr_results(final_bt, what = "trades"))
+  )
+)
 ```
 
-    # A tibble: 1 x 3
-      ts_utc       qty realized_pnl
-      <date>     <dbl>        <dbl>
-    1 2019-01-11    10         4.10
+    # A tibble: 2 x 3
+      case                     fills trades
+      <chr>                    <int>  <int>
+    1 opened and closed            2      1
+    2 final target cannot fill     0      0
 
-Start with fills when you debug execution. Trades are derived from
-filled round trips, not from target changes: a trade row is the
-close-action fill row that realizes PnL. ledgr does not currently expose
-a paired entry/exit trade table.
+The first run has two fills and one realized trade: one fill opens and
+the next closes the position. The final-target run has neither. Start
+with fills when you debug execution. Trades are derived from filled
+round trips, not from target changes: a trade row is the close-action
+fill row that realizes PnL. ledgr does not currently expose a paired
+entry/exit trade table.
 
 ## Try It
 

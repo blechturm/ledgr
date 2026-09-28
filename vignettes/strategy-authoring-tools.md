@@ -160,6 +160,10 @@ signal
 #>     DEMO_01     DEMO_02     DEMO_03     DEMO_04
 #> -0.01229707  0.03585798 -0.01136937 -0.02381160
 
+feature_signal <- ledgr_signal_feature(pulse, "return_5")
+identical(as.numeric(signal), as.numeric(feature_signal))
+#> [1] TRUE
+
 selection <- ledgr_select_top_n(signal, n = 2)
 selection
 #> <ledgr_selection> [4 assets]
@@ -178,10 +182,10 @@ weights
 ```
 
 `ledgr_signal_return()` reads the registered `return_5` feature; it
-never registers a feature for you. Use `ledgr_signal_feature()` for
-another registered feature. Use `ledgr_signal(ctx, values = ...)` only
-when you have already transformed the values into a genuinely custom
-score.
+never registers a feature for you. The executed comparison shows the
+generic `ledgr_signal_feature()` route for another registered feature.
+Use `ledgr_signal(ctx, values = ...)` only when you have already
+transformed the values into a genuinely custom score.
 
 | Object | What it holds | Made by |
 |----|----|----|
@@ -309,6 +313,14 @@ top_momentum_run <- ledgr_experiment(
   cost_model = ledgr_cost_zero()
 ) |>
   ledgr_run(params = params, run_id = "v1_ranking")
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 top_momentum_fills <- ledgr_results(top_momentum_run, what = "fills")
 nrow(top_momentum_fills)
@@ -429,6 +441,14 @@ trend_momentum_run <- ledgr_experiment(
   cost_model = ledgr_cost_zero()
 ) |>
   ledgr_run(params = params, run_id = "v2_rule")
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 nrow(ledgr_results(trend_momentum_run, what = "fills"))
 #> [1] 177

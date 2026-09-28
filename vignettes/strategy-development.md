@@ -37,14 +37,6 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-This article moves in three steps:
-
-1.  learn the raw strategy contract:
-    `function(ctx, params) -> target vector`;
-2.  inspect pulse-known data and registered features;
-3.  use helper objects to express larger strategies while still
-    returning target holdings.
-
 A backtest in ledgr is a sequence of decision moments. At each pulse,
 ledgr shows the strategy only what could have been known at that time.
 The strategy answers with desired holdings. ledgr records the decision,
@@ -408,42 +400,6 @@ summary(bt_top_1)
 #> ledgr Backtest Summary
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
-#>
-#>
-#> Corporate-Action Evidence:
-#> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
-#>   Setting cash_amount:              gross
-#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-#>   Setting cash_posting:             effective_close
-#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-#>   Setting held_terminal_position:   last_permissible
-#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-#>   Setting unsupported_quantity:     report_only
-#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
-#>   Exercised choices:
-#>     cash_amount.gross: 0
-#>     cash_amount.refuse: 0
-#>     cash_posting.effective_close: 0
-#>     cash_posting.next_open: 0
-#>     cash_posting.refuse: 0
-#>     held_terminal_position.last_permissible: 0
-#>     held_terminal_position.last_mark: 0
-#>     held_terminal_position.refuse: 0
-#>     unsupported_quantity.report_only: 0
-#>     unsupported_quantity.refuse: 0
-#>   Refusal reasons:
-#>     none declared: 0
-#>   Late arrivals:               0
-#>   Affected marked exposure:    0
-#>   Gross cash posted:           0
-#>   Modeled terminal proceeds:   0
-#>   Positions disposed:          0
-#>   Realized model P&L:          0
-#>   Unsupported facts:           0
 #> Performance Metrics:
 #>   Total Return:        0.45%
 #>   Annualized Return:   0.89%
@@ -462,6 +418,14 @@ summary(bt_top_1)
 #>
 #> Exposure:
 #>   Time in Market:      95.35%
+#>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
 The summary is portfolio-level: total return, max drawdown, and trade

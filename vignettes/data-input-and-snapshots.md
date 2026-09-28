@@ -122,6 +122,10 @@ That article owns the complete data dictionary and entity diagram.
 data-frame form. It requires `instrument_id`, `ts_utc`, `open`, `high`,
 `low`, and `close`; `volume` is optional.
 
+The chunk is intentionally not executed: it refers to project files that
+do not exist in the package build. Copy it into a project after creating
+those files.
+
 ``` r
 snapshot <- ledgr_snapshot_from_csv(
   "data/daily_bars.csv",
@@ -147,6 +151,9 @@ snapshot <- ledgr_snapshot_from_csv(
 
 The Yahoo adapter downloads bars through `quantmod` and seals the
 result.
+
+This chunk is intentionally not executed because a package render must
+not depend on an external network service or on today’s remote response.
 
 ``` r
 snapshot <- ledgr_snapshot_from_yahoo(

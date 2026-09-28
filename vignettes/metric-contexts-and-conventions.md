@@ -38,6 +38,11 @@ examples can inspect stored assumptions. The accounting walkthrough,
 result-table hierarchy, and hand recomputation live in
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
+The fixture uses `ledgr_backtest()` only as the compact in-memory
+compatibility surface. New project workflows should enter through a
+sealed snapshot, `ledgr_experiment()`, and `ledgr_run()` as shown in the
+Quickstart.
+
 ``` r
 bars <- data.frame(
   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:4,
@@ -292,10 +297,6 @@ summary(bt)
 #> ledgr Backtest Summary
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
-#>
 #> Performance Metrics:
 #>   Total Return:        0.40%
 #>   Annualized Return:   28.59%
@@ -314,6 +315,14 @@ summary(bt)
 #>
 #> Exposure:
 #>   Time in Market:      20.00%
+#>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
 `summary(bt)` is a print-oriented view. It returns the backtest handle

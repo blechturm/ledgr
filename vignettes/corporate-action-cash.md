@@ -71,10 +71,27 @@ summary(research_run)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Performance Metrics:
+#>   Total Return:        -8.79%
+#>   Annualized Return:   -99.96%
+#>   Max Drawdown:        -8.96%
+#>
+#> Risk Metrics:
+#>   Risk-Free Rate:      0.00% annual
+#>   Annualization:       252 periods/year (US equity daily)
+#>   Volatility (annual): 65.23%
+#>   Sharpe Ratio:        -11.444
+#>
+#> Trade Statistics:
+#>   Closed Trades:       0
+#>   Win Rate:            N/A (no trades)
+#>   Avg Trade:           N/A (no trades)
+#>
+#> Exposure:
+#>   Time in Market:      100.00%
+#>
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
-#>
 #>
 #> Corporate-Action Evidence:
 #> Corporate actions: MODELED - configured settlement conventions were exercised
@@ -107,24 +124,6 @@ summary(research_run)
 #>   Positions disposed:          0
 #>   Realized model P&L:          0
 #>   Unsupported facts:           0
-#> Performance Metrics:
-#>   Total Return:        -8.79%
-#>   Annualized Return:   -99.96%
-#>   Max Drawdown:        -8.96%
-#>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 65.23%
-#>   Sharpe Ratio:        -11.444
-#>
-#> Trade Statistics:
-#>   Closed Trades:       0
-#>   Win Rate:            N/A (no trades)
-#>   Avg Trade:           N/A (no trades)
-#>
-#> Exposure:
-#>   Time in Market:      100.00%
 ```
 
 The modeled result reports one `cash_amount.gross` choice, one
@@ -189,3 +188,13 @@ shared_cash_terms[
 #>                  subtype parent_instrument_id gross_cash_per_parent_unit
 #> 1 ordinary_cash_dividend              DEMO_03                       0.75
 ```
+
+## Where Next
+
+- Read `vignette("point-in-time-inputs", package = "ledgr")` to place
+  this fact inside the complete sealed data model.
+- Read
+  `vignette("corporate-action-adapter-authoring", package = "ledgr")` if
+  you are translating vendor evidence into the canonical fact family.
+- Use `ledgr_corporate_action_summary()` when you need the full policy
+  and settlement report rather than the compact run print shown above.

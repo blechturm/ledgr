@@ -111,8 +111,7 @@ single_run <- ledgr_run(
   seed = 2026L
 )
 
-summary(single_run)
-head(ledgr_results(single_run, what = "fills"), 3)
+single_run
 ```
 
 If this run has no fills, impossible prices, or surprising exposure, stop here.
@@ -166,7 +165,6 @@ was selected.
 
 ```{r}
 #| label: promotion-sketch
-#| eval: false
 
 promoted <- ledgr_promote(
   exp,
@@ -174,7 +172,13 @@ promoted <- ledgr_promote(
   run_id = "quickstart_promoted",
   note = "Highest Sharpe ratio in the tiny demo sweep."
 )
+
+promoted
 ```
+
+This promotion is safe to execute here because the article uses a temporary
+store. It records the selection; it does not turn the tiny in-sample sweep into
+validation.
 
 ## Where Next
 
@@ -189,5 +193,6 @@ test-window evaluation.
 #| include: false
 
 close(single_run)
+close(promoted)
 ledgr_snapshot_close(snapshot)
 ```

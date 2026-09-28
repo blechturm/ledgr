@@ -83,13 +83,6 @@ library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
-This article moves in three steps:
-
-1. learn the raw strategy contract: `function(ctx, params) -> target vector`;
-2. inspect pulse-known data and registered features;
-3. use helper objects to express larger strategies while still returning target
-   holdings.
-
 A backtest in ledgr is a sequence of decision moments. At each pulse, ledgr
 shows the strategy only what could have been known at that time. The strategy
 answers with desired holdings. ledgr records the decision, applies the fill

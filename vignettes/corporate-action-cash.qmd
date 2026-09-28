@@ -160,6 +160,15 @@ shared_cash_terms[
 ]
 ```
 
+## Where Next
+
+- Read `vignette("point-in-time-inputs", package = "ledgr")` to place this fact
+  inside the complete sealed data model.
+- Read `vignette("corporate-action-adapter-authoring", package = "ledgr")` if
+  you are translating vendor evidence into the canonical fact family.
+- Use `ledgr_corporate_action_summary()` when you need the full policy and
+  settlement report rather than the compact run print shown above.
+
 ```{r}
 #| label: cleanup
 #| include: false

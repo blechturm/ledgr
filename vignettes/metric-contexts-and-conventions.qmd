@@ -75,6 +75,10 @@ can inspect stored assumptions. The accounting walkthrough, result-table
 hierarchy, and hand recomputation live in
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
+The fixture uses `ledgr_backtest()` only as the compact in-memory compatibility
+surface. New project workflows should enter through a sealed snapshot,
+`ledgr_experiment()`, and `ledgr_run()` as shown in the Quickstart.
+
 ```{r}
 #| label: metric-context-fixture
 

@@ -72,13 +72,9 @@ After snapshot creation, store operations take `snapshot`, not
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
+  sma <- ctx$vec$feature("sma_20")
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
   targets
 }
 
@@ -183,8 +179,8 @@ info
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      b3639301f11003569e65ace43159c249eb796244bd3a673c6a18780cbde12f8a
-    Strategy Hash:    c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Config Hash:      b3bf60e5f21e33e26048a2b8dabada9113887af71a22873ddfc57f7d9d0d187f
+    Strategy Hash:    6f37729adac3ba7e8a0ea2cb61b9272ea96a742d0098b77c2a745251d2d7864d
     Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility:  tier_1
     Execution Mode:   audit_log
@@ -326,7 +322,7 @@ stored_strategy
 
     Run ID:           trend_qty_5
     Reproducibility:  tier_1
-    Source Hash:      c413dd07662e72e003890ed30da11b77113c505d17f99e99dbe701e7485e5236
+    Source Hash:      6f37729adac3ba7e8a0ea2cb61b9272ea96a742d0098b77c2a745251d2d7864d
     Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Hash Verified:    TRUE
     Trust:            FALSE
@@ -340,13 +336,9 @@ writeLines(stored_strategy$strategy_source_text)
 
     function (ctx, params)
     {
+        sma <- ctx$vec$feature("sma_20")
         targets <- ctx$flat()
-        for (id in ctx$universe) {
-            sma <- ctx$feature(id, "sma_20")
-            if (is.finite(sma) && ctx$close(id) > sma) {
-                targets[id] <- params$qty
-            }
-        }
+        targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
         targets
     }
 

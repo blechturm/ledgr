@@ -110,13 +110,9 @@ new R session, recover the handle with
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
+  sma <- ctx$vec$feature("sma_20")
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    sma <- ctx$feature(id, "sma_20")
-    if (is.finite(sma) && ctx$close(id) > sma) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
   targets
 }
 

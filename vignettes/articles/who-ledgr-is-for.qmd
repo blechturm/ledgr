@@ -38,9 +38,9 @@ used, ledgr is built for you.
 **Individual practitioners and small teams.** ledgr runs on your laptop or a
 small ARM board. There is no cloud requirement, no Kubernetes cluster, and no
 sysadmin team. The DuckDB experiment store is a single file. The strategy is an
-R function. The deployment target is whatever can run R. This is intentional:
-ledgr is built for researchers who want to own their stack end-to-end without
-paying for infrastructure they do not need.
+R function. That makes the shipped research architecture portable across
+machines that run R. Paper and live execution are roadmap goals, not current
+deployment modes.
 
 **People who value readable code.** ledgr's current strategy API uses ordinary
 `function(ctx, params)` functions that return explicit target quantities. The
@@ -72,9 +72,9 @@ correctness-first foundation it sits on.
 **People who plan to deploy what they research.** ledgr's vision is the full
 arc from research to paper trading to live trading on hardware you own. The
 strategy contract, event ledger, and data model are intended to carry across
-that arc. Most backtesting tools stop at "backtest results" and leave the
-production gap as the user's problem. ledgr is built to close that gap
-deliberately.
+that arc. Today ledgr supplies the research part: sealed evidence, execution,
+accounting, and durable results. Broker connectivity and operational paper/live
+runtimes remain future work.
 
 **R users who want quant tooling that respects R conventions.** ledgr is
 tidyverse-adjacent without depending on the tidyverse. It uses S3 classes,
@@ -117,8 +117,8 @@ The honest comparison:
 **vs. quantstrat (R):** quantstrat is the historical R standard for
 backtesting and still works for many users, but its API predates modern R
 conventions. ledgr targets a related research workflow with modern R
-ergonomics, deterministic replay, and a clear path toward paper and live
-trading.
+ergonomics and deterministic replay. Its paper/live direction is architectural,
+not a shipped peer-comparison claim.
 
 **vs. VectorBT (Python):** Different categories. VectorBT is a vectorized
 parameter-sweep engine optimized for raw throughput. ledgr is an event-driven
@@ -129,8 +129,9 @@ care about why a specific result is what it is.
 **vs. NautilusTrader (Python/Rust):** NautilusTrader is closest in design
 philosophy: event-driven, deterministic, and built around backtest-to-live
 parity. It is also significantly further along, supports more asset classes,
-and has a much heavier deployment footprint. ledgr trades scope for simplicity
-and deployability on lightweight hardware.
+and has a much heavier operational footprint. ledgr trades scope for a smaller,
+portable research system; it does not yet match NautilusTrader's deployment
+capability.
 
 **vs. Backtrader / backtesting.py / bt (R):** These are often the first
 backtesting tools users encounter. They are easier to start with but less

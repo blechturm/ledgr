@@ -159,3 +159,13 @@ withholding, tax treatment, or completeness of the upstream source.
 
 This release does not claim corporate-action completeness, broker-exact
 settlement, net cash, tax correctness, or exact recipient exposure.
+
+## Where Next
+
+- Read `vignette("corporate-action-cash", package = "ledgr")` to see a
+  sealed cash fact affect an ordinary research run.
+- Read `vignette("point-in-time-inputs", package = "ledgr")` for the
+  complete fact bundle, four clocks, and physical-axis relationship.
+- Use the constructor help as the field-level reference when mapping a
+  real vendor source; this fictional adapter is a boundary example, not
+  a vendor specification.
