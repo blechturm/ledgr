@@ -26,6 +26,44 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-28 [data] Historical revision optimization, deferred
+
+The maintainer requested a consolidated historical-projection synthesis after
+exposure was traced to requested values rather than inferred from event counts.
+[Synthesis v11](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
+records that direction, passed Claude's Type 1 verification on 2026-09-28,
+and was accepted by the maintainer on 2026-09-28. V10 and the spike remain the
+derivation and correction record.
+
+The reported terminal-date correction affected one FDMLQ indicator cell at each
+tested width and no requests in the fourteen intended workloads. The separately
+reported execution check matched all 10,486 fills and found none on zero-volume
+bars. Claude checked these scoped results against the local evidence CSVs in
+final review. Section 7's preservation obligation is discharged at `412f600`,
+`dev/spikes/revision-exposure/`, with a README carrying source and workload
+provenance. Assigned `assume_effective` clocks do
+not establish empirical absence of late arrival, and the source-capture interval
+does not establish a historical revision rate.
+
+The durable reason for deferral: no demonstrated requested-value benefit yet
+justifies numerical segmentation, trigger tables or partial-update machinery.
+Keep historical access, simple carry and missingness disclosure. Correctness for
+supported inputs remains owed; ordinary preparation and, where necessary,
+whole-series recalculation are admitted. Existing fact segments are unaffected.
+
+V11, now accepted, replaces the earlier narrowing entry's implementation-route
+assumption that bounded incremental revision must be established first. The
+next-release narrowing goal remains scheduled; it can revise window composition
+without carry and needs its own correctness coverage, not a mandated storage
+method. The carry-locality bound is not a narrowing proof.
+
+Reopen optimization after a supported fact or policy changes an intended request
+and simple correct preparation demonstrates a material resource or maintenance
+problem. Assess exposure, shortcut consequences and solution cost in that order.
+A source with genuine knowledge clocks or missing sessions warrants assessment,
+not automatic construction. Fitted imputers retain the 2026-09-26 follow-up;
+liquidity policy stays separate. This entry authorizes no implementation or spike.
+
 ### 2026-09-27 [ux] Strategy callback inspection boundary
 
 The strategy-context surface keeps `bars`, `feature_table`, `features_wide`
