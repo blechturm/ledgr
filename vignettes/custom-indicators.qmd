@@ -36,6 +36,21 @@ if (!exists("ledgr_demo_bars") && file.exists(demo_data_path)) {
 }
 ```
 
+Custom indicators are ledgr's extension point for derived market data. By the
+end of this article you will have written the safest scalar form, registered
+it, read it as a whole-universe strategy vector, and identified when the
+optional vectorized and external-data paths need extra review.
+
+They are also the highest-risk feature boundary. A custom indicator can keep a
+strategy pulse-safe, or hide future information in an ordinary-looking value.
+
+::: {.ledgr-callout .ledgr-callout-warning}
+**Custom features are a leakage boundary**
+
+ledgr validates shape, warmup, fingerprints, and registration. It cannot prove
+that externally authored feature logic avoided future information.
+:::
+
 ```{r}
 #| label: packages
 #| message: false
@@ -44,21 +59,6 @@ library(ledgr)
 library(dplyr)
 data("ledgr_demo_bars", package = "ledgr")
 ```
-
-Custom indicators are ledgr's extension point for derived market data. They are
-useful when the built-in indicators and TTR-backed indicators do not express
-the feature you want.
-
-They are also the highest-risk feature boundary. A custom indicator can keep a
-strategy pulse-safe, or it can hide future information in an ordinary-looking
-feature value. This article explains the authoring contract.
-
-::: {.ledgr-callout .ledgr-callout-warning}
-**Custom features are a leakage boundary**
-
-ledgr can validate shape, warmup, fingerprints, and registration. It cannot
-prove that externally authored feature logic avoided future information.
-:::
 
 ## The Indicator Object
 
@@ -76,26 +76,10 @@ important fields are:
 | `stable_after` | First row where the output is considered usable. |
 | `params` | Named deterministic parameter list included in the fingerprint. |
 | `source` | Source label: `"ledgr"`, `"TTR"`, or `"custom"`. |
+| `gap_contract` | Optional claim that a bounded window remains valid under declared-session gaps. |
 
 Use `params` for intentional configuration. Do not close over mutable session
 objects when the value should be part of the feature definition.
-
-::: {.ledgr-diagram .ledgr-custom-indicator-path}
-
-```{mermaid}
-%%| echo: false
-
-flowchart LR
-  declare["declare<br/>indicator"]
-  register["register<br/>experiment"]
-  compute["compute<br/>pulse values"]
-  read["read<br/>ctx feature"]
-  target["return<br/>target holdings"]
-
-  declare --> register --> compute --> read --> target
-```
-
-:::
 
 ## Scalar Indicators
 
@@ -111,7 +95,8 @@ range_3 <- ledgr_indicator(
   },
   requires_bars = 3,
   stable_after = 3,
-  params = list()
+  params = list(),
+  gap_contract = "strict_window"
 )
 ```
 
@@ -123,6 +108,12 @@ This path is easy to reason about because the function receives only historical
 rows up to the current decision point. It is the right first implementation for
 most custom features.
 
+`gap_contract = "strict_window"` is a substantive claim: on an
+availability-aware run, the bounded function is valid only when every expected
+session in its window has an observation. Omit it for a dense-only custom
+indicator. ledgr then refuses that indicator in an availability-aware
+experiment instead of guessing that it tolerates gaps.
+
 ## Vectorized Indicators
 
 `series_fn` is the fast path for indicators that are naturally computed over a
@@ -132,7 +123,6 @@ definition for the same feature. They should be equivalent after warmup.
 
 ```{r}
 #| label: vectorized-indicator
-#| eval: false
 
 sma_3_custom <- ledgr_indicator(
   id = "sma_3_custom",
@@ -151,6 +141,8 @@ sma_3_custom <- ledgr_indicator(
   stable_after = 3,
   params = list(n = 3)
 )
+
+ledgr_feature_contracts(list(sma_3_custom))
 ```
 
 The `series_fn(bars, params)` contract is strict:
@@ -282,15 +274,9 @@ snapshot <- ledgr_snapshot_from_df(
 features <- list(range_3)
 
 strategy <- function(ctx, params) {
+  value <- ctx$vec$feature("range_3")
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    value <- ctx$feature(id, "range_3")
-    if (is.finite(value) && value < params$max_range) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[is.finite(value) & value < params$max_range] <- params$qty
   targets
 }
 
@@ -305,9 +291,9 @@ exp <- ledgr_experiment(
 ledgr_feature_id(features)
 ```
 
-Inside the strategy, `ctx$feature(id, "range_3")` reads the exact feature ID
-from the pulse context for one instrument. Unknown feature IDs fail loudly.
-Warmup for a known feature is represented by `NA_real_`.
+Inside the strategy, `ctx$vec$feature("range_3")` reads the exact feature ID
+for the whole decision axis in one call. Unknown IDs fail loudly; warmup for a
+known feature is `NA_real_`.
 
 Run the experiment and inspect the event-derived result tables just as you
 would for built-in indicators:
@@ -317,13 +303,24 @@ would for built-in indicators:
 
 custom_bt <- ledgr_run(
   exp,
-  params = list(max_range = 5, qty = 10),
-  run_id = paste0("custom-indicators-run-", Sys.getpid())
+  params = list(max_range = 1.5, qty = 10),
+  run_id = "custom-indicators-run"
 )
 
-summary(custom_bt)
-ledgr_results(custom_bt, what = "fills")
-ledgr_results(custom_bt, what = "trades")
+strict_bt <- ledgr_run(
+  exp,
+  params = list(max_range = 1.2, qty = 10),
+  run_id = "custom-indicators-strict"
+)
+
+custom_bt
+tibble(
+  max_range = c(1.5, 1.2),
+  fills = c(
+    nrow(ledgr_results(custom_bt, what = "fills")),
+    nrow(ledgr_results(strict_bt, what = "fills"))
+  )
+)
 ```
 
 The custom feature only changes how pulse-known values are computed. It does
@@ -333,8 +330,9 @@ metric workflow.
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
 
-Change `max_range` from `5` to `2` in the run params. Which fills disappear,
-and why does the custom indicator ID stay the same?
+Inspect the two runs' fill tables. Which instruments lose entries when
+`max_range` falls from `1.5` to `1.2`, and why does the feature ID stay the
+same while the strategy decision changes?
 :::
 
 ```{r}
@@ -342,6 +340,7 @@ and why does the custom indicator ID stay the same?
 #| include: false
 
 close(custom_bt)
+close(strict_bt)
 ledgr_snapshot_close(snapshot)
 ```
 

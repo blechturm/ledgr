@@ -1,29 +1,29 @@
 # Custom Indicators And External Features
 
 
-``` r
-library(ledgr)
-library(dplyr)
-data("ledgr_demo_bars", package = "ledgr")
-```
-
 Custom indicators are ledgr’s extension point for derived market data.
-They are useful when the built-in indicators and TTR-backed indicators
-do not express the feature you want.
+By the end of this article you will have written the safest scalar form,
+registered it, read it as a whole-universe strategy vector, and
+identified when the optional vectorized and external-data paths need
+extra review.
 
 They are also the highest-risk feature boundary. A custom indicator can
-keep a strategy pulse-safe, or it can hide future information in an
-ordinary-looking feature value. This article explains the authoring
-contract.
+keep a strategy pulse-safe, or hide future information in an
+ordinary-looking value.
 
 > [!WARNING]
 >
 > ### Custom features are a leakage boundary
 >
-> ledgr can validate shape, warmup, fingerprints, and registration. It
-> cannot prove that externally authored feature logic avoided future
-> information.
+> ledgr validates shape, warmup, fingerprints, and registration. It cannot
+> prove that externally authored feature logic avoided future information.
 
+
+``` r
+library(ledgr)
+library(dplyr)
+data("ledgr_demo_bars", package = "ledgr")
+```
 
 ## The Indicator Object
 
@@ -41,25 +41,10 @@ definition. The important fields are:
 | `stable_after` | First row where the output is considered usable. |
 | `params` | Named deterministic parameter list included in the fingerprint. |
 | `source` | Source label: `"ledgr"`, `"TTR"`, or `"custom"`. |
+| `gap_contract` | Optional claim that a bounded window remains valid under declared-session gaps. |
 
 Use `params` for intentional configuration. Do not close over mutable
 session objects when the value should be part of the feature definition.
-
-<div class="ledgr-diagram ledgr-custom-indicator-path">
-
-```mermaid
-
-flowchart LR
-  declare["declare<br/>indicator"]
-  register["register<br/>experiment"]
-  compute["compute<br/>pulse values"]
-  read["read<br/>ctx feature"]
-  target["return<br/>target holdings"]
-
-  declare --> register --> compute --> read --> target
-```
-
-</div>
 
 ## Scalar Indicators
 
@@ -73,7 +58,8 @@ range_3 <- ledgr_indicator(
   },
   requires_bars = 3,
   stable_after = 3,
-  params = list()
+  params = list(),
+  gap_contract = "strict_window"
 )
 ```
 
@@ -85,6 +71,13 @@ finite numeric value.
 This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
 implementation for most custom features.
+
+`gap_contract = "strict_window"` is a substantive claim: on an
+availability-aware run, the bounded function is valid only when every
+expected session in its window has an observation. Omit it for a
+dense-only custom indicator. ledgr then refuses that indicator in an
+availability-aware experiment instead of guessing that it tolerates
+gaps.
 
 ## Vectorized Indicators
 
@@ -112,6 +105,12 @@ sma_3_custom <- ledgr_indicator(
   stable_after = 3,
   params = list(n = 3)
 )
+
+ledgr_feature_contracts(list(sma_3_custom))
+#> # A tibble: 1 × 5
+#>   alias feature_id   source requires_bars stable_after
+#>   <chr> <chr>        <chr>          <int>        <int>
+#> 1 <NA>  sma_3_custom custom             3            3
 ```
 
 The `series_fn(bars, params)` contract is strict:
@@ -244,15 +243,9 @@ snapshot <- ledgr_snapshot_from_df(
 features <- list(range_3)
 
 strategy <- function(ctx, params) {
+  value <- ctx$vec$feature("range_3")
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    value <- ctx$feature(id, "range_3")
-    if (is.finite(value) && value < params$max_range) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[is.finite(value) & value < params$max_range] <- params$qty
   targets
 }
 
@@ -268,10 +261,9 @@ ledgr_feature_id(features)
 #> [1] "range_3"
 ```
 
-Inside the strategy, `ctx$feature(id, "range_3")` reads the exact
-feature ID from the pulse context for one instrument. Unknown feature
-IDs fail loudly. Warmup for a known feature is represented by
-`NA_real_`.
+Inside the strategy, `ctx$vec$feature("range_3")` reads the exact
+feature ID for the whole decision axis in one call. Unknown IDs fail
+loudly; warmup for a known feature is `NA_real_`.
 
 Run the experiment and inspect the event-derived result tables just as
 you would for built-in indicators:
@@ -279,48 +271,44 @@ you would for built-in indicators:
 ``` r
 custom_bt <- ledgr_run(
   exp,
-  params = list(max_range = 5, qty = 10),
-  run_id = paste0("custom-indicators-run-", Sys.getpid())
+  params = list(max_range = 1.5, qty = 10),
+  run_id = "custom-indicators-run"
 )
 
-summary(custom_bt)
-#> ledgr Backtest Summary
+strict_bt <- ledgr_run(
+  exp,
+  params = list(max_range = 1.2, qty = 10),
+  run_id = "custom-indicators-strict"
+)
+
+custom_bt
+#> ledgr Backtest Results
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
+#> Run ID:                            custom-indicators-run
+#> Period:                            2019-01-01 to 2019-02-28
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $10054.88
+#> Total Return:                      0.55%
+#> Max Drawdown:                      -0.65%
+#> Closed Trades:                     11
 #>
-#> Performance Metrics:
-#>   Total Return:        0.49%
-#>   Annualized Return:   2.96%
-#>   Max Drawdown:        -0.89%
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
 #>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 2.25%
-#>   Sharpe Ratio:        1.305
-#>
-#> Trade Statistics:
-#>   Closed Trades:       0
-#>   Win Rate:            N/A (no trades)
-#>   Avg Trade:           N/A (no trades)
-#>
-#> Exposure:
-#>   Time in Market:      93.02%
-ledgr_results(custom_bt, what = "fills")
-#> # A tibble: 2 × 10
-#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
-#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#> 1         1 2019-01-04 2019-01-04 00:00:00    DEMO_01       BUY      10  90.7     0
-#> 2         2 2019-01-04 2019-01-04 00:00:00    DEMO_02       BUY      10  74.7     0
-#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
-ledgr_results(custom_bt, what = "trades")
-#> # A tibble: 0 × 10
-#> # ℹ 10 variables: event_seq <int>, ts_utc <date>, recording_pulse_ts_utc <dttm>,
-#> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
-#> #   realized_pnl <dbl>, action <chr>
+#> Use summary(bt) for metrics and evidence
+tibble(
+  max_range = c(1.5, 1.2),
+  fills = c(
+    nrow(ledgr_results(custom_bt, what = "fills")),
+    nrow(ledgr_results(strict_bt, what = "fills"))
+  )
+)
+#> # A tibble: 2 × 2
+#>   max_range fills
+#>       <dbl> <int>
+#> 1       1.5    23
+#> 2       1.2    21
 ```
 
 The custom feature only changes how pulse-known values are computed. It
@@ -331,8 +319,9 @@ tables, or metric workflow.
 >
 > ### Try it
 >
-> Change `max_range` from `5` to `2` in the run params. Which fills
-> disappear, and why does the custom indicator ID stay the same?
+> Inspect the two runs’ fill tables. Which instruments lose entries when
+> `max_range` falls from `1.5` to `1.2`, and why does the feature ID stay
+> the same while the strategy decision changes?
 
 
 ## What To Remember

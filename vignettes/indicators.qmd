@@ -124,62 +124,6 @@ The canonical workflow is: register features on `ledgr_experiment()`, then read
 pulse-known values through `ctx$feature()` or `ctx$features()` inside the
 strategy.
 
-## Expected Sessions And Certified Gap Behavior
-
-The declared session calendar, not the indicator's source package, decides
-which dates belong in an availability-aware window. A missing observation on
-a declared open session invalidates every bounded window that contains it.
-ledgr does not compress that window to the most recent observed rows, carry a
-stale value into it, or treat the gap as ordinary startup warmup.
-
-Here are three equivalent declarations for the two-session SMA in the
-strict-gap table in
-`vignette("missing-data-and-sessions", package = "ledgr")`:
-
-```{r}
-#| label: strict-gap-sma-sources
-
-strict_smas <- ledgr_feature_map(
-  built_in = ledgr_ind_sma(2),
-  public_ttr = ledgr_ind_ttr("SMA", input = "close", n = 2),
-  custom = ledgr_indicator(
-    "custom_sma_2",
-    function(window) mean(window$close),
-    requires_bars = 2,
-    gap_contract = "strict_window"
-  )
-)
-
-ledgr_feature_contracts(strict_smas)
-```
-
-All three produce the same `NA, 11, NA, NA, 15, 17` path for `AAA` in that
-example. This is a deliberately narrow equivalence: it does not say that
-different indicator formulas become numerically equal merely because they
-share session semantics.
-
-The current availability-aware support boundary is executable and closed:
-
-<!-- strict-gap-support:start -->
-| Form | Declaration | Availability-aware status |
-| --- | --- | --- |
-| Built-in SMA | `ledgr_ind_sma(n)` | Supported |
-| Built-in returns | `ledgr_ind_returns(n)` | Supported |
-| Custom bounded window | `ledgr_indicator(..., gap_contract = "strict_window")` | Supported when the declaration is truthful |
-| Public TTR SMA | `ledgr_ind_ttr("SMA", input = "close", n = n)` | Supported for this exact single-output shape |
-| Built-in EMA or RSI | `ledgr_ind_ema(n)` / `ledgr_ind_rsi(n)` | Unsupported |
-| TTR EMA or RSI | `ledgr_ind_ttr("EMA", ...)` / `ledgr_ind_ttr("RSI", ...)` | Unsupported |
-| TTR output bundle | `ledgr_ind_ttr_outputs(...)` | Unsupported |
-| Other TTR signatures | any shape not matching the public TTR SMA row | Unsupported |
-<!-- strict-gap-support:end -->
-
-The recursive EMA and RSI families are unsupported regardless of whether the
-implementation comes from ledgr or TTR. Their state cannot yet be reconstructed
-honestly after an expected-session gap. TTR bundles and every other TTR shape
-also remain uncertified. In an availability-aware experiment, those
-declarations fail with `ledgr_indicator_gap_unsupported` before the strategy
-executes; they are not silently evaluated under dense semantics.
-
 ## Feature Lifecycle: From Declaration To Lookup
 
 The feature path has five steps:
@@ -224,11 +168,11 @@ definition used to compute those values. For multi-output sources such as TTR
 `BBands` or `MACD`, each selected output is an ordinary indicator with its own
 feature ID and output-specific fingerprint.
 
-If two feature declarations produce the same engine feature ID, ledgr treats
-that as one feature name in the pulse context. Use distinct IDs or aliases when
-you need to compare two different definitions. A feature-map alias never changes
-the underlying engine feature ID or fingerprint; it only gives your strategy a
-readable name for mapped access.
+Feature IDs in one map must be unique. An alias does not make two different
+definitions with the same engine ID safe, and an alias may not equal another
+entry's feature ID. It may equal its own feature ID. These fail-closed rules
+keep scalar engine-ID reads and mapped alias reads from naming different
+series. An alias never changes the underlying feature ID or fingerprint.
 
 A **bundle** is an authoring convenience for declaring several indicator
 outputs at once. The engine receives ordinary single-output feature definitions
@@ -438,7 +382,6 @@ ledgr_results(bt, what = "fills")
 
 close(pulse)
 close(bt)
-ledgr_snapshot_close(snapshot)
 ```
 
 ## Read The Feature Contracts
@@ -471,7 +414,6 @@ only computes the feature contracts registered on the experiment.
 
 ```{r}
 #| label: parameter-grid-features
-#| eval: false
 
 swept_features <- ledgr_feature_map(
   ret_5 = ledgr_ind_returns(5),
@@ -510,15 +452,19 @@ compose feature and strategy grids explicitly:
 
 ```{r}
 #| label: active-alias-sweep-example
-#| eval: false
 
-features <- ledgr_feature_map(
+active_features <- ledgr_feature_map(
   fast = ledgr_ind_sma(ledgr_param("fast_n")),
   slow = ledgr_ind_sma(ledgr_param("slow_n"))
 )
 
-strategy <- ledgr_demo_sma_crossover_strategy()
-exp <- ledgr_experiment(snapshot, strategy, features = features, cost_model = ledgr_cost_zero())
+active_strategy <- ledgr_demo_sma_crossover_strategy()
+active_exp <- ledgr_experiment(
+  snapshot,
+  active_strategy,
+  features = active_features,
+  cost_model = ledgr_cost_zero()
+)
 
 grid <- ledgr_grid_cross(
   features = ledgr_feature_grid(
@@ -529,14 +475,23 @@ grid <- ledgr_grid_cross(
   strategy = ledgr_strategy_grid(threshold = c(0, 0.01), qty = 10)
 )
 
-precomputed <- ledgr_precompute_features(exp, grid)
-results <- ledgr_sweep(exp, grid, precomputed_features = precomputed)
+precomputed <- ledgr_precompute_features(active_exp, grid)
+results <- ledgr_sweep(active_exp, grid, precomputed_features = precomputed)
+results |>
+  select(status, final_equity, total_return, params, feature_params) |>
+  slice_head(n = 4)
+
+ledgr_snapshot_close(snapshot)
 ```
 
+Each row is one concrete feature/strategy candidate. Inspect `status` before
+ranking: one bad parameterization is evidence about that candidate, not a
+reason to hide the row or discard the rest of the sweep.
+
 For single-output indicators, the feature-map alias is the strategy-facing name
-returned by `ctx$features(id)`. Bundle entries are intentionally flat; see the
-TTR bundle section below for how bundle aliases differ from single-output
-aliases in mapped access.
+returned by `ctx$features(id)`. Bundle entries are intentionally flat; the TTR
+companion explains why bundles use `prefix` or `naming` rather than one outer
+alias.
 
 
 For TTR-backed declarations, multi-output bundles, and adapter warmup rules,
@@ -561,11 +516,14 @@ Warmup problems are easiest to diagnose by connecting four facts:
 
 warmup_check_snapshot <- ledgr_snapshot_from_df(
   bars |>
-    filter(!(instrument_id == "DEMO_02" & ts_utc > ledgr_utc("2019-01-25"))),
+    group_by(instrument_id) |>
+    filter(instrument_id != "DEMO_02" | row_number() <= 4L) |>
+    ungroup(),
   snapshot_id = paste0("warmup-check-", Sys.getpid())
 )
 
-ledgr_feature_contract_check(warmup_check_snapshot, features)
+ledgr_feature_contract_check(warmup_check_snapshot, features) |>
+  select(alias, instrument_id, available_bars, stable_after, warmup_achievable)
 
 ledgr_snapshot_close(warmup_check_snapshot)
 ```
@@ -578,6 +536,49 @@ instrument's sample and later becomes finite. Impossible warmup is different:
 the instrument never has enough available bars for that feature. In that case,
 zero trades can be a valid completed run plus a useful diagnostic, not a failed
 run.
+
+## Expected Sessions And Certified Gap Behavior
+
+The dense lifecycle above is the entrance. Availability-aware research adds a
+stricter question: which sessions should have contained an observation? A
+missing observation on a declared open session invalidates every bounded
+window that contains it. ledgr does not compress the window, carry a stale
+value into it, or call the gap ordinary startup warmup.
+
+```{r}
+#| label: strict-gap-sma-sources
+
+strict_smas <- ledgr_feature_map(
+  built_in = ledgr_ind_sma(2),
+  public_ttr = ledgr_ind_ttr("SMA", input = "close", n = 2),
+  custom = ledgr_indicator(
+    "custom_sma_2",
+    function(window) mean(window$close),
+    requires_bars = 2,
+    gap_contract = "strict_window"
+  )
+)
+
+ledgr_feature_contracts(strict_smas)
+```
+
+In the strict-gap table in
+`vignette("missing-data-and-sessions", package = "ledgr")`, all three follow
+the same `NA, 11, NA, NA, 15, 17` availability path. That is session
+equivalence, not a claim that different formulas are numerically identical.
+
+<!-- strict-gap-support:start -->
+| Form | Availability-aware status |
+| --- | --- |
+| Built-in SMA and returns | Supported |
+| Custom bounded window with `gap_contract = "strict_window"` | Supported when the declaration is truthful |
+| Public single-output TTR SMA | Supported |
+| Recursive EMA or RSI, TTR bundles, and other TTR shapes | Unsupported |
+<!-- strict-gap-support:end -->
+
+Unsupported declarations fail with `ledgr_indicator_gap_unsupported` before
+the strategy executes. They are never silently evaluated under dense
+semantics.
 
 For result-table interpretation after a zero-trade run, read
 `vignette("metrics-and-accounting", package = "ledgr")`.

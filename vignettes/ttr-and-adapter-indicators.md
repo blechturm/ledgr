@@ -1,4 +1,4 @@
-# TTR And Adapter Indicators
+# TTR Indicators And Bundles
 
 
 <style>
@@ -17,9 +17,10 @@
 }
 </style>
 
-This article covers adapter-backed indicator declarations, especially
-TTR indicators and multi-output bundles. The conceptual feature
-lifecycle lives in `vignette("indicators", package = "ledgr")`.
+This article covers supported TTR declarations and multi-output bundles.
+R functions and CSV-backed external features live in
+`vignette("custom-indicators", package = "ledgr")`; the conceptual
+feature lifecycle lives in `vignette("indicators", package = "ledgr")`.
 
 ## Prerequisites
 
@@ -148,13 +149,9 @@ behavior.
 rsi_features <- native_rsi_features
 
 rsi_strategy <- function(ctx, params) {
+  rsi <- ctx$vec$feature("rsi_14")
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    x <- ctx$features(id, rsi_features)
-    if (ledgr_passed_warmup(x) && x[["rsi_14"]] < params$oversold) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[is.finite(rsi) & rsi < params$oversold] <- params$qty
   targets
 }
 
@@ -255,11 +252,11 @@ ledgr_feature_contracts(bbands_bundle)
 #> 4 <NA>  bbands_pctb TTR               20           20
 ```
 
-When a bundle is placed inside `ledgr_feature_map()`, its entries expand
-using their feature IDs as aliases. A single alias on the bundle
-argument is ignored because one alias cannot name several outputs.
-Control the generated feature IDs with the bundle’s `prefix` argument
-instead.
+When an unnamed bundle is placed inside `ledgr_feature_map()`, its
+entries expand using their feature IDs as aliases. A named outer entry
+such as `bands = bbands_bundle` is refused: one alias cannot name
+several outputs. Control names with the bundle’s `prefix` or `naming`
+argument instead.
 
 Use `outputs` as a filter. The derived or explicit prefix still applies
 to selected outputs, so a subset remains collision-resistant:
@@ -340,6 +337,14 @@ outputs are therefore first callable at `nSlow + nSig - 1`. The same
 rule is verified for `macd`, `signal`, the derived ledgr `histogram`,
 and both `percent = TRUE` and `percent = FALSE`.
 
+When a function is absent from the table, the constructor’s error
+explains the measurement route: run the TTR function over at least 50
+representative bars, inspect the first row where the selected output is
+finite, then provide that deliberately as `requires_bars`. Do not guess
+from the parameter name alone. An explicit warmup makes dense execution
+possible; it does not certify a recursive or otherwise unknown TTR shape
+across availability gaps.
+
 To debug a TTR-backed feature at one decision time, use an active
 snapshot handle, choose a timestamp late enough for the indicator
 warmup, and pass the same TTR feature map to `ledgr_pulse_snapshot()`.
@@ -367,48 +372,11 @@ close(ttr_pulse)
 ledgr_snapshot_close(ttr_snapshot)
 ```
 
-## TTR Warmup Verification
-
-Adapter-backed indicators still use the same ledgr feature contract as
-built-in indicators: each declaration has a `stable_after` value, and
-warmup before that point is ordinary `NA`. TTR-specific work is deciding
-the right lookback rule for the wrapped function.
-
-``` r
-ledgr_ind_ttr_warmup_rules()
-#> # A tibble: 18 × 5
-#>    ttr_fn          input formula          required_args id_args
-#>    <chr>           <chr> <chr>            <list>        <list>
-#>  1 RSI             close n + 1            <chr [1]>     <chr [1]>
-#>  2 SMA             close n                <chr [1]>     <chr [1]>
-#>  3 EMA             close n                <chr [1]>     <chr [1]>
-#>  4 ATR             hlc   n + 1            <chr [1]>     <chr [1]>
-#>  5 MACD            close nSlow + nSig - 1 <chr [3]>     <chr [3]>
-#>  6 WMA             close n                <chr [1]>     <chr [1]>
-#>  7 ROC             close n + 1            <chr [1]>     <chr [1]>
-#>  8 momentum        close n + 1            <chr [1]>     <chr [1]>
-#>  9 CCI             hlc   n                <chr [1]>     <chr [1]>
-#> 10 BBands          close n                <chr [1]>     <chr [1]>
-#> 11 aroon           hl    n                <chr [1]>     <chr [1]>
-#> 12 DonchianChannel hl    n                <chr [1]>     <chr [1]>
-#> 13 MFI             hlcv  n + 1            <chr [1]>     <chr [1]>
-#> 14 CMF             hlcv  n                <chr [1]>     <chr [1]>
-#> 15 runMean         close n                <chr [1]>     <chr [1]>
-#> 16 runSD           close n                <chr [1]>     <chr [1]>
-#> 17 runVar          close n                <chr [1]>     <chr [1]>
-#> 18 runMAD          close n                <chr [1]>     <chr [1]>
-```
-
-When a TTR function is covered by the rule table, ledgr derives the
-warmup from its parameters. When a function is not covered, provide
-`requires_bars` explicitly instead of guessing from the output after the
-fact. The general warmup and zero-trade diagnostic checklist lives in
-`vignette("indicators", package = "ledgr")`.
-
 ## Unsupported Or Custom Indicators
 
-When a TTR function is not in the warmup rules table, provide
-`requires_bars` explicitly:
+The explicit measurement route above can admit an unknown TTR function
+for a dense study. This example records the measured boundary rather
+than pretending that `n = 10` establishes it:
 
 ``` r
 ledgr_ind_ttr(
@@ -424,6 +392,12 @@ For non-TTR sources or more specialized logic, use `ledgr_indicator()`
 directly with a `series_fn`. That is the adapter escape hatch: external
 logic remains at the boundary, while the engine keeps the same
 deterministic indicator contract.
+
+Recursive TTR shapes and output bundles are not availability-certified.
+An availability-aware experiment refuses them with
+`ledgr_indicator_gap_unsupported`; supplying `requires_bars` does not
+change that boundary. The general warmup and zero-trade checklist lives
+in `vignette("indicators", package = "ledgr")`.
 
 ## Where Next
 
