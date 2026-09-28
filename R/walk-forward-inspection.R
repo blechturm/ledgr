@@ -501,6 +501,7 @@ ledgr_walk_forward_degradation_core_columns <- function() {
 
 ledgr_new_walk_forward_degradation <- function(x) {
   x <- tibble::as_tibble(x)
+  attr(x, "ledgr_complete_names") <- names(x)
   class(x) <- union("ledgr_walk_forward_degradation", class(x))
   x
 }
@@ -525,7 +526,14 @@ print.ledgr_walk_forward_degradation <- function(x, ...) {
   } else {
     character()
   }
-  ledgr_print_curated_tibble("# ledgr walk-forward degradation", x, cols = core, footer = footer, ...)
+  ledgr_print_curated_tibble(
+    "# ledgr walk-forward degradation",
+    x,
+    cols = core,
+    footer = footer,
+    footer_requires_complete = rep(TRUE, length(footer)),
+    ...
+  )
 }
 
 ledgr_walk_forward_degradation_table <- function(folds,

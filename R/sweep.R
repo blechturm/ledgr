@@ -390,6 +390,7 @@ ledgr_sweep_impl <- function(exp,
     precomputed_features = !is.null(precomputed_features),
     stop_on_error = stop_on_error
   )
+  attr(out, "ledgr_complete_names") <- names(out)
   class(out) <- c("ledgr_sweep_results", class(out))
   out
 }
@@ -760,6 +761,7 @@ print.ledgr_sweep_results <- function(x, ...) {
       "Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.",
       sprintf("Hidden columns (%d): %s", length(hidden), paste(hidden, collapse = ", "))
     ),
+    footer_requires_complete = c(rep(FALSE, 8L), TRUE),
     ...
   )
 }

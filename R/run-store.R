@@ -577,6 +577,7 @@ ledgr_compare_runs_select <- function(rows,
 
 ledgr_classed_tibble <- function(x, class_name, attrs = list()) {
   out <- tibble::as_tibble(x)
+  attrs$ledgr_complete_names <- names(out)
   for (name in names(attrs)) {
     attr(out, name) <- attrs[[name]]
   }
@@ -592,8 +593,26 @@ ledgr_format_percent <- function(x, digits = 1L, signed = FALSE) {
   out
 }
 
-ledgr_print_curated_tibble <- function(title, x, cols, footer, ...) {
-  view <- tibble::as_tibble(x[, intersect(cols, names(x)), drop = FALSE])
+ledgr_print_curated_tibble <- function(title,
+                                       x,
+                                       cols,
+                                       footer,
+                                       footer_requires_complete = rep(FALSE, length(footer)),
+                                       ...) {
+  complete_names <- attr(x, "ledgr_complete_names", exact = TRUE)
+  complete <- !is.null(complete_names) && identical(names(x), complete_names)
+  view <- if (complete) {
+    tibble::as_tibble(x[, intersect(cols, names(x)), drop = FALSE])
+  } else {
+    tibble::as_tibble(x)
+  }
+  if (length(footer_requires_complete) != length(footer)) {
+    rlang::abort(
+      "`footer_requires_complete` must match `footer`.",
+      class = "ledgr_internal_error"
+    )
+  }
+  footer <- footer[complete | !footer_requires_complete]
   if ("total_return" %in% names(view)) view$total_return <- ledgr_format_percent(view$total_return, signed = TRUE)
   if ("max_drawdown" %in% names(view)) view$max_drawdown <- ledgr_format_percent(view$max_drawdown)
   if ("win_rate" %in% names(view)) view$win_rate <- ledgr_format_percent(view$win_rate)
@@ -791,6 +810,7 @@ print.ledgr_comparison <- function(x, ...) {
       "Full identity and telemetry columns remain available on this tibble.",
       "Inspect one run with ledgr_run_info(snapshot, run_id)."
     ),
+    footer_requires_complete = c(FALSE, TRUE, FALSE),
     ...
   )
 }
@@ -887,7 +907,8 @@ print.ledgr_run_list <- function(x, ...) {
         "INCOMPLETE metrics describe the achieved prefix only.",
         "Full identity and telemetry columns remain available on this tibble.",
         "Inspect one run with ledgr_run_info(snapshot, run_id)."
-      )
+      ),
+      footer_requires_complete = c(FALSE, TRUE, FALSE)
     ),
     list(...)
   )

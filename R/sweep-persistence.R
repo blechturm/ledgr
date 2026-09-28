@@ -135,7 +135,7 @@ ledgr_sweep_list <- function(snapshot) {
     params = list(ledgr_run_store_snapshot_id(snapshot))
   )
   if (nrow(rows) == 0L) {
-    return(structure(tibble::tibble(
+    out <- tibble::tibble(
       sweep_id = character(),
       created_at_utc = as.POSIXct(character(), tz = "UTC"),
       engine_version = character(),
@@ -145,7 +145,10 @@ ledgr_sweep_list <- function(snapshot) {
       retention_returns = character(),
       retention_trades = character(),
       note = character()
-    ), class = c("ledgr_sweep_list", "tbl_df", "tbl", "data.frame")))
+    )
+    attr(out, "ledgr_complete_names") <- names(out)
+    class(out) <- c("ledgr_sweep_list", class(out))
+    return(out)
   }
   rows$created_at_utc <- as.POSIXct(rows$created_at_utc, tz = "UTC")
   rows$sweep_schema_version <- as.integer(rows$sweep_schema_version)
@@ -158,7 +161,10 @@ ledgr_sweep_list <- function(snapshot) {
     "sweep_id", "created_at_utc", "engine_version", "sweep_schema_version",
     "n_candidates", "n_completed", "retention_returns", "retention_trades", "note"
   ), drop = FALSE]
-  structure(tibble::as_tibble(rows), class = c("ledgr_sweep_list", class(tibble::as_tibble(rows))))
+  out <- tibble::as_tibble(rows)
+  attr(out, "ledgr_complete_names") <- names(out)
+  class(out) <- c("ledgr_sweep_list", class(out))
+  out
 }
 
 #' @describeIn ledgr_sweep_save Inspect in-memory or reopened sweep metadata.
@@ -580,6 +586,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     sweep_schema_version = as.integer(parent$sweep_schema_version[[1]]),
     note = ledgr_sweep_optional_chr(parent$note[[1]])
   )
+  attr(out, "ledgr_complete_names") <- names(out)
   # Cross-table checks read risk identity from the assembled object's attrs.
   ledgr_sweep_validate_reconstructed_identity(parent, candidates, out)
   class(out) <- c("ledgr_saved_sweep_results", "ledgr_sweep_results", class(out))

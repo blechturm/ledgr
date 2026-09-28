@@ -1021,13 +1021,13 @@ every piece of evidence the package owes stays printed or reachable.
 | --- | --- | --- | --- |
 | 25 Result output | 2869, 2880-2884 | `print(bt)` as the one-screen result; `summary()` answers first and collapses unused corporate-action detail; a metrics print method; small print defects; curated prints respect the caller's columns; close the cut | a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous |
 
-One independent Type 1 and Type 2 cut review comes before implementation. It
-decides whether the NOT SUPPLIED corporate-action block may collapse and
-whether the metrics may move ahead of the evidence, against the
-equity-settlement synthesis and `contracts.md:552-557`; the full policy record
-stays reachable either way. With the close review that is 2 invocations over
-6 tickets, 0.333. LDG-2869 joins from its Cut 16 deferral. Workstream 25
-follows accepted Workstream 24 and blocks Workstream 26.
+The independent combined Type 1 and Type 2 cut review passed before
+implementation. It permits the NOT SUPPLIED block to collapse to its exact two
+headlines plus a public full-policy pointer, and permits metrics to precede
+evidence while their established internal order and incomplete-run rules stay
+unchanged. With the close review that is 2 invocations over 6 tickets, 0.333.
+LDG-2869 joins from its Cut 16 deferral. Workstream 25 follows accepted
+Workstream 24 and blocks Workstream 26.
 
 ## Cut 19: Documentation corrections before the tag (open)
 
