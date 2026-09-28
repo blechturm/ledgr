@@ -64,36 +64,22 @@ if (!inherits(bt, "ledgr_backtest")) {
   stop("README `bt` object is not a ledgr_backtest handle.", call. = FALSE)
 }
 
-for (name in c("target", "target_values", "review", "candidate", "promoted_run_id")) {
+for (name in c("above_trend", "run_id")) {
   if (!exists(name, envir = env, inherits = FALSE)) {
     stop(sprintf("README did not create the expected `%s` object.", name), call. = FALSE)
   }
 }
 
-target <- get("target", envir = env, inherits = FALSE)
-target_values <- get("target_values", envir = env, inherits = FALSE)
-if (!inherits(target, "ledgr_target") ||
-    !identical(target[["DEMO_01"]], 10) ||
-    !identical(target_values, c(DEMO_01 = 10, DEMO_02 = 0))) {
-  stop("README target extraction did not preserve named quantities.", call. = FALSE)
+# The README shows the strategy contract in full, so its strategy must stay a
+# self-contained Tier 1 function.
+above_trend <- get("above_trend", envir = env, inherits = FALSE)
+if (!identical(ledgr::ledgr_strategy_preflight(above_trend)$tier, "tier_1")) {
+  stop("README strategy is not a self-contained Tier 1 strategy.", call. = FALSE)
 }
 
-review <- get("review", envir = env, inherits = FALSE)
-candidate <- get("candidate", envir = env, inherits = FALSE)
-if (!inherits(review$ranked, "ledgr_sweep_results") ||
-    inherits(review$top, "ledgr_sweep_results")) {
-  stop(
-    "README review did not preserve ranked lineage and presentation-only top output.",
-    call. = FALSE
-  )
-}
-if (!identical(candidate$candidate_id[[1]], review$ranked$candidate_id[[1]])) {
-  stop("README candidate was not extracted from the first ranked row.", call. = FALSE)
-}
-
-promoted_run_id <- get("promoted_run_id", envir = env, inherits = FALSE)
-if (!identical(bt$run_id, promoted_run_id)) {
-  stop("README did not reopen the promoted run by its durable locator.", call. = FALSE)
+run_id <- get("run_id", envir = env, inherits = FALSE)
+if (!identical(bt$run_id, run_id)) {
+  stop("README did not reopen its run by the durable locator.", call. = FALSE)
 }
 
 for (what in c("ledger", "equity", "trades")) {
@@ -109,14 +95,6 @@ if (!exists("snapshot", envir = env, inherits = FALSE)) {
 snapshot <- get("snapshot", envir = env, inherits = FALSE)
 if (!inherits(snapshot, "ledgr_snapshot")) {
   stop("README `snapshot` object is not a ledgr_snapshot handle.", call. = FALSE)
-}
-
-if (!exists("stored_strategy", envir = env, inherits = FALSE)) {
-  stop("README did not create the expected stored strategy inspection object.", call. = FALSE)
-}
-stored_strategy <- get("stored_strategy", envir = env, inherits = FALSE)
-if (!inherits(stored_strategy, "ledgr_extracted_strategy")) {
-  stop("README `stored_strategy` object is not a ledgr_extracted_strategy handle.", call. = FALSE)
 }
 
 if ("package:pkgload" %in% search()) {

@@ -3,22 +3,28 @@
 
 <img src="man/figures/logo.svg" align="right" alt="ledgr logo" width="160" class="ledgr-readme-logo" />
 
-ledgr is an event-sourced systematic trading research framework for R.
+**Backtests you can trust, and reopen later.**
 
-Use it when you want a backtest result to be more than a temporary
-object in an R session. ledgr starts from sealed market-data snapshots,
-runs strategies through an experiment boundary, records event-sourced
-results, and lets you reopen the evidence later.
+ledgr is an R package for systematic trading research. It is built so
+that the usual ways a backtest fools you fail loudly instead of quietly:
+
+- A strategy sees one decision time at a time. It cannot read tomorrow's
+  price, because tomorrow's price is not in what it receives.
+- You can declare which instruments existed and were eligible on each
+  date, so delisted instruments stay in the test instead of silently
+  dropping out.
+- A parameter sweep keeps every candidate and comes with diagnostics for
+  selection bias, so its best result can be questioned before you trust
+  it.
+- Every run is stored with the hash of its data, its parameters, and its
+  strategy source, so you can reopen it months later and see exactly
+  what ran.
 
 ``` text
 sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
 The setup is not overhead. The setup is the audit trail.
-
-ledgr is research software, not investment advice. Backtests and audit
-trails are evidence tools; they do not predict future returns or provide
-compliance guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ## What ledgr Does, And In What Order
 
@@ -33,28 +39,16 @@ before it adds the next:
 Shorting and leverage, intraday bars, other asset classes, and order
 types such as limits and stops come later, each only once its accounting
 is specified and tested. Share-changing corporate actions such as splits
-and mergers are next. Sub-second trading is not a goal.
+and mergers are next; [Cash
+Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
+describes what is modelled today. This release does not claim
+corporate-action completeness, broker-exact settlement, net cash, tax
+correctness, or exact recipient exposure. Sub-second trading is not a
+goal.
 
 If you need any of those today, another backtester will serve you
 better. If you need daily research you can trust and reopen later, that
 is what ledgr is built for.
-
-## Corporate-Action Boundary
-
-ledgr can seal vendor-neutral equity corporate-action facts, post
-evidenced gross cash distributions under a named timing convention,
-model a held terminal disposition at a policy-admitted mark, and report
-fidelity over the facts supplied to the snapshot. Unsupported
-security-quantity effects remain visible in the result instead of being
-silently treated as absent.
-
-This release does not claim corporate-action completeness, broker-exact
-settlement, net cash, tax correctness, or exact recipient exposure. See
-[Cash
-Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
-and [Authoring A Corporate-Action
-Adapter](https://blechturm.github.io/ledgr/articles/corporate-action-adapter-authoring.html)
-for the supported boundary and data contract.
 
 ## Install
 
@@ -66,346 +60,131 @@ pak::pak("blechturm/ledgr")
 ``` r
 library(ledgr)
 library(dplyr)
-
-data("ledgr_demo_bars", package = "ledgr")
 ```
 
-## Run A Small Backtest
+## A First Backtest
 
-Start with the package-owned demo bars. Real research should seal your
-own market data, but the demo data keeps this first run local and
-deterministic.
+A strategy is a function of the current decision context, `ctx`, and
+your parameters, `params`. It returns the holdings you want after the
+next fill: a number of shares for every instrument.
+
+``` r
+above_trend <- function(ctx, params) {
+  trend <- ctx$vec$feature("sma_20")
+  targets <- ctx$flat()
+  targets[which(ctx$vec$close > trend * (1 + params$buffer))] <- params$qty
+  targets
+}
+```
+
+This one holds `qty` shares of every instrument whose close is above its
+20-day moving average by at least `buffer`, and nothing otherwise.
+`ctx$flat()` starts from zero shares for every instrument, and `ctx$vec`
+holds today's values for all of them at once.
+
+Run it on the package's demo data. The data is sealed into a snapshot
+first, so every run records exactly which data it used:
 
 ``` r
 bars <- ledgr_demo_bars |>
   filter(
-    instrument_id %in% c("DEMO_01", "DEMO_02"),
-    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-06-30"))
+    instrument_id %in% c("DEMO_01", "DEMO_02", "DEMO_03"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-12-31"))
   )
 
-bars |>
-  slice_head(n = 4)
-#> # A tibble: 4 x 7
-#>   ts_utc              instrument_id  open  high   low close volume
-#>   <dttm>              <chr>         <dbl> <dbl> <dbl> <dbl>  <dbl>
-#> 1 2019-01-01 00:00:00 DEMO_01        89.7  91.8  89.7  91.5 468600
-#> 2 2019-01-02 00:00:00 DEMO_01        91.5  91.6  91.0  91.3 438315
-#> 3 2019-01-03 00:00:00 DEMO_01        91.3  92.1  89.6  90.5 576390
-#> 4 2019-01-04 00:00:00 DEMO_01        90.7  91.1  89.5  89.8 458921
-```
-
-Seal the bars, declare the strategy boundary, and run one parameter set.
-
-``` r
-snapshot <- ledgr_snapshot_from_df(
-  bars,
-  snapshot_id = "readme_demo"
-)
-
-features <- ledgr_feature_map(
-  fast = ledgr_ind_sma(ledgr_param("fast_n")),
-  slow = ledgr_ind_sma(ledgr_param("slow_n"))
-)
+snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "readme_demo")
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = ledgr_demo_sma_crossover_strategy(),
-  features = features,
+  strategy = above_trend,
+  features = list(ledgr_ind_sma(20)),
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
 bt <- ledgr_run(
   exp,
-  feature_params = list(fast_n = 10L, slow_n = 40L),
-  params = list(qty = 10, threshold = 0),
-  run_id = "readme_sma_crossover"
+  params = list(qty = 10, buffer = 0),
+  run_id = "readme_first_run"
 )
-
-summary(bt)
-#> ledgr Backtest Summary
+bt
+#> ledgr Backtest Results
 #> ======================
 #>
-#> Execution Evidence:
-#>   Fill Timing:         dense_bar_timestamp
-#>   Timing Version:      N/A
+#> Run ID:                            readme_first_run
+#> Period:                            2019-01-01 to 2019-12-31
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $10344.56
+#> Total Return:                      3.45%
+#> Max Drawdown:                      -1.34%
+#> Closed Trades:                     38
 #>
-#>
-#> Corporate-Action Evidence:
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
-#>   Setting cash_amount:              gross
-#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-#>   Setting cash_posting:             effective_close
-#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-#>   Setting held_terminal_position:   last_permissible
-#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-#>   Setting unsupported_quantity:     report_only
-#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
-#>   Exercised choices:
-#>     cash_amount.gross: 0
-#>     cash_amount.refuse: 0
-#>     cash_posting.effective_close: 0
-#>     cash_posting.next_open: 0
-#>     cash_posting.refuse: 0
-#>     held_terminal_position.last_permissible: 0
-#>     held_terminal_position.last_mark: 0
-#>     held_terminal_position.refuse: 0
-#>     unsupported_quantity.report_only: 0
-#>     unsupported_quantity.refuse: 0
-#>   Refusal reasons:
-#>     none declared: 0
-#>   Late arrivals:               0
-#>   Affected marked exposure:    0
-#>   Gross cash posted:           0
-#>   Modeled terminal proceeds:   0
-#>   Positions disposed:          0
-#>   Realized model P&L:          0
-#>   Unsupported facts:           0
-#> Performance Metrics:
-#>   Total Return:        1.07%
-#>   Annualized Return:   2.11%
-#>   Max Drawdown:        -0.76%
 #>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 1.56%
-#>   Sharpe Ratio:        1.349
-#>
-#> Trade Statistics:
-#>   Closed Trades:       2
-#>   Win Rate:            100.00%
-#>   Avg Trade:           $53.41
-#>
-#> Exposure:
-#>   Time in Market:      59.69%
+#> Use summary(bt) for metrics and evidence
 ```
 
-## Inspect The Evidence
+The compact print is the result most readers need first. Detailed
+equity, fills, trades, metrics, and evidence remain available through
+the result API. The cost model is required: `ledgr_cost_zero()` states
+openly that this demo trades for free.
 
-The result views are derived from recorded events. The ledger is the
-source of truth; trades, equity, and metrics are views over that
-evidence.
+## Reopen The Evidence Later
 
-``` r
-ledgr_results(bt, what = "trades")
-#> # A tibble: 2 x 10
-#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
-#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#> 1         3 2019-04-23 2019-04-23 00:00:00    DEMO_01       SELL     10 102.      0
-#> 2         4 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
-#> # i 2 more variables: realized_pnl <dbl>, action <chr>
-head(ledgr_results(bt, what = "equity"), 3)
-#> # A tibble: 3 x 6
-#>   ts_utc     equity  cash positions_value running_max drawdown
-#>   <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-01-01  10000 10000               0       10000        0
-#> 2 2019-01-02  10000 10000               0       10000        0
-#> 3 2019-01-03  10000 10000               0       10000        0
-head(ledgr_results(bt, what = "returns"), 3)
-#> # A tibble: 3 x 3
-#>   ts_utc     equity period_return
-#>   <date>      <dbl>         <dbl>
-#> 1 2019-01-01  10000            NA
-#> 2 2019-01-02  10000             0
-#> 3 2019-01-03  10000             0
-```
-
-Stored strategy provenance is inspectable without rerunning or
-evaluating the strategy source. Use `trust = FALSE` for source and
-metadata inspection.
-
-``` r
-stored_strategy <- ledgr_run_strategy(snapshot, "readme_sma_crossover", trust = FALSE)
-list(
-  reproducibility_level = stored_strategy$reproducibility_level,
-  hash_verified = stored_strategy$hash_verified,
-  strategy_params = stored_strategy$strategy_params
-)
-#> $reproducibility_level
-#> [1] "tier_1"
-#>
-#> $hash_verified
-#> [1] TRUE
-#>
-#> $strategy_params
-#> $strategy_params$qty
-#> [1] 10
-#>
-#> $strategy_params$threshold
-#> [1] 0
-```
-
-Hash verification proves stored-text identity, not code safety. Use
-`trust = TRUE` only when you already trust the store and intentionally
-want to recover a function object.
-
-## Review, Promote, And Reopen
-
-`ledgr_target` is a thin wrapper around the named numeric quantities the
-fold consumes. Inspect one quantity with ordinary `[[` indexing, or
-recover the full named numeric vector with `c()`.
-
-``` r
-target <- ledgr_target(
-  c(DEMO_01 = 10, DEMO_02 = 0),
-  universe = c("DEMO_01", "DEMO_02")
-)
-target[["DEMO_01"]]
-#> [1] 10
-target_values <- c(target)
-target_values
-#> DEMO_01 DEMO_02
-#>      10       0
-```
-
-An exploratory sweep remains evidence, not a decision. Name the ranking
-rule, inspect its presentation table, then extract a candidate from the
-full ranked table before promotion.
-
-``` r
-grid <- ledgr_grid_cross(
-  features = ledgr_feature_grid(
-    fast_n = c(10L, 20L),
-    slow_n = 40L
-  ),
-  strategy = ledgr_strategy_grid(
-    qty = c(5, 10),
-    threshold = 0
-  )
-)
-
-sweep <- ledgr_sweep(exp, grid, seed = 2026L)
-review <- ledgr_sweep_review(sweep, rank_by = -final_equity, n = 2L)
-review$top
-#> # A tibble: 2 x 12
-#>    rank candidate_id           candidate_row status final_equity total_return sharpe_ratio
-#>   <int> <chr>                          <int> <chr>         <dbl>        <dbl>        <dbl>
-#> 1     1 feature_9f9d160d8a33/~             4 DONE         10109.       0.0109         1.39
-#> 2     2 feature_fa560ccbec9f/~             2 DONE         10107.       0.0107         1.35
-#> # i 5 more variables: max_drawdown <dbl>, n_trades <int>, execution_seed <int>,
-#> #   params <list>, feature_params <list>
-
-candidate <- ledgr_candidate(review$ranked, 1L)
-promoted <- ledgr_promote(
-  exp,
-  candidate,
-  run_id = "readme_promoted_candidate"
-)
-```
-
-The run handle is a locator for durable evidence. Closing it releases
-owned resources; it does not delete the run. Keep the store path and
-stable IDs, then reopen the snapshot and completed run in a later
-session without executing the strategy again.
+The run is already durable. Save its locators, release the live handles,
+and reopen the same evidence later. `verify = TRUE` recomputes the data
+hash first:
 
 ``` r
 store_path <- snapshot$db_path
 snapshot_id <- snapshot$snapshot_id
-promoted_run_id <- promoted$run_id
+run_id <- bt$run_id
 
 close(bt)
-close(promoted)
 ledgr_snapshot_close(snapshot)
 
 snapshot <- ledgr_snapshot_open(store_path, snapshot_id, verify = TRUE)
-bt <- ledgr_run_open(snapshot, promoted_run_id)
-head(ledgr_results(bt, what = "equity"), 3)
-#> # A tibble: 3 x 6
-#>   ts_utc     equity  cash positions_value running_max drawdown
-#>   <date>      <dbl> <dbl>           <dbl>       <dbl>    <dbl>
-#> 1 2019-01-01  10000 10000               0       10000        0
-#> 2 2019-01-02  10000 10000               0       10000        0
-#> 3 2019-01-03  10000 10000               0       10000        0
+bt <- ledgr_run_open(snapshot, run_id)
+tail(ledgr_results(bt, what = "equity"), 2)
+#> # A tibble: 2 x 6
+#>   ts_utc     equity   cash positions_value running_max drawdown
+#>   <date>      <dbl>  <dbl>           <dbl>       <dbl>    <dbl>
+#> 1 2019-12-30 10347. 10347.              0       10417. -0.00674
+#> 2 2019-12-31 10345.  9551.            794.      10417. -0.00695
 ```
 
-## Where To Go Next
+## Why ledgr?
 
-| Question | Article |
-|----|----|
-| I want the full research loop: snapshot, sweep, promotion, reopen. | [Research Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html) |
-| I want the shortest runnable path through the package. | [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html) |
-| I want to write strategies correctly. | [Strategy Development](https://blechturm.github.io/ledgr/articles/strategy-development.html) |
-| I want feature maps, indicators, and active aliases. | [Indicators](https://blechturm.github.io/ledgr/articles/indicators.html) |
-| I want point-in-time universes, missing-session handling, and durable explanations. | [Survivorship Bias](https://blechturm.github.io/ledgr/articles/survivorship-bias.html) |
-| I want exploratory sweeps and candidate promotion. | [Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) |
-| I want return-panel evidence, PBO/CSCV, MinTRL, K-Ratio, DSR, and effective-trial diagnostics. | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
-| I want cost and target-risk policy boundaries. | [Risk And Cost](https://blechturm.github.io/ledgr/articles/risk-and-cost.html) |
-| I want walk-forward evaluation. | [Walk-Forward](https://blechturm.github.io/ledgr/articles/walk-forward.html) |
-| I want sealed snapshots, durable stores, backup, and reopen. | [Experiment Store](https://blechturm.github.io/ledgr/articles/experiment-store.html) |
-| I want hashes, provenance tiers, and limits of recovery. | [Reproducibility](https://blechturm.github.io/ledgr/articles/reproducibility.html) |
-| I want fills, trades, equity, metrics, and metric context. | [Metrics And Accounting](https://blechturm.github.io/ledgr/articles/metrics-and-accounting.html) |
+| Research failure | What ledgr records or restricts | See it demonstrated |
+|----|----|----|
+| Looking ahead | Strategies receive one decision-time context | [Leakage](https://blechturm.github.io/ledgr/articles/leakage.html) |
+| Survivors replacing the historical universe | Membership and availability are point in time | [Survivorship Bias](https://blechturm.github.io/ledgr/articles/survivorship-bias.html) |
+| Mistaking a lucky sweep winner for validation | Every candidate and its diagnostics remain evidence | [Selection Integrity](https://blechturm.github.io/ledgr/articles/selection-integrity.html) |
+| Losing the data, code, or parameters behind a result | Runs retain hashes, provenance, and reopenable evidence | [Reproducibility](https://blechturm.github.io/ledgr/articles/reproducibility.html) |
 
-Start with the pkgdown site for the full article set:
-<https://blechturm.github.io/ledgr/>.
+## Learn More
 
-Installed package help remains available from R:
+Start with [Strategy
+Basics](https://blechturm.github.io/ledgr/articles/strategy-development.html),
+then follow [Research
+Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html)
+from one checked run through sweep review and promotion. The [article
+index](https://blechturm.github.io/ledgr/) covers data preparation,
+indicators, accounting, costs, walk-forward evaluation, and durable
+stores. Installed help is available through
+`vignette(package = "ledgr")` and `help(package = "ledgr")`.
 
-``` r
-help(package = "ledgr")
-vignette(package = "ledgr")
-```
+ledgr works with the rest of the R ecosystem: indicators from TTR or
+your own functions, market data from any source you can put in a data
+frame, and results as ordinary tibbles.
 
-## Ecosystem
+## Status
 
-ledgr connects to the R finance ecosystem through adapters. The core is
-narrow by design:
-`data -> pulse -> decision -> fill -> ledger event -> portfolio state`.
-Everything outside that sequence, such as data vendors, indicators,
-charting, and analytics, can be provided by packages that already do
-those things well.
-
-| ledgr owns | Other packages can own |
-|----|----|
-| sealed snapshots and hashes | market-data acquisition |
-| pulse construction and no-lookahead contexts | indicator calculations through adapters |
-| target validation, target-risk transforms, fills, and ledger events | charting and visualization |
-| run identity, provenance, and result reconstruction | downstream analytics and reporting |
-
-This posture is deliberate. If you want an all-in-one charting or
-array-backtesting package, ledgr may not be the shortest path. Choose
-ledgr when you want the audit trail and adapter boundary to be explicit.
-
-## Scope
-
-The current ledgr research API is experiment-first. It includes
-memory-backed exploratory sweep support, compact saved sweeps with
-optional retained return and closed-trade evidence, classed target-risk
-transforms, optional parallel candidate dispatch, canonical single-run
-returns, public return panels, evidence-only selection-integrity
-diagnostics, classed/hashable business objectives, and all-candidates
-eligibility tear-downs. It also includes a scoped
-`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed
-spot-asset FIFO sweeps. Canonical R execution remains the default.
-
-The compiled opt-in is not durable `ledgr_run()` integration, not a
-non-spot accounting model, and not a general compiled fold core. The
-target-risk layer is a target-vector transformation layer; it is not
-affordability enforcement, portfolio optimization, margin, shorting or
-borrow policy, liquidity/capacity modeling, OMS lifecycle behavior, or
-broker-grade risk control. The selection-integrity diagnostics and
-business-objective eligibility results do not choose or promote
-candidates and do not prove future profitability.
-`business_objective_hash` is evidence provenance in this release, not
-run, sweep, candidate, promotion, session, or walk-forward identity.
-ledgr does not ship `ledgr_tune()`, automatic objective-based selection,
-objective-filtered walk-forward identity, scored objective composition,
-purging/embargo/CPCV, benchmark-relative diagnostics, broker adapters,
-paper trading, or live trading. Those are separate roadmap items with
-different state and safety requirements.
-
-`ledgr_run()` returns a live handle. The run artifacts are already
-durable when the run finishes. Most result inspection opens and closes
-its own read connection; explicit `close(bt)` is resource cleanup for
-long sessions and explicit opens.
-
-## Pre-CRAN Compatibility
+ledgr is research software, not investment advice. Backtests are
+evidence tools; they do not predict future returns or provide compliance
+guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ledgr is not yet on CRAN. Until the first CRAN release, stored
-artifacts, database schemas, config hashes, provenance formats, and
-experimental APIs may change without backward compatibility or a
-deprecation cycle. Treat pre-CRAN ledgr as a research/development
-package and expect to rerun experiments after upgrading. Once ledgr is
-released on CRAN, the project will define an explicit compatibility and
-deprecation policy.
+artifacts, database schemas, and APIs may change without a deprecation
+cycle, so expect to rerun experiments after upgrading.

@@ -1448,6 +1448,8 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
       "inst/design/contracts.md",
       "README.Rmd",
       "README.md",
+      "vignettes/research-workflow.qmd",
+      "vignettes/research-workflow.md",
       "vignettes/strategy-authoring-tools.qmd",
       "vignettes/strategy-authoring-tools.md",
       "R/run-store.R",
@@ -1462,8 +1464,8 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   if (workflow_sources_exist) {
   docs <- lapply(paths, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"))
   names(docs) <- c(
-    "contracts", "readme_rmd", "readme", "strategy_qmd",
-    "strategy", "run_store", "namespace"
+    "contracts", "readme_rmd", "readme", "research_qmd", "research",
+    "strategy_qmd", "strategy", "run_store", "namespace"
   )
 
   testthat::expect_match(
@@ -1493,13 +1495,18 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
     fixed = TRUE
   )
   testthat::expect_match(
-    docs$readme_rmd,
-    "review <- ledgr_sweep_review(sweep, rank_by = -final_equity, n = 2L)",
+    docs$research_qmd,
+    "review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    docs$research_qmd,
+    "candidate <- ledgr_candidate(ranked, 1)",
     fixed = TRUE
   )
   testthat::expect_match(
     docs$readme_rmd,
-    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    "above_trend <- function(ctx, params)",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -1508,10 +1515,11 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
     fixed = TRUE
   )
   testthat::expect_match(
-    docs$readme,
-    "candidate <- ledgr_candidate(review$ranked, 1L)",
+    docs$research,
+    "candidate <- ledgr_candidate(ranked, 1)",
     fixed = TRUE
   )
+  testthat::expect_no_match(docs$readme_rmd, "ledgr_sweep(", fixed = TRUE)
   testthat::expect_match(
     docs$strategy_qmd,
     "holding_pulse$hold()",
