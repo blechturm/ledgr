@@ -576,6 +576,7 @@ or versioned packet records.
 - `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v9.md`
 - `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md`
 - `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md`
+- `rfc/rfc_feature_map_read_surface_v0_2_x_seed.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.

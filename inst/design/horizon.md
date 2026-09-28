@@ -64,6 +64,37 @@ A source with genuine knowledge clocks or missing sessions warrants assessment,
 not automatic construction. Fitted imputers retain the 2026-09-26 follow-up;
 liquidity policy stays separate. This entry authorizes no implementation or spike.
 
+### 2026-09-28 [ux] Feature-map read surface RFC seeded
+
+The "feature-engine RFC" that the accessor addendum
+(`rfc/rfc_strategy_callback_contract_addendum_v0_1_8_10_synthesis.md:265-272`)
+and the strategy-authoring-helpers synthesis (`:281-287`) deferred is now in
+flight under a narrower name:
+`rfc/rfc_feature_map_read_surface_v0_2_x_seed.md`.
+
+Its trigger was the single-feature vector surface proving insufficient, and
+the v0.2.0.2 vignette audit showed that it has. Active-alias strategies have no
+whole-universe read, so the demo strategy, Sweeps and Research Workflow must
+loop over `ctx$features(id)`. Existing references to "the feature-engine RFC"
+for alias-map vector reads, parameterized-map inspection (audit P4) and bundle
+outer names (audit P6) now resolve to this cycle.
+
+The pre-seed probe at `c06e2e4` found a defect that exists independently of
+any new accessor. A feature-map alias may equal another entry's engine ID:
+`ledgr_feature_map(sma_10 = ledgr_ind_sma(5), sma_5 = ledgr_ind_sma(10))` is
+accepted. `ctx$features(id)[["sma_10"]]` then returns the 5-bar SMA, while
+`ctx$feature(id, "sma_10")` returns the 10-bar SMA. The seed's Q2 proposes
+refusing such maps. Whether a bounded guard lands before the RFC is a
+maintainer decision.
+
+Not in this cycle:
+- feature computation, including the cold strict availability-feature path;
+- lookback-window reads, which belong to the historical-projection work;
+- nested bundle namespaces;
+- cross-sectional features.
+
+This entry authorizes nothing; it records the routing.
+
 ### 2026-09-27 [ux] Strategy callback inspection boundary
 
 The strategy-context surface keeps `bars`, `feature_table`, `features_wide`
