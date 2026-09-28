@@ -112,6 +112,7 @@ packets are records, not authorization for new work.
 | v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
 | Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
 | v0.1.9 performance scoping | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/horizon.md` |
+| Point-in-time historical projection and missing data | `inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md` (accepted 2026-09-28, operative; section 7 governs the ticket cut), with v10 and the missingness amendment as the derivation record; `dev/spikes/segmented-feature-views/spike_closeout.md`; `dev/spikes/revision-exposure/` (exposure evidence and its provenance README); `inst/design/horizon.md` 2026-09-28 `[data]` entry |
 
 ## Local Verification
 

@@ -560,6 +560,22 @@ or versioned packet records.
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_response.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`
 - `rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_seed.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_seed_review.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_seed_v2.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_response.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v3.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v4.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v5.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v6.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v7.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v8.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v9.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md`
+- `rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md`
 
 The governance RFC and response drove the completed `v0.1.8.00` prep cycle.
 The cost model response is an active downstream constraint for v0.1.8 fold-core design.
