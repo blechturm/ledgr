@@ -28,13 +28,14 @@ if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
 }
 ```
 
-ledgr is built around one design premise: strategies should use the same contract
-across backtest, paper, and live modes. Not a translation of research code into
-production code. Not a reimplementation. The same strategy function, the same
-logic, the same event-sourced ledger model.
+ledgr currently ships a research engine. Its durable experiments, pulse
+contract, and event-derived accounting are designed so later paper and live
+systems do not have to discard the research model. Those later systems have not
+shipped.
 
-This article explains the arc ledgr is designed to cover, how the event-sourced
-model enables it, and where v0.1.x sits on that path.
+This article starts with the research workflow you can use now, then shows the
+longer arc the architecture is intended to support. A design direction is not a
+claim that paper or live execution already exists.
 
 ## The Arc
 
@@ -44,29 +45,26 @@ model enables it, and where v0.1.x sits on that path.
 %%| echo: false
 
 flowchart LR
-  research["research"]
-  paper["paper trading"]
-  live["live trading"]
+  research["shipped research"]
+  paper["planned paper trading"]
+  live["planned live trading"]
 
   research --> paper --> live
 ```
 
 :::
 
-Most backtesting libraries stop at the first arrow. The strategy exits the
-research environment as a CSV of returns and is re-implemented in a production
-system that has nothing to do with the backtest. The results differ. The bugs
-differ. The audit trail is gone.
-
-ledgr is designed so that the strategy that produced the backtested results uses
-the same contract in production. The event-sourced ledger is what makes that
-continuity possible.
+The first box is the product today. ledgr seals inputs, runs research strategies,
+stores accounting evidence, and reopens results. The arrows are an architectural
+goal: future execution modes should reuse a compatible strategy and accounting
+boundary instead of treating a CSV of returns as the production handoff.
 
 ## The Ledger Is The Bridge
 
-In ledgr, results are never computed directly from price arrays. Every decision
--- a target position, a fill, a cash change -- is recorded as an immutable event.
-Equity, trades, and metrics are derived from that ledger after the fact.
+In ledgr, fills and other accounting effects are appended to a ledger. Equity,
+trades, and metrics are derived from that evidence. A target vector is a pulse
+decision, not itself a promise that every intermediate choice becomes an
+immutable ledger row.
 
 ::: {.ledgr-diagram .ledgr-ledger-bridge}
 
@@ -85,19 +83,15 @@ flowchart LR
 
 :::
 
-This is not just a correctness choice. It is an architectural choice that makes
-the research-to-production arc coherent. Backtest and paper fills share the same
-ledger event schema, so the reconstruction logic, result views, and audit trail
-work identically across both modes. Live trading extends the event stream with
-broker lifecycle events -- submissions, acknowledgments, partial fills,
-rejections -- without changing the strategy contract. Safety gates, reconciliation,
-and operational controls are adapter concerns; the strategy itself does not change.
+This is both a correctness choice and a useful future boundary. A paper or live
+system would still need broker order state, partial fills, rejection handling,
+reconciliation, safety gates, recovery, and observability. Those are not
+adapters that can be assumed away, and ledgr does not ship them today.
 
 ## The Experiment Store
 
-Before a strategy is deployed it needs to be validated -- not just against one
-parameter set on one data slice, but across many combinations and market regimes,
-with full provenance.
+Before a strategy is trusted, its research evidence should be inspectable -- not
+just one remembered number from one R session.
 
 The ledgr experiment store makes this durable. A **sealed snapshot** pins the
 market data permanently. A **`run_id`** is an immutable experiment key. Strategy
@@ -131,9 +125,9 @@ created before provenance capture remain inspectable as legacy/pre-provenance
 runs, but they cannot be upgraded into fully reproducible experiments after the
 fact.
 
-The research workflow before deployment has two phases:
+The current research workflow has two phases:
 
-**Commit**. Full provenance run. Validate named candidates with
+**Commit**. Full provenance run. Record named candidates with
 durable artifacts: sealed snapshot hash, strategy source hash, parameter hash,
 config hash, ledgr and R version, dependency versions, compact telemetry, and
 result artifacts. Use `ledgr_run_compare()` to compare named variants and
@@ -144,47 +138,38 @@ parity contracts. Use sweep mode to evaluate parameter-grid candidates without
 committing each candidate as a durable run, then promote a selected candidate
 when it should become an auditable stored run.
 
-## The Edge Device
+## The Planned Operational Boundary
 
-DuckDB runs anywhere R runs, including ARM edge hardware such as a Raspberry Pi
-or a small cloud VPS. A validated strategy can be deployed to an edge device with
-an R instance, a DuckDB experiment store, and a broker adapter.
-
-The device maintains its own ledger, appending live fills to the same schema the
-backtest used. If the device restarts, `ledgr_state_reconstruct()` rebuilds
-current positions and cash from the ledger events. No in-memory state is trusted
-across restarts. The ledger reconstructs ledgr's expected state. In paper and
-live modes, that expected state must still be reconciled against broker-reported
-orders, positions, cash, and fills before trading resumes.
-
-This makes the deployment target simpler than traditional production systems.
-There is no separate database, no separate execution engine, no translation layer.
-R, DuckDB, and a broker adapter are sufficient for systematic EOD and low-frequency
-intraday strategies.
+R and DuckDB can run on small servers and edge hardware, but portability of the
+research store is not a trading system. A future paper or live mode would need
+broker order state, partial fills, rejection handling, reconciliation, safety
+gates, recovery, and observability. The ledger and reconstruction model are
+useful foundations for that work; they are not substitutes for it.
 
 ## The Strategy Contract
 
-The sweep-to-production path works cleanly for strategies written as
+The research-and-promotion path works cleanly for strategies written as
 self-contained `function(ctx, params)` functions with explicit, JSON-safe
 parameters and no hidden mutable state:
 
 ```r
 sma_strategy <- function(ctx, params) {
+  sma <- ctx$vec$feature("sma_20")
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    values <- c(sma = ctx$feature(id, paste0("ttr_sma_", params$window)))
-    if (ledgr_passed_warmup(values) && ctx$close(id) > values[["sma"]]) {
-      targets[id] <- params$quantity
-    }
-  }
+  targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$quantity
   targets
 }
 ```
 
+This example assumes that the experiment declares `ledgr_ind_sma(20)`, whose
+concrete feature ID is `sma_20`. A whole-universe read makes that fixed
+dependency visible instead of rebuilding an ID from strategy parameters.
+
 This is Tier 1 reproducibility: the strategy is fully self-contained, its
 parameters are hashable, and its source is capturable. Tier 1 strategies earn
-full experiment-store identity -- source hash, parameter hash, provenance metadata
--- and are the natural fit for sweep mode and edge deployment.
+full experiment-store identity -- source hash, parameter hash, and provenance
+metadata -- and are the natural fit for sweep mode and portable research
+projects.
 
 ledgr supports less constrained strategies too, but the reproducibility tier is
 always visible in run provenance. The trust boundary is explicit, not hidden.
@@ -199,6 +184,7 @@ experiment construction:
 experiment <- ledgr_experiment(
   snapshot,
   strategy = sma_strategy,
+  features = list(ledgr_ind_sma(20)),
   timing_model = ledgr_timing_next_open(),
   cost_model = ledgr_cost_chain(
     ledgr_cost_spread_bps(5),
@@ -208,7 +194,7 @@ experiment <- ledgr_experiment(
 
 run <- ledgr_run(
   experiment,
-  params = list(window = 20, quantity = 10)
+  params = list(quantity = 10)
 )
 ```
 
@@ -222,9 +208,9 @@ each side of the trade. A buy pays above the execution-bar open; a sell receives
 below it. Fixed and notional fees add explicit costs without changing quantity,
 side, instrument, or execution timestamp.
 
-## What v0.1.x Delivers Today
+## What The Current Research Layer Delivers
 
-v0.1.x is the correctness-first research layer. It already covers:
+The v0.2.1.0 release line is a correctness-first research layer. It covers:
 
 - sealed snapshots, hash verification, and deterministic replay across machines
   and R sessions;
@@ -239,34 +225,30 @@ v0.1.x is the correctness-first research layer. It already covers:
 - feature and strategy grids, sweep execution, candidate rows, compact saved
   sweeps, retained return series, promotion context, and explicit
   selection-is-not-validation framing;
-- public cost-model constructors, timing-model identity, required explicit
-  costs, classed target-risk transforms with risk-chain identity,
+- public cost-model constructors, timing-model identity, explicit costs,
+  target-risk transforms with risk-chain identity,
   reproducibility tiers, strategy preflight, stored strategy source, and a
   deterministic demo dataset for documentation and examples.
 
-The current research layer also includes the first walk-forward surface:
+It also includes walk-forward and selection-integrity surfaces:
 
 - walk-forward evaluation runs over the existing sweep and run surfaces,
   consuming cost identity, saved-sweep retention infrastructure, and risk-chain
   identity;
-- v0.1.9.6 shipped DSR, PBO/CSCV, MinTRL, and deterministic effective-trial
-  clustering over retained return panels; v0.1.9.7 extends that evidence into
-  business-objective eligibility and a public return-panel entry point;
-- crypto-readiness evidence and target-construction helper extensions remain
-  separate future packets.
+- DSR, PBO/CSCV, MinTRL, and deterministic effective-trial clustering operate
+  over retained return panels;
+- point-in-time inputs, availability-aware universes, missing-session rules,
+  cash distributions, and bounded terminal settlement make stronger evidence
+  possible when the research claim requires it.
 
 The target-risk layer is intentionally narrow: it transforms target quantities
 before timing and cost. It does not implement affordability enforcement,
 liquidity/capacity policy, margin, shorting or borrow policy, OMS lifecycle
 behavior, or broker-grade controls.
 
-Paper trading adapters are planned for v0.3.0, observability tooling for
-v0.4.0, and small-scale live trading for v1.0.0. OMS state machine semantics
-remain earlier prerequisite work before paper or live adapters.
-
-The path from a validated experiment-store entry to a running edge device is
-shorter than it looks. The research work done in v0.1.x is not throwaway
-scaffolding -- it is the foundation the production system builds on.
+Paper/live execution, broker adapters, and operational observability remain
+roadmap work. The research layer is intended to be reusable foundation, but no
+release date or operational capability is implied by this article.
 
 ## Where Next
 

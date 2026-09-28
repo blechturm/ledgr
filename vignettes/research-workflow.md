@@ -247,6 +247,12 @@ custom_sma_strategy <- function(ctx, params) {
 }
 ```
 
+This loop is deliberate. Candidate-specific active aliases are available
+through `ctx$features(instrument_id)`, but ledgr does not yet expose an
+alias-aware whole-universe vector read. For ordinary fixed feature IDs,
+prefer `ctx$vec$feature(feature_id)` instead of repeating scalar access
+across the decision axis.
+
 For full strategy-authoring patterns, use
 `vignette("strategy-development", package = "ledgr")`. This article
 stays on the research workflow. While the example above shows the
@@ -566,7 +572,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.670
+    Elapsed Sec:      0.690
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     4
@@ -617,16 +623,18 @@ behind the promoted run. Today that recovery uses two public surfaces:
 
 > [!WARNING]
 >
-> ### API gap
+> ### Promotion evidence
 >
-> The next few lines are intentionally lower-level. They show what ledgr
-> records for a promoted run. A future promotion-review helper may
-> summarize this “what caused this result?” record without asking users to
-> inspect nested promotion-context fields directly.
+> Use the public promotion-context accessor to recover what ledgr recorded
+> about the selected sweep row. The run-info object remains useful for the
+> run’s broader identity and completion evidence.
 
 
 ``` r
-promotion <- info$promotion_context
+promotion <- ledgr_run_promotion_context(
+  exp,
+  "workflow_promoted_candidate"
+)
 list(
   source = promotion$source,
   selected_candidate = promotion$selected_candidate$candidate_id,

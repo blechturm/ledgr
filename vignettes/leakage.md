@@ -59,6 +59,22 @@ leaky_signals <- bars |>
     tomorrow_close = lead(close),
     buy_signal = tomorrow_close > close
   )
+
+leaky_signals |>
+  select(instrument_id, ts_utc, close, tomorrow_close, buy_signal) |>
+  slice_head(n = 4)
+#> # A tibble: 8 × 5
+#> # Groups:   instrument_id [2]
+#>   instrument_id ts_utc              close tomorrow_close buy_signal
+#>   <chr>         <dttm>              <dbl>          <dbl> <lgl>
+#> 1 DEMO_01       2019-01-01 00:00:00  91.5           91.3 FALSE
+#> 2 DEMO_01       2019-01-02 00:00:00  91.3           90.5 FALSE
+#> 3 DEMO_01       2019-01-03 00:00:00  90.5           89.8 FALSE
+#> 4 DEMO_01       2019-01-04 00:00:00  89.8           89.2 FALSE
+#> 5 DEMO_02       2019-01-01 00:00:00  73.9           74.3 TRUE
+#> 6 DEMO_02       2019-01-02 00:00:00  74.3           74.8 TRUE
+#> 7 DEMO_02       2019-01-03 00:00:00  74.8           74.9 TRUE
+#> 8 DEMO_02       2019-01-04 00:00:00  74.9           73.8 FALSE
 ```
 
 The resulting `buy_signal` looks like an ordinary column, but it answers
@@ -84,6 +100,23 @@ leaky_features <- bars |>
     ret_5 = close / lag(close, 5) - 1,
     strong_return = ret_5 > quantile(ret_5, 0.75, na.rm = TRUE)
   )
+
+leaky_features |>
+  select(instrument_id, ts_utc, ret_5, strong_return) |>
+  filter(!is.na(ret_5)) |>
+  slice_head(n = 4)
+#> # A tibble: 8 × 4
+#> # Groups:   instrument_id [2]
+#>   instrument_id ts_utc                 ret_5 strong_return
+#>   <chr>         <dttm>                 <dbl> <lgl>
+#> 1 DEMO_01       2019-01-08 00:00:00 -0.0316  FALSE
+#> 2 DEMO_01       2019-01-09 00:00:00 -0.0302  FALSE
+#> 3 DEMO_01       2019-01-10 00:00:00 -0.0167  FALSE
+#> 4 DEMO_01       2019-01-11 00:00:00 -0.0157  FALSE
+#> 5 DEMO_02       2019-01-08 00:00:00  0.00559 FALSE
+#> 6 DEMO_02       2019-01-09 00:00:00 -0.00942 FALSE
+#> 7 DEMO_02       2019-01-10 00:00:00 -0.0123  FALSE
+#> 8 DEMO_02       2019-01-11 00:00:00 -0.0230  FALSE
 ```
 
 There is no future row reference in the final rule. The leak happened
@@ -106,25 +139,36 @@ ret_5 <- c(
   rnorm(189, mean = -0.001, sd = 0.012)   # remaining three quarters: weak
 )
 
-full_sample <- quantile(ret_5, 0.75, na.rm = TRUE)
-early_window <- quantile(ret_5[seq_len(63)], 0.75, na.rm = TRUE)
+full_sample <- unname(quantile(ret_5, 0.75, na.rm = TRUE))
+expanding <- vapply(seq_along(ret_5), function(i) {
+  if (i <= 20L) {
+    return(NA_real_)
+  }
+  unname(quantile(ret_5[seq_len(i - 1L)], 0.75, na.rm = TRUE))
+}, numeric(1))
 
-thresholds <- c(
-  full_sample = unname(full_sample),
-  early_window = unname(early_window)
+first_quarter <- seq_len(63L)
+tibble(
+  rule = c("full sample", "expanding, prior rows only"),
+  threshold_at_quarter_end = c(full_sample, expanding[[63L]]),
+  first_quarter_signals = c(
+    sum(ret_5[first_quarter] > full_sample),
+    sum(ret_5[first_quarter] > expanding[first_quarter], na.rm = TRUE)
+  )
 )
-
-cat(sprintf("full_sample  %.4f\nearly_window %.4f\n", thresholds[["full_sample"]], thresholds[["early_window"]]))
-#> full_sample  0.0077
-#> early_window 0.0104
+#> # A tibble: 2 × 3
+#>   rule                       threshold_at_quarter_end first_quarter_signals
+#>   <chr>                                         <dbl>                 <int>
+#> 1 full sample                                 0.00775                    24
+#> 2 expanding, prior rows only                  0.0104                      8
 ```
 
 The full-sample threshold is lower because the later weak-return period
-drags the distribution down. Early rows that would not have cleared the
-honest threshold do clear the full-sample one. The strategy records more
-`strong_return = TRUE` signals in the first quarter than it could have
-generated in real time – and that inflated count flows directly into the
-backtest’s apparent edge.
+drags the distribution down. The expanding rule uses only rows that
+precede each decision, so it is the causal comparison. Here the
+future-inclusive rule emits many more first-quarter signals. The exact
+count is less important than the direction: later observations changed
+earlier decisions.
 
 ## The Strategy Boundary
 
@@ -155,11 +199,7 @@ no market-data object from which it can casually index tomorrow’s bar.
 ``` r
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    if (ctx$close(id) > ctx$open(id)) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[which(ctx$vec$close > ctx$vec$open)] <- params$qty
   targets
 }
 ```
@@ -212,6 +252,13 @@ ledgr does not certify that the dataset, event timestamps, universe
 construction, parameter search, or custom vectorized feature code are
 causally clean.
 
+Use `vignette("point-in-time-inputs", package = "ledgr")` for
+knowledge-time facts and
+`vignette("survivorship-bias", package = "ledgr")` for membership,
+lifetime, and terminal-event evidence. Those tools make declared
+evidence executable; they cannot repair vendor data that never recorded
+when a value was actually knowable.
+
 | Risk | Why ledgr cannot fully solve it |
 |----|----|
 | Survivorship-biased universe | A snapshot may already exclude dead or unavailable instruments. |
@@ -236,8 +283,9 @@ causally clean.
 >
 > ### Try it
 >
-> Write down one dataset in your workflow that does not come from price
-> bars. What timestamp says when a strategy was allowed to know it?
+> Change the weak later regime to a strong one and rerun the expanding
+> comparison. Which early decisions change under the full-sample rule, and
+> why can the expanding rule not see that regime yet?
 
 
 ## What To Remember

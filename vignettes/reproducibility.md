@@ -71,20 +71,14 @@ hashed, and stored with the run. Hidden globals are not.
 ``` r
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[which(ctx$vec$close > params$threshold)] <- params$qty
   targets
 }
 ```
 
-The same rule matters for future sweep workers. Sweep mode can send
-explicit parameter combinations to workers. It cannot reliably send an
-arbitrary interactive session.
+The same rule matters for every saved run and sweep row: explicit values
+can be canonicalized and hashed; an arbitrary interactive session
+cannot.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
@@ -92,15 +86,9 @@ snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
 features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
+  ret_5 <- ctx$vec$feature("return_5")
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    ret_5 <- ctx$feature(id, "return_5")
-    if (is.finite(ret_5) && ret_5 > params$min_return) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
   targets
 }
 
@@ -118,6 +106,11 @@ bt <- ledgr_run(
   run_id = "qty_10"
 )
 ```
+
+    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+    next-open fill model requires a following bar. No fill was emitted for this target
+    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+    should be fillable.
 
 ## The Provenance Model
 
@@ -149,14 +142,14 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      a591d498348aaa751c8225c395da6ede98d709475219db59d2810d93860d7e5d
-    Strategy Hash:    f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
+    Config Hash:      553295afc5e7fdca97d9c18bd17eea0462d1665ba4dc8a1866668d4ad4da644f
+    Strategy Hash:    5b043868c4df8e9624c39b13594e7e662e79f0959480a24c3f56f41b9ebe153c
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.880
+    Elapsed Sec:      0.920
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -176,7 +169,7 @@ stored
 
     Run ID:           qty_10
     Reproducibility:  tier_1
-    Source Hash:      f4b2b315e3352a0ac466722988f4deb3d925056b6dff585dbb102ed405ccce91
+    Source Hash:      5b043868c4df8e9624c39b13594e7e662e79f0959480a24c3f56f41b9ebe153c
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Hash Verified:    TRUE
     Trust:            FALSE
@@ -188,13 +181,9 @@ writeLines(stored$strategy_source_text)
 
     function (ctx, params)
     {
+        ret_5 <- ctx$vec$feature("return_5")
         targets <- ctx$flat()
-        for (id in ctx$universe) {
-            ret_5 <- ctx$feature(id, "return_5")
-            if (is.finite(ret_5) && ret_5 > params$min_return) {
-                targets[id] <- params$qty
-            }
-        }
+        targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
         targets
     }
 
@@ -316,6 +305,37 @@ ledgr does not turn them into replayable run parameters. Prefer putting
 values that define the research question into `params`, especially for
 sweeps.
 
+``` r
+captured_threshold <- 100
+
+tier_2_captured <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets[which(ctx$vec$close > captured_threshold)] <- params$qty
+  targets
+}
+
+tier_1_parameterized <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets
+}
+
+list(
+  captured_value = ledgr_strategy_preflight(tier_2_captured)$tier,
+  explicit_parameter = ledgr_strategy_preflight(tier_1_parameterized)$tier
+)
+```
+
+    $captured_value
+    [1] "tier_2"
+
+    $explicit_parameter
+    [1] "tier_1"
+
+Both functions are inspectable, but only the second makes the threshold
+a declared run input. That is why the tier changes even though the
+arithmetic is the same.
+
 Captured mutable environments may be classified as Tier 2 because ledgr
 can resolve that the object exists. Do not treat that classification as
 approval. If the object can change between runs or workers, move the
@@ -370,9 +390,31 @@ ledgr_strategy_preflight(tier_3_strategy)
     Unresolved Symbols: my_helper
 
 Tier 3 strategies fail before execution. There is no `force = TRUE`
-override on `ledgr_run()` or `ledgr_sweep()`; move external values into
-`params`, qualify package calls, or use ledgr’s exported helpers
-instead.
+override on `ledgr_run()` or `ledgr_sweep()`. Move scalar configuration
+into `params`, qualify package calls, or place a small helper inside the
+strategy body so its source is captured. Do not put function objects in
+`params`; run parameters must remain JSON-safe values.
+
+``` r
+repaired_strategy <- function(ctx, params) {
+  choose_targets <- function(context, quantity) {
+    targets <- context$flat()
+    targets[which(context$vec$close > params$threshold)] <- quantity
+    targets
+  }
+
+  choose_targets(ctx, params$qty)
+}
+
+ledgr_strategy_preflight(repaired_strategy)
+```
+
+    ledgr Strategy Preflight
+    =========================
+
+    Tier:    tier_1
+    Allowed: TRUE
+    Reason:  Strategy is self-contained under ledgr's static preflight rules.
 
 Preflight rejection is the first boundary. A covered Tier 3 strategy
 stops before fold execution, before output-handler side effects, and

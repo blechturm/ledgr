@@ -110,20 +110,13 @@ stored with the run. Hidden globals are not.
 
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > params$threshold) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[which(ctx$vec$close > params$threshold)] <- params$qty
   targets
 }
 ```
 
-The same rule matters for future sweep workers. Sweep mode can send explicit
-parameter combinations to workers. It cannot reliably send an arbitrary
-interactive session.
+The same rule matters for every saved run and sweep row: explicit values can be
+canonicalized and hashed; an arbitrary interactive session cannot.
 
 ```{r}
 #| label: experiment-shape
@@ -133,15 +126,9 @@ snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
 features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
+  ret_5 <- ctx$vec$feature("return_5")
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    ret_5 <- ctx$feature(id, "return_5")
-    if (is.finite(ret_5) && ret_5 > params$min_return) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
   targets
 }
 
@@ -293,6 +280,33 @@ to the preflight because they exist in the strategy closure, but ledgr does not
 turn them into replayable run parameters. Prefer putting values that define the
 research question into `params`, especially for sweeps.
 
+```{r}
+#| label: captured-value-contrast
+
+captured_threshold <- 100
+
+tier_2_captured <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets[which(ctx$vec$close > captured_threshold)] <- params$qty
+  targets
+}
+
+tier_1_parameterized <- function(ctx, params) {
+  targets <- ctx$flat()
+  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets
+}
+
+list(
+  captured_value = ledgr_strategy_preflight(tier_2_captured)$tier,
+  explicit_parameter = ledgr_strategy_preflight(tier_1_parameterized)$tier
+)
+```
+
+Both functions are inspectable, but only the second makes the threshold a
+declared run input. That is why the tier changes even though the arithmetic is
+the same.
+
 Captured mutable environments may be classified as Tier 2 because ledgr can
 resolve that the object exists. Do not treat that classification as approval.
 If the object can change between runs or workers, move the value into `params`
@@ -340,8 +354,26 @@ ledgr_strategy_preflight(tier_3_strategy)
 ```
 
 Tier 3 strategies fail before execution. There is no `force = TRUE` override on
-`ledgr_run()` or `ledgr_sweep()`; move external values into `params`, qualify
-package calls, or use ledgr's exported helpers instead.
+`ledgr_run()` or `ledgr_sweep()`. Move scalar configuration into `params`,
+qualify package calls, or place a small helper inside the strategy body so its
+source is captured. Do not put function objects in `params`; run parameters
+must remain JSON-safe values.
+
+```{r}
+#| label: tier-3-repair
+
+repaired_strategy <- function(ctx, params) {
+  choose_targets <- function(context, quantity) {
+    targets <- context$flat()
+    targets[which(context$vec$close > params$threshold)] <- quantity
+    targets
+  }
+
+  choose_targets(ctx, params$qty)
+}
+
+ledgr_strategy_preflight(repaired_strategy)
+```
 
 Preflight rejection is the first boundary. A covered Tier 3 strategy stops
 before fold execution, before output-handler side effects, and before later

@@ -178,6 +178,11 @@ resolved for that candidate. `params$threshold` and `params$qty` come from the
 strategy grid. For the full strategy contract, read
 `vignette("strategy-development", package = "ledgr")`.
 
+The per-instrument read is necessary for active aliases today: ledgr does not
+yet expose an alias-aware whole-universe vector accessor. Fixed feature IDs
+should use `ctx$vec$feature(feature_id)`; this loop is a disclosed boundary,
+not the preferred pattern for ordinary maps.
+
 An **active alias** is a stable strategy-facing feature name whose concrete
 indicator can vary by candidate. The strategy can keep reading
 `values[["fast"]]` and `values[["slow"]]` even when one candidate uses SMA(5)
@@ -281,9 +286,21 @@ flowchart TB
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
 
-Change `slow_n` to `c(20L, 40L, 60L)` and rerun the sweep. The strategy code
-does not change. How many candidates appear after `.filter`, and which
-candidate rows still use the same `fast` and `slow` aliases?
+Run this larger grid. The strategy code and its `fast` and `slow` aliases do
+not change; only the concrete feature parameters do.
+
+```{r}
+expanded_grid <- ledgr_grid_cross(
+  features = ledgr_feature_grid(
+    fast_n = c(5L, 10L),
+    slow_n = c(20L, 40L, 60L),
+    .filter = fast_n < slow_n
+  ),
+  strategy = strategy_grid
+)
+
+c(original = length(grid$params), expanded = length(expanded_grid$params))
+```
 :::
 
 ## Precompute Shared Features
@@ -322,9 +339,15 @@ sweep <- ledgr_sweep(
 )
 
 sweep
+bind_cols(
+  sweep |> select(candidate_id, status) |> slice_head(n = 6),
+  bind_rows(lapply(sweep$params[1:6], as.data.frame)),
+  bind_rows(lapply(sweep$feature_params[1:6], as.data.frame))
+)
 ```
 
-The table contains candidate summaries. It is not a full artifact store and it
+The second view connects each status row to the strategy and feature parameters
+that produced it. The table is not a full artifact store and it
 does not write durable candidate ledgers, equity curves, feature panels, or
 telemetry rows. Each row keeps the compact reproduction key needed for later
 materialization: snapshot identity, selector, strategy identity, feature
@@ -438,9 +461,9 @@ ledgr_sweep_returns(reopened_sweep) |>
   slice_head(n = 5)
 ```
 
-## Three Evidence Tiers
+## Three Retention Levels
 
-Sweeps now give you three different levels of evidence. Use the cheapest level
+Sweeps give you three retention levels. Use the cheapest level
 that answers the question in front of you, then promote only the candidate that
 needs committed-run artifacts.
 
@@ -494,7 +517,7 @@ promotion. That demonstrates that a saved sweep reopens to the same
 dplyr-friendly surface as the in-session result.
 
 The default sweep path is memory-backed and uses the canonical R accounting
-fold. When your workload is spot-asset FIFO and you want the scoped B2
+fold. When your workload is spot-asset FIFO and you want the scoped compiled
 accelerator, opt in explicitly:
 
 ```{r}
@@ -644,8 +667,6 @@ Sweep mode intentionally leaves some decisions outside the API. It does not
 ship:
 
 - automatic ranking, objective functions, or `ledgr_tune()`;
-- per-fold walk-forward PBO, CPCV, DSR, or benchmark diagnostics;
-- risk-layer insertion;
 - cost-grid composition such as `ledgr_cost_grid()`;
 - paper/live trading adapters;
 - intraday-specific support;

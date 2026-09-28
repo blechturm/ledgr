@@ -80,7 +80,6 @@ The blunt example is `lead(close)`: tomorrow's close placed onto today's row.
 
 ```{r}
 #| label: lead-close
-#| eval: false
 
 leaky_signals <- bars |>
   group_by(instrument_id) |>
@@ -89,6 +88,10 @@ leaky_signals <- bars |>
     tomorrow_close = lead(close),
     buy_signal = tomorrow_close > close
   )
+
+leaky_signals |>
+  select(instrument_id, ts_utc, close, tomorrow_close, buy_signal) |>
+  slice_head(n = 4)
 ```
 
 The resulting `buy_signal` looks like an ordinary column, but it answers a
@@ -106,7 +109,6 @@ calling `lead()`.
 
 ```{r}
 #| label: full-sample-quantile
-#| eval: false
 
 leaky_features <- bars |>
   group_by(instrument_id) |>
@@ -115,6 +117,11 @@ leaky_features <- bars |>
     ret_5 = close / lag(close, 5) - 1,
     strong_return = ret_5 > quantile(ret_5, 0.75, na.rm = TRUE)
   )
+
+leaky_features |>
+  select(instrument_id, ts_utc, ret_5, strong_return) |>
+  filter(!is.na(ret_5)) |>
+  slice_head(n = 4)
 ```
 
 There is no future row reference in the final rule. The leak happened earlier:
@@ -137,23 +144,30 @@ ret_5 <- c(
   rnorm(189, mean = -0.001, sd = 0.012)   # remaining three quarters: weak
 )
 
-full_sample <- quantile(ret_5, 0.75, na.rm = TRUE)
-early_window <- quantile(ret_5[seq_len(63)], 0.75, na.rm = TRUE)
+full_sample <- unname(quantile(ret_5, 0.75, na.rm = TRUE))
+expanding <- vapply(seq_along(ret_5), function(i) {
+  if (i <= 20L) {
+    return(NA_real_)
+  }
+  unname(quantile(ret_5[seq_len(i - 1L)], 0.75, na.rm = TRUE))
+}, numeric(1))
 
-thresholds <- c(
-  full_sample = unname(full_sample),
-  early_window = unname(early_window)
+first_quarter <- seq_len(63L)
+tibble(
+  rule = c("full sample", "expanding, prior rows only"),
+  threshold_at_quarter_end = c(full_sample, expanding[[63L]]),
+  first_quarter_signals = c(
+    sum(ret_5[first_quarter] > full_sample),
+    sum(ret_5[first_quarter] > expanding[first_quarter], na.rm = TRUE)
+  )
 )
-
-cat(sprintf("full_sample  %.4f\nearly_window %.4f\n", thresholds[["full_sample"]], thresholds[["early_window"]]))
 ```
 
 The full-sample threshold is lower because the later weak-return period drags
-the distribution down. Early rows that would not have cleared the honest
-threshold do clear the full-sample one. The strategy records more
-`strong_return = TRUE` signals in the first quarter than it could have
-generated in real time -- and that inflated count flows directly into the
-backtest's apparent edge.
+the distribution down. The expanding rule uses only rows that precede each
+decision, so it is the causal comparison. Here the future-inclusive rule emits
+many more first-quarter signals. The exact count is less important than the
+direction: later observations changed earlier decisions.
 
 ## The Strategy Boundary
 
@@ -187,11 +201,7 @@ market-data object from which it can casually index tomorrow's bar.
 
 strategy <- function(ctx, params) {
   targets <- ctx$flat()
-  for (id in ctx$universe) {
-    if (ctx$close(id) > ctx$open(id)) {
-      targets[id] <- params$qty
-    }
-  }
+  targets[which(ctx$vec$close > ctx$vec$open)] <- params$qty
   targets
 }
 ```
@@ -242,6 +252,12 @@ ledgr does not certify that the dataset, event timestamps, universe
 construction, parameter search, or custom vectorized feature code are causally
 clean.
 
+Use `vignette("point-in-time-inputs", package = "ledgr")` for knowledge-time
+facts and `vignette("survivorship-bias", package = "ledgr")` for membership,
+lifetime, and terminal-event evidence. Those tools make declared evidence
+executable; they cannot repair vendor data that never recorded when a value was
+actually knowable.
+
 | Risk | Why ledgr cannot fully solve it |
 | --- | --- |
 | Survivorship-biased universe | A snapshot may already exclude dead or unavailable instruments. |
@@ -263,8 +279,9 @@ clean.
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
 
-Write down one dataset in your workflow that does not come from price bars.
-What timestamp says when a strategy was allowed to know it?
+Change the weak later regime to a strong one and rerun the expanding comparison.
+Which early decisions change under the full-sample rule, and why can the
+expanding rule not see that regime yet?
 :::
 
 ## What To Remember
