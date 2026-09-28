@@ -1,7 +1,7 @@
 # v0.2.0.2 Vignette Audit
 
-**Status:** Frozen findings and proposed dispositions; awaiting maintainer
-acceptance before LDG-2885 through LDG-2888 start.
+**Status:** Accepted frozen findings and dispositions. Product repairs P4
+through P6 precede the documentation-correction workstream.
 
 **Audit date:** 2026-09-28
 
@@ -44,8 +44,9 @@ resolution, and a freshness render. The probes independently reproduced:
   `values must be length 1`;
 - a bundle entered as `bands = ledgr_ind_ttr_outputs(...)` exposes names
   `bbands_dn` and `bbands_up`, silently discarding the outer alias;
-- integer-backed `POSIXct` input reaches snapshot insertion and reports
-  `Bars insert failed (likely duplicate PKs)` instead of the type defect.
+- integer-backed `POSIXct` input reaches the DuckDB insertion boundary and
+  reports `Bars insert failed (likely duplicate PKs)` instead of accepting the
+  valid instant representation.
 
 The freshness run rendered the ordinary root articles. It found eight stale
 Markdown siblings: Cash Distributions, Custom Indicators, Metric Contexts,
@@ -54,8 +55,8 @@ checker itself could not cover all 26 articles; Section 4 records why.
 
 ## 2. Per-Article Verdicts
 
-The table is the frozen correction register. Ticket codes in parentheses are
-the proposed owners: F = LDG-2885, W = LDG-2886, O = LDG-2887, and X =
+The table is the accepted correction register. Ticket codes in parentheses are
+the owners: F = LDG-2885, W = LDG-2886, O = LDG-2887, and X =
 LDG-2888.
 
 | Article | S | W | C | R | L | Capability ladder |
@@ -249,16 +250,17 @@ style-guide defects are additional LDG-2888 work but do not add article cells.
 
 ## 4. Product And API Findings
 
-Documentation cannot close these five findings. The maintainer must accept a
-release disposition before the correction tickets start.
+Documentation cannot close these five findings. On 2026-09-28 the maintainer
+accepted the dispositions below. P4 through P6 land before the related article
+corrections; P3 and P7 remain routed beyond this release.
 
-| Finding | Verified behavior | Proposed owner | Proposed release disposition |
+| Finding | Verified behavior | Owner | Accepted release disposition |
 | --- | --- | --- | --- |
 | P3: no whole-universe active-alias read | `ctx$vec$feature()` and `ledgr_signal_feature()` take engine IDs; mapped aliases require `ctx$features(id)` | Feature-engine RFC named by the strategy-helper synthesis | Defer to the next feature-engine cycle. This release must disclose the forced loop and must not warn as though a replacement existed. |
-| P4: feature-contract inspection fails opaquely | An unresolved parameterized map raises unclassed `simpleError` instead of an actionable ledgr condition | Feature-engine inspection surface | Defer with an explicit materialize-first instruction in this release; schedule classed validation with the active-alias design. |
-| P5: integer-backed POSIXct masks its cause | `ledgr_snapshot_from_df()` reports likely duplicate keys and an aborted transaction instead of the invalid timestamp storage type | Snapshot ingestion owner | Treat as a pre-tag product correction candidate. If deferred, the maintainer must accept the misleading-error non-claim explicitly; prose alone cannot repair it. |
-| P6: outer alias is discarded for TTR bundles | `bands = bundle` exposes bundle feature IDs such as `bbands_dn`, not `bands`; no warning explains that the outer alias has no effect | Feature-map and TTR-bundle owner | Defer to the feature-engine RFC unless the maintainer chooses a bounded validation error before tag. The TTR article must teach the actual naming rule. |
-| P7: explicit feature maps are validated twice per mapped read | `ctx$features(id, feature_map)` costs about 160 microseconds per call versus about 19 microseconds for the resolved alias form; the measured replacement is output-preserving | The v0.2.1.1 pulse/accessor performance cut anchored by `fold_writer_accessor_levers_spike/summary_report.md` | Defer with that already-scheduled performance work. Workstream 26 may correct how the idiom is taught but must not absorb the optimization. |
+| P4: feature-contract inspection fails opaquely | An unresolved parameterized map raises unclassed `simpleError` instead of an actionable ledgr condition | LDG-2890 | Fix before the tag by extending the existing materialize-first, classed refusal to unresolved parameterized declarations. This is a gap in the documented inspection contract, not a new feature-engine design. |
+| P5: integer-backed POSIXct masks its cause | `ledgr_snapshot_from_df()` reports likely duplicate keys and an aborted transaction instead of accepting the valid instant representation | LDG-2891 | Fix before the tag by accepting integer-backed `POSIXct` and proving snapshot-hash identity with the equivalent double-backed representation. |
+| P6: outer alias is discarded for TTR bundles | `bands = bundle` exposes bundle feature IDs such as `bbands_dn`, not `bands`; no warning explains that the outer alias has no effect | LDG-2892 | Fix before the tag with a classed refusal of the ignored outer alias. Bundle `prefix` and `naming` remain the supported naming surfaces. |
+| P7: explicit feature maps are validated twice per mapped read | `ctx$features(id, feature_map)` costs about 160 microseconds per call versus about 19 microseconds for the resolved alias form; the measured replacement is output-preserving | The v0.2.1.1 pulse/accessor performance cut anchored by `fold_writer_accessor_levers_spike/summary_report.md` | Defer with that already-scheduled performance work. Workstream 28 may correct how the idiom is taught but must not absorb the optimization. |
 
 No production change is authorized by this audit.
 
@@ -318,7 +320,7 @@ Every earlier item was rechecked at the current tree.
 
 ## 6. Stop State
 
-LDG-2859 is complete as an audit and remains `review_pending` until the
-maintainer accepts or changes the proposed dispositions. LDG-2885 through
-LDG-2888 must not start before that decision. This artifact changes no article,
-teaching claim, public API, production code, or test.
+LDG-2859 and Workstream 26 are complete. Accepted product repairs P4 through
+P6 land in Workstream 27 before LDG-2885 through LDG-2888 start in Workstream
+28. This artifact changes no article, teaching claim, public API, production
+code, or test.

@@ -411,7 +411,7 @@ four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
 
-## Cut 8: Release gate (open; opens after workstream 26)
+## Cut 8: Release gate (open; opens after workstream 28)
 
 Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
@@ -440,7 +440,7 @@ Cut 19 below. The audit's findings are fixed before the release, but fixing
 them and checking the fixes is its own workstream; the release gate should be
 mostly bureaucracy and mechanical checks. The gate keeps a freshness check over
 every article, and LDG-2824 checks that the README agrees with the release
-notes. LDG-2825 does not start until the maintainer accepts Workstream 26,
+notes. LDG-2825 does not start until the maintainer accepts Workstream 28,
 including each routed finding's release disposition.
 
 | Workstream | Tickets | Content | Review claim |
@@ -1026,7 +1026,7 @@ implementation. It permits the NOT SUPPLIED block to collapse to its exact two
 headlines plus a public full-policy pointer, and permits metrics to precede
 evidence while their established internal order and incomplete-run rules stay
 unchanged. LDG-2869 joins from its Cut 16 deferral. Workstream 25 follows
-accepted Workstream 24 and blocks Workstream 26.
+accepted Workstream 24 and starts the Cut 19 audit-to-correction sequence.
 
 Implementation is complete and the agent-provisional record is
 `result_output_closeout.md`. On the bars-only, supplied-fact and real
@@ -1047,7 +1047,7 @@ the checker passed the 112-second bound.
 
 Three metadata-bearing articles were regenerated here. The seven other stale
 result-output articles and the concurrent README rewrite are explicitly owned
-by dependent Workstream 26. The cut review, close review and focused re-review
+by dependent Workstream 28. The cut review, close review and focused re-review
 are 3/6 = 0.500. The maintainer accepted Workstream 25 and Cut 18 on
 2026-09-28 at `3f848f7`.
 
@@ -1058,19 +1058,42 @@ drift categories and capability ladder already bound in LDG-2859. The
 maintainer accepted the cut on 2026-09-28. This cut entry and its tickets are
 the operative brief; there is no duplicate brief file.
 
-The strategy-article audit's findings are fixed before the release, in their
-own workstream rather than in the release gate. LDG-2858 and LDG-2859 moved
-here from Workstream 15 with their IDs kept. LDG-2859 audits every article,
-starting from `../audits/v0_2_0_2_strategy_article_audit_input.md`, and freezes
-each finding with a proposed disposition; the maintainer accepts those before
-any correction starts. LDG-2858 is now the README rewrite for first-time users.
+The strategy-article audit's findings are fixed before the release, outside
+the release gate. LDG-2859 audited all 26 articles and froze 53 failed
+article/category cells in Workstream 26. Its independent review and the
+maintainer's disposition exposed three bounded product repairs, now Cut 20.
+Those repairs land before the related article corrections in Workstream 28.
+LDG-2858 remains the README rewrite for first-time users.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 26 Documentation corrections | 2858, 2859, 2885-2889 | rewrite and verify the README; audit every article and freeze dispositions; correct the feature, workflow, availability and execution articles and the cross-cutting findings; close with the final audit artifact | every tracked article and the README teach the shipped surface honestly and well, and every audit finding is corrected or routed with an accepted disposition |
+| 26 Vignette audit | 2859 | audit every article and freeze findings, owners and release dispositions | all 26 articles are accounted for across all five categories and all 53 failed cells have one accepted route |
+| 28 Documentation corrections | 2858, 2885-2889 | rewrite and verify the README; correct the feature, workflow, availability, execution and cross-cutting findings; close with the final audit artifact | every tracked article and the README teach the shipped surface honestly and well, and every audit finding is corrected or routed with an accepted disposition |
 
-Product or API defects the audit exposes are routed to owners with a release
-disposition, not implemented here. One Type 1 close review, read as a
-first-time learner, is 0.143 over seven tickets. Workstream 26 follows
-accepted Workstream 25 so the README and articles are corrected against the
-final result prints once, and the release gate follows accepted Workstream 26.
+Product or API defects the audit exposes are routed to owners and are not
+implemented under documentation tickets. Workstream 26 closed at 1/1 = 1.000,
+an honest historical breach; Workstream 28 plans one review over six tickets.
+The cut total is 2/7 = 0.286. Workstream 28 opens after accepted Workstream 27
+so the README and articles are corrected once against final product behavior.
+The release gate follows accepted Workstream 28.
+
+## Cut 20: Audit-discovered product boundary repairs (open)
+
+Authority: the accepted P4, P5 and P6 dispositions in
+`../audits/v0_2_0_2_vignette_audit.md`, the existing public contracts those
+findings violate, and the accepted alias-collision disposition from Q2 option A
+in the feature-map read-surface seed. No new helper or capability is added. The
+collision guard is an explicit conservative naming rule that its RFC may later
+refine.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 27 Product boundary repairs | 2890-2894 | class unresolved parameterized feature inspection; accept integer-backed POSIXct with hash identity; refuse ignored outer bundle aliases; refuse alias/engine-ID collisions; close and measure | four observed gaps are closed without adding feature-engine capability or changing snapshot identity, with one conservative fail-closed naming rule |
+
+P3, the missing whole-universe active-alias read, stays with the feature-engine
+RFC. P7, explicit-map double validation, stays with the scheduled v0.2.1.1
+pulse/accessor optimization cut. Workstream 27 lands between the accepted
+audit in Workstream 26 and the correction phase in Workstream 28; the release
+gate remains downstream of all three. This cut review plus one Type 1 close
+review is 2/5 = 0.400 against the gate. The collision rule adopts Q2 option A
+from the feature-map read-surface seed; that RFC may later refine it.
