@@ -38,12 +38,18 @@ documentation-contract block rather than by review.
    active aliases, which must loop over `ctx$features(id)`; show it with the
    disclosure sentence in Section 9.
 
-   Read features for a rule through the signal helpers, which name what is
-   read and, in availability-aware runs, already mark instruments that cannot
-   be targeted as missing: `ledgr_signal_return(ctx, lookback = 20)`, or
-   `ledgr_signal_feature(ctx, "sma_50")` for any registered feature. Name the
-   condition, then let the pipeline turn it into a target; its `missing`
-   argument states what a missing value, such as warmup, means:
+   Teach strategies as named-vector manipulation before any strategy helper
+   appears. No document before Strategy Basics in the reading flow, including
+   the README and Quickstart, uses a strategy helper: those strategies start
+   from `ctx$flat()`, name the condition, and assign with it without
+   `which()`, as in `targets[rising] <- params$qty`. Strategy Basics teaches
+   that hand-built form first and then shows that the helpers return the same
+   named vectors, because a strategy only ever returns shares per instrument.
+
+   After Strategy Basics, rules read features through the signal helpers,
+   which name what is read, and turn a named condition into a target with the
+   pipeline, whose `missing` argument states what a missing value, such as
+   warmup, means:
 
    ```r
    rising <- ledgr_signal_return(ctx, lookback = 20) > 0
@@ -53,20 +59,19 @@ documentation-contract block rather than by review.
    ```
 
    A rule sized from equity ends in `ledgr_weight_equal()` and
-   `ledgr_target_rebalance()` instead.
+   `ledgr_target_rebalance()` instead. Later articles use the hand-built form
+   only when manipulating the vector is the lesson.
 
-   Strategy Basics also teaches the same rule by hand and shows that both
-   return the same named numeric vector, because a strategy only ever returns
-   shares per instrument: start from `ctx$flat()`, name the condition, assign
-   with it without `which()`, `targets[rising] <- params$qty`, and handle
-   warmup explicitly. Other articles use the hand-built form only when
-   manipulating the vector is the lesson. There, when every instrument shares
-   one history, gate the pulse with
-   `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`; when instruments can
-   warm up at different times, fold a named mask into the condition,
-   `known <- !is.na(ret)`, then `rising <- known & ret > 0`. Do not rely on R
-   skipping `NA` in an assignment; it is invisible to the reader and fails once
-   each instrument gets its own value.
+   Every hand-built rule handles warmup explicitly and never relies on R
+   skipping `NA` in an assignment, which is invisible to the reader and fails
+   once each instrument gets its own value. When every instrument shares one
+   history, gate the pulse with
+   `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`; otherwise fold a named
+   mask into the condition, `known <- !is.na(ret)`, then
+   `rising <- known & ret > 0`. In availability-aware examples a hand-built
+   rule also applies eligibility through the surface the strategy-helper
+   contract defines (Cut 22, LDG-2906), so the same code is correct in dense
+   and ragged universes.
 2. The reader sees every strategy the lesson depends on, and it executes. The
    first strategy a reader runs, in the README and Quickstart, is always
    visible. A later article may run a `ledgr_demo_*` strategy after one
