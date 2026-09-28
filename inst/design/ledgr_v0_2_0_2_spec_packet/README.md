@@ -1073,12 +1073,13 @@ LDG-2858 remains the README rewrite for first-time users.
 Product or API defects the audit exposes are routed to owners and are not
 implemented under documentation tickets. Workstream 26 closed at 1/1 = 1.000,
 an honest historical breach. Workstream 28's initial review and focused
-re-review both returned `CHANGES_REQUIRED`. Its required final review will make
-three reviews over six tickets, 0.500. The resulting Cut 19 total is four
-reviews over seven tickets, 0.571, an honest historical breach. Workstream 28
-opened after accepted Workstream 27 so the README and
-articles are corrected once against final product behavior. The release gate
-follows accepted Workstream 28.
+re-review both returned `CHANGES_REQUIRED`. Its final focused review passed at
+`ecb3962`, making three reviews over six tickets, 0.500. The resulting Cut 19
+total is four reviews over seven tickets, 0.571, an honest historical breach.
+Workstream 28 opened after accepted Workstream 27 so the README and
+articles are corrected once against final product behavior. Cut 21's editorial
+pass, Workstream 29, follows accepted Workstream 28, and the release gate
+follows Workstream 29.
 
 The agent-provisional Workstream 28 implementation is recorded in
 `vignette_correction_closeout.md`. LDG-2858 is at `9edddb8`; LDG-2885 through
@@ -1090,9 +1091,9 @@ also returned `CHANGES_REQUIRED`; correction `40eeb42` closes its six bounded
 defects and makes all five claim mutations fail. Six article-reading test files
 pass, the recursive freshness checker verifies all 26 articles, and the
 ordinary fast profile passes 483/483 blocks in 104.400 seconds against the
-112.000-second gate. Broader flow findings are assigned to Cut 21. Tickets and
-Workstream 28 remain open pending final focused review and maintainer
-acceptance.
+112.000-second gate. Broader flow findings are assigned to Cut 21. The final
+focused review returned PASS at `ecb3962`. Tickets and Workstream 28 remain
+open pending maintainer acceptance.
 
 ## Cut 20: Audit-discovered product boundary repairs (open)
 

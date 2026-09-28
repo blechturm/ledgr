@@ -1,7 +1,7 @@
 # Workstream 28 Documentation Correction Closeout
 
-**Status:** Agent-provisional; awaiting Type 1 close review and maintainer
-acceptance.
+**Status:** Agent-provisional; final focused Type 1 review PASS at `ecb3962`;
+awaiting maintainer acceptance.
 
 **Authority:** Cut 19, Workstream 28, LDG-2858 and LDG-2885 through
 LDG-2889 in `tickets.yml`; the accepted findings in
@@ -126,11 +126,24 @@ evidence and is not a release artifact.
 
 ## Review Accounting And Stop
 
-Two Type 1 reviews have run over six Workstream 28 tickets: 2/6 = 0.333. The
-required final focused review will make that 3/6 = 0.500. Together with
-Workstream 26's accepted audit review, Cut 19 will stand at four reviews over
-seven tickets: 4/7 = 0.571, an honest historical gate breach. No ticket is
-added to repair the arithmetic.
+Three Type 1 reviews ran over six Workstream 28 tickets. The close review and
+the focused re-review returned `CHANGES_REQUIRED`. The final focused review at
+`ecb3962`, a mechanical check the maintainer counts as the third invocation,
+returned PASS on 2026-09-28. It found that:
+
+- the six article-reading test files pass;
+- the recursive freshness check verifies all 26 articles on the maintainer's
+  machine;
+- LTB-0080 and LTB-0074 fail when their protected text is removed;
+- 17 of 18 LTB-0116 mutations fail; and
+- the fast-gate records pass 483/483 in 104.400 seconds.
+
+The one surviving mutation rewords the proof-of-generalization claim, which the
+exact-phrase pin does not cover.
+
+Workstream 28 stands at 3/6 = 0.500. Together with Workstream 26's accepted
+audit review, Cut 19 stands at four reviews over seven tickets: 4/7 = 0.571,
+an honest historical gate breach. No ticket is added to repair the arithmetic.
 
 This closeout authorizes no release-gate command. Workstream 15 opens only
 after the Type 1 review passes and the maintainer accepts Workstream 28 and
