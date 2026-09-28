@@ -172,6 +172,12 @@ Survivorship 1018-1045.
   240; Metric Contexts 224, 240, 330, 374, 389; Research To Production 105.
   Data Input 166, 181, 200 already state reasons.
 - Scalar strategy reads: Custom 72; Execution Semantics 203.
+- The `targets[which(...)]` idiom (maintainer, 2026-09-28): 16 uses in the
+  README, Strategy Basics, Leakage, Experiment Store, Reproducibility, Missing
+  Data, Strategy Authoring Tools and Research Workflow become a named
+  condition with the warmup handling in house rule 1. The README strategy and
+  the Strategy Basics line `targets[which(ctx$vec$close > ctx$vec$open)] <- 1`
+  are pinned; the pins move with the text.
 - Unexplained demo strategies: Indicators 487; Research Workflow 259; Walk-
   Forward 100; Selection Integrity setup 534-586.
 - Stores reopened without `ledgr_temp_store()` or the persistent-path
@@ -234,6 +240,9 @@ The shared-input sections pinned by LTB-0080 are rewritten in reader terms.
 - P8 `?ledgr_indicator` documents one arity: LDG-2903 (D7).
 - The candidate print hides parameters behind hashes: sweep-surface reader
   question, already named in Cut 18's out-of-scope.
+- `ledgr_passed_warmup()` answers for the whole vector, so there is no
+  per-instrument warmup form over `ctx$vec`; articles use a named `!is.na()`
+  mask meanwhile: next maintenance cut.
 - `LEDGR_LAST_BAR_NO_FILL` fires once per instrument without naming it:
   warning-message owner in the next maintenance cut.
 - The run-list INCOMPLETE footer prints for DONE runs with NA completeness:

@@ -37,6 +37,17 @@ documentation-contract block rather than by review.
    inspecting one instrument. The one exception is a strategy that reads
    active aliases, which must loop over `ctx$features(id)`; show it with the
    disclosure sentence in Section 9.
+
+   Write the rule as a named condition and assign with it, without `which()`:
+   `rising <- ret > 0`, then `targets[rising] <- params$qty`. Handle warmup
+   as an explicit decision. When every instrument shares one history, gate
+   the whole pulse with the shipped helper,
+   `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`. When instruments can
+   warm up at different times, as in availability-aware examples, fold a
+   named per-instrument mask into the condition: `known <- !is.na(ret)`, then
+   `rising <- known & ret > 0`. Do not rely on R skipping `NA` in an
+   assignment; it is invisible to the reader and fails once each instrument
+   gets its own value.
 2. The reader sees every strategy the lesson depends on, and it executes. The
    first strategy a reader runs, in the README and Quickstart, is always
    visible. A later article may run a `ledgr_demo_*` strategy after one
