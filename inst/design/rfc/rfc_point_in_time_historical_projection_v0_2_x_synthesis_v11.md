@@ -1,11 +1,15 @@
 # RFC Synthesis v11: Point-in-Time Historical Projection With Missing Data
 
-**Status:** Consolidated successor for review, requested by the maintainer on
-2026-09-28. The simplification direction is authorized; this text awaits final
-verification and maintainer acceptance. Until then, accepted v10 remains the
-operative synthesis. This document authorizes no implementation or spike.
+**Status:** Consolidated successor awaiting maintainer acceptance, requested
+2026-09-28. The simplification direction is authorized. Until acceptance, v10
+remains operative. This document authorizes no implementation or spike.
 **Mode:** Decision synthesis. **Author:** Codex, at maintainer request; this
-departs from the earlier author rotation. Independent final review remains due.
+departs from the earlier author rotation.
+**Final verification:** Claude's Type 1 review of `8c3e1aa` on 2026-09-28
+returned PASS with two low-severity findings, corrected here: F1 distinguishes
+full snapshots from small controls; F2 gives evidence preservation an owner at
+ticket cut. The review checked the reported figures against local evidence CSVs;
+no new package or source-data execution is claimed.
 **Basis:** Accepted [v10][v10] and the [missingness amendment][amendment].
 Original baselines: design `491c4ed`, implementation `ae040e7`. Current reading
 baseline: `d7c6d7f4c80c36d4f6b1c4ac88bfa9a4fe4afa80`. No package code was executed.
@@ -45,12 +49,14 @@ recorded charter deviations remain deviations, not protocol compliance.
 The subsequent exposure investigation was reported to the maintainer on
 2026-09-27 at `dev/spikes/revision-exposure/revision_exposure_report.md`, with
 seven scripts and seven evidence CSVs. They were untracked and are unavailable
-at this document's reading baseline. The following are **maintainer-supplied
-results**, not independently rerun or verified by this rewrite:
+at this document's reading baseline. Originally maintainer-supplied, these
+figures were subsequently checked against the local evidence CSVs in Claude's
+Type 1 review. This rewrite did not rerun the investigation; preservation of
+its report, scripts and CSVs remains an explicit section 7 obligation:
 
 | Investigation | Reported result | Supported inference |
 | --- | --- | --- |
-| Fourteen built baselines, 2019-2021 | 562 instruments, 413,532 bars; 224,732 facts with no encoded positive knowledge lag | Describes the adapter's constructed clocks, not observed publication timing |
+| Fourteen built baselines, 2019-2021 | Ten snapshots each with 562 instruments and 413,532 bars; four controls each with 5 instruments and 100 bars; 224,732 facts across all fourteen, with no encoded positive knowledge lag | Describes the adapter's constructed clocks, not observed publication timing |
 | Declared calendar and active spans | 127,875 expected sessions, zero absent; spans cover 175 instruments, with no span assumed for the other 387 | No missing-session run length to tune carry age in this declared subset |
 | Comparable source captures, 17 hours apart | A terminal-date correction for FDMLQ, from 2007-12-27 to 2002-04-24 | A source correction exists; its timing and consequences need attribution |
 | That correction traced through prices and indicators | No absent cells affected by carry; the final bar changes one indicator cell at each tested width, 5, 20, 60 and 200; FDMLQ occurs in none of the fourteen workloads | Zero affected intended requests from the attributed correction |
@@ -283,10 +289,12 @@ multi-stage experiment is chartered here. Ordinary implementation verification
 does not become a spike merely because it measures its own cost.
 
 At ticket cut, map each retained requirement to an owner, including the
-contract amendment, required-field declaration, companion representation and
-context-surface registration. Keep the independently scheduled narrowing work
-explicit. A missing feasible representation or unaffordable simple preparation
-returns that concrete issue to the maintainer; it does not silently weaken
+contract amendment, required-field declaration, companion representation,
+context-surface registration, and preservation in the repository of the exposure
+report, its scripts and evidence CSVs with their source and workload provenance.
+Keep the independently scheduled narrowing work explicit. A missing feasible
+representation or unaffordable simple preparation returns that concrete issue
+to the maintainer; it does not silently weaken
 causality, omit carry, or authorize an optimization project.
 
 ## 8. Contract changes and detecting requirements
@@ -363,10 +371,10 @@ full runtime backing in both modes. Cut 13 subsequently repaired supported
 access, as recorded in v10 and the current Context Contract. The fact that
 complete data remains internal does not require physical bounded-slice closures.
 
-Next: independently verify this consolidation, accept or correct it, and use
-section 7 for the next-release ticket cut. Preserve the local exposure report
-with its scripts and CSVs when integrating. The RFC index and roadmap distinguish
-this successor from accepted v10; no fresh seed cycle is needed.
+Next: accept or correct the verified consolidation, and use section 7 for the
+next-release ticket cut. Preserve the local exposure report with its scripts
+and CSVs when integrating. The RFC index and roadmap distinguish this successor
+from accepted v10; no fresh seed cycle is needed.
 
 [v10]: rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md
 [amendment]: rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md

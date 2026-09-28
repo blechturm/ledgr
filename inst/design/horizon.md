@@ -31,14 +31,16 @@ an architecture note, or a spec packet.
 The maintainer requested a consolidated historical-projection synthesis after
 exposure was traced to requested values rather than inferred from event counts.
 [Synthesis v11](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
-records that direction and awaits final verification and acceptance. Accepted
-v10 and the spike remain the derivation and correction record.
+records that direction, passed Claude's Type 1 verification on 2026-09-28,
+and awaits maintainer acceptance. Accepted v10 and the spike remain the
+derivation and correction record.
 
 The reported terminal-date correction affected one FDMLQ indicator cell at each
 tested width and no requests in the fourteen intended workloads. The separately
 reported execution check matched all 10,486 fills and found none on zero-volume
-bars. These are scoped maintainer-supplied results; the local exposure report,
-scripts and CSVs still need preservation. Assigned `assume_effective` clocks do
+bars. Claude checked these scoped results against the local evidence CSVs in
+final review. Section 7 assigns ownership for preserving the exposure report,
+scripts and CSVs. Assigned `assume_effective` clocks do
 not establish empirical absence of late arrival, and the source-capture interval
 does not establish a historical revision rate.
 
