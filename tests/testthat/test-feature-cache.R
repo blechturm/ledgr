@@ -150,6 +150,27 @@ testthat::test_that("feature cache key changes with indicator identity and date 
   testthat::expect_false(identical(ledgr:::ledgr_feature_engine_version(), "v0.1.4-series-fn-1"))
 })
 
+testthat::test_that("[LTB-0105] scalar helpers enter feature-engine identity", {
+  baseline <- ledgr:::ledgr_feature_engine_version()
+  changed_window <- local({
+    testthat::local_mocked_bindings(
+      ledgr_compute_feature_scalar_at = function(...) -1,
+      .package = "ledgr"
+    )
+    ledgr:::ledgr_feature_engine_version()
+  })
+  changed_normalizer <- local({
+    testthat::local_mocked_bindings(
+      ledgr_normalize_feature_scalar_output = function(...) -2,
+      .package = "ledgr"
+    )
+    ledgr:::ledgr_feature_engine_version()
+  })
+
+  testthat::expect_false(identical(changed_window, baseline))
+  testthat::expect_false(identical(changed_normalizer, baseline))
+})
+
 testthat::test_that("feature cache key is a deterministic length-prefixed session key", {
   def <- list(
     id = "key_probe",

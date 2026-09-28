@@ -15,6 +15,16 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
       include_captures = FALSE,
       label = "`ledgr_normalize_feature_series_output()`"
     ),
+    compute_scalar_at = ledgr_function_fingerprint(
+      ledgr_compute_feature_scalar_at,
+      include_captures = FALSE,
+      label = "`ledgr_compute_feature_scalar_at()`"
+    ),
+    normalize_scalar = ledgr_function_fingerprint(
+      ledgr_normalize_feature_scalar_output,
+      include_captures = FALSE,
+      label = "`ledgr_normalize_feature_scalar_output()`"
+    ),
     call_series_fn = ledgr_function_fingerprint(
       ledgr_call_feature_series_fn,
       include_captures = FALSE,
