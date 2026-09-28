@@ -39,9 +39,10 @@ test_that("ledgr_snapshot_from_df rejects sub-second POSIXct bars", {
 })
 
 test_that("[LTB-0113] integer-backed POSIXct seals with canonical identity", {
+  dates <- as.Date("2020-01-01") + 0:5
   double_bars <- ledgr_test_make_bars(
     c("AAA", "BBB"),
-    as.Date("2020-01-01") + 0:5
+    dates
   )
   double_bars$ts_utc <- as.POSIXct(double_bars$ts_utc, tz = "UTC")
   integer_bars <- double_bars
@@ -49,8 +50,34 @@ test_that("[LTB-0113] integer-backed POSIXct seals with canonical identity", {
   expect_identical(typeof(double_bars$ts_utc), "double")
   expect_identical(typeof(integer_bars$ts_utc), "integer")
 
-  double_snapshot <- ledgr_snapshot_from_df(double_bars)
-  integer_snapshot <- ledgr_snapshot_from_df(integer_bars)
+  double_knowledge <- as.POSIXct(dates - 1, tz = "UTC")
+  integer_knowledge <- double_knowledge
+  storage.mode(integer_knowledge) <- "integer"
+  expect_identical(typeof(double_knowledge), "double")
+  expect_identical(typeof(integer_knowledge), "integer")
+  make_facts <- function(knowledge_time) {
+    ledgr_facts(ledgr_facts_sessions(
+      data.frame(
+        session_date = dates,
+        status = rep("open", length(dates)),
+        session_open = rep("09:30:00", length(dates)),
+        session_close = rep("16:00:00", length(dates)),
+        knowledge_time = knowledge_time,
+        stringsAsFactors = FALSE
+      ),
+      venue_id = "TEST",
+      timezone = "UTC"
+    ))
+  }
+  double_facts <- make_facts(double_knowledge)
+  integer_facts <- make_facts(integer_knowledge)
+  expect_identical(
+    typeof(integer_facts$families[[1L]]$rows$knowledge_time),
+    "double"
+  )
+
+  double_snapshot <- ledgr_snapshot_from_df(double_bars, facts = double_facts)
+  integer_snapshot <- ledgr_snapshot_from_df(integer_bars, facts = integer_facts)
   on.exit(ledgr_snapshot_close(double_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(integer_snapshot), add = TRUE)
 
@@ -66,6 +93,22 @@ test_that("[LTB-0113] integer-backed POSIXct seals with canonical identity", {
     )
   }
   expect_identical(read_bars(integer_snapshot), read_bars(double_snapshot))
+  read_sessions <- function(snapshot) {
+    DBI::dbGetQuery(
+      ledgr:::get_connection(snapshot),
+      paste(
+        "SELECT venue_id, session_date, effective_from, effective_to,",
+        "knowledge_time, status, session_open, session_close, provenance_json",
+        "FROM snapshot_sessions WHERE snapshot_id = ?",
+        "ORDER BY venue_id, session_date"
+      ),
+      params = list(snapshot$snapshot_id)
+    )
+  }
+  expect_identical(
+    read_sessions(integer_snapshot),
+    read_sessions(double_snapshot)
+  )
   expect_identical(
     ledgr_snapshot_info(integer_snapshot)$snapshot_hash,
     ledgr_snapshot_info(double_snapshot)$snapshot_hash

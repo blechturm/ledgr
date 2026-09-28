@@ -1180,6 +1180,9 @@ ledgr_fact_time <- function(x, field, allow_missing = TRUE) {
       class = c("ledgr_fact_invalid_time", "ledgr_invalid_args")
     )
   }
+  # DuckDB rejects valid POSIXct vectors backed by integer epoch seconds.
+  # Preserve the validated instants while canonicalizing their storage once.
+  storage.mode(out) <- "double"
   out
 }
 

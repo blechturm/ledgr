@@ -134,6 +134,18 @@ testthat::test_that("[LTB-0115] feature maps refuse cross-entry alias collisions
     ledgr_feature_id(own_id),
     c(sma_5 = "sma_5", trend = "sma_10")
   )
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_validate_feature_map_alias_id_collisions = function(...) {
+        stop("feature-map reads repeated the construction-only collision check")
+      },
+      .package = "ledgr"
+    )
+    testthat::expect_identical(
+      ledgr:::ledgr_feature_lookup_map(own_id),
+      c(sma_5 = "sma_5", trend = "sma_10")
+    )
+  })
 
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:23)
   snapshot <- ledgr_snapshot_from_df(bars)

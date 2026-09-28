@@ -279,7 +279,6 @@ ledgr_validate_feature_map_object <- function(x) {
   if (length(concrete_ids) > 0L) {
     ledgr_abort_duplicate_feature_ids(concrete_ids)
   }
-  ledgr_validate_feature_map_alias_id_collisions(aliases, feature_ids)
   invisible(TRUE)
 }
 
