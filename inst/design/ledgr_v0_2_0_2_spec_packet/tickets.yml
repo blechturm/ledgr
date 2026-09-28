@@ -76,7 +76,7 @@ cuts:
   - id: 8
     name: "Release gate"
     cut: "2026-09-25"
-    cut_review: "compressed into the close review of workstream 15, as cuts 5 and 7 were, so one invocation covers the workstream: 1 review over 2 completed tickets is 0.500 against the 0.5 gate. The teaching-surface tickets LDG-2858 and LDG-2859, added on 2026-09-26, made it 1 over 4; the draft Cut 19 of 2026-09-28 moves them to workstream 26, returning the gate to its two original tickets. The tickets are not a split for the ratio. LDG-2824 is user-facing content that is wrong in the tree today and would need writing even if the release slipped; LDG-2825 is the gate execution and its evidence record. They share no implementation and have separate acceptance, and one reviewer reading both in one pass is the natural shape. A correction round would make it 2 over 2, 1.00, and must be recorded rather than hidden, as cut 7 recorded its own."
+    cut_review: "compressed into the close review of workstream 15, as cuts 5 and 7 were, so one invocation covers the workstream: 1 review over 2 completed tickets is 0.500 against the 0.5 gate. The teaching-surface tickets LDG-2858 and LDG-2859, added on 2026-09-26, made it 1 over 4; Cut 19, accepted on 2026-09-28, moved them to workstream 26, returning the gate to its two original tickets. The tickets are not a split for the ratio. LDG-2824 is user-facing content that is wrong in the tree today and would need writing even if the release slipped; LDG-2825 is the gate execution and its evidence record. They share no implementation and have separate acceptance, and one reviewer reading both in one pass is the natural shape. A correction round would make it 2 over 2, 1.00, and must be recorded rather than hidden, as cut 7 recorded its own."
     authority: "inst/design/release_ci_playbook.md, in particular its Release-Gate Ticket Requirements and What Counts as Green sections; the CI Tiers section added 2026-09-25 when R-CMD-check.yaml was tiered"
     source_table: "release_ci_playbook.md: the Release Order, the local-gate checklist, the Ubuntu and DuckDB triage rules, and the tag and GitHub Release handling; NEWS.md as it stands at the cut"
     workstreams: [15]
@@ -190,27 +190,29 @@ cuts:
   - id: 18
     name: "Maintenance: result output"
     cut: "2026-09-28"
-    draft_note: "Agent-drafted on 2026-09-28 at the maintainer's request, on branch `draft/cut18-result-output` in a separate worktree so that workstream 24, in progress in the main working tree, is not disturbed. Nothing here is authorized until the maintainer accepts the cut and writes the workstream brief. Status `draft` on the cut, workstream and new tickets marks that. Ticket IDs LDG-2880 to LDG-2884 are reserved for this cut; LDG-2879 is left free for workstream 24."
-    cut_review: "not yet reviewed. Proposed: one independent Type 1 and Type 2 cut review, because LDG-2881 needs a decision against the accepted equity-settlement synthesis and `contracts.md:552-557`, then one Type 1 close review. Planned invocations are 2 over 6 tickets, 0.333 against the 0.5 gate."
+    opening: "The maintainer accepted the draft cut on 2026-09-28. This cut entry, its recorded decisions and the ticket acceptance criteria are the operative Workstream 25 brief; no duplicate brief artifact is created. Implementation starts after the cut review below has answered LDG-2881's two questions. LDG-2879 is unused."
+    cut_review: "One independent Type 1 and Type 2 cut review before implementation, because LDG-2881 needs a decision against the accepted equity-settlement synthesis and `contracts.md:552-557`, then one Type 1 close review. Planned invocations are 2 over 6 tickets, 0.333 against the 0.5 gate."
     authority: "AGENTS.md: reader work and validation fixes need no new RFC cycle. `inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`, which requires `Corporate actions: NOT SUPPLIED - returns may omit distributions` to print unambiguously ('the one case where a reassuring word would be wrong') and requires double-counting risk from the declared price basis to be declared. `contracts.md:552-557`, which binds how `summary()` presents complete and incomplete performance. The style guide, section 5: output a worked example cannot show without clutter is an API gap."
     source_table: "2026-09-28 probe of a bars-only demo run: `print(bt)` 16 lines, `summary(bt)` 57 lines of which 33 are the corporate-action block, `print(ledgr_compute_metrics(bt))` 96 lines; `inst/design/audits/v0_2_0_2_strategy_article_audit_input.md` incidental findings; the README rewrite of 2026-09-28, which could not show a run result without `select()`"
-    sequencing_proposal: "The README (LDG-2858) and every article (LDG-2859) print these outputs, so workstream 26 in Cut 19, which now owns both, depends on workstream 25, and workstream 15 depends on workstream 26. The README and article corrections therefore check the final output once. This branch merges into `v0.2.0.2` after workstream 24 lands; any `tickets.yml` conflict is resolved against workstream 24's committed text."
+    decisions: "Maintainer, 2026-09-28. (1) Cut 18 contains LDG-2880 through LDG-2884 and LDG-2869, which joins from its Cut 16 deferral as the maintenance cut that deferral named. (2) Whether the NOT SUPPLIED corporate-action block may collapse, and whether the metrics may move ahead of the evidence, is decided by the cut review against the equity-settlement synthesis and `contracts.md:552-557`, not by this acceptance; the full policy record stays reachable either way. (3) The README and article corrections of Cut 19 wait for this cut."
+    sequencing: "Workstream 25 follows accepted Workstream 24 and blocks Workstream 26 in Cut 19, which blocks workstream 15. The README (LDG-2858) and every article (LDG-2859) print these outputs, so they are corrected once, against the final output. LDG-2880, LDG-2882, LDG-2883 and LDG-2869 are independent; LDG-2881 depends on LDG-2880; LDG-2884 depends on all five."
     out_of_scope: "The content and semantics of corporate-action evidence, which the equity-settlement synthesis owns; this cut changes only where and how much of it prints. The README rewrite itself, which LDG-2858 owns and which will print `bt` once LDG-2880 lands. The sweep candidate print, which hides candidate parameters behind hashed IDs; it is a separate reader question for the sweep surface."
     workstreams: [25]
     closeout: "result_output_closeout.md"
-    status: "draft"
+    status: "open"
   - id: 19
     name: "Documentation corrections before the tag"
     cut: "2026-09-28"
-    draft_note: "Agent-drafted on 2026-09-28 at the maintainer's request, on branch `draft/cut18-result-output` together with the Cut 18 draft. The maintainer decided on 2026-09-28 that the findings of the strategy-article audit must be fixed before the release, and that fixing them and checking the fixes belongs in its own workstream rather than in the release gate, which should be mostly bureaucracy and mechanical checks. LDG-2858 and LDG-2859 move here from workstream 15 with their IDs kept, so every existing reference to them stays valid. Status `draft` on the cut, the workstream, the moved tickets and the new tickets marks that nothing here is authorized until the maintainer accepts the cut."
-    cut_review: "not yet reviewed. Proposed: compressed into the close review of workstream 26, because the cut changes no public API and every correction has an executable oracle in rendered chunks, fresh Markdown and documentation-contract pins. One planned Type 1 close review over seven tickets is 0.143 against the 0.5 gate."
-    authority: "The maintainer decision recorded in `draft_note`. `inst/design/vignette_styleguide.md` for form, including its review checklist. The five drift categories and the capability ladder already bound in LDG-2859. AGENTS.md: documentation that changes nothing semantic needs no RFC cycle, and product or API defects found here are routed rather than implemented."
+    opening: "The maintainer accepted the draft cut on 2026-09-28. This cut entry, its recorded decisions and the ticket acceptance criteria are the operative Workstream 26 brief; no duplicate brief artifact is created."
+    cut_review: "Compressed into the Type 1 close review of workstream 26, because the cut changes no public API and every correction has an executable oracle in rendered chunks, fresh Markdown and documentation-contract pins. One planned review over seven tickets is 0.143 against the 0.5 gate."
+    decisions: "Maintainer, 2026-09-28. (1) The findings of the strategy-article audit are fixed before the release. (2) Fixing them and checking the fixes is its own workstream, not part of the release gate, which should be mostly bureaucracy and mechanical checks. (3) LDG-2858 and LDG-2859 move here from workstream 15 with their IDs kept, so every existing reference to them stays valid. (4) LDG-2858 becomes the README rewrite; the earlier rule against restructuring the landing page under the release gate no longer applies. (5) The release notes stay in LDG-2824, which also owns the check that the README agrees with them. (6) The release gate keeps a mechanical freshness check over every article."
+    authority: "The maintainer decisions recorded in `decisions`. `inst/design/vignette_styleguide.md` for form, including its review checklist. The five drift categories and the capability ladder already bound in LDG-2859. AGENTS.md: documentation that changes nothing semantic needs no RFC cycle, and product or API defects found here are routed rather than implemented."
     source_table: "`inst/design/audits/v0_2_0_2_strategy_article_audit_input.md` (the 2026-09-28 editorial pass, with the maintainer's capability-ladder dimension); the README design of 2026-09-28; the tracked article list"
     sequencing: "Workstream 26 depends on workstream 25 because the README and several articles print `print(bt)` and `summary(bt)`, which Cut 18 changes; correcting them once, after that change, avoids a second pass. Workstream 15 depends on workstream 26, so the release gate opens only after the corrected documentation is accepted. Within the workstream, LDG-2859 freezes the findings and the maintainer accepts their dispositions before LDG-2885 to LDG-2888 start."
     out_of_scope: "Product and API defects the audit exposes, such as the missing whole-universe read for active aliases (P3 in the audit input); they are routed to owners with a maintainer release disposition, not implemented here. New articles, new teaching claims and public API changes. The release notes, which stay in LDG-2824."
     workstreams: [26]
     closeout: "documentation_corrections_closeout.md"
-    status: "draft"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -418,7 +420,7 @@ workstreams:
   - id: 25
     name: "Result output"
     cut: 18
-    status: "draft"
+    status: "open"
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins the tickets: a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous. The review compares `print()` and `summary()` before and after on a bars-only run, a run with supplied corporate-action facts and an incomplete availability-aware run; confirms the two corporate-action headline lines still print wherever the equity-settlement synthesis requires them; confirms the collapsed policy record is reachable through a public accessor; and runs each ticket's detector against a restored old print. These are print methods, not fold, ingest or reader hot paths, so the seven-shape walk and before-and-after clock are recorded as not required with that reason."}
@@ -426,7 +428,7 @@ workstreams:
   - id: 26
     name: "Documentation corrections"
     cut: 19
-    status: "draft"
+    status: "open"
     depends_on_workstream: 25
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 26", reason: "One claim joins the tickets: every tracked article and the README teach the shipped surface honestly and well, and every audit finding is either corrected or routed with an accepted disposition. The review reads each corrected article as a first-time learner who has read only the articles before it in the reading flow, not only against the finding list, because checklist review has missed teaching failures in this release; checks each correction against its finding in the final audit artifact; confirms renders are executed and Markdown is fresh; mutates at least one pin per corrected article to show it detects a regression; and confirms no product or API change was made under a documentation ticket. No production code changes, so the seven-shape walk and before-and-after clock are recorded as not required with that reason."}
@@ -1774,13 +1776,13 @@ tickets:
   - id: "LDG-2869"
     title: "Curated result prints show the caller's columns"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "`ledgr_print_curated_tibble()` (`R/run-store.R:595-608`) prints a fixed column list intersected with the object's names, then a fixed footer. After a user's `select()` the object keeps its class, so the print reorders the caller's columns and still says 'Full identity and telemetry columns remain available on this tibble' about columns that were dropped. Five prints share the helper: run comparison (`R/run-store.R:777`), run list (`R/run-store.R:895`), sweep persistence (`R/sweep-persistence.R:245`), sweep results (`R/sweep.R:748`) and walk-forward degradation (`R/walk-forward-inspection.R:528`). Fix it once in the shared printer: when the object no longer carries its full column set, print its own columns in its own order and omit footer lines whose claims no longer hold. Each print method must identify its complete schema independently of its curated view. Unmodified objects print as today."
     acceptance: ["`ledgr_run_compare(snapshot) |> dplyr::select(run_id, n_trades, final_equity)` prints those three columns in that order, and no footer line claims columns that are absent", "selecting every curated column while dropping a hidden identity or telemetry column also removes the full-columns footer claim, so a check that looks only at curated columns fails", "altered-object behavior is tested through the shared printer for at least two of its five consumers, so a comparison-only patch fails", "for each of the five prints, the output for an unmodified object is byte-identical to its output before the change", "a mutation restoring the fixed column order after `select()` fails a registered detector"]
-    evidence: ["Deferred from draft Cut 16 by maintainer decision 6 on 2026-09-27. Both cut reviews reproduced the defect and found it is result-printing maintenance outside workstream 23's claim that authoring helpers remove worked-example workarounds. It belongs in a maintenance cut; the acceptance list carries both reviews' strengthening.", "Moved into draft Cut 18 (workstream 25) on 2026-09-28 at the maintainer's request, as the maintenance cut its deferral named. Its acceptance is unchanged."]
+    evidence: ["Deferred from draft Cut 16 by maintainer decision 6 on 2026-09-27. Both cut reviews reproduced the defect and found it is result-printing maintenance outside workstream 23's claim that authoring helpers remove worked-example workarounds. It belongs in a maintenance cut; the acceptance list carries both reviews' strengthening.", "Moved into Cut 18 (workstream 25) on 2026-09-28 by maintainer decision, as the maintenance cut its deferral named. Its acceptance is unchanged."]
   - id: "LDG-2870"
     title: "A feature signal with the return signal's admissibility policy"
     workstream: 23
@@ -1874,7 +1876,7 @@ tickets:
   - id: "LDG-2880"
     title: "`print(bt)` is the one-screen run result"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1884,7 +1886,7 @@ tickets:
   - id: "LDG-2881"
     title: "`summary(bt)` answers first and collapses unused corporate-action detail"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2880"]
@@ -1894,7 +1896,7 @@ tickets:
   - id: "LDG-2882"
     title: "`ledgr_compute_metrics()` prints as a readable table"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1904,7 +1906,7 @@ tickets:
   - id: "LDG-2883"
     title: "Small print defects in run info and extracted strategies"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P3"
     effort: "S"
     dependencies: []
@@ -1914,7 +1916,7 @@ tickets:
   - id: "LDG-2884"
     title: "Close workstream 25 and cut 18"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2869", "LDG-2880", "LDG-2881", "LDG-2882", "LDG-2883"]
@@ -1924,7 +1926,7 @@ tickets:
   - id: "LDG-2858"
     title: "Rewrite and verify the README for first-time users"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -1934,7 +1936,7 @@ tickets:
   - id: "LDG-2859"
     title: "Audit every article and set each finding's disposition"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "L"
     dependencies: []
@@ -1944,7 +1946,7 @@ tickets:
   - id: "LDG-2885"
     title: "Correct the feature articles"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2859"]
@@ -1954,7 +1956,7 @@ tickets:
   - id: "LDG-2886"
     title: "Correct the workflow articles"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2859"]
@@ -1964,7 +1966,7 @@ tickets:
   - id: "LDG-2887"
     title: "Correct the availability, execution and remaining articles"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2859"]
@@ -1974,7 +1976,7 @@ tickets:
   - id: "LDG-2888"
     title: "Correct the cross-cutting documentation findings"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2859"]
@@ -1984,7 +1986,7 @@ tickets:
   - id: "LDG-2889"
     title: "Close workstream 26 and cut 19"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2858", "LDG-2859", "LDG-2885", "LDG-2886", "LDG-2887", "LDG-2888"]

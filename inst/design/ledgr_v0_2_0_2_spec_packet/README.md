@@ -411,15 +411,15 @@ four bounded corrections; focused re-review returned PASS. The maintainer
 accepted the honest historical exception of two review invocations over one
 ticket, 2.0, rather than padding the cut with unrelated work.
 
-## Cut 8: Release gate (open; opens after workstream 20)
+## Cut 8: Release gate (open; opens after workstream 26)
 
 Authority: `../release_ci_playbook.md`, in particular its Release-Gate Ticket
 Requirements and What Counts as Green sections, and its CI Tiers section added
 2026-09-25 when `R-CMD-check.yaml` was tiered. No RFC: the playbook already
 binds the process and requires that every release-gate ticket name it and the
-exact local gates. Four tickets, LDG-2824, LDG-2858, LDG-2859 and LDG-2825, one
-workstream; the cut review is compressed into the close review, so one
-invocation over four tickets is 0.250.
+exact local gates. Two tickets, LDG-2824 and LDG-2825, one workstream; the cut
+review is compressed into the close review, so one invocation over two tickets
+is 0.500.
 
 The maintainer added the two teaching-surface tickets on 2026-09-26, ahead of
 an
@@ -435,16 +435,17 @@ a broken capability ladder. Each article must begin at the smallest valid path
 for its task, disclose what that path cannot establish, and introduce stricter
 evidence only when its claim requires it. The audit must not turn advanced
 point-in-time inputs into a prerequisite for an ordinary dense backtest.
-LDG-2859 includes the correction pass: findings are frozen first, then every
-in-scope documentation defect is corrected, rerendered and verified. Product
-or API defects are routed rather than hidden in prose. Completion of the audit
-does not automatically start LDG-2825; the maintainer first accepts the final
-corrected audit and decides whether each routed finding lands before release or
-is explicitly deferred with its limitation reflected in the release boundary.
+On 2026-09-28 the maintainer moved LDG-2858 and LDG-2859, with their IDs, into
+Cut 19 below. The audit's findings are fixed before the release, but fixing
+them and checking the fixes is its own workstream; the release gate should be
+mostly bureaucracy and mechanical checks. The gate keeps a freshness check over
+every article, and LDG-2824 checks that the README agrees with the release
+notes. LDG-2825 does not start until the maintainer accepts Workstream 26,
+including each routed finding's release disposition.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
-| 15 Release gate | 2824, 2858, 2859, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; one release-shaped same-host peer record run and rendered; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; peer correctness, differential parity, retention and registered parity checks pass before timing is interpreted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
+| 15 Release gate | 2824, 2825 | release identity promoted from v0.2.0.2 to v0.2.1.0; `NEWS.md` rewritten for the whole version in user terms with the release's non-claims stated; the playbook's local gates run and recorded; one release-shaped same-host peer record run and rendered; the full tier dispatched on the renamed release branch before the merge; main, pkgdown and tag runs as three separate evidences; the GitHub Release entry | package metadata, branch, active governance pointers and tag agree on v0.2.1.0 before gates run; every named gate was run and recorded rather than asserted; peer correctness, differential parity, retention and registered parity checks pass before timing is interpreted; the three CI evidences are distinct run ids; a quick-tier branch run is never cited as the merge gate; skipped gates carry accepted reasons; the notes state what the version does not claim |
 
 The maintainer promoted the release target to v0.2.1.0 on 2026-09-25 because
 the accumulated public capability and architecture changes are no longer
@@ -1002,3 +1003,52 @@ record is `pulse_inspection_parity_closeout.md`. The two reviews make the
 historical ratio 2/3 = 0.667 against the 0.5 gate. The maintainer accepted
 Workstream 24 and Cut 17 on 2026-09-28 without a third review because the
 final cache-identity correction was mechanical and mutation-detected.
+
+## Cut 18: Maintenance, result output (open)
+
+Authority: reader work needs no new RFC cycle; the accepted equity-settlement
+synthesis and `contracts.md` bind what the result prints must keep. The
+maintainer accepted the cut on 2026-09-28. This cut entry and its tickets are
+the operative brief; there is no duplicate brief file.
+
+A bars-only demo run prints 16 lines from `print(bt)`, 57 from `summary(bt)`,
+33 of them corporate-action counts for a policy that never ran, and 96 from
+`print(ledgr_compute_metrics(bt))`. The README could not show a run result
+without `select()`. This cut makes the result readable on one screen while
+every piece of evidence the package owes stays printed or reachable.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 25 Result output | 2869, 2880-2884 | `print(bt)` as the one-screen result; `summary()` answers first and collapses unused corporate-action detail; a metrics print method; small print defects; curated prints respect the caller's columns; close the cut | a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous |
+
+One independent Type 1 and Type 2 cut review comes before implementation. It
+decides whether the NOT SUPPLIED corporate-action block may collapse and
+whether the metrics may move ahead of the evidence, against the
+equity-settlement synthesis and `contracts.md:552-557`; the full policy record
+stays reachable either way. With the close review that is 2 invocations over
+6 tickets, 0.333. LDG-2869 joins from its Cut 16 deferral. Workstream 25
+follows accepted Workstream 24 and blocks Workstream 26.
+
+## Cut 19: Documentation corrections before the tag (open)
+
+Authority: the maintainer's decisions of 2026-09-28, the style guide, and the
+drift categories and capability ladder already bound in LDG-2859. The
+maintainer accepted the cut on 2026-09-28. This cut entry and its tickets are
+the operative brief; there is no duplicate brief file.
+
+The strategy-article audit's findings are fixed before the release, in their
+own workstream rather than in the release gate. LDG-2858 and LDG-2859 moved
+here from Workstream 15 with their IDs kept. LDG-2859 audits every article,
+starting from `../audits/v0_2_0_2_strategy_article_audit_input.md`, and freezes
+each finding with a proposed disposition; the maintainer accepts those before
+any correction starts. LDG-2858 is now the README rewrite for first-time users.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 26 Documentation corrections | 2858, 2859, 2885-2889 | rewrite and verify the README; audit every article and freeze dispositions; correct the feature, workflow, availability and execution articles and the cross-cutting findings; close with the final audit artifact | every tracked article and the README teach the shipped surface honestly and well, and every audit finding is corrected or routed with an accepted disposition |
+
+Product or API defects the audit exposes are routed to owners with a release
+disposition, not implemented here. One Type 1 close review, read as a
+first-time learner, is 0.143 over seven tickets. Workstream 26 follows
+accepted Workstream 25 so the README and articles are corrected against the
+final result prints once, and the release gate follows accepted Workstream 26.
