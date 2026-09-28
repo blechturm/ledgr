@@ -81,11 +81,11 @@ LDG-2888.
 | Strategy Authoring Tools | OK | AUTHOR-W (O) | OK | AUTHOR-R (X) | OK | Signal, selection, weights, then target is the smallest helper pipeline; only the final complete target executes. |
 | TTR And Adapter Indicators | TTR-S (F) | OK | TTR-C (F) | TTR-R (F) | TTR-L (F) | One supported TTR output comes first; recursive shapes and bundles are not availability-certified. |
 | Custom Indicators And External Features | CUSTOM-S (F) | OK | CUSTOM-C (F) | CUSTOM-R (F) | CUSTOM-L (F) | Scalar `fn` is the safe entrance; `series_fn` and adapters add performance and external data without proving causality. |
-| Metric Contexts And Conventions | METRIC-S (O) | OK | OK | METRIC-R (O/X) | OK | The default US-equity context is the entrance; it does not supply time-varying rates or benchmark data. |
+| Metric Contexts And Conventions | METRIC-S (O) | OK | OK | METRIC-R (O) | OK | The default US-equity context is the entrance; it does not supply time-varying rates or benchmark data. |
 | How Targets Become Fills | EXEC-S (O) | OK | EXEC-C (O) | EXEC-R (X) | OK | A target and next-open fill are the entrance; the engine is not an order-management or broker simulator. |
 | Design Philosophy: From Research To Production | RTP-S (W) | OK | RTP-C (W) | RTP-R (W) | RTP-L (W) | The shipped research runtime must come first; paper and live execution remain roadmap layers. |
 | Why ledgr is built in R | OK | OK | WHY-C (O) | OK | OK | The research package is the current path; language portability does not establish a shipped deployment runtime. |
-| Authoring A Corporate-Action Adapter | OK | OK | OK | ADAPTER-R (O/X) | OK | This is for adapter authors after the canonical fact model; normalized facts still need sealing and an execution policy. |
+| Authoring A Corporate-Action Adapter | OK | OK | OK | ADAPTER-R (O) | OK | This is for adapter authors after the canonical fact model; normalized facts still need sealing and an execution policy. |
 
 ### Finding Details
 
@@ -183,11 +183,15 @@ LDG-2888.
   the figures, and remove the maintainer-facing bundle ending.
 - **SURV-L:** add the missing availability Try-it: held-nonmember preservation
   versus accidental liquidation on a feed gap.
-- **BASIC-R:** refresh the changed result output.
+- **BASIC-R:** refresh the changed result output and remove the prose table of
+  contents that begins "This article moves in three steps". The style guide
+  explicitly rejects that opening shape.
 - **ACCT-R:** replace the old cleanup chunk header.
 - **STORE-S:** make the ordinary strategy use whole-vector reads.
-- **WF-R:** refresh the nondeterministic session output and execute the safe
-  promotion or state why it is intentionally not run.
+- **WF-R:** refresh the stale session output and execute the safe promotion or
+  state why it is intentionally not run. The session hash is deterministic;
+  the freshness normalizer must not mask it, because a changed hash is real
+  identity drift.
 - **AUTHOR-W:** execute `ledgr_signal_feature()` rather than only naming it.
 - **METRIC-S:** either use the ordinary experiment/run path or label
   `ledgr_backtest()` as the compact fixture compatibility surface.
@@ -197,18 +201,19 @@ LDG-2888.
   compatibility wrapper.
 - **EXEC-C:** add decision and fill clocks plus the principal no-fill reasons;
   fix the zero-fill/zero-trade section so its cases and arithmetic match.
-- **ADAPTER-R:** register the rendered article in pkgdown navigation, repair
-  freshness checking for its companion R file, and add a selective next step.
+- **ADAPTER-R:** register the rendered article in pkgdown navigation and add a
+  selective next step.
 
 **Cross-cutting -- LDG-2888**
 
-- **AUTHOR-R / RISK-R / EXEC-R / METRIC-R:** `_quarto.yml` suppresses warnings
+- **WARN-X:** `_quarto.yml` suppresses warnings
   globally while these articles teach `LEDGR_LAST_BAR_NO_FILL`. Choose a
   visible per-chunk or project-wide rule and make the render match the prose.
 - The style guide's reading flow is labelled v0.1.9.5, omits five current
   article families, disagrees with `_pkgdown.yml`, and assigns adapter
   declarations to the wrong canonical article.
-- `tools/render-vignettes-gfm.R --all` is non-recursive, so it skips both
+- **CHECK-X:** `tools/render-vignettes-gfm.R --all` is non-recursive, so it
+  skips both
   `vignettes/articles/*.qmd` files. Explicitly passing those files instead
   reports missing Markdown siblings. The adapter-authoring article also fails
   in check mode because only its QMD, not its companion R file, is copied into
@@ -244,7 +249,7 @@ style-guide defects are additional LDG-2888 work but do not add article cells.
 
 ## 4. Product And API Findings
 
-Documentation cannot close these four findings. The maintainer must accept a
+Documentation cannot close these five findings. The maintainer must accept a
 release disposition before the correction tickets start.
 
 | Finding | Verified behavior | Proposed owner | Proposed release disposition |
@@ -253,6 +258,7 @@ release disposition before the correction tickets start.
 | P4: feature-contract inspection fails opaquely | An unresolved parameterized map raises unclassed `simpleError` instead of an actionable ledgr condition | Feature-engine inspection surface | Defer with an explicit materialize-first instruction in this release; schedule classed validation with the active-alias design. |
 | P5: integer-backed POSIXct masks its cause | `ledgr_snapshot_from_df()` reports likely duplicate keys and an aborted transaction instead of the invalid timestamp storage type | Snapshot ingestion owner | Treat as a pre-tag product correction candidate. If deferred, the maintainer must accept the misleading-error non-claim explicitly; prose alone cannot repair it. |
 | P6: outer alias is discarded for TTR bundles | `bands = bundle` exposes bundle feature IDs such as `bbands_dn`, not `bands`; no warning explains that the outer alias has no effect | Feature-map and TTR-bundle owner | Defer to the feature-engine RFC unless the maintainer chooses a bounded validation error before tag. The TTR article must teach the actual naming rule. |
+| P7: explicit feature maps are validated twice per mapped read | `ctx$features(id, feature_map)` costs about 160 microseconds per call versus about 19 microseconds for the resolved alias form; the measured replacement is output-preserving | The v0.2.1.1 pulse/accessor performance cut anchored by `fold_writer_accessor_levers_spike/summary_report.md` | Defer with that already-scheduled performance work. Workstream 26 may correct how the idiom is taught but must not absorb the optimization. |
 
 No production change is authorized by this audit.
 
@@ -271,8 +277,6 @@ Every earlier item was rechecked at the current tree.
 - **Run-info print defects:** Cut 18 corrected elapsed formatting and metadata
   spacing. The old product finding is not carried forward; stale article
   outputs are carried as freshness findings.
-- **Strategy Basics opening list:** this is an editorial preference, not a
-  style-guide violation after the article states its outcome. Rejected.
 - **Strategy Authoring Tools holding explanation:** the current text now says
   the zero target sells the holding because inputs have not warmed up and later
   names `missing = "exclude"`. Rejected as closed.
@@ -286,6 +290,8 @@ Every earlier item was rechecked at the current tree.
   release section, and the stale style-guide flow are adopted in Sections 2
   and 4.
 - All numbered Indicators findings are adopted under IND-S/C/R/L.
+- The Strategy Basics prose table of contents is adopted under BASIC-R. Style
+  guide section 2 explicitly rejects that opening shape.
 - Custom findings 1 and 3 through 5 are adopted. Finding 2's pulse failure is
   rejected as closed, but its `?ledgr_indicator` signature mismatch remains in
   CUSTOM-C.
