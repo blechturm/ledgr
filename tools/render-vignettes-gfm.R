@@ -20,7 +20,7 @@ if (render_all) {
     file.path(repo_root, "vignettes"),
     pattern = "[.]qmd$",
     full.names = TRUE,
-    recursive = FALSE
+    recursive = TRUE
   )
 }
 if (length(path_args) == 0L) {
@@ -161,6 +161,24 @@ if (check_only) {
   if (file.exists(project_config) &&
       !file.copy(project_config, file.path(check_root, "_quarto.yml"))) {
     stop("Could not copy the Quarto project configuration for the freshness check.")
+  }
+  companion_files <- list.files(
+    file.path(repo_root, "vignettes"),
+    pattern = "[.](R|r|csv|rds|json)$",
+    full.names = TRUE,
+    recursive = TRUE
+  )
+  for (companion in companion_files) {
+    companion_rel <- sub(
+      paste0("^", gsub("([\\.^$*+?()[{\\\\|])", "\\\\\\1", repo_prefix)),
+      "",
+      normalizePath(companion, winslash = "/", mustWork = TRUE)
+    )
+    companion_target <- file.path(check_root, companion_rel)
+    dir.create(dirname(companion_target), recursive = TRUE, showWarnings = FALSE)
+    if (!file.copy(companion, companion_target, overwrite = TRUE)) {
+      stop("Could not copy vignette companion for freshness check: ", companion_rel)
+    }
   }
   on.exit({
     resolved_check <- normalizePath(check_root, winslash = "/", mustWork = FALSE)

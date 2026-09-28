@@ -211,7 +211,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
 
   for (needle in c(
     'ledgr_select_top_n(short_signal, n = 2, partial = "allow")',
-    'ledgr_signal_feature()` for another',
+    'feature_signal <- ledgr_signal_feature(pulse, "return_5")',
     'ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")',
     'ledgr_selection(where = rising, missing = "exclude")',
     'state_prev = list(pulses_seen = 1)',
@@ -992,11 +992,10 @@ testthat::test_that("cost documentation contains runnable examples and the curre
       testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
       testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
       testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
-      testthat::expect_match(doc, "v0\\.1\\.9\\.6[[:space:]]+shipped DSR, PBO/CSCV, MinTRL")
-      testthat::expect_match(doc, "v0\\.1\\.9\\.7[[:space:]]+extends that evidence into[[:space:]]+business-objective eligibility")
-      testthat::expect_match(doc, "Paper trading adapters are planned for v0.3.0", fixed = TRUE)
-      testthat::expect_match(doc, "observability tooling for", fixed = TRUE)
-      testthat::expect_match(doc, "small-scale live trading for v1.0.0", fixed = TRUE)
+      testthat::expect_match(doc, "The v0.2.1.0 release line is a correctness-first research layer", fixed = TRUE)
+      testthat::expect_match(doc, "DSR, PBO/CSCV, MinTRL", fixed = TRUE)
+      testthat::expect_match(doc, "Paper/live execution, broker adapters, and operational observability[[:space:]]+remain")
+      testthat::expect_match(doc, "no[[:space:]]+release date or operational capability is implied")
       testthat::expect_no_match(doc, "fill_model", fixed = TRUE)
       testthat::expect_no_match(doc, "commission_fixed", fixed = TRUE)
       testthat::expect_no_match(doc, "v0.1.9.4 shipped walk-forward evaluation", fixed = TRUE)
@@ -1352,10 +1351,10 @@ testthat::test_that("research documentation exposes the disclaimer without broke
 
   testthat::expect_no_match(doc, "No reconciliation step is needed", fixed = TRUE)
   testthat::expect_no_match(doc, "The ledger is the state", fixed = TRUE)
-  testthat::expect_match(doc, "The ledger reconstructs ledgr's expected state", fixed = TRUE)
-  testthat::expect_match(doc, "reconciled against broker-reported", fixed = TRUE)
+  testthat::expect_match(doc, "portability of the[[:space:]]+research store is not a trading system")
+  testthat::expect_match(doc, "broker order state, partial fills, rejection handling", fixed = TRUE)
   testthat::expect_match(doc, "Design Philosophy: From Research to Production", fixed = TRUE)
-  testthat::expect_match(doc, "What v0.1.x Delivers Today", fixed = TRUE)
+  testthat::expect_match(doc, "What The Current Research Layer Delivers", fixed = TRUE)
   }
   })
 })

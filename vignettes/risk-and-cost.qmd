@@ -227,7 +227,6 @@ the opening-day fills.
 
 ```{r}
 #| label: risk-ab
-#| warning: false
 
 uncapped <- run_policy(ledgr_cost_zero(), ledgr_risk_none(), "uncapped")
 capped   <- run_policy(ledgr_cost_zero(), risk, "capped")
@@ -261,7 +260,6 @@ policy with the spread-and-fee chain and compare the opening fill.
 
 ```{r}
 #| label: cost-ab
-#| warning: false
 
 with_cost <- run_policy(cost, risk, "with_cost")
 

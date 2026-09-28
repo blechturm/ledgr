@@ -10,6 +10,8 @@ format:
 
 execute:
   echo: true
-  warning: false
+  # Warnings are part of the teaching record. Suppress one only on a chunk
+  # whose prose explains why that warning is irrelevant to its lesson.
+  warning: true
   message: false
   freeze: false

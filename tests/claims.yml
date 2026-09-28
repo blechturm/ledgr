@@ -1082,7 +1082,7 @@ claims:
     detecting_blocks: ["LTB-0101"]
     promised_profile: "review"
     owner: "maintainer"
-    protected_contract_or_defect: "Strategy Authoring Tools, Indicators and TTR And Adapter Indicators no longer qualify pulse parity to built-ins and explicitly include params, stable_after, series_fn and recursive TTR computation."
+    protected_contract_or_defect: "Strategy Authoring Tools, Indicators and TTR Indicators And Bundles no longer qualify pulse parity to built-ins and explicitly include params, stable_after, series_fn and recursive TTR computation."
     oracle_independence: "The block reads each source article independently of its rendered output and pins the behavior already established by the public-run oracle in LTB-0100."
     smallest_failing_change: "Restore the built-in-only qualification, omit stable_after or series_fn, or describe TTR pulse inspection as a separate computation."
     cheapest_adequate_lane: "The documentation-contract file already owns source-article semantics in review; repeating the rendered executions in fast would add cost without a second behavioral oracle."

@@ -447,7 +447,9 @@ Use article links for workflow depth:
 - Strategy Authoring Tools for one-pulse testing, helper pipelines, share
   sizing, and strategy state;
 - Indicators And Features for feature declarations and alias identity;
-- TTR And Adapter Indicators for adapter-backed indicator declarations;
+- TTR Indicators And Bundles for supported TTR declarations and bundles;
+- Custom Indicators And External Features for scalar and series indicators,
+  R adapters, and CSV-backed external feature declarations;
 - Sweeps for candidate grids, failure rows, and promotion mechanics;
 - Experiment Store for durable artifacts, reopen, and recovery evidence;
 - Reproducibility for hashes, source capture, and limits of provenance;
@@ -521,26 +523,40 @@ did not prove, recorded the decision, and seen where to go next.
 
 ## 12. Reading Flow
 
-The current v0.1.9.5 reading flow is:
+The current reading flow follows `_pkgdown.yml`:
 
 ```text
 README
-  -> Research Workflow
-  -> core workflow articles as needed:
-       Data Input And Snapshots
+  -> Start Here:
+       Who ledgr is for
+       Quickstart
+       Importing And Sealing Market Data
+       Research Workflow
+       Leakage
+       Reproducibility
+  -> Core Workflow:
+       Preparing Point-In-Time Inputs
+       Missing Data And Session Calendars
+       Cash Distributions
+       Survivorship Bias And Point-In-Time Universes
        Strategy Basics
        Indicators And Features
        The Accounting Model
+       Risk And Cost Execution Policy
        Experiment Store
-       Sweeps
-       Walk-Forward
-       Reproducibility
-  -> technical companions as needed:
+       Exploratory Sweeps And Candidate Promotion
+       Selection Integrity
+       Walk-Forward Evaluation
+  -> Going Deeper:
        Strategy Authoring Tools
-       TTR And Adapter Indicators
-       Custom Indicators
+       TTR Indicators And Bundles
+       Custom Indicators And External Features
+       Authoring A Corporate-Action Adapter
        Metric Contexts And Conventions
-       Execution Semantics
+       How Targets Become Fills
+  -> Design / Background:
+       Design Philosophy: From Research To Production
+       Why ledgr is built in R
 ```
 
 Each article should know where it sits in that flow. Repeated concepts should

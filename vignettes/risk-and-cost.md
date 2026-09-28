@@ -202,6 +202,10 @@ compare the opening-day fills.
 ``` r
 uncapped <- run_policy(ledgr_cost_zero(), ledgr_risk_none(), "uncapped")
 capped   <- run_policy(ledgr_cost_zero(), risk, "capped")
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 opening_fills <- function(bt) {
   ledgr_results(bt, what = "fills") |>
@@ -243,6 +247,10 @@ opening fill.
 
 ``` r
 with_cost <- run_policy(cost, risk, "with_cost")
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
 first_fill <- function(bt) {
   ledgr_results(bt, what = "fills") |>
