@@ -26,6 +26,51 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-28 [infrastructure] Binding decisions must be discoverable
+
+The design corpus is correct but costly to navigate. The cost is state that is
+scattered and hard to read, not the corpus's size. On 2026-09-28, answering
+"what currently binds the feature read surface" meant assembling `contracts.md`,
+four syntheses and a horizon note, about 1,500 lines, to recover roughly twenty
+lines of current truth. Three failures recurred:
+
+- **Scattered binding state.** A topic's binding decisions and deferrals live
+  in whichever synthesis made them, each partly superseded, with no
+  consolidated statement. The deferred "feature-engine RFC" existed only as
+  conditional deferrals in three syntheses. Its trigger fired unnoticed until
+  an audit happened to route findings to it.
+- **Stale indexes.** A cycle's state is hand-written in up to five places:
+  the RFC pipeline, the roadmap, horizon, the design index and AGENTS.md. The
+  pipeline row for historical projection still read "open for review" after
+  the synthesis header recorded acceptance.
+- **Unreadable records.** Roadmap and pipeline rows exceed 1,000 characters,
+  and `tickets.yml` holds scope, acceptance and evidence as single-line
+  strings. Line-oriented search prints "[Omitted long matching line]" for
+  exactly the records that carry state.
+
+Direction, for the same cycle as the design-corpus split:
+
+1. **Consolidate binding decisions at acceptance.** When a synthesis is
+   accepted, fold its binding decisions into `contracts.md`, or into a short
+   per-topic decision page if they are not contract-level. Enter each future
+   obligation as a pipeline row with its trigger. "What binds X" should then
+   be one contract section, or one decision page, plus pipeline rows. This
+   changes the acceptance step in `rfc_cycle.md`.
+2. **Status lives once.** It lives in each artifact's own header. Superseded
+   versions say `Superseded by:`. Indexes list only the operative artifact
+   and note its history.
+3. **An index-drift check.** A small tool compares index entries with
+   artifact status headers and fails on disagreement, mirroring the rule
+   that ticket views are generated from `tickets.yml`.
+4. **Readable records.** Use YAML folded scalars for long `tickets.yml`
+   fields; the file parses the same. Turn the longest roadmap and pipeline
+   rows into short headed sections.
+
+This is a documentation restructure with no product or contract consequence,
+like the split. Only item 1 changes process, and the maintainer records that
+change in `rfc_cycle.md`. This entry authorizes nothing; it records the
+direction.
+
 ### 2026-09-28 [data] Historical revision optimization, deferred
 
 The maintainer requested a consolidated historical-projection synthesis after
