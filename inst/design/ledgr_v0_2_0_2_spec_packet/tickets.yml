@@ -227,7 +227,8 @@ cuts:
     out_of_scope: "The P3 whole-universe active-alias read and the P7 explicit-map performance optimization; both retain their accepted later owners. Accepting parameterized maps in inspection helpers, changing bundle-generated IDs, changing timestamp identity, or rewriting article prose under a product ticket."
     workstreams: [27]
     closeout: "audit_product_boundary_repairs_closeout.md"
-    status: "open"
+    accepted: "2026-09-28 by the maintainer, after the focused re-review and record correction at a9650eb"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -450,7 +451,7 @@ workstreams:
   - id: 27
     name: "Audit-discovered product boundary repairs"
     cut: 20
-    status: "open"
+    status: "complete"
     depends_on_workstream: 26
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 27", reason: "One claim joins the tickets: four existing public boundaries no longer silently discard a supplied name, let one string identify two series or leak a misleading internal failure. The review runs each registered mutation; confirms P4 and P6 use existing condition classes and do not add feature-engine capability; proves integer- and double-backed POSIXct inputs seal to identical snapshot hashes; verifies the collision guard at concrete construction, parameterized resolution, public run and per-candidate sweep boundaries; checks ordinary concrete maps, own-ID aliases, unnamed bundles and double-backed timestamps for unchanged behavior; walks the ingestion change against the seven optimization shapes; and records an interleaved before-and-after constructor clock on the audit's timestamp shape. With the completed cut review, the planned total was 2/5 = 0.400; the focused correction review made the actual total 3/5 = 0.600, a historical gate breach."}
@@ -2055,13 +2056,13 @@ tickets:
   - id: "LDG-2893"
     title: "Close audit-discovered product boundary repairs"
     workstream: 27
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2890", "LDG-2891", "LDG-2892", "LDG-2894"]
     scope: "Close Workstream 27 and Cut 20. Run the focused feature-inspection, feature-map, TTR, candidate-resolution, sweep, snapshot-ingestion and hash tests; run the ordinary fast profile and gate; record each mutation and the P5 interleaved clock; update the LDG-2859 audit routes to the landed commits; and hand Workstream 28 the exact shipped behavior and alias/engine-ID naming rule its related prose must teach. Owner: the maintainer; the closeout is agent-provisional until the Type 1 close review and maintainer acceptance."
     acceptance: ["all four product findings name their implementing commit, registered detector and successful mutation in the closeout and final route", "the focused suites and ordinary fast gate pass without a weakened threshold or moved test", "the seven-shape walk and P5 interleaved clock are recorded, with P4, P6 and the collision guard identified as non-hot validation boundaries", "the cut review, first Type 1 close review and focused correction review are recorded as 3/5 = 0.600, a historical gate breach, and Workstream 28 remains blocked until the maintainer accepts it"]
-    evidence: ["Agent-provisional closeout: inst/design/ledgr_v0_2_0_2_spec_packet/audit_product_boundary_repairs_closeout.md. The exact ac69370 fast record at C:/tmp/ws27-fast-ac69370 passed 483/483 blocks in 102.840 seconds; the ordinary checker accepted the one-run record against the unchanged 112-second bound. The planned Type 1 close review was invocation two and returned two findings. Correction 55524e5 closes both with failure-sensitive extensions to LTB-0113 and LTB-0115. The correction record at C:/tmp/ws27-correction-fast-b462cd5 ran at pre-rebase b462cd5, whose code and tests are identical to release-line 55524e5; it passed the same 483 blocks in 98.410 seconds and the gate checker passed against 112 seconds. The focused correction review was invocation three, making 3/5 = 0.600, recorded as a historical gate breach. Workstream 28 remains blocked pending maintainer acceptance."]
+    evidence: ["Accepted by the maintainer on 2026-09-28 after the focused re-review and record correction at a9650eb. Closeout: inst/design/ledgr_v0_2_0_2_spec_packet/audit_product_boundary_repairs_closeout.md. The exact ac69370 fast record at C:/tmp/ws27-fast-ac69370 passed 483/483 blocks in 102.840 seconds; the ordinary checker accepted the one-run record against the unchanged 112-second bound. The planned Type 1 close review was invocation two and returned two findings. Correction 55524e5 closes both with failure-sensitive extensions to LTB-0113 and LTB-0115. The correction record at C:/tmp/ws27-correction-fast-b462cd5 ran at pre-rebase b462cd5, whose code and tests are identical to release-line 55524e5; it passed the same 483 blocks in 98.410 seconds and the gate checker passed against 112 seconds. The focused correction review was invocation three, making 3/5 = 0.600, recorded as a historical gate breach. Workstream 28 is open."]
   - id: "LDG-2894"
     title: "Refuse feature-map aliases that name another entry's feature"
     workstream: 27

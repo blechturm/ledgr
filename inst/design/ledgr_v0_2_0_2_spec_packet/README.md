@@ -1110,4 +1110,5 @@ showed no median regression. The correction record passed the same 483 blocks
 in 98.410 seconds and its gate checker passed. It ran at pre-rebase `b462cd5`,
 whose code and tests are identical to release-line `55524e5`. The focused
 correction review was invocation three: 3/5 = 0.600, recorded as a historical
-gate breach. Workstream 28 remains blocked until maintainer acceptance.
+gate breach. The maintainer accepted Workstream 27 on 2026-09-28 after the
+record correction at `a9650eb`; Workstream 28 is open.

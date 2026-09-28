@@ -1,8 +1,7 @@
 # Cut 20 Closeout: Audit-Discovered Product Boundary Repairs
 
-**Status:** Agent-provisional; the focused Type 1 re-review verified both code
-corrections and returned record-only provenance findings. Those are corrected;
-the workstream awaits maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-09-28 after the focused Type 1
+re-review and record correction at `a9650eb`.
 
 **Implementation:** `ac69370`, corrected at `55524e5` on `v0.2.0.2`.
 
@@ -107,5 +106,5 @@ The cut review is invocation one. The first Type 1 close review is invocation
 two and returned `CHANGES_REQUIRED`. The focused correction review is
 invocation three: 3/5 = 0.600, a historical gate breach that cannot be repaired
 by padding this cut. Its only remaining findings were the stale pre-rebase SHA
-and conditional arithmetic corrected here. This closeout remains
-agent-provisional until the maintainer accepts the workstream.
+and conditional arithmetic corrected here. The maintainer accepted this
+closeout on 2026-09-28.
