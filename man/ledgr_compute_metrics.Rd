@@ -2,6 +2,8 @@
 % Please edit documentation in R/backtest-results.R
 \name{ledgr_compute_metrics}
 \alias{ledgr_compute_metrics}
+\alias{format.ledgr_metrics}
+\alias{print.ledgr_metrics}
 \title{Compute standard metrics from backtest results}
 \usage{
 ledgr_compute_metrics(
@@ -10,6 +12,10 @@ ledgr_compute_metrics(
   metric_context = NULL,
   risk_free_rate = NULL
 )
+
+\method{format}{ledgr_metrics}(x, ...)
+
+\method{print}{ledgr_metrics}(x, ...)
 }
 \arguments{
 \item{bt}{A \code{ledgr_backtest} object. This function does not accept an equity
@@ -23,6 +29,10 @@ When omitted, ledgr uses the metric context stored with the run.}
 \item{risk_free_rate}{Optional scalar annual risk-free-rate override as a
 decimal. For example, \code{0.02} means two percent per year. Supply either
 \code{metric_context} or \code{risk_free_rate}, not both.}
+
+\item{x}{A \code{ledgr_metrics} object.}
+
+\item{...}{Unused.}
 }
 \value{
 A list-like \code{ledgr_metrics} object.

@@ -222,3 +222,39 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
     fixed = TRUE
   )))
 })
+
+testthat::test_that("[LTB-0110] metrics print without dumping attributes", {
+  run <- ledgr_result_output_run(
+    as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+    "metrics-print"
+  )
+  on.exit(close(run$bt), add = TRUE)
+  on.exit(ledgr_snapshot_close(run$snapshot), add = TRUE)
+  metrics <- ledgr_compute_metrics(run$bt)
+  names_before <- names(metrics)
+  values_before <- unclass(metrics)
+  attributes_before <- attributes(metrics)
+  context_before <- ledgr_metric_context(metrics)
+
+  output <- utils::capture.output(returned <- print(metrics))
+  testthat::expect_lte(length(output), 12L)
+  testthat::expect_identical(output[1:2], c("ledgr Metrics", "============="))
+  expected_labels <- c(
+    "Total Return:", "Annualized Return:", "Volatility (annual):",
+    "Sharpe Ratio:", "Max Drawdown:", "Closed Trades:", "Win Rate:",
+    "Avg Trade:", "Time in Market:"
+  )
+  label_rows <- vapply(expected_labels, function(label) {
+    which(grepl(label, output, fixed = TRUE))[[1]]
+  }, integer(1))
+  testthat::expect_identical(unname(label_rows), 3:11)
+  testthat::expect_match(output[[12]], "^Context: risk-free ")
+  testthat::expect_match(output[[12]], "annualization|periods/year")
+  testthat::expect_match(output[[12]], "hash [0-9a-f]{12}$")
+  testthat::expect_identical(returned, metrics)
+  testthat::expect_identical(names(metrics), names_before)
+  testthat::expect_identical(unclass(metrics), values_before)
+  testthat::expect_identical(attributes(metrics), attributes_before)
+  testthat::expect_identical(ledgr_metric_context(metrics), context_before)
+  testthat::expect_type(unclass(metrics), "list")
+})

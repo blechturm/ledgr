@@ -1896,13 +1896,13 @@ tickets:
   - id: "LDG-2882"
     title: "`ledgr_compute_metrics()` prints as a readable table"
     workstream: 25
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "`ledgr_compute_metrics()` (`R/backtest-results.R:468`) returns a `ledgr_metrics` list carrying `metric_context` and `metric_kernel` attributes, and the class has no print method, so printing it dumps 96 lines, most of them attributes. Add print and format methods: one aligned line per metric, with the units `summary()` uses, and one context line naming the risk-free rate, the annualization and a short context hash. The returned object, its values and its attributes are unchanged."
     acceptance: ["printing the metrics of a demo run shows the nine metrics in their current order with units consistent with `summary()`, plus one context line, in at most 15 lines", "`names()`, values, attributes and `ledgr_metric_context()` of the returned object are unchanged, and `unclass()` still yields the plain list", "a mutation removing the print method fails a registered detector"]
-    evidence: []
+    evidence: ["`format.ledgr_metrics()` and `print.ledgr_metrics()` now show the nine stored metrics in object order with the same percent, ratio, count and cash units used by the backtest summary. One context line records the risk-free display, annualization display and first twelve characters of the context hash; the whole print is twelve lines.", "LCL-0110 registers fast LTB-0110. It pins label order, line count and every context component, then compares names, unclassed values, attributes and `ledgr_metric_context()` before and after printing. Removing the print method restores the list-and-attribute dump and fails the block."]
   - id: "LDG-2883"
     title: "Small print defects in run info and extracted strategies"
     workstream: 25

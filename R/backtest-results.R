@@ -477,6 +477,56 @@ ledgr_compute_metrics <- function(bt,
   )
 }
 
+#' @rdname ledgr_compute_metrics
+#' @param x A `ledgr_metrics` object.
+#' @param ... Unused.
+#' @export
+format.ledgr_metrics <- function(x, ...) {
+  if (!inherits(x, "ledgr_metrics")) {
+    rlang::abort("`x` must be a ledgr_metrics object.", class = "ledgr_invalid_args")
+  }
+  finite <- function(value, template, unavailable = "N/A") {
+    if (length(value) == 1L && is.finite(value)) sprintf(template, value) else unavailable
+  }
+  values <- c(
+    finite(x$total_return * 100, "%.2f%%"),
+    finite(x$annualized_return * 100, "%.2f%%"),
+    finite(x$volatility * 100, "%.2f%%"),
+    finite(x$sharpe_ratio, "%.3f"),
+    finite(x$max_drawdown * 100, "%.2f%%"),
+    if (length(x$n_trades) == 1L && is.finite(x$n_trades)) {
+      sprintf("%d", as.integer(x$n_trades))
+    } else {
+      "N/A"
+    },
+    finite(x$win_rate * 100, "%.2f%%"),
+    finite(x$avg_trade, "$%.2f"),
+    finite(x$time_in_market * 100, "%.2f%%")
+  )
+  labels <- c(
+    "Total Return:", "Annualized Return:", "Volatility (annual):",
+    "Sharpe Ratio:", "Max Drawdown:", "Closed Trades:", "Win Rate:",
+    "Avg Trade:", "Time in Market:"
+  )
+  context <- ledgr_metric_context(x)
+  context_line <- sprintf(
+    "Context: risk-free %s; %s; hash %s",
+    ledgr_metric_summary_risk_free_display(context),
+    ledgr_metric_summary_annualization_display(context),
+    substr(ledgr_metric_context_hash(context), 1L, 12L)
+  )
+  c(sprintf("  %-22s %s", labels, values), context_line)
+}
+
+#' @rdname ledgr_compute_metrics
+#' @export
+print.ledgr_metrics <- function(x, ...) {
+  cat("ledgr Metrics\n")
+  cat("=============\n")
+  cat(paste(format(x), collapse = "\n"), "\n", sep = "")
+  invisible(x)
+}
+
 #' Print a backtest result
 #'
 #' @param x A `ledgr_backtest` object.
