@@ -1832,13 +1832,13 @@ tickets:
   - id: "LDG-2877"
     title: "The slow-loop warning covers exact-ID feature reads"
     workstream: 24
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "`ledgr_scalar_accessor_loop` records bar, OHLCV, position and index reads (`R/pulse-context.R:524-561`) but not `ctx$feature(id, feature_id)`, although a loop over it is just as slow and `ctx$vec$feature(feature_id)` is its whole-universe alternative. Strategy Authoring Tools now says so explicitly. Record `ctx$feature()` calls the same way, naming `ctx$vec$feature(feature_id)` in the warning. `ctx$features(id, feature_map)` stays unrecorded: an active-alias strategy has no whole-universe alternative yet (P3 in the audit input), and warning about a pattern the user cannot replace is noise. That boundary is stated in the help and moves when an alias-aware vector read exists."
     acceptance: ["a loop over `ctx$feature(id, feature_id)` across at least 100 instruments emits one `ledgr_scalar_accessor_loop` warning per run that names `ctx$vec$feature(feature_id)`; below the threshold it emits nothing; the warning changes no result", "a loop over `ctx$features(id, feature_map)` still emits nothing, and `?ledgr_strategy_context` states why", "a mutation removing the new recording fails a registered detector", "the recording's per-pulse cost on the registered fold shape is measured before and after, interleaved, with the clock named", "the Strategy Authoring Tools sentence 'Loops over `ctx$feature()` are just as slow but do not trigger it.' and its pin are updated to the new behaviour"]
-    evidence: []
+    evidence: ["`ledgr_pulse_context_feature_accessor()` wraps only exact-ID feature reads when the decision axis has at least 100 instruments and records through the existing per-pulse state. It names `ctx$vec$feature(feature_id)`; the mapped `ctx$features()` closure is unchanged.", "LCL-0102 registers fast LTB-0102 and review LTB-0103. A 100-name exact-ID loop emits one `ledgr_scalar_accessor_loop` with accessor `feature`, count 100 and the vector remedy; 99 reads and 100 mapped active-alias reads emit none. Warned and suppressed runs have identical fills and equity. Replacing the new wrapper with the unrecorded feature accessor makes LTB-0102 fail on the missing warning.", "On the registered 2,000-instrument by 30-pulse single-candidate memory-sweep fold clock, alternating warm processes were before 2.000/2.040/2.060 seconds and after 2.240/2.310/2.350 seconds. The median increase is 0.270 seconds. This clock isolates the deliberate O(1) recording call on each exact-ID scalar read; it is an effect measurement, not a release gate.", "Strategy Authoring Tools and `?ledgr_strategy_context` now say that exact-ID loops warn, name the vector replacement, and explain why mapped alias-bundle reads remain unrecorded until an alias-aware whole-universe accessor exists. The source and rendered article are synchronized."]
   - id: "LDG-2878"
     title: "Close workstream 24 and cut 17"
     workstream: 24

@@ -271,6 +271,11 @@ ledgr_attach_feature_helpers <- function(ctx,
       features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
     }
     feature <- ledgr_projection_feature_accessor(projection, pulse_idx, feature_ids = feature_ids)
+    feature <- ledgr_pulse_context_feature_accessor(
+      feature,
+      ctx$.pulse_lookup,
+      track_scalar_access = length(universe) >= 100L
+    )
     feature_vector <- ledgr_projection_feature_vector_accessor(projection, pulse_idx, feature_ids = feature_ids)
     feature_bundle <- ledgr_projection_feature_bundle_accessor(
       projection,
@@ -311,7 +316,11 @@ ledgr_attach_feature_helpers <- function(ctx,
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
     ctx$.feature_table_current <- NULL
-    ctx$feature <- ledgr_feature_accessor(features)
+    ctx$feature <- ledgr_pulse_context_feature_accessor(
+      ledgr_feature_accessor(features),
+      ctx$.pulse_lookup,
+      track_scalar_access = length(universe) >= 100L
+    )
     ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
     ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
     return(invisible(ctx))
@@ -320,7 +329,11 @@ ledgr_attach_feature_helpers <- function(ctx,
   ctx$feature_table <- features
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$.feature_table_current <- NULL
-  ctx$feature <- ledgr_feature_accessor(features)
+  ctx$feature <- ledgr_pulse_context_feature_accessor(
+    ledgr_feature_accessor(features),
+    ctx$.pulse_lookup,
+    track_scalar_access = length(universe) >= 100L
+  )
   ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
   ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
   ctx
@@ -411,7 +424,15 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
     feature_ids = feature_ids
   )
   if (!is.null(projection)) {
-    out$feature <- ledgr_projection_feature_accessor_state(projection, feature_state, feature_ids = feature_ids)
+    out$feature <- ledgr_pulse_context_feature_accessor(
+      ledgr_projection_feature_accessor_state(
+        projection,
+        feature_state,
+        feature_ids = feature_ids
+      ),
+      lookup,
+      track_scalar_access = length(universe) >= 100L
+    )
     out$features <- ledgr_projection_feature_bundle_accessor_state(
       projection,
       feature_state,
@@ -519,6 +540,21 @@ ledgr_pulse_context_record_scalar_access <- function(lookup,
     )
   }
   invisible(NULL)
+}
+
+ledgr_pulse_context_feature_accessor <- function(feature,
+                                                  lookup,
+                                                  track_scalar_access = FALSE) {
+  if (!isTRUE(track_scalar_access)) return(feature)
+
+  function(instrument_id, feature_name, default = NA_real_) {
+    ledgr_pulse_context_record_scalar_access(
+      lookup,
+      "feature",
+      "ctx$vec$feature(feature_id)"
+    )
+    feature(instrument_id, feature_name, default = default)
+  }
 }
 
 ledgr_pulse_context_helper_bundle <- function(lookup,

@@ -781,7 +781,11 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_no_match(strategy_development_doc, "`signal_*()`", fixed = TRUE)
   testthat::expect_no_match(strategy_development_doc, "```{r cleanup}", fixed = TRUE)
   testthat::expect_match(strategy_development_doc, "#| label: incomplete-target", fixed = TRUE)
-  testthat::expect_match(strategy_authoring_doc, "Loops over `ctx$feature()` are just as\nslow but do not trigger it.", fixed = TRUE)
+  testthat::expect_match(
+    strategy_authoring_doc,
+    "exact-ID\nfeature accessor triggers one",
+    fixed = TRUE
+  )
   testthat::expect_match(strategy_authoring_doc, "### Keep A Position While Rebalancing The Rest", fixed = TRUE)
   testthat::expect_no_match(strategy_authoring_doc, "This is exactly the target a backtest would receive", fixed = TRUE)
   testthat::expect_match(context_help, "carries\\s+\\\\code\\{asset_state\\}")
@@ -874,6 +878,45 @@ testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
   testthat::expect_match(
     ttr_doc,
     "including the TTR adapter's parameters, recursive series calculation",
+    fixed = TRUE
+  )
+})
+
+testthat::test_that("[LTB-0103] feature-loop teaching names the actionable boundary", {
+  root <- testthat::test_path("..", "..")
+  strategy_doc <- paste(
+    readLines(
+      ledgr_test_source_vignette("strategy-authoring-tools.qmd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  context_help <- paste(
+    readLines(
+      file.path(root, "man", "ledgr_strategy_context.Rd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+
+  testthat::expect_match(
+    strategy_doc,
+    "exact-ID\nfeature accessor triggers one",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    strategy_doc,
+    "active-alias bundle has no whole-universe\nequivalent yet",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    context_help,
+    "ctx$vec$feature(feature_id)",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    context_help,
+    "warning without a replacement would not be",
     fixed = TRUE
   )
 })

@@ -53,6 +53,14 @@ Feature IDs and feature-map aliases are different namespaces.
 named by alias. Unknown engine feature IDs fail loudly; warmup for a known
 feature is represented by \code{NA_real_}.
 
+For universes of at least 100 instruments, reading one exact feature ID through
+\code{ctx$feature()} once per instrument emits one
+\code{ledgr_scalar_accessor_loop} warning per run and names
+\code{ctx$vec$feature(feature_id)} as the whole-universe alternative. Mapped
+\code{ctx$features(id)} reads are not recorded because an active-alias map has
+no whole-universe accessor yet; warning without a replacement would not be
+actionable.
+
 \code{ctx$idx(id)} fails loudly for unknown instruments by default. Use
 \code{ctx$idx(id, missing = "na")} only when an explicit \code{NA_integer_}
 sentinel is part of the strategy logic.

@@ -177,10 +177,11 @@ single read. The scalar forms `ctx$close(id)`, `ctx$feature(id, feature_id)`,
 and `ctx$position(id)` are for an instrument you have already singled out.
 Calling them in a loop over `ctx$universe` repeats per-instrument work at every
 pulse and is the most common way to make a strategy slow. For universes of at
-least 100 instruments, a loop over the bar, price, or position accessors
-triggers one `ledgr_scalar_accessor_loop` warning per run that names the vector
-to use; the warning changes no result. Loops over `ctx$feature()` are just as
-slow but do not trigger it.
+least 100 instruments, a loop over the bar, price, position, or exact-ID
+feature accessor triggers one `ledgr_scalar_accessor_loop` warning per run that
+names the vector to use; the warning changes no result. `ctx$features(id)`
+stays unrecorded because its active-alias bundle has no whole-universe
+equivalent yet.
 :::
 
 ## From Scores To Shares
