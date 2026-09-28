@@ -336,17 +336,25 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
       hash_verified = TRUE,
       trust = FALSE,
       strategy_source_text = "function(ctx, params) ctx$flat()",
-      strategy_function = NULL,
+      strategy_function = function(ctx, params) NULL,
       warnings = character()
     ),
     class = c("ledgr_extracted_strategy", "list")
   )
   extracted_output <- utils::capture.output(print(extracted))
   testthat::expect_true("Source Available: TRUE" %in% extracted_output)
-  extracted_values <- sub("^[^:]+:[ ]*", "", extracted_output[4:10])
-  extracted_columns <- regexpr("[^ ]+$", extracted_output[4:10])
+  testthat::expect_true("Function:         recovered" %in% extracted_output)
+  value_columns <- function(lines) {
+    colons <- regexpr(":", lines, fixed = TRUE)
+    tails <- substring(lines, colons + 1L)
+    colons + regexpr("\\S", tails)
+  }
+  extracted_lines <- extracted_output[grepl("^[^:]+:", extracted_output)]
+  extracted_values <- sub("^[^:]+:[ ]*", "", extracted_lines)
+  extracted_columns <- value_columns(extracted_lines)
   testthat::expect_identical(length(unique(extracted_columns)), 1L)
   testthat::expect_identical(extracted_values[[7]], "TRUE")
+  testthat::expect_identical(extracted_values[[8]], "recovered")
 
   info <- structure(
     list(
@@ -380,8 +388,9 @@ testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precisio
   info_output <- utils::capture.output(print(info))
   testthat::expect_true("Elapsed Sec:      0.430" %in% info_output)
   testthat::expect_true("Persist Features: TRUE" %in% info_output)
-  metadata_lines <- info_output[4:21]
-  metadata_columns <- regexpr("[^ ]+$", metadata_lines)
+  metadata_lines <- info_output[grepl("^[^:]+:", info_output)]
+  metadata_columns <- value_columns(metadata_lines)
+  testthat::expect_length(metadata_lines, 20L)
   testthat::expect_identical(length(unique(metadata_columns)), 1L)
   testthat::expect_false(any(grepl("0.430000000000001", info_output, fixed = TRUE)))
   testthat::expect_identical(info$elapsed_sec, stored_elapsed)

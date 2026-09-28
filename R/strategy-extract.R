@@ -286,7 +286,7 @@ print.ledgr_extracted_strategy <- function(x, ...) {
     if (is.na(x$strategy_source_text[[1]])) "FALSE" else "TRUE"
   )
   if (!is.null(x$strategy_function)) {
-    cat("Function:        recovered\n")
+    line("Function", "recovered")
   }
   if (length(x$warnings) > 0L) {
     cat("\nWarnings:\n")
