@@ -1,15 +1,19 @@
 # RFC Synthesis v11: Point-in-Time Historical Projection With Missing Data
 
-**Status:** Consolidated successor awaiting maintainer acceptance, requested
-2026-09-28. The simplification direction is authorized. Until acceptance, v10
-remains operative. This document authorizes no implementation or spike.
+**Status:** **Accepted by the maintainer 2026-09-28.** Operative synthesis; it
+replaces v10, which becomes part of the derivation and correction record. The
+simplification direction is authorized. This document still authorizes no
+implementation or spike: section 7 governs the next-release ticket cut.
 **Mode:** Decision synthesis. **Author:** Codex, at maintainer request; this
 departs from the earlier author rotation.
 **Final verification:** Claude's Type 1 review of `8c3e1aa` on 2026-09-28
 returned PASS with two low-severity findings, corrected here: F1 distinguishes
 full snapshots from small controls; F2 gives evidence preservation an owner at
 ticket cut. The review checked the reported figures against local evidence CSVs;
-no new package or source-data execution is claimed.
+no new package or source-data execution is claimed. The section 7 preservation
+obligation is **discharged**: the report, six scripts, six evidence CSVs and a
+provenance README are committed at `412f600` on `spike/segmented-feature-views`,
+under `dev/spikes/revision-exposure/`.
 **Basis:** Accepted [v10][v10] and the [missingness amendment][amendment].
 Original baselines: design `491c4ed`, implementation `ae040e7`. Current reading
 baseline: `d7c6d7f4c80c36d4f6b1c4ac88bfa9a4fe4afa80`. No package code was executed.
@@ -32,7 +36,7 @@ assessed workloads. It does not remove correctness obligations for supported
 inputs, turn carry off, defer its opt-in form, or drop missingness disclosure.
 Fitted imputers and general model lifecycle remain separate design work.
 
-On acceptance, this document replaces v10 as the immediate synthesis. Earlier
+Accepted 2026-09-28, this document replaces v10 as the immediate synthesis. Earlier
 artifacts remain the reasoning and correction record; their superseded
 architecture and sequencing clauses do not add obligations to this document.
 The checkpoint disposition in section 7 is exhaustive.
@@ -371,10 +375,10 @@ full runtime backing in both modes. Cut 13 subsequently repaired supported
 access, as recorded in v10 and the current Context Contract. The fact that
 complete data remains internal does not require physical bounded-slice closures.
 
-Next: accept or correct the verified consolidation, and use section 7 for the
-next-release ticket cut. Preserve the local exposure report with its scripts
-and CSVs when integrating. The RFC index and roadmap distinguish this successor
-from accepted v10; no fresh seed cycle is needed.
+Next: use section 7 for the next-release ticket cut. The exposure report, its
+scripts and CSVs are preserved at `412f600`. The RFC index and roadmap record this
+document as operative and retain v10 as the derivation record; no fresh seed cycle
+is needed.
 
 [v10]: rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md
 [amendment]: rfc_point_in_time_historical_projection_v0_2_x_missingness_amendment.md

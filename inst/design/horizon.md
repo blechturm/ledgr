@@ -32,15 +32,16 @@ The maintainer requested a consolidated historical-projection synthesis after
 exposure was traced to requested values rather than inferred from event counts.
 [Synthesis v11](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
 records that direction, passed Claude's Type 1 verification on 2026-09-28,
-and awaits maintainer acceptance. Accepted v10 and the spike remain the
+and was accepted by the maintainer on 2026-09-28. V10 and the spike remain the
 derivation and correction record.
 
 The reported terminal-date correction affected one FDMLQ indicator cell at each
 tested width and no requests in the fourteen intended workloads. The separately
 reported execution check matched all 10,486 fills and found none on zero-volume
 bars. Claude checked these scoped results against the local evidence CSVs in
-final review. Section 7 assigns ownership for preserving the exposure report,
-scripts and CSVs. Assigned `assume_effective` clocks do
+final review. Section 7's preservation obligation is discharged at `412f600`,
+`dev/spikes/revision-exposure/`, with a README carrying source and workload
+provenance. Assigned `assume_effective` clocks do
 not establish empirical absence of late arrival, and the source-capture interval
 does not establish a historical revision rate.
 
@@ -50,7 +51,7 @@ Keep historical access, simple carry and missingness disclosure. Correctness for
 supported inputs remains owed; ordinary preparation and, where necessary,
 whole-series recalculation are admitted. Existing fact segments are unaffected.
 
-On acceptance, v11 replaces the earlier narrowing entry's implementation-route
+V11, now accepted, replaces the earlier narrowing entry's implementation-route
 assumption that bounded incremental revision must be established first. The
 next-release narrowing goal remains scheduled; it can revise window composition
 without carry and needs its own correctness coverage, not a mandated storage
