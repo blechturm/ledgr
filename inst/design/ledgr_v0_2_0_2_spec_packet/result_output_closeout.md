@@ -1,14 +1,15 @@
 # Result Output Closeout
 
-**Status:** Agent-provisional; awaiting independent Type 1 review.
+**Status:** Agent-provisional; corrections verified, awaiting maintainer
+acceptance.
 **Date:** 2026-09-28
 **Cut:** 18
 **Workstream:** 25
 **Tickets:** LDG-2869 and LDG-2880 through LDG-2884
 **Baseline:** `ddb7076`
 **Implementation:** `83b3cb2`, `00e4352`, `eff7937`, `3301b84`,
-`5b92c1d`, `d4e127d` and correction `3ccb3a3`, plus this closeout
-record.
+`5b92c1d`, `d4e127d` and corrections `3ccb3a3` and `3dd0c18`, plus this
+closeout record.
 
 ## Outcome
 
@@ -94,11 +95,11 @@ in-memory objects replaced setup that the assertions did not test; existing
 public-path blocks continue to own those boundaries. No production code was
 changed in that gate-only correction.
 
-The correction record selected and passed 479 of 479 blocks in 97.480 seconds,
+The final record selected and passed 479 of 479 blocks in 96.790 seconds,
 with no failures or skips. The independent checker returned
 `LEDGR_TEST_GATE_OK` against the 112-second bound. Records are at:
 
-`C:/Users/maxth/ledgr-research/.tmp/ws25-correction-fast`
+`C:/Users/maxth/ledgr-research/.tmp/ws25-final-correction-fast`
 
 ## Shape And Cost
 
@@ -132,8 +133,9 @@ before corporate-action evidence.
 The metadata-bearing Experiment Store, Reproducibility and Research Workflow
 articles were regenerated here. Quickstart, Strategy Development, Custom
 Indicators, Corporate-Action Cash, Sweeps, Metric Contexts And Conventions,
-and the concurrent README rewrite remain the explicit Workstream 26
-documentation handoff; they are not silently claimed current by this closeout.
+Survivorship Bias, and the concurrent README rewrite remain the explicit
+Workstream 26 documentation handoff; they are not silently claimed current by
+this closeout.
 
 ## Sequencing And Governance
 
@@ -142,6 +144,8 @@ Workstream 26, and Workstream 26 blocks Workstream 15. This lets the README and
 all articles be corrected once against the final output surface.
 
 The independent combined Type 1 and Type 2 cut review, the first close review
-and the requested focused re-review total three invocations over six completed
-tickets, `3 / 6 = 0.500`, at the gate. This closeout remains agent-provisional
-until the maintainer accepts the focused re-review.
+and its focused re-review total three invocations over six completed tickets,
+`3 / 6 = 0.500`, at the gate. The focused review found the recovered-function
+line outside the shared formatter and Survivorship Bias absent from the
+documentation handoff; both are corrected. This closeout remains
+agent-provisional until maintainer acceptance.

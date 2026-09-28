@@ -1037,15 +1037,19 @@ that the absent-policy oracle had lost exact values, and that three metadata
 labels were not aligned. Correction `3ccb3a3` replaces FIFO replay with one
 DuckDB equity aggregate plus a linear event pass, restores the policy oracle,
 aligns both metadata prints, repairs summary spacing and labels the metrics
-object's persisted-prefix scope. The reader clock is 0.11 seconds at 6,200
-fills and 0.28 seconds at 31,400 fills, with exact closed-trade parity to full
-metrics. The correction fast record passed 479/479 blocks in 97.480 seconds;
+object's persisted-prefix scope. Correction `3dd0c18` routes the remaining
+recovered-function line through the formatter and extends the detector to all
+eight extracted-strategy and all twenty run-info value lines. The reader clock
+is 0.11 seconds at 6,200 fills and 0.28 seconds at 31,400 fills, with exact
+closed-trade parity to full metrics. The final fast record passed 479/479
+blocks in 96.790 seconds;
 the checker passed the 112-second bound.
 
-Three metadata-bearing articles were regenerated here. The six other stale
+Three metadata-bearing articles were regenerated here. The seven other stale
 result-output articles and the concurrent README rewrite are explicitly owned
-by dependent Workstream 26. With the requested focused re-review, review
-accounting is 3/6 = 0.500. Workstream 25 and Cut 18 remain review pending.
+by dependent Workstream 26. The cut review, close review and focused re-review
+are 3/6 = 0.500. Workstream 25 and Cut 18 remain review pending for maintainer
+acceptance.
 
 ## Cut 19: Documentation corrections before the tag (open)
 
