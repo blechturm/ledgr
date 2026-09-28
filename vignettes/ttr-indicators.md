@@ -17,10 +17,14 @@
 }
 </style>
 
-This article covers supported TTR declarations and multi-output bundles.
-R functions and CSV-backed external features live in
-`vignette("custom-indicators", package = "ledgr")`; the conceptual
-feature lifecycle lives in `vignette("indicators", package = "ledgr")`.
+You want a TTR indicator, such as RSI, Bollinger bands, or MACD, as a
+feature. By the end of this article you can declare TTR indicators and
+multi-output bundles, predict their feature IDs and warmup, and know
+which TTR shapes availability-aware runs accept. You need it only if you
+use TTR; the built-in indicators need no extra package. R functions and
+CSV-backed external features live in
+`vignette("custom-indicators", package = "ledgr")`; the feature
+lifecycle lives in `vignette("indicators", package = "ledgr")`.
 
 ## Prerequisites
 
@@ -342,10 +346,9 @@ zero-trade checklist lives in
 
 ## Where Next
 
+- `vignette("custom-indicators", package = "ledgr")` covers writing your
+  own indicators and R or CSV adapters.
 - `vignette("indicators", package = "ledgr")` covers the feature
   lifecycle and strategy-time access patterns.
-- `vignette("custom-indicators", package = "ledgr")` covers custom
-  package indicators when an adapter is not enough.
 - `vignette("strategy-authoring-tools", package = "ledgr")` shows how
-  registered features feed a strategy’s helper pipeline, from one pulse
-  to a full run.
+  registered features feed a strategy’s helper pipeline.

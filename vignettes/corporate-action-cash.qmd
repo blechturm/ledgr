@@ -27,6 +27,10 @@ if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
 library(ledgr)
 ```
 
+Your strategy holds a stock that pays a dividend. Without corporate-action
+evidence the run cannot credit that cash; with it, you choose how and when it
+is credited. You need this article when distributions matter to your returns.
+
 ledgr can post a fully evidenced ordinary cash distribution without enabling
 the broader availability model. The research preset uses the vendor-normalized
 gross amount and credits it at the ex-dividend session close.
@@ -161,10 +165,12 @@ shared_cash_terms[
 
 ## Where Next
 
-- Read `vignette("point-in-time-inputs", package = "ledgr")` to place this fact
-  inside the complete sealed data model.
+- Read `vignette("survivorship-bias", package = "ledgr")` for what replacing
+  historical membership with today's survivors does to a result.
 - Read `vignette("corporate-action-adapter-authoring", package = "ledgr")` if
   you are translating vendor evidence into the canonical fact family.
+- Read `vignette("point-in-time-inputs", package = "ledgr")` to place this fact
+  inside the complete sealed data model.
 - Use `ledgr_corporate_action_summary()` when you need the full policy and
   settlement report rather than the compact run print shown above.
 

@@ -1823,3 +1823,50 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   }
   })
 })
+
+testthat::test_that("[LTB-0118] each article hands off to the next article in the reading flow", {
+  root <- testthat::test_path("..", "..")
+  pkgdown_path <- file.path(root, "_pkgdown.yml")
+  testthat::skip_if_not(file.exists(pkgdown_path), "pkgdown config not available during installed-package tests")
+  pkgdown <- readLines(pkgdown_path, warn = FALSE)
+  articles_start <- grep("^articles:", pkgdown)
+  articles_end <- grep("^(redirects|reference):", pkgdown)[[1L]]
+  entries <- grep("^      - ", pkgdown[articles_start:articles_end], value = TRUE)
+  flow <- sub("^      - ", "", entries)
+  source_path <- function(entry) file.path(root, "vignettes", paste0(entry, ".qmd"))
+  testthat::expect_true(all(file.exists(vapply(flow, source_path, character(1)))))
+
+  first_handoff <- function(entry) {
+    lines <- readLines(source_path(entry), warn = FALSE)
+    heading <- grep("^## Where Next\\s*$", lines)
+    if (length(heading) != 1L) return(NA_character_)
+    body <- paste(lines[(heading + 1L):min(length(lines), heading + 12L)], collapse = " ")
+    hit <- regmatches(body, regexpr('vignette\\("[a-z-]+"|[a-z-]+[.]html', body))
+    if (length(hit) == 0L) return(NA_character_)
+    sub("[.]html$", "", sub('^vignette\\("([a-z-]+)"$', "\\1", hit))
+  }
+  for (i in seq_len(length(flow) - 1L)) {
+    testthat::expect_identical(
+      first_handoff(flow[[i]]),
+      basename(flow[[i + 1L]]),
+      info = sprintf("Where Next of %s", flow[[i]])
+    )
+  }
+
+  sidebar <- paste(pkgdown[seq_len(articles_start - 1L)], collapse = " ")
+  sidebar_first <- regmatches(sidebar, regexpr("articles/[a-z-]+[.]html", sidebar))
+  readme <- paste(readLines(file.path(root, "README.Rmd"), warn = FALSE), collapse = " ")
+  learn_more <- sub(".*## Learn More", "", readme)
+  readme_first <- regmatches(learn_more, regexpr("articles/[a-z-]+[.]html", learn_more))
+  testthat::expect_identical(readme_first, sidebar_first)
+
+  for (entry in flow) {
+    rendered <- file.path(root, "vignettes", paste0(entry, ".md"))
+    lines <- readLines(rendered, warn = FALSE)
+    body <- lines[!grepl("^(#|\\s*$|<|:::|---|title:|format:|  )", lines)]
+    testthat::expect_false(
+      startsWith(body[[1L]], "```"),
+      info = sprintf("%s opens with code before prose", entry)
+    )
+  }
+})

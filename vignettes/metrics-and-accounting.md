@@ -17,10 +17,10 @@
 }
 </style>
 
-ledgr records a backtest as accounting evidence first and summary
-metrics second.
-
-The useful reading order is:
+After a run you want to know what actually happened: what filled, which
+positions closed, how equity moved, and where the summary numbers come
+from. ledgr records a backtest as accounting evidence first and summary
+metrics second, and this article reads it in that order:
 
 <div class="ledgr-diagram ledgr-accounting-hierarchy">
 
@@ -442,13 +442,10 @@ ledgr_results(final_bar_bt, what = "fills")
 
 ## Where Next
 
+- `vignette("risk-and-cost", package = "ledgr")` declares cost and risk
+  policy and shows what each changes in a fill.
 - `vignette("metric-contexts-and-conventions", package = "ledgr")`
   covers metric contexts, annualization, and diagnostics.
 - `vignette("execution-semantics", package = "ledgr")` explains why
   fills happen on the next bar and why the final decision bar cannot
   fill.
-- `vignette("survivorship-bias", package = "ledgr")` connects
-  point-in-time facts, missing sessions, diagnostics, and durable
-  explanations.
-- `?ledgr_cost_spread_bps` and `?ledgr_cost_fixed_fee` describe public
-  transaction-cost model declarations.

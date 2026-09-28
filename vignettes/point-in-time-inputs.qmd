@@ -52,6 +52,11 @@ This article adds those claims one at a time. By the end, you will have sealed
 and run one point-in-time bundle, seen a late-known halt change the public
 decision view, and have a reference map for every accepted input family.
 
+You need this section when your research depends on calendars, a universe that
+changes over time, trading restrictions, or corporate actions. A study on
+complete daily bars for a fixed set of instruments can skip it and continue
+with `vignette("strategy-authoring-tools", package = "ledgr")`.
+
 ```{r}
 #| label: library
 #| message: false

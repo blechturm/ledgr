@@ -1,11 +1,6 @@
 # Selection Integrity
 
 
-``` r
-library(ledgr)
-library(dplyr)
-```
-
 You have run a family of strategy variants. Several look attractive. The
 hard question is no longer which row has the largest Sharpe ratio; it is
 whether the search, sample length, return path, and number of trials
@@ -25,6 +20,11 @@ consistency, and Deflated Sharpe Ratio with effective trials to inspect
 multiple-testing pressure. You will then see how those diagnostics can
 inform explicit eligibility requirements without becoming a
 winner-selection rule.
+
+``` r
+library(ledgr)
+library(dplyr)
+```
 
 > [!WARNING]
 >
@@ -709,9 +709,9 @@ Implementation cross-checks are deliberately secondary evidence:
 
 ## Where Next
 
+- For re-running a selection rule on held-out windows, read
+  `vignette("walk-forward", package = "ledgr")`.
 - For candidate grids, retention, review, and promotion mechanics, read
   `vignette("sweeps", package = "ledgr")`.
-- For train/test degradation evidence, read
-  `vignette("walk-forward", package = "ledgr")`.
 - For lookahead and preprocessing failures these diagnostics cannot
   repair, read `vignette("leakage", package = "ledgr")`.

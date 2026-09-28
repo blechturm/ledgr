@@ -17,11 +17,10 @@
 }
 </style>
 
-Strategies should not compute features by reaching into the full future
-data panel. They should read pulse-known values that ledgr computed from
-registered indicator declarations. This article shows how those
-declarations become stable feature IDs, readable aliases, warmup
-behavior, and pulse-time accessors.
+Your strategy needs a moving average, a return, or an RSI at each
+decision. By the end of this article you can declare those features
+once, predict their IDs and warmup, and read their pulse-known values
+inside a strategy without ever reaching into future data.
 
 An **indicator** is a declared feature computation. ledgr computes
 indicators into pulse-known values; scalar accessors, mapped accessors,
@@ -665,9 +664,11 @@ For result-table interpretation after a zero-trade run, read
 
 ## Where Next
 
-- `vignette("ttr-indicators", package = "ledgr")` covers TTR adapters
-  and warmup verification.
-- `vignette("custom-indicators", package = "ledgr")` covers
-  package-native custom indicator authoring.
+- `vignette("leakage", package = "ledgr")` shows how a feature can leak
+  future information and which boundaries ledgr enforces.
+- `vignette("ttr-indicators", package = "ledgr")` covers TTR-backed
+  indicators and multi-output bundles.
+- `vignette("custom-indicators", package = "ledgr")` covers writing your
+  own indicators.
 - `vignette("strategy-development", package = "ledgr")` uses feature
   values inside complete strategies.

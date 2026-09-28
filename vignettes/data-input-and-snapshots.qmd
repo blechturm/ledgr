@@ -261,9 +261,9 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("strategy-development", package = "ledgr")` writes and runs a
+  strategy on a sealed snapshot.
 - `vignette("point-in-time-inputs", package = "ledgr")` adds sessions,
   membership, trading status, lifetime, and economic events.
-- `vignette("strategy-development", package = "ledgr")` uses a sealed
-  snapshot in a complete backtest.
 - `vignette("experiment-store", package = "ledgr")` covers stored runs,
   handles, backup, and recovery.

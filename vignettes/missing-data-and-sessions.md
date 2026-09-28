@@ -20,7 +20,8 @@ what it did not.
 By the end of this article you will have run a backtest over a panel
 with a real three-session hole in it, seen why nothing filled during the
 hole, and chosen the point at which an old price stops being good enough
-to value a position you still hold.
+to value a position you still hold. A complete panel with no gaps runs
+without any of this.
 
 ## The Big Picture: Four Questions, Not One
 
@@ -606,8 +607,8 @@ data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
 
 ## Where Next
 
-- For sealing, adapters, and snapshot identity, see
-  `vignette("data-input-and-snapshots", package = "ledgr")`.
+- For crediting a cash distribution to a held position, see
+  `vignette("corporate-action-cash", package = "ledgr")`.
 - For what a universe that changes over time does to your results, see
   `vignette("survivorship-bias", package = "ledgr")`.
 - For when orders fill and at which bar, see

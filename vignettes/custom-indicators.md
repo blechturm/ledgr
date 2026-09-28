@@ -5,7 +5,8 @@ Custom indicators are ledgr’s extension point for derived market data.
 By the end of this article you will have written the safest scalar form,
 registered it, read it as a whole-universe strategy vector, and
 identified when the optional vectorized and external-data paths need
-extra review.
+extra review. You need it when no built-in or TTR indicator computes
+what your rule reads.
 
 They are also the highest-risk feature boundary. A custom indicator can
 keep a strategy pulse-safe, or hide future information in an
@@ -343,9 +344,9 @@ pulse engine. Keep the boundary explicit:
 
 ## Where Next
 
+- `vignette("corporate-action-adapter-authoring", package = "ledgr")`
+  writes an adapter for vendor corporate-action records.
 - `vignette("indicators", package = "ledgr")` covers the built-in
   feature lifecycle and pulse-time accessors.
-- `vignette("ttr-indicators", package = "ledgr")` covers TTR-backed
-  indicators and multi-output bundles.
 - `vignette("leakage", package = "ledgr")` explains why custom feature
   code is a causal review boundary.

@@ -4,10 +4,11 @@
 You want the smallest useful ledgr loop before reading the tool
 chapters.
 
-This quickstart creates a sealed snapshot, runs one strategy, sweeps a
-small grid, and extracts one candidate for review. It is not a
-validation protocol and it is not a production deployment path. It is
-the shortest useful path from demo data to inspectable evidence.
+In a few minutes you will have run one strategy on sealed demo data,
+tried a small grid of variants, and kept one candidate as a run you can
+reopen. That is the shortest useful path from demo data to inspectable
+evidence; it is not a validation protocol and not a production
+deployment path.
 
 ## Load A Small Dataset
 
@@ -130,7 +131,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio, params) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_c0b37f5e3d12b3d3
+#> # ledgr sweep -- sweep_5caa13456fdd3351
 #> # A tibble: 2 x 5
 #>   candidate_id          status total_return sharpe_ratio params
 #>   <chr>                 <chr>  <chr>               <dbl> <list>
@@ -196,8 +197,9 @@ in-sample sweep into validation.
 
 ## Where Next
 
-Read `vignette("research-workflow", package = "ledgr")` for the full
-project loop, and `vignette("sweeps", package = "ledgr")` when the grid
-itself is what you need to understand. Read
-`vignette("walk-forward", package = "ledgr")` when you are ready to
-separate train-window selection from test-window evaluation.
+- `vignette("data-input-and-snapshots", package = "ledgr")` seals your
+  own data instead of the demo bars.
+- `vignette("strategy-development", package = "ledgr")` teaches the
+  strategy contract behind the rule you just ran.
+- `vignette("research-workflow", package = "ledgr")` follows a research
+  idea through code iterations, sweeps, and promotion.

@@ -1,11 +1,6 @@
 # Survivorship Bias And Point-In-Time Universes
 
 
-``` r
-library(ledgr)
-library(dplyr)
-```
-
 You pull today’s index constituents, fetch history for each one, and
 backtest a simple rule. The equity curve looks good. You check the
 arithmetic, reseal the snapshot, confirm the hashes. Everything
@@ -18,6 +13,16 @@ The file you downloaded lists the companies that are in the index
 Your strategy was never offered the chance to lose money on them. You
 didn’t choose to exclude them. The data did, using information from the
 end of your sample.
+
+You need this article whenever your universe comes from a list that
+changes over time, such as index constituents. A fixed set of
+instruments that all trade through the whole window does not have this
+problem.
+
+``` r
+library(ledgr)
+library(dplyr)
+```
 
 > [!WARNING]
 >
@@ -1071,6 +1076,15 @@ For sealing details, read
 timing and target semantics, read
 `vignette("execution-semantics", package = "ledgr")`. For durable run
 handling, read `vignette("experiment-store", package = "ledgr")`.
+
+## Where Next
+
+- `vignette("strategy-authoring-tools", package = "ledgr")` tests a
+  strategy on one pulse, sizes shares, and handles missing inputs.
+- `vignette("point-in-time-inputs", package = "ledgr")` covers the
+  complete input model.
+- `vignette("execution-semantics", package = "ledgr")` explains when and
+  at what price a target fills.
 
 ## References
 

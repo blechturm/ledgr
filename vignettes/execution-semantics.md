@@ -29,7 +29,8 @@ This article shows how ledgr turns a target into a fill. You emit
 holdings, not orders, and they fill at the next bar’s open, not the bar
 you decided on. That one-bar rule is the no-lookahead boundary: it keeps
 the simulation from trading on information it could not have had at
-decision time.
+decision time. Read it when a fill surprises you, or before you trust a
+result that trades on every bar.
 
 <div class="ledgr-diagram ledgr-execution-diagram">
 
@@ -346,15 +347,9 @@ bind_rows(
 
 ## Where Next
 
-- For warmup gating, feature maps, and `ledgr_passed_warmup()`, read
-  `vignette("indicators", package = "ledgr")` and
-  `vignette("strategy-development", package = "ledgr")`.
+- For what ledgr ships today and the direction toward paper and live
+  trading, read `vignette("research-to-production", package = "ledgr")`.
 - For the cost and risk policy applied at the fill, read
   `vignette("risk-and-cost", package = "ledgr")`.
-- For dynamic membership, retained nonmembers, stale valuation, and
-  blocked execution, read
-  `vignette("survivorship-bias", package = "ledgr")`.
 - For ledger, fills, trades, equity, and metrics, read
   `vignette("metrics-and-accounting", package = "ledgr")`.
-- For why same-bar information is unsafe to trade on, read
-  `vignette("leakage", package = "ledgr")`.

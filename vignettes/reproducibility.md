@@ -9,9 +9,10 @@ which sealed data, which strategy, which parameters, which features,
 which opening state, and which execution assumptions produced this run?
 ```
 
-This article explains the reproducibility model behind that question. It
-is about provenance and replay boundaries, not whether a strategy has
-predictive edge.
+By the end of this article you can tell which of your runs ledgr can
+replay exactly, which depend on code outside the run, and how to move a
+strategy into the self-contained tier. It is about provenance and replay
+boundaries, not whether a strategy has predictive edge.
 
 > [!WARNING]
 >
@@ -149,7 +150,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.880
+    Elapsed Sec:      0.920
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -542,10 +543,9 @@ strategy depended on.
 
 ## Where Next
 
-For the end-to-end research loop and the selection-validation
-distinction, read `vignette("research-workflow", package = "ledgr")`.
-For strategy-authoring patterns that use helper pipelines, one-pulse
-testing, and strategy state, read
-`vignette("strategy-authoring-tools", package = "ledgr")`. For
-store-level source inspection and reopen workflows, read
-`vignette("experiment-store", package = "ledgr")`.
+- `vignette("research-workflow", package = "ledgr")` follows a research
+  idea through code iterations, sweeps, and promotion.
+- `vignette("strategy-authoring-tools", package = "ledgr")` covers
+  helper pipelines, one-pulse testing, and strategy state.
+- `vignette("experiment-store", package = "ledgr")` covers store-level
+  source inspection and reopening.

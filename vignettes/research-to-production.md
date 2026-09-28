@@ -1,10 +1,12 @@
 # Design Philosophy: From Research to Production
 
 
-ledgr currently ships a research engine. Its durable experiments, pulse
-contract, and event-derived accounting are designed so later paper and
-live systems do not have to discard the research model. Those later
-systems have not shipped.
+You want to know whether research done in ledgr can later carry into
+paper or live trading, and what ships today. ledgr currently ships a
+research engine. Its durable experiments, pulse contract, and
+event-derived accounting are designed so later paper and live systems do
+not have to discard the research model. Those later systems have not
+shipped.
 
 This article starts with the research workflow you can use now, then
 shows the longer arc the architecture is intended to support. A design
@@ -143,11 +145,9 @@ this article.
 
 ## Where Next
 
+- [Why ledgr is built in R](why-r.html) makes the case for an R-native
+  research stack.
 - `vignette("research-workflow", package = "ledgr")` shows the current
   project-local research loop.
-- `vignette("walk-forward", package = "ledgr")` shows held-out
-  evaluation over sweep and run surfaces.
-- `vignette("risk-and-cost", package = "ledgr")` explains the
-  target-risk, timing, cost, liquidity, and OMS boundaries.
 - `vignette("reproducibility", package = "ledgr")` covers strategy
   source, tiers, and trust boundaries.

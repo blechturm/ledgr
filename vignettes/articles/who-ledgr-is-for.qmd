@@ -9,9 +9,9 @@ execute:
   echo: true
 ---
 
-ledgr is not for everyone. This article is the honest version of that
-statement: who the package is built for, who it is not built for, and what to
-use instead if you do not fit.
+Before you invest time in ledgr, decide whether it fits your research. This
+article says who the package is built for, who it is not built for, and what
+to use instead if you do not fit.
 
 For financial-use boundaries, see the project
 [disclaimer](https://github.com/blechturm/ledgr/blob/main/DISCLAIMER.md):
@@ -151,8 +151,8 @@ an agent generating hypotheses faster than you can review them. If those
 situations sound far away, ledgr may feel heavy now and become valuable later.
 That is a fine reason to bookmark the project and come back to it.
 
-## Reading on
+## Where Next
 
+- [Quickstart](../articles/quickstart.html): run one strategy, a small sweep and a promotion on demo data
 - [Why ledgr is built in R](why-r.html): the design culture argument
-- [Research Workflow](../articles/research-workflow.html): the reproducible research loop
-- [Research to production](../articles/research-to-production.html): the long-term vision
+- [Research to production](../articles/research-to-production.html): what ships today and the long-term direction

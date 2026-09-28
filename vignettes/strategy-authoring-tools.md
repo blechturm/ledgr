@@ -20,6 +20,8 @@ fixes a problem the previous one showed:
 
 By the end you will have tested each version on one pulse, checked its
 share sizing by hand, run all three, and compared how often they trade.
+Read it once your strategy ranks or sizes instruments, or needs to
+remember something between decisions.
 
 ## Set Up
 
@@ -746,13 +748,11 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("ttr-indicators", package = "ledgr")` declares TTR
+  indicators such as RSI, Bollinger bands, and MACD.
 - `vignette("strategy-development", package = "ledgr")` covers the
   strategy contract, `ctx$flat()` and `ctx$hold()`, and a first run.
-- `vignette("indicators", package = "ledgr")` covers feature IDs,
-  warmup, and feature maps with readable aliases.
 - `vignette("sweeps", package = "ledgr")` compares parameter values such
   as `invested` and `every` systematically.
 - `vignette("reproducibility", package = "ledgr")` explains preflight
   tiers and why strategies must be self-contained.
-- `vignette("survivorship-bias", package = "ledgr")` runs an
-  availability-aware strategy end to end.

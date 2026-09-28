@@ -302,10 +302,13 @@ sets.
 
 ## Where Next
 
+- If your research needs calendars, changing universes, trading
+  restrictions, or corporate actions, continue with
+  `vignette("point-in-time-inputs", package = "ledgr")`; a study on
+  complete daily bars can go on to
+  `vignette("strategy-authoring-tools", package = "ledgr")`.
 - For the sweep, selection and promotion loop this builds on, see
   `vignette("sweeps", package = "ledgr")`.
-- For hashes, source capture, and the limits of provenance, see
-  `vignette("reproducibility", package = "ledgr")`.
 - For the Sharpe ratio and annualization conventions behind these
   scores, see
   `vignette("metric-contexts-and-conventions", package = "ledgr")`.

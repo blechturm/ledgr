@@ -1,6 +1,12 @@
 # Authoring A Corporate-Action Adapter
 
 
+You have corporate-action records from a data vendor and want ledgr to
+use them. This article shows how to write the adapter that translates
+those records into ledgr’s canonical facts, and how to seal the result.
+It is for adapter authors; if your facts already use ledgr’s canonical
+form, `vignette("corporate-action-cash", package = "ledgr")` is enough.
+
 An adapter has one job: translate a source’s vocabulary and units into
 ledgr’s canonical, vendor-neutral corporate-action facts. It must not
 make portfolio policy decisions. Sealing then validates and binds those
@@ -218,10 +224,11 @@ settlement, net cash, tax correctness, or exact recipient exposure.
 
 ## Where Next
 
+- Read `vignette("metric-contexts-and-conventions", package = "ledgr")`
+  for the annualization and risk-free assumptions behind the metrics.
 - Read `vignette("corporate-action-cash", package = "ledgr")` to see a
   sealed cash fact affect an ordinary research run.
 - Read `vignette("point-in-time-inputs", package = "ledgr")` for the
-  complete fact bundle, four clocks, and physical-axis relationship.
-- Use the constructor help as the field-level reference when mapping a
-  real vendor source; this fictional adapter is a boundary example, not
-  a vendor specification.
+  complete fact bundle and its four clocks.
+- Use `?ledgr_facts_equity_corporate_actions` as the field-level
+  reference when mapping a real vendor source.

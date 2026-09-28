@@ -52,10 +52,11 @@ knitr::knit_hooks$set(
 </style>
 ```
 
-Metrics are only useful when their assumptions are visible. This companion to
-The Accounting Model shows where ledgr stores those assumptions, how
-annualization and risk-free-rate choices affect metrics, and how to inspect the
-metric context that travels with runs, sweeps, and promotions.
+Your Sharpe ratio depends on assumptions: how many bars make a year, and which
+risk-free rate applies. By the end of this article you can see where ledgr
+stores those assumptions, how changing them moves the metrics, and how the same
+context travels with runs, sweeps, and promotions. You need it when your data
+is not daily US-equity bars, or when you compare metrics across runs.
 
 ## Prerequisites
 
@@ -352,9 +353,9 @@ close(bt)
 
 ## Where Next
 
+- `vignette("execution-semantics", package = "ledgr")` explains when and at
+  what price a target fills.
 - `vignette("metrics-and-accounting", package = "ledgr")` is the shorter
   accounting-first tutorial.
 - `vignette("sweeps", package = "ledgr")` shows how metric contexts thread
   through parameter sweeps.
-- `vignette("walk-forward", package = "ledgr")` shows how selected-candidate
-  test runs retain metric context evidence.

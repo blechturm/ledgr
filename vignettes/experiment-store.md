@@ -1,9 +1,10 @@
 # Experiment Store
 
 
-The experiment store keeps committed run evidence: run records, labels,
-comparison surfaces, recovery metadata, and reopened results. For
-snapshot creation and data-input boundaries, read
+Every committed run is stored with its evidence. By the end of this
+article you can find your runs again, label and compare them, see what
+produced each one, and reopen them in a later session. For snapshot
+creation and data-input boundaries, read
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
 > [!NOTE]
@@ -186,7 +187,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.860
+    Elapsed Sec:      0.870
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -479,13 +480,9 @@ when the workflow is finished.
 
 ## Where Next
 
-- `vignette("data-input-and-snapshots", package = "ledgr")` covers
-  snapshot creation and sealed-data boundaries.
+- `vignette("reproducibility", package = "ledgr")` explains what a
+  stored run can and cannot reproduce, and the strategy tiers.
 - `vignette("metrics-and-accounting", package = "ledgr")` covers fills,
   trades, equity rows, and metric definitions.
-- `vignette("strategy-development", package = "ledgr")` covers strategy
-  authoring.
-- `vignette("reproducibility", package = "ledgr")` covers strategy
-  source, preflight tiers, and trust boundaries.
-- `vignette("survivorship-bias", package = "ledgr")` reopens an
-  availability-aware run and recovers the same recorded explanation.
+- `vignette("data-input-and-snapshots", package = "ledgr")` covers
+  snapshot creation and sealed-data boundaries.

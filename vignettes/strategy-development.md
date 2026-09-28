@@ -527,14 +527,10 @@ ledgr_snapshot_close(snapshot)
 
 ## Where Next
 
+- `vignette("indicators", package = "ledgr")` declares the features a
+  strategy reads and explains their IDs and warmup.
 - `vignette("strategy-authoring-tools", package = "ledgr")` goes deeper
   on testing on one pulse, helper pipelines, share sizing, and strategy
   state.
-- `vignette("indicators", package = "ledgr")` explains feature identity
-  and strategy-time feature access.
-- `vignette("sweeps", package = "ledgr")` runs one strategy across a
-  grid of `params` and features.
-- `vignette("execution-semantics", package = "ledgr")` explains the fold
-  lifecycle and no-lookahead execution model.
-- `vignette("experiment-store", package = "ledgr")` shows how committed
-  run evidence is stored and reopened.
+- `vignette("execution-semantics", package = "ledgr")` explains when and
+  at what price a target fills.

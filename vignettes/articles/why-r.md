@@ -175,10 +175,10 @@ user.
 
 That is what R is for. That is why ledgr is built in it.
 
-## Reading on
+## Where Next
 
 - [Who ledgr is for](who-ledgr-is-for.html): the audience filter
+- [Quickstart](../articles/quickstart.html): run ledgr end to end on
+  demo data
 - [Research Workflow](../articles/research-workflow.html): the
   reproducible research loop
-- [Strategy development](../articles/strategy-development.html): the
-  readable strategy authoring model

@@ -388,12 +388,10 @@ do not reuse the article's IDs for changed configurations.
 
 ## Where Next
 
+- For finding, comparing, and reopening stored runs, see
+  `vignette("experiment-store", package = "ledgr")`.
 - For fill timing, next-open semantics, and the final-bar rule, see
   `vignette("execution-semantics", package = "ledgr")`.
-- For how fills become trades, equity, and metrics, see
-  `vignette("metrics-and-accounting", package = "ledgr")`.
-- For annualization and the risk-metric conventions behind the Sharpe ratio, see
-  `vignette("metric-contexts-and-conventions", package = "ledgr")`.
 - For cost and risk identity in the full provenance model, see
   `vignette("reproducibility", package = "ledgr")`.
 
