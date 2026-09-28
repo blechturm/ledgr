@@ -261,6 +261,17 @@ ledgr_corporate_action_composition_report <- function(con,
   )
 }
 
+#' Read a run's complete corporate-action policy record
+#'
+#' Returns the corporate-action fidelity, declared price basis, selected policy
+#' settings and identities, exercised choices, refusal counts, settlement
+#' totals, and effective-date omitted-value estimates recorded for one run.
+#'
+#' @param bt A `ledgr_backtest` object.
+#' @param con An optional open database connection used internally. Public
+#'   callers should leave this as `NULL`.
+#' @return A list-like `ledgr_corporate_action_summary` object.
+#' @export
 ledgr_corporate_action_summary <- function(bt, con = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
@@ -483,5 +494,15 @@ ledgr_print_corporate_action_summary <- function(summary) {
       ))
     }
   }
+  invisible(summary)
+}
+
+ledgr_print_corporate_action_summary_compact <- function(summary) {
+  if (!identical(summary$corporate_action_fidelity, "not_supplied")) {
+    return(ledgr_print_corporate_action_summary(summary))
+  }
+  cat("\nCorporate-Action Evidence:\n")
+  ledgr_print_corporate_action_headline(summary)
+  cat("  Full policy record: ledgr_corporate_action_summary(bt)\n")
   invisible(summary)
 }

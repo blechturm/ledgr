@@ -24,6 +24,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_cost_steps",
     "ledgr_cost_zero",
     "ledgr_corporate_actions",
+    "ledgr_corporate_action_summary",
     "ledgr_corporate_actions_research",
     "ledgr_corporate_actions_strict",
     "ledgr_db_init",

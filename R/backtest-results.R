@@ -666,19 +666,7 @@ summary.ledgr_backtest <- function(object,
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
 
-  timing <- ledgr_execution_timing_provenance(object$config)
-  cat("Execution Evidence:\n")
-  cat(sprintf("  Fill Timing:         %s\n", timing$execution_timing_convention))
-  timing_version <- timing$execution_timing_version
-  timing_version <- if (is.null(timing_version) || is.na(timing_version)) "N/A" else as.character(timing_version)
-  cat(sprintf("  Timing Version:      %s\n\n", timing_version))
-
   completion <- ledgr_backtest_completion_info(object)
-  ledgr_print_completion_info(completion)
-  ledgr_print_corporate_action_summary(
-    ledgr_corporate_action_summary(object)
-  )
-
   prefix_only <- ledgr_summary_prefix_only(completion)
   withheld_reason <- "withheld (achieved window is shorter than requested)"
   if (prefix_only) {
@@ -732,6 +720,19 @@ summary.ledgr_backtest <- function(object,
     error = function(e) NULL
   )
   ledgr_print_warmup_diagnostics(diagnostics)
+
+  timing <- ledgr_execution_timing_provenance(object$config)
+  cat("\nExecution Evidence:\n")
+  cat(sprintf("  Fill Timing:         %s\n", timing$execution_timing_convention))
+  timing_version <- timing$execution_timing_version
+  if (!is.null(timing_version) && !is.na(timing_version)) {
+    cat(sprintf("  Timing Version:      %s\n", as.character(timing_version)))
+  }
+
+  ledgr_print_completion_info(completion)
+  ledgr_print_corporate_action_summary_compact(
+    ledgr_corporate_action_summary(object)
+  )
 
   invisible(object)
 }

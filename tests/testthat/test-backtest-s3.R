@@ -29,9 +29,6 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
     out_summary,
     c(
       "ledgr Backtest Summary", "======================", "",
-      "Execution Evidence:",
-      "  Fill Timing:         dense_bar_timestamp",
-      "  Timing Version:      N/A", "",
       "Performance Metrics:",
       "  Total Return:        -0.26%",
       "  Annualized Return:   -12.37%",
@@ -46,7 +43,13 @@ testthat::test_that("ledgr_backtest S3 methods return tidy outputs", {
       "  Win Rate:            N/A (no trades)",
       "  Avg Trade:           N/A (no trades)", "",
       "Exposure:",
-      "  Time in Market:      83.33%"
+      "  Time in Market:      83.33%", "",
+      "Execution Evidence:",
+      "  Fill Timing:         dense_bar_timestamp", "",
+      "Corporate-Action Evidence:",
+      "Corporate actions: NOT SUPPLIED - returns may omit distributions",
+      "Price basis: UNDECLARED - distribution double counting cannot be ruled out",
+      "  Full policy record: ledgr_corporate_action_summary(bt)"
     )
   )
 

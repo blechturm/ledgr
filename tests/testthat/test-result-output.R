@@ -167,3 +167,58 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   testthat::expect_match(prefix_output, "Total Return (achieved prefix):", fixed = TRUE)
   testthat::expect_match(prefix_output, "Max Drawdown (achieved prefix):", fixed = TRUE)
 })
+
+testthat::test_that("[LTB-0108] summary answers before compact evidence", {
+  run <- ledgr_result_output_run(
+    as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+    "summary-order"
+  )
+  on.exit(close(run$bt), add = TRUE)
+  on.exit(ledgr_snapshot_close(run$snapshot), add = TRUE)
+
+  output <- utils::capture.output(summary(run$bt))
+  testthat::expect_lte(length(output), 30L)
+  performance <- match("Performance Metrics:", output)
+  execution <- match("Execution Evidence:", output)
+  corporate <- match("Corporate-Action Evidence:", output)
+  testthat::expect_true(performance < execution && execution < corporate)
+  testthat::expect_false(any(grepl("Timing Version:      N/A", output, fixed = TRUE)))
+  testthat::expect_identical(
+    output[corporate + 1:3],
+    c(
+      "Corporate actions: NOT SUPPLIED - returns may omit distributions",
+      "Price basis: UNDECLARED - distribution double counting cannot be ruled out",
+      "  Full policy record: ledgr_corporate_action_summary(bt)"
+    )
+  )
+  testthat::expect_false(any(grepl("  Setting ", output, fixed = TRUE)))
+
+  policy <- ledgr_corporate_action_summary(run$bt)
+  testthat::expect_s3_class(policy, "ledgr_corporate_action_summary")
+  testthat::expect_identical(policy$corporate_action_fidelity, "not_supplied")
+  testthat::expect_identical(
+    names(policy$selected_settings),
+    names(policy$selected_identities)
+  )
+  testthat::expect_identical(
+    policy$selected_settings,
+    ledgr:::ledgr_corporate_action_policy_settings(run$bt$config$corporate_actions)
+  )
+
+  completion <- ledgr:::ledgr_backtest_completion_info(run$bt)
+  completion$completion_evidence_available <- TRUE
+  completion$complete_performance <- FALSE
+  testthat::local_mocked_bindings(
+    ledgr_backtest_completion_info = function(...) completion,
+    .package = "ledgr"
+  )
+  prefix <- utils::capture.output(summary(run$bt))
+  testthat::expect_true(any(grepl("^Achieved-Prefix Metrics", prefix)))
+  testthat::expect_true(any(grepl("Total Return (prefix)", prefix, fixed = TRUE)))
+  testthat::expect_true(any(grepl("Max Drawdown (prefix)", prefix, fixed = TRUE)))
+  testthat::expect_true(any(grepl(
+    "Volatility (annual): withheld",
+    prefix,
+    fixed = TRUE
+  )))
+})
