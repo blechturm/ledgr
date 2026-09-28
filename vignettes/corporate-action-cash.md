@@ -167,6 +167,28 @@ same study also needs sessions, membership, status, lifetime or quantity
 events. A dense study that only needs evidenced cash distributions does
 not have to adopt every fact family.
 
+`AAA` is local to this article, not an alias for a shared `DEMO_*`
+instrument. The shared `ledgr_demo_pit_inputs` bundle carries the
+equivalent cash-dividend case and its sealed terms:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_cash_case <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "cash_dividend"
+)
+shared_cash_terms <- subset(
+  ledgr_demo_pit_inputs$corporate_actions,
+  parent_instrument_id == shared_cash_case$instrument_id[[1L]] &
+    as.Date(entitlement_time) == shared_cash_case$date[[1L]]
+)
+shared_cash_terms[
+  , c("subtype", "parent_instrument_id", "gross_cash_per_parent_unit")
+]
+#>                  subtype parent_instrument_id gross_cash_per_parent_unit
+#> 1 ordinary_cash_dividend              DEMO_03                       0.75
+```
+
 ## Where Next
 
 - Read `vignette("point-in-time-inputs", package = "ledgr")` to place

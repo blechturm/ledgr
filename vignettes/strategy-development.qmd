@@ -422,8 +422,8 @@ The rendered result is a short, tiny-universe teaching run. Its annualized
 volatility, drawdown and return describe only that fixture; none is evidence
 that the rule is attractive or that the annualization is stable. Read the
 numbers together: a positive final return can coexist with an intra-run
-drawdown, and one closed trade is far too little evidence for a strategy
-judgment.
+drawdown, and 24 closed trades from a tiny synthetic fixture are still far too
+little evidence for a strategy judgment.
 
 Do not expect a teaching strategy to be good. A weak or unattractive result is
 still useful evidence: ledgr records failed ideas with the same care as

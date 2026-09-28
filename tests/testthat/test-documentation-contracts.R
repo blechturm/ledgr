@@ -861,18 +861,33 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
   missing <- read_article("missing-data-and-sessions.qmd")
   adapter <- read_article("corporate-action-adapter-authoring.qmd")
   reproducibility <- read_article("reproducibility.qmd")
+  custom <- read_article("custom-indicators.qmd")
   ttr <- read_article("ttr-and-adapter-indicators.qmd")
   walk_forward <- read_article("walk-forward.qmd")
 
   testthat::expect_match(quickstart, "strategy <- function(ctx, params)", fixed = TRUE)
   testthat::expect_no_match(quickstart, "ledgr_demo_sma_crossover_strategy", fixed = TRUE)
   testthat::expect_match(indicators, "ctx$vec$feature(feature_id)", fixed = TRUE)
+  testthat::expect_no_match(
+    indicators,
+    "The canonical workflow is: register features on `ledgr_experiment()`, then read\npulse-known values through `ctx$feature()` or `ctx$features()` inside the\nstrategy.",
+    fixed = TRUE
+  )
   testthat::expect_match(indicators, "#| eval: !expr requireNamespace(\"TTR\"", fixed = TRUE)
   testthat::expect_match(leakage, "lead(close)", fixed = TRUE)
   testthat::expect_no_match(strategy_basics, "tomorrow_close = lead(close)", fixed = TRUE)
-  testthat::expect_match(survivorship, 'c("2020-01-06", "2020-01-13")', fixed = TRUE)
+  testthat::expect_match(
+    survivorship,
+    'rebalance_dates <- c("2020-01-06", "2020-01-13")',
+    fixed = TRUE
+  )
   testthat::expect_match(survivorship, "availability-aware execution outcome", fixed = TRUE)
   testthat::expect_match(sweeps, "business-objective helpers", fixed = TRUE)
+  testthat::expect_no_match(
+    sweeps,
+    "automatic ranking, objective functions, or `ledgr_tune()`",
+    fixed = TRUE
+  )
   testthat::expect_lt(
     regexpr("## Failure Rows And Contract Errors", sweeps, fixed = TRUE)[[1L]],
     regexpr("## Promote One Candidate", sweeps, fixed = TRUE)[[1L]]
@@ -882,6 +897,8 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
   testthat::expect_match(execution, "select(action, realized_pnl)", fixed = TRUE)
   testthat::expect_match(execution, "select(case, positions_value, equity)", fixed = TRUE)
   testthat::expect_match(missing, "ledgr_snapshot_quarantine()", fixed = TRUE)
+  testthat::expect_no_match(missing, "Two accessors are still missing", fixed = TRUE)
+  testthat::expect_no_match(missing, "there is no\naccessor for them yet", fixed = TRUE)
   testthat::expect_match(missing, "retained pulse history when `ts_utc` is omitted", fixed = TRUE)
   testthat::expect_match(
     adapter,
@@ -889,6 +906,12 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
     fixed = TRUE
   )
   testthat::expect_match(reproducibility, "dependency_versions", fixed = TRUE)
+  testthat::expect_match(
+    custom,
+    "supports both `fn(window)` and `fn(window, params)`",
+    fixed = TRUE
+  )
+  testthat::expect_match(custom, "fn = function(window, params)", fixed = TRUE)
   testthat::expect_match(ttr, "Only the exact public single-output `SMA(close, n)`", fixed = TRUE)
   testthat::expect_no_match(walk_forward, "answers the generalization question", fixed = TRUE)
 })

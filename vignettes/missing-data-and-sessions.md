@@ -580,6 +580,30 @@ lifetime and corporate actions, continue to
 `vignette("point-in-time-inputs", package = "ledgr")`. You do not need
 that full model for an ordinary dense-bars experiment.
 
+The identifiers in this article are local to this article; they are not
+extra history for the shared `DEMO_*` instruments. The shared
+`ledgr_demo_pit_inputs` bundle carries the same kind of
+missing-observation case, so you can connect this focused lesson to the
+complete input model:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_gap <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "missing_observation"
+)
+shared_gap_has_bar <- with(
+  ledgr_demo_pit_inputs$bars,
+  any(
+    instrument_id == shared_gap$instrument_id[[1L]] &
+      as.Date(ts_utc) == shared_gap$date[[1L]]
+  )
+)
+data.frame(shared_gap, observation_row_present = shared_gap_has_bar)
+#>                  type instrument_id       date observation_row_present
+#> 2 missing_observation       DEMO_04 2020-01-09                   FALSE
+```
+
 ## Where Next
 
 - For sealing, adapters, and snapshot identity, see

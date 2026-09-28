@@ -176,12 +176,15 @@ default is intentionally read-only:
 stored <- ledgr_run_strategy(snapshot, "qty_10", trust = FALSE)
 stored
 writeLines(stored$strategy_source_text)
-stored[c("R_version", "ledgr_version", "dependency_versions")]
+names(stored[c("R_version", "ledgr_version", "dependency_versions")])
+sort(names(stored$dependency_versions))
 ```
 
-The compact print emphasizes source identity. The explicit list subset above
-shows the recorded runtime versions that the prose claims; they are metadata,
-not a promise that every external system library can be reconstructed.
+The compact print emphasizes source identity. The field names above show where
+the recorded runtime and dependency versions live without making this article's
+render depend on whichever package versions happen to be installed today.
+Those versions are metadata, not a promise that every external system library
+can be reconstructed.
 
 `trust = FALSE` returns source text and metadata without parsing, evaluating, or
 executing the stored source. In this mode, the source text is just data.

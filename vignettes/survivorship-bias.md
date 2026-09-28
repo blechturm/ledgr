@@ -1039,6 +1039,29 @@ visible. For the complete reusable input model – bars, sessions,
 membership, status, lifetime, and corporate actions – read
 `vignette("point-in-time-inputs", package = "ledgr")`.
 
+`AAA`, `BBB`, and the `DEMO` venue are local to this article; they are
+not additions to the shared `DEMO_*` history. The shared
+`ledgr_demo_pit_inputs` bundle contains the equivalent delisting
+boundary:
+
+``` r
+data("ledgr_demo_pit_inputs", package = "ledgr")
+shared_delisting <- subset(
+  ledgr_demo_pit_inputs$cases,
+  type == "delisting"
+)
+shared_lifetime_boundary <- subset(
+  ledgr_demo_pit_inputs$lifetime,
+  instrument_id == shared_delisting$instrument_id[[1L]] &
+    as.Date(effective_from) == shared_delisting$date[[1L]]
+)
+shared_lifetime_boundary[
+  , c("instrument_id", "effective_from", "assertion", "terminal_event")
+]
+#>   instrument_id      effective_from      assertion terminal_event
+#> 6       DEMO_01 2020-01-14 21:00:00 known_inactive       delisted
+```
+
 ## What This Does And Does Not Establish
 
 The example shows five distinctions worth preserving:

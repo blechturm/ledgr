@@ -300,8 +300,12 @@ tibble(
   grid_name = c("original", "expanded"),
   candidates = c(length(grid$params), length(expanded_grid$params)),
   feature_combinations = c(
-    nrow(distinct(bind_rows(grid$feature_params))),
-    nrow(distinct(bind_rows(expanded_grid$feature_params)))
+    nrow(distinct(bind_rows(lapply(grid$params, `[[`, "feature_params")))),
+    nrow(distinct(bind_rows(lapply(
+      expanded_grid$params,
+      `[[`,
+      "feature_params"
+    ))))
   )
 )
 ```

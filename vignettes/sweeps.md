@@ -294,8 +294,12 @@ flowchart TB
 >   grid_name = c("original", "expanded"),
 >   candidates = c(length(grid$params), length(expanded_grid$params)),
 >   feature_combinations = c(
->     nrow(distinct(bind_rows(grid$feature_params))),
->     nrow(distinct(bind_rows(expanded_grid$feature_params)))
+>     nrow(distinct(bind_rows(lapply(grid$params, `[[`, "feature_params")))),
+>     nrow(distinct(bind_rows(lapply(
+>       expanded_grid$params,
+>       `[[`,
+>       "feature_params"
+>     ))))
 >   )
 > )
 > ```
@@ -303,8 +307,8 @@ flowchart TB
 >     # A tibble: 2 x 3
 >       grid_name candidates feature_combinations
 >       <chr>          <int>                <int>
->     1 original          16                    0
->     2 expanded          24                    0
+>     1 original          16                    4
+>     2 expanded          24                    6
 
 
 ## Precompute Shared Features
@@ -350,7 +354,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_bbe0e24fea59b45c
+    # ledgr sweep -- sweep_5bb77c89b83cc86c
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -391,7 +395,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_bbe0e24fea59b45c
+    # ledgr sweep -- sweep_5bb77c89b83cc86c
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -465,14 +469,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_1415ad3a9281fb0e feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
+    2 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
+    3 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
+    4 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
+    5 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
+    6 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
+    7 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
+    8 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -556,7 +560,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-28 18:35:33                    4           16          16
+    1 sma_retained_sweep 2026-09-28 19:16:10                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -583,7 +587,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-28 18:35:33.691619
+    Created At:        2026-09-28 19:16:10.982711
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -783,7 +787,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_2accd9596426174d
+    # ledgr sweep -- sweep_06eb654b6022ee45
     # A tibble: 2 x 6
       candidate_id          candidate_row status error_class          error_msg   params
       <chr>                         <int> <chr>  <chr>                <chr>       <list>
@@ -830,7 +834,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_bbe0e24fea59b45c
+    # ledgr sweep -- sweep_5bb77c89b83cc86c
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>

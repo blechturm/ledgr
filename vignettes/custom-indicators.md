@@ -63,12 +63,14 @@ range_3 <- ledgr_indicator(
 )
 ```
 
-The documented scalar contract is `fn(window)`: ledgr calls it on a
-bounded historical window ending at the current bar. Before
+The scalar contract supports both `fn(window)` and `fn(window, params)`.
+ledgr calls the one-argument form with a bounded historical window
+ending at the current bar. When the function declares a second argument,
+ledgr also supplies the indicator’s deterministic `params`. Before
 `stable_after`, ledgr returns `NA_real_` for that feature. After warmup,
 the scalar result must be one finite numeric value. Put configuration in
-the indicator’s deterministic `params` for identity; do not rely on an
-extra scalar-function argument.
+`params` so it is part of feature identity; use the two-argument form
+when the calculation needs that configuration.
 
 This path is easy to reason about because the function receives only
 historical rows up to the current decision point. It is the right first
@@ -92,8 +94,8 @@ equivalent after warmup.
 ``` r
 sma_3_custom <- ledgr_indicator(
   id = "sma_3_custom",
-  fn = function(window) {
-    mean(utils::tail(window$close, 3L))
+  fn = function(window, params) {
+    mean(utils::tail(window$close, params$n))
   },
   series_fn = function(bars, params) {
     stats::filter(
