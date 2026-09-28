@@ -1,6 +1,6 @@
 # Pulse Inspection Parity Closeout
 
-**Status:** Agent-provisional; awaiting maintainer acceptance.
+**Status:** Accepted by the maintainer.
 **Date:** 2026-09-28
 **Cut:** 17
 **Workstream:** 24
@@ -158,5 +158,5 @@ invocation over three completed tickets, a historical ratio of
 `2 / 3 = 0.667` against the 0.5 gate. The breach is recorded rather than
 hidden; adding unrelated work cannot change it. The second review's cache
 finding is closed by a direct payload correction and a failing mutation. No
-third review is claimed here. Maintainer acceptance, not this draft, closes
-Workstream 24 and Cut 17 and unblocks Workstream 15.
+third review was requested. The maintainer accepted this closeout on
+2026-09-28, closing Workstream 24 and Cut 17 and unblocking Workstream 15.

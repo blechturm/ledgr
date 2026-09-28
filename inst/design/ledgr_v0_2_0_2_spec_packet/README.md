@@ -940,7 +940,7 @@ review-gate breach in advance because the third review materially changed the
 public UX; the 0.5 threshold itself is unchanged.
 
 Workstream 23 depends on accepted Workstream 22 and unblocks Workstream 24;
-accepted Workstream 24 now blocks the release gate.
+accepted Workstream 24 now unblocks the release gate.
 Implementation follows the ticket dependencies: LDG-2868 and LDG-2870 through
 LDG-2873 establish the helper surface, LDG-2874 replaces the worked-example
 workarounds and LDG-2875 closes the cut. One Type 1 review occurs at workstream
@@ -960,7 +960,7 @@ observation, an unclosed inspection pulse, was corrected at `b419733` and
 added to LTB-0099 without another review round. The maintainer accepted
 Workstream 23 and Cut 16 on 2026-09-28. The recorded ratio is 5/7 = 0.714.
 
-## Cut 17: Pulse inspection parity and loop-warning coverage (open)
+## Cut 17: Pulse inspection parity and loop-warning coverage (closed)
 
 Authority: the live feature contract, the accepted strategy-context-surface
 synthesis and the two product defects recorded by the final strategy-article
@@ -998,6 +998,7 @@ instrument; its full-series mutation fails. The correction ordinary fast
 record passed 474 of 474 blocks in 96.390 seconds and its checker passed the
 112-second gate. LTB-0105 proves that changes to scalar windowing or
 normalization move the feature-engine cache identity. The agent-provisional
-record is `pulse_inspection_parity_closeout.md`; Workstream 24 and Cut 17
-await maintainer acceptance. The two reviews make the historical ratio
-2/3 = 0.667 against the 0.5 gate.
+record is `pulse_inspection_parity_closeout.md`. The two reviews make the
+historical ratio 2/3 = 0.667 against the 0.5 gate. The maintainer accepted
+Workstream 24 and Cut 17 on 2026-09-28 without a third review because the
+final cache-identity correction was mechanical and mutation-detected.
