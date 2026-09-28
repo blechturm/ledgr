@@ -289,15 +289,17 @@ ledgr_weight_equal <- function(selection) {
 #'   also appear in `weights`, even at zero weight.
 #' @return A full-universe `ledgr_target` object.
 #' @examples
-#' weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
+#' weights <- ledgr_weights(c(AAA = 0.5, BBB = 0.5),
+#'                          universe = c("AAA", "BBB"))
 #' ctx <- list(
 #'   universe = c("AAA", "BBB"),
 #'   equity = 1000,
-#'   vec = list(
-#'     close = c(AAA = 50, BBB = 100),
-#'     position = c(AAA = 2, BBB = 0)
-#'   )
+#'   vec = list(close = c(AAA = 50, BBB = 100))
 #' )
+#' ledgr_target_rebalance(weights, ctx, equity_fraction = 0.5)
+#'
+#' ctx$vec$position <- c(AAA = 2, BBB = 0)
+#' weights <- ledgr_weights(c(BBB = 1), universe = c("AAA", "BBB"))
 #' ledgr_target_rebalance(weights, ctx, keep = "AAA")
 #'
 #' @section Articles:
@@ -357,7 +359,23 @@ ledgr_target_rebalance <- function(weights,
     rlang::abort("Levered weights are not supported; `sum(abs(weights))` must be <= 1.", class = "ledgr_levered_weights")
   }
 
-  position_vec <- stats::setNames(as.numeric(ctx$vec$position), universe)
+  position_required <- availability_active || length(keep) > 0L
+  position <- if (position_required) ctx$vec$position else NULL
+  if (position_required &&
+      (is.null(position) || length(position) != length(universe))) {
+    rlang::abort(
+      paste0(
+        "`ctx$vec$position` must provide one value per decision-axis ",
+        "instrument when availability is active or `keep` is used."
+      ),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+  position_vec <- if (position_required) {
+    stats::setNames(as.numeric(position), universe)
+  } else {
+    stats::setNames(numeric(length(universe)), universe)
+  }
   target <- if (availability_active) {
     position_vec
   } else {

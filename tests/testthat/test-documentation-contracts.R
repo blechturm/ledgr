@@ -163,13 +163,11 @@ testthat::test_that("current documentation artifacts, links, and optional bounda
 })
 
 testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper policies", {
-  authoring_qmd <- paste(
-    readLines(
-      ledgr_test_source_vignette("strategy-authoring-tools.qmd"),
-      warn = FALSE
-    ),
-    collapse = "\n"
+  authoring_qmd_lines <- readLines(
+    ledgr_test_source_vignette("strategy-authoring-tools.qmd"),
+    warn = FALSE
   )
+  authoring_qmd <- paste(authoring_qmd_lines, collapse = "\n")
   authoring_md <- paste(
     readLines(
       ledgr_test_source_vignette("strategy-authoring-tools.md"),
@@ -199,17 +197,47 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     )
   }, character(1))
 
+  qmd_chunk <- function(lines, label) {
+    label_line <- which(trimws(lines) == paste0("#| label: ", label))
+    testthat::expect_length(label_line, 1L)
+    tail <- lines[seq.int(label_line + 1L, length(lines))]
+    close <- which(trimws(tail) == "```")[[1L]]
+    paste(lines[seq.int(label_line, label_line + close)], collapse = "\n")
+  }
+  trend_chunk <- qmd_chunk(authoring_qmd_lines, "trend-momentum")
+  weekly_chunk <- qmd_chunk(authoring_qmd_lines, "weekly-trend-momentum")
+  top_chunk <- qmd_chunk(authoring_qmd_lines, "top-momentum")
+
   for (needle in c(
-    'ledgr_select_top_n(params$n, partial = "allow")',
+    'ledgr_select_top_n(short_signal, n = 2, partial = "allow")',
     'ledgr_signal_feature()` for another',
-    'ledgr_target_rebalance(ctx, keep = "DEMO_04")',
+    'ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")',
     'ledgr_selection(where = rising, missing = "exclude")',
     'state_prev = list(pulses_seen = 1)',
     'weights |>\n    ledgr_target_rebalance(ctx'
   )) {
     testthat::expect_match(authoring_qmd, needle, fixed = TRUE, info = needle)
   }
-  testthat::expect_no_match(authoring_qmd, "rising <- !is.na", fixed = TRUE)
+  for (chunk in list(trend_chunk, weekly_chunk)) {
+    testthat::expect_match(
+      chunk,
+      'ledgr_selection(where = rising, missing = "exclude")',
+      fixed = TRUE
+    )
+    testthat::expect_no_match(chunk, "is.na(", fixed = TRUE)
+  }
+  testthat::expect_no_match(top_chunk, 'partial = "allow"', fixed = TRUE)
+  testthat::expect_no_match(
+    development_qmd,
+    'ledgr_select_top_n(n = params$n, partial = "allow")',
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    weekly_chunk,
+    "targets[which(close < trend)] <- 0",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(weekly_chunk, "as.logical(exits)", fixed = TRUE)
   testthat::expect_no_match(
     authoring_qmd,
     "equity_fraction = 0.6",
@@ -235,10 +263,16 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     "nrow(top_momentum_fills)\n#> [1] 136",
     'nrow(ledgr_results(trend_momentum_run, what = "fills"))\n#> [1] 177',
     paste0(
+      'ledgr_select_top_n(short_signal, n = 2, partial = "allow")\n',
+      "#> <ledgr_selection> [4 assets]\n",
+      "#> 1 selected"
+    ),
+    "#>       0       8       0       4",
+    paste0(
       "weekly_trend_momentum(exit_pulse, weekly_params)\n",
       "#> $targets\n",
       "#> DEMO_01 DEMO_02 DEMO_03 DEMO_04\n",
-      "#>       0       0       0       0\n",
+      "#>       0      10       0       0\n",
       "#>\n",
       "#> $state_update\n",
       "#> $state_update$pulses_seen\n",
@@ -308,7 +342,11 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
   testthat::expect_match(strategy_doc, "a call to your own function defined outside the\\s+strategy, such as `trend_momentum\\(\\)`, is rejected before the run starts")
   testthat::expect_match(strategy_doc, "returning `ctx\\$hold\\(\\)` does not guarantee that no fill occurs")
   testthat::expect_match(strategy_doc, "rising <- momentum > 0 & close > trend", fixed = TRUE)
-  testthat::expect_match(strategy_doc, 'where = close < trend,\n      missing = "exclude"', fixed = TRUE)
+  testthat::expect_match(
+    strategy_doc,
+    "targets[which(close < trend)] <- 0",
+    fixed = TRUE
+  )
   testthat::expect_no_match(strategy_doc, "rising <- !is.na", fixed = TRUE)
   testthat::expect_match(strategy_doc, "`vignette\\(\"reproducibility\", package = \"ledgr\"\\)` explains why")
   testthat::expect_match(strategy_doc, "Test A Strategy On One Pulse", fixed = TRUE)

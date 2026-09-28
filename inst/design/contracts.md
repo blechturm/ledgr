@@ -674,6 +674,9 @@ The strategy preflight boundary originated in
   IDs named in `keep` preserve their current quantities and reserve their
   absolute marked exposure exactly once; weights and `equity_fraction` apply
   to the remaining capital. A kept ID must not also occur in the weights.
+  Dense sizing without `keep` does not require a position plane. Availability
+  sizing or an explicit `keep` requires one position per decision-axis ID and
+  fails with `ledgr_invalid_strategy_helper` when that plane is absent.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
 - `ledgr_signal_feature()` reads one registered feature and deliberately masks

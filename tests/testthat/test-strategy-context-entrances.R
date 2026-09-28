@@ -340,6 +340,50 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
 })
 
 testthat::test_that("[LTB-0097] rebalance reserves explicitly kept positions", {
+  legacy_ctx <- list(
+    universe = c("AAA", "BBB"),
+    equity = 1000,
+    vec = list(close = c(AAA = 50, BBB = 100))
+  )
+  legacy_weights <- ledgr_weights(
+    c(AAA = 0.5, BBB = 0.5),
+    universe = legacy_ctx$universe
+  )
+  testthat::expect_identical(
+    unclass(ledgr_target_rebalance(
+      legacy_weights,
+      legacy_ctx,
+      equity_fraction = 0.5
+    )),
+    c(AAA = 5, BBB = 2)
+  )
+  no_position_read <- legacy_ctx
+  no_position_read$vec <- new.env(parent = emptyenv())
+  no_position_read$vec$close <- legacy_ctx$vec$close
+  makeActiveBinding(
+    "position",
+    function(value) {
+      rlang::abort("dense sizing without keep must not read positions")
+    },
+    no_position_read$vec
+  )
+  testthat::expect_identical(
+    unclass(ledgr_target_rebalance(
+      legacy_weights,
+      no_position_read,
+      equity_fraction = 0.5
+    )),
+    c(AAA = 5, BBB = 2)
+  )
+  testthat::expect_error(
+    ledgr_target_rebalance(
+      ledgr_weights(c(BBB = 1), universe = legacy_ctx$universe),
+      legacy_ctx,
+      keep = "AAA"
+    ),
+    class = "ledgr_invalid_strategy_helper"
+  )
+
   dense <- strategy_context_entrance_fixture(
     positions = c(AAA = 4),
     equity = 100

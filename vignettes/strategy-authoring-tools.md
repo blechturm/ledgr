@@ -67,7 +67,7 @@ instruments with the highest 5-day return, using half of the account.
 top_momentum <- function(ctx, params) {
   weights <- ctx |>
     ledgr_signal_return(lookback = 5) |>
-    ledgr_select_top_n(params$n, partial = "allow") |>
+    ledgr_select_top_n(params$n) |>
     ledgr_weight_equal()
 
   weights |>
@@ -171,6 +171,30 @@ weights
 #>     0.5     0.5
 ```
 
+The default warns when fewer than `n` finite scores are available. That
+makes an unexpectedly short ranking visible. Opt out only when selecting
+fewer names is an intended policy:
+
+``` r
+short_signal <- ledgr_signal(c(
+  DEMO_01 = 0.02,
+  DEMO_02 = NA_real_,
+  DEMO_03 = NA_real_,
+  DEMO_04 = NA_real_
+))
+
+tryCatch(
+  ledgr_select_top_n(short_signal, n = 2),
+  warning = conditionMessage
+)
+#> [1] "Only 1 available signal value(s); selecting all available instruments. If this short selection is intentional, use `partial = \"allow\"`."
+ledgr_select_top_n(short_signal, n = 2, partial = "allow")
+#> <ledgr_selection> [4 assets]
+#> 1 selected
+#> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+#>    TRUE   FALSE   FALSE   FALSE
+```
+
 `ledgr_signal_return()` reads the registered `return_5` feature; it
 never registers a feature for you. Use `ledgr_signal_feature()` for
 another registered feature. Use `ledgr_signal(ctx, values = ...)` only
@@ -236,17 +260,31 @@ longer wants.
 >
 > Name a position in `keep` when you want to preserve it while rebalancing
 > the rest. ledgr keeps its current quantity, reserves its marked exposure
-> once, and sizes the new weights from the capital that remains. With
-> equity 100 and a kept position worth 40, weight 1 sizes from 60:
+> once, and sizes the new weights from the capital that remains. This
+> pulse holds four shares of `DEMO_04` and has 600 in cash. Keeping
+> `DEMO_04` leaves that 600 for the new position:
 >
 > ``` r
-> targets <- weights |>
->   ledgr_target_rebalance(ctx, keep = "DEMO_04")
+> keep_pulse <- ledgr_pulse_snapshot(
+>   snapshot,
+>   universe = instruments,
+>   ts_utc = ledgr_utc("2019-03-12"),
+>   features = features,
+>   cash = 600,
+>   positions = c(DEMO_04 = 4)
+> )
+> keep_weights <- ledgr_weights(c(DEMO_02 = 1), universe = instruments)
+> keep_weights |>
+>   ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")
+> #> <ledgr_target> [4 assets]
+> #> non-NA: 4/4
+> #> DEMO_01 DEMO_02 DEMO_03 DEMO_04
+> #>       0       8       0       4
 > ```
 >
 > `equity_fraction` applies to that remaining capital. Do not shrink it by
-> hand to make room for the kept position; doing both would reserve the
-> exposure twice and underinvest the account.
+> hand to make room for the kept position; doing both would shrink the
+> remaining budget a second time and underinvest the account.
 
 
 ## Run The First Version
@@ -282,11 +320,9 @@ top_momentum_fills |>
 Nothing trades during the first week. Until five prior bars exist, every
 5-day return is `NA`; ranking skips missing scores, finds nothing to
 choose, and returns an empty selection without a warning, so the target
-is all zeros. If only one score is available, `partial = "allow"`
-deliberately accepts that short selection. After warmup, the strategy
-trades almost every day because the two highest returns keep changing.
-Each decision fills at the next open, so a fill’s date is the pulse
-after the decision.
+is all zeros. After warmup, the strategy trades almost every day because
+the two highest returns keep changing. Each decision fills at the next
+open, so a fill’s date is the pulse after the decision.
 
 If a whole run finishes with no fills, test the strategy on a late
 pulse. A feature that never warms up looks exactly like this first week,
@@ -489,12 +525,7 @@ weekly_trend_momentum <- function(ctx, params) {
       ledgr_target_rebalance(ctx, equity_fraction = params$invested)
   } else {
     targets <- ctx$hold()
-    exits <- ledgr_selection(
-      ctx,
-      where = close < trend,
-      missing = "exclude"
-    )
-    targets[as.logical(exits)] <- 0
+    targets[which(close < trend)] <- 0
   }
 
   list(targets = targets, state_update = list(pulses_seen = pulses_seen + 1))
@@ -546,14 +577,14 @@ exit_pulse <- ledgr_pulse_snapshot(
   universe = instruments,
   ts_utc = ledgr_utc("2019-03-12"),
   features = features,
-  positions = c(DEMO_03 = 10),
+  positions = c(DEMO_02 = 10, DEMO_03 = 10),
   state_prev = list(pulses_seen = 1)
 )
 
 weekly_trend_momentum(exit_pulse, weekly_params)
 #> $targets
 #> DEMO_01 DEMO_02 DEMO_03 DEMO_04
-#>       0       0       0       0
+#>       0      10       0       0
 #>
 #> $state_update
 #> $state_update$pulses_seen

@@ -391,7 +391,7 @@ unknown feature, not warmup.
 top_return_strategy <- function(ctx, params) {
   weights <- ctx |>
     ledgr_signal_return(lookback = params$lookback) |>
-    ledgr_select_top_n(n = params$n, partial = "allow") |>
+    ledgr_select_top_n(n = params$n) |>
     ledgr_weight_equal()
 
   weights |>
