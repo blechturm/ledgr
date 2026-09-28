@@ -1097,3 +1097,9 @@ audit in Workstream 26 and the correction phase in Workstream 28; the release
 gate remains downstream of all three. This cut review plus one Type 1 close
 review is 2/5 = 0.400 against the gate. The collision rule adopts Q2 option A
 from the feature-map read-surface seed; that RFC may later refine it.
+
+Implementation is complete at `ac69370` and awaits the one planned Type 1
+close review. LCL-0112 through LCL-0115 protect the four boundaries. The exact
+commit passed 483/483 fast blocks in 102.840 seconds against the unchanged
+112-second gate; the timestamp constructor clock showed no median regression.
+Workstream 28 remains blocked until maintainer acceptance.

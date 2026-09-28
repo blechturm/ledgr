@@ -2025,33 +2025,33 @@ tickets:
   - id: "LDG-2890"
     title: "Class unresolved parameterized feature inspection"
     workstream: 27
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Close audit finding P4. `ledgr_feature_contracts()` and `ledgr_feature_contract_check()` accept concrete indicators, bundles and feature maps, but an unresolved map containing `ledgr_param()` declarations currently reaches `vapply()` and leaks an unclassed length error. Extend the existing materialize-first refusal to this representation. Reuse `ledgr_feature_factory_requires_params` and its actionable instruction to resolve concrete `feature_params`; do not add a condition class or make inspection parameter-aware. Keep concrete maps and the existing function-factory refusal unchanged."
     acceptance: ["both public inspection helpers refuse an unresolved parameterized feature map with `ledgr_feature_factory_requires_params` and an exact actionable materialize-first message", "concrete indicators, bundles and feature maps return byte-identical contract rows to the pre-ticket behavior", "a mutation removing only the unresolved-map guard restores the unclassed `vapply()` failure and fails the registered detector", "the help pages describe the same refusal and no parameterized-map acceptance path is added"]
-    evidence: []
+    evidence: ["Implemented at ac69370. LCL-0112 registers LTB-0112: both public inspection helpers reject an unresolved parameterized feature map with the exact ledgr_feature_factory_requires_params materialize-first condition, while literal concrete-map contract rows remain unchanged. Removing only the unresolved-map guard restored the unclassed vapply length error and produced four detector failures. The focused feature-inspection file and the exact-commit fast profile passed."]
   - id: "LDG-2891"
     title: "Accept integer-backed POSIXct snapshot observations"
     workstream: 27
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Close audit finding P5. A valid `POSIXct` vector may store epoch seconds as integers or doubles. `ledgr_snapshot_from_df()` currently formats the integer-backed representation successfully but preserves integer storage into `bars_db`; DuckDB registration or COPY then aborts and the public path reports misleading duplicate-key and transaction diagnostics. Canonicalize the prepared timestamp storage once before that boundary and accept the representation as the same UTC instants, without changing date-label mapping, invalid-time refusal, ordering, sealed bars or snapshot identity. Add no row-wise pass."
     acceptance: ["the public snapshot constructor seals an integer-backed POSIXct input and its double-backed equivalent", "the two snapshots have identical canonical bars and identical snapshot hashes", "a genuinely invalid timestamp retains its existing classed refusal and cannot be converted into an accepted instant", "a mutation removing only the double-storage canonicalization restores the DuckDB registration or transaction failure and fails the registered public-path detector", "an interleaved before-and-after constructor clock on the audit fixture shows no scale-shape regression"]
-    evidence: []
+    evidence: ["Implemented at ac69370. LCL-0113 registers LTB-0113: separately sealed integer- and double-backed POSIXct inputs have identical persisted bars and snapshot hashes, while a missing timestamp retains ledgr_invalid_args. Removing only the storage canonicalization restored the DuckDB transaction failure in the public constructor and failed the detector.", "Alternating fresh-process clocks over 100 instruments by 300 days were pre-change 0.610/0.610/0.610 seconds and current 0.590/0.610/0.610 seconds; both medians are 0.610 seconds. The change is one vectorized storage canonicalization, with no row-wise pass or changed scale shape."]
   - id: "LDG-2892"
     title: "Refuse ignored outer aliases on indicator bundles"
     workstream: 27
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Close audit finding P6. `ledgr_feature_map(bands = bundle)` currently discards `bands` and exposes the bundle's generated feature IDs. Refuse a non-empty outer name on any indicator bundle with the existing `ledgr_invalid_feature_map` vocabulary and an actionable message naming bundle `prefix` and `naming` as the supported controls. Unnamed bundle expansion and its generated IDs remain unchanged. This is validation of ignored input, not a new alias representation."
     acceptance: ["a named concrete or parameterized bundle entry fails with `ledgr_invalid_feature_map` and one exact message explaining `prefix` and `naming`", "an unnamed bundle still expands to the same ordered generated aliases and feature IDs, and explicit bundle prefix or naming still works", "a mutation removing the named-bundle guard silently discards the name and fails the registered detector", "the feature-map and TTR help pages state the same naming boundary"]
-    evidence: []
+    evidence: ["Implemented at ac69370. LCL-0114 registers LTB-0114: named concrete and parameterized bundles fail with the exact ledgr_invalid_feature_map guidance, while an unnamed bundle preserves its ordered generated aliases and IDs. Removing both named-bundle guards restored silent name loss and failed the detector. Existing TTR bundle tests now use the supported unnamed entry plus prefix or naming surface, and the feature-map and TTR help pages state the boundary."]
   - id: "LDG-2893"
     title: "Close audit-discovered product boundary repairs"
     workstream: 27
@@ -2061,14 +2061,14 @@ tickets:
     dependencies: ["LDG-2890", "LDG-2891", "LDG-2892", "LDG-2894"]
     scope: "Close Workstream 27 and Cut 20. Run the focused feature-inspection, feature-map, TTR, candidate-resolution, sweep, snapshot-ingestion and hash tests; run the ordinary fast profile and gate; record each mutation and the P5 interleaved clock; update the LDG-2859 audit routes to the landed commits; and hand Workstream 28 the exact shipped behavior and alias/engine-ID naming rule its related prose must teach. Owner: the maintainer; the closeout is agent-provisional until the Type 1 close review and maintainer acceptance."
     acceptance: ["all four product findings name their implementing commit, registered detector and successful mutation in the closeout and final route", "the focused suites and ordinary fast gate pass without a weakened threshold or moved test", "the seven-shape walk and P5 interleaved clock are recorded, with P4, P6 and the collision guard identified as non-hot validation boundaries", "the cut review and one Type 1 close review are recorded as 2/5 = 0.400 and Workstream 28 remains blocked until the maintainer accepts it"]
-    evidence: []
+    evidence: ["Agent-provisional closeout: inst/design/ledgr_v0_2_0_2_spec_packet/audit_product_boundary_repairs_closeout.md. The exact ac69370 fast record at C:/tmp/ws27-fast-ac69370 passed 483/483 blocks in 102.840 seconds; the ordinary checker accepted the one-run record against the unchanged 112-second bound. The planned Type 1 close review is invocation two, so acceptance would close Cut 20 at 2/5 = 0.400. Workstream 28 remains blocked pending maintainer acceptance."]
   - id: "LDG-2894"
     title: "Refuse feature-map aliases that name another entry's feature"
     workstream: 27
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Close the alias/engine-ID collision found by the feature-map read-surface seed's pre-seed probe. `ledgr_feature_map(sma_10 = ledgr_ind_sma(5), sma_5 = ledgr_ind_sma(10))` is accepted today, so `ctx$features(id)[['sma_10']]` returns the 5-bar SMA while `ctx$feature(id, 'sma_10')` and `ctx$vec$feature('sma_10')` return the 10-bar SMA, without an error. In `ledgr_feature_map()`, beside the existing duplicate-ID check, refuse any alias equal to the concrete feature ID of a different entry, using the existing `ledgr_invalid_feature_map` vocabulary and a message naming the alias and both entries. `ledgr_resolve_feature_map()` rebuilds resolved maps through the constructor, so the same check covers parameterized maps at resolution, per run and per sweep candidate. An alias equal to its own entry's feature ID, including generated bundle aliases, stays valid. This adopts option A from the seed's Q2 as the conservative rule; that RFC may refine it."
     acceptance: ["a concrete map whose alias equals another entry's feature ID fails at construction with `ledgr_invalid_feature_map` and one exact message naming the alias and both entries", "a parameterized map that collides only after resolution fails at `ledgr_run()` with the same class; in a sweep the colliding candidate is recorded as failed with that class while the other candidates complete", "an alias equal to its own entry's feature ID and unnamed bundles behave as before, and every existing test and article feature map constructs and hashes identically", "a mutation removing only the collision check restores the silent two-series read and fails the registered detector", "the feature-map help states the naming boundary"]
-    evidence: []
+    evidence: ["Implemented at ac69370. LCL-0115 registers LTB-0115: the literal concrete collision fails at construction; a collision appearing only after parameter resolution fails through public ledgr_run; and a two-candidate public sweep records only the colliding candidate as FAILED with ledgr_invalid_feature_map while its sibling reaches DONE. An alias equal to its own feature ID remains valid. Replacing only the collision validator with a no-op restored silent construction and failed the detector; the pre-seed probe records the divergent 5-bar and 10-bar reads. The exact-commit fast profile passed every existing feature-map and article-map constructor."]
