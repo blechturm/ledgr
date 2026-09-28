@@ -162,10 +162,11 @@ top_momentum(pulse, params)
 ```
 
 On 12 March the strategy wants `DEMO_02` and `DEMO_03`, the two highest 5-day
-returns, and nothing else. This is exactly the target a backtest would receive
-at this pulse. Calling a strategy on a pulse is the fastest way to catch a
-wrong feature ID, a reversed comparison, or an unexpected position size before
-you run months of bars.
+returns, and nothing else. With built-in indicators like these, a backtest
+would pick the same instruments at this pulse; the share counts depend on the
+account, which here is the pulse's default of 100,000 in cash. Calling a
+strategy on a pulse is the fastest way to catch a wrong feature ID, a reversed
+comparison, or an unexpected position size before you run months of bars.
 
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Read whole vectors, not one instrument at a time**
@@ -175,8 +176,10 @@ single read. The scalar forms `ctx$close(id)`, `ctx$feature(id, feature_id)`,
 and `ctx$position(id)` are for an instrument you have already singled out.
 Calling them in a loop over `ctx$universe` repeats per-instrument work at every
 pulse and is the most common way to make a strategy slow. For universes of at
-least 100 instruments, ledgr emits one `ledgr_scalar_accessor_loop` warning per
-run that names the vector to use; the warning changes no result.
+least 100 instruments, a loop over the bar, price, or position accessors
+triggers one `ledgr_scalar_accessor_loop` warning per run that names the vector
+to use; the warning changes no result. Loops over `ctx$feature()` are just as
+slow but do not trigger it.
 :::
 
 ## From Scores To Shares
@@ -197,9 +200,25 @@ weights <- ledgr_weight_equal(selection)
 weights
 ```
 
-The default warns when fewer than `n` finite scores are available. That makes
-an unexpectedly short ranking visible. Opt out only when selecting fewer names
-is an intended policy:
+`ledgr_signal_return()` reads the registered `return_5` feature; it never
+registers a feature for you. Use `ledgr_signal_feature()` for another
+registered feature. Use `ledgr_signal(ctx, values = ...)` only when you have
+already transformed the values into a genuinely custom score.
+
+| Object | What it holds | Made by |
+|---|---|---|
+| signal | one score per instrument | `ledgr_signal_return()`, `ledgr_signal_feature()` |
+| selection | `TRUE` or `FALSE`: which instruments are chosen | `ledgr_select_top_n()`, `ledgr_selection()` |
+| weights | each chosen instrument's share of the budget | `ledgr_weight_equal()`, `ledgr_weights()` |
+| target | whole-share quantities for every instrument | `ledgr_target_rebalance()` |
+
+Only the target is something ledgr executes. The other three are working
+objects: returning a signal, selection, or weights from a strategy is an error.
+
+A ranking can come up short. When fewer than `n` scores are usable,
+`ledgr_select_top_n()` selects what it can and warns, so an unexpectedly short
+ranking is visible. Opt out only when selecting fewer names is an intended
+policy:
 
 ```{r}
 #| label: short-selection-policy
@@ -218,20 +237,8 @@ tryCatch(
 ledgr_select_top_n(short_signal, n = 2, partial = "allow")
 ```
 
-`ledgr_signal_return()` reads the registered `return_5` feature; it never
-registers a feature for you. Use `ledgr_signal_feature()` for another
-registered feature. Use `ledgr_signal(ctx, values = ...)` only when you have
-already transformed the values into a genuinely custom score.
-
-| Object | What it holds | Made by |
-|---|---|---|
-| signal | one score per instrument | `ledgr_signal_return()`, `ledgr_signal_feature()` |
-| selection | `TRUE` or `FALSE`: which instruments are chosen | `ledgr_select_top_n()`, `ledgr_selection()` |
-| weights | each chosen instrument's share of the budget | `ledgr_weight_equal()`, `ledgr_weights()` |
-| target | whole-share quantities for every instrument | `ledgr_target_rebalance()` |
-
-Only the target is something ledgr executes. The other three are working
-objects: returning a signal, selection, or weights from a strategy is an error.
+Both calls select `DEMO_01`, the only usable score. The first returns the
+warning, which names the opt-out; the second makes the same selection silently.
 
 Weights are relative. `0.5` means "half of the budget", not a number of shares.
 The weights say how to divide a budget. They do not contain the budget, current
@@ -268,14 +275,13 @@ tibble(
 The remainder left by rounding stays in cash. Every instrument that was not
 chosen gets a target of zero, so a rebalance sells anything it no longer wants.
 
-::: {.ledgr-callout .ledgr-callout-warning}
-**Keeping one position while rebalancing the rest**
+### Keep A Position While Rebalancing The Rest
 
-Name a position in `keep` when you want to preserve it while rebalancing the
-rest. ledgr keeps its current quantity, reserves its marked exposure once, and
-sizes the new weights from the capital that remains. This pulse holds four
-shares of `DEMO_04` and has 600 in cash. Keeping `DEMO_04` leaves that 600 for
-the new position:
+Sometimes you want to rebalance around a position you already own. Name it in
+`keep`: ledgr keeps its current quantity, reserves its value once, and sizes
+the new weights from the capital that remains. This pulse holds four shares of
+`DEMO_04` and has 600 in cash. Keeping `DEMO_04` leaves that 600 for the new
+position:
 
 ```{r}
 #| label: keep-position
@@ -293,10 +299,12 @@ keep_weights |>
   ledgr_target_rebalance(keep_pulse, keep = "DEMO_04")
 ```
 
+`DEMO_04` keeps its four shares. `DEMO_02` gets eight shares at about 67.7,
+which uses about 542 of the 600; the rest stays in cash.
+
 `equity_fraction` applies to that remaining capital. Do not shrink it by hand
 to make room for the kept position; doing both would shrink the remaining
 budget a second time and underinvest the account.
-:::
 
 ## Run The First Version
 
@@ -639,8 +647,8 @@ one end to end. Four things then work differently:
   from an optimizer, convert them first: 60% of total equity is weight 1 here.
 - `ctx$state_prev` also carries `asset_state`, one entry per instrument in
   `ctx$universe` for state that belongs to that instrument. An instrument that
-  leaves the universe loses its entry; `vignette("strategy-development",
-  package = "ledgr")` states the rules.
+  leaves the universe loses its entry; `?ledgr_strategy_context` states the
+  rules.
 
 Neither membership nor `ctx$tradable()` guarantees that an order fills at the
 next open.

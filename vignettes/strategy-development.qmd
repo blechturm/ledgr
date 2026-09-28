@@ -71,8 +71,8 @@ pipelines, share sizing, and strategy state, read
 The examples use `dplyr` for demo-data preparation. Strategy functions use
 ledgr's pulse context rather than data-frame operations. The article assumes
 basic familiarity with sealed snapshots (`vignette("data-input-and-snapshots",
-package = "ledgr")`) and feature IDs (`vignette("indicators", package =
-"ledgr")`).
+package = "ledgr")`); it introduces feature IDs where the first strategy needs
+one.
 
 ```{r}
 #| label: library
@@ -94,13 +94,6 @@ A backtest in ledgr is a sequence of decision moments. At each pulse, ledgr
 shows the strategy only what could have been known at that time. The strategy
 answers with desired holdings. ledgr records the decision, applies the fill
 model, and moves to the next pulse.
-
-Sweep execution can opt into the scoped spot-FIFO accelerator with
-`ledgr_sweep(..., compiled_accounting_model = "spot_fifo")`. This changes the
-memory-backed accounting hot frame only; the strategy still receives the same
-`ctx`, returns the same full named target vector, and `NULL` remains the
-canonical R default. Committed `ledgr_run()` artifacts keep the durable R path
-until a separate durable compiled-integration gate lands.
 
 This matters because leakage is easy. If future information enters a historical
 decision, the backtest can look profitable for the wrong reason. ledgr's
@@ -132,27 +125,23 @@ leaky_signals <- ledgr_demo_bars |>
 ```
 
 The ledgr version expresses the rule at one pulse. The strategy can read the
-current bar for the current instrument. Later sections add registered features
-to the same pulse model. The strategy has no market-data table from which it can
-casually index tomorrow's bar. That is the same information shape a live trading
-strategy gets as time passes: each pulse is a new slice of the knowable
-universe.
+current bar for every instrument, and nothing later. Later sections add
+registered features to the same pulse model. The strategy has no
+market-data table from which it can casually index tomorrow's bar. That is the
+same information shape a live trading strategy gets as time passes: each pulse
+is a new slice of the knowable universe.
 
 ```{r}
 #| label: leakage-right
 
 no_leak_bar_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > ctx$open(id)) {
-      targets[id] <- 1
-    }
-  }
-
+  targets[which(ctx$vec$close > ctx$vec$open)] <- 1
   targets
 }
 ```
+
+The next sections explain each piece of that function.
 
 This removes one common source of leakage, but it does not certify that
 snapshots, feature definitions, event timestamps, universe construction, or
@@ -239,20 +228,15 @@ unless today's bar gives me a reason to leave."
 
 hold_unless_down <- function(ctx, params) {
   targets <- ctx$hold()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) < ctx$open(id)) {
-      targets[id] <- 0
-    }
-  }
-
+  targets[which(ctx$vec$close < ctx$vec$open)] <- 0
   targets
 }
 ```
 
-This loop style is fine while the mechanics are still visible. Once you have
-helpers like `signal_*()` and `select_*()`, most strategy logic is easier to
-express at the whole-universe level instead of one instrument at a time.
+`ctx$vec$close < ctx$vec$open` compares every instrument at once, in the order
+of `ctx$universe`. `which()` turns that comparison into the positions where it
+is `TRUE`, skipping any missing value, so exactly those entries of the target
+change and every other instrument keeps its current quantity.
 
 ## A Strategy That Does Nothing
 
@@ -300,31 +284,6 @@ can cap per-instrument target exposure. It is not a cash-affordability,
 margin, liquidity, or broker-risk engine.
 :::
 
-### Remembering Between Pulses
-
-Most strategies decide from the current pulse alone. A strategy that has to
-remember something, such as how many pulses have passed or the price at which
-it bought, returns `list(targets = ..., state_update = ...)` instead of a bare
-target. ledgr stores `state_update` with the run and hands it back as
-`ctx$state_prev` at the next pulse.
-
-- `state_update` is plain data: a list of numbers, strings, logical values, and
-  lists of them. It must be representable as JSON, so functions and
-  environments are rejected.
-- A new `state_update` replaces the previous state. Returning a bare target
-  keeps the previous state unchanged.
-- In a dense run, `ctx$state_prev` is `NULL` on the first pulse. In an
-  availability-aware run it is a list from the first pulse, because ledgr adds
-  `asset_state`: one entry per instrument in `ctx$universe`, keyed by instrument
-  ID, for state that belongs to one instrument. An instrument that leaves the
-  universe loses its entry, one that returns starts again from `list()`, and an
-  entry for an instrument outside the universe is an error.
-- Check a field for `NULL` before using it, because it is missing on the first
-  pulse in both kinds of run.
-
-`vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
-that uses state step by step.
-
 ## A First Trading Rule
 
 Now add one small economic idea:
@@ -339,16 +298,14 @@ observable data becomes a target.
 
 buy_if_up <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > ctx$open(id)) {
-      targets[id] <- 1
-    }
-  }
-
+  targets[which(ctx$vec$close > ctx$vec$open)] <- 1
   targets
 }
 ```
+
+Read it as one decision for the whole universe: start from zero for every
+instrument, then set the instruments whose close is above their open to one
+share.
 
 Targets are desired quantities, not orders, signals, or portfolio weights. A
 target of `1` means "after the next fill opportunity, hold one share." A target
@@ -358,10 +315,9 @@ In these examples, decisions fill at the next open: a decision made at pulse
 `t` fills at the next available bar. That keeps the strategy from deciding and
 filling on the same close.
 
-The loop is intentionally plain because this is the first example. Once the
-economic idea is clear, ledgr strategies are usually easier to read when they
-use helper functions that operate on the whole universe at once. The later
-sections make that transition.
+A rule like this reads current values directly. When a rule needs to rank
+instruments or size positions from the account, the helper pipeline later in
+this article does that work.
 
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
@@ -383,20 +339,32 @@ Parameters let one economic idea run under different assumptions.
 
 buy_if_up_qty <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    if (ctx$close(id) > ctx$open(id)) {
-      targets[id] <- params$qty
-    }
-  }
-
+  targets[which(ctx$vec$close > ctx$vec$open)] <- params$qty
   targets
 }
 ```
 
 Strategies use `function(ctx, params)`. `ctx` is the pulse. `params` is the
 experimenter's chosen configuration for this run. Keeping them separate makes
-the strategy easier to test, compare, and store.
+the strategy easier to test, compare, and store. `vignette("sweeps", package =
+"ledgr")` runs one strategy across many `params` values.
+
+## Remembering Between Pulses
+
+Most strategies decide from the current pulse alone. A strategy that has to
+remember something between pulses, such as how many pulses have passed or the
+price at which it bought, returns `list(targets = ..., state_update = ...)`
+instead of a bare target. ledgr stores the `state_update` with the run and
+hands it back as `ctx$state_prev` at the next pulse.
+
+The state must be plain data: numbers, strings, logical values, and lists of
+them. A new `state_update` replaces the previous one; returning a bare target
+keeps it. On the first pulse there is nothing to remember yet, so check each
+field for `NULL` before using it.
+
+`vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
+that uses state step by step. `?ledgr_strategy_context` states the full rules,
+including the per-instrument `asset_state` of availability-aware runs.
 
 ## Prepare A Small Experiment
 
@@ -536,20 +504,44 @@ from the research-comparison question. Use
 
 ## When ledgr Complains
 
-ledgr tries to fail loudly when an error would make a backtest misleading. If a
-strategy returns a vector with the wrong names or length, ledgr rejects it
-instead of silently treating missing instruments as zero. If a helper reads an
-unregistered feature, `ctx$feature()` reports the unknown feature ID and lists
-the available IDs. If `ledgr_target_rebalance()` receives negative or over-allocated
-weights, it fails before turning them into target quantities.
+ledgr tries to fail loudly when an error would make a backtest misleading. A
+strategy that forgets an instrument is the most common case. ledgr rejects the
+target instead of silently treating the missing instrument as zero:
+
+```{r}
+#| label: incomplete-target
+
+only_one_name <- function(ctx, params) {
+  c(DEMO_01 = 1)
+}
+
+tryCatch(
+  ledgr_experiment(
+    snapshot = snapshot,
+    strategy = only_one_name,
+    opening = ledgr_opening(cash = 10000),
+    cost_model = ledgr_cost_zero()
+  ) |>
+    ledgr_run(run_id = "incomplete_target"),
+  error = conditionMessage
+)
+```
+
+The message names the instrument that is missing. Starting from `ctx$flat()` or
+`ctx$hold()` avoids this mistake, because both already contain every
+instrument. The other common failures are just as specific: a mistyped feature
+ID is reported together with the IDs that are registered, and
+`ledgr_target_rebalance()` refuses negative or over-allocated weights before
+turning them into share quantities.
 
 Those errors are part of the design. They are meant to catch research mistakes
 while the mistake is still small enough to understand.
 
-
 ## Cleanup
 
-```{r cleanup}
+```{r}
+#| label: cleanup
+
 close(bt_top_1)
 ledgr_snapshot_close(snapshot)
 ```
@@ -560,6 +552,8 @@ ledgr_snapshot_close(snapshot)
   testing on one pulse, helper pipelines, share sizing, and strategy state.
 - `vignette("indicators", package = "ledgr")` explains feature identity and
   strategy-time feature access.
+- `vignette("sweeps", package = "ledgr")` runs one strategy across a grid of
+  `params` and features.
 - `vignette("execution-semantics", package = "ledgr")` explains the fold
   lifecycle and no-lookahead execution model.
 - `vignette("experiment-store", package = "ledgr")` shows how committed run
