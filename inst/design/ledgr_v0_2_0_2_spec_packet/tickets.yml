@@ -175,15 +175,16 @@ cuts:
   - id: 17
     name: "Maintenance: pulse inspection parity and loop-warning coverage"
     cut: "2026-09-28"
-    draft_note: "Agent-drafted on 2026-09-28 at the maintainer's request, from the editorial pass over the strategy-authoring articles recorded in `inst/design/audits/v0_2_0_2_strategy_article_audit_input.md`. Nothing here is authorized until the maintainer accepts the cut and writes the workstream brief. Status `draft` on the cut, workstream and tickets marks that."
-    cut_review: "not yet reviewed. Proposed: compressed into the close review of workstream 24, as cuts 14 and 15 were, because both defects are reader and validation corrections with executable oracles. One planned Type 1 close review over three tickets is 0.333 against the 0.5 gate."
+    opening: "The maintainer accepted the draft cut and instructed implementation on 2026-09-28. This cut entry, its recorded decisions and the ticket acceptance criteria are the operative Workstream 24 brief; no duplicate brief artifact is created."
+    cut_review: "Compressed into the Type 1 close review of workstream 24, as cuts 14 and 15 were, because both defects are reader and validation corrections with executable oracles. One planned review over three tickets is 0.333 against the 0.5 gate."
     authority: "AGENTS.md: reader work and validation fixes need no new RFC cycle. `inst/design/contracts.md` near line 889: scalar `fn` and the terminal value from `series_fn` receive the same bounded fully observed window and must agree; the pulse inspection path uses neither contract. The accepted strategy-context-surface synthesis, section 5, which keeps `ledgr_pulse_snapshot()` as an explicit inspection context and authorizes no new inspection subsystem; this cut makes the existing context report the run's own feature values and adds none. Open triage item THEME-006 in `inst/design/ledgr_v0_1_7_9_spec_packet/ledgr_triage_report.md`, which named the run-versus-pulse `fn` signature conflict."
     source_table: "`inst/design/audits/v0_2_0_2_strategy_article_audit_input.md`, product defects P1 and P2; `R/pulse-snapshot.R:292-307`; `R/features-engine.R:196-202` and `:268-283`; `R/pulse-context.R:524-573`"
-    sequencing_proposal: "LDG-2876 changes what articles may claim about one-pulse testing, so on acceptance workstream 15 (release gate) should depend on workstream 24 instead of 23, letting LDG-2859 audit the corrected behaviour once. The maintainer decides whether the release gate, which is open, waits. The deferred result-print defect LDG-2869 is the other maintenance item this release carries; moving it into this cut is the maintainer's call."
+    decisions: "Maintainer, 2026-09-28. (1) Cut 17 contains only LDG-2876 through LDG-2878: pulse/run feature parity, scalar feature-read warning coverage and closeout. (2) LDG-2869 stays deferred to a later maintenance cut. (3) Alias-aware whole-universe feature access stays with the future feature-engine RFC, and rendered-warning visibility stays with LDG-2859. (4) Workstream 15 waits for accepted Workstream 24, so the final article audit sees the corrected behaviour once. (5) The cut review is compressed into one Type 1 close review over the three tickets."
+    sequencing: "Workstream 24 follows accepted Workstream 23 and blocks workstream 15. LDG-2876 and LDG-2877 are independent; LDG-2878 depends on both and carries the single close review."
     out_of_scope: "A whole-universe read for active aliases (P3 in the audit input): `ctx$vec$feature()` and `ledgr_signal_feature()` accept engine IDs only, so an active-alias strategy must loop over `ctx$features(id)`. That is a design decision for the feature-engine RFC the helpers synthesis names under 'Bulk feature-map vector helpers'; the audit input records four articles that now depend on it. Rendered-article warnings hidden by `_quarto.yml` `warning: false`, which is a documentation decision for LDG-2859."
     workstreams: [24]
     closeout: "pulse_inspection_parity_closeout.md"
-    status: "draft"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -328,7 +329,7 @@ workstreams:
     name: "Release gate"
     cut: 8
     status: "open"
-    depends_on_workstream: 23
+    depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 15", reason: "The release gate is the last thing that can catch a false release claim, so it is reviewed before the tag moves rather than after. One review at close checks that every local gate named in the playbook was actually run and recorded with its result rather than asserted, that the three CI evidences are separate run ids and not one run cited three times, that the full tier was dispatched on the release branch before the merge because branch CI is now the quick tier only, that every skipped gate carries an accepted reason, and that the release notes state the version's non-claims as well as its claims. This workstream ships no production code, so the amended review obligations' seven-shape walk and before-and-after clock do not apply; the reviewer records that they were not required rather than leaving the omission unexplained."}
 
@@ -383,7 +384,7 @@ workstreams:
   - id: 24
     name: "Pulse inspection parity and loop-warning coverage"
     cut: 17
-    status: "draft"
+    status: "open"
     depends_on_workstream: 23
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins the tickets: a one-pulse inspection shows the strategy the same feature values the run shows it at that timestamp, and the slow-loop warning covers every scalar accessor that has a whole-universe alternative. The review runs the parity matrix against a real run for built-in, series_fn, fn(window), fn(window, params) and a recursive TTR indicator, restores the one-argument requires_bars call and the missing feature-read recording to confirm both detectors fail, and reads the changed article sentences against the behaviour. The warning's recording runs inside the fold on every scalar feature read, so the review walks that change against the seven shapes and requires an interleaved before-and-after clock on the registered shape; the pulse path is interactive and needs only its recorded cost."}
@@ -1821,7 +1822,7 @@ tickets:
   - id: "LDG-2876"
     title: "Pulse snapshots compute features through the run's feature path"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -1831,7 +1832,7 @@ tickets:
   - id: "LDG-2877"
     title: "The slow-loop warning covers exact-ID feature reads"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1841,7 +1842,7 @@ tickets:
   - id: "LDG-2878"
     title: "Close workstream 24 and cut 17"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2876", "LDG-2877"]

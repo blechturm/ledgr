@@ -939,7 +939,8 @@ invocations over seven active tickets, 0.571. The maintainer accepted the
 review-gate breach in advance because the third review materially changed the
 public UX; the 0.5 threshold itself is unchanged.
 
-Workstream 23 depends on accepted Workstream 22 and blocks the release gate.
+Workstream 23 depends on accepted Workstream 22 and unblocks Workstream 24;
+accepted Workstream 24 now blocks the release gate.
 Implementation follows the ticket dependencies: LDG-2868 and LDG-2870 through
 LDG-2873 establish the helper surface, LDG-2874 replaces the worked-example
 workarounds and LDG-2875 closes the cut. One Type 1 review occurs at workstream
@@ -958,3 +959,30 @@ PASS after verifying every correction and teaching note. Its one non-blocking
 observation, an unclosed inspection pulse, was corrected at `b419733` and
 added to LTB-0099 without another review round. The maintainer accepted
 Workstream 23 and Cut 16 on 2026-09-28. The recorded ratio is 5/7 = 0.714.
+
+## Cut 17: Pulse inspection parity and loop-warning coverage (open)
+
+Authority: the live feature contract, the accepted strategy-context-surface
+synthesis and the two product defects recorded by the final strategy-article
+editorial pass. The maintainer accepted the cut and opened Workstream 24 on
+2026-09-28. This cut entry and LDG-2876 through LDG-2878 are the operative
+brief; there is no duplicate brief file.
+
+Three tickets form Workstream 24. LDG-2876 makes one-pulse inspection obtain
+feature values through the run's feature path. LDG-2877 extends slow-loop
+warning coverage to exact-ID scalar feature reads. LDG-2878 records the parity
+matrix, clocks, seven-shape walk and close review.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 24 Pulse inspection parity | 2876-2878 | reuse run feature computation in pulse inspection; cover scalar exact-ID feature reads; close the cut | a one-pulse inspection shows the feature values a real run sees at that timestamp, and every scalar feature accessor with a whole-universe alternative is covered by the loop warning |
+
+LDG-2876 and LDG-2877 may proceed independently; LDG-2878 depends on both.
+One Type 1 close review over three tickets is 0.333 against the 0.5 gate.
+The release gate now depends on accepted Workstream 24 so LDG-2859 audits the
+corrected teaching surface once.
+
+LDG-2869 remains deferred to a later maintenance cut. Alias-aware
+whole-universe feature access remains assigned to the feature-engine RFC, and
+rendered-warning visibility remains part of LDG-2859. Neither is authorized by
+this cut.
