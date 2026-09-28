@@ -250,9 +250,11 @@ style-guide defects are additional LDG-2888 work but do not add article cells.
 
 ## 4. Product And API Findings
 
-Documentation cannot close these five findings. On 2026-09-28 the maintainer
-accepted the dispositions below. P4 through P6 land before the related article
-corrections; P3 and P7 remain routed beyond this release.
+Documentation cannot close these product findings. On 2026-09-28 the
+maintainer accepted the original five dispositions below. P4 through P6 land
+before the related article corrections; P3 and P7 remain routed beyond this
+release. The Workstream 28 re-review added P8 and routed it to Cut 21's mapping
+ticket rather than changing public help under an article ticket.
 
 | Finding | Verified behavior | Owner | Accepted release disposition |
 | --- | --- | --- | --- |
@@ -261,6 +263,7 @@ corrections; P3 and P7 remain routed beyond this release.
 | P5: integer-backed POSIXct masks its cause | `ledgr_snapshot_from_df()` reports likely duplicate keys and an aborted transaction instead of accepting the valid instant representation | LDG-2891 | Implemented at `ac69370`, completed at `55524e5`: integer-backed `POSIXct` bars and fact clocks are canonicalized once before DuckDB registration and seal to the double-backed snapshot hash. |
 | P6: outer alias is discarded for TTR bundles | `bands = bundle` exposes bundle feature IDs such as `bbands_dn`, not `bands`; no warning explains that the outer alias has no effect | LDG-2892 | Implemented at `ac69370`: named bundle entries fail with the existing feature-map class and direct authors to `prefix` or `naming`. |
 | P7: explicit feature maps are validated twice per mapped read | `ctx$features(id, feature_map)` costs about 160 microseconds per call versus about 19 microseconds for the resolved alias form; the measured replacement is output-preserving | The v0.2.1.1 pulse/accessor performance cut anchored by `fold_writer_accessor_levers_spike/summary_report.md` | Defer with that already-scheduled performance work. Workstream 28 may correct how the idiom is taught but must not absorb the optimization. |
+| P8: `?ledgr_indicator` understates the scalar function contract | Runtime dispatch and parity tests support both `fn(window)` and `fn(window, params)`, while the generated help names only the one-argument form | LDG-2895, which must route the public-help correction to a named owner before the Cut 21 writing passes | The article teaches both shipped forms now. The public-help gap is not papered over or changed under Workstream 28. |
 
 No production change is authorized by this audit.
 
@@ -336,6 +339,21 @@ restores the full certification matrix, fixes the named articles, and adds
 LTB-0116 as a claim-level review detector. The outcomes below describe that
 corrected tree, not the rejected first pass.
 
+The focused re-review also returned `CHANGES_REQUIRED`. It found two failing
+checks, two false article statements, one understated shipped contract and
+four mutations that escaped LTB-0116. Correction `40eeb42` restores the three
+shared-input touchpoints, makes the reproducibility output independent of
+installed dependency versions, reports four and six feature combinations from
+the executable grids, reconciles Strategy Basics with its 24 trades, teaches
+both scalar-indicator arities from one parameter source, and makes all five
+claim mutations fail.
+
+The same review's broader flow findings are inputs to the accepted Cut 21 plan:
+LDG-2897 owns hand-offs, LDG-2898 owns unsafe IDs and unexplained non-executed
+chunks, LDG-2899 owns warnings and hidden candidate parameters, LDG-2900 owns
+duplicated or contradictory facts, and LDG-2901 owns maintainer language and
+shared-input wording. P8 is routed through LDG-2895 as described above.
+
 The correction pass retained the 26-source census and the 53 failed
 article/category cells. Each changed article was read again as a learner who
 had read only the earlier articles in the style-guide flow. `PASS` below means
@@ -351,7 +369,7 @@ were rechecked but not expanded.
 | Importing And Sealing Market Data | PASS: bars-first input remains sufficient for a dense study; external CSV and Yahoo limits are explicit. |
 | Research Workflow | PASS: the public promotion accessor is used and the active-alias loop is disclosed as a current limitation. |
 | Leakage | PASS: the future-inclusive and expanding-prior thresholds are both executed and visibly different. |
-| Reproducibility | PASS: captured values, explicit parameters and the local-helper repair are executable and honestly tiered. |
+| Reproducibility | PASS: captured values, explicit parameters and the local-helper repair are executable and honestly tiered; rendered provenance shows stable field names rather than machine-local versions. |
 | Preparing Point-In-Time Inputs | PASS unchanged: no audit finding and no correction needed. |
 | Missing Data And Session Calendars | PASS: the availability-specific vector example and active-alias limitation are explicit. |
 | Cash Distributions | PASS: research and strict settlement paths retain their distinct claims and a selective next step. |
@@ -366,7 +384,7 @@ were rechecked but not expanded.
 | Walk-Forward Evaluation | PASS: deterministic identity output is fresh and the safe promotion path executes. |
 | Strategy Authoring Tools | PASS: the public signal helper executes and is compared with the direct whole-vector read. |
 | TTR Indicators And Bundles | PASS: one TTR path precedes bundles, naming and warmup rules; recursive availability remains a stated boundary. |
-| Custom Indicators And External Features | PASS: scalar use precedes series and adapter paths; gap_contract and an outcome-changing threshold are demonstrated. |
+| Custom Indicators And External Features | PASS: scalar use precedes series and adapter paths; both supported scalar arities share the declared parameter source; gap_contract and an outcome-changing threshold are demonstrated. |
 | Metric Contexts And Conventions | PASS: the compact compatibility fixture is labelled and the current output is rendered. |
 | How Targets Become Fills | PASS: the ordinary entrance, decision/fill clocks, no-fill reasons and fill/trade arithmetic agree. |
 | Design Philosophy: From Research To Production | PASS: current research capability precedes planned operations, and the shown strategy's feature is declared. |
@@ -385,7 +403,7 @@ The final ownership reconciliation is exact:
   CHECK-X, aligns navigation and the style guide, and retains the accepted
   product routes. P3 remains with the feature-engine
   RFC; P7 remains with the v0.2.1.1 pulse/accessor optimization cut; P4 through
-  P6 were implemented and accepted in Cut 20.
+  P6 were implemented and accepted in Cut 20; P8 is routed through LDG-2895.
 
 The category totals therefore remain 10 superseded-idiom, 4 hand-built
 workaround, 12 claim/non-claim, 19 reference/render and 8 capability-ladder
@@ -399,7 +417,10 @@ Verification at the correction tree:
   sources, including both nested articles and the adapter companion file;
 - the checker first caught a process-dependent run ID in Custom Indicators;
   the example now uses fixed IDs and the second complete check passes;
-- the ordinary fast profile passes 483 of 483 blocks in 105.170 seconds, and
+- five independent LTB-0116 mutations fail: scalar-first guidance, the obsolete
+  sweep non-goal, one-date survivorship, the false reader limitation and a
+  one-arity custom-indicator claim;
+- the ordinary fast profile passes 483 of 483 blocks in 104.400 seconds, and
   the gate checker passes the preregistered 112-second bound; and
 - `git diff --check` is clean.
 

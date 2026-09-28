@@ -34,6 +34,13 @@ LTB-0074 certification matrix, completes the named article corrections,
 reorders the public learning path, registers LTB-0116, and rerenders the
 affected Markdown.
 
+The focused re-review also returned `CHANGES_REQUIRED`. Correction `40eeb42`
+closes its six Workstream 28 defects: all article-reading checks pass, rendered
+provenance is dependency-version independent, the sweep reports four and six
+feature combinations, Strategy Basics interprets its actual 24 trades, Custom
+Indicators teaches both supported scalar arities from one parameter source,
+and all five registered LTB-0116 mutations fail.
+
 This document and the final audit update are LDG-2889's provisional record.
 LDG-2858 was completed with its accepted README implementation. LDG-2885
 through LDG-2889 and Workstream 28 stay open until focused independent
@@ -89,27 +96,41 @@ routes remain:
 - P4 through P6 to the accepted Cut 20 repairs already present in the reviewed
   product surface.
 
+The focused re-review also exposed that `?ledgr_indicator` documents only
+`fn(window)` although the engine supports `fn(window, params)`. The article now
+teaches both shipped forms. P8 routes the public-help correction through
+LDG-2895 to a named owner; Workstream 28 does not edit production roxygen.
+
+Its broader editorial findings already have Cut 21 owners: LDG-2897 covers
+hand-offs, LDG-2898 safe IDs and non-executed chunks, LDG-2899 warnings and
+candidate outputs, LDG-2900 duplicated or contradictory facts, and LDG-2901
+maintainer language and the shared-input wording.
+
 ## Verification
 
 - Six article-reading test files: PASS, including the restored LTB-0074 and
   new LTB-0116.
 - `tools/render-vignettes-gfm.R --check --all`: PASS, 26 of 26 sources.
 - Ordinary fast profile: PASS, 483 of 483 blocks, no non-pass result,
-  105.170 seconds.
-- Fast gate: `LEDGR_TEST_GATE_OK`, one run, median 105.170 seconds against the
+  104.400 seconds.
+- Fast gate: `LEDGR_TEST_GATE_OK`, one run, median 104.400 seconds against the
   preregistered 112.000-second bound.
+- LTB-0116 mutation checks: PASS. Scalar-first guidance, the obsolete sweep
+  non-goal, one-date survivorship, the false reader limitation and a one-arity
+  custom-indicator claim produced 1, 1, 1, 1 and 2 failures respectively.
 - `git diff --check`: PASS.
 - Production R/C++ changes: none.
 
-The fast evidence is in `.tmp/ws28-correction-fast`. It is local execution
+The fast evidence is in `.tmp/ws28-final-correction-fast`. It is local execution
 evidence and is not a release artifact.
 
 ## Review Accounting And Stop
 
-The initial Type 1 close review is one invocation over six Workstream 28
-tickets: 1/6 = 0.167. The requested focused re-review will make that 2/6 =
-0.333. Together with Workstream 26's accepted audit review, Cut 19 will stand
-at three reviews over seven tickets: 3/7 = 0.429, within the 0.5 gate.
+Two Type 1 reviews have run over six Workstream 28 tickets: 2/6 = 0.333. The
+required final focused review will make that 3/6 = 0.500. Together with
+Workstream 26's accepted audit review, Cut 19 will stand at four reviews over
+seven tickets: 4/7 = 0.571, an honest historical gate breach. No ticket is
+added to repair the arithmetic.
 
 This closeout authorizes no release-gate command. Workstream 15 opens only
 after the Type 1 review passes and the maintainer accepts Workstream 28 and
