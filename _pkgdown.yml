@@ -235,6 +235,7 @@ reference:
       - ledgr_signal_return
       - ledgr_select_top_n
       - ledgr_weight_equal
+      - ledgr_target_quantity
       - ledgr_target_rebalance
   - title: Low-Level Utilities
     contents:

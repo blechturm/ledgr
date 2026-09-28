@@ -665,7 +665,11 @@ The strategy preflight boundary originated in
   indicators, silently normalize weights, or add a second execution path.
 - The helper composition contract is
   `signal -> selection -> weights -> target quantities -> existing execution
-  path`. Signal, selection, and weight objects are research objects with origin
+  path`. A fixed-quantity rule may skip the weights: `ledgr_target_quantity()`
+  maps `selection -> target quantities`, giving each selected current member
+  the same non-negative quantity, every other current member zero, and each
+  held nonmember of an availability-aware run its current quantity, as
+  `ledgr_target_rebalance()` does. It performs no sizing and needs no price. Signal, selection, and weight objects are research objects with origin
   metadata; `ledgr_target` is the only helper value type that may unwrap into
   executable target quantities.
 - `ledgr_target_rebalance()` floors share quantities to whole numbers after sizing

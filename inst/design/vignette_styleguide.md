@@ -38,16 +38,19 @@ documentation-contract block rather than by review.
    active aliases, which must loop over `ctx$features(id)`; show it with the
    disclosure sentence in Section 9.
 
-   Write the rule as a named condition and assign with it, without `which()`:
-   `rising <- ret > 0`, then `targets[rising] <- params$qty`. Handle warmup
-   as an explicit decision. When every instrument shares one history, gate
-   the whole pulse with the shipped helper,
-   `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`. When instruments can
-   warm up at different times, as in availability-aware examples, fold a
-   named per-instrument mask into the condition: `known <- !is.na(ret)`, then
-   `rising <- known & ret > 0`. Do not rely on R skipping `NA` in an
-   assignment; it is invisible to the reader and fails once each instrument
-   gets its own value.
+   A fixed-quantity rule uses the helper pipeline, whose `missing` argument
+   states what a missing value, such as warmup, means:
+   `ctx |> ledgr_selection(where = ret > 0, missing = "exclude") |>
+   ledgr_target_quantity(ctx, params$qty)`. A rule sized from equity ends in
+   `ledgr_weight_equal()` and `ledgr_target_rebalance()` instead. When a
+   hand-written target is the lesson, name the condition and assign with it,
+   without `which()`: `rising <- ret > 0`, then `targets[rising] <- params$qty`,
+   and handle warmup explicitly. When every instrument shares one history, gate
+   the pulse with `if (!ledgr_passed_warmup(ret)) return(ctx$flat())`; when
+   instruments can warm up at different times, fold a named mask into the
+   condition, `known <- !is.na(ret)`, then `rising <- known & ret > 0`. Do not
+   rely on R skipping `NA` in an assignment; it is invisible to the reader and
+   fails once each instrument gets its own value.
 2. The reader sees every strategy the lesson depends on, and it executes. The
    first strategy a reader runs, in the README and Quickstart, is always
    visible. A later article may run a `ledgr_demo_*` strategy after one

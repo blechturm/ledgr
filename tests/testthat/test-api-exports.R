@@ -166,6 +166,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_select_top_n",
     "ledgr_signal_feature",
     "ledgr_signal_return",
+    "ledgr_target_quantity",
     "ledgr_target_rebalance",
     "ledgr_weight_equal"
   ))

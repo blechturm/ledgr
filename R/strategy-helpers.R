@@ -443,3 +443,84 @@ ledgr_target_rebalance <- function(weights,
 
   ledgr_target(target, universe = universe, origin = attr(weights, "origin"))
 }
+
+#' Construct full target quantities from a selection
+#'
+#' `ledgr_target_quantity()` converts a selection into a full-universe
+#' `ledgr_target` that holds the same fixed quantity of every selected
+#' instrument. Selected current members get `qty`; every other current member
+#' gets zero. Use it for rules such as "hold 10 shares of each instrument that
+#' passes the condition"; use [ledgr_weight_equal()] and
+#' [ledgr_target_rebalance()] instead when positions should be sized from
+#' account equity.
+#'
+#' Missing decisions are settled by the selection, not here: build the
+#' selection with `ledgr_selection(ctx, where = ..., missing = "exclude")` when
+#' a missing value, such as a feature still in warmup, should mean "not
+#' selected".
+#'
+#' In an availability-aware run, held nonmembers keep their current quantity,
+#' exactly as [ledgr_target_rebalance()] preserves them, and the selection may
+#' name current members only.
+#'
+#' Error class: `ledgr_invalid_strategy_helper` when `selection` is not a
+#' `ledgr_selection`, names an instrument outside the current member set, or
+#' when `qty` is not one finite, non-negative number. Negative quantities stay
+#' refused until short-selling semantics are defined.
+#'
+#' @param selection A `ledgr_selection` object.
+#' @param ctx ledgr strategy context.
+#' @param qty One finite, non-negative target quantity for each selected
+#'   instrument.
+#' @return A full-universe `ledgr_target` object.
+#' @examples
+#' selection <- ledgr_selection(c(AAA = TRUE, BBB = FALSE),
+#'                              universe = c("AAA", "BBB"))
+#' ctx <- list(universe = c("AAA", "BBB"))
+#' ledgr_target_quantity(selection, ctx, qty = 10)
+#'
+#' @section Articles:
+#' Strategy helper pipelines:
+#' `vignette("strategy-development", package = "ledgr")`
+#' `system.file("doc", "strategy-development.html", package = "ledgr")`
+#' @export
+ledgr_target_quantity <- function(selection, ctx, qty) {
+  if (!inherits(selection, "ledgr_selection")) {
+    rlang::abort("`selection` must be a ledgr_selection object.", class = "ledgr_invalid_strategy_helper")
+  }
+  universe <- ledgr_validate_strategy_helper_ctx(ctx, "ledgr_target_quantity")
+  if (!is.numeric(qty) || length(qty) != 1L || is.na(qty) || !is.finite(qty) || qty < 0) {
+    rlang::abort(
+      "`qty` must be one finite, non-negative number; negative quantities are not supported until short-selling semantics are defined.",
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+
+  availability_active <- isTRUE(ctx$availability_active)
+  members <- if (availability_active) as.character(ctx$members %||% character()) else universe
+  extra <- setdiff(names(selection), members)
+  if (length(extra) > 0L) {
+    rlang::abort(
+      sprintf("`selection` contains instruments outside the current member set: %s.", paste(extra, collapse = ", ")),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+
+  target <- if (availability_active) {
+    position <- ctx$vec$position
+    if (is.null(position) || length(position) != length(universe)) {
+      rlang::abort(
+        "`ctx$vec$position` must provide one value per decision-axis instrument when availability is active.",
+        class = "ledgr_invalid_strategy_helper"
+      )
+    }
+    stats::setNames(as.numeric(position), universe)
+  } else {
+    stats::setNames(rep(0, length(universe)), universe)
+  }
+  if (length(members) > 0L) target[members] <- 0
+  selected <- names(selection)[as.logical(selection)]
+  if (length(selected) > 0L) target[selected] <- as.numeric(qty)
+
+  ledgr_target(target, universe = universe, origin = attr(selection, "origin"))
+}

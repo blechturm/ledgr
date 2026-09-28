@@ -637,3 +637,78 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
     NA
   )
 })
+
+testthat::test_that("[LTB-0117] fixed-quantity targets follow the selection", {
+  dense <- strategy_context_entrance_fixture()
+  pick <- ledgr_selection(dense, where = c(TRUE, FALSE))
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(pick, dense, qty = 10)),
+    c(AAA = 10, BBB = 0)
+  )
+  none <- ledgr_selection(dense, ids = character())
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(none, dense, qty = 10)),
+    c(AAA = 0, BBB = 0)
+  )
+  warmup <- ledgr_selection(dense, where = c(NA, TRUE), missing = "exclude")
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(warmup, dense, qty = 7)),
+    c(AAA = 0, BBB = 7)
+  )
+
+  available <- strategy_context_entrance_fixture(
+    availability = TRUE,
+    positions = c(OLD = 2)
+  )
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(ledgr_selection(available), available, qty = 5)),
+    c(AAA = 5, OLD = 2)
+  )
+
+  for (bad in list(-1, NA_real_, Inf, c(1, 2), "10")) {
+    testthat::expect_error(
+      ledgr_target_quantity(pick, dense, qty = bad),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+  testthat::expect_error(
+    ledgr_target_quantity(ledgr_selection(c(AAA = TRUE, OLD = TRUE)), available, qty = 1),
+    class = "ledgr_invalid_strategy_helper"
+  )
+  testthat::expect_error(
+    ledgr_target_quantity(c(AAA = TRUE, BBB = FALSE), dense, qty = 1),
+    class = "ledgr_invalid_strategy_helper"
+  )
+
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:29)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  pipeline <- function(ctx, params) {
+    ctx |>
+      ledgr_selection(where = ctx$vec$feature("return_5") > 0, missing = "exclude") |>
+      ledgr_target_quantity(ctx, params$qty)
+  }
+  by_hand <- function(ctx, params) {
+    ret <- ctx$vec$feature("return_5")
+    targets <- ctx$flat()
+    targets[which(ret > 0)] <- params$qty
+    targets
+  }
+  run_fills <- function(strategy, run_id) {
+    exp <- ledgr_experiment(
+      snapshot,
+      strategy,
+      features = list(ledgr_ind_returns(5)),
+      opening = ledgr_opening(cash = 10000),
+      cost_model = ledgr_cost_zero()
+    )
+    bt <- suppressWarnings(ledgr_run(exp, params = list(qty = 3), run_id = run_id))
+    on.exit(close(bt), add = TRUE)
+    fills <- as.data.frame(ledgr_results(bt, what = "fills"))
+    fills[, intersect(c("ts_utc", "instrument_id", "side", "qty", "price", "fee"), names(fills))]
+  }
+  from_pipeline <- run_fills(pipeline, "quantity_pipeline")
+  from_hand <- run_fills(by_hand, "quantity_by_hand")
+  testthat::expect_gt(nrow(from_pipeline), 0L)
+  testthat::expect_equal(from_pipeline, from_hand)
+})
