@@ -4,7 +4,9 @@
 **Owner:** Maintainer.
 **Canonicalization Point:** Canonized at the v0.1.8.5 release gate. Future
 documentation cycles may revise this file, but the rules below describe the
-accepted article bar that shipped with v0.1.8.5.
+accepted article bar that shipped with v0.1.8.5. Revised on 2026-09-28 after
+the v0.2.0.2 documentation review with the house rules, canonical homes and
+flow read, which address problems between articles rather than within one.
 **Scope:** Installed user-facing articles and vignettes. README guidance is
 adjacent but README may keep its existing render workflow unless the active
 packet explicitly migrates it.
@@ -20,6 +22,50 @@ scan and enough precision to avoid wrong research habits.
 
 Quarto is the target source format for installed vignettes in this cycle.
 Where a file is still `.Rmd`, treat it as migration input.
+
+---
+
+## House Rules
+
+These rules apply to every article and keep the articles reading as one set.
+The numbered sections carry the detail. Rules marked *checkable* can be
+enforced by search over the sources or rendered Markdown; enforce them with a
+documentation-contract block rather than by review.
+
+1. Strategies read whole vectors: `ctx$vec$close`,
+   `ctx$vec$feature(feature_id)`. `ctx$feature()` and `ctx$features()` are for
+   inspecting one instrument. The one exception is a strategy that reads
+   active aliases, which must loop over `ctx$features(id)`; show it with the
+   disclosure sentence in Section 9.
+2. The reader sees every strategy the lesson depends on, and it executes. The
+   first strategy a reader runs, in the README and Quickstart, is always
+   visible. A later article may run a `ledgr_demo_*` strategy after one
+   sentence saying what it does and what each parameter means.
+3. A candidate ID never appears without the parameters that produced it.
+   Print the candidate or select its parameter columns. If that takes
+   clutter, route the gap as Section 5 describes.
+4. Run and snapshot IDs are fixed literals, never built from `Sys.getpid()`,
+   the clock or random draws. The freshness check needs deterministic renders.
+   *Checkable.*
+5. An article that closes and reopens a store names it with
+   `ledgr_temp_store()` and says once that a real project passes a persistent
+   path. Other articles may rely on the default temporary store.
+6. Every `eval: false` chunk states its reason in the adjacent prose, and the
+   reason is one of the four in Section 5. Chunk options use the `#|` form.
+   *Checkable* for the header form.
+7. Every warning the render shows is explained where it first appears in the
+   article. A chunk may set `warning: false` only when its prose says why the
+   warning is irrelevant to the lesson.
+8. Output that looks alarming or impressive gets one sentence of
+   interpretation. The common case is annualized metrics from a few bars of
+   fixture data: say once that they are an artifact of the sample.
+9. A fact in Section 9's list is stated in its home article and linked from
+   everywhere else, not restated in other words.
+10. A concept is used without a gloss only after its home article in the
+    Section 12 reading flow. Before that, give a one-sentence gloss and link
+    the home.
+11. No words a user cannot act on; Section 3 lists them. *Checkable.*
+12. Where Next starts with the next article in the reading flow.
 
 ---
 
@@ -91,6 +137,18 @@ Avoid:
 - apology language;
 - long passive chains;
 - internal project shorthand that a user cannot act on.
+
+Internal shorthand includes at least: fold core, oracle, touchpoint,
+accelerator (outside the compiled-accounting section of Sweeps), legacy and
+pre-provenance, parity contract, composable bundle, B2, and ticket, test or
+claim IDs such as `LDG-`, `LTB-` and `LCL-`. Say what the reader sees or does
+instead: "the engine computes", "this check", "runs created by an older
+version". "Tier" means a reproducibility tier and nothing else.
+
+Do not narrate the test suite in a user article. A sentence such as "the
+matrix below is the executable oracle used by ledgr's tests", or a section
+that ties an article's example to a shared test fixture, is a maintainer
+cross-check; it belongs in a test.
 
 Avoid current-version framing in user-facing vignette prose. Do not write
 "in v0.1.8.5, ledgr does..." or "currently, this feature works..." when the
@@ -176,6 +234,9 @@ Use runnable chunks for ordinary examples. Use `eval: false` only when:
 - the example requires external data or network access;
 - the section is conceptual and says so plainly;
 - the chunk is intentionally a fragment and is labeled as such.
+
+State which reason applies in the prose next to the chunk. A reader should
+never wonder whether an unexecuted chunk would work.
 
 Quarto chunk options use YAML-in-comment syntax:
 
@@ -349,7 +410,7 @@ with the article or method section they cover.
 
 Show output when it teaches the reader what to expect. Prefer real rendered
 output from executed chunks whenever the article can use package-owned data,
-local fixtures, or a disposable `tempdir()` store. Hand-written `#>` transcript
+local fixtures, or a disposable store from `ledgr_temp_store()`. Hand-written `#>` transcript
 blocks are brittle: they can drift away from the API and hide breakage that a
 render would catch.
 
@@ -440,21 +501,68 @@ tradeoff. Not every section needs one.
 
 Articles should link forward and sideways intentionally.
 
-Use article links for workflow depth:
+### Canonical Homes
 
-- Data Input And Snapshots for snapshot creation and sealed-data boundaries;
-- Strategy Basics for first-pass strategy authoring;
-- Strategy Authoring Tools for one-pulse testing, helper pipelines, share
-  sizing, and strategy state;
-- Indicators And Features for feature declarations and alias identity;
-- TTR Indicators And Bundles for supported TTR declarations and bundles;
-- Custom Indicators And External Features for scalar and series indicators,
-  R adapters, and CSV-backed external feature declarations;
-- Sweeps for candidate grids, failure rows, and promotion mechanics;
-- Experiment Store for durable artifacts, reopen, and recovery evidence;
-- Reproducibility for hashes, source capture, and limits of provenance;
-- The Accounting Model for derived fills, trades, equity, and metrics;
-- Metric Contexts And Conventions for annualization and metric assumptions.
+Each topic has one home article. The home teaches it; every other article
+uses it with a link, or with a one-sentence gloss and a link when the home
+comes later in the reading flow.
+
+| Topic | Home article |
+| --- | --- |
+| Sealed snapshots, snapshot hashes, bars-first input | Importing And Sealing Market Data |
+| The strategy contract: `function(ctx, params)`, full target vectors, `ctx$flat()`, `ctx$hold()`, `ctx$vec` | Strategy Basics |
+| One-pulse testing, the selection-weight-target helper pipeline, share sizing, strategy state | Strategy Authoring Tools |
+| Engine feature IDs, feature maps, aliases, active aliases, warmup, the warmup and zero-trade checklist | Indicators And Features |
+| Which indicators availability-aware runs accept | Indicators And Features |
+| TTR declarations, bundles, bundle naming, TTR warmup | TTR Indicators And Bundles |
+| Scalar `fn` and `series_fn` indicators, `gap_contract`, R and CSV adapters | Custom Indicators And External Features |
+| Ledger events, fills, trades, equity, metrics | The Accounting Model |
+| Cost models and risk chains | Risk And Cost Execution Policy |
+| Stores, run IDs, labels, reopening, comparing runs | Experiment Store |
+| Reproducibility tiers, strategy preflight, source capture | Reproducibility |
+| Sweeps, candidates, failure rows, promotion, the compiled-accounting opt-in | Exploratory Sweeps And Candidate Promotion |
+| Look-ahead and leakage, including the `lead(close)` example | Leakage |
+| DSR, PBO/CSCV, MinTRL, business-objective criteria | Selection Integrity |
+| Walk-forward folds and what they establish | Walk-Forward Evaluation |
+| Availability-aware runs and what turns them on | Preparing Point-In-Time Inputs |
+| Session calendars, missing observations, stale marks, quarantine | Missing Data And Session Calendars |
+| The corporate-action lines in a result print | Cash Distributions |
+| Membership, held nonmembers, survivorship | Survivorship Bias And Point-In-Time Universes |
+| Decision and fill clocks, next-open fills, the last-bar no-fill, affordability | How Targets Become Fills |
+| Annualization and metric contexts | Metric Contexts And Conventions |
+| What ships today versus the roadmap | Design Philosophy: From Research To Production |
+
+### Facts That Must Read The Same Everywhere
+
+These facts drifted apart between articles before. The home states each one;
+other articles link rather than paraphrase.
+
+- **Affordability** (How Targets Become Fills): dense fills do not check cash,
+  which can go negative; availability-aware runs refuse a cash-consuming fill
+  they cannot afford, with reason `insufficient_cash`.
+- **Availability-eligible indicators** (Indicators And Features, in its
+  support matrix): built-in SMA and returns, custom indicators declaring a
+  truthful `gap_contract = "strict_window"`, and single-output TTR SMA on
+  `close` declared with only `n`. Every other form, including recursive
+  indicators, TTR bundles and other TTR shapes, is refused.
+- **Active aliases** (Indicators And Features): use this sentence wherever an
+  active-alias strategy loops, so that it can be found and replaced when the
+  read ships: "ledgr has no alias-aware whole-universe feature read yet, so a
+  strategy that reads active aliases loops over `ctx$features(id)`. With
+  fixed feature IDs, use `ctx$vec$feature()`."
+- **Promotion** (Sweeps): promotion records which candidate was selected and
+  why; it is not validation.
+- **Selection diagnostics** (Selection Integrity): DSR, PBO/CSCV, MinTRL and
+  business-objective criteria ship. No article lists them as non-goals.
+- **Walk-forward** (Walk-Forward Evaluation): held-out folds are dependent
+  evidence about a selection rule. They do not prove that it generalizes.
+- **Corporate-action print lines** (Cash Distributions): what "Corporate
+  actions: NOT SUPPLIED" and "Price basis: UNDECLARED" mean and when they
+  matter. The first result in the README and Quickstart gives one sentence and
+  links there.
+- **Current capability** (Research To Production): ledgr is a research
+  runtime; paper and live execution, broker adapters and operational
+  observability are roadmap work.
 
 Use `?function_name` for function-level details.
 
@@ -593,6 +701,13 @@ Avoid:
 - feature factories taught as the primary parameterized sweep path;
 - promotion presented as validation;
 - exact-ID feature lookup presented as the primary active-alias workflow;
+- per-instrument feature loops presented as the strategy path when the feature
+  IDs are fixed;
+- a concept used before its home article in the reading flow without a gloss
+  and a link;
+- one fact stated in different words in several articles;
+- test fixtures, oracles or maintainer cross-checks narrated in a user
+  article;
 - internal RFC links in user-facing articles;
 - orphaned code snippets that look executable but are not;
 - diagrams that restate adjacent prose without adding structure;
@@ -623,6 +738,7 @@ For each article batch, reviewers should ask:
 11. Does the article preserve the release boundary and roadmap sequence?
 12. If the article summarizes delivered/planned capabilities, was that section
     updated during the release gate?
+13. Does the article follow the house rules?
 
 Use the checklist at two points:
 
@@ -634,3 +750,23 @@ Use the checklist at two points:
 
 The review is editorial and technical. A vignette can pass tests and still fail
 the teachability bar.
+
+### Flow Read
+
+The checklist above works one article at a time. Problems between articles,
+such as a concept used before it is taught or one fact told two ways, only
+show up when someone reads the whole set in order. Once per release, and after
+any change to the reading flow, one reader who did not write the changes reads
+the README and every article in Section 12 order and asks:
+
+1. Is any concept used before its home article without a one-sentence gloss
+   and a link?
+2. Does every fact in Section 9's list read the same everywhere, with only the
+   home explaining it?
+3. Does every article follow the house rules?
+4. Is every line of the first result a reader sees explained, including the
+   corporate-action lines?
+5. Does each Where Next lead to the next article, so that following them
+   reaches the end of the flow?
+
+Findings from the flow read are recorded and corrected like article findings.
