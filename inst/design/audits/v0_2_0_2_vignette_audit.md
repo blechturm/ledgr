@@ -1,7 +1,7 @@
 # v0.2.0.2 Vignette Audit
 
-**Status:** Accepted frozen findings and dispositions. Product repairs P4
-through P6 precede the documentation-correction workstream.
+**Status:** Agent-provisional final correction record; awaiting the Workstream
+28 Type 1 close review and maintainer acceptance.
 
 **Audit date:** 2026-09-28
 
@@ -324,3 +324,75 @@ LDG-2859 and Workstream 26 are complete. Accepted product repairs P4 through
 P6 land in Workstream 27 before LDG-2885 through LDG-2888 start in Workstream
 28. This artifact changes no article, teaching claim, public API, production
 code, or test.
+
+## 7. Final Correction Outcomes
+
+The correction pass retained the 26-source census and the 53 failed
+article/category cells. Each changed article was read again as a learner who
+had read only the earlier articles in the style-guide flow. `PASS` below means
+the corrected article now starts from the smallest useful path, states the
+limit of that path, introduces stricter evidence only when its claim needs it,
+and matches the shipped surface. The two articles with no original finding
+were rechecked but not expanded.
+
+| Article | Final learner-read result |
+| --- | --- |
+| Who ledgr is for | PASS: research portability is separate from planned paper/live operation. |
+| Quickstart | PASS: one short run is the entrance; promotion is executed without implying validation. |
+| Importing And Sealing Market Data | PASS: bars-first input remains sufficient for a dense study; external CSV and Yahoo limits are explicit. |
+| Research Workflow | PASS: the public promotion accessor is used and the active-alias loop is disclosed as a current limitation. |
+| Leakage | PASS: the future-inclusive and expanding-prior thresholds are both executed and visibly different. |
+| Reproducibility | PASS: captured values, explicit parameters and the local-helper repair are executable and honestly tiered. |
+| Preparing Point-In-Time Inputs | PASS unchanged: no audit finding and no correction needed. |
+| Missing Data And Session Calendars | PASS: the availability-specific vector example and active-alias limitation are explicit. |
+| Cash Distributions | PASS: research and strict settlement paths retain their distinct claims and a selective next step. |
+| Survivorship Bias And Point-In-Time Universes | PASS: the strategy now exercises changing availability, captions explain both figures, and the held-nonmember case is runnable. |
+| Strategy Basics | PASS: the prose table of contents is removed and the smallest strategy path remains first. |
+| Indicators And Features | PASS: dense use precedes certification; whole-vector strategy reads, warmup contrast, maps and sweeps are executed. |
+| The Accounting Model | PASS: current output and cleanup syntax are rendered without widening the article. |
+| Risk And Cost Execution Policy | PASS: described warnings are visible and the article keeps its execution-policy non-claims. |
+| Experiment Store | PASS: its ordinary strategy uses the whole-vector feature surface while persistence claims remain bounded. |
+| Exploratory Sweeps And Candidate Promotion | PASS: parameter values appear beside outcomes; promotion remains in-sample evidence. |
+| Selection Integrity | PASS unchanged: no audit finding and no correction needed. |
+| Walk-Forward Evaluation | PASS: deterministic identity output is fresh and the safe promotion path executes. |
+| Strategy Authoring Tools | PASS: the public signal helper executes and is compared with the direct whole-vector read. |
+| TTR Indicators And Bundles | PASS: one TTR path precedes bundles, naming and warmup rules; recursive availability remains a stated boundary. |
+| Custom Indicators And External Features | PASS: scalar use precedes series and adapter paths; gap_contract and an outcome-changing threshold are demonstrated. |
+| Metric Contexts And Conventions | PASS: the compact compatibility fixture is labelled and the current output is rendered. |
+| How Targets Become Fills | PASS: the ordinary entrance, decision/fill clocks, no-fill reasons and fill/trade arithmetic agree. |
+| Design Philosophy: From Research To Production | PASS: current research capability precedes planned operations, and the shown strategy's feature is declared. |
+| Why ledgr is built in R | PASS: language and research-store portability no longer imply a shipped operational runtime. |
+| Authoring A Corporate-Action Adapter | PASS: navigation and next steps now connect adapter authors to sealing and policy without making the article an ordinary-user prerequisite. |
+
+The final ownership reconciliation is exact:
+
+- LDG-2885 corrects all 12 feature-article cells: IND-S/C/R/L,
+  CUSTOM-S/C/R/L and TTR-S/C/R/L.
+- LDG-2886 corrects all 17 workflow cells: FLOW-W/C, LEAK-C/R/L,
+  REPRO-S/C/R/L, SWEEP-W/C/R/L and RTP-S/C/R/L.
+- LDG-2887 corrects the 21 article cells assigned to O in Section
+  2, including availability, execution, lifecycle and current-output fixes.
+- LDG-2888 corrects the 3 article cells assigned to X, closes WARN-X and
+  CHECK-X, aligns navigation and the style guide, and retains the accepted
+  product routes. P3 remains with the feature-engine
+  RFC; P7 remains with the v0.2.1.1 pulse/accessor optimization cut; P4 through
+  P6 were implemented and accepted in Cut 20.
+
+The category totals therefore remain 10 superseded-idiom, 4 hand-built
+workaround, 12 claim/non-claim, 19 reference/render and 8 capability-ladder
+cells: 53 corrected cells, none dropped or silently reclassified.
+
+Verification at the correction tree:
+
+- `test-documentation-contracts.R` passes;
+- `tools/render-vignettes-gfm.R --check --all` executes and verifies all 26
+  sources, including both nested articles and the adapter companion file;
+- the checker first caught a process-dependent run ID in Custom Indicators;
+  the example now uses fixed IDs and the second complete check passes;
+- the ordinary fast profile passes 483 of 483 blocks in 102.550 seconds, and
+  the gate checker passes the preregistered 112-second bound; and
+- `git diff --check` is clean.
+
+No production R or C++ source, public API, schema, identity rule or execution
+behavior changed under Workstream 28. These outcomes remain agent-provisional
+until the Type 1 close review and maintainer acceptance.
