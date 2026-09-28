@@ -55,7 +55,11 @@ documentation-contract block rather than by review.
    *Checkable* for the header form.
 7. Every warning the render shows is explained where it first appears in the
    article. A chunk may set `warning: false` only when its prose says why the
-   warning is irrelevant to the lesson.
+   warning is irrelevant to the lesson. No other stray console output reaches
+   the render: package attach and masking messages, startup banners, progress
+   output and incidental messages are suppressed where they arise, in the
+   project or setup configuration, never by hiding output the lesson uses.
+   *Checkable* for known stray-output patterns.
 8. Output that looks alarming or impressive gets one sentence of
    interpretation. The common case is annualized metrics from a few bars of
    fixture data: say once that they are an artifact of the sample.
