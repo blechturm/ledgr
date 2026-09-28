@@ -172,6 +172,18 @@ cuts:
     close_review: "The initial Type 1 close review returned CHANGES_REQUIRED. The focused re-review returned PASS after independently verifying all three corrections, every teaching note and the failure sensitivity of the registered mutations. It found one non-blocking open pulse in the article; b419733 closed it and extended LTB-0099 to prevent recurrence. The maintainer accepted Workstream 23 and Cut 16 on 2026-09-28 without another review round."
     accepted: "2026-09-28 by the maintainer, after the PASS and b419733"
     status: "closed"
+  - id: 17
+    name: "Maintenance: pulse inspection parity and loop-warning coverage"
+    cut: "2026-09-28"
+    draft_note: "Agent-drafted on 2026-09-28 at the maintainer's request, from the editorial pass over the strategy-authoring articles recorded in `inst/design/audits/v0_2_0_2_strategy_article_audit_input.md`. Nothing here is authorized until the maintainer accepts the cut and writes the workstream brief. Status `draft` on the cut, workstream and tickets marks that."
+    cut_review: "not yet reviewed. Proposed: compressed into the close review of workstream 24, as cuts 14 and 15 were, because both defects are reader and validation corrections with executable oracles. One planned Type 1 close review over three tickets is 0.333 against the 0.5 gate."
+    authority: "AGENTS.md: reader work and validation fixes need no new RFC cycle. `inst/design/contracts.md` near line 889: scalar `fn` and the terminal value from `series_fn` receive the same bounded fully observed window and must agree; the pulse inspection path uses neither contract. The accepted strategy-context-surface synthesis, section 5, which keeps `ledgr_pulse_snapshot()` as an explicit inspection context and authorizes no new inspection subsystem; this cut makes the existing context report the run's own feature values and adds none. Open triage item THEME-006 in `inst/design/ledgr_v0_1_7_9_spec_packet/ledgr_triage_report.md`, which named the run-versus-pulse `fn` signature conflict."
+    source_table: "`inst/design/audits/v0_2_0_2_strategy_article_audit_input.md`, product defects P1 and P2; `R/pulse-snapshot.R:292-307`; `R/features-engine.R:196-202` and `:268-283`; `R/pulse-context.R:524-573`"
+    sequencing_proposal: "LDG-2876 changes what articles may claim about one-pulse testing, so on acceptance workstream 15 (release gate) should depend on workstream 24 instead of 23, letting LDG-2859 audit the corrected behaviour once. The maintainer decides whether the release gate, which is open, waits. The deferred result-print defect LDG-2869 is the other maintenance item this release carries; moving it into this cut is the maintainer's call."
+    out_of_scope: "A whole-universe read for active aliases (P3 in the audit input): `ctx$vec$feature()` and `ledgr_signal_feature()` accept engine IDs only, so an active-alias strategy must loop over `ctx$features(id)`. That is a design decision for the feature-engine RFC the helpers synthesis names under 'Bulk feature-map vector helpers'; the audit input records four articles that now depend on it. Rendered-article warnings hidden by `_quarto.yml` `warning: false`, which is a documentation decision for LDG-2859."
+    workstreams: [24]
+    closeout: "pulse_inspection_parity_closeout.md"
+    status: "draft"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -367,6 +379,14 @@ workstreams:
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23", reason: "One claim joins the tickets: the strategy-authoring worked example needs no hand-written workaround for missing inputs, short rankings, kept positions or pulse sizing, and each helper that removes one follows its stage's missing-value rule from helpers synthesis Q3. The review re-executes the article and confirms each removed workaround was replaced by a shipped helper rather than moved elsewhere, runs every ticket's registered mutation, reads the extended contract text against the engine, and confirms that dense outputs are unchanged whenever the new arguments are not used. These helpers run once per pulse, so the review walks each changed helper against the seven shapes, where a loop over instruments is a finding unless its reason is stated, and measures a helper-pipeline run before and after, interleaved, naming the clock as cold or warm."}
+
+  - id: 24
+    name: "Pulse inspection parity and loop-warning coverage"
+    cut: 17
+    status: "draft"
+    depends_on_workstream: 23
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins the tickets: a one-pulse inspection shows the strategy the same feature values the run shows it at that timestamp, and the slow-loop warning covers every scalar accessor that has a whole-universe alternative. The review runs the parity matrix against a real run for built-in, series_fn, fn(window), fn(window, params) and a recursive TTR indicator, restores the one-argument requires_bars call and the missing feature-read recording to confirm both detectors fail, and reads the changed article sentences against the behaviour. The warning's recording runs inside the fold on every scalar feature read, so the review walks that change against the seven shapes and requires an interleaved before-and-after clock on the registered shape; the pulse path is interactive and needs only its recorded cost."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -1798,3 +1818,33 @@ tickets:
     scope: "Close workstream 23 and cut 16. Record which helper closed which gap, the maintainer decisions recorded on the cut and why, that LDG-2869 was deferred to a maintenance cut, and the out-of-scope routes, so a later reader finds alias planes, scheduling, warning frequency and the result-print defect where they went. Record the seven-shape walk result and the before-and-after helper-pipeline clocks the review obligations require, and review invocations against the 0.5 gate, including the three cut-review invocations and the breach the maintainer accepted in advance. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout maps every gap in the cut to its ticket and helper, or to its named out-of-scope route", "the maintainer decisions are recorded with their reasons, including the scheduling override", "the seven-shape walk and interleaved before-and-after clocks are recorded with the clock named", "review invocations are recorded against the 0.5 gate"]
     evidence: ["The accepted closeout maps LDG-2868 and LDG-2870 through LDG-2874 to their helper and registered detector, records the maintainer decisions and the LDG-2869 and out-of-scope routes. The focused Type 1 re-review returned PASS, and the maintainer accepted the workstream on 2026-09-28.", "The seven-shape walk found and removed one duplicate context validation in the feature-signal path; LTB-0095 counts one validation. The correction removes the unconditional dense position-plane read found by the close review. No remaining changed loop grows with bars, fact rows, instruments x pulses, events, diagnostics or candidates.", "Three interleaved 5,000-call warm clocks at 505 instruments put the ranking-helper delta at +0.080 ms/call and the missing-policy rule delta at +0.092 ms/call, about +0.10 and +0.12 seconds over 1,260 pulses. The correction ordinary fast record passed 470/470 in 87.560 seconds and its checker passed the 112-second gate.", "Three cut reviews, the initial close review and the requested focused re-review are 5/7 = 0.714. The maintainer accepted the first breach before implementation; the correction round is recorded rather than hidden. The review's sole non-blocking observation was corrected at b419733 by closing keep_pulse and extending LTB-0099."]
+  - id: "LDG-2876"
+    title: "Pulse snapshots compute features through the run's feature path"
+    workstream: 24
+    status: "draft"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: "`ledgr_pulse_snapshot()` computes each feature itself, by calling `ind$fn(window_sub)` with one argument on the last `requires_bars` rows (`R/pulse-snapshot.R:305-307`). A run uses `series_fn` when the indicator has one, otherwise `fn(window, params)` over `stable_after` rows (`R/features-engine.R:196-202`, `:268-283`). The two agree for built-in window features and disagree elsewhere. A reviewer measured TTR RSI(14) for DEMO_01 at 2019-06-03 as 25.39 on a pulse and 41.02 in the run; a custom `fn(window, params)` fails on a pulse with a missing `params` argument while the run succeeds; and `fn` sees two rows on a pulse and four in the run when `requires_bars = 2` and `stable_after = 4`. One-pulse testing, which Strategy Authoring Tools, Indicators and TTR And Adapter Indicators teach as the way to see what a strategy will see, is therefore wrong for exactly the indicators where it matters most. Make the pulse obtain its feature values from the run's own feature computation over the snapshot history up to `ts_utc`, with the same parameters, rather than from a second implementation. Feature maps and `feature_params` keep working as today."
+    acceptance: ["for a built-in window feature, an indicator with `series_fn`, an `fn(window)` indicator, an `fn(window, params)` indicator and a recursive TTR indicator (guarded on TTR being installed), the value a pulse reports for each instrument equals the value the strategy sees at the same timestamp in a `ledgr_run()` over the same snapshot and features, so the run is the oracle", "a custom `fn(window, params)` indicator works on a pulse built with `feature_params`, and its `fn` receives the same `stable_after`-row window it receives in a run", "a mutation restoring the one-argument `requires_bars` call fails a registered detector", "the pulse path calls the run's feature computation instead of keeping its own; no second feature implementation remains in `R/pulse-snapshot.R`", "the cost of building one pulse at 100 instruments and 2,000 bars of history is recorded before and after as an interactive clock, not a regression gate", "the article sentences that qualify one-pulse testing for built-in indicators, in Strategy Authoring Tools, Indicators and TTR And Adapter Indicators, are corrected to the new behaviour with their pins"]
+    evidence: []
+  - id: "LDG-2877"
+    title: "The slow-loop warning covers exact-ID feature reads"
+    workstream: 24
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: "`ledgr_scalar_accessor_loop` records bar, OHLCV, position and index reads (`R/pulse-context.R:524-561`) but not `ctx$feature(id, feature_id)`, although a loop over it is just as slow and `ctx$vec$feature(feature_id)` is its whole-universe alternative. Strategy Authoring Tools now says so explicitly. Record `ctx$feature()` calls the same way, naming `ctx$vec$feature(feature_id)` in the warning. `ctx$features(id, feature_map)` stays unrecorded: an active-alias strategy has no whole-universe alternative yet (P3 in the audit input), and warning about a pattern the user cannot replace is noise. That boundary is stated in the help and moves when an alias-aware vector read exists."
+    acceptance: ["a loop over `ctx$feature(id, feature_id)` across at least 100 instruments emits one `ledgr_scalar_accessor_loop` warning per run that names `ctx$vec$feature(feature_id)`; below the threshold it emits nothing; the warning changes no result", "a loop over `ctx$features(id, feature_map)` still emits nothing, and `?ledgr_strategy_context` states why", "a mutation removing the new recording fails a registered detector", "the recording's per-pulse cost on the registered fold shape is measured before and after, interleaved, with the clock named", "the Strategy Authoring Tools sentence 'Loops over `ctx$feature()` are just as slow but do not trigger it.' and its pin are updated to the new behaviour"]
+    evidence: []
+  - id: "LDG-2878"
+    title: "Close workstream 24 and cut 17"
+    workstream: 24
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: ["LDG-2876", "LDG-2877"]
+    scope: "Close workstream 24 and cut 17. Record the parity matrix and its oracle, the loop-warning boundary for `ctx$features()` and why it waits for an alias-aware vector read, whether LDG-2869 joined this cut, and whether the release gate waited for it. Record the seven-shape walk for the fold-side recording, the before-and-after clocks, and review invocations against the 0.5 gate. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the closeout states which feature paths now agree between pulse and run and names the detector for each", "the `ctx$features()` warning boundary is recorded with its reason and the decision it waits for", "the seven-shape walk and the interleaved clocks are recorded with the clock named", "review invocations are recorded against the 0.5 gate"]
+    evidence: []
