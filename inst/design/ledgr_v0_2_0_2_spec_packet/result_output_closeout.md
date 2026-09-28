@@ -1,7 +1,6 @@
 # Result Output Closeout
 
-**Status:** Agent-provisional; corrections verified, awaiting maintainer
-acceptance.
+**Status:** Accepted by the maintainer.
 **Date:** 2026-09-28
 **Cut:** 18
 **Workstream:** 25
@@ -148,4 +147,4 @@ and its focused re-review total three invocations over six completed tickets,
 `3 / 6 = 0.500`, at the gate. The focused review found the recovered-function
 line outside the shared formatter and Survivorship Bias absent from the
 documentation handoff; both are corrected. This closeout remains
-agent-provisional until maintainer acceptance.
+accepted by the maintainer on 2026-09-28.

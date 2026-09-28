@@ -1004,7 +1004,7 @@ historical ratio 2/3 = 0.667 against the 0.5 gate. The maintainer accepted
 Workstream 24 and Cut 17 on 2026-09-28 without a third review because the
 final cache-identity correction was mechanical and mutation-detected.
 
-## Cut 18: Maintenance, result output (review pending)
+## Cut 18: Maintenance, result output (accepted)
 
 Authority: reader work needs no new RFC cycle; the accepted equity-settlement
 synthesis and `contracts.md` bind what the result prints must keep. The
@@ -1048,8 +1048,8 @@ the checker passed the 112-second bound.
 Three metadata-bearing articles were regenerated here. The seven other stale
 result-output articles and the concurrent README rewrite are explicitly owned
 by dependent Workstream 26. The cut review, close review and focused re-review
-are 3/6 = 0.500. Workstream 25 and Cut 18 remain review pending for maintainer
-acceptance.
+are 3/6 = 0.500. The maintainer accepted Workstream 25 and Cut 18 on
+2026-09-28 at `3f848f7`.
 
 ## Cut 19: Documentation corrections before the tag (open)
 

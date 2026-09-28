@@ -199,8 +199,9 @@ cuts:
     out_of_scope: "The content and semantics of corporate-action evidence, which the equity-settlement synthesis owns; this cut changes only where and how much of it prints. The README rewrite itself, which LDG-2858 owns and which will print `bt` once LDG-2880 lands. The sweep candidate print, which hides candidate parameters behind hashed IDs; it is a separate reader question for the sweep surface."
     workstreams: [25]
     closeout: "result_output_closeout.md"
-    close_review: "The first Type 1 close review at 260f59c returned CHANGES_REQUIRED on a print-time FIFO replay, loss of the exact absent-policy oracle and misaligned metadata values. Correction 3ccb3a3 replaces replay with a measured linear headline reader, restores exact policy assertions, aligns both metadata prints, repairs summary spacing and labels the metrics object's persisted-prefix scope. The focused re-review verified F1 and F2 and found two small residuals: the recovered Function line bypassed the formatter and Survivorship Bias was absent from the Workstream 26 handoff. Correction 3dd0c18 and the final record close both. Three invocations over six tickets is 0.500."
-    status: "review_pending"
+    close_review: "The first Type 1 close review at 260f59c returned CHANGES_REQUIRED on a print-time FIFO replay, loss of the exact absent-policy oracle and misaligned metadata values. Correction 3ccb3a3 replaces replay with a measured linear headline reader, restores exact policy assertions, aligns both metadata prints, repairs summary spacing and labels the metrics object's persisted-prefix scope. The focused re-review verified F1 and F2 and found two small residuals: the recovered Function line bypassed the formatter and Survivorship Bias was absent from the Workstream 26 handoff. Correction 3dd0c18 and the final record close both. Three invocations over six tickets is 0.500. The maintainer accepted Workstream 25 and Cut 18 on 2026-09-28."
+    accepted: "2026-09-28 by the maintainer, at 3f848f7"
+    status: "closed"
   - id: 19
     name: "Documentation corrections before the tag"
     cut: "2026-09-28"
@@ -421,7 +422,7 @@ workstreams:
   - id: 25
     name: "Result output"
     cut: 18
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins the tickets: a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous. The review compares `print()` and `summary()` before and after on a bars-only run, a run with supplied corporate-action facts and an incomplete availability-aware run; confirms the two corporate-action headline lines still print wherever the equity-settlement synthesis requires them; confirms the collapsed policy record is reachable through a public accessor; and runs each ticket's detector against a restored old print. These are print methods, not fold, ingest or reader hot paths, so the seven-shape walk and before-and-after clock are recorded as not required with that reason."}
@@ -1917,7 +1918,7 @@ tickets:
   - id: "LDG-2884"
     title: "Close workstream 25 and cut 18"
     workstream: 25
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2869", "LDG-2880", "LDG-2881", "LDG-2882", "LDG-2883"]
