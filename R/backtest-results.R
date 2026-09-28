@@ -509,51 +509,60 @@ print.ledgr_backtest <- function(x, ...) {
   }
 
   cfg <- x$config
-  universe <- cfg$universe$instrument_ids
-  start <- cfg$backtest$start_ts_utc
-  end <- cfg$backtest$end_ts_utc
   initial_cash <- cfg$backtest$initial_cash
-  execution_mode <- if (is.list(cfg$engine) && !is.null(cfg$engine$execution_mode)) {
-    cfg$engine$execution_mode
-  } else {
-    NA_character_
-  }
 
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
   on.exit(opened$close(), add = TRUE)
-  final_equity <- DBI::dbGetQuery(
+  result_bounds <- DBI::dbGetQuery(
     con,
     "
-    SELECT equity
+    SELECT
+      MIN(ts_utc) AS start_ts_utc,
+      MAX(ts_utc) AS end_ts_utc,
+      ARG_MAX(equity, ts_utc) AS final_equity
     FROM equity_curve
     WHERE run_id = ?
-    ORDER BY ts_utc DESC
-    LIMIT 1
     ",
     params = list(x$run_id)
-  )$equity[[1]]
-  final_equity <- as.numeric(final_equity)
+  )
+  final_equity <- as.numeric(result_bounds$final_equity[[1]])
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
-
-  pnl <- final_equity - initial_cash
-  pnl_pct <- (pnl / initial_cash) * 100
+  computed <- ledgr_compute_metrics(x)
+  completion <- ledgr_run_completion_info(con, x$run_id)
+  prefix_only <- ledgr_summary_prefix_only(completion)
+  period <- ledgr_result_period_label(
+    result_bounds$start_ts_utc[[1]],
+    result_bounds$end_ts_utc[[1]]
+  )
+  return_label <- if (prefix_only) "Total Return (achieved prefix):" else "Total Return:"
+  drawdown_label <- if (prefix_only) "Max Drawdown (achieved prefix):" else "Max Drawdown:"
 
   cat("ledgr Backtest Results\n")
   cat("======================\n\n")
-  cat("Run ID:        ", x$run_id, "\n")
-  cat("Universe:      ", paste(universe, collapse = ", "), "\n")
-  cat("Date Range:    ", start, "to", end, "\n")
-  cat("Execution Mode:", execution_mode, "\n")
-  cat("Initial Cash:  ", sprintf("$%.2f", initial_cash), "\n")
-  cat("Final Equity:  ", sprintf("$%.2f", final_equity), "\n")
-  cat("P&L:           ", sprintf("$%.2f (%.2f%%)", pnl, pnl_pct), "\n\n")
+  cat(sprintf("%-34s %s\n", "Run ID:", x$run_id))
+  cat(sprintf("%-34s %s\n", "Period:", period))
+  cat(sprintf("%-34s $%.2f\n", "Opening Cash:", initial_cash))
+  cat(sprintf("%-34s $%.2f\n", "Final Equity:", final_equity))
+  cat(sprintf("%-34s %.2f%%\n", return_label, computed$total_return * 100))
+  cat(sprintf("%-34s %.2f%%\n", drawdown_label, computed$max_drawdown * 100))
+  cat(sprintf("%-34s %d\n\n", "Closed Trades:", computed$n_trades))
   ledgr_print_corporate_action_headline(corporate_actions)
   cat("\n")
-  cat("Use summary(bt) for detailed metrics\n")
-  cat("Use plot(bt) for equity curve visualization\n")
+  cat("Use summary(bt) for metrics and evidence\n")
 
   invisible(x)
+}
+
+ledgr_result_period_label <- function(start, end) {
+  values <- as.POSIXct(c(start, end), tz = "UTC")
+  midnight <- format(values, "%H:%M:%S", tz = "UTC") == "00:00:00"
+  labels <- if (all(midnight)) {
+    format(values, "%Y-%m-%d", tz = "UTC")
+  } else {
+    format(values, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  }
+  paste(labels, collapse = " to ")
 }
 
 ledgr_summary_prefix_only <- function(completion) {

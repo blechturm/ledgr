@@ -1876,13 +1876,13 @@ tickets:
   - id: "LDG-2880"
     title: "`print(bt)` is the one-screen run result"
     workstream: 25
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
     scope: "`print.ledgr_backtest()` (`R/backtest-results.R:506`) is already close to a one-screen result: 16 lines on a bars-only demo run, with run ID, universe, date range, opening cash, final equity and P&L. It omits max drawdown and closed trades, prints full ISO timestamps for daily bars, and shows `Execution Mode: audit_log` (`:547`), an internal term. Make it the result the README and articles print: run ID, period, opening cash, final equity, total return, max drawdown, closed trades, the two corporate-action headline lines, and one pointer to `summary()`. Its numbers come from the same computation `summary()` uses, so the two cannot disagree."
     acceptance: ["a bars-only demo run prints at most 15 lines containing run ID, period, opening cash, final equity, total return, max drawdown and closed trades, and no `Execution Mode` line", "total return, max drawdown and closed trades equal what `summary()` and `ledgr_compute_metrics()` report for the same run", "a period on daily bars prints as dates; sub-daily timestamps keep their time", "for a bars-only run the lines `Corporate actions: NOT SUPPLIED - returns may omit distributions` and `Price basis: UNDECLARED - distribution double counting cannot be ruled out` still print unchanged, as `tests/testthat/test-corporate-action-results.R:92-98` requires", "an incomplete run labels its return and drawdown as achieved-prefix evidence, consistent with `contracts.md:552-557`", "printing does not mutate the backtest object, and a mutation restoring the execution-mode line or dropping max drawdown fails a registered detector"]
-    evidence: []
+    evidence: ["`print.ledgr_backtest()` now derives its result period from the first and last persisted equity timestamps, reads all headline metrics through `ledgr_compute_metrics()`, and prints run ID, period, opening cash, final equity, total return, maximum drawdown and closed trades before the two unchanged corporate-action warnings. The internal execution mode and redundant plot pointer are gone; a bars-only result is fifteen lines.", "LCL-0107 registers fast LTB-0107. Public daily and intraday runs are compared with the public metrics object, the output is bounded, both exact warning lines are pinned, the backtest object is unchanged and mocked incomplete completion evidence requires achieved-prefix labels. Restoring Execution Mode or dropping maximum drawdown fails the block."]
   - id: "LDG-2881"
     title: "`summary(bt)` answers first and collapses unused corporate-action detail"
     workstream: 25
