@@ -1,7 +1,7 @@
 # Workstream 28 Documentation Correction Closeout
 
-**Status:** Agent-provisional; final focused Type 1 review PASS at `ecb3962`;
-awaiting maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-09-28, after the final focused
+Type 1 review passed at `ecb3962`.
 
 **Authority:** Cut 19, Workstream 28, LDG-2858 and LDG-2885 through
 LDG-2889 in `tickets.yml`; the accepted findings in

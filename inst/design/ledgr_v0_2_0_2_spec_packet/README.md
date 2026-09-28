@@ -1092,8 +1092,8 @@ defects and makes all five claim mutations fail. Six article-reading test files
 pass, the recursive freshness checker verifies all 26 articles, and the
 ordinary fast profile passes 483/483 blocks in 104.400 seconds against the
 112.000-second gate. Broader flow findings are assigned to Cut 21. The final
-focused review returned PASS at `ecb3962`. Tickets and Workstream 28 remain
-open pending maintainer acceptance.
+focused review returned PASS at `ecb3962`. The maintainer accepted Workstream
+28 and Cut 19 on 2026-09-28 and opened Cut 21's Workstream 29.
 
 ## Cut 20: Audit-discovered product boundary repairs (open)
 
