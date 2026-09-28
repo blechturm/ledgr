@@ -709,6 +709,7 @@ close(weekly_run)
 close(pulse)
 close(first_pulse)
 close(holding_pulse)
+close(keep_pulse)
 close(exit_pulse)
 ledgr_snapshot_close(snapshot)
 ```

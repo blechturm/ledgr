@@ -207,6 +207,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   trend_chunk <- qmd_chunk(authoring_qmd_lines, "trend-momentum")
   weekly_chunk <- qmd_chunk(authoring_qmd_lines, "weekly-trend-momentum")
   top_chunk <- qmd_chunk(authoring_qmd_lines, "top-momentum")
+  cleanup_chunk <- qmd_chunk(authoring_qmd_lines, "cleanup")
 
   for (needle in c(
     'ledgr_select_top_n(short_signal, n = 2, partial = "allow")',
@@ -238,6 +239,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
     fixed = TRUE
   )
   testthat::expect_no_match(weekly_chunk, "as.logical(exits)", fixed = TRUE)
+  testthat::expect_match(cleanup_chunk, "close(keep_pulse)", fixed = TRUE)
   testthat::expect_no_match(
     authoring_qmd,
     "equity_fraction = 0.6",
