@@ -435,88 +435,32 @@ swept_features <- ledgr_feature_map(
   ret_20 = ledgr_ind_returns(20)
 )
 
-feature_ids <- ledgr_feature_id(swept_features)
-
-parameterized_strategy <- function(ctx, params) {
-  ret <- ctx$vec$feature(feature_ids[[paste0("ret_", params$lookback)]])
-
-  targets <- ctx$flat()
-  targets[is.finite(ret) & ret > params$min_return] <- params$qty
-  targets
-}
-
-return_grid <- ledgr_param_grid(
-  ret_5 = list(lookback = 5, min_return = 0, qty = 10),
-  ret_10 = list(lookback = 10, min_return = 0, qty = 10),
-  ret_20 = list(lookback = 20, min_return = 0, qty = 10)
-)
-
-return_exp <- ledgr_experiment(
-  snapshot,
-  parameterized_strategy,
-  features = swept_features,
-  cost_model = ledgr_cost_zero()
-)
-return_sweep <- ledgr_sweep(return_exp, return_grid)
-bind_cols(
-  return_sweep |> select(candidate_id, status, total_return),
-  bind_rows(lapply(return_sweep$params, as.data.frame))
-)
+ledgr_feature_id(swept_features)
 ```
 
 The feature set must cover the whole grid: `lookback = 20` means `return_20`
 must already be registered. A missing feature ID is an unknown-feature error,
-not warmup.
-The alias names in `swept_features` must also match the lookup key pattern used
-by the strategy, here `paste0("ret_", params$lookback)`.
-In short, all feature parameter values must be registered before `ledgr_run()`;
+not warmup. In short, all feature parameter values must be registered before
+`ledgr_run()`;
 do not create `ledgr_ind_returns(params$lookback)` lazily inside the strategy.
 
 For exploratory sweeps over ledgr-owned indicator parameters, prefer active
-aliases. Declare the varying constructor arguments with `ledgr_param()` and
-compose feature and strategy grids explicitly:
+aliases. Declare the varying constructor argument with `ledgr_param()`; each
+sweep candidate then resolves its own concrete indicator behind a stable alias:
 
 ```{r}
-#| label: active-alias-sweep-example
+#| label: active-alias-declaration
 
 active_features <- ledgr_feature_map(
   fast = ledgr_ind_sma(ledgr_param("fast_n")),
   slow = ledgr_ind_sma(ledgr_param("slow_n"))
 )
 
-active_strategy <- ledgr_demo_sma_crossover_strategy()
-active_exp <- ledgr_experiment(
-  snapshot,
-  active_strategy,
-  features = active_features,
-  cost_model = ledgr_cost_zero()
-)
-
-active_grid <- ledgr_grid_cross(
-  features = ledgr_feature_grid(
-    fast_n = c(10L, 20L),
-    slow_n = c(40L, 80L),
-    .filter = fast_n < slow_n
-  ),
-  strategy = ledgr_strategy_grid(threshold = c(0, 0.01), qty = 10)
-)
-
-precomputed <- ledgr_precompute_features(active_exp, active_grid)
-results <- ledgr_sweep(
-  active_exp,
-  active_grid,
-  precomputed_features = precomputed
-)
-results |>
-  select(status, final_equity, total_return, params, feature_params) |>
-  slice_head(n = 4)
-
 ledgr_snapshot_close(snapshot)
 ```
 
-Each row is one concrete feature/strategy candidate. Inspect `status` before
-ranking: one bad parameterization is evidence about that candidate, not a
-reason to hide the row or discard the rest of the sweep.
+`vignette("sweeps", package = "ledgr")` composes the feature and strategy grids
+for this map, runs the sweep and reads the candidate rows.
 
 For single-output indicators, the feature-map alias is the strategy-facing name
 returned by `ctx$features(id)`. Active aliases currently have no alias-aware
@@ -525,9 +469,8 @@ read per instrument. Fixed feature IDs should use `ctx$vec$feature()` instead.
 Bundle entries are intentionally flat; the TTR companion explains why bundles
 use `prefix` or `naming` rather than one outer alias.
 
-
 For TTR-backed declarations, multi-output bundles, and adapter warmup rules,
-read `vignette("ttr-and-adapter-indicators", package = "ledgr")`.
+read `vignette("ttr-indicators", package = "ledgr")`.
 
 ## Troubleshoot Warmup And Zero Trades
 
@@ -568,6 +511,92 @@ instrument's sample and later becomes finite. Impossible warmup is different:
 the instrument never has enough available bars for that feature. In that case,
 zero trades can be a valid completed run plus a useful diagnostic, not a failed
 run.
+
+### Diagnose A Successful Run With Zero Trades
+
+A completed run with zero trades is not automatically wrong. It means ledgr
+accepted the strategy outputs and the ledger reached the end of the sample, but
+no closed round trips were recorded.
+
+Use this checklist before changing the strategy:
+
+1. Start with `summary(bt)`. If `Closed Trades` is zero, `win_rate` and
+   `avg_trade` should be `NA`, not zero. If a registered feature can never
+   become usable because the sample is too short, `summary(bt)` also prints a
+   `Warmup Diagnostics` note with the feature ID, instrument ID, required bars,
+   and available bars.
+2. Inspect `ledgr_results(bt, what = "fills")`. Empty fills mean nothing ever
+   executed. Non-empty fills with empty trades mean positions opened but did
+   not close.
+3. Confirm the feature IDs with `ledgr_feature_id(features)`. A helper such as
+   `ledgr_signal_return(ctx, lookback = 60)` reads `return_60`; that indicator must
+   be registered before the run.
+4. Compare feature contracts with sample length before assuming the strategy is
+   broken. `ledgr_feature_contracts(features)` shows `requires_bars` and
+   `stable_after`. If an instrument has fewer available bars than a feature's
+   `requires_bars`, that feature cannot become usable for that instrument.
+5. Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature is still
+   `NA` for every instrument near the end of the sample, the issue is no longer
+   ordinary early warmup. Check the lookback length, sample length, universe,
+   and feature registration.
+6. If the helper pipeline returns a `ledgr_empty_selection` on a late diagnostic
+   pulse, inspect the signal values directly. Ordinary early warmup should have
+   passed by then; a late all-missing signal usually points to sample length,
+   universe, or feature-registration issues.
+
+Timestamp checks should compare normalized UTC values, not local string
+representations:
+
+```{r}
+#| label: timestamp-troubleshooting
+#| eval: false
+
+target_ts <- ledgr_utc("2020-01-05T00:00:00Z")
+ledgr_utc(ctx$ts_utc) == target_ts
+
+intraday_time <- format(ledgr_utc(ctx$ts_utc), "%H:%M:%S", tz = "UTC")
+intraday_time >= "14:30:00" && intraday_time <= "21:00:00"
+```
+
+If fills are empty, distinguish zero signals from zero sizing. In your own run,
+use the same snapshot, universe, timestamp, features, strategy, and params you
+are debugging:
+
+```{r}
+#| label: zero-sizing-troubleshooting
+#| eval: false
+
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = ...,
+  ts_utc = ...,
+  features = features
+)
+target <- strategy(pulse, params)
+target
+all(target == 0)
+```
+
+Custom fill-model contract errors are different from zero-trade outcomes; see
+the fill-model reference documentation for the required fill fields.
+
+#### Four Warmup-Adjacent Cases
+
+Warmup is per instrument. One instrument can have a usable value while another
+is still `NA` because it has fewer bars or a different data history.
+
+Ordinary feature warmup is local to the beginning of each instrument's usable
+sample. A known feature is `NA` for early pulses, then becomes usable once the
+feature contract has enough bars.
+
+Impossible warmup is different: every value for an instrument/feature remains
+`NA` because the instrument never reaches the feature contract. That is the
+case reported by the `Warmup Diagnostics` note in `summary(bt)`.
+
+Current-bar absence is a third failure mode. If ledgr cannot construct the pulse
+sequence because a current bar is absent for an instrument in the requested
+universe, the run fails before strategy evaluation for that incomplete pulse;
+this is a pulse construction error, not a feature warmup value.
 
 ## Expected Sessions And Certified Gap Behavior
 
@@ -623,7 +652,7 @@ For result-table interpretation after a zero-trade run, read
 
 ## Where Next
 
-- `vignette("ttr-and-adapter-indicators", package = "ledgr")` covers TTR
+- `vignette("ttr-indicators", package = "ledgr")` covers TTR
   adapters and warmup verification.
 - `vignette("custom-indicators", package = "ledgr")` covers package-native
   custom indicator authoring.

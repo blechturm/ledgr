@@ -22,17 +22,26 @@ articles:
   - title: Start Here
     navbar: Start Here
     desc: >
-      What ledgr is, the shortest runnable path, and the two ideas it is
-      built on: no lookahead, and a backtest as reproducible evidence.
+      Decide whether ledgr fits your research, then run the shortest complete
+      loop: one backtest, a small sweep, and one promoted candidate.
     contents:
       - articles/who-ledgr-is-for
       - quickstart
+  - title: Building Blocks
+    navbar: Building Blocks
+    desc: >
+      Seal data, write a strategy, declare features, keep lookahead out, read
+      the results, apply cost and risk policy, store runs, and know what a run
+      can be trusted to reproduce.
+    contents:
       - data-input-and-snapshots
       - strategy-development
       - indicators
+      - leakage
       - metrics-and-accounting
       - risk-and-cost
       - experiment-store
+      - reproducibility
   - title: Research Workflow
     navbar: Research Workflow
     desc: >
@@ -40,9 +49,6 @@ articles:
       evaluation without confusing reproducibility with validation.
     contents:
       - sweeps
-      - research-workflow
-      - leakage
-      - reproducibility
       - selection-integrity
       - walk-forward
   - title: Point-In-Time Evidence
@@ -63,7 +69,7 @@ articles:
       becomes a fill.
     contents:
       - strategy-authoring-tools
-      - ttr-and-adapter-indicators
+      - ttr-indicators
       - custom-indicators
       - corporate-action-adapter-authoring
       - metric-contexts-and-conventions
@@ -76,6 +82,10 @@ articles:
     contents:
       - research-to-production
       - articles/why-r
+redirects:
+  - ["articles/research-workflow.html", "articles/sweeps.html"]
+  - ["articles/ttr-and-adapter-indicators.html", "articles/ttr-indicators.html"]
+
 reference:
   - title: Package
     contents:

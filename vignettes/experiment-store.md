@@ -301,80 +301,18 @@ close(best_bt)
 
 ## Inspect Stored Strategy Source
 
-Completed runs keep strategy provenance in the experiment store. This is
-one of the most useful audit artifacts: you can inspect the source text
-that produced a run without reopening the backtest handle and without
-rerunning the strategy. The full trust and tier model lives in
-`vignette("reproducibility", package = "ledgr")`; this section shows the
-store workflow.
-
-Use `trust = FALSE` for safe inspection. It returns stored source text,
-parameters, hashes, dependency metadata, and warnings without parsing,
-evaluating, or executing the source.
-
-``` r
-stored_strategy <- ledgr_run_strategy(snapshot, "trend_qty_5", trust = FALSE)
-stored_strategy
-```
-
-    ledgr Extracted Strategy
-    ========================
-
-    Run ID:           trend_qty_5
-    Reproducibility:  tier_1
-    Source Hash:      6f37729adac3ba7e8a0ea2cb61b9272ea96a742d0098b77c2a745251d2d7864d
-    Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
-    Hash Verified:    TRUE
-    Trust:            FALSE
-    Source Available: TRUE
-
-The source text is just data in this mode.
-
-``` r
-writeLines(stored_strategy$strategy_source_text)
-```
-
-    function (ctx, params)
-    {
-        sma <- ctx$vec$feature("sma_20")
-        targets <- ctx$flat()
-        targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
-        targets
-    }
-
-Hash verification proves stored-text identity, not code safety. Use
-`trust = TRUE` only when you already trust the experiment store and
-intentionally want ledgr to parse and evaluate the stored text into a
-function object. Legacy/pre-provenance runs remain inspectable through
-`ledgr_run_info()` and stored result tables, but their strategy function
-cannot be recovered from provenance alone.
+Completed runs keep strategy provenance in the experiment store: the
+source text, parameters, hashes and dependency metadata that produced
+each run. `ledgr_run_strategy(snapshot, run_id, trust = FALSE)` reads
+them without executing anything;
+`vignette("reproducibility", package = "ledgr")` teaches that reader and
+when trusted recovery is appropriate.
 
 When a run ID is missing, store lookup helpers fail with class
 `ledgr_run_not_found`:
 
 ``` r
 ledgr_run_info(snapshot, "missing_run")
-```
-
-Trusted recovery can be used to rerun a stored strategy only after you
-have decided that evaluating the stored source is acceptable:
-
-``` r
-recovered <- ledgr_run_strategy(snapshot, "trend_qty_5", trust = TRUE)
-
-rerun_exp <- ledgr_experiment(
-  snapshot = snapshot,
-  strategy = recovered$strategy_function,
-  features = features,
-  opening = ledgr_opening(cash = 10000),
-  cost_model = ledgr_cost_zero()
-)
-
-ledgr_run(
-  rerun_exp,
-  params = recovered$strategy_params,
-  run_id = "trend_qty_5_rerun"
-)
 ```
 
 ## Reopen A Completed Run In A Later Session
@@ -504,30 +442,6 @@ ledgr_run_list(snapshot)
 
 Archiving hides a run from default listings without deleting artifacts.
 
-## Current Feature Persistence Boundary
-
-Run metadata records whether feature persistence was enabled, and pulse
-inspection lets you view registered feature values at one decision time.
-Public feature inspection is intentionally scoped to feature contracts,
-warmup feasibility, and pulse-time feature views:
-
-- `ledgr_feature_contracts(features)` shows declared feature
-  requirements;
-- `ledgr_feature_contract_check(snapshot, features)` checks whether
-  those requirements are achievable in a sealed snapshot;
-- `ledgr_pulse_snapshot()` plus `ledgr_pulse_features()` or
-  `ledgr_pulse_wide()` inspects one pulse.
-
-A full persisted feature-series retrieval API remains outside the
-current experiment-store surface; use precompute and sweep provenance
-when you need feature-set identity at sweep scale.
-
-External point-in-time regressors are a separate future data surface.
-The public roadmap tracks that work in the v0.2.x point-in-time data
-line so vintage semantics, lineage, ASOF lookup, and leakage prevention
-can be designed explicitly rather than smuggled into CSV bars or active
-aliases.
-
 ## Back Up A Closed Store
 
 The experiment store is an ordinary DuckDB file. Back it up only after
@@ -562,23 +476,6 @@ ordinary result inspection opens and closes read connections per
 operation. Use `close(bt)` as explicit resource cleanup in long
 sessions, tests, and explicit-open workflows. Close snapshot handles
 when the workflow is finished.
-
-## Task Intent Map
-
-Use this map when you know the task but not the function name:
-
-| Intent                    | Start here                    |
-|---------------------------|-------------------------------|
-| Seal in-memory bars       | `ledgr_snapshot_from_df()`    |
-| Seal a local CSV          | `ledgr_snapshot_from_csv()`   |
-| Fetch and seal Yahoo bars | `ledgr_snapshot_from_yahoo()` |
-| Reopen an existing store  | `ledgr_snapshot_open()`       |
-| List stored runs          | `ledgr_run_list()`            |
-| Compare durable runs      | `ledgr_run_compare()`         |
-
-Yahoo data is a convenience source. The sealed snapshot is the ledgr
-artifact; the remote Yahoo endpoint remains outside ledgr’s
-reproducibility boundary.
 
 ## Where Next
 

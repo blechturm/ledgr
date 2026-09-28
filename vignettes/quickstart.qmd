@@ -186,9 +186,8 @@ validation.
 
 ## Where Next
 
-Read `vignette("research-workflow", package = "ledgr")` for the full project
-loop. Read `vignette("sweeps", package = "ledgr")` when the grid itself is the
-thing you need to understand. Read `vignette("walk-forward", package =
+Read `vignette("sweeps", package = "ledgr")` for the full project loop: grids,
+candidate review, promotion, and reopening the promoted run. Read `vignette("walk-forward", package =
 "ledgr")` when you are ready to separate train-window selection from
 test-window evaluation.
 

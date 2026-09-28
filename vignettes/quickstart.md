@@ -130,7 +130,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio, params) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_736b26f659e1283d
+#> # ledgr sweep -- sweep_9e23053fc0377f71
 #> # A tibble: 2 x 5
 #>   candidate_id          status total_return sharpe_ratio params
 #>   <chr>                 <chr>  <chr>               <dbl> <list>
@@ -196,8 +196,7 @@ in-sample sweep into validation.
 
 ## Where Next
 
-Read `vignette("research-workflow", package = "ledgr")` for the full
-project loop. Read `vignette("sweeps", package = "ledgr")` when the grid
-itself is the thing you need to understand. Read
+Read `vignette("sweeps", package = "ledgr")` for the full project loop:
+grids, candidate review, promotion, and reopening the promoted run. Read
 `vignette("walk-forward", package = "ledgr")` when you are ready to
 separate train-window selection from test-window evaluation.

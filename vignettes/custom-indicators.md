@@ -345,7 +345,7 @@ pulse engine. Keep the boundary explicit:
 
 - `vignette("indicators", package = "ledgr")` covers the built-in
   feature lifecycle and pulse-time accessors.
-- `vignette("ttr-and-adapter-indicators", package = "ledgr")` covers
-  TTR-backed indicators and multi-output bundles.
+- `vignette("ttr-indicators", package = "ledgr")` covers TTR-backed
+  indicators and multi-output bundles.
 - `vignette("leakage", package = "ledgr")` explains why custom feature
   code is a causal review boundary.

@@ -188,14 +188,11 @@ bars_from <- function(prices) {
 
 ### Which sessions were expected?
 
-A **session** is one trading day at one venue: the day the venue was
-open, and the hours it was open for. It is a property of the venue, not
-of your data. A venue has sessions on days when nothing you own happened
-to trade.
-
-So the calendar is declared, not inferred from the rows you received. If
-you infer sessions from observations, a day with no rows never existed,
-and your history silently shortens. Build it as an ordinary table first:
+A **session** is one trading day at one venue, declared from the venue’s
+calendar rather than inferred from the rows you received;
+`vignette("missing-data-and-sessions", package = "ledgr")` teaches the
+calendar in full. Here it is an ordinary table that includes the closed
+days:
 
 ``` r
 calendar <- tibble(
@@ -222,23 +219,6 @@ calendar
 #> 11 2020-01-16   open   14:30:00     21:00:00
 #> 12 2020-01-17   open   14:30:00     21:00:00
 ```
-
-Read the columns as four separate assertions:
-
-| Column | What you are asserting |
-|----|----|
-| `session_date` | This calendar day existed at the venue. |
-| `status` | Whether it was `open` or `closed`. Closed days are supplied too: that is how a weekend is distinguished from a missing file. |
-| `session_open` | That session’s economic execution time and price cutoff. |
-| `session_close` | The decision pulse and the accounting row to which that session’s fills align. |
-
-Supplying the closed days matters. Had you listed only the ten open
-days, a holiday and a failed download would look identical. Here they do
-not.
-
-In production this table comes from the venue or an exchange-calendar
-package, covering the whole period you intend to run, not from the
-instrument rows you happen to hold.
 
 ``` r
 session_facts <- ledgr_facts_sessions(
@@ -1011,7 +991,7 @@ guess: a bar whose high sits below its open prevents sealing, with
 which hashes the rejected row as evidence and excludes it from runtime
 bars while the expected session stays on the calendar. For that
 workflow, read
-`vignette("data-input-and-snapshots", package = "ledgr")`.
+`vignette("missing-data-and-sessions", package = "ledgr")`.
 
 > [!TIP]
 >

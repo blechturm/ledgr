@@ -169,48 +169,6 @@ The native RSI feature ID is `rsi_14`. The TTR-backed RSI feature ID above is
 as interchangeable without checking that their calculation and warmup behavior
 match your research intent.
 
-RSI is a common mean-reversion input. One compact rule is: buy when RSI is below
-30, then return to flat when the condition is no longer true. The experiment
-registers the RSI indicator before the run; the strategy only reads the
-pulse-time value. The example below uses native RSI so it works without TTR.
-Use TTR-backed RSI when you deliberately want adapter behavior.
-
-```{r}
-#| label: rsi-mean-reversion
-
-rsi_features <- native_rsi_features
-
-rsi_strategy <- function(ctx, params) {
-  rsi <- ctx$vec$feature("rsi_14")
-  targets <- ctx$flat()
-  targets[is.finite(rsi) & rsi < params$oversold] <- params$qty
-  targets
-}
-
-rsi_snapshot <- ledgr_snapshot_from_df(
-  bars,
-  snapshot_id = paste0("rsi-vignette-", Sys.getpid())
-)
-
-rsi_exp <- ledgr_experiment(
-  snapshot = rsi_snapshot,
-  strategy = rsi_strategy,
-  features = rsi_features,
-  opening = ledgr_opening(cash = 10000),
-  cost_model = ledgr_cost_zero()
-)
-
-rsi_bt <- ledgr_run(
-  rsi_exp,
-  params = list(oversold = 30, qty = 10),
-  run_id = paste0("rsi-demo-", Sys.getpid())
-)
-
-ledgr_results(rsi_bt, what = "fills")
-close(rsi_bt)
-ledgr_snapshot_close(rsi_snapshot)
-```
-
 Some TTR functions return several columns. For those functions, choose one
 column with `output` when you need exactly one output, or use
 `ledgr_ind_ttr_outputs()` to declare several outputs from one shared TTR

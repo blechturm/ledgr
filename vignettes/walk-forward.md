@@ -302,10 +302,8 @@ sets.
 
 ## Where Next
 
-- For the sweep and selection mechanics this builds on, see
+- For the sweep, selection and promotion loop this builds on, see
   `vignette("sweeps", package = "ledgr")`.
-- For the full research arc from idea to reviewed candidate, see
-  `vignette("research-workflow", package = "ledgr")`.
 - For hashes, source capture, and the limits of provenance, see
   `vignette("reproducibility", package = "ledgr")`.
 - For the Sharpe ratio and annualization conventions behind these

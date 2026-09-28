@@ -16,18 +16,59 @@
   margin-left: auto;
   margin-right: auto;
 }
+&#10;.ledgr-workflow-diagram .mermaid svg {
+  max-width: 560px !important;
+}
 &#10;.ledgr-grid-diagram .mermaid svg {
   max-width: 760px !important;
 }
 &#10;.ledgr-alias-diagram .mermaid svg {
   max-width: 820px !important;
 }
+&#10;.ledgr-validation-diagram .mermaid svg {
+  max-width: 520px !important;
+}
 </style>
 
-This article explains how declared parameter variation becomes candidate
-rows. The central idea is active aliases: one strategy can read stable
-feature names such as `fast` and `slow` while the sweep varies the
-concrete indicators behind those names.
+You have an idea for a trading rule. Maybe a fast moving average
+crossing a slow one looks useful. How do you turn that hunch into
+evidence you can reopen, inspect, and explain later?
+
+This workflow produces research evidence, not investment advice or a
+guarantee that a strategy will work in the future. See the project
+[disclaimer](../DISCLAIMER.md).
+
+The loop is deliberately short:
+
+<div class="ledgr-diagram ledgr-workflow-diagram">
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
+
+flowchart TB
+  data["Seal data"]
+  experiment["Declare experiment"]
+  single["Run once"]
+  sweep["Sweep candidates"]
+  inspect["Inspect evidence"]
+  promote["Promote with note"]
+  reopen["Reopen and recover"]
+
+  data --> experiment --> single --> sweep --> inspect --> promote --> reopen
+  inspect -. new research iteration .-> experiment
+```
+
+</div>
+
+Each step removes one common ambiguity:
+
+- sealing fixes the evidence;
+- experiment declaration fixes the strategy boundary;
+- a single run checks that the setup behaves at all;
+- sweeping compares declared candidates;
+- inspection makes the selection rule visible;
+- promotion records the human choice;
+- reopening proves the result is a durable artifact.
 
 Sweeps are for exploration. Promotion records one selected candidate as
 a committed run. Neither step proves that the selected candidate will
@@ -57,6 +98,54 @@ data("ledgr_demo_bars", package = "ledgr")
 
 This article uses `dplyr` for tabular inspection. The sweep itself is
 ledgr’s job.
+
+> [!NOTE]
+>
+> ### Running this yourself
+>
+> This article is evaluated when it is rendered. To keep package builds
+> and local previews disposable, the code writes to a temporary DuckDB
+> store. In a real project, replace `store_path` with a durable path such
+> as `artifacts/ledgr_store.duckdb`.
+
+
+> [!NOTE]
+>
+> ### About the demo data
+>
+> `DEMO_01` and `DEMO_02` are package-owned demo instruments. Real
+> research should use a sealed snapshot of the market data you intend to
+> study. The point here is the shape of the workflow, not the realism of
+> the data.
+
+
+## Project Topology
+
+Start with a small project shape. One script creates the evidence, one
+store holds the artifacts, and one report explains the research choice.
+
+``` text
+my-ledgr-project/
+  artifacts/
+    ledgr_store.duckdb
+  reports/
+    workflow_review.md
+  scripts/
+    research_workflow.R
+```
+
+ledgr does not require this exact layout. The point is simpler: keep the
+script, durable store, and written reasoning close enough that a future
+review can recover the full research decision.
+
+In a real project, add generated stores such as `artifacts/*.duckdb` to
+`.gitignore` unless you have a deliberate artifact-versioning policy.
+The script and source data should explain how to recreate the store; Git
+should not quietly become the database backup.
+
+``` r
+store_path <- ledgr_temp_store()
+```
 
 ## Sweep Is Exploration
 
@@ -88,8 +177,10 @@ ledgr_promote() / ledgr_run() commit an auditable run
 
 ## Declare Parameterized Features
 
-Start with one sealed snapshot and one strategy. This article stays on
-sweep mechanics rather than train/test or walk-forward evaluation.
+Seal the evidence first. Here you use two demo instruments over the
+first half of 2019. Once the data is sealed, the snapshot becomes the
+identity of the evidence: every run below refers back to the same
+immutable input.
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -100,8 +191,8 @@ bars <- ledgr_demo_bars |>
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  snapshot_id = "sweep_alias_demo",
-  db_path = tempfile(fileext = ".duckdb")
+  db_path = store_path,
+  snapshot_id = "demo_2019_h1"
 )
 
 features <- ledgr_feature_map(
@@ -129,7 +220,7 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = sma_crossover_strategy,
   features = features,
-  opening = ledgr_opening(cash = 100000),
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
@@ -138,11 +229,11 @@ exp
 
     ledgr_experiment
     ================
-    Snapshot ID: sweep_alias_demo
+    Snapshot ID: demo_2019_h1
     Database:    <temporary DuckDB path>
     Universe:    2 instruments
     Features:    2 mapped
-    Opening:     cash=100000, positions=0
+    Opening:     cash=10000, positions=0
     Mode:        audit_log
     Price basis: <undeclared>
     Metrics:     US equity daily (252 days/year * 1 bars/day = 252 bars/year)
@@ -205,6 +296,57 @@ For a second candidate with `fast_n = 10` and `slow_n = 40`, the same
 arrows resolve to SMA(10) and SMA(40), but the strategy still reads
 `values[["fast"]]` and `values[["slow"]]`. The aliases stay stable
 across candidates.
+
+## Sanity-Check One Run
+
+Before you fan out into a sweep, run one parameter set. You are checking
+two basic things: did anything trade, and do the derived results look
+plausible? Sweeps amplify whatever your setup does, including doing
+nothing.
+
+``` r
+single_run <- ledgr_run(
+  exp,
+  params = list(qty = 10, threshold = 0),
+  feature_params = list(fast_n = 10L, slow_n = 40L),
+  run_id = "workflow_single_run",
+  seed = 2026L
+)
+
+single_run
+```
+
+    ledgr Backtest Results
+    ======================
+
+    Run ID:                            workflow_single_run
+    Period:                            2019-01-01 to 2019-06-28
+    Opening Cash:                      $10000.00
+    Final Equity:                      $10106.83
+    Total Return:                      1.07%
+    Max Drawdown:                      -0.76%
+    Closed Trades:                     2
+
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+
+    Use summary(bt) for metrics and evidence
+
+``` r
+ledgr_results(single_run, what = "trades")
+```
+
+    # A tibble: 2 x 10
+      event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+          <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+    1         3 2019-04-23 2019-04-23 00:00:00    DEMO_01       SELL     10 102.      0
+    2         4 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
+    # i 2 more variables: realized_pnl <dbl>, action <chr>
+
+At this stage, the exact performance number matters less than the
+existence and plausibility of fills, positions, and equity. If this run
+has no fills, odd position changes, or implausible equity, stop here and
+debug the strategy or feature declarations before sweeping.
 
 ## Build The Candidate Grid
 
@@ -324,7 +466,7 @@ precomputed
 
     ledgr_precomputed_features
     ===========================
-    Snapshot:   sweep_alias_demo
+    Snapshot:   demo_2019_h1
     Candidates: 16
     Features:   4
     Universe:   DEMO_01, DEMO_02
@@ -354,26 +496,26 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_5bb77c89b83cc86c
+    # ledgr sweep -- sweep_0c37eb63d4b17940
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
-     1 feature_9a29b31da~             1 DONE          0.541 +0.0%        -0.1%               6
-     2 feature_9a29b31da~             2 DONE          3.07  +0.1%        -0.0%               3
-     3 feature_9a29b31da~             3 DONE          0.541 +0.0%        -0.1%               6
-     4 feature_9a29b31da~             4 DONE          3.08  +0.2%        -0.1%               3
-     5 feature_af0f94c90~             5 DONE          1.80  +0.1%        -0.0%               5
-     6 feature_af0f94c90~             6 DONE          2.05  +0.1%        -0.0%               3
-     7 feature_af0f94c90~             7 DONE          1.80  +0.2%        -0.1%               5
-     8 feature_af0f94c90~             8 DONE          2.05  +0.1%        -0.1%               3
-     9 feature_6ff6fe3a1~             9 DONE          1.38  +0.1%        -0.0%               3
-    10 feature_6ff6fe3a1~            10 DONE          2.12  +0.1%        -0.0%               2
-    11 feature_6ff6fe3a1~            11 DONE          1.38  +0.1%        -0.1%               3
-    12 feature_6ff6fe3a1~            12 DONE          2.12  +0.2%        -0.1%               2
-    13 feature_fa560ccbe~            13 DONE          1.34  +0.1%        -0.0%               2
-    14 feature_fa560ccbe~            14 DONE          1.30  +0.0%        -0.0%               2
-    15 feature_fa560ccbe~            15 DONE          1.34  +0.1%        -0.1%               2
-    16 feature_fa560ccbe~            16 DONE          1.30  +0.1%        -0.1%               2
+     1 feature_9a29b31da~             1 DONE          0.546 +0.2%        -0.5%               6
+     2 feature_9a29b31da~             2 DONE          3.08  +1.1%        -0.3%               3
+     3 feature_9a29b31da~             3 DONE          0.551 +0.5%        -1.0%               6
+     4 feature_9a29b31da~             4 DONE          3.08  +2.3%        -0.6%               3
+     5 feature_af0f94c90~             5 DONE          1.80  +0.8%        -0.3%               5
+     6 feature_af0f94c90~             6 DONE          2.06  +0.7%        -0.4%               3
+     7 feature_af0f94c90~             7 DONE          1.81  +1.6%        -0.7%               5
+     8 feature_af0f94c90~             8 DONE          2.06  +1.4%        -0.7%               3
+     9 feature_6ff6fe3a1~             9 DONE          1.38  +0.6%        -0.3%               3
+    10 feature_6ff6fe3a1~            10 DONE          2.13  +0.8%        -0.3%               2
+    11 feature_6ff6fe3a1~            11 DONE          1.39  +1.1%        -0.7%               3
+    12 feature_6ff6fe3a1~            12 DONE          2.13  +1.6%        -0.6%               2
+    13 feature_fa560ccbe~            13 DONE          1.34  +0.5%        -0.4%               2
+    14 feature_fa560ccbe~            14 DONE          1.30  +0.5%        -0.4%               2
+    15 feature_fa560ccbe~            15 DONE          1.35  +1.1%        -0.8%               2
+    16 feature_fa560ccbe~            16 DONE          1.31  +1.0%        -0.8%               2
     # i 1 more variable: execution_seed <int>
 
     # i 16 combinations: 16 done, 0 failed.
@@ -395,7 +537,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_5bb77c89b83cc86c
+    # ledgr sweep -- sweep_0c37eb63d4b17940
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -435,6 +577,12 @@ identity, feature fingerprints, seed metadata, and candidate params. Use
 directly. Full equity, fills, trades, and ledger rows are created only
 by committed runs.
 
+`ledgr_sweep()` is the memory-backed exploration mode. It evaluates
+candidate rows through the same fold semantics as committed runs, but it
+keeps compact candidate evidence instead of writing a durable ledger and
+equity curve for every row. Promotion is the point where one selected
+candidate pays the durable-materialization cost.
+
 If the experiment declares a `risk_chain`, sweep candidates also carry
 `risk_chain_hash` and row-level provenance carries `risk_plan_json`.
 These fields are execution identity: they say which target-risk plan
@@ -469,14 +617,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-01 00:00:00 100000            NA
-    2 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-02 00:00:00 100000             0
-    3 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-03 00:00:00 100000             0
-    4 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-04 00:00:00 100000             0
-    5 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-07 00:00:00 100000             0
-    6 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-08 00:00:00 100000             0
-    7 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-09 00:00:00 100000             0
-    8 sweep_12e5d01f9271c884 feature_9a29b31dae19/st~ 2019-01-10 00:00:00 100000             0
+    1 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_a267f07eb177aabe feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -560,7 +708,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-28 19:16:10                    4           16          16
+    1 sma_retained_sweep 2026-09-28 20:32:18                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -575,7 +723,7 @@ ledgr_sweep_info(reopened_sweep)
     ================
 
     Sweep ID:          sma_retained_sweep
-    Snapshot:          sweep_alias_demo
+    Snapshot:          demo_2019_h1
     Snapshot Hash:     6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Candidates:        16
     Completed:         16
@@ -587,7 +735,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-28 19:16:10.982711
+    Created At:        2026-09-28 20:32:18.111344
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -608,11 +756,11 @@ ledgr_sweep_returns(reopened_sweep) |>
     # A tibble: 5 x 6
       sweep_id           candidate_id          status ts_utc              equity period_return
       <chr>              <chr>                 <chr>  <dttm>               <dbl>         <dbl>
-    1 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-01 00:00:00 100000            NA
-    2 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-02 00:00:00 100000             0
-    3 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-03 00:00:00 100000             0
-    4 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-04 00:00:00 100000             0
-    5 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-07 00:00:00 100000             0
+    1 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-01 00:00:00  10000            NA
+    2 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-02 00:00:00  10000             0
+    3 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-03 00:00:00  10000             0
+    4 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-04 00:00:00  10000             0
+    5 sma_retained_sweep feature_9a29b31dae19~ DONE   2019-01-07 00:00:00  10000             0
 
 ## Three Retention Levels
 
@@ -668,9 +816,7 @@ external metric packages as additional analysis over an explicit return
 series, and label any overlapping headline metric when it comes from a
 different convention.
 
-The rest of this article uses the reopened sweep for candidate
-inspection and promotion. That demonstrates that a saved sweep reopens
-to the same dplyr-friendly surface as the in-session result.
+## Compiled Accounting And Workers
 
 The default sweep path is memory-backed and uses the canonical R
 accounting fold. When your workload is spot-asset FIFO and you want the
@@ -689,7 +835,10 @@ sweep <- ledgr_sweep(
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is
 a memory-backed sweep accelerator only: it is not a general compiled
 execution engine, not the durable `ledgr_run()` path, not a non-spot
-accounting model, and not enabled by default.
+accounting model, and not enabled by default. A committed `ledgr_run()`
+that requests it fails closed. Unsupported model names raise
+`ledgr_unsupported_accounting_model`, and missing compiled support
+raises `ledgr_compiled_spot_fifo_unavailable`.
 
 For independent candidates, `workers` can dispatch sweep rows in
 parallel when the required backend and worker package dependencies are
@@ -698,61 +847,6 @@ semantics; interrupted parallel sweeps discard the partial table instead
 of returning partially promotable rows. That means parallel sweep
 execution is a dispatch choice over independent candidate rows, not a
 second execution engine.
-
-## Inspect Before Promotion
-
-Name the ranking rule before selecting. Here the rule is deliberately
-simple: among completed candidates, sort by Sharpe ratio descending.
-ledgr ships business-objective helpers for explicit selection rules, as
-taught in `vignette("selection-integrity", package = "ledgr")`; it does
-not silently choose a winner. This example keeps the rule visible as
-ordinary R code.
-
-``` r
-review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
-review$top |>
-  select(candidate_id, sharpe_ratio, params, feature_params)
-```
-
-    # A tibble: 5 x 4
-      candidate_id                               sharpe_ratio params           feature_params
-      <chr>                                             <dbl> <list>           <list>
-    1 feature_9a29b31dae19/strategy_dc6315936028         3.08 <named list [2]> <named list>
-    2 feature_9a29b31dae19/strategy_7ccbbefd14d1         3.07 <named list [2]> <named list>
-    3 feature_6ff6fe3a1d38/strategy_dc6315936028         2.12 <named list [2]> <named list>
-    4 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1         2.12 <named list [2]> <named list>
-    5 feature_af0f94c90243/strategy_dc6315936028         2.05 <named list [2]> <named list>
-
-``` r
-review$issues
-```
-
-    # A tibble: 0 x 6
-    # i 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
-    #   error_class <chr>, error_msg <chr>, warnings <list>
-
-``` r
-ranked <- review$ranked
-```
-
-`ledgr_sweep_review()` packages the inspection shape while keeping the
-ranking rule explicit in the call. `review$top` is for the candidates
-you want to read closely, `review$issues` is for warnings and failures,
-and `review$ranked` retains the full completed-candidate table for
-deliberate selection.
-
-## What A Sweep Does Not Prove
-
-A sweep is exploratory evidence with an audit trail. It does not answer
-whether the selected rule will generalize.
-
-The more candidates you try, the more opportunity you create for
-sample-specific luck to look like skill. If the question is
-generalization rather than artifact reproducibility, use
-`vignette("walk-forward", package = "ledgr")`.
-
-This is the same selection-bias boundary that separates reproducible
-sweep evidence from walk-forward or later validation-toolkit evidence.
 
 ## Failure Rows And Contract Errors
 
@@ -775,7 +869,7 @@ debug_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = debug_strategy,
   features = list(),
-  opening = ledgr_opening(cash = 100000),
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
@@ -787,7 +881,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_06eb654b6022ee45
+    # ledgr sweep -- sweep_993e28258971c214
     # A tibble: 2 x 6
       candidate_id          candidate_row status error_class          error_msg   params
       <chr>                         <int> <chr>  <chr>                <chr>       <list>
@@ -819,13 +913,64 @@ incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects
 failed candidates.
 
-## Promote One Candidate
+## Inspect Before Promotion
 
-Promotion replays one selected candidate as a committed run. This is the
-slow path that explicitly pays to materialize durable ledger and equity
-artifacts. For the full research loop around promotion notes, reopen,
-and human review, read
-`vignette("research-workflow", package = "ledgr")`.
+Name the ranking rule before selecting. Here the rule is deliberately
+simple: among completed candidates, sort by Sharpe ratio descending.
+ledgr ships business-objective helpers for explicit selection rules, as
+taught in `vignette("selection-integrity", package = "ledgr")`; it does
+not silently choose a winner. This example keeps the rule visible as
+ordinary R code, and it reads the reopened saved sweep to show that a
+saved sweep reopens to the same dplyr-friendly surface as the in-session
+result.
+
+``` r
+review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top |>
+  select(candidate_id, sharpe_ratio, params, feature_params)
+```
+
+    # A tibble: 5 x 4
+      candidate_id                               sharpe_ratio params           feature_params
+      <chr>                                             <dbl> <list>           <list>
+    1 feature_9a29b31dae19/strategy_dc6315936028         3.08 <named list [2]> <named list>
+    2 feature_9a29b31dae19/strategy_7ccbbefd14d1         3.08 <named list [2]> <named list>
+    3 feature_6ff6fe3a1d38/strategy_dc6315936028         2.13 <named list [2]> <named list>
+    4 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1         2.13 <named list [2]> <named list>
+    5 feature_af0f94c90243/strategy_dc6315936028         2.06 <named list [2]> <named list>
+
+``` r
+review$issues
+```
+
+    # A tibble: 0 x 6
+    # i 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
+    #   error_class <chr>, error_msg <chr>, warnings <list>
+
+``` r
+ranked <- review$ranked
+```
+
+`ledgr_sweep_review()` packages the inspection shape while keeping the
+ranking rule explicit in the call. `review$top` is for the candidates
+you want to read closely, `review$issues` is for warnings and failures,
+and `review$ranked` retains the full completed-candidate table for
+deliberate selection.
+
+> [!TIP]
+>
+> ### Try it
+>
+> Sort by `total_return` instead of `sharpe_ratio`. Does the first
+> candidate change? If it does, your “best” candidate depends on the
+> metric, not only on the strategy.
+
+
+## Promote One Candidate With A Note
+
+Promotion replays one selected candidate as a committed run and attaches
+the human selection note. This is the slow path that explicitly pays to
+materialize durable ledger and equity artifacts.
 
 ``` r
 candidate <- ledgr_candidate(ranked, 1)
@@ -834,7 +979,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_5bb77c89b83cc86c
+    # ledgr sweep -- sweep_0c37eb63d4b17940
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -853,8 +998,11 @@ candidate_table |>
 promoted_run <- ledgr_promote(
   exp,
   candidate,
-  run_id = "sweep_selected_candidate",
-  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
+  run_id = "workflow_promoted_candidate",
+  note = paste(
+    "Promoted from an exploratory same-snapshot sweep for workflow review.",
+    "This note records the selection rationale; it is not statistical validation."
+  )
 )
 
 summary(promoted_run)
@@ -864,15 +1012,15 @@ summary(promoted_run)
     ======================
 
     Performance Metrics:
-      Total Return:        0.23%
-      Annualized Return:   0.44%
-      Max Drawdown:        -0.07%
+      Total Return:        2.25%
+      Annualized Return:   4.48%
+      Max Drawdown:        -0.64%
 
     Risk Metrics:
       Risk-Free Rate:      0.00% annual
       Annualization:       252 periods/year (US equity daily)
-      Volatility (annual): 0.14%
-      Sharpe Ratio:        3.075
+      Volatility (annual): 1.42%
+      Sharpe Ratio:        3.084
 
     Trade Statistics:
       Closed Trades:       3
@@ -889,6 +1037,266 @@ summary(promoted_run)
     Corporate actions: NOT SUPPLIED - returns may omit distributions
     Price basis: UNDECLARED - distribution double counting cannot be ruled out
       Full policy record: ledgr_corporate_action_summary(bt)
+
+The promoted run is now a committed run with its own run ID. The
+selection note travels with the run. Same-snapshot promotion is useful
+for audit, debugging, and durable storage of the chosen candidate. It
+remains in-sample.
+
+## Reopen The Promoted Run
+
+The payoff for the project store is that you can come back later without
+re-running the strategy. Release the live handles, reopen the snapshot
+with hash verification, and open the promoted run by its ID.
+
+``` r
+close(single_run)
+close(promoted_run)
+ledgr_snapshot_close(snapshot)
+
+snapshot <- ledgr_snapshot_open(
+  store_path,
+  snapshot_id = "demo_2019_h1",
+  verify = TRUE
+)
+
+ledgr_run_list(snapshot)
+```
+
+    # ledgr run list
+    # A tibble: 2 x 10
+      run_id                      label tags  status final_equity total_return
+      <chr>                       <chr> <lgl> <chr>         <dbl> <chr>
+    1 workflow_single_run         <NA>  NA    DONE         10107. +1.1%
+    2 workflow_promoted_candidate <NA>  NA    DONE         10225. +2.3%
+      complete_performance achieved_end_utc execution_mode reproducibility_level
+      <lgl>                <dttm>           <chr>          <chr>
+    1 NA                   NA               audit_log      tier_1
+    2 NA                   NA               audit_log      tier_1
+
+    # i INCOMPLETE metrics describe the achieved prefix only.
+    # i Full identity and telemetry columns remain available on this tibble.
+    # i Inspect one run with ledgr_run_info(snapshot, run_id).
+
+``` r
+reopened <- ledgr_run_open(snapshot, "workflow_promoted_candidate")
+reopened
+```
+
+    ledgr Backtest Results
+    ======================
+
+    Run ID:                            workflow_promoted_candidate
+    Period:                            2019-01-01 to 2019-06-28
+    Opening Cash:                      $10000.00
+    Final Equity:                      $10225.14
+    Total Return:                      2.25%
+    Max Drawdown:                      -0.64%
+    Closed Trades:                     3
+
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+
+    Use summary(bt) for metrics and evidence
+
+Three public readers recover what ledgr recorded about the promoted run:
+
+- `ledgr_run_info()` for the run’s identity and completion evidence;
+- `ledgr_promotion_context()` for the selected sweep row, its parameters
+  and the promotion note;
+- `ledgr_run_strategy()` for strategy source and parameter provenance.
+
+``` r
+promotion <- ledgr_promotion_context(reopened)
+list(
+  source = promotion$source,
+  selected_candidate = promotion$selected_candidate$candidate_id,
+  selected_candidate_row = promotion$selected_candidate$candidate_row,
+  strategy_params_json = promotion$selected_candidate$params_json,
+  feature_params_json = promotion$selected_candidate$feature_params_json,
+  note = promotion$note
+)
+```
+
+    $source
+    [1] "ledgr_promote"
+
+    $selected_candidate
+    [1] "feature_9a29b31dae19/strategy_dc6315936028"
+
+    $selected_candidate_row
+    [1] 4
+
+    $strategy_params_json
+    [1] "{\"qty\":10.0,\"threshold\":0.01}"
+
+    $feature_params_json
+    [1] "{\"fast_n\":5,\"slow_n\":20}"
+
+    $note
+    [1] "Promoted from an exploratory same-snapshot sweep for workflow review. This note records the selection rationale; it is not statistical validation."
+
+``` r
+extracted <- ledgr_run_strategy(
+  snapshot,
+  "workflow_promoted_candidate",
+  trust = FALSE
+)
+
+extracted$strategy_params
+```
+
+    $qty
+    [1] 10
+
+    $threshold
+    [1] 0.01
+
+``` r
+extracted$reproducibility_level
+```
+
+    [1] "tier_1"
+
+``` r
+extracted$hash_verified
+```
+
+    [1] TRUE
+
+The result is compact but load-bearing: ledgr stores which sweep
+candidate was selected, which strategy parameters and feature parameters
+produced it, what note justified the promotion, and which strategy
+source metadata was captured.
+
+> [!NOTE]
+>
+> ### What recovery means
+>
+> Recovery is provenance, not magic. Tier 1 strategy source can usually be
+> inspected, hash-checked, and optionally evaluated with `trust = TRUE`.
+> Tier 2 strategies may depend on external functions or package state, so
+> ledgr records the source text, hashes, parameters, dependency metadata,
+> and warnings that explain what was captured and what remains outside the
+> run artifact.
+
+
+## Plot The Promoted Evidence
+
+A report should show the promoted run’s path, not only its scalar
+metrics. The equity table already contains the information needed for a
+compact equity and drawdown view.
+
+``` r
+promoted_equity <- ledgr_results(reopened, what = "equity") |>
+  mutate(drawdown_axis = drawdown * equity[[1]] + equity[[1]])
+
+ggplot2::ggplot(promoted_equity, ggplot2::aes(x = ts_utc)) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = equity),
+    linewidth = 0.8,
+    color = "#1f77b4"
+  ) +
+  ggplot2::geom_area(
+    ggplot2::aes(y = drawdown_axis),
+    fill = "#d55e00",
+    alpha = 0.20
+  ) +
+  ggplot2::labs(
+    title = "Promoted candidate equity path",
+    x = NULL,
+    y = "Equity",
+    caption = "Orange area scales drawdown onto the equity axis for compact review."
+  ) +
+  ggplot2::theme_minimal(base_size = 12)
+```
+
+![](sweeps_files/figure-commonmark/promoted-equity-plot-1.png)
+
+## What Promotion Does Not Prove
+
+You now have a promoted candidate. It means you can reopen the exact
+evidence trail: the sealed data, feature declarations, parameter values,
+run identity, candidate row, and promotion note. It does not mean the
+strategy will generalize.
+
+A single-window sweep is exploratory evidence with an audit trail. Naive
+sweep-and-pick selection is a selection-bias risk because every
+candidate was compared on the same evidence window. Picking the highest
+metric from that window can overfit the sample even when every
+individual run was deterministic and leakage-safe at the pulse boundary.
+The more candidates you try, the more opportunity you create for
+sample-specific luck to look like skill.
+
+<div class="ledgr-diagram ledgr-validation-diagram">
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "secondaryColor": "#eef2ff", "secondaryTextColor": "#1f2937", "secondaryBorderColor": "#64748b", "tertiaryColor": "#fff7ed", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#fb923c"}}}%%
+
+flowchart TB
+  window["Same evidence window<br/>Candidate 1<br/>Candidate 2<br/>Candidate 3<br/>Candidate ..."]
+  pick["Pick highest metric"]
+  caveat["Selection recorded<br/>not validated"]
+
+  window --> pick --> caveat
+```
+
+</div>
+
+If the question is generalization rather than artifact reproducibility,
+use `vignette("selection-integrity", package = "ledgr")` and
+`vignette("walk-forward", package = "ledgr")`.
+
+This is the same selection-bias boundary that separates reproducible
+sweep evidence from walk-forward or later validation-toolkit evidence.
+
+> [!TIP]
+>
+> ### Try it
+>
+> Write one sentence explaining why you promoted the candidate and one
+> sentence explaining why that promotion is not validation. If the second
+> sentence feels hard to write, the selection rule probably needs more
+> work.
+
+
+## Write The Human Research Note
+
+Do not leave the reasoning only in your head. Write a short report next
+to the stored artifacts. A compact report should include:
+
+- hypothesis and data window
+- snapshot hash and data-source assumptions
+- feature and strategy declarations
+- candidate grid summary
+- candidate ranking rule
+- top-N candidate table
+- issue and failure review
+- equity and drawdown plots
+- promotion note
+- reason for rejecting alternatives
+- selection caveat: promoted candidate is not statistically validated by
+  promotion itself
+
+Here is the shape of a useful entry:
+
+``` text
+Hypothesis and data window:
+  SMA crossover candidates may capture persistent moves in DEMO_01 and DEMO_02
+  over the 2019 H1 demo window.
+
+Promotion note:
+  Promoted the top Sharpe candidate after checking that all candidate rows
+  completed and no issue rows changed the interpretation.
+
+Selection caveat:
+  This is a same-window exploratory selection. Promotion records the chosen
+  candidate and its provenance; it does not prove out-of-sample performance.
+```
+
+The report is where the human reasoning lives. ledgr records what
+happened, which inputs were used, and which candidate was promoted; it
+does not certify that the selection protocol was statistically sound.
 
 ## Cost Models Are Fixed Inputs
 
@@ -916,11 +1324,11 @@ not ship:
 
 ## Where Next
 
-- For the full research loop around sweeps, read
-  `vignette("research-workflow", package = "ledgr")`.
+- For selection-bias diagnostics over a sweep, read
+  `vignette("selection-integrity", package = "ledgr")`.
+- For held-out evaluation of a selection rule, read
+  `vignette("walk-forward", package = "ledgr")`.
 - For feature maps, indicator identity, and active aliases, read
   `vignette("indicators", package = "ledgr")`.
-- For no-lookahead pulse timing, next-open fills, and final-bar
-  warnings, read `vignette("execution-semantics", package = "ledgr")`.
 - For durable run comparison after promotion, read
   `vignette("experiment-store", package = "ledgr")`.

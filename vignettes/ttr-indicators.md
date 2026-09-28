@@ -138,67 +138,6 @@ above is `ttr_rsi_14`. Those are different feature definitions and
 should not be treated as interchangeable without checking that their
 calculation and warmup behavior match your research intent.
 
-RSI is a common mean-reversion input. One compact rule is: buy when RSI
-is below 30, then return to flat when the condition is no longer true.
-The experiment registers the RSI indicator before the run; the strategy
-only reads the pulse-time value. The example below uses native RSI so it
-works without TTR. Use TTR-backed RSI when you deliberately want adapter
-behavior.
-
-``` r
-rsi_features <- native_rsi_features
-
-rsi_strategy <- function(ctx, params) {
-  rsi <- ctx$vec$feature("rsi_14")
-  targets <- ctx$flat()
-  targets[is.finite(rsi) & rsi < params$oversold] <- params$qty
-  targets
-}
-
-rsi_snapshot <- ledgr_snapshot_from_df(
-  bars,
-  snapshot_id = paste0("rsi-vignette-", Sys.getpid())
-)
-
-rsi_exp <- ledgr_experiment(
-  snapshot = rsi_snapshot,
-  strategy = rsi_strategy,
-  features = rsi_features,
-  opening = ledgr_opening(cash = 10000),
-  cost_model = ledgr_cost_zero()
-)
-
-rsi_bt <- ledgr_run(
-  rsi_exp,
-  params = list(oversold = 30, qty = 10),
-  run_id = paste0("rsi-demo-", Sys.getpid())
-)
-
-ledgr_results(rsi_bt, what = "fills")
-#> # A tibble: 16 × 10
-#>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
-#>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#>  1         1 2019-01-22 2019-01-22 00:00:00    DEMO_01       BUY      10  87.2     0
-#>  2         2 2019-01-23 2019-01-23 00:00:00    DEMO_02       BUY      10  69.1     0
-#>  3         3 2019-01-24 2019-01-24 00:00:00    DEMO_01       SELL     10  89.0     0
-#>  4         4 2019-01-25 2019-01-25 00:00:00    DEMO_02       SELL     10  69.9     0
-#>  5         5 2019-02-07 2019-02-07 00:00:00    DEMO_02       BUY      10  67.9     0
-#>  6         6 2019-02-08 2019-02-08 00:00:00    DEMO_02       SELL     10  67.2     0
-#>  7         7 2019-02-14 2019-02-14 00:00:00    DEMO_02       BUY      10  66.5     0
-#>  8         8 2019-02-18 2019-02-18 00:00:00    DEMO_02       SELL     10  67.2     0
-#>  9         9 2019-05-01 2019-05-01 00:00:00    DEMO_01       BUY      10  98.7     0
-#> 10        10 2019-05-03 2019-05-03 00:00:00    DEMO_01       SELL     10  99.9     0
-#> 11        11 2019-05-30 2019-05-30 00:00:00    DEMO_01       BUY      10  94.2     0
-#> 12        12 2019-06-12 2019-06-12 00:00:00    DEMO_02       BUY      10  75.3     0
-#> 13        13 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
-#> 14        14 2019-06-18 2019-06-18 00:00:00    DEMO_01       SELL     10  87.7     0
-#> 15        15 2019-06-19 2019-06-19 00:00:00    DEMO_01       BUY      10  87.3     0
-#> 16        16 2019-06-28 2019-06-28 00:00:00    DEMO_01       SELL     10  87.7     0
-#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
-close(rsi_bt)
-ledgr_snapshot_close(rsi_snapshot)
-```
-
 Some TTR functions return several columns. For those functions, choose
 one column with `output` when you need exactly one output, or use
 `ledgr_ind_ttr_outputs()` to declare several outputs from one shared TTR

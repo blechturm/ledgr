@@ -176,78 +176,15 @@ snapshot <- ledgr_snapshot_from_yahoo(
 > policy.
 
 
-## Refuse Or Quarantine A Bad Observation
+## Malformed Bars Are Refused
 
-A malformed bar is not a missing bar. ledgr refuses it by default rather
-than guess what it meant. This row has a high below its open.
-
-``` r
-session_dates <- as.Date("2019-01-01") + 0:4
-invalid_bars <- tibble(
-  instrument_id = "IMPORT_01",
-  ts_utc = session_dates,
-  open = 100:104,
-  high = 101:105,
-  low = 99:103,
-  close = 100:104,
-  volume = 1000
-)
-invalid_bars$high[[3]] <- invalid_bars$open[[3]] - 5
-```
-
-Quarantine is meaningful only when an independent calendar says the
-observation was expected. Otherwise a dropped row is indistinguishable
-from a date that never existed.
-
-``` r
-session_facts <- ledgr_facts_sessions(
-  tibble(
-    session_date = session_dates,
-    status = "open",
-    session_open = "14:30:00",
-    session_close = "21:00:00",
-    knowledge_time = ledgr_utc("2018-12-01")
-  ),
-  venue_id = "IMPORT_VENUE",
-  timezone = "UTC"
-)
-
-strict <- tryCatch(
-  ledgr_snapshot_from_df(
-    invalid_bars,
-    instruments_df = tibble(instrument_id = "IMPORT_01"),
-    facts = ledgr_facts(session_facts),
-    db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_strict.duckdb"))
-  ),
-  error = identity
-)
-
-conditionMessage(strict)
-```
-
-    [1] "Availability input cannot be sealed: ohlc_invalid."
-
-Nothing was sealed. If you have decided that the source row should
-remain in the audit record but must not reach runtime, ask for
-quarantine explicitly.
-
-``` r
-quarantined <- ledgr_snapshot_from_df(
-  invalid_bars,
-  instruments_df = tibble(instrument_id = "IMPORT_01"),
-  facts = ledgr_facts(session_facts),
-  db_path = ledgr_temp_store(file.path(tempdir(), "ledgr_quarantine.duckdb")),
-  invalid_observations = "quarantine"
-)
-
-ledgr_snapshot_info(quarantined)$bar_count
-```
-
-    [1] 4
-
-Four of five observations reached runtime. The invalid source row
-remains bound into the snapshot evidence; quarantine is not deletion or
-repair.
+A malformed bar, such as a high below its open, is not a missing bar.
+ledgr refuses it by default rather than guess what it meant, and nothing
+is sealed. When a session calendar says the observation was expected,
+you can instead keep the source row in the audit record without letting
+it reach runtime by sealing with `invalid_observations = "quarantine"`.
+`vignette("missing-data-and-sessions", package = "ledgr")` shows both
+outcomes and how to read the quarantined rows back.
 
 ## Reopen The Same Artifact
 
@@ -279,7 +216,6 @@ For backup, recovery, live handles, and stored runs, continue with
 ## Cleanup
 
 ``` r
-ledgr_snapshot_close(quarantined)
 ledgr_snapshot_close(snapshot)
 ```
 

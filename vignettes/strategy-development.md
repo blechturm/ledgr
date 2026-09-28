@@ -230,7 +230,8 @@ deciding and filling on the same close.
 
 A rule like this reads current values directly. When a rule needs to
 rank instruments or size positions from the account, the helper pipeline
-later in this article does that work.
+in `vignette("strategy-authoring-tools", package = "ledgr")` does that
+work.
 
 > [!TIP]
 >
@@ -285,10 +286,7 @@ availability-aware runs.
 ## Prepare A Small Experiment
 
 Use two instruments from the offline demo data so the first full
-backtest can run anywhere. The detailed pulse-inspection and
-helper-pipeline walkthrough lives in
-`vignette("strategy-authoring-tools", package = "ledgr")`; this article
-keeps only the compact setup needed to run one strategy.
+backtest can run anywhere.
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -317,21 +315,20 @@ return input the strategy will read. Feature IDs are exact: a typo is an
 unknown feature, not warmup.
 
 ``` r
-top_return_strategy <- function(ctx, params) {
-  weights <- ctx |>
-    ledgr_signal_return(lookback = params$lookback) |>
-    ledgr_select_top_n(n = params$n) |>
-    ledgr_weight_equal()
-
-  weights |>
-    ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
+positive_return <- function(ctx, params) {
+  ret <- ctx$vec$feature("return_5")
+  targets <- ctx$flat()
+  targets[which(is.finite(ret) & ret > params$min_return)] <- params$qty
+  targets
 }
 ```
 
-Economically, this scores each instrument by recent return, keeps the
-top name, splits the selected allocation equally, and converts the
-weights into floored share targets. No helper registers indicators
-automatically; the experiment must still declare `features`.
+Economically, this holds `qty` shares of every instrument whose 5-bar
+return is above `min_return`, and nothing otherwise. `is.finite()` keeps
+the warmup pulses, where the return is still `NA`, out of the decision.
+
+When a rule needs to rank instruments or size positions from the account
+instead, ledgr’s helper pipeline does that work in four steps:
 
 | Step | Use |
 |----|----|
@@ -342,13 +339,13 @@ automatically; the experiment must still declare `features`.
 
 The weights carry only relative allocations. Rebalancing needs `ctx`
 again because current equity, prices, and holdings determine the share
-quantities. The focused authoring article develops each step and its
-missing-input policy.
+quantities. `vignette("strategy-authoring-tools", package = "ledgr")`
+builds a strategy with each step and its missing-input policy.
 
 ``` r
 exp <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = top_return_strategy,
+  strategy = positive_return,
   features = features,
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
@@ -358,34 +355,38 @@ exp <- ledgr_experiment(
 ## Run One Backtest
 
 ``` r
-bt_top_1 <- exp |>
+bt_first <- exp |>
   ledgr_run(
-    params = list(lookback = 5, n = 1, equity_fraction = 0.1),
-    run_id = "top_return_1"
+    params = list(min_return = 0, qty = 10),
+    run_id = "positive_return_1"
   )
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
-summary(bt_top_1)
+summary(bt_first)
 #> ledgr Backtest Summary
 #> ======================
 #>
 #> Performance Metrics:
-#>   Total Return:        0.45%
-#>   Annualized Return:   0.89%
-#>   Max Drawdown:        -1.12%
+#>   Total Return:        1.20%
+#>   Annualized Return:   2.37%
+#>   Max Drawdown:        -0.82%
 #>
 #> Risk Metrics:
 #>   Risk-Free Rate:      0.00% annual
 #>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): 2.02%
-#>   Sharpe Ratio:        0.450
+#>   Volatility (annual): 1.75%
+#>   Sharpe Ratio:        1.346
 #>
 #> Trade Statistics:
-#>   Closed Trades:       24
-#>   Win Rate:            45.83%
-#>   Avg Trade:           $2.15
+#>   Closed Trades:       20
+#>   Win Rate:            35.00%
+#>   Avg Trade:           $6.62
 #>
 #> Exposure:
-#>   Time in Market:      95.35%
+#>   Time in Market:      69.77%
 #>
 #> Execution Evidence:
 #>   Fill Timing:         dense_bar_timestamp
@@ -405,7 +406,7 @@ The rendered result is a short, tiny-universe teaching run. Its
 annualized volatility, drawdown and return describe only that fixture;
 none is evidence that the rule is attractive or that the annualization
 is stable. Read the numbers together: a positive final return can
-coexist with an intra-run drawdown, and 24 closed trades from a tiny
+coexist with an intra-run drawdown, and 20 closed trades from a tiny
 synthetic fixture are still far too little evidence for a strategy
 judgment.
 
@@ -416,21 +417,30 @@ same care as successful ones, which is part of not fooling yourself.
 Inspecting trades shows the actions produced by the target decisions.
 
 ``` r
-ledgr_results(bt_top_1, what = "trades")
-#> # A tibble: 24 x 10
+ledgr_results(bt_first, what = "trades")
+#> # A tibble: 20 x 10
 #>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
 #>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#>  1         3 2019-01-14 2019-01-14 00:00:00    DEMO_02       SELL     13  72.8     0
-#>  2         4 2019-01-18 2019-01-18 00:00:00    DEMO_01       SELL     11  86.2     0
-#>  3         7 2019-01-21 2019-01-21 00:00:00    DEMO_02       SELL     13  70.2     0
-#>  4         8 2019-01-25 2019-01-25 00:00:00    DEMO_01       SELL      1  90.7     0
-#>  5         9 2019-02-08 2019-02-08 00:00:00    DEMO_01       SELL     10  92.6     0
-#>  6        13 2019-02-13 2019-02-13 00:00:00    DEMO_02       SELL     15  66.2     0
-#>  7        14 2019-02-20 2019-02-20 00:00:00    DEMO_01       SELL     10  96.9     0
-#>  8        17 2019-02-25 2019-02-25 00:00:00    DEMO_02       SELL     14  67.5     0
-#>  9        18 2019-02-27 2019-02-27 00:00:00    DEMO_01       SELL      1 100.      0
-#> 10        19 2019-03-11 2019-03-11 00:00:00    DEMO_01       SELL      9 106.      0
-#> # i 14 more rows
+#>  1         2 2019-01-10 2019-01-10 00:00:00    DEMO_02       SELL     10  73.5     0
+#>  2         5 2019-02-01 2019-02-01 00:00:00    DEMO_02       SELL     10  69.3     0
+#>  3         6 2019-02-07 2019-02-07 00:00:00    DEMO_01       SELL     10  93.3     0
+#>  4         9 2019-02-26 2019-02-26 00:00:00    DEMO_02       SELL     10  68.2     0
+#>  5        11 2019-03-05 2019-03-05 00:00:00    DEMO_02       SELL     10  65.3     0
+#>  6        13 2019-03-11 2019-03-11 00:00:00    DEMO_01       SELL     10 106.      0
+#>  7        14 2019-03-11 2019-03-11 00:00:00    DEMO_02       SELL     10  68.0     0
+#>  8        16 2019-03-15 2019-03-15 00:00:00    DEMO_02       SELL     10  67.6     0
+#>  9        18 2019-03-20 2019-03-20 00:00:00    DEMO_02       SELL     10  67.2     0
+#> 10        21 2019-04-05 2019-04-05 00:00:00    DEMO_01       SELL     10 103.      0
+#> 11        23 2019-04-11 2019-04-11 00:00:00    DEMO_02       SELL     10  71.3     0
+#> 12        25 2019-04-16 2019-04-16 00:00:00    DEMO_01       SELL     10 105.      0
+#> 13        26 2019-04-29 2019-04-29 00:00:00    DEMO_02       SELL     10  75.9     0
+#> 14        29 2019-05-16 2019-05-16 00:00:00    DEMO_01       SELL     10 101.      0
+#> 15        30 2019-05-24 2019-05-24 00:00:00    DEMO_02       SELL     10  80.6     0
+#> 16        32 2019-06-03 2019-06-03 00:00:00    DEMO_02       SELL     10  79.8     0
+#> 17        34 2019-06-07 2019-06-07 00:00:00    DEMO_01       SELL     10  94.9     0
+#> 18        37 2019-06-24 2019-06-24 00:00:00    DEMO_02       SELL     10  77.8     0
+#> 19        38 2019-06-25 2019-06-25 00:00:00    DEMO_01       SELL     10  86.7     0
+#> 20        40 2019-06-26 2019-06-26 00:00:00    DEMO_02       SELL     10  76.9     0
 #> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
@@ -443,34 +453,35 @@ If a run has zero trades, inspect fills before assuming nothing
 happened:
 
 ``` r
-ledgr_results(bt_top_1, what = "fills")
-#> # A tibble: 50 x 10
+ledgr_results(bt_first, what = "fills")
+#> # A tibble: 41 x 10
 #>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
 #>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
-#>  1         1 2019-01-09 2019-01-09 00:00:00    DEMO_02       BUY      13  74.6     0
-#>  2         2 2019-01-14 2019-01-14 00:00:00    DEMO_01       BUY      11  87.9     0
-#>  3         3 2019-01-14 2019-01-14 00:00:00    DEMO_02       SELL     13  72.8     0
-#>  4         4 2019-01-18 2019-01-18 00:00:00    DEMO_01       SELL     11  86.2     0
-#>  5         5 2019-01-18 2019-01-18 00:00:00    DEMO_02       BUY      13  72.6     0
-#>  6         6 2019-01-21 2019-01-21 00:00:00    DEMO_01       BUY      11  87.4     0
-#>  7         7 2019-01-21 2019-01-21 00:00:00    DEMO_02       SELL     13  70.2     0
-#>  8         8 2019-01-25 2019-01-25 00:00:00    DEMO_01       SELL      1  90.7     0
-#>  9         9 2019-02-08 2019-02-08 00:00:00    DEMO_01       SELL     10  92.6     0
-#> 10        10 2019-02-08 2019-02-08 00:00:00    DEMO_02       BUY      14  67.2     0
-#> # i 40 more rows
+#>  1         1 2019-01-09 2019-01-09 00:00:00    DEMO_02       BUY      10  74.6     0
+#>  2         2 2019-01-10 2019-01-10 00:00:00    DEMO_02       SELL     10  73.5     0
+#>  3         3 2019-01-23 2019-01-23 00:00:00    DEMO_01       BUY      10  88.0     0
+#>  4         4 2019-01-30 2019-01-30 00:00:00    DEMO_02       BUY      10  71.1     0
+#>  5         5 2019-02-01 2019-02-01 00:00:00    DEMO_02       SELL     10  69.3     0
+#>  6         6 2019-02-07 2019-02-07 00:00:00    DEMO_01       SELL     10  93.3     0
+#>  7         7 2019-02-13 2019-02-13 00:00:00    DEMO_01       BUY      10  93.9     0
+#>  8         8 2019-02-19 2019-02-19 00:00:00    DEMO_02       BUY      10  68.7     0
+#>  9         9 2019-02-26 2019-02-26 00:00:00    DEMO_02       SELL     10  68.2     0
+#> 10        10 2019-03-04 2019-03-04 00:00:00    DEMO_02       BUY      10  68.0     0
+#> # i 31 more rows
 #> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
 Zero fills means no execution occurred. Non-empty fills with zero trades
 means positions opened but did not close. `n_trades` counts closed round
 trips, while the fills table shows both opening and closing execution
-rows.
+rows. For the full checklist when a run makes no trades, see
+`vignette("indicators", package = "ledgr")`.
 
 If you want to compare variants, keep the strategy authoring question
 separate from the research-comparison question. Use
 `vignette("experiment-store", package = "ledgr")` for stored-run
-comparison and `vignette("research-workflow", package = "ledgr")` for
-promotion and review.
+comparison and `vignette("sweeps", package = "ledgr")` for promotion and
+review.
 
 ## When ledgr Complains
 
@@ -510,7 +521,7 @@ mistakes while the mistake is still small enough to understand.
 ## Cleanup
 
 ``` r
-close(bt_top_1)
+close(bt_first)
 ledgr_snapshot_close(snapshot)
 ```
 

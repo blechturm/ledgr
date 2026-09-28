@@ -25,8 +25,6 @@ Core installed articles:
 \itemize{
 \item \code{vignette("quickstart", package = "ledgr")}
 \item \code{system.file("doc", "quickstart.html", package = "ledgr")}
-\item \code{vignette("research-workflow", package = "ledgr")}
-\item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
 \item \code{vignette("data-input-and-snapshots", package = "ledgr")}
 \item \code{system.file("doc", "data-input-and-snapshots.html", package = "ledgr")}
 \item \code{vignette("point-in-time-inputs", package = "ledgr")}
@@ -39,8 +37,8 @@ Core installed articles:
 \item \code{system.file("doc", "strategy-authoring-tools.html", package = "ledgr")}
 \item \code{vignette("indicators", package = "ledgr")}
 \item \code{system.file("doc", "indicators.html", package = "ledgr")}
-\item \code{vignette("ttr-and-adapter-indicators", package = "ledgr")}
-\item \code{system.file("doc", "ttr-and-adapter-indicators.html", package = "ledgr")}
+\item \code{vignette("ttr-indicators", package = "ledgr")}
+\item \code{system.file("doc", "ttr-indicators.html", package = "ledgr")}
 \item \code{vignette("custom-indicators", package = "ledgr")}
 \item \code{system.file("doc", "custom-indicators.html", package = "ledgr")}
 \item \code{vignette("metrics-and-accounting", package = "ledgr")}

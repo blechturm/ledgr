@@ -660,8 +660,8 @@ than half. That is not evidence that the weekly version is a better
 strategy; in this sample the plain ranking even finished with the most
 equity. Three variants of one idea on four instruments over six months
 say nothing reliable about performance.
-`vignette("research-workflow", package = "ledgr")` covers how to compare
-candidates without fooling yourself.
+`vignette("selection-integrity", package = "ledgr")` covers how to
+compare candidates without fooling yourself.
 
 > [!TIP]
 >

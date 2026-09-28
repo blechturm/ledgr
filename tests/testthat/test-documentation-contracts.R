@@ -423,13 +423,15 @@ testthat::test_that("source and installed article boundaries stay explicit", {
   }
   })
 
-  # Also covers: retired TTR indicator article is not installed
+  # Also covers: retired article slugs are not installed
   local({
   root <- testthat::test_path("..", "..")
-  testthat::expect_false(file.exists(file.path(root, "vignettes", "ttr-indicators.qmd")))
-  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.qmd")))
-  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.R")))
-  testthat::expect_false(file.exists(file.path(root, "inst", "doc", "ttr-indicators.html")))
+  for (retired in c("ttr-and-adapter-indicators", "research-workflow")) {
+    testthat::expect_false(file.exists(file.path(root, "vignettes", paste0(retired, ".qmd"))))
+    testthat::expect_false(file.exists(file.path(root, "inst", "doc", paste0(retired, ".qmd"))))
+    testthat::expect_false(file.exists(file.path(root, "inst", "doc", paste0(retired, ".R"))))
+    testthat::expect_false(file.exists(file.path(root, "inst", "doc", paste0(retired, ".html"))))
+  }
   })
 })
 
@@ -597,6 +599,10 @@ testthat::test_that("public result and helper documentation states current seman
     readLines(ledgr_test_source_vignette("metrics-and-accounting.qmd"), warn = FALSE),
     readLines(ledgr_test_source_vignette("metric-contexts-and-conventions.qmd"), warn = FALSE)
   ), collapse = "\n")
+  checklist_doc <- paste(readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE), collapse = "\n")
+  sweeps_doc <- paste(readLines(ledgr_test_source_vignette("sweeps.qmd"), warn = FALSE), collapse = "\n")
+  cost_doc <- paste(readLines(ledgr_test_source_vignette("risk-and-cost.qmd"), warn = FALSE), collapse = "\n")
+  execution_doc_last_bar <- paste(readLines(ledgr_test_source_vignette("execution-semantics.qmd"), warn = FALSE), collapse = "\n")
   root <- testthat::test_path("..", "..")
   backtest_help <- paste(readLines(file.path(root, "man", "ledgr_backtest.Rd"), warn = FALSE), collapse = "\n")
   experiment_help <- paste(readLines(file.path(root, "man", "ledgr_experiment.Rd"), warn = FALSE), collapse = "\n")
@@ -616,17 +622,17 @@ testthat::test_that("public result and helper documentation states current seman
   )) {
     testthat::expect_match(metrics_doc, term, fixed = TRUE)
   }
-  testthat::expect_match(metrics_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
   testthat::expect_match(metrics_doc, "compact fixture helper for accounting\\s+examples")
   testthat::expect_match(metrics_doc, "snapshot -> `ledgr_experiment\\(\\)` -> `ledgr_run\\(\\)`")
-  testthat::expect_match(metrics_doc, "requires_bars", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "stable_after", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Warmup is per instrument", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Warmup Diagnostics", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Four Warmup-Adjacent Cases", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Ordinary feature warmup", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Impossible warmup", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Current-bar absence", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "requires_bars", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "stable_after", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Warmup is per instrument", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Warmup Diagnostics", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Four Warmup-Adjacent Cases", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Ordinary feature warmup", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Impossible warmup", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Current-bar absence", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Ledger Events", fixed = TRUE)
   testthat::expect_match(metrics_doc, "ledger events<br/>source of truth", fixed = TRUE)
   testthat::expect_match(metrics_doc, "summary metrics<br/>formulas over results", fixed = TRUE)
@@ -664,9 +670,9 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(metrics_doc, "exactly one comparison context per table", fixed = TRUE)
   testthat::expect_match(metrics_doc, "source sweep context explains\\s+how a candidate was ranked")
   testthat::expect_match(metrics_doc, "For reports, convert the comparison object", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Ordinary feature warmup is local to the beginning of each instrument's usable\\s+sample")
+  testthat::expect_match(execution_doc_last_bar, "LEDGR_LAST_BAR_NO_FILL", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "ledgr_pulse_snapshot()", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Ordinary feature warmup is local to the beginning of each instrument's usable\\s+sample")
   testthat::expect_match(metrics_doc, "Risk Metric Contract", fixed = TRUE)
   testthat::expect_match(metrics_doc, "sharpe_ratio", fixed = TRUE)
   testthat::expect_match(metrics_doc, "excess_return[t] = equity_return[t] - rf_period_return[t]", fixed = TRUE)
@@ -676,20 +682,20 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Metric assumptions now live in a `metric_context`", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Timing, Spread, And Fees", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Timing and cost are separate execution steps", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "open \\* \\(1 \\+ spread_bps / 20000\\)")
-  testthat::expect_match(metrics_doc, "open \\* \\(1 - spread_bps / 20000\\)")
-  testthat::expect_match(metrics_doc, "approximately `spread_bps` basis points before\\s+explicit fees")
-  testthat::expect_match(metrics_doc, "Price transforms and explicit fees are different", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "What costs do not model", fixed = TRUE)
+  testthat::expect_match(cost_doc, "Timing, Spread, And Fees", fixed = TRUE)
+  testthat::expect_match(cost_doc, "Timing and cost are separate execution steps", fixed = TRUE)
+  testthat::expect_match(cost_doc, "open \\* \\(1 \\+ spread_bps / 20000\\)")
+  testthat::expect_match(cost_doc, "open \\* \\(1 - spread_bps / 20000\\)")
+  testthat::expect_match(cost_doc, "approximately `spread_bps` basis points before\\s+explicit fees")
+  testthat::expect_match(cost_doc, "Price transforms and explicit fees are different", fixed = TRUE)
+  testthat::expect_match(cost_doc, "What costs do not model", fixed = TRUE)
   for (term in c("liquidity", "financing", "taxes", "OMS", "broker reconciliation")) {
-    testthat::expect_match(metrics_doc, term, fixed = TRUE)
+    testthat::expect_match(cost_doc, term, fixed = TRUE)
   }
-  testthat::expect_match(metrics_doc, "transaction-cost\\s+analysis")
-  testthat::expect_match(metrics_doc, "Compiled Accounting Fails Closed", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "ledgr_unsupported_accounting_model", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "ledgr_compiled_spot_fifo_unavailable", fixed = TRUE)
+  testthat::expect_match(cost_doc, "transaction-cost\\s+analysis")
+  testthat::expect_match(sweeps_doc, "A committed `ledgr_run()` that requests it fails closed.", fixed = TRUE)
+  testthat::expect_match(sweeps_doc, "ledgr_unsupported_accounting_model", fixed = TRUE)
+  testthat::expect_match(sweeps_doc, "ledgr_compiled_spot_fifo_unavailable", fixed = TRUE)
   testthat::expect_no_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
   testthat::expect_no_match(metrics_doc, "`2 \\* spread_bps` basis points before fixed commissions")
 
@@ -731,10 +737,10 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(metrics_doc, "print-oriented view", fixed = TRUE)
   testthat::expect_match(metrics_doc, "returns the backtest handle\\s+invisibly")
   testthat::expect_match(metrics_doc, "raw metrics object keeps metric-kernel attributes", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Timestamp checks should compare normalized UTC values", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "intraday_time <- format", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "distinguish zero signals from zero sizing", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "required fill fields", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Timestamp checks should compare normalized UTC values", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "intraday_time <- format", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "distinguish zero signals from zero sizing", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "required fill fields", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Use `ledgr_compute_metrics\\(\\)` for scripted")
   testthat::expect_match(metrics_doc, "`ledgr_run_compare()` is also programmatic", fixed = TRUE)
   })
@@ -804,7 +810,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_no_match(strategy_authoring_doc, "summary(bt_mapped)", fixed = TRUE)
   testthat::expect_match(strategy_doc, "vignette\\(\"data-input-and-snapshots\",\\s+package = \"ledgr\"\\)")
   testthat::expect_no_match(strategy_development_doc, "\\*\\*Definition\\*\\*")
-  testthat::expect_match(strategy_doc, "ledgr_results\\(bt_top_1, what = \"fills\"\\)")
+  testthat::expect_match(strategy_doc, "ledgr_results\\(bt_first, what = \"fills\"\\)")
   testthat::expect_match(strategy_doc, "Zero fills means no execution occurred", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Non-empty fills with zero trades", fixed = TRUE)
   testthat::expect_match(strategy_doc, "test the strategy on a late\\s+pulse")
@@ -862,7 +868,7 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
   adapter <- read_article("corporate-action-adapter-authoring.qmd")
   reproducibility <- read_article("reproducibility.qmd")
   custom <- read_article("custom-indicators.qmd")
-  ttr <- read_article("ttr-and-adapter-indicators.qmd")
+  ttr <- read_article("ttr-indicators.qmd")
   walk_forward <- read_article("walk-forward.qmd")
 
   testthat::expect_match(quickstart, "strategy <- function(ctx, params)", fixed = TRUE)
@@ -930,7 +936,7 @@ testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
   )
   ttr_doc <- paste(
     readLines(
-      ledgr_test_source_vignette("ttr-and-adapter-indicators.qmd"),
+      ledgr_test_source_vignette("ttr-indicators.qmd"),
       warn = FALSE
     ),
     collapse = "\n"
@@ -1063,8 +1069,6 @@ testthat::test_that("cost documentation contains runnable examples and the curre
       testthat::expect_match(doc, "timing_model", fixed = TRUE)
       testthat::expect_match(doc, "cost_model", fixed = TRUE)
       testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
-      testthat::expect_match(doc, "ledgr_cost_spread_bps", fixed = TRUE)
-      testthat::expect_match(doc, "quoted-spread convention", fixed = TRUE)
       testthat::expect_match(doc, "cost_model_hash", fixed = TRUE)
       testthat::expect_match(doc, "cost_plan_json", fixed = TRUE)
       testthat::expect_match(doc, "walk-forward evaluation runs over the existing sweep and run surfaces", fixed = TRUE)
@@ -1100,26 +1104,30 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
     pkgdown_text <- paste(readLines(pkgdown, warn = FALSE), collapse = "\n")
 
     start_here <- regexpr("  - title: Start Here", pkgdown_text, fixed = TRUE)
+    building_blocks <- regexpr("  - title: Building Blocks", pkgdown_text, fixed = TRUE)
     research_workflow <- regexpr("  - title: Research Workflow", pkgdown_text, fixed = TRUE)
     pit_evidence <- regexpr("  - title: Point-In-Time Evidence", pkgdown_text, fixed = TRUE)
     going_deeper <- regexpr("  - title: Going Deeper", pkgdown_text, fixed = TRUE)
     design <- regexpr("  - title: Design / Background", pkgdown_text, fixed = TRUE)
     testthat::expect_gt(start_here[[1]], 0)
-    testthat::expect_gt(research_workflow[[1]], start_here[[1]])
+    testthat::expect_gt(building_blocks[[1]], start_here[[1]])
+    testthat::expect_gt(research_workflow[[1]], building_blocks[[1]])
     testthat::expect_gt(pit_evidence[[1]], research_workflow[[1]])
     testthat::expect_gt(going_deeper[[1]], pit_evidence[[1]])
     testthat::expect_gt(design[[1]], going_deeper[[1]])
 
-    start_block <- substr(pkgdown_text, start_here[[1]], research_workflow[[1]] - 1L)
+    start_block <- substr(pkgdown_text, start_here[[1]], building_blocks[[1]] - 1L)
     testthat::expect_match(start_block, "articles/who-ledgr-is-for", fixed = TRUE)
     testthat::expect_match(start_block, "- quickstart", fixed = TRUE)
-    testthat::expect_match(start_block, "- data-input-and-snapshots", fixed = TRUE)
-    testthat::expect_match(start_block, "- strategy-development", fixed = TRUE)
-    testthat::expect_match(start_block, "- indicators", fixed = TRUE)
-    testthat::expect_match(start_block, "- metrics-and-accounting", fixed = TRUE)
-    testthat::expect_match(start_block, "- risk-and-cost", fixed = TRUE)
-    testthat::expect_match(start_block, "- experiment-store", fixed = TRUE)
     testthat::expect_no_match(start_block, "- survivorship-bias", fixed = TRUE)
+
+    blocks_block <- substr(pkgdown_text, building_blocks[[1]], research_workflow[[1]] - 1L)
+    for (article in c(
+      "data-input-and-snapshots", "strategy-development", "indicators", "leakage",
+      "metrics-and-accounting", "risk-and-cost", "experiment-store", "reproducibility"
+    )) {
+      testthat::expect_match(blocks_block, paste0("- ", article), fixed = TRUE)
+    }
 
     research_block <- substr(
       pkgdown_text,
@@ -1127,9 +1135,7 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
       pit_evidence[[1]] - 1L
     )
     testthat::expect_match(research_block, "- sweeps", fixed = TRUE)
-    testthat::expect_match(research_block, "- research-workflow", fixed = TRUE)
-    testthat::expect_match(research_block, "- leakage", fixed = TRUE)
-    testthat::expect_match(research_block, "- reproducibility", fixed = TRUE)
+    testthat::expect_no_match(research_block, "- research-workflow", fixed = TRUE)
     testthat::expect_match(research_block, "- selection-integrity", fixed = TRUE)
     testthat::expect_match(research_block, "- walk-forward", fixed = TRUE)
 
@@ -1141,7 +1147,7 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
 
     deeper_block <- substr(pkgdown_text, going_deeper[[1]], design[[1]] - 1L)
     testthat::expect_match(deeper_block, "- strategy-authoring-tools", fixed = TRUE)
-    testthat::expect_match(deeper_block, "- ttr-and-adapter-indicators", fixed = TRUE)
+    testthat::expect_match(deeper_block, "- ttr-indicators", fixed = TRUE)
     testthat::expect_match(deeper_block, "- custom-indicators", fixed = TRUE)
     testthat::expect_match(deeper_block, "- metric-contexts-and-conventions", fixed = TRUE)
     testthat::expect_match(deeper_block, "- execution-semantics", fixed = TRUE)
@@ -1307,13 +1313,12 @@ testthat::test_that("package help and help-page links target installed articles"
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
   for (article in c(
     "quickstart",
-    "research-workflow",
     "data-input-and-snapshots",
     "point-in-time-inputs",
     "strategy-development",
     "strategy-authoring-tools",
     "indicators",
-    "ttr-and-adapter-indicators",
+    "ttr-indicators",
     "custom-indicators",
     "metrics-and-accounting",
     "risk-and-cost",
@@ -1327,7 +1332,8 @@ testthat::test_that("package help and help-page links target installed articles"
     testthat::expect_match(text, sprintf("vignette(\"%s\", package = \"ledgr\")", article), fixed = TRUE)
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
-  testthat::expect_no_match(text, "ttr-indicators", fixed = TRUE)
+  testthat::expect_no_match(text, "ttr-and-adapter-indicators", fixed = TRUE)
+  testthat::expect_no_match(text, "research-workflow", fixed = TRUE)
   }
   })
 
@@ -1350,14 +1356,15 @@ testthat::test_that("package help and help-page links target installed articles"
   installed_articles <- tools::file_path_sans_ext(basename(list.files(vignettes_dir, pattern = "[.](Rmd|qmd)$", full.names = TRUE)))
   testthat::expect_true(all(linked_articles %in% installed_articles))
   testthat::expect_true("indicators" %in% installed_articles)
-  testthat::expect_true("ttr-and-adapter-indicators" %in% installed_articles)
+  testthat::expect_true("ttr-indicators" %in% installed_articles)
   testthat::expect_true("strategy-authoring-tools" %in% installed_articles)
   testthat::expect_true("metric-contexts-and-conventions" %in% installed_articles)
   testthat::expect_true("data-input-and-snapshots" %in% installed_articles)
   testthat::expect_true("point-in-time-inputs" %in% installed_articles)
   testthat::expect_true("quickstart" %in% installed_articles)
   testthat::expect_true("risk-and-cost" %in% installed_articles)
-  testthat::expect_false("ttr-indicators" %in% installed_articles)
+  testthat::expect_false("ttr-and-adapter-indicators" %in% installed_articles)
+  testthat::expect_false("research-workflow" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
   }
@@ -1389,7 +1396,7 @@ testthat::test_that("research documentation exposes the disclaimer without broke
   workflow_candidates <- file.path(
     root,
     "vignettes",
-    c("research-workflow.qmd", "research-workflow.Rmd")
+    c("sweeps.qmd", "sweeps.Rmd")
   )
   workflow_paths <- workflow_candidates[file.exists(workflow_candidates)]
   workflow_path <- if (length(workflow_paths) > 0L) workflow_paths[[1L]] else NA_character_
@@ -1532,8 +1539,8 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
       "inst/design/contracts.md",
       "README.Rmd",
       "README.md",
-      "vignettes/research-workflow.qmd",
-      "vignettes/research-workflow.md",
+      "vignettes/sweeps.qmd",
+      "vignettes/sweeps.md",
       "vignettes/strategy-authoring-tools.qmd",
       "vignettes/strategy-authoring-tools.md",
       "R/run-store.R",
@@ -1580,7 +1587,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   )
   testthat::expect_match(
     docs$research_qmd,
-    "review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)",
+    "review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)",
     fixed = TRUE
   )
   testthat::expect_match(

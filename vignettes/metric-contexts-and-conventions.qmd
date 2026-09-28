@@ -334,111 +334,12 @@ comparison |>
   select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
 ```
 
-## Diagnose A Successful Run With Zero Trades
+## Zero Trades In The Metrics
 
-A completed run with zero trades is not automatically wrong. It means ledgr
-accepted the strategy outputs and the ledger reached the end of the sample, but
-no closed round trips were recorded.
-
-Use this checklist before changing the strategy:
-
-1. Start with `summary(bt)`. If `Closed Trades` is zero, `win_rate` and
-   `avg_trade` should be `NA`, not zero. If a registered feature can never
-   become usable because the sample is too short, `summary(bt)` also prints a
-   `Warmup Diagnostics` note with the feature ID, instrument ID, required bars,
-   and available bars.
-2. Inspect `ledgr_results(bt, what = "fills")`. Empty fills mean nothing ever
-   executed. Non-empty fills with empty trades mean positions opened but did
-   not close.
-3. Confirm the feature IDs with `ledgr_feature_id(features)`. A helper such as
-   `ledgr_signal_return(ctx, lookback = 60)` reads `return_60`; that indicator must
-   be registered before the run.
-4. Compare feature contracts with sample length before assuming the strategy is
-   broken. `ledgr_feature_contracts(features)` shows `requires_bars` and
-   `stable_after`. If an instrument has fewer available bars than a feature's
-   `requires_bars`, that feature cannot become usable for that instrument.
-5. Inspect a late pulse with `ledgr_pulse_snapshot()`. If the feature is still
-   `NA` for every instrument near the end of the sample, the issue is no longer
-   ordinary early warmup. Check the lookback length, sample length, universe,
-   and feature registration.
-6. If the helper pipeline returns a `ledgr_empty_selection` on a late diagnostic
-   pulse, inspect the signal values directly. Ordinary early warmup should have
-   passed by then; a late all-missing signal usually points to sample length,
-   universe, or feature-registration issues.
-
-Timestamp checks should compare normalized UTC values, not local string
-representations:
-
-```{r}
-#| label: timestamp-troubleshooting
-#| eval: false
-
-target_ts <- ledgr_utc("2020-01-05T00:00:00Z")
-ledgr_utc(ctx$ts_utc) == target_ts
-
-intraday_time <- format(ledgr_utc(ctx$ts_utc), "%H:%M:%S", tz = "UTC")
-intraday_time >= "14:30:00" && intraday_time <= "21:00:00"
-```
-
-If fills are empty, distinguish zero signals from zero sizing. In your own run,
-use the same snapshot, universe, timestamp, features, strategy, and params you
-are debugging:
-
-```{r}
-#| label: zero-sizing-troubleshooting
-#| eval: false
-
-pulse <- ledgr_pulse_snapshot(
-  snapshot,
-  universe = ...,
-  ts_utc = ...,
-  features = features
-)
-target <- strategy(pulse, params)
-target
-all(target == 0)
-```
-
-Custom fill-model contract errors are different from zero-trade outcomes; see
-the fill-model reference documentation for the required fill fields.
-
-### Four Warmup-Adjacent Cases
-
-Warmup is per instrument. One instrument can have a usable value while another
-is still `NA` because it has fewer bars or a different data history.
-
-Ordinary feature warmup is local to the beginning of each instrument's usable
-sample. A known feature is `NA` for early pulses, then becomes usable once the
-feature contract has enough bars.
-
-Impossible warmup is different: every value for an instrument/feature remains
-`NA` because the instrument never reaches the feature contract. That is the
-case reported by the `Warmup Diagnostics` note in `summary(bt)`.
-
-Current-bar absence is a third failure mode. If ledgr cannot construct the pulse
-sequence because a current bar is absent for an instrument in the requested
-universe, the run fails before strategy evaluation for that incomplete pulse;
-this is a pulse construction error, not a feature warmup value.
-
-A final-bar target is separate from warmup. Under the next-open fill model,
-there is no later bar available to fill a target emitted on the last pulse, so
-ledgr reports `LEDGR_LAST_BAR_NO_FILL` and leaves the ledger unchanged for that
-target change.
-
-### Compiled Accounting Fails Closed
-
-Default execution uses the canonical R accounting path:
-`compiled_accounting_model = NULL`. The scoped `"spot_fifo"` accelerator is an
-ephemeral sweep opt-in for the supported compiled accounting workload;
-committed durable runs
-fail closed if you request it there. Unsupported model names raise
-`ledgr_unsupported_accounting_model`. Missing compiled support raises
-`ledgr_compiled_spot_fifo_unavailable`.
-
-Those classes are the stable top-level conditions to assert on in tests. The
-accelerator does not broaden ledgr's accounting model into futures, margin,
-broker reconciliation, or derivative accounting.
-
+A completed run with zero closed trades reports `win_rate` and `avg_trade` as
+`NA`, not zero, because there is no closed trade to average. To find out why a
+run made no trades, use the checklist in
+`vignette("indicators", package = "ledgr")`.
 
 ## Cleanup
 

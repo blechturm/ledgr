@@ -52,6 +52,10 @@ knitr::knit_hooks$set(
   margin-right: auto;
 }
 
+.ledgr-workflow-diagram .mermaid svg {
+  max-width: 560px !important;
+}
+
 .ledgr-grid-diagram .mermaid svg {
   max-width: 760px !important;
 }
@@ -59,13 +63,53 @@ knitr::knit_hooks$set(
 .ledgr-alias-diagram .mermaid svg {
   max-width: 820px !important;
 }
+
+.ledgr-validation-diagram .mermaid svg {
+  max-width: 520px !important;
+}
 </style>
 ```
 
-This article explains how declared parameter variation becomes candidate rows.
-The central idea is active aliases: one strategy can read stable feature names
-such as `fast` and `slow` while the sweep varies the concrete indicators behind
-those names.
+You have an idea for a trading rule. Maybe a fast moving average crossing a
+slow one looks useful. How do you turn that hunch into evidence you can
+reopen, inspect, and explain later?
+
+This workflow produces research evidence, not investment advice or a guarantee
+that a strategy will work in the future. See the project
+[disclaimer](../DISCLAIMER.md).
+
+The loop is deliberately short:
+
+::: {.ledgr-diagram .ledgr-workflow-diagram}
+
+```{mermaid}
+%%| echo: false
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
+
+flowchart TB
+  data["Seal data"]
+  experiment["Declare experiment"]
+  single["Run once"]
+  sweep["Sweep candidates"]
+  inspect["Inspect evidence"]
+  promote["Promote with note"]
+  reopen["Reopen and recover"]
+
+  data --> experiment --> single --> sweep --> inspect --> promote --> reopen
+  inspect -. new research iteration .-> experiment
+```
+
+:::
+
+Each step removes one common ambiguity:
+
+- sealing fixes the evidence;
+- experiment declaration fixes the strategy boundary;
+- a single run checks that the setup behaves at all;
+- sweeping compares declared candidates;
+- inspection makes the selection rule visible;
+- promotion records the human choice;
+- reopening proves the result is a durable artifact.
 
 Sweeps are for exploration. Promotion records one selected candidate as a
 committed run. Neither step proves that the selected candidate will generalize.
@@ -82,6 +126,53 @@ data("ledgr_demo_bars", package = "ledgr")
 
 This article uses `dplyr` for tabular inspection. The sweep itself is ledgr's
 job.
+
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
+
+This article is evaluated when it is rendered. To keep package builds and local
+previews disposable, the code writes to a temporary DuckDB store. In a real
+project, replace `store_path` with a durable path such as
+`artifacts/ledgr_store.duckdb`.
+:::
+
+::: {.ledgr-callout .ledgr-callout-note}
+**About the demo data**
+
+`DEMO_01` and `DEMO_02` are package-owned demo instruments. Real research
+should use a sealed snapshot of the market data you intend to study. The point
+here is the shape of the workflow, not the realism of the data.
+:::
+
+## Project Topology
+
+Start with a small project shape. One script creates the evidence, one store
+holds the artifacts, and one report explains the research choice.
+
+```text
+my-ledgr-project/
+  artifacts/
+    ledgr_store.duckdb
+  reports/
+    workflow_review.md
+  scripts/
+    research_workflow.R
+```
+
+ledgr does not require this exact layout. The point is simpler: keep the
+script, durable store, and written reasoning close enough that a future review
+can recover the full research decision.
+
+In a real project, add generated stores such as `artifacts/*.duckdb` to
+`.gitignore` unless you have a deliberate artifact-versioning policy. The
+script and source data should explain how to recreate the store; Git should not
+quietly become the database backup.
+
+```{r}
+#| label: topology
+
+store_path <- ledgr_temp_store()
+```
 
 ## Sweep Is Exploration
 
@@ -112,8 +203,9 @@ not make that choice out-of-sample.
 
 ## Declare Parameterized Features
 
-Start with one sealed snapshot and one strategy. This article stays on sweep
-mechanics rather than train/test or walk-forward evaluation.
+Seal the evidence first. Here you use two demo instruments over the first half
+of 2019. Once the data is sealed, the snapshot becomes the identity of the
+evidence: every run below refers back to the same immutable input.
 
 ```{r}
 #| label: experiment-setup
@@ -126,8 +218,8 @@ bars <- ledgr_demo_bars |>
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  snapshot_id = "sweep_alias_demo",
-  db_path = tempfile(fileext = ".duckdb")
+  db_path = store_path,
+  snapshot_id = "demo_2019_h1"
 )
 
 features <- ledgr_feature_map(
@@ -155,7 +247,7 @@ exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = sma_crossover_strategy,
   features = features,
-  opening = ledgr_opening(cash = 100000),
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
@@ -218,6 +310,32 @@ flowchart TB
 For a second candidate with `fast_n = 10` and `slow_n = 40`, the same arrows
 resolve to SMA(10) and SMA(40), but the strategy still reads `values[["fast"]]`
 and `values[["slow"]]`. The aliases stay stable across candidates.
+
+## Sanity-Check One Run
+
+Before you fan out into a sweep, run one parameter set. You are checking two
+basic things: did anything trade, and do the derived results look plausible?
+Sweeps amplify whatever your setup does, including doing nothing.
+
+```{r}
+#| label: single-run
+
+single_run <- ledgr_run(
+  exp,
+  params = list(qty = 10, threshold = 0),
+  feature_params = list(fast_n = 10L, slow_n = 40L),
+  run_id = "workflow_single_run",
+  seed = 2026L
+)
+
+single_run
+ledgr_results(single_run, what = "trades")
+```
+
+At this stage, the exact performance number matters less than the existence
+and plausibility of fills, positions, and equity. If this run has no fills,
+odd position changes, or implausible equity, stop here and debug the strategy
+or feature declarations before sweeping.
 
 ## Build The Candidate Grid
 
@@ -363,6 +481,12 @@ materialization: snapshot identity, selector, strategy identity, feature
 fingerprints, seed metadata, and candidate params. Use
 `ledgr_candidate_reproduction_key()` when you want to inspect that key directly.
 Full equity, fills, trades, and ledger rows are created only by committed runs.
+
+`ledgr_sweep()` is the memory-backed exploration mode. It evaluates candidate
+rows through the same fold semantics as committed runs, but it keeps compact
+candidate evidence instead of writing a durable ledger and equity curve for
+every row. Promotion is the point where one selected candidate pays the
+durable-materialization cost.
 
 If the experiment declares a `risk_chain`, sweep candidates also carry
 `risk_chain_hash` and row-level provenance carries `risk_plan_json`. These fields
@@ -521,9 +645,7 @@ Keep ledgr's scalar metric rows as the canonical ledgr evidence. Use external
 metric packages as additional analysis over an explicit return series, and label
 any overlapping headline metric when it comes from a different convention.
 
-The rest of this article uses the reopened sweep for candidate inspection and
-promotion. That demonstrates that a saved sweep reopens to the same
-dplyr-friendly surface as the in-session result.
+## Compiled Accounting And Workers
 
 The default sweep path is memory-backed and uses the canonical R accounting
 fold. When your workload is spot-asset FIFO and you want the scoped compiled
@@ -545,7 +667,9 @@ sweep <- ledgr_sweep(
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is a
 memory-backed sweep accelerator only: it is not a general compiled execution engine,
 not the durable `ledgr_run()` path, not a non-spot accounting model, and not
-enabled by default.
+enabled by default. A committed `ledgr_run()` that requests it fails closed.
+Unsupported model names raise `ledgr_unsupported_accounting_model`, and missing
+compiled support raises `ledgr_compiled_spot_fifo_unavailable`.
 
 For independent candidates, `workers` can dispatch sweep rows in parallel when
 the required backend and worker package dependencies are available. Parallelism
@@ -553,41 +677,6 @@ changes candidate dispatch, not strategy semantics; interrupted parallel sweeps
 discard the partial table instead of returning partially promotable rows.
 That means parallel sweep execution is a dispatch choice over independent
 candidate rows, not a second execution engine.
-
-## Inspect Before Promotion
-
-Name the ranking rule before selecting. Here the rule is deliberately simple:
-among completed candidates, sort by Sharpe ratio descending. ledgr ships
-business-objective helpers for explicit selection rules, as taught in
-`vignette("selection-integrity", package = "ledgr")`; it does not silently
-choose a winner. This example keeps the rule visible as ordinary R code.
-
-```{r}
-#| label: inspect-candidates
-
-review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
-review$top |>
-  select(candidate_id, sharpe_ratio, params, feature_params)
-review$issues
-ranked <- review$ranked
-```
-
-`ledgr_sweep_review()` packages the inspection shape while keeping the ranking
-rule explicit in the call. `review$top` is for the candidates you want to read
-closely, `review$issues` is for warnings and failures, and `review$ranked`
-retains the full completed-candidate table for deliberate selection.
-
-## What A Sweep Does Not Prove
-
-A sweep is exploratory evidence with an audit trail. It does not answer whether
-the selected rule will generalize.
-
-The more candidates you try, the more opportunity you create for sample-specific
-luck to look like skill. If the question is generalization rather than artifact
-reproducibility, use `vignette("walk-forward", package = "ledgr")`.
-
-This is the same selection-bias boundary that separates reproducible sweep
-evidence from walk-forward or later validation-toolkit evidence.
 
 ## Failure Rows And Contract Errors
 
@@ -612,7 +701,7 @@ debug_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = debug_strategy,
   features = list(),
-  opening = ledgr_opening(cash = 100000),
+  opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
 )
 
@@ -638,12 +727,44 @@ stops immediately so the sweep does not mix incomparable rows.
 extracting a failed row for diagnostics; `ledgr_promote()` still rejects failed
 candidates.
 
-## Promote One Candidate
+## Inspect Before Promotion
 
-Promotion replays one selected candidate as a committed run. This is the slow
-path that explicitly pays to materialize durable ledger and equity artifacts.
-For the full research loop around promotion notes, reopen, and human review, read
-`vignette("research-workflow", package = "ledgr")`.
+Name the ranking rule before selecting. Here the rule is deliberately simple:
+among completed candidates, sort by Sharpe ratio descending. ledgr ships
+business-objective helpers for explicit selection rules, as taught in
+`vignette("selection-integrity", package = "ledgr")`; it does not silently
+choose a winner. This example keeps the rule visible as ordinary R code, and it
+reads the reopened saved sweep to show that a saved sweep reopens to the same
+dplyr-friendly surface as the in-session result.
+
+```{r}
+#| label: inspect-candidates
+
+review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
+review$top |>
+  select(candidate_id, sharpe_ratio, params, feature_params)
+review$issues
+ranked <- review$ranked
+```
+
+`ledgr_sweep_review()` packages the inspection shape while keeping the ranking
+rule explicit in the call. `review$top` is for the candidates you want to read
+closely, `review$issues` is for warnings and failures, and `review$ranked`
+retains the full completed-candidate table for deliberate selection.
+
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
+
+Sort by `total_return` instead of `sharpe_ratio`. Does the first candidate
+change? If it does, your "best" candidate depends on the metric, not only on
+the strategy.
+:::
+
+## Promote One Candidate With A Note
+
+Promotion replays one selected candidate as a committed run and attaches the
+human selection note. This is the slow path that explicitly pays to
+materialize durable ledger and equity artifacts.
 
 ```{r}
 #| label: promote-selected
@@ -656,12 +777,205 @@ candidate_table |>
 promoted_run <- ledgr_promote(
   exp,
   candidate,
-  run_id = "sweep_selected_candidate",
-  note = "Selected highest-Sharpe completed candidate from the exploratory sweep."
+  run_id = "workflow_promoted_candidate",
+  note = paste(
+    "Promoted from an exploratory same-snapshot sweep for workflow review.",
+    "This note records the selection rationale; it is not statistical validation."
+  )
 )
 
 summary(promoted_run)
 ```
+
+The promoted run is now a committed run with its own run ID. The selection note
+travels with the run. Same-snapshot promotion is useful for audit, debugging,
+and durable storage of the chosen candidate. It remains in-sample.
+
+## Reopen The Promoted Run
+
+The payoff for the project store is that you can come back later without
+re-running the strategy. Release the live handles, reopen the snapshot with
+hash verification, and open the promoted run by its ID.
+
+```{r}
+#| label: reopen
+
+close(single_run)
+close(promoted_run)
+ledgr_snapshot_close(snapshot)
+
+snapshot <- ledgr_snapshot_open(
+  store_path,
+  snapshot_id = "demo_2019_h1",
+  verify = TRUE
+)
+
+ledgr_run_list(snapshot)
+
+reopened <- ledgr_run_open(snapshot, "workflow_promoted_candidate")
+reopened
+```
+
+Three public readers recover what ledgr recorded about the promoted run:
+
+- `ledgr_run_info()` for the run's identity and completion evidence;
+- `ledgr_promotion_context()` for the selected sweep row, its parameters and
+  the promotion note;
+- `ledgr_run_strategy()` for strategy source and parameter provenance.
+
+```{r}
+#| label: recover-provenance
+
+promotion <- ledgr_promotion_context(reopened)
+list(
+  source = promotion$source,
+  selected_candidate = promotion$selected_candidate$candidate_id,
+  selected_candidate_row = promotion$selected_candidate$candidate_row,
+  strategy_params_json = promotion$selected_candidate$params_json,
+  feature_params_json = promotion$selected_candidate$feature_params_json,
+  note = promotion$note
+)
+
+extracted <- ledgr_run_strategy(
+  snapshot,
+  "workflow_promoted_candidate",
+  trust = FALSE
+)
+
+extracted$strategy_params
+extracted$reproducibility_level
+extracted$hash_verified
+```
+
+The result is compact but load-bearing: ledgr stores which sweep candidate was
+selected, which strategy parameters and feature parameters produced it, what
+note justified the promotion, and which strategy source metadata was captured.
+
+::: {.ledgr-callout .ledgr-callout-note}
+**What recovery means**
+
+Recovery is provenance, not magic. Tier 1 strategy source can usually be
+inspected, hash-checked, and optionally evaluated with `trust = TRUE`. Tier 2
+strategies may depend on external functions or package state, so ledgr records
+the source text, hashes, parameters, dependency metadata, and warnings that
+explain what was captured and what remains outside the run artifact.
+:::
+
+## Plot The Promoted Evidence
+
+A report should show the promoted run's path, not only its scalar metrics.
+The equity table already contains the information needed for a compact equity
+and drawdown view.
+
+```{r}
+#| label: promoted-equity-plot
+#| fig.width: 7
+#| fig.height: 4
+
+promoted_equity <- ledgr_results(reopened, what = "equity") |>
+  mutate(drawdown_axis = drawdown * equity[[1]] + equity[[1]])
+
+ggplot2::ggplot(promoted_equity, ggplot2::aes(x = ts_utc)) +
+  ggplot2::geom_line(
+    ggplot2::aes(y = equity),
+    linewidth = 0.8,
+    color = "#1f77b4"
+  ) +
+  ggplot2::geom_area(
+    ggplot2::aes(y = drawdown_axis),
+    fill = "#d55e00",
+    alpha = 0.20
+  ) +
+  ggplot2::labs(
+    title = "Promoted candidate equity path",
+    x = NULL,
+    y = "Equity",
+    caption = "Orange area scales drawdown onto the equity axis for compact review."
+  ) +
+  ggplot2::theme_minimal(base_size = 12)
+```
+
+## What Promotion Does Not Prove
+
+You now have a promoted candidate. It means you can reopen the exact evidence
+trail: the sealed data, feature declarations, parameter values, run identity,
+candidate row, and promotion note. It does not mean the strategy will
+generalize.
+
+A single-window sweep is exploratory evidence with an audit trail. Naive
+sweep-and-pick selection is a selection-bias risk because every candidate was
+compared on the same evidence window. Picking the highest metric from that
+window can overfit the sample even when every individual run was deterministic
+and leakage-safe at the pulse boundary. The more candidates you try, the more
+opportunity you create for sample-specific luck to look like skill.
+
+::: {.ledgr-diagram .ledgr-validation-diagram}
+
+```{mermaid}
+%%| echo: false
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "secondaryColor": "#eef2ff", "secondaryTextColor": "#1f2937", "secondaryBorderColor": "#64748b", "tertiaryColor": "#fff7ed", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#fb923c"}}}%%
+
+flowchart TB
+  window["Same evidence window<br/>Candidate 1<br/>Candidate 2<br/>Candidate 3<br/>Candidate ..."]
+  pick["Pick highest metric"]
+  caveat["Selection recorded<br/>not validated"]
+
+  window --> pick --> caveat
+```
+
+:::
+
+If the question is generalization rather than artifact reproducibility, use
+`vignette("selection-integrity", package = "ledgr")` and
+`vignette("walk-forward", package = "ledgr")`.
+
+This is the same selection-bias boundary that separates reproducible sweep
+evidence from walk-forward or later validation-toolkit evidence.
+
+::: {.ledgr-callout .ledgr-callout-tip}
+**Try it**
+
+Write one sentence explaining why you promoted the candidate and one sentence
+explaining why that promotion is not validation. If the second sentence feels
+hard to write, the selection rule probably needs more work.
+:::
+
+## Write The Human Research Note
+
+Do not leave the reasoning only in your head. Write a short report next to the
+stored artifacts. A compact report should include:
+
+- hypothesis and data window
+- snapshot hash and data-source assumptions
+- feature and strategy declarations
+- candidate grid summary
+- candidate ranking rule
+- top-N candidate table
+- issue and failure review
+- equity and drawdown plots
+- promotion note
+- reason for rejecting alternatives
+- selection caveat: promoted candidate is not statistically validated by promotion itself
+
+Here is the shape of a useful entry:
+
+```text
+Hypothesis and data window:
+  SMA crossover candidates may capture persistent moves in DEMO_01 and DEMO_02
+  over the 2019 H1 demo window.
+
+Promotion note:
+  Promoted the top Sharpe candidate after checking that all candidate rows
+  completed and no issue rows changed the interpretation.
+
+Selection caveat:
+  This is a same-window exploratory selection. Promotion records the chosen
+  candidate and its provenance; it does not prove out-of-sample performance.
+```
+
+The report is where the human reasoning lives. ledgr records what happened,
+which inputs were used, and which candidate was promoted; it does not certify
+that the selection protocol was statistically sound.
 
 ## Cost Models Are Fixed Inputs
 
@@ -688,12 +1002,12 @@ ship:
 
 ## Where Next
 
-- For the full research loop around sweeps, read
-  `vignette("research-workflow", package = "ledgr")`.
+- For selection-bias diagnostics over a sweep, read
+  `vignette("selection-integrity", package = "ledgr")`.
+- For held-out evaluation of a selection rule, read
+  `vignette("walk-forward", package = "ledgr")`.
 - For feature maps, indicator identity, and active aliases, read
   `vignette("indicators", package = "ledgr")`.
-- For no-lookahead pulse timing, next-open fills, and final-bar warnings, read
-  `vignette("execution-semantics", package = "ledgr")`.
 - For durable run comparison after promotion, read
   `vignette("experiment-store", package = "ledgr")`.
 
@@ -701,6 +1015,6 @@ ship:
 #| label: cleanup
 #| include: false
 
-close(promoted_run)
+close(reopened)
 ledgr_snapshot_close(snapshot)
 ```

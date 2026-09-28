@@ -149,7 +149,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.870
+    Elapsed Sec:      0.840
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -217,6 +217,20 @@ a function object.
 ``` r
 trusted <- ledgr_run_strategy(snapshot, "qty_10", trust = TRUE)
 trusted$strategy_function
+
+rerun_exp <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = trusted$strategy_function,
+  features = features,
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+
+ledgr_run(
+  rerun_exp,
+  params = trusted$strategy_params,
+  run_id = "qty_10_rerun"
+)
 ```
 
 Hash verification proves stored-text identity, not code safety. A
@@ -529,8 +543,8 @@ strategy depended on.
 ## Where Next
 
 For the end-to-end research loop and the selection-validation
-distinction, read `vignette("research-workflow", package = "ledgr")`.
-For strategy-authoring patterns that use helper pipelines, one-pulse
+distinction, read `vignette("sweeps", package = "ledgr")`. For
+strategy-authoring patterns that use helper pipelines, one-pulse
 testing, and strategy state, read
 `vignette("strategy-authoring-tools", package = "ledgr")`. For
 store-level source inspection and reopen workflows, read

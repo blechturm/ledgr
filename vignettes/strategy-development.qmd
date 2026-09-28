@@ -273,8 +273,8 @@ In these examples, decisions fill at the next open: a decision made at pulse
 filling on the same close.
 
 A rule like this reads current values directly. When a rule needs to rank
-instruments or size positions from the account, the helper pipeline later in
-this article does that work.
+instruments or size positions from the account, the helper pipeline in
+`vignette("strategy-authoring-tools", package = "ledgr")` does that work.
 
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**
@@ -326,9 +326,7 @@ including the per-instrument `asset_state` of availability-aware runs.
 ## Prepare A Small Experiment
 
 Use two instruments from the offline demo data so the first full backtest can
-run anywhere. The detailed pulse-inspection and helper-pipeline walkthrough
-lives in `vignette("strategy-authoring-tools", package = "ledgr")`; this
-article keeps only the compact setup needed to run one strategy.
+run anywhere.
 
 ```{r}
 #| label: data
@@ -358,23 +356,22 @@ input the strategy will read. Feature IDs are exact: a typo is an unknown
 feature, not warmup.
 
 ```{r}
-#| label: helper-strategy
+#| label: return-strategy
 
-top_return_strategy <- function(ctx, params) {
-  weights <- ctx |>
-    ledgr_signal_return(lookback = params$lookback) |>
-    ledgr_select_top_n(n = params$n) |>
-    ledgr_weight_equal()
-
-  weights |>
-    ledgr_target_rebalance(ctx, equity_fraction = params$equity_fraction)
+positive_return <- function(ctx, params) {
+  ret <- ctx$vec$feature("return_5")
+  targets <- ctx$flat()
+  targets[which(is.finite(ret) & ret > params$min_return)] <- params$qty
+  targets
 }
 ```
 
-Economically, this scores each instrument by recent return, keeps the top name,
-splits the selected allocation equally, and converts the weights into floored
-share targets. No helper registers indicators automatically; the experiment
-must still declare `features`.
+Economically, this holds `qty` shares of every instrument whose 5-bar return is
+above `min_return`, and nothing otherwise. `is.finite()` keeps the warmup
+pulses, where the return is still `NA`, out of the decision.
+
+When a rule needs to rank instruments or size positions from the account
+instead, ledgr's helper pipeline does that work in four steps:
 
 | Step | Use |
 |---|---|
@@ -385,14 +382,15 @@ must still declare `features`.
 
 The weights carry only relative allocations. Rebalancing needs `ctx` again
 because current equity, prices, and holdings determine the share quantities.
-The focused authoring article develops each step and its missing-input policy.
+`vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
+with each step and its missing-input policy.
 
 ```{r}
 #| label: experiment
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
-  strategy = top_return_strategy,
+  strategy = positive_return,
   features = features,
   opening = ledgr_opening(cash = 10000),
   cost_model = ledgr_cost_zero()
@@ -404,13 +402,13 @@ exp <- ledgr_experiment(
 ```{r}
 #| label: run-one
 
-bt_top_1 <- exp |>
+bt_first <- exp |>
   ledgr_run(
-    params = list(lookback = 5, n = 1, equity_fraction = 0.1),
-    run_id = "top_return_1"
+    params = list(min_return = 0, qty = 10),
+    run_id = "positive_return_1"
   )
 
-summary(bt_top_1)
+summary(bt_first)
 ```
 
 The summary is portfolio-level: total return, max drawdown, and trade count are
@@ -422,7 +420,7 @@ The rendered result is a short, tiny-universe teaching run. Its annualized
 volatility, drawdown and return describe only that fixture; none is evidence
 that the rule is attractive or that the annualization is stable. Read the
 numbers together: a positive final return can coexist with an intra-run
-drawdown, and 24 closed trades from a tiny synthetic fixture are still far too
+drawdown, and 20 closed trades from a tiny synthetic fixture are still far too
 little evidence for a strategy judgment.
 
 Do not expect a teaching strategy to be good. A weak or unattractive result is
@@ -434,7 +432,7 @@ Inspecting trades shows the actions produced by the target decisions.
 ```{r}
 #| label: trades
 
-ledgr_results(bt_top_1, what = "trades")
+ledgr_results(bt_first, what = "trades")
 ```
 
 The trade table only includes closed round trips. Small one-share rows appear
@@ -447,17 +445,19 @@ If a run has zero trades, inspect fills before assuming nothing happened:
 ```{r}
 #| label: fills-diagnostic
 
-ledgr_results(bt_top_1, what = "fills")
+ledgr_results(bt_first, what = "fills")
 ```
 
 Zero fills means no execution occurred. Non-empty fills with zero trades means
 positions opened but did not close. `n_trades` counts closed round trips, while
-the fills table shows both opening and closing execution rows.
+the fills table shows both opening and closing execution rows. For the full
+checklist when a run makes no trades, see
+`vignette("indicators", package = "ledgr")`.
 
 If you want to compare variants, keep the strategy authoring question separate
 from the research-comparison question. Use
 `vignette("experiment-store", package = "ledgr")` for stored-run comparison and
-`vignette("research-workflow", package = "ledgr")` for promotion and review.
+`vignette("sweeps", package = "ledgr")` for promotion and review.
 
 ## When ledgr Complains
 
@@ -499,7 +499,7 @@ while the mistake is still small enough to understand.
 ```{r}
 #| label: cleanup
 
-close(bt_top_1)
+close(bt_first)
 ledgr_snapshot_close(snapshot)
 ```
 

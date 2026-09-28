@@ -17,8 +17,6 @@
 #' Core installed articles:
 #' - `vignette("quickstart", package = "ledgr")`
 #' - `system.file("doc", "quickstart.html", package = "ledgr")`
-#' - `vignette("research-workflow", package = "ledgr")`
-#' - `system.file("doc", "research-workflow.html", package = "ledgr")`
 #' - `vignette("data-input-and-snapshots", package = "ledgr")`
 #' - `system.file("doc", "data-input-and-snapshots.html", package = "ledgr")`
 #' - `vignette("point-in-time-inputs", package = "ledgr")`
@@ -31,8 +29,8 @@
 #' - `system.file("doc", "strategy-authoring-tools.html", package = "ledgr")`
 #' - `vignette("indicators", package = "ledgr")`
 #' - `system.file("doc", "indicators.html", package = "ledgr")`
-#' - `vignette("ttr-and-adapter-indicators", package = "ledgr")`
-#' - `system.file("doc", "ttr-and-adapter-indicators.html", package = "ledgr")`
+#' - `vignette("ttr-indicators", package = "ledgr")`
+#' - `system.file("doc", "ttr-indicators.html", package = "ledgr")`
 #' - `vignette("custom-indicators", package = "ledgr")`
 #' - `system.file("doc", "custom-indicators.html", package = "ledgr")`
 #' - `vignette("metrics-and-accounting", package = "ledgr")`

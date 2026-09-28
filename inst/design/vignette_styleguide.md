@@ -524,15 +524,15 @@ comes later in the reading flow.
 | Cost models and risk chains | Risk And Cost Execution Policy |
 | Stores, run IDs, labels, reopening, comparing runs | Experiment Store |
 | Reproducibility tiers, strategy preflight, source capture | Reproducibility |
-| Sweeps, candidates, failure rows, promotion, the compiled-accounting opt-in | Exploratory Sweeps And Candidate Promotion |
+| Sweeps, candidates, failure rows, promotion, reopening and recovering a promoted run, the research note, the compiled-accounting opt-in | Exploratory Sweeps And Candidate Promotion |
 | Look-ahead and leakage, including the `lead(close)` example | Leakage |
 | DSR, PBO/CSCV, MinTRL, business-objective criteria | Selection Integrity |
 | Walk-forward folds and what they establish | Walk-Forward Evaluation |
 | Availability-aware runs and what turns them on | Preparing Point-In-Time Inputs |
-| Session calendars, missing observations, stale marks, quarantine | Missing Data And Session Calendars |
+| Session calendars, missing observations, trading status, stale marks, quarantine, `ledgr_run_explain()` and `ledgr_run_completion()` | Missing Data And Session Calendars |
 | The corporate-action lines in a result print | Cash Distributions |
 | Membership, held nonmembers, survivorship | Survivorship Bias And Point-In-Time Universes |
-| Decision and fill clocks, next-open fills, the last-bar no-fill, affordability | How Targets Become Fills |
+| Decision and fill clocks, next-open fills, the last-bar no-fill, affordability, the `Fill Timing` summary line | How Targets Become Fills |
 | Annualization and metric contexts | Metric Contexts And Conventions |
 | What ships today versus the roadmap | Design Philosophy: From Research To Production |
 
@@ -642,17 +642,17 @@ README
   -> Start Here:
        Who ledgr is for
        Quickstart
+  -> Building Blocks:
        Importing And Sealing Market Data
        Strategy Basics
        Indicators And Features
+       Leakage
        The Accounting Model
        Risk And Cost Execution Policy
        Experiment Store
+       Reproducibility
   -> Research Workflow:
        Exploratory Sweeps And Candidate Promotion
-       Research Workflow
-       Leakage
-       Reproducibility
        Selection Integrity
        Walk-Forward Evaluation
   -> Point-In-Time Evidence:

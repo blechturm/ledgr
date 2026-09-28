@@ -280,8 +280,46 @@ Same quantity, two different fills. The spread step lifts the buy price by half
 the quoted spread, and the notional fee adds a charge proportional to the fill
 value. Costs do not change what you decided to hold; they change what holding it
 was worth.
-Cost models do not change quantities, refuse fills, model liquidity, manage
-orders, reconcile brokers, or act as an OMS.
+
+### Timing, Spread, And Fees
+
+Timing and cost are separate execution steps. `ledgr_timing_next_open()` decides
+where a target change can fill: the next available open after the strategy
+decision. A cost model then resolves the proposed fill price and explicit fee.
+Strategies do not receive cost state, and cost models do not change side,
+quantity, instrument, or execution timestamp.
+
+`ledgr_cost_spread_bps()` uses a quoted bid/ask-spread convention. A buy crosses
+half the quoted spread above the reference open:
+`open * (1 + spread_bps / 20000)`. A sell crosses half below it:
+`open * (1 - spread_bps / 20000)`. For the same reference price, a buy/sell
+round trip therefore crosses approximately `spread_bps` basis points before
+explicit fees.
+
+```{r}
+#| label: quoted-spread-arithmetic
+
+spread_bps <- 25
+reference_price <- 100
+buy_cross <- reference_price * (1 + spread_bps / 20000)
+sell_cross <- reference_price * (1 - spread_bps / 20000)
+round_trip_bps <- (buy_cross - sell_cross) / reference_price * 10000
+round(round_trip_bps, 6)
+```
+
+Price transforms and explicit fees are different. `ledgr_cost_spread_bps()`
+changes the fill price. `ledgr_cost_fixed_fee()` and
+`ledgr_cost_notional_bps_fee()` add values to the fill `fee` column after any
+price transforms have resolved.
+
+::: {.ledgr-callout .ledgr-callout-important}
+**What costs do not model**
+
+Cost models are deterministic research assumptions over accepted fill proposals.
+They do not implement liquidity or capacity limits, financing, transaction-cost
+analysis, taxes, OMS lifecycle behavior, or broker reconciliation. Those are
+separate future layers, not hidden behavior in the cost API.
+:::
 
 ## Identity
 

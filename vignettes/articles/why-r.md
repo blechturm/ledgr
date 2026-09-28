@@ -55,21 +55,20 @@ structure for the same pulse contract: code should describe the research
 idea in the order you would explain it to a colleague.
 
 The same readability argument carries into sweep work. ledgr’s
-exploration path is still ordinary R strategy code evaluated through the
-same fold semantics, with memory-backed candidate summaries and an
-explicit `compiled_accounting_model = "spot_fifo"` opt-in for a narrow
-memory-backed accounting accelerator. R remains credible here because
-the package keeps the contract narrow: readable strategy code first,
-targeted low-level acceleration where measurement justified it, and
-durable artifacts only when a candidate is promoted.
+exploration path is still ordinary R strategy code with memory-backed
+candidate summaries. R remains credible here because the package keeps
+the contract narrow: readable strategy code first, targeted low-level
+acceleration where measurement justified it, and durable artifacts only
+when a candidate is promoted.
 
 ## R Keeps The Research Runtime Portable
 
 ledgr’s vision is the full research-to-production arc, including
 deployment to hardware you control: a Raspberry Pi, an Intel NUC, a
-small VPS, or anything else that runs R. The shipped capability today is
-the research runtime, not a paper/live service. The current package
-imports are:
+small VPS, or anything else that runs R. [Research to
+production](../articles/research-to-production.html) states what ships
+today; this article is about why R suits that direction. The current
+package imports are:
 
 ``` text
 collapse, codetools, DBI, digest, duckdb, rlang, tibble, yyjsonr
@@ -179,7 +178,7 @@ That is what R is for. That is why ledgr is built in it.
 ## Reading on
 
 - [Who ledgr is for](who-ledgr-is-for.html): the audience filter
-- [Research Workflow](../articles/research-workflow.html): the
-  reproducible research loop
+- [Exploratory Sweeps And Candidate Promotion](../articles/sweeps.html):
+  the reproducible research loop
 - [Strategy development](../articles/strategy-development.html): the
   readable strategy authoring model

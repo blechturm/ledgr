@@ -116,6 +116,13 @@ as a section.
 | last-bar no-fill, affordability | How Targets Become Fills | Metric Contexts 423-426; Strategy Basics 230-242; Survivorship 539-544 |
 | current capability | Research To Production | Who 42-43, 75-77; Why R 73-96, 152-155 |
 
+LDG-2896 carried out every row except affordability and the last-bar no-fill:
+those copies move in LDG-2900, when How Targets Become Fills gains the home
+statement they would link to. Two rows kept a short gloss where a pinned
+contract names the surface: Data Input still names
+`invalid_observations = "quarantine"` (LTB-0079), and Strategy Basics keeps a
+brief "Remembering Between Pulses" pointer and its fills-versus-trades lines.
+
 **D5. Trims inside articles.** Experiment Store drops its Task Intent Map
 (460-474) and feature-persistence section (405-425). Research To Production
 drops its retaught store, contract and cost sections. TTR cuts its native-RSI

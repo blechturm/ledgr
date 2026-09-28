@@ -49,10 +49,10 @@ vignettes/**/*_files/
 !vignettes/metrics-and-accounting_files/figure-commonmark/
 vignettes/metrics-and-accounting_files/figure-commonmark/*
 !vignettes/metrics-and-accounting_files/figure-commonmark/equity-curve-plot-1.png
-!vignettes/research-workflow_files/
-!vignettes/research-workflow_files/figure-commonmark/
-vignettes/research-workflow_files/figure-commonmark/*
-!vignettes/research-workflow_files/figure-commonmark/promoted-equity-plot-1.png
+!vignettes/sweeps_files/
+!vignettes/sweeps_files/figure-commonmark/
+vignettes/sweeps_files/figure-commonmark/*
+!vignettes/sweeps_files/figure-commonmark/promoted-equity-plot-1.png
 !vignettes/selection-integrity_files/
 !vignettes/selection-integrity_files/figure-commonmark/
 vignettes/selection-integrity_files/figure-commonmark/*

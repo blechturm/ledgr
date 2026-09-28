@@ -115,7 +115,9 @@ any availability family requires a complete session calendar. Under
 `knowledge = "evidenced"`, every session row needs a `knowledge_time`: an open
 session must be known by its open, and a closure before its civil day starts.
 Use `"assume_effective"` only when that assumption is part of the research
-design.
+design. `vignette("missing-data-and-sessions", package = "ledgr")` is the home
+for session calendars, trading status and stale marks; this article only
+assembles them.
 
 ## Add A Point-In-Time Universe
 
@@ -335,7 +337,9 @@ unlist(ledgr_run_completion(pit_run)[
 
 The first decision remains unrestricted because the halt was not yet known.
 The second is restricted for `trading_halted`. The excluded interval end is
-active again.
+active again. `ledgr_run_explain()` reports what one decision knew about one
+instrument, and `ledgr_run_completion()` reports whether the run finished its
+horizon; the missing-data article teaches both readers.
 
 ## Data Dictionary
 
