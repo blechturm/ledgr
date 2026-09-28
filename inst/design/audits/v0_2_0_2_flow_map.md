@@ -1,7 +1,8 @@
 # v0.2.0.2 Documentation Flow Map
 
 **Status:** LDG-2895 working artifact, agent-drafted 2026-09-28. The
-maintainer's decisions in Section 3 are recorded before LDG-2896 starts.
+maintainer accepted D1 to D7 in Section 3 on 2026-09-28, before LDG-2896
+started.
 
 **Authority:** Cut 21 in `inst/design/ledgr_v0_2_0_2_spec_packet/tickets.yml`;
 `inst/design/vignette_styleguide.md` house rules, canonical homes and facts
@@ -70,9 +71,10 @@ Source total: 12,003 lines. The LDG-2902 length check measures against it.
 - **Hand-offs.** 23 of 26 articles send the reader somewhere other than the
   next article; Survivorship has no Where Next.
 
-## 3. Decisions For The Maintainer
+## 3. Decisions
 
-Each proposal names where every moved lesson lands. Nothing is added.
+The maintainer accepted all seven on 2026-09-28. Each names where every moved
+lesson lands. Nothing is added.
 
 **D1. Merge Research Workflow into Sweeps (recommended).** Sweeps becomes the
 single home for grids, review, failure rows, promotion, reopening a promoted
@@ -124,9 +126,8 @@ run to the ID contrast. Why R and Research To Production stay separate
 redirect, since R and CSV adapters live in Custom Indicators.
 
 **D7. P8, the `?ledgr_indicator` help page.** It documents only `fn(window)`.
-Workstream 29 may not edit `R/` beyond `vignette()` references. Proposed owner:
-a one-line roxygen ticket added to Cut 21, since it is the same documentation
-surface.
+Workstream 29 may not edit `R/` beyond `vignette()` references. Owner: LDG-2903,
+a roxygen ticket added to Cut 21, since it is the same documentation surface.
 
 ## 4. Violations By Pass
 
@@ -213,7 +214,7 @@ The shared-input sections pinned by LTB-0080 are rewritten in reader terms.
 ## 5. Routed Product Gaps
 
 - P3 whole-universe active-alias read: feature-map read surface RFC.
-- P8 `?ledgr_indicator` documents one arity: D7.
+- P8 `?ledgr_indicator` documents one arity: LDG-2903 (D7).
 - The candidate print hides parameters behind hashes: sweep-surface reader
   question, already named in Cut 18's out-of-scope.
 - `LEDGR_LAST_BAR_NO_FILL` fires once per instrument without naming it:
