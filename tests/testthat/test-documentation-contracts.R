@@ -426,7 +426,7 @@ testthat::test_that("source and installed article boundaries stay explicit", {
   # Also covers: retired article slugs are not installed
   local({
   root <- testthat::test_path("..", "..")
-  for (retired in c("ttr-and-adapter-indicators", "research-workflow")) {
+  for (retired in c("ttr-and-adapter-indicators")) {
     testthat::expect_false(file.exists(file.path(root, "vignettes", paste0(retired, ".qmd"))))
     testthat::expect_false(file.exists(file.path(root, "inst", "doc", paste0(retired, ".qmd"))))
     testthat::expect_false(file.exists(file.path(root, "inst", "doc", paste0(retired, ".R"))))
@@ -1135,7 +1135,7 @@ testthat::test_that("public site artifacts are current, complete, and quiet", {
       pit_evidence[[1]] - 1L
     )
     testthat::expect_match(research_block, "- sweeps", fixed = TRUE)
-    testthat::expect_no_match(research_block, "- research-workflow", fixed = TRUE)
+    testthat::expect_match(research_block, "- research-workflow", fixed = TRUE)
     testthat::expect_match(research_block, "- selection-integrity", fixed = TRUE)
     testthat::expect_match(research_block, "- walk-forward", fixed = TRUE)
 
@@ -1313,6 +1313,7 @@ testthat::test_that("package help and help-page links target installed articles"
   testthat::expect_match(text, "system.file(\"doc\", package = \"ledgr\")", fixed = TRUE)
   for (article in c(
     "quickstart",
+    "research-workflow",
     "data-input-and-snapshots",
     "point-in-time-inputs",
     "strategy-development",
@@ -1333,7 +1334,6 @@ testthat::test_that("package help and help-page links target installed articles"
     testthat::expect_match(text, sprintf("system.file(\"doc\", \"%s.html\", package = \"ledgr\")", article), fixed = TRUE)
   }
   testthat::expect_no_match(text, "ttr-and-adapter-indicators", fixed = TRUE)
-  testthat::expect_no_match(text, "research-workflow", fixed = TRUE)
   }
   })
 
@@ -1364,7 +1364,6 @@ testthat::test_that("package help and help-page links target installed articles"
   testthat::expect_true("quickstart" %in% installed_articles)
   testthat::expect_true("risk-and-cost" %in% installed_articles)
   testthat::expect_false("ttr-and-adapter-indicators" %in% installed_articles)
-  testthat::expect_false("research-workflow" %in% installed_articles)
   testthat::expect_false("who-ledgr-is-for" %in% linked_articles)
   testthat::expect_false("why-r" %in% linked_articles)
   }
@@ -1396,7 +1395,7 @@ testthat::test_that("research documentation exposes the disclaimer without broke
   workflow_candidates <- file.path(
     root,
     "vignettes",
-    c("sweeps.qmd", "sweeps.Rmd")
+    c("research-workflow.qmd", "research-workflow.Rmd")
   )
   workflow_paths <- workflow_candidates[file.exists(workflow_candidates)]
   workflow_path <- if (length(workflow_paths) > 0L) workflow_paths[[1L]] else NA_character_

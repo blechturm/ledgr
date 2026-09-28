@@ -1,0 +1,319 @@
+---
+title: "Research Workflow"
+format:
+  html:
+    toc: false
+    theme: cosmo
+    code-copy: true
+execute:
+  echo: true
+vignette: >
+  %\VignetteIndexEntry{Research Workflow}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+options(width = 90)
+options(cli.unicode = FALSE)
+pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
+if (!is.na(pkg_root) && requireNamespace("pkgload", quietly = TRUE)) {
+  pkgload::load_all(pkg_root, quiet = TRUE)
+}
+```
+
+```{=html}
+<style>
+.ledgr-diagram {
+  margin: 1.25rem auto 1.5rem auto;
+  text-align: center;
+}
+
+.ledgr-diagram .mermaid {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.ledgr-diagram .mermaid svg {
+  display: block;
+  height: auto !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ledgr-workflow-diagram .mermaid svg {
+  max-width: 560px !important;
+}
+</style>
+```
+
+You have an idea for a trading rule. How do you turn that hunch into evidence
+you can reopen, inspect, and explain later, while you keep changing the rule?
+
+Most research iterations change the strategy code itself: a new condition, a
+different exit, a filter you did not think of on the first try. Some
+iterations ask a narrower question, such as which lookback works best. This
+article follows both kinds of iteration through one project and shows where
+each one hands off.
+
+This workflow produces research evidence, not investment advice or a guarantee
+that a strategy will work in the future. See the project
+[disclaimer](../DISCLAIMER.md).
+
+::: {.ledgr-diagram .ledgr-workflow-diagram}
+
+```{mermaid}
+%%| echo: false
+%%{init: {"theme": "base", "flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "curve": "linear"}, "themeVariables": {"fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif", "fontSize": "15px", "primaryColor": "#f8fafc", "primaryTextColor": "#1f2937", "primaryBorderColor": "#64748b", "lineColor": "#64748b", "tertiaryColor": "#eef2ff", "tertiaryTextColor": "#1f2937", "tertiaryBorderColor": "#64748b", "clusterBkg": "#ffffff", "clusterBorder": "#cbd5e1"}}}%%
+
+flowchart TB
+  data["Seal data"]
+  rule["Write a rule"]
+  run["Run and inspect"]
+  compare["Compare committed runs"]
+  sweep["Sweep a parameter question"]
+  select["Select and validate"]
+  note["Record the decision"]
+
+  data --> rule --> run --> compare --> select --> note
+  compare -. change the code .-> rule
+  compare -. parameter question .-> sweep --> select
+```
+
+:::
+
+## Prerequisites
+
+```{r}
+#| label: prerequisites
+#| message: false
+
+library(ledgr)
+library(dplyr)
+data("ledgr_demo_bars", package = "ledgr")
+```
+
+::: {.ledgr-callout .ledgr-callout-note}
+**Running this yourself**
+
+This article is evaluated when it is rendered, so it writes to a temporary
+store. In a real project, replace `store_path` with a durable path such as
+`artifacts/ledgr_store.duckdb`.
+:::
+
+## Project Topology
+
+Start with a small project shape. One script creates the evidence, one store
+holds the artifacts, and one report explains the research choice.
+
+```text
+my-ledgr-project/
+  artifacts/
+    ledgr_store.duckdb
+  reports/
+    workflow_review.md
+  scripts/
+    research_workflow.R
+```
+
+ledgr does not require this exact layout. The point is simpler: keep the
+script, durable store, and written reasoning close enough that a future review
+can recover the full research decision.
+
+In a real project, add generated stores such as `artifacts/*.duckdb` to
+`.gitignore` unless you have a deliberate artifact-versioning policy. The
+script and source data should explain how to recreate the store; Git should not
+quietly become the database backup.
+
+## Seal The Evidence
+
+Every version of the rule below runs against the same sealed snapshot, so the
+comparison is between rules, not between data sets.
+
+```{r}
+#| label: snapshot
+
+store_path <- ledgr_temp_store()
+
+bars <- ledgr_demo_bars |>
+  filter(
+    instrument_id %in% c("DEMO_01", "DEMO_02", "DEMO_03"),
+    between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-12-31"))
+  )
+
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  db_path = store_path,
+  snapshot_id = "research_2019"
+)
+```
+
+## Version 1: One Rule, One Run
+
+The first idea is plain momentum: hold `qty` shares of every instrument whose
+20-bar return is positive.
+
+```{r}
+#| label: version-1
+
+momentum_v1 <- function(ctx, params) {
+  ret <- ctx$vec$feature("return_20")
+  targets <- ctx$flat()
+  targets[which(is.finite(ret) & ret > 0)] <- params$qty
+  targets
+}
+
+exp_v1 <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = momentum_v1,
+  features = list(ledgr_ind_returns(20)),
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+
+run_v1 <- ledgr_run(exp_v1, params = list(qty = 10), run_id = "momentum_v1")
+run_v1
+```
+
+Before judging the idea, check that the setup behaves at all: did anything
+trade, and do the numbers look plausible for ten shares of three demo
+instruments? If a run has no fills or implausible equity, fix the strategy or
+the feature declarations before you iterate further.
+
+## Version 2: Change The Code
+
+Suppose the trades show the rule buying into short rallies inside a falling
+market. The next iteration is not a new parameter value; it is a new
+condition. Version 2 also requires the close to sit above its 50-bar moving
+average.
+
+```{r}
+#| label: version-2
+
+momentum_v2 <- function(ctx, params) {
+  ret <- ctx$vec$feature("return_20")
+  trend <- ctx$vec$feature("sma_50")
+  targets <- ctx$flat()
+  rising <- is.finite(ret) & is.finite(trend) & ret > 0 & ctx$vec$close > trend
+  targets[which(rising)] <- params$qty
+  targets
+}
+
+exp_v2 <- ledgr_experiment(
+  snapshot = snapshot,
+  strategy = momentum_v2,
+  features = list(ledgr_ind_returns(20), ledgr_ind_sma(50)),
+  opening = ledgr_opening(cash = 10000),
+  cost_model = ledgr_cost_zero()
+)
+
+run_v2 <- ledgr_run(exp_v2, params = list(qty = 10), run_id = "momentum_v2")
+```
+
+Each version is its own committed run with its own strategy source and hash.
+You do not overwrite version 1 to try version 2; both stay in the store.
+
+## Compare Committed Runs
+
+Label each version with what changed, then compare them side by side. The
+store and comparison surfaces are taught in
+`vignette("experiment-store", package = "ledgr")`.
+
+```{r}
+#| label: compare-versions
+
+snapshot <- snapshot |>
+  ledgr_run_label("momentum_v1", "20-bar momentum") |>
+  ledgr_run_label("momentum_v2", "20-bar momentum above the 50-bar trend")
+
+ledgr_run_compare(snapshot, run_ids = c("momentum_v1", "momentum_v2"))
+```
+
+Here the trend filter did not help: version 2 finished lower with a slightly
+deeper drawdown. That is still useful evidence, and it stays in the store next
+to version 1. Read the comparison as evidence about two rules on one window,
+not as a verdict. Picking the better of two code versions is already a selection: the
+more versions you try on the same data, the more room there is for luck to
+look like an improvement.
+
+## When A Parameter Question Appears
+
+Sometimes the next question is narrower: is 20 bars the right lookback, or 50
+the right trend length? That is a parameter question, and it has its own tool.
+Declare the candidates as a grid, sweep them, and promote the one you choose;
+`vignette("sweeps", package = "ledgr")` teaches that step, including failure
+rows and how to reopen a promoted run later.
+
+Keep the two kinds of iteration apart. Code changes are committed runs you
+compare deliberately. Parameter questions are sweeps over a declared grid.
+Mixing them, for example by editing the rule between sweep candidates, makes
+the evidence impossible to reconstruct.
+
+## Select, Then Validate
+
+Choosing a version or a promoted candidate records a decision; it does not
+prove the rule generalizes. Two articles test that decision:
+
+- `vignette("selection-integrity", package = "ledgr")` asks whether a search
+  over many variants gives any reason to trust the winner;
+- `vignette("walk-forward", package = "ledgr")` re-runs the selection rule on
+  later, held-out windows.
+
+## Write The Human Research Note
+
+Do not leave the reasoning only in your head. Write a short report next to the
+stored artifacts. A compact report should include:
+
+- hypothesis and data window
+- snapshot hash and data-source assumptions
+- each code version and why it changed
+- feature and strategy declarations
+- candidate grid summary, if you swept
+- the ranking or selection rule
+- issue and failure review
+- equity and drawdown plots
+- promotion note, if you promoted
+- reason for rejecting alternatives
+- selection caveat: the chosen version is not statistically validated by
+  selection itself
+
+Here is the shape of a useful entry:
+
+```text
+Hypothesis and data window:
+  Short-term momentum may capture persistent moves in DEMO_01 to DEMO_03
+  over the 2019 demo window.
+
+Iterations:
+  v1 bought every positive 20-bar return; v2 added a 50-bar trend filter after
+  v1 bought rallies inside falling markets.
+
+Selection caveat:
+  Both versions were compared on the same window. The choice is recorded, not
+  validated; walk-forward evaluation is the next step.
+```
+
+The report is where the human reasoning lives. ledgr records what happened,
+which inputs were used, and which runs you compared or promoted; it does not
+certify that the research protocol was statistically sound.
+
+## Where Next
+
+- For parameter grids, candidate review and promotion, read
+  `vignette("sweeps", package = "ledgr")`.
+- For run discovery, labels, comparison and reopening, read
+  `vignette("experiment-store", package = "ledgr")`.
+- For what a committed run can and cannot reproduce, read
+  `vignette("reproducibility", package = "ledgr")`.
+
+```{r}
+#| label: cleanup
+#| include: false
+
+close(run_v1)
+close(run_v2)
+ledgr_snapshot_close(snapshot)
+```

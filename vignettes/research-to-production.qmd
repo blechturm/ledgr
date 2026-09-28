@@ -163,8 +163,8 @@ release date or operational capability is implied by this article.
 
 ## Where Next
 
-- `vignette("sweeps", package = "ledgr")` shows the current project-local
-  research loop.
+- `vignette("research-workflow", package = "ledgr")` shows the current
+  project-local research loop.
 - `vignette("walk-forward", package = "ledgr")` shows held-out evaluation over
   sweep and run surfaces.
 - `vignette("risk-and-cost", package = "ledgr")` explains the target-risk,

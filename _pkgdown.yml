@@ -48,6 +48,7 @@ articles:
       Move from a checked run through explicit candidate selection and held-out
       evaluation without confusing reproducibility with validation.
     contents:
+      - research-workflow
       - sweeps
       - selection-integrity
       - walk-forward
@@ -83,7 +84,6 @@ articles:
       - research-to-production
       - articles/why-r
 redirects:
-  - ["articles/research-workflow.html", "articles/sweeps.html"]
   - ["articles/ttr-and-adapter-indicators.html", "articles/ttr-indicators.html"]
 
 reference:

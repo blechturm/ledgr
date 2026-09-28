@@ -17,6 +17,8 @@
 #' Core installed articles:
 #' - `vignette("quickstart", package = "ledgr")`
 #' - `system.file("doc", "quickstart.html", package = "ledgr")`
+#' - `vignette("research-workflow", package = "ledgr")`
+#' - `system.file("doc", "research-workflow.html", package = "ledgr")`
 #' - `vignette("data-input-and-snapshots", package = "ledgr")`
 #' - `system.file("doc", "data-input-and-snapshots.html", package = "ledgr")`
 #' - `vignette("point-in-time-inputs", package = "ledgr")`

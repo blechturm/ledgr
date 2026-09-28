@@ -143,7 +143,7 @@ this article.
 
 ## Where Next
 
-- `vignette("sweeps", package = "ledgr")` shows the current
+- `vignette("research-workflow", package = "ledgr")` shows the current
   project-local research loop.
 - `vignette("walk-forward", package = "ledgr")` shows held-out
   evaluation over sweep and run surfaces.

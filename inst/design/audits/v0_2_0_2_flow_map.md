@@ -85,6 +85,16 @@ equity plot. The duplicated grid, review and promotion code is dropped.
 `research-workflow` redirects to `sweeps`. Alternative: keep Research
 Workflow as the end-to-end narrative and make it link-only for mechanics.
 
+**D1 amended (maintainer, 2026-09-28).** After LDG-2896 merged the two
+articles, the maintainer noted that research iteration is mostly changing the
+strategy code, not only sweeping parameters. Research Workflow is restored as
+the loop article: project layout, a v1 rule, a v2 code change, committed runs
+compared with labels, the hand-off to Sweeps for a parameter question, the
+hand-off to Selection Integrity and Walk-Forward, and the research note. Sweeps
+keeps grids, failure rows, review, promotion, reopening a promoted run and the
+plot. Research Workflow opens the Research Workflow section, and its redirect
+is removed. The count returns to 26.
+
 **D2. Reorder the flow.** Start Here: Who ledgr is for, Quickstart.
 Building Blocks: Data Input, Strategy Basics, Indicators, Leakage, The
 Accounting Model, Risk And Cost, Experiment Store, Reproducibility. Research

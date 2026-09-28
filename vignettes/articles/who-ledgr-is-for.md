@@ -156,7 +156,7 @@ bookmark the project and come back to it.
 ## Reading on
 
 - [Why ledgr is built in R](why-r.html): the design culture argument
-- [Exploratory Sweeps And Candidate Promotion](../articles/sweeps.html):
-  the reproducible research loop
+- [Research Workflow](../articles/research-workflow.html): the
+  reproducible research loop
 - [Research to production](../articles/research-to-production.html): the
   long-term vision

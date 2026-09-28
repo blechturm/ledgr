@@ -524,7 +524,8 @@ comes later in the reading flow.
 | Cost models and risk chains | Risk And Cost Execution Policy |
 | Stores, run IDs, labels, reopening, comparing runs | Experiment Store |
 | Reproducibility tiers, strategy preflight, source capture | Reproducibility |
-| Sweeps, candidates, failure rows, promotion, reopening and recovering a promoted run, the research note, the compiled-accounting opt-in | Exploratory Sweeps And Candidate Promotion |
+| The research loop: project layout, iterating on strategy code with committed runs, when a parameter question calls for a sweep, the research note | Research Workflow |
+| Sweeps, candidates, failure rows, promotion, reopening and recovering a promoted run, the compiled-accounting opt-in | Exploratory Sweeps And Candidate Promotion |
 | Look-ahead and leakage, including the `lead(close)` example | Leakage |
 | DSR, PBO/CSCV, MinTRL, business-objective criteria | Selection Integrity |
 | Walk-forward folds and what they establish | Walk-Forward Evaluation |
@@ -652,6 +653,7 @@ README
        Experiment Store
        Reproducibility
   -> Research Workflow:
+       Research Workflow
        Exploratory Sweeps And Candidate Promotion
        Selection Integrity
        Walk-Forward Evaluation

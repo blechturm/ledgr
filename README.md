@@ -170,8 +170,9 @@ Start with
 then use [Strategy
 Basics](https://blechturm.github.io/ledgr/articles/strategy-development.html)
 to write your own rule.
-[Sweeps](https://blechturm.github.io/ledgr/articles/sweeps.html) takes
-that rule from one checked run through sweep review and promotion. The
+[Research
+Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html)
+takes that rule through code iterations, sweeps and promotion. The
 [article index](https://blechturm.github.io/ledgr/) covers data preparation,
 indicators, accounting, costs, walk-forward evaluation, and durable
 stores. Installed help is available through

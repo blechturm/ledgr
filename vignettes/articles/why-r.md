@@ -178,7 +178,7 @@ That is what R is for. That is why ledgr is built in it.
 ## Reading on
 
 - [Who ledgr is for](who-ledgr-is-for.html): the audience filter
-- [Exploratory Sweeps And Candidate Promotion](../articles/sweeps.html):
-  the reproducible research loop
+- [Research Workflow](../articles/research-workflow.html): the
+  reproducible research loop
 - [Strategy development](../articles/strategy-development.html): the
   readable strategy authoring model

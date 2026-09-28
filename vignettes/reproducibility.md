@@ -149,7 +149,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.840
+    Elapsed Sec:      0.880
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -543,8 +543,8 @@ strategy depended on.
 ## Where Next
 
 For the end-to-end research loop and the selection-validation
-distinction, read `vignette("sweeps", package = "ledgr")`. For
-strategy-authoring patterns that use helper pipelines, one-pulse
+distinction, read `vignette("research-workflow", package = "ledgr")`.
+For strategy-authoring patterns that use helper pipelines, one-pulse
 testing, and strategy state, read
 `vignette("strategy-authoring-tools", package = "ledgr")`. For
 store-level source inspection and reopen workflows, read

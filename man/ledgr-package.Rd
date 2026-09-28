@@ -25,6 +25,8 @@ Core installed articles:
 \itemize{
 \item \code{vignette("quickstart", package = "ledgr")}
 \item \code{system.file("doc", "quickstart.html", package = "ledgr")}
+\item \code{vignette("research-workflow", package = "ledgr")}
+\item \code{system.file("doc", "research-workflow.html", package = "ledgr")}
 \item \code{vignette("data-input-and-snapshots", package = "ledgr")}
 \item \code{system.file("doc", "data-input-and-snapshots.html", package = "ledgr")}
 \item \code{vignette("point-in-time-inputs", package = "ledgr")}
