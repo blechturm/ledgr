@@ -435,6 +435,12 @@ a broken capability ladder. Each article must begin at the smallest valid path
 for its task, disclose what that path cannot establish, and introduce stricter
 evidence only when its claim requires it. The audit must not turn advanced
 point-in-time inputs into a prerequisite for an ordinary dense backtest.
+LDG-2859 includes the correction pass: findings are frozen first, then every
+in-scope documentation defect is corrected, rerendered and verified. Product
+or API defects are routed rather than hidden in prose. Completion of the audit
+does not automatically start LDG-2825; the maintainer first accepts the final
+corrected audit and decides whether each routed finding lands before release or
+is explicitly deferred with its limitation reflected in the release boundary.
 
 | Workstream | Tickets | Content | Review claim |
 | --- | --- | --- | --- |
