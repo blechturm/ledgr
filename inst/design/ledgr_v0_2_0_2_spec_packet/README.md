@@ -1025,18 +1025,27 @@ The independent combined Type 1 and Type 2 cut review passed before
 implementation. It permits the NOT SUPPLIED block to collapse to its exact two
 headlines plus a public full-policy pointer, and permits metrics to precede
 evidence while their established internal order and incomplete-run rules stay
-unchanged. With the close review that is 2 invocations over 6 tickets, 0.333.
-LDG-2869 joins from its Cut 16 deferral. Workstream 25 follows accepted
-Workstream 24 and blocks Workstream 26.
+unchanged. LDG-2869 joins from its Cut 16 deferral. Workstream 25 follows
+accepted Workstream 24 and blocks Workstream 26.
 
 Implementation is complete and the agent-provisional record is
-`result_output_closeout.md`. On the three reference runs, `print(bt)` changed
-from 16 to 15 lines, `summary(bt)` changed from 57/57/67 to 29/56/39, and the
-metrics print changed from 96 to 12 lines. The first valid fast record passed
-every block but missed the gate at a 115.730-second median. Removing redundant
-test-only DuckDB setup produced the final 479/479 record in 110.560 seconds;
-the checker passed the 112-second bound. No production code changed during
-that correction. Workstream 25 and Cut 18 await their Type 1 close review.
+`result_output_closeout.md`. On the bars-only, supplied-fact and real
+incomplete references, `print(bt)` changed from 16 to 15 lines,
+`summary(bt)` from 57/57/67 to 29/56/40, and the metrics print from 96 to 13
+lines. The first close review found that the initial print replayed every fill,
+that the absent-policy oracle had lost exact values, and that three metadata
+labels were not aligned. Correction `3ccb3a3` replaces FIFO replay with one
+DuckDB equity aggregate plus a linear event pass, restores the policy oracle,
+aligns both metadata prints, repairs summary spacing and labels the metrics
+object's persisted-prefix scope. The reader clock is 0.11 seconds at 6,200
+fills and 0.28 seconds at 31,400 fills, with exact closed-trade parity to full
+metrics. The correction fast record passed 479/479 blocks in 97.480 seconds;
+the checker passed the 112-second bound.
+
+Three metadata-bearing articles were regenerated here. The six other stale
+result-output articles and the concurrent README rewrite are explicitly owned
+by dependent Workstream 26. With the requested focused re-review, review
+accounting is 3/6 = 0.500. Workstream 25 and Cut 18 remain review pending.
 
 ## Cut 19: Documentation corrections before the tag (open)
 
