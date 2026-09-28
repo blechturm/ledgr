@@ -110,6 +110,25 @@ The three the question implies, as a floor rather than a list to pre-author: the
 value before the barrier is knowable, the value after, and a result returned
 before the barrier became knowable which must not have changed.
 
+## Ablation, added 2026-09-27 on a maintainer brief
+
+Step two continues in `spike_ablation.R`, varying what the eight cases hold
+fixed: universe size, and the authoring style of the feature. It adds no question
+about the seam and no clock. It tests two synthesis claims that are stated in
+quantities, so each has its own kill condition:
+
+- Section 6.1 bounds the forward reach at `W_f - 1` and fences the derivation to
+  features whose whole input dependency is bounded by `W_f`. **Kill:** a
+  finite-window style revising outside `[a, b + A_in + W_f - 1]`.
+- Section 6.2 claims a breakpoint recomputes one series rather than the panel.
+  **Kill:** a non-subject instrument revising under an instrument-scoped barrier.
+
+A third claim was added on the same brief, and the synthesis does not make it:
+that revising is worth its cost at all. Blocks D and E measure the bias of not
+revising, against the point-in-time diagonal, for both available shortcuts. It is
+a correctness measurement and still reports no clock. Three questions on one
+charter is the limit; a fourth becomes its own spike.
+
 ## Boundaries
 
 - The throwaway knowledge-dependent rule is **throwaway**. It is not a draft of
