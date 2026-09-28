@@ -145,3 +145,38 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
     c(40, 40)
   )
 })
+
+testthat::test_that("[LTB-0104] fn-only pulse features run once per instrument", {
+  fixture <- ledgr_pulse_feature_parity_fixture()
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  counted <- ledgr_indicator(
+    id = "counted_window",
+    fn = function(window) {
+      calls$n <- calls$n + 1L
+      mean(window$close)
+    },
+    requires_bars = 2,
+    stable_after = 4
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    fixture$bars,
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = fixture$ids,
+    ts_utc = ledgr_iso_utc(tail(fixture$pulses, 1L)),
+    features = list(counted),
+    cash = 10000
+  )
+  on.exit(close(pulse), add = TRUE)
+
+  testthat::expect_identical(calls$n, length(fixture$ids))
+  testthat::expect_identical(
+    unname(pulse$vec$feature("counted_window")),
+    c(109.75, 87.75)
+  )
+})

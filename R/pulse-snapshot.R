@@ -300,8 +300,12 @@ ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, fea
       next
     }
     for (feature in features) {
-      values <- ledgr_compute_feature_series(bars, feature)
-      feature_value[[row_idx]] <- values[[length(values)]]
+      feature_value[[row_idx]] <- if (is.null(feature$series_fn)) {
+        ledgr_compute_feature_latest(bars, feature)
+      } else {
+        values <- ledgr_compute_feature_series(bars, feature)
+        values[[length(values)]]
+      }
       row_idx <- row_idx + 1L
     }
   }
