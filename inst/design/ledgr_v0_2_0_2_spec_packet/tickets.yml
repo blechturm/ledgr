@@ -1906,13 +1906,13 @@ tickets:
   - id: "LDG-2883"
     title: "Small print defects in run info and extracted strategies"
     workstream: 25
-    status: "open"
+    status: "complete"
     priority: "P3"
     effort: "S"
     dependencies: []
     scope: "Three prints show defects a reader notices at once. The extracted-strategy print writes `Source Available:TRUE` with no space (`R/strategy-extract.R:281`). The run-info print writes `Persist Features:TRUE` the same way and prints elapsed time with floating-point noise such as `Elapsed Sec: 0.430000000000001` (`R/run-store.R:993-994`). Align these labels with their sibling lines and print elapsed seconds at a fixed precision."
     acceptance: ["the three labels align with their sibling lines", "elapsed seconds print with at most three decimals while the stored value is unchanged", "rendered articles and the README that show these prints are regenerated in the same change"]
-    evidence: []
+    evidence: ["The extracted-strategy and run-info methods now include visible post-colon spacing for Source Available and Persist Features. Elapsed seconds are formatted to exactly three decimals at the print boundary; the stored numeric telemetry is untouched.", "LCL-0111 registers fast LTB-0111 over two literal in-memory metadata objects. It requires both corrected lines, rejects the floating-point tail and verifies the elapsed field is unchanged. The Experiment Store, Reproducibility and Research Workflow articles are regenerated in this ticket; the concurrent README rewrite remains owned by LDG-2858 in the dependent Workstream 26 and is not overwritten here."]
   - id: "LDG-2884"
     title: "Close workstream 25 and cut 18"
     workstream: 25

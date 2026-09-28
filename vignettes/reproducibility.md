@@ -156,8 +156,8 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     0.85
-    Persist Features:TRUE
+    Elapsed Sec:      0.900
+    Persist Features: TRUE
     Cache Hits:      0
     Cache Misses:    2
 
@@ -180,7 +180,7 @@ stored
     Params Hash:     3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Hash Verified:   TRUE
     Trust:           FALSE
-    Source Available:TRUE
+    Source Available: TRUE
 
 ``` r
 writeLines(stored$strategy_source_text)

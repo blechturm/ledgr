@@ -1011,8 +1011,16 @@ print.ledgr_run_info <- function(x, ...) {
   cat("Execution Mode:  ", value("execution_mode"), "\n", sep = "")
   cat("Fill Timing:     ", value("execution_timing_convention"), "\n", sep = "")
   cat("Timing Version:  ", value("execution_timing_version", "N/A"), "\n", sep = "")
-  cat("Elapsed Sec:     ", value("elapsed_sec"), "\n", sep = "")
-  cat("Persist Features:", value("persist_features"), "\n", sep = "")
+  elapsed <- x$elapsed_sec
+  elapsed <- if (
+    is.null(elapsed) || length(elapsed) == 0L || is.na(elapsed[[1]])
+  ) {
+    "NA"
+  } else {
+    sprintf("%.3f", as.numeric(elapsed[[1]]))
+  }
+  cat("Elapsed Sec:      ", elapsed, "\n", sep = "")
+  cat("Persist Features: ", value("persist_features"), "\n", sep = "")
   cat("Cache Hits:      ", value("feature_cache_hits"), "\n", sep = "")
   cat("Cache Misses:    ", value("feature_cache_misses"), "\n", sep = "")
   if (isTRUE(x$legacy_pre_provenance)) {

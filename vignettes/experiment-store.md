@@ -190,8 +190,8 @@ info
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     0.93
-    Persist Features:TRUE
+    Elapsed Sec:      0.890
+    Persist Features: TRUE
     Cache Hits:      0
     Cache Misses:    2
 
@@ -260,7 +260,6 @@ comparison |>
     2 trend_qty_15       10125. +1.3%               0.851 -1.5%              12
 
     # i Fill timing comparable: yes (same_timing_convention).
-    # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
 For report writing, coerce the comparison to a data frame or tibble
@@ -331,7 +330,7 @@ stored_strategy
     Params Hash:     69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Hash Verified:   TRUE
     Trust:           FALSE
-    Source Available:TRUE
+    Source Available: TRUE
 
 The source text is just data in this mode.
 
@@ -400,42 +399,6 @@ summary(reopened)
     ledgr Backtest Summary
     ======================
 
-    Execution Evidence:
-      Fill Timing:         dense_bar_timestamp
-      Timing Version:      N/A
-
-
-    Corporate-Action Evidence:
-    Corporate actions: NOT SUPPLIED - returns may omit distributions
-    Price basis: UNDECLARED - distribution double counting cannot be ruled out
-      Setting cash_amount:              gross
-      Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-      Setting cash_posting:             effective_close
-      Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-      Setting held_terminal_position:   last_permissible
-      Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-      Setting unsupported_quantity:     report_only
-      Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
-      Exercised choices:
-        cash_amount.gross: 0
-        cash_amount.refuse: 0
-        cash_posting.effective_close: 0
-        cash_posting.next_open: 0
-        cash_posting.refuse: 0
-        held_terminal_position.last_permissible: 0
-        held_terminal_position.last_mark: 0
-        held_terminal_position.refuse: 0
-        unsupported_quantity.report_only: 0
-        unsupported_quantity.refuse: 0
-      Refusal reasons:
-        none declared: 0
-      Late arrivals:               0
-      Affected marked exposure:    0
-      Gross cash posted:           0
-      Modeled terminal proceeds:   0
-      Positions disposed:          0
-      Realized model P&L:          0
-      Unsupported facts:           0
     Performance Metrics:
       Total Return:        0.42%
       Annualized Return:   0.82%
@@ -454,6 +417,14 @@ summary(reopened)
 
     Exposure:
       Time in Market:      66.67%
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Full policy record: ledgr_corporate_action_summary(bt)
 
 ``` r
 tail(ledgr_results(reopened, what = "equity"), 3)

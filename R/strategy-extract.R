@@ -278,7 +278,7 @@ print.ledgr_extracted_strategy <- function(x, ...) {
   cat("Params Hash:     ", value("strategy_params_hash"), "\n", sep = "")
   cat("Hash Verified:   ", value("hash_verified", "FALSE"), "\n", sep = "")
   cat("Trust:           ", value("trust", "FALSE"), "\n", sep = "")
-  cat("Source Available:", if (is.na(x$strategy_source_text[[1]])) "FALSE" else "TRUE", "\n", sep = "")
+  cat("Source Available: ", if (is.na(x$strategy_source_text[[1]])) "FALSE" else "TRUE", "\n", sep = "")
   if (!is.null(x$strategy_function)) {
     cat("Function:        recovered\n")
   }

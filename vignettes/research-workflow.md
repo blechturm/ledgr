@@ -286,10 +286,6 @@ summary(single_run)
     ledgr Backtest Summary
     ======================
 
-    Execution Evidence:
-      Fill Timing:         dense_bar_timestamp
-      Timing Version:      N/A
-
     Performance Metrics:
       Total Return:        1.07%
       Annualized Return:   2.11%
@@ -308,6 +304,14 @@ summary(single_run)
 
     Exposure:
       Time in Market:      59.69%
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Full policy record: ledgr_corporate_action_summary(bt)
 
 ``` r
 ledgr_results(single_run, what = "trades")
@@ -471,10 +475,6 @@ summary(promoted)
     ledgr Backtest Summary
     ======================
 
-    Execution Evidence:
-      Fill Timing:         dense_bar_timestamp
-      Timing Version:      N/A
-
     Performance Metrics:
       Total Return:        2.25%
       Annualized Return:   4.48%
@@ -493,6 +493,14 @@ summary(promoted)
 
     Exposure:
       Time in Market:      63.57%
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Full policy record: ledgr_corporate_action_summary(bt)
 
 The promoted run is now a committed run with its own run ID. The
 selection note travels with the run.
@@ -551,15 +559,15 @@ info
     Snapshot Hash:   6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 523c01fdf7e56d6ac24271057fd702deb70c0618d6c1533f97ed6798fe377f31
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:     5f94feac98056d84bb9d55053990f945d10373c67702405a7f4b5d8905dd4d67
+    Config Hash:     8fb5fdc895fe7552a9eb5083164ebc12795fb81377994cda2972c3fb67858979
     Strategy Hash:   1bf04a8ccca8bbaa85f33b05cf3047a11751467ab7a9ca85d02d243c9487788b
     Params Hash:     dc6315936028dd9d68e2f38075e2fca32b85edfe083b671d9c9feadbd2b0255f
     Reproducibility: tier_1
     Execution Mode:  audit_log
     Fill Timing:     dense_bar_timestamp
     Timing Version:  N/A
-    Elapsed Sec:     1.17
-    Persist Features:TRUE
+    Elapsed Sec:      0.670
+    Persist Features: TRUE
     Cache Hits:      0
     Cache Misses:    4
 
@@ -570,10 +578,6 @@ summary(reopened)
 
     ledgr Backtest Summary
     ======================
-
-    Execution Evidence:
-      Fill Timing:         dense_bar_timestamp
-      Timing Version:      N/A
 
     Performance Metrics:
       Total Return:        2.25%
@@ -593,6 +597,14 @@ summary(reopened)
 
     Exposure:
       Time in Market:      63.57%
+
+    Execution Evidence:
+      Fill Timing:         dense_bar_timestamp
+
+    Corporate-Action Evidence:
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+      Full policy record: ledgr_corporate_action_summary(bt)
 
 Reopening turns the workflow from a temporary R session into a durable
 research artifact.

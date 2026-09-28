@@ -258,3 +258,57 @@ testthat::test_that("[LTB-0110] metrics print without dumping attributes", {
   testthat::expect_identical(ledgr_metric_context(metrics), context_before)
   testthat::expect_type(unclass(metrics), "list")
 })
+
+testthat::test_that("[LTB-0111] metadata prints align and bound elapsed precision", {
+  extracted <- structure(
+    list(
+      run_id = "run-1",
+      reproducibility_level = "full",
+      strategy_source_hash = "source-hash",
+      strategy_params_hash = "params-hash",
+      hash_verified = TRUE,
+      trust = FALSE,
+      strategy_source_text = "function(ctx, params) ctx$flat()",
+      strategy_function = NULL,
+      warnings = character()
+    ),
+    class = c("ledgr_extracted_strategy", "list")
+  )
+  extracted_output <- utils::capture.output(print(extracted))
+  testthat::expect_true("Source Available: TRUE" %in% extracted_output)
+
+  info <- structure(
+    list(
+      run_id = "run-1",
+      label = NA_character_,
+      status = "DONE",
+      archived = FALSE,
+      tags = NA_character_,
+      completion_evidence_available = FALSE,
+      snapshot_id = "snapshot-1",
+      snapshot_hash = "snapshot-hash",
+      feature_set_hash = "feature-hash",
+      risk_chain_hash = "risk-hash",
+      config_hash = "config-hash",
+      strategy_source_hash = "source-hash",
+      strategy_params_hash = "params-hash",
+      reproducibility_level = "full",
+      execution_mode = "audit_log",
+      execution_timing_convention = "dense_bar_timestamp",
+      execution_timing_version = NA_character_,
+      elapsed_sec = 0.430000000000001,
+      persist_features = TRUE,
+      feature_cache_hits = 0L,
+      feature_cache_misses = 0L,
+      legacy_pre_provenance = FALSE,
+      error_msg = NA_character_
+    ),
+    class = c("ledgr_run_info", "list")
+  )
+  stored_elapsed <- info$elapsed_sec
+  info_output <- utils::capture.output(print(info))
+  testthat::expect_true("Elapsed Sec:      0.430" %in% info_output)
+  testthat::expect_true("Persist Features: TRUE" %in% info_output)
+  testthat::expect_false(any(grepl("0.430000000000001", info_output, fixed = TRUE)))
+  testthat::expect_identical(info$elapsed_sec, stored_elapsed)
+})
