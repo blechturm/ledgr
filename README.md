@@ -16,22 +16,44 @@ sealed snapshot -> experiment -> run -> event ledger -> results
 
 The setup is not overhead. The setup is the audit trail.
 
-ledgr is research software, not investment advice. Backtests and audit trails
-are evidence tools; they do not predict future returns or provide compliance
-guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
+ledgr is research software, not investment advice. Backtests and audit
+trails are evidence tools; they do not predict future returns or provide
+compliance guarantees. See [DISCLAIMER.md](DISCLAIMER.md).
+
+## What ledgr Does, And In What Order
+
+ledgr is deliberately narrow. It does one kind of backtest completely
+before it adds the next:
+
+- long-only positions in spot instruments, starting with equities;
+- end-of-day decisions on daily bars, filled at the next open;
+- point-in-time universes, with cash distributions and delistings
+  modelled explicitly.
+
+Shorting and leverage, intraday bars, other asset classes, and order
+types such as limits and stops come later, each only once its accounting
+is specified and tested. Share-changing corporate actions such as splits
+and mergers are next. Sub-second trading is not a goal.
+
+If you need any of those today, another backtester will serve you
+better. If you need daily research you can trust and reopen later, that
+is what ledgr is built for.
 
 ## Corporate-Action Boundary
 
-ledgr can seal vendor-neutral equity corporate-action facts, post evidenced
-gross cash distributions under a named timing convention, model a held
-terminal disposition at a policy-admitted mark, and report fidelity over the
-facts supplied to the snapshot. Unsupported security-quantity effects remain
-visible in the result instead of being silently treated as absent.
+ledgr can seal vendor-neutral equity corporate-action facts, post
+evidenced gross cash distributions under a named timing convention,
+model a held terminal disposition at a policy-admitted mark, and report
+fidelity over the facts supplied to the snapshot. Unsupported
+security-quantity effects remain visible in the result instead of being
+silently treated as absent.
 
 This release does not claim corporate-action completeness, broker-exact
 settlement, net cash, tax correctness, or exact recipient exposure. See
-[Cash Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
-and [Authoring A Corporate-Action Adapter](https://blechturm.github.io/ledgr/articles/corporate-action-adapter-authoring.html)
+[Cash
+Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
+and [Authoring A Corporate-Action
+Adapter](https://blechturm.github.io/ledgr/articles/corporate-action-adapter-authoring.html)
 for the supported boundary and data contract.
 
 ## Install
@@ -104,6 +126,42 @@ summary(bt)
 #> ledgr Backtest Summary
 #> ======================
 #>
+#> Execution Evidence:
+#>   Fill Timing:         dense_bar_timestamp
+#>   Timing Version:      N/A
+#>
+#>
+#> Corporate-Action Evidence:
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#>   Setting cash_amount:              gross
+#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
+#>   Setting cash_posting:             effective_close
+#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
+#>   Setting held_terminal_position:   last_permissible
+#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
+#>   Setting unsupported_quantity:     report_only
+#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Exercised choices:
+#>     cash_amount.gross: 0
+#>     cash_amount.refuse: 0
+#>     cash_posting.effective_close: 0
+#>     cash_posting.next_open: 0
+#>     cash_posting.refuse: 0
+#>     held_terminal_position.last_permissible: 0
+#>     held_terminal_position.last_mark: 0
+#>     held_terminal_position.refuse: 0
+#>     unsupported_quantity.report_only: 0
+#>     unsupported_quantity.refuse: 0
+#>   Refusal reasons:
+#>     none declared: 0
+#>   Late arrivals:               0
+#>   Affected marked exposure:    0
+#>   Gross cash posted:           0
+#>   Modeled terminal proceeds:   0
+#>   Positions disposed:          0
+#>   Realized model P&L:          0
+#>   Unsupported facts:           0
 #> Performance Metrics:
 #>   Total Return:        1.07%
 #>   Annualized Return:   2.11%
@@ -132,11 +190,12 @@ evidence.
 
 ``` r
 ledgr_results(bt, what = "trades")
-#> # A tibble: 2 x 9
-#>   event_seq ts_utc     instrument_id side    qty price   fee realized_pnl action
-#>       <int> <date>     <chr>         <chr> <dbl> <dbl> <dbl>        <dbl> <chr>
-#> 1         3 2019-04-23 DEMO_01       SELL     10 102.      0         27.4 CLOSE
-#> 2         4 2019-06-13 DEMO_02       SELL     10  76.5     0         79.4 CLOSE
+#> # A tibble: 2 x 10
+#>   event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
+#>       <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
+#> 1         3 2019-04-23 2019-04-23 00:00:00    DEMO_01       SELL     10 102.      0
+#> 2         4 2019-06-13 2019-06-13 00:00:00    DEMO_02       SELL     10  76.5     0
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 head(ledgr_results(bt, what = "equity"), 3)
 #> # A tibble: 3 x 6
 #>   ts_utc     equity  cash positions_value running_max drawdown
@@ -238,8 +297,8 @@ promoted <- ledgr_promote(
 
 The run handle is a locator for durable evidence. Closing it releases
 owned resources; it does not delete the run. Keep the store path and
-stable IDs, then reopen the snapshot and completed run in a later session
-without executing the strategy again.
+stable IDs, then reopen the snapshot and completed run in a later
+session without executing the strategy again.
 
 ``` r
 store_path <- snapshot$db_path
@@ -310,29 +369,31 @@ ledgr when you want the audit trail and adapter boundary to be explicit.
 
 ## Scope
 
-The current ledgr research API is experiment-first. It includes memory-backed
-exploratory sweep support, compact saved sweeps with optional retained return
-and closed-trade evidence, classed target-risk transforms, optional parallel
-candidate dispatch, canonical single-run returns, public return panels,
-evidence-only selection-integrity diagnostics, classed/hashable business
-objectives, and all-candidates eligibility tear-downs. It also includes a scoped
-`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed spot-asset
-FIFO sweeps. Canonical R execution remains the default.
+The current ledgr research API is experiment-first. It includes
+memory-backed exploratory sweep support, compact saved sweeps with
+optional retained return and closed-trade evidence, classed target-risk
+transforms, optional parallel candidate dispatch, canonical single-run
+returns, public return panels, evidence-only selection-integrity
+diagnostics, classed/hashable business objectives, and all-candidates
+eligibility tear-downs. It also includes a scoped
+`compiled_accounting_model = "spot_fifo"` opt-in for memory-backed
+spot-asset FIFO sweeps. Canonical R execution remains the default.
 
-The compiled opt-in is not durable `ledgr_run()` integration, not a non-spot
-accounting model, and not a general compiled fold core. The target-risk layer
-is a target-vector transformation layer; it is not affordability enforcement,
-portfolio optimization, margin, shorting or borrow policy, liquidity/capacity
-modeling, OMS lifecycle behavior, or broker-grade risk control. The
-selection-integrity diagnostics and business-objective eligibility results do
-not choose or promote candidates and do not prove future profitability.
-`business_objective_hash` is evidence provenance in this release, not run,
-sweep, candidate, promotion, session, or walk-forward identity. ledgr does not
-ship `ledgr_tune()`, automatic objective-based selection, objective-filtered
-walk-forward identity, scored objective composition, purging/embargo/CPCV,
-benchmark-relative diagnostics, broker adapters, paper trading, or live
-trading. Those are separate roadmap items with different state and safety
-requirements.
+The compiled opt-in is not durable `ledgr_run()` integration, not a
+non-spot accounting model, and not a general compiled fold core. The
+target-risk layer is a target-vector transformation layer; it is not
+affordability enforcement, portfolio optimization, margin, shorting or
+borrow policy, liquidity/capacity modeling, OMS lifecycle behavior, or
+broker-grade risk control. The selection-integrity diagnostics and
+business-objective eligibility results do not choose or promote
+candidates and do not prove future profitability.
+`business_objective_hash` is evidence provenance in this release, not
+run, sweep, candidate, promotion, session, or walk-forward identity.
+ledgr does not ship `ledgr_tune()`, automatic objective-based selection,
+objective-filtered walk-forward identity, scored objective composition,
+purging/embargo/CPCV, benchmark-relative diagnostics, broker adapters,
+paper trading, or live trading. Those are separate roadmap items with
+different state and safety requirements.
 
 `ledgr_run()` returns a live handle. The run artifacts are already
 durable when the run finishes. Most result inspection opens and closes
