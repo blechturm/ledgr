@@ -26,6 +26,98 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-28 [planning] Dependency order for the next version
+
+The next version after v0.2.1.0 is called v0.2.2 in planning. The roadmap's
+"v0.2.1.1 opening" row is its first workstream. Its aim is to make portfolio
+optimization and ML-adjacent estimators possible on point-in-time history.
+This sketch orders what is accepted, what is only seeded and what has no seed.
+It binds nothing; the owning RFCs, syntheses and ticket cuts decide.
+
+**0. Before the design load.** Run the design-corpus split and
+binding-decision discoverability (roadmap rows) first. The threads below all
+interlock, and reconstructing their binding state from scattered syntheses is
+the dominant navigation cost.
+
+**1. Opening workstream: accessor internals.** The fold-writer and accessor
+optimization is an accepted direction cut directly as tickets. It changes the
+accessor internals that the read-surface RFC and the history reads build on.
+The older pulse-context accessor cost chore appears implemented in code;
+`ledgr_feature_lookup_map()` no longer calls `ledgr_alias_map_storage()`.
+Verify its status and close its roadmap row, or fold what remains into this
+workstream.
+
+**2. History substrate (synthesis v11, accepted).**
+- Resolve v11 section 7 parts (a), semantic evidence, and (b), two-clock
+  access representation, before committing implementation interfaces.
+- Then implement (c), treatment and disclosure with measured preparation and
+  delivery cost, and (d), numerical correctness.
+- Measure the cold strict availability-feature path as part of (c).
+  `ledgr_compute_feature_series_strict()` took 58% of a cold availability run
+  at 500 x 1,260 by slicing a data-frame window per bar and calling `fn` and
+  `series_fn` on each. v0.2.1.1 excludes it, and v11 optimizes only an
+  observed bottleneck, so (c) is where it is observed.
+- The instrument-narrowed expected-sessions goal is scheduled beside this
+  (v11 section 4) and must resolve window composition at the request cutoff.
+
+**3. Addressing, designed alongside 2.** The feature-map read surface RFC is at
+seed v1, with the response next. History window reads and whole-universe reads
+must share one rule for naming features by alias or engine ID. Otherwise the
+missing alias read (audit P3) returns for the parameterized, sweepable
+strategies this version targets. Neither interface should freeze first. The
+alias/engine-ID collision guard (LDG-2894) already makes the namespace
+unambiguous.
+
+**4. Cadence: the scheduler.** The strategy schedule decorator seed dates from
+2026-06-12, before the v0.2.0 context-surface, availability and empty-domain
+work. It needs a seed v2 against the current surface, then its response. It
+matters for speed, not only ergonomics: fitting a covariance or estimator on
+rebalance dates only is what makes optimization affordable across 500
+instruments and many sweep candidates. The 2026-09-27 monthly-rebalance
+measurement showed low-turnover runs dominated by costs that do not scale with
+trading.
+
+**5. Portfolio construction.** The pipeline order is weight-strategy wrapper,
+then optimization scaffolding, then adapters. History (2) is a hard
+predecessor: no adapter assembles its own history. Constraint expansion is
+half-gated on the shorting/leverage contract, which is still "gate without
+seed". Decide scope first:
+- long-only methods fit today's contracts: long-only minimum variance, risk
+  parity, maximum diversification;
+- unconstrained mean-variance, market-neutral and leveraged methods need the
+  shorting seed written before scaffolding is scoped.
+
+Affordability in target risk (the parked capital-floor direction) sits between
+optimizer weights and executable targets.
+
+**6. ML-adjacent estimators.** For this version, "ML-adjacent" means
+estimators computed from prepared windows inside the strategy callback on
+decision dates. It needs 2, 3 and 4. Trained models with identity, refit
+rules and temporal cross-validation remain the parked ML-architecture RFC;
+fitted imputers remain their recorded follow-up. v11 leaves model lifecycle to
+separate design.
+
+**Critical path.** 0, then 1, then decisions 2(a)/(b) with the addressing rule
+3, then 2(c)/(d), then 4, then 5, then 6.
+
+**Seeds still missing or stale:**
+- scheduler seed v2 (stale);
+- optimization scaffolding with the weight-strategy wrapper (parked, not
+  seeded);
+- shorting/leverage (gate without seed), required only beyond long-only;
+- a strict-feature cost charter, only if the (c) measurement shows it is the
+  bottleneck;
+- ML architecture (later).
+
+The seeds for 4 and 5, and the shorting seed if needed, can be written while 1
+and 2 run.
+
+**Not gating:** exact equity quantity settlement, the compiled execution RFC,
+the peer-benchmark alignment chore, and liquidity/capacity policy. Each keeps
+its own track.
+
+This entry authorizes nothing; it records the planning order.
+
 ### 2026-09-28 [infrastructure] Binding decisions must be discoverable
 
 The design corpus is correct but costly to navigate. The cost is state that is
