@@ -187,6 +187,18 @@ cuts:
     close_review: "Initial Type 1 review CHANGES_REQUIRED; focused second review CHANGES_REQUIRED after verifying the first correction. The remaining cache-identity finding was closed at d02b861 with LTB-0105, and b060b02 recorded the final 474-block gate and 2/3 review ratio. The maintainer accepted Workstream 24 and Cut 17 on 2026-09-28 without a third review."
     accepted: "2026-09-28 by the maintainer, at b060b02"
     status: "closed"
+  - id: 18
+    name: "Maintenance: result output"
+    cut: "2026-09-28"
+    draft_note: "Agent-drafted on 2026-09-28 at the maintainer's request, on branch `draft/cut18-result-output` in a separate worktree so that workstream 24, in progress in the main working tree, is not disturbed. Nothing here is authorized until the maintainer accepts the cut and writes the workstream brief. Status `draft` on the cut, workstream and new tickets marks that. Ticket IDs LDG-2880 to LDG-2884 are reserved for this cut; LDG-2879 is left free for workstream 24."
+    cut_review: "not yet reviewed. Proposed: one independent Type 1 and Type 2 cut review, because LDG-2881 needs a decision against the accepted equity-settlement synthesis and `contracts.md:552-557`, then one Type 1 close review. Planned invocations are 2 over 6 tickets, 0.333 against the 0.5 gate."
+    authority: "AGENTS.md: reader work and validation fixes need no new RFC cycle. `inst/design/rfc/rfc_equity_settlement_post_v0_2_0_2_synthesis.md`, which requires `Corporate actions: NOT SUPPLIED - returns may omit distributions` to print unambiguously ('the one case where a reassuring word would be wrong') and requires double-counting risk from the declared price basis to be declared. `contracts.md:552-557`, which binds how `summary()` presents complete and incomplete performance. The style guide, section 5: output a worked example cannot show without clutter is an API gap."
+    source_table: "2026-09-28 probe of a bars-only demo run: `print(bt)` 16 lines, `summary(bt)` 57 lines of which 33 are the corporate-action block, `print(ledgr_compute_metrics(bt))` 96 lines; `inst/design/audits/v0_2_0_2_strategy_article_audit_input.md` incidental findings; the README rewrite of 2026-09-28, which could not show a run result without `select()`"
+    sequencing_proposal: "The README (LDG-2858) and every article (LDG-2859) print these outputs, so on acceptance workstream 15 should depend on workstream 25 instead of 24, letting both audits check the final output once. This branch merges into `v0.2.0.2` after workstream 24 lands; any `tickets.yml` conflict is resolved against workstream 24's committed text."
+    out_of_scope: "The content and semantics of corporate-action evidence, which the equity-settlement synthesis owns; this cut changes only where and how much of it prints. The README rewrite itself, which LDG-2858 owns and which will print `bt` once LDG-2880 lands. The sweep candidate print, which hides candidate parameters behind hashed IDs; it is a separate reader question for the sweep surface."
+    workstreams: [25]
+    closeout: "result_output_closeout.md"
+    status: "draft"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -390,6 +402,14 @@ workstreams:
     depends_on_workstream: 23
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins the tickets: a one-pulse inspection shows the strategy the same feature values the run shows it at that timestamp, and the slow-loop warning covers every scalar accessor that has a whole-universe alternative. The review runs the parity matrix against a real run for built-in, series_fn, fn(window), fn(window, params) and a recursive TTR indicator, restores the one-argument requires_bars call and the missing feature-read recording to confirm both detectors fail, and reads the changed article sentences against the behaviour. The warning's recording runs inside the fold on every scalar feature read, so the review walks that change against the seven shapes and requires an interleaved before-and-after clock on the registered shape; the pulse path is interactive and needs only its recorded cost."}
+
+  - id: 25
+    name: "Result output"
+    cut: 18
+    status: "draft"
+    depends_on_workstream: 24
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins the tickets: a user can see how a run did on one screen, while every piece of evidence the package owes stays printed or reachable and unambiguous. The review compares `print()` and `summary()` before and after on a bars-only run, a run with supplied corporate-action facts and an incomplete availability-aware run; confirms the two corporate-action headline lines still print wherever the equity-settlement synthesis requires them; confirms the collapsed policy record is reachable through a public accessor; and runs each ticket's detector against a restored old print. These are print methods, not fold, ingest or reader hot paths, so the seven-shape walk and before-and-after clock are recorded as not required with that reason."}
 
 tickets:
   # ---------------------------------------------------------- 1 Oracle repair
@@ -1753,14 +1773,14 @@ tickets:
     evidence: ["`ledgr_pulse_snapshot()` now takes `cash`, aligns named positions to the requested universe, values them from the current close into `ctx$equity`, accepts a JSON-safe `state_prev`, and prints cash, equity, the nonzero-position count and state presence without dumping either payload.", "LTB-0094 compares two public pulse snapshots with a real three-pulse dense fold using reversed position names. Cash, equity, holdings, rebalance targets and next-pulse state are identical; the retired `initial_cash` argument fails, and a function-bearing state raises `ledgr_config_non_deterministic` through both the fold and inspection paths.", "The focused pulse-context-accessor file passed after implementation. Existing explicit pulse-snapshot calls now use `cash`; the help documents cash versus NAV and the dense-only state boundary."]
   - id: "LDG-2869"
     title: "Curated result prints show the caller's columns"
-    workstream: 23
-    status: "deferred"
+    workstream: 25
+    status: "draft"
     priority: "P2"
     effort: "S"
     dependencies: []
     scope: "`ledgr_print_curated_tibble()` (`R/run-store.R:595-608`) prints a fixed column list intersected with the object's names, then a fixed footer. After a user's `select()` the object keeps its class, so the print reorders the caller's columns and still says 'Full identity and telemetry columns remain available on this tibble' about columns that were dropped. Five prints share the helper: run comparison (`R/run-store.R:777`), run list (`R/run-store.R:895`), sweep persistence (`R/sweep-persistence.R:245`), sweep results (`R/sweep.R:748`) and walk-forward degradation (`R/walk-forward-inspection.R:528`). Fix it once in the shared printer: when the object no longer carries its full column set, print its own columns in its own order and omit footer lines whose claims no longer hold. Each print method must identify its complete schema independently of its curated view. Unmodified objects print as today."
     acceptance: ["`ledgr_run_compare(snapshot) |> dplyr::select(run_id, n_trades, final_equity)` prints those three columns in that order, and no footer line claims columns that are absent", "selecting every curated column while dropping a hidden identity or telemetry column also removes the full-columns footer claim, so a check that looks only at curated columns fails", "altered-object behavior is tested through the shared printer for at least two of its five consumers, so a comparison-only patch fails", "for each of the five prints, the output for an unmodified object is byte-identical to its output before the change", "a mutation restoring the fixed column order after `select()` fails a registered detector"]
-    evidence: ["Deferred from draft Cut 16 by maintainer decision 6 on 2026-09-27. Both cut reviews reproduced the defect and found it is result-printing maintenance outside workstream 23's claim that authoring helpers remove worked-example workarounds. It belongs in a maintenance cut; the acceptance list carries both reviews' strengthening."]
+    evidence: ["Deferred from draft Cut 16 by maintainer decision 6 on 2026-09-27. Both cut reviews reproduced the defect and found it is result-printing maintenance outside workstream 23's claim that authoring helpers remove worked-example workarounds. It belongs in a maintenance cut; the acceptance list carries both reviews' strengthening.", "Moved into draft Cut 18 (workstream 25) on 2026-09-28 at the maintainer's request, as the maintenance cut its deferral named. Its acceptance is unchanged."]
   - id: "LDG-2870"
     title: "A feature signal with the return signal's admissibility policy"
     workstream: 23
@@ -1851,3 +1871,53 @@ tickets:
     scope: "Close workstream 24 and cut 17. Record the parity matrix and its oracle, the loop-warning boundary for `ctx$features()` and why it waits for an alias-aware vector read, whether LDG-2869 joined this cut, and whether the release gate waited for it. Record the seven-shape walk for the fold-side recording, the before-and-after clocks, and review invocations against the 0.5 gate. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["the closeout states which feature paths now agree between pulse and run and names the detector for each", "the `ctx$features()` warning boundary is recorded with its reason and the decision it waits for", "the seven-shape walk and the interleaved clocks are recorded with the clock named", "review invocations are recorded against the 0.5 gate"]
     evidence: ["Accepted closeout: `pulse_inspection_parity_closeout.md`. LTB-0100 and LTB-0102 are the parity and warning detectors; LTB-0104 bounds `fn`-only scalar calls; LTB-0105 protects cache invalidation; LTB-0101 and LTB-0103 pin the public teaching in the review lane. The old pulse implementation, redundant full-series scalar evaluation, incomplete cache payload and unrecorded-feature mutations fail their owning blocks.", "The corrected seven-shape walk records the shape-5 regression found in the first close review: the initial parity path computed and discarded every prior scalar value. `fn`-only pulse features now call the shared terminal-value helper once per requested instrument, while `series_fn` retains required full history. The existing warning state has only the bounded shape-7 resemblance already recorded.", "Interactive built-in pulse wall changed from median 0.55 to 0.26 seconds. The initially regressed `fn`-only path changed from a reviewed median 8.43 seconds to a corrected median 0.36 seconds, against a 0.50-second pre-cut median. The shared helper adds about 4% to the run's scalar-series loop. The interleaved 2,000-instrument by 30-pulse memory-sweep medians changed from 2.040 to 2.310 seconds when exact-ID feature-read recording was added. These are interactive, component or effect clocks, not release gates.", "The final correction ordinary fast record passed 474 of 474 blocks in 96.390 seconds and the checker passed the 112-second gate at `C:/Users/maxth/ledgr-research/.tmp/ws24-cache-correction-fast`. LDG-2869 did not join the cut; maintainer acceptance of Workstream 24 satisfies the release-gate dependency. The initial and focused correction reviews are two invocations over three tickets, 0.667 against the 0.5 gate; the historical breach is recorded rather than diluted. The focused re-review's cache finding was closed mechanically without claiming a third review."]
+  - id: "LDG-2880"
+    title: "`print(bt)` is the one-screen run result"
+    workstream: 25
+    status: "draft"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "`print.ledgr_backtest()` (`R/backtest-results.R:506`) is already close to a one-screen result: 16 lines on a bars-only demo run, with run ID, universe, date range, opening cash, final equity and P&L. It omits max drawdown and closed trades, prints full ISO timestamps for daily bars, and shows `Execution Mode: audit_log` (`:547`), an internal term. Make it the result the README and articles print: run ID, period, opening cash, final equity, total return, max drawdown, closed trades, the two corporate-action headline lines, and one pointer to `summary()`. Its numbers come from the same computation `summary()` uses, so the two cannot disagree."
+    acceptance: ["a bars-only demo run prints at most 15 lines containing run ID, period, opening cash, final equity, total return, max drawdown and closed trades, and no `Execution Mode` line", "total return, max drawdown and closed trades equal what `summary()` and `ledgr_compute_metrics()` report for the same run", "a period on daily bars prints as dates; sub-daily timestamps keep their time", "for a bars-only run the lines `Corporate actions: NOT SUPPLIED - returns may omit distributions` and `Price basis: UNDECLARED - distribution double counting cannot be ruled out` still print unchanged, as `tests/testthat/test-corporate-action-results.R:92-98` requires", "an incomplete run labels its return and drawdown as achieved-prefix evidence, consistent with `contracts.md:552-557`", "printing does not mutate the backtest object, and a mutation restoring the execution-mode line or dropping max drawdown fails a registered detector"]
+    evidence: []
+  - id: "LDG-2881"
+    title: "`summary(bt)` answers first and collapses unused corporate-action detail"
+    workstream: 25
+    status: "draft"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2880"]
+    scope: "`summary.ledgr_backtest()` (`R/backtest-results.R:640`) prints Execution Evidence, then the Corporate-Action Evidence block (`R/corporate-action-results.R:424`), then the metrics. On a bars-only run the corporate-action block is 33 of 57 lines: four policy settings, four identities, ten exercised-choice counts and nine totals, all zero, for a policy that never ran. Print the metrics first and the evidence after. When corporate actions are NOT SUPPLIED, print only the two headline lines and one line saying where the full policy record can be read; when facts were supplied, keep the full block. Drop the `Timing Version: N/A` line. The cut review decides two questions before implementation: whether collapsing the block for NOT SUPPLIED satisfies the equity-settlement synthesis's reporting requirements, and whether moving the metrics section keeps 'the established metric content and order' of `contracts.md:552-557`. The full policy record must stay reachable: if no public accessor returns it today, this ticket adds one instead of dropping the record from reach."
+    acceptance: ["on a bars-only run the metrics sections precede every evidence section, the corporate-action section is its two headline lines plus one pointer line, and the whole summary is at most 30 lines", "on a run with supplied facts, the detailed corporate-action lines pinned at `tests/testthat/test-corporate-action-results.R:99-110` print unchanged", "on an incomplete run, the metrics heading, prefix-only labelling and withheld metrics follow `contracts.md:552-557` exactly", "the policy settings and identities of a NOT SUPPLIED run are returned by the public accessor the pointer line names, identical to what the old block printed", "no metric value, label or order changes, and a mutation restoring the full block for NOT SUPPLIED runs fails a registered detector"]
+    evidence: []
+  - id: "LDG-2882"
+    title: "`ledgr_compute_metrics()` prints as a readable table"
+    workstream: 25
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: "`ledgr_compute_metrics()` (`R/backtest-results.R:468`) returns a `ledgr_metrics` list carrying `metric_context` and `metric_kernel` attributes, and the class has no print method, so printing it dumps 96 lines, most of them attributes. Add print and format methods: one aligned line per metric, with the units `summary()` uses, and one context line naming the risk-free rate, the annualization and a short context hash. The returned object, its values and its attributes are unchanged."
+    acceptance: ["printing the metrics of a demo run shows the nine metrics in their current order with units consistent with `summary()`, plus one context line, in at most 15 lines", "`names()`, values, attributes and `ledgr_metric_context()` of the returned object are unchanged, and `unclass()` still yields the plain list", "a mutation removing the print method fails a registered detector"]
+    evidence: []
+  - id: "LDG-2883"
+    title: "Small print defects in run info and extracted strategies"
+    workstream: 25
+    status: "draft"
+    priority: "P3"
+    effort: "S"
+    dependencies: []
+    scope: "Three prints show defects a reader notices at once. The extracted-strategy print writes `Source Available:TRUE` with no space (`R/strategy-extract.R:281`). The run-info print writes `Persist Features:TRUE` the same way and prints elapsed time with floating-point noise such as `Elapsed Sec: 0.430000000000001` (`R/run-store.R:993-994`). Align these labels with their sibling lines and print elapsed seconds at a fixed precision."
+    acceptance: ["the three labels align with their sibling lines", "elapsed seconds print with at most three decimals while the stored value is unchanged", "rendered articles and the README that show these prints are regenerated in the same change"]
+    evidence: []
+  - id: "LDG-2884"
+    title: "Close workstream 25 and cut 18"
+    workstream: 25
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: ["LDG-2869", "LDG-2880", "LDG-2881", "LDG-2882", "LDG-2883"]
+    scope: "Close workstream 25 and cut 18. Record the before-and-after line counts of `print()`, `summary()` and the metrics print on the three reference runs, the cut review's decision on collapsing the NOT SUPPLIED block and where the full policy record is read, that LDG-2869 moved here from its Cut 16 deferral, and whether the release gate waited for this cut. Record review invocations against the 0.5 gate, and that the seven-shape walk and clocks were not required because no hot path changed. Owner: the maintainer; the draft is agent-provisional."
+    acceptance: ["the closeout records the before-and-after output sizes on the three reference runs", "the corporate-action collapse decision and the accessor for the full policy record are recorded", "the move of LDG-2869 and the release-gate sequencing are recorded", "review invocations are recorded against the 0.5 gate, with the non-application of the seven-shape walk stated and explained"]
+    evidence: []
