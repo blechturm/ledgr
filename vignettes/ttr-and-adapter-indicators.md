@@ -342,9 +342,12 @@ and both `percent = TRUE` and `percent = FALSE`.
 
 To debug a TTR-backed feature at one decision time, use an active
 snapshot handle, choose a timestamp late enough for the indicator
-warmup, and pass the same TTR feature map to `ledgr_pulse_snapshot()`. A
-completed backtest proves the run succeeded, but it does not replace the
-snapshot handle needed for interactive pulse inspection.
+warmup, and pass the same TTR feature map to `ledgr_pulse_snapshot()`.
+Pulse inspection uses the dense run’s feature computation over snapshot
+history through that timestamp, including the TTR adapter’s parameters,
+recursive series calculation and warmup boundary. A completed backtest
+proves the run succeeded, but it does not replace the snapshot handle
+needed for interactive pulse inspection.
 
 ``` r
 ttr_snapshot <- ledgr_snapshot_from_df(

@@ -121,12 +121,13 @@ top_momentum(pulse, params)
 ```
 
 On 12 March the strategy wants `DEMO_02` and `DEMO_03`, the two highest
-5-day returns, and nothing else. With built-in indicators like these, a
-backtest would pick the same instruments at this pulse; the share counts
-depend on the account, which here is the pulse’s default of 100,000 in
-cash. Calling a strategy on a pulse is the fastest way to catch a wrong
-feature ID, a reversed comparison, or an unexpected position size before
-you run months of bars.
+5-day returns, and nothing else. The pulse computes every declared
+feature through the same feature path as a dense run, so the backtest
+sees these same values at this timestamp. The share counts depend on the
+account, which here is the pulse’s default of 100,000 in cash. Calling a
+strategy on a pulse is the fastest way to catch a wrong feature ID, a
+reversed comparison, or an unexpected position size before you run
+months of bars.
 
 > [!TIP]
 >

@@ -836,6 +836,48 @@ testthat::test_that("public result and helper documentation states current seman
   })
 })
 
+testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
+  strategy_doc <- paste(
+    readLines(
+      ledgr_test_source_vignette("strategy-authoring-tools.qmd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+  indicators_doc <- paste(
+    readLines(ledgr_test_source_vignette("indicators.qmd"), warn = FALSE),
+    collapse = "\n"
+  )
+  ttr_doc <- paste(
+    readLines(
+      ledgr_test_source_vignette("ttr-and-adapter-indicators.qmd"),
+      warn = FALSE
+    ),
+    collapse = "\n"
+  )
+
+  testthat::expect_match(
+    strategy_doc,
+    "same feature path as a dense run",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    indicators_doc,
+    "same feature path a dense run uses over snapshot",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    indicators_doc,
+    "`stable_after`, and `series_fn` when present",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    ttr_doc,
+    "including the TTR adapter's parameters, recursive series calculation",
+    fixed = TRUE
+  )
+})
+
 testthat::test_that("cost documentation contains runnable examples and the current API surface", {
   local({
   root <- testthat::test_path("..", "..")

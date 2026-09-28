@@ -268,75 +268,51 @@ ledgr_compute_pulse_features <- function(con, snapshot_id, universe, ts_utc, fea
     return(data.frame())
   }
 
-  max_lookback <- max(vapply(features, function(ind) ind$requires_bars, numeric(1)))
-  feature_rows <- list()
+  quoted_ids <- paste(DBI::dbQuoteString(con, universe), collapse = ", ")
+  history <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, ts_utc, open, high, low, close, volume ",
+      "FROM snapshot_bars ",
+      "WHERE snapshot_id = ? AND instrument_id IN (", quoted_ids, ") ",
+      "AND ts_utc <= ? ",
+      "ORDER BY instrument_id, ts_utc"
+    ),
+    params = list(snapshot_id, ts_utc)
+  )
+  history$instrument_id <- as.character(history$instrument_id)
+  history_by_instrument <- split(history, history$instrument_id)
+
+  n_features <- length(features)
+  n_rows <- length(universe) * n_features
+  instrument_id <- rep(as.character(universe), each = n_features)
+  feature_name <- rep(
+    vapply(features, function(feature) feature$id, character(1)),
+    times = length(universe)
+  )
+  feature_value <- rep(NA_real_, n_rows)
+
   row_idx <- 1L
-
   for (inst in universe) {
-    window <- DBI::dbGetQuery(
-      con,
-      "
-      SELECT instrument_id, ts_utc, open, high, low, close, volume
-      FROM snapshot_bars
-      WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc <= ?
-      ORDER BY ts_utc DESC
-      LIMIT ?
-      ",
-      params = list(snapshot_id, inst, ts_utc, as.integer(max_lookback))
-    )
-    if (nrow(window) == 0) next
-
-    window <- window[rev(seq_len(nrow(window))), , drop = FALSE]
-    window$ts_utc <- vapply(window$ts_utc, ledgr_iso_utc, character(1))
-
-    for (ind in features) {
-      if (nrow(window) < ind$requires_bars) {
-        value <- NA_real_
-        feature_rows[[row_idx]] <- data.frame(
-          ts_utc = ts_utc,
-          instrument_id = inst,
-          feature_name = ind$id,
-          feature_value = value,
-          stringsAsFactors = FALSE
-        )
-        row_idx <- row_idx + 1L
-        next
-      }
-
-      window_sub <- window[(nrow(window) - ind$requires_bars + 1):nrow(window), , drop = FALSE]
-      result <- ind$fn(window_sub)
-
-      if (is.list(result) && length(result) > 1) {
-        res_names <- names(result)
-        if (is.null(res_names) || any(!nzchar(res_names))) {
-          res_names <- as.character(seq_along(result))
-        }
-        for (i in seq_along(result)) {
-          feature_rows[[row_idx]] <- data.frame(
-            ts_utc = ts_utc,
-            instrument_id = inst,
-            feature_name = paste(ind$id, res_names[[i]], sep = "_"),
-            feature_value = result[[i]],
-            stringsAsFactors = FALSE
-          )
-          row_idx <- row_idx + 1L
-        }
-      } else {
-        feature_rows[[row_idx]] <- data.frame(
-          ts_utc = ts_utc,
-          instrument_id = inst,
-          feature_name = ind$id,
-          feature_value = result,
-          stringsAsFactors = FALSE
-        )
-        row_idx <- row_idx + 1L
-      }
+    bars <- history_by_instrument[[inst]]
+    if (is.null(bars) || nrow(bars) == 0L) {
+      row_idx <- row_idx + n_features
+      next
+    }
+    for (feature in features) {
+      values <- ledgr_compute_feature_series(bars, feature)
+      feature_value[[row_idx]] <- values[[length(values)]]
+      row_idx <- row_idx + 1L
     }
   }
 
-  out <- do.call(rbind, feature_rows)
-  rownames(out) <- NULL
-  out
+  data.frame(
+    ts_utc = rep(ts_utc, n_rows),
+    instrument_id = instrument_id,
+    feature_name = feature_name,
+    feature_value = feature_value,
+    stringsAsFactors = FALSE
+  )
 }
 
 ledgr_simplify_indicator_values <- function(values) {

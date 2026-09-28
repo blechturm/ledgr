@@ -266,11 +266,13 @@ pulse <- ledgr_pulse_snapshot(
 )
 ```
 
-At this timestamp, ledgr has computed the same two features for each
-instrument in the universe. The long pulse view shows that directly: one
-row per instrument and feature. Without a feature map, `alias` is `NA`.
-With the map, rows are filtered to the mapped features and aliases are
-filled.
+At this timestamp, ledgr has computed the two features for each
+instrument in the universe through the same feature path a dense run
+uses over snapshot history through this timestamp. That includes each
+declaration’s parameters, `stable_after`, and `series_fn` when present.
+The long pulse view shows the result directly: one row per instrument
+and feature. Without a feature map, `alias` is `NA`. With the map, rows
+are filtered to the mapped features and aliases are filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
