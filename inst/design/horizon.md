@@ -62,6 +62,39 @@ Questions for the homework:
 The companion entry on sensible defaults (2026-09-29) supplies the rule for
 which of these settings get a default.
 
+Requirements from a product review of the same day, weighing the users in
+`vignettes/articles/who-ledgr-is-for.qmd`. The intent model suits ledgr's core
+users and matches how professional systems separate alpha from execution.
+Whether demanding users accept it depends mostly on the first requirement.
+
+1. **Pluggable, not just configurable.** A user can write their own
+   step against a typed contract: its input, its output and what it
+   records. Built-in steps are defaults, not the only options. Without
+   this, a quant who needs their own impact model, turnover or buffer
+   constraint, or order policy will put execution logic back into the
+   strategy, which is what the model exists to prevent.
+2. **Observable.** Every step records what it changed, per pulse and per
+   instrument; the north-star RFC calls these audit signals. Professionals
+   need the records to trust a step, and learners need them to answer "why
+   do I still hold this?".
+3. **Identity-bearing and counted.** Every setting is part of run identity,
+   and a sweep over execution settings counts as trials in selection
+   integrity. Otherwise running the same strategy under different settings
+   becomes a new way to overfit.
+4. **Visible to the strategy, read-only (open question).** Some strategies
+   react to what happened, for example reducing exposure elsewhere when a
+   sale did not execute. A read-only view of the last pulse's execution
+   outcomes in `ctx` would allow that without the strategy owning the books.
+   The homework decides whether it is needed.
+5. **The escape hatch stays.** Strategies remain free-form R (design
+   philosophy section 2.7). The model removes the need to handle execution
+   in the strategy, not the ability to.
+
+Some strategies stay out of reach until the timing and order-management
+layers exist: stops and bracket exits (the 2026-06-11 gap), limit and close
+orders, partial fills and market impact. The articles should say so, as the
+Research To Production shared fact does for live trading.
+
 Until the homework lands, ledgr keeps today's behaviour, and Cut 22 makes it
 predictable and documented. `ctx$flat()` is literal: it sells departed
 holdings, and sells a halted holding once a fill is possible. The helpers keep
