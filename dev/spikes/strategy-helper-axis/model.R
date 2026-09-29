@@ -197,10 +197,10 @@ H$ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = 
       fail("Signal strategy functions must return a named character vector with unique, non-empty instrument names.")
     }
     if (!all(axis[eligible] %in% signal_names)) fail("Signal strategy output must cover every eligible instrument.")
-    code <- toupper(trimws(signals[match(axis[eligible], signal_names)]))
+    code <- toupper(trimws(signals))
     if (anyNA(code) || any(!nzchar(code))) fail("Signal strategy output contains missing or empty signals.")
     if (!all(code %in% names(map))) fail("Unknown signal(s). Supported signals are LONG, FLAT, and SHORT.")
-    target[eligible] <- unname(map[code])
+    target[eligible] <- unname(map[code[match(axis[eligible], signal_names)]])
     asNamespace("ledgr")$ledgr_validate_strategy_targets(target, axis, allow_empty = availability)
   }
   attr(out, "ledgr_signal_strategy_wrapper") <- TRUE

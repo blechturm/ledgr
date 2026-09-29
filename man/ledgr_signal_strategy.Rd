@@ -9,8 +9,9 @@ ledgr_signal_strategy(fn, long_qty = 1, flat_qty = 0, short_qty = -1)
 \arguments{
 \item{fn}{Signal function called as \code{fn(ctx)}. It receives the ledgr pulse
 context, not \code{params}, and must return either a scalar signal for a
-single-instrument universe or a named character vector with one signal per
-instrument in \code{ctx$universe}.}
+single-instrument universe or a named character vector with a signal for
+every eligible instrument in \code{ctx$universe}. Signals for ineligible
+instruments may be included or left out.}
 
 \item{long_qty}{Target quantity for \code{"LONG"}.}
 
@@ -29,6 +30,13 @@ named numeric target vector.
 strategies that emit explicit signals. It does not change the runner
 contract: the returned strategy maps signals to a full named numeric target
 vector before the shared StrategyResult validator runs.
+
+Only eligible instruments (\code{ctx$vec$admissible}) are mapped from their
+signals. Every ineligible instrument, a held nonmember or a target-restricted
+member, keeps its current quantity, whatever signal it received. On an empty
+decision axis the function is still called and the strategy returns a named
+zero-length target; a zero-length signal is valid whenever no instrument is
+eligible.
 }
 \section{Articles}{
 

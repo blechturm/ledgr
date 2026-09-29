@@ -843,3 +843,84 @@ testthat::test_that("[LTB-0121] selections, rankings and target helpers apply el
     c(AAA = 0, BBB = 10)
   )
 })
+
+testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and holds the rest", {
+  long_all <- ledgr_signal_strategy(
+    function(ctx) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe),
+    long_qty = 10
+  )
+  long_members <- ledgr_signal_strategy(
+    function(ctx) stats::setNames(rep("LONG", length(ctx$members)), ctx$members),
+    long_qty = 10
+  )
+  testthat::expect_identical(ledgr_strategy_preflight(long_all)$tier, "tier_2")
+
+  dense <- strategy_context_entrance_fixture()
+  mixed <- ledgr_signal_strategy(function(ctx) c(AAA = "LONG", BBB = "FLAT"), long_qty = 10)
+  testthat::expect_identical(mixed(dense, list()), c(AAA = 10, BBB = 0))
+
+  held <- strategy_context_entrance_fixture(
+    availability = TRUE, positions = c(OLD = 2), restricted = c(FALSE, FALSE)
+  )
+  testthat::expect_identical(long_all(held, list()), c(AAA = 10, OLD = 2))
+  testthat::expect_identical(long_members(held, list()), c(AAA = 10, OLD = 2))
+
+  halted <- strategy_context_entrance_fixture(
+    availability = TRUE, members = c("AAA", "OLD"), restricted = c(TRUE, FALSE),
+    positions = c(AAA = 3)
+  )
+  testthat::expect_identical(long_all(halted, list()), c(AAA = 3, OLD = 10))
+  omit_eligible <- ledgr_signal_strategy(function(ctx) c(AAA = "LONG"), long_qty = 10)
+  testthat::expect_error(omit_eligible(halted, list()), class = "ledgr_invalid_strategy_result")
+  unknown_id <- ledgr_signal_strategy(function(ctx) c(OLD = "LONG", ZZZ = "LONG"), long_qty = 10)
+  testthat::expect_error(unknown_id(halted, list()), class = "ledgr_invalid_strategy_result")
+  bad_code <- ledgr_signal_strategy(function(ctx) c(AAA = "MAYBE", OLD = "LONG"), long_qty = 10)
+  testthat::expect_error(bad_code(halted, list()), class = "ledgr_invalid_strategy_result")
+
+  holdings_only <- strategy_context_entrance_fixture(
+    availability = TRUE, members = character(), positions = c(OLD = 2),
+    restricted = c(FALSE, FALSE)
+  )
+  testthat::expect_identical(long_members(holdings_only, list()), c(AAA = 0, OLD = 2))
+
+  empty_bars <- data.frame(
+    instrument_id = character(),
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    open = numeric(), high = numeric(), low = numeric(), close = numeric(),
+    volume = numeric(),
+    stringsAsFactors = FALSE
+  )
+  empty_axis <- list(
+    run_id = "empty-axis",
+    ts_utc = "2026-01-02T21:00:00Z",
+    universe = character(),
+    bars = empty_bars,
+    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
+    .positions = stats::setNames(numeric(), character()),
+    cash = 100,
+    equity = 100,
+    seed = NULL,
+    pulse_seed = NULL,
+    state_prev = NULL,
+    .safety_state = "GREEN",
+    availability_active = TRUE,
+    members = character()
+  )
+  class(empty_axis) <- "ledgr_pulse_context"
+  empty_axis <- ledgr:::ledgr_update_pulse_context_helpers(
+    empty_axis,
+    bars = empty_bars,
+    features = empty_axis$feature_table,
+    positions = empty_axis$.positions,
+    universe = character(),
+    availability = list()
+  )
+  calls <- 0L
+  counting <- ledgr_signal_strategy(function(ctx) {
+    calls <<- calls + 1L
+    stats::setNames(character(), character())
+  }, long_qty = 10)
+  empty_target <- counting(empty_axis, list())
+  testthat::expect_identical(calls, 1L)
+  testthat::expect_identical(empty_target, stats::setNames(numeric(), character()))
+})

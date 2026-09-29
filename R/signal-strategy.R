@@ -5,10 +5,18 @@
 #' contract: the returned strategy maps signals to a full named numeric target
 #' vector before the shared StrategyResult validator runs.
 #'
+#' Only eligible instruments (`ctx$vec$admissible`) are mapped from their
+#' signals. Every ineligible instrument, a held nonmember or a target-restricted
+#' member, keeps its current quantity, whatever signal it received. On an empty
+#' decision axis the function is still called and the strategy returns a named
+#' zero-length target; a zero-length signal is valid whenever no instrument is
+#' eligible.
+#'
 #' @param fn Signal function called as `fn(ctx)`. It receives the ledgr pulse
 #'   context, not `params`, and must return either a scalar signal for a
-#'   single-instrument universe or a named character vector with one signal per
-#'   instrument in `ctx$universe`.
+#'   single-instrument universe or a named character vector with a signal for
+#'   every eligible instrument in `ctx$universe`. Signals for ineligible
+#'   instruments may be included or left out.
 #' @param long_qty Target quantity for `"LONG"`.
 #' @param flat_qty Target quantity for `"FLAT"`.
 #' @param short_qty Target quantity for `"SHORT"`.
@@ -52,13 +60,39 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
 
   out <- function(ctx, params) {
     universe <- ctx$universe
-    if (!is.character(universe) || length(universe) < 1L || anyNA(universe) || any(!nzchar(universe))) {
+    availability_active <- isTRUE(ctx$availability_active)
+    if (!is.character(universe) || (!availability_active && length(universe) < 1L) ||
+        anyNA(universe) || any(!nzchar(universe))) {
       rlang::abort("Signal strategy context must include a non-empty character `universe`.", class = "ledgr_invalid_strategy_result")
+    }
+    eligible <- ledgr_strategy_eligible(ctx, universe)
+    current_targets <- function() {
+      position <- ctx$vec$position
+      if (is.null(position) || length(position) != length(universe)) {
+        rlang::abort(
+          "`ctx$vec$position` must provide one value per decision-axis instrument when an instrument is ineligible.",
+          class = "ledgr_invalid_strategy_result"
+        )
+      }
+      stats::setNames(as.numeric(position), universe)
+    }
+    must_cover <- function(missing_ids) {
+      rlang::abort(
+        sprintf("Signal strategy output must cover every eligible instrument: %s.", paste(missing_ids, collapse = ", ")),
+        class = "ledgr_invalid_strategy_result"
+      )
     }
 
     signals <- fn(ctx)
-    if (!is.character(signals) || length(signals) < 1L) {
+    if (!is.character(signals)) {
       rlang::abort("Signal strategy functions must return character signals.", class = "ledgr_invalid_strategy_result")
+    }
+    if (length(signals) == 0L) {
+      # With no eligible instrument there is nothing to map: every instrument
+      # on the axis, if any, keeps its current quantity.
+      if (any(eligible)) must_cover(universe[eligible])
+      targets <- if (length(universe) == 0L) stats::setNames(numeric(), character()) else current_targets()
+      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active))
     }
 
     signal_names <- names(signals)
@@ -97,9 +131,31 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
       )
     }
 
-    targets <- as.numeric(signal_map[signals])
-    names(targets) <- signal_names
-    ledgr_validate_strategy_targets(targets, universe)
+    if (all(eligible)) {
+      # Every instrument is eligible: map the signals and let the target
+      # validator refuse missing or extra names, as it always has.
+      targets <- as.numeric(signal_map[signals])
+      names(targets) <- signal_names
+      return(ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active))
+    }
+
+    # Some instruments are ineligible: they keep their current quantity, and
+    # the signals must name axis instruments and cover every eligible one.
+    targets <- current_targets()
+    position_of_signal <- match(signal_names, universe)
+    if (anyNA(position_of_signal)) {
+      rlang::abort(
+        sprintf("Signal strategy output names instruments outside the decision axis: %s.",
+                paste(signal_names[is.na(position_of_signal)], collapse = ", ")),
+        class = "ledgr_invalid_strategy_result"
+      )
+    }
+    covered <- logical(length(universe))
+    covered[position_of_signal] <- TRUE
+    if (any(eligible & !covered)) must_cover(universe[eligible & !covered])
+    mapped <- eligible[position_of_signal]
+    targets[position_of_signal[mapped]] <- unname(signal_map)[match(signals[mapped], names(signal_map))]
+    ledgr_validate_strategy_targets(targets, universe, allow_empty = availability_active)
   }
   attr(out, "ledgr_signal_strategy_wrapper") <- TRUE
   out
