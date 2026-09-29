@@ -557,6 +557,7 @@ comes later in the reading flow.
 | Scalar `fn` and `series_fn` indicators, `gap_contract`, R and CSV adapters | Custom Indicators And External Features |
 | Ledger events, fills, trades, equity, metrics | The Accounting Model |
 | Cost models and risk chains | Risk And Cost Execution Policy |
+| The intent model: a strategy states what it wants to hold, and later steps decide what is allowed, when it executes and what it costs, and record the result; what happens to intent that cannot execute | Risk And Cost Execution Policy |
 | Stores, run IDs, labels, reopening, comparing runs | Experiment Store |
 | Reproducibility tiers, strategy preflight, source capture | Reproducibility |
 | The research loop: project layout, iterating on strategy code with committed runs, when a parameter question calls for a sweep, the research note | Research Workflow |
@@ -603,6 +604,21 @@ other articles link rather than paraphrase.
 - **Current capability** (Research To Production): ledgr is a research
   runtime; paper and live execution, broker adapters and operational
   observability are roadmap work.
+- **Targets are intent** (Risk And Cost Execution Policy): a strategy states
+  what it wants to hold. It does not place orders, check cash or keep the
+  books. ledgr's later steps decide what is allowed, when it executes and what
+  it costs, and record the result. ledgr has no order management yet, so an
+  intent that cannot execute at its fill opportunity is recorded as not
+  executed rather than queued, and the strategy states its intent again at the
+  next decision. Strategy Basics comes earlier in the flow; it glosses this in
+  one sentence and links to the home.
+- **Departed and halted holdings** (Survivorship Bias for departed holdings,
+  Missing Data And Session Calendars for halts): `ctx$flat()` is literal, so a
+  rule starting from it sells a departed holding at the next open and sells a
+  halted holding once a fill is possible; the helpers keep both. Increasing a
+  holding outside the universe, or a halted one, fails with an error. A fill
+  for a halted instrument is recorded as not executed. What ledgr should do by
+  default here is open design work; articles say so without naming a release.
 
 Use `?function_name` for function-level details.
 
