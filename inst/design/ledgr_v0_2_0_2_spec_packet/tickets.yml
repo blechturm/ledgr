@@ -2335,7 +2335,7 @@ tickets:
     dependencies: ["LDG-2905", "LDG-2906", "LDG-2907", "LDG-2908", "LDG-2912", "LDG-2909", "LDG-2910"]
     scope: "Close Workstream 30 and Cut 22 in `strategy_helper_axis_closeout.md`: the accepted decision, each ticket's commit, registered detector and mutation, the probe check against the frozen baseline, the fast gate, the recorded costs before and after, and the review invocations. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["`check.R` passes through every ticket against the frozen Cut 22 baseline, with exactly the manifest rows changed; only then does `check.R --accept` replace the baseline and empty the manifest, in a commit of its own", "the fast profile passes its gate, and every helper and per-pulse cost recorded under the implementation rule is shown before and after", "review invocations are recorded against the 0.5 gate"]
-    evidence: []
+    evidence: ["Agent-provisional, 2026-09-29. `strategy_helper_axis_closeout.md` drafts the close: the decision, each ticket's commit and registered detector, the probe check, the recorded costs before and after, the fast gate and the review count. At 266cf5c, `check.R` with no `--through` passes: 1,635 observations, all 460 manifest rows realized, nothing else changed. The fast profile passes 489 blocks in 74.98 s against the 112 s bound. `check.R --accept` is held until the Workstream 30 close review (invocation 4, 4 over 8 tickets, 0.500) has rerun the check against the frozen baseline, and then lands in a commit of its own."]
   - id: "LDG-2915"
     title: "Open the store once per public call"
     workstream: 31
