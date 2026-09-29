@@ -9,15 +9,20 @@ way in a dense universe and in a ragged, availability-aware universe?
 
 ## Evidence
 
-`dev/spikes/strategy-helper-axis/probe.R` runs 43 probes on each context:
+`dev/spikes/strategy-helper-axis/probe.R` runs 67 probes on each context:
 every signal,
 selection, weight and target helper; `ledgr_signal_strategy()`; the warmup
 gate in its one-argument and proposed context-aware forms; `ctx$vec` planes, `ctx$flat()`, `ctx$hold()`, `ctx$tradable()`,
 `ctx$position()`, `ctx$features()` with an explicit map and with the active
 alias map; `ctx$state_prev$asset_state`; and the input forms of
-`ledgr_signal(ctx, values = ...)`. Two input-only warmup probes, six runtime
-runs and the public pulse snapshot complete the set: 870 observations in
-`observations.csv`.
+`ledgr_signal(ctx, values = ...)`, including named payloads in reverse order
+and covering members only. They also cover what happens to a signal's class
+and eligibility under comparison, arithmetic, subsetting, `rank()` and `c()`,
+the context-entrance conditions and their classes, and target helpers given
+an ineligible ID. Input-only rows cover the one-argument warmup and value
+mode. Eight runtime rows (six runs recording their fills, a sweep and a
+walk-forward) complete the set, as does every probe on the public pulse
+snapshot: 1,399 observations in `observations.csv`.
 
 - **Constructed contexts.** Built with the internal pulse-context
   constructor. Target restriction is set independently of membership, as the
@@ -48,19 +53,24 @@ runs and the public pulse snapshot complete the set: 870 observations in
 | `real_dense` | AAA, BBB, CCC | not declared (dense) | AAA, BBB, CCC | none |
 
 - **Runtime.** Six strategies are run to completion or failure through
-  `ledgr_run()`, with the real strategy preflight. They cover membership
-  departure, a halted member, an opening nonmember position and an empty
-  axis.
+  `ledgr_run()`, with the real strategy preflight, recording their fills.
+  They cover membership departure, a halted member, an opening nonmember
+  position and an empty axis. A sweep and a walk-forward run the halted-member
+  pipeline end to end.
 
-- **Public pulse snapshot.** `ledgr_pulse_snapshot()` on the
+- **Public pulse snapshot.** Every probe on `ledgr_pulse_snapshot()` of the
   availability-bearing snapshot.
 
-`model.R` states the LDG-2906 decision executably, and `expected.R` derives
-`expected_delta.csv` from it: every observation the decision changes, with the
-ticket that owns it. `check.R --through <ticket>` reruns the probe and fails
+`model.R` states the LDG-2906 decision executably. It delegates every rule
+the decision keeps to the production code, and the probe installs it in the
+ledgr namespace for the runtime rows, so the real fold judges it.
+`expected.R` derives `expected_delta.csv` from it: every observation the
+decision changes, with the ticket that owns it. It refuses any change to
+behaviour the decision keeps, and any dense change outside an exact list of
+keys. `check.R --through <ticket>` reruns the probe and fails
 on duplicate keys, a changed row count, a manifest `was` that differs from the
-frozen baseline, an owned change not yet realized, and any change outside the
-manifest. `observations.csv` stays frozen as the Cut 22 input until LDG-2911
+frozen baseline, an owned change not yet realized, a later ticket's row that
+changed early, and any change outside the manifest. `observations.csv` stays frozen as the Cut 22 input until LDG-2911
 accepts the new baseline with `--accept`.
 
 ## What Already Works In Both

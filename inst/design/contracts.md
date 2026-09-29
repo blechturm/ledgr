@@ -691,13 +691,15 @@ The strategy preflight boundary originated in
   usable scores without changing the selection.
 ### Decision Axis And Eligibility
 
-Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906); binding once the
-LDG-2906 Type 2 review is accepted. One decision axis and one eligibility
-plane hold in dense and availability-aware contexts alike, so a strategy
-written as named-vector manipulation, or as a helper pipeline, means the same
-thing in both. The executable statement of these rules is
-`dev/spikes/strategy-helper-axis/model.R`; `expected_delta.csv` in the same
-directory lists every observation they change.
+Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906) and revised after
+its first Type 2 review; binding once the re-review is accepted. One decision
+axis and one eligibility plane hold in dense and availability-aware contexts
+alike, so a strategy written as named-vector manipulation, or as a helper
+pipeline, means the same thing in both. The executable statement of these
+rules is `dev/spikes/strategy-helper-axis/model.R`, which delegates every rule
+kept from before to the production code; `expected_delta.csv` in the same
+directory lists every observation the rules change and the ticket that
+changes it.
 
 - **Eligibility.** An ID is eligible when it is a member and not
   target-restricted. `ctx$vec$admissible` is that plane in every context:
@@ -705,51 +707,93 @@ directory lists every observation they change.
   contexts. Dense contexts expose `ctx$members` as `ctx$universe`, and
   `member` (all `TRUE`), `target_restricted` (all `FALSE`),
   `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
-  allocated once per run. No second eligibility plane exists.
-  `ctx$tradable()` stays a character vector of IDs that also requires a price.
+  allocated once per run and reused on every pulse. No second eligibility
+  plane exists. `ctx$tradable()` stays a character vector of IDs that also
+  requires a price.
 - **Context payloads.** An unnamed `values`, `where` or warmup payload has
   exactly length(Daxis) and aligns by position. A named payload uses unique
-  Daxis IDs and covers every eligible ID; an uncovered ineligible ID is `NA`.
-  Unnamed input of any other length, and any ID off the axis, fail with
-  `ledgr_invalid_strategy_type` in both kinds of run.
-- **Enforcement.** The standard pipeline applies eligibility automatically in
-  `ledgr_selection()` and `ledgr_select_top_n()`, and `ledgr_signal_strategy()`
-  applies it itself. Hand-built rules state it with `ctx$vec$admissible`, and
-  the runtime target validators remain the backstop. The `missing` policy
-  covers eligible IDs only. `ids` naming an ineligible axis ID leave it
-  unselected.
-- **Ineligible holdings.** Convenience target helpers
-  (`ledgr_target_rebalance()`, `ledgr_target_quantity()`,
-  `ledgr_signal_strategy()`) keep every ineligible axis ID at its current
+  Daxis IDs in any order and covers every eligible ID; an uncovered ineligible
+  ID is `NA`. Unnamed input of any other length, a named ID off the axis, and a
+  classed, list, factor or dimensioned payload fail with
+  `ledgr_invalid_strategy_type` in both kinds of run. The entrance rules are
+  unchanged: `universe` in context mode, an unknown, duplicated, combined or
+  `NULL` payload, a missing required payload and an invalid `missing` value
+  fail with `ledgr_invalid_strategy_helper`.
+- **Signals.** `ledgr_signal_feature()`, `ledgr_signal_return()` and
+  `ledgr_signal(ctx, values = ...)` return one value per Daxis ID in
+  `ctx$universe` order, with the raw value for every ID including ineligible
+  ones, and carry `ctx$vec$admissible` as the `eligible` attribute. The origin
+  is the feature ID, or the supplied `origin`. Arithmetic on a signal keeps
+  its class and `eligible` attribute. Comparison, subsetting, `rank()` and
+  `c()` return plain named vectors without them. Helpers that take `ctx`
+  derive eligibility from `ctx`, never from the attribute. Only
+  `ledgr_select_top_n()` reads the attribute, and it refuses anything that is
+  not a `ledgr_signal`. A transformed vector becomes a signal again through
+  `ledgr_signal(ctx, values = ...)`.
+- **Selections and rankings.** A context selection covers the axis and is
+  `FALSE` for every ineligible ID, whatever the payload: no payload selects
+  every eligible ID, `where` decides eligible IDs only, and `ids` naming an
+  ineligible axis ID leave it unselected. The `missing` policy covers
+  eligible IDs only. `ledgr_select_top_n()` ranks eligible, non-missing scores
+  with its stable tie policy, counts only those in its short-ranking warning,
+  and returns a selection over the signal's axis; with nothing usable it
+  returns an all-`FALSE` `ledgr_empty_selection` over that axis. Its `n` and
+  `partial` validation is unchanged.
+- **Target helpers.** `ledgr_target_rebalance()`, `ledgr_target_quantity()`
+  and `ledgr_signal_strategy()` keep every ineligible axis ID at its current
   quantity, whether a held nonmember or a target-restricted member, and
   rebalancing reserves its absolute marked exposure exactly once, `keep`
-  included. They size or assign eligible IDs only. Raw named targets,
-  `ledgr_target()`, `ctx$flat()` and `ctx$hold()` stay literal and may exit or
-  reduce as the availability contract allows.
+  included. They size or assign eligible IDs only. A selection that selects,
+  or weights that weight, an ineligible ID fail with
+  `ledgr_invalid_strategy_helper`; unselected ineligible names are accepted.
+  `ledgr_signal_strategy()` requires a signal for every eligible ID, may omit
+  or include ineligible ones, and fails with `ledgr_invalid_strategy_result`
+  otherwise.
+- **Literal targets and today's behaviour.** Raw named targets,
+  `ledgr_target()`, `ctx$flat()` and `ctx$hold()` are literal. A strategy
+  states intent; ledgr's later steps judge and execute it (Cut 22 decision
+  4). Until the design work recorded in `horizon.md` on 2026-09-29 lands, the
+  consequences are these. A rule starting from `ctx$flat()` sells a departed
+  holding at the next open, and sells a halted holding once a fill is
+  possible. The fill for a restricted instrument is recorded as not executed
+  while the restriction lasts. Increasing a held nonmember fails with
+  `ledgr_nonmember_exposure_increase`. Changing a restricted holding other
+  than holding or exiting fails with `ledgr_restricted_target`. Exiting or
+  reducing an ineligible holding is a valid target, so the validators do not
+  catch a hand-built rule that does so without meaning to; that is what
+  masking with `ctx$vec$admissible` is for.
 - **Empty axis.** Every context helper returns a zero-length named result.
   `ledgr_signal_strategy()` still invokes its function and returns a named
   zero-length target; a zero-length signal is valid whenever no ID is
   eligible.
-- **Warmup.** `ledgr_passed_warmup(ctx, values)` returns `TRUE` when every
-  eligible value is non-missing, and `TRUE` when no ID is eligible. The
-  one-argument form is unchanged.
+- **Warmup.** `ledgr_passed_warmup(ctx, values)` takes a context payload or a
+  signal (aligned by its names). It returns `TRUE` when every eligible value
+  is non-missing, and `TRUE` when no ID is eligible. Non-numeric `values`, or
+  `values` without a context, fail with `ledgr_invalid_warmup_input`. The
+  one-argument form is unchanged, including its zero-length failure.
 - **Dense results.** Every dense ID is eligible, so dense results of the
   existing helper pipelines do not change.
 
 Domains, for a decision axis `BBB, CCC, AAA` where `BBB` is a halted member
 and `AAA` a held nonmember, each holding 5:
 
-| Object | Domain | Names | Ineligible entries | Example |
-|---|---|---|---|---|
-| `ctx$vec` planes | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
-| `ctx$members` | allocation membership M | character IDs | not applicable | `BBB, CCC`; dense: `ctx$universe` |
-| context signals | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
-| context selections | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
-| rankings | the signal's Daxis | named | never selected or counted | `ledgr_select_top_n(signal, 2)` selects `CCC` and warns `ledgr_partial_selection` |
-| weights | selected IDs | named | a weight on one fails | `ledgr_weight_equal()` gives `CCC=1` |
-| helper targets | Daxis | named | current quantity | `ledgr_selection(ctx) \|> ledgr_target_quantity(ctx, 10)` is `BBB=5 CCC=10 AAA=5` |
-| raw targets, `ctx$flat()`, `ctx$hold()` | Daxis | named | literal | `ctx$flat()` exits `AAA`, which the validators allow |
-| value-mode signals, selections, weights | their `universe` | named | none: every entry is eligible | unchanged |
+| Object | Type | Domain | Names | Ineligible entries | Example |
+|---|---|---|---|---|---|
+| `ctx$vec` planes | numeric, logical or character | Daxis | unnamed, positional | marked by `admissible` | `ctx$vec$admissible` is `FALSE, TRUE, FALSE` |
+| `ctx$members` | character IDs | allocation membership M | not applicable | not applicable | `BBB, CCC`; dense: `ctx$universe` |
+| context signals | `ledgr_signal` (numeric) | Daxis | named | raw value; `eligible` attribute | `ledgr_signal_return(ctx, 1)` is `BBB=0.02 CCC=-0.01 AAA=0.01` |
+| context selections | `ledgr_selection` (logical) | Daxis | named | always `FALSE` | `ledgr_selection(ctx)` is `BBB=FALSE CCC=TRUE AAA=FALSE` |
+| rankings | `ledgr_selection` (logical) | the signal's Daxis | named | never selected or counted | `ledgr_select_top_n(signal, 2)` selects `CCC` and warns `ledgr_partial_selection` |
+| weights | `ledgr_weights` (numeric) | selected IDs | named | a weight on one fails | `ledgr_weight_equal()` gives `CCC=1` |
+| helper targets | `ledgr_target` (numeric) | Daxis | named | current quantity | `ledgr_selection(ctx) \|> ledgr_target_quantity(ctx, 10)` is `BBB=5 CCC=10 AAA=5` |
+| raw targets, `ctx$flat()`, `ctx$hold()` | named numeric | Daxis | named | literal | `ctx$flat()` sells `AAA` at the next open |
+| value-mode signals, selections, weights | their class | their `universe` | named | none: every entry is eligible | unchanged |
+
+Audit findings closed (`inst/design/audits/v0_2_0_2_strategy_helper_axis_audit.md`):
+A1 by Signals; A2 by Eligibility; A3 by Selections and rankings and Target
+helpers; A4 by Target helpers and Empty axis; A5 by Signals and Selections and
+rankings; A6 by Warmup. A7 stays a representation inventory, answered by the
+domain table.
 
 - Feature maps are authoring UX over the existing feature registry and pulse
   context. They may make feature registration and pulse-time lookup easier, but

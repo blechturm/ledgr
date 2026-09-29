@@ -35,15 +35,24 @@ ids_text <- function(x) if (is.null(x)) "NULL" else if (length(x) == 0L) "<none>
 # Helper table. Every probe calls the helpers through `H`, and every context
 # passes through `adapt()`. With AXIS_PROBE_MODEL set to model.R, the model
 # replaces the helpers LDG-2906 changes with executable statements of the
-# decided semantics, and states the runtime outcomes; expected.R uses that to
-# write expected_delta.csv. Without it, the probe measures the package.
+# decided semantics, and the runtime rows run the real fold with those
+# statements installed in the ledgr namespace; expected.R uses that to write
+# expected_delta.csv. Without it, the probe measures the package.
 # ---------------------------------------------------------------------------
 
 H <- mget(c("ledgr_signal_strategy", "ledgr_signal_return", "ledgr_signal_feature", "ledgr_signal", "ledgr_selection", "ledgr_select_top_n", "ledgr_weight_equal", "ledgr_target_rebalance", "ledgr_target_quantity", "ledgr_target", "ledgr_weights", "ledgr_passed_warmup"), envir = asNamespace("ledgr"))
 adapt <- function(ctx) ctx
-runtime_expected <- NULL
 model_path <- Sys.getenv("AXIS_PROBE_MODEL")
 if (nzchar(model_path)) source(model_path, local = TRUE)
+model_helpers <- c("ledgr_signal", "ledgr_signal_feature", "ledgr_signal_return", "ledgr_selection",
+  "ledgr_select_top_n", "ledgr_target_rebalance", "ledgr_target_quantity", "ledgr_signal_strategy",
+  "ledgr_passed_warmup")
+
+sig_attrs <- function(x) {
+  if (inherits(x, c("probe_error", "probe_warning"))) return(show(x))
+  eligible <- attr(x, "eligible")
+  paste0("class=", class(x)[[1L]], " eligible=", if (is.null(eligible)) "none" else paste(eligible, collapse = ","))
+}
 
 # ---------------------------------------------------------------------------
 # The probes. Each returns one result string; the same probes run on every
@@ -115,7 +124,32 @@ probe_ctx <- function(ctx, lookback, threshold) {
     "warmup: passed_warmup(ctx$vec$feature)" = show(try_run(H$ledgr_passed_warmup(feat))),
     "warmup: passed_warmup(signal)" = show(try_run(H$ledgr_passed_warmup(unclass(sig)))),
     "warmup: passed_warmup(ctx, ctx$vec$feature)" = show(try_run(H$ledgr_passed_warmup(ctx, feat))),
-    "warmup: passed_warmup(ctx, signal)" = show(try_run(H$ledgr_passed_warmup(ctx, sig)))
+    "warmup: passed_warmup(ctx, signal)" = show(try_run(H$ledgr_passed_warmup(ctx, sig))),
+    "warmup: passed_warmup(ctx, named member-only feature)" = show(try_run(H$ledgr_passed_warmup(ctx, stats::setNames(feat[match(m, u)], m)))),
+    "warmup: passed_warmup(ctx, character)" = show(try_run(H$ledgr_passed_warmup(ctx, as.character(feat)))),
+    "warmup: passed_warmup(ctx$features(first)) via active alias" = on_first(H$ledgr_passed_warmup(ctx$features(first))),
+    "context: ctx$vec$target_restriction_reason" = show(ctx$vec$target_restriction_reason),
+    "signal: attributes of ledgr_signal_return" = sig_attrs(sig),
+    "signal: attributes after comparison (signal > threshold)" = sig_attrs(try_run(sig > threshold)),
+    "signal: attributes after arithmetic (-signal)" = sig_attrs(try_run(-sig)),
+    "signal: attributes after subsetting (signal[1])" = if (is.na(first)) "n/a (empty axis)" else sig_attrs(try_run(sig[1])),
+    "signal: attributes after rank(signal)" = sig_attrs(try_run(rank(sig))),
+    "signal: attributes after c(signal)" = sig_attrs(try_run(c(sig))),
+    "signal: ledgr_signal(ctx, values = named reversed axis)" = show(try_run(H$ledgr_signal(ctx, values = rev(stats::setNames(feat, u))))),
+    "selection: select_top_n(-signal, 1)" = show(try_run(H$ledgr_select_top_n(-sig, 1))),
+    "selection: where = named reversed axis" = show(try_run(H$ledgr_selection(ctx, where = rev(stats::setNames(feat > threshold, u))))),
+    "selection: where = named member-only" = show(try_run(H$ledgr_selection(ctx, where = stats::setNames((feat > threshold)[match(m, u)], m)))),
+    "entrance: ledgr_signal(ctx, values, universe = NULL)" = show(try_run(H$ledgr_signal(ctx, universe = NULL, values = feat))),
+    "entrance: ledgr_signal(ctx, values = matrix)" = show(try_run(H$ledgr_signal(ctx, values = matrix(feat, ncol = 1L)))),
+    "entrance: ledgr_selection(ctx, ids = NULL)" = show(try_run(H$ledgr_selection(ctx, ids = NULL))),
+    "entrance: ledgr_selection(ctx, ids and where)" = on_first(H$ledgr_selection(ctx, ids = first, where = feat > threshold)),
+    "entrance: ledgr_selection(ctx, missing = \"bogus\")" = show(try_run(H$ledgr_selection(ctx, missing = "bogus"))),
+    "entrance: ledgr_selection(ctx, where = unnamed wrong length)" = show(try_run(H$ledgr_selection(ctx, where = c(feat > threshold, TRUE)))),
+    "entrance: select_top_n(signal, 0)" = show(try_run(H$ledgr_select_top_n(sig, 0))),
+    "refusal: target_quantity(value selection of every axis ID)" = show(try_run(H$ledgr_target_quantity(
+      H$ledgr_selection(stats::setNames(rep(TRUE, length(u)), u), universe = u), ctx, 10))),
+    "refusal: rebalance(value weights on every axis ID)" = show(try_run(H$ledgr_target_rebalance(
+      H$ledgr_weights(stats::setNames(rep(1 / max(1L, length(u)), length(u)), u), universe = u), ctx)))
   )
   out
 }
@@ -179,8 +213,11 @@ for (cn in names(constructed)) {
   if (n >= 2L) add_rows(paste0(cn, "+missing_second"), probe_ctx(constructed[[cn]](c(0.2, NA)), lookback = 5, threshold = 0.1))
 }
 add_rows("input-only", c(
-  "warmup: passed_warmup(numeric(0))" = show(try_run(ledgr_passed_warmup(numeric(0)))),
-  "warmup: passed_warmup(c(0.2, NA))" = show(try_run(ledgr_passed_warmup(c(0.2, NA))))
+  "warmup: passed_warmup(numeric(0))" = show(try_run(H$ledgr_passed_warmup(numeric(0)))),
+  "warmup: passed_warmup(c(0.2, NA))" = show(try_run(H$ledgr_passed_warmup(c(0.2, NA)))),
+  "value: ledgr_signal(c(A = 1, B = NA))" = show(try_run(H$ledgr_signal(c(A = 1, B = NA)))),
+  "value: ledgr_selection(c(A = TRUE, B = FALSE))" = show(try_run(H$ledgr_selection(c(A = TRUE, B = FALSE)))),
+  "value: select_top_n(value signal, 1)" = show(try_run(H$ledgr_select_top_n(H$ledgr_signal(c(A = 1, B = 2)), 1)))
 ))
 
 # ---------------------------------------------------------------------------
@@ -260,19 +297,41 @@ run_fixture <- function(snapshot_name, strategy, params = list(), opening = ledg
       universe = ledgr_universe_members("probe"), valuation_policy = ledgr_valuation_stale(2L),
       cost_model = ledgr_cost_zero(), opening = opening)
   }
-  run <- function() close(suppressWarnings(ledgr_run(exp, params = params)))
-  # The recording strategy calls probe_ctx(), a user helper that preflight
-  # rightly classifies Tier 3. Capture runs therefore skip preflight; every
-  # "runtime" row below runs a self-contained strategy through the real one.
-  if (isTRUE(capture_only)) {
-    run <- function() testthat::with_mocked_bindings(
-      close(suppressWarnings(ledgr_run(exp, params = params))),
-      ledgr_strategy_preflight = function(strategy) real_preflight(function(ctx, params) ctx$flat()),
-      .package = "ledgr")
+  with_probe_bindings(capture_only, {
+    tryCatch({
+      bt <- suppressWarnings(ledgr_run(exp, params = params))
+      fills <- as.data.frame(ledgr_results(bt, "fills"))
+      close(bt)
+      fills_text(fills)
+    }, error = error_text)
+  })
+}
+
+# The recording strategy calls probe_ctx(), a user helper that preflight
+# rightly classifies Tier 3, so capture runs skip preflight. Under the model,
+# the helpers in the ledgr namespace are replaced by the model's for the run,
+# so the real fold, validators and fills judge the decided helpers; preflight
+# is skipped there too, because it would classify the model's own code.
+with_probe_bindings <- function(capture_only, code) {
+  bindings <- list()
+  if (isTRUE(capture_only) || nzchar(model_path)) {
+    bindings$ledgr_strategy_preflight <- function(strategy) real_preflight(function(ctx, params) ctx$flat())
   }
-  outcome <- tryCatch({ run(); "completed" },
-    error = function(e) { if (nzchar(Sys.getenv("PROBE_DEBUG"))) message(conditionMessage(e)); paste0("ERROR <", grep("^ledgr_", class(e), value = TRUE)[[1L]], ">") })
-  outcome
+  if (nzchar(model_path)) bindings <- c(bindings, H[model_helpers])
+  if (length(bindings) > 0L) {
+    do.call(testthat::local_mocked_bindings, c(bindings, list(.package = "ledgr", .env = environment())))
+  }
+  code
+}
+error_text <- function(e) {
+  if (nzchar(Sys.getenv("PROBE_DEBUG"))) message(conditionMessage(e))
+  paste0("ERROR <", grep("^ledgr_", class(e), value = TRUE)[[1L]], ">")
+}
+fills_text <- function(fills) {
+  if (nrow(fills) == 0L) return("completed; no fills")
+  signed <- ifelse(fills$side == "BUY", fills$qty, -fills$qty)
+  paste0("completed; fills ", paste(sprintf("%s %s %+g", substr(format(fills$ts_utc), 6, 10),
+    fills$instrument_id, signed), collapse = ", "))
 }
 
 invisible(run_fixture("departure", recording_strategy, list(buy = TRUE, record = list(
@@ -283,13 +342,38 @@ invisible(run_fixture("plain", recording_strategy, list(buy = TRUE, record = lis
   capture_only = TRUE, dense = TRUE))
 for (label in sort(ls(capture))) add_rows(label, get(label, envir = capture))
 
-runtime_rows <- if (!is.null(runtime_expected)) runtime_expected else c(
+halted_quantity_strategy <- function(ctx, params) {
+  qty <- if (substr(format(ctx$ts_utc), 1, 10) >= "2020-01-06") params$qty + 2 else params$qty
+  ctx |> ledgr_selection() |> ledgr_target_quantity(ctx, qty)
+}
+availability_experiment <- function(strategy) {
+  ledgr_experiment(snapshots$departure, strategy,
+    features = ledgr_feature_map(ret = ledgr_ind_returns(1)),
+    universe = ledgr_universe_members("probe"), valuation_policy = ledgr_valuation_stale(2L),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 10000))
+}
+run_sweep_smoke <- function() with_probe_bindings(FALSE, tryCatch({
+  sw <- suppressWarnings(ledgr_sweep(availability_experiment(halted_quantity_strategy),
+    ledgr_param_grid(qty3 = list(qty = 3), qty5 = list(qty = 5))))
+  paste(sprintf("%s %s %s", sw$candidate_id, sw$status, format(round(sw$final_equity, 2))), collapse = "; ")
+}, error = error_text))
+run_walk_forward_smoke <- function() with_probe_bindings(FALSE, tryCatch({
+  wf <- suppressWarnings(ledgr_walk_forward(availability_experiment(halted_quantity_strategy),
+    grid = ledgr_param_grid(qty3 = list(qty = 3), qty5 = list(qty = 5)),
+    folds = ledgr_folds_rolling(start = "2020-01-02", end = "2020-01-08", train_window = "2 days",
+      test_window = "2 days", step = "2 days"),
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+  folds <- as.data.frame(wf$folds)
+  paste(sprintf("fold %s %s", folds$fold_seq, folds$status), collapse = "; ")
+}, error = error_text))
+
+runtime_rows <- c(
   "run: signal_strategy(member-only signals), held nonmember" =
     run_fixture("departure", member_only_signals),
   "run: signal_strategy(axis signals LONG 10), opening nonmember CCC = 2" =
     run_fixture("ended", axis_signals, opening = ledgr_opening(cash = 10000, positions = c(CCC = 2), cost_basis = c(CCC = 100))),
   "run: signal_strategy(axis signals), empty axis" =
-    run_fixture("ended", ledgr_signal_strategy(function(ctx) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe), long_qty = 0)),
+    run_fixture("ended", H$ledgr_signal_strategy(function(ctx) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe), long_qty = 0)),
   "run: selection(ctx) -> target_quantity, quantity changes while halted" =
     run_fixture("departure", function(ctx, params) {
       qty <- if (substr(format(ctx$ts_utc), 1, 10) >= "2020-01-06") 7 else 5
@@ -301,18 +385,18 @@ runtime_rows <- if (!is.null(runtime_expected)) runtime_expected else c(
       ledgr_selection(ctx, ids = "BBB") |> ledgr_target_quantity(ctx, qty)
     }),
   "run: hand-built flat()[signal > -1] <- 5 after departure" =
-    run_fixture("departure", function(ctx, params) { t <- ctx$flat(); t[ledgr_signal_return(ctx, 1) > -1] <- 5; t })
+    run_fixture("departure", function(ctx, params) { t <- ctx$flat(); t[ledgr_signal_return(ctx, 1) > -1] <- 5; t }),
+  "sweep: selection -> target_quantity, two quantities, quantity changes while halted" =
+    run_sweep_smoke(),
+  "walk-forward: selection -> target_quantity over rolling folds" =
+    run_walk_forward_smoke()
 )
 add_rows("runtime", runtime_rows)
 
-# Public pulse snapshot of the availability-bearing fixture.
-pulse <- try_run(adapt(ledgr_pulse_snapshot(snapshots$departure, universe = c("AAA", "BBB", "CCC"),
-  ts_utc = day(4), features = list(ledgr_ind_returns(1)))))
-add_rows("pulse_snapshot", c(
-  "context: ctx$members" = if (inherits(pulse, "probe_error")) show(pulse) else ids_text(pulse$members),
-  "context: eligibility planes in ctx$vec" = if (inherits(pulse, "probe_error")) show(pulse) else
-    ids_text(intersect(c("member", "admissible", "target_restricted"), names(pulse$vec)))
-))
+# Public pulse snapshot of the availability-bearing fixture: every probe.
+pulse <- ledgr_pulse_snapshot(snapshots$departure, universe = c("AAA", "BBB", "CCC"),
+  ts_utc = day(4), features = list(ledgr_ind_returns(1)))
+add_rows("pulse_snapshot", probe_ctx(pulse, lookback = 1, threshold = 0))
 
 observations <- do.call(rbind, rows)
 key <- paste(observations$context, observations$probe, sep = " | ")
