@@ -873,6 +873,22 @@ Corporate actions, delisting cash flows, borrow and short financing,
 order-management behaviour, and general imputation are outside this first
 availability surface.
 
+::: {.ledgr-callout .ledgr-callout-important}
+**A holding you cannot sell ends the run**
+
+When a held instrument delists, or cannot be traded or valued for longer than
+the valuation policy allows, the run stops `INCOMPLETE` instead of booking a
+loss. That omits a real outcome: a botched exit can cost money. The stop also
+ends every other position's path, and comparison, sweep ranking and
+walk-forward selection consider completed runs only. So the variants that met
+this event drop out of the comparison. Treat an incomplete run as evidence
+about the strategy, not as noise to filter away.
+
+A way to book the outcome is being designed. It would use settlement evidence
+where it exists, and a loss assumption you declare, such as a write-off,
+where it does not.
+:::
+
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it: move the valuation boundary**
 
