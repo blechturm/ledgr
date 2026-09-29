@@ -199,14 +199,17 @@ market-data object from which it can casually index tomorrow's bar.
 
 ```{r}
 #| label: pulse-strategy
-#| eval: false
 
 strategy <- function(ctx, params) {
-  targets <- ctx$flat()
-  targets[which(ctx$vec$close > ctx$vec$open)] <- params$qty
-  targets
+  up <- ctx$vec$close > ctx$vec$open
+  ctx |>
+    ledgr_selection(where = up) |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 ```
+
+Everything this rule reads comes from `ctx`: today's close and open for every
+instrument. Nothing in it can reach tomorrow's bar.
 
 This boundary prevents one common class of leakage. It does not cleanse
 contaminated data that were already handed to ledgr.

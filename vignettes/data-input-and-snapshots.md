@@ -58,7 +58,10 @@ implicit.
 ## Seal A Snapshot
 
 `ledgr_snapshot_from_df()` validates, stores, and seals the data in one
-call.
+call. This article keeps its store in a temporary file from
+`ledgr_temp_store()`, because it closes and reopens it below; a real
+project passes a persistent `db_path`, so the snapshot outlives the R
+session.
 
 ``` r
 db_path <- ledgr_temp_store(file.path(tempdir(), "ledgr_import_demo.duckdb"))
@@ -136,7 +139,9 @@ snapshot <- ledgr_snapshot_from_csv(
 
 Supply a separate instrument file when you have stable metadata. It
 needs an `instrument_id`; `symbol`, `currency`, `asset_class`,
-`multiplier`, and `tick_size` are optional.
+`multiplier`, and `tick_size` are optional. This chunk is not executed
+either, for the same reason: the files it names do not exist in the
+package build.
 
 ``` r
 snapshot <- ledgr_snapshot_from_csv(

@@ -233,8 +233,9 @@ instrument’s current trading permission:
 
 ``` r
 signal <- ctx$vec$feature("sma_2")
-ready <- is.finite(signal) & ctx$vec$admissible
-targets[which(ready)] <- 1
+ready <- !is.na(signal) & ctx$vec$admissible
+targets <- ctx$flat()
+targets[ready] <- 1
 ```
 
 This uses one concrete engine feature ID over the full decision axis. A
@@ -305,7 +306,8 @@ snapshot <- ledgr_snapshot_from_df(
   bars,
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
-  db_path = tempfile(fileext = ".duckdb")
+  db_path = tempfile(fileext = ".duckdb"),
+  snapshot_id = "missing_data_demo"
 )
 ```
 
@@ -480,9 +482,10 @@ are separate properties, and this is the case that shows why.
 >
 > ### Try it
 >
-> Set `max_sessions = 2` and run again. Does the run complete? Then widen
-> the hole to four sessions and re-seal. Which of the two knobs, your data
-> or your tolerance, decides whether you get a full-window result?
+> Set `max_sessions = 2` and run again under a new `run_id`, since a store
+> keeps one run per ID. Does the run complete? Then widen the hole to four
+> sessions and re-seal. Which of the two knobs, your data or your
+> tolerance, decides whether you get a full-window result?
 
 
 ## Rows That Are Present but Wrong
@@ -505,7 +508,8 @@ tryCatch(
     broken,
     instruments_df = tibble(instrument_id = c("AAA", "BBB")),
     facts = ledgr_facts(sessions, status),
-    db_path = tempfile(fileext = ".duckdb")
+    db_path = tempfile(fileext = ".duckdb"),
+    snapshot_id = "missing_data_refused"
   ),
   ledgr_availability_validation_failed = function(error) {
     conditionMessage(error)
@@ -525,7 +529,8 @@ quarantined <- ledgr_snapshot_from_df(
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
   invalid_observations = "quarantine",
-  db_path = tempfile(fileext = ".duckdb")
+  db_path = tempfile(fileext = ".duckdb"),
+  snapshot_id = "missing_data_quarantined"
 )
 
 ledgr_snapshot_quarantine(quarantined) |>

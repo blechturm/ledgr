@@ -72,8 +72,10 @@ data("ledgr_demo_bars", package = "ledgr")
 
 ## Temporary Snapshot Setup
 
-This article uses a small temporary snapshot so the store examples are
-self-contained. The full snapshot lifecycle is covered in
+This article uses a small snapshot in a temporary store from
+`ledgr_temp_store()`, so the store examples are self-contained. A real project
+passes a persistent path, so its runs outlive the R session. The full snapshot
+lifecycle is covered in
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
 ```{r}
@@ -110,10 +112,10 @@ new R session, recover the handle with
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
-  sma <- ctx$vec$feature("sma_20")
-  targets <- ctx$flat()
-  targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
-  targets
+  above <- ctx$vec$close > ledgr_signal_feature(ctx, "sma_20")
+  ctx |>
+    ledgr_selection(where = above, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp <- ledgr_experiment(
@@ -209,9 +211,8 @@ assumptions, pass that context explicitly:
 
 ```{r}
 #| label: compare-exp-context
-#| eval: false
 
-comparison <- ledgr_run_compare(
+exp_comparison <- ledgr_run_compare(
   snapshot,
   run_ids = c("trend_qty_5", "trend_qty_15"),
   metric_context = ledgr_metric_context(exp)
@@ -266,13 +267,15 @@ executing anything; `vignette("reproducibility", package = "ledgr")` teaches
 that reader and when trusted recovery is appropriate.
 
 When a run ID is missing, store lookup helpers fail with class
-`ledgr_run_not_found`:
+`ledgr_run_not_found`, so code can tell a typo from other store errors:
 
 ```{r}
 #| label: missing-run
-#| eval: false
 
-ledgr_run_info(snapshot, "missing_run")
+tryCatch(
+  ledgr_run_info(snapshot, "missing_run"),
+  ledgr_run_not_found = function(error) class(error)[[1]]
+)
 ```
 
 ## Reopen A Completed Run In A Later Session
@@ -325,11 +328,12 @@ connection.
 
 ```{r}
 #| label: low-level-recovery
-#| eval: false
 
 con <- ledgr_db_init(db_path)
 state <- ledgr_state_reconstruct("trend_qty_5", con)
 DBI::dbDisconnect(con, shutdown = TRUE)
+
+names(state)
 ```
 
 This pair is intentionally not a broker or migration layer. It does not perform

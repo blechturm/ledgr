@@ -107,11 +107,11 @@ stored with the run. Hidden globals are not.
 
 ```{r}
 #| label: params-boundary
-#| eval: false
 
 strategy <- function(ctx, params) {
+  above <- ctx$vec$close > params$threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 ```
@@ -128,8 +128,9 @@ features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
   ret_5 <- ctx$vec$feature("return_5")
+  rising <- !is.na(ret_5) & ret_5 > params$min_return
   targets <- ctx$flat()
-  targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
+  targets[rising] <- params$qty
   targets
 }
 
@@ -196,10 +197,9 @@ object.
 
 ```{r}
 #| label: extract-trust
-#| eval: false
 
 trusted <- ledgr_run_strategy(snapshot, "qty_10", trust = TRUE)
-trusted$strategy_function
+is.function(trusted$strategy_function)
 
 rerun_exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -252,11 +252,7 @@ R references and ledgr's exported public namespace.
 
 tier_1_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    targets[id] <- params$qty
-  }
-
+  targets[] <- params$qty
   targets
 }
 
@@ -309,14 +305,16 @@ research question into `params`, especially for sweeps.
 captured_threshold <- 100
 
 tier_2_captured <- function(ctx, params) {
+  above <- ctx$vec$close > captured_threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > captured_threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 
 tier_1_parameterized <- function(ctx, params) {
+  above <- ctx$vec$close > params$threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 
@@ -387,8 +385,9 @@ must remain JSON-safe values.
 
 repaired_strategy <- function(ctx, params) {
   choose_targets <- function(context, quantity) {
+    above <- context$vec$close > params$threshold
     targets <- context$flat()
-    targets[which(context$vec$close > params$threshold)] <- quantity
+    targets[above] <- quantity
     targets
   }
 
@@ -446,7 +445,6 @@ when some symbols resolve.
 
 ```{r}
 #| label: hidden-mutable-state
-#| eval: false
 
 counter <- 0
 
@@ -454,8 +452,12 @@ bad_strategy <- function(ctx, params) {
   counter <<- counter + 1
   ctx$flat()
 }
+
+ledgr_strategy_preflight(bad_strategy)$tier
 ```
 
+The global assignment is caught here, but preflight cannot see every form of
+hidden state, such as a mutable object reached through a captured environment.
 Avoid this pattern. Store intentional strategy variation in `params`, and let
 ledgr record decisions and state changes through the run artifacts.
 

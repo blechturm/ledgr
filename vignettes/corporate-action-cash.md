@@ -49,7 +49,8 @@ snapshot <- ledgr_snapshot_from_df(
   bars,
   facts = ledgr_facts(ledgr_facts_equity_corporate_actions(terms)),
   price_basis = "split_adjusted",
-  db_path = store
+  db_path = store,
+  snapshot_id = "cash_distribution_demo"
 )
 opening <- ledgr_opening(
   cash = 1000,

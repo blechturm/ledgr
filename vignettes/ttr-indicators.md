@@ -311,6 +311,19 @@ ttr_pulse <- ledgr_pulse_snapshot(
 )
 
 ledgr_pulse_features(ttr_pulse, ttr_features)
+#> # A tibble: 10 × 5
+#>    ts_utc              instrument_id feature_id                    feature_value alias
+#>    <dttm>              <chr>         <chr>                                 <dbl> <chr>
+#>  1 2019-06-03 00:00:00 DEMO_01       return_5                             0.0179 ret_5
+#>  2 2019-06-03 00:00:00 DEMO_01       ttr_rsi_14                          41.0    ttr_rsi
+#>  3 2019-06-03 00:00:00 DEMO_01       ttr_bbands_20_up                   104.     bb_up
+#>  4 2019-06-03 00:00:00 DEMO_01       ttr_macd_12_26_9_false_macd         -1.84   macd
+#>  5 2019-06-03 00:00:00 DEMO_01       ttr_macd_12_26_9_false_signal       -1.65   macd_sig…
+#>  6 2019-06-03 00:00:00 DEMO_02       return_5                            -0.0176 ret_5
+#>  7 2019-06-03 00:00:00 DEMO_02       ttr_rsi_14                          56.0    ttr_rsi
+#>  8 2019-06-03 00:00:00 DEMO_02       ttr_bbands_20_up                    83.6    bb_up
+#>  9 2019-06-03 00:00:00 DEMO_02       ttr_macd_12_26_9_false_macd          1.45   macd
+#> 10 2019-06-03 00:00:00 DEMO_02       ttr_macd_12_26_9_false_signal        1.84   macd_sig…
 close(ttr_pulse)
 ledgr_snapshot_close(ttr_snapshot)
 ```

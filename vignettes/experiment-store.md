@@ -39,8 +39,10 @@ data("ledgr_demo_bars", package = "ledgr")
 
 ## Temporary Snapshot Setup
 
-This article uses a small temporary snapshot so the store examples are
-self-contained. The full snapshot lifecycle is covered in
+This article uses a small snapshot in a temporary store from
+`ledgr_temp_store()`, so the store examples are self-contained. A real
+project passes a persistent path, so its runs outlive the R session. The
+full snapshot lifecycle is covered in
 `vignette("data-input-and-snapshots", package = "ledgr")`.
 
 ``` r
@@ -73,10 +75,10 @@ After snapshot creation, store operations take `snapshot`, not
 features <- list(ledgr_ind_sma(20))
 
 trend_strategy <- function(ctx, params) {
-  sma <- ctx$vec$feature("sma_20")
-  targets <- ctx$flat()
-  targets[which(is.finite(sma) & ctx$vec$close > sma)] <- params$qty
-  targets
+  above <- ctx$vec$close > ledgr_signal_feature(ctx, "sma_20")
+  ctx |>
+    ledgr_selection(where = above, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp <- ledgr_experiment(
@@ -180,14 +182,14 @@ info
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      b3bf60e5f21e33e26048a2b8dabada9113887af71a22873ddfc57f7d9d0d187f
-    Strategy Hash:    6f37729adac3ba7e8a0ea2cb61b9272ea96a742d0098b77c2a745251d2d7864d
+    Config Hash:      20f271989efdb9ba34fca1b21a2e691aca3160d33fa117590b54084cbae8139c
+    Strategy Hash:    2e232e77ee059fecf01d125877ea3b9bca61e6a484825fd059ddd3d50985f3fc
     Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.870
+    Elapsed Sec:      0.920
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -234,7 +236,7 @@ reads stored run artifacts. When you want the comparison to use an
 experiment’s metric assumptions, pass that context explicitly:
 
 ``` r
-comparison <- ledgr_run_compare(
+exp_comparison <- ledgr_run_compare(
   snapshot,
   run_ids = c("trend_qty_5", "trend_qty_15"),
   metric_context = ledgr_metric_context(exp)
@@ -310,11 +312,16 @@ them without executing anything;
 when trusted recovery is appropriate.
 
 When a run ID is missing, store lookup helpers fail with class
-`ledgr_run_not_found`:
+`ledgr_run_not_found`, so code can tell a typo from other store errors:
 
 ``` r
-ledgr_run_info(snapshot, "missing_run")
+tryCatch(
+  ledgr_run_info(snapshot, "missing_run"),
+  ledgr_run_not_found = function(error) class(error)[[1]]
+)
 ```
+
+    [1] "ledgr_run_not_found"
 
 ## Reopen A Completed Run In A Later Session
 
@@ -410,7 +417,11 @@ low-level tool that already owns a DBI connection.
 con <- ledgr_db_init(db_path)
 state <- ledgr_state_reconstruct("trend_qty_5", con)
 DBI::dbDisconnect(con, shutdown = TRUE)
+
+names(state)
 ```
+
+    [1] "positions"    "cash"         "pnl"          "equity_curve"
 
 This pair is intentionally not a broker or migration layer. It does not
 perform broker reconciliation, prove live restart safety, migrate old

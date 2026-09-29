@@ -201,7 +201,7 @@ January 8's close. When the target went flat on January 10, the sell filled at
 January 11's open.
 
 The price you decide on is never the price you get. That is why a strategy
-should read `ctx$close(id)` and feature values as pulse-known *information*, not
+should read `ctx$vec$close` and feature values as pulse-known *information*, not
 as executable prices. Each fill also carries a fee set by the cost model; this
 article keeps costs at zero to isolate timing (see
 `vignette("risk-and-cost", package = "ledgr")`).

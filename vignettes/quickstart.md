@@ -43,19 +43,18 @@ snapshot <- ledgr_snapshot_from_df(
 
 Start with a visible rule: hold five units when the current close is
 above its 20-session moving average, otherwise hold zero. The strategy
-reads the whole decision axis at once.
+reads the whole decision axis at once. Until the average has 20 closes
+to work with it does not exist, and the strategy holds nothing.
 
 ``` r
 features <- list(ledgr_ind_sma(20))
 
 strategy <- function(ctx, params) {
   sma <- ctx$vec$feature("sma_20")
+  if (!ledgr_passed_warmup(sma)) return(ctx$flat())
+  above <- ctx$vec$close / sma - 1 > params$threshold
   targets <- ctx$flat()
-  selected <- which(
-    is.finite(sma) &
-      (ctx$vec$close / sma - 1) > params$threshold
-  )
-  targets[selected] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 
@@ -131,7 +130,7 @@ sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 sweep |>
   select(candidate_id, status, total_return, sharpe_ratio, params) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_5caa13456fdd3351
+#> # ledgr sweep -- sweep_f510788f76226f75
 #> # A tibble: 2 x 5
 #>   candidate_id          status total_return sharpe_ratio params
 #>   <chr>                 <chr>  <chr>               <dbl> <list>

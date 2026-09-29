@@ -215,9 +215,9 @@ ledgr_metric_context_hash(context)
 
 ### Comparison, Sweep, And Promotion Contexts
 
-The following snippets use objects from the experiment-store and sweeps
-workflows. They show where metric context is carried, not a complete
-runnable example.
+The following snippets are fragments: they use objects from the
+experiment-store and sweeps workflows, so they are not executed here.
+They show where metric context is carried.
 
 `ledgr_run_compare()` has exactly one comparison context per table. The
 snapshot-first form uses the default context unless you pass one
@@ -365,7 +365,8 @@ Comparison metrics are recomputed from stored equity and fill tables and
 use the same closed-trade semantics as `ledgr_compute_metrics()`.
 
 For reports, convert the comparison object and keep the raw numeric
-columns:
+columns. Like the snippets above, this fragment uses the
+experiment-store comparison, so it is not executed here:
 
 ``` r
 comparison |>

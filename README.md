@@ -52,6 +52,9 @@ is what ledgr is built for.
 
 ## Install
 
+Install from GitHub. The install needs network access, so it is not run
+when this page is built:
+
 ``` r
 if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("blechturm/ledgr")
@@ -71,8 +74,10 @@ next fill: a number of shares for every instrument.
 ``` r
 above_trend <- function(ctx, params) {
   trend <- ctx$vec$feature("sma_20")
+  if (!ledgr_passed_warmup(trend)) return(ctx$flat())
+  above <- ctx$vec$close > trend * (1 + params$buffer)
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > trend * (1 + params$buffer))] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 ```
@@ -80,10 +85,13 @@ above_trend <- function(ctx, params) {
 This one holds `qty` shares of every instrument whose close is above its
 20-day moving average by at least `buffer`, and nothing otherwise.
 `ctx$flat()` starts from zero shares for every instrument, and `ctx$vec`
-holds today's values for all of them at once.
+holds today's values for all of them at once. For the first 19 bars the
+average does not exist yet, so the strategy holds nothing until it does.
 
 Run it on the package's demo data. The data is sealed into a snapshot
-first, so every run records exactly which data it used:
+first, so every run records exactly which data it used. The snapshot
+lives in a temporary store here; a real project passes a persistent
+path, so the evidence outlives the R session:
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -92,7 +100,11 @@ bars <- ledgr_demo_bars |>
     between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-12-31"))
   )
 
-snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "readme_demo")
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = "readme_demo",
+  db_path = ledgr_temp_store()
+)
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -169,13 +181,12 @@ Start with
 [Quickstart](https://blechturm.github.io/ledgr/articles/quickstart.html),
 then use [Strategy
 Basics](https://blechturm.github.io/ledgr/articles/strategy-development.html)
-to write your own rule.
-[Research
+to write your own rule. [Research
 Workflow](https://blechturm.github.io/ledgr/articles/research-workflow.html)
 takes that rule through code iterations, sweeps and promotion. The
-[article index](https://blechturm.github.io/ledgr/) covers data preparation,
-indicators, accounting, costs, walk-forward evaluation, and durable
-stores. Installed help is available through
+[article index](https://blechturm.github.io/ledgr/) covers data
+preparation, indicators, accounting, costs, walk-forward evaluation, and
+durable stores. Installed help is available through
 `vignette(package = "ledgr")` and `help(package = "ledgr")`.
 
 ledgr works with the rest of the R ecosystem: indicators from TTR or

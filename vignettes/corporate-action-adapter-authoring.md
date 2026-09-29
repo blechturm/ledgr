@@ -191,7 +191,8 @@ snapshot <- ledgr_snapshot_from_df(
   instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(facts),
   price_basis = "split_adjusted",
-  db_path = store
+  db_path = store,
+  snapshot_id = "adapter_demo"
 )
 info <- ledgr_snapshot_info(snapshot)
 c(

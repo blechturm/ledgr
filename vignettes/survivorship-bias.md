@@ -513,7 +513,7 @@ rebalance_declared_members <- function(ctx, params) {
     return(ctx$hold())
   }
   ctx |>
-    ledgr_selection(where = ctx$universe %in% ctx$members) |>
+    ledgr_selection() |>
     ledgr_weight_equal() |>
     ledgr_target_rebalance(ctx, equity_fraction = params$invested)
 }
@@ -530,9 +530,11 @@ need not be the same as this availability-aware case.
 The path is explicit. `ledgr_universe_members("demo_members")` selects
 the named history. At each decision, its cutoff resolution becomes
 `ctx$members`. `ctx$universe` is the members-plus-holdings axis, so a
-held former member stays visible. The rebalance helper creates one
-full-axis target; execution and valuation then decide independently what
-can fill and what can be marked.
+held former member stays visible. `ledgr_selection()` without a
+condition selects every current member that can trade, so a held former
+member is never selected. The rebalance helper creates one full-axis
+target; execution and valuation then decide independently what can fill
+and what can be marked.
 
 ## Comparing Survivor and Point-in-Time Universes
 
@@ -541,7 +543,9 @@ same strategy, same valuation policy, same starting cash. The only
 difference is which universe is declared.
 
 Seal the evidence first. After this point the inputs are frozen and
-identified by a hash.
+identified by a hash. The store comes from `ledgr_temp_store()` because
+the article closes and reopens it later; a real project passes a
+persistent path, so the evidence outlives the R session.
 
 ``` r
 store_path <- ledgr_temp_store(
@@ -787,9 +791,10 @@ them, because the instrument is simply absent.
 >
 > At the January 13 pulse, compare `ctx$hold()` with a target built only
 > from `ctx$members`. Which one preserves `AAA`? Then remove one current
-> bar for a still-held instrument. A feed gap must not become an
-> accidental liquidation; start from holdings and change only the
-> positions your rule intends to change.
+> bar for a still-held instrument and seal the changed bars under a new
+> `snapshot_id`. A feed gap must not become an accidental liquidation;
+> start from holdings and change only the positions your rule intends to
+> change.
 >
 > Expected result: `ctx$hold()` retains the nonzero `AAA` position.
 > Replacing it with a member-only zero vector requests an exit, but with
@@ -1020,12 +1025,15 @@ workflow, read
 >
 > ### Try it: spend the whole account
 >
-> Rerun the survivor experiment with `params = list(invested = 1)` and a
-> new `run_id`. Predict first: does its single target fill? Sizing uses
-> the January 6 close of 50, so the whole account asks for 200 shares, but
-> execution happens at the January 7 open where `BBB` costs 51 and those
-> shares now cost 10,200. Check `ledgr_results(run, "diagnostics")` for
-> the execution row and its reason code.
+> The snapshot above has been closed, so first point `snapshot` at the
+> reopened handle with `snapshot <- reopened_snapshot`, then call
+> `declare(c("BBB"))`. Rerun the survivor experiment with
+> `params = list(invested = 1)` and a new `run_id`. Predict first: does
+> its single target fill? Sizing uses the January 6 close of 50, so the
+> whole account asks for 200 shares, but execution happens at the January
+> 7 open where `BBB` costs 51 and those shares now cost 10,200. Check
+> `ledgr_results(run, "diagnostics")` for the execution row and its reason
+> code.
 >
 > Then try the same on `point_in_time`. Its two targets cost 9,700 at that
 > same opening and both fill, because `AAA` fell overnight while `BBB`

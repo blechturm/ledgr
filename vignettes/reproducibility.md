@@ -71,8 +71,9 @@ hashed, and stored with the run. Hidden globals are not.
 
 ``` r
 strategy <- function(ctx, params) {
+  above <- ctx$vec$close > params$threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 ```
@@ -88,8 +89,9 @@ features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
   ret_5 <- ctx$vec$feature("return_5")
+  rising <- !is.na(ret_5) & ret_5 > params$min_return
   targets <- ctx$flat()
-  targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
+  targets[rising] <- params$qty
   targets
 }
 
@@ -143,14 +145,14 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      553295afc5e7fdca97d9c18bd17eea0462d1665ba4dc8a1866668d4ad4da644f
-    Strategy Hash:    5b043868c4df8e9624c39b13594e7e662e79f0959480a24c3f56f41b9ebe153c
+    Config Hash:      3610553a51bc9f0d05d490d34f2ee6d4cc5b5fcf9dbad414b6a3ed60425e2301
+    Strategy Hash:    f8864de00cb362bf6046a1eb4f32e407819d8a8f12d902d2210647fe7f7e16ec
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.920
+    Elapsed Sec:      0.830
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -170,7 +172,7 @@ stored
 
     Run ID:           qty_10
     Reproducibility:  tier_1
-    Source Hash:      5b043868c4df8e9624c39b13594e7e662e79f0959480a24c3f56f41b9ebe153c
+    Source Hash:      f8864de00cb362bf6046a1eb4f32e407819d8a8f12d902d2210647fe7f7e16ec
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Hash Verified:    TRUE
     Trust:            FALSE
@@ -183,8 +185,9 @@ writeLines(stored$strategy_source_text)
     function (ctx, params)
     {
         ret_5 <- ctx$vec$feature("return_5")
+        rising <- !is.na(ret_5) & ret_5 > params$min_return
         targets <- ctx$flat()
-        targets[which(is.finite(ret_5) & ret_5 > params$min_return)] <- params$qty
+        targets[rising] <- params$qty
         targets
     }
 
@@ -217,8 +220,12 @@ a function object.
 
 ``` r
 trusted <- ledgr_run_strategy(snapshot, "qty_10", trust = TRUE)
-trusted$strategy_function
+is.function(trusted$strategy_function)
+```
 
+    [1] TRUE
+
+``` r
 rerun_exp <- ledgr_experiment(
   snapshot = snapshot,
   strategy = trusted$strategy_function,
@@ -233,6 +240,27 @@ ledgr_run(
   run_id = "qty_10_rerun"
 )
 ```
+
+    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+    next-open fill model requires a following bar. No fill was emitted for this target
+    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+    should be fillable.
+
+    ledgr Backtest Results
+    ======================
+
+    Run ID:                            qty_10_rerun
+    Period:                            2019-01-01 to 2019-06-28
+    Opening Cash:                      $10000.00
+    Final Equity:                      $10119.69
+    Total Return:                      1.20%
+    Max Drawdown:                      -0.82%
+    Closed Trades:                     20
+
+    Corporate actions: NOT SUPPLIED - returns may omit distributions
+    Price basis: UNDECLARED - distribution double counting cannot be ruled out
+
+    Use summary(bt) for metrics and evidence
 
 Hash verification proves stored-text identity, not code safety. A
 verified hash means the stored text matches the stored hash. It does not
@@ -271,11 +299,7 @@ namespace.
 ``` r
 tier_1_strategy <- function(ctx, params) {
   targets <- ctx$flat()
-
-  for (id in ctx$universe) {
-    targets[id] <- params$qty
-  }
-
+  targets[] <- params$qty
   targets
 }
 
@@ -343,14 +367,16 @@ sweeps.
 captured_threshold <- 100
 
 tier_2_captured <- function(ctx, params) {
+  above <- ctx$vec$close > captured_threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > captured_threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 
 tier_1_parameterized <- function(ctx, params) {
+  above <- ctx$vec$close > params$threshold
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > params$threshold)] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 
@@ -432,8 +458,9 @@ strategy body so its source is captured. Do not put function objects in
 ``` r
 repaired_strategy <- function(ctx, params) {
   choose_targets <- function(context, quantity) {
+    above <- context$vec$close > params$threshold
     targets <- context$flat()
-    targets[which(context$vec$close > params$threshold)] <- quantity
+    targets[above] <- quantity
     targets
   }
 
@@ -508,11 +535,17 @@ bad_strategy <- function(ctx, params) {
   counter <<- counter + 1
   ctx$flat()
 }
+
+ledgr_strategy_preflight(bad_strategy)$tier
 ```
 
-Avoid this pattern. Store intentional strategy variation in `params`,
-and let ledgr record decisions and state changes through the run
-artifacts.
+    [1] "tier_3"
+
+The global assignment is caught here, but preflight cannot see every
+form of hidden state, such as a mutable object reached through a
+captured environment. Avoid this pattern. Store intentional strategy
+variation in `params`, and let ledgr record decisions and state changes
+through the run artifacts.
 
 ## What To Remember
 

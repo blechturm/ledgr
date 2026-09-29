@@ -182,10 +182,9 @@ indicators resolved for that candidate. `params$threshold` and
 `params$qty` come from the strategy grid. For the full strategy
 contract, read `vignette("strategy-development", package = "ledgr")`.
 
-The per-instrument read is necessary for active aliases today: ledgr
-does not yet expose an alias-aware whole-universe vector accessor. Fixed
-feature IDs should use `ctx$vec$feature(feature_id)`; this loop is a
-disclosed boundary, not the preferred pattern for ordinary maps.
+ledgr has no alias-aware whole-universe feature read yet, so a strategy
+that reads active aliases loops over `ctx$features(id)`. With fixed
+feature IDs, use `ctx$vec$feature()`.
 
 An **active alias** is a stable strategy-facing feature name whose
 concrete indicator can vary by candidate. The strategy can keep reading
@@ -375,7 +374,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_9d297f7c769ea96d
+    # ledgr sweep -- sweep_1fa0dc9f175668bf
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -416,7 +415,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_9d297f7c769ea96d
+    # ledgr sweep -- sweep_1fa0dc9f175668bf
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -496,14 +495,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_9bd8cdad9e8dc612 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -587,7 +586,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-28 21:42:17                    4           16          16
+    1 sma_retained_sweep 2026-09-29 17:15:34                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -614,7 +613,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-28 21:42:17.275514
+    Created At:        2026-09-29 17:15:34.541451
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -702,14 +701,22 @@ accounting fold. When your workload is spot-asset FIFO and you want the
 scoped compiled accelerator, opt in explicitly:
 
 ``` r
-sweep <- ledgr_sweep(
+fifo_sweep <- ledgr_sweep(
   exp,
   grid,
   precomputed_features = precomputed,
   seed = 2026L,
   compiled_accounting_model = "spot_fifo"
 )
+
+identical(fifo_sweep$final_equity, sweep$final_equity)
 ```
+
+    [1] TRUE
+
+The compiled path changes how the accounting is computed, not the
+result: every candidate ends with the same final equity as in the
+canonical sweep above.
 
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is
 a memory-backed sweep accelerator only: it is not a general compiled
@@ -760,7 +767,7 @@ failed_sweep |>
   select(candidate_id, candidate_row, status, error_class, error_msg, params)
 ```
 
-    # ledgr sweep -- sweep_8b0b58c45831ae0a
+    # ledgr sweep -- sweep_64f547d58c11f9c5
     # A tibble: 2 x 6
       candidate_id          candidate_row status error_class          error_msg   params
       <chr>                         <int> <chr>  <chr>                <chr>       <list>
@@ -858,7 +865,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_9d297f7c769ea96d
+    # ledgr sweep -- sweep_1fa0dc9f175668bf
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>

@@ -139,17 +139,18 @@ I already own, unless today’s bar gives me a reason to leave.”
 
 ``` r
 hold_unless_down <- function(ctx, params) {
+  down <- ctx$vec$close < ctx$vec$open
   targets <- ctx$hold()
-  targets[which(ctx$vec$close < ctx$vec$open)] <- 0
+  targets[down] <- 0
   targets
 }
 ```
 
 `ctx$vec$close < ctx$vec$open` compares every instrument at once, in the
-order of `ctx$universe`. `which()` turns that comparison into the
-positions where it is `TRUE`, skipping any missing value, so exactly
-those entries of the target change and every other instrument keeps its
-current quantity.
+order of `ctx$universe`, and gives the condition a name: `down` holds
+one `TRUE` or `FALSE` per instrument. Assigning through it changes
+exactly the instruments where it is `TRUE`; every other instrument keeps
+its current quantity.
 
 ## A Strategy That Does Nothing
 
@@ -210,8 +211,9 @@ observable data becomes a target.
 
 ``` r
 buy_if_up <- function(ctx, params) {
+  up <- ctx$vec$close > ctx$vec$open
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > ctx$vec$open)] <- 1
+  targets[up] <- 1
   targets
 }
 ```
@@ -252,8 +254,9 @@ different assumptions.
 
 ``` r
 buy_if_up_qty <- function(ctx, params) {
+  up <- ctx$vec$close > ctx$vec$open
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > ctx$vec$open)] <- params$qty
+  targets[up] <- params$qty
   targets
 }
 ```
@@ -317,18 +320,78 @@ unknown feature, not warmup.
 ``` r
 positive_return <- function(ctx, params) {
   ret <- ctx$vec$feature("return_5")
+  if (!ledgr_passed_warmup(ret)) return(ctx$flat())
+  rising <- ret > params$min_return
   targets <- ctx$flat()
-  targets[which(is.finite(ret) & ret > params$min_return)] <- params$qty
+  targets[rising] <- params$qty
   targets
 }
 ```
 
 Economically, this holds `qty` shares of every instrument whose 5-bar
-return is above `min_return`, and nothing otherwise. `is.finite()` keeps
-the warmup pulses, where the return is still `NA`, out of the decision.
+return is above `min_return`, and nothing otherwise. A 5-bar return
+needs five earlier closes, so for the first bars it is still `NA`. Both
+instruments share one calendar, so the return is missing for all of them
+at once, and `ledgr_passed_warmup()` holds nothing until every value
+exists. Handle warmup explicitly like this rather than letting a missing
+value slip through the assignment unseen.
 
-When a rule needs to rank instruments or size positions from the account
-instead, ledgr’s helper pipeline does that work in four steps:
+## The Same Rule With Helpers
+
+Every strategy, however it is written, returns the same thing: shares
+per instrument. ledgr’s strategy helpers build that named vector for you
+in named steps. Here is the same rule as a helper pipeline:
+
+``` r
+positive_return_helpers <- function(ctx, params) {
+  rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
+  ctx |>
+    ledgr_selection(where = rising, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
+}
+```
+
+`ledgr_signal_return()` reads the registered 5-bar return,
+`ledgr_selection()` keeps the instruments where the condition holds, and
+`missing = "exclude"` says what a warmup `NA` means: not selected.
+`ledgr_target_quantity()` turns the selection into `qty` shares for the
+selected instruments and zero for the rest.
+
+To see that both forms agree, ask each for its target on one decision
+date. `ledgr_pulse_snapshot()` builds the `ctx` a strategy would receive
+at one timestamp;
+`vignette("strategy-authoring-tools", package = "ledgr")` covers it in
+detail.
+
+``` r
+pulse <- ledgr_pulse_snapshot(
+  snapshot,
+  universe = c("DEMO_01", "DEMO_02"),
+  ts_utc = ledgr_utc("2019-01-29"),
+  features = features
+)
+params <- list(min_return = 0, qty = 10)
+
+hand_built <- positive_return(pulse, params)
+piped <- positive_return_helpers(pulse, params)
+
+hand_built
+#> DEMO_01 DEMO_02
+#>      10      10
+identical(unclass(piped), hand_built)
+#> [1] TRUE
+
+close(pulse)
+```
+
+The helpers return the same named vector, with a class that prints a
+short summary. Use whichever form makes the rule easier to read. The
+later articles use the helpers for rules like this one and write the
+vector by hand when manipulating it is the lesson.
+
+The pipeline has four kinds of step. A rule that ranks instruments or
+sizes positions from the account swaps in the ranking and weighting
+steps:
 
 | Step | Use |
 |----|----|

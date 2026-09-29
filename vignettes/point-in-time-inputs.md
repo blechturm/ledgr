@@ -249,7 +249,10 @@ facts alone do not activate the availability model.
 
 Combine the fact families, then pass the plain bundle through the
 ordinary snapshot API. The scope and knowledge choices are explicit in
-the code above; they are not hidden inside the bundle’s recipe.
+the code above; they are not hidden inside the bundle’s recipe. The
+store comes from `ledgr_temp_store()` because the code closes and
+reopens it; a real project passes a persistent path, so the sealed
+evidence outlives the R session.
 
 ``` r
 pit_facts <- ledgr_facts(

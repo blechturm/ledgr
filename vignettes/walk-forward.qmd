@@ -85,7 +85,10 @@ snapshot <- ledgr_snapshot_from_df(
 ```
 
 The experiment is the same kind of object used by `ledgr_run()` and
-`ledgr_sweep()`.
+`ledgr_sweep()`. Its strategy is `ledgr_demo_sma_crossover_strategy()`, which
+holds `qty` shares of an instrument while its fast moving average over `fast_n`
+bars is more than `threshold` above its slow average over `slow_n` bars, and
+nothing otherwise.
 
 ```{r}
 #| label: experiment

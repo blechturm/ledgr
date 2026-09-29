@@ -557,8 +557,9 @@ weekly_trend_momentum <- function(ctx, params) {
     targets <- weights |>
       ledgr_target_rebalance(ctx, equity_fraction = params$invested)
   } else {
+    exits <- ledgr_selection(ctx, where = close < trend, missing = "exclude")
     targets <- ctx$hold()
-    targets[which(close < trend)] <- 0
+    targets[exits] <- 0
   }
 
   list(targets = targets, state_update = list(pulses_seen = pulses_seen + 1))
@@ -571,9 +572,10 @@ weekly_params <- list(invested = 0.5, every = 5)
 the strategy holds. On every fifth pulse it rebalances with the rule
 from the second version. In between, it starts from `ctx$hold()`, keeps
 every position, and changes one thing: an instrument that closed below
-its trend is set to zero. An instrument without a close is neither
-bought nor sold. That is the hold-then-edit pattern: start from what you
-own and change only what today’s evidence justifies.
+its trend is set to zero. The exits are a selection, so
+`missing = "exclude"` states the missing case: an instrument without a
+close is neither bought nor sold. That is the hold-then-edit pattern:
+start from what you own and change only what today’s evidence justifies.
 
 You might be tempted to call `trend_momentum()` from inside
 `weekly_trend_momentum()` instead of repeating the rule. Don’t: ledgr
@@ -669,7 +671,8 @@ compare candidates without fooling yourself.
 >
 > ### Try it
 >
-> Run `weekly_trend_momentum()` with `every = 1`. It should reproduce
+> Run `weekly_trend_momentum()` with `every = 1` under a new `run_id`,
+> since a store keeps one run per ID. It should reproduce
 > `trend_momentum()` fill for fill. Why? Checks like this are a cheap way
 > to confirm that a rewrite changed only what you meant to change.
 

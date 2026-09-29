@@ -557,12 +557,15 @@ strict-lattice stable-region criteria.
 
 Assume you already have a retained sweep called `objective_sweep`. The
 executed setup behind this example runs four named SMA candidates on the
-package’s demo bars. It is hidden here because snapshot, experiment,
-grid, and sweep construction are the preceding workflow, not part of
-declaring an eligibility policy. Return retention is explicit because
-both DSR and `positive_trajectory` consume the retained candidate paths.
-Read `vignette("sweeps", package = "ledgr")` for the full construction,
-retention, and reopening workflow.
+package’s demo bars with `ledgr_demo_sma_crossover_strategy()`, which
+holds `qty` shares of an instrument while its fast moving average over
+`fast_n` bars is more than `threshold` above its slow average over
+`slow_n` bars, and nothing otherwise. The setup is hidden here because
+snapshot, experiment, grid, and sweep construction are the preceding
+workflow, not part of declaring an eligibility policy. Return retention
+is explicit because both DSR and `positive_trajectory` consume the
+retained candidate paths. Read `vignette("sweeps", package = "ledgr")`
+for the full construction, retention, and reopening workflow.
 
 The DSR criterion records the already-computed diagnostic rather than
 recomputing it inside the objective. The example treats all four

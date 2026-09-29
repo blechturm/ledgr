@@ -71,7 +71,8 @@ snapshot <- ledgr_snapshot_from_df(
 
 Start with a visible rule: hold five units when the current close is above its
 20-session moving average, otherwise hold zero. The strategy reads the whole
-decision axis at once.
+decision axis at once. Until the average has 20 closes to work with it does not
+exist, and the strategy holds nothing.
 
 ```{r}
 #| label: experiment
@@ -80,12 +81,10 @@ features <- list(ledgr_ind_sma(20))
 
 strategy <- function(ctx, params) {
   sma <- ctx$vec$feature("sma_20")
+  if (!ledgr_passed_warmup(sma)) return(ctx$flat())
+  above <- ctx$vec$close / sma - 1 > params$threshold
   targets <- ctx$flat()
-  selected <- which(
-    is.finite(sma) &
-      (ctx$vec$close / sma - 1) > params$threshold
-  )
-  targets[selected] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 

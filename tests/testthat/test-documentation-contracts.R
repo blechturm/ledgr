@@ -235,7 +235,7 @@ testthat::test_that("[LTB-0099] strategy teaching uses the shipped helper polici
   )
   testthat::expect_match(
     weekly_chunk,
-    "targets[which(close < trend)] <- 0",
+    'exits <- ledgr_selection(ctx, where = close < trend, missing = "exclude")',
     fixed = TRUE
   )
   testthat::expect_no_match(weekly_chunk, "as.logical(exits)", fixed = TRUE)
@@ -350,7 +350,7 @@ testthat::test_that("feature documentation teaches discovery, aliases, and mater
   testthat::expect_match(strategy_doc, "rising <- momentum > 0 & close > trend", fixed = TRUE)
   testthat::expect_match(
     strategy_doc,
-    "targets[which(close < trend)] <- 0",
+    "targets[exits] <- 0",
     fixed = TRUE
   )
   testthat::expect_no_match(strategy_doc, "rising <- !is.na", fixed = TRUE)
@@ -787,7 +787,11 @@ testthat::test_that("public result and helper documentation states current seman
   # Strategy Basics teaches whole-vector rules, not the scalar loop its own
   # tip calls slow, and keeps accelerator internals out of the first article.
   testthat::expect_no_match(strategy_development_doc, "for (id in ctx$universe)", fixed = TRUE)
-  testthat::expect_match(strategy_development_doc, "targets[which(ctx$vec$close > ctx$vec$open)] <- 1", fixed = TRUE)
+  testthat::expect_match(
+    strategy_development_doc,
+    "up <- ctx$vec$close > ctx$vec$open\n  targets <- ctx$flat()\n  targets[up] <- 1",
+    fixed = TRUE
+  )
   testthat::expect_no_match(strategy_development_doc, "compiled_accounting_model", fixed = TRUE)
   testthat::expect_no_match(strategy_development_doc, "`signal_*()`", fixed = TRUE)
   testthat::expect_no_match(strategy_development_doc, "```{r cleanup}", fixed = TRUE)
@@ -1869,4 +1873,68 @@ testthat::test_that("[LTB-0118] each article hands off to the next article in th
       info = sprintf("%s opens with code before prose", entry)
     )
   }
+})
+
+# House rules 1, 4 and 6 over the README and every article source. Returns one
+# message per violation, so the block can also be run against an older tree.
+ledgr_doc_idiom_violations <- function(root) {
+  sources <- c(
+    file.path(root, "README.Rmd"),
+    list.files(file.path(root, "vignettes"), pattern = "[.]qmd$", full.names = TRUE, recursive = TRUE)
+  )
+  disclosure <- paste(
+    "ledgr has no alias-aware whole-universe feature read yet, so a strategy that",
+    "reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,",
+    "use `ctx$vec$feature()`."
+  )
+  squish <- function(x) gsub("\\s+", " ", x)
+  out <- character()
+  for (path in sources) {
+    lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    name <- basename(path)
+    old_header <- grep("^```\\{r[ ,]", lines)
+    out <- c(out, sprintf("%s:%d old chunk header", name, old_header))
+
+    opens <- grep("^```\\{r", lines)
+    closes <- grep("^```\\s*$", lines)
+    in_chunk <- logical(length(lines))
+    for (open in opens) {
+      close <- closes[closes > open][1L]
+      if (!is.na(close) && close > open + 1L) in_chunk[(open + 1L):(close - 1L)] <- TRUE
+    }
+    code <- ifelse(in_chunk, lines, "")
+    id_source <- grep(
+      "(run_id|snapshot_id)\\b.*(Sys\\.getpid|Sys\\.time|Sys\\.Date|sample\\(|runif\\(|rnorm\\()",
+      code
+    )
+    out <- c(out, sprintf("%s:%d run or snapshot ID from process, clock or random draw", name, id_source))
+
+    loops <- grep("for \\(\\w+ in ctx\\$universe\\)", code)
+    reads_aliases <- FALSE
+    for (start in loops) {
+      depth <- 0L
+      end <- start
+      for (i in start:length(code)) {
+        depth <- depth + lengths(regmatches(code[[i]], gregexpr("\\{", code[[i]]))) -
+          lengths(regmatches(code[[i]], gregexpr("\\}", code[[i]])))
+        end <- i
+        if (i > start && depth <= 0L) break
+      }
+      body <- code[start:end]
+      if (any(grepl("ctx\\$feature\\(", body))) {
+        out <- c(out, sprintf("%s:%d ctx$feature() inside a loop over ctx$universe", name, start))
+      }
+      if (any(grepl("ctx\\$features\\(", body))) reads_aliases <- TRUE
+    }
+    if (reads_aliases && !grepl(disclosure, squish(paste(lines, collapse = " ")), fixed = TRUE)) {
+      out <- c(out, sprintf("%s: ctx$features(id) loop without the active-alias disclosure sentence", name))
+    }
+  }
+  out
+}
+
+testthat::test_that("[LTB-0125] article code follows the house idioms for IDs, chunk headers and feature reads", {
+  root <- testthat::test_path("..", "..")
+  testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
+  testthat::expect_identical(ledgr_doc_idiom_violations(root), character())
 })

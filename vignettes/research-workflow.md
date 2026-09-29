@@ -125,10 +125,10 @@ whose 20-bar return is positive.
 
 ``` r
 momentum_v1 <- function(ctx, params) {
-  ret <- ctx$vec$feature("return_20")
-  targets <- ctx$flat()
-  targets[which(is.finite(ret) & ret > 0)] <- params$qty
-  targets
+  rising <- ledgr_signal_return(ctx, lookback = 20) > 0
+  ctx |>
+    ledgr_selection(where = rising, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp_v1 <- ledgr_experiment(
@@ -169,16 +169,17 @@ the strategy or the feature declarations before you iterate further.
 Suppose the trades show the rule buying into short rallies inside a
 falling market. The next iteration is not a new parameter value; it is a
 new condition. Version 2 also requires the close to sit above its 50-bar
-moving average.
+moving average. The 50-bar average is missing for longer than the 20-bar
+return, and `missing = "exclude"` keeps an instrument out until both
+inputs exist.
 
 ``` r
 momentum_v2 <- function(ctx, params) {
-  ret <- ctx$vec$feature("return_20")
-  trend <- ctx$vec$feature("sma_50")
-  targets <- ctx$flat()
-  rising <- is.finite(ret) & is.finite(trend) & ret > 0 & ctx$vec$close > trend
-  targets[which(rising)] <- params$qty
-  targets
+  rising <- ledgr_signal_return(ctx, lookback = 20) > 0
+  above_trend <- ctx$vec$close > ledgr_signal_feature(ctx, "sma_50")
+  ctx |>
+    ledgr_selection(where = rising & above_trend, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp_v2 <- ledgr_experiment(

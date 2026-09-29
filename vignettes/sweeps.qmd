@@ -196,10 +196,9 @@ resolved for that candidate. `params$threshold` and `params$qty` come from the
 strategy grid. For the full strategy contract, read
 `vignette("strategy-development", package = "ledgr")`.
 
-The per-instrument read is necessary for active aliases today: ledgr does not
-yet expose an alias-aware whole-universe vector accessor. Fixed feature IDs
-should use `ctx$vec$feature(feature_id)`; this loop is a disclosed boundary,
-not the preferred pattern for ordinary maps.
+ledgr has no alias-aware whole-universe feature read yet, so a strategy that
+reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
+use `ctx$vec$feature()`.
 
 An **active alias** is a stable strategy-facing feature name whose concrete
 indicator can vary by candidate. The strategy can keep reading
@@ -556,16 +555,20 @@ accelerator, opt in explicitly:
 
 ```{r}
 #| label: sweep-spot-fifo-shape
-#| eval: false
 
-sweep <- ledgr_sweep(
+fifo_sweep <- ledgr_sweep(
   exp,
   grid,
   precomputed_features = precomputed,
   seed = 2026L,
   compiled_accounting_model = "spot_fifo"
 )
+
+identical(fifo_sweep$final_equity, sweep$final_equity)
 ```
+
+The compiled path changes how the accounting is computed, not the result: every
+candidate ends with the same final equity as in the canonical sweep above.
 
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is a
 memory-backed sweep accelerator only: it is not a general compiled execution engine,

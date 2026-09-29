@@ -6,7 +6,10 @@ output:
     md_extensions: -smart
 ---
 
-```{r setup, include=FALSE}
+```{r}
+#| label: setup
+#| include: false
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -77,12 +80,21 @@ built for.
 
 ## Install
 
-```{r install, eval=FALSE}
+Install from GitHub. The install needs network access, so it is not run when
+this page is built:
+
+```{r}
+#| label: install
+#| eval: false
+
 if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
 pak::pak("blechturm/ledgr")
 ```
 
-```{r attach, message=FALSE}
+```{r}
+#| label: attach
+#| message: false
+
 library(ledgr)
 library(dplyr)
 ```
@@ -93,11 +105,15 @@ A strategy is a function of the current decision context, `ctx`, and your
 parameters, `params`. It returns the holdings you want after the next fill: a
 number of shares for every instrument.
 
-```{r strategy}
+```{r}
+#| label: strategy
+
 above_trend <- function(ctx, params) {
   trend <- ctx$vec$feature("sma_20")
+  if (!ledgr_passed_warmup(trend)) return(ctx$flat())
+  above <- ctx$vec$close > trend * (1 + params$buffer)
   targets <- ctx$flat()
-  targets[which(ctx$vec$close > trend * (1 + params$buffer))] <- params$qty
+  targets[above] <- params$qty
   targets
 }
 ```
@@ -105,19 +121,28 @@ above_trend <- function(ctx, params) {
 This one holds `qty` shares of every instrument whose close is above its
 20-day moving average by at least `buffer`, and nothing otherwise.
 `ctx$flat()` starts from zero shares for every instrument, and `ctx$vec` holds
-today's values for all of them at once.
+today's values for all of them at once. For the first 19 bars the average does
+not exist yet, so the strategy holds nothing until it does.
 
 Run it on the package's demo data. The data is sealed into a snapshot first,
-so every run records exactly which data it used:
+so every run records exactly which data it used. The snapshot lives in a
+temporary store here; a real project passes a persistent path, so the evidence
+outlives the R session:
 
-```{r first-run}
+```{r}
+#| label: first-run
+
 bars <- ledgr_demo_bars |>
   filter(
     instrument_id %in% c("DEMO_01", "DEMO_02", "DEMO_03"),
     between(ts_utc, ledgr_utc("2019-01-01"), ledgr_utc("2019-12-31"))
   )
 
-snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "readme_demo")
+snapshot <- ledgr_snapshot_from_df(
+  bars,
+  snapshot_id = "readme_demo",
+  db_path = ledgr_temp_store()
+)
 
 exp <- ledgr_experiment(
   snapshot = snapshot,
@@ -145,7 +170,9 @@ trades for free.
 The run is already durable. Save its locators, release the live handles, and
 reopen the same evidence later. `verify = TRUE` recomputes the data hash first:
 
-```{r reopen}
+```{r}
+#| label: reopen
+
 store_path <- snapshot$db_path
 snapshot_id <- snapshot$snapshot_id
 run_id <- bt$run_id
@@ -192,7 +219,10 @@ ledgr is not yet on CRAN. Until the first CRAN release, stored artifacts,
 database schemas, and APIs may change without a deprecation cycle, so expect
 to rerun experiments after upgrading.
 
-```{r cleanup, include=FALSE}
+```{r}
+#| label: cleanup
+#| include: false
+
 if (exists("bt")) close(bt)
 if (exists("snapshot")) ledgr_snapshot_close(snapshot)
 ```

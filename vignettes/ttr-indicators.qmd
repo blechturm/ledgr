@@ -302,7 +302,7 @@ replace the snapshot handle needed for interactive pulse inspection.
 
 ```{r}
 #| label: ttr-pulse-snapshot
-#| eval: false
+#| eval: !expr requireNamespace("TTR", quietly = TRUE)
 
 ttr_snapshot <- ledgr_snapshot_from_df(
   bars,

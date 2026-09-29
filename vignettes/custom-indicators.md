@@ -35,7 +35,7 @@ definition. The important fields are:
 
 | Field | Meaning |
 |----|----|
-| `id` | Stable feature ID used in `ctx$feature(instrument_id, feature_id)`. |
+| `id` | Stable feature ID a strategy reads with `ctx$vec$feature(feature_id)`. |
 | `fn` | Scalar function for one bounded historical window. |
 | `series_fn` | Optional vectorized function for one instrument’s full bar series. |
 | `requires_bars` | Minimum lookback requirement for the indicator definition. |
@@ -208,7 +208,9 @@ median_close <- ledgr_adapter_r(
 The adapter stores the adapted function identity and arguments in
 indicator parameters. It still creates an ordinary `ledgr_indicator`.
 
-`ledgr_adapter_csv()` adapts a CSV of precomputed values:
+`ledgr_adapter_csv()` adapts a CSV of precomputed values. The chunk is
+not executed because the file it names does not exist in the package
+build:
 
 ``` r
 csv_indicator <- ledgr_adapter_csv(
@@ -242,16 +244,16 @@ bars <- ledgr_demo_bars |>
 
 snapshot <- ledgr_snapshot_from_df(
   bars,
-  snapshot_id = paste0("custom-indicators-", Sys.getpid())
+  snapshot_id = "custom_indicators_demo"
 )
 
 features <- list(range_3)
 
 strategy <- function(ctx, params) {
-  value <- ctx$vec$feature("range_3")
-  targets <- ctx$flat()
-  targets[is.finite(value) & value < params$max_range] <- params$qty
-  targets
+  narrow <- ledgr_signal_feature(ctx, "range_3") < params$max_range
+  ctx |>
+    ledgr_selection(where = narrow, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp <- ledgr_experiment(
@@ -266,9 +268,10 @@ ledgr_feature_id(features)
 #> [1] "range_3"
 ```
 
-Inside the strategy, `ctx$vec$feature("range_3")` reads the exact
-feature ID for the whole decision axis in one call. Unknown IDs fail
-loudly; warmup for a known feature is `NA_real_`.
+Inside the strategy, `ledgr_signal_feature(ctx, "range_3")` reads the
+exact feature ID for the whole decision axis in one call. Unknown IDs
+fail loudly; warmup for a known feature is `NA_real_`, which
+`missing = "exclude"` leaves unselected.
 
 Run the experiment and inspect the event-derived result tables just as
 you would for built-in indicators:
