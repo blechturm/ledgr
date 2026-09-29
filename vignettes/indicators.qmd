@@ -22,6 +22,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 options(width = 90)
+options(cli.unicode = FALSE)
 # Local renders load ledgr from source; installed builds use the library call
 # in the prerequisites chunk.
 pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
@@ -398,6 +399,10 @@ ledgr_results(bt, what = "fills")
 close(pulse)
 close(bt)
 ```
+
+The `LEDGR_LAST_BAR_NO_FILL` warning comes from the last bar: the rule changed
+its target there, and there is no later open at which to fill it. It is
+expected at the end of most samples; `vignette("execution-semantics", package = "ledgr")` explains it.
 
 The fill table is the first execution check: it shows which instruments
 actually crossed from a target into a position, at which next-open price. An

@@ -309,7 +309,10 @@ positive value means improvement or degradation depends on the selection rule
 direction.
 
 Short test windows may carry warning flags. Those warnings are not failures;
-they are metadata telling you how to interpret the evidence.
+they are metadata telling you how to interpret the evidence. Here each test
+window is one month of two demo instruments, so the annualized Sharpe ratios
+swing from 0.80 to 3.64 between folds; at this size they show the shape of the
+evidence, not its strength.
 
 ## Extract A Candidate With A Rationale
 
@@ -325,8 +328,13 @@ candidate <- ledgr_candidate(
   selection_rationale = "Documentation example: inspect the latest completed fold."
 )
 
-candidate$candidate_id
+candidate
+str(candidate$feature_params)
 ```
+
+The print shows the strategy parameters. The feature parameters, the moving
+average lengths behind the `feature_...` part of the ID, are in
+`candidate$feature_params`.
 
 Promotion uses the same candidate object as sweep promotion. In a real research
 project, promote only after you have written down why this fold and candidate
@@ -393,7 +401,9 @@ especially with large candidate grids and wide feature sets.
 Re-run `ledgr_walk_forward()` with `opening_state_policy = "flat_test_state"`.
 How does the degradation table change, and why does `cold_start_distorted`
 appear? Then widen the `test_window` in `ledgr_folds_rolling()` to `"2 months"`
-and re-run. Do the short-test-window warning flags go away?
+and re-run. The short-test-window flags stay, because the health check asks
+for at least 90 calendar days. How long must a test window be before they go
+away, and how many folds still fit between `start` and `end`?
 :::
 
 ## What This Does Not Do

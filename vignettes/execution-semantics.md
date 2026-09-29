@@ -98,13 +98,12 @@ tibble::tibble(
   mean_return = c(mean(timing$fill_same_bar), mean(timing$fill_next_open)),
   win_rate = c(mean(timing$fill_same_bar > 0), mean(timing$fill_next_open > 0))
 )
+#> # A tibble: 2 x 3
+#>   fill_rule                   mean_return win_rate
+#>   <chr>                             <dbl>    <dbl>
+#> 1 same bar you decided on         0.00997    1
+#> 2 next open (what ledgr does)     0.00155    0.559
 ```
-
-    # A tibble: 2 x 3
-      fill_rule                   mean_return win_rate
-      <chr>                             <dbl>    <dbl>
-    1 same bar you decided on         0.00997    1
-    2 next open (what ledgr does)     0.00155    0.559
 
 Filling at the bar you decided from wins **100 percent** of the time.
 That is not skill – you only ever bought bars you already knew had
@@ -160,13 +159,12 @@ bt <- ledgr_run(
 
 ledgr_results(bt, what = "fills") |>
   select(ts_utc, side, qty, price)
+#> # A tibble: 2 x 4
+#>   ts_utc     side    qty price
+#>   <date>     <chr> <dbl> <dbl>
+#> 1 2019-01-09 BUY      10  88.4
+#> 2 2019-01-11 SELL     10  88.8
 ```
-
-    # A tibble: 2 x 4
-      ts_utc     side    qty price
-      <date>     <chr> <dbl> <dbl>
-    1 2019-01-09 BUY      10  88.4
-    2 2019-01-11 SELL     10  88.8
 
 The strategy asked to hold the position across two bars, but you see
 only two fills: one to open the position and one to close it. The bars
@@ -212,18 +210,14 @@ final_bt <- ledgr_run(
   run_id = "how_targets_final_bar",
   params = list()
 )
-```
+#> Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
+#> next-open fill model requires a following bar. No fill was emitted for this target
+#> change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
+#> should be fillable.
 
-    Warning: LEDGR_LAST_BAR_NO_FILL: target changed on the final available bar, but the
-    next-open fill model requires a following bar. No fill was emitted for this target
-    change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
-    should be fillable.
-
-``` r
 nrow(ledgr_results(final_bt, what = "fills"))
+#> [1] 0
 ```
-
-    [1] 0
 
 The warning carries the stable code `LEDGR_LAST_BAR_NO_FILL` (see
 `?LEDGR_LAST_BAR_NO_FILL`). If that final target matters, extend the
@@ -277,14 +271,13 @@ tibble(
     nrow(ledgr_results(final_bt, what = "trades"))
   )
 )
+#> # A tibble: 3 x 3
+#>   case                     fills trades
+#>   <chr>                    <int>  <int>
+#> 1 opened and closed            2      1
+#> 2 opened and still held        1      0
+#> 3 final target cannot fill     0      0
 ```
-
-    # A tibble: 3 x 3
-      case                     fills trades
-      <chr>                    <int>  <int>
-    1 opened and closed            2      1
-    2 opened and still held        1      0
-    3 final target cannot fill     0      0
 
 The first run has two fills and one realized trade: one fill opens and
 the next closes the position. The open-position run has one fill and
@@ -306,16 +299,13 @@ bind_rows(
     select(action, realized_pnl),
   .id = "case"
 )
-```
+#> # A tibble: 3 x 3
+#>   case                  action realized_pnl
+#>   <chr>                 <chr>         <dbl>
+#> 1 opened and closed     OPEN           0
+#> 2 opened and closed     CLOSE          4.10
+#> 3 opened and still held OPEN           0
 
-    # A tibble: 3 x 3
-      case                  action realized_pnl
-      <chr>                 <chr>         <dbl>
-    1 opened and closed     OPEN           0
-    2 opened and closed     CLOSE          4.10
-    3 opened and still held OPEN           0
-
-``` r
 bind_rows(
   `opened and closed` = ledgr_results(bt, what = "equity") |>
     slice_tail(n = 1),
@@ -324,13 +314,17 @@ bind_rows(
   .id = "case"
 ) |>
   select(case, positions_value, equity)
+#> # A tibble: 2 x 3
+#>   case                  positions_value equity
+#>   <chr>                           <dbl>  <dbl>
+#> 1 opened and closed                  0  10004.
+#> 2 opened and still held            870.  9987.
 ```
 
-    # A tibble: 2 x 3
-      case                  positions_value equity
-      <chr>                           <dbl>  <dbl>
-    1 opened and closed                  0  10004.
-    2 opened and still held            870.  9987.
+The closed position left its profit in cash, so its equity is about
+10,004 with nothing held. The held position is valued at its last close,
+870 against the 884 it cost, so its equity of about 9,987 carries an
+unrealized loss that no trade has booked yet.
 
 ## Try It
 

@@ -13,5 +13,11 @@ execute:
   # Warnings are part of the teaching record. Suppress one only on a chunk
   # whose prose explains why that warning is irrelevant to its lesson.
   warning: true
-  message: false
   freeze: false
+
+# `message` is a knitr chunk option, not a Quarto execute option, so it is set
+# here; under `execute:` it is silently ignored. This keeps package attach and
+# masking messages out of every article.
+knitr:
+  opts_chunk:
+    message: false

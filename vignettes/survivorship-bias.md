@@ -641,9 +641,13 @@ ledgr_results(point_in_time, "fills") |>
 ```
 
 The decision was made at the January 6 close. The fills are stamped at
-the January 7 open, when the economic execution happened. Their
-read-only `recording_pulse_ts_utc` points to the January 7 close where
-the resulting account state appears on the equity curve.
+the January 7 open, when the economic execution happened. The third row
+is the January 13 rebalance, filled at the January 14 open: `AAA` has
+left the declared membership, so the rebalance selects only `BBB`, keeps
+the `AAA` holding it can no longer select, and spends the rest of the
+budget on 11 more `BBB` shares. Their read-only `recording_pulse_ts_utc`
+points to the January 7 close where the resulting account state appears
+on the equity curve.
 
 > [!NOTE]
 >

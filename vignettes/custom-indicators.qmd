@@ -19,6 +19,7 @@ vignette: >
 
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
+options(cli.unicode = FALSE)
 # Local renders load the package from source via pkgload (working dir is
 # either project root or vignettes/); installed builds fall through and
 # rely on the library(ledgr) call in the prerequisites chunk.
@@ -149,6 +150,10 @@ sma_3_custom <- ledgr_indicator(
 
 ledgr_feature_contracts(list(sma_3_custom))
 ```
+
+The contract row is what a strategy relies on: `sma_3_custom` is the ID to
+read, `source` records that it is your code, and the feature is `NA` until the
+third bar. The alias is `NA` because the list is unnamed.
 
 The `series_fn(bars, params)` contract is strict:
 

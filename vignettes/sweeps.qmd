@@ -421,6 +421,9 @@ retained_long |>
   slice_head(n = 8)
 ```
 
+Each `candidate_id` here is a row of `candidate_table` above, which lists the
+parameters that produced it.
+
 `period_return` is `NA_real_` on the first retained row for each candidate
 because there is no prior equity value to compare against. Drop that first
 return before handing the series to an external metric package:
@@ -616,7 +619,8 @@ debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
 failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
 
 failed_sweep |>
-  select(candidate_id, candidate_row, status, error_class, error_msg, params)
+  mutate(qty = vapply(params, function(p) p$qty, numeric(1))) |>
+  select(candidate_id, qty, status, error_class, error_msg)
 ```
 
 Use the failed row as an interactive debugging handle: inspect `error_class`,
@@ -648,10 +652,16 @@ dplyr-friendly surface as the in-session result.
 
 review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
 review$top |>
-  select(candidate_id, sharpe_ratio, params, feature_params)
+  select(candidate_id, sharpe_ratio) |>
+  left_join(as_tibble(candidate_table) |> select(-status), by = "candidate_id")
 review$issues
 ranked <- review$ranked
 ```
+
+The join to `candidate_table` shows what each top candidate is. The top rows
+come in pairs that differ only in `qty`: doubling the quantity doubles the
+profit but leaves the Sharpe ratio unchanged, so this ranking cannot tell them
+apart. A rule that must choose between them needs a second criterion.
 
 `ledgr_sweep_review()` packages the inspection shape while keeping the ranking
 rule explicit in the call. `review$top` is for the candidates you want to read
@@ -693,8 +703,10 @@ promoted_run <- ledgr_promote(
 summary(promoted_run)
 ```
 
-The promoted run is now a committed run with its own run ID. The selection note
-travels with the run. Same-snapshot promotion is useful for audit, debugging,
+Three closed trades on two instruments over half a year are far too few to
+judge a rule: the 100% win rate and the Sharpe ratio above describe this small
+sample, not the strategy. The promoted run is now a committed run with its own
+run ID. The selection note travels with the run. Same-snapshot promotion is useful for audit, debugging,
 and durable storage of the chosen candidate. It remains in-sample.
 
 ## Reopen The Promoted Run

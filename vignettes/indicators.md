@@ -158,7 +158,7 @@ crossover_features <- ledgr_feature_map(
 crossover_ids <- ledgr_feature_id(crossover_features)
 
 ledgr_feature_contracts(crossover_features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias    feature_id source requires_bars stable_after
 #>   <chr>    <chr>      <chr>          <int>        <int>
 #> 1 sma_fast sma_10     ledgr             10           10
@@ -220,7 +220,7 @@ are filtered to the mapped features and aliases are filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   ts_utc              instrument_id feature_id feature_value alias
 #>   <dttm>              <chr>         <chr>              <dbl> <chr>
 #> 1 2019-03-01 00:00:00 DEMO_01       return_5         0.0853  ret_5
@@ -238,11 +238,11 @@ orders feature columns, using aliases as the wide feature keys.
 
 ``` r
 ledgr_pulse_wide(pulse, features)
-#> # A tibble: 1 × 17
+#> # A tibble: 1 x 17
 #>   ts_utc                cash equity DEMO_01__ohlcv_open DEMO_01__ohlcv_high
 #>   <dttm>               <dbl>  <dbl>               <dbl>               <dbl>
 #> 1 2019-03-01 00:00:00 100000 100000                103.                107.
-#> # ℹ 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
+#> # i 12 more variables: DEMO_01__ohlcv_low <dbl>, DEMO_01__ohlcv_close <dbl>,
 #> #   DEMO_01__ohlcv_volume <dbl>, DEMO_01__feature_ret_5 <dbl>,
 #> #   DEMO_01__feature_sma_10 <dbl>, DEMO_02__ohlcv_open <dbl>, DEMO_02__ohlcv_high <dbl>,
 #> #   DEMO_02__ohlcv_low <dbl>, DEMO_02__ohlcv_close <dbl>, DEMO_02__ohlcv_volume <dbl>,
@@ -369,7 +369,7 @@ bt <- exp |>
 #> should be fillable.
 
 ledgr_results(bt, what = "fills")
-#> # A tibble: 39 × 10
+#> # A tibble: 39 x 10
 #>    event_seq ts_utc     recording_pulse_ts_utc instrument_id side    qty price   fee
 #>        <int> <date>     <dttm>                 <chr>         <chr> <dbl> <dbl> <dbl>
 #>  1         1 2019-01-23 2019-01-23 00:00:00    DEMO_01       BUY      10  88.0     0
@@ -382,12 +382,17 @@ ledgr_results(bt, what = "fills")
 #>  8         8 2019-03-08 2019-03-08 00:00:00    DEMO_02       BUY      10  68.9     0
 #>  9         9 2019-03-11 2019-03-11 00:00:00    DEMO_01       SELL     10 106.      0
 #> 10        10 2019-03-11 2019-03-11 00:00:00    DEMO_02       SELL     10  68.0     0
-#> # ℹ 29 more rows
-#> # ℹ 2 more variables: realized_pnl <dbl>, action <chr>
+#> # i 29 more rows
+#> # i 2 more variables: realized_pnl <dbl>, action <chr>
 
 close(pulse)
 close(bt)
 ```
+
+The `LEDGR_LAST_BAR_NO_FILL` warning comes from the last bar: the rule
+changed its target there, and there is no later open at which to fill
+it. It is expected at the end of most samples;
+`vignette("execution-semantics", package = "ledgr")` explains it.
 
 The fill table is the first execution check: it shows which instruments
 actually crossed from a target into a position, at which next-open
@@ -404,7 +409,7 @@ known feature may still be `NA`.
 
 ``` r
 ledgr_feature_contracts(features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 ret_5  return_5   ledgr              6            6
@@ -417,7 +422,7 @@ the contract table. For an unnamed list, `alias` is `NA`.
 ``` r
 plain_features <- list(ledgr_ind_returns(5), ledgr_ind_sma(10))
 ledgr_feature_contracts(plain_features)
-#> # A tibble: 2 × 5
+#> # A tibble: 2 x 5
 #>   alias feature_id source requires_bars stable_after
 #>   <chr> <chr>      <chr>          <int>        <int>
 #> 1 <NA>  return_5   ledgr              6            6
@@ -503,7 +508,7 @@ warmup_check_snapshot <- ledgr_snapshot_from_df(
 
 ledgr_feature_contract_check(warmup_check_snapshot, features) |>
   select(alias, instrument_id, available_bars, stable_after, warmup_achievable)
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   alias  instrument_id available_bars stable_after warmup_achievable
 #>   <chr>  <chr>                  <int>        <int> <lgl>
 #> 1 ret_5  DEMO_01                  129            6 TRUE
@@ -633,7 +638,7 @@ strict_smas <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(strict_smas)
-#> # A tibble: 3 × 5
+#> # A tibble: 3 x 5
 #>   alias      feature_id   source requires_bars stable_after
 #>   <chr>      <chr>        <chr>          <int>        <int>
 #> 1 built_in   sma_2        ledgr              2            2

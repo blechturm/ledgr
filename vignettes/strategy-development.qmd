@@ -472,6 +472,11 @@ bt_first <- exp |>
 summary(bt_first)
 ```
 
+The run prints a `LEDGR_LAST_BAR_NO_FILL` warning. The strategy changed its
+target on the last bar of the sample, and there is no later open at which to
+fill that change, so ledgr reports it rather than dropping it silently. Expect
+it at the end of most samples; `vignette("execution-semantics", package = "ledgr")` explains when it matters.
+
 The summary is portfolio-level: total return, max drawdown, and trade count are
 computed from the completed run. In ledgr, trades are closed round trips; the
 fills table can contain more rows because opening fills and closing fills are

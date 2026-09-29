@@ -186,6 +186,9 @@ rule direction.
 
 Short test windows may carry warning flags. Those warnings are not
 failures; they are metadata telling you how to interpret the evidence.
+Here each test window is one month of two demo instruments, so the
+annualized Sharpe ratios swing from 0.80 to 3.64 between folds; at this
+size they show the shape of the evidence, not its strength.
 
 ## Extract A Candidate With A Rationale
 
@@ -199,9 +202,26 @@ candidate <- ledgr_candidate(
   selection_rationale = "Documentation example: inspect the latest completed fold."
 )
 
-candidate$candidate_id
-#> [1] "feature_af0f94c90243/strategy_86be010cf688"
+candidate
+#> ledgr_sweep_candidate
+#> =====================
+#> Candidate ID:     feature_af0f94c90243/strategy_86be010cf688
+#> Status:           DONE
+#> Execution seed:   618380647
+#> Strategy:         1bf04a8ccca8
+#> Snapshot hash:    689d79faf5dc3ef9e7335e46bc583d6027bb8bfe9416a4c944a4294689269d26
+#> Feature-set hash: e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70
+#> Evaluation scope: walk_forward
+#> Params:           {"qty":5.0,"threshold":0.0}
+str(candidate$feature_params)
+#> List of 2
+#>  $ fast_n: int 10
+#>  $ slow_n: int 20
 ```
+
+The print shows the strategy parameters. The feature parameters, the
+moving average lengths behind the `feature_...` part of the ID, are in
+`candidate$feature_params`.
 
 Promotion uses the same candidate object as sweep promotion. In a real
 research project, promote only after you have written down why this fold
@@ -286,8 +306,10 @@ sets.
 > Re-run `ledgr_walk_forward()` with
 > `opening_state_policy = "flat_test_state"`. How does the degradation
 > table change, and why does `cold_start_distorted` appear? Then widen the
-> `test_window` in `ledgr_folds_rolling()` to `"2 months"` and re-run. Do
-> the short-test-window warning flags go away?
+> `test_window` in `ledgr_folds_rolling()` to `"2 months"` and re-run. The
+> short-test-window flags stay, because the health check asks for at least
+> 90 calendar days. How long must a test window be before they go away,
+> and how many folds still fit between `start` and `end`?
 
 
 ## What This Does Not Do

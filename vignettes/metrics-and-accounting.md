@@ -438,8 +438,6 @@ ledgr_results(final_bar_bt, what = "fills")
 #> #   realized_pnl <dbl>, action <chr>
 ```
 
-## Cleanup
-
 ## Where Next
 
 - `vignette("risk-and-cost", package = "ledgr")` declares cost and risk

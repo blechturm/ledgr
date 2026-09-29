@@ -44,20 +44,6 @@ generalize.
 ``` r
 library(ledgr)
 library(dplyr)
-```
-
-
-    Attaching package: 'dplyr'
-
-    The following objects are masked from 'package:stats':
-
-        filter, lag
-
-    The following objects are masked from 'package:base':
-
-        intersect, setdiff, setequal, union
-
-``` r
 data("ledgr_demo_bars", package = "ledgr")
 ```
 
@@ -374,7 +360,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_1fa0dc9f175668bf
+    # ledgr sweep -- sweep_558ad21aa6fc3215
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -415,7 +401,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_1fa0dc9f175668bf
+    # ledgr sweep -- sweep_558ad21aa6fc3215
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -495,14 +481,17 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_47ed4699aed49472 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+
+Each `candidate_id` here is a row of `candidate_table` above, which
+lists the parameters that produced it.
 
 `period_return` is `NA_real_` on the first retained row for each
 candidate because there is no prior equity value to compare against.
@@ -586,7 +575,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-29 17:15:34                    4           16          16
+    1 sma_retained_sweep 2026-09-29 17:52:05                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -613,7 +602,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-29 17:15:34.541451
+    Created At:        2026-09-29 17:52:05.145317
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -764,15 +753,16 @@ debug_grid <- ledgr_strategy_grid(qty = c(5, -1))
 failed_sweep <- ledgr_sweep(debug_exp, debug_grid)
 
 failed_sweep |>
-  select(candidate_id, candidate_row, status, error_class, error_msg, params)
+  mutate(qty = vapply(params, function(p) p$qty, numeric(1))) |>
+  select(candidate_id, qty, status, error_class, error_msg)
 ```
 
-    # ledgr sweep -- sweep_64f547d58c11f9c5
-    # A tibble: 2 x 6
-      candidate_id          candidate_row status error_class          error_msg   params
-      <chr>                         <int> <chr>  <chr>                <chr>       <list>
-    1 strategy_69e7ad01d1e8             1 DONE   <NA>                  <NA>       <named list>
-    2 strategy_8d5f90d900e7             2 FAILED ledgr_strategy_error "Strategy ~ <named list>
+    # ledgr sweep -- sweep_fe281d4c6d081e55
+    # A tibble: 2 x 5
+      candidate_id            qty status error_class          error_msg
+      <chr>                 <dbl> <chr>  <chr>                <chr>
+    1 strategy_69e7ad01d1e8     5 DONE   <NA>                  <NA>
+    2 strategy_8d5f90d900e7    -1 FAILED ledgr_strategy_error "Strategy error at ts_utc=2019-~
 
     # i 2 combinations: 1 done, 1 failed.
     # i Retention returns: none.
@@ -813,17 +803,18 @@ result.
 ``` r
 review <- ledgr_sweep_review(reopened_sweep, rank_by = desc(sharpe_ratio), n = 5)
 review$top |>
-  select(candidate_id, sharpe_ratio, params, feature_params)
+  select(candidate_id, sharpe_ratio) |>
+  left_join(as_tibble(candidate_table) |> select(-status), by = "candidate_id")
 ```
 
-    # A tibble: 5 x 4
-      candidate_id                               sharpe_ratio params           feature_params
-      <chr>                                             <dbl> <list>           <list>
-    1 feature_9a29b31dae19/strategy_dc6315936028         3.08 <named list [2]> <named list>
-    2 feature_9a29b31dae19/strategy_7ccbbefd14d1         3.08 <named list [2]> <named list>
-    3 feature_6ff6fe3a1d38/strategy_dc6315936028         2.13 <named list [2]> <named list>
-    4 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1         2.13 <named list [2]> <named list>
-    5 feature_af0f94c90243/strategy_dc6315936028         2.06 <named list [2]> <named list>
+    # A tibble: 5 x 6
+      candidate_id                               sharpe_ratio threshold   qty fast_n slow_n
+      <chr>                                             <dbl>     <dbl> <dbl>  <int>  <int>
+    1 feature_9a29b31dae19/strategy_dc6315936028         3.08      0.01    10      5     20
+    2 feature_9a29b31dae19/strategy_7ccbbefd14d1         3.08      0.01     5      5     20
+    3 feature_6ff6fe3a1d38/strategy_dc6315936028         2.13      0.01    10      5     40
+    4 feature_6ff6fe3a1d38/strategy_7ccbbefd14d1         2.13      0.01     5      5     40
+    5 feature_af0f94c90243/strategy_dc6315936028         2.06      0.01    10     10     20
 
 ``` r
 review$issues
@@ -836,6 +827,12 @@ review$issues
 ``` r
 ranked <- review$ranked
 ```
+
+The join to `candidate_table` shows what each top candidate is. The top
+rows come in pairs that differ only in `qty`: doubling the quantity
+doubles the profit but leaves the Sharpe ratio unchanged, so this
+ranking cannot tell them apart. A rule that must choose between them
+needs a second criterion.
 
 `ledgr_sweep_review()` packages the inspection shape while keeping the
 ranking rule explicit in the call. `review$top` is for the candidates
@@ -865,7 +862,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_1fa0dc9f175668bf
+    # ledgr sweep -- sweep_558ad21aa6fc3215
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -924,10 +921,12 @@ summary(promoted_run)
     Price basis: UNDECLARED - distribution double counting cannot be ruled out
       Full policy record: ledgr_corporate_action_summary(bt)
 
-The promoted run is now a committed run with its own run ID. The
-selection note travels with the run. Same-snapshot promotion is useful
-for audit, debugging, and durable storage of the chosen candidate. It
-remains in-sample.
+Three closed trades on two instruments over half a year are far too few
+to judge a rule: the 100% win rate and the Sharpe ratio above describe
+this small sample, not the strategy. The promoted run is now a committed
+run with its own run ID. The selection note travels with the run.
+Same-snapshot promotion is useful for audit, debugging, and durable
+storage of the chosen candidate. It remains in-sample.
 
 ## Reopen The Promoted Run
 

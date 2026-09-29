@@ -19,6 +19,7 @@ vignette: >
 
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
+options(cli.unicode = FALSE)
 # Local renders load the package from source via pkgload (working dir is
 # either project root or vignettes/); installed builds fall through and
 # rely on the library(ledgr) call in the prerequisites chunk.

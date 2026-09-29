@@ -160,10 +160,16 @@ bt <- ledgr_run(
 bt
 ```
 
-The compact print is the result most readers need first. Detailed equity,
-fills, trades, metrics, and evidence remain available through the result API.
-The cost model is required: `ledgr_cost_zero()` states openly that this demo
-trades for free.
+The compact print is the result most readers need first: the opening cash,
+the final equity, the return and drawdown over the period, and the number of
+closed round trips. The last two lines concern dividends. This demo data
+carries no distribution records and does not say how its prices were adjusted,
+so the return may omit dividends or count them twice; that is fine for learning
+the mechanics, and
+[Cash Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
+shows how to supply that evidence. Detailed equity, fills, trades, metrics,
+and evidence remain available through the result API. The cost model is
+required: `ledgr_cost_zero()` states openly that this demo trades for free.
 
 ## Reopen The Evidence Later
 
@@ -184,6 +190,10 @@ snapshot <- ledgr_snapshot_open(store_path, snapshot_id, verify = TRUE)
 bt <- ledgr_run_open(snapshot, run_id)
 tail(ledgr_results(bt, what = "equity"), 2)
 ```
+
+The reopened run returns the same equity curve: each row's equity is its cash
+plus the value of its positions, and `drawdown` is the fall from the highest
+equity so far.
 
 ## Why ledgr?
 

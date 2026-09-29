@@ -326,6 +326,11 @@ summary(bt)
 #>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
+The fixture holds one share for one bar of five, so a 0.40% gain becomes
+a 28.59% annualized return and a Sharpe ratio near 8. Annualizing five
+bars exaggerates everything; these figures show how the conventions are
+applied, not anything about a strategy.
+
 `summary(bt)` is a print-oriented view. It returns the backtest handle
 invisibly, not a metrics object. Use `ledgr_compute_metrics()` for
 scripted workflows:
@@ -380,8 +385,6 @@ A completed run with zero closed trades reports `win_rate` and
 `avg_trade` as `NA`, not zero, because there is no closed trade to
 average. To find out why a run made no trades, use the checklist in
 `vignette("indicators", package = "ledgr")`.
-
-## Cleanup
 
 ## Where Next
 

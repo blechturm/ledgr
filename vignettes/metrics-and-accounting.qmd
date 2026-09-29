@@ -420,8 +420,6 @@ ledgr_results(final_bar_bt, what = "fills")
 ```
 
 
-## Cleanup
-
 ```{r}
 #| label: cleanup
 #| include: false

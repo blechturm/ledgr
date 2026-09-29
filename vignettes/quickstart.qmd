@@ -144,12 +144,16 @@ grid <- ledgr_strategy_grid(
 sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 
 sweep |>
-  select(candidate_id, status, total_return, sharpe_ratio, params) |>
+  mutate(threshold = vapply(params, function(p) p$threshold, numeric(1))) |>
+  select(candidate_id, threshold, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
 ```
 
-The sweep table is evidence, not an automatic recommendation. If you rank rows,
-make the ranking rule visible at the call site.
+Each row is one candidate: the `threshold` it ran with, its status and its
+result. The Sharpe ratio is annualized from half a year of two demo
+instruments, so at this size it describes the sample, not the rule. The sweep
+table is evidence, not an automatic recommendation. If you rank rows, make the
+ranking rule visible at the call site.
 
 ```{r}
 #| label: candidate
@@ -159,8 +163,11 @@ candidate <- ledgr_candidate(
   1L
 )
 
-candidate$candidate_id
+candidate
 ```
+
+The candidate carries its parameters and the hashes of the inputs it ran on, so
+the choice can be traced back to exactly what produced it.
 
 Promotion is the step that turns one selected candidate into a durable run. In
 a real project, use a deliberate `run_id` and a note that explains why this row

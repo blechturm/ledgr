@@ -112,11 +112,15 @@ sma_3_custom <- ledgr_indicator(
 )
 
 ledgr_feature_contracts(list(sma_3_custom))
-#> # A tibble: 1 × 5
+#> # A tibble: 1 x 5
 #>   alias feature_id   source requires_bars stable_after
 #>   <chr> <chr>        <chr>          <int>        <int>
 #> 1 <NA>  sma_3_custom custom             3            3
 ```
+
+The contract row is what a strategy relies on: `sma_3_custom` is the ID
+to read, `source` records that it is your code, and the feature is `NA`
+until the third bar. The alias is `NA` because the list is unnamed.
 
 The `series_fn(bars, params)` contract is strict:
 
@@ -312,7 +316,7 @@ tibble(
     nrow(ledgr_results(strict_bt, what = "fills"))
   )
 )
-#> # A tibble: 2 × 2
+#> # A tibble: 2 x 2
 #>   max_range fills
 #>       <dbl> <int>
 #> 1       1.5    23

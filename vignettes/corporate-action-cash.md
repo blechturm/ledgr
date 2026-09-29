@@ -132,7 +132,12 @@ summary(research_run)
 #>   Unsupported facts:           0
 ```
 
-The modeled result reports one `cash_amount.gross` choice, one
+The annualized return and Sharpe ratio come from annualizing a few bars
+and mean nothing here; the total return and the corporate-action record
+are the result. In that record each setting appears twice, as its value
+and as the versioned identity that fixes what the value means, and the
+counts below it show which choices this run exercised. The modeled
+result reports one `cash_amount.gross` choice, one
 `cash_posting.effective_close` choice and gross cash posted of 2.5. It
 does not claim a payment date, withholding, investor tax or broker-net
 amount.

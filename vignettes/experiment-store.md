@@ -119,6 +119,12 @@ ledgr_run_list(snapshot)
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
+Both runs finished with status `DONE`. `complete_performance` and
+`achieved_end_utc` are `NA` because these runs had no point-in-time
+rules that could stop them early, and the footer’s note about
+`INCOMPLETE` metrics applies only to runs whose status says so; neither
+run here does.
+
 Use labels and tags for mutable human-facing organization.
 
 ``` r
@@ -196,7 +202,10 @@ info
 
 `ledgr_run_info()` is the detailed metadata view. It includes execution
 mode, compact telemetry, status, identity hashes, and reproducibility
-tier.
+tier. The hashes identify every input and are the same whenever the same
+inputs run; `Elapsed Sec` and the cache counts describe how this
+execution went on this machine and can differ between otherwise
+identical runs.
 
 Useful fields include:
 
@@ -227,9 +236,13 @@ comparison
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
 
-Comparison is read-only and does not rerun strategies. `n_trades` counts
-closed, realised trade observations, not every fill. A run can have
-fills but no closed trades yet, in which case win rate is not defined.
+The two runs differ only in quantity: tripling it roughly triples the
+profit and the drawdown while the Sharpe ratio barely moves. Both Sharpe
+ratios are annualized from half a year of two demo instruments, so they
+describe this sample, not the rule. Comparison is read-only and does not
+rerun strategies. `n_trades` counts closed, realised trade observations,
+not every fill. A run can have fills but no closed trades yet, in which
+case win rate is not defined.
 
 `ledgr_run_compare()` starts from the durable snapshot handle because it
 reads stored run artifacts. When you want the comparison to use an

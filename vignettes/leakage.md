@@ -66,7 +66,7 @@ leaky_signals <- bars |>
 leaky_signals |>
   select(instrument_id, ts_utc, close, tomorrow_close, buy_signal) |>
   slice_head(n = 4)
-#> # A tibble: 8 × 5
+#> # A tibble: 8 x 5
 #> # Groups:   instrument_id [2]
 #>   instrument_id ts_utc              close tomorrow_close buy_signal
 #>   <chr>         <dttm>              <dbl>          <dbl> <lgl>
@@ -80,9 +80,11 @@ leaky_signals |>
 #> 8 DEMO_02       2019-01-04 00:00:00  74.9           73.8 FALSE
 ```
 
-The resulting `buy_signal` looks like an ordinary column, but it answers
-a question the strategy could not have answered at today’s decision
-time.
+The table is still grouped by instrument, so `slice_head(n = 4)` shows
+the first four rows of each. Every `TRUE` marks a day whose next close
+is higher, which is known only the day after. The resulting `buy_signal`
+looks like an ordinary column, but it answers a question the strategy
+could not have answered at today’s decision time.
 
 A strategy that trades on this signal is contaminated even if the
 resulting trades are not all profitable. The signal was created from
@@ -108,7 +110,7 @@ leaky_features |>
   select(instrument_id, ts_utc, ret_5, strong_return) |>
   filter(!is.na(ret_5)) |>
   slice_head(n = 4)
-#> # A tibble: 8 × 4
+#> # A tibble: 8 x 4
 #> # Groups:   instrument_id [2]
 #>   instrument_id ts_utc                 ret_5 strong_return
 #>   <chr>         <dttm>                 <dbl> <lgl>
@@ -159,7 +161,7 @@ tibble(
     sum(ret_5[first_quarter] > expanding[first_quarter], na.rm = TRUE)
   )
 )
-#> # A tibble: 2 × 3
+#> # A tibble: 2 x 3
 #>   rule                       threshold_at_quarter_end first_quarter_signals
 #>   <chr>                                         <dbl>                 <int>
 #> 1 full sample                                 0.00775                    24

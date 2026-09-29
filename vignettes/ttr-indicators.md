@@ -96,7 +96,7 @@ ttr_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(ttr_features)
-#> # A tibble: 5 × 5
+#> # A tibble: 5 x 5
 #>   alias       feature_id                    source requires_bars stable_after
 #>   <chr>       <chr>                         <chr>          <int>        <int>
 #> 1 ret_5       return_5                      ledgr              6            6
@@ -128,7 +128,7 @@ native_rsi_features <- ledgr_feature_map(
 )
 
 ledgr_feature_contracts(native_rsi_features)
-#> # A tibble: 1 × 5
+#> # A tibble: 1 x 5
 #>   alias  feature_id source requires_bars stable_after
 #>   <chr>  <chr>      <chr>          <int>        <int>
 #> 1 rsi_14 rsi_14     ledgr             15           15
@@ -157,7 +157,7 @@ ledgr_feature_contracts(ledgr_feature_map(
   bb_up = ledgr_ind_ttr("BBands", input = "close", output = "up", n = 20),
   bb_pctB = ledgr_ind_ttr("BBands", input = "close", output = "pctB", n = 20)
 ))
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   alias   feature_id         source requires_bars stable_after
 #>   <chr>   <chr>              <chr>          <int>        <int>
 #> 1 bb_dn   ttr_bbands_20_dn   TTR               20           20
@@ -186,7 +186,7 @@ bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)
 ledgr_feature_id(bbands_bundle)
 #> [1] "bbands_dn"   "bbands_mavg" "bbands_up"   "bbands_pctb"
 ledgr_feature_contracts(bbands_bundle)
-#> # A tibble: 4 × 5
+#> # A tibble: 4 x 5
 #>   alias feature_id  source requires_bars stable_after
 #>   <chr> <chr>       <chr>          <int>        <int>
 #> 1 <NA>  bbands_dn   TTR               20           20
@@ -250,7 +250,7 @@ TTR warmup inference is inspectable:
 ``` r
 ledgr_ind_ttr_warmup_rules() |>
   select(ttr_fn, input, formula)
-#> # A tibble: 18 × 3
+#> # A tibble: 18 x 3
 #>    ttr_fn          input formula
 #>    <chr>           <chr> <chr>
 #>  1 RSI             close n + 1
@@ -311,19 +311,19 @@ ttr_pulse <- ledgr_pulse_snapshot(
 )
 
 ledgr_pulse_features(ttr_pulse, ttr_features)
-#> # A tibble: 10 × 5
+#> # A tibble: 10 x 5
 #>    ts_utc              instrument_id feature_id                    feature_value alias
 #>    <dttm>              <chr>         <chr>                                 <dbl> <chr>
 #>  1 2019-06-03 00:00:00 DEMO_01       return_5                             0.0179 ret_5
 #>  2 2019-06-03 00:00:00 DEMO_01       ttr_rsi_14                          41.0    ttr_rsi
 #>  3 2019-06-03 00:00:00 DEMO_01       ttr_bbands_20_up                   104.     bb_up
 #>  4 2019-06-03 00:00:00 DEMO_01       ttr_macd_12_26_9_false_macd         -1.84   macd
-#>  5 2019-06-03 00:00:00 DEMO_01       ttr_macd_12_26_9_false_signal       -1.65   macd_sig…
+#>  5 2019-06-03 00:00:00 DEMO_01       ttr_macd_12_26_9_false_signal       -1.65   macd_sig~
 #>  6 2019-06-03 00:00:00 DEMO_02       return_5                            -0.0176 ret_5
 #>  7 2019-06-03 00:00:00 DEMO_02       ttr_rsi_14                          56.0    ttr_rsi
 #>  8 2019-06-03 00:00:00 DEMO_02       ttr_bbands_20_up                    83.6    bb_up
 #>  9 2019-06-03 00:00:00 DEMO_02       ttr_macd_12_26_9_false_macd          1.45   macd
-#> 10 2019-06-03 00:00:00 DEMO_02       ttr_macd_12_26_9_false_signal        1.84   macd_sig…
+#> 10 2019-06-03 00:00:00 DEMO_02       ttr_macd_12_26_9_false_signal        1.84   macd_sig~
 close(ttr_pulse)
 ledgr_snapshot_close(ttr_snapshot)
 ```

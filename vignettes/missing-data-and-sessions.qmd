@@ -425,7 +425,8 @@ ledgr_run_explain(loose_run, "BBB") |>
   select(mark_source, mark_age, execution_outcome, execution_reason)
 ```
 
-`BBB` is carried at a `stale_close` two sessions old, and nothing executes.
+Across the hole `BBB` is carried at a `stale_close` that grows one, two and
+three sessions old, and nothing executes.
 The mark is doing valuation work only. It is never an execution price, and no
 fill is ever produced on a session where an instrument has no observation.
 

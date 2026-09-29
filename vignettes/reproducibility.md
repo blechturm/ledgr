@@ -115,6 +115,11 @@ bt <- ledgr_run(
     change. Check the strategy's final-pulse behavior or extend the snapshot if this trade
     should be fillable.
 
+The `LEDGR_LAST_BAR_NO_FILL` warning means the rule changed its target
+on the last bar, where no later open exists to fill it. It does not
+affect what the run records;
+`vignette("execution-semantics", package = "ledgr")` explains it.
+
 ## The Provenance Model
 
 For completed runs, ledgr stores run provenance alongside the result
@@ -152,7 +157,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.830
+    Elapsed Sec:      0.870
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2

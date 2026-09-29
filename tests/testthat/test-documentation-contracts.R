@@ -1938,3 +1938,35 @@ testthat::test_that("[LTB-0125] article code follows the house idioms for IDs, c
   testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
   testthat::expect_identical(ledgr_doc_idiom_violations(root), character())
 })
+
+# House rule 7: no stray console output in the rendered README or any rendered
+# article. Returns one message per hit, so it can also run against an older tree.
+ledgr_doc_stray_output <- function(root) {
+  rendered <- c(
+    file.path(root, "README.md"),
+    list.files(file.path(root, "vignettes"), pattern = "[.]md$", full.names = TRUE, recursive = TRUE)
+  )
+  patterns <- c(
+    "Attaching package",
+    "The following object is masked",
+    "The following objects are masked",
+    "Loading required package",
+    "Registered S3 method",
+    "was built under R version"
+  )
+  out <- character()
+  for (path in rendered) {
+    lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    for (pattern in patterns) {
+      hit <- grep(pattern, lines, fixed = TRUE)
+      out <- c(out, sprintf("%s:%d %s", basename(path), hit, pattern))
+    }
+  }
+  out
+}
+
+testthat::test_that("[LTB-0126] no rendered article or the README shows stray console output", {
+  root <- testthat::test_path("..", "..")
+  testthat::skip_if_not(file.exists(file.path(root, "README.md")), "rendered articles not available during installed-package tests")
+  testthat::expect_identical(ledgr_doc_stray_output(root), character())
+})

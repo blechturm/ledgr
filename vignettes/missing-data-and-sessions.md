@@ -454,10 +454,10 @@ ledgr_run_explain(loose_run, "BBB") |>
 #> 9 current_close        0 no_action         "no_target_change"
 ```
 
-`BBB` is carried at a `stale_close` two sessions old, and nothing
-executes. The mark is doing valuation work only. It is never an
-execution price, and no fill is ever produced on a session where an
-instrument has no observation.
+Across the hole `BBB` is carried at a `stale_close` that grows one, two
+and three sessions old, and nothing executes. The mark is doing
+valuation work only. It is never an execution price, and no fill is ever
+produced on a session where an instrument has no observation.
 
 Supplying one timestamp keeps the focused form. Ask about `AAA` on the
 session it was halted:

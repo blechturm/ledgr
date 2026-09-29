@@ -24,6 +24,7 @@ preprocessing, and state which leakage risks ledgr cannot certify for you.
 
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
+options(cli.unicode = FALSE)
 # Local renders load the package from source via pkgload (working dir is
 # either project root or vignettes/); installed builds fall through and
 # rely on the library(ledgr) call in the prerequisites chunk.
@@ -96,8 +97,11 @@ leaky_signals |>
   slice_head(n = 4)
 ```
 
-The resulting `buy_signal` looks like an ordinary column, but it answers a
-question the strategy could not have answered at today's decision time.
+The table is still grouped by instrument, so `slice_head(n = 4)` shows the
+first four rows of each. Every `TRUE` marks a day whose next close is higher,
+which is known only the day after. The resulting `buy_signal` looks like an
+ordinary column, but it answers a question the strategy could not have
+answered at today's decision time.
 
 A strategy that trades on this signal is contaminated even if the resulting
 trades are not all profitable. The signal was created from tomorrow's outcome,

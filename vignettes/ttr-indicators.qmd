@@ -22,6 +22,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 options(width = 90)
+options(cli.unicode = FALSE)
 # Local renders load ledgr from source; installed builds use the library call
 # in the prerequisites chunk.
 pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_

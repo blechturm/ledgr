@@ -17,6 +17,7 @@ vignette: >
 #| label: setup
 #| include: false
 
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 options(width = 90)
 options(cli.unicode = FALSE)
 pkg_root <- if (file.exists("DESCRIPTION")) "." else if (file.exists("../DESCRIPTION")) ".." else NA_character_
@@ -328,6 +329,11 @@ bind_rows(
 ) |>
   select(case, positions_value, equity)
 ```
+
+The closed position left its profit in cash, so its equity is about 10,004
+with nothing held. The held position is valued at its last close, 870 against
+the 884 it cost, so its equity of about 9,987 carries an unrealized loss that
+no trade has booked yet.
 
 ## Try It
 

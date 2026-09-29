@@ -245,8 +245,10 @@ tryCatch(
 ledgr_select_top_n(short_signal, n = 2, partial = "allow")
 ```
 
-Both calls select `DEMO_01`, the only usable score. The first returns the
-warning, which names the opt-out; the second makes the same selection silently.
+Without the opt-out the call warns; the chunk catches the warning and shows
+its message, which says every available instrument is selected and names the
+opt-out. With `partial = "allow"`, the same selection, `DEMO_01`, is made
+silently.
 
 Weights are relative. `0.5` means "half of the budget", not a number of shares.
 The weights say how to divide a budget. They do not contain the budget, current
@@ -347,10 +349,10 @@ If a whole run finishes with no fills, test the strategy on a late pulse. A
 feature that never warms up looks exactly like this first week, only it never
 ends.
 
-When you run this yourself, R also prints a `LEDGR_LAST_BAR_NO_FILL` warning.
-The strategy changed its target on the final bar, and there is no later open at
-which to fill it. Expect it at the end of most samples; `?LEDGR_LAST_BAR_NO_FILL`
-explains when it matters.
+The run also prints two `LEDGR_LAST_BAR_NO_FILL` warnings, one for each
+instrument whose target changed on the final bar: there is no later open at
+which to fill those changes. Expect them at the end of most samples;
+`?LEDGR_LAST_BAR_NO_FILL` explains when they matter.
 
 ## Choose Members With A Rule Instead Of A Rank
 

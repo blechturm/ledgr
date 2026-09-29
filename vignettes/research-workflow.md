@@ -226,9 +226,11 @@ ledgr_run_compare(snapshot, run_ids = c("momentum_v1", "momentum_v2"))
 Here the trend filter did not help: version 2 finished lower with a
 slightly deeper drawdown. That is still useful evidence, and it stays in
 the store next to version 1. Read the comparison as evidence about two
-rules on one window, not as a verdict. Picking the better of two code
-versions is already a selection: the more versions you try on the same
-data, the more room there is for luck to look like an improvement.
+rules on one window, not as a verdict: both Sharpe ratios are annualized
+from one year of three demo instruments, so they describe this sample
+more than the rules. Picking the better of two code versions is already
+a selection: the more versions you try on the same data, the more room
+there is for luck to look like an improvement.
 
 ## When A Parameter Question Appears
 

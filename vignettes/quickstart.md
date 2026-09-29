@@ -128,14 +128,15 @@ grid <- ledgr_strategy_grid(
 sweep <- ledgr_sweep(exp, grid, seed = 2026L)
 
 sweep |>
-  select(candidate_id, status, total_return, sharpe_ratio, params) |>
+  mutate(threshold = vapply(params, function(p) p$threshold, numeric(1))) |>
+  select(candidate_id, threshold, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_f510788f76226f75
+#> # ledgr sweep -- sweep_35035e22d86c839f
 #> # A tibble: 2 x 5
-#>   candidate_id          status total_return sharpe_ratio params
-#>   <chr>                 <chr>  <chr>               <dbl> <list>
-#> 1 strategy_7ccbbefd14d1 DONE   +0.5%               1.25  <named list [2]>
-#> 2 strategy_86be010cf688 DONE   +0.4%               0.838 <named list [2]>
+#>   candidate_id          threshold status total_return sharpe_ratio
+#>   <chr>                     <dbl> <chr>  <chr>               <dbl>
+#> 1 strategy_7ccbbefd14d1      0.01 DONE   +0.5%               1.25
+#> 2 strategy_86be010cf688      0    DONE   +0.4%               0.838
 #>
 #> # i 2 combinations: 2 done, 0 failed.
 #> # i Retention returns: none.
@@ -147,8 +148,11 @@ sweep |>
 #> # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
 ```
 
-The sweep table is evidence, not an automatic recommendation. If you
-rank rows, make the ranking rule visible at the call site.
+Each row is one candidate: the `threshold` it ran with, its status and
+its result. The Sharpe ratio is annualized from half a year of two demo
+instruments, so at this size it describes the sample, not the rule. The
+sweep table is evidence, not an automatic recommendation. If you rank
+rows, make the ranking rule visible at the call site.
 
 ``` r
 candidate <- ledgr_candidate(
@@ -156,9 +160,21 @@ candidate <- ledgr_candidate(
   1L
 )
 
-candidate$candidate_id
-#> [1] "strategy_7ccbbefd14d1"
+candidate
+#> ledgr_sweep_candidate
+#> =====================
+#> Candidate ID:     strategy_7ccbbefd14d1
+#> Status:           DONE
+#> Execution seed:   603352633
+#> Strategy:         89fb9e6adb02
+#> Snapshot hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
+#> Feature-set hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
+#> Evaluation scope: exploratory
+#> Params:           {"qty":5.0,"threshold":0.01}
 ```
+
+The candidate carries its parameters and the hashes of the inputs it ran
+on, so the choice can be traced back to exactly what produced it.
 
 Promotion is the step that turns one selected candidate into a durable
 run. In a real project, use a deliberate `run_id` and a note that

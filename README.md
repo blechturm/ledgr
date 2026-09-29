@@ -137,10 +137,17 @@ bt
 #> Use summary(bt) for metrics and evidence
 ```
 
-The compact print is the result most readers need first. Detailed
-equity, fills, trades, metrics, and evidence remain available through
-the result API. The cost model is required: `ledgr_cost_zero()` states
-openly that this demo trades for free.
+The compact print is the result most readers need first: the opening
+cash, the final equity, the return and drawdown over the period, and the
+number of closed round trips. The last two lines concern dividends. This
+demo data carries no distribution records and does not say how its
+prices were adjusted, so the return may omit dividends or count them
+twice; that is fine for learning the mechanics, and [Cash
+Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
+shows how to supply that evidence. Detailed equity, fills, trades,
+metrics, and evidence remain available through the result API. The cost
+model is required: `ledgr_cost_zero()` states openly that this demo
+trades for free.
 
 ## Reopen The Evidence Later
 
@@ -165,6 +172,10 @@ tail(ledgr_results(bt, what = "equity"), 2)
 #> 1 2019-12-30 10347. 10347.              0       10417. -0.00674
 #> 2 2019-12-31 10345.  9551.            794.      10417. -0.00695
 ```
+
+The reopened run returns the same equity curve: each row's equity is its
+cash plus the value of its positions, and `drawdown` is the fall from
+the highest equity so far.
 
 ## Why ledgr?
 
