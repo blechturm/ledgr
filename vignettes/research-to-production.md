@@ -134,9 +134,11 @@ It also includes walk-forward and selection-integrity surfaces:
   stronger evidence possible when the research claim requires it.
 
 The target-risk layer is intentionally narrow: it transforms target
-quantities before timing and cost. It does not implement affordability
-enforcement, liquidity/capacity policy, margin, shorting or borrow
-policy, OMS lifecycle behavior, or broker-grade controls.
+quantities before timing and cost. Affordability is not part of it;
+`vignette("execution-semantics", package = "ledgr")` states when fills
+check cash. It does not implement liquidity or capacity policy, margin,
+shorting or borrow policy, order-management lifecycle behavior, or
+broker-grade controls.
 
 Paper/live execution, broker adapters, and operational observability
 remain roadmap work. The research layer is intended to be reusable

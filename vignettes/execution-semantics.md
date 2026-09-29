@@ -183,6 +183,22 @@ strategy should read `ctx$vec$close` and feature values as pulse-known
 set by the cost model; this article keeps costs at zero to isolate
 timing (see `vignette("risk-and-cost", package = "ledgr")`).
 
+Every run summary names this rule on its `Fill Timing:` line.
+`dense_bar_timestamp` means a dense run: a target decided on one bar
+fills at the next bar’s open, stamped with that bar’s timestamp.
+`availability_open_v2` means an availability-aware run: decisions happen
+at declared session closes and fill at the next declared session
+opening.
+
+## Cash Is Not Checked In A Dense Run
+
+A dense run fills a target whether or not the account can pay for it.
+Dense fills do not check cash, which can go negative when targets cost
+more than the account holds. An availability-aware run refuses a
+cash-consuming fill it cannot afford and records the refusal with reason
+`insufficient_cash`. When capital matters, size targets from `ctx$cash`
+and `ctx$equity`, or with `ledgr_target_rebalance()`.
+
 ## A Target On The Final Bar Cannot Fill
 
 A target change on the final pulse is valid strategy output, but there

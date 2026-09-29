@@ -245,9 +245,9 @@ targets <- ctx$flat()
 targets[ready] <- 1
 ```
 
-This uses one concrete engine feature ID over the full decision axis. A mapped
-active alias currently has no whole-universe vector accessor; that separate API
-gap is scheduled rather than hidden behind a scalar loop here.
+This uses one concrete engine feature ID over the full decision axis. ledgr has no alias-aware whole-universe feature read yet, so a strategy that
+reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
+use `ctx$vec$feature()`.
 
 This is stricter than a generic warmup check in one useful way: it says what
 the strategy actually needs at this pulse. See
@@ -348,6 +348,13 @@ buy_what_is_tradable <- function(ctx, params) {
 Asking for a new size on a restricted instrument fails the pulse rather than
 trading silently. That is the engine refusing to do what the venue would not
 have allowed.
+
+Selling a halted holding follows the same rule of no queued orders. A zero
+target for a halted holding is recorded as not executed and dropped, not
+queued. A rule starting from `ctx$flat()` states zero again on every pulse and
+so sells at the first open after the halt, while a zero stated once during the
+halt never sells. The strategy helpers keep halted holdings. What ledgr should
+do by default here is open design work.
 
 ## Step 6: Choose How Stale Is Too Stale
 

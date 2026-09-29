@@ -106,18 +106,18 @@ single_run
 If this run has no fills, impossible prices, or surprising exposure,
 stop here. Sweeps amplify a setup; they do not repair it.
 
-The printed warnings are deliberate. `Corporate actions: NOT SUPPLIED`
-means this demo supplied no distribution evidence;
-`Price basis: UNDECLARED` means ledgr cannot rule out dividend double
-counting in the bars. That is acceptable for learning the mechanics, not
-for making an equity-research claim. See
-`vignette("corporate-action-cash", package = "ledgr")` for the modeled
-path.
+The last two lines say this demo supplied no dividend evidence and did
+not declare how its prices were adjusted, which is fine for learning the
+mechanics but not for an equity-research claim;
+`vignette("corporate-action-cash", package = "ledgr")` explains both.
 
 ## Sweep A Tiny Grid
 
-Vary only the strategy threshold. The feature remains the same concrete
-SMA used by the single run, so each candidate is easy to explain.
+A sweep runs the same experiment once per parameter combination and
+keeps every result; `vignette("sweeps", package = "ledgr")` covers it in
+full. Vary only the strategy threshold. The feature remains the same
+concrete SMA used by the single run, so each candidate is easy to
+explain.
 
 ``` r
 grid <- ledgr_strategy_grid(
@@ -131,7 +131,7 @@ sweep |>
   mutate(threshold = vapply(params, function(p) p$threshold, numeric(1))) |>
   select(candidate_id, threshold, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_35035e22d86c839f
+#> # ledgr sweep -- sweep_9d81d1eaae19d51c
 #> # A tibble: 2 x 5
 #>   candidate_id          threshold status total_return sharpe_ratio
 #>   <chr>                     <dbl> <chr>  <chr>               <dbl>

@@ -506,6 +506,12 @@ when the declared membership changes on January 13. The second decision makes
 the point-in-time availability change part of the executed strategy path
 rather than merely something inspected after the run.
 
+What happens to a departed holding depends on how the rule is written.
+`ctx$flat()` is literal, so a rule starting from it sells a departed holding at
+the next open. The strategy helpers keep departed holdings, as the rule below
+does. Increasing a holding outside the universe fails with an error. What
+ledgr should do by default here is open design work.
+
 ```{r}
 #| label: strategy
 
@@ -877,9 +883,10 @@ terminal-event fact was declared, so the run keeps the prefix it could value
 and labels the rest missing. Inspect the prefix, correct evidence or policy,
 then rerun under a new identity.
 
-Corporate actions, delisting cash flows, borrow and short financing,
-order-management behaviour, and general imputation are outside this first
-availability surface.
+Share-changing corporate actions, delisting cash flows, borrow and short
+financing, order-management behaviour, and general imputation are outside this
+first availability surface. Cash distributions are modelled, as
+`vignette("corporate-action-cash", package = "ledgr")` shows.
 
 ::: {.ledgr-callout .ledgr-callout-important}
 **A holding you cannot sell ends the run**

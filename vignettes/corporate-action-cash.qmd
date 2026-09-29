@@ -38,6 +38,19 @@ gross amount and credits it at the ex-dividend session close.
 That timing is a model assumption. It prevents a missing-asset dip on the
 ex-date, but makes cash spendable before a broker might actually pay it.
 
+## What The Print Lines Say
+
+Every run print and summary ends with two lines about this evidence.
+`Corporate actions: NOT SUPPLIED` means the snapshot holds no corporate-action
+facts, so returns may omit distributions; `MODELED` means supplied evidence was
+applied under the settings the summary lists. `Price basis: UNDECLARED` means
+the bars do not say how they were adjusted: if they already include dividends
+and ledgr also credits them, the same distribution is counted twice. A
+declared basis such as `split_adjusted` removes that doubt. Both lines matter
+whenever the instruments pay distributions and the claim is about total
+return; for learning the mechanics on demo data they can be read and set
+aside.
+
 ## A Minimal Evidenced Dividend
 
 ```{r}

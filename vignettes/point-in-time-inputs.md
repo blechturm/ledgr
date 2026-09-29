@@ -16,6 +16,13 @@ actions. A study on complete daily bars for a fixed set of instruments
 can skip it and continue with
 `vignette("strategy-authoring-tools", package = "ledgr")`.
 
+An experiment becomes availability-aware when its snapshot declares
+membership, session, trading-status or lifetime facts, or when the
+experiment declares a valuation policy. There is no separate switch.
+Corporate-action facts alone do not turn it on; they change how held
+positions are valued and credited, not which instruments the strategy
+sees.
+
 ``` r
 library(ledgr)
 library(dplyr)

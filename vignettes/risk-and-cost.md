@@ -25,6 +25,13 @@ by a different layer:
 | timing   | when does it execute? (mechanics)       |
 | cost     | what did it cost? (friction)            |
 
+A strategy states what it wants to hold. It does not place orders, check
+cash or keep the books: the layers after it decide what is allowed, when
+it executes and what it costs, and ledgr records the result. ledgr has
+no order management yet, so an intent that cannot execute at its fill
+opportunity is recorded as not executed rather than queued, and the
+strategy states its intent again at the next decision.
+
 ``` text
 strategy targets
   -> risk chain        (reshape quantities)

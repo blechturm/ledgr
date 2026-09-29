@@ -183,8 +183,11 @@ crossover_strategy <- function(ctx, params) {
 ## Inspect One Pulse
 
 Create a small sealed snapshot and inspect one decision pulse before
-running a full backtest. This keeps the runtime data visible before the
-article introduces more metadata.
+running a full backtest. `ledgr_pulse_snapshot()` builds the `ctx` a
+strategy would receive at one timestamp;
+`vignette("strategy-authoring-tools", package = "ledgr")` uses it to
+test strategies. This keeps the runtime data visible before the article
+introduces more metadata.
 
 ``` r
 bars <- ledgr_demo_bars |>
@@ -213,10 +216,12 @@ pulse <- ledgr_pulse_snapshot(
 At this timestamp, ledgr has computed the two features for each
 instrument in the universe through the same feature path a dense run
 uses over snapshot history through this timestamp. That includes each
-declaration’s parameters, `stable_after`, and `series_fn` when present.
-The long pulse view shows the result directly: one row per instrument
-and feature. Without a feature map, `alias` is `NA`. With the map, rows
-are filtered to the mapped features and aliases are filled.
+declaration’s parameters, `stable_after`, and, for a custom indicator
+computed over the whole series, its `series_fn`
+(`vignette("custom-indicators", package = "ledgr")`). The long pulse
+view shows the result directly: one row per instrument and feature.
+Without a feature map, `alias` is `NA`. With the map, rows are filtered
+to the mapped features and aliases are filled.
 
 ``` r
 ledgr_pulse_features(pulse, features)
@@ -473,12 +478,12 @@ strategy grids for this map, runs the sweep and reads the candidate
 rows.
 
 For single-output indicators, the feature-map alias is the
-strategy-facing name returned by `ctx$features(id)`. Active aliases
-currently have no alias-aware whole-universe accessor, so an
-active-alias strategy must use that scalar mapped read per instrument.
-Fixed feature IDs should use `ctx$vec$feature()` instead. Bundle entries
-are intentionally flat; the TTR companion explains why bundles use
-`prefix` or `naming` rather than one outer alias.
+strategy-facing name returned by `ctx$features(id)`. ledgr has no
+alias-aware whole-universe feature read yet, so a strategy that reads
+active aliases loops over `ctx$features(id)`. With fixed feature IDs,
+use `ctx$vec$feature()`. Bundle entries are intentionally flat; the TTR
+companion explains why bundles use `prefix` or `naming` rather than one
+outer alias.
 
 For TTR-backed declarations, multi-output bundles, and adapter warmup
 rules, read `vignette("ttr-indicators", package = "ledgr")`.

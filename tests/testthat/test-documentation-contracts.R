@@ -768,9 +768,15 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(strategy_authoring_doc, "*held nonmember*", fixed = TRUE)
   testthat::expect_match(strategy_authoring_doc, "Neither membership nor `ctx$tradable()` guarantees", fixed = TRUE)
   testthat::expect_match(strategy_doc, "Affordability is not automatic", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "does not check affordability", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "`risk_chain` can transform", fixed = TRUE)
-  testthat::expect_match(strategy_doc, "not a cash-affordability", fixed = TRUE)
+  # The affordability and risk-chain facts moved to their homes in LDG-2900;
+  # Strategy Basics keeps a gloss that links the home.
+  execution_home <- paste(readLines(ledgr_test_source_vignette("execution-semantics.qmd"), warn = FALSE), collapse = "\n")
+  risk_home <- paste(readLines(ledgr_test_source_vignette("risk-and-cost.qmd"), warn = FALSE), collapse = "\n")
+  production_doc <- paste(readLines(ledgr_test_source_vignette("research-to-production.qmd"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(strategy_development_doc, "A dense run fills a target whether or not the account can pay\\s+for it")
+  testthat::expect_match(execution_home, "Dense\\s+fills do not check cash, which can go negative")
+  testthat::expect_match(risk_home, "A risk chain may reshape those quantities\\s+before any fill exists")
+  testthat::expect_match(production_doc, "Affordability is not\\s+part of it")
   testthat::expect_match(strategy_doc, "returns an empty selection without a warning", fixed = TRUE)
   testthat::expect_match(strategy_authoring_doc, "Decide What A Missing Input Should Do", fixed = TRUE)
   testthat::expect_match(strategy_authoring_doc, "holding_pulse <- ledgr_pulse_snapshot", fixed = TRUE)
@@ -922,7 +928,7 @@ testthat::test_that("[LTB-0116] corrected articles keep their teaching claims", 
     fixed = TRUE
   )
   testthat::expect_match(custom, "fn = function(window, params)", fixed = TRUE)
-  testthat::expect_match(ttr, "Only the exact public single-output `SMA(close, n)`", fixed = TRUE)
+  testthat::expect_match(ttr, "accept only the exact single-output\\s+`SMA\\(close, n\\)` TTR shape")
   testthat::expect_no_match(walk_forward, "answers the generalization question", fixed = TRUE)
 })
 
@@ -958,8 +964,7 @@ testthat::test_that("[LTB-0101] pulse teaching promises the run feature path", {
   )
   testthat::expect_match(
     indicators_doc,
-    "`stable_after`, and `series_fn` when present",
-    fixed = TRUE
+    "`stable_after`, and, for a custom indicator computed over the whole series,\\s+its `series_fn`"
   )
   testthat::expect_match(
     ttr_doc,
@@ -992,8 +997,7 @@ testthat::test_that("[LTB-0103] feature-loop teaching names the actionable bound
   )
   testthat::expect_match(
     strategy_doc,
-    "active-alias bundle has no whole-universe\nequivalent yet",
-    fixed = TRUE
+    "`ctx\\$features\\(id\\)` stays unrecorded: ledgr has no alias-aware\\s+whole-universe feature read yet"
   )
   testthat::expect_match(
     context_help,
@@ -1969,4 +1973,67 @@ testthat::test_that("[LTB-0126] no rendered article or the README shows stray co
   root <- testthat::test_path("..", "..")
   testthat::skip_if_not(file.exists(file.path(root, "README.md")), "rendered articles not available during installed-package tests")
   testthat::expect_identical(ledgr_doc_stray_output(root), character())
+})
+
+# House rule 9 and style guide section 9: each shared fact is stated in its home
+# article, and known contradicting phrases appear nowhere. Returns one message
+# per problem, so it can also run against an older tree.
+ledgr_doc_fact_home_problems <- function(root) {
+  source_text <- function(slug) {
+    path <- file.path(root, "vignettes", paste0(slug, ".qmd"))
+    if (!file.exists(path)) return(NA_character_)
+    gsub("\\s+", " ", paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = " "))
+  }
+  homes <- list(
+    c("execution-semantics", "Dense fills do not check cash, which can go negative"),
+    c("execution-semantics", "records the refusal with reason `insufficient_cash`"),
+    c("execution-semantics", "`dense_bar_timestamp` means a dense run"),
+    c("indicators", "| Public TTR SMA | `ledgr_ind_ttr(\"SMA\", input = \"close\", n = n)` | Supported for this exact single-output shape |"),
+    c("indicators", "ledgr has no alias-aware whole-universe feature read yet, so a strategy that reads active aliases loops over `ctx$features(id)`. With fixed feature IDs, use `ctx$vec$feature()`."),
+    c("sweeps", "Promotion records a choice; it does not make that choice out-of-sample."),
+    c("selection-integrity", "Deflated Sharpe Ratio with effective trials"),
+    c("walk-forward", "so a good walk-forward result does not prove that the rule generalizes"),
+    c("point-in-time-inputs", "An experiment becomes availability-aware when its snapshot declares membership, session, trading-status or lifetime facts, or when the experiment declares a valuation policy."),
+    c("corporate-action-cash", "`Corporate actions: NOT SUPPLIED` means the snapshot holds no corporate-action facts"),
+    c("corporate-action-cash", "`Price basis: UNDECLARED` means the bars do not say how they were adjusted"),
+    c("research-to-production", "Paper/live execution, broker adapters, and operational observability remain roadmap work."),
+    c("risk-and-cost", "ledgr has no order management yet, so an intent that cannot execute at its fill opportunity is recorded as not executed rather than queued"),
+    c("survivorship-bias", "`ctx$flat()` is literal, so a rule starting from it sells a departed holding at the next open."),
+    c("missing-data-and-sessions", "A zero target for a halted holding is recorded as not executed and dropped, not queued.")
+  )
+  contradictions <- c(
+    "does not implement affordability enforcement",
+    "does not check affordability",
+    "tests the generalization question",
+    "later validation-toolkit",
+    "Corporate actions, delisting cash flows",
+    "Active aliases currently have no alias-aware",
+    "active alias currently has no whole-universe"
+  )
+  out <- character()
+  for (home in homes) {
+    text <- source_text(home[[1L]])
+    if (is.na(text) || !grepl(home[[2L]], text, fixed = TRUE)) {
+      out <- c(out, sprintf("%s lacks its home statement: %s", home[[1L]], substr(home[[2L]], 1L, 60L)))
+    }
+  }
+  sources <- c(
+    file.path(root, "README.Rmd"),
+    list.files(file.path(root, "vignettes"), pattern = "[.]qmd$", full.names = TRUE, recursive = TRUE)
+  )
+  for (path in sources) {
+    text <- gsub("\\s+", " ", paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = " "))
+    for (phrase in contradictions) {
+      if (grepl(phrase, text, fixed = TRUE)) {
+        out <- c(out, sprintf("%s contradicts a home fact: %s", basename(path), phrase))
+      }
+    }
+  }
+  out
+}
+
+testthat::test_that("[LTB-0127] each shared fact is stated in its home and contradicted nowhere", {
+  root <- testthat::test_path("..", "..")
+  testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
+  testthat::expect_identical(ledgr_doc_fact_home_problems(root), character())
 })

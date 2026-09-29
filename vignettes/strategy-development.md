@@ -182,21 +182,18 @@ to hold this many shares of each instrument.” The engine compares that
 against current holdings and fills the gap.
 
 That distinction keeps strategies free from execution-state bookkeeping.
+A target is intent: the layers after the strategy decide what is
+allowed, when it executes and what it costs, as
+`vignette("risk-and-cost", package = "ledgr")` explains.
 
 > [!WARNING]
 >
 > ### Affordability is not automatic
 >
-> Raw target vectors are desired holdings. ledgr does not check
-> affordability before filling them; if a target requires more cash than
-> the simulated portfolio has, the run can fill anyway and cash can go
-> negative. Use `ledgr_target_rebalance(equity_fraction = ...)` or size
-> directly from `ctx$cash` and `ctx$equity` when you need capital-aware
-> targets. A `risk_chain` can transform validated targets before fill
-> timing and cost resolution – for example `ledgr_risk_long_only()` can
-> clip short targets and `ledgr_risk_max_weight()` can cap per-instrument
-> target exposure. It is not a cash-affordability, margin, liquidity, or
-> broker-risk engine.
+> A dense run fills a target whether or not the account can pay for it, so
+> cash can go negative.
+> `vignette("execution-semantics", package = "ledgr")` states the rule,
+> including what availability-aware runs do instead.
 
 
 ## A First Trading Rule
@@ -335,6 +332,7 @@ instruments share one calendar, so the return is missing for all of them
 at once, and `ledgr_passed_warmup()` holds nothing until every value
 exists. Handle warmup explicitly like this rather than letting a missing
 value slip through the assignment unseen.
+`vignette("indicators", package = "ledgr")` covers warmup in full.
 
 ## The Same Rule With Helpers
 

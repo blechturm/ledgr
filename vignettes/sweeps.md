@@ -360,7 +360,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_558ad21aa6fc3215
+    # ledgr sweep -- sweep_5ddf310ca57c655f
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -401,7 +401,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_558ad21aa6fc3215
+    # ledgr sweep -- sweep_5ddf310ca57c655f
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -481,14 +481,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_44b365291c7c24e9 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_a970bf6dbd5048d5 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -575,7 +575,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-09-29 17:52:05                    4           16          16
+    1 sma_retained_sweep 2026-09-29 18:02:25                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -602,7 +602,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-09-29 17:52:05.145317
+    Created At:        2026-09-29 18:02:25.793524
     Schema Version:    4
     Engine Version:    0.2.0.2
     Note:              Exploratory SMA sweep with retained return series.
@@ -757,7 +757,7 @@ failed_sweep |>
   select(candidate_id, qty, status, error_class, error_msg)
 ```
 
-    # ledgr sweep -- sweep_fe281d4c6d081e55
+    # ledgr sweep -- sweep_538e75a0751b215d
     # A tibble: 2 x 5
       candidate_id            qty status error_class          error_msg
       <chr>                 <dbl> <chr>  <chr>                <chr>
@@ -862,7 +862,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_558ad21aa6fc3215
+    # ledgr sweep -- sweep_5ddf310ca57c655f
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -1125,12 +1125,14 @@ flowchart TB
 
 </div>
 
-If the question is generalization rather than artifact reproducibility,
-use `vignette("selection-integrity", package = "ledgr")` and
-`vignette("walk-forward", package = "ledgr")`.
+If the question is whether the selection holds up beyond this sample
+rather than whether the artifacts reproduce, use
+`vignette("selection-integrity", package = "ledgr")` and
+`vignette("walk-forward", package = "ledgr")`. They weigh the selection;
+neither proves that it generalizes.
 
 This is the same selection-bias boundary that separates reproducible
-sweep evidence from walk-forward or later validation-toolkit evidence.
+sweep evidence from held-out evidence.
 
 > [!TIP]
 >

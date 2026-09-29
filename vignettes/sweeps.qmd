@@ -842,12 +842,14 @@ flowchart TB
 
 :::
 
-If the question is generalization rather than artifact reproducibility, use
+If the question is whether the selection holds up beyond this sample rather
+than whether the artifacts reproduce, use
 `vignette("selection-integrity", package = "ledgr")` and
-`vignette("walk-forward", package = "ledgr")`.
+`vignette("walk-forward", package = "ledgr")`. They weigh the selection; neither
+proves that it generalizes.
 
 This is the same selection-bias boundary that separates reproducible sweep
-evidence from walk-forward or later validation-toolkit evidence.
+evidence from held-out evidence.
 
 ::: {.ledgr-callout .ledgr-callout-tip}
 **Try it**

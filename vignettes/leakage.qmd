@@ -225,7 +225,9 @@ casual column added to a data frame. It has an ID, parameters, required history,
 warmup/stability rules, and a deterministic place in the pulse context.
 
 Scalar indicator functions are evaluated on bounded historical windows ending
-at the current bar. Vectorized `series_fn` functions must return a numeric
+at the current bar. Vectorized `series_fn` functions, which compute a custom indicator over an
+instrument's whole series
+(`vignette("custom-indicators", package = "ledgr")`), must return a numeric
 series aligned to the input bars, with valid warmup and post-warmup values.
 Unknown feature IDs fail loudly at pulse time rather than silently becoming
 missing values.

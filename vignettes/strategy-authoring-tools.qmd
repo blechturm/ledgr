@@ -181,9 +181,9 @@ Calling them in a loop over `ctx$universe` repeats per-instrument work at every
 pulse and is the most common way to make a strategy slow. For universes of at
 least 100 instruments, a loop over the bar, price, position, or exact-ID
 feature accessor triggers one `ledgr_scalar_accessor_loop` warning per run that
-names the vector to use; the warning changes no result. `ctx$features(id)`
-stays unrecorded because its active-alias bundle has no whole-universe
-equivalent yet.
+names the vector to use; the warning changes no result. `ctx$features(id)` stays unrecorded: ledgr has no alias-aware whole-universe feature read yet, so a strategy that
+reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
+use `ctx$vec$feature()`.
 :::
 
 ## From Scores To Shares

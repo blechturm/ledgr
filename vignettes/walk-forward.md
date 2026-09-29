@@ -6,11 +6,13 @@ the luckiest parameter on this slice of history? A sweep selects and
 scores on the same data, so its winner is in-sample evidence. It cannot
 tell you whether the rule generalizes.
 
-Walk-forward evaluation tests the generalization question under a
-rolling, held-out protocol. It splits time into folds, and in each one
-it selects a candidate on a train window, then tests only that candidate
-on the next, untouched window. The test window is held-out evidence: the
-selection never saw it.
+Walk-forward evaluation puts a selection rule to a rolling, held-out
+test. Held-out folds are dependent evidence about the selection rule:
+they share the snapshot, the grid and your choices, so a good
+walk-forward result does not prove that the rule generalizes. It splits
+time into folds, and in each one it selects a candidate on a train
+window, then tests only that candidate on the next, untouched window.
+The test window is held-out evidence: the selection never saw it.
 
 ``` text
 for each fold:
@@ -263,7 +265,9 @@ A degradation table is easy to over-read. Three things bound what it can
 tell you.
 
 Walk-forward evidence is only as survivorship-safe as the sealed
-snapshot and universe semantics it evaluates.
+snapshot and universe semantics it evaluates: a snapshot of today’s
+survivors hides the instruments that failed along the way, as
+`vignette("survivorship-bias", package = "ledgr")` shows.
 
 > [!WARNING]
 >
