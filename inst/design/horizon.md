@@ -26,6 +26,46 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-29 [ux] Sensible defaults versus required configuration
+
+Parked on purpose: a full pass could grow into a large change, and nothing
+changes before the tag.
+
+The principle stands (maintainer, 2026-09-29): users should not have to
+configure dozens of things before they can run an experiment, and every choice
+must remain configurable. `ledgr_ux_decisions.md` asks for defaults that are
+"informative and opinionated"; `ledgr_design_philosophy.md` section 2.6 asks
+that important choices be visible. Visible does not mean required.
+
+The trigger is `valuation_policy = ledgr_valuation_stale(max_sessions = ...)`.
+Every availability-aware experiment must supply it, and the contract says the
+package supplies no default stale horizon. The same day, Cut 22 decision 3
+chose the opposite pattern for departed holdings: a default that users expect,
+shown in the print, with the other setting taught.
+
+`ledgr_experiment()` today:
+
+- always required: `snapshot`, `strategy`, `cost_model`;
+- required when the run is availability-aware: `valuation_policy`;
+- defaulted: `opening` (100,000 cash), `timing_model` (next open),
+  `risk_chain` (none), `corporate_action_policy` (research), `features`,
+  `persist_features` and `execution_mode`; `metric_context` and
+  `risk_free_rate` resolve when omitted.
+
+The chore is a rule for deciding which choices get a default and which must be
+declared, and then applying it across these arguments and the new
+departed-holding setting. Questions the rule has to answer:
+
+- does a default silently move the conclusions a researcher draws, or only
+  the numbers they would pick anyway?
+- can the default be shown where users look, in the experiment and run print
+  and in `ledgr_experiment_plan()`?
+- how does a default enter experiment, sweep and walk-forward identity?
+- could a currently required choice become a default with a visible note
+  instead?
+
+This entry authorizes no implementation and no argument change.
+
 ### 2026-09-29 [execution] Untradable holdings end the run instead of booking the loss
 
 The maintainer's position: a botched exit is a legitimate economic outcome. A
