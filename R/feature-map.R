@@ -318,7 +318,19 @@ print.ledgr_feature_map <- function(x, ...) {
 #' `ledgr_invalid_warmup_input`; non-numeric input aborts with class
 #' `ledgr_invalid_warmup_input`.
 #'
-#' @param x A numeric vector, typically returned by `ctx$features()`.
+#' The context-aware form `ledgr_passed_warmup(ctx, values)` checks one value
+#' per instrument on the decision axis, such as `ctx$vec$feature(id)` or a
+#' context signal. It considers eligible instruments only (`ctx$vec$admissible`):
+#' a missing value on a held nonmember or a target-restricted member does not
+#' fail the check, and with no eligible instrument the check passes. `values`
+#' aligns by position when unnamed and by name when named, as for
+#' `ledgr_signal(ctx, values = ...)`; named values must cover every eligible
+#' instrument. Non-numeric `values`, or `values` with an `x` that is not a pulse
+#' context, abort with class `ledgr_invalid_warmup_input`.
+#'
+#' @param x A numeric vector, typically returned by `ctx$features()`; or, when
+#'   `values` is supplied, the pulse context.
+#' @param values Optional numeric decision-axis values or a context signal.
 #' @return A logical scalar.
 #' @section Articles:
 #' Feature-map strategy authoring is taught in:
@@ -335,8 +347,14 @@ print.ledgr_feature_map <- function(x, ...) {
 #' ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
 #'
 #' try(ledgr_passed_warmup(numeric(0)))
+#'
+#' # Inside a strategy, over every eligible instrument:
+#' # if (!ledgr_passed_warmup(ctx, ctx$vec$feature("sma_10"))) return(ctx$hold())
 #' @export
-ledgr_passed_warmup <- function(x) {
+ledgr_passed_warmup <- function(x, values) {
+  if (!missing(values)) {
+    return(ledgr_passed_warmup_context(x, values))
+  }
   if (!is.numeric(x)) {
     rlang::abort(
       "`x` must be a numeric vector.",
@@ -349,5 +367,33 @@ ledgr_passed_warmup <- function(x) {
       class = c("ledgr_empty_warmup_input", "ledgr_invalid_warmup_input", "ledgr_invalid_args")
     )
   }
-  isTRUE(all(!is.na(x)))
+  !anyNA(x)
+}
+
+# Eligible decision-axis values only; no eligible ID is a pass. A signal aligns
+# by its names; every other payload goes through the context entrance.
+ledgr_passed_warmup_context <- function(ctx, values) {
+  if (!inherits(ctx, "ledgr_pulse_context")) {
+    rlang::abort(
+      "`x` must be a ledgr pulse context when `values` is supplied.",
+      class = "ledgr_invalid_warmup_input"
+    )
+  }
+  if (inherits(values, "ledgr_signal")) {
+    values <- stats::setNames(as.numeric(values), names(values))
+  }
+  if (!is.numeric(values)) {
+    rlang::abort(
+      "`values` must be a numeric vector.",
+      class = "ledgr_invalid_warmup_input"
+    )
+  }
+  parts <- ledgr_strategy_context_parts(ctx, "ledgr_passed_warmup")
+  eligible <- ledgr_strategy_eligible(ctx, parts$axis)
+  all_eligible <- all(eligible)
+  aligned <- ledgr_strategy_context_align(
+    values, "values", "numeric", parts$axis, parts$axis,
+    required = if (all_eligible) NULL else eligible
+  )
+  if (all_eligible) !anyNA(aligned) else !anyNA(aligned[eligible])
 }

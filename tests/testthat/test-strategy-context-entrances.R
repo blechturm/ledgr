@@ -62,6 +62,41 @@ strategy_context_entrance_fixture <- function(availability = FALSE,
   ctx
 }
 
+strategy_context_empty_axis_fixture <- function() {
+  empty_bars <- data.frame(
+    instrument_id = character(),
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    open = numeric(), high = numeric(), low = numeric(), close = numeric(),
+    volume = numeric(),
+    stringsAsFactors = FALSE
+  )
+  empty_axis <- list(
+    run_id = "empty-axis",
+    ts_utc = "2026-01-02T21:00:00Z",
+    universe = character(),
+    bars = empty_bars,
+    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
+    .positions = stats::setNames(numeric(), character()),
+    cash = 100,
+    equity = 100,
+    seed = NULL,
+    pulse_seed = NULL,
+    state_prev = NULL,
+    .safety_state = "GREEN",
+    availability_active = TRUE,
+    members = character()
+  )
+  class(empty_axis) <- "ledgr_pulse_context"
+  ledgr:::ledgr_update_pulse_context_helpers(
+    empty_axis,
+    bars = empty_bars,
+    features = empty_axis$feature_table,
+    positions = empty_axis$.positions,
+    universe = character(),
+    availability = list()
+  )
+}
+
 testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility over the axis", {
   dense <- strategy_context_entrance_fixture()
   dense_target <- dense |>
@@ -562,38 +597,7 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
     ledgr_target_rebalance(holdings_only)
   testthat::expect_identical(unclass(held_target), c(AAA = 0, OLD = 2))
 
-  empty_bars <- data.frame(
-    instrument_id = character(),
-    ts_utc = as.POSIXct(character(), tz = "UTC"),
-    open = numeric(), high = numeric(), low = numeric(), close = numeric(),
-    volume = numeric(),
-    stringsAsFactors = FALSE
-  )
-  empty_axis <- list(
-    run_id = "empty-axis",
-    ts_utc = "2026-01-02T21:00:00Z",
-    universe = character(),
-    bars = empty_bars,
-    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
-    .positions = stats::setNames(numeric(), character()),
-    cash = 100,
-    equity = 100,
-    seed = NULL,
-    pulse_seed = NULL,
-    state_prev = NULL,
-    .safety_state = "GREEN",
-    availability_active = TRUE,
-    members = character()
-  )
-  class(empty_axis) <- "ledgr_pulse_context"
-  empty_axis <- ledgr:::ledgr_update_pulse_context_helpers(
-    empty_axis,
-    bars = empty_bars,
-    features = empty_axis$feature_table,
-    positions = empty_axis$.positions,
-    universe = character(),
-    availability = list()
-  )
+  empty_axis <- strategy_context_empty_axis_fixture()
   testthat::expect_error(ledgr:::ledgr_validate_pulse_context(empty_axis), NA)
   cash_before <- empty_axis$cash
   equity_before <- empty_axis$equity
@@ -923,4 +927,93 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
   empty_target <- counting(empty_axis, list())
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(empty_target, stats::setNames(numeric(), character()))
+})
+
+testthat::test_that("[LTB-0123] the context warmup form checks eligible instruments only", {
+  contexts <- list(
+    dense = strategy_context_entrance_fixture(),
+    held_nonmember = strategy_context_entrance_fixture(
+      availability = TRUE, positions = c(OLD = 2), restricted = c(FALSE, FALSE)
+    ),
+    restricted_member = strategy_context_entrance_fixture(
+      availability = TRUE, members = c("AAA", "OLD"), restricted = c(TRUE, FALSE)
+    ),
+    holdings_only = strategy_context_entrance_fixture(
+      availability = TRUE, members = character(), positions = c(OLD = 2),
+      restricted = c(FALSE, FALSE)
+    )
+  )
+  # Expected results for a missing first and a missing second value, written
+  # from each fixture's eligibility: dense AAA and BBB; AAA only beside the held
+  # nonmember OLD; OLD only beside the restricted member AAA; nothing eligible.
+  intended <- list(
+    dense = c(missing_first = FALSE, missing_second = FALSE),
+    held_nonmember = c(missing_first = FALSE, missing_second = TRUE),
+    restricted_member = c(missing_first = TRUE, missing_second = FALSE),
+    holdings_only = c(missing_first = TRUE, missing_second = TRUE)
+  )
+  for (name in names(contexts)) {
+    ctx <- contexts[[name]]
+    testthat::expect_true(ledgr_passed_warmup(ctx, ctx$vec$feature("return_5")), info = name)
+    testthat::expect_true(ledgr_passed_warmup(ctx, ledgr_signal_feature(ctx, "return_5")), info = name)
+    variants <- list(missing_first = c(NA_real_, 0.9), missing_second = c(0.2, NA_real_))
+    for (variant in names(variants)) {
+      values <- variants[[variant]]
+      named <- stats::setNames(values, ctx$universe)
+      expected <- intended[[name]][[variant]]
+      label <- paste(name, variant)
+      testthat::expect_identical(ledgr_passed_warmup(ctx, values), expected, info = label)
+      testthat::expect_identical(ledgr_passed_warmup(ctx, rev(named)), expected, info = label)
+      testthat::expect_identical(
+        ledgr_passed_warmup(ctx, ledgr_signal(ctx, values = values)), expected, info = label
+      )
+      eligible_only <- named[as.logical(ctx$vec$admissible)]
+      testthat::expect_identical(ledgr_passed_warmup(ctx, eligible_only), expected, info = label)
+    }
+  }
+
+  empty_axis <- strategy_context_empty_axis_fixture()
+  testthat::expect_true(ledgr_passed_warmup(empty_axis, numeric()))
+  testthat::expect_true(ledgr_passed_warmup(empty_axis, stats::setNames(numeric(), character())))
+
+  restricted <- contexts$restricted_member
+  testthat::expect_error(
+    ledgr_passed_warmup(restricted, c(AAA = 0.2)),
+    class = "ledgr_invalid_strategy_type"
+  )
+  testthat::expect_error(
+    ledgr_passed_warmup(restricted, c(0.2, 0.9, 0.1)),
+    class = "ledgr_invalid_strategy_type"
+  )
+  condition_classes <- function(expr) {
+    setdiff(
+      class(tryCatch(expr, error = identity)),
+      c("rlang_error", "error", "condition")
+    )
+  }
+  testthat::expect_identical(
+    condition_classes(ledgr_passed_warmup(restricted, c("0.2", "0.9"))),
+    "ledgr_invalid_warmup_input"
+  )
+  testthat::expect_identical(
+    condition_classes(ledgr_passed_warmup(c(0.2, 0.9), c(0.2, 0.9))),
+    "ledgr_invalid_warmup_input"
+  )
+
+  # The one-argument form is unchanged: all(!is.na(x)) over the whole vector.
+  testthat::expect_true(ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101)))
+  testthat::expect_false(ledgr_passed_warmup(c(ret_5 = NA_real_, sma_10 = 101)))
+  testthat::expect_false(ledgr_passed_warmup(restricted$vec$feature("return_5") * NA))
+  testthat::expect_identical(
+    condition_classes(ledgr_passed_warmup(numeric())),
+    c("ledgr_empty_warmup_input", "ledgr_invalid_warmup_input", "ledgr_invalid_args")
+  )
+  testthat::expect_identical(
+    condition_classes(ledgr_passed_warmup("x")),
+    c("ledgr_invalid_warmup_input", "ledgr_invalid_args")
+  )
+  testthat::expect_identical(
+    condition_classes(ledgr_passed_warmup(restricted)),
+    c("ledgr_invalid_warmup_input", "ledgr_invalid_args")
+  )
 })

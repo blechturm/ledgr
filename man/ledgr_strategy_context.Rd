@@ -24,7 +24,9 @@ eligibility planes, aligned to \code{ctx$universe}, in every run. An
 instrument is admissible when it is a member and not target-restricted. In a
 dense run every instrument is a member, none is restricted, every reason is
 \code{""} and every instrument is admissible, so a rule masked with
-\code{ctx$vec$admissible} works unchanged in both kinds of run.
+\code{ctx$vec$admissible} works unchanged in both kinds of run. The context
+helpers, including \code{ledgr_passed_warmup(ctx, values)}, consider admissible
+instruments only.
 \item \code{ctx$idx(id)}: 1-based universe position for one instrument.
 \item \code{ctx$open(id)}, \code{ctx$high(id)}, \code{ctx$low(id)},
 \code{ctx$close(id)}, \code{ctx$volume(id)}: current bar values for one

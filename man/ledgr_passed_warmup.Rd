@@ -4,10 +4,13 @@
 \alias{ledgr_passed_warmup}
 \title{Check whether mapped feature values have passed warmup}
 \usage{
-ledgr_passed_warmup(x)
+ledgr_passed_warmup(x, values)
 }
 \arguments{
-\item{x}{A numeric vector, typically returned by \code{ctx$features()}.}
+\item{x}{A numeric vector, typically returned by \code{ctx$features()}; or, when
+\code{values} is supplied, the pulse context.}
+
+\item{values}{Optional numeric decision-axis values or a context signal.}
 }
 \value{
 A logical scalar.
@@ -24,6 +27,16 @@ strategy conditions after feature values have been read. Zero-length input
 aborts with classes \code{ledgr_empty_warmup_input} and
 \code{ledgr_invalid_warmup_input}; non-numeric input aborts with class
 \code{ledgr_invalid_warmup_input}.
+
+The context-aware form \code{ledgr_passed_warmup(ctx, values)} checks one value
+per instrument on the decision axis, such as \code{ctx$vec$feature(id)} or a
+context signal. It considers eligible instruments only (\code{ctx$vec$admissible}):
+a missing value on a held nonmember or a target-restricted member does not
+fail the check, and with no eligible instrument the check passes. \code{values}
+aligns by position when unnamed and by name when named, as for
+\code{ledgr_signal(ctx, values = ...)}; named values must cover every eligible
+instrument. Non-numeric \code{values}, or \code{values} with an \code{x} that is not a pulse
+context, abort with class \code{ledgr_invalid_warmup_input}.
 }
 \section{Articles}{
 
@@ -43,4 +56,7 @@ ledgr_passed_warmup(c(ret_5 = NA_real_, sma_10 = 101))
 ledgr_passed_warmup(c(ret_5 = 0.02, sma_10 = 101))
 
 try(ledgr_passed_warmup(numeric(0)))
+
+# Inside a strategy, over every eligible instrument:
+# if (!ledgr_passed_warmup(ctx, ctx$vec$feature("sma_10"))) return(ctx$hold())
 }
