@@ -26,6 +26,96 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-29 [execution] Untradable holdings end the run instead of booking the loss
+
+The maintainer's position: a botched exit is a legitimate economic outcome. A
+holding that cannot be sold must be able to cost money in a backtest. That
+covers a long halt or suspension, a delisting without settlement, and a stock
+that trades only where the snapshot has no bars. Ending the run when this
+happens omits exactly that outcome.
+
+Today the accepted point-in-time contract stops instead:
+
+- a stale mark past `ledgr_valuation_stale(max_sessions)` stops the run with
+  `valuation_horizon_exhausted`;
+- a terminal lifetime assertion on a held ID stops it with
+  `terminal_settlement_unsupported`;
+- an exit with no execution bar is rejected with `execution_bar_missing`
+  ("never carry a standing order") until the stale horizon stops the run.
+
+Each finalizes `INCOMPLETE` with only the accepted prefix. The principle
+behind it, never fabricate settlement, is sound and stays. What is missing is
+a way to represent the outcome rather than stop.
+
+Executed on 2026-09-29 with a two-instrument fixture in which AAA delists
+while held:
+
+- `summary()` reports `INCOMPLETE`, the stop reason and the affected ID
+  clearly, and `print()` labels its returns "achieved prefix".
+- The stop truncates the whole portfolio. BBB, which was never stuck, loses
+  its path after the stop too.
+- `ledgr_run_compare(snapshot)` silently leaves the stuck run out of its
+  default table. Naming it in `run_ids` fails with `ledgr_run_not_complete`,
+  so it cannot be compared at all.
+- The sweep print reads "2 combinations: 1 done, 0 failed", so the
+  `INCOMPLETE` candidate is counted nowhere. Its row carries prefix metrics in
+  the same columns as the completed candidate.
+- `ledgr_sweep_review()` ranks completed candidates only and lists the stuck
+  one among issue rows, with no stop reason shown.
+
+Read in the code but not executed:
+
+- walk-forward training selection keeps only `DONE` candidates
+  (`R/walk-forward-selection.R:158`) without reporting the exclusion;
+- the degradation table scores a `PARTIAL` fold's truncated test run with no
+  warning flag, while the selected-candidate table drops that fold;
+- `ledgr_sweep_filter()` evaluates completed candidates only, and its print
+  counts only those.
+
+Why it matters beyond one run: variants that meet the tail event leave
+comparison and selection, so the surviving variants look better than they
+are. That is survivorship bias at the strategy level, the bias the
+point-in-time machinery exists to prevent.
+
+Direction, not decided:
+
+- With evidence, book the actual outcome from terminal-settlement facts:
+  cash per share at delisting (zero included), a deal price, or an
+  over-the-counter price series that makes the holding tradable again.
+- Without evidence, apply a declared assumption instead of a stop. The user
+  chooses it explicitly, as with `max_sessions`: write off, a stated haircut,
+  or stop as today. The run continues, the holding stays on the books, exits
+  stay queued, and the loss appears in results marked as assumption-backed. A
+  constant delisting return is a sensitivity scenario, not truth
+  (`research/ledgr_ragged_universe_prior_art_review.md`), so several
+  assumptions should be comparable side by side.
+
+This is RFC-sized and needs prior art before a seed. It changes valuation,
+the ledger event vocabulary (a loss that is not a fill), completion status,
+metrics, sweeps, walk-forward and provenance. Prior art to gather first:
+
+- the delisting-return literature already cited in the prior-art review
+  (Shumway; Beaver, McNichols and Price);
+- how CRSP and Sharadar record delisting outcomes
+  (`research/Sharadar-Corporate-Event-Evidence.md` already routes held
+  terminal events to `terminal_settlement_unsupported`);
+- how peer backtesters treat halted, suspended and delisted holdings;
+- how exchanges and brokers handle halts, reopening auctions and migration
+  to over-the-counter trading.
+
+It belongs to the accounting-critical-events RFC (v0.2.x), whose entry point
+the 2026-09-08 availability entry already names as
+`terminal_settlement_unsupported`.
+
+One part is small and separate: the silent handling on the comparison and
+selection surfaces is a disclosure defect that needs no RFC. That covers the
+default comparison set, the sweep count, the unreported walk-forward
+exclusion and the missing degradation flag. The survivorship article should
+also state the current limit. Whether those land before the tag is the
+maintainer's call.
+
+This entry authorizes no implementation, spike or RFC.
+
 ### 2026-09-28 [planning] Dependency order for the next version
 
 The next version after v0.2.1.0 is called v0.2.2 in planning. The roadmap's
