@@ -73,18 +73,22 @@ ledgr_strategy_type_stats <- function(x) {
   sprintf("non-NA: %d/%d", non_na, length(x))
 }
 
-# The eligibility plane over the decision axis: `ctx$vec$admissible` when the
-# context carries it; otherwise every ID of a dense context, or the current
-# members of an availability context, is eligible.
-ledgr_strategy_eligible <- function(ctx, axis) {
+# The eligibility plane over the decision axis is `ctx$vec$admissible`. A dense
+# context without the plane has every ID eligible; a plane that is present, or
+# an availability context, must carry one non-missing logical per axis ID, and
+# anything else fails closed with the caller's condition class.
+ledgr_strategy_eligible <- function(ctx, axis, class = "ledgr_invalid_strategy_helper") {
   admissible <- ctx$vec$admissible
-  if (!is.null(admissible) && length(admissible) == length(axis)) {
-    return(as.logical(admissible))
+  if (is.null(admissible) && !isTRUE(ctx$availability_active)) {
+    return(rep(TRUE, length(axis)))
   }
-  if (isTRUE(ctx$availability_active)) {
-    return(axis %in% as.character(ctx$members %||% character()))
+  if (!is.logical(admissible) || length(admissible) != length(axis) || anyNA(admissible)) {
+    rlang::abort(
+      "`ctx$vec$admissible` must hold one non-missing logical value per decision-axis instrument.",
+      class = class
+    )
   }
-  rep(TRUE, length(axis))
+  as.logical(admissible)
 }
 
 ledgr_strategy_context_abort <- function(message,

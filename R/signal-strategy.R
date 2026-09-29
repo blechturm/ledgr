@@ -65,7 +65,7 @@ ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1
         anyNA(universe) || any(!nzchar(universe))) {
       rlang::abort("Signal strategy context must include a non-empty character `universe`.", class = "ledgr_invalid_strategy_result")
     }
-    eligible <- ledgr_strategy_eligible(ctx, universe)
+    eligible <- ledgr_strategy_eligible(ctx, universe, class = "ledgr_invalid_strategy_result")
     current_targets <- function() {
       position <- ctx$vec$position
       if (is.null(position) || length(position) != length(universe)) {

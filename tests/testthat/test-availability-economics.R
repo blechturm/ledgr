@@ -282,7 +282,8 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
     vec = list(
       positions = c(3, 0),
       close = c(NA, 50),
-      risk_mark = c(100, 50)
+      risk_mark = c(100, 50),
+      admissible = c(FALSE, TRUE)
     ),
     idx = function(id) match(id, c("FORMER", "MEMBER"))
   )

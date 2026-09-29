@@ -1016,4 +1016,86 @@ testthat::test_that("[LTB-0123] the context warmup form checks eligible instrume
     condition_classes(ledgr_passed_warmup(restricted)),
     c("ledgr_invalid_warmup_input", "ledgr_invalid_args")
   )
+  # A classed numeric vector keeps its own is.na() method in the
+  # one-argument form, which is all(!is.na(x)), even when its anyNA() method
+  # disagrees.
+  registerS3method("is.na", "ledgr_ltb0123_never_na", function(x) rep(FALSE, length(x)))
+  registerS3method("anyNA", "ledgr_ltb0123_never_na", function(x, recursive = FALSE) TRUE)
+  never_na <- structure(c(a = NA_real_, b = 1), class = "ledgr_ltb0123_never_na")
+  testthat::expect_true(ledgr_passed_warmup(never_na))
+
+  # A signal on the context's axis is read without a second entrance pass;
+  # other payloads, and a signal carrying an infinite score, still take it.
+  align_calls <- 0L
+  align <- ledgr:::ledgr_strategy_context_align
+  testthat::local_mocked_bindings(
+    ledgr_strategy_context_align = function(...) {
+      align_calls <<- align_calls + 1L
+      align(...)
+    },
+    .package = "ledgr"
+  )
+  signal <- ledgr_signal(restricted, values = c(NA_real_, 0.9))
+  align_calls <- 0L
+  testthat::expect_true(ledgr_passed_warmup(restricted, signal))
+  testthat::expect_false(ledgr_passed_warmup(restricted, signal * c(1, NA)))
+  testthat::expect_identical(align_calls, 0L)
+  testthat::expect_true(ledgr_passed_warmup(restricted, c(NA_real_, 0.9)))
+  testthat::expect_identical(align_calls, 1L)
+  testthat::expect_error(
+    ledgr_passed_warmup(restricted, signal * c(1, Inf)),
+    class = "ledgr_invalid_strategy_type"
+  )
+  testthat::expect_error(
+    ledgr_passed_warmup(restricted, c(0.2, Inf)),
+    class = "ledgr_invalid_strategy_type"
+  )
+})
+
+testthat::test_that("[LTB-0124] a malformed eligibility plane fails closed in every helper", {
+  restricted <- strategy_context_entrance_fixture(
+    availability = TRUE, members = c("AAA", "OLD"), restricted = c(TRUE, FALSE),
+    positions = c(AAA = 3)
+  )
+  wrapper <- ledgr_signal_strategy(
+    function(ctx) stats::setNames(rep("LONG", length(ctx$universe)), ctx$universe),
+    long_qty = 10
+  )
+  calls <- list(
+    signal_feature = function(ctx) ledgr_signal_feature(ctx, "return_5"),
+    signal_values = function(ctx) ledgr_signal(ctx, values = c(0.2, 0.9)),
+    selection = function(ctx) ledgr_selection(ctx),
+    selection_ids = function(ctx) ledgr_selection(ctx, ids = c("AAA", "OLD")),
+    quantity = function(ctx) ledgr_target_quantity(ledgr_selection(c(AAA = FALSE, OLD = TRUE)), ctx, qty = 10),
+    rebalance = function(ctx) ledgr_target_rebalance(ledgr_weights(c(OLD = 1), universe = ctx$universe), ctx),
+    warmup = function(ctx) ledgr_passed_warmup(ctx, c(0.2, 0.9)),
+    wrapper = function(ctx) wrapper(ctx, list())
+  )
+  expected_class <- function(name) {
+    if (identical(name, "wrapper")) "ledgr_invalid_strategy_result" else "ledgr_invalid_strategy_helper"
+  }
+  planes <- list(missing = NULL, short = FALSE, character = c("TRUE", "FALSE"), missing_value = c(NA, TRUE))
+  for (plane in names(planes)) {
+    broken <- restricted
+    broken$vec["admissible"] <- list(planes[[plane]])
+    for (name in names(calls)) {
+      testthat::expect_error(calls[[name]](broken), class = expected_class(name), info = paste(plane, name))
+    }
+  }
+
+  # The well-formed context keeps the restricted member out.
+  testthat::expect_identical(unclass(calls$selection(restricted)), c(AAA = FALSE, OLD = TRUE))
+  testthat::expect_identical(wrapper(restricted, list()), c(AAA = 3, OLD = 10))
+
+  # A dense context without the plane has every instrument eligible; a dense
+  # plane that is present must be well formed.
+  dense <- strategy_context_entrance_fixture()
+  bare <- dense
+  bare$vec["admissible"] <- list(NULL)
+  testthat::expect_identical(unclass(ledgr_selection(bare)), c(AAA = TRUE, BBB = TRUE))
+  testthat::expect_identical(wrapper(bare, list()), c(AAA = 10, BBB = 10))
+  short <- dense
+  short$vec$admissible <- TRUE
+  testthat::expect_error(ledgr_selection(short), class = "ledgr_invalid_strategy_helper")
+  testthat::expect_error(wrapper(short, list()), class = "ledgr_invalid_strategy_result")
 })

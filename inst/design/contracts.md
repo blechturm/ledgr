@@ -708,8 +708,14 @@ changes it.
   `member` (all `TRUE`), `target_restricted` (all `FALSE`),
   `target_restriction_reason` (all `""`) and `admissible` (all `TRUE`),
   allocated once per run and reused on every pulse. No second eligibility
-  plane exists. `ctx$tradable()` stays a character vector of IDs that also
-  requires a price.
+  plane exists: a context helper never rebuilds eligibility from
+  `ctx$members`. An availability context without a logical, axis-length,
+  non-missing `admissible` plane, or any context whose plane is present but
+  malformed, fails with `ledgr_invalid_strategy_helper`
+  (`ledgr_invalid_strategy_result` in the `ledgr_signal_strategy()` wrapper);
+  a dense context without the plane treats every ID as eligible.
+  `ctx$tradable()` stays a character vector of IDs that also requires a
+  price.
 - **Context payloads.** An unnamed `values`, `where` or warmup payload has
   exactly length(Daxis) and aligns by position. A named payload uses unique
   Daxis IDs in any order and covers every eligible ID; an uncovered ineligible

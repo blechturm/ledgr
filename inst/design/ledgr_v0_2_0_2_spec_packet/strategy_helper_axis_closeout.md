@@ -1,11 +1,13 @@
 # Strategy Helper Axis Closeout
 
-**Status:** Agent-provisional draft. Awaiting the Workstream 30 close review
-and the maintainer's acceptance.
+**Status:** Agent-provisional draft. The Workstream 30 close review returned
+CHANGES_REQUIRED; its three findings are fixed without a further review, by the
+maintainer's choice. Awaiting the maintainer's acceptance.
 **Date:** 2026-09-29
 **Cut:** 22
 **Workstream:** 30
-**Implementation range:** `63c453b..266cf5c`, plus this closeout record.
+**Implementation range:** `63c453b..266cf5c`, the close-review correction, and
+this closeout record.
 
 ## Decision
 
@@ -29,7 +31,8 @@ and help, and the design homework is recorded in `horizon.md` on 2026-09-29.
 | LDG-2908 | Context signals return raw values over the axis with an `eligible` attribute. | LTB-0120 / LCL-0120 | `7450692` |
 | LDG-2912 | Selections, rankings and target helpers apply eligibility and keep ineligible holdings. | LTB-0121 / LCL-0121 | `7450692` |
 | LDG-2909 | `ledgr_signal_strategy()` maps eligible instruments, holds the rest and accepts an empty axis. | LTB-0122 / LCL-0122 | `2fd53a2` |
-| LDG-2910 | `ledgr_passed_warmup(ctx, values)` checks eligible instruments only. | LTB-0123 / LCL-0123 | `266cf5c` |
+| LDG-2910 | `ledgr_passed_warmup(ctx, values)` checks eligible instruments only. | LTB-0123 / LCL-0123 | `266cf5c`, correction |
+| close review | A missing or malformed eligibility plane fails closed in every context helper. | LTB-0124 / LCL-0124 | correction |
 
 The claim records carry the fixtures, condition classes and smallest failing
 changes; each ticket's evidence in `tickets.yml` carries its mutation counts.
@@ -44,7 +47,8 @@ their claims restate the contract.
 LDG-2907 30, LDG-2908 171, LDG-2912 120, LDG-2909 34, LDG-2910 105. Each
 ticket passed `check.R --through <ticket>`, with its rows and every earlier
 ticket's realized, later tickets' rows at their baseline, and nothing outside
-the manifest changed. At `266cf5c`:
+the manifest changed. At `266cf5c`, and again after the close-review
+correction:
 
 ```text
 Rscript dev/spikes/strategy-helper-axis/check.R
@@ -70,8 +74,10 @@ All clocks are warm, interleaved, one process per arm, with bytes from
 | LDG-2909 | wrapper call, axis 500, dense | 395 us, 177,760 B | 400 us, 177,760 B |
 | LDG-2909 | wrapper call, axis 500, ragged | 385 us, 177,760 B | 405 us, 204,552 B (keeping ineligible holdings) |
 | LDG-2909 | wrapper runs, per pulse | baseline | +2% dense and availability, paired within a machine level shift |
-| LDG-2910 | one-argument warmup | 1.43 us, 0 B | 1.00 us, 0 B |
-| LDG-2910 | context warmup, axis 10 and 500 | not available | 26 us and 55 us, 67,448 B at 500 |
+| LDG-2910 | one-argument warmup | 1.43 us, 0 B | 1.15 us, 0 B (after the correction) |
+| LDG-2910 | context warmup, axis 10 and 500 | not available | 22 us and 55 us, 67,448 B at 500 |
+| correction | context warmup on a signal, axis 500 | 125 us, 163,576 B | 40 us, 43,016 B |
+| correction | every helper and wrapper call, axis 500; pipeline and wrapper runs | `252c1cc` | within +2.5%/-5%, identical bytes |
 
 Three regressions were found by measurement and fixed before their tickets
 landed: dense `ledgr_selection(where =)` +26% and `ids =` +10% bytes, and a
@@ -81,13 +87,39 @@ new dispatch (LDG-2910). No change adds a loop over instruments, pulses or
 rows; the per-instrument warning loop in `ledgr_target_rebalance()` became one
 aggregated warning.
 
+## Close-Review Corrections
+
+The close review (invocation 4) confirmed invocation 3's four fixes, every
+registered mutation, the real folds, the seven-shape walk and the costs, and
+found three defects, all fixed:
+
+- The one-argument warmup form's `!anyNA(x)` body, introduced to pay for the
+  new dispatch, differs from `all(!is.na(x))` for a classed vector whose
+  `is.na()` and `anyNA()` methods disagree. The fast path now applies to plain
+  vectors only. The LDG-2910 record's claim that the two are identical for
+  numeric input was wrong and is corrected there.
+- `ledgr_strategy_eligible()` rebuilt eligibility from `ctx$members` when an
+  availability context lacked a well-formed plane, so a restricted member could
+  be selected. It now fails closed with the caller's condition class; a dense
+  context without the plane stays all eligible. LTB-0124 covers four broken
+  planes across eight helper calls. One hand-built availability test fixture
+  lacked the plane and now carries it.
+- The context warmup form sent a signal through the full entrance a second
+  time. A signal on the context's axis is now read directly, with eligibility
+  from `ctx`; other payloads, including a signal with an infinite score, still
+  take the entrance.
+
+Eleven mutations each fail the owning block; the counts are in LCL-0123,
+LCL-0124 and LDG-2911's evidence.
+
 ## Fast Gate
 
-At `266cf5c` the ordinary fast profile passed 489 of 489 blocks in 74.98
-seconds against the 112-second bound, on duckdb 1.5.6.9000 (107.5 seconds on
-duckdb 1.5.5 at `2fd53a2`; see Cut 23). A one-process full-suite run fails the
-same ten tests before and after this cut; LDG-2914 owns that and LDG-2913 the
-stale witness baseline.
+After the correction the ordinary fast profile passed 490 of 490 blocks in
+74.72 seconds against the 112-second bound, on duckdb 1.5.6.9000 (107.5
+seconds on duckdb 1.5.5 at `2fd53a2`; see Cut 23). A one-process full-suite
+run fails the same nine tests before and after the correction, plus LTB-0123,
+whose entrance counter reads 0 there as LTB-0095's and LTB-0119's do;
+LDG-2914 owns that and LDG-2913 the stale witness baseline.
 
 ## Open Points For The Maintainer
 
@@ -102,6 +134,6 @@ stale witness baseline.
 Cut review invocation 1 (Codex, CHANGES_REQUIRED, seven findings patched),
 invocation 2 (Type 2 review of LDG-2906, NEEDS_TYPE_2), invocation 3 (Type 2
 re-review, CHANGES_REQUIRED, four findings fixed without a further review by
-the maintainer's choice). The Workstream 30 close review is invocation 4:
-4 over 8 tickets, `0.500`, at the gate. Any further review is a recorded
-breach.
+the maintainer's choice) and invocation 4 (the Workstream 30 close review,
+CHANGES_REQUIRED, three findings fixed without a further review by the
+maintainer's choice): 4 over 8 tickets, `0.500`, at the gate.

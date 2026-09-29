@@ -17,7 +17,7 @@
 # hand-built guard `!anyNA(values[ctx$vec$admissible])` in both arms and the
 # context form `ledgr_passed_warmup(ctx, values)` where the tree has it, with
 # `ledgr_signal(ctx, values = values)` as the reference cost of the shared
-# context entrance. Bytes
+# context entrance, and the context form on a signal built from those values. Bytes
 # are `Rprofmem()` vector allocations, the `bench::mark()` `mem_alloc` meter.
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -96,6 +96,8 @@ for (ragged in c(FALSE, TRUE)) for (n in c(10L, 500L)) {
   record(paste0("signal_reference_", shape), function() ledgr_signal(ctx, values = values), calls)
   if (has_context_form) {
     record(paste0("context_form_", shape), function() ledgr_passed_warmup(ctx, values), calls)
+    signal <- ledgr_signal(ctx, values = values)
+    record(paste0("context_form_signal_", shape), function() ledgr_passed_warmup(ctx, signal), calls)
   }
 }
 

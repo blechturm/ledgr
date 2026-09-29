@@ -367,20 +367,20 @@ ledgr_passed_warmup <- function(x, values) {
       class = c("ledgr_empty_warmup_input", "ledgr_invalid_warmup_input", "ledgr_invalid_args")
     )
   }
-  !anyNA(x)
+  # `anyNA()` skips a classed vector's own `is.na()` method.
+  if (is.object(x)) isTRUE(all(!is.na(x))) else !anyNA(x)
 }
 
-# Eligible decision-axis values only; no eligible ID is a pass. A signal aligns
-# by its names; every other payload goes through the context entrance.
+# Eligible decision-axis values only; no eligible ID is a pass. A signal on
+# this context's axis was validated by its constructor, so only its values are
+# read; a signal on another order, or carrying an infinite score, and every
+# other payload go through the context entrance.
 ledgr_passed_warmup_context <- function(ctx, values) {
   if (!inherits(ctx, "ledgr_pulse_context")) {
     rlang::abort(
       "`x` must be a ledgr pulse context when `values` is supplied.",
       class = "ledgr_invalid_warmup_input"
     )
-  }
-  if (inherits(values, "ledgr_signal")) {
-    values <- stats::setNames(as.numeric(values), names(values))
   }
   if (!is.numeric(values)) {
     rlang::abort(
@@ -391,6 +391,15 @@ ledgr_passed_warmup_context <- function(ctx, values) {
   parts <- ledgr_strategy_context_parts(ctx, "ledgr_passed_warmup")
   eligible <- ledgr_strategy_eligible(ctx, parts$axis)
   all_eligible <- all(eligible)
+  if (inherits(values, "ledgr_signal")) {
+    if (identical(names(values), parts$axis)) {
+      finite <- is.finite(values)
+      if (all(finite) || !any(is.infinite(values))) {
+        return(if (all_eligible) all(finite) else all(finite[eligible]))
+      }
+    }
+    values <- stats::setNames(as.numeric(values), names(values))
+  }
   aligned <- ledgr_strategy_context_align(
     values, "values", "numeric", parts$axis, parts$axis,
     required = if (all_eligible) NULL else eligible
