@@ -2083,3 +2083,14 @@ testthat::test_that("[LTB-0128] user articles use no maintainer shorthand", {
   testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
   testthat::expect_identical(ledgr_doc_maintainer_terms(root), character())
 })
+
+testthat::test_that("[LTB-0129] the ledgr_indicator help documents both scalar arities", {
+  root <- testthat::test_path("..", "..")
+  help_path <- file.path(root, "man", "ledgr_indicator.Rd")
+  testthat::skip_if_not(file.exists(help_path), "help sources not available during installed-package tests")
+  help <- gsub("\\s+", " ", paste(readLines(help_path, warn = FALSE), collapse = " "))
+  testthat::expect_match(help, "\\code{function(window)}", fixed = TRUE)
+  testthat::expect_match(help, "\\code{function(window, params)}", fixed = TRUE)
+  testthat::expect_match(help, "ledgr also passes the indicator's \\code{params}", fixed = TRUE)
+  testthat::expect_match(help, "fn = function(window, params) mean(tail(window$close, params$n))", fixed = TRUE)
+})

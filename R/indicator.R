@@ -1,7 +1,11 @@
 #' Construct a ledgr indicator
 #'
 #' @param id Unique indicator identifier.
-#' @param fn Indicator function: function(window) -> numeric | list.
+#' @param fn Scalar indicator function evaluated on one bounded window of bars
+#'   ending at the current bar, returning a numeric value or a list. Two forms
+#'   are accepted: `function(window)`, and `function(window, params)`. When the
+#'   function declares a second argument, ledgr also passes the indicator's
+#'   `params`.
 #' @param requires_bars Minimum lookback period (integer).
 #' @param params Named list of deterministic parameters for fingerprinting.
 #' @param stable_after Number of bars after which the indicator output is stable.
@@ -21,6 +25,14 @@
 #'   requires_bars = 1
 #' )
 #' last_close$id
+#'
+#' mean_close <- ledgr_indicator(
+#'   id = "mean_close_3",
+#'   fn = function(window, params) mean(tail(window$close, params$n)),
+#'   requires_bars = 3,
+#'   params = list(n = 3)
+#' )
+#' mean_close$id
 #' @export
 ledgr_indicator <- function(id,
                             fn,

@@ -2257,7 +2257,7 @@ tickets:
     dependencies: []
     scope: "Route P8 from the LDG-2895 flow map (decision D7). `?ledgr_indicator` documents `fn` as `function(window)` only, although the engine calls `fn(window, params)` when the function declares a second argument (`ledgr_call_feature_fn()` in `R/features-engine.R`) and `test-pulse-feature-parity.R` exercises both forms. Correct the roxygen `@param fn` text and example so the help page matches Custom Indicators, and regenerate `man/ledgr_indicator.Rd`. No code changes."
     acceptance: ["`?ledgr_indicator` documents `fn(window)` and `fn(window, params)` and says the second form receives the indicator's `params`", "only roxygen comments in `R/indicator.R` and the regenerated `man/ledgr_indicator.Rd` change, and the package help builds without a new warning", "a documentation-contract assertion pins both forms in the help page and fails when the second form is removed"]
-    evidence: []
+    evidence: ["Agent-provisional, 2026-09-29. The roxygen `@param fn` in `R/indicator.R` and the hand-maintained `man/ledgr_indicator.Rd` now document `function(window)` and `function(window, params)`, and that ledgr passes the indicator's `params` when the function declares a second argument, as `ledgr_call_feature_fn()` does; a second example uses the two-argument form and runs. `tools::checkRd()` reports nothing. No code changed. LCL-0129 registers review block LTB-0129 pinning both forms and the example in the help page; removing the second form from the Rd fails it."]
   - id: "LDG-2904"
     title: "Add a fixed-quantity target helper"
     workstream: 29

@@ -18,7 +18,11 @@ ledgr_indicator(
 \arguments{
 \item{id}{Unique indicator identifier.}
 
-\item{fn}{Indicator function: function(window) -> numeric | list.}
+\item{fn}{Scalar indicator function evaluated on one bounded window of bars
+ending at the current bar, returning a numeric value or a list. Two forms
+are accepted: \code{function(window)}, and \code{function(window, params)}. When the
+function declares a second argument, ledgr also passes the indicator's
+\code{params}.}
 
 \item{requires_bars}{Minimum lookback period (integer).}
 
@@ -49,4 +53,12 @@ last_close <- ledgr_indicator(
   requires_bars = 1
 )
 last_close$id
+
+mean_close <- ledgr_indicator(
+  id = "mean_close_3",
+  fn = function(window, params) mean(tail(window$close, params$n)),
+  requires_bars = 3,
+  params = list(n = 3)
+)
+mean_close$id
 }
