@@ -258,7 +258,9 @@ cuts:
     out_of_scope: "Short selling, leverage and any new target semantics beyond eligibility and axis shape. The alias-aware whole-universe feature read (P3), which stays with the feature-map read-surface RFC. Teaching changes, which belong to Workstream 29 once this cut is accepted."
     workstreams: [30]
     closeout: "strategy_helper_axis_closeout.md"
-    status: "open"
+    close_review: "Invocation 4, the clean-context Codex Type 1 close review of Workstream 30 at 252c1cc on 2026-09-29, returned CHANGES_REQUIRED with three bounded findings and confirmed invocation 3's four fixes. The maintainer chose to have the writer fix the three without a further review; the correction is ac28924. Final count 4 over 8 tickets, 0.500, at the gate."
+    accepted: "2026-09-29 by the maintainer, after the close-review correction at ac28924; `check.R --accept` in 6497c00"
+    status: "closed"
   - id: 23
     name: "Per-call store overhead"
     cut: "2026-09-29"
@@ -507,7 +509,7 @@ workstreams:
   - id: 30
     name: "Strategy helpers on one decision axis"
     cut: 22
-    status: "open"
+    status: "complete"
     depends_on_workstream: 28
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 30", reason: "One claim joins the tickets: every strategy helper and context surface follows the accepted LDG-2906 domain table in dense and ragged universes, so a strategy written as named-vector manipulation, or as a helper pipeline, is correct in both. The review reruns `dev/spikes/strategy-helper-axis/check.R` and confirms it passes against the frozen Cut 22 baseline with exactly the manifest rows changed, before the baseline is replaced. It runs each ticket's registered mutation, reruns the real-fold runtime rows, and confirms that dense results of the existing helper pipelines and the one-argument warmup form are unchanged. It walks every changed function against the cut's implementation rule, the seven shapes and the maintainer checklist, naming each loop over instruments with its reason or as a finding. It remeasures the recorded helper and per-pulse costs itself, interleaved on a warm clock."}
@@ -2259,7 +2261,7 @@ tickets:
   - id: "LDG-2905"
     title: "Record the strategy-helper axis audit"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -2269,7 +2271,7 @@ tickets:
   - id: "LDG-2906"
     title: "Decide the one-axis eligibility contract"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2905"]
@@ -2279,7 +2281,7 @@ tickets:
   - id: "LDG-2907"
     title: "Give dense contexts the eligibility planes"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2906"]
@@ -2289,7 +2291,7 @@ tickets:
   - id: "LDG-2908"
     title: "Put signals on the decision axis"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2907"]
@@ -2299,7 +2301,7 @@ tickets:
   - id: "LDG-2912"
     title: "Put selection, ranking and target helpers on the decision axis"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2908"]
@@ -2309,7 +2311,7 @@ tickets:
   - id: "LDG-2909"
     title: "Apply eligibility in ledgr_signal_strategy()"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2908", "LDG-2912"]
@@ -2319,7 +2321,7 @@ tickets:
   - id: "LDG-2910"
     title: "Add a context-aware warmup form"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2908"]
@@ -2329,13 +2331,13 @@ tickets:
   - id: "LDG-2911"
     title: "Close workstream 30 and cut 22"
     workstream: 30
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2905", "LDG-2906", "LDG-2907", "LDG-2908", "LDG-2912", "LDG-2909", "LDG-2910"]
     scope: "Close Workstream 30 and Cut 22 in `strategy_helper_axis_closeout.md`: the accepted decision, each ticket's commit, registered detector and mutation, the probe check against the frozen baseline, the fast gate, the recorded costs before and after, and the review invocations. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["`check.R` passes through every ticket against the frozen Cut 22 baseline, with exactly the manifest rows changed; only then does `check.R --accept` replace the baseline and empty the manifest, in a commit of its own", "the fast profile passes its gate, and every helper and per-pulse cost recorded under the implementation rule is shown before and after", "review invocations are recorded against the 0.5 gate"]
-    evidence: ["Agent-provisional, 2026-09-29. `strategy_helper_axis_closeout.md` drafts the close: the decision, each ticket's commit and registered detector, the probe check, the recorded costs before and after, the fast gate and the review count. At 266cf5c, `check.R` with no `--through` passes: 1,635 observations, all 460 manifest rows realized, nothing else changed. The fast profile passes 489 blocks in 74.98 s against the 112 s bound. `check.R --accept` is held until the Workstream 30 close review (invocation 4, 4 over 8 tickets, 0.500) has rerun the check against the frozen baseline, and then lands in a commit of its own.", "2026-09-29, Workstream 30 close review (invocation 4, clean-context Codex at 252c1cc): CHANGES_REQUIRED with three findings; invocation 3's four fixes, every registered mutation, the real folds, the seven-shape walk, the costs and the review count were confirmed. The maintainer chose to have the writer fix the three without a further review. (1) The one-argument warmup form used `!anyNA(x)` for every numeric input, which differs from `all(!is.na(x))` for a classed vector whose `is.na()` and `anyNA()` methods disagree; it now uses the fast path for plain vectors only. (2) `ledgr_strategy_eligible()` rebuilt eligibility from `ctx$members` when an availability context lacked a well-formed plane, so a restricted member could be selected; it now fails closed with the caller's condition class (`ledgr_invalid_strategy_helper`, or `ledgr_invalid_strategy_result` in the wrapper) when an availability context lacks a logical, axis-length, non-missing `ctx$vec$admissible`, or when any context carries a malformed one, and a dense context without the plane stays all eligible. The contract and `?ledgr_strategy_context` say so. One hand-built availability fixture in `test-availability-economics.R` lacked the plane and now carries it. (3) The context warmup form sent a signal through the full entrance a second time; a signal on the context's axis is now read directly (eligibility from `ctx`), and any other payload, including a signal with an infinite score, still takes the entrance. Detectors: LTB-0123 gains a classed-vector case and an entrance counter; new LTB-0124 / LCL-0124 covers missing, short, character and NA-bearing planes across eight helper calls. Eleven mutations each fail the owning block: rebuild from members (18 failures), accept an NA plane (2 and an error), wrapper with the helper class (errors), `anyNA()` for classed vectors (1), axis signal through the entrance (2), count ineligible on the signal path (5) and on the entrance path (13), fail when nothing is eligible (12), positional alignment (10), and the two class changes (1 each). `check.R` passes unchanged: 1,635 observations, all 460 manifest rows realized, nothing else changed. The fast profile passes 490 blocks in 74.72 s. A one-process full-suite run fails the same nine tests at 252c1cc and after, plus LTB-0123, whose new entrance counter reads 0 there, as LTB-0095's and LTB-0119's counters do (LDG-2914). Cost, four interleaved pairs against 252c1cc, `ws30_close_fix_*_clocks.csv`: warmup on a signal at axis 500 125 us and 163,576 B before, 40 us and 43,016 B after (ragged 125 to 35 us, 156,784 to 38,112 B); warmup on raw values unchanged (55 us); the one-argument form 1.02 to 1.15 us, 0 B, still below the 1.43 us before the cut; every helper and wrapper call within +2.5%/-5% in time with identical bytes, and the dense and availability pipeline and wrapper runs within noise with identical bytes per pulse, so validating the plane on each call costs nothing measurable."]
+    evidence: ["Agent-provisional, 2026-09-29. `strategy_helper_axis_closeout.md` drafts the close: the decision, each ticket's commit and registered detector, the probe check, the recorded costs before and after, the fast gate and the review count. At 266cf5c, `check.R` with no `--through` passes: 1,635 observations, all 460 manifest rows realized, nothing else changed. The fast profile passes 489 blocks in 74.98 s against the 112 s bound. `check.R --accept` is held until the Workstream 30 close review (invocation 4, 4 over 8 tickets, 0.500) has rerun the check against the frozen baseline, and then lands in a commit of its own.", "2026-09-29, Workstream 30 close review (invocation 4, clean-context Codex at 252c1cc): CHANGES_REQUIRED with three findings; invocation 3's four fixes, every registered mutation, the real folds, the seven-shape walk, the costs and the review count were confirmed. The maintainer chose to have the writer fix the three without a further review. (1) The one-argument warmup form used `!anyNA(x)` for every numeric input, which differs from `all(!is.na(x))` for a classed vector whose `is.na()` and `anyNA()` methods disagree; it now uses the fast path for plain vectors only. (2) `ledgr_strategy_eligible()` rebuilt eligibility from `ctx$members` when an availability context lacked a well-formed plane, so a restricted member could be selected; it now fails closed with the caller's condition class (`ledgr_invalid_strategy_helper`, or `ledgr_invalid_strategy_result` in the wrapper) when an availability context lacks a logical, axis-length, non-missing `ctx$vec$admissible`, or when any context carries a malformed one, and a dense context without the plane stays all eligible. The contract and `?ledgr_strategy_context` say so. One hand-built availability fixture in `test-availability-economics.R` lacked the plane and now carries it. (3) The context warmup form sent a signal through the full entrance a second time; a signal on the context's axis is now read directly (eligibility from `ctx`), and any other payload, including a signal with an infinite score, still takes the entrance. Detectors: LTB-0123 gains a classed-vector case and an entrance counter; new LTB-0124 / LCL-0124 covers missing, short, character and NA-bearing planes across eight helper calls. Eleven mutations each fail the owning block: rebuild from members (18 failures), accept an NA plane (2 and an error), wrapper with the helper class (errors), `anyNA()` for classed vectors (1), axis signal through the entrance (2), count ineligible on the signal path (5) and on the entrance path (13), fail when nothing is eligible (12), positional alignment (10), and the two class changes (1 each). `check.R` passes unchanged: 1,635 observations, all 460 manifest rows realized, nothing else changed. The fast profile passes 490 blocks in 74.72 s. A one-process full-suite run fails the same nine tests at 252c1cc and after, plus LTB-0123, whose new entrance counter reads 0 there, as LTB-0095's and LTB-0119's counters do (LDG-2914). Cost, four interleaved pairs against 252c1cc, `ws30_close_fix_*_clocks.csv`: warmup on a signal at axis 500 125 us and 163,576 B before, 40 us and 43,016 B after (ragged 125 to 35 us, 156,784 to 38,112 B); warmup on raw values unchanged (55 us); the one-argument form 1.02 to 1.15 us, 0 B, still below the 1.43 us before the cut; every helper and wrapper call within +2.5%/-5% in time with identical bytes, and the dense and availability pipeline and wrapper runs within noise with identical bytes per pulse, so validating the plane on each call costs nothing measurable.", "Maintainer, 2026-09-29: Workstream 30 and Cut 22 accepted after the close-review correction at ac28924. `check.R --accept` then ran after the full check passed against the frozen baseline, in its own commit 6497c00: the 460 manifest rows became the baseline, the manifest is empty, and the check passes against the new baseline with no expected changes."]
   - id: "LDG-2915"
     title: "Open the store once per public call"
     workstream: 31

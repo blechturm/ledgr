@@ -1,13 +1,12 @@
 # Strategy Helper Axis Closeout
 
-**Status:** Agent-provisional draft. The Workstream 30 close review returned
-CHANGES_REQUIRED; its three findings are fixed without a further review, by the
-maintainer's choice. Awaiting the maintainer's acceptance.
+**Status:** Accepted by the maintainer on 2026-09-29, after the close-review
+correction at `ac28924`.
 **Date:** 2026-09-29
 **Cut:** 22
 **Workstream:** 30
-**Implementation range:** `63c453b..266cf5c`, the close-review correction, and
-this closeout record.
+**Implementation range:** `63c453b..ac28924`, the baseline acceptance `6497c00`,
+and this closeout record.
 
 ## Decision
 
@@ -55,8 +54,10 @@ Rscript dev/spikes/strategy-helper-axis/check.R
 ok through all: 1635 observations, 460 expected change(s) realized, 0 pending at their baseline value
 ```
 
-`check.R --accept`, which replaces the baseline and empties the manifest,
-runs only after the close review has rerun this check, in a commit of its own.
+`check.R --accept` ran after the close review had rerun this check and the
+maintainer had accepted the workstream, in its own commit `6497c00`: the 460
+manifest rows became the baseline, the manifest is empty, and the check passes
+against the new baseline with no expected changes.
 
 ## Costs
 
