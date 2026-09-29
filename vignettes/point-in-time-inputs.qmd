@@ -120,8 +120,7 @@ pit$sessions |>
   select(session_date, status, session_close)
 ```
 
-The closure is declared `closed`; the gap date remains `open`. ledgr can now
-advance the expected-session clock without manufacturing a price. Declaring
+The closure is declared `closed`; the gap date remains `open`. ledgr can then advance the expected-session clock without manufacturing a price. Declaring
 any availability family requires a complete session calendar. Under
 `knowledge = "evidenced"`, every session row needs a `knowledge_time`: an open
 session must be known by its open, and a closure before its civil day starts.

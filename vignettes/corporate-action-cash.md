@@ -192,8 +192,10 @@ events. A dense study that only needs evidenced cash distributions does
 not have to adopt every fact family.
 
 `AAA` is local to this article, not an alias for a shared `DEMO_*`
-instrument. The shared `ledgr_demo_pit_inputs` bundle carries the
-equivalent cash-dividend case and its sealed terms:
+instrument. When you want to model a dividend on data that also carries
+sessions, membership and trading status, load the shared
+`ledgr_demo_pit_inputs` bundle. It contains a cash dividend, and this
+check finds its terms:
 
 ``` r
 data("ledgr_demo_pit_inputs", package = "ledgr")

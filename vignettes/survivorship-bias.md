@@ -407,14 +407,14 @@ ledgr_facts_history(
 #> # i Full rows remain in $rows; supporting evidence remains in $evidence.
 ```
 
-The next block is article-specific sensitivity analysis, not part of the
-canonical ingestion-to-run workflow. It deliberately rewrites the
-synthetic vendor’s `knowledge_time` to isolate what that clock changes.
-The mechanical fixture construction is folded because ordinary analysis
-should resolve the facts as supplied, not re-author vendor timestamps.
+The next block is a what-if for this article only, not a step in an
+ordinary workflow. It rewrites the example vendor’s `knowledge_time` to
+show what that clock changes. Its setup code is folded, because real
+research resolves facts as supplied rather than rewriting vendor
+timestamps.
 
 <details class="code-fold">
-<summary>Show article-specific sensitivity fixture</summary>
+<summary>Show the what-if setup</summary>
 
 ``` r
 late_membership <- ledgr_facts_membership_snapshots(
@@ -1057,15 +1057,16 @@ workflow, read
 
 ## Where This Fits
 
-This article keeps a two-company fixture because it makes the bias
+This article keeps a two-company example because it makes the bias
 visible. For the complete reusable input model – bars, sessions,
 membership, status, lifetime, and corporate actions – read
 `vignette("point-in-time-inputs", package = "ledgr")`.
 
 `AAA`, `BBB`, and the `DEMO` venue are local to this article; they are
-not additions to the shared `DEMO_*` history. The shared
-`ledgr_demo_pit_inputs` bundle contains the equivalent delisting
-boundary:
+not additions to the shared `DEMO_*` history. When you want to study a
+delisting on data that also carries sessions, trading status and
+corporate actions, load the shared `ledgr_demo_pit_inputs` bundle. It
+contains a delisting, and this check finds its lifetime boundary:
 
 ``` r
 data("ledgr_demo_pit_inputs", package = "ledgr")
@@ -1106,7 +1107,7 @@ Nor does sealing certify your source. If membership knowledge time is
 assumed from effective time, `ledgr_experiment_plan()` labels the family
 `assumption_backed`. If trading-status or lifetime facts are omitted,
 their checks remain omitted. The gap shown here belongs to one synthetic
-fixture chosen to make the mechanism legible; it is not an estimate of
+example chosen to make the mechanism legible; it is not an estimate of
 survivorship bias in any real index.
 
 For sealing details, read

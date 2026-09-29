@@ -195,7 +195,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.920
+    Elapsed Sec:      0.960
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -410,9 +410,8 @@ helpers above:
 - use `ledgr_run_info()` and `ledgr_run_strategy()` to inspect stored
   metadata and strategy provenance.
 
-The lower-level recovery pair remains public for restart inspection and
-maintainer workflows that need to work directly against the store
-connection.
+The lower-level recovery pair is public for restart inspection and for
+tools that need to work directly against the store connection.
 
 `ledgr_db_init(db_path)` opens a DBI connection to a ledgr DuckDB store
 and ensures the ledgr schema exists. In normal workflows, ordinary users

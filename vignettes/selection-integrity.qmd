@@ -209,7 +209,7 @@ full-sample mean return, 0.012 versus 0.005 for each rotating candidate, yet it
 never wins one of the six in-sample contests. A full-sample leader and a
 segment-wise winner are different claims.
 
-ledgr fails closed when the panel has too few candidates or observations,
+ledgr stops with an error when the panel has too few candidates or observations,
 contains non-finite returns, cannot be divided by `S`, or a custom metric fails
 to return one finite score per candidate.
 
@@ -290,7 +290,7 @@ deployable. When observed Sharpe does not exceed the reference, ledgr keeps the
 candidate and reports an infinite requirement rather than dropping weak
 evidence.
 
-The diagnostic also fails closed on too few observations, constant or
+The diagnostic also stops with an error on too few observations, constant or
 non-finite returns, and invalid confidence, reference-Sharpe, or risk-free-rate
 inputs.
 
@@ -356,7 +356,7 @@ ledgr_k_ratio(
 The endpoints are nearly identical, but the noisy path has a smaller fitted
 slope, a much larger slope standard error, and therefore a much smaller
 K-Ratio. Compare K-Ratios only across compatible frequencies and the same
-published variant. ledgr fails closed on fewer than three observations,
+published variant. ledgr stops with an error on fewer than three observations,
 non-finite inputs, excess returns at or below `-1`, or a cumulative path whose
 slope uncertainty cannot be estimated.
 
@@ -694,12 +694,12 @@ would you be prepared to state before seeing the candidate returns?
 - Kestner, L. N. (2013). "(Re)Introducing the K-Ratio."
   [doi:10.2139/ssrn.2230949](https://doi.org/10.2139/ssrn.2230949).
 
-Implementation cross-checks are deliberately secondary evidence:
+Independent implementations and references you can compare against:
 
 - The CRAN [`pbo` reference manual](https://cran.r-project.org/web/packages/pbo/pbo.pdf)
-  documents the external PBO implementation used as an optional test oracle.
+  documents an independent PBO implementation.
 - The CRAN [`PerformanceAnalytics` reference manual](https://cran.r-project.org/web/packages/PerformanceAnalytics/PerformanceAnalytics.pdf)
-  documents `MinTrackRecord()`, used as an optional numerical cross-check.
+  documents `MinTrackRecord()`, an independent MinTRL implementation.
 - Base R [`hclust()` documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/hclust.html)
   documents the clustering primitive. The choice to turn complete-linkage
   clusters over `1 - correlation` into effective trials remains ledgr policy.

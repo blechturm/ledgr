@@ -318,7 +318,7 @@ closes the position. The open-position run has one fill and zero trades because
 the position remains open. The final-target run has neither. Start with fills
 when you debug execution. Trades are derived from filled round trips, not from
 target changes: a trade row is the close-action fill row that realizes PnL.
-ledgr does not currently expose a paired entry/exit trade table.
+ledgr has no paired entry/exit trade table.
 
 The distinction is also visible in accounting. A closing fill carries
 `realized_pnl`; an open position remains in the equity curve's

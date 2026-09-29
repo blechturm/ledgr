@@ -32,16 +32,16 @@ library(dplyr)
 library(tibble)
 ```
 
-## Fixture For Context Examples
+## A Small Example Run
 
 This companion article needs a small completed run so metric-context
 examples can inspect stored assumptions. The accounting walkthrough,
 result-table hierarchy, and hand recomputation live in
 `vignette("metrics-and-accounting", package = "ledgr")`.
 
-The fixture uses `ledgr_backtest()` only as the compact in-memory
-compatibility surface. New project workflows should enter through a
-sealed snapshot, `ledgr_experiment()`, and `ledgr_run()` as shown in the
+This example uses `ledgr_backtest()`, a compact in-memory entrance for
+small examples. New project workflows should enter through a sealed
+snapshot, `ledgr_experiment()`, and `ledgr_run()` as shown in the
 Quickstart.
 
 ``` r
@@ -74,9 +74,9 @@ bt <- ledgr_backtest(
 
 ## Metric Context
 
-Metric assumptions now live in a `metric_context`. The default context
-is US equity daily: zero annual risk-free rate and `252 * 1` periods per
-year. Use market templates for common assumptions:
+Metric assumptions live in a `metric_context`. The default context is US
+equity daily: zero annual risk-free rate and `252 * 1` periods per year.
+Use market templates for common assumptions:
 
 > [!NOTE]
 >
@@ -281,10 +281,9 @@ rf_period_return = (1 + rf_annual)^(1 / bars_per_year) - 1
 ```
 
 Time-varying risk-free-rate series and real data providers such as FRED,
-Treasury, ECB, or central-bank adapters are deferred to later
-metric-context provider work. Future providers must feed the same
-pulse-aligned `rf_period_return` vector into the formula above; they
-must not create a separate Sharpe formula branch.
+Treasury, ECB, or central-bank adapters are not supported yet. When they
+arrive, they will feed the same pulse-aligned `rf_period_return` vector
+into the formula above, so the Sharpe formula stays the same.
 
 Sharpe returns `NA_real_` for short samples, flat equity, or near-zero
 volatility; see `?ledgr_compute_metrics` for the exact edge-case rules.
@@ -326,7 +325,7 @@ summary(bt)
 #>   Full policy record: ledgr_corporate_action_summary(bt)
 ```
 
-The fixture holds one share for one bar of five, so a 0.40% gain becomes
+The example holds one share for one bar of five, so a 0.40% gain becomes
 a 28.59% annualized return and a Sharpe ratio near 8. Annualizing five
 bars exaggerates everything; these figures show how the conventions are
 applied, not anything about a strategy.
@@ -358,10 +357,10 @@ ledgr_metric_context(metrics)
 #> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
 ```
 
-The raw metrics object keeps metric-kernel attributes for provenance.
-Those attributes are part of the programmatic object, not the printed
-metric table. Use named fields such as `metrics$sharpe_ratio` or the
-subset above when you need a compact report.
+The raw metrics object keeps attributes that record how each metric was
+computed. Those attributes are part of the programmatic object, not the
+printed metric table. Use named fields such as `metrics$sharpe_ratio` or
+the subset above when you need a compact report.
 
 `ledgr_run_compare()` is also programmatic: it returns a tibble-like
 `ledgr_comparison` object with raw numeric metric columns for filtering

@@ -204,7 +204,7 @@ c(
 #>         "SEALED"              "6"              "2"
 ```
 
-The snapshot hash now covers the canonical facts and their declared
+The snapshot hash covers the canonical facts and their declared
 provenance. Reopening verifies that identity; a consumer does not need
 the private source or adapter to reproduce the sealed input.
 

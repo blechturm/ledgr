@@ -623,7 +623,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(metrics_doc, term, fixed = TRUE)
   }
   testthat::expect_match(checklist_doc, "Diagnose A Successful Run With Zero Trades", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "compact fixture helper for accounting\\s+examples")
+  testthat::expect_match(metrics_doc, "compact helper for accounting\\s+examples")
   testthat::expect_match(metrics_doc, "snapshot -> `ledgr_experiment\\(\\)` -> `ledgr_run\\(\\)`")
   testthat::expect_match(checklist_doc, "requires_bars", fixed = TRUE)
   testthat::expect_match(checklist_doc, "stable_after", fixed = TRUE)
@@ -681,7 +681,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(metrics_doc, "see `?ledgr_compute_metrics` for the exact edge-case rules", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Time-varying risk-free-rate series and real data providers", fixed = TRUE)
   testthat::expect_match(metrics_doc, "Sortino, Calmar, Omega, information ratio", fixed = TRUE)
-  testthat::expect_match(metrics_doc, "Metric assumptions now live in a `metric_context`", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "Metric assumptions live in a `metric_context`", fixed = TRUE)
   testthat::expect_match(cost_doc, "Timing, Spread, And Fees", fixed = TRUE)
   testthat::expect_match(cost_doc, "Timing and cost are separate execution steps", fixed = TRUE)
   testthat::expect_match(cost_doc, "open \\* \\(1 \\+ spread_bps / 20000\\)")
@@ -693,7 +693,7 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(cost_doc, term, fixed = TRUE)
   }
   testthat::expect_match(cost_doc, "transaction-cost\\s+analysis")
-  testthat::expect_match(sweeps_doc, "A committed `ledgr_run()` that requests it fails closed.", fixed = TRUE)
+  testthat::expect_match(sweeps_doc, "A committed `ledgr_run()` that requests it stops with an error.", fixed = TRUE)
   testthat::expect_match(sweeps_doc, "ledgr_unsupported_accounting_model", fixed = TRUE)
   testthat::expect_match(sweeps_doc, "ledgr_compiled_spot_fifo_unavailable", fixed = TRUE)
   testthat::expect_no_match(metrics_doc, "full spread adjustment on\\s+each fill leg")
@@ -736,7 +736,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(results_help, "ledgr_pulse_features", fixed = TRUE)
   testthat::expect_match(metrics_doc, "print-oriented view", fixed = TRUE)
   testthat::expect_match(metrics_doc, "returns the backtest handle\\s+invisibly")
-  testthat::expect_match(metrics_doc, "raw metrics object keeps metric-kernel attributes", fixed = TRUE)
+  testthat::expect_match(metrics_doc, "raw metrics object keeps attributes that record how each metric was", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Timestamp checks should compare normalized UTC values", fixed = TRUE)
   testthat::expect_match(checklist_doc, "intraday_time <- format", fixed = TRUE)
   testthat::expect_match(checklist_doc, "distinguish zero signals from zero sizing", fixed = TRUE)
@@ -1741,7 +1741,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   testthat::expect_match(knowledge_section, "ledgr_facts_resolve(", fixed = TRUE)
   testthat::expect_no_match(knowledge_section, "ledgr_opening(", fixed = TRUE)
   testthat::expect_no_match(knowledge_section, "ledgr_run(", fixed = TRUE)
-  testthat::expect_match(knowledge_section, "article-specific sensitivity analysis", fixed = TRUE)
+  testthat::expect_match(knowledge_section, "what-if for this article only", fixed = TRUE)
   testthat::expect_match(knowledge_section, "#| code-fold: true", fixed = TRUE)
 
   experiment_line <- grep(
@@ -2036,4 +2036,50 @@ testthat::test_that("[LTB-0127] each shared fact is stated in its home and contr
   root <- testthat::test_path("..", "..")
   testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
   testthat::expect_identical(ledgr_doc_fact_home_problems(root), character())
+})
+
+# House rule 11 and style guide section 3: no internal shorthand a user cannot
+# act on in the README or a user article, source or rendered. The one named
+# exception is "accelerator" inside the compiled-accounting section of Sweeps.
+ledgr_doc_maintainer_terms <- function(root) {
+  documents <- c(
+    file.path(root, c("README.Rmd", "README.md")),
+    list.files(file.path(root, "vignettes"), pattern = "[.](qmd|md)$", full.names = TRUE, recursive = TRUE)
+  )
+  terms <- c(
+    "fold core" = "(?i)\\bfold core\\b",
+    "oracle" = "(?i)\\boracles?\\b",
+    "touchpoint" = "(?i)\\btouchpoints?\\b",
+    "accelerator" = "(?i)\\baccelerators?\\b",
+    "legacy" = "(?i)\\blegacy\\b",
+    "pre-provenance" = "(?i)\\bpre-provenance\\b",
+    "parity contract" = "(?i)\\bparity contracts?\\b",
+    "composable bundle" = "(?i)\\bcomposable bundles?\\b",
+    "B2" = "\\bB2\\b",
+    "ticket or test ID" = "\\b(LDG|LTB|LCL)-[0-9]"
+  )
+  out <- character()
+  for (path in documents) {
+    lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    if (grepl("^sweeps[.]", basename(path))) {
+      start <- grep("^## Compiled Accounting And Workers\\s*$", lines)
+      if (length(start) == 1L) {
+        later <- grep("^## ", lines)
+        end <- later[later > start][1L]
+        if (is.na(end)) end <- length(lines) + 1L
+        lines[start:(end - 1L)] <- ""
+      }
+    }
+    for (term in names(terms)) {
+      hit <- grep(terms[[term]], lines, perl = TRUE)
+      out <- c(out, sprintf("%s:%d %s", basename(path), hit, term))
+    }
+  }
+  out
+}
+
+testthat::test_that("[LTB-0128] user articles use no maintainer shorthand", {
+  root <- testthat::test_path("..", "..")
+  testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
+  testthat::expect_identical(ledgr_doc_maintainer_terms(root), character())
 })

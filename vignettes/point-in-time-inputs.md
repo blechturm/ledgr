@@ -91,7 +91,7 @@ pit$sessions |>
     2   2020-01-09   open      16:00:00
 
 The closure is declared `closed`; the gap date remains `open`. ledgr can
-now advance the expected-session clock without manufacturing a price.
+then advance the expected-session clock without manufacturing a price.
 Declaring any availability family requires a complete session calendar.
 Under `knowledge = "evidenced"`, every session row needs a
 `knowledge_time`: an open session must be known by its open, and a

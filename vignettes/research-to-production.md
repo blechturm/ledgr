@@ -2,11 +2,10 @@
 
 
 You want to know whether research done in ledgr can later carry into
-paper or live trading, and what ships today. ledgr currently ships a
-research engine. Its durable experiments, pulse contract, and
-event-derived accounting are designed so later paper and live systems do
-not have to discard the research model. Those later systems have not
-shipped.
+paper or live trading, and what ships today. ledgr ships a research
+engine. Its durable experiments, pulse contract, and event-derived
+accounting are designed so later paper and live systems do not have to
+discard the research model. Those later systems have not shipped.
 
 This article starts with the research workflow you can use now, then
 shows the longer arc the architecture is intended to support. A design

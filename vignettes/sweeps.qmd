@@ -385,7 +385,7 @@ fingerprints, seed metadata, and candidate params. Use
 Full equity, fills, trades, and ledger rows are created only by committed runs.
 
 `ledgr_sweep()` is the memory-backed exploration mode. It evaluates candidate
-rows through the same fold semantics as committed runs, but it keeps compact
+rows with the same execution rules as committed runs, but it keeps compact
 candidate evidence instead of writing a durable ledger and equity curve for
 every row. Promotion is the point where one selected candidate pays the
 durable-materialization cost.
@@ -552,8 +552,8 @@ any overlapping headline metric when it comes from a different convention.
 
 ## Compiled Accounting And Workers
 
-The default sweep path is memory-backed and uses the canonical R accounting
-fold. When your workload is spot-asset FIFO and you want the scoped compiled
+The default sweep path is memory-backed and uses ledgr's standard R
+accounting. When your workload is spot-asset FIFO and you want the scoped compiled
 accelerator, opt in explicitly:
 
 ```{r}
@@ -576,7 +576,7 @@ candidate ends with the same final equity as in the canonical sweep above.
 `compiled_accounting_model = NULL` remains the default. `"spot_fifo"` is a
 memory-backed sweep accelerator only: it is not a general compiled execution engine,
 not the durable `ledgr_run()` path, not a non-spot accounting model, and not
-enabled by default. A committed `ledgr_run()` that requests it fails closed.
+enabled by default. A committed `ledgr_run()` that requests it stops with an error.
 Unsupported model names raise `ledgr_unsupported_accounting_model`, and missing
 compiled support raises `ledgr_compiled_spot_fifo_unavailable`.
 
@@ -861,7 +861,7 @@ hard to write, the selection rule probably needs more work.
 
 ## Cost Models Are Fixed Inputs
 
-Cost models are part of the experiment identity in this release. A sweep varies
+Cost models are part of the experiment identity. A sweep varies
 feature parameters and strategy parameters across the declared grid; it does not
 compose cost models as another grid dimension. If you want to compare different
 cost assumptions, run separate experiments or separate sweeps with explicit

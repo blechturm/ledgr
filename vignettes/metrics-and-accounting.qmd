@@ -142,10 +142,10 @@ produced that surface.
 
 ## A Tiny Run
 
-Use a five-bar in-memory fixture so the accounting can be checked by hand. OHLC
+Use a five-bar in-memory example so the accounting can be checked by hand. OHLC
 values are equal per bar so the example focuses on accounting arithmetic; real
 bars use the same code with ordinary intra-bar movement.
-This article uses `ledgr_backtest()` as a compact fixture helper for accounting
+This article uses `ledgr_backtest()` as a compact helper for accounting
 examples. The canonical research workflow remains:
 snapshot -> `ledgr_experiment()` -> `ledgr_run()`.
 

@@ -179,7 +179,8 @@ Those bundle IDs are shorter than the hand-written single-output TTR IDs
 such as `ttr_bbands_20_up`. That asymmetry is intentional: bundle
 defaults optimize for readable output names. Use
 `naming = c(up = "ttr_bbands_20_up")` or hand-written
-`ledgr_ind_ttr(output = ...)` calls when you need exact legacy IDs.
+`ledgr_ind_ttr(output = ...)` calls when you need the exact IDs of the
+single-output form.
 
 ``` r
 bbands_bundle <- ledgr_ind_ttr_outputs("BBands", input = "close", n = 20)

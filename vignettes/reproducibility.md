@@ -157,7 +157,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.870
+    Elapsed Sec:      0.830
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -272,10 +272,10 @@ verified hash means the stored text matches the stored hash. It does not
 mean the source is safe to evaluate, economically sensible, or
 independent from external state.
 
-Legacy/pre-provenance runs and strategy types without capturable source
-may report `strategy_source_text = NA`. Those runs can still be
-inspected through `ledgr_run_info()` and result tables, but the strategy
-function cannot be recovered from provenance alone.
+Runs created by older versions of ledgr, and strategy types whose source
+cannot be captured, may report `strategy_source_text = NA`. Those runs
+can still be inspected through `ledgr_run_info()` and result tables, but
+the strategy function cannot be recovered from provenance alone.
 
 Stored source is a strong audit artifact, but it is only one part of
 reproducibility. A strategy may call external packages. It may close
@@ -482,11 +482,10 @@ ledgr_strategy_preflight(repaired_strategy)
     Allowed: TRUE
     Reason:  Strategy is self-contained under ledgr's static preflight rules.
 
-Preflight rejection is the first boundary. A covered Tier 3 strategy
-stops before fold execution, before output-handler side effects, and
-before later determinism hashing can become the first user-facing error.
-The condition class chain includes `ledgr_strategy_tier3` and
-`ledgr_strategy_preflight_error`.
+Preflight rejection comes first. A Tier 3 strategy stops before the run
+starts: before any pulse executes and before anything is written, so the
+preflight error is the first one you see. The condition class chain
+includes `ledgr_strategy_tier3` and `ledgr_strategy_preflight_error`.
 
 The most common hard rejections are:
 

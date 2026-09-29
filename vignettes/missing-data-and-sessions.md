@@ -195,10 +195,9 @@ Availability mode instead advances on the independently declared
 expected-session calendar. A declared open session remains a pulse even
 when one or every instrument lacks an observation.
 
-The small matrix below is the worked comparison used by ledgr’s
-strict-gap tests. It has one closed date, one missing open-session
-observation for `AAA`, and a `BBB` series that starts late. Both moving
-averages use a two-session window.
+The small matrix below is a worked comparison. It has one closed date,
+one missing open-session observation for `AAA`, and a `BBB` series that
+starts late. Both moving averages use a two-session window.
 
 <!-- strict-gap-table:start -->
 
@@ -587,7 +586,7 @@ traded price. It may not, and no setting changes that.
 
 ## Where This Fits
 
-This article uses a small `AAA`/`BBB` fixture because a three-session
+This article uses a small `AAA`/`BBB` example because a three-session
 hole makes mark ageing and the no-fill rule easy to see. For the
 complete reusable data model, including sessions, membership, status,
 lifetime and corporate actions, continue to
@@ -595,10 +594,10 @@ lifetime and corporate actions, continue to
 that full model for an ordinary dense-bars experiment.
 
 The identifiers in this article are local to this article; they are not
-extra history for the shared `DEMO_*` instruments. The shared
-`ledgr_demo_pit_inputs` bundle carries the same kind of
-missing-observation case, so you can connect this focused lesson to the
-complete input model:
+extra history for the shared `DEMO_*` instruments. When you want to try
+this lesson on data that also carries membership, trading status and
+lifetime facts, load the shared `ledgr_demo_pit_inputs` bundle. It
+contains the same kind of missing observation, and this check finds it:
 
 ``` r
 data("ledgr_demo_pit_inputs", package = "ledgr")

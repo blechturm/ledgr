@@ -100,9 +100,9 @@ including feature-construction leakage and remaining user responsibilities, see
 Strategy code receives one pulse context rather than a table containing future
 bars. That removes one easy route to accidental look-ahead, but it does not
 certify snapshot construction, feature logic, event timestamps, universe
-history, or parameter selection. The Leakage article owns the worked
-`lead(close)` example and the broader causal review; this article now stays on
-the strategy contract itself.
+history, or parameter selection. `vignette("leakage", package = "ledgr")` works through the `lead(close)`
+example and the broader causal review; this article stays on the strategy
+contract.
 
 With that boundary in mind, start with the simplest possible strategy.
 
@@ -480,10 +480,10 @@ fills table can contain more rows because opening fills and closing fills are
 both recorded.
 
 The rendered result is a short, tiny-universe teaching run. Its annualized
-volatility, drawdown and return describe only that fixture; none is evidence
+volatility, drawdown and return describe only that sample; none is evidence
 that the rule is attractive or that the annualization is stable. Read the
 numbers together: a positive final return can coexist with an intra-run
-drawdown, and 20 closed trades from a tiny synthetic fixture are still far too
+drawdown, and 20 closed trades from a tiny synthetic sample are still far too
 little evidence for a strategy judgment.
 
 Do not expect a teaching strategy to be good. A weak or unattractive result is

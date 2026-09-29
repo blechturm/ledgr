@@ -1,11 +1,11 @@
 # Why ledgr is built in R
 
 
-The default expectation in 2026 is that quantitative trading frameworks
-are written in Python. VectorBT, NautilusTrader, Zipline, Backtrader,
-and backtesting.py are all Python projects. The R quant ecosystem is
-older, quieter, and underinvested. Building a new framework in R
-requires justification.
+The default expectation is that quantitative trading frameworks are
+written in Python. VectorBT, NautilusTrader, Zipline, Backtrader, and
+backtesting.py are all Python projects. The R quant ecosystem is older,
+quieter, and underinvested. Building a new framework in R requires
+justification.
 
 This article is that justification. It is not “R is better than Python.”
 It is a specific argument about why, for ledgr’s goals and audience, R
@@ -110,10 +110,10 @@ floor. Different ecosystems make different tradeoffs; R’s tradeoff is
 useful for users who value long-term maintainability.
 
 ledgr is being built to use this infrastructure rather than work around
-it. Every release is checked, the pkgdown site builds in CI, the test
-suite is tied to explicit release acceptance criteria, and NEWS
-documents user-visible changes. None of this is unique to ledgr, but it
-is the kind of discipline the R package culture expects and rewards.
+it. Every release passes `R CMD check`, the pkgdown site builds in
+continuous integration, and NEWS documents user-visible changes. None of
+this is unique to ledgr, but it is the kind of discipline the R package
+culture expects and rewards.
 
 ## R’s quant ecosystem needs the investment
 

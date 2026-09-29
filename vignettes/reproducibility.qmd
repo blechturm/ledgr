@@ -224,8 +224,8 @@ Hash verification proves stored-text identity, not code safety. A verified hash
 means the stored text matches the stored hash. It does not mean the source is
 safe to evaluate, economically sensible, or independent from external state.
 
-Legacy/pre-provenance runs and strategy types without capturable source may
-report `strategy_source_text = NA`. Those runs can still be inspected through
+Runs created by older versions of ledgr, and strategy types whose source cannot
+be captured, may report `strategy_source_text = NA`. Those runs can still be inspected through
 `ledgr_run_info()` and result tables, but the strategy function cannot be
 recovered from provenance alone.
 
@@ -401,9 +401,9 @@ repaired_strategy <- function(ctx, params) {
 ledgr_strategy_preflight(repaired_strategy)
 ```
 
-Preflight rejection is the first boundary. A covered Tier 3 strategy stops
-before fold execution, before output-handler side effects, and before later
-determinism hashing can become the first user-facing error. The condition class
+Preflight rejection comes first. A Tier 3 strategy stops before the run starts:
+before any pulse executes and before anything is written, so the preflight error
+is the first one you see. The condition class
 chain includes `ledgr_strategy_tier3` and `ledgr_strategy_preflight_error`.
 
 The most common hard rejections are:
