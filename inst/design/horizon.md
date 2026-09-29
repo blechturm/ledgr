@@ -26,6 +26,51 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
+
+The maintainer wants this done soon. It is RFC work, a continuation of
+`rfc/rfc_execution_policy_pipeline_audit_signal_north_star.md` (a 2026-05-16
+maintainer RFC that predates point-in-time universes), not a new seam.
+
+The principle is already stated in `vignettes/risk-and-cost.qmd`: the strategy
+answers what it wants to hold, and downstream layers answer what it is allowed
+to hold, when it executes and what it cost. Order management comes later as
+another composable step
+(`rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md`). The point-in-time
+work added cases that the layer table does not yet place. Cut 22 decisions 3
+and 4 (`ledgr_v0_2_0_2_spec_packet/tickets.yml`, 2026-09-29) are the inputs:
+
+- **Mandate.** A departed holding that can still trade is sold by default,
+  with a declared setting that keeps it instead. That is a constraint step
+  after the strategy, not constructor behaviour. Increasing a holding outside
+  the declared universe stays an error.
+- **Market restriction.** A halt is an execution outcome, recorded rather than
+  raised. Only intent formed while the instrument was tradable is acted on,
+  so a halt cannot cause a sale at the reopening followed by a buy back.
+- **Order management.** Selling at the reopening, grace periods, buffers and
+  queued exits are order policies. The 2026-06-11 protective-exit gap and the
+  2026-09-29 untradable-holdings entry belong to the same arc.
+
+Questions for the homework:
+
+- Where does each layer sit in the pipeline?
+- What does each layer record, and which of its outcomes are errors?
+- How is each setting declared, shown in the print and entered into
+  experiment, sweep and walk-forward identity?
+- What happens today to intent the engine could not act on?
+
+The companion entry on sensible defaults (2026-09-29) supplies the rule for
+which of these settings get a default.
+
+Until the homework lands, ledgr keeps today's behaviour, and Cut 22 makes it
+predictable and documented. `ctx$flat()` is literal: it sells departed
+holdings, and sells a halted holding once a fill is possible. The helpers keep
+departed holdings. A fill for a restricted instrument is recorded as not
+executed. Increases outside the universe or on a restricted holding fail with
+an error.
+
+This entry authorizes no implementation.
+
 ### 2026-09-29 [ux] Sensible defaults versus required configuration
 
 Parked on purpose: a full pass could grow into a large change, and nothing
