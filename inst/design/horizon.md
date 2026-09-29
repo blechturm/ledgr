@@ -118,6 +118,31 @@ its own track.
 
 This entry authorizes nothing; it records the planning order.
 
+### 2026-09-28 [ux] Pilot runtime estimates for large experiments
+
+Large sweeps, walk-forward studies, portfolio optimizers and ML-adjacent
+strategies may eventually justify a public runtime-estimation command. The
+useful product is an execution-backed pilot, not a static promise: run one or
+a few representative candidates through the real public path in scratch,
+separate reusable preparation from warm orchestration, engine and results
+costs, then report a range with its sample, assumptions and largest source of
+uncertainty. Prior timings from a matching snapshot, configuration and runtime
+environment may reduce the pilot cost.
+
+Sampling disconnected pulses is not generally sound. Stateful strategies need
+their preceding pulses, later windows can cost more than early windows, and
+rebalance or model-refit pulses may dominate ordinary pulses. The default pilot
+should therefore preserve the complete state transition for each sampled
+candidate; independent pulse sampling is admissible only under an explicit
+strategy contract that makes it valid. The pilot needs a hard time budget,
+scratch-only outputs and a clear statement that it executes user code and does
+not create completed experiment evidence.
+
+This is low urgency and is not on the v0.2.2 critical path. Promote it only
+when real large experiments show that an up-front pilot would save material
+time or compute. Because it defines execution, state and side-effect semantics,
+promotion requires an RFC rather than a small convenience ticket.
+
 ### 2026-09-28 [infrastructure] Binding decisions must be discoverable
 
 The design corpus is correct but costly to navigate. The cost is state that is
