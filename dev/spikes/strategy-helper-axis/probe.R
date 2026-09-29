@@ -16,9 +16,15 @@ out_path <- if (length(args) >= 1L) args[[1L]] else "dev/spikes/strategy-helper-
 suppressMessages(pkgload::load_all(".", quiet = TRUE, compile = FALSE))
 utc <- function(x) as.POSIXct(x, tz = "UTC")
 
+# A condition is recorded by its full class stack, without the generic
+# rlang and base classes, so a change to any secondary class is visible.
+condition_classes <- function(cnd) {
+  classes <- setdiff(class(cnd), c("rlang_error", "rlang_warning", "error", "warning", "condition"))
+  paste(classes, collapse = "/")
+}
 try_run <- function(expr) tryCatch(expr,
-  error = function(e) structure(list(class = class(e)[[1]]), class = "probe_error"),
-  warning = function(w) structure(list(class = class(w)[[1]]), class = "probe_warning"))
+  error = function(e) structure(list(class = condition_classes(e)), class = "probe_error"),
+  warning = function(w) structure(list(class = condition_classes(w)), class = "probe_warning"))
 show <- function(x) {
   if (inherits(x, "probe_error")) return(paste0("ERROR <", x$class, ">"))
   if (inherits(x, "probe_warning")) return(paste0("WARN <", x$class, ">"))
@@ -48,6 +54,15 @@ model_helpers <- c("ledgr_signal", "ledgr_signal_feature", "ledgr_signal_return"
   "ledgr_select_top_n", "ledgr_target_rebalance", "ledgr_target_quantity", "ledgr_signal_strategy",
   "ledgr_passed_warmup")
 
+# Every attribute except names, so a lost origin, class or eligibility shows.
+attrs_text <- function(x) {
+  if (inherits(x, c("probe_error", "probe_warning"))) return(show(x))
+  a <- attributes(x)
+  a$names <- NULL
+  if (length(a) == 0L) return("<none>")
+  a <- a[order(names(a))]
+  paste(sprintf("%s=%s", names(a), vapply(a, function(v) paste(if (is.character(v)) v else format(v, trim = TRUE), collapse = ","), character(1))), collapse = " ")
+}
 sig_attrs <- function(x) {
   if (inherits(x, c("probe_error", "probe_warning"))) return(show(x))
   eligible <- attr(x, "eligible")
@@ -149,7 +164,21 @@ probe_ctx <- function(ctx, lookback, threshold) {
     "refusal: target_quantity(value selection of every axis ID)" = show(try_run(H$ledgr_target_quantity(
       H$ledgr_selection(stats::setNames(rep(TRUE, length(u)), u), universe = u), ctx, 10))),
     "refusal: rebalance(value weights on every axis ID)" = show(try_run(H$ledgr_target_rebalance(
-      H$ledgr_weights(stats::setNames(rep(1 / max(1L, length(u)), length(u)), u), universe = u), ctx)))
+      H$ledgr_weights(stats::setNames(rep(1 / max(1L, length(u)), length(u)), u), universe = u), ctx))),
+    "wrapper: signal_strategy(signals omitting the first ID)" = if (is.na(first)) "n/a (empty axis)" else show(try_run(
+      H$ledgr_signal_strategy(function(ctx) stats::setNames(rep("LONG", length(ctx$universe) - 1L), ctx$universe[-1L]),
+        long_qty = 10)(ctx, list()))),
+    "warmup: passed_warmup(ctx, named reversed feature)" = show(try_run(H$ledgr_passed_warmup(ctx, rev(stats::setNames(feat, u))))),
+    "attrs: ledgr_signal_feature" = attrs_text(try_run(H$ledgr_signal_feature(ctx, fid))),
+    "attrs: ledgr_signal_return" = attrs_text(sig),
+    "attrs: ledgr_signal(ctx, values = vec$feature, origin = \"custom\")" = attrs_text(try_run(H$ledgr_signal(ctx, values = feat, origin = "custom"))),
+    "attrs: ledgr_selection(ctx)" = attrs_text(try_run(H$ledgr_selection(ctx))),
+    "attrs: ledgr_selection(ctx, where = signal > threshold, origin = \"custom\")" = attrs_text(try_run(
+      H$ledgr_selection(ctx, where = sig > threshold, origin = "custom", missing = "exclude"))),
+    "attrs: select_top_n(signal, 1)" = attrs_text(try_run(H$ledgr_select_top_n(sig, 1, partial = "allow"))),
+    "attrs: weight_equal(selection(ctx))" = attrs_text(try_run(H$ledgr_weight_equal(H$ledgr_selection(ctx)))),
+    "attrs: selection(ctx) -> target_quantity" = attrs_text(try_run(ctx |> H$ledgr_selection() |> H$ledgr_target_quantity(ctx, 10))),
+    "attrs: selection(ctx) -> equal -> rebalance" = attrs_text(try_run(ctx |> H$ledgr_selection() |> H$ledgr_weight_equal() |> H$ledgr_target_rebalance(ctx)))
   )
   out
 }
@@ -217,7 +246,11 @@ add_rows("input-only", c(
   "warmup: passed_warmup(c(0.2, NA))" = show(try_run(H$ledgr_passed_warmup(c(0.2, NA)))),
   "value: ledgr_signal(c(A = 1, B = NA))" = show(try_run(H$ledgr_signal(c(A = 1, B = NA)))),
   "value: ledgr_selection(c(A = TRUE, B = FALSE))" = show(try_run(H$ledgr_selection(c(A = TRUE, B = FALSE)))),
-  "value: select_top_n(value signal, 1)" = show(try_run(H$ledgr_select_top_n(H$ledgr_signal(c(A = 1, B = 2)), 1)))
+  "value: select_top_n(value signal, 1)" = show(try_run(H$ledgr_select_top_n(H$ledgr_signal(c(A = 1, B = 2)), 1))),
+  "wrapper: marker on ledgr_signal_strategy()" = show(isTRUE(attr(axis_signals, "ledgr_signal_strategy_wrapper"))),
+  "wrapper: preflight tier of ledgr_signal_strategy()" = show(try_run(ledgr_strategy_preflight(axis_signals)$tier)),
+  "wrapper: minimal dense context list(universe = \"A\")" = show(try_run(
+    H$ledgr_signal_strategy(function(ctx) c(A = "LONG"), long_qty = 10)(list(universe = "A"), list())))
 ))
 
 # ---------------------------------------------------------------------------
@@ -231,6 +264,8 @@ add_rows("input-only", c(
 #              bought, the axis becomes AAA alone (holdings only); without
 #              it, the axis is empty.
 #   plain:     the same bars without facts, run dense.
+#   halt:      all three are members throughout; BBB is halted from day 2
+#              until day 5, so the halt ends before the run does.
 # ---------------------------------------------------------------------------
 
 days <- utc("2020-01-01 16:00:00") + 86400 * 0:7
@@ -249,6 +284,19 @@ fixture <- function(kind) {
   if (identical(kind, "plain")) {
     return(ledgr_snapshot_from_df(grid, instruments_df = data.frame(instrument_id = ids),
       db_path = tempfile(fileext = ".duckdb")))
+  }
+  if (identical(kind, "halt")) {
+    membership <- ledgr_facts_membership_intervals(data.frame(instrument_id = ids, effective_from = day(1),
+      member = TRUE, source = "axis_probe", stringsAsFactors = FALSE), universe_id = "probe",
+      knowledge = "assume_effective")
+    status <- ledgr_facts_trading_status(data.frame(
+      instrument_id = c("AAA", "BBB", "CCC", "BBB"),
+      effective_from = c(day(1), day(1), day(1), day(2) + 3600), effective_to = c(rep(utc(NA), 3), day(5)),
+      knowledge_time = c(rep(utc("2019-12-31 00:00:00"), 3), day(2)),
+      status = c("active", "active", "active", "halted"), precedence = c(0L, 0L, 0L, 1L),
+      source = "axis_probe", stringsAsFactors = FALSE))
+    return(ledgr_snapshot_from_df(grid, instruments_df = data.frame(instrument_id = ids),
+      facts = ledgr_facts(sessions, membership, status), db_path = tempfile(fileext = ".duckdb")))
   }
   if (identical(kind, "departure")) {
     membership <- data.frame(instrument_id = c("AAA", "BBB", "CCC"),
@@ -271,7 +319,8 @@ fixture <- function(kind) {
     db_path = tempfile(fileext = ".duckdb"))
 }
 
-snapshots <- list(departure = fixture("departure"), ended = fixture("ended"), plain = fixture("plain"))
+snapshots <- list(departure = fixture("departure"), ended = fixture("ended"), plain = fixture("plain"),
+  halt = fixture("halt"))
 
 capture <- new.env()
 real_preflight <- ledgr_strategy_preflight
@@ -286,7 +335,7 @@ recording_strategy <- function(ctx, params) {
 }
 
 run_fixture <- function(snapshot_name, strategy, params = list(), opening = ledgr_opening(cash = 10000),
-                        capture_only = FALSE, dense = FALSE) {
+                        capture_only = FALSE, dense = FALSE, halted_no_fills = FALSE) {
   exp <- if (isTRUE(dense)) {
     ledgr_experiment(snapshots[[snapshot_name]], strategy,
       features = ledgr_feature_map(ret = ledgr_ind_returns(1)),
@@ -301,8 +350,14 @@ run_fixture <- function(snapshot_name, strategy, params = list(), opening = ledg
     tryCatch({
       bt <- suppressWarnings(ledgr_run(exp, params = params))
       fills <- as.data.frame(ledgr_results(bt, "fills"))
+      blocked <- if (isTRUE(halted_no_fills)) {
+        d <- as.data.frame(ledgr_results(bt, "diagnostics"))
+        d <- d[d$reason_code %in% "trading_halted" & d$stage %in% "execution", , drop = FALSE]
+        paste0("; not executed ", if (nrow(d) == 0L) "none" else paste(sprintf("%s %s %s",
+          substr(format(d$ts_utc), 6, 10), d$instrument_id, d$outcome), collapse = ", "))
+      } else ""
       close(bt)
-      fills_text(fills)
+      paste0(fills_text(fills), blocked)
     }, error = error_text)
   })
 }
@@ -310,11 +365,10 @@ run_fixture <- function(snapshot_name, strategy, params = list(), opening = ledg
 # The recording strategy calls probe_ctx(), a user helper that preflight
 # rightly classifies Tier 3, so capture runs skip preflight. Under the model,
 # the helpers in the ledgr namespace are replaced by the model's for the run,
-# so the real fold, validators and fills judge the decided helpers; preflight
-# is skipped there too, because it would classify the model's own code.
+# so the real preflight, fold, validators and fills judge the decided helpers.
 with_probe_bindings <- function(capture_only, code) {
   bindings <- list()
-  if (isTRUE(capture_only) || nzchar(model_path)) {
+  if (isTRUE(capture_only)) {
     bindings$ledgr_strategy_preflight <- function(strategy) real_preflight(function(ctx, params) ctx$flat())
   }
   if (nzchar(model_path)) bindings <- c(bindings, H[model_helpers])
@@ -325,7 +379,7 @@ with_probe_bindings <- function(capture_only, code) {
 }
 error_text <- function(e) {
   if (nzchar(Sys.getenv("PROBE_DEBUG"))) message(conditionMessage(e))
-  paste0("ERROR <", grep("^ledgr_", class(e), value = TRUE)[[1L]], ">")
+  paste0("ERROR <", paste(grep("^ledgr_", class(e), value = TRUE), collapse = "/"), ">")
 }
 fills_text <- function(fills) {
   if (nrow(fills) == 0L) return("completed; no fills")
@@ -386,6 +440,19 @@ runtime_rows <- c(
     }),
   "run: hand-built flat()[signal > -1] <- 5 after departure" =
     run_fixture("departure", function(ctx, params) { t <- ctx$flat(); t[ledgr_signal_return(ctx, 1) > -1] <- 5; t }),
+  "run: literal flat() every pulse after buying, halt ends mid-run" =
+    run_fixture("halt", function(ctx, params) {
+      if (substr(format(ctx$ts_utc), 1, 10) == "2020-01-01") { t <- ctx$flat(); t[] <- 5; return(t) }
+      ctx$flat()
+    }, halted_no_fills = TRUE),
+  "run: literal zero once during the halt then hold, halt ends mid-run" =
+    run_fixture("halt", function(ctx, params) {
+      day <- substr(format(ctx$ts_utc), 1, 10)
+      if (day == "2020-01-01") { t <- ctx$flat(); t[] <- 5; return(t) }
+      t <- ctx$hold()
+      if (day == "2020-01-02") t[["BBB"]] <- 0
+      t
+    }, halted_no_fills = TRUE),
   "sweep: selection -> target_quantity, two quantities, quantity changes while halted" =
     run_sweep_smoke(),
   "walk-forward: selection -> target_quantity over rolling folds" =

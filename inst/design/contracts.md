@@ -753,10 +753,14 @@ changes it.
   `ledgr_target()`, `ctx$flat()` and `ctx$hold()` are literal. A strategy
   states intent; ledgr's later steps judge and execute it (Cut 22 decision
   4). Until the design work recorded in `horizon.md` on 2026-09-29 lands, the
-  consequences are these. A rule starting from `ctx$flat()` sells a departed
-  holding at the next open, and sells a halted holding once a fill is
-  possible. The fill for a restricted instrument is recorded as not executed
-  while the restriction lasts. Increasing a held nonmember fails with
+  consequences are these. Every target is attempted at the next open and is
+  never queued. A rule starting from `ctx$flat()` sells a departed holding at
+  the next open. A zero target for a halted holding is recorded as not
+  executed (`trading_halted`) and discarded; the holding is sold only if the
+  strategy states zero again on a pulse whose next open can fill. A rule
+  starting from `ctx$flat()` does that on every pulse, so it sells at the first
+  open after the halt; a rule that states zero once during the halt does not
+  sell. Increasing a held nonmember fails with
   `ledgr_nonmember_exposure_increase`. Changing a restricted holding other
   than holding or exiting fails with `ledgr_restricted_target`. Exiting or
   reducing an ineligible holding is a valid target, so the validators do not

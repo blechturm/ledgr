@@ -9,7 +9,7 @@ way in a dense universe and in a ragged, availability-aware universe?
 
 ## Evidence
 
-`dev/spikes/strategy-helper-axis/probe.R` runs 67 probes on each context:
+`dev/spikes/strategy-helper-axis/probe.R` runs 77 probes on each context:
 every signal,
 selection, weight and target helper; `ledgr_signal_strategy()`; the warmup
 gate in its one-argument and proposed context-aware forms; `ctx$vec` planes, `ctx$flat()`, `ctx$hold()`, `ctx$tradable()`,
@@ -18,11 +18,14 @@ alias map; `ctx$state_prev$asset_state`; and the input forms of
 `ledgr_signal(ctx, values = ...)`, including named payloads in reverse order
 and covering members only. They also cover what happens to a signal's class
 and eligibility under comparison, arithmetic, subsetting, `rank()` and `c()`,
-the context-entrance conditions and their classes, and target helpers given
-an ineligible ID. Input-only rows cover the one-argument warmup and value
-mode. Eight runtime rows (six runs recording their fills, a sweep and a
-walk-forward) complete the set, as does every probe on the public pulse
-snapshot: 1,399 observations in `observations.csv`.
+the context-entrance conditions and their full class stacks, every
+attribute of each helper's result including origin, a wrapper that omits an
+eligible ID, and target helpers given an ineligible ID. Input-only rows cover the one-argument warmup, value mode
+and the wrapper's marker, preflight tier and minimal dense context. Ten
+runtime rows (eight runs recording their fills, two of them across a halt
+that ends mid-run, a sweep and a walk-forward) complete the set, as does
+every probe on the public pulse snapshot: 1,635 observations in
+`observations.csv`.
 
 - **Constructed contexts.** Built with the internal pulse-context
   constructor. Target restriction is set independently of membership, as the
@@ -219,7 +222,7 @@ decision. The proposal, narrowed after the cut review:
 | Object | Domain after Cut 22 (proposal) | Open choice for LDG-2906 |
 |---|---|---|
 | `ctx$vec` planes | axis, positional; dense gains `member`, `target_restricted`, `target_restriction_reason`, `admissible` | none |
-| signals | axis, named | value for an ineligible entry: the raw value plus an eligibility attribute (recommended, since mistakes then fail loudly at the runtime validators), or `NA` plus the attribute |
+| signals | axis, named | value for an ineligible entry: the raw value plus an eligibility attribute (recommended), or `NA` plus the attribute |
 | selections | axis, named; ineligible entries `FALSE` (recommended) | or stay member-domain, and say so in the inventory |
 | weights | selected instruments only (unchanged) | none |
 | explicit `ids` naming an ineligible member | unselected, so the target helper holds it (recommended) | or a classed error |

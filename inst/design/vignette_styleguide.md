@@ -614,11 +614,14 @@ other articles link rather than paraphrase.
   one sentence and links to the home.
 - **Departed and halted holdings** (Survivorship Bias for departed holdings,
   Missing Data And Session Calendars for halts): `ctx$flat()` is literal, so a
-  rule starting from it sells a departed holding at the next open and sells a
-  halted holding once a fill is possible; the helpers keep both. Increasing a
-  holding outside the universe, or a halted one, fails with an error. A fill
-  for a halted instrument is recorded as not executed. What ledgr should do by
-  default here is open design work; articles say so without naming a release.
+  rule starting from it sells a departed holding at the next open. A zero
+  target for a halted holding is recorded as not executed and dropped, not
+  queued; a rule starting from `ctx$flat()` states zero again on every pulse
+  and so sells at the first open after the halt, while a zero stated once
+  during the halt never sells. The helpers keep both. Increasing a holding
+  outside the universe, or a halted one, fails with an error. What ledgr
+  should do by default here is open design work; articles say so without
+  naming a release.
 
 Use `?function_name` for function-level details.
 

@@ -18,7 +18,10 @@ ns <- asNamespace("ledgr")
 model_abort <- function(message, class) rlang::abort(message, class = class)
 
 # Dense contexts expose the allocation membership and the eligibility planes,
-# all eligible. Availability contexts are unchanged.
+# all eligible. Availability contexts are unchanged. This sketch builds the
+# dense planes on every call; it states what they contain, not how often they
+# are built. LDG-2907's counter is the proof that the implementation builds
+# them once per run.
 adapt <- function(ctx) {
   if (isTRUE(ctx$availability_active)) return(ctx)
   n <- length(ctx$universe)
@@ -163,23 +166,29 @@ H$ledgr_target_quantity <- function(selection, ctx, qty) {
 }
 
 # The signal wrapper maps eligible IDs only, holds ineligible ones at their
-# current quantity, and accepts an empty axis; everything else is the
-# package's wrapper validation.
+# current quantity, and accepts an empty axis. It carries the production
+# wrapper marker, so preflight classifies it exactly as it classifies the
+# package's wrapper, and it ends with the package's final target validator.
+# A context where every ID is eligible needs no position plane, as today.
 H$ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = -1) {
   real$ledgr_signal_strategy(fn, long_qty = long_qty, flat_qty = flat_qty, short_qty = short_qty)
-  map <- c(LONG = long_qty, FLAT = flat_qty, SHORT = short_qty)
+  map <- c(LONG = as.numeric(long_qty), FLAT = as.numeric(flat_qty), SHORT = as.numeric(short_qty))
   force(fn)
-  function(ctx, params) {
-    fail <- function(message) model_abort(message, "ledgr_invalid_strategy_result")
-    ctx <- adapt(ctx)
+  out <- function(ctx, params) {
+    fail <- function(message) rlang::abort(message, class = "ledgr_invalid_strategy_result")
+    availability <- isTRUE(ctx$availability_active)
     axis <- ctx$universe
-    eligible <- as.logical(ctx$vec$admissible)
-    target <- stats::setNames(as.numeric(ctx$vec$position), axis)
+    if (!is.character(axis) || (!availability && length(axis) < 1L) || anyNA(axis) || any(!nzchar(axis))) {
+      fail("Signal strategy context must include a non-empty character `universe`.")
+    }
+    eligible <- if (availability) as.logical(ctx$vec$admissible) else rep(TRUE, length(axis))
+    target <- stats::setNames(numeric(length(axis)), axis)
+    if (!all(eligible)) target[!eligible] <- as.numeric(ctx$vec$position)[!eligible]
     signals <- fn(ctx)
     if (!is.character(signals)) fail("Signal strategy functions must return character signals.")
     if (length(signals) == 0L) {
       if (any(eligible)) fail("Signal strategy output must cover every eligible instrument.")
-      return(target)
+      return(asNamespace("ledgr")$ledgr_validate_strategy_targets(target, axis, allow_empty = availability))
     }
     signal_names <- names(signals)
     if (is.null(signal_names) && length(signals) == 1L && length(axis) == 1L) signal_names <- axis
@@ -190,10 +199,12 @@ H$ledgr_signal_strategy <- function(fn, long_qty = 1, flat_qty = 0, short_qty = 
     if (!all(axis[eligible] %in% signal_names)) fail("Signal strategy output must cover every eligible instrument.")
     code <- toupper(trimws(signals[match(axis[eligible], signal_names)]))
     if (anyNA(code) || any(!nzchar(code))) fail("Signal strategy output contains missing or empty signals.")
-    if (!all(code %in% names(map))) fail("Unknown signal(s).")
-    target[eligible] <- as.numeric(map[code])
-    target
+    if (!all(code %in% names(map))) fail("Unknown signal(s). Supported signals are LONG, FLAT, and SHORT.")
+    target[eligible] <- unname(map[code])
+    asNamespace("ledgr")$ledgr_validate_strategy_targets(target, axis, allow_empty = availability)
   }
+  attr(out, "ledgr_signal_strategy_wrapper") <- TRUE
+  out
 }
 
 # Context-aware warmup over eligible IDs, vacuously TRUE when none; a signal

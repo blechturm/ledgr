@@ -38,8 +38,8 @@ owner <- function(probe) {
   rules <- c(
     "LDG-2910" = "^warmup: passed_warmup\\(ctx, ",
     "LDG-2909" = "^wrapper: |^run: signal_strategy",
-    "LDG-2912" = "^selection: |^pipeline: |^refusal: |^run: selection|^sweep: |^walk-forward: ",
-    "LDG-2908" = "^signal: |\\[signal > threshold\\]|^warmup: passed_warmup\\(signal\\)|^run: hand-built",
+    "LDG-2912" = "^selection: |^pipeline: |^refusal: |^run: selection|^sweep: |^walk-forward: |^attrs: (ledgr_selection|select_top_n|weight_equal|selection)",
+    "LDG-2908" = "^signal: |^attrs: ledgr_signal|\\[signal > threshold\\]|^warmup: passed_warmup\\(signal\\)|^run: hand-built",
     "LDG-2907" = "^context: ctx\\$members$|^context: eligibility planes|^context: ctx\\$vec\\$admissible$|^context: ctx\\$vec\\$target_restriction_reason$|\\[vec\\$(member|admissible) & "
   )
   out <- rep(NA_character_, length(probe))
@@ -52,9 +52,11 @@ if (anyNA(delta$ticket)) {
 }
 
 # Behaviour the decision keeps must not change anywhere: context entrances and
-# their condition classes, value mode, reads, constructors, views and the
-# one-argument warmup form.
+# their condition classes, value mode, reads, constructors, views, the
+# one-argument warmup form, literal targets in real runs, and the wrapper's
+# marker, preflight tier and minimal dense context.
 kept <- grepl(paste0("^entrance: |^value: |^read: |^view: |^constructor: |^context: universe$|",
+  "^run: literal |^wrapper: (marker|preflight|minimal)|",
   "^context: ctx\\$state_prev|^hand-built: flat\\(\\)\\[vec\\$feature|^warmup: passed_warmup\\(ctx\\$|",
   "^warmup: passed_warmup\\(numeric|^warmup: passed_warmup\\(c\\("), delta$probe)
 if (any(kept)) stop("behaviour the decision keeps would change:\n", paste(key(delta)[kept], collapse = "\n"))
@@ -68,6 +70,9 @@ dense_allowed <- c(
   "hand-built: flat()[vec$member & vec$feature > threshold] <- 10",
   "hand-built: flat()[vec$admissible & vec$feature > threshold] <- 10",
   "signal: attributes of ledgr_signal_return", "signal: attributes after arithmetic (-signal)",
+  "attrs: ledgr_signal_feature", "attrs: ledgr_signal_return",
+  "attrs: ledgr_signal(ctx, values = vec$feature, origin = \"custom\")",
+  "warmup: passed_warmup(ctx, named reversed feature)",
   "warmup: passed_warmup(ctx, ctx$vec$feature)", "warmup: passed_warmup(ctx, signal)",
   "warmup: passed_warmup(ctx, named member-only feature)", "warmup: passed_warmup(ctx, character)"
 )

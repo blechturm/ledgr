@@ -97,10 +97,11 @@ Research To Production shared fact does for live trading.
 
 Until the homework lands, ledgr keeps today's behaviour, and Cut 22 makes it
 predictable and documented. `ctx$flat()` is literal: it sells departed
-holdings, and sells a halted holding once a fill is possible. The helpers keep
-departed holdings. A fill for a restricted instrument is recorded as not
-executed. Increases outside the universe or on a restricted holding fail with
-an error.
+holdings at the next open. A zero target for a halted holding is recorded as
+not executed and discarded, not queued, so the holding is sold only when the
+strategy states zero again after the halt ends; `ctx$flat()` does that on
+every pulse. The helpers keep departed holdings. Increases outside the
+universe or on a restricted holding fail with an error.
 
 This entry authorizes no implementation.
 
