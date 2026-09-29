@@ -15,15 +15,18 @@ ledgr_signal_feature(ctx, feature_id)
 A \code{ledgr_signal} object.
 }
 \description{
-\code{ledgr_signal_feature()} reads one already-registered feature plane. In an
-availability-aware context it projects to current members and masks exactly
-the members whose targets are inadmissible. Missing prices alone do not mask
-a feature score. An empty current membership returns an empty signal without
-reading the feature plane.
+\code{ledgr_signal_feature()} reads one already-registered feature plane and
+returns one raw score per instrument in \code{ctx$universe}, in that order. The
+signal carries \code{ctx$vec$admissible} as its \code{eligible} attribute: an
+instrument that is not a member, or is target-restricted, keeps its raw score
+but is marked ineligible, so ineligible is never reported as missing.
+\code{\link[=ledgr_select_top_n]{ledgr_select_top_n()}} ranks eligible scores only, and \code{\link[=ledgr_selection]{ledgr_selection()}}
+decides eligible instruments only.
 }
 \details{
-Use \code{ledgr_signal()} with its raw \code{values} entrance for transformed or custom
-scores that should not receive this convenience mask.
+Arithmetic on a signal keeps its class and \code{eligible} attribute; comparison,
+subsetting, \code{rank()} and \code{c()} return plain vectors. Use \code{\link[=ledgr_signal]{ledgr_signal()}} with
+its \code{values} entrance to turn a transformed vector back into a signal.
 }
 \section{Articles}{
 

@@ -20,8 +20,8 @@ A full-universe \code{ledgr_target} object.
 \description{
 \code{ledgr_target_quantity()} converts a selection into a full-universe
 \code{ledgr_target} that holds the same fixed quantity of every selected
-instrument. Selected current members get \code{qty}; every other current member
-gets zero. Use it for rules such as "hold 10 shares of each instrument that
+instrument. Selected eligible instruments get \code{qty}; every other eligible
+instrument gets zero. Use it for rules such as "hold 10 shares of each instrument that
 passes the condition"; use \code{\link[=ledgr_weight_equal]{ledgr_weight_equal()}} and
 \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} instead when positions should be sized from
 account equity.
@@ -31,13 +31,15 @@ selection with \code{ledgr_selection(ctx, where = ..., missing = "exclude")} whe
 a missing value, such as a feature still in warmup, should mean "not
 selected".
 
-In an availability-aware run, held nonmembers keep their current quantity,
-exactly as \code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} preserves them, and the selection may
-name current members only.
+In an availability-aware run, every ineligible instrument, a held nonmember
+or a target-restricted member, keeps its current quantity, exactly as
+\code{\link[=ledgr_target_rebalance]{ledgr_target_rebalance()}} preserves it. The selection may name any instrument
+on the decision axis, but may select eligible instruments only.
 }
 \details{
 Error class: \code{ledgr_invalid_strategy_helper} when \code{selection} is not a
-\code{ledgr_selection}, names an instrument outside the current member set, or
+\code{ledgr_selection}, names an instrument outside the decision axis, selects
+an ineligible instrument, or
 when \code{qty} is not one finite, non-negative number. Negative quantities stay
 refused until short-selling semantics are defined.
 }

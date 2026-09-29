@@ -73,6 +73,20 @@ ledgr_strategy_type_stats <- function(x) {
   sprintf("non-NA: %d/%d", non_na, length(x))
 }
 
+# The eligibility plane over the decision axis: `ctx$vec$admissible` when the
+# context carries it; otherwise every ID of a dense context, or the current
+# members of an availability context, is eligible.
+ledgr_strategy_eligible <- function(ctx, axis) {
+  admissible <- ctx$vec$admissible
+  if (!is.null(admissible) && length(admissible) == length(axis)) {
+    return(as.logical(admissible))
+  }
+  if (isTRUE(ctx$availability_active)) {
+    return(axis %in% as.character(ctx$members %||% character()))
+  }
+  rep(TRUE, length(axis))
+}
+
 ledgr_strategy_context_abort <- function(message,
                                          class = "ledgr_invalid_strategy_helper") {
   rlang::abort(message, class = class)
@@ -158,12 +172,16 @@ ledgr_strategy_context_dots <- function(dots, helper, allowed, required = FALSE)
   dots
 }
 
+# `required` is a logical mask over `members`: named payloads must cover the
+# required IDs, and only their missing decisions are refused. By default every
+# member is required.
 ledgr_strategy_context_align <- function(payload,
                                          argument,
                                          expected_type,
                                          axis,
                                          members,
-                                         missing_decisions = c("error", "exclude")) {
+                                         missing_decisions = c("error", "exclude"),
+                                         required = NULL) {
   missing_decisions <- match.arg(missing_decisions)
   valid_type <- switch(
     expected_type,
@@ -204,7 +222,7 @@ ledgr_strategy_context_align <- function(payload,
         class = "ledgr_invalid_strategy_type"
       )
     }
-    missing_members <- setdiff(members, payload_names)
+    missing_members <- setdiff(if (is.null(required)) members else members[required], payload_names)
     if (length(missing_members) > 0L) {
       ledgr_strategy_context_abort(
         sprintf("`%s` is missing current member IDs: %s.", argument,
@@ -224,7 +242,8 @@ ledgr_strategy_context_align <- function(payload,
   }
   projected <- aligned[match(members, names(aligned))]
   names(projected) <- members
-  if (identical(expected_type, "logical") && anyNA(projected)) {
+  refused <- if (is.null(required)) is.na(projected) else is.na(projected) & required
+  if (identical(expected_type, "logical") && any(refused)) {
     if (identical(missing_decisions, "exclude")) {
       projected[is.na(projected)] <- FALSE
     } else {
@@ -236,7 +255,7 @@ ledgr_strategy_context_align <- function(payload,
             "a rebalance then targets those instruments to zero."
           ),
           argument,
-          paste(members[is.na(projected)], collapse = ", ")
+          paste(members[refused], collapse = ", ")
         ),
         class = "ledgr_invalid_strategy_type"
       )
@@ -291,6 +310,12 @@ ledgr_print_strategy_vector <- function(x, type, ...) {
 #' pipelines. Signals are intermediate objects; strategies must not return them
 #' directly. A zero-length named signal represents an empty decision domain.
 #'
+#' In context mode, `ledgr_signal(ctx, values = ...)` returns one value per
+#' instrument in `ctx$universe` and carries `ctx$vec$admissible` as its
+#' `eligible` attribute. Unnamed `values` align by position and must have one
+#' value per instrument; named `values` may come in any order and must cover
+#' every eligible instrument, and uncovered instruments are `NA`.
+#'
 #' @param x Named numeric vector of signal scores, or a pulse context.
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
@@ -316,10 +341,14 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
     dots <- ledgr_strategy_context_dots(
       dots, "ledgr_signal", allowed = "values", required = TRUE
     )
+    eligible <- ledgr_strategy_eligible(x, parts$axis)
     values <- ledgr_strategy_context_align(
-      dots$values, "values", "numeric", parts$axis, parts$members
+      dots$values, "values", "numeric", parts$axis, parts$axis,
+      required = eligible
     )
-    return(ledgr_signal(values, origin = origin))
+    signal <- ledgr_signal(values, origin = origin)
+    attr(signal, "eligible") <- eligible
+    return(signal)
   }
   if ((is.list(x) || is.environment(x)) && !inherits(x, "ledgr_signal")) {
     ledgr_strategy_context_abort(
@@ -352,13 +381,18 @@ ledgr_signal <- function(x, universe = NULL, origin = NULL, ...) {
 #' pipelines. Selections are intermediate objects; strategies must not return
 #' them directly.
 #'
+#' In context mode, the selection covers the whole decision axis and is `FALSE`
+#' for every ineligible instrument, whatever the payload: no payload selects
+#' every eligible instrument, `where` decides eligible instruments only, and
+#' `ids` naming an ineligible instrument leave it unselected.
+#'
 #' @param x Named logical vector where `TRUE` means selected, or a pulse context.
 #' @param universe Optional universe used to reject extra instrument names.
 #' @param origin Optional helper/source label for printing.
 #' @param ... In context mode, at most one named `ids` or `where` payload.
-#' @param missing In context mode, whether missing current-member decisions
-#'   fail (`"error"`, the default) or count as not selected (`"exclude"`). A
-#'   subsequent rebalance targets excluded held members to zero; use
+#' @param missing In context mode, whether missing decisions for eligible
+#'   instruments fail (`"error"`, the default) or count as not selected
+#'   (`"exclude"`). A subsequent rebalance targets excluded held members to zero; use
 #'   `ctx$hold()` when the intended action is to preserve positions. This is a
 #'   decision policy, unlike `ctx$idx(id, missing = "na")`, which controls a
 #'   missing instrument lookup.
@@ -406,19 +440,25 @@ ledgr_selection <- function(x,
     dots <- ledgr_strategy_context_dots(
       dots, "ledgr_selection", allowed = c("ids", "where")
     )
+    axis <- parts$axis
+    eligible <- ledgr_strategy_eligible(x, axis)
     values <- if (length(dots) == 0L) {
-      stats::setNames(rep(TRUE, length(parts$members)), parts$members)
+      stats::setNames(eligible, axis)
     } else if (identical(names(dots), "ids")) {
-      ledgr_strategy_context_ids(dots$ids, parts$axis, parts$members)
+      in_ids <- ledgr_strategy_context_ids(dots$ids, axis, axis)
+      if (all(eligible)) in_ids else in_ids & eligible
     } else {
-      ledgr_strategy_context_align(
+      all_eligible <- all(eligible)
+      decided <- ledgr_strategy_context_align(
         dots$where,
         "where",
         "logical",
-        parts$axis,
-        parts$members,
-        missing_decisions = missing
+        axis,
+        axis,
+        missing_decisions = missing,
+        required = if (all_eligible) NULL else eligible
       )
+      if (all_eligible) decided else decided & eligible
     }
     return(ledgr_selection(values, origin = origin))
   }

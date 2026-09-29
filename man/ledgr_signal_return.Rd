@@ -19,8 +19,8 @@ A \code{ledgr_signal} object.
 in \code{ctx$universe} and returns a \code{ledgr_signal}. The required indicator must
 already be registered on the experiment, for example with
 \code{features = list(ledgr_ind_returns(20))}; this helper never auto-registers
-indicators. An availability context with no current members returns an empty
-signal without reading the feature plane.
+indicators. Like \code{\link[=ledgr_signal_feature]{ledgr_signal_feature()}}, it returns raw scores over the
+whole decision axis and marks eligibility in the \code{eligible} attribute.
 }
 \details{
 If \code{lookback} is supplied through \code{params$lookback} in a strategy or

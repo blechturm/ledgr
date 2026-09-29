@@ -33,7 +33,8 @@ ledgr_strategy_helper_validate_equity_fraction <- function(equity_fraction) {
 }
 
 ledgr_strategy_empty_selection <- function(universe, origin = NULL) {
-  selection <- ledgr_selection(logical(), universe = universe, origin = origin)
+  selection <- ledgr_selection(stats::setNames(logical(length(universe)), universe),
+                               universe = universe, origin = origin)
   class(selection) <- c("ledgr_empty_selection", class(selection))
   selection
 }
@@ -47,34 +48,25 @@ ledgr_strategy_helper_context_equity <- function(ctx) {
 }
 
 ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
-  members <- universe
-  if (isTRUE(ctx$availability_active)) {
-    members <- as.character(ctx$members %||% character())
-    if (length(members) == 0L) {
-      return(ledgr_signal(numeric(), universe = members, origin = feature_id))
-    }
-  }
-
-  values <- stats::setNames(as.numeric(ctx$vec$feature(feature_id)), universe)
-  if (isTRUE(ctx$availability_active)) {
-    member_idx <- match(members, universe)
-    values <- values[member_idx]
-    admissible <- as.logical(ctx$vec$admissible[member_idx])
-    values[!admissible] <- NA_real_
-  }
-  ledgr_signal(values, universe = members, origin = feature_id)
+  values <- if (length(universe) == 0L) numeric() else as.numeric(ctx$vec$feature(feature_id))
+  signal <- ledgr_signal(stats::setNames(values, universe), universe = universe, origin = feature_id)
+  attr(signal, "eligible") <- ledgr_strategy_eligible(ctx, universe)
+  signal
 }
 
 #' Build a signal from one registered feature
 #'
-#' `ledgr_signal_feature()` reads one already-registered feature plane. In an
-#' availability-aware context it projects to current members and masks exactly
-#' the members whose targets are inadmissible. Missing prices alone do not mask
-#' a feature score. An empty current membership returns an empty signal without
-#' reading the feature plane.
+#' `ledgr_signal_feature()` reads one already-registered feature plane and
+#' returns one raw score per instrument in `ctx$universe`, in that order. The
+#' signal carries `ctx$vec$admissible` as its `eligible` attribute: an
+#' instrument that is not a member, or is target-restricted, keeps its raw score
+#' but is marked ineligible, so ineligible is never reported as missing.
+#' [ledgr_select_top_n()] ranks eligible scores only, and [ledgr_selection()]
+#' decides eligible instruments only.
 #'
-#' Use [ledgr_signal()] with its raw `values` entrance for transformed or custom
-#' scores that should not receive this convenience mask.
+#' Arithmetic on a signal keeps its class and `eligible` attribute; comparison,
+#' subsetting, `rank()` and `c()` return plain vectors. Use [ledgr_signal()] with
+#' its `values` entrance to turn a transformed vector back into a signal.
 #'
 #' @param ctx ledgr strategy context.
 #' @param feature_id One non-empty registered feature ID.
@@ -114,8 +106,8 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' in `ctx$universe` and returns a `ledgr_signal`. The required indicator must
 #' already be registered on the experiment, for example with
 #' `features = list(ledgr_ind_returns(20))`; this helper never auto-registers
-#' indicators. An availability context with no current members returns an empty
-#' signal without reading the feature plane.
+#' indicators. Like [ledgr_signal_feature()], it returns raw scores over the
+#' whole decision axis and marks eligibility in the `eligible` attribute.
 #'
 #' If `lookback` is supplied through `params$lookback` in a strategy or
 #' parameter grid, register every concrete `return_<lookback>` feature before
@@ -150,18 +142,21 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
 
 #' Select the top instruments from a signal
 #'
-#' `ledgr_select_top_n()` selects the highest finite/non-missing signal values.
-#' Missing values are ignored. Ties are broken deterministically by instrument
-#' ID in alphabetical order. If no values are usable, the function returns a
-#' classed empty selection without warning. The empty selection carries the
-#' original universe and signal origin so it can flow through `ledgr_weight_equal()`
-#' and `ledgr_target_rebalance()` to a flat full-universe target.
+#' `ledgr_select_top_n()` selects the highest non-missing signal values among
+#' eligible instruments: a signal built from a context marks ineligible
+#' instruments in its `eligible` attribute, and they are never selected or
+#' counted. Missing values are ignored. Ties are broken deterministically by
+#' instrument ID in alphabetical order. The result covers the signal's whole
+#' axis. If no values are usable, the function returns a classed empty selection,
+#' all `FALSE`, without warning; it keeps the signal origin and flows through
+#' `ledgr_weight_equal()` and `ledgr_target_rebalance()` to a target that keeps
+#' ineligible holdings and zeroes the rest.
 #'
 #' Selection and warning classes:
 #' - `ledgr_empty_selection` for the classed object returned when every signal
 #'   value is missing;
 #' - `ledgr_partial_selection` for the warning emitted when fewer than `n`
-#'   finite values are available under `partial = "warn"`.
+#'   eligible, non-missing values are available under `partial = "warn"`.
 #'
 #' @param signal A `ledgr_signal` object.
 #' @param n Number of instruments to select.
@@ -197,31 +192,31 @@ ledgr_select_top_n <- function(signal, n, partial = c("warn", "allow")) {
 
   values <- as.numeric(signal)
   ids <- names(signal)
-  available <- !is.na(values)
-  if (!any(available)) {
+  eligible <- attr(signal, "eligible", exact = TRUE)
+  if (is.null(eligible)) eligible <- rep(TRUE, length(ids))
+  usable <- which(eligible & !is.na(values))
+  if (length(usable) == 0L) {
     return(ledgr_strategy_empty_selection(ids, origin = attr(signal, "origin")))
   }
 
-  available_ids <- ids[available]
-  available_values <- values[available]
-  ord <- order(-available_values, available_ids)
-  selected_ids <- available_ids[ord][seq_len(min(n, length(ord)))]
+  ranked <- usable[order(-values[usable], ids[usable])]
+  selected_idx <- ranked[seq_len(min(n, length(ranked)))]
 
-  if (length(selected_ids) < n && identical(partial, "warn")) {
+  if (length(selected_idx) < n && identical(partial, "warn")) {
     rlang::warn(
       sprintf(
         paste0(
           "Only %d available signal value(s); selecting all available instruments. ",
           "If this short selection is intentional, use `partial = \"allow\"`."
         ),
-        length(selected_ids)
+        length(selected_idx)
       ),
       class = "ledgr_partial_selection"
     )
   }
 
   selection <- stats::setNames(rep(FALSE, length(ids)), ids)
-  selection[selected_ids] <- TRUE
+  selection[selected_idx] <- TRUE
   ledgr_selection(selection, universe = ids, origin = attr(signal, "origin"))
 }
 
@@ -264,7 +259,9 @@ ledgr_weight_equal <- function(selection) {
 #'
 #' In a dense run, allocatable equity is current equity. In an
 #' availability-aware run, ledgr first reserves the absolute marked exposure of
-#' held nonmembers and preserves their current quantities. IDs named in `keep`
+#' ineligible holdings, held nonmembers and target-restricted members alike, and
+#' preserves their current quantities; weights may name eligible instruments
+#' only. IDs named in `keep`
 #' are likewise preserved and reserved exactly once. Weights and
 #' `equity_fraction` apply to the residual capital after those reservations.
 #' Share quantities are floored to whole numbers with
@@ -342,13 +339,12 @@ ledgr_target_rebalance <- function(weights,
   }
 
   availability_active <- isTRUE(ctx$availability_active)
-  members <- if (availability_active) as.character(ctx$members %||% character()) else universe
-  allowed_weight_ids <- members
+  members <- if (availability_active) universe[ledgr_strategy_eligible(ctx, universe)] else universe
 
-  extra <- setdiff(names(weights), allowed_weight_ids)
+  extra <- setdiff(names(weights), members)
   if (length(extra) > 0L) {
     rlang::abort(
-      sprintf("`weights` contains instruments outside the current member set: %s.", paste(extra, collapse = ", ")),
+      sprintf("`weights` names instruments that are not eligible: %s.", paste(extra, collapse = ", ")),
       class = "ledgr_invalid_strategy_helper"
     )
   }
@@ -429,9 +425,12 @@ ledgr_target_rebalance <- function(weights,
       instrument_id = id
     )
   }
-  for (id in weight_ids[invalid_price]) {
+  if (any(invalid_price)) {
     rlang::warn(
-      sprintf("Cannot size target for `%s`: close price is missing, non-finite, or non-positive. Targeting 0.", id),
+      sprintf(
+        "Cannot size targets for %s: close price is missing, non-finite, or non-positive. Targeting 0.",
+        paste(sprintf("`%s`", weight_ids[invalid_price]), collapse = ", ")
+      ),
       class = "ledgr_invalid_target_price"
     )
   }
@@ -448,8 +447,8 @@ ledgr_target_rebalance <- function(weights,
 #'
 #' `ledgr_target_quantity()` converts a selection into a full-universe
 #' `ledgr_target` that holds the same fixed quantity of every selected
-#' instrument. Selected current members get `qty`; every other current member
-#' gets zero. Use it for rules such as "hold 10 shares of each instrument that
+#' instrument. Selected eligible instruments get `qty`; every other eligible
+#' instrument gets zero. Use it for rules such as "hold 10 shares of each instrument that
 #' passes the condition"; use [ledgr_weight_equal()] and
 #' [ledgr_target_rebalance()] instead when positions should be sized from
 #' account equity.
@@ -459,12 +458,14 @@ ledgr_target_rebalance <- function(weights,
 #' a missing value, such as a feature still in warmup, should mean "not
 #' selected".
 #'
-#' In an availability-aware run, held nonmembers keep their current quantity,
-#' exactly as [ledgr_target_rebalance()] preserves them, and the selection may
-#' name current members only.
+#' In an availability-aware run, every ineligible instrument, a held nonmember
+#' or a target-restricted member, keeps its current quantity, exactly as
+#' [ledgr_target_rebalance()] preserves it. The selection may name any instrument
+#' on the decision axis, but may select eligible instruments only.
 #'
 #' Error class: `ledgr_invalid_strategy_helper` when `selection` is not a
-#' `ledgr_selection`, names an instrument outside the current member set, or
+#' `ledgr_selection`, names an instrument outside the decision axis, selects
+#' an ineligible instrument, or
 #' when `qty` is not one finite, non-negative number. Negative quantities stay
 #' refused until short-selling semantics are defined.
 #'
@@ -497,11 +498,21 @@ ledgr_target_quantity <- function(selection, ctx, qty) {
   }
 
   availability_active <- isTRUE(ctx$availability_active)
-  members <- if (availability_active) as.character(ctx$members %||% character()) else universe
-  extra <- setdiff(names(selection), members)
-  if (length(extra) > 0L) {
+  eligible <- ledgr_strategy_eligible(ctx, universe)
+  selection_ids <- names(selection)
+  chosen <- as.logical(selection)
+  unknown <- setdiff(selection_ids, universe)
+  if (length(unknown) > 0L) {
     rlang::abort(
-      sprintf("`selection` contains instruments outside the current member set: %s.", paste(extra, collapse = ", ")),
+      sprintf("`selection` names instruments outside the decision axis: %s.", paste(unknown, collapse = ", ")),
+      class = "ledgr_invalid_strategy_helper"
+    )
+  }
+  selected_idx <- match(selection_ids[chosen], universe)
+  if (any(!eligible[selected_idx])) {
+    rlang::abort(
+      sprintf("`selection` selects instruments that are not eligible: %s.",
+              paste(universe[selected_idx[!eligible[selected_idx]]], collapse = ", ")),
       class = "ledgr_invalid_strategy_helper"
     )
   }
@@ -518,9 +529,8 @@ ledgr_target_quantity <- function(selection, ctx, qty) {
   } else {
     stats::setNames(rep(0, length(universe)), universe)
   }
-  if (length(members) > 0L) target[members] <- 0
-  selected <- names(selection)[as.logical(selection)]
-  if (length(selected) > 0L) target[selected] <- as.numeric(qty)
+  target[eligible] <- 0
+  target[selected_idx] <- as.numeric(qty)
 
   ledgr_target(target, universe = universe, origin = attr(selection, "origin"))
 }

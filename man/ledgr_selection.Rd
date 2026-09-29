@@ -21,9 +21,9 @@ ledgr_selection(
 
 \item{...}{In context mode, at most one named \code{ids} or \code{where} payload.}
 
-\item{missing}{In context mode, whether missing current-member decisions
-fail (\code{"error"}, the default) or count as not selected (\code{"exclude"}). A
-subsequent rebalance targets excluded held members to zero; use
+\item{missing}{In context mode, whether missing decisions for eligible
+instruments fail (\code{"error"}, the default) or count as not selected
+(\code{"exclude"}). A subsequent rebalance targets excluded held members to zero; use
 \code{ctx$hold()} when the intended action is to preserve positions. This is a
 decision policy, unlike \code{ctx$idx(id, missing = "na")}, which controls a
 missing instrument lookup.}
@@ -35,6 +35,11 @@ A \code{ledgr_selection} object.
 \code{ledgr_selection()} creates a named logical vector for strategy helper
 pipelines. Selections are intermediate objects; strategies must not return
 them directly.
+
+In context mode, the selection covers the whole decision axis and is \code{FALSE}
+for every ineligible instrument, whatever the payload: no payload selects
+every eligible instrument, \code{where} decides eligible instruments only, and
+\code{ids} naming an ineligible instrument leave it unselected.
 }
 \section{Articles}{
 

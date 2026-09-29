@@ -28,7 +28,9 @@ decision-time sizing and fill-time value is expected.
 
 In a dense run, allocatable equity is current equity. In an
 availability-aware run, ledgr first reserves the absolute marked exposure of
-held nonmembers and preserves their current quantities. IDs named in \code{keep}
+ineligible holdings, held nonmembers and target-restricted members alike, and
+preserves their current quantities; weights may name eligible instruments
+only. IDs named in \code{keep}
 are likewise preserved and reserved exactly once. Weights and
 \code{equity_fraction} apply to the residual capital after those reservations.
 Share quantities are floored to whole numbers with

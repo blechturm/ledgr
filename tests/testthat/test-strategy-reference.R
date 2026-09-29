@@ -60,8 +60,8 @@ testthat::test_that("[LTB-0096] ledgr_select_top_n makes short rankings explicit
   )
   testthat::expect_s3_class(empty, "ledgr_empty_selection")
   testthat::expect_s3_class(empty, "ledgr_selection")
-  testthat::expect_identical(length(empty), 0L)
-  testthat::expect_identical(attr(empty, "universe"), c("AAA", "BBB"))
+  testthat::expect_identical(unclass(empty)[c("AAA", "BBB")], c(AAA = FALSE, BBB = FALSE))
+  testthat::expect_identical(names(empty), c("AAA", "BBB"))
   testthat::expect_identical(attr(empty, "origin"), "return_60")
   testthat::expect_silent(
     empty_allowed <- ledgr_select_top_n(empty_signal, 1, partial = "allow")

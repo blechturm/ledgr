@@ -62,7 +62,7 @@ strategy_context_entrance_fixture <- function(availability = FALSE,
   ctx
 }
 
-testthat::test_that("[LTB-0085] context entrances bind alignment and membership projection", {
+testthat::test_that("[LTB-0085] context entrances bind alignment and eligibility over the axis", {
   dense <- strategy_context_entrance_fixture()
   dense_target <- dense |>
     ledgr_selection() |>
@@ -114,7 +114,7 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and membership 
   )
   testthat::expect_true(all(vapply(
     projected,
-    function(x) identical(unclass(x), c(AAA = TRUE)),
+    function(x) identical(unclass(x), c(AAA = TRUE, OLD = FALSE)),
     logical(1)
   )))
   testthat::expect_identical(projected, named_projected)
@@ -130,14 +130,18 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and membership 
     ledgr_selection(available, where = c(NA, FALSE)),
     class = "ledgr_invalid_strategy_type"
   )
+  testthat::expect_identical(
+    unclass(ledgr_selection(available, ids = "OLD")),
+    c(AAA = FALSE, OLD = FALSE)
+  )
   testthat::expect_error(
-    ledgr_selection(available, ids = "OLD"),
-    class = "ledgr_invalid_strategy_helper"
+    ledgr_selection(available, ids = "ZZZ"),
+    class = "ledgr_invalid_strategy_type"
   )
 
   ranked <- ledgr_signal(available, values = c(AAA = 1, OLD = 999)) |>
     ledgr_select_top_n(1)
-  testthat::expect_identical(unclass(ranked), c(AAA = TRUE))
+  testthat::expect_identical(unclass(ranked), c(AAA = TRUE, OLD = FALSE))
 
   empty_members <- strategy_context_entrance_fixture(
     availability = TRUE,
@@ -147,7 +151,7 @@ testthat::test_that("[LTB-0085] context entrances bind alignment and membership 
   )
   empty_selection <- ledgr_selection(empty_members, where = c(FALSE, TRUE))
   testthat::expect_s3_class(empty_selection, "ledgr_selection")
-  testthat::expect_length(empty_selection, 0L)
+  testthat::expect_identical(unclass(empty_selection), c(AAA = FALSE, OLD = FALSE))
 })
 
 testthat::test_that("[LTB-0086] context payload failures are classed before projection", {
@@ -187,7 +191,7 @@ testthat::test_that("[LTB-0086] context payload failures are classed before proj
   helper_error(ledgr_selection(malformed))
 })
 
-testthat::test_that("[LTB-0087] raw and convenience signals keep distinct policies", {
+testthat::test_that("[LTB-0087] raw and convenience signals share raw values and eligibility", {
   ctx <- strategy_context_entrance_fixture(
     availability = TRUE,
     positions = c(AAA = 4, OLD = 2),
@@ -197,22 +201,24 @@ testthat::test_that("[LTB-0087] raw and convenience signals keep distinct polici
   )
   raw <- ledgr_signal(ctx, values = ctx$vec$feature("return_5"))
   convenience <- ledgr_signal_return(ctx, lookback = 5)
-  testthat::expect_identical(unclass(raw), c(AAA = 0.2))
-  testthat::expect_identical(
-    stats::setNames(as.numeric(convenience), names(convenience)),
-    c(AAA = NA_real_)
-  )
+  for (signal in list(raw, convenience)) {
+    testthat::expect_identical(
+      stats::setNames(as.numeric(signal), names(signal)),
+      c(AAA = 0.2, OLD = 0.9)
+    )
+    testthat::expect_identical(attr(signal, "eligible"), c(FALSE, FALSE))
+  }
 
   missing_scores <- ledgr_signal(ctx, values = c(AAA = NA_real_, OLD = 9)) |>
     ledgr_select_top_n(1) |>
     ledgr_weight_equal() |>
     ledgr_target_rebalance(ctx)
   guarded <- ctx$hold()
-  testthat::expect_identical(unclass(missing_scores), c(AAA = 0, OLD = 2))
+  testthat::expect_identical(unclass(missing_scores), c(AAA = 4, OLD = 2))
   testthat::expect_identical(guarded, c(AAA = 4, OLD = 2))
 })
 
-testthat::test_that("[LTB-0095] feature signals apply only the admissibility mask", {
+testthat::test_that("[LTB-0095] feature signals carry the admissibility plane", {
   restricted <- strategy_context_entrance_fixture(
     availability = TRUE,
     members = c("AAA", "OLD"),
@@ -226,9 +232,11 @@ testthat::test_that("[LTB-0095] feature signals apply only the admissibility mas
   )
   testthat::expect_identical(
     stats::setNames(as.numeric(feature), names(feature)),
-    c(AAA = NA_real_, OLD = 0.9)
+    c(AAA = 0.2, OLD = 0.9)
   )
-  testthat::expect_identical(unclass(raw), c(AAA = 0.2, OLD = 0.9))
+  testthat::expect_identical(attr(feature, "eligible"), c(FALSE, TRUE))
+  testthat::expect_identical(stats::setNames(as.numeric(raw), names(raw)), c(AAA = 0.2, OLD = 0.9))
+  testthat::expect_identical(attr(raw, "eligible"), c(FALSE, TRUE))
 
   unpriced <- strategy_context_entrance_fixture(
     availability = TRUE,
@@ -260,12 +268,10 @@ testthat::test_that("[LTB-0095] feature signals apply only the admissibility mas
     availability = TRUE,
     members = character()
   )
-  empty$vec$feature <- function(...) {
-    rlang::abort("empty membership must not read a feature")
-  }
   signal <- ledgr_signal_feature(empty, "return_5")
   testthat::expect_s3_class(signal, "ledgr_signal")
-  testthat::expect_length(signal, 0L)
+  testthat::expect_identical(stats::setNames(as.numeric(signal), names(signal)), c(AAA = 0.2, OLD = 0.9))
+  testthat::expect_identical(attr(signal, "eligible"), c(FALSE, FALSE))
   testthat::expect_identical(attr(signal, "origin"), "return_5")
 
   validation_calls <- 0L
@@ -307,6 +313,7 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
     availability = TRUE,
     members = c("AAA", "OLD"),
     positions = c(OLD = 2),
+    restricted = c(FALSE, FALSE),
     equity = 100
   )
   available$vec$close[[2L]] <- NA_real_
@@ -516,7 +523,7 @@ testthat::test_that("[LTB-0098] missing selection decisions require an explicit 
   )
   testthat::expect_identical(
     unclass(ledgr_selection(available, where = c(TRUE, NA))),
-    c(AAA = TRUE)
+    c(AAA = TRUE, OLD = FALSE)
   )
 
   testthat::expect_error(
@@ -540,12 +547,11 @@ testthat::test_that("[LTB-0090] empty helper domains keep their distinct meaning
     positions = c(OLD = 2),
     equity = 100
   )
-  holdings_only$vec$feature <- function(...) {
-    rlang::abort("empty membership must not read a feature")
-  }
-  empty_signal <- ledgr_signal_return(holdings_only, lookback = 5)
-  testthat::expect_s3_class(empty_signal, "ledgr_signal")
-  testthat::expect_length(empty_signal, 0L)
+  holdings_signal <- ledgr_signal_return(holdings_only, lookback = 5)
+  testthat::expect_s3_class(holdings_signal, "ledgr_signal")
+  testthat::expect_identical(names(holdings_signal), c("AAA", "OLD"))
+  testthat::expect_identical(attr(holdings_signal, "eligible"), c(FALSE, FALSE))
+  testthat::expect_s3_class(ledgr_select_top_n(holdings_signal, 1), "ledgr_empty_selection")
   testthat::expect_error(
     ledgr_signal_return(holdings_only, lookback = 0),
     class = "ledgr_invalid_strategy_helper"
@@ -711,4 +717,129 @@ testthat::test_that("[LTB-0117] fixed-quantity targets follow the selection", {
   from_hand <- run_fills(by_hand, "quantity_by_hand")
   testthat::expect_gt(nrow(from_pipeline), 0L)
   testthat::expect_equal(from_pipeline, from_hand)
+})
+
+testthat::test_that("[LTB-0120] signals cover the decision axis and carry eligibility", {
+  contexts <- list(
+    dense = strategy_context_entrance_fixture(),
+    held_nonmember = strategy_context_entrance_fixture(
+      availability = TRUE, positions = c(OLD = 2), restricted = c(FALSE, FALSE)
+    ),
+    restricted_member = strategy_context_entrance_fixture(
+      availability = TRUE, members = c("AAA", "OLD"), restricted = c(TRUE, FALSE)
+    ),
+    holdings_only = strategy_context_entrance_fixture(
+      availability = TRUE, members = character(), positions = c(OLD = 2),
+      restricted = c(FALSE, FALSE)
+    )
+  )
+  intended <- list(
+    dense = c(AAA = 10, BBB = 10),
+    held_nonmember = c(AAA = 10, OLD = 0),
+    restricted_member = c(AAA = 0, OLD = 10),
+    holdings_only = c(AAA = 0, OLD = 0)
+  )
+  for (name in names(contexts)) {
+    ctx <- contexts[[name]]
+    feature <- ctx$vec$feature("return_5")
+    signals <- list(
+      ledgr_signal_feature(ctx, "return_5"),
+      ledgr_signal_return(ctx, lookback = 5),
+      ledgr_signal(ctx, values = feature),
+      ledgr_signal(ctx, values = rev(stats::setNames(feature, ctx$universe)))
+    )
+    for (signal in signals) {
+      testthat::expect_identical(names(signal), ctx$universe, info = name)
+      testthat::expect_identical(as.numeric(signal), as.numeric(feature), info = name)
+      testthat::expect_identical(attr(signal, "eligible"), as.logical(ctx$vec$admissible), info = name)
+    }
+    target <- ctx$flat()
+    target[ctx$vec$admissible & signals[[2L]] > 0.1] <- 10
+    testthat::expect_identical(target, intended[[name]], info = name)
+  }
+
+  restricted <- contexts$restricted_member
+  both_missing <- ledgr_signal(restricted, values = c(NA_real_, NA_real_))
+  eligible_missing <- is.na(both_missing) & attr(both_missing, "eligible")
+  testthat::expect_identical(unname(eligible_missing), c(FALSE, TRUE))
+  testthat::expect_error(
+    ledgr_selection(restricted, where = both_missing > 0.1),
+    class = "ledgr_invalid_strategy_type"
+  )
+  ineligible_missing <- ledgr_signal(restricted, values = c(NA_real_, 0.9))
+  testthat::expect_identical(
+    unclass(ledgr_selection(restricted, where = ineligible_missing > 0.1)),
+    c(AAA = FALSE, OLD = TRUE)
+  )
+})
+
+testthat::test_that("[LTB-0121] selections, rankings and target helpers apply eligibility", {
+  restricted <- strategy_context_entrance_fixture(
+    availability = TRUE, members = c("AAA", "OLD"), restricted = c(TRUE, FALSE),
+    positions = c(AAA = 3)
+  )
+  testthat::expect_identical(unclass(ledgr_selection(restricted)), c(AAA = FALSE, OLD = TRUE))
+  testthat::expect_identical(
+    unclass(ledgr_selection(restricted, ids = c("AAA", "OLD"))),
+    c(AAA = FALSE, OLD = TRUE)
+  )
+  testthat::expect_identical(
+    unclass(ledgr_selection(restricted, where = c(NA, TRUE))),
+    c(AAA = FALSE, OLD = TRUE)
+  )
+  testthat::expect_error(
+    ledgr_selection(restricted, where = c(TRUE, NA)),
+    class = "ledgr_invalid_strategy_type"
+  )
+  testthat::expect_identical(
+    unclass(ledgr_selection(restricted, where = c(TRUE, NA), missing = "exclude")),
+    c(AAA = FALSE, OLD = FALSE)
+  )
+
+  ranked <- testthat::expect_no_warning(
+    ledgr_select_top_n(ledgr_signal(restricted, values = c(5, 1)), 1)
+  )
+  testthat::expect_identical(unclass(ranked), c(AAA = FALSE, OLD = TRUE))
+  testthat::expect_warning(
+    short <- ledgr_select_top_n(ledgr_signal(restricted, values = c(5, 1)), 2),
+    class = "ledgr_partial_selection"
+  )
+  testthat::expect_identical(unclass(short), c(AAA = FALSE, OLD = TRUE))
+  empty <- testthat::expect_no_warning(
+    ledgr_select_top_n(ledgr_signal(restricted, values = c(5, NA)), 1)
+  )
+  testthat::expect_s3_class(empty, "ledgr_empty_selection")
+  testthat::expect_identical(as.logical(empty), c(FALSE, FALSE))
+
+  quantity <- ledgr_target_quantity(ledgr_selection(restricted), restricted, qty = 10)
+  testthat::expect_identical(unclass(quantity), c(AAA = 3, OLD = 10))
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(ledgr_selection(c(AAA = FALSE, OLD = TRUE)), restricted, qty = 10)),
+    c(AAA = 3, OLD = 10)
+  )
+  testthat::expect_error(
+    ledgr_target_quantity(ledgr_selection(c(AAA = TRUE, OLD = FALSE)), restricted, qty = 10),
+    class = "ledgr_invalid_strategy_helper"
+  )
+
+  rebalanced <- restricted |>
+    ledgr_selection() |>
+    ledgr_weight_equal() |>
+    ledgr_target_rebalance(restricted)
+  kept <- ledgr_target_rebalance(
+    ledgr_weight_equal(ledgr_selection(restricted)), restricted, keep = "AAA"
+  )
+  testthat::expect_identical(unclass(rebalanced), c(AAA = 3, OLD = 13))
+  testthat::expect_identical(kept, rebalanced)
+  testthat::expect_error(
+    ledgr_target_rebalance(ledgr_weights(c(AAA = 1), universe = restricted$universe), restricted),
+    class = "ledgr_invalid_strategy_helper"
+  )
+
+  dense <- strategy_context_entrance_fixture()
+  testthat::expect_identical(unclass(ledgr_selection(dense)), c(AAA = TRUE, BBB = TRUE))
+  testthat::expect_identical(
+    unclass(ledgr_target_quantity(ledgr_selection(dense, ids = "BBB"), dense, qty = 10)),
+    c(AAA = 0, BBB = 10)
+  )
 })

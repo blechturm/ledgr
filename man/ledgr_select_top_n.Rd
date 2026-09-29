@@ -19,12 +19,15 @@ A \code{ledgr_selection} object. When all signal values are missing, the
 object also inherits from \code{ledgr_empty_selection}.
 }
 \description{
-\code{ledgr_select_top_n()} selects the highest finite/non-missing signal values.
-Missing values are ignored. Ties are broken deterministically by instrument
-ID in alphabetical order. If no values are usable, the function returns a
-classed empty selection without warning. The empty selection carries the
-original universe and signal origin so it can flow through \code{ledgr_weight_equal()}
-and \code{ledgr_target_rebalance()} to a flat full-universe target.
+\code{ledgr_select_top_n()} selects the highest non-missing signal values among
+eligible instruments: a signal built from a context marks ineligible
+instruments in its \code{eligible} attribute, and they are never selected or
+counted. Missing values are ignored. Ties are broken deterministically by
+instrument ID in alphabetical order. The result covers the signal's whole
+axis. If no values are usable, the function returns a classed empty selection,
+all \code{FALSE}, without warning; it keeps the signal origin and flows through
+\code{ledgr_weight_equal()} and \code{ledgr_target_rebalance()} to a target that keeps
+ineligible holdings and zeroes the rest.
 }
 \details{
 Selection and warning classes:
@@ -32,7 +35,7 @@ Selection and warning classes:
 \item \code{ledgr_empty_selection} for the classed object returned when every signal
 value is missing;
 \item \code{ledgr_partial_selection} for the warning emitted when fewer than \code{n}
-finite values are available under \code{partial = "warn"}.
+eligible, non-missing values are available under \code{partial = "warn"}.
 }
 }
 \section{Articles}{
