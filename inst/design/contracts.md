@@ -691,8 +691,8 @@ The strategy preflight boundary originated in
   usable scores without changing the selection.
 ### Decision Axis And Eligibility
 
-Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906) and revised after
-its first Type 2 review; binding once the re-review is accepted. One decision
+Decided by the maintainer on 2026-09-29 (Cut 22, LDG-2906), revised after
+two Type 2 reviews, and accepted by the maintainer on 2026-09-29. One decision
 axis and one eligibility plane hold in dense and availability-aware contexts
 alike, so a strategy written as named-vector manipulation, or as a helper
 pipeline, means the same thing in both. The executable statement of these
