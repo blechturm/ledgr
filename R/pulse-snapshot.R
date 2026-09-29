@@ -13,7 +13,9 @@
 #'   dense one-pulse strategy checks; availability-aware state normalization is
 #'   not simulated.
 #'
-#' @return A `ledgr_pulse_context` object.
+#' @return A `ledgr_pulse_context` object with the accessors and planes of the
+#'   strategy context (see `?ledgr_strategy_context`), including `ctx$members`
+#'   and the eligibility planes, with every instrument a member.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -108,6 +110,7 @@ ledgr_pulse_snapshot <- function(snapshot,
   e <- new.env(parent = emptyenv())
   e$ts_utc <- ts_norm
   e$universe <- universe
+  e$members <- e$universe
   e$positions <- positions
   e$cash <- as.numeric(cash)
   e$state_prev <- state_prev

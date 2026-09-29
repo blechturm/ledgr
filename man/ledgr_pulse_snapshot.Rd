@@ -37,7 +37,9 @@ dense one-pulse strategy checks; availability-aware state normalization is
 not simulated.}
 }
 \value{
-A \code{ledgr_pulse_context} object.
+A \code{ledgr_pulse_context} object with the accessors and planes of the
+strategy context (see \code{?ledgr_strategy_context}), including \code{ctx$members}
+and the eligibility planes, with every instrument a member.
 }
 \description{
 Freeze a pulse snapshot for interactive strategy development

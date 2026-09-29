@@ -16,6 +16,15 @@ Common accessors:
 \item \code{ctx$universe}: character vector on the current decision axis. In
 availability-aware runs this can include held nonmembers that remain necessary
 for valuation and disposition.
+\item \code{ctx$members}: the current allocation population. In a dense run it
+is \code{ctx$universe}.
+\item \code{ctx$vec$member}, \code{ctx$vec$target_restricted},
+\code{ctx$vec$target_restriction_reason} and \code{ctx$vec$admissible}: the
+eligibility planes, aligned to \code{ctx$universe}, in every run. An
+instrument is admissible when it is a member and not target-restricted. In a
+dense run every instrument is a member, none is restricted, every reason is
+\code{""} and every instrument is admissible, so a rule masked with
+\code{ctx$vec$admissible} works unchanged in both kinds of run.
 \item \code{ctx$idx(id)}: 1-based universe position for one instrument.
 \item \code{ctx$open(id)}, \code{ctx$high(id)}, \code{ctx$low(id)},
 \code{ctx$close(id)}, \code{ctx$volume(id)}: current bar values for one
@@ -86,7 +95,8 @@ Strategies should return full named numeric target vectors. The helpers
 they already have one entry for every instrument in \code{ctx$universe}.
 In availability-aware runs, \code{ctx$universe} is the decision axis and
 \code{ctx$members} is the current allocation population; held nonmembers may
-remain on the former without entering the latter. Use \code{ctx$tradable()} as
+remain on the former without entering the latter. In a dense run the two are
+the same. Use \code{ctx$tradable()} as
 the explicit convenience predicate for admissible and priced members. A stale
 permissible mark can satisfy that predicate while still failing current-close
 sizing, so it guarantees neither a sizing close nor execution at the next open.
@@ -110,7 +120,7 @@ top | seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | pulse_seed | all | nullable_scalar | none | integer_seed | NULL_allowed | none
 top | state_prev | all | nullable_list | portfolio_and_Daxis | strategy_state | NULL_on_first_dense_pulse | none
 top | availability_active | availability | logical_scalar | none | flag | never | none
-top | members | availability | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
+top | members | all | character_vector | Daxis_subset | instrument_id | empty_allowed | vec.member
 top | bar | all | function | instrument_id | OHLCV_row | absent_row_errors | bars
 top | open | all | function | instrument_id | price | NA_allowed | vec.open
 top | high | all | function | instrument_id | price | NA_allowed | vec.high
@@ -134,11 +144,11 @@ plane | close | all | numeric_vector | Daxis | price | NA_allowed | close
 plane | volume | all | numeric_vector | Daxis | source_units | NA_allowed | volume
 plane | position | all | numeric_vector | Daxis | quantity | never | position
 plane | feature | all | function | Daxis | feature_value | warmup_NA | feature
-plane | member | availability | logical_vector | Daxis | flag | never | members
+plane | member | all | logical_vector | Daxis | flag | never | members
 plane | held | availability | logical_vector | Daxis | flag | never | none
-plane | target_restricted | availability | logical_vector | Daxis | flag | never | none
-plane | target_restriction_reason | availability | character_vector | Daxis | reason_token | empty_string_allowed | none
-plane | admissible | availability | logical_vector | Daxis | flag | never | tradable
+plane | target_restricted | all | logical_vector | Daxis | flag | never | none
+plane | target_restriction_reason | all | character_vector | Daxis | reason_token | empty_string_allowed | none
+plane | admissible | all | logical_vector | Daxis | flag | never | tradable
 plane | priced | availability | logical_vector | Daxis | flag | never | tradable
 plane | mark_age | availability | integer_vector | Daxis | sessions | NA_when_unpriced | none
 plane | risk_mark | availability | numeric_vector | Daxis | price | NA_when_unpriced | none

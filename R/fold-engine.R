@@ -387,6 +387,9 @@ ledgr_execute_fold <- function(execution, output_handler) {
   } else {
     NULL
   }
+  # A dense axis never changes during a run, so its eligibility planes are
+  # prepared once here and shared by every pulse's context.
+  dense_planes <- if (availability_active) NULL else ledgr_dense_eligibility_planes(length(instrument_ids))
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
@@ -611,6 +614,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
       if (availability_active) {
         ctx$availability_active <- TRUE
         ctx$members <- as.character(availability_view$members)
+      } else {
+        ctx$members <- context_ids
       }
       class(ctx) <- "ledgr_pulse_context"
       ctx <- if (!is.null(fast_context) && !availability_active) {
@@ -625,7 +630,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           pulse_idx = i,
           active_alias_map = active_alias_map,
           id_to_idx = id_to_idx,
-          scalar_access_state = scalar_access_state
+          scalar_access_state = scalar_access_state,
+          dense_planes = dense_planes
         )
       } else {
         ledgr_update_pulse_context_helpers(
@@ -641,7 +647,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
           active_alias_map = active_alias_map,
           id_to_idx = if (availability_active) NULL else id_to_idx,
           availability = availability_view,
-          scalar_access_state = scalar_access_state
+          scalar_access_state = scalar_access_state,
+          dense_planes = dense_planes
         )
       }
       if (availability_active) {

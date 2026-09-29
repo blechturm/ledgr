@@ -25,6 +25,7 @@ ledgr_pulse_context <- function(run_id,
     seed = seed,
     pulse_seed = pulse_seed,
     state_prev = state_prev,
+    members = universe,
     .safety_state = safety_state
   )
 
@@ -351,7 +352,8 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                active_alias_map = NULL,
                                                id_to_idx = NULL,
                                                availability = NULL,
-                                               scalar_access_state = NULL) {
+                                               scalar_access_state = NULL,
+                                               dense_planes = NULL) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
   ctx <- ledgr_attach_feature_helpers(
     ctx,
@@ -370,7 +372,21 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     universe = universe,
     id_to_idx = id_to_idx,
     availability = availability,
-    scalar_access_state = scalar_access_state
+    scalar_access_state = scalar_access_state,
+    dense_planes = dense_planes
+  )
+}
+
+# Dense eligibility planes: every instrument is a member and none is
+# restricted. The fold prepares them once per run and passes them to every
+# pulse; a context built on its own prepares them once.
+ledgr_dense_eligibility_planes <- function(n) {
+  n <- as.integer(n)
+  list(
+    member = rep(TRUE, n),
+    target_restricted = rep(FALSE, n),
+    target_restriction_reason = rep("", n),
+    admissible = rep(TRUE, n)
   )
 }
 
@@ -461,7 +477,8 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
                                                     pulse_idx = NULL,
                                                     active_alias_map = NULL,
                                                     id_to_idx = NULL,
-                                                    scalar_access_state = NULL) {
+                                                    scalar_access_state = NULL,
+                                                    dense_planes = NULL) {
   for (name in names(fast_context$helpers)) {
     ctx[[name]] <- fast_context$helpers[[name]]
   }
@@ -496,7 +513,8 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
     positions = positions,
     universe = universe,
     id_to_idx = id_to_idx,
-    scalar_access_state = scalar_access_state
+    scalar_access_state = scalar_access_state,
+    dense_planes = dense_planes
   )
 }
 
@@ -669,7 +687,8 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
                                                universe = ctx$universe,
                                                id_to_idx = NULL,
                                                availability = NULL,
-                                               scalar_access_state = NULL) {
+                                               scalar_access_state = NULL,
+                                               dense_planes = NULL) {
   lookup <- ctx$.pulse_lookup
   if (!is.environment(lookup)) {
     rlang::abort("Pulse context accessors have not been initialized.", class = "ledgr_invalid_pulse_context")
@@ -683,6 +702,13 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
   lookup$feature_vector <- ctx$.feature_vector
   lookup$bar_index <- ledgr_pulse_context_bar_index(bars, universe)
   lookup$availability <- availability
+  if (!is.list(availability)) {
+    if (is.null(dense_planes)) dense_planes <- lookup$dense_planes
+    if (!is.list(dense_planes) || length(dense_planes$admissible) != length(universe)) {
+      dense_planes <- ledgr_dense_eligibility_planes(length(universe))
+    }
+    lookup$dense_planes <- dense_planes
+  }
   if (length(universe) >= 100L) {
     if (is.null(scalar_access_state)) {
       scalar_access_state <- lookup$scalar_access_state
@@ -812,6 +838,12 @@ ledgr_pulse_context_vec <- function(lookup) {
     out$mark_age <- as.integer(take("mark_age", NA_integer_))
     out$risk_mark <- as.numeric(take("risk_mark", NA_real_))
     out$mark_source <- as.character(take("mark_source", ""))
+  } else if (is.list(lookup$dense_planes)) {
+    planes <- lookup$dense_planes
+    out$member <- planes$member
+    out$target_restricted <- planes$target_restricted
+    out$target_restriction_reason <- planes$target_restriction_reason
+    out$admissible <- planes$admissible
   }
   out
 }
