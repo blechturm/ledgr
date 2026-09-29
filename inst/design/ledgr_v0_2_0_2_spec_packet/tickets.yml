@@ -259,6 +259,18 @@ cuts:
     workstreams: [30]
     closeout: "strategy_helper_axis_closeout.md"
     status: "open"
+  - id: 23
+    name: "Per-call store overhead"
+    cut: "2026-09-29"
+    draft_note: "Agent-drafted on 2026-09-29 at the maintainer's request, after a review of where the fast test profile spends its time. The slow blocks use minimal fixtures; their cost is fixed per-call overhead in the product that every user pays. The largest part is upstream: the duckdb R package lists the time-zone database six times per open-and-close cycle, about 85 ms on Windows (issue drafted, not yet filed). Bypassing that check, as a diagnostic only, cut `ledgr_experiment()` from 0.46 s to 0.09 s, `ledgr_run()` with `close()` from 0.90 s to 0.22 s, and the fast profile from 107.5 s to 94.9 s. This cut takes the two ledgr-side findings. Status `draft` until the maintainer accepts it and decides whether it lands before the v0.2.1.0 tag or opens v0.2.1.1."
+    cut_review: "not yet reviewed. Proposed: one Type 1 close review of Workstream 31, 1 invocation over 2 tickets, 0.5, at the gate."
+    authority: "`inst/design/manual/optimization_coding_style.qmd` (shape 5, work computed and discarded or recomputed; the rule to pay validation once). `inst/design/contracts.md`, Persistence Contract: the handle is a locator, runner-owned write connections checkpoint before disconnect, and schema validation is read-only."
+    source_table: "Measured on 2026-09-29 at 2fd53a2 on a two-instrument, four-pulse pipeline (`ledgr_snapshot_from_df()`, `ledgr_experiment()`, `ledgr_run()`, two `ledgr_results()` reads, `close()`), with duckdb 1.5.5 on R 4.6.1 under Windows 11. Opens of the store per public call: `ledgr_experiment()` 3, `ledgr_run()` 2, each `ledgr_results()` 1, `close()` 1. Each open-and-close cycle pays DuckDB's instance startup and, with duckdb 1.5.5, six `OlsonNames()` listings of about 12 ms each. With the time-zone check bypassed, `ledgr_validate_schema()` is about half of the remaining time of `ledgr_run()`, and opening connections about half of `ledgr_experiment()`."
+    sequencing: "LDG-2915 and LDG-2916 are independent; either may land first. Neither is a dependency of the release gate. The upstream duckdb fix is separate and outside this cut; the measurements should be repeated after it lands, because it changes how much each open costs."
+    out_of_scope: "The upstream duckdb change. Stubbing the time-zone check in tests, which would hide the cost without removing it. Keeping connections open between public calls, which the locator contract excludes."
+    workstreams: [31]
+    closeout: "per_call_store_overhead_closeout.md"
+    status: "draft"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -499,6 +511,13 @@ workstreams:
     depends_on_workstream: 28
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 30", reason: "One claim joins the tickets: every strategy helper and context surface follows the accepted LDG-2906 domain table in dense and ragged universes, so a strategy written as named-vector manipulation, or as a helper pipeline, is correct in both. The review reruns `dev/spikes/strategy-helper-axis/check.R` and confirms it passes against the frozen Cut 22 baseline with exactly the manifest rows changed, before the baseline is replaced. It runs each ticket's registered mutation, reruns the real-fold runtime rows, and confirms that dense results of the existing helper pipelines and the one-argument warmup form are unchanged. It walks every changed function against the cut's implementation rule, the seven shapes and the maintainer checklist, naming each loop over instruments with its reason or as a finding. It remeasures the recorded helper and per-pulse costs itself, interleaved on a warm clock."}
+  - id: 31
+    name: "Per-call store overhead"
+    cut: 23
+    status: "draft"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 31", reason: "One claim joins the tickets: a public call opens the store at most once per database file and validates its schema at most once per store and session, with identical results. The review reruns the connection census and the validation counter, runs each ticket's registered mutation, checks that no connection outlives its call and that a changed or failing store is still validated and still fails, walks the changed code against the seven shapes, and remeasures the recorded per-call and per-run costs itself, interleaved on a warm clock."}
   - id: 28
     name: "Documentation corrections"
     cut: 19
@@ -2316,4 +2335,24 @@ tickets:
     dependencies: ["LDG-2905", "LDG-2906", "LDG-2907", "LDG-2908", "LDG-2912", "LDG-2909", "LDG-2910"]
     scope: "Close Workstream 30 and Cut 22 in `strategy_helper_axis_closeout.md`: the accepted decision, each ticket's commit, registered detector and mutation, the probe check against the frozen baseline, the fast gate, the recorded costs before and after, and the review invocations. Owner: the maintainer; the draft is agent-provisional."
     acceptance: ["`check.R` passes through every ticket against the frozen Cut 22 baseline, with exactly the manifest rows changed; only then does `check.R --accept` replace the baseline and empty the manifest, in a commit of its own", "the fast profile passes its gate, and every helper and per-pulse cost recorded under the implementation rule is shown before and after", "review invocations are recorded against the 0.5 gate"]
+    evidence: []
+  - id: "LDG-2915"
+    title: "Open the store once per public call"
+    workstream: 31
+    status: "draft"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: "Each public call opens and shuts down DuckDB separately for every internal step: `ledgr_experiment()` opens the snapshot three times (validating the snapshot, reading its fact headers, reading its universe), `ledgr_run()` twice, and each `ledgr_results()` and `close()` once more. Every open-and-close cycle pays DuckDB's instance startup and, with duckdb 1.5.5, the upstream time-zone listing. This is shape 5, work recomputed. Open each database file once per public call and pass the connection to the internal steps. No connection outlives its call, and write connections still checkpoint before they disconnect. Check in the connection census used for the source table as a harness under `dev/bench/`."
+    acceptance: ["the checked-in census reports the opens per public call before and after, and every public call opens each database file it touches at most once", "no connection outlives its call: a registered block fails if a handle, snapshot or experiment keeps a live connection after the call returns", "results, identities and hashes are unchanged, the fast profile passes its gate and the full suite passes", "per-call and per-run time and allocation are recorded before and after, interleaved on a warm clock, per the optimization style guide"]
+    evidence: []
+  - id: "LDG-2916"
+    title: "Validate the store schema once per store and session"
+    workstream: 31
+    status: "draft"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "`ledgr_validate_schema()` re-validates the same experiment-store schema on every run; with the upstream time-zone cost removed it is about half of the remaining time of a small `ledgr_run()`. The optimization style guide says to pay validation once. Remember a successful validation per store file and session, keyed so that a different file, a changed schema version marker or a replaced file is validated again. Validation stays read-only, and a store that fails validation fails on every call."
+    acceptance: ["a registered block proves with a counter that repeated runs against one store validate its schema once, and that a second store, a changed version marker and a replaced file are each validated again", "a store that fails validation still fails on every call, with the same condition class", "results are unchanged, the fast profile passes its gate and the full suite passes", "the per-run time of a small registered run is recorded before and after, interleaved on a warm clock"]
     evidence: []
