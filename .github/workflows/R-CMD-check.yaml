@@ -155,17 +155,21 @@ jobs:
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=1
 
+      # The timing bounds in tests/test-gates.yml are calibrated on the
+      # registered runner, ubuntu-latest with the R release; other jobs run the
+      # same profiles, so their tests gate, but apply no timing bound.
       - name: Confirm ordinary fast profile (run 2)
-        if: steps.ordinary_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && steps.ordinary_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=2
 
       - name: Confirm ordinary fast profile (run 3)
-        if: steps.ordinary_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && steps.ordinary_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary --run-index=3
 
       - name: Check ordinary fast-profile gate
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
           Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=ordinary --records=test-profile-artifacts/ordinary
 
@@ -181,17 +185,17 @@ jobs:
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=1
 
       - name: Confirm isolated CRAN fast profile (run 2)
-        if: matrix.config.cran && steps.cran_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.cran && matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && steps.cran_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=2
 
       - name: Confirm isolated CRAN fast profile (run 3)
-        if: matrix.config.cran && steps.cran_fast_1.outputs.exceeded == 'true'
+        if: matrix.config.cran && matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && steps.cran_fast_1.outputs.exceeded == 'true'
         run: |
           Rscript --vanilla tools/run-test-profile.R --profile=fast --mode=cran --library=.ledgr-cran-test-library --records=test-profile-artifacts/cran --run-index=3
 
       - name: Check isolated CRAN-profile gate
-        if: matrix.config.cran
+        if: matrix.config.cran && matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
         run: |
           Rscript --vanilla tools/check-test-gate.R --profile=fast --mode=cran --records=test-profile-artifacts/cran
 

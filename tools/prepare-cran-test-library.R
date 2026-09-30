@@ -14,11 +14,14 @@ library_path <- value_arg("library")
 if (is.null(library_path) || !nzchar(library_path)) {
   stop("Use --library=<empty-or-new-directory>.")
 }
-library_path <- normalizePath(library_path, winslash = "/", mustWork = FALSE)
 if (dir.exists(library_path) && length(list.files(library_path, all.files = TRUE, no.. = TRUE)) > 0L) {
   stop("The isolated library must be new or empty.")
 }
 dir.create(library_path, recursive = TRUE, showWarnings = FALSE)
+# Normalize once the directory exists: on Unix, normalizePath() leaves a missing
+# relative path relative, and the CRAN-mode runner reads the recorded manifest
+# path after changing to a read-only working directory.
+library_path <- normalizePath(library_path, winslash = "/", mustWork = TRUE)
 
 description <- read.dcf(file.path(root, "DESCRIPTION"))
 dependency_fields <- intersect(c("Depends", "Imports", "LinkingTo"), colnames(description))
