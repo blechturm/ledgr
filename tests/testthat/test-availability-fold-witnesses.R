@@ -99,6 +99,31 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       testthat::expect_identical(expected$engine_version, "0.2.0.1")
       actual$engine_version <- NULL
       expected$engine_version <- NULL
+      # LDG-2851 renamed `ctx$vec$positions` to `ctx$vec$position` after the
+      # freeze, so the witness strategy's source differs by exactly that
+      # rename, and so do the values derived from it: the source hash, the
+      # strategy key and the config hash. The frozen evidence stays as
+      # recorded; every other identity value must still match exactly.
+      expected_config <- ledgr:::ledgr_json_read_nested(expected$config_json)
+      actual_config <- ledgr:::ledgr_json_read_nested(actual$config_json)
+      frozen_source <- expected_config$strategy$provenance$strategy_source
+      testthat::expect_identical(
+        lengths(regmatches(frozen_source, gregexpr("ctx$vec$positions", frozen_source, fixed = TRUE))),
+        1L
+      )
+      testthat::expect_identical(
+        actual_config$strategy$provenance$strategy_source,
+        gsub("ctx$vec$positions", "ctx$vec$position", frozen_source, fixed = TRUE)
+      )
+      for (derived in c("strategy_source", "strategy_source_hash")) {
+        expected_config$strategy$provenance[[derived]] <- NULL
+        actual_config$strategy$provenance[[derived]] <- NULL
+      }
+      expected_config$strategy$params$strategy_key <- NULL
+      actual_config$strategy$params$strategy_key <- NULL
+      testthat::expect_identical(actual_config, expected_config)
+      actual$config_json <- expected$config_json <- NULL
+      actual$config_hash <- expected$config_hash <- NULL
     }
     if (identical(surface, "equity")) {
       tolerant_column <- "unrealized_pnl"
