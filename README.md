@@ -52,8 +52,8 @@ is what ledgr is built for.
 
 ## Install
 
-Install from GitHub. The install needs network access, so it is not run
-when this page is built:
+ledgr needs R 4.6.0 or later. Install it from GitHub. The install needs
+network access, so it is not run when this page is built:
 
 ``` r
 if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")

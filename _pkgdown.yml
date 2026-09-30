@@ -127,7 +127,7 @@ reference:
       - print.ledgr_sweep_candidate
       - ledgr_promote
       - ledgr_fold
-      - ledgr_select_argmax
+      - ledgr_rule_argmax
       - ledgr_walk_forward
       - ledgr_walk_forward_open
       - print.ledgr_walk_forward_degradation
@@ -154,6 +154,9 @@ reference:
       - as_tibble.ledgr_backtest
       - ledgr_results
       - ledgr_run_explain
+      - ledgr_run_completion
+      - ledgr_corporate_action_policy
+      - ledgr_corporate_action_summary
       - as_tibble.ledgr_result_table
       - print.ledgr_result_table
       - close.ledgr_backtest
@@ -233,6 +236,7 @@ reference:
       - ledgr_weights
       - ledgr_target
       - ledgr_signal_return
+      - ledgr_signal_feature
       - ledgr_select_top_n
       - ledgr_weight_equal
       - ledgr_target_quantity
@@ -248,3 +252,5 @@ reference:
       - ledgr_backtest_bench
       - ledgr_sim_bars
       - ledgr_demo_bars
+      - ledgr_sim_pit_inputs
+      - ledgr_demo_pit_inputs

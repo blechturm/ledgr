@@ -520,7 +520,7 @@ authoring). When a milestone closes, sweep its entries to `## Resolved`.
 - **v0.2.0.1** -- availability hot- and cold-path productionization, the
   resumed-run correctness repair, and release-closeout measurements under the
   accepted synthesis and maintainer decisions.
-- **Post-v0.2.0.2 exact equity quantity settlement** -- atomic parent-to-
+- **Post-v0.2.1.0 exact equity quantity settlement** -- atomic parent-to-
   recipient position and model-basis transformation for stock acquisitions,
   mixed consideration and spin-offs. Promoted to the roadmap on 2026-09-24;
   a focused RFC is required before ticket cut.

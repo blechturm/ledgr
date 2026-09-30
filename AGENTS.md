@@ -70,9 +70,10 @@ Current planning context (2026-09-27):
 
 - v0.2.0.1 is published. Its packet, closeout and measurements are historical
   evidence; do not reopen that release or rewrite its measured results.
-- Release and planning branch: v0.2.0.2, targeting v0.2.1.0. The active packet
-  is `inst/design/ledgr_v0_2_0_2_spec_packet/`; its `tickets.yml` is the sole
-  current status and sequencing authority.
+- Release branch: v0.2.1.0. The active packet keeps its historical path,
+  `inst/design/ledgr_v0_2_0_2_spec_packet/` (the release was planned as
+  v0.2.0.2 and promoted); its `tickets.yml` is the sole current status and
+  sequencing authority.
 - The governance review, testing-architecture RFC (2026-09-21) and
   accounting-core RFC (2026-09-22) are accepted. This packet pilots
   workstream-level review, with `tickets.yml` as authority and no batch
@@ -92,7 +93,7 @@ packets are records, not authorization for new work.
 
 | Area | Read |
 | --- | --- |
-| v0.2.0.2 equity and workflow planning | `inst/design/ledgr_roadmap.md` v0.2.0.2 section; `inst/design/research/Sharadar-Corporate-Event-Evidence.md`; `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`; relevant horizon and RFC pipeline entries |
+| v0.2.1.0 equity and workflow planning (packet path `v0_2_0_2`) | `inst/design/ledgr_roadmap.md` v0.2.1.0 section; `inst/design/research/Sharadar-Corporate-Event-Evidence.md`; `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`; relevant horizon and RFC pipeline entries |
 | v0.2.0.1 released availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted hot-path and timestamp/benchmark amendments in that packet, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
 | Post-v0.2.0.1 spot-crypto planning | `inst/design/ledgr_roadmap.md` (spot-crypto section), `inst/design/horizon.md` (2026-09-14 research entry), `inst/design/rfc/README.md` (pipeline row), `inst/design/spike_protocol.md`, `inst/design/research/Transaction-Cost-Models.md`, `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` |
 | v0.2.0.0 release record | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |

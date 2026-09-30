@@ -3,8 +3,9 @@
 **Status:** Active design index.
 **Authority:** Operational map for agents and human collaborators.
 **Latest released packet:** [v0.2.0.1](ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md).
-**Current planning branch / release target:** `v0.2.0.2` / `v0.2.1.0`.
-**Current implementation packet:** `ledgr_v0_2_0_2_spec_packet/`; its
+**Current release branch / target:** `v0.2.1.0`.
+**Current implementation packet:** `ledgr_v0_2_0_2_spec_packet/` (historical
+path: the release was planned as v0.2.0.2 and promoted); its
 `tickets.yml` is the sole ticket and sequencing authority.
 The active packet carries current scope and status; do not infer either from an
 older planning narrative. The governance, testing-architecture,

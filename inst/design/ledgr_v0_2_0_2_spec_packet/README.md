@@ -1,7 +1,17 @@
-# v0.2.0.2 Packet
+# v0.2.0.2 Packet (Release v0.2.1.0)
 
-**Status:** Eleven cuts: six closed, one folded, two open, and two awaiting
-review acceptance. Cut 1, the
+**Promotion:** The maintainer promoted this release from v0.2.0.2 to v0.2.1.0
+on 2026-09-25, because its public capability and architecture changes are no
+longer patch-sized. The package version, NEWS heading and release branch are
+v0.2.1.0. This directory, and the RFC, audit, spike, benchmark, synthesis and
+ticket names written under it, keep `v0_2_0_2` as their historical identity;
+a surviving `v0.2.0.2` in them names the planning version they were written
+under, not the release. "Post-v0.2.0.2" now reads "post-v0.2.1.0" wherever it
+marks the release boundary.
+
+**Status:** Twenty-three cuts: twenty-one closed, cut 5 folded into cut 3,
+and cut 8, the release gate, open. The paragraph below records the packet as
+it stood early in the cycle; `tickets.yml` holds the current state. Cut 1, the
 test-suite
 cleanup, is closed: five
 workstreams complete, eleven reviews over thirty-one tickets, and the

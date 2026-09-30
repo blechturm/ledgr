@@ -1,19 +1,217 @@
-# ledgr 0.2.0.2
+# ledgr 0.2.1.0
 
-- Development version opened. No user-facing changes have shipped yet, and no
-  spec is cut. The roadmap schedules this release to open with the test-suite
-  cleanup under the testing-architecture RFC, then FIFO accounting-core
-  consolidation, then equity economic events, fast availability results,
-  minimal progress, consistent opening validation, first-cutoff inspection,
-  and clear unsupported-economics explanations, in that order. Scope becomes
-  binding only when the packet spec is accepted, which follows the test-suite
-  audit and the testing-architecture RFC; the governance review is accepted.
-- Added vendor-neutral sealed equity corporate-action facts, evidenced gross
-  cash distributions under named timing, modeled held-terminal disposition,
-  explicit unsupported-quantity reporting, and ordinary-result fidelity over
-  supplied facts.
-- This release does not claim corporate-action completeness, broker-exact
-  settlement, net cash, tax correctness, or exact recipient exposure.
+ledgr 0.2.1.0 models equity corporate actions from sealed facts, gives
+strategies one helper pipeline that behaves the same in dense and
+availability-aware runs, prints results on one screen, and reads CSV files
+through one path. It requires R 4.6.0 and duckdb 1.5.6.
+
+## Upgrading from 0.2.0.1
+
+These changes need edits to existing code:
+
+- Install R 4.6.0 or later and duckdb 1.5.6 or later. ledgr uses base R's
+  `%||%`, added in R 4.4, so it never ran on the R 4.2 it declared; R 4.6 is
+  the oldest release with duckdb 1.5.6 binaries on Windows and macOS.
+- In strategies, `ctx$vec$positions` is now `ctx$vec$position`, and
+  `ctx$positions` is removed: use `ctx$vec$position`, aligned to
+  `ctx$universe`, or `ctx$position(id)`. `ctx$safety_state` is removed, and so
+  are the `ctx$targets()` and `ctx$current_targets()` stubs; use `ctx$flat()`
+  and `ctx$hold()`. A strategy edited to the new names gets a new source hash.
+- `ledgr_select_argmax()` and `ledgr_select_argmin()` are now
+  `ledgr_rule_argmax()` and `ledgr_rule_argmin()`. Walk-forward selections are
+  unchanged.
+- `ledgr_pulse_snapshot()`'s `initial_cash` is now `cash`: the cash held beside
+  `positions`. The pulse's `ctx$equity` now adds the marked positions, so a
+  pulse built with holdings reports different, correct equity and sizing.
+- `ledgr_snapshot_import_bars_csv()` and
+  `ledgr_snapshot_import_instruments_csv()` are removed; use
+  `ledgr_snapshot_from_csv(csv_path, instruments_csv_path = ...)`. The
+  caller-managed create, import and seal steps on an open connection,
+  `auto_generate_instruments = FALSE`, `validate = "none"` and a non-UTF-8
+  `encoding` have no replacement. CSV errors now raise `ledgr_invalid_args`;
+  `LEDGR_CSV_FORMAT_ERROR` is gone.
+- `ledgr_feature_map()` refuses a named indicator bundle, as in
+  `ledgr_feature_map(bands = bundle)`; name the outputs with the bundle's
+  `prefix` or `naming` argument. It also refuses an alias equal to another
+  entry's feature ID.
+- `ledgr_opening(cash = 0)` now fails when the opening is built; runs already
+  refused it.
+- `vignette("ttr-and-adapter-indicators")` is now `vignette("ttr-indicators")`.
+
+These change results or identity without a code change:
+
+- In availability-aware runs, the context signals `ledgr_signal_return()`,
+  `ledgr_signal_feature()` and `ledgr_signal(ctx, values)` now score every
+  instrument in `ctx$universe` and carry eligibility in an `eligible`
+  attribute, instead of returning current members with inadmissible scores set
+  to `NA`. Code that relied on the member-only length or on the `NA`s should
+  read `attr(signal, "eligible")` or `ctx$vec$admissible`.
+- New experiments record a corporate-action policy, and Yahoo snapshots
+  declare their price basis, so config hashes differ from 0.2.0.1 for
+  otherwise identical experiments.
+- CSV files are read by DuckDB. All-numeric text with leading zeros is kept, so
+  an instrument `0001` no longer seals as `1`, and the text `NA` in a text
+  column is text rather than missing. Snapshots of affected files get
+  corrected IDs and hashes.
+- Pulse feature values now match a real run for `series_fn` indicators,
+  `fn(window, params)` indicators and recursive TTR indicators such as RSI;
+  they were wrong on a pulse before.
+- `print(bt)` and `summary(bt)` print differently; see below.
+
+## Equity corporate actions
+
+- `ledgr_facts_equity_corporate_actions()`, used inside `ledgr_facts()`, seals
+  vendor-neutral corporate-action facts such as dividends, acquisitions and
+  spin-offs, each with its dates, completeness, provenance tier and refusal
+  reason. The facts are part of the snapshot hash; a snapshot without them
+  keeps its old hash. Supplying them does not switch on availability.
+- `ledgr_snapshot_from_df()`, `ledgr_snapshot_from_csv()` and
+  `ledgr_snapshot_from_yahoo()` take `price_basis`, `"split_adjusted"` or
+  `"distribution_adjusted"`, which is part of experiment identity. Yahoo
+  snapshots default to `"split_adjusted"`.
+- `ledgr_experiment()` and `ledgr_backtest()` take `corporate_action_policy`,
+  built with `ledgr_corporate_actions()` or its presets
+  `ledgr_corporate_actions_research()`, the default, and
+  `ledgr_corporate_actions_strict()`, which refuses every modeled treatment.
+  Runs stored before this release reopen with no policy recorded.
+- Gross cash distributions post as `CASHFLOW` ledger events. Entitlement is
+  fixed before the ex-date, the policy's `cash_posting` credits the cash at the
+  effective close or the next open, a fact that becomes known late posts once,
+  when it becomes known, and a resumed run posts each fact exactly once.
+- A held position ended by a corporate action is closed by a new `DISPOSITION`
+  ledger event that consumes its lots, moves the modeled proceeds into cash and
+  reports realized model PnL. Without a usable mark it refuses before changing
+  the account.
+- `print(bt)` states corporate-action coverage and the price basis,
+  `summary(bt)` reports the evidence, and `ledgr_corporate_action_summary(bt)`
+  returns the full record, including `corporate_action_fidelity`:
+  `not_supplied`, `none`, `modeled` or `unsupported`.
+- `compiled_accounting_model = "spot_fifo"` refuses a run with corporate-action
+  events instead of dropping them; use the default accounting for such runs.
+- New articles: "Cash Distributions" and "Authoring A Corporate-Action
+  Adapter".
+
+Corporate actions are not complete in this release. This release does not
+claim corporate-action completeness, broker-exact settlement, net cash, tax
+correctness, or exact recipient exposure. Exact quantity settlement, such as
+new shares from a split or a spin-off and the basis allocated to them, is not
+modeled, and bars declared distribution-adjusted are refused as execution
+bars.
+
+## Strategy authoring
+
+- The helper pipeline, a signal (`ledgr_signal_return()`,
+  `ledgr_signal_feature()`) into `ledgr_selection()` into
+  `ledgr_target_quantity()` or `ledgr_target_rebalance()`, behaves the same in
+  dense and availability-aware runs. Dense contexts now expose `ctx$members`,
+  `ctx$vec$member`, `ctx$vec$target_restricted`,
+  `ctx$vec$target_restriction_reason` and `ctx$vec$admissible`, with every
+  instrument eligible.
+- `ledgr_signal_feature(ctx, feature_id)` reads any registered feature as a
+  signal.
+- `ledgr_signal(ctx, values)` and `ledgr_selection(ctx, ids = , where = )`
+  accept a strategy context. `ledgr_selection(missing = "exclude")` treats a
+  missing value as not selected; the default still refuses it. A context
+  selection never picks an ineligible instrument.
+- `ledgr_select_top_n(partial = "allow")` accepts fewer than `n` usable scores
+  without warning, and ranks eligible instruments only.
+- `ledgr_target_quantity(selection, ctx, qty)` gives selected instruments `qty`
+  shares and the rest zero; ineligible holdings keep their quantity.
+- `ledgr_target_rebalance(keep = )` keeps the named positions at their
+  quantity and sizes the remaining capital. A zero weight no longer needs a
+  price, and several unpriced instruments raise one warning naming them all.
+- `ledgr_signal_strategy()` keeps ineligible instruments at their current
+  quantity and returns an empty target on an empty universe.
+- `ledgr_passed_warmup(ctx, values)` checks eligible instruments only.
+- `ctx$tradable()` returns the instruments that are members, admissible and
+  priced; it does not promise a fill.
+- `ledgr_signal()` and `ledgr_target()` accept empty vectors.
+- A loop of one scalar accessor, including `ctx$feature(id, feature_id)`, over
+  100 or more instruments warns once per run with
+  `ledgr_scalar_accessor_loop` and names the vector form. Results are
+  unchanged.
+- `ledgr_run_strategy(trust = TRUE)` returns a function that can call ledgr's
+  exported functions and those of base and recommended R, so a recovered
+  helper-pipeline strategy reruns. Objects in the global environment and
+  ledgr's unexported functions stay out of reach, and Tier 1 preflight now
+  accepts only exported functions of recommended packages.
+
+## Inspection and results
+
+- `print(bt)` fits on one screen: period, opening cash, final equity, total
+  return, maximum drawdown, closed trades, the corporate-action and price-basis
+  lines, and a pointer to `summary()`.
+- `summary(bt)` shows the metrics first. Without corporate-action facts, its
+  corporate-action block shrinks to the two headline lines and a pointer to
+  `ledgr_corporate_action_summary(bt)`.
+- `ledgr_compute_metrics(bt)` prints as a short table; the object and its
+  values are unchanged.
+- `ledgr_run_completion(bt)` answers whether a run completed, and if not, its
+  achieved window, stop reason and affected exposure.
+- `ledgr_run_explain(bt, instrument_id)` without `ts_utc` returns the
+  instrument's whole per-pulse history.
+- `ledgr_snapshot_quarantine(snapshot)` returns the observations excluded under
+  `invalid_observations = "quarantine"`, with reasons.
+- `ledgr_pulse_snapshot(state_prev = )` supplies the previous state for testing
+  a stateful strategy on one pulse, in dense runs. The pulse print shows cash,
+  equity, held positions and whether a previous state was supplied.
+- After `dplyr::select()`, the prints of `ledgr_run_list()`,
+  `ledgr_run_compare()`, sweep results and walk-forward degradation show the
+  selected columns in the selected order.
+
+## Data input and point-in-time evidence
+
+- `ledgr_snapshot_from_csv()` is the file form of `ledgr_snapshot_from_df()`:
+  it takes `instruments_csv_path`, `facts` and `invalid_observations`, accepts
+  the same columns and timestamps, and seals to the same hash.
+- `ledgr_snapshot_from_df()` and the fact constructors accept integer-backed
+  `POSIXct` timestamps.
+- `ledgr_sim_pit_inputs()` generates a deterministic point-in-time input
+  bundle with switchable cases, and the dataset `ledgr_demo_pit_inputs` is one
+  such bundle, with a venue closure, a missing open-session bar, a delisting, a
+  late-known halt and a cash dividend. The new article "Preparing
+  Point-In-Time Inputs" runs it end to end; "Data Input And Snapshots" is now
+  "Importing And Sealing Market Data".
+- `ledgr_sweep()` now accepts strict-window indicators such as `ledgr_ind_sma()`
+  on a declared session calendar, as `ledgr_run()` already did.
+  `ledgr_ind_ttr("SMA", input = "close", n = ...)` is supported in
+  availability-aware runs; other TTR indicators and recursive built-ins are
+  still refused there before the strategy runs.
+- Extra columns on a quarantined row no longer change the snapshot hash.
+
+## Speed and reliability
+
+- ledgr validates a store's schema once per session and opens the store once
+  per public call; calls that commit runs, `ledgr_walk_forward()`,
+  `ledgr_promote()` and `ledgr_backtest()`, open it once for their own work
+  plus once per run. With duckdb 1.5.6, which opens a store far more cheaply,
+  a small `ledgr_run()` takes about 140 ms against 300 ms on duckdb 1.5.5 with
+  the same code, and `ledgr_experiment()` about 30 ms against 110 ms.
+- No public call leaves a connection open after it returns; `ledgr_sweep()`,
+  `ledgr_snapshot_info()`, `ledgr_promote()`, pulse snapshots and indicator dev
+  objects used to.
+- ledgr can use a store that you hold open with your own DuckDB connection,
+  which duckdb 1.5.6 would otherwise refuse.
+- Availability-aware runs are much faster to value: in one measurement of a
+  large run, computing the availability marks went from about 12 minutes to 11
+  seconds.
+- `ledgr_snapshot_from_csv()` read a 630,000-row file about three times
+  faster in one cold measurement.
+- Experiment stores upgrade their schema automatically. A store that holds
+  historical `FEE` ledger rows is kept but can no longer be read until cleaned.
+  Malformed ledger event metadata now stops with an error instead of a
+  warning, and a store missing a table fails to open instead of being rebuilt.
+- `ledgr_strategy_preflight()` no longer loads every recommended package to
+  classify a strategy, which removes stray warnings such as Tk's.
+
+## Documentation
+
+- The README is rewritten for a first reader, and all 26 articles were
+  corrected against the shipped behaviour and reordered into Start Here,
+  Building Blocks, Research Workflow, Point-In-Time Evidence, Going Deeper and
+  Design. Strategies are taught as named vectors first and helpers second.
+- `?ledgr_strategy_context` lists every public context member, and
+  `?ledgr_indicator` documents both `fn(window)` and `fn(window, params)`.
 
 # ledgr 0.2.0.1
 
