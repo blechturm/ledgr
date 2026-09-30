@@ -349,8 +349,12 @@ testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
   testthat::expect_true(is.function(script_env$make_ledgr_demo_pit_inputs))
   generated <- script_env$make_ledgr_demo_pit_inputs(
     output_path = regenerated_path,
-    package_root = package_root
+    package_root = package_root,
+    load_package = FALSE
   )
+  # Regenerating must not reload ledgr: a reload replaces the namespace, and
+  # every later mock would patch functions the tests no longer call (LDG-2914).
+  testthat::expect_identical(environment(ledgr_sim_pit_inputs), asNamespace("ledgr"))
   testthat::expect_identical(generated, ledgr_demo_pit_inputs)
 
   committed_path <- normalizePath(

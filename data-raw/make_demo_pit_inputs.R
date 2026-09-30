@@ -3,8 +3,14 @@
 
 make_ledgr_demo_pit_inputs <- function(
     output_path = file.path("data", "ledgr_demo_pit_inputs.rda"),
-    package_root = ".") {
-  pkgload::load_all(package_root, quiet = TRUE)
+    package_root = ".",
+    load_package = TRUE) {
+  # The test suite passes `load_package = FALSE`: it has this source tree
+  # loaded already, and reloading it mid-suite would replace the namespace that
+  # later tests mock.
+  if (isTRUE(load_package)) {
+    pkgload::load_all(package_root, quiet = TRUE)
+  }
   ledgr_demo_pit_inputs <- ledgr_sim_pit_inputs(
     instrument_ids = sprintf("DEMO_%02d", 1:5),
     from = "2020-01-01",

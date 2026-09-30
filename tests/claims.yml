@@ -830,9 +830,9 @@ claims:
     detecting_blocks: ["LTB-0078"]
     promised_profile: "review"
     owner: "maintainer"
-    protected_contract_or_defect: "The shipped dataset is byte-reproducible from its declared call, contains matching observations for its facts, preserves its closure and open-session gap, completes after verified reopen, and carries a recognized ordinary cash dividend that posts 1.5 under the research preset and is refused under the strict preset for two held units."
+    protected_contract_or_defect: "The shipped dataset is byte-reproducible from its declared call, contains matching observations for its facts, preserves its closure and open-session gap, completes after verified reopen, and carries a recognized ordinary cash dividend that posts 1.5 under the research preset and is refused under the strict preset for two held units. Regenerating inside the test process does not reload ledgr, which would replace the namespace later tests mock (LDG-2914)."
     oracle_independence: "The checked-in data-raw script is sourced into an isolated environment and its callable generator writes a fresh artifact; returned content and bytes are compared with the committed data before public constructors, seal verification, completion and two public held-position settlement runs consume it."
-    smallest_failing_change: "Change the script's call, seed, serialization, one bundled row, a scope argument, the closure or gap placement, make the dividend subtype unrecognized, stop research cash posting or strict refusal, or attach facts that cannot complete with their bundled bars."
+    smallest_failing_change: "Change the script's call, seed, serialization, one bundled row, a scope argument, the closure or gap placement, make the dividend subtype unrecognized, stop research cash posting or strict refusal, or attach facts that cannot complete with their bundled bars, or let the generator reload ledgr in the test process."
     cheapest_adequate_lane: "One small regeneration and durable public run protect the distribution artifact; file I/O and sealing keep it in review."
     overlapping_evidence: "LCL-0077 proves the generator output generally but does not bind the checked-in data bytes or their published call."
   - id: "LCL-0079"
