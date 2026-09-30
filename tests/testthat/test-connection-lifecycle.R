@@ -139,8 +139,13 @@ testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with the
   snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "user_held")
   ledgr_snapshot_close(snapshot)
 
-  # A connection with DuckDB's default instance settings, not ledgr's.
-  drv <- duckdb::duckdb()
+  # A connection whose instance settings differ from ledgr's. DuckDB's own
+  # defaults differ from them on some platforms only, so the block sets its own
+  # storage directories, under the session's temporary directory.
+  drv <- duckdb::duckdb(config = list(
+    extension_directory = file.path(tempdir(), "ledgr-user-extensions"),
+    secret_directory = file.path(tempdir(), "ledgr-user-secrets")
+  ))
   con <- DBI::dbConnect(drv, dbdir = path)
   on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -157,6 +162,14 @@ testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with the
     DBI::dbGetQuery(con, "SELECT run_id FROM runs")$run_id,
     "user_held_run"
   )
+  # Closing the joined connections left the user's database registered:
+  # ledgr joins it again.
+  bt_again <- ledgr_run(exp, run_id = "user_held_again")
+  close(bt_again)
+  testthat::expect_identical(
+    sort(DBI::dbGetQuery(con, "SELECT run_id FROM runs")$run_id),
+    c("user_held_again", "user_held_run")
+  )
 
   # Only DuckDB's own settings-mismatch error is joined, and joining does not
   # hide DuckDB's messages.
@@ -165,12 +178,12 @@ testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with the
     error = identity
   )
   testthat::expect_s3_class(refused, "error")
-  # The join constructs its driver with no arguments; `dbConnect()` also calls
-  # `duckdb()` internally, with arguments, outside the join's control.
+  # The join builds its driver from `dbdir` alone; `dbConnect()` also calls
+  # `duckdb()` internally, positionally, outside the join's control.
   real_duckdb <- duckdb::duckdb
   testthat::local_mocked_bindings(
     duckdb = function(...) {
-      if (...length() == 0L) message("duckdb driver message")
+      if (identical(...names(), "dbdir")) message("duckdb driver message")
       real_duckdb(...)
     },
     .package = "duckdb"
@@ -180,13 +193,21 @@ testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with the
     "duckdb driver message"
   )
   testthat::expect_true(DBI::dbIsValid(joined$con))
-  DBI::dbDisconnect(joined$con)
-  duckdb::duckdb_shutdown(joined$drv)
+  testthat::expect_null(joined$drv)
+  DBI::dbDisconnect(joined$con, shutdown = TRUE)
   testthat::expect_true(DBI::dbIsValid(con))
   unrelated <- tempfile(fileext = ".duckdb")
   testthat::expect_null(ledgr:::ledgr_join_open_duckdb(
     unrelated,
     simpleError("unrelated object which already exists")
   ))
+  read_only <- simpleError(paste(
+    "`read_only`, `config$extension_directory` can't be applied to the database",
+    "instance for `x`, which already exists. These settings take effect only",
+    "when the instance is created."
+  ))
+  testthat::expect_null(ledgr:::ledgr_join_open_duckdb(unrelated, read_only))
+  not_a_refusal <- simpleError("`config$extension_directory` is not writable.")
+  testthat::expect_null(ledgr:::ledgr_join_open_duckdb(unrelated, not_a_refusal))
   testthat::expect_false(file.exists(unrelated))
 })

@@ -34,28 +34,30 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
 
 # duckdb 1.5.6 refuses a driver whose instance settings differ from those of a
 # database already open in the session, such as a connection the user made with
-# `duckdb::duckdb()`. The settings apply only when an instance is created, so
-# join the open instance with a plain driver instead of failing. Only DuckDB's
-# own settings-mismatch error qualifies, so a plain driver never creates an
-# instance; any other error stands.
+# their own `duckdb::duckdb()` settings. Settings apply only when an instance is
+# created, so ledgr joins the open instance instead of failing: a driver for the
+# file that brings no settings of its own returns the open instance from
+# DuckDB's registry, whatever settings created it. Only a refusal whose every
+# refused setting is one of the storage directories ledgr sets qualifies, so
+# the join never creates an instance; any other error stands.
 ledgr_join_open_duckdb <- function(db_path, err) {
-  signature <- c(
-    "config$extension_directory",
-    "config$secret_directory",
-    "can't be applied to the database instance",
-    "take effect only when the instance is created"
-  )
   message <- conditionMessage(err)
-  if (!all(vapply(signature, grepl, logical(1), x = message, fixed = TRUE))) {
+  if (!grepl("can't be applied to the database instance", message, fixed = TRUE) ||
+      !grepl("take effect only when the instance is created", message, fixed = TRUE)) {
     return(NULL)
   }
-  drv <- duckdb::duckdb()
+  refused_part <- sub("can't be applied to the database instance.*$", "", message)
+  refused <- gsub("`", "", regmatches(refused_part, gregexpr("`[^`]+`", refused_part))[[1L]], fixed = TRUE)
+  storage <- c("config$extension_directory", "config$secret_directory")
+  if (length(refused) == 0L || !all(refused %in% storage)) {
+    return(NULL)
+  }
+  # The driver DuckDB returns is the one that opened the instance: shutting it
+  # down would unregister the user's database, so the connection comes back
+  # without a driver for ledgr to shut down.
   tryCatch(
-    list(con = DBI::dbConnect(drv, dbdir = db_path), drv = drv),
-    error = function(e) {
-      try(duckdb::duckdb_shutdown(drv), silent = TRUE)
-      NULL
-    }
+    list(con = DBI::dbConnect(duckdb::duckdb(dbdir = db_path)), drv = NULL),
+    error = function(e) NULL
   )
 }
 
