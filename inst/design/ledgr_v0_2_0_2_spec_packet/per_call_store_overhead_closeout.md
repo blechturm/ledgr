@@ -1,9 +1,9 @@
 # Per-Call Store Overhead Closeout
 
-**Status:** Agent-provisional draft. The Workstream 31 close review
-(invocation 1, at `4933065`) and its re-review (invocation 2, at `067017a`)
-returned CHANGES_REQUIRED; both correction rounds below await the maintainer's
-acceptance.
+**Status:** Accepted by the maintainer on 2026-09-30, at `1b22990`, without a
+third review. The close review (invocation 1, at `4933065`) and its re-review
+(invocation 2, at `067017a`) each returned CHANGES_REQUIRED; both correction
+rounds are below.
 **Date:** 2026-09-30
 **Cut:** 23
 **Workstream:** 31

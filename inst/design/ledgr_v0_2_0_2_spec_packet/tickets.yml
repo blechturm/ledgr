@@ -276,7 +276,9 @@ cuts:
     out_of_scope: "Stubbing the time-zone check in tests, which would hide the cost without removing it. Keeping connections open between public calls, which the locator contract excludes. Snapshot sealing cost (237 ms of the small pipeline), which is not per-call overhead."
     workstreams: [31]
     closeout: "per_call_store_overhead_closeout.md"
-    status: "open"
+    historical_gate: "2 review invocations over 3 completed tickets, 0.667, against a 0.5 gate; accepted by the maintainer without a third review as an honest breach, not padded with unrelated work"
+    accepted: "2026-09-30 by the maintainer, at 1b22990"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -520,7 +522,7 @@ workstreams:
   - id: 31
     name: "Per-call store overhead"
     cut: 23
-    status: "open"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 31", reason: "One claim joins the tickets: on a supported duckdb, a public call opens the store at most once per database file and validates its schema at most once per store and session, with identical results. The review checks the duckdb floor and the binary availability recorded for it, reruns the connection census and the validation counter, runs each ticket's registered mutation, checks that no connection outlives its call and that a changed or failing store is still validated and still fails, walks the changed code against the seven shapes, and remeasures the recorded costs itself, interleaved on a warm clock."}
@@ -2365,7 +2367,7 @@ tickets:
   - id: "LDG-2915"
     title: "Open the store once per public call"
     workstream: 31
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "M"
     dependencies: ["LDG-2919"]
@@ -2375,7 +2377,7 @@ tickets:
   - id: "LDG-2916"
     title: "Validate the store schema once per store and session"
     workstream: 31
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2919"]
@@ -2385,7 +2387,7 @@ tickets:
   - id: "LDG-2917"
     title: "Require duckdb 1.5.6 or later"
     workstream: 31
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2919"]
