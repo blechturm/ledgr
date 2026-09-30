@@ -260,3 +260,14 @@ ledgr_test_fetch_equity_curve_core <- function(con, run_id) {
   df
 }
 
+# covr instruments ledgr in every process that loads it, including mirai worker
+# daemons, and stopping a daemon can cut off its coverage trace and break the
+# coverage run. Coverage runs therefore start no workers; the ordinary runs
+# cover the worker paths.
+ledgr_test_in_coverage <- function() {
+  requireNamespace("covr", quietly = TRUE) && covr::in_covr()
+}
+
+ledgr_test_skip_workers_in_coverage <- function() {
+  testthat::skip_if(ledgr_test_in_coverage(), "Coverage runs start no worker daemons.")
+}

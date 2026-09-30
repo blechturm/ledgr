@@ -124,6 +124,7 @@ testthat::test_that("risk plans in sweep payloads are PSOCK-safe value objects",
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("[LTB-0025] parallel sweep constructs opening lots identically to sequential", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -174,6 +175,7 @@ testthat::test_that("[LTB-0025] parallel sweep constructs opening lots identical
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep preserves parameterized risk identity and row order", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -220,6 +222,7 @@ testthat::test_that("parallel sweep preserves parameterized risk identity and ro
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep preserves warning and failure row association", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -262,6 +265,7 @@ testthat::test_that("parallel sweep preserves warning and failure row associatio
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep id", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -288,6 +292,7 @@ testthat::test_that("parallel sweep keeps reproduction key stable modulo sweep i
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep workers do not write persistent artifacts", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -311,6 +316,7 @@ testthat::test_that("parallel sweep workers do not write persistent artifacts", 
 # ledgr-test-profile: heavy_protocol
 testthat::test_that("parallel sweep rejects ambient RNG strategies", {
   testthat::skip_if_not_installed("mirai")
+  ledgr_test_skip_workers_in_coverage()
   ledgr_skip_parallel_sweep_under_covr()
   snapshot <- ledgr_snapshot_from_df(ledgr_parallel_sweep_test_bars())
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)

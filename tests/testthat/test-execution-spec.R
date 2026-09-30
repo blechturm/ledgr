@@ -539,17 +539,20 @@ testthat::test_that("[LTB-0026] accounting refuses every unhandled pulse event k
     )
   }
 
-  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
-  testthat::expect_match(
-    fold_source,
-    "ledgr_fold_pulse_plan_fill_intents(accounting_events)",
-    fixed = TRUE
-  )
-  testthat::expect_match(
-    fold_source,
-    "for (entry in accounting_events$fills)",
-    fixed = TRUE
-  )
+  # covr rewrites function bodies, so the source text holds only in ordinary runs.
+  if (!(requireNamespace("covr", quietly = TRUE) && covr::in_covr())) {
+    fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+    testthat::expect_match(
+      fold_source,
+      "ledgr_fold_pulse_plan_fill_intents(accounting_events)",
+      fixed = TRUE
+    )
+    testthat::expect_match(
+      fold_source,
+      "for (entry in accounting_events$fills)",
+      fixed = TRUE
+    )
+  }
 })
 
 testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold outputs", {

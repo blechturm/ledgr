@@ -10,6 +10,13 @@ ledgr_test_profiles <- function() {
 }
 
 ledgr_test_source_root <- function(start = getwd(), package = "ledgr") {
+  # tools/check-coverage.R names the source tree, because covr runs the tests
+  # from a temporary install without articles or R sources.
+  declared <- Sys.getenv("LEDGR_TEST_SOURCE_ROOT", unset = "")
+  if (nzchar(declared) && file.exists(file.path(declared, "DESCRIPTION")) &&
+      dir.exists(file.path(declared, "tests", "testthat"))) {
+    return(normalizePath(declared, winslash = "/", mustWork = TRUE))
+  }
   cursor <- normalizePath(start, winslash = "/", mustWork = TRUE)
   ancestors <- character()
   repeat {
@@ -457,7 +464,7 @@ ledgr_test_claims_read <- function(path, preflight) {
   claims
 }
 
-ledgr_test_claims_check <- function(claims, preflight, actual, profile) {
+ledgr_test_claims_check <- function(claims, preflight, actual, profile, enforce_executed = TRUE) {
   promised <- Filter(function(claim) identical(claim$promised_profile, profile), claims)
   for (claim in promised) {
     blocks <- unlist(claim$detecting_blocks, use.names = FALSE)
@@ -469,7 +476,7 @@ ledgr_test_claims_check <- function(claims, preflight, actual, profile) {
         "ledgr_test_claims_execution_missing"
       )
     }
-    if (all(observed == "skipped")) {
+    if (all(observed == "skipped") && isTRUE(enforce_executed)) {
       ledgr_test_abort(
         sprintf("Claim %s is guarded only by skipped blocks.", claim$id),
         "ledgr_test_claims_all_skipped"
@@ -585,7 +592,11 @@ ledgr_test_run_profile <- function(root,
   actual <- actual_filter(ledgr_test_actual_census(results))
   ledgr_test_reconcile_execution(expected, actual)
   claims <- ledgr_test_claims_read(claims_path, preflight)
-  ledgr_test_claims_check(claims, preflight, actual, profile)
+  # A coverage run measures lines, not claims: covr instruments closures, and
+  # blocks that inspect them skip there by design. The ordinary runs verify
+  # that every claim executes.
+  in_coverage <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
+  ledgr_test_claims_check(claims, preflight, actual, profile, enforce_executed = !in_coverage)
   ledgr_test_write_census(census_path, expected, actual)
   testthat:::test_files_check(results, stop_on_failure = stop_on_failure)
   list(

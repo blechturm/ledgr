@@ -45,6 +45,12 @@ ledgr_check_coverage_main <- function() {
     }
   }
 
+  # covr runs the tests from a temporary install that holds no articles or R
+  # sources; point the test control plane at this source tree instead.
+  Sys.setenv(LEDGR_TEST_SOURCE_ROOT = normalizePath(".", winslash = "/", mustWork = TRUE))
+  # Count every ordinary block, fast and review, as coverage did before the
+  # test lanes split them.
+  Sys.setenv(LEDGR_TEST_PROFILES = "fast,review")
   coverage <- ledgr_collect_coverage()
   coverage_pct <- covr::percent_coverage(coverage)
 

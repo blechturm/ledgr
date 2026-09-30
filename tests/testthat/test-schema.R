@@ -246,14 +246,17 @@ testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", 
   testthat::expect_length(failure_line, 1L)
   testthat::expect_length(marker_line, 1L)
   testthat::expect_gt(marker_line, failure_line)
-  migration_body <- paste(
-    deparse(body(ledgr:::ledgr_experiment_store_migrate)),
-    collapse = "\n"
-  )
-  testthat::expect_identical(
-    digest::digest(migration_body, algo = "sha256", serialize = FALSE),
-    "1b836d6b78a2c24621bb8bcc0275075c6f8ba8ab570f93af9c8d4cff8b384f10"
-  )
+  # covr rewrites function bodies, so the body hash holds only in ordinary runs.
+  if (!(requireNamespace("covr", quietly = TRUE) && covr::in_covr())) {
+    migration_body <- paste(
+      deparse(body(ledgr:::ledgr_experiment_store_migrate)),
+      collapse = "\n"
+    )
+    testthat::expect_identical(
+      digest::digest(migration_body, algo = "sha256", serialize = FALSE),
+      "1b836d6b78a2c24621bb8bcc0275075c6f8ba8ab570f93af9c8d4cff8b384f10"
+    )
+  }
 })
 
 testthat::test_that("schema creation is idempotent", {

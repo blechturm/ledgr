@@ -280,7 +280,7 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
   )
   sequential <- ledgr_sweep(parameterized, grid, stop_on_error = TRUE)
   parallel <- NULL
-  if (requireNamespace("mirai", quietly = TRUE)) {
+  if (requireNamespace("mirai", quietly = TRUE) && !ledgr_test_in_coverage()) {
     parallel <- ledgr_sweep(
       parameterized,
       grid,

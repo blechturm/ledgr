@@ -395,6 +395,10 @@ testthat::test_that("[LTB-0082] profile tools identify the exact failing conditi
 })
 
 testthat::test_that("[LTB-0083] installed checks resolve the source package", {
+  # This block tests discovery, which a coverage run's declared root bypasses.
+  declared <- Sys.getenv("LEDGR_TEST_SOURCE_ROOT", unset = NA)
+  Sys.unsetenv("LEDGR_TEST_SOURCE_ROOT")
+  on.exit(if (!is.na(declared)) Sys.setenv(LEDGR_TEST_SOURCE_ROOT = declared), add = TRUE)
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
   testthat::expect_identical(
     ledgr_test_source_root(file.path(root, "tests", "testthat")),

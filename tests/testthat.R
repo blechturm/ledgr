@@ -10,11 +10,16 @@ library(testthat)
 library(ledgr)
 
 source("test-control-plane.R", local = TRUE)
-ledgr_test_run_profile(
-  root = ledgr_test_source_root(normalizePath(".", winslash = "/")),
-  profile = "fast",
-  mode = "ordinary",
-  reporter = "summary",
-  census_path = file.path(tempdir(), "ledgr-check-census.csv"),
-  load_package = "none"
-)
+# R CMD check runs the fast profile. tools/check-coverage.R sets
+# LEDGR_TEST_PROFILES = "fast,review" so coverage counts every ordinary block.
+profiles <- strsplit(Sys.getenv("LEDGR_TEST_PROFILES", unset = "fast"), ",", fixed = TRUE)[[1L]]
+for (profile in trimws(profiles)) {
+  ledgr_test_run_profile(
+    root = ledgr_test_source_root(normalizePath(".", winslash = "/")),
+    profile = profile,
+    mode = "ordinary",
+    reporter = "summary",
+    census_path = file.path(tempdir(), sprintf("ledgr-check-census-%s.csv", profile)),
+    load_package = "none"
+  )
+}
