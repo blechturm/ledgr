@@ -24,7 +24,7 @@ Imports:
     codetools,
     DBI,
     digest,
-    duckdb,
+    duckdb (>= 1.5.6),
     rlang,
     tibble,
     yyjsonr (>= 0.1.22)
