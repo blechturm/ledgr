@@ -51,6 +51,8 @@ ledgr_walk_forward <- function(exp,
   if (!inherits(grid, "ledgr_param_grid")) {
     rlang::abort("`grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
   }
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
   folds <- ledgr_validate_fold_list(folds)
   selection_rule <- ledgr_validate_selection_rule(selection_rule)
   seed <- ledgr_seed_normalize(seed)
@@ -282,7 +284,8 @@ ledgr_walk_forward_base_config <- function(exp, meta) {
     availability = exp$availability,
     universe_rule = exp$universe_rule,
     valuation_policy = exp$valuation_policy,
-    corporate_action_policy = exp$corporate_action_policy
+    corporate_action_policy = exp$corporate_action_policy,
+    price_basis = exp$data_identity$price_basis
   )
 }
 

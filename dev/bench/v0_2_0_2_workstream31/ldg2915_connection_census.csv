@@ -1,0 +1,49 @@
+"arm","call","opens","files","max_opens_per_file","live_after"
+"before","ledgr_snapshot_from_df",1,1,1,0
+"before","ledgr_snapshot_list",1,1,1,0
+"before","ledgr_experiment",3,1,3,0
+"before","ledgr_run",2,1,2,0
+"before","ledgr_run (second)",2,1,2,0
+"before","print",1,1,1,0
+"before","summary",4,1,4,0
+"before","ledgr_results fills",1,1,1,0
+"before","ledgr_results equity",1,1,1,0
+"before","close",1,1,1,0
+"before","close (second)",1,1,1,0
+"before","ledgr_run_list",1,1,1,0
+"before","ledgr_run_info",1,1,1,0
+"before","ledgr_run_open",1,1,1,0
+"before","close (reopened)",1,1,1,0
+"before","ledgr_snapshot_info",1,1,1,1
+"before","ledgr_feature_contract_check",0,0,0,1
+"before","ledgr_precompute_features",0,0,0,1
+"before","ledgr_sweep",1,1,1,1
+"before","ledgr_sweep (precomputed)",1,1,1,1
+"before","ledgr_backtest",1,1,1,1
+"before","close (backtest)",1,1,1,1
+"before","ledgr_db_init",1,1,1,1
+"before","ledgr_snapshot_close",0,0,0,0
+"after","ledgr_snapshot_from_df",1,1,1,0
+"after","ledgr_snapshot_list",1,1,1,0
+"after","ledgr_experiment",1,1,1,0
+"after","ledgr_run",1,1,1,0
+"after","ledgr_run (second)",1,1,1,0
+"after","print",1,1,1,0
+"after","summary",1,1,1,0
+"after","ledgr_results fills",1,1,1,0
+"after","ledgr_results equity",1,1,1,0
+"after","close",1,1,1,0
+"after","close (second)",1,1,1,0
+"after","ledgr_run_list",1,1,1,0
+"after","ledgr_run_info",1,1,1,0
+"after","ledgr_run_open",1,1,1,0
+"after","close (reopened)",1,1,1,0
+"after","ledgr_snapshot_info",1,1,1,0
+"after","ledgr_feature_contract_check",1,1,1,0
+"after","ledgr_precompute_features",1,1,1,0
+"after","ledgr_sweep",1,1,1,0
+"after","ledgr_sweep (precomputed)",1,1,1,0
+"after","ledgr_backtest",2,1,2,0
+"after","close (backtest)",1,1,1,0
+"after","ledgr_db_init",1,1,1,0
+"after","ledgr_snapshot_close",0,0,0,0

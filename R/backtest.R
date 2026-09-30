@@ -148,6 +148,8 @@ ledgr_backtest <- function(snapshot = NULL,
       class = "ledgr_invalid_args"
     )
   }
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   ledgr_snapshot_validate(snapshot)
 
   if (is.null(universe)) {
@@ -283,6 +285,8 @@ ledgr_infer_universe_from_data <- function(data) {
 }
 
 ledgr_infer_universe_from_snapshot <- function(snapshot) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   con <- get_connection(snapshot)
   universe <- DBI::dbGetQuery(
     con,
@@ -475,7 +479,8 @@ ledgr_run_experiment <- function(exp,
     availability = exp$availability,
     universe_rule = exp$universe_rule,
     valuation_policy = exp$valuation_policy,
-    corporate_action_policy = exp$corporate_action_policy
+    corporate_action_policy = exp$corporate_action_policy,
+    price_basis = exp$data_identity$price_basis
   )
 
   result <- ledgr_run_config(config, metric_context = exp$metric_context)

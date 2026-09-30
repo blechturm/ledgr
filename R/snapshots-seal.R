@@ -71,6 +71,8 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   if (inherits(con, "ledgr_snapshot")) {
     snapshot_obj <- con
     snapshot_id <- con$snapshot_id
+    release <- ledgr_snapshot_hold(con)
+    on.exit(release(), add = TRUE)
     con <- get_connection(con)
   }
   if (!DBI::dbIsValid(con)) {

@@ -148,6 +148,8 @@ ledgr_sweep_impl <- function(exp,
   if (!inherits(param_grid, "ledgr_param_grid")) {
     rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
   }
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
@@ -222,15 +224,14 @@ ledgr_sweep_impl <- function(exp,
   availability_data <- NULL
   availability_config <- NULL
   execution_opportunities_posix <- NULL
-  opened_snapshot <- ledgr_run_store_open(exp$snapshot$db_path)
-  on.exit(ledgr_run_store_close(opened_snapshot), add = TRUE)
+  snapshot_con <- get_connection(exp$snapshot)
   corporate_action_rows <- ledgr_corporate_action_rows(
-    opened_snapshot$con,
+    snapshot_con,
     exp$snapshot$snapshot_id
   )
   if (availability_active) {
     availability_data <- ledgr_availability_provider_data(
-      opened_snapshot$con,
+      snapshot_con,
       exp$snapshot$snapshot_id
     )
     availability_config <- ledgr_sweep_availability_config(exp)

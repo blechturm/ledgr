@@ -214,6 +214,8 @@ ledgr_snapshot_validate <- function(snapshot) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_snapshot")
   }
 
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   con <- get_connection(snapshot)
   stored <- DBI::dbGetQuery(
     con,

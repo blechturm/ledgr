@@ -77,6 +77,16 @@ ledgr_snapshot_connection <- function(snapshot) {
   list(con = state$con, opened_new = TRUE)
 }
 
+# Holds a snapshot's connection for one call. The returned closer, registered
+# with on.exit(), closes the connection only when this call opened it, so a
+# public call never leaves one open and nested reads share one open.
+ledgr_snapshot_hold <- function(snapshot) {
+  if (!inherits(snapshot, "ledgr_snapshot") || !isTRUE(ledgr_snapshot_connection(snapshot)$opened_new)) {
+    return(function() invisible(FALSE))
+  }
+  function() ledgr_snapshot_close(snapshot)
+}
+
 get_connection <- function(x) {
   if (inherits(x, "ledgr_snapshot")) {
     return(ledgr_snapshot_connection(x)$con)

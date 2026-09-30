@@ -826,6 +826,8 @@ summary.ledgr_backtest <- function(object,
   if (!inherits(object, "ledgr_backtest")) {
     rlang::abort("`object` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  release <- ledgr_backtest_hold(object)
+  on.exit(release(), add = TRUE)
 
   computed <- ledgr_compute_metrics(
     object,

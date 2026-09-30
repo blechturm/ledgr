@@ -92,6 +92,8 @@ ledgr_feature_contracts <- function(features) {
 #' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
 ledgr_feature_contract_check <- function(snapshot, features) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   ledgr_feature_contract_check_validate_snapshot(snapshot)
   if (is.function(features) && !inherits(features, "ledgr_indicator")) {
     rlang::abort(
@@ -140,10 +142,6 @@ ledgr_feature_contract_check_validate_snapshot <- function(snapshot) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot.", class = "ledgr_invalid_args")
   }
-  con <- get_connection(snapshot)
-  if (!DBI::dbIsValid(con)) {
-    rlang::abort("`snapshot` must have a valid database connection.", class = "ledgr_invalid_snapshot")
-  }
   info <- ledgr_snapshot_info(snapshot)
   if (!identical(info$status[[1]], "SEALED")) {
     rlang::abort(
@@ -155,6 +153,8 @@ ledgr_feature_contract_check_validate_snapshot <- function(snapshot) {
 }
 
 ledgr_snapshot_bar_counts <- function(snapshot) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   con <- get_connection(snapshot)
   rows <- DBI::dbGetQuery(
     con,

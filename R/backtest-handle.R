@@ -162,6 +162,25 @@ ledgr_backtest_open <- function(bt) {
   list(con = state$con, opened_new = TRUE)
 }
 
+# Holds a backtest's read connection for one call, like ledgr_snapshot_hold():
+# the first read opens it, later reads in the call share it, and the returned
+# closer releases it. A call that reads nothing opens nothing.
+ledgr_backtest_hold <- function(bt) {
+  state <- backtest_state(bt)
+  if (isTRUE(state$held)) {
+    return(function() invisible(FALSE))
+  }
+  state$held <- TRUE
+  function() {
+    state$held <- FALSE
+    if (isTRUE(state$held_open)) {
+      state$held_open <- FALSE
+      ledgr_backtest_disconnect_state(state)
+    }
+    invisible(TRUE)
+  }
+}
+
 ledgr_backtest_read_connection <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
@@ -180,6 +199,15 @@ ledgr_backtest_read_connection <- function(bt) {
     opened <- ledgr_backtest_open(bt)
     return(list(
       con = opened$con,
+      temporary = FALSE,
+      close = function() invisible(FALSE)
+    ))
+  }
+
+  if (isTRUE(state$held)) {
+    state$held_open <- TRUE
+    return(list(
+      con = ledgr_backtest_open(bt)$con,
       temporary = FALSE,
       close = function() invisible(FALSE)
     ))

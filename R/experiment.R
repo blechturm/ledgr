@@ -240,6 +240,8 @@ ledgr_experiment <- function(snapshot,
   } else {
     ledgr_metric_context_resolve(metric_context)
   }
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   price_basis <- ledgr_experiment_validate_snapshot(snapshot)
   ledgr_validate_corporate_action_policy(corporate_action_policy)
 

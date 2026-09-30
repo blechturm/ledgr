@@ -522,6 +522,8 @@ ledgr_experiment_window <- function(exp,
     rlang::abort("`exp` must be a ledgr_experiment object.", class = "ledgr_invalid_args")
   }
   opening_state_policy <- match.arg(opening_state_policy)
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   scoring_start <- ledgr_walk_forward_posix(start_utc, "`start_utc`")
   scoring_end <- ledgr_walk_forward_posix(end_utc, "`end_utc`")
@@ -592,6 +594,8 @@ ledgr_experiment_window_from_fold <- function(exp,
 }
 
 ledgr_experiment_window_validate_pulses <- function(exp, window) {
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
   bars_by_id <- ledgr_precompute_fetch_bars(
     exp$snapshot,
     exp$universe,
@@ -600,10 +604,8 @@ ledgr_experiment_window_validate_pulses <- function(exp, window) {
   )
   bars_by_id <- ledgr_sweep_normalize_bars_by_id(bars_by_id, exp$universe)
   if (isTRUE(exp$availability$active)) {
-    opened <- ledgr_run_store_open(exp$snapshot$db_path)
-    on.exit(ledgr_run_store_close(opened), add = TRUE)
     availability_data <- ledgr_availability_provider_data(
-      opened$con,
+      get_connection(exp$snapshot),
       exp$snapshot$snapshot_id
     )
     provider <- ledgr_availability_provider_portable(

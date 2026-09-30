@@ -46,6 +46,8 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     rlang::abort("`param_grid` must be a ledgr_param_grid object.", class = "ledgr_invalid_args")
   }
   ledgr_validate_feature_factory_grid(exp, param_grid)
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- ledgr_precompute_scoring_range(meta, start = start, end = end)
@@ -240,6 +242,8 @@ ledgr_warn_large_grid_without_precomputed_features <- function(param_grid, preco
 }
 
 ledgr_precompute_snapshot_meta <- function(snapshot) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   ledgr_feature_contract_check_validate_snapshot(snapshot)
   info <- ledgr_snapshot_info(snapshot)
   snapshot_hash <- info$snapshot_hash[[1]]
@@ -272,6 +276,8 @@ ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
 }
 
 ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   con <- get_connection(snapshot)
   placeholders <- paste(rep("?", length(universe)), collapse = ", ")
   rows <- DBI::dbGetQuery(
