@@ -14,6 +14,9 @@ source(file.path(root, "tests", "test-control-plane.R"), local = TRUE)
 profile <- value_arg("profile", "fast")
 mode <- value_arg("mode", "ordinary")
 records_dir <- value_arg("records")
+# --advisory: a timing overrun warns instead of failing, for CI on hosted
+# runners; missing, failed or unreconciled blocks still fail.
+advisory <- "--advisory" %in% args
 if (!identical(profile, "fast")) stop("Only fast has a timing gate.")
 if (!mode %in% c("ordinary", "cran")) stop("Unknown gate mode.")
 if (is.null(records_dir) || !dir.exists(records_dir)) stop("Gate records are missing.")
@@ -177,16 +180,32 @@ if (length(execution_mismatch) > 0L) {
   )
 }
 
-median_seconds <- ledgr_test_gate_decide(
-  records$elapsed_seconds,
-  bound,
-  gates$confirmation_runs_above_bound
+overrun <- NULL
+median_seconds <- tryCatch(
+  ledgr_test_gate_decide(
+    records$elapsed_seconds,
+    bound,
+    gates$confirmation_runs_above_bound
+  ),
+  ledgr_test_timing_gate_failed = function(cnd) {
+    if (!advisory) stop(cnd)
+    overrun <<- conditionMessage(cnd)
+    stats::median(records$elapsed_seconds)
+  }
 )
 records$bound_seconds <- bound
 records$median_seconds <- median_seconds
-records$gate_passed <- TRUE
+records$gate_passed <- is.null(overrun)
 utils::write.csv(records, file.path(records_dir, "gate-record.csv"), row.names = FALSE)
-cat(sprintf(
-  "LEDGR_TEST_GATE_OK mode=%s runs=%d median=%.3f bound=%.3f\n",
-  mode, nrow(records), median_seconds, bound
-))
+if (!is.null(overrun)) {
+  cat(sprintf("::warning title=Fast-profile timing::%s Advisory on this runner.\n", overrun))
+  cat(sprintf(
+    "LEDGR_TEST_GATE_ADVISORY mode=%s runs=%d median=%.3f bound=%.3f\n",
+    mode, nrow(records), median_seconds, bound
+  ))
+} else {
+  cat(sprintf(
+    "LEDGR_TEST_GATE_OK mode=%s runs=%d median=%.3f bound=%.3f\n",
+    mode, nrow(records), median_seconds, bound
+  ))
+}

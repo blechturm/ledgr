@@ -39,9 +39,9 @@ tier, and whether the run was skipped.
 
 | Event | Tier | What runs |
 | --- | --- | --- |
-| Branch push touching code | quick | ubuntu only: README cold start, v0.1.x acceptance, ordinary fast profile and gate, `R CMD check` |
+| Branch push touching code | quick | ubuntu only: README cold start, v0.1.x acceptance, ordinary fast profile with its advisory timing check, `R CMD check` |
 | Branch push touching only `inst/design/**` or `docs/**` | none | no run at all |
-| Push to `main`, tag `v*`, any pull request, nightly 04:17 UTC | full | ubuntu and windows, plus the isolated CRAN library, the CRAN-mode fast profile and gate, and coverage |
+| Push to `main`, tag `v*`, any pull request, nightly 04:17 UTC | full | ubuntu (R release and the pinned floor release) and windows; the isolated CRAN library and CRAN-mode fast profile on ubuntu; `R CMD check --as-cran` on windows; coverage |
 | `workflow_dispatch` | chosen | the `tier` input, defaulting to full |
 
 Three consequences for the release gate:
@@ -56,6 +56,19 @@ Three consequences for the release gate:
 - **Cancelled branch runs are expected.** Concurrency supersedes an in-flight
   run when the same branch is pushed again. `main` and release tags are never
   cancelled.
+
+Timing is advisory in CI (maintainer decision, 2026-09-30). The fast-profile
+bounds in `tests/test-gates.yml` are checked on the registered runner, ubuntu
+with the R release, and an overrun there prints a warning and records
+`gate_passed = FALSE` instead of failing the job; the same runner once measured
+103 and 135 seconds on identical code. Test failures still fail every job. The
+binding timing check is the local fast-profile gate recorded in ticket evidence
+and re-measured in close reviews.
+
+The isolated CRAN profile runs on ubuntu only. What it checks, a library of
+hard dependencies only and a read-only working directory, does not depend on
+the platform; windows runs the test profiles and `R CMD check --as-cran`, as
+CRAN does there.
 
 The nightly schedule fires only from the default branch, so a release branch
 gets no nightly coverage of its own. The tiering is deliberately asymmetric
@@ -125,6 +138,11 @@ first place a documentation break surfaces.
 11. Create or update the GitHub Release for the existing tag and mark it
     latest. Do this only after tag CI is green. Do not recreate or force-push the
     tag just to update release notes.
+12. For a release that goes to CRAN, check it on CRAN's own Windows machines
+    through win-builder before submitting: `devtools::check_win_release()`,
+    `devtools::check_win_devel()` and `devtools::check_win_oldrelease()`, and
+    wait for their mailed results. CI's windows job approximates CRAN's check;
+    win-builder is CRAN's check.
 
 ## Design Index Maintenance
 

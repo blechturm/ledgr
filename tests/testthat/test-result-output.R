@@ -22,7 +22,9 @@ testthat::test_that("[LTB-0106] curated result prints respect selected columns",
   attr(comparison, "fill_timing_comparable") <- TRUE
   attr(comparison, "fill_timing_comparability_reason") <- "same convention"
 
-  selected <- dplyr::select(comparison, n_trades, run_id, final_equity)
+  # Base column selection, as dplyr::select() does: the check runs without
+  # packages ledgr only suggests.
+  selected <- comparison[c("n_trades", "run_id", "final_equity")]
   selected_output <- utils::capture.output(print(selected, width = Inf))
   selected_header <- selected_output[grepl("n_trades", selected_output, fixed = TRUE)][1]
   testthat::expect_match(
@@ -39,7 +41,7 @@ testthat::test_that("[LTB-0106] curated result prints respect selected columns",
     "run_id", "label", "final_equity", "total_return", "sharpe_ratio",
     "max_drawdown", "n_trades", "win_rate", "reproducibility_level"
   )
-  curated_only <- dplyr::select(comparison, dplyr::all_of(curated))
+  curated_only <- comparison[curated]
   curated_output <- utils::capture.output(print(curated_only, width = Inf))
   testthat::expect_false(any(grepl(
     "Full identity and telemetry columns",
@@ -70,7 +72,7 @@ testthat::test_that("[LTB-0106] curated result prints respect selected columns",
       stringsAsFactors = FALSE
     )
   )
-  run_selected <- dplyr::select(runs, status, run_id)
+  run_selected <- runs[c("status", "run_id")]
   run_output <- utils::capture.output(print(run_selected, width = Inf))
   run_header <- run_output[grepl("status", run_output, fixed = TRUE)][1]
   testthat::expect_match(run_header, "status\\s+run_id")
