@@ -86,10 +86,11 @@ jobs:
             fi
           fi
 
-          # The full tier also checks the previous R release, which is the
-          # declared floor in DESCRIPTION, so the floor is the oldest R tested.
+          # The full tier also checks the R release declared as the floor in
+          # DESCRIPTION, pinned by version, so the floor stays the oldest R
+          # tested after the next release.  Until then it repeats release.
           if [ "$tier" = "full" ]; then
-            matrix='[{"os":"ubuntu-latest","r":"release","coverage":true,"cran":true},{"os":"windows-latest","r":"release","coverage":false,"cran":true},{"os":"ubuntu-latest","r":"oldrel-1","coverage":false,"cran":true}]'
+            matrix='[{"os":"ubuntu-latest","r":"release","coverage":true,"cran":true},{"os":"windows-latest","r":"release","coverage":false,"cran":true},{"os":"ubuntu-latest","r":"4.6","coverage":false,"cran":true}]'
           else
             matrix='[{"os":"ubuntu-latest","r":"release","coverage":false,"cran":false}]'
           fi
