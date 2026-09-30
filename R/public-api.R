@@ -35,12 +35,21 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
 # duckdb 1.5.6 refuses a driver whose instance settings differ from those of a
 # database already open in the session, such as a connection the user made with
 # `duckdb::duckdb()`. The settings apply only when an instance is created, so
-# join the open instance with a plain driver instead of failing.
+# join the open instance with a plain driver instead of failing. Only DuckDB's
+# own settings-mismatch error qualifies, so a plain driver never creates an
+# instance; any other error stands.
 ledgr_join_open_duckdb <- function(db_path, err) {
-  if (!grepl("which already exists", conditionMessage(err), fixed = TRUE)) {
+  signature <- c(
+    "config$extension_directory",
+    "config$secret_directory",
+    "can't be applied to the database instance",
+    "take effect only when the instance is created"
+  )
+  message <- conditionMessage(err)
+  if (!all(vapply(signature, grepl, logical(1), x = message, fixed = TRUE))) {
     return(NULL)
   }
-  drv <- suppressMessages(duckdb::duckdb())
+  drv <- duckdb::duckdb()
   tryCatch(
     list(con = DBI::dbConnect(drv, dbdir = db_path), drv = drv),
     error = function(e) {

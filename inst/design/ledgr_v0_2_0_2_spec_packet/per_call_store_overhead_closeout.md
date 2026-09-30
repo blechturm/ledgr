@@ -1,8 +1,9 @@
 # Per-Call Store Overhead Closeout
 
 **Status:** Agent-provisional draft. The Workstream 31 close review
-(invocation 1, at `4933065`) returned CHANGES_REQUIRED; the correction round
-below awaits its re-review and the maintainer's acceptance.
+(invocation 1, at `4933065`) and its re-review (invocation 2, at `067017a`)
+returned CHANGES_REQUIRED; both correction rounds below await the maintainer's
+acceptance.
 **Date:** 2026-09-30
 **Cut:** 23
 **Workstream:** 31
@@ -55,7 +56,10 @@ Each ticket's evidence in `tickets.yml` carries its detail. The correction round
   LDG-2914 were caused by duckdb 1.5.6. It refuses a driver whose instance
   settings differ from those of a database already open in the session, so
   ledgr could not open a store a user held open with their own
-  `duckdb::duckdb()` connection. ledgr now joins that instance.
+  `duckdb::duckdb()` connection. ledgr now joins that instance. The re-review
+  found the join's first condition too broad and its driver's messages
+  suppressed; it now joins only on DuckDB's full settings-mismatch error and
+  leaves DuckDB's messages alone.
 
 ## Blocks
 
@@ -65,7 +69,7 @@ Each block is registered in `tests/claims.yml` with the five review obligations.
 | --- | --- | --- |
 | LTB-0130 | LCL-0130 | the validation cache is off, the key drops the catalogue fingerprint, the marker timestamp, the store path or the constraint text, or a failed validation is remembered |
 | LTB-0131 | LCL-0131 | a call loses its hold, a hold never releases, a nested open does not borrow, `ledgr_run()` rereads the price basis, the sweep opens its own connection, the promotion context stays on the handle, the pulse or indicator dev keeps its connection, or a snapshot closes a borrowed connection |
-| LTB-0132 | LCL-0132 | ledgr fails instead of joining a store the user holds open |
+| LTB-0132 | LCL-0132 | ledgr fails instead of joining a store the user holds open, joins on an unrelated error, or suppresses DuckDB's messages while joining |
 
 LTB-0040 now hashes a plain-text rendering of the schema shape, because the
 serialized query results differed between R and duckdb builds (LDG-2919).
@@ -121,7 +125,10 @@ Round 2, on CRAN's duckdb 1.5.6:
   passes alone. Through `testthat::test_dir()` after one
   `pkgload::load_all()`, only the LDG-2913 baseline fails. The first round
   recorded three failures from `test_dir()`, which hides the LDG-2914 set, and
-  two of those three were the duckdb 1.5.6 defect LDG-2917 now fixes.
+  two of those three were the duckdb 1.5.6 defect LDG-2917 now fixes. These
+  runs used the English_United States.utf8 locale; the re-review, in a shell
+  that could not set a UTF-8 locale, also saw the encoding-dependent
+  sweep-retention block fail.
 - `R CMD check --no-manual --no-build-vignettes` under R 4.6.1 with CRAN's
   duckdb 1.5.6 reported Status OK at `bb33779`.
 - No loop was added on a hot path; the store registry is one keyed lookup per
@@ -129,9 +136,11 @@ Round 2, on CRAN's duckdb 1.5.6:
 
 ## Review Count
 
-Invocation 1 returned CHANGES_REQUIRED. The re-review of this correction is
-invocation 2, making Workstream 31 2 invocations over 3 tickets, 0.667, above
-the 0.5 gate: an honest breach, not padded with unrelated work.
+Invocation 1 returned CHANGES_REQUIRED, and so did invocation 2, the
+re-review, on two defects in the new join, both fixed with the reviewer's
+controls. Workstream 31 stands at 2 invocations over 3 tickets, 0.667, above
+the 0.5 gate: an honest breach, not padded with unrelated work. A third review
+would make it 1.000.
 
 ## Open
 

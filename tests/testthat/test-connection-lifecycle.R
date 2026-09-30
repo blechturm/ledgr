@@ -157,4 +157,36 @@ testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with the
     DBI::dbGetQuery(con, "SELECT run_id FROM runs")$run_id,
     "user_held_run"
   )
+
+  # Only DuckDB's own settings-mismatch error is joined, and joining does not
+  # hide DuckDB's messages.
+  refused <- tryCatch(
+    DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), dbdir = path),
+    error = identity
+  )
+  testthat::expect_s3_class(refused, "error")
+  # The join constructs its driver with no arguments; `dbConnect()` also calls
+  # `duckdb()` internally, with arguments, outside the join's control.
+  real_duckdb <- duckdb::duckdb
+  testthat::local_mocked_bindings(
+    duckdb = function(...) {
+      if (...length() == 0L) message("duckdb driver message")
+      real_duckdb(...)
+    },
+    .package = "duckdb"
+  )
+  testthat::expect_message(
+    joined <- ledgr:::ledgr_join_open_duckdb(path, refused),
+    "duckdb driver message"
+  )
+  testthat::expect_true(DBI::dbIsValid(joined$con))
+  DBI::dbDisconnect(joined$con)
+  duckdb::duckdb_shutdown(joined$drv)
+  testthat::expect_true(DBI::dbIsValid(con))
+  unrelated <- tempfile(fileext = ".duckdb")
+  testthat::expect_null(ledgr:::ledgr_join_open_duckdb(
+    unrelated,
+    simpleError("unrelated object which already exists")
+  ))
+  testthat::expect_false(file.exists(unrelated))
 })
