@@ -1,12 +1,13 @@
 # Editorial Pass Closeout
 
-**Status:** Agent-provisional draft. Awaiting the Workstream 29 close review
-and the maintainer's acceptance. The writer records no learner-read verdict on
-its own work; the flow read belongs to the close review.
+**Status:** Accepted by the maintainer on 2026-09-30, at `78a3ce3`. The writer
+records no learner-read verdict on its own work; the flow read belonged to the
+close review.
 **Date:** 2026-09-29
 **Cut:** 21
 **Workstream:** 29
-**Implementation range:** `fca6eb6..86ef8aa`, plus this closeout record.
+**Implementation range:** `fca6eb6..86ef8aa`, the close-review corrections
+`78f4aba` and `78a3ce3`, and this closeout record.
 
 ## Decisions
 
@@ -111,3 +112,14 @@ LDG-2904): 1 over 10, `0.100`, against the 0.5 gate. The close review is a
 clean-context Codex session that receives the Workstream 29 review brief, the
 commit range, the style guide and the accepted flow map, and nothing from the
 writer's conversation.
+
+The close review (invocation 1, at `8ce374d`) returned CHANGES_REQUIRED on two
+findings: Who ledgr is for showed a helper pipeline before Strategy Basics, in
+a plain Markdown block the writer's survey missed, and Reproducibility sorted
+its dependency list with locale-dependent `sort()`. Both were fixed at
+`78f4aba`, and LTB-0125 gained a check that no strategy helper is named in the
+README, Who ledgr is for, Quickstart or Data Input. The re-review (invocation 2,
+at `78f4aba`) confirmed both fixes and found that the new check missed
+`ledgr_signal_strategy()`; it was added at `78a3ce3` and verified with the
+reviewer's own control. The maintainer accepted without a third review: 2 over
+10 tickets, `0.200`.
