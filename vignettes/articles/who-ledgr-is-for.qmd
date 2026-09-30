@@ -41,24 +41,12 @@ sysadmin team. The DuckDB experiment store is a single file. The strategy is an
 R function. That makes the shipped research architecture portable across
 machines that run R.
 
-**People who value readable code.** ledgr's current strategy API uses ordinary
-`function(ctx, params)` functions that return explicit target quantities. The
-strategy helper layer makes that same contract read like economic logic:
-
-```r
-ctx |>
-  ledgr_signal_return(lookback = 20) |>
-  ledgr_select_top_n(10) |>
-  ledgr_weight_equal() |>
-  ledgr_target_rebalance(ctx, equity_fraction = 1)
-```
-
-That helper pipeline is still ordinary ledgr strategy code: it ends in target
-quantities and runs through the same pulse engine. See the strategy-development
-article for a runnable, step-by-step version.
-
-The pulse context appears twice because signal scoring needs current feature
-values, and final sizing needs current prices, cash, and equity.
+**People who value readable code.** A ledgr strategy is an ordinary
+`function(ctx, params)`. It reads today's values for every instrument and
+returns the number of shares it wants to hold of each, as a named vector: no
+order objects, callbacks or framework classes.
+[Strategy Basics](../articles/strategy-development.html) builds one step by
+step.
 
 **Researchers working with agents.** Reproducibility, sealed data, and explicit
 dependency boundaries are useful for humans, and they are also what makes a

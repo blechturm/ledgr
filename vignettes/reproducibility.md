@@ -157,7 +157,7 @@ ledgr_run_info(snapshot, "qty_10")
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.830
+    Elapsed Sec:      1.120
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -203,7 +203,8 @@ names(stored[c("R_version", "ledgr_version", "dependency_versions")])
     [1] "R_version"           "ledgr_version"       "dependency_versions"
 
 ``` r
-sort(names(stored$dependency_versions))
+dependencies <- names(stored$dependency_versions)
+dependencies[order(tolower(dependencies), method = "radix")]
 ```
 
     [1] "collapse" "DBI"      "digest"   "duckdb"   "ledgr"    "R"        "tibble"

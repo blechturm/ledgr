@@ -1934,6 +1934,23 @@ ledgr_doc_idiom_violations <- function(root) {
       out <- c(out, sprintf("%s: ctx$features(id) loop without the active-alias disclosure sentence", name))
     }
   }
+
+  # House rule 1: no strategy helper, in prose or code, before Strategy Basics.
+  before_basics <- file.path(root, c(
+    "README.Rmd",
+    "vignettes/articles/who-ledgr-is-for.qmd",
+    "vignettes/quickstart.qmd",
+    "vignettes/data-input-and-snapshots.qmd"
+  ))
+  helper_pattern <- paste0(
+    "\\bledgr_(signal|signal_return|signal_feature|selection|select_top_n|",
+    "weight_equal|weights|target|target_rebalance|target_quantity)\\b"
+  )
+  for (path in before_basics[file.exists(before_basics)]) {
+    lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    hit <- grep(helper_pattern, lines, perl = TRUE)
+    out <- c(out, sprintf("%s:%d strategy helper before Strategy Basics", basename(path), hit))
+  }
   out
 }
 
