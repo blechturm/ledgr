@@ -1943,7 +1943,7 @@ ledgr_doc_idiom_violations <- function(root) {
     "vignettes/data-input-and-snapshots.qmd"
   ))
   helper_pattern <- paste0(
-    "\\bledgr_(signal|signal_return|signal_feature|selection|select_top_n|",
+    "\\bledgr_(signal_strategy|signal|signal_return|signal_feature|selection|select_top_n|",
     "weight_equal|weights|target|target_rebalance|target_quantity)\\b"
   )
   for (path in before_basics[file.exists(before_basics)]) {
