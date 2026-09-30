@@ -50,6 +50,15 @@ schema_catalogue_calls <- function(statements) {
   )]
 }
 
+# The shape as plain text, so its hash depends only on the schema. Hashing
+# the query results themselves serializes how DBI and duckdb built those
+# vectors, which differs across R and duckdb builds with identical values.
+schema_shape_text <- function(shape) {
+  paste(unlist(lapply(names(shape), function(part) {
+    c(part, do.call(paste, c(unname(as.list(shape[[part]])), sep = "|")))
+  })), collapse = "\n")
+}
+
 schema_information_shape <- function(con) {
   list(
     tables = DBI::dbGetQuery(
@@ -134,8 +143,8 @@ testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
   ledgr_create_schema(con)
   current_shape <- schema_information_shape(con)
   testthat::expect_identical(
-    digest::digest(current_shape, algo = "sha256"),
-    "4f2a099ad5ddc3b205e54ae0d9e5bd435047c7df18cda7fa67c5d9e6457f79e0"
+    digest::digest(schema_shape_text(current_shape), algo = "sha256", serialize = FALSE),
+    "8654cb7d2e49e6554f3ca67b221145e8438f9ade114c709a24aa75cf1bfc7c52"
   )
 
   DBI::dbExecute(

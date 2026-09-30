@@ -86,10 +86,12 @@ jobs:
             fi
           fi
 
+          # The full tier also checks the previous R release, which is the
+          # declared floor in DESCRIPTION, so the floor is the oldest R tested.
           if [ "$tier" = "full" ]; then
-            matrix='[{"os":"ubuntu-latest","coverage":true,"cran":true},{"os":"windows-latest","coverage":false,"cran":true}]'
+            matrix='[{"os":"ubuntu-latest","r":"release","coverage":true,"cran":true},{"os":"windows-latest","r":"release","coverage":false,"cran":true},{"os":"ubuntu-latest","r":"oldrel-1","coverage":false,"cran":true}]'
           else
-            matrix='[{"os":"ubuntu-latest","coverage":false,"cran":false}]'
+            matrix='[{"os":"ubuntu-latest","r":"release","coverage":false,"cran":false}]'
           fi
 
           {
@@ -119,6 +121,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
+          r-version: ${{ matrix.config.r }}
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-pandoc@v2
