@@ -770,3 +770,64 @@ ledgr_validate_schema <- function(con) {
 
   invisible(TRUE)
 }
+
+.ledgr_schema_validation_cache <- new.env(parent = emptyenv())
+
+# Pay schema validation once per store and session. The key is the store file,
+# its schema version marker and the time that marker was written, and a
+# fingerprint of the catalogue (every table, column, type, nullability and
+# constraint), read in one query of a few milliseconds. A different file, a
+# migrated schema, a replaced file or a changed catalogue is therefore validated
+# again. Only a successful validation is remembered: a store that fails
+# validation fails on every call. In-memory stores and stores without a marker
+# are always validated. The public `ledgr_validate_schema()` stays a full check
+# on every call.
+ledgr_validate_schema_once <- function(con) {
+  key <- ledgr_schema_validation_key(con)
+  if (!is.null(key) && isTRUE(.ledgr_schema_validation_cache[[key]])) {
+    return(invisible(TRUE))
+  }
+  ledgr_validate_schema(con)
+  if (!is.null(key)) {
+    assign(key, TRUE, envir = .ledgr_schema_validation_cache)
+  }
+  invisible(TRUE)
+}
+
+ledgr_schema_validation_key <- function(con) {
+  path <- tryCatch(DBI::dbGetInfo(con)$dbname, error = function(e) NULL)
+  if (!is.character(path) || length(path) != 1L || is.na(path) ||
+      !nzchar(path) || identical(path, ":memory:")) {
+    return(NULL)
+  }
+  marker <- tryCatch(
+    DBI::dbGetQuery(
+      con,
+      "SELECT m.value,
+              CAST(m.updated_at_utc AS VARCHAR) AS updated_at,
+              (SELECT md5(string_agg(
+                 c.table_name || '.' || c.column_name || ':' || c.data_type || ':' ||
+                   c.is_nullable::VARCHAR, ',' ORDER BY c.table_name, c.column_index))
+               FROM duckdb_columns() c WHERE c.schema_name = 'main') AS columns_fp,
+              (SELECT md5(string_agg(
+                 k.table_name || ':' || k.constraint_type || ':' ||
+                   array_to_string(k.constraint_column_names, '|'), ','
+                 ORDER BY k.table_name, k.constraint_type, k.constraint_index))
+               FROM duckdb_constraints() k WHERE k.schema_name = 'main') AS constraints_fp
+       FROM ledgr_schema_metadata m
+       WHERE m.key = 'experiment_store_schema_version'"
+    ),
+    error = function(e) NULL
+  )
+  if (!is.data.frame(marker) || nrow(marker) != 1L) {
+    return(NULL)
+  }
+  paste(
+    normalizePath(path, winslash = "/", mustWork = FALSE),
+    marker$value[[1L]],
+    marker$updated_at[[1L]],
+    marker$columns_fp[[1L]],
+    marker$constraints_fp[[1L]],
+    sep = "\r"
+  )
+}

@@ -75,7 +75,7 @@ ledgr_db_init <- function(db_path) {
   attr(con, "ledgr_duckdb_drv") <- drv
 
   ledgr_create_schema(con)
-  ledgr_validate_schema(con)
+  ledgr_validate_schema_once(con)
   con
 }
 

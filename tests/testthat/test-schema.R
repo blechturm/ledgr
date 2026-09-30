@@ -233,12 +233,12 @@ testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", 
   )
   testthat::expect_match(
     runner_source,
-    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema\\(con\\)",
+    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
     perl = TRUE
   )
   testthat::expect_match(
     public_source,
-    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema\\(con\\)",
+    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
     perl = TRUE
   )
   failure_line <- grep("if \\(isTRUE\\(simulate_failure\\)\\)", marker_source)
@@ -637,4 +637,89 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
   row <- DBI::dbGetQuery(con, "SELECT run_id, status FROM runs")
   testthat::expect_identical(row$run_id, "bad-check")
   testthat::expect_identical(row$status, "DONE")
+})
+
+testthat::test_that("[LTB-0130] a store's schema is validated once per session until it changes", {
+  calls <- 0L
+  full_validation <- ledgr:::ledgr_validate_schema
+  testthat::local_mocked_bindings(
+    ledgr_validate_schema = function(con) {
+      calls <<- calls + 1L
+      full_validation(con)
+    },
+    .package = "ledgr"
+  )
+  validations <- function(expr) {
+    before <- calls
+    force(expr)
+    calls - before
+  }
+  init_and_close <- function(path) {
+    con <- ledgr_db_init(path)
+    DBI::dbDisconnect(con, shutdown = TRUE)
+    invisible(TRUE)
+  }
+  store_files <- function(path) c(path, paste0(path, ".wal"))
+
+  bars <- data.frame(
+    ts_utc = rep(as.POSIXct(paste(as.Date("2026-02-02") + 0:3, "16:00:00"), tz = "UTC"), each = 2L),
+    instrument_id = rep(c("AAA", "BBB"), 4L),
+    open = 10, high = 10, low = 10, close = 10, volume = 1000
+  )
+  path <- tempfile(fileext = ".duckdb")
+  second <- tempfile(fileext = ".duckdb")
+  copy <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(store_files(path), store_files(second), store_files(copy)), force = TRUE), add = TRUE)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "validation_once")
+  exp <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  )
+
+  # Repeated runs and store opens against one unchanged store validate once.
+  testthat::expect_identical(validations({
+    for (id in c("once_1", "once_2", "once_3")) close(ledgr_run(exp, run_id = id))
+    init_and_close(path)
+  }), 1L)
+  testthat::expect_identical(
+    nrow(ledgr_run_list(snapshot)),
+    3L
+  )
+  ledgr_snapshot_close(snapshot)
+
+  # A byte-for-byte copy at another path is a different file and is validated.
+  testthat::expect_true(file.copy(path, copy))
+  testthat::expect_identical(validations(init_and_close(copy)), 1L)
+
+  # A second store is validated on its own.
+  testthat::expect_identical(validations(init_and_close(second)), 1L)
+  testthat::expect_identical(validations(init_and_close(second)), 0L)
+
+  # A rewritten version marker is validated again.
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = second)
+  DBI::dbExecute(
+    con,
+    "UPDATE ledgr_schema_metadata
+     SET updated_at_utc = updated_at_utc + INTERVAL 1 SECOND
+     WHERE key = 'experiment_store_schema_version'"
+  )
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  testthat::expect_identical(validations(init_and_close(second)), 1L)
+
+  # A store replaced at the same path is validated again.
+  unlink(store_files(second), force = TRUE)
+  testthat::expect_identical(validations(init_and_close(second)), 1L)
+
+  # A changed catalogue is validated again, and a failing store fails on every
+  # call with the same condition class.
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = second)
+  DBI::dbExecute(con, "ALTER TABLE run_tags DROP COLUMN created_at_utc")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  failure_class <- function() class(tryCatch(init_and_close(second), error = identity))
+  first_failure <- NULL
+  testthat::expect_identical(validations(first_failure <- failure_class()), 1L)
+  testthat::expect_true("error" %in% first_failure)
+  testthat::expect_identical(validations(testthat::expect_identical(failure_class(), first_failure)), 1L)
 })

@@ -613,7 +613,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   }, add = TRUE)
 
   ledgr_create_schema(con)
-  ledgr_validate_schema(con)
+  ledgr_validate_schema_once(con)
 
   registration <- ledgr_run_registration(
     con = con,
