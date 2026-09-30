@@ -127,11 +127,10 @@ snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
 features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
-  ret_5 <- ctx$vec$feature("return_5")
-  rising <- !is.na(ret_5) & ret_5 > params$min_return
-  targets <- ctx$flat()
-  targets[rising] <- params$qty
-  targets
+  rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
+  ctx |>
+    ledgr_selection(where = rising, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp <- ledgr_experiment(

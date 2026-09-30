@@ -55,6 +55,14 @@ that source. \code{trust = TRUE} is a recovery path for experiment stores you
 already trust and intentionally want ledgr to parse/evaluate: it verifies
 source identity before parsing/evaluating the stored text, but hash
 verification proves identity only; it is not a code-safety guarantee.
+
+A recovered function resolves exactly the unqualified names a Tier 1
+strategy may use (see \code{\link[=ledgr_strategy_preflight]{ledgr_strategy_preflight()}}): base R, ledgr's exported
+functions, and the exports of the recommended R packages, each bound from
+the package preflight resolves it to. It cannot reach objects in the global
+environment or ledgr's unexported functions; a strategy that needs those was
+not Tier 1 when it ran.
+
 Legacy/pre-provenance runs and strategy types without capturable source may
 return \code{NA} for \code{strategy_source_text}.
 }

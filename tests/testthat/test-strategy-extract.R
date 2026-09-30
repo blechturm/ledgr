@@ -367,3 +367,85 @@ testthat::test_that("ledgr_run_strategy handles legacy pre-provenance runs witho
     class = "ledgr_strategy_source_unavailable"
   )
 })
+
+testthat::test_that("[LTB-0133] trusted recovery resolves what Tier 1 allows and nothing more", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(db_path, paste0(db_path, ".wal")), force = TRUE), add = TRUE)
+  closes <- c(100 + 0:11, 100 - 0:11 / 2)
+  bars <- data.frame(
+    ts_utc = rep(as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:11, 2L),
+    instrument_id = rep(c("AAA", "BBB"), each = 12L),
+    open = closes, high = closes + 1, low = closes - 1, close = closes, volume = 1000
+  )
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "recovery")
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  # Tier 1: the helper pipeline, the context warmup form and an unqualified
+  # recommended-R function.
+  strategy <- function(ctx, params) {
+    returns <- ledgr_signal_return(ctx, lookback = 5)
+    if (!ledgr_passed_warmup(ctx, returns)) {
+      return(ctx$flat())
+    }
+    qty <- median(c(params$qty, params$qty))
+    ctx |>
+      ledgr_selection(where = returns > params$min_return, missing = "exclude") |>
+      ledgr_target_quantity(ctx, qty)
+  }
+  testthat::expect_identical(ledgr_strategy_preflight(strategy)$tier, "tier_1")
+  experiment <- function(fn) {
+    ledgr_experiment(
+      snapshot, fn,
+      features = list(ledgr_ind_returns(5)),
+      opening = ledgr_opening(cash = 10000),
+      cost_model = ledgr_cost_zero()
+    )
+  }
+  params <- list(min_return = 0, qty = 3)
+  original <- suppressWarnings(ledgr_run(experiment(strategy), params = params, run_id = "original"))
+  on.exit(close(original), add = TRUE)
+
+  trusted <- ledgr_run_strategy(snapshot, "original", trust = TRUE)
+  rerun <- suppressWarnings(ledgr_run(
+    experiment(trusted$strategy_function),
+    params = trusted$strategy_params,
+    run_id = "recovered"
+  ))
+  on.exit(close(rerun), add = TRUE)
+  fills <- function(bt) {
+    out <- as.data.frame(ledgr_results(bt, "fills"))
+    out[, setdiff(names(out), c("run_id", "event_id")), drop = FALSE]
+  }
+  testthat::expect_gt(nrow(fills(original)), 0L)
+  testthat::expect_identical(fills(rerun), fills(original))
+
+  # A stored source that reaches a global object or a ledgr internal recovers,
+  # but cannot resolve either name.
+  assign("ledgr_test_recovery_global", 1, envir = globalenv())
+  on.exit(rm("ledgr_test_recovery_global", envir = globalenv()), add = TRUE)
+  close(rerun)
+  close(original)
+  rewrite <- function(source) {
+    ledgr_test_replace_run_provenance(db_path, "original", list(
+      strategy_source = source,
+      strategy_source_hash = digest::digest(source, algo = "sha256")
+    ))
+  }
+  rewrite("function(ctx, params) ledgr_test_recovery_global")
+  testthat::expect_error(
+    ledgr_run_strategy(snapshot, "original", trust = TRUE)$strategy_function(NULL, list()),
+    "ledgr_test_recovery_global"
+  )
+  rewrite("function(ctx, params) ledgr_strategy_tier1_package(\"sum\")")
+  testthat::expect_error(
+    ledgr_run_strategy(snapshot, "original", trust = TRUE)$strategy_function(NULL, list()),
+    "ledgr_strategy_tier1_package"
+  )
+
+  # trust = FALSE parses and evaluates nothing: source that cannot parse is
+  # returned as text.
+  rewrite("function(ctx, params) {")
+  untrusted <- ledgr_run_strategy(snapshot, "original", trust = FALSE)
+  testthat::expect_identical(untrusted$strategy_source_text, "function(ctx, params) {")
+  testthat::expect_false("strategy_function" %in% names(untrusted))
+})

@@ -88,11 +88,10 @@ snapshot <- ledgr_snapshot_from_df(bars, snapshot_id = "research_snapshot")
 features <- list(ledgr_ind_returns(5))
 
 strategy <- function(ctx, params) {
-  ret_5 <- ctx$vec$feature("return_5")
-  rising <- !is.na(ret_5) & ret_5 > params$min_return
-  targets <- ctx$flat()
-  targets[rising] <- params$qty
-  targets
+  rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
+  ctx |>
+    ledgr_selection(where = rising, missing = "exclude") |>
+    ledgr_target_quantity(ctx, params$qty)
 }
 
 exp <- ledgr_experiment(
@@ -150,14 +149,14 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      3610553a51bc9f0d05d490d34f2ee6d4cc5b5fcf9dbad414b6a3ed60425e2301
-    Strategy Hash:    f8864de00cb362bf6046a1eb4f32e407819d8a8f12d902d2210647fe7f7e16ec
+    Config Hash:      8478a6dab28b464e8686f9f396a204e1f51ec2a2c7215990dd5a721dea053f38
+    Strategy Hash:    bacaf6e70817b64d2a9221bc85f88607caed1e47d1da0e4a1bad4f61567f2989
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.120
+    Elapsed Sec:      1.050
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -177,7 +176,7 @@ stored
 
     Run ID:           qty_10
     Reproducibility:  tier_1
-    Source Hash:      f8864de00cb362bf6046a1eb4f32e407819d8a8f12d902d2210647fe7f7e16ec
+    Source Hash:      bacaf6e70817b64d2a9221bc85f88607caed1e47d1da0e4a1bad4f61567f2989
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Hash Verified:    TRUE
     Trust:            FALSE
@@ -189,11 +188,8 @@ writeLines(stored$strategy_source_text)
 
     function (ctx, params)
     {
-        ret_5 <- ctx$vec$feature("return_5")
-        rising <- !is.na(ret_5) & ret_5 > params$min_return
-        targets <- ctx$flat()
-        targets[rising] <- params$qty
-        targets
+        rising <- ledgr_signal_return(ctx, lookback = 5) > params$min_return
+        ledgr_target_quantity(ledgr_selection(ctx, where = rising, missing = "exclude"), ctx, params$qty)
     }
 
 ``` r

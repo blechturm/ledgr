@@ -414,26 +414,47 @@ ledgr_strategy_priority_package_has_symbol <- function(package, symbol) {
       error = function(e) FALSE
     )))
   }
-  isTRUE(available) &&
-    exists(symbol, envir = asNamespace(package), inherits = FALSE)
+  isTRUE(available) && ledgr_strategy_package_exports(package, symbol)
+}
+
+# Whether `package` exports `symbol`, looked up in the namespace's export table
+# rather than by building the list of every export.
+ledgr_strategy_package_exports <- function(package, symbol) {
+  if (identical(package, "base")) {
+    return(exists(symbol, envir = baseenv(), inherits = FALSE))
+  }
+  exists(symbol, envir = getNamespaceInfo(package, "exports"), inherits = FALSE)
+}
+
+# Base and recommended packages in the order a default R session searches the
+# attached ones, then the rest alphabetically.
+ledgr_strategy_tier1_search_order <- function() {
+  packages <- ledgr_strategy_priority_packages()
+  attached <- c("stats", "graphics", "grDevices", "utils", "datasets", "methods", "base")
+  c(intersect(attached, packages), sort(setdiff(packages, attached)))
+}
+
+# The package a Tier 1 strategy's unqualified symbol resolves to: ledgr's
+# exports first, then the exports of base and recommended R. Preflight and
+# trusted recovery share this rule, so a recovered strategy resolves exactly
+# what preflight allowed.
+ledgr_strategy_tier1_package <- function(symbol) {
+  if (!is.character(symbol) || length(symbol) != 1L || is.na(symbol) || !nzchar(symbol)) {
+    return(NA_character_)
+  }
+  if (ledgr_strategy_package_exports("ledgr", symbol)) {
+    return("ledgr")
+  }
+  for (package in ledgr_strategy_tier1_search_order()) {
+    if (ledgr_strategy_priority_package_has_symbol(package, symbol)) {
+      return(package)
+    }
+  }
+  NA_character_
 }
 
 ledgr_strategy_symbol_is_tier1 <- function(symbol) {
-  if (!is.character(symbol) || length(symbol) != 1L || is.na(symbol) || !nzchar(symbol)) {
-    return(FALSE)
-  }
-  if (symbol %in% getNamespaceExports("ledgr")) {
-    return(TRUE)
-  }
-  packages <- ledgr_strategy_priority_packages()
-  loaded <- packages %in% loadedNamespaces()
-  packages <- c(packages[loaded], packages[!loaded])
-  for (package in packages) {
-    if (ledgr_strategy_priority_package_has_symbol(package, symbol)) {
-      return(TRUE)
-    }
-  }
-  FALSE
+  !is.na(ledgr_strategy_tier1_package(symbol))
 }
 
 ledgr_strategy_symbol_resolves_to_external_object <- function(symbol, env) {

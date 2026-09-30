@@ -106,6 +106,14 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' already trust and intentionally want ledgr to parse/evaluate: it verifies
 #' source identity before parsing/evaluating the stored text, but hash
 #' verification proves identity only; it is not a code-safety guarantee.
+#'
+#' A recovered function resolves exactly the unqualified names a Tier 1
+#' strategy may use (see [ledgr_strategy_preflight()]): base R, ledgr's exported
+#' functions, and the exports of the recommended R packages, each bound from
+#' the package preflight resolves it to. It cannot reach objects in the global
+#' environment or ledgr's unexported functions; a strategy that needs those was
+#' not Tier 1 when it ran.
+#'
 #' Legacy/pre-provenance runs and strategy types without capturable source may
 #' return `NA` for `strategy_source_text`.
 #'
@@ -244,7 +252,7 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
       rlang::abort(sprintf("Stored strategy source for run '%s' must parse to exactly one expression.", run_id), class = "ledgr_strategy_parse_failed")
     }
     fn <- tryCatch(
-      eval(expr[[1]], envir = new.env(parent = baseenv())),
+      ledgr_strategy_recover_function(expr[[1]]),
       error = function(e) {
         rlang::abort(sprintf("Stored strategy source for run '%s' could not be evaluated as a function.", run_id), class = "ledgr_strategy_eval_failed", parent = e)
       }
@@ -256,6 +264,27 @@ ledgr_run_strategy <- function(snapshot, run_id, trust = FALSE) {
   }
 
   structure(out, class = c("ledgr_extracted_strategy", "list"))
+}
+
+# Evaluates stored strategy source into a function that resolves exactly what
+# a Tier 1 strategy may use: base R, and the symbols it names from ledgr's
+# exports and base and recommended R, bound under the package preflight
+# resolves them to. Neither the global environment nor ledgr internals are
+# reachable.
+ledgr_strategy_recover_function <- function(expr) {
+  fn <- eval(expr, envir = new.env(parent = baseenv()))
+  if (!is.function(fn)) {
+    return(fn)
+  }
+  resolved <- new.env(parent = baseenv())
+  for (symbol in codetools::findGlobals(fn, merge = TRUE)) {
+    package <- ledgr_strategy_tier1_package(symbol)
+    if (!is.na(package) && !identical(package, "base")) {
+      assign(symbol, getExportedValue(package, symbol), envir = resolved)
+    }
+  }
+  environment(fn) <- new.env(parent = resolved)
+  fn
 }
 
 #' Print extracted strategy metadata
