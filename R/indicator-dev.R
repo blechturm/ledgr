@@ -34,7 +34,9 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   }
   ts_norm <- ledgr_normalize_ts_utc(ts_utc)
 
+  # The window is read here; `test_dates()` opens the snapshot for each call.
   opened <- ledgr_open_dedicated_snapshot(snapshot)
+  on.exit(ledgr_snapshot_close(opened$snapshot), add = TRUE)
   con <- opened$con
 
   e <- new.env(parent = emptyenv())
@@ -42,20 +44,6 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   e$ts_utc <- ts_norm
   e$lookback <- as.integer(lookback)
   e$.snapshot <- opened$snapshot
-  e$.con <- con
-
-  reg.finalizer(
-    e,
-    function(env) {
-      if (!is.null(env$.snapshot)) {
-        ledgr_snapshot_close(env$.snapshot)
-      }
-      env$.con <- NULL
-      env$.snapshot <- NULL
-      invisible(TRUE)
-    },
-    onexit = TRUE
-  )
 
   window <- tryCatch(
     {
@@ -103,9 +91,12 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
       rlang::abort("`dates` must contain at least one timestamp.", class = "ledgr_invalid_args")
     }
     dates_norm <- vapply(dates, ledgr_normalize_ts_utc, character(1))
+    release <- ledgr_snapshot_hold(e$.snapshot)
+    on.exit(release(), add = TRUE)
+    con <- get_connection(e$.snapshot)
     values <- lapply(dates_norm, function(date_norm) {
       window_i <- DBI::dbGetQuery(
-        e$.con,
+        con,
         "
         SELECT instrument_id, ts_utc, open, high, low, close, volume
         FROM snapshot_bars

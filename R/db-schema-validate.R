@@ -776,12 +776,12 @@ ledgr_validate_schema <- function(con) {
 # Pay schema validation once per store and session. The key is the store file,
 # its schema version marker and the time that marker was written, and a
 # fingerprint of the catalogue (every table, column, type, nullability and
-# constraint), read in one query of a few milliseconds. A different file, a
-# migrated schema, a replaced file or a changed catalogue is therefore validated
-# again. Only a successful validation is remembered: a store that fails
-# validation fails on every call. In-memory stores and stores without a marker
-# are always validated. The public `ledgr_validate_schema()` stays a full check
-# on every call.
+# constraint with its text), read in one query of a few milliseconds. A
+# different file, a migrated schema, a replaced file or a changed catalogue is
+# therefore validated again. Only a successful validation is remembered: a
+# store that fails validation fails on every call. In-memory stores and stores
+# without a marker are always validated. The public `ledgr_validate_schema()`
+# stays a full check on every call.
 ledgr_validate_schema_once <- function(con) {
   key <- ledgr_schema_validation_key(con)
   if (!is.null(key) && isTRUE(.ledgr_schema_validation_cache[[key]])) {
@@ -811,7 +811,8 @@ ledgr_schema_validation_key <- function(con) {
                FROM duckdb_columns() c WHERE c.schema_name = 'main') AS columns_fp,
               (SELECT md5(string_agg(
                  k.table_name || ':' || k.constraint_type || ':' ||
-                   array_to_string(k.constraint_column_names, '|'), ','
+                   array_to_string(k.constraint_column_names, '|') || ':' ||
+                   coalesce(k.constraint_text, '') || ':' || coalesce(k.expression, ''), ','
                  ORDER BY k.table_name, k.constraint_type, k.constraint_index))
                FROM duckdb_constraints() k WHERE k.schema_name = 'main') AS constraints_fp
        FROM ledgr_schema_metadata m

@@ -9,6 +9,10 @@ ledgr_run_store_open <- function(db_path) {
     rlang::abort(sprintf("DuckDB file does not exist: %s", db_path), class = "ledgr_db_not_found")
   }
 
+  held <- ledgr_held_store(db_path)
+  if (!is.null(held)) {
+    return(list(con = held, drv = NULL, borrowed = TRUE))
+  }
   opened <- ledgr_open_duckdb_with_retry(db_path)
   attr(opened$con, "ledgr_duckdb_drv") <- opened$drv
   opened
@@ -52,6 +56,11 @@ ledgr_run_store_snapshot_id <- function(snapshot) {
 }
 
 ledgr_run_store_close <- function(opened) {
+  # A borrowed connection is checkpointed but stays open for its holder.
+  if (is.list(opened) && isTRUE(opened$borrowed)) {
+    ledgr_checkpoint_duckdb(opened$con)
+    return(invisible(TRUE))
+  }
   if (is.list(opened) && !is.null(opened$con) && DBI::dbIsValid(opened$con)) {
     ledgr_checkpoint_duckdb(opened$con)
     suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = FALSE), silent = TRUE))

@@ -186,8 +186,11 @@ ledgr_snapshot_open <- function(db_path, snapshot_id = NULL, verify = FALSE) {
     rlang::abort("`verify` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
 
-  con <- ledgr_db_init(db_path)
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  con <- ledgr_held_store(db_path)
+  if (is.null(con)) {
+    con <- ledgr_db_init(db_path)
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  }
   if (is.null(snapshot_id)) {
     snapshots <- ledgr_snapshot_list(con)
     sealed <- snapshots[snapshots$status == "SEALED", , drop = FALSE]

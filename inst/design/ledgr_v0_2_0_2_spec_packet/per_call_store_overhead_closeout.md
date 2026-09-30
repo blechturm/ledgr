@@ -1,14 +1,16 @@
 # Per-Call Store Overhead Closeout
 
-**Status:** Agent-provisional draft, awaiting the Workstream 31 close review
-and the maintainer's acceptance.
+**Status:** Agent-provisional draft. The Workstream 31 close review
+(invocation 1, at `4933065`) returned CHANGES_REQUIRED; the correction round
+below awaits its re-review and the maintainer's acceptance.
 **Date:** 2026-09-30
 **Cut:** 23
 **Workstream:** 31
 **Implementation range:** `8b777e7` (LDG-2916), `b0edb49` (LDG-2915) and
-`bb33779` (LDG-2917), each measured against its parent; and this closeout
-record. The R floor LDG-2917 relies on is LDG-2919 in Workstream 15, `3647e51`,
-amended to 4.6.0 in `bea8bed`.
+`bb33779` (LDG-2917), each measured against its parent; the close-review
+correction, measured against `4933065`; and this closeout record. The R floor
+LDG-2917 relies on is LDG-2919 in Workstream 15, `3647e51`, amended to 4.6.0
+in `bea8bed`.
 
 ## Decisions
 
@@ -20,6 +22,14 @@ maintainer raised the R floor to 4.6.0 rather than wait, so every supported R
 release has a 1.5.6 binary on Windows and macOS. Windows users on R-devel still
 get the 1.5.5 binary until CRAN rebuilds it.
 
+After the close review the maintainer decided (Cut 23 decision 1) that a public
+call that commits runs, `ledgr_walk_forward()`, `ledgr_promote()` or
+`ledgr_backtest()`, opens the store once for its own reads and writes plus once
+per committed run, whose fold keeps its own write connection. Every other public
+call opens each store file once, and no call leaves a connection open. One
+connection through committed runs is the v0.2.1.1 roadmap row "one store
+connection per composite call".
+
 ## Passes
 
 | Ticket | Pass | Commit |
@@ -27,37 +37,50 @@ get the 1.5.5 binary until CRAN rebuilds it.
 | LDG-2916 | validate a store's schema once per store and session | `8b777e7` |
 | LDG-2915 | open the store once per public call; no connection outlives its call | `b0edb49` |
 | LDG-2917 | require `duckdb (>= 1.5.6)` | `bb33779` |
+| all three | close-review correction | this round |
 
-Each ticket's evidence in `tickets.yml` carries its detail. LDG-2915 went wider
-than its two named calls: the connection census showed `summary()` opening the
-run store four times, and `ledgr_snapshot_info()`, `ledgr_sweep()` and the other
-snapshot readers leaving the snapshot's connection open until
-`ledgr_snapshot_close()`. Every internal reader that went through
-`get_connection()` now holds the connection for its call through
-`ledgr_snapshot_hold()`, so no reader can leave one open.
+Each ticket's evidence in `tickets.yml` carries its detail. The correction round:
+
+- LDG-2916: the cache key's catalogue fingerprint now includes each
+  constraint's text, so a check weakened on the same columns is validated
+  again and fails.
+- LDG-2915: a registry of held store connections, keyed by file, lets every
+  nested open within a public call borrow the connection the call holds;
+  borrowers never close it. Walk-forward, its inspection readers,
+  `ledgr_candidate()` and `ledgr_promote()` now meet decision 1.
+  `ledgr_promote()` no longer leaves the promoted run's handle open, and
+  `ledgr_pulse_snapshot()` and `ledgr_indicator_dev()` close their connection
+  before returning.
+- LDG-2917: two runner resume failures that this workstream had attributed to
+  LDG-2914 were caused by duckdb 1.5.6. It refuses a driver whose instance
+  settings differ from those of a database already open in the session, so
+  ledgr could not open a store a user held open with their own
+  `duckdb::duckdb()` connection. ledgr now joins that instance.
 
 ## Blocks
 
-Each new block is registered in `tests/claims.yml` with the five review
-obligations.
+Each block is registered in `tests/claims.yml` with the five review obligations.
 
 | Block | Claim | Fails when |
 | --- | --- | --- |
-| LTB-0130 | LCL-0130 | the validation cache is off, the key drops the catalogue fingerprint, the marker timestamp or the store path, or a failed validation is remembered |
-| LTB-0131 | LCL-0131 | `ledgr_experiment()` or `summary()` or `ledgr_snapshot_info()` loses its hold, either hold never releases, `ledgr_run()` rereads the price basis, or the sweep reopens the store |
+| LTB-0130 | LCL-0130 | the validation cache is off, the key drops the catalogue fingerprint, the marker timestamp, the store path or the constraint text, or a failed validation is remembered |
+| LTB-0131 | LCL-0131 | a call loses its hold, a hold never releases, a nested open does not borrow, `ledgr_run()` rereads the price basis, the sweep opens its own connection, the promotion context stays on the handle, the pulse or indicator dev keeps its connection, or a snapshot closes a borrowed connection |
+| LTB-0132 | LCL-0132 | ledgr fails instead of joining a store the user holds open |
 
 LTB-0040 now hashes a plain-text rendering of the schema shape, because the
 serialized query results differed between R and duckdb builds (LDG-2919).
 
 ## Results
 
-Opens per public call, from `dev/bench/v0_2_0_2_workstream31/connection_census.R`
-against `8b777e7`: `ledgr_experiment()` 3 to 1, `ledgr_run()` 2 to 1, `summary()`
-4 to 1; every other call in the census already opened once. Connections still
-live after `ledgr_snapshot_info()`, `ledgr_feature_contract_check()`,
-`ledgr_precompute_features()`, `ledgr_sweep()` and `ledgr_backtest()` went from
-1 to 0. `ledgr_backtest()` opens the store twice, a snapshot read and then the
-committed run, whose fold keeps its own write connection.
+Opens per public call, from `dev/bench/v0_2_0_2_workstream31/connection_census.R`.
+Against `8b777e7`: `ledgr_experiment()` 3 to 1, `ledgr_run()` 2 to 1,
+`summary()` 4 to 1. Against `4933065`, in the correction round:
+`ledgr_walk_forward()` over two folds 16 to 3, the walk-forward inspection
+readers 2 to 1, `ledgr_candidate()` on a walk-forward result 5 to 1, and
+`ledgr_promote()` 3 to 2. `ledgr_backtest()` opens twice. After every call in
+the census no connection is live; before, `ledgr_snapshot_info()`,
+`ledgr_sweep()`, `ledgr_promote()`, `ledgr_pulse_snapshot()`,
+`ledgr_indicator_dev()` and others left one.
 
 Warm-clock medians, interleaved, one process per arm. LDG-2916 and LDG-2915
 were measured on the r-universe build of duckdb 1.5.6.9000, LDG-2917 on CRAN's
@@ -71,11 +94,15 @@ were measured on the r-universe build of duckdb 1.5.6.9000, LDG-2917 on CRAN's
 | `ledgr_run()` | 165 ms | 140 ms | LDG-2915 |
 | `summary()` | 100 ms | 40 ms | LDG-2915 |
 | `ledgr_sweep()`, two candidates | 70 ms | 60 ms | LDG-2915 |
+| `ledgr_walk_forward()`, two folds | 570 ms | 460 ms | LDG-2915 correction |
+| `ledgr_candidate()`, walk-forward | 140 ms | 70 ms | LDG-2915 correction |
+| `ledgr_promote()` with `close()` | 340 ms | 260 ms | LDG-2915 correction |
 | `ledgr_run()`, duckdb 1.5.5 to 1.5.6 | 300 ms | 140 ms | LDG-2917 |
 | fast profile, duckdb 1.5.5 to 1.5.6 | 98.7 s | 74.9 s | LDG-2917 |
 
-One cost: repeated sweeps against a snapshot left open took 50 ms before
-LDG-2915 and 60 ms after, because the earlier code reused the connection it had
+Two costs: repeated sweeps against a snapshot left open took 50 ms before
+LDG-2915 and 60 ms after, and an indicator dev object's `test_dates()` 0 ms
+before and 25 ms after, because the earlier code reused a connection it had
 left open.
 
 Results and identities: config and snapshot hashes, fills, equity, trades and
@@ -84,24 +111,31 @@ in their two wall-clock columns.
 
 ## Checks
 
-- The fast profile passes 492 blocks in 74.94 seconds on CRAN's duckdb 1.5.6
-  against the 112-second bound.
-- A one-process full-suite run of 970 tests shows three failures, all known and
-  owned by LDG-2914: the availability fold-witness baseline and the two runner
-  resume tests.
+Round 2, on CRAN's duckdb 1.5.6:
+
+- The fast profile passes 493 blocks in 79.07 seconds against the 112-second
+  bound.
+- The full suite in one process through `testthat::test_local()`, with the
+  failure limit removed, runs 971 tests; 8 fail: the LDG-2913 witness
+  baseline and the seven one-process failures LDG-2914 owns, each of which
+  passes alone. Through `testthat::test_dir()` after one
+  `pkgload::load_all()`, only the LDG-2913 baseline fails. The first round
+  recorded three failures from `test_dir()`, which hides the LDG-2914 set, and
+  two of those three were the duckdb 1.5.6 defect LDG-2917 now fixes.
 - `R CMD check --no-manual --no-build-vignettes` under R 4.6.1 with CRAN's
-  duckdb 1.5.6: Status OK.
-- No loop was added on a hot path; each change removes work.
+  duckdb 1.5.6 reported Status OK at `bb33779`.
+- No loop was added on a hot path; the store registry is one keyed lookup per
+  open.
 
 ## Review Count
 
-The cut proposes one Type 1 close review of Workstream 31: 1 invocation over 3
-tickets, 0.333, under the 0.5 gate.
+Invocation 1 returned CHANGES_REQUIRED. The re-review of this correction is
+invocation 2, making Workstream 31 2 invocations over 3 tickets, 0.667, above
+the 0.5 gate: an honest breach, not padded with unrelated work.
 
 ## Open
 
 - LDG-2919's CI acceptance needs the branch pushed; the full-tier floor job now
   pins R 4.6.
-- Walk-forward is not in the census: it commits one run per fold, so it opens
-  the store once per test run by design. It takes the snapshot hold for its
-  reads.
+- The one-process full-suite failures listed under Checks belong to LDG-2913
+  and LDG-2914 in Workstream 15.

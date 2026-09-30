@@ -104,7 +104,9 @@ ledgr_pulse_snapshot <- function(snapshot,
     }
   }
 
+  # The context reads bars and features once, here; it keeps no connection.
   opened <- ledgr_open_dedicated_snapshot(snapshot)
+  on.exit(ledgr_snapshot_close(opened$snapshot), add = TRUE)
   con <- opened$con
 
   e <- new.env(parent = emptyenv())
@@ -120,20 +122,6 @@ ledgr_pulse_snapshot <- function(snapshot,
   e$alias_map_hash <- alias_map_info$alias_map_hash
   e$alias_map_version <- alias_map_info$alias_map_version
   e$.snapshot <- opened$snapshot
-  e$.con <- con
-
-  reg.finalizer(
-    e,
-    function(env) {
-      if (!is.null(env$.snapshot)) {
-        ledgr_snapshot_close(env$.snapshot)
-      }
-      env$.con <- NULL
-      env$.snapshot <- NULL
-      invisible(TRUE)
-    },
-    onexit = TRUE
-  )
 
   bars <- tryCatch(
     {

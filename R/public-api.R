@@ -22,7 +22,7 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
       error = function(e) {
         last_err <<- e
         try(duckdb::duckdb_shutdown(drv), silent = TRUE)
-        NULL
+        ledgr_join_open_duckdb(db_path, e)
       }
     )
     if (!is.null(out)) return(out)
@@ -30,6 +30,24 @@ ledgr_open_duckdb_with_retry <- function(db_path, attempts = 50L, sleep_s = 0.05
     Sys.sleep(sleep_s)
   }
   stop(last_err)
+}
+
+# duckdb 1.5.6 refuses a driver whose instance settings differ from those of a
+# database already open in the session, such as a connection the user made with
+# `duckdb::duckdb()`. The settings apply only when an instance is created, so
+# join the open instance with a plain driver instead of failing.
+ledgr_join_open_duckdb <- function(db_path, err) {
+  if (!grepl("which already exists", conditionMessage(err), fixed = TRUE)) {
+    return(NULL)
+  }
+  drv <- suppressMessages(duckdb::duckdb())
+  tryCatch(
+    list(con = DBI::dbConnect(drv, dbdir = db_path), drv = drv),
+    error = function(e) {
+      try(duckdb::duckdb_shutdown(drv), silent = TRUE)
+      NULL
+    }
+  )
 }
 
 ledgr_checkpoint_duckdb <- function(con, strict = FALSE) {

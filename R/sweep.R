@@ -651,6 +651,8 @@ ledgr_promote <- function(exp,
   if (!is.logical(require_same_snapshot) || length(require_same_snapshot) != 1L || is.na(require_same_snapshot)) {
     rlang::abort("`require_same_snapshot` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
   if (identical(candidate$status, "INCOMPLETE")) {
     rlang::abort(
       sprintf("Cannot promote incomplete candidate '%s'.", candidate$candidate_id),

@@ -204,6 +204,15 @@ ledgr_backtest_read_connection <- function(bt) {
     ))
   }
 
+  held_store <- ledgr_held_store(bt$db_path)
+  if (!is.null(held_store)) {
+    return(list(
+      con = held_store,
+      temporary = FALSE,
+      close = function() invisible(FALSE)
+    ))
+  }
+
   if (isTRUE(state$held)) {
     state$held_open <- TRUE
     return(list(

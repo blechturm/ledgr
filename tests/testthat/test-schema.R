@@ -693,6 +693,28 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
   testthat::expect_true(file.copy(path, copy))
   testthat::expect_identical(validations(init_and_close(copy)), 1L)
 
+  # A check constraint weakened on the same columns and keys is validated again
+  # and fails.
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = copy)
+  DBI::dbExecute(con, "DROP TABLE snapshot_sessions")
+  DBI::dbExecute(con, "
+    CREATE TABLE snapshot_sessions (
+      snapshot_id TEXT NOT NULL,
+      venue_id TEXT NOT NULL,
+      session_date DATE NOT NULL,
+      effective_from TIMESTAMP NOT NULL,
+      effective_to TIMESTAMP NOT NULL,
+      knowledge_time TIMESTAMP,
+      status TEXT NOT NULL CHECK (status IN ('open')),
+      session_open TIMESTAMP,
+      session_close TIMESTAMP,
+      provenance_json TEXT NOT NULL,
+      PRIMARY KEY (snapshot_id, venue_id, session_date)
+    )
+  ")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  testthat::expect_identical(validations(testthat::expect_error(init_and_close(copy))), 1L)
+
   # A second store is validated on its own.
   testthat::expect_identical(validations(init_and_close(second)), 1L)
   testthat::expect_identical(validations(init_and_close(second)), 0L)

@@ -28,7 +28,8 @@ ledgr_write_promotion_context <- function(bt, candidate, note = NULL) {
     rlang::abort("`candidate` must be a ledgr_sweep_candidate object.", class = "ledgr_invalid_args")
   }
 
-  opened <- ledgr_backtest_open(bt)
+  opened <- ledgr_run_store_open(bt$db_path)
+  on.exit(ledgr_run_store_close(opened), add = TRUE)
   con <- opened$con
   ledgr_create_schema(con)
   DBI::dbExecute(

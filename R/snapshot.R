@@ -31,6 +31,9 @@ ledgr_snapshot_register_finalizer <- function(state) {
     function(env) {
       con <- env$con
       drv <- env$drv
+      if (isTRUE(env$borrowed)) {
+        con <- NULL
+      }
       if (!is.null(con) && DBI::dbIsValid(con)) {
         suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
       }
@@ -68,23 +71,104 @@ ledgr_snapshot_connection <- function(snapshot) {
   if (!is.null(con) && DBI::dbIsValid(con)) {
     return(list(con = con, opened_new = FALSE))
   }
+  held <- ledgr_held_store(snapshot$db_path)
+  if (!is.null(held)) {
+    state$con <- held
+    state$drv <- NULL
+    state$borrowed <- TRUE
+    return(list(con = held, opened_new = FALSE))
+  }
 
   opened <- ledgr_open_duckdb_with_retry(snapshot$db_path)
   state$con <- opened$con
   state$drv <- opened$drv
+  state$borrowed <- FALSE
   attr(state$con, "ledgr_duckdb_drv") <- opened$drv
 
   list(con = state$con, opened_new = TRUE)
 }
 
-# Holds a snapshot's connection for one call. The returned closer, registered
-# with on.exit(), closes the connection only when this call opened it, so a
-# public call never leaves one open and nested reads share one open.
-ledgr_snapshot_hold <- function(snapshot) {
-  if (!inherits(snapshot, "ledgr_snapshot") || !isTRUE(ledgr_snapshot_connection(snapshot)$opened_new)) {
+# Connections held for one public call, keyed by store file. A nested open of
+# the same file within the call borrows the held connection instead of opening
+# another, and only the holder closes it. DuckDB shares one database per file
+# within a session, so a borrower also sees what a run's own write connection
+# committed. In-memory stores are never shared.
+.ledgr_held_stores <- new.env(parent = emptyenv())
+
+ledgr_store_key <- function(db_path) {
+  if (!is.character(db_path) || length(db_path) != 1L || is.na(db_path) ||
+      !nzchar(db_path) || identical(db_path, ":memory:")) {
+    return(NULL)
+  }
+  normalizePath(db_path, winslash = "/", mustWork = FALSE)
+}
+
+ledgr_held_store <- function(db_path) {
+  key <- ledgr_store_key(db_path)
+  if (is.null(key)) {
+    return(NULL)
+  }
+  con <- .ledgr_held_stores[[key]]
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    return(NULL)
+  }
+  con
+}
+
+# Registers `con` as the held connection of `db_path` unless one is held
+# already, and returns the closer that unregisters it.
+ledgr_store_register <- function(db_path, con) {
+  key <- ledgr_store_key(db_path)
+  if (is.null(key) || !is.null(ledgr_held_store(db_path))) {
     return(function() invisible(FALSE))
   }
-  function() ledgr_snapshot_close(snapshot)
+  assign(key, con, envir = .ledgr_held_stores)
+  function() {
+    if (exists(key, envir = .ledgr_held_stores, inherits = FALSE)) {
+      rm(list = key, envir = .ledgr_held_stores)
+    }
+    invisible(TRUE)
+  }
+}
+
+# Holds a store file's connection for one call, for code that has a path but no
+# snapshot yet. The closer checkpoints and closes it.
+ledgr_store_hold <- function(db_path) {
+  if (is.null(ledgr_store_key(db_path)) || !is.null(ledgr_held_store(db_path)) ||
+      !file.exists(db_path)) {
+    return(function() invisible(FALSE))
+  }
+  con <- ledgr_db_init(db_path)
+  unregister <- ledgr_store_register(db_path, con)
+  function() {
+    unregister()
+    ledgr_checkpoint_duckdb(con)
+    suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
+    drv <- attr(con, "ledgr_duckdb_drv", exact = TRUE)
+    if (!is.null(drv)) {
+      suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
+    }
+    invisible(TRUE)
+  }
+}
+
+# Holds a snapshot's connection for one call and registers it for its store
+# file. The returned closer, registered with on.exit(), closes the connection
+# only when this call opened it, so a public call never leaves one open and
+# nested reads share one open.
+ledgr_snapshot_hold <- function(snapshot) {
+  if (!inherits(snapshot, "ledgr_snapshot")) {
+    return(function() invisible(FALSE))
+  }
+  opened <- ledgr_snapshot_connection(snapshot)
+  unregister <- ledgr_store_register(snapshot$db_path, opened$con)
+  if (!isTRUE(opened$opened_new)) {
+    return(unregister)
+  }
+  function() {
+    unregister()
+    ledgr_snapshot_close(snapshot)
+  }
 }
 
 get_connection <- function(x) {
@@ -125,6 +209,11 @@ ledgr_snapshot_close <- function(snapshot) {
   con <- state$con
   drv <- state$drv
 
+  # A borrowed connection belongs to the call that holds it.
+  if (isTRUE(state$borrowed)) {
+    con <- NULL
+    state$borrowed <- FALSE
+  }
   if (!is.null(con) && DBI::dbIsValid(con)) {
     suppressWarnings(try(DBI::dbDisconnect(con, shutdown = TRUE), silent = TRUE))
   }

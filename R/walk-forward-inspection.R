@@ -67,6 +67,12 @@ ledgr_candidate.ledgr_walk_forward_results <- function(results,
   if (missing(fold_seq)) {
     rlang::abort("`fold_seq` is required.", class = "ledgr_invalid_args")
   }
+  release <- if (is.null(snapshot)) {
+    ledgr_store_hold(ledgr_walk_forward_locator(results)$db_path)
+  } else {
+    ledgr_snapshot_hold(snapshot)
+  }
+  on.exit(release(), add = TRUE)
   resolved <- ledgr_walk_forward_resolve_candidate_snapshot(results, snapshot)
   if (isTRUE(resolved$close)) {
     on.exit(ledgr_snapshot_close(resolved$snapshot), add = TRUE)
@@ -280,6 +286,8 @@ ledgr_walk_forward_resolve_candidate_snapshot <- function(results, snapshot = NU
 
 ledgr_walk_forward_read_session <- function(snapshot, session_id, verify_runs = TRUE) {
   ledgr_walk_forward_validate_snapshot(snapshot)
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
   if (!is.character(session_id) || length(session_id) != 1L || is.na(session_id) || !nzchar(session_id)) {
     rlang::abort("`session_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
