@@ -80,6 +80,7 @@ committed run. Neither step proves that the selected candidate will generalize.
 
 ```{r}
 #| label: prerequisites
+#| message: false
 
 library(ledgr)
 library(dplyr)

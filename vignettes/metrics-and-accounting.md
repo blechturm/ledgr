@@ -29,7 +29,7 @@ metrics second, and this article reads it in that order:
 flowchart TB
   ledger["ledger events<br/>source of truth"]
   fills["fills<br/>execution rows"]
-  trades["trades<br/>closed round trips"]
+  trades["trades<br/>closing fills"]
   equity["equity rows<br/>portfolio value"]
   metrics["summary metrics<br/>formulas over results"]
 
@@ -212,8 +212,9 @@ trades
 #> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
-This run has two fill rows but one closed trade row. Counting fills as
-trades would double-count the round trip.
+This run has two fill rows but one closed trade row: the opening buy
+closes nothing, so it is not a trade. Counting fills as trades would
+count it too.
 
 ## Equity Rows
 
@@ -301,10 +302,12 @@ equity for return calculations. Max drawdown is the maximum
 peak-to-trough decline in the public equity rows. Time in market is the
 share of equity rows with absolute `positions_value > 1e-6`.
 
-`ledgr_results()` returns persisted result tables: `equity`, `fills`,
-`trades`, or `ledger`. There is no `what = "metrics"` result table. Use
-`summary(bt)` for printed interpretation, or `ledgr_compute_metrics(bt)`
-when you need the named metric values in code.
+`ledgr_results()` returns the persisted result tables listed under
+Inspection Surfaces: `equity`, `returns`, `fills`, `trades`, `ledger`,
+`diagnostics` and `availability`. There is no `what = "metrics"` result
+table. Use `summary(bt)` for printed interpretation, or
+`ledgr_compute_metrics(bt)` when you need the named metric values in
+code.
 
 This small example uses `bars_per_year <- 252` because the bars are
 daily. ledgr detects bar frequency for `ledgr_compute_metrics()` and

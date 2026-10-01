@@ -36,6 +36,14 @@ before it adds the next:
 - point-in-time universes, with cash distributions and delistings
   modelled explicitly.
 
+Long-only is the supported use, but not yet a default every run
+enforces. An availability-aware run refuses a new short and a fill the
+account cannot afford. A dense run does neither: a negative target opens
+a short with no borrow cost, margin or financing, and a fill can take
+cash below zero. Add `ledgr_risk_long_only()` to the risk chain to drop
+short targets in either mode, and size targets from the account's cash
+and equity when capital matters.
+
 Shorting and leverage, intraday bars, other asset classes, and order
 types such as limits and stops come later, each only once its accounting
 is specified and tested. Share-changing corporate actions such as splits
@@ -139,10 +147,11 @@ bt
 
 The compact print is the result most readers need first: the opening
 cash, the final equity, the return and drawdown over the period, and the
-number of closed round trips. The last two lines concern dividends. This
-demo data carries no distribution records and does not say how its
-prices were adjusted, so the return may omit dividends or count them
-twice; that is fine for learning the mechanics, and [Cash
+number of closed trades: fills that close quantity, fully or in part.
+The last two lines concern dividends. This demo data carries no
+distribution records and does not say how its prices were adjusted, so
+the return may omit dividends or count them twice; that is fine for
+learning the mechanics, and [Cash
 Distributions](https://blechturm.github.io/ledgr/articles/corporate-action-cash.html)
 shows how to supply that evidence. Detailed equity, fills, trades,
 metrics, and evidence remain available through the result API. The cost

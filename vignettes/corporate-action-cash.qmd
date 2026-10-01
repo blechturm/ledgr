@@ -60,10 +60,10 @@ times <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:3
 bars <- data.frame(
   instrument_id = "AAA",
   ts_utc = times,
-  open = c(100, 90, 45, 46),
-  high = c(100, 90, 45, 46),
-  low = c(100, 90, 45, 46),
-  close = c(100, 90, 45, 46),
+  open = c(50, 48.75, 48.75, 48.75),
+  high = c(50, 48.75, 48.75, 48.75),
+  low = c(50, 48.75, 48.75, 48.75),
+  close = c(50, 48.75, 48.75, 48.75),
   volume = 1000
 )
 terms <- data.frame(
@@ -71,7 +71,7 @@ terms <- data.frame(
   subtype = "ordinary_cash_dividend",
   parent_instrument_id = "AAA",
   entitlement_time = times[[2]],
-  effective_time = times[[4]],
+  effective_time = times[[2]],
   knowledge_time = times[[1]],
   complete = TRUE,
   provenance_tier = "snapshot_bound",
@@ -93,14 +93,22 @@ snapshot <- ledgr_snapshot_from_df(
 opening <- ledgr_opening(
   cash = 1000,
   positions = c(AAA = 2),
-  cost_basis = c(AAA = 100)
+  cost_basis = c(AAA = 50)
 )
 hold <- function(ctx, params) ctx$hold()
 ```
 
-The later halving of the price is deliberately present. The canonical cash
-term is already normalized to the sealed snapshot's unit basis; ledgr does not
-reapply a vendor adjustment.
+The bars are split-adjusted but not distribution-adjusted, so the price falls
+by the 1.25 distribution on the ex-date, the second bar, which is also the
+entitlement time. Two shares lose 2.5 of market value there, and the research
+preset posts the 2.5 of cash at that same close, so equity does not move:
+without the fact, the run would report the drop as a loss. In ledgr's facts the
+entitlement time is that ex-dividend boundary, and it is the clock cash posts
+on: the research preset's `effective_close` setting credits the cash at the
+close of the entitlement pulse. `effective_time` governs dispositions and
+quantity events, not cash. The cash term is
+already normalized to the sealed snapshot's unit basis; ledgr does not reapply
+a vendor adjustment.
 
 ```{r}
 #| label: research-preset
@@ -154,7 +162,7 @@ strict_result
 ## Where This Fits
 
 This article keeps one local `AAA` holding so the gross cash amount and the
-later price change are easy to inspect. The full reusable point-in-time model
+ex-date price drop are easy to inspect. The full reusable point-in-time model
 is in `vignette("point-in-time-inputs", package = "ledgr")`; use it when the
 same study also needs sessions, membership, status, lifetime or quantity
 events. A dense study that only needs evidenced cash distributions does not

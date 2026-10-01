@@ -172,7 +172,7 @@ checks; they do not mutate the run:
 ``` r
 stored_run_context <- ledgr_metric_context(bt)
 stored_metrics <- ledgr_compute_metrics(bt)
-zero_rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0)
+rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0.04)
 
 ledgr_metric_context(stored_metrics)
 #> ledgr_metric_context
@@ -181,13 +181,13 @@ ledgr_metric_context(stored_metrics)
 #> Risk-free rate: 0.0000%
 #> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
 #> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
-ledgr_metric_context(zero_rf_metrics)
+ledgr_metric_context(rf_metrics)
 #> ledgr_metric_context
 #> ====================
 #> Version:        1
-#> Risk-free rate: 0.0000%
+#> Risk-free rate: 4.0000%
 #> Calendar:       US equity daily (252 days/year * 1 bars/day = 252 bars/year)
-#> Hash:           794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb
+#> Hash:           247dc197ca7e63bd503d5ee7743bb2ff2e2c542ee61a698e94960964ffacffa8
 identical( # confirm the override did not mutate the stored context on `bt`
   ledgr_metric_context_hash(stored_run_context),
   ledgr_metric_context_hash(ledgr_metric_context(bt))

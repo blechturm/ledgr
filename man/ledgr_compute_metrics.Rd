@@ -59,8 +59,10 @@ converted to a per-period return. Flat, constant-return, invalid, or short
 return series return \code{NA_real_}.
 \item \code{max_drawdown}: maximum peak-to-trough percentage decline,
 \code{min(equity / cummax(equity) - 1)}.
-\item \code{n_trades}: number of closed trade rows. Open-only fills do not count until
-a later fill closes quantity.
+\item \code{n_trades}: number of closed trade rows. A closed trade row is a fill that
+closes quantity, fully or in part, so a rebalance that trims a position
+counts as one. Open-only fills do not count until a later fill closes
+quantity.
 \item \code{win_rate}: share of closed trade rows with strict realized P&L \verb{> 0};
 breakeven is not a win, and open-position gains remain in equity until
 closed.

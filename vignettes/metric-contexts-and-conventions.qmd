@@ -185,10 +185,10 @@ mutate the run:
 
 stored_run_context <- ledgr_metric_context(bt)
 stored_metrics <- ledgr_compute_metrics(bt)
-zero_rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0)
+rf_metrics <- ledgr_compute_metrics(bt, risk_free_rate = 0.04)
 
 ledgr_metric_context(stored_metrics)
-ledgr_metric_context(zero_rf_metrics)
+ledgr_metric_context(rf_metrics)
 identical( # confirm the override did not mutate the stored context on `bt`
   ledgr_metric_context_hash(stored_run_context),
   ledgr_metric_context_hash(ledgr_metric_context(bt))

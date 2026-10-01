@@ -256,8 +256,10 @@ The strategy code did not change. The policy did.
 The clamped quantity is fractional -- 54.632 shares -- because `max_weight`
 scales the target to hit exactly 50 percent of equity at the decision price,
 rather than flooring to a whole share. ledgr target quantities are continuous at
-this layer; if your venue trades whole lots, add a lot-size or rounding policy
-rather than hiding rounding inside the strategy.
+this layer, and no shipped risk step rounds them. If your venue trades whole
+shares or lots, round in the strategy for now, for example with `floor()` on
+the quantities you return, and know that a later `max_weight` clamp can make a
+whole target fractional again.
 
 ## What Cost Does
 

@@ -243,8 +243,8 @@ warning and treat the missing fill as a completed trade.
 ## Zero Fills And Zero Trades Are Different
 
 Zero fills means no execution occurred. Non-empty fills with zero trades
-means the run opened or adjusted a position but did not close a round
-trip inside the sample.
+means the run opened or added to a position but no fill closed any
+quantity inside the sample.
 
 ``` r
 open_and_hold <- function(ctx, params) {
@@ -299,9 +299,10 @@ The first run has two fills and one realized trade: one fill opens and
 the next closes the position. The open-position run has one fill and
 zero trades because the position remains open. The final-target run has
 neither. Start with fills when you debug execution. Trades are derived
-from filled round trips, not from target changes: a trade row is the
-close-action fill row that realizes PnL. ledgr has no paired entry/exit
-trade table.
+from fills, not from target changes: a trade row is a fill that closes
+quantity, fully or in part, and realizes PnL. A rebalance that trims a
+position therefore records a trade. ledgr has no paired entry/exit trade
+table.
 
 The distinction is also visible in accounting. A closing fill carries
 `realized_pnl`; an open position remains in the equity curve’s

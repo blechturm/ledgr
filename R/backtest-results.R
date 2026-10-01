@@ -440,8 +440,10 @@ ledgr_backtest_bench <- function(bt) {
 #'   return series return `NA_real_`.
 #' - `max_drawdown`: maximum peak-to-trough percentage decline,
 #'   `min(equity / cummax(equity) - 1)`.
-#' - `n_trades`: number of closed trade rows. Open-only fills do not count until
-#'   a later fill closes quantity.
+#' - `n_trades`: number of closed trade rows. A closed trade row is a fill that
+#'   closes quantity, fully or in part, so a rebalance that trims a position
+#'   counts as one. Open-only fills do not count until a later fill closes
+#'   quantity.
 #' - `win_rate`: share of closed trade rows with strict realized P&L `> 0`;
 #'   breakeven is not a win, and open-position gains remain in equity until
 #'   closed.

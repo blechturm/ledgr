@@ -467,9 +467,9 @@ silently. Expect it at the end of most samples;
 matters.
 
 The summary is portfolio-level: total return, max drawdown, and trade
-count are computed from the completed run. In ledgr, trades are closed
-round trips; the fills table can contain more rows because opening fills
-and closing fills are both recorded.
+count are computed from the completed run. In ledgr, a trade is a fill
+that closes quantity, fully or in part; the fills table can contain more
+rows because opening fills are recorded too.
 
 The rendered result is a short, tiny-universe teaching run. Its
 annualized volatility, drawdown and return describe only that sample;
@@ -513,10 +513,10 @@ ledgr_results(bt_first, what = "trades")
 #> # i 2 more variables: realized_pnl <dbl>, action <chr>
 ```
 
-The trade table only includes closed round trips. Small one-share rows
-appear when integer sizing and price movement leave a tiny adjustment
-after a previous target. Larger rows are the ordinary position exits.
-`realized_pnl` is the profit or loss booked when that position closes.
+The trade table has one row for each fill that closes quantity, whether
+it closes the whole position or only part of it. Here every row closes a
+whole 10-share position. `realized_pnl` is the profit or loss booked by
+that closing fill.
 
 If a run has zero trades, inspect fills before assuming nothing
 happened:
@@ -541,9 +541,9 @@ ledgr_results(bt_first, what = "fills")
 ```
 
 Zero fills means no execution occurred. Non-empty fills with zero trades
-means positions opened but did not close. `n_trades` counts closed round
-trips, while the fills table shows both opening and closing execution
-rows. For the full checklist when a run makes no trades, see
+means positions opened but did not close. `n_trades` counts fills that
+close quantity, while the fills table shows both opening and closing
+execution rows. For the full checklist when a run makes no trades, see
 `vignette("indicators", package = "ledgr")`.
 
 If you want to compare variants, keep the strategy authoring question

@@ -107,9 +107,9 @@ ledgr_run_list(snapshot)
     # ledgr run list
     # A tibble: 2 x 10
       run_id       label tags  status final_equity total_return complete_performance
-      <chr>        <chr> <lgl> <chr>         <dbl> <chr>        <lgl>
-    1 trend_qty_5  <NA>  NA    DONE         10042. +0.4%        NA
-    2 trend_qty_15 <NA>  NA    DONE         10125. +1.3%        NA
+      <chr>        <chr> <chr> <chr>         <dbl> <chr>        <lgl>
+    1 trend_qty_5  <NA>  <NA>  DONE         10042. +0.4%        NA
+    2 trend_qty_15 <NA>  <NA>  DONE         10125. +1.3%        NA
       achieved_end_utc execution_mode reproducibility_level
       <dttm>           <chr>          <chr>
     1 NA               audit_log      tier_1
@@ -195,7 +195,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.960
+    Elapsed Sec:      0.940
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -256,40 +256,24 @@ exp_comparison <- ledgr_run_compare(
 )
 ```
 
-The printed comparison formats some columns for reading. Programmatic
-code gets raw numeric columns from the tibble:
-
-``` r
-comparison |>
-  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
-```
-
-    # ledgr comparison
-    # A tibble: 2 x 6
-      run_id       final_equity total_return sharpe_ratio max_drawdown n_trades
-      <chr>               <dbl> <chr>               <dbl> <chr>           <int>
-    1 trend_qty_5        10042. +0.4%               0.838 -0.5%              12
-    2 trend_qty_15       10125. +1.3%               0.851 -1.5%              12
-
-    # i Fill timing comparable: yes (same_timing_convention).
-    # i Inspect one run with ledgr_run_info(snapshot, run_id).
-
-For report writing, coerce the comparison to a data frame or tibble
-before formatting percentages yourself:
+The printed comparison formats some columns for reading, and a
+`select()` on the comparison keeps that print. The columns underneath
+are raw numbers. Convert with `as_tibble()` before code or a report
+reads them, and format percentages yourself:
 
 ``` r
 comparison_report <- comparison |>
   as_tibble() |>
-  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
 
 comparison_report
 ```
 
-    # A tibble: 2 x 5
-      run_id       final_equity total_return sharpe_ratio max_drawdown
-      <chr>               <dbl>        <dbl>        <dbl>        <dbl>
-    1 trend_qty_5        10042.      0.00418        0.838     -0.00499
-    2 trend_qty_15       10125.      0.0125         0.851     -0.0148
+    # A tibble: 2 x 6
+      run_id       final_equity total_return sharpe_ratio max_drawdown n_trades
+      <chr>               <dbl>        <dbl>        <dbl>        <dbl>    <int>
+    1 trend_qty_5        10042.      0.00418        0.838     -0.00499       12
+    2 trend_qty_15       10125.      0.0125         0.851     -0.0148        12
 
 After selecting a run, reopen it and inspect the underlying result
 tables rather than parsing the printed comparison:
@@ -420,10 +404,10 @@ and close the required connections for their own operations.
 
 `ledgr_state_reconstruct(run_id, con)` reconstructs ledgr’s expected
 simulated state for one stored run from ledger-backed evidence. It
-returns reconstructed state artifacts such as positions, cash, equity,
-fills, and trades from the stored run records. It is useful when you are
-inspecting a restart boundary, debugging stored evidence, or building a
-low-level tool that already owns a DBI connection.
+returns a list of positions, cash, profit and loss (`pnl`) and an equity
+curve (`equity_curve`) rebuilt from the stored run records. It is useful
+when you are inspecting a restart boundary, debugging stored evidence,
+or building a low-level tool that already owns a DBI connection.
 
 ``` r
 con <- ledgr_db_init(db_path)

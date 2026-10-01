@@ -516,7 +516,7 @@ ledgr should do by default here is open design work.
 
 rebalance_declared_members <- function(ctx, params) {
   rebalance_dates <- c("2020-01-06", "2020-01-13")
-  if (!substr(ctx$ts_utc, 1, 10) %in% rebalance_dates) {
+  if (!format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC") %in% rebalance_dates) {
     return(ctx$hold())
   }
   ctx |>
@@ -608,7 +608,7 @@ January 10 was a delisting rather than a halt or a feed gap.
 
 # The survivor experiment repeats every argument above and changes one, so
 # wrap the shared choices rather than retyping them.
-declare <- function(universe) {
+universe_experiment <- function(universe) {
   ledgr_experiment(
     snapshot,
     rebalance_declared_members,
@@ -623,7 +623,7 @@ point_in_time <- ledgr_run(
   point_in_time_experiment, params = list(invested = 0.9), run_id = "pit-universe"
 )
 survivor <- ledgr_run(
-  declare(c("BBB")), params = list(invested = 0.9), run_id = "survivor-universe"
+  universe_experiment(c("BBB")), params = list(invested = 0.9), run_id = "survivor-universe"
 )
 ```
 
@@ -641,9 +641,10 @@ The decision was made at the January 6 close. The fills are stamped at the
 January 7 open, when the economic execution happened. The third row is the
 January 13 rebalance, filled at the January 14 open: `AAA` has left the declared
 membership, so the rebalance selects only `BBB`, keeps the `AAA` holding it can
-no longer select, and spends the rest of the budget on 11 more `BBB` shares. Their read-only
-`recording_pulse_ts_utc` points to the January 7 close where the resulting
-account state appears on the equity curve.
+no longer select, and spends the rest of the budget on 11 more `BBB` shares.
+Each fill's read-only `recording_pulse_ts_utc` points to the close of its fill
+session, January 7 for the first two rows and January 14 for the third, where
+the resulting account state appears on the equity curve.
 
 ::: {.ledgr-callout .ledgr-callout-note}
 **Two clocks in one fill row**
@@ -923,7 +924,7 @@ small run: ask to halve the position on January 8, and again on January 10.
 
 trim_twice <- function(ctx, params) {
   target <- ctx$hold()
-  day <- substr(ctx$ts_utc, 1, 10)
+  day <- format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC")
   if (day == "2020-01-06") target[["BBB"]] <- 100
   if (day %in% c("2020-01-08", "2020-01-10")) target[["BBB"]] <- 50
   target
@@ -1018,8 +1019,8 @@ expected session stays on the calendar. For that workflow, read
 **Try it: spend the whole account**
 
 The snapshot above has been closed, so first point `snapshot` at the reopened
-handle with `snapshot <- reopened_snapshot`, then call `declare(c("BBB"))`.
-Rerun the survivor experiment with `params = list(invested = 1)` and a new
+handle with `snapshot <- reopened_snapshot`, then call
+`universe_experiment(c("BBB"))`. Rerun the survivor experiment with `params = list(invested = 1)` and a new
 `run_id`. Predict first: does its single target fill? Sizing uses the January 6
 close of 50, so the whole account asks for 200 shares, but execution happens at
 the January 7 open where `BBB` costs 51 and those shares now cost 10,200. Check

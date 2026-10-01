@@ -56,7 +56,7 @@ one has its own home in the data you supply.
 | --- | --- | --- |
 | Was the venue open at all? | the session calendar | there is no pulse; nothing is expected of anyone |
 | Did this instrument trade? | whether a bar row exists | the instrument is unpriced; its last mark starts ageing |
-| Was it allowed to trade? | trading-status facts | you may hold or exit it, but not resize it |
+| Was it allowed to trade? | trading-status facts | you may hold it or target an exit, but not resize it; while it is halted, an exit target is not executed or queued (Step 5) |
 | Was its declared lifetime active? | lifetime facts | it stays on the decision axis when membership or holdings put it there, but target changes are restricted and terminal rules may apply |
 
 The first two questions cannot be told apart from a price file alone. A closed

@@ -538,7 +538,7 @@ useful diagnostic, not a failed run.
 
 A completed run with zero trades is not automatically wrong. It means
 ledgr accepted the strategy outputs and the ledger reached the end of
-the sample, but no closed round trips were recorded.
+the sample, but no fill closed any quantity.
 
 Use this checklist before changing the strategy:
 
@@ -600,7 +600,7 @@ Custom fill-model contract errors are different from zero-trade
 outcomes; see the fill-model reference documentation for the required
 fill fields.
 
-#### Four Warmup-Adjacent Cases
+#### Three Warmup-Adjacent Cases
 
 Warmup is per instrument. One instrument can have a usable value while
 another is still `NA` because it has fewer bars or a different data

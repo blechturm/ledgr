@@ -57,10 +57,11 @@ Leakage is what happens when that boundary is violated. It can be obvious, or it
 can be hidden inside preprocessing that looks harmless.
 
 ledgr's workflow is designed around this problem. The strategy interface, sealed
-snapshots, and registered feature definitions each reflect a deliberate choice
-to make common leakage patterns structurally difficult -- not just documented as
-bad practice. This article explains where that protection applies and where your
-responsibility begins.
+snapshots, and registered feature definitions each make a common leakage
+pattern harder to write by accident -- not just documented as bad practice. They
+are not a sandbox: R code can still reach data ledgr did not hand it. This
+article explains where that protection applies and where your responsibility
+begins.
 
 ::: {.ledgr-callout .ledgr-callout-warning}
 **Leakage breaks the question**
@@ -216,7 +217,12 @@ Everything this rule reads comes from `ctx`: today's close and open for every
 instrument. Nothing in it can reach tomorrow's bar.
 
 This boundary prevents one common class of leakage. It does not cleanse
-contaminated data that were already handed to ledgr.
+contaminated data that were already handed to ledgr, and it does not stop a
+strategy from reading data it was not handed. A function can close over an
+object from your session, such as the full bars table or a column of
+precomputed signals, and index it by `ctx$ts_utc`. Preflight classifies such a
+strategy as Tier 2 and records a note naming the captured object; it does not
+refuse it, and ledgr cannot tell whether that object holds future rows.
 
 ## The Feature Boundary
 
@@ -250,7 +256,7 @@ be written with causal discipline.
 
 | Boundary | ledgr behavior |
 | --- | --- |
-| Strategy reads future rows | Strategy receives a pulse context, not a future table. |
+| Strategy reads future rows | Strategy receives a pulse context, not a future table; an object captured from your session is noted by preflight, not blocked. |
 | Unknown feature ID | `ctx$feature()` fails loudly instead of returning warmup. |
 | Known feature in warmup | Values are explicitly `NA_real_` until usable. |
 | Invalid target shape | Missing or extra target instruments are rejected. |
@@ -276,6 +282,8 @@ actually knowable.
 | Restated data | Vendors may revise values after the simulated decision time. |
 | Research-loop leakage | Trying many ideas and reporting the best one turns the sample into training data. |
 | Semantically leaky `series_fn` | A shape-valid vector can still be future-aware internally. |
+| Captured session objects | A strategy can close over a data frame from your session and read rows the pulse context would not give it. |
+| Split-adjusted price levels | Split-adjusted bars restate history at today's share basis, so a rule that uses an absolute price level, such as a minimum price or a lot size, sees levels that did not exist before a later split. |
 
 ## Checklist Before Trusting A Run
 

@@ -131,6 +131,7 @@ ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, 
     "total_return", "n_trades", "config_json", "schema_version"
   )
 
+  ensure_col("tags", NA_character_)
   for (col in setdiff(canonical_cols, names(out))) {
     ensure_col(col, NA)
   }

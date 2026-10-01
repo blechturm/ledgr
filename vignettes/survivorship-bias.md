@@ -515,7 +515,7 @@ with an error. What ledgr should do by default here is open design work.
 ``` r
 rebalance_declared_members <- function(ctx, params) {
   rebalance_dates <- c("2020-01-06", "2020-01-13")
-  if (!substr(ctx$ts_utc, 1, 10) %in% rebalance_dates) {
+  if (!format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC") %in% rebalance_dates) {
     return(ctx$hold())
   }
   ctx |>
@@ -613,7 +613,7 @@ feed gap.
 ``` r
 # The survivor experiment repeats every argument above and changes one, so
 # wrap the shared choices rather than retyping them.
-declare <- function(universe) {
+universe_experiment <- function(universe) {
   ledgr_experiment(
     snapshot,
     rebalance_declared_members,
@@ -628,7 +628,7 @@ point_in_time <- ledgr_run(
   point_in_time_experiment, params = list(invested = 0.9), run_id = "pit-universe"
 )
 survivor <- ledgr_run(
-  declare(c("BBB")), params = list(invested = 0.9), run_id = "survivor-universe"
+  universe_experiment(c("BBB")), params = list(invested = 0.9), run_id = "survivor-universe"
 )
 ```
 
@@ -651,9 +651,10 @@ the January 7 open, when the economic execution happened. The third row
 is the January 13 rebalance, filled at the January 14 open: `AAA` has
 left the declared membership, so the rebalance selects only `BBB`, keeps
 the `AAA` holding it can no longer select, and spends the rest of the
-budget on 11 more `BBB` shares. Their read-only `recording_pulse_ts_utc`
-points to the January 7 close where the resulting account state appears
-on the equity curve.
+budget on 11 more `BBB` shares. Each fill’s read-only
+`recording_pulse_ts_utc` points to the close of its fill session,
+January 7 for the first two rows and January 14 for the third, where the
+resulting account state appears on the equity curve.
 
 > [!NOTE]
 >
@@ -710,9 +711,9 @@ run_inventory
 #> # ledgr run list
 #> # A tibble: 2 x 10
 #>   run_id            label tags  status     final_equity total_return complete_performance
-#>   <chr>             <chr> <lgl> <chr>             <dbl> <chr>        <lgl>
-#> 1 pit-universe      <NA>  NA    INCOMPLETE         8290 -17.1%       FALSE
-#> 2 survivor-universe <NA>  NA    DONE              11425 +14.3%       TRUE
+#>   <chr>             <chr> <chr> <chr>             <dbl> <chr>        <lgl>
+#> 1 pit-universe      <NA>  <NA>  INCOMPLETE         8290 -17.1%       FALSE
+#> 2 survivor-universe <NA>  <NA>  DONE              11425 +14.3%       TRUE
 #>   achieved_end_utc    execution_mode reproducibility_level
 #>   <dttm>              <chr>          <chr>
 #> 1 2020-01-14 21:00:00 audit_log      tier_1
@@ -932,7 +933,7 @@ January 10.
 ``` r
 trim_twice <- function(ctx, params) {
   target <- ctx$hold()
-  day <- substr(ctx$ts_utc, 1, 10)
+  day <- format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC")
   if (day == "2020-01-06") target[["BBB"]] <- 100
   if (day %in% c("2020-01-08", "2020-01-10")) target[["BBB"]] <- 50
   target
@@ -1039,7 +1040,7 @@ workflow, read
 >
 > The snapshot above has been closed, so first point `snapshot` at the
 > reopened handle with `snapshot <- reopened_snapshot`, then call
-> `declare(c("BBB"))`. Rerun the survivor experiment with
+> `universe_experiment(c("BBB"))`. Rerun the survivor experiment with
 > `params = list(invested = 1)` and a new `run_id`. Predict first: does
 > its single target fill? Sizing uses the January 6 close of 50, so the
 > whole account asks for 200 shares, but execution happens at the January

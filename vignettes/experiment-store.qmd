@@ -230,25 +230,17 @@ exp_comparison <- ledgr_run_compare(
 )
 ```
 
-The printed comparison formats some columns for reading. Programmatic code gets
-raw numeric columns from the tibble:
+The printed comparison formats some columns for reading, and a `select()` on
+the comparison keeps that print. The columns underneath are raw numbers.
+Convert with `as_tibble()` before code or a report reads them, and format
+percentages yourself:
 
 ```{r}
 #| label: compare-raw
 
-comparison |>
-  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
-```
-
-For report writing, coerce the comparison to a data frame or tibble before
-formatting percentages yourself:
-
-```{r}
-#| label: compare-report-ready
-
 comparison_report <- comparison |>
   as_tibble() |>
-  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown)
+  select(run_id, final_equity, total_return, sharpe_ratio, max_drawdown, n_trades)
 
 comparison_report
 ```
@@ -331,9 +323,9 @@ not need it because snapshot and run helpers open, verify, and close the
 required connections for their own operations.
 
 `ledgr_state_reconstruct(run_id, con)` reconstructs ledgr's expected simulated
-state for one stored run from ledger-backed evidence. It returns reconstructed
-state artifacts such as positions, cash, equity, fills, and trades from the
-stored run records. It is useful when you are inspecting a restart boundary,
+state for one stored run from ledger-backed evidence. It returns a list of
+positions, cash, profit and loss (`pnl`) and an equity curve (`equity_curve`)
+rebuilt from the stored run records. It is useful when you are inspecting a restart boundary,
 debugging stored evidence, or building a low-level tool that already owns a DBI
 connection.
 

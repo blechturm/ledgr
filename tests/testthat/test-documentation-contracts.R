@@ -629,7 +629,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(checklist_doc, "stable_after", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Warmup is per instrument", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Warmup Diagnostics", fixed = TRUE)
-  testthat::expect_match(checklist_doc, "Four Warmup-Adjacent Cases", fixed = TRUE)
+  testthat::expect_match(checklist_doc, "Three Warmup-Adjacent Cases", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Ordinary feature warmup", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Impossible warmup", fixed = TRUE)
   testthat::expect_match(checklist_doc, "Current-bar absence", fixed = TRUE)
@@ -1747,7 +1747,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   experiment_line <- grep(
     "point_in_time_experiment <- ledgr_experiment(", qmd_lines, fixed = TRUE
   )[[1L]]
-  wrapper_line <- grep("declare <- function(universe)", qmd_lines, fixed = TRUE)[[1L]]
+  wrapper_line <- grep("universe_experiment <- function(universe)", qmd_lines, fixed = TRUE)[[1L]]
   testthat::expect_lt(experiment_line, wrapper_line)
   testthat::expect_match(
     qmd,

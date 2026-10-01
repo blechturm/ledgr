@@ -118,9 +118,9 @@ supports more asset classes, and has a much heavier operational
 footprint. ledgr trades scope for a smaller, portable research system;
 it does not yet match NautilusTrader’s deployment capability.
 
-**vs. Backtrader / backtesting.py / bt (R):** These are often the first
-backtesting tools users encounter. They are easier to start with but
-less focused on sealed data, provenance, and the path to production.
+**vs. Backtrader / backtesting.py / bt (Python):** These are often the
+first backtesting tools users encounter. They are easier to start with
+but less focused on sealed data, provenance, and the path to production.
 ledgr is the next step when those guarantees start to matter.
 
 ## Self-test

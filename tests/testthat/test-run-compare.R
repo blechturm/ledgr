@@ -432,3 +432,33 @@ testthat::test_that("ledgr_run_compare tolerates legacy pre-provenance runs with
   testthat::expect_true(is.na(cmp$strategy_source_hash))
   testthat::expect_true(is.na(cmp$strategy_params_hash))
 })
+
+testthat::test_that("[LTB-0134] run tags are character whether or not a run is tagged", {
+  db_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(db_path), add = TRUE)
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets["TEST_A"] <- 1
+    targets
+  }
+  bt <- ledgr_backtest(
+    data = ledgr_test_compact_bars(),
+    strategy = strategy,
+    start = "2020-01-01",
+    end = "2020-01-05",
+    db_path = db_path,
+    run_id = "tags-type",
+    cost_model = ledgr_cost_zero()
+  )
+  close(bt)
+  snapshot <- ledgr_test_snapshot_for_run(db_path, bt)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+
+  testthat::expect_type(ledgr_run_list(snapshot)$tags, "character")
+  testthat::expect_type(ledgr_run_info(snapshot, "tags-type")$tags, "character")
+
+  ledgr_run_tag(snapshot, "tags-type", "baseline")
+  testthat::expect_type(ledgr_run_list(snapshot)$tags, "character")
+  testthat::expect_identical(ledgr_run_list(snapshot)$tags, "baseline")
+  testthat::expect_identical(ledgr_run_info(snapshot, "tags-type")$tags, "baseline")
+})
