@@ -10,7 +10,7 @@ params:
   run_harness: false
   preset: "smoke"
   results_preset: "record"
-  results_prefix: "peer_benchmark_record_20260926T080725Z"
+  results_prefix: "peer_benchmark_record_20261001T055357Z"
 ---
 
 This tracked report records the v0.2.1.0 internal same-host peer workload.
@@ -22,40 +22,54 @@ The exact sampled record command was:
 
 ```powershell
 & dev/bench/peer_benchmark/run_record.ps1 `
-  -RepoRoot "C:\tmp\ledgr-ws12" `
+  -RepoRoot "C:\tmp\ledgr-ws29" `
   -Release "v0.2.1.0" `
-  -LedgrOrder "ttr-first"
+  -LedgrOrder "ttr-first" `
+  -RProfile "C:\tmp\ledgr-release-0210-profile.R"
 ```
 
 The exact ignored local prefix is
-`dev/bench/results/peer_benchmark_record_20260926T080725Z`. It was measured
-from commit `c7d936ddccbdf7affbdcd1c9be22f7d8fdaa7eb0`; the exact benchmark
-harness has SHA-256
-`9ac0c8f2b5f276000f10028104de9824f106719705307329853f6a2de283edaf`.
-It ran under R 4.6.1 ucrt on Windows build 26200. Quantstrat 0.25 completed
-from the isolated library with the ticket-pinned blotter 0.17.0,
+`dev/bench/results/peer_benchmark_record_20261001T055357Z`. It was measured
+from commit `cfa8c67127aa3e0ebd27714c147f11891ae5cbe5`, the release commit
+that entered release-branch CI; the exact benchmark harness has SHA-256
+`6625a84c484b26e0583a9604142e128f56dd76604c77fc66481f49d62b258bdf`.
+It ran under R 4.6.1 ucrt on Windows build 26200 with CRAN's duckdb 1.5.6,
+which the release requires: the release R profile puts that library first.
+The previously promoted record of 2026-09-26 ran on duckdb 1.5.2, which its
+profile picked up from an older user library; the environment sidecar does not
+record the duckdb version, so this is disclosed here. Quantstrat 0.25
+completed from the isolated library with the ticket-pinned blotter 0.17.0,
 FinancialInstrument 1.3.0, xts 0.14.2, and TTR 0.24.4. Backtrader and
 zipline-reloaded completed through pinned `uv` environments. Local LEAN was
 unavailable because its CLI root uses an obsolete organization layout. No
 hosted LEAN service was used.
 
 The report checks every ledgr row before interpreting its timing. The canonical
-public sweep completed in 39.68 seconds cold and 32.31 seconds warm; the public
-compiled sweep completed in 27.19 seconds cold and 17.60 seconds warm. The two
-public sweep rows are exact across all 1,260 equity rows, 68,201 fills, and the
-realized-trade row after normalizing only the engine label. Against durable
-ledgr, fills and trades are exact; compensated production-inline equity passes
-the existing relative `all.equal()` tolerance of `1e-8`, with maximum absolute
-residual `1.9744e-07`, maximum relative residual `1.971e-14`, and affected
-column `equity` across 1,222 rows. Earlier diagnostic
-peer CSVs used reconstructed equity; this final record uses compensated
-production-inline equity as the memory reference. Richer surfaces come from an
-explicitly untimed private oracle and are used only for parity. The report
-retains peer residuals and partial surfaces rather than turning a numerical
-tolerance into a claim of full parity. Zipline now pairs all 1,260 source
-sessions positionally and records daily-return correlation `0.987974`; the
-v0.2.0.1 report's `0.146064` was produced by the disclosed one-day timestamp
-misalignment and remains historical evidence rather than being rewritten.
+public sweep completed in 37.89 seconds cold and 30.66 seconds warm; the public
+compiled sweep completed in 20.05 seconds cold and 12.66 seconds warm. The two
+public sweeps and durable ledgr are exact across all 1,260 equity rows, 68,201
+fills, and the realized-trade row after normalizing only the engine label.
+Richer surfaces come from an explicitly untimed private oracle and are used
+only for parity. The report retains peer residuals and partial surfaces rather
+than turning a numerical tolerance into a claim of full parity. Zipline pairs
+all 1,260 source sessions positionally and records daily-return correlation
+`0.987974`; the v0.2.0.1 report's `0.146064` was produced by the disclosed
+one-day timestamp misalignment and remains historical evidence rather than
+being rewritten.
+
+This record is the second of two release runs from the same commit and command.
+The first, `peer_benchmark_record_20261001T053231Z`, passed the same
+correctness and parity checks. Its durable public TTR row took 64.89 seconds
+against this record's 57.94 and the promoted record's 60.94, while every other
+row reproduced within about 8 percent; the repeat shows that row's spread on
+one host, not a package change, and neither run is a regression of it. Against
+the promoted record every ledgr row is as fast or faster: the compiled sweep by
+26 percent and durable built-in SMA by 24 percent. The peer engines, whose code
+did not change, also ran 5 to 22 percent faster, so the host itself was
+faster; no ledgr speedup is claimed from this comparison. The sampled process
+tree peaked at 2,284.1 MiB across 885 one-second samples, against 1,667.4 MiB
+in the first run and 1,715.7 MiB in the promoted record; the peak includes the
+Python peers and is not a ledgr memory claim.
 
 Workstream 17 also corrects the indicator boundary. All published TTR rows now
 use exported `ledgr_ind_ttr("SMA")`; the retired private wrapper is absent.
@@ -63,8 +77,9 @@ Durable public TTR and built-in SMA ran in separate fresh R processes with
 identical R, library-path and package-version records. Their feature axes and
 NA masks are exact; 1,260,000 numeric cells pass the existing `1e-8` tolerance
 with maximum absolute residual `7.567e-10`. Equity, fills and realized trades
-are exact. Timing does not identify a source effect: the promoted TTR-first
-record reports warm clocks of 53.02 and 68.33 seconds. The six-order
+are exact. Timing does not identify a source effect: this TTR-first record
+reports warm clocks of 50.42 and 50.08 seconds, the 2026-09-26 record 53.02 and
+68.33. The six-order
 attribution spike independently places every source in every process position
 twice; each contrast changes direction. That spike classifies the old
 9.57-second chart gap as order-confounded rather than a package-speed

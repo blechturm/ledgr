@@ -87,6 +87,35 @@ known 1,250-row Backtrader warm-up boundary and rejects the regressed
 1,008-row Zipline join. The complete sampled process tree peaked at
 1,753.8 MiB across 892 one-second samples.
 
+## v0.2.1.0 Release Record
+
+The release gate's record renders the ignored local prefix
+`dev/bench/results/peer_benchmark_record_20261001T055357Z`, measured from the
+release commit `cfa8c67127aa3e0ebd27714c147f11891ae5cbe5` with:
+
+```powershell
+& dev/bench/peer_benchmark/run_record.ps1 `
+  -RepoRoot "C:\tmp\ledgr-ws29" `
+  -Release "v0.2.1.0" `
+  -LedgrOrder "ttr-first" `
+  -RProfile "C:\tmp\ledgr-release-0210-profile.R"
+```
+
+The release profile puts CRAN's duckdb 1.5.6, which the release requires,
+first on the library path; the 2026-09-26 record below ran on duckdb 1.5.2, and
+the environment sidecar does not record the duckdb version. Correctness,
+canonical-versus-compiled differential parity, surface retention and peer
+parity all pass; the public sweeps and durable ledgr are exact across 1,260
+equity rows and 68,201 fills. LEAN was unavailable (obsolete local CLI root).
+This is the second of two runs from the same commit and command; the first,
+`peer_benchmark_record_20261001T053231Z`, passed the same checks with its
+durable public TTR row at 64.89 seconds against 57.94 here and 60.94 in the
+promoted record, while the other rows reproduced within about 8 percent. That
+spread is host variance on one row, not a package change. Against the 2026-09-26
+record every ledgr row is as fast or faster, but the unchanged peer engines
+were also 5 to 22 percent faster, so no ledgr speedup is claimed. The sampled
+process tree peaked at 2,284.1 MiB across 885 one-second samples.
+
 ## v0.2.1.0 Public TTR Boundary Record
 
 Workstream 17 replaces the private benchmark-only TTR wrapper with exported
