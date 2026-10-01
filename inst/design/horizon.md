@@ -49,6 +49,13 @@ ranking, availability-aware universes with entries and exits, corporate
 actions, multiple feature families, and strategies with state. Each keeps the
 current record's rule that parity is checked before timing is read.
 
+Maintainer, 2026-10-01: ledgr makes no public performance claim, not even a
+same-host version-over-version speedup, until this suite exists; its results
+then become the official comparison. Parity comes first and is the near-term
+interest, also for the API: writing the same strategy for each peer shows where
+ledgr's interface and semantics differ, which could become a guide for users
+coming from those peers.
+
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 
 The maintainer wants this done soon. It is RFC work, a continuation of

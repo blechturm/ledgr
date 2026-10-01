@@ -1,9 +1,7 @@
 # v0.2.1.0 Release Gate Closeout
 
-**Status:** Agent-provisional draft. The local gates, the peer record and the
-dispatched full-tier run on the release branch are recorded below. The
-Workstream 15 close review, the merge to `main`, `main` CI, the tag, tag CI
-and the GitHub Release follow, each after the maintainer's go-ahead.
+**Status:** Closed 2026-10-01. v0.2.1.0 is tagged at `5f19dbc` and published
+as a GitHub Release. Every outward step followed the maintainer's go-ahead.
 **Date:** 2026-10-01
 **Cut:** 8
 **Workstream:** 15
@@ -128,9 +126,29 @@ NOTEs (CRAN incoming feasibility, top-level files, Rd line widths, relative
 URL paths), the same four as run `36776852759`. The advisory timing gates warned
 at medians of 134.97 seconds (ordinary, bound 112) and 133.75 seconds (CRAN
 mode, bound 105) on the hosted runner, as the advisory decision anticipated.
-Commits after `a3517c6` change only design records. Still to record, as
-three separate run ids: `main` R-CMD-check, `main` pkgdown, and the `v0.2.1.0`
-tag R-CMD-check.
+Commits after `a3517c6` change only design records.
+
+The first merge put `207e760` on `main` (R-CMD-check `36827106141`, pkgdown
+`36827106227`, both green) and the tag on it (tag CI `36832236507`, green).
+Those runs are superseded by the documentation patch below and are not the
+release's evidence. The release's three CI evidences, each a separate run on
+the patched commit `5f19dbc`:
+
+| Evidence | Run | Result |
+| --- | --- | --- |
+| `main` R-CMD-check, full tier | `36864577355` | success: Ubuntu release OK with coverage 85.94 percent, Ubuntu R 4.6 OK, Windows `--as-cran` 4 NOTEs |
+| `main` pkgdown | `36864577411` | success: built and deployed |
+| `v0.2.1.0` tag R-CMD-check, full tier on `refs/tags/v0.2.1.0` | `36870589523` | success: Ubuntu release OK with coverage 85.94 percent, Ubuntu R 4.6 OK, Windows `--as-cran` 5 NOTEs |
+
+The tag run's fifth Windows NOTE is the examples timing check:
+`print.ledgr_backtest` took 10.97 seconds elapsed on 1.00 second of CPU, a
+runner stall; the same commit's `main` run passed the examples check with no
+NOTE. The branch full tier for the patched code is run `36859387501` at
+`a8059f3`, green. The GitHub Release "v0.2.1.0 Equity Corporate Actions and
+Strategy Workflow" was created from the existing tag after tag CI was green,
+published 2026-10-01T14:39:31Z and marked latest; its notes state the
+upgrade requirements, the breaking renames and the non-claims, and make no
+performance claim.
 
 ## Production Code
 
@@ -181,5 +199,8 @@ code-review obligations although LDG-2918 changes production code. All three
 are answered in `e7c83ef` and `63d9826`. The focused re-review at `63d9826`
 returned CHANGES_REQUIRED on one finding the correction introduced: the
 amendment to the Workstream 15 review reason was also appended to Workstream
-22's, which shares the sentence it followed. It is removed there in this commit.
-Two invocations over six tickets is 0.333.
+22's, which shares the sentence it followed. `f1c80b4` removed it there, and
+the maintainer accepted the workstream without a third review. Two invocations
+over six tickets is 0.333. The documentation patch, Cut 24, had its own two
+invocations over three tickets, 0.667, an accepted breach recorded in that
+cut.
