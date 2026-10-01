@@ -24,8 +24,6 @@ that the usual ways a backtest fools you fail loudly instead of quietly:
 sealed snapshot -> experiment -> run -> event ledger -> results
 ```
 
-The setup is not overhead. The setup is the audit trail.
-
 ## What ledgr Does, And In What Order
 
 ledgr is deliberately narrow. It does one kind of backtest completely
