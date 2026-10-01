@@ -160,5 +160,8 @@ CHANGES_REQUIRED on three record findings and no code or design finding: the
 merge-gate result was unrecorded, two gate commands were described rather
 than recorded, and the review reason still exempted the workstream from the
 code-review obligations although LDG-2918 changes production code. All three
-are answered in `e7c83ef` and this commit. The focused re-review makes it 2
-over 6, 0.333.
+are answered in `e7c83ef` and `63d9826`. The focused re-review at `63d9826`
+returned CHANGES_REQUIRED on one finding the correction introduced: the
+amendment to the Workstream 15 review reason was also appended to Workstream
+22's, which shares the sentence it followed. It is removed there in this commit.
+Two invocations over six tickets is 0.333.
