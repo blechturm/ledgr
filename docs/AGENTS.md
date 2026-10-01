@@ -32,6 +32,18 @@ preserve the execution contracts in `inst/design/contracts.md`.
   harness, and deliver a runner, a diff-based checker, and a gut
   demonstration. Size budgets in that document are stop signals, not
   targets.
+- Governance loop (accepted 2026-09-21, pilot on the next packet): the
+  maintainer writes every operative brief and names its mode. `Type 1`
+  verifies an accepted direction and always asks independently whether
+  the inputs are right; `Type 2` challenges the design; a design concern
+  found in Type 1 returns `NEEDS_TYPE_2`. Review is per workstream, not
+  batch. `tickets.yml` is the sole ticket authority; batches produce no
+  evidence essay; a decision-changing rejection gets a concise durable
+  reason, which Git does not hold. Details: `inst/design/rfc_cycle.md`.
+- Contracts and specifications define semantics. Canonical R is the
+  normative executable oracle for optimized or compiled paths; runtime
+  default is a separate decision; divergence fails closed pending an
+  RFC.
 - Code on ingest, seal, fold, hydration, finalisation, or result-reader
   paths follows the optimization coding style in
   `inst/design/manual/optimization_coding_style.qmd` (reviewable draft):
@@ -65,40 +77,28 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (completed v0.2.0.0 packet; accepted v0.2.0.1
-RFC; locally complete v0.2.0.1 release gate):
+Current planning context (2026-09-27):
 
-- v0.2.0.0 combined API/representation hardening with the first
-  point-in-time asset-availability implementation
-  (`inst/design/ledgr_v0_2_0_0_spec_packet/`). No second engine, general
-  short financing, settlement economics, OMS, imputation framework, or
-  representation optimization is authorized by it.
-- The v0.1.9.x releases shipped the public transaction-cost API, saved
-  sweeps, classed target risk, walk-forward evaluation, API naming
-  cleanup, the validation substrate with selection-integrity
-  diagnostics, business objectives, and the evidence-only all-candidates
-  sweep filter. Their packets and closeouts are listed in
-  `inst/design/README.md`.
-- The active v0.2.0.1 packet covers availability seams, seal validators,
-  resumed-run repair, linear event writes, prepared valuation, and
-  benchmark closeout. LDG-2719 through LDG-2744 are in the active
-  packet; Batches 0-9 are complete, Batch 10 is diagnostic history,
-  Batch 11 is complete after review, and Batches 12 through 15 are
-  complete after review. The local release gate is accepted and the
-  branch is ready for remote CI; main and tag evidence do not yet exist.
-  The availability prerequisite
-  selected `NEITHER`; no availability-ingestion optimization is
-  authorized. Old paths ship in no form, the public fact resolver stays
-  independent, and no speed claim is authorized.
-- The refreshed spot-crypto readiness probe follows v0.2.0.1 as a
-  separate v0.2.0.x planning cycle. Do not draft its Charter or change
-  package code before its executable prerequisite and one-page findings
-  under `inst/design/spike_protocol.md`. Austrian tax work remains
-  separately parked.
-- The release-by-release planning narrative that previously lived in
-  this file is preserved verbatim in
-  `inst/design/planning_context_history.md`; the maintained records are
-  `inst/design/ledgr_roadmap.md` and `inst/design/README.md`.
+- v0.2.0.1 is published. Its packet, closeout and measurements are
+  historical evidence; do not reopen that release or rewrite its
+  measured results.
+- Release branch: v0.2.1.0. The active packet keeps its historical path,
+  `inst/design/ledgr_v0_2_0_2_spec_packet/` (the release was planned as
+  v0.2.0.2 and promoted); its `tickets.yml` is the sole current status
+  and sequencing authority.
+- The governance review, testing-architecture RFC (2026-09-21) and
+  accounting-core RFC (2026-09-22) are accepted. This packet pilots
+  workstream-level review, with `tickets.yml` as authority and no batch
+  evidence essays. Reader work and validation fixes need no new RFC
+  cycle.
+- Reuse public capabilities and production semantics. Design only the
+  missing behavior; do not add research-specific manifests or a parallel
+  provenance system. Prefer small detecting examples and concrete
+  workflow improvements.
+- Spot-crypto, compiled-default promotion and tax work remain separate
+  from the scheduled equity/workflow scope. Older release narratives are
+  linked from `inst/design/README.md` and
+  `inst/design/planning_context_history.md`.
 
 ## Active Design Entry Points
 
@@ -109,7 +109,8 @@ work.
 
 | Area | Read |
 |----|----|
-| v0.2.0.1 availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted hot-path and timestamp/benchmark amendments in that packet, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
+| v0.2.1.0 equity and workflow planning (packet path `v0_2_0_2`) | `inst/design/ledgr_roadmap.md` v0.2.1.0 section; `inst/design/research/Sharadar-Corporate-Event-Evidence.md`; `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`; relevant horizon and RFC pipeline entries |
+| v0.2.0.1 released availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted hot-path and timestamp/benchmark amendments in that packet, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
 | Post-v0.2.0.1 spot-crypto planning | `inst/design/ledgr_roadmap.md` (spot-crypto section), `inst/design/horizon.md` (2026-09-14 research entry), `inst/design/rfc/README.md` (pipeline row), `inst/design/spike_protocol.md`, `inst/design/research/Transaction-Cost-Models.md`, `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` |
 | v0.2.0.0 release record | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md`, `inst/design/horizon.md` |
 | Release records v0.1.8.2 to v0.1.9.7 | `inst/design/README.md` (release-record list) and `inst/design/ledgr_roadmap.md`; the per-packet reading lists that previously sat in this table are preserved in `inst/design/planning_context_history.md` |
@@ -117,7 +118,7 @@ work.
 | v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
 | Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/horizon.md` |
 | v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
-| Sweep performance / optimization | `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md`, `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` |
+| Sweep performance / optimization | `inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md` for the scheduled v0.2.1.1 opening workstream; `inst/design/exact_parity_internal_optimization_proof_template.md`; `inst/design/manual/optimization_coding_style.qmd`; `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`; relevant projection/accessor syntheses |
 | Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
 | v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd` |
 | Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
@@ -128,11 +129,12 @@ work.
 | v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
 | Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
 | v0.1.9 performance scoping | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/horizon.md` |
+| Point-in-time historical projection and missing data | `inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md` (accepted 2026-09-28, operative; section 7 governs the ticket cut), with v10 and the missingness amendment as the derivation record; `dev/spikes/segmented-feature-views/spike_closeout.md`; `dev/spikes/revision-exposure/` (exposure evidence and its provenance README); `inst/design/horizon.md` 2026-09-28 `[data]` entry |
 
 ## Local Verification
 
-Current Windows R path used in this workspace. This local verification
-runtime does not change the package support floor in `DESCRIPTION`.
+Current Windows R path used here; it does not change the `DESCRIPTION`
+floor.
 
 ``` powershell
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary')"
@@ -141,25 +143,18 @@ runtime does not change the package support floor in `DESCRIPTION`.
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" tools/check-coverage.R
 ```
 
-Targeted checks are preferred while editing, followed by full tests and
-package check before committing release-ticket work.
+Prefer targeted checks while editing, then full tests and package check.
 
-Building the pkgdown site locally is wrapped in `dev/build-site.R`. A
-bare `Rscript` does not inherit RStudio’s Quarto/Pandoc environment and
-trips on stale `src/` artifacts; the wrapper sets
-`QUARTO_PATH`/`RSTUDIO_PANDOC`, adds the user library fallback, cleans
-compiled `src/` artifacts (the 0-byte DLL that breaks `load_all` in
-vignette setup), then runs
-[`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html).
+Local pkgdown builds use `dev/build-site.R`. It sets Quarto/Pandoc and
+the user library fallback, cleans stale compiled `src/` artifacts, then
+runs pkgdown.
 
 ``` powershell
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R --check  # verify toolchain only
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" dev/build-site.R          # full build into docs/
 ```
 
-The live site otherwise redeploys from the `pkgdown` GitHub Actions
-workflow on push to `main`; the wrapper is for local preview before
-pushing.
+The live site redeploys from the `pkgdown` workflow on push to `main`.
 
 ## Ticket Workflow
 
@@ -170,5 +165,5 @@ pushing.
 4.  Run targeted tests, then full tests/package checks when the change
     affects public API, runner behavior, snapshots, CI, or release
     gates.
-5.  Update the active `tickets.md` checkboxes and `tickets.yml` status
-    together.
+5.  Update `tickets.yml`; it is the only ticket authority. Any readable
+    view is generated, not edited.
