@@ -120,8 +120,15 @@ decisions recorded there:
   daemons, and skip only checks of live function bodies.
 
 Release-branch full tier, dispatched: run `36776852759` at `76dc0e9` was the
-first fully green full-tier run since v0.2.0.1; run `36822363938` at `a3517c6`
-is the merge gate (result recorded when it completes). Still to record, as
+first fully green full-tier run since v0.2.0.1. The merge gate is full-tier run
+`36822363938`, dispatched on `v0.2.1.0` at `a3517c6`, conclusion success:
+Ubuntu release passed `R CMD check` with Status OK and coverage at 85.94
+percent; Ubuntu R 4.6 passed; Windows passed `R CMD check --as-cran` with 4
+NOTEs (CRAN incoming feasibility, top-level files, Rd line widths, relative
+URL paths), the same four as run `36776852759`. The advisory timing gates warned
+at medians of 134.97 seconds (ordinary, bound 112) and 133.75 seconds (CRAN
+mode, bound 105) on the hosted runner, as the advisory decision anticipated.
+Commits after `a3517c6` change only design records. Still to record, as
 three separate run ids: `main` R-CMD-check, `main` pkgdown, and the `v0.2.1.0`
 tag R-CMD-check.
 
@@ -148,5 +155,10 @@ distribution-adjusted are refused as execution bars. The README states the R
 ## Review Count
 
 Workstream 15 holds six tickets: LDG-2824, LDG-2825, LDG-2913, LDG-2914,
-LDG-2918 and LDG-2919. One Type 1 close review covers them: 1 over 6. A
-correction round would add one invocation and be recorded.
+LDG-2918 and LDG-2919. The first Type 1 close review, at `6cdaa7b`, returned
+CHANGES_REQUIRED on three record findings and no code or design finding: the
+merge-gate result was unrecorded, two gate commands were described rather
+than recorded, and the review reason still exempted the workstream from the
+code-review obligations although LDG-2918 changes production code. All three
+are answered in `e7c83ef` and this commit. The focused re-review makes it 2
+over 6, 0.333.
