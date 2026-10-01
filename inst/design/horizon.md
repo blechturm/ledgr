@@ -26,6 +26,29 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-01 [benchmark] A suite of peer workloads, not one
+
+The maintainer wants the peer benchmark to grow from one workload into a
+suite of workloads and strategies, measured against the same peers. The
+registered record is one shape: 500 instruments, 1,260 daily sessions and one
+SMA crossover. It is a single point.
+
+Two reasons. Parity across many shapes is a stronger quality signal than
+parity on one: each new workload is another place where ledgr must compute
+what the peers compute or explain the difference. And a cost map across
+shapes gives the optimization work data it does not have today, because
+ledgr's cost floor is per pulse more than per bar. A wide daily universe spreads
+each pulse's fixed cost over many instruments; a narrow and long intraday
+workload, such as 100 instruments over a year of minute bars, has thirty times
+the pulses for the same bar count and has never been measured. Intraday at
+whole-second resolution or coarser is within the timestamp contract; this
+entry is how to learn what it costs.
+
+Candidate shapes: narrow and long intraday, wide and short cross-sectional
+ranking, availability-aware universes with entries and exits, corporate
+actions, multiple feature families, and strategies with state. Each keeps the
+current record's rule that parity is checked before timing is read.
+
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 
 The maintainer wants this done soon. It is RFC work, a continuation of

@@ -81,6 +81,7 @@ cuts:
     source_table: "release_ci_playbook.md: the Release Order, the local-gate checklist, the Ubuntu and DuckDB triage rules, and the tag and GitHub Release handling; NEWS.md as it stands at the cut"
     workstreams: [15]
     closeout: "release_gate_closeout.md"
+    close_review: "The first Type 1 close review of workstream 15, at 6cdaa7b, returned CHANGES_REQUIRED on three record findings and no code or design finding: the merge-gate run result was unrecorded, two local-gate commands were described rather than recorded literally, and the review reason still exempted the workstream from the code-review obligations although LDG-2918 changes production code. The corrections in e7c83ef and 63d9826 record both commands verbatim, record green full-tier run 36822363938 as the merge gate, amend the review reason, label LDG-2918's preflight clock warm and record its seven-shape walk. The focused re-review at 63d9826 confirmed all three closures and returned CHANGES_REQUIRED on one finding the correction introduced, the amendment duplicated onto workstream 22's review reason; f1c80b4 removed it. 2 review invocations over 6 tickets is 0.333. The maintainer accepted workstream 15's review on 2026-10-01 without a third review. LDG-2824, LDG-2913, LDG-2914, LDG-2918 and LDG-2919 are complete; LDG-2825, and with it this cut, stays open until main CI, main pkgdown, tag CI and the GitHub Release are recorded."
     status: "open"
   - id: 9
     name: "Availability and evidence accessors"
@@ -1402,7 +1403,7 @@ tickets:
   - id: "LDG-2824"
     title: "Promote the release to v0.2.1.0 and write its release notes"
     workstream: 15
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -1422,7 +1423,7 @@ tickets:
   - id: "LDG-2913"
     title: "Declare the witness strategy rename against the frozen availability baseline"
     workstream: 15
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -1432,7 +1433,7 @@ tickets:
   - id: "LDG-2914"
     title: "Make the full test suite pass in one process"
     workstream: 15
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -1443,7 +1444,7 @@ tickets:
   - id: "LDG-2918"
     title: "Let trusted strategy recovery resolve ledgr exports"
     workstream: 15
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1453,7 +1454,7 @@ tickets:
   - id: "LDG-2919"
     title: "Raise the R floor to 4.6.0 and test the floor release"
     workstream: 15
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
