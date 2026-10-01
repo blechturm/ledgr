@@ -195,7 +195,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.940
+    Elapsed Sec:      0.960
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -258,8 +258,9 @@ exp_comparison <- ledgr_run_compare(
 
 The printed comparison formats some columns for reading, and a
 `select()` on the comparison keeps that print. The columns underneath
-are raw numbers. Convert with `as_tibble()` before code or a report
-reads them, and format percentages yourself:
+are raw numbers, so code can use them directly, as the ranking below
+does. For a report table that prints the numbers as they are, convert
+with `as_tibble()` first and format percentages yourself:
 
 ``` r
 comparison_report <- comparison |>

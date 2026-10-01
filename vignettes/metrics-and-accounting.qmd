@@ -320,11 +320,12 @@ for return calculations. Max drawdown is the maximum peak-to-trough decline in
 the public equity rows. Time in market is the share of equity rows with
 absolute `positions_value > 1e-6`.
 
-`ledgr_results()` returns the persisted result tables listed under Inspection
+`ledgr_results()` returns the seven result views listed under Inspection
 Surfaces: `equity`, `returns`, `fills`, `trades`, `ledger`, `diagnostics` and
-`availability`. There is no `what = "metrics"` result table. Use `summary(bt)` for
-printed interpretation, or `ledgr_compute_metrics(bt)` when you need the named
-metric values in code.
+`availability`. Some are stored, others are derived from the ledger or
+reconstructed on request. There is no `what = "metrics"` result table. Use
+`summary(bt)` for printed interpretation, or `ledgr_compute_metrics(bt)` when
+you need the named metric values in code.
 
 This small example uses `bars_per_year <- 252` because the bars are daily. ledgr
 detects bar frequency for `ledgr_compute_metrics()` and snaps common cadences,
