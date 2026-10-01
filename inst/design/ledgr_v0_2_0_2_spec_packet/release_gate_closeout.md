@@ -1,0 +1,107 @@
+# v0.2.1.0 Release Gate Closeout
+
+**Status:** Agent-provisional draft. The local gates, the peer record and the
+dispatched full-tier run on the release branch are recorded below. The
+Workstream 15 close review, the merge to `main`, `main` CI, the tag, tag CI
+and the GitHub Release follow, each after the maintainer's go-ahead.
+**Date:** 2026-10-01
+**Cut:** 8
+**Workstream:** 15
+**Authority:** `inst/design/release_ci_playbook.md`
+
+## Preconditions
+
+The maintainer accepted Workstream 28 and Workstream 29 before any gate ran
+(`tickets.yml`, Cuts 19 and 21). Cut 23, the per-call store overhead, was
+accepted on 2026-09-30 at `1b22990`.
+
+Version consistency, checked before the first gate at `791060e`: `DESCRIPTION`
+reports 0.2.1.0, NEWS opens with `# ledgr 0.2.1.0`, the checked-out branch and
+`origin` both have `v0.2.1.0` (with `v0.2.0.2` deleted from `origin` at the
+maintainer's go-ahead), and AGENTS.md and `inst/design/README.md` name
+v0.2.1.0. The intended tag is `v0.2.1.0`. The 98 tracked files that keep
+`v0.2.0.2` are historical artifact names or narrative, classified in the
+LDG-2824 evidence; neither AGENTS.md nor the design index needed a further
+correction at the gate.
+
+## Local Gates
+
+Windows 11, R 4.6.1, at `791060e` unless noted. Release-gate timeouts were used.
+
+| Gate | Command | Result | Wall time |
+| --- | --- | --- | ---: |
+| Full package tests, one process | `testthat::test_local('.', stop_on_failure = FALSE)` with the failure limit removed | 972 tests, 0 failures | 568 s |
+| README cold start | `Rscript --vanilla tools/check-readme-example.R` | passed | 22 s |
+| Article freshness, run 1 | `Rscript tools/render-vignettes-gfm.R --check --all` | failed: `vignettes/walk-forward.md` stale | 154 s |
+| Article freshness, run 2 | the same, at `a3517c6` | all 26 verified | 154 s |
+| `R CMD build` | `R CMD build .` | built `ledgr_0.2.1.0.tar.gz` | 222 s |
+| `R CMD check` | `R CMD check --no-manual --no-build-vignettes ledgr_0.2.1.0.tar.gz` | Status: OK | 252 s |
+| Coverage | `Rscript tools/check-coverage.R`, at `76dc0e9` | 85.94 percent against 80 | about 15 min |
+| pkgdown build | `Rscript dev/build-site.R` | built; no DuckDB notices across 28 rendered articles | 327 s |
+| WSL/Ubuntu DuckDB gate | the playbook's four `test_file()` calls, R 4.6.0, duckdb 1.5.6 | 24 tests, 0 failures | 11 s |
+
+Walk-Forward went stale because its printed session ID hashes the package
+version, which the promotion changed; it was re-rendered in `cfa8c67`, where
+only that line moved. The pkgdown build's two tracked `docs/` files were
+committed in the same commit, as earlier gates did. The WSL gate ran on an
+exported copy of `791060e` inside WSL, with duckdb 1.5.6 installed from Posit's
+Ubuntu binaries, because WSL's own library held duckdb 1.5.2.
+
+## Peer Record
+
+Two runs from the release commit `cfa8c67` with the registered 500-instrument,
+1,260-session, fixed-seed all-engine command and a release R profile that puts
+CRAN's duckdb 1.5.6 first; the second run,
+`dev/bench/results/peer_benchmark_record_20261001T055357Z`, is promoted and
+renders the tracked report (`a3517c6`). Correctness, canonical-versus-compiled
+differential parity, surface retention and peer parity pass in both runs;
+LEAN was unavailable (obsolete local CLI root) and is reported as such. The
+first run's durable public TTR row took 64.89 seconds against 60.94 in the
+promoted 2026-09-26 record, while every other row was as fast or faster; the
+maintainer asked for the repeat, which measured 57.94, showing host variance
+rather than a package change. Against the 2026-09-26 record, which ran on
+duckdb 1.5.2, every ledgr row is as fast or faster, but the unchanged peer
+engines were also 5 to 22 percent faster, so no ledgr speedup is claimed. The
+sampled process tree peaked at 2,284.1 MiB. Details: the peer README's
+"v0.2.1.0 Release Record".
+
+## Continuous Integration
+
+The release branch's full tier had not run since v0.2.0.1 when the gate began;
+its first dispatches failed only on gates added since then, which windows and
+CRAN mode had never passed. Fixed in LDG-2917 and LDG-2919, with maintainer
+decisions recorded there:
+
+- the duckdb 1.5.6 join for stores a user holds open, and LTB-0132 that forces
+  the refusal on every platform;
+- CI timing is advisory (maintainer, 2026-09-30): hosted runners measured 103
+  and 135 seconds on identical code against a 112-second bound. The bound is
+  unchanged and still binding locally (82.86 seconds at the gate); CI records
+  the time and warns. This changes where the gate binds, not its threshold;
+- the isolated CRAN profile runs on ubuntu, and windows runs
+  `R CMD check --as-cran`, as CRAN does there;
+- the CRAN test library is kept out of the package build;
+- coverage measures the fast and review profiles together, as it did before
+  the test lanes split them (maintainer, 2026-09-30), with the 80 percent
+  threshold unchanged; coverage runs find the source tree, start no worker
+  daemons, and skip only checks of live function bodies.
+
+Release-branch full tier, dispatched: run `36776852759` at `76dc0e9` was the
+first fully green full-tier run since v0.2.0.1; run `36822363938` at `a3517c6`
+is the merge gate (result recorded when it completes). Still to record, as
+three separate run ids: `main` R-CMD-check, `main` pkgdown, and the `v0.2.1.0`
+tag R-CMD-check.
+
+## Release Notes
+
+NEWS opens with `# ledgr 0.2.1.0`, starts with what an upgrading user must
+change, and states the non-claims in their own paragraph: corporate actions are
+not complete, exact quantity settlement is not modeled, and bars declared
+distribution-adjusted are refused as execution bars. The README states the R
+4.6.0 requirement and agrees with the notes.
+
+## Review Count
+
+Workstream 15 holds six tickets: LDG-2824, LDG-2825, LDG-2913, LDG-2914,
+LDG-2918 and LDG-2919. One Type 1 close review covers them: 1 over 6. A
+correction round would add one invocation and be recorded.
