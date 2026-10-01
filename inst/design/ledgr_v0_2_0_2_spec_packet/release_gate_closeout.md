@@ -30,7 +30,7 @@ Windows 11, R 4.6.1, at `791060e` unless noted. Release-gate timeouts were used.
 
 | Gate | Command | Result | Wall time |
 | --- | --- | --- | ---: |
-| Full package tests, one process | `testthat::test_local('.', stop_on_failure = FALSE)` with the failure limit removed | 972 tests, 0 failures | 568 s |
+| Full package tests, one process | command 1 below | 972 tests, 0 failures | 568 s |
 | README cold start | `Rscript --vanilla tools/check-readme-example.R` | passed | 22 s |
 | Article freshness, run 1 | `Rscript tools/render-vignettes-gfm.R --check --all` | failed: `vignettes/walk-forward.md` stale | 154 s |
 | Article freshness, run 2 | the same, at `a3517c6` | all 26 verified | 154 s |
@@ -38,7 +38,40 @@ Windows 11, R 4.6.1, at `791060e` unless noted. Release-gate timeouts were used.
 | `R CMD check` | `R CMD check --no-manual --no-build-vignettes ledgr_0.2.1.0.tar.gz` | Status: OK | 252 s |
 | Coverage | `Rscript tools/check-coverage.R`, at `76dc0e9` | 85.94 percent against 80 | about 15 min |
 | pkgdown build | `Rscript dev/build-site.R` | built; no DuckDB notices across 28 rendered articles | 327 s |
-| WSL/Ubuntu DuckDB gate | the playbook's four `test_file()` calls, R 4.6.0, duckdb 1.5.6 | 24 tests, 0 failures | 11 s |
+| WSL/Ubuntu DuckDB gate | command 2 below, R 4.6.0, duckdb 1.5.6 | 24 tests, 0 failures | 11 s |
+
+Command 1 is `"C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" -e <expr>` from
+the package root, with this expression as one argument
+(`testthat::test_local()` loads the package through `pkgload::load_all()` with
+its defaults):
+
+```r
+options(testthat.progress.max_fails = Inf); res <- as.data.frame(testthat::test_local('.', reporter = 'summary', stop_on_failure = FALSE)); bad <- sum(res$failed > 0 | res$error); cat('TESTS', nrow(res), 'BAD', bad, '\n'); quit(status = as.integer(bad > 0))
+```
+
+Command 2 is `Rscript /mnt/c/tmp/ledgr-wsl-gate.R`, run inside WSL from the
+exported tree's root. The script, verbatim:
+
+```r
+# WSL/Ubuntu DuckDB gate for the v0.2.1.0 release (release_ci_playbook.md).
+.libPaths(c(path.expand("~/R/gate-lib"), .libPaths()))
+Sys.setenv(NOT_CRAN = "true")
+suppressMessages(pkgload::load_all(".", quiet = TRUE))
+cat("R", as.character(getRversion()), "duckdb", as.character(packageVersion("duckdb")), "\n")
+files <- c(
+  "test-schema-validator-side-effects.R", "test-schema-snapshots.R",
+  "test-schema.R", "test-persistence-fresh-connection.R"
+)
+start <- proc.time()[["elapsed"]]
+bad_total <- 0L
+for (f in files) {
+  r <- as.data.frame(testthat::test_file(file.path("tests/testthat", f), reporter = "silent"))
+  bad <- sum(r$failed > 0 | r$error)
+  bad_total <- bad_total + bad
+  cat(sprintf("%-42s %3d tests %d bad\n", f, nrow(r), bad))
+}
+cat(sprintf("WSL GATE %s in %.0f s\n", if (bad_total == 0L) "PASS" else "FAIL", proc.time()[["elapsed"]] - start))
+```
 
 Walk-Forward went stale because its printed session ID hashes the package
 version, which the promotion changed; it was re-rendered in `cfa8c67`, where
@@ -91,6 +124,18 @@ first fully green full-tier run since v0.2.0.1; run `36822363938` at `a3517c6`
 is the merge gate (result recorded when it completes). Still to record, as
 three separate run ids: `main` R-CMD-check, `main` pkgdown, and the `v0.2.1.0`
 tag R-CMD-check.
+
+## Production Code
+
+The gate's brief predates four tickets that joined the workstream; the
+review reason was amended on 2026-10-01. LDG-2918 is the only production change:
+one Tier 1 resolver shared by preflight and trusted recovery. Its loops run over
+a strategy's free symbols and the fixed list of recommended packages; neither
+grows with bars, facts, instrument-pulses, events, diagnostics or candidates,
+and none of the seven named shapes appears. Its preflight cost is a warm clock,
+interleaved against `8a6fd38`: 2.8 to 2.9 ms for the helper strategy and 1.75
+to 1.85 ms for a plain one, within the clock's noise. LDG-2913, LDG-2914 and
+LDG-2919 change tests, test tooling, CI and the R floor only.
 
 ## Release Notes
 
