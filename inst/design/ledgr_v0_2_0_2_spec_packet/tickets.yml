@@ -291,7 +291,10 @@ cuts:
     out_of_scope: "Changing dense defaults, counting incomplete candidates as trials, a preflight warning on captured data, a rounding risk step, a promotion banner, a series_fn prefix check, recursive-indicator warmup, print column types and source-hash normalization. Each is parked in a design session row of ledgr_roadmap.md marked external review 2026-10-01."
     workstreams: [32]
     closeout: "release_gate_closeout.md"
-    status: "open"
+    close_review: "Invocation 1: a clean-context Codex Type 1 close review of Workstream 32 at 3345e3c returned CHANGES_REQUIRED on two sentences the patch wrote: Accounting called all seven ledgr_results() outputs persisted tables, and Experiment Store said a comparison must be converted with as_tibble() before code reads it. It otherwise confirmed every routed finding by executed probes (dense short and negative cash against the availability-aware refusal, a partial reduction as one closed trade, an unqueued halted exit, a captured data frame passing preflight as Tier 2, the entitlement posting clock and the 0.00% result), found no weakened test, and measured LDG-2922 warm and interleaved at a 0.994 median ratio. a8059f3 corrected both sentences. Invocation 2, a focused re-review at a8059f3, returned PASS. Branch full tier on a8059f3: run 36859387501; earlier dispatches 36855195000 (old remote head, cancelled), 36855731855 (superseded by the review corrections, cancelled) and 36857664931 (fbb64aa, cancelled) are not evidence."
+    historical_gate: "2 review invocations over 3 completed tickets, 0.667, against a 0.5 gate; accepted by the maintainer without a third review as an honest breach, not padded with unrelated work"
+    accepted: "2026-10-01 by the maintainer"
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -550,7 +553,7 @@ workstreams:
   - id: 32
     name: "Documentation patch"
     cut: 24
-    status: "open"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 32", reason: "One claim joins the tickets: after the patch, no tracked article or the README states behaviour the code does not have, among the findings routed here. The review checks each routed finding against the changed text and the code it describes, asks independently whether the routing record's verdicts are right and whether the patch introduced a new false statement, confirms the re-rendered articles are fresh and that no article-reading test was weakened, and checks the tags fix with its test. LDG-2922 touches result-reader code, so the review walks it against the seven shapes; it adds no loop. Its cost is measured on the registered run-list shape, before and after, warm."}
@@ -2417,7 +2420,7 @@ tickets:
   - id: "LDG-2920"
     title: "Correct the verified article defects"
     workstream: 32
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -2427,7 +2430,7 @@ tickets:
   - id: "LDG-2921"
     title: "State shipped behaviour where the documentation over-claims"
     workstream: 32
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -2437,7 +2440,7 @@ tickets:
   - id: "LDG-2922"
     title: "Make the tags column character from the start"
     workstream: 32
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "XS"
     dependencies: []

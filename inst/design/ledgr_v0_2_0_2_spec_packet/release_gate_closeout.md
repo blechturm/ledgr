@@ -152,6 +152,24 @@ not complete, exact quantity settlement is not modeled, and bars declared
 distribution-adjusted are refused as execution bars. The README states the R
 4.6.0 requirement and agrees with the notes.
 
+## Documentation Patch
+
+The tag was pushed at `207e760` and tag CI passed (run `36832236507`), but
+before the GitHub Release an outside reader's review of the README and all
+articles arrived. The maintainer decided that no version is tagged with known
+defects. Its findings were verified and routed
+(`external_review_2026_10_01.md`): documentation errors and the run list's
+`tags` type became Cut 24, Workstream 32 (LDG-2920 to LDG-2922); behaviour
+changes went to design sessions of the next version. The patch corrects the
+articles, states shipped behaviour where the documentation over-claimed, and
+makes `tags` character from the start. Its local checks: all 26 articles fresh,
+the README example passing, the full suite in one process failing only on the
+two declared test pins it then updated, and the binding fast-profile gate
+passing at 495 blocks. Two reviews (0.667 over three tickets, an accepted
+breach) passed it at `a8059f3`. The release tag moves to the patched commit
+after `main` is green, as the playbook's release order allows; tag CI and the
+GitHub Release are recorded on the moved tag.
+
 ## Review Count
 
 Workstream 15 holds six tickets: LDG-2824, LDG-2825, LDG-2913, LDG-2914,
