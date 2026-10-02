@@ -316,6 +316,28 @@ instruments and many sweep candidates. The 2026-09-27 monthly-rebalance
 measurement showed low-turnover runs dominated by costs that do not scale with
 trading.
 
+Maintainer, 2026-10-02: seed v1 binds skip-callback only. On a held pulse the
+fold still builds the full context and feature views and then discards them,
+and still values and books the pulse one step at a time. Seed v2 should take
+two levers into scope rather than park them. First, skip context and feature
+construction on held pulses. Second, step from event to event: between two
+decision pulses positions are constant, so equity over a held stretch is one
+vectorised product of positions and closes plus cash, and the stretch breaks
+only at prepared event pulses, namely the next-open fill of a decision, cash
+postings and dispositions (`R/corporate-action-settlement.R` already prepares
+`posting_idx`, `cash_due_idx` and `disposition_due_idx` up front), mark ageing
+past the valuation limit, and availability stops. That would make a scheduled
+strategy cost roughly in proportion to its decisions and events rather than
+its pulses. Before the seed, a small spike measures how a held pulse's cost
+splits between context construction, the strategy call and accounting on the
+monthly-rebalance workload; the combined writer/accessor spike measured that
+workload at 18.6 s per run and 6.1 s per one-candidate sweep against 67.6 s and
+44.2 s for the daily strategy, without attributing the remainder. The canonical
+R fold stays the oracle, so equity, events and fills must be byte-identical. A
+held pulse in an availability-aware run must still honour departed and halted
+holdings, which the execution-intent session decides. The monthly-rebalance
+shape also belongs in the peer workload suite.
+
 **5. Portfolio construction.** The pipeline order is weight-strategy wrapper,
 then optimization scaffolding, then adapters. History (2) is a hard
 predecessor: no adapter assembles its own history. Constraint expansion is
