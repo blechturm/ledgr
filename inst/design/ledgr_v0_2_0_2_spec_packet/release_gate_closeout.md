@@ -143,8 +143,10 @@ the patched commit `5f19dbc`:
 The tag run's fifth Windows NOTE is the examples timing check:
 `print.ledgr_backtest` took 10.97 seconds elapsed on 1.00 second of CPU, a
 runner stall; the same commit's `main` run passed the examples check with no
-NOTE. The branch full tier for the patched code is run `36859387501` at
-`a8059f3`, green. The GitHub Release "v0.2.1.0 Equity Corporate Actions and
+NOTE. Run `36864577616` is the release-branch push at the same commit, a quick
+tier, and is not cited as tag CI. The branch full tier for the patched code is
+run `36859387501` at `a8059f3`, green. No gate was weakened and no threshold
+was lowered to reach green. The GitHub Release "v0.2.1.0 Equity Corporate Actions and
 Strategy Workflow" was created from the existing tag after tag CI was green,
 published 2026-10-01T14:39:31Z and marked latest; its notes state the
 upgrade requirements, the breaking renames and the non-claims, and make no
