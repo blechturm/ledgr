@@ -1,0 +1,13 @@
+{
+  "resolve_membership": 28.86,
+  "history_membership": 21.46,
+  "history_sessions": 17.18,
+  "hash_only": 17,
+  "resolve_membership_nohash": 10.78,
+  "history_membership_nohash": 4.53,
+  "history_sessions_nohash": 0.25,
+  "provider_data": 0.18,
+  "sessions_construct_ny_s": 42.83,
+  "sessions_construct_utc_s": 17.28,
+  "civil_dates": 10473
+}

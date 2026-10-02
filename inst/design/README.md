@@ -695,6 +695,7 @@ defaults or named ticket-cut gates or both must land.
 
 ## Audits And Spikes
 
+- `../../dev/bench/notes/long_window_scaling_findings.md` - 2026-10-02 long-window scaling research for EXP-0003 (30-year availability-aware runs): measured causes ranked by contribution, scaling tables, snapshot hashing spike, reader-path timings and parity obligations; reproducer in `dev/bench/long_window/`; routed into the v0.2.2 indicator warmup and snapshot verification sessions and the long-window performance row of the roadmap.
 - `audits/v0_2_0_test_suite_audit.md` - initial test-suite audit for planned v0.2.0 API and fold hardening: source findings, pinned CI evidence, invariant-to-test map, and pending fault-injection follow-up.
 - `audits/execution_engine_audit.md` - v0.1.7.9 execution-engine audit and routing.
 - `audits/v0_1_8_spec_deep_review.md` - v0.1.8 spec review and routing.

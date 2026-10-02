@@ -1,0 +1,11 @@
+{
+  "sweep_cold_s": 156.25,
+  "sweep_second_call_s": 156.07,
+  "candidates": 4,
+  "sweep_status": "DONE",
+  "save_s": 0.19,
+  "open_s": 0.08,
+  "folds": 3,
+  "walk_forward_s": 313.3,
+  "walk_forward_status": "returned"
+}

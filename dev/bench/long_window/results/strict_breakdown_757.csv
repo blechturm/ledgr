@@ -1,0 +1,4 @@
+"feature","n","width","windows","strict_s","us_per_window","slice_us","check_us","fn_us","series_us","all_equal_us","vectorised_s","speedup","identical","max_abs_diff","na_mask_identical"
+"return_63",757,64,694,0.07,100.864553314121,38.4245917387127,28.8184438040346,14.4092219020173,0,28.8184438040346,0,Inf,TRUE,0,TRUE
+"return_126",757,127,631,0.04,63.3914421553091,42.2609614368726,15.8478605388273,0,0,31.6957210776545,0,Inf,TRUE,0,TRUE
+"return_252",757,253,505,0.03,59.4059405940593,39.6039603960396,19.8019801980203,0,0,39.6039603960396,0,Inf,TRUE,-Inf,TRUE
