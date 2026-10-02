@@ -351,6 +351,27 @@ seed". Decide scope first:
 Affordability in target risk (the parked capital-floor direction) sits between
 optimizer weights and executable targets.
 
+Research candidate to carry into the future scaffolding RFC, not a selected
+adapter: Peter Cotton's Schur complementary allocation / Schur bridge
+(https://schur.microprediction.org/; corrected paper dated 2026-09-19). The
+architectural interest is a construction-level regularization dial, gamma,
+that controls how much cross-group covariance structure the allocator uses,
+separate from covariance-estimator regularization such as Ledoit-Wolf
+shrinkage. Do not add a Schur-specific seam: the useful test is whether the
+generic history -> estimator -> weights -> executable-target pipeline makes
+Schur a boring adapter.
+
+Any later evaluation must consume only the point-in-time history substrate,
+run on scheduled decision dates, and tune or select gamma only inside
+walk-forward training. Compare at least sample and shrunk covariance inputs
+against HRP and long-only minimum-variance/risk-parity baselines. If
+implemented, start from the corrected pair-form (Q, b) construction rather
+than copying the original 2024 / naive split literally; the endpoint claims
+differ. Under today's long-only spot contract, do not claim that gamma = 1
+equals unconstrained global minimum variance. Exact unrestricted endpoint
+work waits on the shorting/leverage contract. A reference implementation in
+skfolio is prior art, not an API template.
+
 **6. ML-adjacent estimators.** For this version, "ML-adjacent" means
 estimators computed from prepared windows inside the strategy callback on
 decision dates. It needs 2, 3 and 4. Trained models with identity, refit
