@@ -268,7 +268,7 @@ This entry authorizes no implementation, spike or RFC.
 ### 2026-09-28 [planning] Dependency order for the next version
 
 The next version after v0.2.1.0 is called v0.2.2 in planning. The roadmap's
-"v0.2.1.1 opening" row is its first workstream. Its aim is to make portfolio
+"v0.2.2 opening" row is its first workstream. Its aim is to make portfolio
 optimization and ML-adjacent estimators possible on point-in-time history.
 This sketch orders what is accepted, what is only seeded and what has no seed.
 It binds nothing; the owning RFCs, syntheses and ticket cuts decide.
@@ -294,7 +294,7 @@ workstream.
 - Measure the cold strict availability-feature path as part of (c).
   `ledgr_compute_feature_series_strict()` took 58% of a cold availability run
   at 500 x 1,260 by slicing a data-frame window per bar and calling `fn` and
-  `series_fn` on each. v0.2.1.1 excludes it, and v11 optimizes only an
+  `series_fn` on each. v0.2.2 excludes it, and v11 optimizes only an
   observed bottleneck, so (c) is where it is observed.
 - The instrument-narrowed expected-sessions goal is scheduled beside this
   (v11 section 4) and must resolve window composition at the request cutoff.

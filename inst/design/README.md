@@ -465,7 +465,7 @@ load-bearing for future sweep and fold-core work.
   hot-path, ingest, seal, and reader code)
 - `collapse_optimization_map.md`
 - `spikes/fold_writer_accessor_levers_spike/summary_report.md` (measured input
-  promoted to the v0.2.1.1 opening optimization workstream)
+  promoted to the v0.2.2 opening optimization workstream)
 - `spikes/ledgr_parallelism_spike/summary_report.md`
 - `spikes/ledgr_parallelism_spike/architecture_synthesis.md`
 - `spikes/ledgr_optimization_round_spike/README.md`
