@@ -54,14 +54,14 @@ workstreams:
   - id: 4
     name: "Horizon migration"
     cut: 1
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 3
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 4", reason: "One claim joins LDG-2930 through LDG-2932: every horizon body survives, every old heading still resolves, and no accepted obligation or operative binding citation remains hidden in parking-lot prose. The review recounts entries from the pre-migration file, reconciles each heading to one active body or one redirect plus archive body, samples bodies from every disposition, independently searches obligation language and operative citations, verifies pipeline ownership, and confirms historical packets and syntheses were not rewritten."}
   - id: 5
     name: "Current context and migration closeout"
     cut: 1
-    status: "pending"
+    status: "in_progress"
     depends_on_workstream: 4
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 5", reason: "One claim joins LDG-2933 and LDG-2934: after migration, the roadmap, AGENTS.md, packet, consumer links and front door describe one current state and a human or agent can follow the documented routes without reconstructing history. The review runs the scenario walk from the accepted plan on real topics, checks released narrative remains recoverable, verifies the bounded deterministic evidence sample and any one-time routing without a new ledger, checks the optional-link-check decision against the least-machinery rule, and reconciles all twelve tickets and five workstreams in the closeout."}
