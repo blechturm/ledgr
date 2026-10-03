@@ -129,13 +129,13 @@ tickets:
   - id: "LDG-2929"
     title: "Make the RFC index a pipeline with open obligations"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2928"]
     scope: "Remove the Topic Decision Index from rfc/README.md and retain only active, due, deliberately parked and Obligations open cycles. Every obligation records its exact accepted source section, trigger and intended route. Link decisions.md to the pipeline row without copying obligation text. Remove accepted cycles that have no active stage or open obligation."
     acceptance: ["every pipeline row has one allowed state, latest operative artifact and next action or trigger", "every Obligations open item has an exact accepted source section and appears nowhere else as copied obligation text", "the Topic Decision Index is removed after LDG-2925's reconciliation, and every decision-bridge pipeline link resolves", "the RFC index free-text header states its pipeline-only role and current status", "the sentence describing horizon as authoritative is gone, and an accepted cycle with no open work or obligation is absent"]
-    evidence: []
+    evidence: ["rfc/README.md is now a current pipeline only: one Active row, three Due rows, eleven deliberately Parked rows and seven Obligations open rows. The Topic Decision Index, completed implementation rows, ADR routing table and scaffolding catalogue are removed; their historical artifacts remain at the same paths and the LDG-2925 reconciliation preserves the retired catalogue's 27-row disposition.", "Every row uses one of the four allowed states and names a latest operative or routing artifact plus its next action or trigger. Each Obligations open row links an exact accepted source section and states both Trigger and Route. The header says explicitly that horizon is non-binding parking and that ticket cut or recorded maintainer drop are the only obligation-removal routes.", "decisions.md backfills seven pipeline links without copying obligation text: historical projection, recursive indicators, objective-filtered walk-forward identity, OMS, equity exact quantity and the compiled envelope, plus its existing pipeline-front-door link. All seven targets resolve to the heading or an explicit row id.", "One-off structural checks reported LDG2929_SHAPE_OK rows=22 obligations=7 decision_links=7 and RFC_PIPELINE_LINKS_OK over 38 local Markdown links. Mutating an allowed state, deleting one registered obligation source anchor or breaking one decision pipeline target makes the check fail. git diff --check is clean; no retained checker was added."]
   - id: "LDG-2930"
     title: "Archive resolved horizon entries with stable redirects"
     workstream: 4
