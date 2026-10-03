@@ -1,8 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1 and 2
-are accepted after Type 1 close review; Workstream 3 is in progress and later
-workstreams remain pending.
+are accepted after Type 1 close review; Workstream 3 is complete and awaiting
+its Type 1 close review; later workstreams remain pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -26,9 +26,11 @@ the packet state and does not become a second editable ticket ledger.
   evidence for the two retired catalogues; it is not a decision index.
 - `../README.md`: the LDG-2926 short front door for current authority and
   task-oriented routes.
+- `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
+  deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstreams 1 and 2 are complete,
-  Workstream 3 is in progress and the remaining workstreams are pending.
+  Workstream 3 is review-pending and the remaining workstreams are pending.
 
 ## Cut 1: Design-memory authority and discoverability
 

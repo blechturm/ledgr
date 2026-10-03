@@ -47,7 +47,7 @@ workstreams:
   - id: 3
     name: "RFC pipeline and obligation routing"
     cut: 1
-    status: "in_progress"
+    status: "review_pending"
     depends_on_workstream: 2
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 3", reason: "One claim joins LDG-2928 and LDG-2929: accepted unscheduled obligations have exactly one durable operational home and speculation remains non-binding. The review compares both amended stage-9 passages with stages 1 through 8, traces every Obligations open item to an exact accepted section, trigger and route, checks that decisions.md links rather than copies obligation text, and confirms accepted cycles with neither active work nor open obligations no longer clutter the pipeline."}
