@@ -25,6 +25,9 @@ the packet state and does not become a second editable ticket ledger.
 - `horizon_migration_reconciliation.md`: the LDG-2931 classification,
   obligation sweep and LDG-2932 body/redirect reconciliation; it is migration
   evidence, not authority or a backlog.
+- `../roadmap_history.md`: the verbatim planning tail displaced when LDG-2933
+  reduced the roadmap to its maintained sequence; it is historical context,
+  not current scope or sequencing authority.
 - `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
   evidence for the two retired catalogues; it is not a decision index.
 - `../README.md`: the LDG-2926 short front door for current authority and

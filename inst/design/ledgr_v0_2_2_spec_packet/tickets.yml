@@ -169,13 +169,13 @@ tickets:
   - id: "LDG-2933"
     title: "Compact the roadmap and current agent context"
     workstream: 5
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
     scope: "Keep detailed dependency planning for the current and next release in ledgr_roadmap.md, collapse completed releases to concise outcome links, and preserve displaced historical narrative in planning_context_history.md or the archive without rewriting it. Update AGENTS.md to the current release, packet and operative entry points while retaining its operational rules and under-150-line constraint. Classify misleading root plans as current, superseded or historical without mass renaming."
     acceptance: ["the roadmap free-text header states its committed-sequencing role and current release status", "the roadmap has one maintained current sequence, concise completed-release routes and no competing design-memory plan", "every removed roadmap narrative remains reachable in an explicitly historical document", "AGENTS.md names v0.2.2, its packet, the normalized contracts and the new navigation routes, contains no stale v0.2.1.0 current-state instruction and remains under 150 lines", "no product scope or semantic rule changes under roadmap or AGENTS editing"]
-    evidence: []
+    evidence: ["ledgr_roadmap.md now identifies v0.2.2 as the current release and delegates detailed release scope and dependencies to the packet macro plan and tickets.yml. Its maintained body is 226 lines; the displaced 2,259-line planning tail is preserved verbatim in roadmap_history.md with an explicit historical-only header and a route back to current authority.", "AGENTS.md is 135 lines, retains the operating and verification rules, and replaces the stale v0.2.1.0 context and release-history reading table with task-oriented routes to contracts.md, the v0.2.2 packet, decisions.md, the RFC pipeline, horizon, roadmap and archives. The root Markdown classification found README.md current, NEWS.md a release record, AGENTS.md current operational context, and LICENSE.md and DISCLAIMER.md evergreen; no competing root plan exists.", "The roadmap and AGENTS edits change navigation and status only. The milestone rows and product semantics are unchanged in the staged ticket delta; six pre-existing maintainer research-route edits remain unstaged in ledgr_roadmap.md and are not attributed to this ticket. git diff --check passed and every route added by the ticket resolves."]
   - id: "LDG-2934"
     title: "Close the design-memory migration"
     workstream: 5

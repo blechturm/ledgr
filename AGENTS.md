@@ -66,55 +66,41 @@ Read before implementing any non-trivial change:
 
 ## Current State
 
-Current planning context (2026-09-27):
+Current planning context (2026-10-03):
 
-- v0.2.0.1 is published. Its packet, closeout and measurements are historical
-  evidence; do not reopen that release or rewrite its measured results.
-- Release branch: v0.2.1.0. The active packet keeps its historical path,
-  `inst/design/ledgr_v0_2_0_2_spec_packet/` (the release was planned as
-  v0.2.0.2 and promoted); its `tickets.yml` is the sole current status and
-  sequencing authority.
-- The governance review, testing-architecture RFC (2026-09-21) and
-  accounting-core RFC (2026-09-22) are accepted. This packet pilots
-  workstream-level review, with `tickets.yml` as authority and no batch
-  evidence essays. Reader work and validation fixes need no new RFC cycle.
-- Reuse public capabilities and production semantics. Design only the missing
-  behavior; do not add research-specific manifests or a parallel provenance
-  system. Prefer small detecting examples and concrete workflow improvements.
-- Spot-crypto, compiled-default promotion and tax work remain separate from the
-  scheduled equity/workflow scope. Older release narratives are linked from
-  `inst/design/README.md` and `inst/design/planning_context_history.md`.
+- v0.2.1.0 is published. Its packet retains the historical
+  `ledgr_v0_2_0_2_spec_packet/` path and is release evidence, not current
+  implementation authority.
+- The current release branch is `v0.2.2`. Its active packet is
+  `inst/design/ledgr_v0_2_2_spec_packet/`; `tickets.yml` is the sole status and
+  sequencing authority. Cut 1 Workstreams 1 through 4 are accepted and
+  Workstream 5 is in progress.
+- `inst/design/contracts.md` is the normative current-behavior source. Cite its
+  stable topic headings, not line numbers. Accepted RFC syntheses bind pending
+  design; they do not override shipped behavior before implementation.
+- The roadmap is the compact committed sequence. Detailed v0.2.2 dependencies
+  live in the packet macro plan, parked ideas in `horizon.md`, and displaced
+  planning narrative in `roadmap_history.md` and
+  `planning_context_history.md`.
+- Reuse public capabilities and production semantics. Design only missing
+  behavior; do not add research-specific manifests or parallel provenance.
 
 ## Active Design Entry Points
 
-Read these before working in the listed areas. They are accepted design decisions
-binding for their stated release scope unless marked otherwise. Completed spec
-packets are records, not authorization for new work.
+Start from the task, not from release history. Completed packets and archived
+planning are evidence, not authorization for new work.
 
-| Area | Read |
+| Question | Start here |
 | --- | --- |
-| v0.2.1.0 equity and workflow planning (packet path `v0_2_0_2`) | `inst/design/ledgr_roadmap.md` v0.2.1.0 section; `inst/design/research/Sharadar-Corporate-Event-Evidence.md`; `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`; relevant RFC pipeline entries |
-| v0.2.0.1 released availability performance | `inst/design/ledgr_v0_2_0_1_spec_packet/v0_2_0_1_spec.md`, accepted hot-path and timestamp/benchmark amendments in that packet, `inst/design/ledgr_v0_2_0_1_spec_packet/tickets.yml`, Markdown tickets, and batch plan; accepted RFC artifacts; `dev/spikes/v0_2_0_1_hot_path_complexity_audit/`; `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/`; optimization and benchmark manuals; spike protocol section 10; earlier spike inventories and `dev/spikes/snapshot-sealing/` |
-| Post-v0.2.0.1 spot-crypto planning | `inst/design/ledgr_roadmap.md` (spot-crypto section), `inst/design/rfc/README.md` (pipeline row), `inst/design/spike_protocol.md`, `inst/design/research/Transaction-Cost-Models.md`, `inst/design/research/Cross-Asset-Accounting-Critical-Events.md` |
-| v0.2.0.0 release record | `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_spec.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_tickets.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/tickets.yml`, `inst/design/ledgr_v0_2_0_0_spec_packet/batch_plan.md`, `inst/design/ledgr_v0_2_0_0_spec_packet/v0_2_0_0_release_closeout.md`, `inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`, `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`, `inst/design/audits/v0_2_0_test_suite_audit.md`, `inst/design/spike_protocol.md`, `inst/design/vignette_styleguide.md`, `inst/design/release_ci_playbook.md`, `inst/design/contracts.md`, `inst/design/ledgr_roadmap.md` |
-| Release records v0.1.8.2 to v0.1.9.7 | `inst/design/README.md` (release-record list) and `inst/design/ledgr_roadmap.md`; the per-packet reading lists that previously sat in this table are preserved in `inst/design/planning_context_history.md` |
-| v0.1.8.9 optimization inputs | `inst/design/spikes/ledgr_v0_1_8_9_optimization_round_spike/architecture_synthesis.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `dev/bench/peer_benchmark/peer_benchmark.md` |
-| v0.1.8.8 parallel dispatch | `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`, `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`, `inst/design/manual/sweep.qmd`, `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md` |
-| Fold-core and feature-path documentation | `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd`, `inst/design/manual/features.qmd`, `inst/design/rfc/README.md` |
-| v0.1.8.8 peer benchmark report | `dev/bench/README.md`, `dev/bench/peer_three_way.R`, `dev/bench/peer_three_way_backtrader.py`, `inst/design/ledgr_v0_1_8_7_spec_packet/benchmark_attribution_closeout.md` |
-| Sweep performance / optimization | `inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md` for the scheduled v0.2.2 opening workstream; `inst/design/exact_parity_internal_optimization_proof_template.md`; `inst/design/manual/optimization_coding_style.qmd`; `inst/design/rfc/rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md`; relevant projection/accessor syntheses; `dev/bench/notes/long_window_scaling_findings.md` (2026-10-02 long-window scaling causes and parity obligations; reproducer `dev/bench/long_window/`) |
-| Feature projection / materialization | `inst/design/rfc/rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md`, `inst/design/rfc/rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md` |
-| v0.1.8.7 optimization inputs | `inst/design/audits/fold_path_hotpath_audit.md`, `inst/design/manual/snapshots_data.qmd`, `inst/design/collapse_optimization_map.md`, `inst/design/spikes/ledgr_optimization_round_spike/README.md`, `inst/design/manual/execution_fold_core.qmd`, `inst/design/manual/performance_arc_v0_1_8_x.qmd` |
-| Multi-output indicator authoring | `inst/design/rfc/rfc_multi_output_indicator_ux_synthesis.md` |
-| Indicator determinism / fingerprinting | `inst/design/rfc/rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md` |
-| Metric context / risk metrics | `inst/design/rfc/rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md` (accepted for v0.1.8.2) |
-| Active parameterized feature aliases | `inst/design/rfc/rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md` (accepted for v0.1.8.4) |
-| Research workflow / artifact topology | `inst/design/rfc/rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md` (accepted for v0.1.8.5 planning) |
-| v0.1.9 risk layer / tiered output | `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_synthesis.md` (accepted for v0.1.9 planning) |
-| Primitive internals / collapse acceleration | `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md` (accepted for v0.1.9 planning) |
-| v0.1.9 performance scoping | `inst/design/ledgr_v0_1_8_9_spec_packet/v0_1_8_9_release_closeout.md`, `dev/bench/notes/single_core_optimization_inventory.md`, `dev/bench/notes/per_pulse_complexity_findings.md`, `inst/design/rfc/README.md` |
-| Point-in-time historical projection and missing data | `inst/design/rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md` (accepted 2026-09-28, operative; section 7 governs the ticket cut), with v10 and the missingness amendment as the derivation record; `dev/spikes/segmented-feature-views/spike_closeout.md`; `dev/spikes/revision-exposure/` (exposure evidence and its provenance README); `inst/design/rfc/README.md` |
-
+| What is current behavior? | `inst/design/contracts.md`, by topic heading |
+| What is being implemented now? | `inst/design/ledgr_v0_2_2_spec_packet/README.md`, then `tickets.yml` |
+| What is the v0.2.2 dependency plan? | `inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md` |
+| Which accepted decisions are pending implementation? | `inst/design/decisions.md`, then the linked accepted source |
+| Which RFC is active or due? | `inst/design/rfc/README.md` |
+| Where is a non-binding idea parked? | `inst/design/horizon.md` |
+| What is the cross-version sequence? | `inst/design/ledgr_roadmap.md` |
+| Where is displaced planning history? | `inst/design/roadmap_history.md` and `inst/design/planning_context_history.md` |
+| What governs optimization work? | `inst/design/manual/optimization_coding_style.qmd` and `inst/design/manual/benchmark_methodology.qmd` |
 ## Local Verification
 
 Current Windows R path used here; it does not change the `DESCRIPTION` floor.
