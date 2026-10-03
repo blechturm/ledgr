@@ -123,7 +123,7 @@ testthat::test_that("[LTB-0140] prepared feature state stays inside one sweep ca
     },
     .package = "ledgr"
   )
-  result <- ledgr_sweep(experiment, grid, seed = 1L)
+  result <- ledgr_sweep(experiment, grid, workers = 1L, seed = 1L)
 
   testthat::expect_true(all(result$status == "DONE"))
   maps <- lapply(seen, function(x) x$active_lookup$value)
