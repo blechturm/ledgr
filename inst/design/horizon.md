@@ -59,6 +59,10 @@ interest, also for the API: writing the same strategy for each peer shows where
 ledgr's interface and semantics differ, which could become a guide for users
 coming from those peers.
 
+The release-claim rule is bound in the v0.2.2 macro plan and the RFC
+pipeline's `benchmark-methodology` row. The candidate suite design remains
+parked here.
+
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 
 The maintainer wants this done soon. It is RFC work, a continuation of
@@ -3480,7 +3484,7 @@ Promoted and archived: [historical body](horizon_archive.md#open-009). Durable d
 
 ### 2026-09-27 [ux] Strategy callback inspection boundary
 
-Promoted and archived: [historical body](horizon_archive.md#open-010). Durable destination: [strategy-context synthesis](rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md).
+Promoted and archived: [historical body](horizon_archive.md#open-010). Durable destination: [strategy-context pipeline row](rfc/README.md#strategy-context-preflight).
 
 ### 2026-09-27 [data] Instrument-narrowed expected sessions, deferred
 
@@ -3528,7 +3532,7 @@ Promoted and archived: [historical body](horizon_archive.md#open-024). Durable d
 
 ### 2026-09-21 [infrastructure] Governance loop accepted; what it deferred
 
-Promoted and archived: [historical body](horizon_archive.md#open-025). Durable destination: [design-memory plan](ledgr_v0_2_2_spec_packet/design_memory_overhaul_plan.md).
+Promoted and archived: [historical body](horizon_archive.md#open-025). Durable destinations: [governance synthesis](rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md) and [benchmark-methodology pipeline row](rfc/README.md#benchmark-methodology).
 
 ### 2026-09-20 [ux] Real-data workflow costs beyond accounting
 
@@ -3704,7 +3708,7 @@ Measured evidence archived: [historical body](horizon_archive.md#open-090). No c
 
 ### 2026-06-07 [research] Hypothesis recording as a first-class identity artifact
 
-Promoted and archived: [historical body](horizon_archive.md#open-091). Durable destination: [roadmap or owning released packet](ledgr_roadmap.md).
+Promoted and archived: [historical body](horizon_archive.md#open-091). Durable destination: [sweep-persistence pipeline row](rfc/README.md#sweep-persistence-follow-ups).
 
 ### 2026-06-07 [planning] Portfolio optimization scaffolding -- four-level decomposition and architectural footguns
 

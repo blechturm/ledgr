@@ -15,7 +15,7 @@ an entry; this record corrects that mechanical census error.
 
 | Original heading | Disposition | Destination | Obligation scan |
 | --- | --- | --- | --- |
-| 2026-10-01 [benchmark] A suite of peer workloads, not one | still parked | [active body](../horizon.md) | 1: proposal constraint; remains non-binding |
+| 2026-10-01 [benchmark] A suite of peer workloads, not one | still parked | [active body](../horizon.md) | 1: suite design remains parked; its release-claim rule is bound in the macro plan and `benchmark-methodology` pipeline row |
 | 2026-09-29 [execution] Design homework: where intent meets the universe and the market | still parked | [active body](../horizon.md) | 0: none |
 | 2026-09-29 [ux] Sensible defaults versus required configuration | still parked | [active body](../horizon.md) | 3: proposal constraint; remains non-binding |
 | 2026-09-29 [execution] Untradable holdings end the run instead of booking the loss | promoted | [terminal-outcome pipeline row](../rfc/README.md#terminal-outcome-policy) | 1: consumed or routed by the durable destination |
@@ -24,7 +24,7 @@ an entry; this record corrects that mechanical census error.
 | 2026-09-28 [infrastructure] Binding decisions must be discoverable | promoted | [design-memory plan](design_memory_overhaul_plan.md) | 1: consumed or routed by the durable destination |
 | 2026-09-28 [data] Historical revision optimization, deferred | promoted | [historical-projection v11](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md) | 2: consumed or routed by the durable destination |
 | 2026-09-28 [ux] Feature-map read surface RFC seeded | promoted | [feature-map pipeline row](../rfc/README.md#feature-map-read-surface) | 1: consumed or routed by the durable destination |
-| 2026-09-27 [ux] Strategy callback inspection boundary | promoted | [strategy-context synthesis](../rfc/rfc_strategy_context_surface_v0_2_x_synthesis.md) | 4: consumed or routed by the durable destination |
+| 2026-09-27 [ux] Strategy callback inspection boundary | promoted | [strategy-context pipeline row](../rfc/README.md#strategy-context-preflight) | 4: consumed or routed by the durable destination |
 | 2026-09-27 [data] Interval facts cannot express per-endpoint knowledge | still parked | [active body](../horizon.md) | 1: proposal constraint; remains non-binding |
 | 2026-09-27 [data] Instrument-narrowed expected sessions, deferred | promoted | [historical-projection v11](../rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md) | 4: consumed or routed by the durable destination |
 | 2026-09-27 [execution] Writer and accessor levers measured | promoted | [v0.2.2 macro plan](macro_plan.md) | 0: none |
@@ -39,7 +39,7 @@ an entry; this record corrects that mechanical census error.
 | 2026-09-22 [product] One CSV ingestion surface | promoted | [roadmap or owning released packet](../ledgr_roadmap.md) | 0: none |
 | 2026-09-22 [architecture] Accounting core accepted; what it deferred | promoted | [accounting-core synthesis](../rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md) | 0: none |
 | 2026-09-21 [infrastructure] Testing architecture accepted; what it deferred | promoted | [testing-architecture synthesis](../rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md) | 0: none |
-| 2026-09-21 [infrastructure] Governance loop accepted; what it deferred | promoted | [design-memory plan](design_memory_overhaul_plan.md) | 0: none |
+| 2026-09-21 [infrastructure] Governance loop accepted; what it deferred | promoted | [governance synthesis](../rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md); [benchmark-methodology pipeline row](../rfc/README.md#benchmark-methodology) | 0: direct benchmark correction routed by the durable destinations |
 | 2026-09-20 [ux] Real-data workflow costs beyond accounting | measured evidence | [archive body](../horizon_archive.md#open-026) | 1: historical gate/test language; no new duty |
 | 2026-09-20 [data] Equity accounting events now block real portfolio research | measured evidence | [archive body](../horizon_archive.md#open-027) | 0: none |
 | 2026-09-20 [data] Point-in-time universe inspection before execution | measured evidence | [archive body](../horizon_archive.md#open-028) | 3: historical gate/test language; no new duty |
@@ -105,7 +105,7 @@ an entry; this record corrects that mechanical census error.
 | 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle accepted | promoted | [sweep-persistence synthesis](../rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md) | 0: none |
 | 2026-06-07 [research] Post-synthesis sweep persistence future obligations | promoted | [sweep-persistence synthesis](../rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md) | 0: none |
 | 2026-06-07 [research] Peterson (2017) methodology reference added | measured evidence | [archive body](../horizon_archive.md#open-090) | 1: historical gate/test language; no new duty |
-| 2026-06-07 [research] Hypothesis recording as a first-class identity artifact | promoted | [roadmap or owning released packet](../ledgr_roadmap.md) | 2: consumed or routed by the durable destination |
+| 2026-06-07 [research] Hypothesis recording as a first-class identity artifact | promoted | [sweep-persistence pipeline row](../rfc/README.md#sweep-persistence-follow-ups) | 2: consumed or routed by the durable destination |
 | 2026-06-07 [research] MAE / MFE per-trade excursion analytics | still parked | [active body](../horizon.md) | 0: none |
 | 2026-06-07 [planning] Portfolio optimization scaffolding -- four-level decomposition and architectural footguns | promoted | [v0.2.2 macro plan](macro_plan.md) | 6: consumed or routed by the durable destination |
 | 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture | promoted | [validation pipeline row](../rfc/README.md#validation-toolkit-follow-ups) | 4: consumed or routed by the durable destination |
@@ -187,7 +187,8 @@ the horizon as their handoff. Their disposition is:
 | Feature-projection synthesis Section 7 | Unscheduled window, export, PIT-interchange and metadata obligations route to `feature-data-projection-follow-ups`. |
 | Transaction-cost API synthesis Section 14 | Walk-forward cost identity was consumed by v0.1.9.4. Remaining cost, liquidity, financing, OMS and reporting work routes to `cost-model-follow-ups`, cross-asset accounting or OMS. |
 | Walk-forward synthesis Section 12 | Shipped identity and parallel requirements are consumed. Remaining diagnostic, embargo, lineage and PIT follow-ups join `validation-toolkit-follow-ups`. |
-| Strategy-context synthesis Section 8 | The external-helper preflight requirement routes to `strategy-context-preflight`; the accepted synthesis remains unchanged. |
+| Strategy-context synthesis Sections 5 and 8 | The inspection-removal seed and availability-aware parity requirement and the external-helper preflight requirement route to `strategy-context-preflight`; the accepted synthesis remains unchanged. |
+| Governance synthesis Section 7 | The unmeasured taught `ctx$features()` idiom routes as a direct correction through `benchmark-methodology`; the other deferred observations remain triggered audits or questions rather than standing work. |
 | Sweep-persistence synthesis Sections 8 and 11 | Remaining retention, decay, comparison, notes and schema obligations route to `sweep-persistence-follow-ups`. |
 | Strategy-authoring helpers, Future obligations | Shorting, cost-aware sizing, declarative construction, compiled callbacks and bulk reads route to the shorting, cost, public-API, compiled and active feature-map rows respectively. |
 | v0.1.8.7 optimization synthesis, Future Obligations | Compiled work routes to the compiled-envelope row; parallel and matrix work shipped; snapshot identity routes to the due verification policy; performance claims remain measurement-triggered. |
@@ -197,6 +198,13 @@ The strategy-callback synthesis still has its historical pre-final-review
 status line. Its unchanged final review approves it and the v0.1.8.10 packet
 calls it accepted, so the pipeline cites that evidence without rewriting the
 historical synthesis.
+
+The pre-migration section-level “Current planning note” and “Promotion index”
+sat between the inspection-boundary heading and the next dated entry. The
+mechanical split therefore preserved those 85 lines inside `open-010`. They
+remain historical context, not part of the strategy-context obligation; their
+surviving exact-quantity and compiled-architecture routes are represented by
+the existing pipeline rows.
 
 The contextual scan found 87 entries and 273 review-token occurrences. The
 table records their contextual disposition; this accepted-source sweep is the
@@ -225,6 +233,6 @@ untradable-holdings redirect, reporting `HEADING_MUTATION_DETECTED`.
 The accepted-source sweep above found no additional unscheduled obligation
 after LDG-2931 added or expanded the named pipeline rows. Historical packets
 and syntheses were not edited. Old heading links continue to resolve in
-`horizon.md`; all 134 distinct local redirect targets and all 36 local
+`horizon.md`; all 138 distinct local redirect targets and all 39 local
 RFC-pipeline links resolve in the current tree. The check repaired the older
 v0.1.9.1 redirect from a nonexistent packet README to the packet spec.

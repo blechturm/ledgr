@@ -1,8 +1,9 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1
-through 3 are accepted after Type 1 close review; Workstream 4 is ready for
-Type 1 close review and Workstream 5 remains pending.
+through 3 are accepted after Type 1 close review. Workstream 4's Type 1
+corrections are applied and await maintainer acceptance; Workstream 5 remains
+pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That

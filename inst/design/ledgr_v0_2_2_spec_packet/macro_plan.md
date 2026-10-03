@@ -250,8 +250,10 @@ harness, shows the cost. Then run one integrated long-window record covering:
 - one long-only estimator strategy on explicit decision dates; and
 - scheduler behavior only if WS6 was promoted by measurement.
 
-Run the standardized peer workload before making a new public performance
-claim. Peer comparison is evidence about the release, not its product goal.
+Run the standardized peer workload as release evidence. Do not make a public
+performance claim, including a same-host version-over-version speedup claim,
+until the broader peer-workload suite is defined and run. Building that suite
+is not itself a v0.2.2 product goal.
 
 Exit: the release goal is demonstrated end to end and all release claims name
 the measured boundary.
