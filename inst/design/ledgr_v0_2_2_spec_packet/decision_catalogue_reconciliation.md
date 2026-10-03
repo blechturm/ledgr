@@ -71,12 +71,14 @@ The old catalogues omitted one accepted operative synthesis and did not expose
 four shipped rules whose semantics remained only in the v0.1.9.5 spec. The
 bridge therefore also includes:
 
-- [point-in-time historical projection](../decisions.md#point-in-time-historical-projection),
+- point-in-time historical projection:
+  [bridge row](../decisions.md#point-in-time-historical-projection);
   accepted after both catalogues had drifted;
 - [execution-window minimum](../decisions.md#execution-window-minimum);
 - [fill-transition validity](../decisions.md#fill-transition-validity);
 - [cost rounding and fees](../decisions.md#cost-rounding-and-fees); and
-- [walk-forward snapshot override](../decisions.md#walk-forward-snapshot-override).
+- walk-forward snapshot override:
+  [bridge row](../decisions.md#walk-forward-snapshot-override).
 
 The recursive-indicator pipeline row is not itself an accepted design. The
 bridge records only the accepted boundary already present in the historical-
