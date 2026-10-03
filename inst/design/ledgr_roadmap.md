@@ -192,6 +192,11 @@ The maintained v0.2.2 dependency and scope plan is
 the compact cross-version index; detailed release planning is not duplicated
 here.
 
+The 2026-10-03 WS5 amendment makes database-side hashing and a permitted new
+hash rule explicit, separates faster full verification from scoped or reused
+verification, and measures public operations. Feature-artifact reuse follows
+the WS3/WS4 history and indicator semantics; details remain in the macro plan.
+
 ## Completed Milestone Records
 
 Completed milestones are not expanded here. Their scope, tickets, and

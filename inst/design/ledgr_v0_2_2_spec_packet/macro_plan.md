@@ -184,11 +184,35 @@ scale.
 
 ### WS5. Snapshot verification and artifact policy
 
-- Decide the verification policy and component-hash boundary rather than
-  repeatedly hashing every persisted fact on ordinary reads.
+- Use the existing [long-window hashing measurements](../../../dev/bench/notes/long_window_scaling_findings.md#5-snapshot-hashing-spike),
+  [DuckDB prototype](../../../dev/bench/long_window/hash_spike.R) and
+  [binary-payload experiment](../../../dev/bench/notes/durable_path_observations.md#observation-5-the-hash-payload-could-be-bytes-instead-of-strings)
+  to evaluate database-side canonicalization and hashing. Extend these probes
+  only for missing correctness and end-to-end evidence; do not reopen the
+  general feasibility question.
+- A new hash-rule version is permitted; reproducing R serialization is not a
+  requirement for that new rule. Decide the canonical encoding, text versus
+  binary representation, and version dispatch or explicit migration for
+  existing snapshots before implementation, with the corresponding contract
+  amendments. Binary encoding and wholesale JSON removal are not release
+  requirements.
+- Separate faster full verification from scoped or reused verification.
+  Faster full verification may proceed independently while preserving full
+  coverage. For scoped or reused verification, decide the component boundary,
+  trusted expected digests, dependencies and invalidation rules rather than
+  repeatedly hashing every persisted fact on ordinary reads. Fast subset
+  digest computation alone does not establish a verification guarantee.
 - Decide whether feature persistence is requested, promotion-only or reusable
   by snapshot and feature identity. This is a stored-artifact policy decision,
-  not a parity-only optimization.
+  not a parity-only optimization. Finalize reuse keys and invalidation after
+  WS3 and WS4 bind the relevant history, knowledge-cutoff, missingness and
+  recursive-initialization semantics; snapshot and feature identity alone
+  must not be assumed sufficient.
+- Measure complete public operations: snapshot creation and sealing, opening
+  and verification, membership and session-history reads, and a subsequent
+  run on the same snapshot. Attribute hashing separately without presenting
+  a component speedup as an end-to-end result; retain detecting integrity
+  checks under the selected verification policy.
 - Apply direct long-window optimizations that remain material after WS1 through
   WS4.
 - Capture a phase-level memory profile before changing representation solely
@@ -327,3 +351,9 @@ dependency change is recorded here and summarized in the roadmap until ticket
 cut. After ticket cut, changes to executable scope or ordering belong in
 `tickets.yml`, with this document updated only when the release-level story
 itself changes.
+
+2026-10-03 maintainer amendment: WS5 explicitly consumes the existing DuckDB
+hashing evidence, permits a new hash rule, separates faster full verification
+from verification-policy changes, and binds public-operation measurements.
+Feature reuse depends on the WS3/WS4 semantics. This clarifies the existing
+workstream without adding release scope or authorizing implementation.
