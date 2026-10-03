@@ -24,6 +24,8 @@ the packet state and does not become a second editable ticket ledger.
   reconciliation; it is evidence, not a replacement contract.
 - `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
   evidence for the two retired catalogues; it is not a decision index.
+- `../README.md`: the LDG-2926 short front door for current authority and
+  task-oriented routes.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstream 1 is complete, Workstream 2
   is in progress and the remaining workstreams are pending.

@@ -99,13 +99,13 @@ tickets:
   - id: "LDG-2926"
     title: "Rewrite the design front door"
     workstream: 2
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2925"]
     scope: "Rewrite inst/design/README.md as the short front door. It answers the active release, which documents bind, where to find current behavior or accepted pending change, and where historical or explanatory evidence lives. Remove its competing decision catalogue and detailed release ledger while preserving links to historical records. Do not copy ticket detail or decision prose into the front door."
     acceptance: ["the front door names v0.2.2 and its packet as current and no stale branch or release claim remains", "from the front door a reader reaches a current contract topic directly or an accepted pending decision and its exact source within two links", "the front door states the authority ladder and conflict rules from plan section 4.9: the contract stands provisionally against code; reliance stops on a binding-document conflict; only explicit supersession establishes precedence; and filename, date or proximity imply no authority", "the old accepted-decisions catalogue and detailed release narrative no longer live in README.md and remain recoverable through linked standing or historical documents", "task routes cover contract, pending decision, active RFC, executable ticket, parked idea, research evidence and released history without making an index authoritative"]
-    evidence: []
+    evidence: ["inst/design/README.md is now an 86-line routing front door naming v0.2.2 and its packet. It contains no release-by-release ledger or decision catalogue; released outcomes remain reachable through ledgr_roadmap.md, planning_context_history.md and versioned packet directories.", "The front door links directly to contracts.md and decisions.md, so a reader reaches a current contract heading or an accepted decision's exact source in no more than two links. Task routes cover current contracts, accepted pending decisions, RFC work, executable tickets, parked ideas, research/audit/spike evidence and released history.", "The authority and conflict sections state that contracts stand provisionally against code, reliance stops on a binding-document conflict, only explicit supersession establishes precedence, filename/date/proximity imply no authority and tickets.yml may sequence but not reinterpret accepted work. A local target-and-anchor check reports FRONT_DOOR_LINKS_OK."]
   - id: "LDG-2927"
     title: "Link pending and superseded rules without duplicating them"
     workstream: 2
