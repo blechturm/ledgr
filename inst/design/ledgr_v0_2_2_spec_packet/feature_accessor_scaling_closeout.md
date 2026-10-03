@@ -25,7 +25,7 @@ alternated production and candidate arms for three repetitions on one sealed
 500-instrument, 1,260-pulse fixture. Every kept release-shape row recorded no
 other R process and less than one other busy CPU core.
 
-| Public path | Production median | Candidate median | Saving |
+| Public path | Production median | Candidate median | Saving (1 - ratio of medians) |
 | --- | ---: | ---: | ---: |
 | `ledgr_run()` | 56.291 s | 49.605 s | 11.9% |
 | canonical `ledgr_sweep()` | 32.822 s | 25.837 s | 21.3% |
@@ -96,7 +96,7 @@ ticket.
 
 | Claim | Detector | Failure probe |
 | --- | --- | --- |
-| values, defaults and errors remain exact; preparation happens once | LTB-0139 / LCL-0139 | shifting every instrument row produced more than 38 failures; repeated-read counters require one preparation and one alias normalization |
+| values, defaults and errors remain exact; preparation happens once | LTB-0139 / LCL-0139 | shifting every instrument row produced more than 38 failures; restoring the old per-call `%in%` feature and universe membership fails five structural assertions; repeated-read counters require one preparation and one alias normalization |
 | prepared state stays candidate-local | LTB-0140 / LCL-0140 | a two-candidate sweep must observe separate environments and `signal = sma_2` then `signal = sma_3`; hoisting the first object fails those observations |
 | explicit maps validate once and memoize only exact success | LTB-0141 / LCL-0141 | set-insensitive reuse fails ordered output and changes nine validations to seven; retaining state across a failed map changes nine to eight |
 
@@ -137,6 +137,33 @@ normalizing sweep attributes after removing timing columns. No result was
 accepted. The normalizer was replaced with the established sweep comparison
 shape and the whole gate was rerun from scratch into the recorded evidence.
 
+Two correction-profile attempts completed all 500 fast blocks but could not
+write their census because their record directories were outside this
+session's durable writable root. Neither attempt is evidence. The accepted
+correction record was rerun from scratch into the permitted research
+workspace.
+
+## First Review Corrections
+
+The first Type 1 close review found no behavioral divergence. It found three
+evidence defects, all corrected without changing production code:
+
+- LTB-0139 now requires the three prepared-environment reads, rejects `%in%`
+  inside either returned accessor closure, and fails five assertions when the
+  old linear feature, instrument and universe lookups are restored.
+- LTB-0139 and LTB-0141 now pin the literal messages for an invalid active
+  alias map and unresolved, tampered and swapped explicit maps.
+- the prepared-accessor table labels its saving as one minus the ratio of
+  medians. The paired-median savings in `timing_summary.csv` remain valid
+  supporting statistics, but are not the percentages printed in that table.
+
+The focused accessor, feature-map, active-alias, control-plane and
+documentation-contract suites pass after these corrections. The correction
+ordinary fast profile executed 500 of 500 blocks with zero failures or skips
+in 84.020 seconds. The gate checker returned `LEDGR_TEST_GATE_OK` against the
+112-second bound. Its record is at
+`C:/Users/maxth/ledgr-research/ws7-correction-fast`.
+
 ## Boundaries And Verification
 
 There is no public API, schema, run or snapshot identity, hash, tolerance,
@@ -154,4 +181,5 @@ zero failures or skips in 82.920 seconds. The gate checker returned
 Cut 2 has three completed review invocations before this request: its combined
 cut review and the two Workstream 6 review rounds. The requested Workstream 7
 close review is invocation four over eleven tickets, 0.364 against the 0.5
-gate.
+gate. A focused re-review of these corrections would be invocation five,
+5/11 = 0.455, still within the gate.

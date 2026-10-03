@@ -85,6 +85,43 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   }
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(normalize_calls, 1L)
+
+  scalar_source <- paste(deparse(body(
+    ledgr:::ledgr_projection_feature_accessor_state
+  )), collapse = "\n")
+  bundle_source <- paste(deparse(body(
+    ledgr:::ledgr_projection_feature_bundle_accessor_state
+  )), collapse = "\n")
+  testthat::expect_match(
+    scalar_source,
+    "is.null(known_features[[feature_name]])",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    scalar_source,
+    "inst_idx <- instrument_rows[[instrument_id]]",
+    fixed = TRUE
+  )
+  testthat::expect_match(
+    bundle_source,
+    "is.null(members[[instrument_id]])",
+    fixed = TRUE
+  )
+  testthat::expect_false(grepl("%in%", scalar_source, fixed = TRUE))
+  testthat::expect_false(grepl("%in%", bundle_source, fixed = TRUE))
+
+  invalid_alias <- ledgr:::ledgr_fast_context_state(
+    c("AAA", "BBB"),
+    projection = projection,
+    feature_ids = c("sma_2", "sma_3"),
+    active_alias_map = stats::setNames(1L, "fast")
+  )
+  testthat::expect_error(
+    invalid_alias$features("AAA"),
+    "`alias_map` must be a named character vector of concrete feature IDs.",
+    class = "ledgr_invalid_alias_map",
+    fixed = TRUE
+  )
 })
 
 # ledgr-test-profile: review
@@ -188,15 +225,21 @@ testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures"
   )
   testthat::expect_error(
     accessor("AAA", parameterized),
-    class = "ledgr_unresolved_feature_id"
+    "`ledgr_feature_id()` requires concrete features. Resolve parameterized declarations with concrete `feature_params` first.",
+    class = "ledgr_unresolved_feature_id",
+    fixed = TRUE
   )
   testthat::expect_error(
     accessor("AAA", tampered),
-    class = "ledgr_invalid_feature_map"
+    "`x$feature_ids` does not match the mapped indicator IDs.",
+    class = "ledgr_invalid_feature_map",
+    fixed = TRUE
   )
   testthat::expect_error(
     accessor("AAA", swapped),
-    class = "ledgr_invalid_feature_map"
+    "`x$indicators` names must match `x$aliases`.",
+    class = "ledgr_invalid_feature_map",
+    fixed = TRUE
   )
   testthat::expect_error(
     accessor("AAA", unknown),

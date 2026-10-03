@@ -1013,7 +1013,8 @@ Accepted change pending:
   fixed for that run and prepared state is never shared across runs or sweep
   candidates. A bundled accessor may retain only its last successfully
   resolved concrete feature map and may reuse that lookup only when the next
-  map is `identical()`; a non-identical or failed input clears the memo.
+  map is `identical()`; a non-identical or failed feature-map input clears the
+  memo.
   Dot-prefixed context fields are not API and carry no guarantees; deliberate
   R introspection of closure environments, call stacks or internal bindings is
   outside this contract.
