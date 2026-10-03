@@ -142,6 +142,76 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
   )
 })
 
+testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+
+  run_id <- "diagnostic-sequence-handler"
+  insert_test_run(con, run_id)
+  existing <- ledgr:::ledgr_availability_diagnostic_row(
+    run_id = run_id,
+    diagnostic_seq = 7L,
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+    stage = "context",
+    outcome = "passed",
+    reason_code = "existing"
+  )
+  DBI::dbAppendTable(con, "run_diagnostics", existing)
+
+  original_next <- ledgr:::ledgr_next_diagnostic_seq
+  sequence_queries <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_next_diagnostic_seq = function(...) {
+      sequence_queries <<- sequence_queries + 1L
+      original_next(...)
+    },
+    .package = "ledgr"
+  )
+  handler <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = run_id,
+    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE
+  )
+  block <- function(reason, n) {
+    do.call(rbind, lapply(seq_len(n), function(i) {
+      ledgr:::ledgr_availability_diagnostic_row(
+        run_id = run_id,
+        diagnostic_seq = 1L,
+        ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),
+        stage = "context",
+        outcome = "passed",
+        reason_code = paste0(reason, i)
+      )
+    }))
+  }
+  handler$write_run_diagnostics(block("first", 2L))
+  handler$write_run_diagnostics(block("second", 1L))
+
+  rows <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT diagnostic_seq, reason_code FROM run_diagnostics ",
+      "WHERE run_id = ? ORDER BY diagnostic_seq"
+    ),
+    params = list(run_id)
+  )
+  testthat::expect_identical(sequence_queries, 1L)
+  testthat::expect_identical(rows$diagnostic_seq, c(7L, 8L, 9L, 10L))
+  testthat::expect_identical(
+    rows$reason_code,
+    c("existing", "first1", "first2", "second1")
+  )
+
+  handler_source <- paste(
+    deparse(body(ledgr:::ledgr_persistent_output_handler)),
+    collapse = "\n"
+  )
+  testthat::expect_false(grepl("MAX\\(diagnostic_seq\\)", handler_source))
+})
+
 testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact order", {
   fills <- list(
     ledgr_test_next_open_fill(

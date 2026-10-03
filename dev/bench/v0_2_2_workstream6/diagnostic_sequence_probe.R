@@ -7,7 +7,14 @@ value_arg <- function(name, default = NULL) {
 }
 
 script_arg <- grep("^--file=", commandArgs(), value = TRUE)
-script <- normalizePath(sub("^--file=", "", script_arg[[1L]]), winslash = "/")
+script <- if (length(script_arg) > 0L) {
+  normalizePath(sub("^--file=", "", script_arg[[1L]]), winslash = "/")
+} else {
+  normalizePath(
+    "dev/bench/v0_2_2_workstream6/diagnostic_sequence_probe.R",
+    winslash = "/"
+  )
+}
 root <- normalizePath(file.path(dirname(script), "..", "..", ".."), winslash = "/")
 out_dir <- value_arg(
   "out",
@@ -17,8 +24,12 @@ out_dir <- value_arg(
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 pkgload::load_all(root, quiet = TRUE, compile = FALSE)
-con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+db_path <- tempfile("ledgr-diagnostic-sequence-", fileext = ".duckdb")
+con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+on.exit({
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  unlink(db_path)
+}, add = TRUE)
 ledgr_create_schema(con)
 
 run_id <- "diagnostic-sequence-probe"
@@ -57,7 +68,9 @@ query_batch_seconds <- function(repetitions) {
 
 # Registered before the measurements below: implementation needs both at least
 # one percent of the public denominator and cumulative query-work exponent >1.10.
-public_denominator_seconds <- 58.381
+# Availability-aware warm public run from the registered long-window record:
+# 500 members x 1,514 pulses, approximately 758,514 diagnostic rows.
+public_denominator_seconds <- 29.0
 wall_gate_seconds <- public_denominator_seconds * 0.01
 superlinear_exponent_gate <- 1.10
 
@@ -91,7 +104,7 @@ for (i in seq_along(ends)) {
   last <- ends[[i]]
   insert_rows(first, last)
   query_once()
-  seconds <- query_batch_seconds(10L)
+  seconds <- query_batch_seconds(100L)
   incremental[[i]] <- data.frame(
     rows = last,
     query_seconds = seconds,
@@ -114,7 +127,10 @@ cumulative_exponent <- unname(stats::coef(stats::lm(
 ))[[2L]])
 total_query_seconds <- tail(incremental$cumulative_query_seconds, 1L)
 summary <- data.frame(
-  public_shape = "s1_release_shape: ledgr_run, 500 instruments x 1260 pulses",
+  public_shape = paste(
+    "availability-aware warm ledgr_run:",
+    "500 members x 1514 pulses, approximately 758514 diagnostic rows"
+  ),
   public_denominator_seconds = public_denominator_seconds,
   wall_gate_seconds = wall_gate_seconds,
   measured_query_seconds_750000_rows = total_query_seconds,
@@ -133,13 +149,17 @@ utils::write.csv(count_clocks, file.path(out_dir, "query_count_clocks.csv"), row
 utils::write.csv(incremental, file.path(out_dir, "incremental_query_clocks.csv"), row.names = FALSE)
 utils::write.csv(summary, file.path(out_dir, "summary.csv"), row.names = FALSE)
 utils::write.csv(data.frame(
-  key = c("r_version", "duckdb", "git_head", "chunk_size", "query_repetitions"),
+  key = c(
+    "r_version", "duckdb", "git_head", "database",
+    "chunk_size", "query_repetitions"
+  ),
   value = c(
     R.version.string,
     as.character(utils::packageVersion("duckdb")),
     system2("git", c("-C", shQuote(root), "rev-parse", "HEAD"), stdout = TRUE)[[1L]],
+    "file-backed temporary DuckDB store",
     as.character(chunk_size),
-    "7 batches x 100 static; 10 per incremental point"
+    "7 batches x 100 static; 100 per incremental point"
   ),
   stringsAsFactors = FALSE
 ), file.path(out_dir, "environment.csv"), row.names = FALSE)

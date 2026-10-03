@@ -244,6 +244,17 @@ ledgr_write_run_telemetry <- function(con,
   invisible(TRUE)
 }
 
+ledgr_next_diagnostic_seq <- function(con, run_id) {
+  as.integer(DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq ",
+      "FROM run_diagnostics WHERE run_id = ?"
+    ),
+    params = list(run_id)
+  )$next_seq[[1L]])
+}
+
 ledgr_persistent_output_handler <- function(con,
                                             run_id,
                                             run_wall_start,
@@ -261,6 +272,14 @@ ledgr_persistent_output_handler <- function(con,
   state$pending_states_idx <- 0L
   state$pulse_fill_rows <- vector("list", 256L)
   state$pulse_fill_n <- 0L
+  state$next_diagnostic_seq <- NULL
+
+  next_diagnostic_seq <- function(refresh = FALSE) {
+    if (isTRUE(refresh) || is.null(state$next_diagnostic_seq)) {
+      state$next_diagnostic_seq <- ledgr_next_diagnostic_seq(con, run_id)
+    }
+    state$next_diagnostic_seq
+  }
 
   handler <- list()
 
@@ -471,16 +490,12 @@ ledgr_persistent_output_handler <- function(con,
 
   handler$write_run_diagnostics <- function(diagnostics) {
     if (!is.null(diagnostics) && nrow(diagnostics) > 0L) {
-      next_seq <- DBI::dbGetQuery(
-        con,
-        "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq FROM run_diagnostics WHERE run_id = ?",
-        params = list(run_id)
-      )$next_seq[[1L]]
       diagnostics$diagnostic_seq <- seq.int(
-        from = as.integer(next_seq),
+        from = next_diagnostic_seq(),
         length.out = nrow(diagnostics)
       )
       DBI::dbAppendTable(con, "run_diagnostics", diagnostics)
+      state$next_diagnostic_seq <- state$next_diagnostic_seq + nrow(diagnostics)
     }
     invisible(TRUE)
   }
@@ -493,12 +508,9 @@ ledgr_persistent_output_handler <- function(con,
   }
 
   handler$write_exception_diagnostic <- function(diagnostic) {
-    next_seq <- DBI::dbGetQuery(
-      con,
-      "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq FROM run_diagnostics WHERE run_id = ?",
-      params = list(run_id)
-    )$next_seq[[1L]]
-    diagnostic$diagnostic_seq <- as.integer(next_seq)
+    # A failed fold transaction may advance the in-memory counter before the
+    # database rolls its writes back. Re-read once for the terminal diagnostic.
+    diagnostic$diagnostic_seq <- next_diagnostic_seq(refresh = TRUE)
     DBI::dbAppendTable(con, "run_diagnostics", diagnostic)
     invisible(TRUE)
   }

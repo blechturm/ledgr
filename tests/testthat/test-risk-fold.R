@@ -155,9 +155,17 @@ testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
   testthat::expect_identical(flushes, 3L)
   testthat::expect_identical(handler$events()$instrument_id, c("AAA", "BBB"))
 
+  final_strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-02T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets[c("AAA", "BBB")] <- 1
+      return(targets)
+    }
+    ctx$hold()
+  }
   final_handler <- ledgr:::ledgr_memory_output_handler("pulse-final-flush")
   final_execution <- ledgr_risk_fold_test_execution(
-    strategy = strategy,
+    strategy = final_strategy,
     cost_resolver = ledgr_test_cost_resolver(
       spread_bps = 0,
       commission_fixed = 0
