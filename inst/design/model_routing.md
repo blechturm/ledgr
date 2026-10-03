@@ -4,7 +4,7 @@
 active routing rule. Use `rfc_cycle.md` and the active packet for current review
 and implementation roles.
 
-**Status:** Active  
+**Status:** Historical (formerly Active)
 **Scope:** ledgr ticket classification, implementation, and review  
 **Purpose:** Stable, repeatable rules for assigning work to model tiers and
 providing implementing agents with the context they need to avoid silent

@@ -79,7 +79,7 @@ top-level RED, inconclusive or other non-binary outcome. `NEITHER` and
 | `dev/spikes/availability-hot-path-representation/probe_findings.md` (RED component) | The rejected representation and green prerequisite are recorded in the availability-hot-path RFC cycle; neither is open work. |
 | `dev/spikes/collapse-preparation/findings.md` (RED) | The rejected `collapse::rsplit()` route is recorded in `collapse_optimization_map.md` and the fold-writer/accessor summary. |
 | `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md` (`NEITHER`) | Consumed and explicitly closed without ingestion work in the v0.2.1 packet and release closeout. |
-| `dev/spikes/strategy-context-surface/probe_findings.md` (`partly`) | Consumed by the accepted strategy-context synthesis and the v0.2.1 Cut 13 closeout; full-run performance was measured by its implementation packet rather than claimed by the probe. |
+| `dev/spikes/strategy-context-surface/probe_findings.md` (`partly`) | Consumed by the accepted strategy-context synthesis and the v0.2.1 Cut 13 closeout; the implementation packet recorded warm microbenchmarks only, and full-run performance remains unmeasured. |
 | `spikes/settlement_quantity_primitive_spike/closeout.md` (RED) | Consumed by equity-settlement seed v3 and the accepted synthesis's exact-quantity boundary. |
 
 The terminal-disposition row is both the final spike path and a consumed green
@@ -140,12 +140,12 @@ ticket is duplicated in `Obligations open`.
 ## Final Reconciliation
 
 - Tickets LDG-2923 through LDG-2934: twelve complete.
-- Workstreams 1 through 4: accepted; Workstream 5: ready for Type 1 close
-  review.
-- Review count before the Workstream 5 close review: six invocations. That
-  review is invocation seven, so acceptance in one round closes at 7/12 =
-  0.583, above the 0.500 gate. The extra Workstream 2 invocation is historical;
-  the cut is not padded or reviews merged to repair the ratio.
+- Workstreams 1 through 4: accepted; Workstream 5: corrected after its Type 1
+  close review and focused re-review, and awaiting maintainer acceptance.
+- Review count: the Workstream 5 close review was invocation seven and its
+  focused re-review was invocation eight. The cut therefore stands at 8/12 =
+  0.667, above the 0.500 gate. The breach is historical; the cut is not padded
+  and reviews are not merged to repair the ratio.
 - RFC pipeline: no Cut 1 obligation remains open after ticket ownership.
 - Horizon: promoted Cut 1 sources are redirects; no ticketed Cut 1 body remains
   active parking.

@@ -2,7 +2,8 @@
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1
 through 4 are accepted after Type 1 close review and maintainer acceptance.
-Workstream 5 is complete and awaits Type 1 close review.
+Workstream 5 is corrected after its close review and focused re-review and
+awaits maintainer acceptance.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -39,7 +40,8 @@ the packet state and does not become a second editable ticket ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstreams 1 through 4 are complete
-  and accepted, while Workstream 5 is complete and review pending.
+  and accepted, while Workstream 5 awaits maintainer acceptance after its
+  focused correction.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -61,10 +63,10 @@ returned `PASS_AFTER_PATCHES`; its bounded corrections are incorporated. A
 correction review is recorded honestly rather than hidden by merging or
 padding work.
 
-The actual count is six invocations before the Workstream 5 close review. That
-review will be invocation seven, so a one-round acceptance closes Cut 1 at
-7/12 = 0.583. The historical breach is recorded rather than repaired by adding
-tickets or combining reviews.
+The Workstream 5 close review was invocation seven and its focused re-review
+was invocation eight. The actual count is therefore 8/12 = 0.667. The
+historical breach is recorded rather than repaired by adding tickets or
+combining reviews.
 
 This cut changes no package behavior. Other v0.2.2 product, optimization and
 RFC work remains outside it and may be cut separately after its own authority

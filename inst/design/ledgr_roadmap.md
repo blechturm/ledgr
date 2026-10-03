@@ -5,7 +5,7 @@
 scope and dependencies live in `ledgr_v0_2_2_spec_packet/macro_plan.md`; once
 cut, `ledgr_v0_2_2_spec_packet/tickets.yml` is the sole implementation and
 sequencing authority.
-**Latest release:** v0.2.1.0, published 2026-10-02. Its packet remains under
+**Latest release:** v0.2.1.0, published 2026-10-01. Its packet remains under
 `ledgr_v0_2_0_2_spec_packet/` because that was the planned version when cut.
 **Current release / branch:** v0.2.2 on `v0.2.2`.
 
