@@ -1,6 +1,6 @@
 # Design-Memory Overhaul Closeout
 
-**Status:** Agent-provisional closeout for Cut 1, Workstream 5.
+**Status:** Accepted by the maintainer on 2026-10-03; Cut 1 closed.
 **Implementation range:** `a93e7e3..8c05e6e`; twelve tickets in five serial
 workstreams. The focused correction after that range changes records only.
 **Behavior:** Documentation and process routing only. No package behavior,
@@ -140,8 +140,7 @@ ticket is duplicated in `Obligations open`.
 ## Final Reconciliation
 
 - Tickets LDG-2923 through LDG-2934: twelve complete.
-- Workstreams 1 through 4: accepted; Workstream 5: corrected after its Type 1
-  close review and focused re-review, and awaiting maintainer acceptance.
+- Workstreams 1 through 5: accepted; Cut 1 closed.
 - Review count: the Workstream 5 close review was invocation seven and its
   focused re-review was invocation eight. The cut therefore stands at 8/12 =
   0.667, above the 0.500 gate. The breach is historical; the cut is not padded

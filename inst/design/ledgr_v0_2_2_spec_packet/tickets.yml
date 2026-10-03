@@ -12,8 +12,9 @@ cuts:
     out_of_scope: "Package behavior, production code, test semantics, RFC stages 1 through 8, review modes, the spike protocol, ticket authority, ADR revival, per-decision files, a database or generated registry, mass renaming of historical artifacts, rewriting released packets or syntheses, deleting horizon bodies, and every other v0.2.2 product or optimization topic."
     workstreams: [1, 2, 3, 4, 5]
     closeout: "design_memory_overhaul_closeout.md"
-    accepted: "2026-10-03 by the maintainer after PASS_AFTER_PATCHES"
-    status: "active"
+    accepted: "2026-10-03 by the maintainer for ticket cut; all five workstreams and Cut 1 accepted 2026-10-03 after the focused Workstream 5 correction at 79363fb"
+    close_review: "Workstreams 1 through 4 accepted after Type 1 review. Workstream 5 close review at 8c05e6e returned CHANGES_REQUIRED; correction ebd5dd2; focused re-review returned three factual residuals; record-only correction 79363fb accepted by the maintainer without a ninth review. Actual count 8/12 = 0.667, recorded as a historical gate breach."
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -61,7 +62,7 @@ workstreams:
   - id: 5
     name: "Current context and migration closeout"
     cut: 1
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 4
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 5", reason: "One claim joins LDG-2933 and LDG-2934: after migration, the roadmap, AGENTS.md, packet, consumer links and front door describe one current state and a human or agent can follow the documented routes without reconstructing history. The review runs the scenario walk from the accepted plan on real topics, checks released narrative remains recoverable, verifies the bounded deterministic evidence sample and any one-time routing without a new ledger, checks the optional-link-check decision against the least-machinery rule, and reconciles all twelve tickets and five workstreams in the closeout."}

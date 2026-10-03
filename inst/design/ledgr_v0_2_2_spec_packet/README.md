@@ -1,9 +1,7 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1
-through 4 are accepted after Type 1 close review and maintainer acceptance.
-Workstream 5 is corrected after its close review and focused re-review and
-awaits maintainer acceptance.
+**Status:** Cut 1 and all five workstreams accepted by the maintainer on
+2026-10-03 after Type 1 close review and the focused Workstream 5 corrections.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -29,19 +27,16 @@ the packet state and does not become a second editable ticket ledger.
 - `../roadmap_history.md`: the verbatim planning tail displaced when LDG-2933
   reduced the roadmap to its maintained sequence; it is historical context,
   not current scope or sequencing authority.
-- `design_memory_overhaul_closeout.md`: the LDG-2934 evidence reconciliation,
-  least-machinery decision and six-scenario navigation walk; agent-provisional
-  until the Workstream 5 close review and maintainer acceptance.
+- `design_memory_overhaul_closeout.md`: the accepted LDG-2934 evidence
+  reconciliation, least-machinery decision and six-scenario navigation walk.
 - `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
   evidence for the two retired catalogues; it is not a decision index.
 - `../README.md`: the LDG-2926 short front door for current authority and
   task-oriented routes.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
-- `tickets.yml`: sole ticket and sequencing authority. It currently records
-  twelve tickets in five workstreams; Workstreams 1 through 4 are complete
-  and accepted, while Workstream 5 awaits maintainer acceptance after its
-  focused correction.
+- `tickets.yml`: sole ticket and sequencing authority. It records twelve
+  complete tickets in five accepted workstreams; Cut 1 is closed.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -67,6 +62,9 @@ The Workstream 5 close review was invocation seven and its focused re-review
 was invocation eight. The actual count is therefore 8/12 = 0.667. The
 historical breach is recorded rather than repaired by adding tickets or
 combining reviews.
+
+The maintainer accepted Workstream 5 and closed Cut 1 on 2026-10-03 after the
+record-only correction at `79363fb`, without a ninth review invocation.
 
 This cut changes no package behavior. Other v0.2.2 product, optimization and
 RFC work remains outside it and may be cut separately after its own authority
