@@ -69,13 +69,13 @@ tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Produce contract_census.md as a bounded migration input, not a replacement contract. Inventory authority handoffs and operative external references in the header and body; find future or conditional language; sample two non-adjacent clauses from each of the thirteen H2 sections against existing tests; enumerate normative must, must not and binding statements in the named v0.1.8 strategy-preflight source and v0.1.9.5 packet; and check whether the v0.2.0.0, v0.2.0.1 and v0.2.1.0 packets recorded their contract changes. Classify findings as stale authority text, accepted-but-unimplemented direction, code-versus-contract disagreement or conflict between binding documents. Do not edit contracts.md under this ticket."
     acceptance: ["the census names all thirteen H2 sections and records two non-adjacent sampled clauses per section, or every clause when a section has fewer than two, with the existing test or the absence of one", "every authoritative, binding, remains-binding, packet, synthesis, roadmap and horizon handoff found in contracts.md is listed with its proposed disposition", "the v0.1.8, v0.1.9.5 and later-release outbound checks account for each normative statement as present in contracts.md, explicitly superseded, deliberately dropped or routed as a finding", "the census changes no contract clause and states that code disagreement does not authorize changing the contract"]
-    evidence: []
+    evidence: ["contract_census.md records the thirteen H2 sections and two non-adjacent samples per section, with the existing test or an explicit detector gap. It inventories the two stale header handoffs, the one binding horizon dependency, the retained audit and release-playbook references, and future-language groups without changing contracts.md.", "The outbound reconciliation finds the v0.1.8 strategy-preflight source fully consolidated or explicitly extended. It finds four shipped v0.1.9.5 rules that are not yet consolidated strongly enough for contracts.md's new role: the two-pulse guard, fill-input validity, fee/rounding order and two-field walk-forward override. They are routed to the exact-source decision bridge rather than inserted editorially. Tag-range inspection confirms v0.2.0.0 and v0.2.1.0 recorded their behavior changes in contracts.md; v0.2.0.1 changed only the dependency floor and reused existing semantic contracts.", "Static checks at a3100d7 plus this artifact: thirteen H2 headings, 26 sample rows, every cited test file exists, ASCII/LF with final newline and no trailing whitespace, and git diff --check clean. No contract clause changed under LDG-2923."]
   - id: "LDG-2924"
     title: "Normalize contracts as the current normative source"
     workstream: 1
