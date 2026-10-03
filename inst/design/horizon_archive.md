@@ -252,3 +252,6060 @@ per-lane attribution, and workload-grid / peer-benchmark measurement closeout.
 Default execution remains canonical R. Durable compiled integration,
 non-spot compiled accounting, target risk, walk-forward, cost/liquidity, OMS,
 and public benchmark claims remain deferred. See the v0.1.8.10 packet.
+
+## Open-entry bodies archived by Workstream 4
+
+<a id="open-004"></a>
+
+### 2026-09-29 [execution] Untradable holdings end the run instead of booking the loss
+
+The maintainer's position: a botched exit is a legitimate economic outcome. A
+holding that cannot be sold must be able to cost money in a backtest. That
+covers a long halt or suspension, a delisting without settlement, and a stock
+that trades only where the snapshot has no bars. Ending the run when this
+happens omits exactly that outcome.
+
+Today the accepted point-in-time contract stops instead:
+
+- a stale mark past `ledgr_valuation_stale(max_sessions)` stops the run with
+  `valuation_horizon_exhausted`;
+- a terminal lifetime assertion on a held ID stops it with
+  `terminal_settlement_unsupported`;
+- an exit with no execution bar is rejected with `execution_bar_missing`
+  ("never carry a standing order") until the stale horizon stops the run.
+
+Each finalizes `INCOMPLETE` with only the accepted prefix. The principle
+behind it, never fabricate settlement, is sound and stays. What is missing is
+a way to represent the outcome rather than stop.
+
+Executed on 2026-09-29 with a two-instrument fixture in which AAA delists
+while held:
+
+- `summary()` reports `INCOMPLETE`, the stop reason and the affected ID
+  clearly, and `print()` labels its returns "achieved prefix".
+- The stop truncates the whole portfolio. BBB, which was never stuck, loses
+  its path after the stop too.
+- `ledgr_run_compare(snapshot)` silently leaves the stuck run out of its
+  default table. Naming it in `run_ids` fails with `ledgr_run_not_complete`,
+  so it cannot be compared at all.
+- The sweep print reads "2 combinations: 1 done, 0 failed", so the
+  `INCOMPLETE` candidate is counted nowhere. Its row carries prefix metrics in
+  the same columns as the completed candidate.
+- `ledgr_sweep_review()` ranks completed candidates only and lists the stuck
+  one among issue rows, with no stop reason shown.
+
+Read in the code but not executed:
+
+- walk-forward training selection keeps only `DONE` candidates
+  (`R/walk-forward-selection.R:158`) without reporting the exclusion;
+- the degradation table scores a `PARTIAL` fold's truncated test run with no
+  warning flag, while the selected-candidate table drops that fold;
+- `ledgr_sweep_filter()` evaluates completed candidates only, and its print
+  counts only those.
+
+Why it matters beyond one run: variants that meet the tail event leave
+comparison and selection, so the surviving variants look better than they
+are. That is survivorship bias at the strategy level, the bias the
+point-in-time machinery exists to prevent.
+
+Direction, not decided:
+
+- With evidence, book the actual outcome from terminal-settlement facts:
+  cash per share at delisting (zero included), a deal price, or an
+  over-the-counter price series that makes the holding tradable again.
+- Without evidence, apply a declared assumption instead of a stop. The user
+  chooses it explicitly, as with `max_sessions`: write off, a stated haircut,
+  or stop as today. The run continues, the holding stays on the books, exits
+  stay queued, and the loss appears in results marked as assumption-backed. A
+  constant delisting return is a sensitivity scenario, not truth
+  (`research/ledgr_ragged_universe_prior_art_review.md`), so several
+  assumptions should be comparable side by side.
+
+This is RFC-sized and needs prior art before a seed. It changes valuation,
+the ledger event vocabulary (a loss that is not a fill), completion status,
+metrics, sweeps, walk-forward and provenance. Prior art to gather first:
+
+- the delisting-return literature already cited in the prior-art review
+  (Shumway; Beaver, McNichols and Price);
+- how CRSP and Sharadar record delisting outcomes
+  (`research/Sharadar-Corporate-Event-Evidence.md` already routes held
+  terminal events to `terminal_settlement_unsupported`);
+- how peer backtesters treat halted, suspended and delisted holdings;
+- how exchanges and brokers handle halts, reopening auctions and migration
+  to over-the-counter trading.
+
+It belongs to the accounting-critical-events RFC (v0.2.x), whose entry point
+the 2026-09-08 availability entry already names as
+`terminal_settlement_unsupported`.
+
+One part is small and separate: the silent handling on the comparison and
+selection surfaces is a disclosure defect that needs no RFC. That covers the
+default comparison set, the sweep count, the unreported walk-forward
+exclusion and the missing degradation flag. The survivorship article should
+also state the current limit. Whether those land before the tag is the
+maintainer's call.
+
+This entry authorizes no implementation, spike or RFC.
+
+
+<a id="open-005"></a>
+
+### 2026-09-28 [planning] Dependency order for the next version
+
+The next version after v0.2.1.0 is called v0.2.2 in planning. The roadmap's
+"v0.2.2 opening" row is its first workstream. Its aim is to make portfolio
+optimization and ML-adjacent estimators possible on point-in-time history.
+This sketch orders what is accepted, what is only seeded and what has no seed.
+It binds nothing; the owning RFCs, syntheses and ticket cuts decide.
+
+**0. Before the design load.** Run the design-corpus split and
+binding-decision discoverability (roadmap rows) first. The threads below all
+interlock, and reconstructing their binding state from scattered syntheses is
+the dominant navigation cost.
+
+**1. Opening workstream: accessor internals.** The fold-writer and accessor
+optimization is an accepted direction cut directly as tickets. It changes the
+accessor internals that the read-surface RFC and the history reads build on.
+The older pulse-context accessor cost chore appears implemented in code;
+`ledgr_feature_lookup_map()` no longer calls `ledgr_alias_map_storage()`.
+Verify its status and close its roadmap row, or fold what remains into this
+workstream.
+
+**2. History substrate (synthesis v11, accepted).**
+- Resolve v11 section 7 parts (a), semantic evidence, and (b), two-clock
+  access representation, before committing implementation interfaces.
+- Then implement (c), treatment and disclosure with measured preparation and
+  delivery cost, and (d), numerical correctness.
+- Measure the cold strict availability-feature path as part of (c).
+  `ledgr_compute_feature_series_strict()` took 58% of a cold availability run
+  at 500 x 1,260 by slicing a data-frame window per bar and calling `fn` and
+  `series_fn` on each. v0.2.2 excludes it, and v11 optimizes only an
+  observed bottleneck, so (c) is where it is observed.
+- The instrument-narrowed expected-sessions goal is scheduled beside this
+  (v11 section 4) and must resolve window composition at the request cutoff.
+
+**3. Addressing, designed alongside 2.** The feature-map read surface RFC is at
+seed v1, with the response next. History window reads and whole-universe reads
+must share one rule for naming features by alias or engine ID. Otherwise the
+missing alias read (audit P3) returns for the parameterized, sweepable
+strategies this version targets. Neither interface should freeze first. The
+alias/engine-ID collision guard (LDG-2894) already makes the namespace
+unambiguous.
+
+**4. Cadence: the scheduler.** The strategy schedule decorator seed dates from
+2026-06-12, before the v0.2.0 context-surface, availability and empty-domain
+work. It needs a seed v2 against the current surface, then its response. It
+matters for speed, not only ergonomics: fitting a covariance or estimator on
+rebalance dates only is what makes optimization affordable across 500
+instruments and many sweep candidates. The 2026-09-27 monthly-rebalance
+measurement showed low-turnover runs dominated by costs that do not scale with
+trading.
+
+Maintainer, 2026-10-02: seed v1 binds skip-callback only. On a held pulse the
+fold still builds the full context and feature views and then discards them,
+and still values and books the pulse one step at a time. Seed v2 should take
+two levers into scope rather than park them. First, skip context and feature
+construction on held pulses. Second, step from event to event: between two
+decision pulses positions are constant, so equity over a held stretch is one
+vectorised product of positions and closes plus cash, and the stretch breaks
+only at prepared event pulses, namely the next-open fill of a decision, cash
+postings and dispositions (`R/corporate-action-settlement.R` already prepares
+`posting_idx`, `cash_due_idx` and `disposition_due_idx` up front), mark ageing
+past the valuation limit, and availability stops. That would make a scheduled
+strategy cost roughly in proportion to its decisions and events rather than
+its pulses. Before the seed, a small spike measures how a held pulse's cost
+splits between context construction, the strategy call and accounting on the
+monthly-rebalance workload; the combined writer/accessor spike measured that
+workload at 18.6 s per run and 6.1 s per one-candidate sweep against 67.6 s and
+44.2 s for the daily strategy, without attributing the remainder. The canonical
+R fold stays the oracle, so equity, events and fills must be byte-identical. A
+held pulse in an availability-aware run must still honour departed and halted
+holdings, which the execution-intent session decides. The monthly-rebalance
+shape also belongs in the peer workload suite.
+
+**5. Portfolio construction.** The pipeline order is weight-strategy wrapper,
+then optimization scaffolding, then adapters. History (2) is a hard
+predecessor: no adapter assembles its own history. Constraint expansion is
+half-gated on the shorting/leverage contract, which is still "gate without
+seed". Decide scope first:
+- long-only methods fit today's contracts: long-only minimum variance, risk
+  parity, maximum diversification;
+- unconstrained mean-variance, market-neutral and leveraged methods need the
+  shorting seed written before scaffolding is scoped.
+
+Affordability in target risk (the parked capital-floor direction) sits between
+optimizer weights and executable targets.
+
+Research candidate to carry into the future scaffolding RFC, not a selected
+adapter: Peter Cotton's Schur complementary allocation / Schur bridge
+(https://schur.microprediction.org/; corrected paper dated 2026-09-19). The
+architectural interest is a construction-level regularization dial, gamma,
+that controls how much cross-group covariance structure the allocator uses,
+separate from covariance-estimator regularization such as Ledoit-Wolf
+shrinkage. Do not add a Schur-specific seam: the useful test is whether the
+generic history -> estimator -> weights -> executable-target pipeline makes
+Schur a boring adapter.
+
+Any later evaluation must consume only the point-in-time history substrate,
+run on scheduled decision dates, and tune or select gamma only inside
+walk-forward training. Compare at least sample and shrunk covariance inputs
+against HRP and long-only minimum-variance/risk-parity baselines. If
+implemented, start from the corrected pair-form (Q, b) construction rather
+than copying the original 2024 / naive split literally; the endpoint claims
+differ. Under today's long-only spot contract, do not claim that gamma = 1
+equals unconstrained global minimum variance. Exact unrestricted endpoint
+work waits on the shorting/leverage contract. A reference implementation in
+skfolio is prior art, not an API template.
+
+**6. ML-adjacent estimators.** For this version, "ML-adjacent" means
+estimators computed from prepared windows inside the strategy callback on
+decision dates. It needs 2, 3 and 4. Trained models with identity, refit
+rules and temporal cross-validation remain the parked ML-architecture RFC;
+fitted imputers remain their recorded follow-up. v11 leaves model lifecycle to
+separate design.
+
+**Critical path.** 0, then 1, then decisions 2(a)/(b) with the addressing rule
+3, then 2(c)/(d), then 4, then 5, then 6.
+
+**Seeds still missing or stale:**
+- scheduler seed v2 (stale);
+- optimization scaffolding with the weight-strategy wrapper (parked, not
+  seeded);
+- shorting/leverage (gate without seed), required only beyond long-only;
+- a strict-feature cost charter, only if the (c) measurement shows it is the
+  bottleneck;
+- ML architecture (later).
+
+The seeds for 4 and 5, and the shorting seed if needed, can be written while 1
+and 2 run.
+
+**Not gating:** exact equity quantity settlement, the compiled execution RFC,
+the peer-benchmark alignment chore, and liquidity/capacity policy. Each keeps
+its own track.
+
+This entry authorizes nothing; it records the planning order.
+
+
+<a id="open-007"></a>
+
+### 2026-09-28 [infrastructure] Binding decisions must be discoverable
+
+The design corpus is correct but costly to navigate. The cost is state that is
+scattered and hard to read, not the corpus's size. On 2026-09-28, answering
+"what currently binds the feature read surface" meant assembling `contracts.md`,
+four syntheses and a horizon note, about 1,500 lines, to recover roughly twenty
+lines of current truth. Three failures recurred:
+
+- **Scattered binding state.** A topic's binding decisions and deferrals live
+  in whichever synthesis made them, each partly superseded, with no
+  consolidated statement. The deferred "feature-engine RFC" existed only as
+  conditional deferrals in three syntheses. Its trigger fired unnoticed until
+  an audit happened to route findings to it.
+- **Stale indexes.** A cycle's state is hand-written in up to five places:
+  the RFC pipeline, the roadmap, horizon, the design index and AGENTS.md. The
+  pipeline row for historical projection still read "open for review" after
+  the synthesis header recorded acceptance.
+- **Unreadable records.** Roadmap and pipeline rows exceed 1,000 characters,
+  and `tickets.yml` holds scope, acceptance and evidence as single-line
+  strings. Line-oriented search prints "[Omitted long matching line]" for
+  exactly the records that carry state.
+
+Direction, for the same cycle as the design-corpus split:
+
+1. **Consolidate binding decisions at acceptance.** When a synthesis is
+   accepted, fold its binding decisions into `contracts.md`, or into a short
+   per-topic decision page if they are not contract-level. Enter each future
+   obligation as a pipeline row with its trigger. "What binds X" should then
+   be one contract section, or one decision page, plus pipeline rows. This
+   changes the acceptance step in `rfc_cycle.md`.
+2. **Status lives once.** It lives in each artifact's own header. Superseded
+   versions say `Superseded by:`. Indexes list only the operative artifact
+   and note its history.
+3. **An index-drift check.** A small tool compares index entries with
+   artifact status headers and fails on disagreement, mirroring the rule
+   that ticket views are generated from `tickets.yml`.
+4. **Readable records.** Use YAML folded scalars for long `tickets.yml`
+   fields; the file parses the same. Turn the longest roadmap and pipeline
+   rows into short headed sections.
+
+This is a documentation restructure with no product or contract consequence,
+like the split. Only item 1 changes process, and the maintainer records that
+change in `rfc_cycle.md`. This entry authorizes nothing; it records the
+direction.
+
+
+<a id="open-008"></a>
+
+### 2026-09-28 [data] Historical revision optimization, deferred
+
+The maintainer requested a consolidated historical-projection synthesis after
+exposure was traced to requested values rather than inferred from event counts.
+[Synthesis v11](rfc/rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md)
+records that direction, passed Claude's Type 1 verification on 2026-09-28,
+and was accepted by the maintainer on 2026-09-28. V10 and the spike remain the
+derivation and correction record.
+
+The reported terminal-date correction affected one FDMLQ indicator cell at each
+tested width and no requests in the fourteen intended workloads. The separately
+reported execution check matched all 10,486 fills and found none on zero-volume
+bars. Claude checked these scoped results against the local evidence CSVs in
+final review. Section 7's preservation obligation is discharged at `412f600`,
+`dev/spikes/revision-exposure/`, with a README carrying source and workload
+provenance. Assigned `assume_effective` clocks do
+not establish empirical absence of late arrival, and the source-capture interval
+does not establish a historical revision rate.
+
+The durable reason for deferral: no demonstrated requested-value benefit yet
+justifies numerical segmentation, trigger tables or partial-update machinery.
+Keep historical access, simple carry and missingness disclosure. Correctness for
+supported inputs remains owed; ordinary preparation and, where necessary,
+whole-series recalculation are admitted. Existing fact segments are unaffected.
+
+V11, now accepted, replaces the earlier narrowing entry's implementation-route
+assumption that bounded incremental revision must be established first. The
+next-release narrowing goal remains scheduled; it can revise window composition
+without carry and needs its own correctness coverage, not a mandated storage
+method. The carry-locality bound is not a narrowing proof.
+
+Reopen optimization after a supported fact or policy changes an intended request
+and simple correct preparation demonstrates a material resource or maintenance
+problem. Assess exposure, shortcut consequences and solution cost in that order.
+A source with genuine knowledge clocks or missing sessions warrants assessment,
+not automatic construction. Fitted imputers retain the 2026-09-26 follow-up;
+liquidity policy stays separate. This entry authorizes no implementation or spike.
+
+
+<a id="open-009"></a>
+
+### 2026-09-28 [ux] Feature-map read surface RFC seeded
+
+The "feature-engine RFC" that the accessor addendum
+(`rfc/rfc_strategy_callback_contract_addendum_v0_1_8_10_synthesis.md:265-272`)
+and the strategy-authoring-helpers synthesis (`:281-287`) deferred is now in
+flight under a narrower name:
+`rfc/rfc_feature_map_read_surface_v0_2_x_seed.md`.
+
+Its trigger was the single-feature vector surface proving insufficient, and
+the v0.2.0.2 vignette audit showed that it has. Active-alias strategies have no
+whole-universe read, so the demo strategy, Sweeps and Research Workflow must
+loop over `ctx$features(id)`. Existing references to "the feature-engine RFC"
+for alias-map vector reads, parameterized-map inspection (audit P4) and bundle
+outer names (audit P6) now resolve to this cycle.
+
+The pre-seed probe at `c06e2e4` found a defect that exists independently of
+any new accessor. A feature-map alias may equal another entry's engine ID:
+`ledgr_feature_map(sma_10 = ledgr_ind_sma(5), sma_5 = ledgr_ind_sma(10))` is
+accepted. `ctx$features(id)[["sma_10"]]` then returns the 5-bar SMA, while
+`ctx$feature(id, "sma_10")` returns the 10-bar SMA. The seed's Q2 proposes
+refusing such maps. Whether a bounded guard lands before the RFC is a
+maintainer decision.
+
+Not in this cycle:
+- feature computation, including the cold strict availability-feature path;
+- lookback-window reads, which belong to the historical-projection work;
+- nested bundle namespaces;
+- cross-sectional features.
+
+This entry authorizes nothing; it records the routing.
+
+
+<a id="open-010"></a>
+
+### 2026-09-27 [ux] Strategy callback inspection boundary
+
+The strategy-context surface keeps `bars`, `feature_table`, `features_wide`
+and `bar(id)` because the current inspection reader depends on those views and
+no complete replacement was established. Open a focused RFC seed only when
+inspection UX is prioritized enough to remove them. That seed must define the
+state being inspected, preserve its axis and knowledge cutoff, explain how a
+frozen view survives later pulses and place any table materialization outside
+the callback hot path. Its evidence must include parity against a real
+availability-aware callback. This entry does not authorize automatic table
+population or a new inspection subsystem.
+
+**Current planning note (2026-09-20):** v0.2.0.1 is released. The roadmap
+schedules v0.2.0.2 equity accounting and research-workflow improvements from
+Sharadar evidence. No v0.2.0.2 implementation packet is open yet. The roadmap
+owns commitments; observations below remain non-binding unless promoted.
+Spot-crypto is parked behind that equity/workflow priority.
+
+The completed packet consumed only verified API-golden-path and stale-example
+findings in Batches 2 and 10. Batch 10 closed those scoped repairs. The
+remaining 2026-09-04 all-vignette findings, including article-order,
+catch-all-topic, and long-article navigation work, stay parked for a later
+documentation-freshness pass.
+
+**Promotion index (horizon → roadmap).** Where open entries have a planned
+milestone. Entries not listed are pure direction with no committed home yet
+(e.g. Shiny UIs, compiled fold core, strategy family guides, tidy/vectorized
+authoring). When a milestone closes, sweep its entries to `## Resolved`.
+
+- **v0.1.8.x (closed 2026-06-05).** Fold-core structural debt,
+  peer-benchmark expansion, parallel dispatch, substrate / optimization
+  arc, B2 spot-FIFO accelerator, and the v0.1.8.11 documentation / cleanup
+  release all shipped across v0.1.8.1 through v0.1.8.11. See `## Resolved`
+  for entry-by-entry closeouts.
+- **v0.1.9** — affordability / target-risk layer (incl. the phased-pulse
+  restructure); primitive internals and collapse planning gates.
+- **v0.1.9.x** -- walk-forward (RFC accepted 2026-06-04 with Amendment 1 +
+  Amendment 2 + Section 17 ticket-cut gates); validation toolkit
+  (formerly "selection-integrity diagnostics"; RFC accepted 2026-06-12,
+  amended 2026-06-14 with a v0.1.9.6 PBO spike gate, then implemented as
+  substrate plus native PBO/CSCV, MinTRL, DSR, and effective-trial clustering);
+  intraday-readiness code audit (completed in v0.1.9.6, audit only);
+  API and representation-boundary hardening RFC candidate (2026-09-04 entry;
+  after the active v0.1.9.7 cycle, before another large validation or execution
+  surface); cost-model post-direction;
+  randomized / blocked
+  slice diagnostics; promotion-grade sweep artifacts; target
+  construction helper extensions (Pass 2 per-stage helpers); broker /
+  exchange cost templates; spot-FIFO as default
+  for ephemeral spot workloads (candidate; see 2026-06-05 and
+  2026-06-13 entries).
+- **v0.2.0.1** -- availability hot- and cold-path productionization, the
+  resumed-run correctness repair, and release-closeout measurements under the
+  accepted synthesis and maintainer decisions.
+- **Post-v0.2.1.0 exact equity quantity settlement** -- atomic parent-to-
+  recipient position and model-basis transformation for stock acquisitions,
+  mixed consideration and spin-offs. Promoted to the roadmap on 2026-09-24;
+  a focused RFC is required before ticket cut.
+- **After v0.2.0.1** -- the refreshed spot-crypto readiness probe and
+  conditional measurement spike. No prior crypto spike was executed; the
+  roadmap requires the probe-before-prose sequence in `spike_protocol.md`.
+- **Next implementation packet** -- the peer benchmark session alignment
+  chore: normalize peer session indexes before parity scoring, report join
+  retention, and revisit the 0.99 weak-return threshold in the article. Also
+  the pulse-context accessor chore: stop discarding alias-map identity work in
+  the per-pulse feature accessor, share the constant feature-table schema,
+  index the `features_wide` fill, and audit which `ctx` fields deserve
+  laziness.
+- **v0.2.x** — snapshot administration and research-loop ergonomics
+  (promotion recovery); point-in-time data tables / external regressor
+  snapshots (unify in one RFC); corporate actions and instrument master;
+  explicit accounting-critical event types RFC; liquidity and capacity; OMS
+  semantics + snapshot lineage + live data logs; external benchmark / beta
+  uses; external reference-data adapter provenance; provider risk-free
+  divergence; reference strategy templates / baseline strategies; external
+  package adapters (PerformanceAnalytics first); non-spot accounting
+  models (futures / margin / options / FX) once derivatives architecture
+  work begins; general ML-strategy preparedness (leakage-safe training
+  substrate, model-as-artifact identity, in-loop refit) gated on the
+  temporal-CV / embargo machinery and needing a dedicated RFC (see the
+  2026-06-14 entry).
+- **v0.2.x to v0.3.0** -- live bad-data resilience, ragged-universe
+  (asset-lifetime) handling, and sim-to-real backtest fidelity. Keep the
+  offline research-validity substrate distinct from the later live runtime;
+  both need dedicated RFC treatment (see the 2026-05-28 and 2026-09-06
+  `[data]` entries).
+- **Post-K1 / B2 gates** -- compiled fold core (`ledgrcore` sister
+  package) functionally parked. The K1 measurement spike completed and
+  the scoped v0.1.8.10 B2 spot-FIFO accelerator shipped with
+  peer-validated 5x engine speedup (see
+  `dev/bench/peer_benchmark/peer_benchmark.md` and the 2026-06-05
+  post-LDG-2522 entry). Architecture A authorization now requires a
+  workload where engine dominates more than 42% of B2-row wall AND
+  results / ingestion phases approach their floors; neither condition
+  currently holds. Incremental B2 expansion (per-pulse equity, durable
+  path, non-spot accounting models) remains available as a v0.1.9.x+
+  forward direction.
+
+
+<a id="open-012"></a>
+
+### 2026-09-27 [data] Instrument-narrowed expected sessions, deferred
+
+Accepted 2026-09-27: the documentation reports what the engine does. Feature
+windows count venue open sessions, and lifetime facts do not narrow the feature
+axis. Reaching the stated design goal - instrument expected sessions excluding
+accepted `known_inactive` intervals - is scheduled for the next release in
+`ledgr_roadmap.md`, and this entry keeps the reasoning so it is not re-derived
+from scratch.
+
+The disagreement. Four authorities say feature windows exclude known inactivity:
+the availability synthesis ("expected sessions, which drive feature windows...
+are the venue open sessions minus those inside an accepted `known_inactive`
+lifetime interval"), `contracts.md:803`, the v0.2.0.0 packet ("instrument
+expected sessions exclude known inactivity for features"), and gate 21 ("those
+sessions leave the feature and classification expected set"). The engine narrows
+nowhere: hydration builds one frame per instrument on the venue pulse axis and
+fails the run if any per-instrument axis differs
+(`R/backtest-runner.R:873-907`, gate at `:904-905`), and `known_inactive`
+reaches only trading restriction and terminal handling. The two behaviours
+differ in value, not coverage: across an inactive interval, narrowing reaches
+back past it and returns a number, gating returns `NA`.
+
+Why it survived two tagged releases: gate 21's narrowing clause has no test
+coverage anywhere. `known_inactive` appears in eleven test files and none assert
+a feature value; `tests/testthat/test-availability-features.R` has four tests
+and no lifetime reference. It was design text that nothing executed. The
+neighbouring guarantee is covered, since the same file tests that future facts
+cannot change earlier features. Whichever direction a later version takes, the
+repair adds the fixture that pins it.
+
+Measured cost, 2026-09-27. Documenting current behaviour: one clause in one
+gate, three prose sites, one new fixture, no fixture breakage. Implementing
+narrowing: an engine change to a hydration path that currently refuses
+per-instrument axes, fixtures written from scratch, and possible repair of
+fixtures that expect `NA` across an inactive span. The computation itself is
+easy, because `ledgr_compute_feature_series_strict()` counts rows of whatever
+frame it is handed and narrows correctly when handed a narrowed one; the work is
+deriving per-instrument frames and scattering results back onto the venue axis.
+
+The reasoning that survived review, for whoever reinstates this. Gating keeps
+one knowledge-dependent channel rather than two, since narrowing makes window
+*composition* depend on knowledge as well as carry eligibility, and the two
+interact. Narrowing discards real observations, because a genuine print inside
+an asserted inactive interval exists today and is used, and narrowing removes
+that session from the axis. The availability synthesis already forbids the same
+bridging for a whole-feed outage, where "an observation before and after the
+outage can never masquerade as a complete adjacent-session window". And gating
+puts features on the same axis the valuation clock already uses.
+
+Two arguments that were made and do not hold, recorded so they are not made
+again. Gating does not make feature values cutoff-invariant once carry-forward
+is enabled, because carry eligibility is conditioned on knowledge-timed facts.
+And carry-forward does not provide a disclosed substitute for bridging
+inactivity, because the accepted carry policy forbids carry across an inactive
+interval.
+
+The trip-wire that makes narrowing expensive rather than merely fiddly: expected
+sessions derived from lifetime facts inherit those facts' knowledge times, so a
+fact becoming knowable mid-run changes a past window's contents, and
+`contracts.md:808-810` requires cutoff-causal semantics where future-known facts
+cannot rewrite cached earlier feature values. Features are precomputed once per
+run while lifetime facts resolve per pulse, so narrowing needs either per-pulse
+recomputation, bounded incremental invalidation, or a declared causal deviation.
+The first is the shape the optimization manual bans; the second is the machinery
+the historical-projection checkpoint exists to evaluate. Under every current
+adapter the two clocks coincide, so the trip-wire does not fire today - which is
+exactly why it should be checked before narrowing lands rather than after.
+
+Route: the next release, with the fixture, after the historical-projection
+checkpoint establishes whether bounded revision is buildable. The roadmap row
+carries the commitment; this entry carries the reasoning.
+
+
+<a id="open-013"></a>
+
+### 2026-09-27 [execution] Writer and accessor levers measured
+
+Four spikes measured hot-path levers on the release line at `b14579f`: 500 instruments × 1,260
+sessions, SMA 5/10, 68,201 fills. Report:
+`inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md`; evidence under
+`dev/spikes/`. At measurement close the findings bound no design. On 2026-09-27 the maintainer
+promoted the three measured levers to the roadmap as the opening workstream of v0.2.1.1. The
+roadmap now carries the commitment; this entry retains the measurements and rejected routes.
+
+- A per-pulse block write of fill events plus prepared fast-context feature accessors gave
+  byte-identical results. Warm `ledgr_run` −22%, one-candidate `ledgr_sweep` −38%, compiled
+  `spot_fifo` sweep −25%, 8-candidate sweep −38%. The two savings add up, and a mid-pulse failure
+  still leaves a durable run FAILED with nothing persisted.
+- `ctx$features(id, feature_map)`, the form the indicators vignette teaches, validates the map
+  twice on every call: about 160 µs, against 19 µs for the alias form. Remembering the last validated map cuts an
+  explicit-map run from 155.7 s to 58.8 s, with identical results and errors.
+- A cold availability-path run spends 58% of its time in per-bar strict feature computation
+  (`ledgr_compute_feature_series_strict()`), which calls `fn` and `series_fn` on every window.
+- `collapse::rsplit()` for bar preparation was rejected: about 60 ms per call, under 1% of a run.
+- This corrects the 2026-09-18 accessor entry: the dense path builds `features_wide` once per run,
+  not on every pulse. Availability runs subset it per pulse with `%in%`.
+
+Promotion is deliberately narrow: per-pulse fill-event block writes, prepared scalar feature
+accessors, and validate-once plus a run-local exact memo for explicit feature maps. The rejected
+`collapse::rsplit()` route, strict availability feature computation, fill-payload construction,
+lot accounting, snapshot-hash guards and other incidental observations are not authorized by the
+promotion. The measured seams route directly to a ticket cut under the exact-parity proof
+template; a required public API, identity, persistence or failure-semantics change routes back to
+Type 2 design instead of expanding the maintenance workstream.
+
+
+<a id="open-015"></a>
+
+### 2026-09-26 [data] Latent behaviours surfaced by the preparation spike
+
+Base `split()` orders groups by the session's `LC_COLLATE`. On an English locale it orders
+`aaa|b_1|B2|BBB`; under C collation it orders `B2|BBB|aaa|b_1`. Because of that, the order of
+`payload` values and `warmup` rows in the public `ledgr_precomputed_features` object depends on the
+machine for mixed-case or punctuated instrument ids. Sweep metrics are unaffected, because the
+projection indexes values by universe id.
+
+User indicator callbacks (`fn`, `series_fn`) receive bar frames whose `row.names` are each row's
+position in the whole universe query result. Those values depend on which other instruments were
+queried. `contracts.md` promises only ascending time order. A callback that reads `rownames()` gets
+universe-dependent values today.
+
+The availability hydration path (the bars-cache block in `ledgr_run_fold()`) aligns rows by
+timestamp and then overwrites `instrument_id` with the group key. A misgrouped split therefore
+passes silently: under a deliberately misgrouping candidate, `bars_mat` and the pulse views changed
+without any error. Dense hydration and precompute coverage validation do stop on misalignment. Any
+future change to the split or grouping on that path needs an external oracle.
+
+`ledgr_fill_row_buffer_add_many()` (`R/fold-reconstruction.R`, called on the compiled path at
+`R/sweep.R:1795`) writes through environment-held base subassignment. That is style shape 7: a full
+column copy on every call. It measured about 3% of a compiled sweep.
+
+`ledgr_with_collapse_deterministic()` has no call sites. Any value-bearing collapse adoption still
+needs pinned options at the call, as the collapse optimization map requires.
+
+
+<a id="open-017"></a>
+
+### 2026-09-24 [data] Equity corporate actions post-v0.2.0.2 direction
+
+`rfc_equity_settlement_post_v0_2_0_2_synthesis.md`, accepted 2026-09-24,
+binds v0.2.0.2's corporate-action slice: sealed vendor-neutral facts,
+evidenced gross cash distributions, modeled terminal disposition, explicit
+refusal and a headline fidelity signal. "v1" here means dividends post and
+terminal holdings dispose under a named convention; nothing transforms a
+parent holding into a recipient holding. This entry records what the
+synthesis deferred and where each piece would be owned.
+
+**Exact quantity settlement.** Already on the roadmap as its own RFC:
+atomic parent consumption and recipient creation, mixed cash legs,
+model-basis transfer, fractions, off-axis valuation and compiled handling.
+Its evidence requirement is stated by that RFC, not pre-empted by the
+provenance tier. A policy value whose scope it narrows mints a new version.
+
+**Receivable and payment-date accounting.** Deferred by the maintainer's
+posting decision. Trigger: research that depends materially on when cash
+becomes spendable. Data requirement: a payment clock whose own knowledge
+time is established, not merely supplied.
+
+**Lifetime-only terminal disposition.** Disposition without a session
+calendar and a valuation policy changes missing-bar semantics and needs its
+own runnable probe before it is promised. Availability activation is
+retained until then.
+
+**Total-return series.** Derived on the feature plane from sealed
+split-adjusted bars plus sealed distribution facts. Not sealed as bars.
+
+**Fidelity beyond `modeled`.** An `evidenced` state, reserved for a release
+that can exercise an effect with no configured convention, which requires
+complete source clocks.
+
+Promoted roadmap hooks: the exact-quantity RFC (next equity-accounting
+release); the receivable RFC (when the trigger above fires); the
+lifetime-only disposition probe (bounded spike, before any such claim).
+
+Immediate cross-cycle obligations: the Sharadar producer specification in
+`ledgr-research` must be revised to the accepted synthesis before its facts
+become release evidence; the upstream private gate reconciles the
+distribution population and the corrected census outside this packet.
+
+This entry does not authorize any of the above; it records the direction.
+
+
+<a id="open-018"></a>
+
+### 2026-09-24 [data] Exact equity quantity settlement remains a product gap
+
+v0.2.0.2 deliberately stops short of transforming a held parent position into
+recipient securities and cash consideration. Its bounded usability answer is
+evidenced cash distributions plus an identified modeled disposition for a
+terminal holding, with strict refusal still available. That lets ordinary
+research finish; it does not reproduce the economics of holding through a
+stock acquisition, mixed acquisition or spin-off.
+
+The corrected private census makes the gap concrete. It found 41 candidate
+transformations, 24 recipients already inside the measured physical axis and
+22 cases normalized into the snapshot's split-adjusted unit basis. Ten of the
+22 are clean single-recipient stock acquisitions; twelve combine mixed
+acquisitions and parent spin-offs. No case is broker-exact. Event counts are
+not exposure rates: the effect on a strategy depends on whether it held the
+parent. The gap is usually bounded for frequently rebalanced factor research,
+but it is material for buy-and-hold and index replication and disqualifying
+for spin-off, merger-arbitrage, tax-lot or broker-reconciliation claims.
+
+This is not a unique shortcoming of ledgr's current direction. LEAN's public
+portfolio implementation applies splits and cash dividends, while its
+documented delisting path liquidates disappearing holdings; its public
+corporate-action contract does not establish an atomic recipient-share and
+basis transformation. Zipline has the stronger partial primitive: a stock
+dividend can create recipient shares from a payment asset and ratio, but the
+visible ledger path increments quantity rather than expressing the complete
+parent reduction, mixed cash leg and basis allocation required here.
+Backtrader commonly consumes adjusted prices instead. Competitor limitations
+bound the market gap; they do not lower ledgr's correctness target.
+
+The roadmap schedules a focused RFC for one of the next equity-accounting
+releases. It owns atomic multi-instrument persistence, parent consumption,
+recipient creation, cash legs, model-basis transfer, fractions, replay and
+reopen, off-axis valuation and compiled refusal or support. Until it lands,
+ledgr must preserve the canonical source facts, make every omission or modeled
+disposition unavoidable in ordinary results, and avoid any claim of complete
+corporate-action settlement.
+
+Primary comparison references checked for this decision:
+
+- <https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions>
+- <https://github.com/QuantConnect/Lean/blob/master/Common/Securities/SecurityPortfolioManager.cs>
+- <https://github.com/quantopian/zipline/blob/master/zipline/data/adjustments.py>
+- <https://github.com/quantopian/zipline/blob/master/zipline/finance/ledger.py>
+
+
+<a id="open-019"></a>
+
+### 2026-09-22 [product] A quarantined row's copy is a diagnostic, not identity
+
+Maintainer decision, taken after the ingestion-reader re-review. When a bar
+fails validation under `invalid_observations = "quarantine"`, ledgr saves the
+supplied row as `original_row_json` so the user can see what was wrong. That
+field serialized every column of the row, including ones ledgr never reads,
+and the rule-2 hash covered it, so a stray spreadsheet column changed the
+snapshot's identity. Both ingestion surfaces document the opposite: extra
+columns "are ignored and do not become part of the sealed snapshot or its
+hash". The documentation was right and the hash was wrong.
+
+The hashed view now keeps only the canonical bar keys of the saved row and
+drops `quarantine_id`, which is a digest of the whole row and also the read's
+ordering key. The stored row is unchanged.
+
+The subtlety worth carrying forward is why the obvious fix is wrong. A
+quarantined bar is not written to `snapshot_bars`, so the saved copy is the
+only record of its values. Dropping the field from the hash outright, which
+was the first attempt, meant that editing a quarantined bar no longer changed
+the snapshot hash. An existing test caught it. The field has to be projected,
+not discarded: identity covers the row's canonical values and ignores
+everything else about it.
+
+This predates the DuckDB reader. The reader only changed how those ignored
+values render, which is what made the exposure visible.
+
+
+<a id="open-020"></a>
+
+### 2026-09-22 [process] Sequential A/B timing invented a regression
+
+Recorded because it nearly caused a wrong decision twice in one cut. After an
+identity fix the fast gate reported a 92.16 s median against a 90 s bound,
+and three runs of the patched tree against three runs of the previous commit
+appeared to confirm a 5.6 s regression. Interleaving the two trees, one run
+each in turn, showed them identical: 84.69, 84.70, 84.67 against 84.67,
+84.38, 85.03. The difference was machine state drifting over a long session.
+
+Sequential A-then-B blocks on this machine cannot separate a real change from
+drift, and the drift is the same order as the effects being measured.
+Interleave, or measure the component directly rather than the whole profile.
+The same sequential method produced the earlier claim that moving four
+sealing blocks took the fast median from 86.78 s to 90.25 s; that lane
+decision survives only because it also rests on a direct per-block
+measurement within one tree.
+
+
+<a id="open-021"></a>
+
+### 2026-09-22 [product] DuckDB reads the ingestion CSV
+
+Maintainer decision: `duckdb::read_csv_auto()` replaces `utils::read.csv()`
+inside `ledgr_read_csv_strict()`. duckdb is already an Import, so nothing
+moves in the dependency stance.
+
+The reader stays a reader. `instrument_id`, `ts_utc` and `symbol` are forced
+to text, so ledgr keeps owning instrument identity and all six accepted
+timestamp forms and DuckDB never parses a timestamp. That boundary is the
+whole design: the alternative, letting DuckDB infer everything, would hand a
+documented and tested contract to a dependency.
+
+The v0.2.0.1 inventory's OPT-L03 had put reader substitution on the RFC side
+of its line, because accepted inputs, inferred types and error timing all
+change. Cut 3 inherited that and declined it without measuring, which its
+closeout records as a gap. Measured afterwards, the read is 4.91 seconds
+against 0.26 at the release shape, and `ledgr_snapshot_from_csv()` falls from
+10.72 to 7.23 seconds.
+
+Speed was not the decisive argument. The comparison found that
+`ledgr_snapshot_from_csv()` silently corrupted leading-zero instrument ids:
+a file declaring `0001` sealed with `1`, because R's CSV reader infers an
+integer column for all-numeric ids, into a column the schema types `TEXT`.
+The snapshot sealed without error over wrong identifiers and hashed them.
+That is a correctness fix that happens to be faster, not an optimization.
+
+What this costs: snapshots previously sealed from such a file have wrong ids
+and wrong hashes, and non-UTF-8 files are now rejected explicitly rather than
+silently mis-decoded. Both are deliberate, and the package is pre-release
+with no external consumers.
+
+Corrected 2026-09-22 after close review. The first version of this entry said
+the defect and the moved hashes were confined to `instrument_id`. That was
+wrong. Every column ledgr persists as text has the same hole, and the review
+demonstrated it for `symbol`, `currency` and `asset_class`: the old reader
+inferred a number for an all-numeric value and the new one returns text, so
+each moves the hash. The forced set is now every persisted text column, not
+three identity columns. A second undeclared change came with it: DuckDB
+returns a literal `NA` as the two-character string where `utils::read.csv()`
+read it as missing, so an instrument id of `NA` now seals instead of being
+rejected. That is kept and declared, because `NA` is a real ticker and CSV
+says missing with an empty field.
+
+The generalizable lesson is narrower than the first version claimed. A
+compatibility matrix registered as a test before the change is worth having,
+but it only covers what it enumerates: this one had no instruments-CSV row
+and no null-token row, so it reported one moved behaviour where there were
+several. An enumerated witness proves the enumeration, not the surface.
+
+
+<a id="open-022"></a>
+
+### 2026-09-22 [product] One CSV ingestion surface
+
+Maintainer decision: `ledgr_snapshot_from_csv()` and
+`ledgr_snapshot_from_df()` are the ingestion surface. The connection-first
+lifecycle from v0.1.1, `ledgr_snapshot_create()` then
+`ledgr_snapshot_import_bars_csv()` then `ledgr_snapshot_seal()`, with
+`ledgr_snapshot_import_instruments_csv()` beside it, is removed in v0.2.0.2
+cut 3. The 2026-09-17 entry below asked for a compatibility matrix rather
+than a silent merge; this is the explicit decision it reserved.
+
+Why. The two CSV surfaces are two generations of the same idea. The strict
+importer came first (2025-12-19); the handle-returning adapters came two days
+later and re-implemented its four validations (finite OHLC, rounding, bounds,
+duplicate key) in a second error vocabulary rather than calling it, and
+`from_csv()` bypasses it entirely. Every capability added since landed on
+`from_df()` only: the strict flow has no reference to availability facts or
+quarantine and cannot carry them. Its one distinct capability, instrument
+metadata from a second file, moves to `from_csv()` as an argument. Nothing
+in package code or vignettes drives the strict flow; its callers are its own
+examples and twenty-six test sites.
+
+What stays open. The identity-preserving timestamp work in `from_df()`
+(OPT-L02) ships in the same cut with a pinned snapshot hash as its witness.
+`colClasses` on the reader changes which error fires first and is declined
+at 0.9 s. Hash chunk widening and raw-bytes hashing keep their earlier
+dispositions.
+
+
+<a id="open-023"></a>
+
+### 2026-09-22 [architecture] Accounting core accepted; what it deferred
+
+The accounting-core consolidation RFC is accepted
+(`rfc/rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md`) and
+implements as one workstream after the test cleanup and before equity
+settlement. Its inventory refuted the "eight independent FIFO replays"
+premise: one R kernel, one C++ reimplementation, six driver loops, one
+duplicated projection. Six things it left open.
+
+The C++ boundary. With the carrier bound, the R-to-C++ transfer becomes a
+segment concatenation and split instead of per-lot list allocation, which
+was 98% of the compiled path. That is cheaper, not priced. The
+compiled-execution RFC owns it, together with the C++ event envelope for
+CASHFLOW and opening seeds, which call sites the kernel may serve, and any
+runtime default. Its inputs are the D5 depth curve and inventory section 9.
+
+Equity settlement's lot attributes. Acquisitions, spin-offs and unsettled
+claims transform lots and will add aligned per-lot columns under their own
+accepted semantics. Nothing is added in anticipation; unknown operations
+fail closed until that design binds.
+
+FEE. Schema-admitted and never produced. Its ticket checks persisted runs
+for any row before tightening the CHECK; if one exists, FEE is documented
+as reserved instead.
+
+Per-call kernel overhead. About 30 us per fill at any depth, in validation,
+coercion and copies; most of the measured 28x was this, not the scans. A
+separate optional ticket, gated on keeping every validation the kernel
+performs today.
+
+The carrier itself. Per-instrument segments with a head index are bound;
+linked queues and environments are not. A later RFC may replace it if the
+D5 curve or a depth profile justifies it. Copy-on-modify into list-held
+vectors is recorded, with `collapse::setv` as the escape.
+
+A process observation for the pilot closeout. Two inherited premises,
+deferring the carrier and preparing per source, survived seed, response
+and synthesis and were caught at maintainer review. Both agents carried
+them forward from a prior artifact rather than deriving them from the
+tree. That is where agent checking was weakest this cycle.
+
+
+<a id="open-024"></a>
+
+### 2026-09-21 [infrastructure] Testing architecture accepted; what it deferred
+
+The testing-architecture RFC is accepted
+(`rfc/rfc_testing_architecture_v0_2_0_2_synthesis.md`) and implements
+directly as v0.2.0.2's five opening workstreams. Four things it left open.
+
+The claims registry registers declared load-bearing claims and cannot prove
+completeness; an undeclared contract stays invisible to its checker. The
+Shrink, Merge, and Delete reviews carry that question by hand. If a sole
+guard is ever lost that way, the registry's seed set from `contracts.md`
+and the prior audit's twelve rows is where to look for why.
+
+Snapshot-file and failure-message rules were declined because no
+`expect_snapshot` artifact exists and no failure was traced to a message.
+Either becomes a rule the day the mechanism or the defect appears.
+
+A mixed file that becomes homogeneous through Shrink or Merge is noticed by
+nothing; its per-block tags keep working and become redundant. A periodic
+look is cheap; a checker for it is not worth writing.
+
+Extended parity beyond the cheap canonical core runs at release
+unconditionally, owned by the maintainer. Whether a future compiled
+expansion needs its own trigger between releases is that RFC's question.
+
+
+<a id="open-025"></a>
+
+### 2026-09-21 [infrastructure] Governance loop accepted; what it deferred
+
+The post-v0.2.0.1 governance review is accepted
+(`rfc/rfc_governance_review_post_v0_2_0_1_synthesis_v2.md`) and binds as a
+pilot on the next implementation packet. Four things it deliberately left
+open, parked here so they are not rediscovered.
+
+The peer benchmark's public-workflow claim has a known gap: it reads
+`ctx$features_wide` while the documentation teaches `ctx$features()`, so the
+taught idiom is unmeasured (2026-09-18 per-pulse entry). Closing it is a
+direct ticket for the next packet, one benchmark row using the taught idiom.
+It is a correction to an existing claim, not a process rule.
+
+A code-health census, duplication scan, and forbidden-call reachability guard
+were proposed and rejected as standing release steps. Each remains available
+as a triggered audit under the accepted routes when a question calls for it.
+
+A second reviewing human, or a rotating second reader of the maintainer's
+briefs, would remove the model's single point of judgment. It is not
+available to a one-maintainer project and was not proposed; the question
+stays open.
+
+The cycle itself needed nine artifacts, one rejected synthesis, and two
+returned seeds to change a process document. The pilot's counters should show
+that is not repeated; if a process change again costs more than the feature
+work it governs, that is a finding against the model.
+
+
+<a id="open-026"></a>
+
+### 2026-09-20 [ux] Real-data workflow costs beyond accounting
+
+The empirical handoff `inst/design/research/Sharadar-Workflow-Improvement-Evidence.md`
+collects LFB-006/008/009/010 from the research repository. The roadmap promotes
+these improvements into v0.2.0.2 planning; this note keeps their design rationale.
+
+A silent 858.69-second phase obscured a 12.61-second fold and a 799.56-second
+availability read. Optional stage progress would distinguish useful work from
+a stalled process without a dashboard or new evidence system. Progress should
+be throttled and must not affect economic results, identity or RNG behavior.
+
+The public opening constructor accepts zero cash that execution later rejects.
+The supported domain should be consistent and fail early; the research-side
+epsilon-cash probe is not a reason to expand financing semantics.
+
+The corporate-event findings also motivate clear explanations of supplied but
+unsupported economics. Inspect existing diagnostics and summary surfaces first.
+Computational completion is not a guarantee of complete event coverage, and no
+reader can certify events absent from the supplied data. This belongs with the
+equity work, not a parallel provenance or certification mechanism.
+
+The existing single-cutoff inspection and availability reconstruction entries
+below retain their specific boundaries. LFB-007 remains obsolete: explicit
+strategies can already distinguish holding from liquidation.
+
+
+<a id="open-027"></a>
+
+### 2026-09-20 [data] Equity accounting events now block real portfolio research
+
+The Sharadar baseline census supplies empirical input to the existing
+2026-06-28 cross-asset accounting entry and the v0.2.x corporate-actions and
+explicit accounting-event roadmap sections. The compact handoff is
+`inst/design/research/Sharadar-Corporate-Event-Evidence.md`; it links the private
+source inventory, corrected terminal case and LFB-001/LFB-011 at a fixed commit.
+
+The 563-instrument population contains cash/security/mixed acquisition forms,
+delistings, spin-offs and cash dividends. The retained portfolio prefix already
+crosses dividend and spin-off events without their distributions being booked;
+terminal facts stop held delistings without settling them. Mechanical
+reconciliation therefore does not establish total-return accounting.
+
+This supports an equity-first scope rather than implementing the entire
+cross-asset catalogue. Preserve the roadmap's accounting-core consolidation
+dependency, source-fact versus account-event split, explicit price/unit basis,
+and independent replay verification. The adapter still needs supported terms
+and declared clocks; missing publication/payment/settlement inputs are not
+fixed by a new ledger event type. Crypto, tax and derivatives remain separate.
+The roadmap now schedules the bounded equity direction for v0.2.0.2; API and
+event-schema decisions remain open for the existing design directions.
+
+
+<a id="open-028"></a>
+
+### 2026-09-20 [data] Point-in-time universe inspection before execution
+
+Using ledgr on real Sharadar data exposed friction when a study needs a fixed
+initial investment universe derived from point-in-time facts.
+
+The comparison has three arms: B1 buys an initially eligible basket and holds
+it; B2 rebalances that same fixed basket monthly; B3 rebalances against
+evolving historical membership. The first production callback already exposes
+what the initial basket needs, namely historical membership, exact-current
+prices and admissibility. B2 needs that derived basket as its experiment
+universe before execution begins, and there is no way to obtain it without
+running something first.
+
+Remembering the basket inside a dynamic-membership strategy is not necessarily
+equivalent. An original constituent that later leaves the index must stay
+eligible under B2's fixed-basket policy, so a strategy reading live membership
+each pulse is answering a different question.
+
+The need, stated without a vendor or an API: a researcher should be able to
+inspect historical membership and current sizing eligibility at a chosen
+decision cutoff, then use that result in ordinary experiment configuration.
+The same information would also support coverage summaries, membership
+transition tables, and visualizations of change over time.
+
+The reported workaround is a setup run that encodes selection through unfunded
+targets, whose diagnostics are then read to configure the real experiments.
+Treat that as reported evidence rather than verified behavior. It motivates
+the inspection friction; it does not establish a causality or accounting
+defect. Its cost is that configuration requires executing a throwaway run, and
+that selection travels in a channel meant for targets.
+
+What exists today is adjacent and does not close the gap.
+`ledgr_universe_members()` is a policy constructor declaring which membership
+universe an experiment uses, not a query. The `ledgr_facts_*` family
+constructs fact tables on the input side. `ledgr_run_explain()` and the
+availability result surface both resolve availability only after a run exists.
+Nothing answers what the universe is at a chosen cutoff from a sealed snapshot
+and a policy alone.
+
+Boundaries any eventual answer must keep explicit:
+
+- membership is not sizing eligibility;
+- sizing eligibility does not guarantee affordability or execution;
+- a permissible stale valuation mark is not a fresh sizing or execution price;
+- portfolio-dependent information such as held positions differs from
+  snapshot-and-policy information; and
+- future execution observations must never enter a causal decision-time
+  screen.
+
+Design alternatives, recorded without choosing among them and without naming
+functions or signatures: extend an existing public inspection surface; provide
+a read-only production-context or universe query; or expose persisted strategy
+state where that is independently useful. Single-cutoff inspection is the
+immediate need. Whole-period summaries are a possible extension, not a
+prerequisite. A strategy-state reader and any future walk-forward
+fitted-output handoff are related but distinct concerns and do not belong in
+the same decision.
+
+Any eventual solution should reuse production availability resolution rather
+than introduce a second semantic implementation, and should rest on existing
+snapshot and configuration identity. It should not require a study-specific
+artifact or another provenance system.
+
+One cross-reference, deliberately not bundled. The 2026-09-19 entry on
+quadratic availability result reconstruction is relevant, because a
+single-date query should not have to reconstruct an entire run to answer one
+cutoff. That is an established performance defect on its own evidence: fixing
+it neither requires nor approves a new inspection surface, and approving an
+inspection surface would not excuse leaving it unfixed. The 2026-09-08 entry
+records the accepted availability implementation direction this builds on.
+
+Promotion (2026-09-20): the maintainer scheduled single-cutoff inspection in
+v0.2.0.2 on the reported fixed-follow-on-experiment evidence. Focused API design
+should choose the smallest production-backed surface; this promotion does not
+choose a signature or authorize whole-history analytics or strategy-state export.
+
+
+<a id="open-029"></a>
+
+### 2026-09-19 [execution] Availability result reconstruction is quadratic
+
+Work in the ledgr-research sister repository measured
+`ledgr_results(run, "availability")` at 799.56 seconds against a 12.61-second
+757-pulse fold on the same run, a factor of 63. The surrounding phase was
+858.69 seconds, of which reading fills, equity and diagnostics together cost
+0.55. The numbers are the sister repository's, not reproduced here; what
+follows is a reading of the package source that explains them.
+
+The public read does not load a persisted table. It rebuilds the provider and
+calendar and then, for every decision timestamp, reconstructs positions,
+recreates the decision view, resolves marks for every visible instrument, and
+builds one data frame per pulse. The driver is
+`R/availability-results.R:326-353`.
+
+The dominant cost is `ledgr_availability_marks_at()` at
+`R/availability-results.R:271`. It allocates a `length(axis)` by `pulse_idx`
+matrix per pulse and then loops over instruments, and `provider$history()` at
+`R/availability-provider.R:212` issues one DuckDB query per call, filtered
+`ts_utc <= ?`, so at pulse p each query returns p rows. At 757 pulses and the
+505 instruments implied by 382,288 result rows that is 382,288 separate
+queries returning about 144.9 million rows to produce 382,288, a read
+amplification of 379 which is exactly (P+1)/2. The discarded matrices total
+roughly 1.16 GB. The valuation state is then rebuilt over the whole prefix and
+advanced one step, so that walk restarts every pulse too.
+
+The second mechanism is `ledgr_availability_positions_asof()` at
+`R/availability-results.R:243`. It re-reads the ledger prefix per pulse, parses
+`meta_json` per event in an R loop, and accumulates into a named numeric vector
+by name, which costs an instrument-count lookup and a reallocation per
+assignment. That is O(P * E) JSON parses. It contributed nothing to the
+measured run because the control was flat and the function returns early on an
+empty event set. The consequence is that 799.56 seconds is the floor for this
+shape, not the worst case: the same call on a run with fills adds the whole
+ledger replay on top and grows with fill count.
+
+The architectural point is that the fold already computed all of this. The
+engine walks pulses forward carrying positions and valuation state
+incrementally, which is what the 12.61 seconds bought. The reconstruction
+discards that shape and re-derives each pulse from the beginning, turning an
+O(P) forward pass into O(P^2), and O(N * P^2) in rows touched. The gap widens
+with horizon: doubling the pulses costs the fold twice and the rebuild four
+times. This is the same disease as the duplicated FIFO replays recorded on
+2026-09-18, one layer out, and the same remedy applies, which is to compute
+once forward and project rather than re-derive.
+
+The complexity is already catalogued as OPT-L14 in the packet's remaining
+optimization inventory, which names `O(P * E + N * P^2)` and prescribes
+prepared ranges and set-wise reads. What the inventory has never carried is a
+measured cost; its evidence line cites the complexity and loop audits with no
+seconds. This measurement is therefore new and strengthens the scheduling case
+considerably, because the defect sits on a public, supported, documented call
+where the audit read costs 63 times the computation it audits. OPT-L14 is
+marked as needing no RFC for exact read-side reconstruction.
+
+The fix shape is one pass for each mechanism. Marks become one query for all
+instruments to the final pulse, pivoted once into an instrument-by-pulse
+matrix, then a forward walk reusing the valuation state. Positions become one
+query for the event stream and one grouped forward cumulative sum indexed per
+pulse, with the JSON parsed once. A correctly shaped reconstruction does
+strictly less per-pulse work than the fold, since it evaluates no strategy and
+generates no fills, so single-digit seconds is a reasonable expectation rather
+than a promise. OPT-L14's stated caution still holds and should govern the
+work: recovery and historical inspection are correctness oracles, and each
+needs point-in-time, terminal-event, reopen and missing-evidence cases before
+the query shape changes.
+
+Two limits on the arithmetic above. It assumes 505 instruments visible at
+every pulse, inferred by dividing the result rows by the pulse count; if
+visibility varies the totals shift, though the quadratic shape does not. And
+the implied 2.09 milliseconds per query is derived from the reported total
+rather than measured independently, so it is consistency evidence and not a
+benchmark.
+
+
+<a id="open-030"></a>
+
+### 2026-09-18 [execution] Per-pulse context and feature accessor costs
+
+A staged profile of the full public pipeline found that the sweep is where
+essentially all the time goes, and that most of the sweep is not execution.
+The shape was 40 instruments by 756 days, two SMA features, twelve
+candidates: `from_df` 0.88s, `from_csv` 1.72s, `ledgr_experiment` 0.50s,
+`ledgr_sweep` 60.2s serial, `ledgr_promote` 6.70s. Parallel dispatch is
+healthy and is not a finding: four workers took the same sweep from 60.20s to
+17.69s, a 3.40x speedup at 85 percent efficiency. DuckDB is not a bottleneck
+anywhere in the pipeline.
+
+Three costs are worth naming. All three preserve output exactly, which makes
+them candidates for the exact-parity proof template's first use outside a
+timestamp change.
+
+The dominant one is discarded identity work inside a hot accessor.
+`ledgr_feature_lookup_map()` at `R/feature-alias-map.R:179` calls
+`ledgr_alias_map_storage()` and keeps only `storage$alias_map`. That storage
+function normalizes the map, sorts names twice, builds two mapping lists, runs
+`canonical_json()` twice and computes a SHA-256. Everything except the
+normalized map is thrown away. Measured on a two-alias map the full call is
+100 microseconds against roughly zero for `ledgr_normalize_alias_map()` alone,
+the results are `identical()` on both the populated and the null branch, and
+about 30 microseconds each go to the JSON and the digest. The accessor runs
+once per instrument per pulse, so the profiled sweep made 362,880 calls and
+the profiler attributed 56.73 percent of the sweep and 47.44 percent of
+`ledgr_promote` to it. It also accounts for the `digest`, `serialize` and
+`order` peaks in the same profile.
+
+One limit on that share, and it is a sharp one. The profiled strategy calls
+`ctx$features(id)` once per instrument per pulse. That is the documented
+quickstart idiom and the shape `ledgr_demo_sma_crossover_strategy()` uses, but
+the peer benchmark's own strategy reads `ctx$features_wide` and names concrete
+feature columns, so it never enters this path at all. The promoted peer
+records therefore do not carry this cost, and fixing it would not move them.
+The 56.73 percent belongs to the alias-accessor authoring style, and a
+`features_wide` strategy pays none of it.
+
+The fix is confined to that one call site. Five other callers exist, in
+`R/backtest-config.R:157`, `R/experiment.R:458` and `:480`, and
+`R/pulse-snapshot.R:54` and `:58`. They keep the whole object because they
+need the JSON and hash for run identity, and they run once per run rather
+than once per pulse. `ledgr_alias_map_storage()` itself should not change.
+The abort inside it on mismatched identity names is unreachable from the
+accessor, because `identity_map` defaults to `alias_map` and the check then
+compares a vector with itself.
+
+Second, `R/runtime-projection.R:337` uses
+`replicate(n_pulses, ledgr_projection_feature_table_schema(), simplify =
+FALSE)`. `replicate` re-evaluates its expression, so this constructs 756
+identical empty frames, each containing `as.POSIXct(character(), tz = "UTC")`,
+which is the expensive part. Measured at 309 milliseconds against roughly zero
+for `rep(list(schema), n_pulses)`, with `identical()` true.
+
+Third, `ledgr_features_wide()` fills its matrix with a per-element loop using
+character row and column indices at `R/pulse-context.R:196-198`. Replacing it
+with one `match()` pair and a single `cbind()` matrix assignment is exact and
+measured 30 against 20 microseconds at 40 instruments by 2 features, 500
+against 40 at 200 by 5, and 2,450 against 100 at 563 by 5. The per-cell cost
+rises from 0.38 to 0.87 microseconds across that range, so the loop is
+superlinear at roughly the 1.24 power rather than linear, and it degrades as
+the universe grows.
+
+Two minor items from the same profile, recorded so they are not rediscovered.
+`match.arg()` took 8.10 percent of total sweep time from
+`R/runtime-projection.R:287`, inside the per-pulse pulse-views builder, where
+the argument has two fixed options. And `list.files` appeared
+in three stages, including 58 percent of `ledgr_experiment` at 0.29 seconds
+absolute; the only package caller is `R/parallel-workers.R:276`, in the
+worker-setup dry run that fires even at `workers = 1`. Part of that may be a
+`pkgload` artifact and it should be confirmed against an installed package
+before anyone acts on it.
+
+Nothing else in this path is new. The `sprintf` and `format.POSIXlt` peaks
+topping both ingestion profiles are the `R/snapshot_adapters.R:104` reformat
+already recorded as Observation 7 in the durable-path observations note and
+catalogued as OPT-L02; `from_csv` running about twice
+`from_df` is consistent with OPT-L03. `ledgr_promote()` inherits the alias-map
+cost wholesale because it re-runs a full fold. No new code duplication appeared
+beyond the two families already parked, the duplicated FIFO replays and the
+`*_validate_matrix` and feature-accessor clones. No quadratic cost was found
+anywhere in the pipeline; every cost here is a constant, not an exponent.
+
+The generalizable observation behind these is that `ctx` mixes two shapes with
+different cost behavior, and neither is measured. Accessor closures such as
+`ctx$features()` and `ctx$feature()` do their work per call, so their cost
+depends on how the strategy is written; an in-run probe measured
+`ctx$features(id)` across the universe at 4,616 microseconds per pulse while
+every other surface measured at or near zero. Materialized fields such as
+`ctx$features_wide`, `ctx$vec` and `ctx$bars` are built eagerly during context
+construction at `R/pulse-context.R:310` and `:318`, unconditionally, so they
+are free to read and paid for whether or not a strategy ever touches them.
+A strategy that avoids `ctx$features()` therefore does not avoid
+`ledgr_features_wide()`.
+
+That mix means a strategy author cannot see or control these costs, and that
+the accessor bodies have never been measured as a surface. A later audit
+should record which materialized fields are built regardless of use, and
+whether any other accessor closure carries a body heavier than its callers
+expect. Only `ctx$features()` does today, but nothing prevents the next one.
+What to do about the mix is the parked question below, not this entry's.
+
+Parked direction, not planned work. The architectural question behind these
+three costs is whether the context should be derived from the strategy rather
+than built as a fixed union, with the preflight computing a `ctx` read set and
+the fold building only that set. Much of the machinery is already present:
+`R/strategy-preflight.R` walks the strategy AST and classifies tier 1 through
+tier 3, and `fast_context` at `R/pulse-context.R:411` already builds helpers
+once and rebinds them per pulse. The conservative fallback for an unanalyzable
+strategy is today's full build, so the worst case is a no-op. A read set would
+also be a leakage-surface statement and not only a speed change, since a
+strategy that provably never references a field cannot leak through it.
+
+This needs a spike before any prose commits to it. Under the spike protocol
+the cheaper prerequisite question comes first: can the preflight resolve a
+`ctx` read set for realistic strategies at all, including dynamic
+`ctx[[name]]` forms? If it cannot, the derived-context idea stops there and
+the answer is something else. Lazy bindings via `delayedAssign` or
+`makeActiveBinding` are the obvious alternative and belong in the same probe
+rather than being assumed away: they move error timing into strategy code,
+which ledgr treats as contract, and they raise a promise-serialization
+question on the mirai worker path that currently measures a clean 3.40x. No
+charter is written until that prerequisite has been run.
+
+One separable item does not depend on the architecture. The alias-map defect
+reached production because an identity function was reachable from the pulse
+loop. A source guard asserting that `canonical_json`, `digest`, and the hash
+helpers are unreachable from the fold's per-pulse path would have caught it
+when it was written, and it follows the existing Stage L source-guard pattern.
+
+
+<a id="open-031"></a>
+
+### 2026-09-18 [infrastructure] Peer benchmark session alignment defect
+
+The promoted v0.2.0.1 peer record reports zipline-reloaded at a 0.146064
+daily-return correlation against ledgr, and the rendered article labels that
+row `review (weak return correlation)`. The number measures the harness, not
+zipline.
+
+Every one of zipline's 1,260 equity rows is labelled exactly one calendar day
+after the corresponding ledgr row. ledgr spans 2018-01-01 to 2022-10-28 on
+Monday-to-Friday labels; zipline spans 2018-01-02 to 2022-10-29 on
+Tuesday-to-Saturday labels; the offset is `+1` on every row without exception.
+The adapter registers the `exchange_calendars` 24/5 calendar at
+`dev/bench/peer_benchmark/python/zipline/peer_zipline_full.py:93` to match
+ledgr's synthetic weekday bars, and that calendar's session labels land one day
+after the bar dates written into the csvdir bundle. Zipline trades the same
+price sequence in the same order; it only names each session a day later.
+
+Parity is then scored by an inner join on the timestamp string at
+`dev/bench/peer_benchmark/peer_benchmark.R:1456-1463`. Against a shifted index
+that join keeps 1,008 of 1,260 rows, silently dropping all 252 Mondays and all
+252 Saturdays, and pairs ledgr's session at date D with zipline's row for bar
+D-1. Equity levels are smooth enough to survive the lag at 0.999757
+correlation; first differences are not, and that is the entire distance between
+0.146 and a real result.
+
+Scored positionally, row against row, zipline returns 0.999832 equity
+correlation, 0.987974 daily-return correlation, and 0.00200155 maximum
+single-bar divergence. It passes the same Tier 1 rule and lands beside
+quantstrat's 0.987795. Zipline is not an outlier.
+
+Two further observations belong with any fix. The join reports no retention, so
+a twenty percent row loss passed unremarked while the other peers retained
+essentially every comparable row; a retention check would have caught this
+without anyone reading a calendar. And the article's weak-return threshold is
+0.99, which no external engine except backtrader clears on returns, so a
+corrected zipline at 0.987974 would still render as a defect. That threshold
+describes engine-convention distance, not a fault.
+
+Smaller and separate: zipline's final session liquidates, 341 fills ending
+fully in cash, where ledgr's final session has none. It is worth understanding,
+but it is not the cause, since excluding that bar moves the positional return
+correlation only from 0.987974 to 0.987997.
+
+The promoted record measured what it says it measured, and its Tier 1 verdict
+holds under either alignment, so this is not a release-gate failure and the
+frozen record should stay as measured history. It is a comparison-correctness
+defect that would misrepresent a peer project if the article were published as
+it stands.
+
+
+<a id="open-032"></a>
+
+### 2026-09-18 [execution] Duplicated FIFO accounting replays
+
+An inventory of lot-state usage found nine places that drive the FIFO
+accounting state machine. One computes the truth: `ledgr_execute_fold()`.
+The other eight replay it, each as an independently hand-written loop over
+events:
+
+- `ledgr_extract_fills_impl()` for durable `ledgr_results(bt, "fills")`;
+- `ledgr_equity_from_events()` and `ledgr_fills_from_events()` for memory
+  reconstruction;
+- `ledgr_sweep_summary_from_ordered_events()` for the durable-sweep fallback;
+- `ledgr_rebuild_derived_state()`;
+- `ledgr_run_finalize()`;
+- `ledgr_compare_runs_fill_stats()`; and
+- `ledgr_lot_state_from_events()`, shared by two state-as-of callers.
+
+Four further sites only seed or unpack state and are not replays.
+
+A reachability pass from the 165 exported functions splits those eight. Six are
+production: `ledgr_extract_fills_impl()` through `ledgr_run_fills()`,
+`as_tibble()`, `ledgr_extract_trades()` and metrics;
+`ledgr_sweep_summary_from_ordered_events()` through
+`ledgr_sweep_run_candidate()`; `ledgr_rebuild_derived_state()` through
+`ledgr_state_reconstruct()`; `ledgr_run_finalize()` through
+`ledgr_run_fold()`; `ledgr_compare_runs_fill_stats()` through
+`ledgr_run_compare()` and `ledgr_run_store_fetch()`; and
+`ledgr_lot_state_from_events()` through the two state-as-of callers.
+
+`ledgr_equity_from_events()` and `ledgr_fills_from_events()` have no package
+callers at all. They are reached only from the benchmark harness and the test
+suite, which is what the corrected public benchmark boundary intended. They are
+parity oracles, they belong in R, and they must stay outside any shared core,
+because folding an oracle into the implementation it verifies destroys the
+verification.
+
+That makes the target a fold, one shared core, and two independent oracles:
+four implementations rather than nine. It also settles in advance one question
+the consolidation RFC would otherwise have to open, namely which replays remain
+independent verifiers.
+
+These are copies rather than variations. Each carries the same per-row
+`[[` extraction from a fetched frame, the same per-row `meta_json` parse, an
+`O(instruments)` named-list lot lookup, and an `O(lot depth)` re-sum of net
+position or cost basis. `ledgr_run_finalize()` also re-implements the
+`colSums(positions_mat * close_mat)` block that sits a few hundred lines above
+it in the equity reconstruction.
+
+The cost is correctness before performance. Nine implementations of one state
+machine must agree, no differential test covers most pairs, and any future
+change to accounting semantics - short exposure, settlement, borrow, an
+alternative lot-selection policy - has to land consistently in all of them.
+
+There are really two implementations in two languages: the R machine driven
+nine times, and `ledgr_cpp_spot_fifo_batch()` driven once from the fold's
+opt-in branch. The compiled kernel is the only place the accounting was ever
+reduced to a single batched contract, and it serves the smallest share of the
+work.
+
+That kernel's contract is also the natural consolidation target. It accepts
+batched fills with integer instrument indices and flat lot arrays and returns
+positions, cash, lot arrays, cost basis, realized P&L, the compensation term,
+and the next event sequence - which is the per-event trajectory every replay
+needs. Making the replays speak that shape is the same work as consolidating
+them, so an R consolidation first and an optional compiled backend afterwards
+is one refactor rather than two.
+
+Three constraints belong with the idea. The kernel has no `CASHFLOW` branch
+while every replay handles cashflow events. Any replay that verifies compiled
+output must stay independent of it, which keeps the benchmark parity oracles
+in R, and `ledgr_extract_fills_impl()` is a subtle case because it cross-checks
+persisted realized P&L against its own recomputation. The compensated
+`realized_comp` accumulator is global and threaded through the kernel, so a
+kernel-backed replay preserves summation semantics while an R-side regrouping
+by instrument would not.
+
+Consolidation is what makes the known optimizations worth doing, because today
+each would have to be applied eight times: hoist fetched columns once with
+`.subset2()` instead of per-row `[[`; resolve instruments with one
+`collapse::fmatch()` and index lot state by integer; maintain cost basis and
+net position incrementally rather than re-summing open lots; parse `meta_json`
+once per chunk; drop the vestigial `COUNT(*)` pre-scan in the durable reader;
+share one connection across `equity` and `fills`; and reuse the realized P&L
+the fold already persisted where the path is a reader rather than a verifier.
+
+It should also shrink the compiled proof matrix rather than grow it. With nine
+drivers reduced to a fold plus one replay over a shared core, adversarial
+trace evidence proves the accounting once and the remaining surfaces become
+projection tests over a verified trajectory.
+
+
+<a id="open-033"></a>
+
+### 2026-09-18 [infrastructure] Duplicated helper families
+
+A similarity pass over package function bodies, with string literals and
+numeric constants normalized away, found twenty-seven near-duplicate pairs
+above a 0.45 Jaccard threshold. Two families are worth naming; the rest are
+parallel structure a careful author would plausibly write.
+
+The `*_validate_matrix` family has five members across three files:
+`ledgr_pbo_validate_matrix()`, `ledgr_dsr_validate_matrix()`,
+`ledgr_effective_trials_validate_matrix()`, `ledgr_k_ratio_validate_matrix()`
+and `ledgr_min_track_record_validate_matrix()`. Every one runs the same
+sequence: a matrix and numeric type check, a minimum-row check, then a finite
+and non-missing check, with some adding column and constant-column checks. The
+two closest pairs differ by a single numeric literal, three rows against four,
+plus their message text and error classes. One parameterized validator taking
+the metric label, minimum rows, minimum columns and a non-constant flag would
+replace all five while preserving every message and class.
+
+The feature accessor family has five members forming a projection-by-bundle-by
+-state matrix at eighty to eighty-six percent pairwise overlap, each twenty-
+seven to thirty-seven lines with three aborts. That reads as combinatorial
+expansion that wants flags rather than five near-clones.
+
+Weaker pairs, recorded so they are not rediscovered: cost and risk
+`flatten_children`, the feature-set and risk-chain config hashes, the sweep-
+candidate and walk-forward-score store upgrades, the objective diagnostic and
+evidence numeric helpers, the two strategy symbol resolvers, run tag and
+untag, rolling and anchored folds, and cached and uncached features at pulse.
+Repeated SQL is almost absent: only two snapshot-status lookups appear twice,
+in availability persistence against CSV utilities, and in derived state
+against the run snapshot guard.
+
+Separately, twenty-four per-row `for (i in seq_len(nrow(...)))` loops exist
+across seventeen files. That is a census for the test-suite audit and the
+optimization backlog rather than a refactor target, and broad loop cleanup
+remains a declared non-goal.
+
+Unlike the duplicated FIFO replays, these are shape duplication with low
+correctness risk: the failure mode is an inconsistent message, not a wrong
+number. They are also exact-parity candidates in the sense the internal
+optimization proof template defines, since a correct consolidation preserves
+inputs, outputs, errors, classes and messages exactly. They would be the
+template's first use outside a performance change, which would test whether it
+generalizes.
+
+Two limits of the method belong with the result. Bodies under roughly two
+hundred and forty normalized characters were excluded, so small helpers are not
+covered. And the pass finds textual similarity, so it would have missed the
+FIFO replays had they been written in different styles; the call-site inventory
+found those, not this scan.
+
+
+<a id="open-034"></a>
+
+### 2026-09-17 [infrastructure] Durable-path ingestion and serialization observations
+
+The Batch 8 and Batch 9 investigation found additional cold- and durable-path
+costs that are deliberately outside v0.2.0.1. The discovery record is parked at
+`dev/bench/notes/durable_path_observations.md`. It is profiling and
+micro-measurement evidence, not a ticket, release gate, performance target, or
+authorization to change snapshot identity.
+
+The future work separates three concerns. First, identity-preserving candidates
+include chunk-local reuse of repeated canonical hash formatting, vectorized
+timestamp handling, and removal of redundant duplicate-key string formatting.
+Second, event serialization needs a bounded spike because sequence and
+cash/position deltas are consumed during the fold even though much of the JSON
+payload appears deferrable. Third, hashing canonical values as raw typed bytes
+could be materially faster but changes durable identity and therefore requires
+its own version-matrix RFC rather than an optimization ticket.
+
+The three exported ingestion surfaces retain distinct contracts:
+`ledgr_snapshot_from_df()`, its `ledgr_snapshot_from_csv()` wrapper, and the
+separate strict `ledgr_snapshot_import_bars_csv()` importer. Any future cycle
+must register a compatibility matrix instead of silently merging them. A later
+peer-benchmark revision may call `ledgr_snapshot_from_csv()` directly so its
+preparation clock represents the public user path; that would change the phase
+definition and must be disclosed rather than presented as a like-for-like
+speedup.
+
+Before tickets are cut, reproduce the observations in a quiet, checked-in
+probe with component clocks, bounded-memory measurements, byte-identity checks,
+reopen and tamper detection, and explicit timestamp-branch coverage. The
+identity-preserving candidates should be evaluated before the binary-identity
+RFC, but measured payoff does not waive semantic or persistence gates. The
+current 55-to-62-second figures are orientation only; v0.2.0.1 Batch 10 measures
+the accepted source without consuming this entry.
+
+
+<a id="open-036"></a>
+
+### 2026-09-18 [execution] Compiled execution RFC and proof architecture
+
+Stop iterating on compiled spot-FIFO inside v0.2.0.1. The current evidence is
+strong enough to justify a focused post-release RFC, but not to widen the
+shipping scope by inspection. At the corrected public sweep boundary, compiled
+spot-FIFO removes about half of canonical engine time on the registered fixture.
+That result combines native FIFO accounting, batch processing, and compiled
+event appends; it is not a measurement of a pure R-language tax. The private
+record measured a 14.42-second compiled engine phase, while the corrected public
+sweep record derives 14.78 seconds from 30.38 seconds warm wall less 15.52
+seconds of setup. Keep those clocks labelled rather than merging them.
+
+The observed record produced exact equity on that fixture, but the binding
+contract is narrower: fills and realized trades compare exactly, while floating
+equity uses the already registered relative `all.equal()` tolerance of `1e-8`.
+Observed exactness must not be rewritten as a stronger contract. The maintenance
+surface is also broader than the 458-line C++ kernel: roughly 705 code lines
+include R-side packing and dispatch plus generated bindings, with enum,
+validation, and dispatch work threaded through eleven R files and assertions
+across eight test files.
+
+The future RFC should use execution combinations as a risk map, not require a
+full Cartesian benchmark for every release. A proportionate proof stack is:
+adversarial differential kernel traces; separate memory and durable sink tests
+for atomicity and rollback; small dense and availability workflow witnesses;
+representative cost and risk cases; and one or two full-scale performance
+records. This preserves strictness while letting semantic tests, integration
+witnesses, and empirical measurements do different jobs.
+
+The RFC should examine availability-aware compiled execution, a durable batch
+sink, and only then any default-promotion question. Ordinary order types resolve
+upstream into the same fill contract. The more important boundaries are
+settlement, borrow and financing, multiple currencies, corporate actions, and
+alternative lot-selection or tax policies, because those can change accounting
+semantics. Availability and durable support require their own evidence; neither
+is unlocked by code inspection or the current benchmark.
+
+Whether canonical R remains the normative truth is deliberately not decided in
+this entry. Reference authority, runtime defaults, permitted divergence, and
+independent differential verification belong to the scheduled post-release
+governance review. The accompanying test-suite audit must classify compiled
+guarantees within its bounded developer, comprehensive correctness, heavy
+evidence, and CRAN submission lanes and may route a focused testing RFC and
+later refactorings. Compiled sources make the CRAN lane decision material for
+this case, because platform coverage and check runtime constrain what its
+guarantees can prove on CRAN machines. The
+compiled-execution RFC consumes those decisions. Nothing here changes Batch 11
+or any v0.2.0.1 release gate.
+
+
+<a id="open-038"></a>
+
+### 2026-09-15 [infrastructure] Evidence-gated removal of scale-growing R work
+
+The availability representation cycle and snapshot-sealing probe exposed one
+recurring performance failure: R-level iteration over a collection that grows
+with the data while each iteration constructs a frame, rescans or subsets a
+table, parses repetitive values, grows a container, or recomputes unused work.
+The discontinuities were representation and placement defects, not evidence
+that every explicit loop is defective. Bounded loops, cursor advances, and
+clear cold-path iteration remain valid when measurement does not make them a
+meaningful cost.
+
+The durable direction is to prepare data-scale inputs once into primitive
+vectors, matrices, segment tables, indexes, or bounded typed buffers; operate on
+those shapes in the fold or validator; and manifest frames only at public and
+persistence boundaries. Optimization starts with a production-shaped probe,
+separates the cold snapshot clock from warm repeated experiments, changes one
+seam, and proves semantic and persisted-output parity. A package-wide mechanical
+rewrite is explicitly not the goal.
+
+The accepted packet already consumed the diagnostic and seal-validator work.
+The reviewed closeout audit then promoted exactly two more measured costs into
+the accepted amendment: memory/durable event writes and fold-time availability
+valuation. The per-bar timestamp, repetitive JSON and hashing, broader
+finalisation, recovery, hydration, compiled packing, and result-reader findings
+remain candidates to measure and route individually. The broad loop audit is a
+discovery map, not an auditable census or a commitment to fix every listed
+site; only the amendment's two named corrections are authorized now.
+
+
+<a id="open-041"></a>
+
+### 2026-09-09 [infrastructure] API hardening post-v0.2.0 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_api_representation_hardening_v0_2_0_synthesis.md`
+binds corrections, a simpler fills reader, explicit inspection lineage, and
+effect-preserving coordinator extraction for v0.2.0: pro rata reversal fee
+allocation, `ledgr_run_fills(bt)` with the cursor and its arguments removed,
+run handles as durable locators, and `ledgr_run_fold()` extracted in four
+risk-ordered stages behind named tests. Here "v1" means its first hardening
+implementation, not ledgr v1.0.0. The following themes record later work;
+current packet tests and the accepted availability handoff stay in the
+immediate plan.
+
+**Accounting and shorting**
+
+- Executed, probe finding 12: the reversal probe accepted negative targets
+  without a settled shorting contract. Pass this observed contract and
+  enforcement gap to the shorting/leverage seed.
+- Contract, `contracts.md` Strategy and the availability synthesis Section 16:
+  algebraic reversal coverage authorizes no borrowing, margin, or terminal
+  settlement; accounting-critical events and financing own those economics.
+
+**Availability extensions**
+
+- The accepted availability synthesis owns current availability semantics;
+  multi-venue and subdaily calendars require later scoping.
+- Live degradation and broad provider adaptation need their own evidence and
+  source contracts.
+
+**Features and model research**
+
+- Fitted preprocessing and imputation must define causal fit/use boundaries
+  and estimation populations.
+- Native-missingness consumers and cross-sectional cache families belong to
+  that later ML work.
+
+**Resources and performance**
+
+- Revisit streaming only after measured memory pressure and a proposed public
+  consumption contract.
+- Revisit wider sweep/module cuts and representation optimization only after
+  a concrete problem; no small-fixture structure count establishes a
+  performance winner.
+
+**Tooling and teaching**
+
+- September 6 CI parallelism and duplicate-work proposals remain separate;
+  retain release evidence.
+- Keep documentation executable and freshness repairs local; no new
+  documentation registry.
+
+#### Promoted roadmap hooks
+
+- Shorting/leverage RFC: v0.2.x, before claiming supported negative-target
+  economics.
+- Accounting-critical events RFC: v0.2.x, before corporate/terminal settlement
+  or accrual costs.
+- Fitted preprocessing/ML RFC: later v0.2.x research window, after
+  availability semantics land.
+- Multi-venue/subdaily scheduling RFC: later v0.2.x-v0.3.0, when a concrete
+  dataset requires it.
+- OMS lifecycle RFC follow-through: v0.2.x-v0.3.0, before persistent or
+  partially filled orders.
+- Explicit streaming contract RFC: later window, triggered only if eager reads
+  become limiting.
+
+#### Immediate cross-cycle obligations
+
+- The hardening packet owns the five slices, twelve gates, and the Section 11
+  spec-cut mappings of the synthesis, including the finalization failure
+  status decision.
+- Availability consumes corrected fee projection, eager readers, and explicit
+  risk restoration.
+- Preserve the availability synthesis Section 14 acceptance obligations and
+  Section 15 open choices without creating another registry.
+- The shorting seed receives probe finding 12, distinguishing accepted
+  execution from supported semantics.
+
+This entry authorizes none of the deferred capabilities and commits no
+release date. It records direction and routes each concern; concrete spec
+packets remain separate actions.
+
+
+<a id="open-042"></a>
+
+### 2026-09-08 [data] Asset availability post-v0.1.9.8 direction
+
+The accepted synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+binds the first implementation of point-in-time universes: one activation
+rule, one fold core, a members-union-held axis, policy v4 semantics, strict
+feature gaps, a required observation-independent session calendar, and a
+required declared valuation horizon. "v1" means the first implementation of
+this feature. A same-day post-acceptance review correction makes the session
+family mandatory whenever availability-aware behavior is active; only dense
+mode may derive pulses from observed bars. It also separates structural status
+input invalidity, which prevents sealing, from individually valid competing
+source assertions, which remain hashed evidence and resolve conservatively at
+runtime. Gates 24 and 16 respectively carry those obligations into spec cut.
+
+Deferred themes: accounting-critical events (dividends, delistings, terminal
+economics) -> accounting sibling RFC; OMS and order lifetimes -> OMS RFC;
+fitted preprocessing, imputation, and the ML lifecycle -> preprocessing RFC;
+multi-venue scheduling -> calendar RFC; representation measurement -> a
+`spike_protocol.md` probe with one question.
+
+Promoted roadmap hooks: accounting-critical events (v0.2.x); OMS (v0.3.0);
+preprocessing and ML (v0.2.x after PIT ships); multi-venue (v0.3.x); aliases
+and revision facts (v0.2.x spec-cut candidates).
+
+Immediate cross-cycle obligations: the PIT spec packet edits the Snapshot,
+Context, Strategy, Result, and Persistence contracts listed in Section 2 of
+the synthesis; the accounting sibling consumes the lifetime family and the
+`terminal_settlement_unsupported` stop as its entry point.
+
+This entry records accepted direction. It does not authorize a spec packet,
+tickets, or implementation by itself.
+
+
+<a id="open-043"></a>
+
+### 2026-09-06 [infrastructure] CI critical-path and release-gate runtime hardening
+
+The v0.1.9.7 release CI was profiled after branch, main, and tag runs of the
+same release SHA. The long wait is primarily a workflow-shape problem, not a
+large v0.1.9.7 code or test regression.
+
+Measured GitHub Actions baseline:
+
+- Branch checks took 48.8 minutes on Ubuntu and 31.1 minutes on Windows.
+- Main checks took 47.4 minutes on Ubuntu and 30.4 minutes on Windows. Main
+  also ran the separate pkgdown workflow for 10.2 minutes.
+- Tag checks took 48.1 minutes on Ubuntu and 24.9 minutes on Windows.
+- Running the same SHA through branch, main, and tag consumed about 144.3
+  minutes on the serial critical path and about 241 runner-minutes in total.
+- Comparable v0.1.9.6 Ubuntu runs took 44.4 to 45.9 minutes. v0.1.9.7 added
+  roughly two to three minutes, about six percent, to an already-long
+  baseline; it did not create the underlying CI cost.
+
+The Ubuntu job is the critical path because it serializes independent gates.
+On the tag run, the acceptance preflight took about 0.6 minutes, R CMD check
+about 22.5 minutes, pkgdown about 6.9 minutes, and coverage about 16.2 minutes.
+The full test suite runs inside R CMD check and again under coverage. Main also
+builds pkgdown once inside `R-CMD-check.yaml` and again in the dedicated
+`pkgdown.yaml` workflow.
+
+The R CMD check timing contains two separate vignette costs. The source-build
+phase spent about four minutes creating vignettes because
+`rcmdcheck::rcmdcheck()` receives `--no-build-vignettes` as a check argument
+but receives no corresponding `build_args`. The subsequent package check still
+spent about 1.9 minutes running vignette code. Package tests were the largest
+check subphase at about 14.1 minutes.
+
+Local profiling confirms broad integration cost rather than one pathological
+test file. The full 112-file suite took about 12.3 minutes; the five slowest
+files represented about 31 percent and the ten slowest about 44 percent of
+recorded test time. The suite repeatedly creates snapshots, databases, runs,
+sweeps, and walk-forward sessions, so optimization must preserve isolation and
+must not replace realistic fixtures with shared mutable state merely for speed.
+
+The profile also exposed a resource-lifecycle hardening lead. A walk-forward
+orchestrator test creates a walk-forward result without explicitly closing its
+`test_runs`, unlike neighboring tests. Focused runs emitted an automatic
+checkpoint-on-finalization warning, and isolated timings moved substantially
+between runs. Audit explicit close discipline across integration fixtures before
+treating individual file timings as stable evidence.
+
+Recommended future hardening sequence:
+
+- Split R CMD check, coverage, and pkgdown into parallel jobs with independent
+  required statuses. This preserves all current evidence while reducing one
+  run's estimated critical path from about 48 minutes toward 25 to 30 minutes,
+  subject to setup and cache measurements.
+- Give main one pkgdown build owner. Prefer the dedicated pkgdown/deploy
+  workflow rather than rebuilding the same site inside the Linux check job.
+- Add concurrency cancellation for superseded branch or pull-request runs, but
+  never cancel main or tag release evidence.
+- Make test resource cleanup explicit, starting with unclosed walk-forward test
+  runs, then re-profile before considering test sharding or fixture redesign.
+- Spike `build_args = "--no-build-vignettes"` for routine branch CI while
+  retaining one full source-vignette build on the release path. Do not silently
+  remove source-package vignette verification from every path.
+- Publish a small per-job and per-gate timing artifact so future release deltas
+  are visible without reconstructing timestamps from action logs.
+
+Reducing coverage scope, moving integration tests to nightly-only execution, or
+weakening release checks is not the first route. Parallelism and duplicate-work
+removal offer the larger low-risk gain. The branch-to-main-to-tag repetition is
+currently deliberate independent release evidence; consolidating those stages
+would be a release-playbook decision, not an incidental CI edit. This entry
+authorizes no workflow or release-playbook change by itself.
+
+
+<a id="open-044"></a>
+
+### 2026-09-06 [data] Ragged-universe prior art and RFC evidence handoff
+
+Three non-binding inputs sharpened the then-parked ragged-universe /
+asset-lifetime direction:
+
+- `inst/design/research/ledgr_ragged_universe_prior_art_review.md` compares
+  LEAN, zipline-reloaded, NautilusTrader, vectorbt, Qlib, and the quantstrat
+  stack, then surveys missing-data, point-in-time, terminal-event, and
+  fold-safe preprocessing concerns.
+- `inst/design/research/rfc-evidence-handoff.md` records the empirical handoff
+  from the separate vendor-ingestion and strategy-testing work. It is a
+  concise evidence memo, not an RFC seed or architecture decision.
+- `inst/design/research/Sharadar-Empirical-Evidence.md` is the reviewed,
+  non-reconstructive empirical synthesis from the Sharadar Data MVP and
+  Evidence Promotion v0.1.0 cycle. Private evidence artifacts at source commit
+  `e53bda3b108e51ad44720b9812c8072624b8820e` remain authoritative for exact
+  audit.
+
+The prior-art result supports an evolutionary direction rather than permissive
+NA handling. Preserve the strict complete-panel mode as a migration and parity
+oracle. A future ragged mode must distinguish instrument lifetime,
+point-in-time membership, expected observation, observed fact, quality state,
+valuation eligibility, feature validity, and execution eligibility. Carried,
+imputed, or otherwise synthetic values must not silently become execution
+evidence, and terminal economic outcomes must not disappear when a price row
+does.
+
+The empirical synthesis records a concrete pressure result over the complete
+supported 2019-2021 XNYS reference population: 757 expected sessions, 563
+point-in-time members, and 382,288 expected member/session rows. ledgr could
+seal the available bars, but its static instrument input could not preserve the
+membership stream without distortion. This establishes changing membership;
+it does not independently establish that ordinary expected-session bar gaps
+occurred, because the tracked Gate 4 evidence did not separate that predicate.
+A frozen 5-by-20 dense control sealed, reopened, and reconciled, which confirms
+the present dense/static plumbing without establishing historical-universe
+validity. Vendor lineage remained in a hash-bound sidecar, and current
+accounting still could not support dividend-inclusive or terminal-event
+performance claims.
+
+Routing consequence: separate the offline research-validity problem from the
+later streaming/live bad-data problem. The offline ragged-universe substrate
+should not wait automatically for OMS or the live data log, although it must
+coordinate with point-in-time tables, corporate actions / instrument master,
+and accounting-critical event types. Seed v1 uses one umbrella architecture
+RFC and leaves smaller implementation packets or coordinated sibling RFCs to
+later accepted decisions.
+
+Before choosing storage layout, mask granularity, or strategy-facing API, run
+the proposed real-data spike across strict dense, dense-plus-masks, sparse
+event, and sparse-storage / fold-local-dense prototypes. Required evidence
+includes current dense parity, no fills on carried or imputed prices, pre-event
+invariance under future-listing or revision perturbation, explicit stale and
+unpriced states, run/sweep/cache/chunking parity, sample-retention diagnostics,
+and runtime/memory profiles. Fold-fitted transforms remain train-local model
+artifacts rather than snapshot-seal repair.
+
+**Status update (2026-09-07):** The RFC cycle is now in flight at the
+non-binding response stage. Seed v1
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md`)
+was answered the same day by the Stage 3 adversarial response
+(`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response.md`).
+Stage 4 response review was accepted the same day. A follow-up methodological,
+API, and UX review is recorded in
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_response_review_addendum.md`.
+The bounded comparative architecture spike chartered in
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_spike_charter.md`
+closed inconclusive on 2026-09-08. Its shared provider boundary preserved the
+accepted semantics for the ten implemented witnesses across three physical
+representations, but 21 witnesses and the empirical workload remained unrun;
+it produced no representation, timing, or memory winner. The independently
+reviewed terminal report is on `spike/asset-availability-pit-universes` at
+`d59259f`; that disposable branch must not merge.
+
+Seed v2 at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed_v2.md`
+was independently reviewed and maintainer-accepted for synthesis on
+2026-09-08. It carries the logical semantic boundary forward, keeps physical
+encoding unselected, and adds a binding usability direction:
+users provide source facts through validated adapters while ledgr derives its
+internal availability planes. A provider-shaped fixture, pre-seal validation,
+an unresolved-evidence report, and a broader survivorship-bias teaching
+article are gates before implementation scope. The synthesis at
+`inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md`
+was accepted by the maintainer after Codex final review on 2026-09-08. It
+binds the first-implementation direction while leaving Section 15 questions
+for spec cut; no spec packet or implementation is open yet. The research,
+spike, and Seed v2 remain historical inputs rather than implementation
+authority.
+
+
+<a id="open-045"></a>
+
+### 2026-09-04 [infrastructure] Post-v0.1.9.6 review findings and invariant-hardening RFC candidate
+
+A post-release review of main at `3518b18` / tag `v0.1.9.6` found five concrete
+hardening items. They are not treated as evidence that the snapshot, fold,
+ledger, no-lookahead, or promotion contracts are broken; they sit at
+representation, provenance-restoration, RNG-hygiene, and argument-validation
+boundaries.
+
+Findings to route when a maintenance or hardening packet opens:
+
+- Reversal fill projection duplicates an execution fee across derived `CLOSE`
+  and `OPEN` rows. Cash and equity deduct the event fee once, but fill-table
+  fee totals by `event_seq` can exceed the ledger event fee. This needs an
+  explicit derived-fill fee ownership rule before fills are used for
+  transaction-cost analysis.
+- Sweep-result subsetting restores cost provenance but not risk provenance
+  (`risk_chain_hash`, `risk_plan_json`), so subsetted sweep results can lose
+  risk identity consumed by inspection and validation surfaces.
+- Infrastructure temporary identifiers use R's statistical RNG in snapshot
+  ingestion and fill extraction. This is caller RNG hygiene debt, distinct from
+  the older stochastic-resume gap below.
+- Wide retained-return projection can collide with a candidate id named
+  `ts_utc`, because the timestamp column and candidate columns share one tibble
+  namespace.
+- `stream_threshold` validation does not fully enforce the documented finite
+  numeric-scalar contract.
+
+API-footprint context: this entry does not mean the v0.1.9.5 API naming and
+surface-tightening cycle failed. That cycle was scoped as a no-alias hard-rename
+and targeted unexport pass, not a full namespace-minimization pass. It moved the
+export count from 127 in v0.1.9.4 to 124 in v0.1.9.5 while adding canonical
+family-first names and removing obsolete / duplicate public doors. The footprint
+then grew because later packets intentionally added feature-family surfaces:
+validation diagnostics, retained-return projections, closed-trade retention, and
+the public return-panel entry point. Current concern is therefore surface
+flatness and representation-boundary synchronization, not stale compatibility
+aliases.
+
+Small, local fixes for the five items above do not require an RFC by themselves.
+An RFC is recommended if this becomes a broader hardening cycle that also
+classifies the public API surface into workflow / construction / advanced
+inspection / infrastructure tiers, makes representation-boundary invariants
+declarative, and assigns ownership for accounting/provenance invariants across
+run results, sweep retention, reopened artifacts, and compiled/R parity.
+
+Routing recommendation: keep the active v0.1.9.7 business-objective /
+return-panel cycle focused unless one of these findings blocks its work. After
+that cycle, consider a dedicated "API and representation-boundary hardening"
+RFC before adding another large validation or execution surface. This entry
+authorizes no code changes and no API reshaping.
+
+
+<a id="open-046"></a>
+
+### 2026-09-04 [docs] Post-v0.1.9.6 all-vignette review findings
+
+An external all-vignette review of main at `3518b188` / tag `v0.1.9.6`
+was spot-checked against the current branch. Most factual claims were real
+and should be treated as documentation drift / teaching debt, not as evidence
+that the execution, snapshot, identity, or validation diagnostics are broken.
+The reviewed baseline had 21 vignette sources, 231 R chunks, 30 non-executed
+chunks, and 132 exports. Current branch counts differ because v0.1.9.7 has
+already added the public return-panel entry point and renamed the validation
+diagnostics.
+
+Immediate active-packet routing:
+
+- The Selection Integrity-specific findings are already in the v0.1.9.7
+  path. LDG-2671 should consume them directly: no hidden fake-sweep helper,
+  concept-first openings, visible return-panel input, stronger method
+  citations / precise convention attribution, executed contrasts, and
+  anti-overclaim guards.
+- The broader all-vignette cleanup is not part of Batch 9. It should wait
+  until after v0.1.9.7 unless a stale claim blocks an active ticket or release
+  surface.
+
+Verified factual-drift items to route into the next documentation freshness
+pass:
+
+- `vignettes/articles/who-ledgr-is-for.qmd` says the first backtest takes
+  minutes and labels `bt` as R; the `bt` label is wrong, and the speed
+  statement should be recalibrated against the current internal benchmark
+  posture.
+- `vignettes/quickstart.qmd` sketches promotion with `eval: false` and does
+  not close the `single_run` handle in the cleanup path.
+- `vignettes/research-workflow.qmd` closes `promoted` before later using it,
+  which is technically possible for durable handles but teaches lifecycle
+  order poorly.
+- `vignettes/reproducibility.qmd` still says "future sweep mode."
+- `vignettes/data-input-and-snapshots.qmd` mentions
+  `ledgr_snapshot_info()` but should foreground the dense per-instrument /
+  pulse-panel requirement and show snapshot inspection earlier in the first
+  seal path.
+- `vignettes/indicators.qmd` teaches the compatibility
+  `ledgr_param_grid()` path before the preferred split-grid / active-alias
+  path.
+- `vignettes/metrics-and-accounting.qmd` omits
+  `ledgr_results(bt, what = "returns")` from the result-table surface.
+- `vignettes/sweeps.qmd` and `vignettes/walk-forward.qmd` still speak as if
+  selection-integrity diagnostics are unshipped; the walk-forward wording
+  should narrow to per-fold diagnostics where appropriate.
+- `vignettes/research-to-production.qmd` uses
+  `ledgr_experiment(..., params = ...)`, which is not a current
+  `ledgr_experiment()` argument.
+- `vignettes/ttr-and-adapter-indicators.qmd` has an `eval: false`
+  `ledgr_pulse_snapshot(snapshot, ...)` fragment whose `snapshot` object is
+  not created in the article.
+- `vignettes/strategy-authoring-tools.qmd` uses
+  `unclass(target)[["DEMO_01"]]`; the target-value accessor gap is already
+  parked in the strategy-helper / API-hardening stream.
+- `vignettes/metric-contexts-and-conventions.qmd` has become a catch-all for
+  zero-trade troubleshooting and compiled-accounting failure examples; decide
+  whether those belong in a troubleshooting or diagnostics surface.
+
+Broader findings to coordinate with the API and representation-boundary
+hardening RFC candidate:
+
+- Define a public golden path and classify exports by workflow,
+  construction, advanced inspection, and infrastructure tier. The concern is
+  current namespace flatness and documentation discoverability, not stale
+  compatibility aliases.
+- Add or route small public accessors where documentation currently exposes
+  internals, especially target-value reads and promotion / context inspection.
+- Review very large R files / functions as part of behavior-neutral boundary
+  extraction. The file-size concern is maintainability and invariant
+  synchronization, not immediate functional breakage.
+- Revisit public performance language after a reproducible benchmark article
+  can separate default R execution, opt-in compiled paths, and peer parity
+  without making public ranking claims.
+
+This entry authorizes no vignette rewrite, API change, or performance claim by
+itself. It is source memory for a later documentation freshness packet and for
+the scheduled API hardening RFC.
+
+**2026-09-11 active-packet disposition.** v0.2.0.0 Batches 2 and 10 consumed
+the executable public-workflow and factual-drift subset. The target-vector and
+promotion journey now executes through the public API; run handles are cleaned
+up or deliberately reopened; `future sweep mode`, the omitted returns table,
+the unshipped selection-diagnostics claims, the misplaced experiment `params`,
+the undefined TTR pulse snapshot, and the first-run timing overstatement were
+corrected. The new Survivorship Bias article owns the point-in-time facts,
+missing-session, quarantine, incomplete-result, and durable-explanation path.
+
+The indicator article's preferred-order rewrite, the metric-context article's
+topic split, broader navigation work, and fuller dense-panel onboarding remain
+parked. Quickstart keeps its current non-executed promotion sketch because the
+same public promotion journey executes in Research Workflow; converting every
+small shape sketch into another durable run would add noise rather than close a
+factual gap. These items need a later documentation-freshness cut, not hidden
+scope in the v0.2.0.0 release gate.
+
+
+<a id="open-049"></a>
+
+### 2026-06-13 [docs] Deferred v0.1.9.5 vignette-audit items
+
+The 2026-06-13 vignette audit
+(`inst/design/audits/v0_1_9_5_vignette_audit.md`) pulled its stale-fact fixes,
+the two highest-value helpers (`ledgr_sweep_review()`, `ledgr_temp_store()`),
+and the editorial cleanups into v0.1.9.5 (Batches 8A/8B/8C). The following are
+deferred to a later packet:
+
+- **Vignette splits (audit Section 6).** `sweeps.qmd` (717 lines) should split
+  off its retention / save-reopen / external-metrics cluster into a companion;
+  `metric-contexts-and-conventions.qmd` should split off its diagnostic
+  playbook. Both are pinned in `_pkgdown.yml` navigation and
+  `tests/testthat/test-documentation-contracts.R`, so a split must update those
+  pins -- real work, not a drive-by patch.
+- **Residual strategy-development trim (audit Section 6).** If the
+  post-v0.1.9.5 "Strategy Basics" article still carries helper-pipeline
+  strategy material after the Batch 8C de-duplication pass, move that material
+  to the companion strategy-authoring article and leave a pointer. The v0.1.9.5
+  in-scope fix is only the duplicated opening/setup and cross-link cleanup.
+- **Lower-value helpers (audit Sections 3.4-3.6).** A `ledgr_target` value
+  accessor (to retire `unclass(target)[["id"]]`); a `ledgr_annualization(bt)`
+  accessor so hand-recomputes provably match `ledgr_compute_metrics()`; a
+  vectorized feature-read / set-targets-where helper to shorten the
+  `for (id in ctx$universe)` strategy loop. Take these only when the relevant
+  surface is naturally touched.
+- **Trades entry/exit pairing (audit Section 3.3).** A "trade" is currently a
+  single close-action fill row with no paired entry/exit timestamp. Decide
+  between documenting that shape clearly or adding an entry/exit-paired trades
+  view. The v0.1.9.5 fix is only to correct the `execution-semantics` example
+  to the real columns.
+
+Non-commitments: these are recorded direction, not roadmap commitments; helper
+names and the trades-pairing decision are illustrative.
+
+
+<a id="open-050"></a>
+
+### 2026-06-13 [infrastructure] Peer benchmark redo with the cost and risk chains (v0.1.9.6)
+
+**Status update 2026-06-15: implemented as internal v0.1.9.6 measurement.**
+LDG-2655 added current-surface benchmark rows for
+`ledgr_cost_zero()` / `ledgr_risk_none()` and for a representative public
+cost/risk chain on the same fixture and seed. The smoke and record commands
+completed all five ledgr rows, the repeated warnings were attributed to the
+documented `LEDGR_LAST_BAR_NO_FILL` next-open final-bar behavior, and the
+record bundle remains an ignored local artifact under `dev/bench/results/`.
+The checked-in report records the methodology and commands without replacing
+the all-peer historical comparison with a cost-only slice.
+
+Interpretation guardrail: the single-process record bundle is not a clean
+cost/risk overhead isolation because row-order warm-up dominates the observed
+timing deltas. Treat it as current-surface parity and boundary evidence, not a
+public speed claim and not proof that cost/risk held a performance line. Sweep
+this entry to `## Resolved` at the v0.1.9.6 closeout.
+
+Original scheduling note: the peer parity/performance benchmark
+(`dev/bench/peer_benchmark/`) was last recorded at v0.1.8.10 (record bundle
+2026-06-02), which predates the public cost chain (v0.1.9.1) and the
+target-risk chain (v0.1.9.3). The current numbers therefore do not include
+per-fill cost-model resolution or per-pulse risk-chain transform overhead. Redo
+the record bundle on the v0.1.9.5 surface to record the current cost/risk
+boundary and expose any obvious overhead signal.
+
+Measurement design (so the delta is attributable, not blended into the engine
+phase):
+
+- run a `ledgr_cost_zero()` / `ledgr_risk_none()` row next to a row with a real
+  cost chain and risk chain, on the same fixture and seed;
+- the difference isolates per-fill cost-resolution and per-pulse risk-transform
+  cost from the rest of the engine phase.
+
+Prior to confirm, not assume: the risk chain should be near-free -- `long_only`
+and `max_weight` are vector ops over the target vector, not a per-instrument R
+loop -- while the cost chain resolves per fill, which is exactly where
+universe-scaling cost lives at 500 instruments. The redo tells you which.
+
+Scope: this is a measurement spike, not a performance-optimization commitment.
+If it surfaces a material cost-chain regression, that becomes its own hot-path
+item (the per-pulse / per-fill R-loop frontier is already recorded). After the
+new bundle lands, update the benchmark report methodology and the v0.1.8.10
+record-bundle line without adding a public ranking claim.
+
+Related: the standing single-core-before-parallel stance; the per-pulse
+`O(n_inst)` hot-path frontier; the 2026-06-13 compiled-spot-FIFO-default
+decision entry below (a default flip would change which row the report leads
+with).
+
+Non-commitments: not a commitment beyond v0.1.9.6 scheduling; the measurement
+design is illustrative.
+
+
+<a id="open-052"></a>
+
+### 2026-06-13 [execution] v0.1.9.6 intraday-readiness code audit
+
+**Status update 2026-06-15: audit completed, no runtime change.** LDG-2654
+produced `inst/design/audits/v0_1_9_6_intraday_readiness_audit.md`. The audit
+found no High blockers and confirmed the execution, snapshot, feature,
+retained-return, and identity paths are timestamp-grid or row-count based
+rather than day-only. It routed three Medium findings forward: metric-context
+calendar mismatch guardrails are not wired into the metric path, walk-forward
+short-window warnings are cadence-blind, and the execution/cost policy is
+cadence-neutral next-pulse execution but not a full intraday microstructure
+model. No intraday runtime implementation was authorized or made in v0.1.9.6.
+The entry remains open after the v0.1.9.6 closeout because M-1, M-2, and L-1
+were routed forward. The status update below records the completed M-1 work and
+keeps the remaining intraday items explicit.
+
+**Status update 2026-09-05: M-1 closed in active v0.1.9.7.** LDG-2663
+closes the metric-context honesty gap with a warning-only, classed cadence
+guardrail at the existing run, sweep, comparison, and walk-forward metric
+boundaries. It does not alter metric values, metric-context hashes, or any
+execution, sweep, candidate, run, session, promotion, or walk-forward identity.
+M-2 (cadence-blind walk-forward short-window warnings) and L-1 (a bounded
+intraday example plus the whole-second tolerance record) remain explicitly
+deferred to the later intraday RFC. No first-class intraday runtime behavior is
+authorized by this closeout.
+
+Original scheduling note: run a deep code review to check whether the v0.1.x
+architecture is still EOD-first but intraday-tolerant, or whether recent work
+introduced architectural footguns that would make future intraday support
+expensive.
+
+Scope:
+
+- code and contract audit only; no intraday runtime implementation;
+- inspect snapshot sealing, timestamp precision, pulse calendars, fold
+  windows, metric annualization, feature warmup/hydration, timing/cost
+  contexts, target-risk boundaries, retained return panels, sweep/walk-forward
+  identity, and generated documentation examples;
+- identify assumptions that are merely EOD teaching choices versus assumptions
+  that have become runtime invariants;
+- check whether validation-toolkit work over retained panels introduces
+  cadence-specific shapes that would block later intraday windows or
+  session-aware folds;
+- assess the refactor size for each footgun: documentation-only, small local
+  patch, packet-sized refactor, or architecture/RFC-sized refactor;
+- name contract tests or audits that would prevent the same footgun from
+  reappearing.
+
+Audit output should be a versioned audit document, not a feature patch:
+
+```text
+finding -> affected surface -> why it matters for intraday ->
+current severity -> refactor size -> recommended disposition
+```
+
+The expected outcome is a footgun register and refactor-size estimate that can
+inform v0.1.9.x/v0.2.x scheduling. It should explicitly answer whether ledgr can
+still honestly say "EOD-first, intraday-tolerant" after the v0.1.9.x arc.
+
+Related entry: 2026-05-27 [execution] Intraday support arc and pre-v0.2.x
+architectural footguns. This entry schedules the audit promised there; it does
+not authorize the intraday support arc itself.
+
+
+<a id="open-056"></a>
+
+### 2026-06-13 [ux] Walk-forward degradation table curated print (shipped v0.1.9.5)
+
+Shipped as a maintainer-directed UX fix following the vignette styleguide
+Section 5 "clutter signals a missing helper" note. `wf$degradation` is now
+classed `ledgr_walk_forward_degradation` with a `print` method that shows the
+core train-versus-test columns -- fold, selection metric, train/test value,
+absolute diff, warning flags, selected candidate -- while the object stays a
+full tibble so `as_tibble()` and dplyr verbs still see every column. The
+v0.1.9.5 walk-forward vignette dropped its manual `select()` boilerplate, and
+`ledgr_fold_list` gained a per-fold train/test window print in the same change.
+
+Sweep this entry to `## Resolved` at the v0.1.9.5 closeout.
+
+
+<a id="open-059"></a>
+
+### 2026-06-11 [audit] Vignette screening for the v0.1.9.5 teaching cycle
+
+A full screening of all twelve installed vignettes (~6,400 lines) completed
+at v0.1.9.4 close, reviewed against `vignette_styleguide.md`, the v0.1.8.5 /
+v0.1.8.11 teachability precedents, and the R for Data Science north star.
+Full verdicts, split designs, missing-vignette list, and consumption order
+are recorded in `inst/design/audits/v0_1_9_4_vignette_screening_audit.md`.
+
+Routing summary:
+
+- **v0.1.9.4 release gate (Batch 9 / LDG-2626), not v0.1.9.5:** three stale
+  vignette references, including one actively wrong callout in
+  `execution-semantics.qmd` that tells readers the public cost API is still
+  planned while the chunk below it uses the shipped v0.1.9.1 API. These are
+  exactly the styleguide Section 12 release-gate checks.
+- **v0.1.9.5 split pairs (concept + technical details):**
+  strategy-development, indicators, metrics-and-accounting, and
+  experiment-store each split into a concept article plus a
+  technical-details article; the sweeps split is a borderline cut-line
+  candidate. The experiment-store split also creates the "Data Input And
+  Snapshots" article the v0.1.8.5 reading flow named but never built.
+- **Missing vignettes confirmed or proposed:** risk-and-cost execution
+  policy (largest hole - v0.1.9.3 target-risk shipped with no vignette
+  home), executable walk-forward research arc, a ~150-line quickstart
+  ("whole game" on-ramp), and an optional consolidated debugging article.
+- **Sequencing constraint:** the API-naming-consistency rename batch
+  (`rfc/rfc_api_naming_consistency_v0_1_9_5_seed.md`) must land before the
+  vignette batches so new articles teach the final vocabulary exactly once.
+- **R4DS assessment:** the teaching surface can match the north star; the
+  styleguide already encodes the load-bearing R4DS principles, and the
+  split plan IS the R4DS whole-game -> tools -> deeper-topics architecture.
+
+This entry records direction and routing; the v0.1.9.5 spec packet binds
+final shape. Sweep this entry to `## Resolved` when the v0.1.9.5 packet
+consumes the audit.
+
+
+<a id="open-060"></a>
+
+### 2026-06-11 [audit] Deep code review findings for the next release cycle
+
+A deep code review pass over the engine core, accounting, identity, and
+persistence layers completed at v0.1.9.4 close. Full findings, severities,
+file/line references, and suggested fixes are recorded in
+`inst/design/audits/v0_1_9_4_deep_code_review_audit.md`. None block the
+v0.1.9.4 release gate; all are tracked for the next release cycle
+(v0.1.9.5 is the natural home for most).
+
+Severity summary:
+
+- **Blocker (1).** B-1: unprotected SEXP during string-vector construction
+  in `src/spot_fifo.cpp` output assembly -- GC use-after-free risk under
+  allocation pressure, exactly the large-batch workloads the compiled
+  spot-FIFO accelerator targets. Ten-line fix (anchor vectors in the
+  protected output list before filling). Should land before any benchmark
+  re-record that exercises the compiled path at scale.
+- **High (3).** H-1: single-pulse runs crash with a bare unclassed
+  subscript error in `backtest-runner.R`. H-2: R lot accounting fails
+  silent-open on invalid fill input while the C++ kernel fails closed;
+  align R to fail-closed. H-3: `ledgr_time_elapsed` magnitude heuristic
+  divides by 1e9 for any run longer than ~1000 seconds, corrupting
+  persisted `run_telemetry.elapsed_sec` for multi-hour sweeps.
+- **Medium (7).** Legacy full-spread resolver deletion (M-1), C++ scalar
+  TYPEOF hardening (M-2), `cpp11::stop` instead of `Rf_error` (M-3),
+  fractional-quantity dust lots as a contract decision (M-4, pairs with
+  the whole-second contract precedent), per-fill DB roundtrips in db_live
+  mode (M-5), snapshot-hash timestamp representation pinning (M-6, hash
+  stability across driver upgrades), notional-fee rounding-order binding
+  (M-7).
+- **Nits (6).** Double meta_json parse in replay, O(n^2) lot packing,
+  int32 event_seq bound, absolute delta tolerance, JSON cache eviction
+  accounting, slow-path features_wide loop.
+
+The audit also records do-not-regress positives: four-path accounting
+parity (canonical durable / ephemeral / compiled / replay) with identical
+Kahan summation in R and C++, the validate-then-reorder target contract
+that makes the R and C++ fill loops provably equivalent, chunk-invariant
+streaming snapshot hashing, and the marked no-lookahead boundary in the
+fold engine.
+
+Promotion path: B-1/H-1/H-2/H-3 plus the kernel-hygiene mediums (M-1, M-2,
+M-3) fit a small hardening batch early in v0.1.9.5. M-4 and M-6 are
+contract-binding decisions that belong in the v0.1.9.5 contracts audit
+proper. M-5, M-7, and the nits ride along as entropy items.
+
+
+<a id="open-068"></a>
+
+### 2026-06-09 [research] Business-objective constructor RFC (Pardo-anchored)
+
+**Status update 2026-06-15: explicitly deferred out of v0.1.9.6.** The
+validation-substrate packet shipped evidence-only diagnostics first. A business
+objective filters candidate eligibility and composes with selection identity,
+so it is intentionally held until the diagnostic surfaces, interpretation
+rules, and walk-forward identity consequences have at least one stable packet
+behind them. No `ledgr_business_objective()` or `ledgr_sweep_filter()` surface
+is authorized by v0.1.9.6.
+
+Paired with the 2026-06-09 Palomar constraint expansion family entry above:
+Pardo (2008) Chapter 11's nine-criterion robust-strategy checklist deserves
+operationalization as a `ledgr_business_objective()` constructor that filters
+sweep candidates by intrinsic strategy quality before selection. Already
+recorded in `inst/design/methodology_references.md` as a deferred citation
+anchor; this entry promotes it to a planning seed.
+
+Pardo's nine criteria:
+
+1. relatively even distribution of trades over time;
+2. relatively even distribution of trading profit;
+3. relative balance between long and short profit;
+4. a large group of contiguous, profitable strategy parameters;
+5. acceptable trading performance across a wide range of markets;
+6. acceptable risk;
+7. relatively stable winning and losing runs;
+8. a large and statistically valid number of trades;
+9. a positive performance trajectory.
+
+This is a different kind of taxonomy from Palomar's constraints. Palomar
+names what a portfolio is allowed to do at decision time. Pardo names what
+makes a strategy worth keeping after a sweep. They are complementary: a
+strategy passes Palomar's constraints at every pulse, then is judged against
+Pardo's checklist on its full run-history evidence. Both should anchor on
+their respective vocabularies.
+
+The Pardo checklist is also distinct from selection-integrity diagnostics
+(Bailey / Lopez de Prado). Selection-integrity asks "did I pick the wrong
+winner because of multiple testing?" -- DSR / PBO / CSCV adjust the
+selected candidate's metrics after the fact. Pardo's checklist asks "is
+THIS strategy worth promoting on its own merits?" -- it filters candidates
+by intrinsic quality before selection. Both surfaces apply at the
+sweep-result level and answer different questions. The combination is
+stronger than either alone.
+
+### Computability against existing ledgr artifacts
+
+Seven of nine criteria are computable from v0.1.9.2+ retained artifacts
+today:
+
+- **Even trade distribution over time** -- from trade timestamps in
+  retained results; needs a temporal-uniformity metric (Gini, Herfindahl,
+  or Kolmogorov-Smirnov against uniform).
+- **Even profit distribution** -- from retained returns; needs a
+  concentration metric over per-period profits.
+- **Stable parameter region** -- from sweep results; needs parameter-grid
+  topology awareness. Pardo's strongest single methodology contribution
+  per the existing methodology_references.md entry.
+- **Acceptable risk** -- broad; could map to drawdown, vol, VaR, or
+  composite. The exact metric choice needs an RFC decision.
+- **Stable winning / losing runs** -- from trade outcomes; streak
+  analysis.
+- **Statistically valid number of trades** -- minimum sample-size check.
+- **Positive performance trajectory** -- from equity curve; trend slope
+  or the K-Ratio from Kestner cited by Pardo.
+
+Two criteria are deferred:
+
+- **Long-short balance** -- gated on the shorting / leverage contract
+  RFC (2026-06-01 horizon entry). Until long-short authoring lands this
+  criterion is structurally inapplicable.
+- **Acceptable performance across markets** -- requires multi-snapshot
+  evaluation. A single-snapshot proxy across non-overlapping time slices
+  of one snapshot could ship earlier; full cross-snapshot evaluation
+  needs v0.2.x snapshot lineage.
+
+### Indicative public shape (illustrative, not contractual)
+
+```r
+business_objective <- ledgr_business_objective(
+  ledgr_pardo_even_trade_distribution(max_concentration = 0.3),
+  ledgr_pardo_even_profit_distribution(max_concentration = 0.4),
+  ledgr_pardo_stable_region(min_neighbors = 5),
+  ledgr_pardo_acceptable_risk(max_drawdown = 0.20),
+  ledgr_pardo_stable_runs(max_streak = 10),
+  ledgr_pardo_min_trades(n = 30),
+  ledgr_pardo_positive_trajectory(slope_min = 0)
+)
+
+filtered <- ledgr_sweep_filter(sweep_results, business_objective)
+```
+
+Each criterion is a classed step that consumes sweep candidate evidence
+(metrics, trade list, equity curve, retained return series) and returns a
+boolean or graded score per candidate. The chain composes them into a
+single filter. The constructor produces a serializable plan with a
+`business_objective_hash` that participates in selection identity
+alongside the walk-forward `selection_rule_hash`.
+
+### Sequencing dependencies
+
+- v0.1.9.2 retained returns and sweep artifact persistence (shipped) --
+  needed for criteria 2, 7, 9;
+- v0.1.9.4 walk-forward (planned) -- not strictly required, but the
+  business objective should compose cleanly with walk-forward selection
+  rules. The selection rule picks the winner from the eligible pool; the
+  business objective narrows the eligible pool;
+- selection-integrity diagnostics RFC (planned v0.2.x) -- natural
+  companion; both apply at the sweep-result level for different purposes;
+- long-short contract RFC (2026-06-01 horizon entry) -- predecessor for
+  criterion 3;
+- snapshot lineage (v0.2.x roadmap) -- predecessor for the full version
+  of criterion 5.
+
+### Indicative slot
+
+A focused v0.2.x cycle, plausibly paired with the selection-integrity
+diagnostics RFC since both operate on sweep results and serve
+complementary purposes. The seven computable-today criteria could ship in
+a single packet; the two deferred criteria slot in as their predecessors
+come online.
+
+Earlier than the Palomar constraint expansion family because:
+
+- no architectural predecessors beyond v0.1.9.2 (shipped);
+- no fold-core touch;
+- no quantity-space vs weight-space translation work;
+- the criteria are mostly metric calculations over existing artifacts.
+
+### Non-commitments
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the `ledgr_pardo_*()` constructor sketches are illustrative, not
+  contractual;
+- which v0.2.x packet this cycle joins (selection-integrity standalone,
+  paired with portfolio optimization scaffolding, or its own cycle) is a
+  scoping decision, not a horizon commitment;
+- the specific composition rule (all criteria must pass vs scored
+  composite vs threshold majority) is left to the RFC;
+- the `business_objective_hash` participation in selection identity is
+  named here as a coordination requirement, not bound semantics.
+
+
+<a id="open-070"></a>
+
+### 2026-06-09 [adapters] Palomar adapter family for portfolio optimization scaffolding
+
+**Status update 2026-06-11:** a follow-up ecosystem sweep extended the
+candidate list and added one architectural category. None of this changes
+the entry's non-commitments; the additions record candidates for v0.2.x
+scoping alongside the original three.
+
+- **`RiskPortfolios` (Ardia, Boudt et al.)** -- CRAN, lightweight,
+  deterministic closed-form/QP implementations of min-variance,
+  inverse-vol, equal-risk-contribution, max-diversification, and
+  risk-efficient portfolios. Two roles: the cheapest possible
+  proof-of-pattern adapter for the `ledgr_weight_strategy()` wrapper
+  (one function, weights out) before the larger Palomar /
+  PortfolioAnalytics lifts, and the baseline-portfolio menu
+  (equal-weight, inverse-vol) every optimized-candidate comparison
+  needs. Indicative implementation order: before the Palomar trio,
+  even though the Palomar family stays the headline.
+- **`NMOF` (Schumann)** -- actively maintained, book-backed
+  (Gilli/Maringer/Schumann) heuristic optimization (Threshold Accepting
+  and related) covering non-convex objectives the convex stack cannot:
+  cardinality without a specialized solver, drawdown-shaped objectives,
+  integer lots. ledgr-specific angle: heuristic optimizers are
+  stochastic, and ledgr's execution-seed contract is exactly the
+  machinery that makes a stochastic optimizer auditable. An NMOF adapter
+  would be the first demonstration that the determinism discipline
+  extends to stochastic optimization.
+- **`parma` (Ghalanos)** -- scenario-based LP/QP/NLP formulations for
+  CVaR, CDaR (drawdown-at-risk), LPM, and minimax portfolios; risk
+  measures not covered by the Palomar trio or RiskPortfolios.
+  Maintenance is sporadic (watch item); methods-driven medium priority.
+- **Estimator adapters as a named second category.** Every optimizer
+  above consumes `(mu, Sigma)`, and the weights are only as reproducible
+  as the estimator that produced the inputs. The Peterson entry's
+  `momentFUN` note already gestures at this; binding it as a category is
+  worth more than any single package: estimator adapters carry
+  fingerprinted identity (estimator, window, parameters -- the indicator
+  fingerprint pattern reused), optimizer adapters consume them.
+  Candidates: **`fitHeavyTail`** (convexfi -- already in
+  `methodology_references.md` but previously absent from this entry; it
+  is the estimator-side member of the same Palomar family),
+  **`corpcor`** (Ledoit-Wolf linear shrinkage), **`nlshrink`**
+  (nonlinear shrinkage), **`covFactorModel`** (convexfi, GitHub-only,
+  factor-structured Sigma).
+- **CVXR clarification** -- not an adapter target; it is the authoring
+  escape hatch. A user writes a weight strategy directly in CVXR inside
+  `ledgr_weight_strategy()`; convex solvers are deterministic, so this
+  composes with the identity model without any adapter. Palomar's book
+  formulates in CVXR, so the future scaffolding vignette should show the
+  pattern once.
+- **Cross-cutting determinism gate for the scaffolding RFC:**
+  solver-backed adapters fingerprint solver name, version, and tolerance
+  settings, and parity-test with tolerance bounds rather than
+  byte-equality -- third-party solvers do not owe bit-reproducibility
+  across versions, unlike the in-repo spot-FIFO kernel.
+- **Routing notes:** `portsort` (cross-sectional double sorts) belongs
+  to the cross-sectional indicators entry, not this family;
+  `rugarch`/`rmgarch` (vol forecasting for vol-targeting weight
+  strategies) and `FactorAnalytics` (factor exposures; GitHub-only) are
+  later-cycle candidates adjacent to this family. Confirmed skips
+  consistent with existing dispositions: `fPortfolio` / Rmetrics
+  (stale), `tseries::portfolio.optim`, `PortfolioOptim`, `MarkowitzR`
+  (inference, complementary), `PMwR` (already marked skip).
+
+A 2026-06-09 review of Palomar's GitHub package family at the `convexfi`
+organization identified three R packages as coordinated adapter targets
+for the v0.2.x portfolio optimization scaffolding (2026-06-07 horizon
+entry) and the Palomar constraint expansion family (2026-06-09 horizon
+entry above). All three share Palomar's notation conventions and accept
+the same Chapter 6 constraint vocabulary, so adapting one de-risks
+adapting the other two.
+
+### Adapter targets
+
+- **`riskParityPortfolio`** -- equal-risk-contribution portfolio
+  construction. Maps to portfolio optimization scaffolding's risk-parity
+  objective (Level 2 of the four-level decomposition per the 2026-06-07
+  horizon entry).
+- **`highOrderPortfolios`** -- mean-variance-skewness-kurtosis
+  optimization. Maps to scaffolding's higher-moment objective. Useful for
+  workflows that want to consider beyond second-moment risk.
+- **`sparseIndexTracking`** -- index tracking with cardinality constraint
+  `||w||_0 <= K`. Direct implementation by Palomar of the cardinality
+  constraint defined in his own Chapter 6.2; the reference solver when
+  the Palomar risk-chain expansion family opens cardinality. The
+  cardinality heuristic-vs-solver decision named in that horizon entry
+  could be answered by "adapt sparseIndexTracking" for the solver branch.
+
+All three are convex-optimization-backed (consistent with the `convexfi`
+organization name) and follow Palomar's textbook notation:
+
+- adapting one teaches the patterns needed for the other two (shared
+  argument naming, shared constraint specification format, shared output
+  shape);
+- the adapter pattern matches the v0.2.x External Package Adapters
+  roadmap entry's "thin, optional, output-only" discipline;
+- vocabulary stays anchored on Palomar's terminology, honoring the
+  Palomar constraint expansion family entry's "Do not coin alternatives"
+  binding.
+
+### Comparison point, not adapter
+
+- **`portfolioBacktest`** -- automated portfolio backtesting over
+  multiple datasets. Closest peer in the R portfolio research ecosystem.
+  Portfolio-optimization-first where ledgr is identity-and-determinism-
+  first. Worth a focused comparison read for the v0.1.9.5 positioning
+  narrative or the eventual scaffolding RFC seed; the canonical
+  alternative ledgr should understand the way it understands Backtrader
+  and quantstrat. Not an adapter target -- adapting it would create a
+  second backtester surface inside ledgr, violating the no-second-
+  execution-engine invariant.
+
+### Coordination with existing planning artifacts
+
+The v0.2.x External Package Adapters roadmap entry already names
+PerformanceAnalytics, PortfolioAnalytics, tidyfinance, and quantmod as
+adapter targets. The Palomar adapter family extends that list with three
+portfolio-optimization-specific adapters that sit alongside
+PortfolioAnalytics. Indicative ranking when the cycle opens:
+
+```text
+v0.2.x External Package Adapters (existing roadmap entry)
+  -> PerformanceAnalytics (reporting; ranked first)
+  -> Palomar family (portfolio construction; this entry)
+       riskParityPortfolio + highOrderPortfolios + sparseIndexTracking
+  -> PortfolioAnalytics (portfolio construction; alternative to Palomar)
+  -> tidyfinance (factor / data research)
+  -> quantmod (data ingestion)
+```
+
+Palomar family vs PortfolioAnalytics is not either-or. PortfolioAnalytics
+is more established and has broader objective coverage; Palomar packages
+are newer, more focused, and share notation with the canonical textbook.
+Both are adapter candidates; sequencing depends on user demand when the
+scaffolding cycle opens.
+
+### Sequencing dependencies
+
+- portfolio optimization scaffolding (v0.2.x, 2026-06-07 horizon entry)
+  must be scoped before any adapter target is selected;
+- Palomar constraint expansion family (2026-06-09 horizon entry above)
+  should be coordinated with the cardinality adapter decision since
+  `sparseIndexTracking` covers the solver branch of cardinality;
+- v0.2.x External Package Adapters roadmap entry's "thin, optional,
+  output-only" discipline applies to each adapter;
+- adapter ranking depends on user demand at v0.2.x scoping time; this
+  entry records the candidates, not the order.
+
+### Indicative slot
+
+Inside the v0.2.x portfolio optimization scaffolding packet or the
+v0.2.x External Package Adapters packet, depending on whether the
+scaffolding ships with its own adapters or routes adapters to the
+dedicated adapter packet. Either is defensible; the entry stays in
+horizon until that scoping decision lands.
+
+### Non-commitments
+
+- this is not a roadmap commitment;
+- no public API is bound by this entry;
+- the adapter selection order among the three Palomar packages is left
+  to v0.2.x scoping;
+- the Palomar-vs-PortfolioAnalytics adapter ranking is left to user-
+  demand evidence at scoping time, not pre-decided here;
+- `portfolioBacktest`'s role as comparison-only-not-adapter is bound
+  here, but the depth of the comparison study is a v0.1.9.5 or v0.2.x
+  packet scoping decision.
+
+
+<a id="open-071"></a>
+
+### 2026-06-05 [infrastructure] Release-gate harness around playbook checks
+
+The v0.1.9.1 release gate exposed a process gap: the release CI playbook
+contained the right shape of guidance, but the final gate still depended on
+the agent remembering which CI-equivalent local commands mattered. In
+particular, the README cold-start check
+(`Rscript --vanilla tools/check-readme-example.R`) was not run locally before
+the first branch push, even though CI treats it as its own gate and it caught
+installed-package example drift that full tests, package check, vignette
+renders, and pkgdown did not catch.
+
+Future release work needs a lightweight harness around release-gate evidence,
+not just prose instructions. Possible shape: a repo-local script or R helper
+that reads the active release-gate ticket / packet, verifies that the playbook
+is referenced, prints the exact local gate checklist, runs or records the
+README cold-start check, full tests, package check, coverage, pkgdown, and
+WSL/Ubuntu gates as applicable, and emits a compact closeout block for the
+ticket. This should remain a release-process aid, not a new execution or
+package-runtime surface.
+
+The important design point is automatic context loading and inspectable
+evidence. Future agents should not need to remember the playbook from prior
+turns; the harness should make the required gates visible before work starts
+and make omissions obvious in review.
+
+
+<a id="open-072"></a>
+
+### 2026-06-05 [infrastructure] Release-gate tickets must not absorb executable doc/example migration
+
+The v0.1.9.1 Batch 8 release-gate commit absorbed a broad executable
+documentation and example migration for the required `cost_model` contract.
+That migration belonged in an earlier reviewed docs/example batch alongside
+the public API change, not in the final release-gate commit. The release gate
+should verify readiness with the smallest possible closeout / metadata change;
+it should not become the place where required-argument migrations are first
+landed across README, vignettes, examples, rendered docs, and reference pages.
+
+Defense: every release-gate ticket should point at
+`inst/design/release_ci_playbook.md`, include the explicit local-gate
+checklist, and treat executable-doc drift as a signal to cut a new pre-release
+batch instead of expanding the gate. If a release gate uncovers broad
+example/API migration work, pause the release sequence, split the work, and
+review that migration on its own surface before merge/tag resumes.
+
+
+<a id="open-074"></a>
+
+### 2026-05-29 [execution] v0.1.8.7 optimization-round post-synthesis direction
+
+The accepted v0.1.8.7 synthesis
+(`inst/design/rfc/rfc_optimization_round_v0_1_8_7_synthesis.md`) binds a
+single-core pure-R hot-path cleanup: surface-preserving event-buffer
+capacity/write fix (B0), hot-path representation/formatting cleanup with
+durable-identity bytes fenced off (R), and read-back reconstruction behind a
+deterministic collapse gate (C), plus ADR 0004 deps and explicit legacy
+cleanup. The modern execution contract is snapshot-backed and function-strategy
+based; raw `bars` execution, R6 strategy execution, and run-time `data_hash`
+identity are removed or fail before the fold. It does **not** authorize a
+compiled core, parallel dispatch (now v0.1.8.8), sweep crossover claims, or
+durable identity-format changes. Whole-second timestamp contract reaffirmed;
+sub-second out of scope (not HFT). Pure direction, no committed home: a
+compiled/native fold core is the later lever for decisive single-run peer wins;
+the sweep amortization / peer-crossover track stays open (measured modest ~1.18×,
+the per-candidate fold dominates — needs heavier-precompute workloads before any
+claim); the matrix-canonical strategy surface is a separate contract/ergonomics
+RFC; the deeper typed event-emission rewrite (B1) waits on an explicit
+primitive-contract binding; durable hash/provenance/fingerprint byte changes each
+need their own contract decision.
+
+
+<a id="open-075"></a>
+
+### 2026-05-30 [optimization] Post-v0.1.8.7 remaining fold-loop levers
+
+The v0.1.8.7 benchmark closeout leaves the main hot bucket as the pure-R
+turnover fold loop: on the current local TTR-backed peer shape, the durable run
+spends 15.70s of 25.91s in the loop while producing 13,355 fills. B0 removed the
+pathological event-buffer cost, R/A removed the obvious timestamp/setup tax, and
+C improved fills materialization/read-back. What remains is not one known bug; it
+is the accumulation of interpreted per-pulse/per-instrument/per-fill mechanics.
+
+Collapse can still help, but only in specific measured sub-operations. Candidate
+uses to preserve for later profiling:
+
+- use `collapse::setv()` for the remaining event-buffer column writes if POSIXct
+  class/tzone and event-stream parity remain byte-identical;
+- replace hot target/order selection idioms (`match`, `%in%`, repeated `which`,
+  logical-vector allocation) with `collapse::fmatch()`, `collapse::whichv()`,
+  and related vectorized operators where profiling shows lookup/selection cost;
+- precompute integer instrument maps with `fmatch()`-style semantics rather than
+  rematching character IDs inside turnover paths;
+- batch state-delta or fill aggregation with grouped `fsum()`-style operations
+  only if a future order/fill shape produces multiple same-pulse rows per
+  instrument and parity is proven;
+- keep `rowbind()`, `fcumsum()`, and summary-stat helpers as reconstruction and
+  metric materialization levers, not as a claim on live fold-loop speed.
+
+Weak collapse candidates: arbitrary strategy callbacks, branch-heavy fill-rule
+logic, and direct matrix bar/feature reads. Those are either user code, already
+cheap base-C indexing, or better addressed by the primitive-contract / compiled
+core path. Lane R-style timestamp and string-formatting cleanup is also mostly
+base-R representation discipline, not a collapse problem.
+
+The practical next diagnostic, if this becomes active work, is an intra-loop
+profile that splits context access, target/order conversion, fill resolution,
+state update, and event emission after B0/R/A/C. Do not start another broad
+collapse pass from package capability alone; require a named hot frame, a
+deterministic-wrapper boundary for value-bearing operations, and parity fixtures
+that cover durable and sweep event streams.
+
+v0.1.8.8 Batch 2 ran that first diagnostic locally with per-pulse telemetry
+sampling (`control$telemetry_stride = 1`). Treat the numbers as local,
+current-source, machine-specific attribution only; the full-stride telemetry
+adds overhead, so this is not a new speed claim. On the TTR-backed
+`peer_sma_crossover` shape (500 instruments x 1260 pulses x 2 features),
+measured fold-loop bucket shares were: target/order conversion about 34.6%,
+event emission about 27.6%, unattributed loop overhead about 22.9%,
+bar-read/mark-to-market about 10.0%, fill resolution about 2.0%, state update
+about 1.7%, context build about 0.9%, strategy callback about 0.3%, and feature
+view read effectively zero. On the wide no-feature/no-trade shape, the visible
+cost was mostly target/order conversion (~41.9%), unattributed loop overhead
+(~43.6%), and bar-read/mark-to-market (~14.1%).
+
+Implications to preserve for future work: target/order conversion needs a named
+profile of target validation, per-instrument delta scanning, next-bar lookup,
+and proposal construction before any rewrite; event emission remains the main
+turnover-specific R bucket after B0, but further handler work must prove exact
+event-stream parity; and the wide no-trade result points at interpreted
+per-instrument scanning/loop overhead, which is more likely a primitive-contract
+or compiled-core lever than a small collapse substitution. Context construction
+and the strategy callback are not the lead buckets on these shapes.
+
+This entry records direction, not committed work.
+
+
+<a id="open-076"></a>
+
+### 2026-05-31 [optimization] LDG-2476 peer-benchmark turnover cost decomposition
+
+The LDG-2476 follow-up peer benchmark initially looked like a severe ledgr
+regression: on a 500 x 1260 shape, the current apples-to-apples peer harness
+reported ledgr_ttr_canonical at 240.64s versus Backtrader at 80.30s. The
+current-source A/B evidence in
+`dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md` changes the
+interpretation. The v0.1.8.7/current-source reference row used SMA 20/50
+continuous-target semantics and produced 13,355 fills; the current parity row
+uses SMA 5/10 crossover-event semantics and produced 68,324 fills. Re-running
+the old-shape style on current source landed at 31.60s with 13,355 fills,
+matching the 30.75s class from the previous closeout. That rules out a broad
+"fold core got 9x slower" diagnosis for the historical workload.
+
+Supporting local artifacts:
+
+- `dev/bench/peer_benchmark/notes/backtrader_scale_check.md`
+- `dev/bench/peer_benchmark/notes/ledgr_regression_source_analysis.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_design.md`
+- `dev/bench/peer_benchmark/notes/three_phase_decomposition_results.md`
+- `dev/bench/results/peer_benchmark_record_20260531T053230Z_performance.csv`
+- `dev/bench/results/peer_benchmark_record_20260531T114451Z_performance.csv`
+- `dev/bench/results/ledgr_regression_continuous_20260531T101455Z.csv`
+- `dev/bench/results/ledgr_regression_continuous_20_50_20260531T101945Z.csv`
+
+Read these as local, current-source, machine-specific evidence only. They are
+not a public speed claim and are not a release benchmark ranking.
+
+The later three-phase decomposition refined the interpretation again. On the
+same 500 x 1260 SMA 5/10 crossover workload, Backtrader engine time was
+79.704s and durable ledgr engine time was 138.370s, so the direct engine-loop
+gap is 1.74x rather than the roughly 3x bundled wall-clock gap. The remaining
+wall-clock gap is mostly results materialization: durable ledgr results took
+83.000s, while Backtrader results took 0.153s because its fills are captured
+inline during `notify_order`.
+
+The ephemeral ledgr diagnostic row was the important surprise. It uses the same
+fold core with a memory output handler and produced parity with the durable
+row, but it was slower overall: durable ledgr was 242.080s and ephemeral ledgr
+was 289.620s. Removing the durable snapshot saved 9.740s of ingestion, but the
+memory output handler added 16.380s during engine execution and in-memory
+event-stream reconstruction added 40.900s during results materialization. In
+this high-fill-density regime, the durable DuckDB-backed path is currently the
+efficient ledgr path, not an avoidable cost wrapper around a faster ephemeral
+engine.
+
+The exposed optimization targets are narrower, in expected impact order:
+
+- **Fills read-back reconstruction.** On the 500 x 1260 diagnostic,
+  `ledgr_results(bt, "fills")` took 6.75s for 13,355 fills and 82.28s for
+  68,324 fills. This scales worse than linearly and is the clearest post-run
+  bottleneck.
+- **Memory output-handler per-fill cost.** The parity-matched ephemeral row was
+  16.380s slower than durable during engine execution at 68k fills. The memory
+  handler is not currently the cheap write path on high-turnover workloads.
+- **In-memory event-stream reconstruction.** The ephemeral results phase was
+  40.900s slower than durable `ledgr_results()` reconstruction on the same
+  event stream. This is a separate optimization lane from DuckDB read-back.
+- **Fill/event throughput during the run.** Moving from 13,355 to 68,324 fills
+  raised loop time from about 20s to about 122s. Event/fill turnover remains a
+  main runtime pressure point, and durable ledgr's engine loop was 1.74x
+  Backtrader on the boundary-equivalent row.
+- **Data ingestion and snapshot creation.** Snapshot creation on the 500 x 1260
+  shape is visible but no longer the lead target: durable ledgr ingestion was
+  20.710s and ephemeral ledgr ingestion was 10.970s in the three-phase record.
+  CSV parsing, validation, DuckDB insert, sealing, and hash work should still be
+  separated before optimization.
+- **Strategy-state persistence.** The crossover `state_update` path wrote 1,260
+  rows and about 10.3 MB of JSON. It added measurable overhead, but it is
+  secondary to fill/event volume and fills reconstruction on this workload.
+- **Target/state vector copying.** The peer strategy is now vectorized, but the
+  engine still scans named target/position surfaces and computes deltas every
+  pulse. Keep this as a lower-confidence target tied to prior fold-loop
+  diagnostics.
+
+Feature precompute is not a lead target for this specific SMA workload: `t_pre`
+remained about 0.9s in both the old-shape and no-state control rows. Future
+work should start from a decomposition that separates ingestion, fold loop,
+event emission, fills read-back, and strategy-state persistence instead of
+comparing aggregate peer rows across different SMA windows and turnover levels.
+
+Benchmark interpretation caveat to preserve: ledgr rows include durable
+DuckDB-backed event/equity persistence and result reconstruction, while Python
+peer rows in the harness generally write only canonical CSV artifacts. That is
+part of ledgr's product contract, but it must be separated from pure engine
+loop time when diagnosing performance.
+
+This entry records the optimization target stack, not committed work. A future
+v0.1.8.9 optimization packet should start from phase-separated timing for
+ingestion, fold-loop fill/event work, state persistence, and result
+reconstruction before choosing a fix.
+
+The v0.1.8.8 contribution is `LDG-2479` (Self-Profiling Workload Grid
+Extension), which captures the cost-surface scaling behavior across universe
+size, history length, fill density, and persistence mode that this single-point
+peer benchmark could not see. The grid output is the planned baseline for the
+v0.1.8.9 optimization spec.
+
+**Per-pulse complexity finding (post-LDG-2479 grid run).** The grid revealed
+per-fill engine cost growing with universe size on the same strategy and
+density: 931 us/fill at 100 instruments, 2,040 at 500, 3,107 at 1000, all on
+the 1260-pulse SMA 5/10 crossover. Fills per instrument is constant at ~135
+across these rows, so total fills scale linearly with `n_inst`. A correctly
+implemented event-driven engine should have flat per-fill cost; ledgr's is
+super-linear. Architecture is correct; implementation has R-idiom debt.
+Three specific suspects in `R/fold-engine.R`, all mechanical to fix:
+
+- Per-pulse position valuation loop at `R/fold-engine.R:164-170` iterates
+  `seq_along(instrument_ids)` per pulse to mark positions to market. O(n_inst)
+  per pulse with no fill dependency. Vectorizing to
+  `sum(as.numeric(state$positions) * bars_mat$close[, i])` is expected to
+  recover ~9s of 413s loop time on the xlarge cell.
+- Per-target early-skip loop at `R/fold-engine.R:277-359` iterates
+  `names(targets)` per pulse and does per-instrument lookups even when no
+  fill will fire. Computing a delta vector once and iterating only over
+  `which(abs(delta_vec) > tol)` is expected to recover ~12s on the xlarge
+  cell.
+- Named-vector copy-on-write on `state$positions` at `R/fold-engine.R:354-355`
+  may force whole-vector copies because the pulse-context constructor holds a
+  reference. Switching `state` to an environment, or `state$positions` to
+  integer-indexed numeric with a one-time id-to-idx map, is expected to
+  recover ~1.5s.
+
+Combined cheap recovery on `density_high_xlarge_durable`: ~22.5s of 413s loop
+time. The bigger architectural win is that the per-fill cost curve flattens —
+the apparent "ledgr scales with universe" symptom is the artifact of R loops,
+not a deep engine problem.
+
+After these three fixes, the next-largest target is per-fill
+`output_handler$write_fill_events()` batching: the current path inserts one
+DuckDB row per fill, and at 133k fills per-fill DuckDB cost is sizable.
+Chunked writes of 100-1000 fills should give the next big win after the
+per-pulse fixes land.
+
+Full diagnosis with code excerpts, fix sketches, risk notes, alignment
+caveats, and verification discipline is in
+`dev/bench/notes/per_pulse_complexity_findings.md`. That note is the
+load-bearing input for the v0.1.8.9 single-core optimization spec.
+
+**v0.1.8.9 Batch 7 cleanup triage (2026-06-01).** After the main
+optimization lanes landed, the high-density xlarge durable cell was down to
+267.84s wall and 231.17s loop. The optional cleanup lanes no longer clear the
+v0.1.8.9 threshold:
+
+- Spike 5 next-bar matrix lookup is deferred to v0.1.8.10+ or a broader
+  matrix-canonical/compiled-core pass. It still has a valid mechanism, but the
+  projected ~5s recovery is now less than 2% of wall and requires changing the
+  fill-proposal boundary from row-shaped `next_bar` to scalar
+  `next_open_price`.
+- Spike 3 `state$positions` representation is deferred to v0.1.8.10+ or a
+  state-representation audit. The semantic-preserving id-map option projects
+  less than 1s recovery, while the faster env/setv variants risk changing
+  pulse-context snapshot semantics.
+- The LDG-2479 fills row-count fallback is treated as resolved by the
+  LDG-2496 fills-buffer rewrite: post-main-lane xlarge durable runs materialize
+  fills directly with zero failures and no ledger-count fallback.
+- Spike 10's Kahan-vs-cumsum finding is documentation fallout, not a runtime
+  lane. Durable-vs-ephemeral sub-1e-8 equity noise should be attributed to
+  Kahan compensated summation versus naive `cumsum()`, not DuckDB double
+  round-trip precision.
+
+**v0.1.8.9 Batch 8 measurement closeout (2026-06-01).** The full record
+workload-grid rerun closed the round with the high-density xlarge durable cell
+at 232.03s wall, 199.06s loop, and 23.36s fills extraction, down from the
+v0.1.8.8 baseline of 445.02s wall, 413.47s loop, and 197.11s fills
+extraction. Per-fill engine cost fell from 3107.33 to 1494.95 us/fill and
+per-fill extraction cost fell from 1481.33 to 175.43 us/fill. The comparable
+large durable cell moved 153.76s -> 85.12s wall.
+
+The peer benchmark rerun at the LDG-2476 shape shows ledgr's phase-separated
+engine row much closer to Backtrader: durable ledgr engine time moved from
+138.37s to 88.00s while Backtrader stayed essentially flat at 79.70s -> 78.53s.
+That changes the local engine-only ratio from 1.74x to 1.12x. Total ledgr wall
+is still 118.79s versus Backtrader's 79.34s because ledgr retains ingestion and
+results surfaces that Backtrader mostly avoids.
+
+Residual optimization direction changes accordingly. The next productive work
+is not another per-row buffer-write patch; it is R-side substrate work
+(typed/state vectors, matrix-canonical next-bar access, pulse-context data
+structures), better ephemeral phase telemetry, and a yyjsonr read-path
+investigation. Any future `ledgrcore` build should be gated by a post-substrate
+measurement spike rather than assumed from the pre-v0.1.8.9 gap.
+
+
+<a id="open-077"></a>
+
+### 2026-05-30 [architecture] Compiled fold core as `ledgrcore` sister package
+
+The 2026-05-25 entry above records that a compiled fold core remains future
+direction and lists the minimum gates before a port RFC. Batch 4 of v0.1.8.8
+(typed execution spec, LDG-2472) and Batch 3 (deterministic-only RNG with
+`ctx$pulse_seed`, LDG-2471) have now closed two of the structural prerequisites
+the 2026-05-25 entry called out. With those in place, the assumed architecture
+becomes concrete enough to document:
+
+Pattern:
+
+- compiled fold core ships as a separate `ledgrcore` sister package;
+- ledgr declares `ledgrcore` as `Suggests`, not `Imports` — pure-R ledgr
+  remains the CRAN-friendly reference;
+- both implementations consume the same `ledgr_execution_spec_v1` payload
+  through `ledgr_execution_spec()`;
+- both implementations emit events through the same output-handler interface
+  (`write_fill_events`, `buffer_strategy_state`, etc.);
+- strategy callbacks remain R-side (the Batch 2 diagnostic measured strategy
+  callback at 0.3% of loop time, so the cross-language callback overhead is
+  negligible against the buckets a compiled core would attack);
+- byte-identical event-stream parity against the pure-R reference is the
+  release contract for any `ledgrcore` version.
+
+The R fold core stays the reference implementation. `ledgrcore` is bound to
+match it byte-for-byte; spec drift becomes a failing parity test, not a silent
+divergence. This is the same discipline that gated v0.1.8.7's optimization
+lanes and the v0.1.8.8 cross-engine parity benchmark (LDG-2476).
+
+Trade-offs to keep visible:
+
+- two implementations to maintain — parity gate enforces equivalence;
+- `Suggests` becomes "everyone installs anyway" once `ledgrcore` ships —
+  accept it; document that pure-R is the fallback;
+- pure-R path rots silently if nobody runs it — keep pure-R as the test
+  default; run `ledgrcore` in a separate CI matrix;
+- versioning matrix grows — `spec_version` on the typed spec is the
+  compatibility gate.
+
+Language choice (C++ via cpp11 vs Rust via extendr) is deferred. The
+ecosystem-alignment argument favours C++ (ledgr already depends on duckdb,
+which is bundled C++); the memory-safety argument favours Rust. Decide when
+the build is authorized, not before.
+
+The decision to build was originally gated on:
+
+- the v0.1.8.9 single-core optimization round (shipped: xlarge wall
+  445.02s → 232.03s, peer engine ratio 1.74x → 1.12x Backtrader);
+- the LDG-2476 LEAN-Python parity row as the empirical anchor for the
+  compiled-core scoping question.
+
+Post-v0.1.8.9 ledgr is within ~1.5x Backtrader on the peer-matched
+workload, so by the original "within ~2x → maintenance overhead with
+marginal payoff" rule the build is no longer the automatic next step.
+Subsequent updates below (2026-06-01 measurement-spike gate,
+`ledgrcore-spike` repo-split, R-side substrate framing) replace this
+rule with the substrate-then-measure path. The 2026-05-25 entry's
+minimum gates (target risk stability, walk-forward workloads,
+cost/liquidity boundaries, typed value objects) remain binding alongside
+the new empirical gate.
+
+**Canonical JSON encoder/decoder belongs in `ledgrcore` (2026-05-31 update,
+from v0.1.8.9 round LDG-2493 / LDG-2494 work).** The v0.1.8.9 round investigates
+`yyjsonr` as a faster replacement for `jsonlite::fromJSON` (read-side hot
+path) and potentially for `jsonlite::toJSON` in `canonical_json` (write-side
+durable identity). If those spikes land in v0.1.8.9, they are a bridge solution,
+not the end state. The end state is: `ledgrcore` exposes
+`ledgrcore::canonical_json()` and `ledgrcore::parse_event_meta()` backed by
+the compiled core's host-language JSON library (rapidjson for C++,
+serde_json for Rust, or yyjson directly). Three reasons this lives in
+`ledgrcore` rather than ledgr:
+
+- **Determinism is owned by the compiled contract.** `ledgrcore`'s release
+  contract is byte-identical event-stream parity. JSON output bytes ARE
+  part of the event stream (event meta_json columns). The compiled core
+  pins the JSON encoder version and options inside its parity gate, which
+  is stricter than anything ledgr's pure-R surface can guarantee via
+  third-party R packages whose version defaults may drift across CRAN
+  releases.
+- **The hot path eliminates the R-level call entirely.** With `ledgrcore`
+  owning the encoder, the per-event meta parse and the per-pulse
+  state_update serialization happen inside compiled code, bypassing the
+  R interpreter for JSON I/O entirely. That is larger than the v0.1.8.9
+  yyjsonr win because it removes the R↔C transition cost as well.
+- **Reproducibility surface narrows.** Today ledgr's durable identity
+  depends on `jsonlite`'s byte stability across versions; tomorrow it
+  could depend on `yyjsonr`'s. With `ledgrcore` owning the encoder, the
+  durable identity contract has one bound binary, not a moving third-party
+  R-package surface.
+
+Scope note: this is a `ledgrcore` deliverable when K1 lands, not a
+v0.1.8.9 line item. v0.1.8.9's yyjsonr work (if it lands) is the bridge —
+correct byte format chosen so the eventual `ledgrcore` encoder can match it,
+or with a documented format version bump if yyjsonr differs from jsonlite.
+v0.1.8.9 spec should not over-promise compiled-core JSON as imminent.
+
+**Build authorization is gated on a measurement spike (2026-06-01 update,
+from v0.1.8.9 closeout discussion).** The trigger conditions above are
+necessary but not sufficient. Before any `ledgrcore` build is authorized,
+a minimum-viable measurement spike runs two compiled fold cores — one in
+C++ via cpp11, one in Rust via extendr — and measures four load-bearing
+numbers:
+
+- per-pulse cost with R strategy callback (realistic boundary case);
+- per-pulse cost with an inline static strategy (compiled-only ceiling);
+- per-fill cost with R output-handler callback (realistic boundary case);
+- per-fill cost with inline event accumulation (compiled-only ceiling).
+
+The gap between realistic and inline numbers measures how much K1 actually
+buys. Small gap means K1 is bounded by the R-callback boundary and is not
+worth the complexity. Large gap means K1 has real headroom. The spike
+does not reimplement the fold engine; it implements a minimum-viable
+per-pulse loop (bars matrix in, equity vector out) and produces an
+apples-to-apples per-language comparison plus a build/don't-build verdict.
+
+**The spike is scoped after the v0.1.9 substrate round** (per the
+2026-06-01 R-side data structures entry below). If the spike runs against
+pre-substrate R, it overstates the compiled-core win because R-side
+per-pulse work is still in the substrate-debt regime; post-substrate that
+drops materially and the boundary-crossing overhead becomes proportionally
+larger. The fair comparison is post-substrate R vs compiled, not current R
+vs compiled.
+
+Decision shape from the spike:
+
+- compiled vs post-substrate-R gaps < 1.5x on both per-pulse and per-fill:
+  `ledgrcore` stays parked; substrate absorbed most of the structural win;
+- gaps 2-3x: `ledgrcore` is worth scoping with explicit cost/benefit math
+  against the substrate-round residual;
+- gaps 5x+: the compiled story is empirically load-bearing and the build
+  is authorized, with the language choice driven by the spike's measured
+  boundary-cost differential between extendr and cpp11 (not by the
+  ecosystem/memory-safety priors the original entry listed).
+
+**ANSWERED 2026-06-01** — K1 measurement spike complete. Verdict at
+`ledgrcore-spike` repo
+(`inst/design/spikes/k1_measurement_spike/verdict.md`). Headline:
+build authorized only for the inline-output design (xlarge inline
+cells: Rust 47-151x, C++ 10-33x); parked for R-handler-per-fill
+designs (xlarge R-handler cells ~1x). Decision-shape rule above is
+SPLIT-MET: ceiling cells exceed 5x by orders of magnitude; realistic
+R-handler-per-fill cells fall under 1.5x. Build authorization is
+narrowly conditional on inline-output architecture; see the 2026-06-01
+[architecture] K1 measurement-spike verdict horizon entry below for
+the full disposition and the gates that remain binding.
+
+**Repo-split decision (2026-06-01 evening update, from v0.1.8.10 spike
+round scoping).** The K1 measurement spike was initially scoped into the
+v0.1.8.10 spike round
+(`inst/design/spikes/ledgr_v0_1_8_10_optimization_round_spike/`). It was
+moved out of that round and into a dedicated `ledgrcore-spike` repo for
+three reasons:
+
+- **Cadence mismatch.** R-side spikes iterate at 1-3 day cycles; Rust /
+  C++ FFI development iterates at week-scale cycles. Bundling them would
+  make v0.1.8.10 closeout wait on the K1 spike, defeating the
+  fast-iteration intent of staying in the v0.1.8.x single-core arc.
+- **Build-system hygiene.** Adding `Cargo.toml` plus a C++ toolchain to
+  the ledgr repo would force every R contributor to install Rust or
+  full C++ tooling just to clone and run tests, a tax that delivers
+  nothing to R-side contributors. The separate repo keeps ledgr's build
+  surface clean.
+- **Stronger measurement baseline.** Timing the spike to run after
+  v0.1.8.10 ships lets the comparison use post-v0.1.8.10 production R as
+  the baseline rather than a substrate-emulated R variant. That is the
+  strongest possible fair comparison and exactly what this entry's
+  original "fair comparison is post-substrate R vs compiled" framing
+  intended.
+
+Repo name: `ledgrcore-spike` (clearer intent than `ledgrcore` until the
+spike concludes "build authorized"; renamed to `ledgrcore` at that point
+as a one-time GitHub operation if the verdict goes that way).
+
+The horizon's K1 spike specification (the four load-bearing numbers, the
+decision-rule thresholds, the C++ vs Rust language comparison) remains
+authoritative. The separate-repo spike implements that spec against
+post-v0.1.8.10 production R and feeds results back to a future ledgr
+horizon update.
+
+**Result fed back 2026-06-01:** the K1 measurement spike completed all
+36 cells in the `ledgrcore-spike` repo. Verdict authored at
+`inst/design/spikes/k1_measurement_spike/verdict.md` (commit
+`7618230`). The repo-split decision is validated by the outcome — the
+spike ran the full Stage 1 spec → Stage 2 R reference → Stage 3 Rust
+extendr → Stage 4 C++ cpp11 → Stage 5 measurement → Stage 6 verdict
+cadence without entangling ledgr's R-side cadence or build surface.
+The repo remains named `ledgrcore-spike` for now; the
+`ledgrcore` rename is conditional on the maintainer accepting the
+verdict's narrow build authorization (inline-output design only) and
+on the additional ledgr-side gates landing (per the 2026-06-01
+Architecture B and ephemeral-attribution entries below). See the
+2026-06-01 [architecture] K1 measurement-spike verdict horizon entry
+below for the full disposition.
+
+This entry records direction, not committed work.
+
+
+<a id="open-078"></a>
+
+### 2026-06-01 [architecture] R-side data structures as shared substrate for compiled-core path
+
+Source-code analysis of Backtrader (`mementum/backtrader` on GitHub) during
+v0.1.8.9 closeout discussion: Backtrader runs ~127 us/bar at the LDG-2476
+peer-benchmark shape (500 inst x 1260 bars) in pure Python — no Cython, no
+compiled core. Its lead over ledgr at that shape (~1.6-2x post-v0.1.8.9)
+comes from architectural choices that do not require leaving the host
+language:
+
+- `array.array('d')` C-level contiguous double storage for all price and
+  indicator series, indexed by integer offset (`backtrader/linebuffer.py`,
+  `self.array = array.array(str('d'))` and `__getitem__` as
+  `self.array[self.idx + ago]`).
+- Integer-cursor advance per bar (`self.idx += size`) rather than per-bar
+  context object construction.
+- Vectorized indicator precompute via the `once()` method, with strategy
+  callbacks running event-based against the precomputed C arrays.
+- Inline fill emission to in-memory Python lists, no event-log
+  reconstruction phase.
+
+ledgr already matches indicator precompute (TTR fast path + series_fn).
+The other three are R-addressable through data-structure work, not
+compilation. That changes the framing of the v0.2.x compiled-core
+conversation.
+
+**Substrate framing.** Better R-side data structures pay off twice. Once
+as direct R-side optimization in v0.1.9 (typed primitive `state$positions`
+matching inventory A3, reusable pulse-context env matching A5/A6,
+matrix-canonical next-bar matching B2, ephemeral memory-handler inline
+equity accumulation removing the sweep-summary reconstruction pass). And
+again as the substrate any future `ledgrcore` would have to consume across
+the R-to-compiled boundary. Bad data structures cap a compiled core's
+per-pulse ceiling at the strategy-callback boundary, because the compiled
+core still pays R-side ctx construction per call. Good data structures
+remove that cap. So data-structure investment is no-regret regardless of
+whether K1 follows.
+
+**K1 trigger reframing.** The K1 entry above gates the compiled-core build
+on "if ledgr is within ~2x peer comparator after v0.1.8.9, ledgrcore is
+maintenance overhead with marginal payoff." v0.1.8.9 shipped with the
+phase-separated peer benchmark at 1.12x Backtrader on engine time and 1.50x
+on total wall (per the LDG-2476 Batch 8 closeout addendum above). By the
+K1 entry's own gate, the compiled-core build is no longer the
+empirically-supported automatic next step.
+
+A cleaner gating shape going forward:
+
+- v0.1.8.10 invests in the residual single-core lanes (sweep-ephemeral
+  reconstruction, R-side substrate, read-path). The strategy callback
+  contract addendum (`ctx$vec`, `ctx$idx()`, bulk
+  `ctx$vec$feature(feature_id)`) is bound by the 2026-06-01 strategy
+  callback synthesis and lands in this cycle.
+- v0.1.9 invests in target-risk layer plus post-optimization primitive-
+  internals / substrate planning gates per the roadmap.
+- K1 is reframed from "automatic v0.2.x next step" to "ambition-tier
+  choice triggered by either (a) post-v0.1.8.10 / post-v0.1.9 measurement
+  via the `ledgrcore-spike` external repo showing R-side has reached its
+  ceiling and the residual gap to Backtrader is still material, or (b)
+  demand for Polars/Rust-class throughput that pure-R cannot reach
+  (Ziplime's 12.4s on M3 vendor reference is the orientation number for
+  that tier)."
+
+The maintainer's stance during v0.1.8.9 closeout: exhaust R-side
+optimizations, especially data structures, before committing to a
+compiled core. The Backtrader source-code evidence supports the stance —
+they got their lead from data structures, not compilation.
+
+This entry records direction, not committed work. `ledgrcore` remains
+parked behind the gates listed in the 2026-05-30 entry above, plus
+the addition of "R-side substrate must be exhausted first" as a new
+gate informed by the Backtrader analysis.
+
+
+<a id="open-079"></a>
+
+### 2026-06-01 [architecture] Architecture B: in-place hot-frame compilation as alternative to ledgrcore
+
+The K1 measurement spike in the external `ledgrcore-spike` repo
+measures **Architecture A**: a separate compiled fold core that owns
+the loop and calls back into R for the strategy. Preliminary K1 data
+(15 of 36 cells at the time of writing) surfaces an architectural
+alternative the horizon's K1 framing did not name explicitly:
+**Architecture B — keep the fold loop in R; compile the hot inner
+work; call from R per pulse rather than per fill**.
+
+Architecture B has two distinct sub-paths with very different costs.
+They must not be conflated:
+
+**B1: extend the existing collapse-doctrine pattern (no new language).**
+ledgr's `Imports: collapse` (v0.1.8.7 ADR 0004) gives ledgr access to
+C-level routines via an R-callable API. Examples already in
+production: `collapse::setv()` for event buffer writes (v0.1.8.9 L2/L3);
+`collapse::gsplit()` for per-instrument bucketing (v0.1.8.10 Spike 2's
+re-confirmed doctrine). B1 means writing more ledgr R code to use
+collapse primitives wherever they fit. **Strictly no new compiled
+source in ledgr's tree.** Bounded by what collapse expresses: parallel
+array operations, grouped reductions, in-place writes. Weak at
+serial-state-dependent loops (FIFO lot accounting cannot be expressed
+in collapse primitives directly). Most of the obvious B1 wins are
+already captured by v0.1.8.7 and v0.1.8.9.
+
+**B2: add custom compiled hot frames inside ledgr via cpp11.**
+ledgr today has no `src/` directory and no C++ source. B2 would add
+`LinkingTo: cpp11` to `DESCRIPTION` and write per-pulse hot frames as
+C++ functions called from the R fold loop. **This is new compiled
+source in ledgr's own tree.** Pattern is mature: cpp11 is what
+tidyverse uses (vctrs, readr, dplyr internals); CRAN-distributable
+without additional friction; requires only the standard R-package C++
+toolchain (Rtools on Windows; system compiler elsewhere — what every
+R developer already has if they install any compiled CRAN package).
+
+The architectural cost ladder:
+
+| | New language in ledgr tree | Build toolchain | Distribution |
+|---|---|---|---|
+| B1 (more collapse)        | No  | None new (collapse is an R `Imports`) | None new |
+| B2 (cpp11 hot frames)     | Yes (C++) | Standard R-package C++ build | One package, one CRAN release |
+| A (separate `ledgrcore`)  | Yes (Rust or C++) | Cross-platform compiled package, potentially Rust | Two packages, two release cycles, cross-package version management |
+
+**B2 is genuinely cheaper than A** — same language work in scope, but
+inside the existing ledgr package rather than as a separate sister
+repo with its own cross-platform build and release lifecycle. B2 is
+NOT free: it adds compiled source to ledgr's tree and a build
+requirement for contributors. But it is much less than A.
+
+The key insight from K1's preliminary data motivating B2: the per-fill
+FFI boundary cost is roughly 1 ms per call. K1's `*_handler_R`
+variants pay ~130k × 1ms = ~130s at xlarge — the per-fill R callback
+dominates total wall regardless of whether the surrounding fold loop
+is R, Rust, or C++. **B2 avoids the same trap by batching: don't call
+the compiled function per fill; call it per pulse with a vector of
+fills.** At xlarge that is ~1260 FFI hops per run, not ~130k.
+
+Concrete shape of B2 (the R fold loop calling a cpp11 hot frame per
+pulse):
+
+```r
+for (t in seq_len(n_pulses)) {
+  prices  <- bars[, t]
+  targets <- strategy_callback(ctx)
+  deltas  <- targets - state$positions
+  fill_idx <- which(deltas != 0)
+  if (length(fill_idx) > 0) {
+    # ONE compiled call per pulse; all fills for this pulse batched.
+    # Implemented as a cpp11 function in ledgr/src/.
+    pulse <- ledgr_apply_pulse_fills(
+      state         = state, lots = lots,
+      instrument_idx = fill_idx,
+      deltas        = deltas[fill_idx],
+      prices        = prices[fill_idx],
+      pulse_idx     = t
+    )
+    state <- pulse$state
+    lots  <- pulse$lots
+    # event buffer extended inside the compiled call
+  }
+  equity[t] <- state$cash + sum(state$positions * prices)
+}
+```
+
+Inside the compiled per-pulse call, the serial dependency between
+fills (lot machinery, position mutation, cash mutation, event
+emission) runs at C-speed without crossing the FFI boundary. The R
+fold loop's per-pulse overhead is small (~6 us/pulse per
+`dev/spikes/spike-amdahl-floor.md`); over 1260 pulses that is ~7.5 ms
+total — negligible.
+
+What B2 avoids vs Architecture A:
+
+- No separate package to maintain (ledgrcore is its own
+  cross-platform build target with its own release lifecycle).
+- No Rust toolchain (cpp11 is C++-only; ledgr already requires the
+  standard R-package C++ toolchain for any CRAN-installable
+  compiled-package dependency, including collapse).
+- Smaller blast radius per hot frame; each cpp11 function is
+  independently scopeable and ships in normal ledgr releases.
+- No strategy-FFI boundary at all (strategies stay R-to-R as today;
+  the strategy callback is just an R function call from the R fold
+  loop).
+
+What B2 does not buy vs Architecture A:
+
+- Architecture A's compiled fold loop can do per-pulse work (bars
+  column read, equity sum, ctx construction) in compiled code; B2
+  keeps that in R. Per the Amdahl-floor spike's empty-fold
+  decomposition, the per-pulse machinery share is non-trivial but
+  bounded. Architecture A's ceiling on this slice is higher.
+- Architecture A produces a substrate the eventual production-grade
+  compiled fold could consume across the FFI boundary. B2's compiled
+  hot frames ARE that substrate, just packaged differently.
+
+The K1 spike's four variants do NOT include Architecture B (neither
+B1 nor B2). The closest is `strat_R_handler_inline`, but that is
+Architecture A (compiled fold loop calling R only for the strategy
+callback). It does not measure "R fold loop + compiled per-pulse fill
+batching."
+
+Implications for the K1 verdict and ledgr's compiled-core direction:
+
+- The K1 verdict in `ledgrcore-spike` answers Architecture A's
+  question; Architecture B remains unmeasured.
+- If K1's `strat_R_handler_inline` lands at 5-10x at xlarge
+  (Architecture A's realistic ceiling), B2 may capture 60-90% of the
+  same wall recovery at a fraction of the architectural cost. Build
+  authorization for `ledgrcore` should weigh this against B2's lower
+  cost rather than treating Architecture A's threshold-cross as
+  automatic.
+- The v0.1.8.10 Round-3 substrate decision (fold-owned FIFO
+  accounting per L7 Ticket 2) is no-regret for either architecture.
+  It positions the substrate cleanly for both an external compiled
+  fold core AND for an R fold loop calling compiled per-pulse fill
+  processors.
+
+> **Status update 2026-06-05.** The B2 "simplest first cut" has
+> partially shipped: LDG-2522 in v0.1.8.10 implemented FIFO lot
+> machinery + event buffer extension + cash / position update in cpp11
+> for spot-asset accounting on the ephemeral / memory-backed boundary.
+> The peer benchmark at `dev/bench/peer_benchmark/peer_benchmark.md`
+> records the result: 5x engine speedup vs canonical R, 0.20x of
+> Backtrader engine time, parity validated against canonical ledgr at
+> zero diff across equity, cash, and position proxy on the
+> 500-instrument SMA-crossover fixture. The "B2 measurement spike"
+> promoted hook below is stale: B2 was measured AND shipped for
+> spot-FIFO scope, not pending measurement. The forward B2 scope is
+> incremental expansion -- per-pulse equity compilation, fully compiled
+> event buffer extension at remaining write sites, bars column read in
+> compiled code, non-spot accounting models when derivatives / FX /
+> margin work begins, and durable-path integration -- all scoped
+> against the closed `compiled_accounting_model` enum (2026-06-02
+> scope-guard entry). See the 2026-06-05 post-LDG-2522 entry for the
+> current optimization picture and the Architecture A status update.
+
+Promoted roadmap hook (superseded 2026-06-05): the original
+"v0.1.9.x or v0.2.x -- Architecture B2 measurement spike" hook has been
+replaced by two forward items:
+
+- **Shipped (v0.1.8.10).** B2 spot-FIFO accelerator (LDG-2522). See the
+  peer benchmark for measurement.
+- **v0.1.9.x or later -- Incremental B2 expansion.** Per-pulse equity
+  compilation, fully compiled event buffer extension, bars column
+  read, durable-path integration, additional
+  `compiled_accounting_model` values for non-spot asset classes (each
+  requiring its own RFC, parity suite, and closeout per 2026-06-02
+  scope-guard entry).
+
+The B2 spike scoping question (inside ledgr vs separate spike repo)
+was answered by LDG-2522 in favor of "inside ledgr": `LinkingTo: cpp11`
+and `src/` are now part of the package build. Incremental B2 expansion
+follows the same production-grade approach.
+
+This entry does not authorize Architecture B beyond what LDG-2522 has
+already shipped; it records the architectural option, the
+post-LDG-2522 status, and the incremental forward scope. The
+2026-05-30 ledgrcore entry's "R-side substrate must be exhausted
+first" gate (closed by v0.1.8.10) was joined by an "Architecture B2
+must be measured before Architecture A is authorized" gate, which is
+itself closed for spot-FIFO scope by LDG-2522 (see K1 verdict gate 2
+status update).
+
+
+<a id="open-080"></a>
+
+### 2026-06-02 [architecture] B2 spot-FIFO accelerator is not a derivatives accounting model
+
+The v0.1.8.10 LDG-2522 B2 gate is scoped to a spot-asset FIFO
+fill-batch accelerator. The internal ledgr gate is a closed
+`compiled_accounting_model` enum, not a generic boolean compiled-fill
+switch: `NULL` means the canonical R fold path, and `"spot_fifo"` is
+the only compiled accounting model v0.1.8.10 may measure.
+
+This scope guard exists to preserve future derivatives and margin
+accounting work. The spot-FIFO kernel must not be extended into futures,
+options, derivatives, margin, or other instrument-accounting semantics
+by accretion. A future non-spot accounting model needs its own model
+value, RFC, parity suite, and closeout language. Unsupported
+`compiled_accounting_model` values should fail closed with a named error
+rather than silently falling back after partial compiled execution or
+pretending the spot-FIFO kernel is a general instrument engine.
+
+Closeout and attribution language should therefore say "spot-asset FIFO
+fill-batch accelerator" or equivalent. It should not describe LDG-2522
+as shipping a general compiled fold core, a public compiled execution
+mode, or a derivatives-capable accounting engine.
+
+
+<a id="open-082"></a>
+
+### 2026-06-02 [documentation] Documentation, structure, and cleanup release before v0.1.9 features
+
+The v0.1.8.x optimization arc plus the v0.1.8.10 substrate work plus the B2
+compiled spot-FIFO accelerator land a substantial codified architecture that
+is captured in RFCs, decision logs, contracts, and spec packets but is not
+synthesized in any human-discoverable form. The governance pattern is
+working: every load-bearing decision is ratified, recorded, and traceable.
+But the volume has grown past what the maintainer can hold in head, and
+reviewing the codified architecture currently requires mining the governance
+archive.
+
+The next release should be documentation, structure, and cleanup only,
+before any new feature work resumes. The goal is entropy reduction: extract
+codified architectural decisions from RFCs and decision logs, synthesize
+them into a human- and agent-readable form, and make them discoverable
+without mining seven RFCs and thirty decision-log entries.
+
+This expands the previously planned v0.1.9.x maintainer manual scope (see
+the 2026-05-30 [documentation] entry below), which explicitly excluded
+"rewrite of RFC/ADR/spec-packet governance records into articles." That
+exclusion was correct for the v0.1.8.8 window; it is no longer correct
+after the v0.1.8.10 / B2 arc multiplied the codified-decision surface.
+Synthesis is now part of the scope.
+
+Scope additions over the 2026-05-30 maintainer manual entry:
+
+- RFC synthesis pass: extract load-bearing decisions from accepted RFCs
+  into a discoverable index that says "if you are trying to understand X,
+  the binding decisions are these and the others are scaffolding."
+- ADR population: many architectural decisions live as RFC bindings
+  without dedicated ADR records. The ADR directory should be populated
+  where the decision has stabilized.
+- Decision-log synthesis: the sister-repo decision-log pattern is great
+  archaeology; the equivalent ledger-side synthesis should be a
+  discoverable artifact, not a chronological dump.
+- Vignette refresh: who-ledgr-is-for, why-r, strategy-development, and
+  research-workflow articles need updates reflecting the post-v0.1.8.10 /
+  B2 reality. Ephemeral sweep is now a real sweep mode at scale; the
+  parameter-exploration economics shifted from "expensive but possible" to
+  "feasible at serious-research scale." The articles should say so.
+- User-facing financial research-software disclaimer: add a plain-English
+  disclaimer surface and modest links from README / introductory docs if the
+  review accepts the 2026-06-01 disclaimer entry.
+- Performance-arc narrative: a coherent v0.1.8.x story that names what got
+  faster and how to attribute it. Internal-facing first; external
+  publication (R/Finance talk, blog post) is a follow-on decision.
+- `contracts.md` audit and structural pass: first check whether the contract
+  file is stale after v0.1.8.10, then organize by surface (execution-spec,
+  fold-engine, output-handler, lot-accounting, ctx, etc.) rather than
+  chronologically if that preserves or clarifies current semantics.
+- Internal compiled-accounting documentation
+  (`compiled_accounting_model` enum scope guard) for future contributors
+  and future-self.
+
+Tone target: the documentation should be human-readable AND agent-readable
+AND a little fun to read. Not dry reference material. Prose with a point of
+view, examples that teach, a maintainer voice that signals "this was
+thought about, here is why." Dry reference is what RFCs and contracts.md
+already do; the synthesis layer earns its place by being more readable than
+the source.
+
+Sequencing rationale: features can wait; entropy management cannot. The
+risk of deferring is that the next architectural decision is made against a
+codified surface the maintainer no longer has full visibility on, which is
+exactly the failure mode the RFC discipline was built to prevent. v0.1.9
+target risk, v0.1.9.x crypto-readiness, walk-forward, and other planned
+feature work sit behind this release.
+
+Active planning packet: v0.1.8.11, modeled on v0.1.8.00 as a prep-release
+that precedes the next feature cycle. The roadmap entry expands and
+re-sequences the existing v0.1.9.x maintainer manual milestone.
+
+
+<a id="open-083"></a>
+
+### 2026-06-01 [optimization] Ephemeral-mode xlarge wall attribution as gate for ledgrcore / Architecture B2 commit
+
+**Maintainer goal:** ephemeral mode should be fast. The current xlarge
+ephemeral baseline is ~372.55s per the workload-grid measurement
+(post-v0.1.8.9; cited by Codex in the v0.1.8.10 Round-2 review against
+`v0_1_8_9_release_closeout.md`). Reducing this is the user-facing
+optimization target for v0.1.9-class work.
+
+The K1 measurement spike (Architecture A) and the Architecture B2
+spike (above) both attack the **fold-loop slice** of ledgr's wall:
+FIFO lot accounting + position / cash updates + event emission +
+per-pulse equity. Per the v0.1.8.10 Round-3 Spike 12 measurement,
+the lot-machinery slice at xlarge synthetic was ~30s. Adopting a
+compiled fold core would compress that slice from ~30s to single-
+digit milliseconds — a **~30-50s wall recovery on the ~372s xlarge
+ephemeral cell**, roughly **8-15% wall reduction**. Meaningful but
+not transformative.
+
+The **other ~85% of ledgr's xlarge ephemeral wall is unmeasured.**
+Candidates for where it lives, in order of suspicion based on prior
+spike evidence:
+
+- **Per-pulse ctx construction with helper attachment**
+  (`ledgr_update_fast_pulse_context_helpers` at `R/fold-engine.R:196-221`).
+  v0.1.8.10 Round-3 L6 (Spike 4 disposition) identified this as the
+  actual cost surface — Spike 4 measured only bare `list()` allocation
+  (~7.5ms total at xlarge, invisible), but v0.1.8.8 Batch 2 telemetry
+  attributed ~0.9% of fold-loop time to ctx construction (~1.8s at
+  xlarge), which means the helper attachment is where the cost lives.
+  Direct profiling required.
+
+- **Feature engine per-pulse cost.** Runtime projection lookup,
+  feature-table materialization, alias-map resolution (per accessor
+  call until the v0.1.8.10 accessor RFC bulk-read lands). Unmeasured
+  directly; share could be substantial on feature-heavy strategies.
+
+- **Memory output handler `meta` list column residual** (v0.1.8.9 L8).
+  The setv fix recovered most of the buffer cost but the `meta` list
+  column bounds setv's win. Quantified roughly in v0.1.8.9 (~75s
+  ephemeral-specific recovery from the memory handler fix); residual
+  unclear.
+
+- **Strategy callback per-pulse cost.** Strategy is user code so this
+  is partially uncompressible, but the surrounding R-side invocation
+  machinery (target validation, signature handling, etc.) may be
+  larger than the Amdahl-floor spike's ~6 us/pulse suggests on
+  production strategies.
+
+- **Telemetry collection** when enabled. Per-pulse sampling stride
+  affects this; default-off in production but worth knowing the cost
+  envelope.
+
+- **Reconstruction pass non-lot work.** Per Round-3 L1 the lot machinery
+  is the dominant share (synthesised at ~93%, with Codex's caveat that
+  the decomposition was inferred across two fixtures). The remaining
+  ~5-10% includes cash cumsum, fills tibble materialization, metrics
+  computation. Small but worth quantifying.
+
+- **Pulse-seed RNG derivation.** v0.1.8.10 Spike 8 measured this at
+  0.14s standalone at xlarge — below v0.1.8.10 threshold but
+  non-zero.
+
+What this spike must do:
+
+- Run an attribution spike against the LDG-2479 `density_high_xlarge_ephemeral`
+  cell with Spike 11-shaped subphase telemetry exposing both engine
+  and results phases.
+- Within the engine phase, decompose per-pulse cost into ctx
+  construction (with helper attachment isolated), strategy callback,
+  fill loop, lot machinery (separately attributable post-Ticket 2
+  fold-owned accounting), event emission, and equity computation.
+- Within the results phase (whatever remains after Ticket 1 / Spike 11
+  measurement), attribute to fills materialization, metrics
+  computation, and any other residual.
+- Produce a Pareto attribution: which 3-5 sub-frames account for 80%
+  of xlarge ephemeral wall?
+- Output: `inst/design/spikes/ephemeral_wall_attribution_spike/attribution_synthesis.md`
+  with concrete per-frame us/pulse and us/fill numbers, plus
+  recommended sequencing for v0.1.9 optimization tickets.
+
+This spike is a **gate on both ledgrcore and Architecture B2 commitments.**
+Specifically:
+
+- IF the fold-loop slice is < ~15% of xlarge ephemeral wall: neither
+  Architecture A nor B2 is the highest-leverage v0.1.9 optimization.
+  The maintainer should prioritise whichever sub-frame the attribution
+  spike identifies as dominant. K1 verdict still informs the
+  compiled-core question but does not justify immediate build
+  authorization.
+- IF the fold-loop slice is 30-50%+ of xlarge ephemeral wall:
+  Architecture B2 spike runs next, then A vs B2 decision per the
+  B2 horizon entry above.
+- IF the attribution spike surfaces a clear larger lever (e.g. ctx
+  helper attachment at ~40% of wall): that lever takes v0.1.9
+  precedence; ledgrcore and B2 both defer.
+
+The v0.1.8.10 Round-3 constraints carry forward: this attribution
+spike runs post-v0.1.8.10 (so it measures against the substrate-
+decision shape including fold-owned accounting), uses the same
+LDG-2479 grid cells, follows the same parity / determinism gates,
+and produces a verdict in the same shape as v0.1.8.9's
+architecture_synthesis.
+
+> **Status update 2026-06-05.** This entry's "gate on both ledgrcore and
+> Architecture B2 commitments" framing is stale. LDG-2522 shipped the
+> B2 spot-FIFO accelerator in v0.1.8.10 with peer-validated 5x engine
+> speedup; the B2 commitment is no longer pending. The engine-dominance
+> assumption that justified the gate framing (engine ~85% of wall) is
+> also wrong: post-LDG-2522 measurement shows engine is 42.5% of B2-row
+> wall, with results (26.6%) and ingestion (30.8%) larger combined. The
+> "v0.1.9 promoted hook" below is demoted: this attribution spike is now
+> reference forensic work, available when a real perf push needs sub-
+> frame decomposition (e.g. results-phase decomposition before attacking
+> the 9.89s reconstruction lever). It is not a v0.1.9 release headline,
+> not a calendar milestone, and the gate cited in the K1 verdict entry
+> below has been reframed accordingly. See the 2026-06-05 post-LDG-2522
+> entry for the current optimization picture and the Architecture A
+> status.
+
+Promoted roadmap hooks (superseded 2026-06-05):
+
+- **Reference forensic work, no scheduled trigger.** Run an attribution
+  spike when a specific perf push needs sub-frame decomposition (e.g.
+  before attacking the results-phase 9.89s reconstruction lever or the
+  ingestion-phase `read.csv` lever). The original v0.1.9 promotion has
+  been demoted: this spike's findings inform but do not gate any
+  specific release.
+- **v0.1.9.x or later -- Highest-leverage attack on dominant
+  attribution finding.** Per the 2026-06-05 post-LDG-2522 entry, the
+  top candidates by absolute wall saving are: results phase canonical
+  materialization (9.89s), ingestion phase (11.43s with
+  `data.table::fread` or arrow), and engine remaining R machinery
+  (15.77s via R-side substrate). Scoping a v0.1.9.x perf packet
+  against any of these may or may not require this attribution spike
+  as input.
+
+This entry does not authorize the attribution spike scope or the
+follow-on optimization work; it records the original (now reframed)
+gate framing and preserves the analysis of where post-LDG-2522 wall
+likely lives. The 2026-05-30 ledgrcore entry's gates and the
+Architecture B2 entry's gates are now joined by an "xlarge ephemeral
+wall attribution should be run when an actual compiled-core
+authorization decision is on the table" cue -- a conditional cue, not
+a v0.1.9 calendar gate (see K1 verdict gate 3 status update for the
+current framing).
+
+
+<a id="open-084"></a>
+
+### 2026-06-01 [architecture] K1 measurement-spike verdict: compiled fold core authorized for inline-output design only
+
+The K1 measurement spike in the external `ledgrcore-spike` repo
+completed all 36 cells (4 boundary variants × 3 implementations ×
+3 scales) on 2026-06-01. Verdict authored at
+`ledgrcore-spike` `inst/design/spikes/k1_measurement_spike/verdict.md`
+(commit `7618230`).
+
+**Headline numbers (xlarge cells, ratios of compiled vs R median wall):**
+
+| Boundary variant            | Rust vs R | C++ vs R |
+|:----------------------------|----------:|---------:|
+| `strat_static_handler_inline` (ceiling) | 151.20× | 32.73× |
+| `strat_R_handler_inline` (realistic inline-output) | 47.33× | 10.14× |
+| `strat_static_handler_R` (R handler per fill) | 1.00× | 1.08× |
+| `strat_R_handler_R` (both R callbacks) | 0.97× | 1.02× |
+
+**Decision-rule outcome (split-met):** the horizon's 5× build-authorized
+threshold is exceeded by orders of magnitude on the two inline-output
+cells; the two R-handler-per-fill cells fall under 1.5× (park
+threshold). The K1 verdict is therefore **conditional build
+authorization**: build is justified only for a production ledgrcore
+design that keeps fill-event accumulation inside the compiled loop
+and materializes the event frame once. A production design that calls
+an R output handler per fill is parked by the verdict — the per-fill
+R callback dominates total wall regardless of whether the surrounding
+fold loop is R, Rust, or C++.
+
+**Language verdict (with caveat):** Rust extendr is the measured
+runtime winner on the viable inline-output cells (Rust 4.6× over C++
+on `strat_static_handler_inline` xlarge; Rust 4.7× over C++ on
+`strat_R_handler_inline` xlarge). C++ cpp11 retains lower R-package
+integration friction (cleaner `R CMD INSTALL .` path; the Rust path
+required a custom dev-DLL loader during spike Stage 3).
+
+**Build-flag asymmetry caveat (open).** The Rust crate was built with
+`cargo --release` (opt-level=3 + ThinLTO defaults). The C++ path went
+through `R CMD INSTALL .` which inherits R's Makevars defaults
+(typically -O2, no LTO). The methodology note records the toolchain
+versions but does not equalize the optimization flags. A C++ rebuild
+with `PKG_CXXFLAGS = -O3 -flto` in `src/Makevars` may close most or
+all of the Rust-vs-C++ gap on the inline cells, in which case the
+language verdict compresses to "essentially tied; C++ has lower
+integration friction." The build-flag check is a precondition for any
+production language decision; the verdict's narrow build
+authorization is independent of which language wins.
+
+**What the verdict does NOT authorize:**
+
+- It does not authorize an immediate `ledgrcore` build. The
+  authorization is narrow (inline-output design only) and is gated by
+  two further ledgr-side decisions (Architecture B2 measurement and
+  xlarge ephemeral wall attribution per the 2026-06-01 entries above).
+- It does not authorize the `ledgrcore-spike` → `ledgrcore` repo
+  rename. That happens only if Architecture A is chosen over
+  Architecture B2 AND the attribution spike confirms the fold-loop
+  slice warrants the compiled-core architectural cost.
+- It does not address ~85% of ledgr's xlarge ephemeral wall. The K1
+  spike measured the minimum-viable fold loop (FIFO lot accounting,
+  position/cash updates, event emission, equity computation). The
+  remaining ~85% of ledgr's xlarge ephemeral wall lives in machinery
+  the K1 charter deliberately excluded (cost resolver, feature
+  engine, ctx helper attachment, durable I/O, telemetry, runtime
+  projection). The 2026-06-01 ephemeral attribution entry above is
+  the path to surfacing those.
+
+**Gates that remain binding** (from prior horizon entries):
+
+1. **R-side substrate must be exhausted first** (2026-05-30 ledgrcore
+   entry). v0.1.8.10 shipped the substrate closeout and the scoped B2
+   spot-FIFO opt-in; this gate is no longer pending.
+   *Status: closed.*
+2. **Architecture B2 must be measured before Architecture A is
+   authorized** (2026-06-01 Architecture B entry above). The B2
+   spot-FIFO gate ran in v0.1.8.10 for memory-backed sweeps, but that does
+   not authorize a general compiled fold core or durable compiled integration.
+   K1 verdict does not substitute for the remaining A-vs-B2 product
+   comparison.
+   *Status update 2026-06-05: closed for spot-FIFO scope by LDG-2522
+   (peer-validated 5x engine speedup; see 2026-06-05 post-LDG-2522
+   entry). Remaining B2 surface scope -- per-pulse equity compilation,
+   non-spot accounting models (futures / margin / FX), full durable-path
+   integration -- requires its own measurement when those decisions are
+   on the table.*
+3. **Xlarge ephemeral wall attribution must complete before either
+   compiled-core path is authorized** (2026-06-01 attribution entry
+   above). The K1 verdict explicitly anticipates this in its
+   "lower leverage than the dominant ledgr-side residual" caveat.
+   *Status update 2026-06-05: reframed as conditional-on-Architecture-A-
+   decision. Architecture A is functionally parked (see 2026-06-05
+   post-LDG-2522 entry) because engine is now 42.5% of B2-row wall, not
+   the ~85% the original gate framing assumed. This gate is not a
+   v0.1.9 calendar obligation; it fires only when an A authorization is
+   actually being considered, which is not currently scoped.*
+
+**Sequencing forward:**
+
+- Next ledgr-side spike: the ephemeral xlarge wall attribution spike
+  per the 2026-06-01 attribution entry. Output decides whether the
+  fold-loop slice (K1's domain) is even the right v0.1.9 optimization
+  target.
+- IF the attribution surfaces the fold-loop slice as a meaningful
+  share of wall: the Architecture B2 spike runs next. K1 verdict +
+  B2 verdict + attribution verdict combine into the A-vs-B2 decision.
+- IF the attribution surfaces a different dominant lever (e.g. ctx
+  helper attachment, feature engine cost, durable I/O): both K1 and
+  B2 defer; the dominant lever takes v0.1.9 precedence.
+- IF the attribution surfaces no single dominant lever (e.g. wall is
+  diffuse across many sub-frames): the maintainer makes a
+  cost/benefit judgment that may include Architecture B2 as one of
+  several v0.1.9.x lanes.
+
+**Other findings from the spike worth preserving:**
+
+- The pure-R fold loop at the v0.1.8.10 substrate shape is genuinely
+  fast on the compiled-ceiling case (R `strat_static_handler_inline`
+  large = 80ms; xlarge = 720ms). The compiled gap is "merely" 30-150×,
+  not 1000×+. R-side substrate work is competitive with compiled
+  cores in absolute terms; the gap remains because compiled fold
+  loops have no R interpreter overhead per pulse.
+- The per-fill R callback boundary cost is roughly 1ms per call (~135s
+  / 130k fills at xlarge). This is the cost ceiling that any compiled
+  architecture pays if it calls R per fill — and it is the same cost
+  Architecture B2 would pay R→compiled per pulse (~1260 hops/run
+  instead of ~130k). The boundary direction is symmetric; the
+  frequency is the decision variable.
+- The K1 spike validated the spec packet → R reference → Rust extendr
+  → C++ cpp11 → measurement → verdict cadence with explicit per-stage
+  hand-offs and parity gates. This cadence is portable to future
+  cross-language measurement work if any is scoped.
+
+This entry does not authorize work; it records that the K1
+measurement spike is complete with a narrow build authorization, that
+two further ledgr-side gates remain binding, and that the ephemeral
+attribution spike is the appropriate next move.
+
+
+<a id="open-085"></a>
+
+### 2026-06-05 [optimization] Post-LDG-2522 ephemeral wall picture and Architecture A status
+
+The v0.1.8.10 B2 spot-FIFO accelerator (LDG-2522) shipped with
+peer-validated engine speedup. Numbers from
+`dev/bench/peer_benchmark/peer_benchmark.md` v0.1.8.10 record bundle,
+same fixture, same seed, 500-instrument 5-year SMA crossover:
+
+```text
+B2 spot-FIFO ephemeral:
+  Ingestion:  11.43s  (30.8%)
+  Engine:     15.77s  (42.5%)
+  Results:     9.89s  (26.6%)
+  Total:      37.13s
+
+Canonical ephemeral baseline:
+  Engine:     79.39s  (B2 cut to 15.77s -- 5.0x engine speedup)
+
+Backtrader same fixture:
+  Engine:     78.54s  (B2 is 5.0x faster)
+  Results:     0.15s  (B2 is 66x slower here)
+  Ingestion:   0.67s  (B2 is 17x slower here)
+```
+
+The wall composition has flipped: engine is no longer the dominant
+share. Results plus ingestion together are 21.32s -- larger than
+engine. That reframes the post-LDG-2522 optimization picture and the
+Architecture A business case.
+
+**Realistic optimization options after the FIFO compilation:**
+
+1. Results phase canonical materialization (9.89s). Event-stream to
+   equity / fills / trades reconstruction in R. Backtrader does its
+   results phase in 0.15s (66x gap), reflecting that ledgr materializes
+   canonical tibbles while Backtrader writes raw CSV -- but the ratio is
+   far beyond that justification alone. Fills read-back super-linearity
+   at xlarge (flagged in prior horizon entries) lives here. Compiled
+   materialization or vectorized event-stream collapse looks like the
+   biggest absolute lever in the stack.
+
+2. Ingestion phase (11.43s). `read.csv` plus timestamp normalization
+   plus in-memory bars / features / projection. Backtrader does the
+   equivalent in 0.67s. `data.table::fread` or arrow CSV would cut the
+   `read.csv` chunk by roughly 10x. Cheap fix, large absolute payoff.
+
+3. Engine remaining R machinery (15.77s). Per-pulse ctx construction
+   with helper attachment, feature engine alias / vector reads,
+   per-pulse equity, target validation. R-side substrate work (integer
+   cursors, matrix-canonical access, ephemeral inline equity
+   accumulation) named in prior horizon as no-regret addresses most of
+   this without needing more cpp11.
+
+4. Compiled spot-FIFO on the durable path. Currently ephemeral-only.
+   Canonical durable runs at 115.12s; durable users see none of the B2
+   win. Extending the accelerator to durable is a real product gap.
+
+5. Incremental B2 surfaces. Per-pulse equity computation in compiled,
+   fully compiled event buffer extension, bars column read. Smaller
+   incremental wins; each shaves seconds off the 15.77s engine slice.
+
+The top two (results plus ingestion) together represent ~21s of the 37s
+total. There is a credible path to a ~15s total wall (~2.5x further
+speedup) without needing Architecture A at all.
+
+**Architecture A status: parked.** Marginal ROI after B2: K1's
+realistic-case R-handler-inline numbers suggest 10-47x R on the
+inline-output cells; B2 is already 5x R on engine. A's marginal speedup
+over B2 is maybe 2-10x on the engine slice (15.77s to 2-5s), cutting
+~10-13s off total wall, taking 37s to 24-27s -- a 1.4-1.5x total-wall
+reduction. The fixed cost of A (separate Rust / C++ package, two release
+cycles, Rust toolchain on users, version coordination, blast radius
+across both packages) is unchanged. A also does not touch results phase
+(9.89s) or ingestion phase (11.43s), which are larger absolute slices
+than what A could improve. Reconsider only when a workload surfaces
+where engine dominates more than 42% of B2-row wall AND results /
+ingestion phases approach their floors. Neither condition holds today.
+
+**Attribution spike reframed.** Earlier horizon entries promoted the
+ephemeral xlarge wall attribution spike as a v0.1.9 gate. That framing
+assumed engine was ~85% of wall; reality after LDG-2522 is 42.5%. The
+spike is reference forensic work -- useful when a real perf push needs
+sub-frame decomposition (e.g. results phase decomposition before
+attacking the 9.89s reconstruction lever) -- not a release headline and
+not a calendar gate. See the 2026-06-01 attribution entry's status
+update for the demoted hook framing.
+
+**Distribution argument retracted.** Earlier framings of the opt-in
+spot-FIFO design listed "users need a C++ toolchain" as a reason to
+keep the compiled path opt-in. CRAN and R-universe ship pre-built
+Windows / Mac binaries that include compiled `.dll` / `.so` artifacts;
+GitHub source installs require the standard R-package C++ toolchain
+(Rtools on Windows) regardless of whether spot-FIFO is the runtime
+default, because the cpp11 code is in the build either way.
+Distribution is independent of the runtime default. See the 2026-06-05
+spot-FIFO-default candidate entry for the remaining load-bearing
+reasons.
+
+**Park status (2026-06-05).** All five optimization options above are
+parked as forward direction: available when a real perf push needs
+scope, no scheduled trigger. None are promoted to v0.1.9.x candidates
+in this pass. The v0.1.9 window is target-risk per roadmap; the
+v0.1.9.x slate already carries walk-forward (RFC accepted), the
+spot-FIFO-default candidate (see 2026-06-05 entry below),
+crypto-readiness, target-helper Pass 2, sweep artifact persistence,
+and cost-model API direction. The v0.1.8.x single-core perf arc closed
+with LDG-2522; re-opening it is a maintainer decision against the menu
+above, not a default sequencing assumption. Promoting one or more of
+these options into a v0.1.9.x or later packet is appropriate when (a)
+a specific user-facing wall-time target is named, or (b) a workload
+surfaces that exposes one of the named slices (results / ingestion /
+engine residual / durable / incremental B2) as a binding bottleneck.
+Same park vocabulary as Architecture A: available, no scheduled
+trigger, reconsider on named conditions.
+
+This entry does not authorize any of the five optimization options. It
+records direction so the next perf-tick scopes against accurate
+numbers. The peer benchmark file at
+`dev/bench/peer_benchmark/peer_benchmark.md` is the validation
+reference for further work.
+
+
+<a id="open-086"></a>
+
+### 2026-06-05 [execution] Spot-FIFO as default for ephemeral spot workloads (v0.1.9.x candidate)
+
+The compiled spot-FIFO accelerator (LDG-2522, v0.1.8.10) ships today as
+an explicit opt-in: `compiled_accounting_model = "spot_fifo"` on the
+ephemeral / memory-backed sweep boundary. Default ledgr execution
+remains canonical R. The peer benchmark established that the compiled
+path matches canonical R outputs exactly on the SMA-crossover fixture
+(zero diff on equity, cash, and position proxy across 1260 bars).
+Reading the benchmark result alongside the cpp11 build maturity (one
+release cycle, internal parity infrastructure in place), the question
+"should this be the default for ephemeral spot workloads in v0.1.9.x"
+is worth surfacing as a candidate.
+
+**Why this is a v0.1.9.x candidate, not a decision:**
+
+The opt-in design was deliberate. Three of the original reasons are
+still load-bearing:
+
+1. Scope guard. `compiled_accounting_model` is a closed enum;
+   `"spot_fifo"` is the one valid value v0.1.8.10 ships. Default-on
+   would silently apply spot-FIFO semantics to non-spot users when
+   other asset classes land. The 2026-06-02 scope-guard entry binds
+   this explicitly: "Spot-FIFO kernel must not be extended into
+   futures, options, derivatives, margin by accretion."
+2. Parity coverage. The peer benchmark validated parity on ONE fixture
+   (500 instruments, 5y daily, SMA crossover, high-turnover). That is
+   not the same as parity across all strategy shapes, instrument
+   counts, and corner cases (sparse trading, fractional positions,
+   tiny lots, exact-zero fills, ties at fill prices).
+3. Audit-trail intermediate differences. Even with identical final
+   outputs (which the benchmark validates), intermediate diagnostics
+   or event ordering inside the compiled hot frame may differ from
+   the R path. Until those are documented, "different audit shape" is
+   a real reason to keep R canonical for users who introspect
+   intermediate state.
+
+One previously-cited reason is no longer load-bearing: **distribution**.
+CRAN and R-universe ship pre-built Windows / Mac binaries; GitHub source
+installs already require the standard R-package C++ toolchain (Rtools
+on Windows) regardless of whether spot-FIFO is the runtime default,
+because the cpp11 code is in the build. Distribution is independent of
+the runtime default. See the 2026-06-05 post-LDG-2522 entry above for
+the retraction in context.
+
+**Asset-class expansion context (load-bearing):**
+
+The ledgr engine currently supports spot assets only. The long-term
+design intends to support other asset classes: derivatives (futures,
+options, perpetuals), foreign exchange, and potentially margin-traded
+spot products. Each of these requires its own accounting model
+(futures mark-to-market with margin, options valuation with Greeks, FX
+with cross-currency cash management). The closed-enum design of
+`compiled_accounting_model` is the architectural anchor that keeps
+this expansion path clean. The 2026-06-02 entry already names this:
+"Future non-spot accounting models need own model value, RFC, parity
+suite, closeout language."
+
+Making spot-FIFO the default must not erode this architectural anchor.
+Specifically, the default semantics must be:
+
+- **Default = `"spot_fifo"` when the instrument set is spot-only**,
+  where "spot-only" is determined by an asset-class metadata field on
+  instruments (or by the absence of any non-spot instrument) rather
+  than by user opt-in.
+- **Fail closed with named error when the instrument set contains any
+  non-spot asset**, with the error pointing the user at the explicit
+  `compiled_accounting_model` argument once the relevant non-spot
+  model ships.
+- **Never silent fallback or accretion** -- the closed enum stays
+  closed, and silently broadening spot-FIFO semantics to cover
+  derivatives by accident is the failure mode this design prevents.
+
+This means the "default = spot_fifo" decision is not a single
+configuration flip. It is: (a) an asset-class detection mechanism on
+instruments; (b) a default-resolution path that consults that
+mechanism; (c) a fail-closed error path for non-spot detection; (d)
+documentation that names the asset-class expansion intent so future
+maintainers do not treat the default-on behavior as license to extend
+spot semantics to other classes. (a) and (b) are v0.1.9.x scope; (c)
+and (d) are pure design.
+
+**Prerequisites before flipping the default in v0.1.9.x:**
+
+- Broader parity sweep across strategy shapes (mean-reversion,
+  momentum, rebalanced index, pair-trading), instrument counts (10 /
+  100 / 500 / 2000), and corner cases (sparse trading, fractional
+  positions, tiny lots, ties at fill prices, exact-zero quantity
+  fills).
+- Audit-trail documentation comparing intermediate event ordering and
+  diagnostic shape between the R and compiled paths.
+- Asset-class metadata mechanism on instruments plus default-resolution
+  path consulting it.
+- Named-error failure path for non-spot detection
+  (`ledgr_compiled_accounting_model_unsupported` or similar).
+- An ADR or RFC binding the default-resolution semantics so the
+  closed-enum architectural anchor is documented in the same place as
+  the default-on flip.
+- A deliberate version tick (v0.1.9.x packet) flipping the default
+  with release notes naming the prerequisites above.
+
+This is a v0.1.9.x candidate, not a committed milestone. It belongs in
+the v0.1.9.x slate alongside walk-forward and the other candidate
+slots; promotion depends on maintainer scoping.
+
+This entry does not authorize the work. It records the candidate and
+the load-bearing asset-class expansion context that must be preserved
+through any default-on decision.
+
+
+<a id="open-087"></a>
+
+### 2026-06-05 [planning] v0.1.9.x line sequencing -- four-tick arc culminating in walk-forward
+
+Following the maintainer decision to scope each v0.1.9.x feature into
+its own sub-tick rather than bundle into a single packet, the v0.1.9.x
+line is a four-tick arc culminating in walk-forward:
+
+- **v0.1.9.1** -- public transaction-cost API
+  (`rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`,
+  accepted, no amendments, spec-cut ready).
+- **v0.1.9.2** -- sweep artifact persistence (RFC cycle accepted
+  2026-06-07; see accepted sweep RFC entry below).
+- **v0.1.9.3** -- target-risk layer + per-pulse fill-loop restructure
+  (`rfc_chainable_risk_oms_policy_boundary_synthesis.md` plus the
+  per-pulse restructure prereq named in the v0.1.9 roadmap section).
+- **v0.1.9.4** -- walk-forward evaluation (culmination;
+  `rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` with
+  Amendments 1 + 2 + Section 17 ticket-cut gates).
+
+**Status update 2026-06-07:** the v0.1.9.2 sweep persistence RFC cycle
+is accepted and the spec packet has opened from
+`inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+The cost-identity consumption obligation from v0.1.9.1 is satisfied by
+the accepted synthesis: retention remains non-identity in Section 4, and
+`cost_model_hash` / `cost_plan_json` are persisted on saved sweep
+artifacts in Section 6.
+
+**Arc rationale: forward-dependency discipline.** Each tick produces
+identity or infrastructure that walk-forward consumes when it
+ticket-cuts at v0.1.9.4:
+
+- v0.1.9.1 cost-API binds `cost_model_hash` and `cost_plan_json` on
+  run config (synthesis Section 6.1). Walk-forward must include
+  `cost_model_hash` in `candidate_key` and `session_id` per cost-API
+  synthesis Section 6.4 + 14:560 future obligation.
+- v0.1.9.2 sweep persistence ships candidate-level retention
+  infrastructure; sweep persistence also records `cost_model_hash`
+  and `cost_plan_json` per candidate (carries v0.1.9.1 identity).
+- v0.1.9.3 target-risk produces the risk-chain identity that
+  walk-forward synthesis Section 3 + Amendment 2 binds as required
+  for fold / session / candidate provenance.
+- v0.1.9.4 walk-forward ticket-cuts with every identity surface and
+  infrastructure prereq already real in code. No stubbed identity
+  slots, no schema migrations, no late-binding obligations to absorb.
+
+**What this reshapes.** The previous roadmap framing had target-risk
+as the v0.1.9 headline and walk-forward as a v0.1.9.x candidate. The
+arc puts target-risk at v0.1.9.3 (still v0.1.9, sequenced within the
+line rather than as the .0 headline) and walk-forward at v0.1.9.4
+with all prereqs satisfied. Target-risk is not pushed to v0.2.x; it
+remains v0.1.9 work.
+
+**Scope-discipline acknowledgment.** Walk-forward could ship earlier
+with stubbed risk-chain and cost-identity slots (one or two schema
+migrations later as target-risk and costs land). The maintainer
+declined the early-ship option in favor of clean sequencing -- each
+tick ships a complete forward dependency before walk-forward
+consumes it. No rebends, no retroactive Section 17 gate additions,
+no v1 schema that needs to be re-migrated pre-CRAN.
+
+**Other v0.1.9.x roadmap candidates** (crypto-readiness spike,
+target-construction-helper Pass 2 extensions, spot-FIFO-default
+candidate per 2026-06-05 entry above, selection-integrity
+diagnostics) are not yet sequenced into this arc. They slot in as
+either small parallel releases between the four named ticks or get
+absorbed into one of them at scoping time. Each is its own scoping
+decision when its window opens.
+
+**Cross-cycle obligations recorded by this sequencing:**
+
+- v0.1.9.2 sweep persistence consumed v0.1.9.1 cost-identity bindings
+  in the accepted synthesis: retention is non-identity, while
+  `cost_model_hash` and `cost_plan_json` are persisted on saved sweep
+  artifacts.
+- v0.1.9.3 target-risk spec packet must produce risk-chain identity
+  that walk-forward's Section 17 gate matrix already references in
+  its current bindings (matrix is set up, needs target-risk to
+  deliver the identity surface it gates).
+- v0.1.9.4 walk-forward ticket-cut packet picks up both cost-identity
+  (from .1, currently a cost-API synthesis Section 14:560 future
+  obligation) and risk-chain identity (from .3) as concrete
+  acceptance criteria on Section 17 gate rows. The current
+  Section 17 gate matrix does not yet name `cost_model_hash`; this
+  must be added at walk-forward packet-cut time, either by amending
+  the walk-forward synthesis or by the spec-cut writer treating the
+  cost-API synthesis Section 14:560 as authoritative.
+
+This entry records the sequencing decision and the cross-cycle
+identity handoffs. Future tickets in v0.1.9.x should respect the arc
+shape; deviations require explicit maintainer override (e.g., a
+parallel small release for target-helper Pass 2 between named ticks).
+
+
+<a id="open-088"></a>
+
+### 2026-06-05 [research] v0.1.9.2 sweep artifact persistence RFC cycle accepted
+
+**Status update 2026-06-07:** the scheduled RFC cycle is complete.
+Maintainer accepted the synthesis and closed the cycle after final review.
+The accepted cycle artifacts are:
+
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_seed.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_response.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_seed_v2.md`;
+- `inst/design/rfc/rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md`.
+
+The v0.1.9.2 spec packet opens from the synthesis. Bound scope is durable
+sweep artifact persistence plus optional retained net portfolio equity/return
+series for completed candidates. The accepted surface includes
+`ledgr_sweep_retention()`, `retain = ledgr_sweep_retention()` on
+`ledgr_sweep()`, save/open/list/info helpers, long and wide retained-series
+accessors, cost identity persistence, reopened-sweep candidate compatibility,
+and a compact DuckDB schema over `sweeps`, `sweep_candidates`, and
+`sweep_returns`.
+
+Explicit non-scope remains load-bearing: no ranking helpers, named selection
+views, winner-picking, automatic promotion, full ledger/fill/trade retention
+for every candidate, benchmark-relative diagnostics, signal decay tooling,
+implementation/cost decay tooling, gross-vs-net cost attribution, or
+walk-forward integration in v0.1.9.2. Promotion from reopened sweeps still
+re-executes the selected candidate from its reproduction key instead of
+committing stored scalar or retained-return rows as a full run.
+
+The cycle also preserves the forward dependency shape from the 2026-06-05
+v0.1.9.x sequencing entry: v0.1.9.4 walk-forward may consume the v0.1.9.2
+sweep-retention substrate, but walk-forward owns fold/window semantics,
+selected-candidate test execution, per-fold provenance, and any per-fold
+retention dimensions.
+
+This entry records acceptance and closure. The synthesis is authoritative for
+ticket-cut gates; this horizon entry does not authorize implementation beyond
+the v0.1.9.2 spec packet.
+
+
+<a id="open-089"></a>
+
+### 2026-06-07 [research] Post-synthesis sweep persistence future obligations
+
+The accepted v0.1.9.2 sweep persistence synthesis deliberately leaves several
+directions out of the first packet. These are future obligations, not active
+scope:
+
+- walk-forward per-fold/per-candidate return-series retention;
+- signal decay substrate;
+- implementation/cost-decay substrate and gross-vs-net definition;
+- selection-integrity diagnostic helpers over retained returns;
+- PerformanceAnalytics adapter;
+- per-instrument and per-trade retention;
+- cross-sweep comparison helpers;
+- sweep extension/append semantics;
+- structured sweep notes;
+- `persist =` narrower than `retain =`;
+- benchmark-relative return decay;
+- snapshot-decoupled sweep reopening;
+- saved-sweep schema migration;
+- pushed-down or lazy wide-return pivots for very large saved sweeps.
+
+The benchmark-relative return-decay item belongs with the v0.2.x benchmark
+context and active-metrics substrate. It should not be implemented in v0.1.9.2,
+because v0.1.9.2 stores net strategy equity/returns only and does not define
+aligned benchmark/reference returns.
+
+This entry is non-authorizing. It keeps the post-synthesis obligations visible
+for later RFC/spec windows without expanding the active sweep persistence
+packet.
+
+
+<a id="open-090"></a>
+
+### 2026-06-07 [research] Peterson (2017) methodology reference added
+
+Added an external methodology reference at
+`inst/design/methodology_references.md` covering Brian Peterson's
+*Developing & Backtesting Systematic Trading Strategies* (2017). Peterson
+is the maintainer of the load-bearing R quantitative-finance ecosystem
+(`quantstrat`, `blotter`, `PerformanceAnalytics`, `PortfolioAnalytics`);
+the paper is his methodological doctrine for systematic strategy
+development.
+
+The reference file maps Peterson's framework to ledgr surfaces, identifies
+strong / partial / non-alignments, and names specific sections that future
+RFC cycles should cite as priors. Three citation targets are most
+load-bearing:
+
+- the **selection-integrity diagnostics RFC seed** (v0.1.9.x slot) should
+  anchor in Peterson's "Probability of Overfitting" section and its cited
+  Bailey / Lopez de Prado, Bailey / Borwein / Lopez de Prado / Zhu,
+  Sullivan / Timmermann / White, Hansen, and Harvey / Liu papers;
+- the **benchmark context RFC seed** (v0.2.x) should anchor in
+  "Choosing a benchmark" -- archetypal / alternative indices /
+  custom tracking portfolios / market observables;
+- the **portfolio optimization scaffolding** future obligation (see entry
+  below) should anchor in "Rebalancing and asset allocation" -- Kelly,
+  optimal-f, LSPM (Vince 2009) -- and the implicit `constrained_objective()`
+  FIXME from quantstrat that Peterson flags on page 4.
+
+The reference document is not user-facing and does not promote to pkgdown;
+it is a maintainer-level methodology prior cited from RFC seeds.
+
+This entry is non-authorizing. It records the methodology lineage so the
+next adjacent RFC cycle has a known citation anchor.
+
+
+<a id="open-091"></a>
+
+### 2026-06-07 [research] Hypothesis recording as a first-class identity artifact
+
+Peterson (2017) treats the testable hypothesis as the load-bearing
+artifact of strategy development: declarative conjecture, predictive
+content, expected outcome, verification test. ledgr today has no
+structured equivalent. Strategy code expresses *how* a strategy acts;
+nothing records *why* the strategy was hypothesized, what its expected
+direction or magnitude was, or how the result will be tested.
+
+The closest existing surface is the v0.1.9.2 sweep `note` argument
+(synthesis Q4 binding: free-text character scalar). The sweep persistence
+synthesis already routes "structured sweep notes" to its F9 future
+obligation. That F9 obligation should expand to cover hypothesis-shaped
+structured notes specifically:
+
+- declared dependent variable (the predicted measurable outcome);
+- declared independent variables (the inputs to the prediction);
+- expected direction / range of the outcome;
+- verification test the maintainer plans to apply;
+- optional links to upstream literature.
+
+A hypothesis recorded this way could travel with the sweep (and any
+promoted run derived from it) as a non-identity attribute. It is
+audit-only: the framework does not act on the hypothesis or verify it
+automatically; it preserves the maintainer's a-priori intent so post-hoc
+HARKing is detectable on review.
+
+Recommended path: defer until v0.2.x and bundle into the structured sweep
+notes RFC; do not pull into v0.1.9.2 scope.
+
+Adjacent surface: a structured hypothesis is related to but distinct from
+a structured *business objective* (which would constrain optimization
+ranges for return, risk, leverage, drawdown). The business-objective
+constructor is named separately in the portfolio optimization scaffolding
+entry below; the two surfaces should land together if and when they ship.
+
+This entry is non-authorizing.
+
+
+<a id="open-093"></a>
+
+### 2026-06-07 [planning] Portfolio optimization scaffolding -- four-level decomposition and architectural footguns
+
+The maintainer plans to build portfolio optimization scaffolding later in
+the roadmap, after the multi-asset / non-spot accounting work and
+intraday support land. This entry records the four-level framing,
+substrate prerequisites, and architectural footguns so the eventual RFC
+cycle starts with a clean foundation.
+
+Peterson's "portfolio optimization" covers at least four distinct problems
+with different substrate requirements:
+
+**Level 1 -- within-strategy weight construction.** Rank-weighting,
+inverse-vol weighting, normalization, rebalance bands. Already on the
+roadmap as v0.1.9.x Target Construction Helper Extensions (Pass 2 of the
+`signal_*()` -> `select_*()` -> `weight_*()` -> `target_*()` pipeline).
+Not really "optimization" in Peterson's sense; deterministic weight
+construction inside a single strategy. No new architecture.
+
+**Level 2 -- single-strategy multi-asset per-pulse optimization.**
+Mean-variance, minimum-variance, max-Sharpe, risk-parity solved inside
+the strategy function for the current asset universe per pulse. Fits
+inside the existing strategy contract (return full named numeric target
+quantities); the optimizer is a deterministic transform from features to
+targets. Needs care on solver determinism (seeded initialization for
+`DEoptim`, `GenSA`, `pso`) and on identity surface (solver choice and
+tolerance enter identity).
+
+**Level 3 -- multi-strategy capital allocation post-hoc.** Take N
+committed runs (or N retained sweep candidates), solve for capital
+weights across them. Kelly, optimal-f, LSPM (Vince 2009), mean-variance
+over strategy return streams. This is meta-level: the optimization input
+is the *output* of ledgr execution, not part of it. Needs substantial
+new substrate (see below).
+
+**Level 4 -- per-strategy position sizing / Kelly-style leverage.** Given
+a strategy with Sharpe X and drawdown distribution Y, what is the right
+Kelly fraction or LSPM allocation? Closest existing analogue is the
+v0.1.9.3 chainable risk layer (target-risk pre-strategy hook), which is
+structurally similar to optimal-f rescaling. The accepted
+`rfc_chainable_risk_oms_policy_boundary_synthesis.md` is the substrate
+prior; Level 4 would extend it with stats-driven sizing rules.
+
+#### Substrate prerequisites
+
+Most prerequisites are already on the roadmap or in flight:
+
+- v0.1.9.1 cost identity (`cost_model_hash`, `cost_plan_json`) -- done.
+  Net returns are well-defined; cost-model swaps do not drift identity.
+- v0.1.9.2 retained net returns -- the input series for any
+  returns-based optimizer.
+- v0.1.9.3 chainable risk layer -- Level 4 substrate and a pre-strategy
+  hook other optimizers can reuse.
+- v0.1.9.4 walk-forward -- rolling estimation window for Level 2 and
+  Level 3 optimizers.
+- v0.1.9.x selection-integrity diagnostics -- the *hard prerequisite*.
+  Peterson's strongest warning is that optimization on overfit inputs is
+  worse than no optimization. CSCV / PBO / DSR confirm the optimizer
+  inputs are not noise.
+- v0.2.x benchmark context -- active-portfolio constraints
+  (tracking-error budgets, IR-maximization objectives).
+- v0.2.x point-in-time data -- factor-model / risk-model inputs without
+  look-ahead.
+- v0.2.x corporate actions and instrument master -- equity-data
+  substrate for serious multi-asset optimization.
+- v0.2.x explicit accounting-critical event types -- needed for capital
+  flow events (deposit, withdraw, rebalance trade) at the portfolio
+  layer.
+- v0.2.x multi-asset / non-spot accounting (futures, margin, FX) -- the
+  flat-to-reduced or increased-to-reduced trade-definition RFC must
+  precede Level 3.
+- Intraday support (sub-daily-pulse, still whole-second) -- for
+  higher-frequency optimization use cases.
+
+Genuinely new substrate that is *not* yet on the roadmap:
+
+- **Multi-snapshot return-stream alignment.** Each ledgr snapshot has
+  its own time base. Multi-strategy allocation over committed runs
+  needs aligned return series across snapshots -- different inception
+  dates, possibly different session calendars if instruments differ,
+  different scoring pulses if strategies disagree on rebalance
+  frequency. Identity-bearing substrate; deserves its own RFC.
+- **Joint return distribution modeling.** Mean / covariance estimation,
+  shrinkage (Ledoit-Wolf), factor-model decomposition (Fama-French,
+  Barra-style), Factor Model Monte Carlo (Jiang 2007, Zivot 2011/2012
+  per Peterson). PortfolioAnalytics has `momentFUN` hooks; ledgr would
+  need either an adapter or its own helpers.
+- **Constrained-objective constructor as a first-class identity
+  artifact.** Peterson is explicit: business objectives should be
+  specified as ranges with min / target / max for return, risk,
+  leverage, drawdown. ledgr has no `ledgr_business_objective()`
+  constructor today. Related to but distinct from the structured
+  hypothesis-recording surface (entry above): business objectives
+  constrain the optimizer; hypotheses describe the predicted outcome.
+- **Capital flow event types.** Deposit / withdraw / rebalance-trade
+  events that change account equity outside the strategy's own fill
+  stream. v0.2.x "explicit accounting-critical event types" likely
+  covers some of this; the portfolio-level aggregation layer is its
+  own surface.
+- **Portfolio-level identity surface.** A new hash
+  (`portfolio_composition_hash` or similar) capturing which strategies
+  are included, at what weights, with what rebalance rule, against
+  what objective. Same identity discipline as `cost_model_hash` and
+  `candidate_key`.
+- **Rebalance scheduling.** Calendar-period / cash-flow-triggered /
+  threshold-triggered rebalancing. Peterson explicitly cautions against
+  continuous-rebalancing assumptions. The schedule becomes an
+  identity-bound artifact.
+
+#### Architectural constraints to preserve
+
+The same load-bearing invariants the rest of ledgr observes, plus a few
+specific to portfolio optimization:
+
+- **No second execution engine.** The optimizer outputs weights /
+  targets; execution still goes through the fold core. For Level 2 this
+  is natural (optimizer is a deterministic transform inside the
+  strategy). For Level 3 the multi-strategy execution is closer to
+  "scenario analysis on saved retained-return series" than "run a new
+  backtest" -- the fold core is not invoked at the portfolio layer.
+- **Identity-bound.** Every optimization output hashes deterministically
+  from its inputs. Solver choice, solver tolerance, random seeds (if
+  any), shrinkage parameters, and constrained-objective parameters all
+  enter identity.
+- **Snapshot-sealed inputs.** Returns going into the optimizer come from
+  sealed snapshots (or sealed saved sweeps); the optimizer cannot reach
+  back into the input data.
+- **Deterministic solvers.** Random-init solvers (`DEoptim`, `GenSA`,
+  `pso`) get explicit seeds derived from the optimization's master
+  seed. PortfolioAnalytics has a precedent here.
+- **Whole-second timestamps.** Rebalance schedules are whole-second; no
+  sub-second portfolio rebalancing.
+- **Adapter over reimplementation.** `PortfolioAnalytics` and
+  `PerformanceAnalytics` already solve the core optimization and
+  risk-statistics problems competently. ledgr should ship the
+  *substrate* (aligned return streams, business-objective constructor,
+  capital-flow accounting, portfolio identity) and adapt to PortA /
+  `pbo` / custom optimizers rather than reimplementing them. This
+  matches the v0.1.9.2 sweep persistence synthesis F5 obligation
+  (PerformanceAnalytics adapter) extended to the optimizer surface.
+
+#### Architectural footguns to avoid
+
+- **Putting portfolio optimization in the fold core.** Levels 3 and 4
+  are meta-level. Smuggling multi-strategy semantics into single-strategy
+  run identity breaks the "one snapshot -> one run -> one identity"
+  contract. Multi-strategy allocation must compose committed runs; it
+  must not extend them.
+- **Shipping the optimizer before selection-integrity diagnostics
+  land.** Optimization on overfit inputs is worse than no optimization.
+  CSCV / PBO / DSR / White's Reality Check are the safety pin on the
+  portfolio-optimization grenade. They must ship first.
+- **Continuous-rebalancing assumptions.** Most academic literature
+  assumes continuous rebalancing; production reality is discrete and
+  expensive. The rebalance schedule must be a first-class
+  identity-bearing artifact.
+- **Reimplementing PortfolioAnalytics or FRAPO.** Peterson and Bernhard
+  Pfaff have spent two decades on these solvers. ledgr does not need to
+  compete; the adapter pattern is the right architectural posture.
+- **Hand-crafting joint-return models inside the strategy function.**
+  Joint-return distribution modeling belongs at the portfolio layer or
+  in a feature-engine extension, not inside individual strategy
+  callables. Strategies remain deterministic functions of features and
+  state.
+- **Treating Level 1 as Level 3.** Within-strategy weight construction
+  (`signal_*()` -> `weight_*()`) is not portfolio optimization. The
+  v0.1.9.x Target Construction Helper Extensions deliberately do not
+  cross into Level 2-4 territory.
+- **Skipping the business-objective constructor.** Optimization without
+  ranges of acceptable / target / maximum return, risk, leverage, and
+  drawdown produces unstable parameter choices. Without an
+  identity-bound `ledgr_business_objective()` the optimizer has nothing
+  to constrain against.
+
+#### Sequencing
+
+```text
+v0.1.9.2  Retained net returns         [Tier 2 substrate]
+v0.1.9.3  Chainable risk layer         [Level 4 substrate]
+v0.1.9.4  Walk-forward                 [rolling-window substrate]
+v0.1.9.x  Selection-integrity diag.    [hard prerequisite for optimization]
+v0.2.x    Benchmark context            [active-portfolio prerequisite]
+v0.2.x    Point-in-time data           [factor-model prerequisite]
+v0.2.x    Multi-asset / non-spot acct  [accounting prerequisite]
+v0.2.x    Corporate actions / IM       [equity-data prerequisite]
+v0.2.x    Intraday support             [optional frequency prerequisite]
+v0.2.x    PA / PortA adapter           [returns-analytics surface]
+v0.2.x+   Portfolio optimization       [Levels 3 / 4 ship after prerequisites]
+v0.3.0    Paper trading                [production calibration]
+v1.0.0    Small-scale live trading
+```
+
+Levels 1 and 2 can ship earlier (Level 1 already roadmapped; Level 2
+could compose into the strategy contract via helpers without new
+identity surface). Levels 3 and 4 are deferred behind the prerequisite
+substrate.
+
+#### Permanent non-goals
+
+- Sub-second / HFT portfolio rebalancing: out per the whole-second
+  timestamp contract.
+- Replacing `PortfolioAnalytics` / `FRAPO` solvers: not the right scope.
+- Live multi-strategy order management before v0.3.0+ paper trading.
+
+#### Citations
+
+- Peterson (2017), "Rebalancing and asset allocation" section -- Kelly,
+  optimal-f, LSPM (Vince 2009), layered objectives, rebalance frequency.
+- Peterson's implicit `constrained_objective()` FIXME from quantstrat
+  (page 4 footnote).
+- Bailey / Lopez de Prado for drawdown-based stop-outs and the "Triple
+  Penance" rule (cited in Peterson's risk-rules section).
+- Vince (2009), *The Leverage Space Trading Model*.
+
+See `inst/design/methodology_references.md` for the full Peterson
+reference.
+
+This entry is non-authorizing. It records the architectural shape so the
+eventual RFC cycle opens with a clean foundation. It does not authorize
+implementation, does not commit to a specific version slot, and does not
+pre-bind any of the substrate prerequisites. The intent is to make the
+architectural footguns visible now so they do not surface as last-minute
+surprises once the product arc completes.
+
+
+<a id="open-094"></a>
+
+### 2026-06-07 [planning] Validation toolkit -- bundling selection-integrity diagnostics with the business-objective constructor under an adapter-first posture
+
+**Status update 2026-09-05: v0.1.9.7 continuation implemented.**
+Business-objective eligibility and native K-Ratio are no longer deferred.
+v0.1.9.7 adds the seven-criterion all-pass objective, diagnostic thresholds,
+closed-trade evidence, a strict-lattice stable-region criterion, and the
+all-candidates `ledgr_sweep_filter()` evidence surface. Objective-filtered
+walk-forward identity, Triple Penance, purging/embargo/CPCV,
+benchmark-relative diagnostics, and portfolio optimization remain deferred;
+the 2026-06-26 entry above is the current business-objective completion ledger.
+
+**Status update 2026-06-15: v0.1.9.6 substrate and diagnostics implemented.**
+The packet shipped the canonical return stream, retained-return panel bridge,
+adapter-shaped projections, native PBO/CSCV after the green spike,
+minimum-track-record length, DSR, deterministic effective-trial clustering, and
+the Selection Integrity teaching surface. The PBO spike reversed the default
+adapter-runtime prior for PBO specifically: `pbo` remains an optional reference
+cross-check, while ledgr ships a native implementation over its retained-return
+panel contract. Business-objective filtering, K-Ratio, Triple Penance,
+purging/embargo/CPCV, benchmark-relative diagnostics, portfolio optimization,
+and walk-forward objective-filtered identity remain deferred. Those deferrals
+were carried forward through the v0.1.9.6 closeout; the later status update
+records which items v0.1.9.7 consumed.
+
+**Status update 2026-06-14: maintainer-amended with a PBO spike gate.**
+The accepted synthesis remains binding, but v0.1.9.6 no longer treats
+PBO/CSCV implementation as unconditional. The packet first ships the return
+substrate and runs a PBO spike that verifies the `pbo` package/API,
+determinism, known-answer/reference-value behavior, ledgr panel contract, and
+adapter-vs-native verdict. Public PBO/CSCV implementation may proceed in
+v0.1.9.6 only if the spike synthesis passes maintainer review. Otherwise
+PBO/CSCV and the dependent business-objective / objective-filtered
+walk-forward identity work defer to v0.1.9.7 or later. The same amendment
+requires the methodological-diagnostics styleguide rule before validation
+method tickets open: ledgr teaches the method, evidence, interpretation,
+limits, failure modes, and references, not only the function call.
+
+**Status update 2026-06-12: consumed by the accepted validation-toolkit
+synthesis.** The RFC cycle this entry anticipated ran to completion on
+2026-06-11/12 (seed v1 -> response -> seed v2 with maintainer decisions
+D1-D4 in-line -> synthesis -> final review APPROVED WITH PATCHES ->
+maintainer acceptance). Binding artifact:
+`rfc/rfc_validation_toolkit_v0_1_9_x_synthesis.md`. The roadmap slot
+this entry rescoped is now the scheduled v0.1.9.6 milestone row. The
+open questions previously listed here were answered by the cycle
+(license posture: MIT core / Suggests adapters; per-period return
+vectors: A-prime sweep-level with the `fold_seq` extension parked;
+stable-region detector and Triple Penance: promoted to v0.1.9.6
+spec-cut as Q1/Q2). Keep this entry visible until the v0.1.9.6 release
+closeout, then sweep to `## Resolved`.
+
+This entry rescopes the v0.1.9.x "selection integrity diagnostics"
+roadmap slot (currently `ledgr_roadmap.md:113`) into a single validation
+toolkit packet that lands after v0.1.9.4 walk-forward closes. The toolkit
+bundles two literatures that share substrate and target the same
+"should this candidate be promoted?" question from complementary angles:
+
+- **Selection-bias correction (Bailey / Borwein / Lopez de Prado / Zhu
+  2014-):** Deflated Sharpe Ratio, Probability of Backtest Overfitting,
+  Combinatorially Symmetric Cross Validation, Triple Penance drawdown
+  rule. The methodology priors are recorded in
+  `inst/design/methodology_references.md`.
+- **Robust strategy evaluation (Pardo 2008):** the nine-characteristic
+  robust-strategy checklist (even trade distribution over time, even
+  profit distribution, long/short balance, stable parameter regions,
+  multi-regime acceptable performance, acceptable risk, stable streak
+  distributions, sufficient n_trades, positive equity trajectory).
+
+#### Adapter-first posture
+
+The toolkit's design stance is *connect to the R ecosystem rather than
+replace it*. Peterson, Lopez de Prado, Pfaff, and Hyndman have spent
+decades building the R substrate for trading strategy evaluation;
+ledgr ships substrate plus orchestration and adapts to existing packages
+for the canonical compute.
+
+The split (subject to verification during the research-input stage):
+
+**Adapter targets:**
+
+- `PerformanceAnalytics` (Peterson, Carl, et al.) -- canonical R
+  performance metrics. Sharpe, Sortino, Calmar, drawdown statistics,
+  VaR, ES, rolling performance, rolling regression. The v0.1.9.2 sweep
+  persistence synthesis Section 11 F5 obligation (PerformanceAnalytics
+  adapter) is pulled forward from generic v0.2.x to land alongside the
+  validation toolkit, since the toolkit depends on PA as a substrate.
+- `pbo` (Matt Barry) for PBO + CSCV computation, if current. The
+  algorithm is also well-specified in the Bailey / Borwein / Lopez de
+  Prado / Zhu *Notices of the AMS* paper, so a native fallback is
+  feasible if the package has decayed.
+- `RPESE` (Chen / Martin et al.) for serial-dependence-aware confidence
+  intervals on performance metrics.
+- `changepoint` (Killick) and `MSwM` for regime-detection adapters if
+  the regime work (currently unscheduled per the regime-detection
+  research slot) is ever promoted to scope.
+
+**Native implementation (no adapter exists or adaptation is wrong-shape):**
+
+- Deflated Sharpe Ratio orchestration (PA may provide precursors but the
+  full deflation step is small).
+- K-Ratio (Kestner via Pardo).
+- Triple Penance drawdown-based stop-out rule.
+- Pardo trade-distribution criteria (1, 2, 3, 7) computed from ledgr
+  fills directly, since `blotter::tradeStats()` consumes blotter's
+  account / portfolio state model and adapting that to ledgr fills
+  would conflict with ledgr's deterministic event-sourced invariants.
+- Stable-region parameter analysis (criterion 4); no R package, small
+  native algorithm.
+- `ledgr_business_objective()` constructor; must be ledgr-native
+  because it is identity-bound and orchestrates the nine criterion
+  checks against ledgr's substrate.
+
+**Deliberately deferred or skipped:**
+
+- Purged k-fold cross validation and embargo (Lopez de Prado 2018,
+  *Advances in Financial Machine Learning*). No R port at production
+  quality; not load-bearing for v0.1.9.x scope since PBO/CSCV plus
+  ledgr's native walk-forward cover the substantive territory.
+- Hierarchical Risk Parity (Lopez de Prado 2016). Routed to the
+  portfolio optimization scaffolding entry above as a Level 3
+  adapter target, not to the validation toolkit.
+
+#### Why bundle selection-integrity and business-objective
+
+The two layers answer the same question from complementary angles:
+Bailey / Lopez de Prado ask "is this candidate's reported Sharpe corrected
+for selection bias?" and Pardo asks "even with bias correction, does the
+underlying structure hold up?" Shipping the business-objective constructor
+without the bias-correction layer is exactly the *Pseudo-Mathematics*
+warning case (Bailey / Borwein / Lopez de Prado / Zhu 2014). Shipping
+selection-integrity without the structural checks leaves the maintainer
+with corrected metrics but no canonical way to threshold them. Bundling
+enforces both at once.
+
+The same Pardo nine-criterion checklist that informs the business-objective
+constructor is also the natural source for the named-constraint taxonomy
+in any future portfolio optimization scaffolding (per the
+2026-06-07 portfolio optimization entry above). The validation toolkit
+is therefore not just a v0.1.9.x deliverable; it is the substrate prior
+that later v0.2.x+ scaffolding consumes.
+
+#### Substrate completion timeline
+
+Walking through the nine Pardo criteria against substrate availability:
+criteria 1, 2, 3, 6, 7, 8 are computable today from promoted-run fills
+and metric kernel outputs; criteria 4 and 9 complete when v0.1.9.2 sweep
+persistence closes; criterion 5 (multi-regime acceptable performance)
+requires v0.1.9.4 walk-forward. The validation toolkit therefore floors
+at v0.1.9.4 close, which aligns with the existing v0.1.9.x slot's
+"after the walk-forward window model stabilizes" framing.
+
+#### Sequencing
+
+```text
+v0.1.9.1  cost-API                  [DONE]
+v0.1.9.2  sweep persistence         [in flight]
+v0.1.9.3  target-risk               [planned]
+v0.1.9.4  walk-forward              [planned; substrate completion]
+v0.1.9.x  validation toolkit        [bundle: Bailey + Pardo; adapter-first]
+v0.1.9.5  docs / teaching cycle     [teaches the full v0.1.9.x arc]
+```
+
+The v0.1.9.5 documentation cycle's coverage expands accordingly. The
+existing 2026-06-05 v0.1.9.5 horizon entry frames it as documenting the
+v0.1.9.x arc; adding validation toolkit to that arc means v0.1.9.5
+teaches strategy validation as a coherent workflow alongside cost-API,
+sweep persistence, target-risk, and walk-forward.
+
+#### Ecosystem citizenship
+
+The adapter-first posture is a deliberate social choice in addition to
+a technical one. ledgr is a citizen of the R quantitative-finance
+ecosystem, not a replacement for it. Peterson maintains
+`PerformanceAnalytics`, `PortfolioAnalytics`, `quantstrat`, `blotter`;
+Pfaff maintains `FRAPO` and the Rmetrics suite; Hyndman maintains
+`forecast`. ledgr's value-add is the deterministic event-sourced
+substrate that makes those packages' analytical layers tractable, not a
+re-implementation of analytics they already ship at production quality.
+Adapter-first signals coalition rather than competition and avoids the
+maintenance debt of duplicating mature code.
+
+#### Research input completed
+
+The deep-research input for the validation toolkit cycle landed at
+`inst/design/research/Validation-Toolkit.md` (2026-06-07). Five
+load-bearing findings move the eventual RFC seed's design space:
+
+1. **`PerformanceAnalytics` 2.1.0 + `RPESE` 1.2.7 are the canonical
+   adapter pairing.** Both maintained, current under Peterson / Carl /
+   Martin stewardship, and the pairing is the natural ecosystem-
+   citizenship choice. RPESE's influence-function methods are
+   deterministic by construction; bootstrap modes are opt-in and
+   seedable, which fits ledgr's determinism invariants.
+2. **DSR and Harvey-Liu haircut already exist in `quantstrat`, not
+   `PerformanceAnalytics`.** Surface names `SharpeRatio.deflated` and
+   `SharpeRatio.haircut`. But `quantstrat` depends transitively on
+   `FinancialInstrument`, which was removed from CRAN on 2025-06-12.
+   Right architectural posture: treat quantstrat code as a *formula
+   donor* (inspect the implementation, write native helpers against
+   ledgr's canonical retained returns) rather than as a dependency.
+3. **`pbo`'s input shape is incompatible with fold-level scalar scores.**
+   It expects a T x N panel of raw returns and performs CSCV internally.
+   The architectural choice is binary: either preserve per-period return
+   vectors per candidate (and feed `pbo` directly as an optional
+   adapter), or accept that walk-forward produces fold-level summaries
+   (and implement PBO/CSCV over scores natively). Cannot coerce.
+4. **Purged K-fold, embargo, and CPCV have no production-grade R
+   adapter.** `PortfolioTesteR` has a helper inside a broader framework
+   but is too narrow to use as canonical. Algorithms are deterministic
+   index construction and leakage exclusion -- fits ledgr's invariants
+   well; native implementation is the right call. AGPL-licensed
+   `pypbo` is the only verified Python comparator and should be avoided
+   entirely.
+5. **HRP via `HierPortfolios` is a clean adapter route** if HRP is ever
+   in scope (per the portfolio optimization scaffolding entry above
+   Level 3 substrate). `PortfolioAnalytics` doesn't expose HRP directly
+   in current CRAN docs.
+
+The research also confirmed that a single `Validation-Toolkit.md`
+research file is the right shape at this stage; the seed and synthesis
+may split selection-integrity and business-objective concerns later at
+implementation-spec time once interfaces stabilize.
+
+#### Open questions for the RFC seed
+
+The research-input stage answered the questions previously listed here
+about package maintenance status (PA 2.1.0 2026-04-11, RPESE 1.2.7
+2026-01-08, `pbo` 1.3.5 May 2022 quiet), PA's lack of direct DSR (it
+lives in quantstrat instead), and `pbo`'s input-shape compatibility
+(incompatible with fold-level scores). Remaining items for the seed
+author:
+
+- Triple Penance original-paper specification (the research did not
+  source-verify the formula; paper-first verification needed before
+  engineering sizing).
+- License posture for ledgr's downstream: if ledgr core must remain
+  outside the GPL family, keep small native formulas (DSR, K-Ratio,
+  Triple Penance) in core and place GPL adapters in optional
+  boundaries; if ledgr is already GPL-compatible, the PA + RPESE
+  adapters are technically and politically the cleanest path. Bind at
+  seed time.
+- Whether ledgr's walk-forward should preserve per-period candidate
+  return vectors (to feed `pbo` directly as an optional adapter) or
+  collapse to fold-level scalar scores (requiring native PBO/CSCV over
+  scores). Substrate question that touches the v0.1.9.4 walk-forward
+  packet's output shape.
+- Stable-region parameter analysis: which detector (2D Gaussian
+  smoothing / local-mean stability / neighborhood SD); the research
+  notes the gap but doesn't propose a methodology.
+- Verification of Hudson & Thames `mlfinlab` successor landscape (the
+  research covered `skfolio` and `pypbo` directionally, not
+  exhaustively); useful for the seed's Python comparison appendix.
+
+#### Non-authorizing closure
+
+This entry rescopes a roadmap slot, records the adapter-first posture,
+and anchors the research input so the eventual RFC cycle opens with a
+clean foundation. It does not authorize implementation, does not commit
+to a specific batch count, and does not pre-bind which packages will be
+adapted (subject to current maintenance verification at seed-cut time).
+When the RFC cycle opens, the roadmap line at `ledgr_roadmap.md:113`
+should be re-scoped from "selection integrity diagnostics" to
+"validation toolkit" at packet-open time per the roadmap-maintenance
+discipline.
+
+
+<a id="open-095"></a>
+
+### 2026-06-07 [planning] Walk-forward fold output -- preserve per-period candidate return vectors for validation-toolkit PBO adapter optionality
+
+**Status update 2026-06-11:** carried forward. The v0.1.9.4 walk-forward
+packet chose the operational scalar-score MVP plus selected-candidate test-run
+evidence; it did not add per-period return vectors for every candidate/fold.
+The substrate question remains parked for the validation-toolkit /
+selection-integrity diagnostics RFC, where native PBO/CSCV-over-scores versus
+adapter-oriented return-panel retention can be decided with the first
+walk-forward session model in hand.
+
+This entry records a substrate observation for the v0.1.9.4 walk-forward
+spec-cut writer, surfaced by the 2026-06-07 validation toolkit entry's
+Finding 3 (the deep-research review found that `pbo`'s CSCV
+implementation requires a T x N panel of raw returns, not fold-level
+scalar scores; see
+`inst/design/research/Validation-Toolkit.md`).
+
+The accepted walk-forward synthesis
+(`rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, Amendments 1 + 2
+and Section 17 ticket-cut gates) binds the operational degradation
+table data contract at Section 16.5 -- per-fold scalar metric values
+for the default print method. That contract is correct as-is for the
+operational reporting surface. The question this entry records is
+whether the v0.1.9.4 spec-cut writer should additionally preserve
+per-period candidate return vectors per fold as a separate retention
+surface.
+
+#### The two options
+
+**Option A -- preserve per-period candidate return vectors per fold.**
+The fold-level scalar metrics from Amendment 2 Section 16.5 remain the
+operational surface; per-period return vectors are an additional
+retention artifact, naturally implemented as an extension of the
+v0.1.9.2 retained-net-returns substrate with `fold_seq` added as the
+new dimension. The validation toolkit's `pbo` adapter route is
+preserved -- ledgr can feed `pbo` directly via the T x N panel
+`pbo()` expects.
+
+**Option B -- collapse to fold-level scalar scores.** Operational
+surface only; no per-period return vectors per fold. The validation
+toolkit must implement PBO and CSCV natively over fold-level scalar
+scores. The algorithm is well-specified but moves entirely onto
+ledgr's plate; no `pbo` adapter is available because the input shape
+mismatch is conceptual, not just type-level.
+
+#### Why this matters
+
+Both options are defensible. The choice has practical consequences:
+
+- **Storage cost.** Option A increases the v0.1.9.4 retention surface
+  roughly proportionally to `(n_candidates x n_folds x n_pulses_per_fold)`.
+  For realistic walk-forward configurations (say 10 candidates x 20
+  folds x 252 pulses), that is on the order of 50K doubles per metric
+  -- not free but well within the v0.1.9.2 storage smoke ratio scale.
+- **Adapter vs native scope.** Option A reduces the validation
+  toolkit's native scope (one fewer algorithm to own); Option B
+  expands it (native PBO / CSCV over scores becomes a v0.1.9.x
+  deliverable).
+- **Future flexibility.** Option A enables future research-stage
+  analyses that want per-fold per-candidate return distributions
+  (signal decay over time, regime decomposition per fold, per-fold
+  attribution). Option B forecloses these without later substrate
+  expansion.
+
+The v0.1.9.2 sweep persistence synthesis Section 11 future obligations
+list already includes "walk-forward per-fold / per-candidate
+return-series retention" (F1 in the post-synthesis direction entry
+above). Option A is the natural implementation of that obligation;
+Option B is the natural avoidance. The validation toolkit research
+surfaces this trade-off earlier than it would otherwise have surfaced,
+while the walk-forward packet is still pre-cut.
+
+#### Recommendation
+
+Lean toward Option A -- preserve per-period candidate return vectors
+per fold as a separate retention surface. Reasons:
+
+- Aligns with the v0.1.9.2 sweep persistence synthesis's three-tier
+  evidence framing (scalar / return-series / promoted run) and extends
+  it naturally with a `fold_seq` dimension.
+- Reduces the validation toolkit's native-implementation scope by
+  preserving the `pbo` adapter route, consistent with the adapter-first
+  posture bound in the 2026-06-07 validation toolkit entry above.
+- Enables future signal-decay, regime-decomposition, and per-fold
+  attribution work without later substrate expansion.
+- Storage cost is bounded and within the v0.1.9.2 storage smoke ratio
+  scale.
+
+Option A's main cost is the additional retention surface on v0.1.9.4;
+if walk-forward retention complexity is already substantial at the
+v0.1.9.4 spec packet, Option B remains defensible. The choice is for
+the v0.1.9.4 spec-cut writer to make at packet-open time with the
+trade-off visible.
+
+#### Process note
+
+This entry is NOT a walk-forward synthesis amendment. The accepted
+synthesis Amendment 2 Section 16.5 is correct as-is; the operational
+degradation table contract stands. This entry is a substrate
+observation that informs the spec-cut writer's choice on whether the
+v0.1.9.4 packet additively preserves per-period vectors as a separate
+retention surface. If the spec-cut writer chooses Option A, the
+additive retention is an additive packet scope decision; if the writer
+chooses Option B, the validation toolkit picks up native PBO and CSCV
+over scores. Either path is consistent with the accepted synthesis.
+
+If the spec-cut writer reads this entry, decides Option B is correct,
+and ships v0.1.9.4 without per-period vectors per fold, the validation
+toolkit retains the option to implement native PBO / CSCV over scores
+as the canonical path. Nothing here forecloses that.
+
+This entry is non-authorizing. It records the substrate trade-off so
+it does not surface as a last-minute decision at validation-toolkit
+seed time after v0.1.9.4 has already shipped.
+
+
+<a id="open-096"></a>
+
+### 2026-06-05 [planning] v0.1.9.5 documentation, teaching, and contracts release after v0.1.9.x arc
+
+After v0.1.9.4 walk-forward closes the v0.1.9.x arc, ledgr will have
+shipped: public cost-API and identity surfaces (v0.1.9.1), sweep
+artifact persistence (v0.1.9.2), target-risk plus per-pulse restructure
+(v0.1.9.3), and walk-forward evaluation (v0.1.9.4). The codified-
+architecture surface will have grown to roughly the same scale as
+v0.1.8.7-10 did before v0.1.8.11, with the same discoverability-decay
+risk. v0.1.9.5 should mirror the v0.1.8.11 pattern: entropy-management
+release before v0.2.x feature work begins.
+
+**Authoritative inputs at spec-cut time (indicative):**
+
+- The four completed v0.1.9.x packets and their release closeouts.
+- `rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`.
+- `rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md` with Amendments
+  1 + 2 and Section 17 ticket-cut gates.
+- `rfc_chainable_risk_oms_policy_boundary_synthesis.md`.
+- The v0.1.9.2 sweep persistence synthesis (when it lands).
+- Accumulated horizon entries from the v0.1.9.x arc.
+
+**Workstreams (indicative; spec packet binds final shape):**
+
+- **Workstream A -- Contracts audit and structural pass.**
+  `contracts.md` needs target-risk layer language, walk-forward
+  identity language, and sweep persistence shape. Same
+  "audit first, route findings, edit only after routing" discipline
+  as v0.1.8.11.
+
+- **Workstream B -- User-facing vignette refresh.**
+  - `strategy-development.qmd`: simplified to target authoring; remove
+    what migrates to the new risk-and-cost vignette.
+  - `metrics-and-accounting.qmd`: cost-aware metric-interpretation
+    touch (the substantive cost rewrite shipped in v0.1.9.1 Batch 6).
+  - `research-workflow.qmd`: walk-forward integration.
+  - `research-to-production.qmd`: depth pass beyond the v0.1.9.1
+    release-gate surface migration.
+
+- **Workstream C -- New vignettes.**
+  - **Walk-forward research arc** (headline). Anchors the v0.1.9.4
+    evaluation surface: snapshot to folds to train sweep to
+    selection rule to test execution to candidate extraction to
+    promotion.
+  - **Risk-and-cost execution policy**. Teaches the v0.1.9.1 cost-API
+    plus v0.1.9.3 target-risk layers as the strategy-to-fill
+    in-between. Diagram and narrative of the pipeline
+    (targets -> risk -> timing -> cost -> fill), why each layer
+    exists, what each does not do. Worked examples for cost
+    composition (quoted-spread convention, chain order rule) and
+    classed risk-step authoring. Explicit non-goals named to bound
+    teaching scope: pre-trade alpha-vs-cost filtering, liquidity,
+    OMS, broker reconciliation, financing, taxes, TCA.
+
+- **Workstream D -- Maintainer manual articles with Implementation
+  Trace.** Cost resolver, target-risk layer, walk-forward fold
+  machinery. Each gets both Synthesis and Implementation Trace per
+  the v0.1.8.11 Section 3.7 two-layer standard.
+
+- **Workstream E -- Identity contract reference v2.** Extend the
+  Batch 4 `?ledgr_identity_fields` substrate to cover risk-chain
+  identity and walk-forward `candidate_key` / `session_id`
+  composition. Pull the cost-API forward-obligation rows
+  (synthesis Section 14:560) and the walk-forward Section 17
+  gate-row obligations (2026-06-05 horizon entry above) into the
+  canonical reference.
+
+- **Workstream F -- v0.1.9.x performance and decisions internal
+  arc.** Narrative covering target-risk's per-pulse restructure,
+  walk-forward's wrapper-not-engine choice, the cost-API spec-cut
+  discipline, and the LDG-2575 measurement-spike methodology
+  refinement (row-total measurement + focused-loop attribution).
+  Same internal-first-not-marketing posture v0.1.8.11 used.
+
+- **Workstream G -- Release surfaces.** NEWS, roadmap, horizon
+  housekeeping, design index, RFC index, performance-arc index
+  update.
+
+**Naming rationale (risk-and-cost vs execution-policy):**
+
+The v0.2.x roadmap has an `Execution Policy Pipeline` north-star RFC
+planned (broader scope: OMS, liquidity, order policy, paper / live).
+The v0.1.9.5 vignette is bounded to risk plus cost as the
+in-between layer between strategy targets and fills; timing stays in
+`execution-semantics.qmd` with a forward-reference. The
+`risk-and-cost` name avoids collision with the future v0.2.x
+execution-policy work.
+
+**Sequencing:**
+
+- Spec scoping starts during v0.1.9.4 ticket-cut so target-risk
+  decisions (v0.1.9.3 shipped earlier) and walk-forward decisions
+  (Section 17 gates) are absorbed as they bind. Lead time analogous
+  to the v0.1.8.10 to v0.1.8.11 transition.
+- Implementation starts after v0.1.9.4 ships.
+- Auditr cycle runs against the refreshed v0.1.9.5 surface; findings
+  absorb into v0.1.9.6 or v0.2.x feature packets. Same auditr-after
+  pattern the v0.1.8.11 to v0.1.9.1 flow established.
+
+**Non-scope:**
+
+- Marketing or external benchmark claims.
+- New public APIs (the docs cycle surfaces what shipped; if a doc
+  surfaces a real contract bug, route to a follow-on ticket).
+- Execution-semantics changes.
+- v0.2.x feature work (liquidity, OMS, snapshot lineage, paper /
+  live).
+- Walk-forward Section 17 gate-row additions to the synthesis
+  (those bind at v0.1.9.4 ticket-cut, not in the docs cycle).
+
+**Relationship to the existing roadmap placeholder:**
+
+The roadmap currently carries a `v0.1.9.x Follow-On Documentation
+After v0.1.8.11` entry, which was the bounded-remainder placeholder
+in case v0.1.8.11 left documentation work undone. v0.1.9.5
+supersedes that placeholder: it is the substantive teaching-and-
+entropy cycle for the v0.1.9.x arc, not a remainder cleanup. The
+roadmap entry should be updated when v0.1.9.5 reaches active
+planning (per the roadmap discipline that next-planned milestones
+carry detail and later ones carry intent bullets only).
+
+This entry records the intent. The actual spec packet binds the
+workstream details when v0.1.9.4 closes; the auditr cycle that
+follows v0.1.9.5 will produce the next round of THEME-style findings.
+
+
+<a id="open-097"></a>
+
+### 2026-06-01 [strategy] Strategy callback contract + authoring helpers post-v0.1.8.x direction
+
+The paired RFC cycle for the v0.1.8.10 strategy callback contract addendum
+(`rfc_strategy_callback_contract_addendum_v0_1_8_10_synthesis.md`, final
+review approved) and the v0.1.8.x strategy authoring helpers
+(`rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md`, final review
+approved) closes the cross-sectional strategy authoring direction for the
+v0.1.8.x arc. The accessor synthesis binds the `ctx$vec` universe-aligned
+vector namespace, the `ctx$idx()` instrument-id-to-position resolver, and
+bulk `ctx$vec$feature(feature_id)` reads. The helpers synthesis binds
+extension (not replacement) of the existing exported pipeline
+(`signal_return`, `select_top_n`, `weight_equal`, `target_rebalance` plus
+value types `ledgr_signal`, `ledgr_selection`, `ledgr_weights`,
+`ledgr_target`) across two passes: Pass 1 internal optimization in
+v0.1.8.10 where existing helpers consume `ctx$vec` with no public surface
+change, Pass 2 per-stage public helper additions in v0.1.9.x (per the
+roadmap's `v0.1.9.x Target Construction Helper Extensions` slot).
+
+Feature-engine vector extensions
+- Bulk multi-feature reads beyond the single-feature
+  `ctx$vec$feature(feature_id)` surface — separate feature-engine RFC if
+  the single-feature surface proves insufficient in practice.
+- Feature-map vector output and alias-map vector interactions — same
+  feature-engine RFC.
+- Lookback-window vector access (per-instrument history through
+  `ctx$vec`) — same feature-engine RFC.
+- Public scalar `ctx$feature_at(feature_id, idx)` sugar over
+  `ctx$feature(ctx$vec$id[idx], feature_id)` — same RFC.
+
+Long-short, hedged, and levered authoring helpers
+- Short, market-neutral, pair-helper families. Currently gated by the
+  negative/levered-weights rejection at `R/strategy-helpers.R:226-231`;
+  cannot be promoted to public helpers without first binding
+  shorting/leverage contract semantics in a separate RFC.
+- Hedge-ratio constructors and beta-neutral target builders — same gate.
+
+Cost-aware sizing
+- Strategies do not receive cost-related state today; the cost-API
+  synthesis (prior horizon entries) puts cost wiring downstream of the
+  strategy callback. Any helper that estimates or optimizes transaction
+  costs inside the strategy callback needs a read-only estimator RFC
+  after the public cost API lands.
+
+Declarative strategy constructor
+- A `ledgr_strategy()` constructor composing signal / selection /
+  weighting / sizing / triggers as named arguments — larger DSL, future
+  RFC if the helper family grows enough to justify it. Not in scope for
+  Pass 2.
+
+Stronger read-only enforcement
+- v0.1.8.10 enforces `ctx$vec` and `ctx$idx()` read-only semantics
+  through documented convention plus mutation-leak tests. If post-CRAN
+  use surfaces drift, a contract-hardening RFC evaluates locked
+  bindings, active bindings, copy-on-access, or R6-style read-only
+  context objects.
+
+Compiled-strategy callback boundary
+- The `ledgrcore-spike` external repo will report whether a compiled
+  fold core changes strategy-callback economics. A compiled-strategy
+  callback contract RFC is downstream of the spike report and out of
+  scope until then.
+
+Promoted roadmap hooks
+- **v0.1.8.10**: accessor synthesis implementation (`ctx$vec`
+  namespace, `ctx$idx()` resolver, bulk
+  `ctx$vec$feature(feature_id)`); helpers synthesis Pass 1 internal
+  optimization (existing exported helpers consume `ctx$vec` where it
+  helps, no public surface change).
+- **v0.1.9.x Target Construction Helper Extensions** (canonical roadmap
+  slot; paired with the 2026-05-25 horizon entry): Pass 2 per-stage
+  extensions per the helpers synthesis — rank-weight, inverse-vol,
+  normalization, rebalance bands, target diagnostics.
+- **v0.1.9.x or later — Feature-engine vector extensions**: bulk
+  multi-feature reads, lookback vectors, alias-map vector interactions.
+- **v0.1.9.x+ or v0.2.x — Long-short / hedged / levered authoring
+  helpers**: gated on shorting/leverage contract RFC.
+- **Post cost-API GA — Cost-aware sizing read-only estimator**: gated
+  on the public cost API landing.
+- **v0.2.x or later — Declarative strategy constructor**: larger DSL,
+  conditional on helper family growth.
+- **Post-CRAN or on user demand — Stronger read-only enforcement**:
+  contract-hardening RFC for ctx immutability.
+- **Post-`ledgrcore-spike` report — Compiled-strategy callback boundary
+  contract**: gated on the external K1 spike comparison.
+
+Immediate cross-cycle obligations
+
+- The v0.1.8.10 spec packet listed both synthesis artifacts as binding design
+  inputs and shipped the accessor / Pass 1 scope. v0.1.8.11 (shipped
+  2026-06-04) made the resulting strategy-author surface discoverable in
+  docs via the maintainer manual articles without promoting Pass 2
+  helpers early; this obligation is closed.
+- The negative/levered weights rejection block in `target_rebalance()`
+  lives at `R/strategy-helpers.R:226-231` (precision over the helpers
+  synthesis's `:226-230` citation); future RFCs and tickets citing
+  this gate should use the corrected range.
+- The v0.1.8.11 documentation pass collected horizon entries created
+  during the v0.1.8.10 RFC closeouts, the same way this entry pairs the
+  accessor and helpers cycles; this obligation is closed.
+
+This entry does not authorize any of the above; it records the
+direction. The accessor synthesis is binding for v0.1.8.10
+implementation; the helpers synthesis is binding for v0.1.8.10 Pass 1
+implementation and for v0.1.9.x Pass 2 design. Tickets cut from either
+synthesis must respect that binding language and treat the deferrals
+above as separate downstream RFCs.
+
+
+<a id="open-099"></a>
+
+### 2026-05-26 [execution] Accepted OMS direction and intraday-safe target-decision storage
+
+The accepted OMS synthesis is
+`inst/design/rfc/rfc_ledgr_oms_seed_synthesis.md`. It binds a future v0.2.x
+two-stream design: `order_events` records engine-owned order lifecycle, while
+`ledger_events` remains accounting truth. The strategy contract stays
+`function(ctx, params) -> full named numeric target vector`; paper/live adapters
+remain deferred to v0.3.0+; and no sweep-to-live path is allowed.
+
+The important long-horizon storage lesson is that target-decision persistence
+must bind identity and reconstructability, not a universal full-JSON payload per
+decision row. First EOD implementations may store full vectors directly, but
+intraday-compatible designs need retention-dependent, batchable, and
+potentially deduplicated/sparse/columnar/payload-reference storage without
+destructive migration from the EOD shape.
+
+
+<a id="open-100"></a>
+
+### 2026-05-25 [infrastructure] Pre-CRAN compatibility policy
+
+Until ledgr is released on CRAN, stored artifacts, database schemas, config
+hashes, provenance formats, and experimental APIs may change without backward
+compatibility or a deprecation cycle. Pre-CRAN artifacts are development
+artifacts; users should expect to rerun experiments after upgrading when a
+cycle changes storage, hashing, or execution contracts.
+
+This does not weaken current-version trust. Fingerprint pins, release gates,
+contract tests, hash verification, and reproducibility discipline remain
+load-bearing for agent containment and within-cycle correctness. Once ledgr
+reaches CRAN, revisit this policy and define explicit compatibility and
+deprecation rules.
+
+
+<a id="open-109"></a>
+
+### 2026-05-13 [infrastructure] Public parallel sweep backend
+
+The v0.1.8 architecture should stay parallel-ready, but a public parallel sweep
+feature remains unscheduled. Before promotion, ledgr needs decisions on worker
+package setup, `workers > 1` failure modes, worker-local output isolation,
+interrupt semantics beyond discard-all, and whether mirai remains the backend
+or becomes one backend behind a small internal abstraction.
+
+Evidence and design breadcrumbs:
+
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `inst/design/rfc/rfc_parallelism_spike_architecture_consequences.md`
+- `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md`
+- `inst/design/manual/sweep.qmd`
+
+Known spike findings to preserve: mirai is viable on Windows native R and
+Ubuntu/WSL as an optional backend; sequential sweep must not depend on mirai;
+`workers > 1` without mirai should fail loudly rather than silently fall back;
+parallelism belongs at candidate dispatch, not inside one candidate's fold; and
+workers should return candidate results to the orchestrator rather than writing
+shared DuckDB state.
+
+
+<a id="open-110"></a>
+
+### 2026-05-13 [infrastructure] Parallel worker setup and Tier 2 packages
+
+SPIKE-8 showed that package-qualified calls can work on workers when the
+package is installed, but unqualified calls such as `mutate()` or `SMA()` need
+explicit setup such as `everywhere({ library(dplyr); library(TTR) })`. Helper
+objects assigned in setup did not persist under mirai's default cleanup, which
+is useful because it prevents arbitrary `.GlobalEnv` helper smuggling.
+
+Future parallel sweep design should revisit whether dependency information
+comes from an explicit `worker_packages` argument, strategy preflight output, a
+companion dependency check, or a combination. A tier label alone is not enough
+for parallel Tier 2 execution.
+
+Evidence:
+
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `inst/design/manual/sweep.qmd`
+
+
+<a id="open-111"></a>
+
+### 2026-05-13 [infrastructure] mori as transport, not hot lookup
+
+SPIKE-7 showed that `mori::share()` crosses the mirai worker boundary on
+Windows and Ubuntu/WSL and can shrink serialized payload handles dramatically.
+The same spike showed slower lookup than plain in-process matrices for
+fold-like feature access. Treat mori as a future transport/memory-pressure tool,
+not the default representation for hot per-pulse feature lookup.
+
+Cases where mori may matter later: walk-forward or CSCV redispatches where
+large payloads are re-sent often, very high worker counts where `workers x
+payload_size` creates memory pressure, or remote/slow transport environments.
+
+Evidence:
+
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `inst/design/rfc/rfc_parallelism_spike_architecture_consequences_response.md`
+
+
+<a id="open-112"></a>
+
+### 2026-05-13 [infrastructure] Worker-local read-only DuckDB transport
+
+SPIKE-4 showed that concurrent worker-local read-only DuckDB access to a sealed
+snapshot worked on Windows and Ubuntu/WSL and did not create WAL, temp, lock, or
+other side files in the targeted probe. This keeps worker-local snapshot reads
+available as a future transport path.
+
+Future design should remember the interface consequence: the fold core must not
+take a live DBI connection from the orchestrator. It should accept an abstract
+input source that can represent either an in-memory precomputed payload or a
+sealed snapshot path plus metadata for worker-local read-only lookup.
+
+Evidence:
+
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `inst/design/manual/sweep.qmd`
+
+
+<a id="open-114"></a>
+
+### 2026-05-13 [data] Feature payload scale and indicator-width stress
+
+The parallelism spike deliberately tested feature-width payloads because
+indicator sweeps multiply columns per instrument. Plain R serialized payloads
+were acceptable for v0.1.8 EOD-scale sweep when preloaded once, but larger
+universes, intraday-like pulse counts, walk-forward folds, CSCV/PBO partitions,
+and indicator-parameter sweeps can multiply payload size quickly.
+
+Future feature-transport work should preserve three paths: explicit in-memory
+precomputed payloads, worker-local read-only snapshot lookup, and future
+shared-memory payloads. Do not bake in a pre-fetch-only design.
+
+Evidence:
+
+- `inst/design/spikes/ledgr_parallelism_spike/summary_report.md`
+- `inst/design/spikes/ledgr_parallelism_spike/architecture_synthesis.md`
+- `inst/design/manual/sweep.qmd`
+
+
+<a id="open-117"></a>
+
+### 2026-05-14 [sweep] Promotion-grade sweep artifacts
+
+Future design: save/load complete sweep result bundles with manifest, snapshot
+locator hints, strategy/feature recovery metadata, and verification helpers.
+Useful for expensive sweeps and offline audit. Deferred because v0.1.8 stores
+selection context on promoted runs instead.
+
+Bounded first shape: persist grid definition, candidate summaries,
+warnings/errors, metric context, feature-set hashes, execution seeds, ranking or
+selection view, manifest data, and snapshot locator hints. Do not persist full
+ledger, fill, trade, or equity artifacts for every candidate by default.
+
+Promoted roadmap hook: `v0.1.9.x Sweep Artifact Persistence`.
+
+
+<a id="open-121"></a>
+
+### 2026-05-27 [risk] Affordability belongs in target risk
+
+The research fold treats strategy output as desired target quantities and
+applies deterministic next-open fills. Until the target-risk chain exists, raw
+targets can request more exposure than available cash supports; the fold records
+the fill and cash can go negative. That arithmetic is reproducible, but it is
+not a declared margin model.
+
+The v0.1.9 target-risk RFC should treat capital discipline as a first-class
+risk adapter, alongside long-only and max-weight constraints. The minimum shape
+should include an explicit capital floor or affordability rule inserted between
+target validation and fill timing, preserving the strategy contract: strategies
+declare desired holdings; risk transforms, rejects, or annotates targets before
+execution.
+
+
+<a id="open-124"></a>
+
+### 2026-05-25 [data] Point-in-time data tables
+
+Future external observations and reference data need point-in-time semantics
+before ledgr can honestly support fundamentals, earnings, macro, index
+membership, factor features, or universe-derived benchmarks.
+
+Concepts to define:
+
+- `known_at`;
+- `available_at`;
+- `effective_at`;
+- `event_time`;
+- `revision_time`;
+- provider/source/version metadata;
+- alignment policy to strategy decision timestamps.
+
+This is distinct from adapter provenance. Provenance says where data came from;
+point-in-time tables say when a strategy was allowed to know it. Promoted
+roadmap hook: `v0.2.x Point-In-Time Data Tables`.
+
+
+<a id="open-125"></a>
+
+### 2026-05-25 [data] Corporate actions and instrument master
+
+Sealed snapshots are reproducible, but reproducible survivorship-biased data
+can still be wrong for many research claims. Serious equity research eventually
+needs explicit handling for:
+
+- raw versus adjusted price policy;
+- splits and dividends;
+- delistings and delisting returns;
+- symbol changes;
+- stable instrument identifiers;
+- point-in-time universe membership.
+
+This should coordinate with point-in-time data tables and benchmark/reference
+data design. Promoted roadmap hook:
+`v0.2.x Corporate Actions And Instrument Master`.
+
+
+<a id="open-128"></a>
+
+### 2026-05-24 [data] Provider risk-free source divergence
+
+The `ledgr_tidyfinance_unit_probe` spike found that tidyfinance's standalone
+`download_data_risk_free()` endpoint and its Fama-French factor endpoint do
+not return interchangeable `risk_free` values for the same calendar period.
+For example, tidyfinance 0.5.0 returned January 2010 standalone monthly
+`risk_free = 0.000016898`, while the Fama-French 3-factor monthly endpoint
+returned `risk_free = 0` for the same month.
+
+This is not necessarily a provider bug. The standalone endpoint is
+FRED-derived and converted by tidyfinance; the Fama-French endpoint reflects
+the factor dataset's own rounded file. A future factor or reference-data
+adapter must preserve this distinction instead of silently treating every
+column named `risk_free` as the same source.
+
+Future RFCs that expose multiple risk-free sources should require explicit
+source selection and provenance fields for endpoint, dataset, provider
+version, and frequency. Metric-context construction must reject ambiguous
+"risk-free from provider" requests when more than one provider endpoint could
+produce the series.
+
+
+<a id="open-130"></a>
+
+### 2026-05-28 [optimization] Feature projection shape post-v0.1.8.x direction
+
+The accepted synthesis
+`rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md` binds the
+next feature-projection materialization direction: v0.1.8.6 first removes
+redundant cache-key fingerprint work, then stops building full-panel long
+`ctx$feature_table` rows by default. Wide/projection-backed accessors are the
+decision-time surface; long becomes inspection/export/research shape. This entry
+uses no feature "v1" shorthand; work is assigned to v0.1.8.6, v0.1.8.9, or later.
+
+#### Lookback and portfolio windows
+
+- `ctx$window()` is accepted as the causal lookback primitive, but enters
+  v0.1.9 only if target-risk or portfolio-risk work needs covariance windows.
+- First public shape, when cut, is single-feature `n_inst x lookback` matrix
+  with leading `NA_real_` warmup columns.
+- Multi-feature/tensor/list window shapes are future API work after the first
+  matrix contract exists.
+
+#### Long research/export layer
+
+- Runtime long `ctx$feature_table` is not the training-frame surface.
+- Full-panel long feature export, ML training frames, and tidy EDA helpers need
+  a separate research/export API cycle.
+- PIT regressor and feature-store interchange belong with the later PIT/data
+  provider track.
+
+#### Persistent event schema and replay
+
+- LDG-2410 typed memory events are complete and memory-scoped.
+- Typed persistent columns for `cash_delta` and `position_delta` are the
+  persistent counterpart and are preferred over a DuckDB-SQL-only replay patch
+  if storage/schema work is accepted.
+- Broader typed event metadata remains future event-schema work.
+
+#### DuckDB-backed projection and storage
+
+- v0.1.8.6 DuckDB/storage work should consume the simplified projection
+  contract after schema-only `feature_table` is in place.
+- DuckDB must remain a block/storage boundary, not a per-pulse runtime query
+  engine.
+- No future storage path should reintroduce full-panel long materialization by
+  default.
+
+#### Collapse and primitive internals
+
+- Primitive-internals discipline applies broadly.
+- No collapse Imports dependency is authorized by the feature-projection
+  materialization directions.
+- Collapse remains governed by
+  `rfc_collapse_primitive_internals_v0_1_9_synthesis.md`: measured hot frames,
+  deterministic wrapper, and parity gates only.
+
+#### Promoted roadmap hooks
+
+- v0.1.8.6: feature cache-key dedup for feature-definition fingerprint and
+  feature-engine version.
+- v0.1.8.6: schema-only `ctx$feature_table` default plus non-fast-path rebuild
+  fix.
+- v0.1.8.6: post-5.0/post-5.1 remeasurement and instrument x feature sweep.
+- v0.1.8.6, if storage/schema work is explicitly accepted: typed persistent
+  `cash_delta` and `position_delta` columns.
+- v0.1.9, only if target-risk/portfolio-risk needs it: single-feature
+  `ctx$window()` matrix API.
+- Later: multi-feature/tensor windows.
+- Later: full-panel long export/training APIs and PIT feature-store
+  interchange.
+- Later: broader typed event metadata beyond replay deltas.
+
+#### Immediate cross-cycle obligations
+
+These obligations were directed at the v0.1.8.6 spec packet (now shipped):
+
+- 5.0 was cut before 5.1 and remeasured after each — landed.
+- Width-invariance and benchmark claims were withheld until the instrument
+  x feature sweep ran in read/score and turnover modes — landed.
+- Typed persistent `cash_delta` and `position_delta` columns (5.6) were
+  evaluated against scope; 5.6 was deferred and recorded as designed future
+  storage work rather than shipped as an incomplete SQL-only patch.
+
+This entry does not authorize any of the above by itself; it records the
+post-synthesis direction and deferrals. Concrete work remains governed by the
+accepted synthesis and the relevant spec packets. The remaining open items
+in the hooks list above (multi-feature/tensor windows, long export/training
+APIs, broader typed event metadata) carry to later v0.1.x/v0.2.x cycles.
+
+
+<a id="open-131"></a>
+
+### 2026-05-28 [optimization] Persistent DB-replay reconstruction via DuckDB SQL
+
+`ledgr_reconstruct_positions()`, `ledgr_reconstruct_cash()`, and
+`ledgr_rebuild_derived_state()` (`R/derived-state.R`) replay the persisted
+`ledger_events` table with `jsonlite::fromJSON(meta_json)` **per row** in an R
+loop, plus named-vector grow-by-assignment. This is the reopen / resume /
+rebuild-from-store path - NOT the main backtest reconstruction, which is already
+vectorized via `findInterval` + `cumsum` in `ledgr_run_fold`. It is O(events)
+with a JSON parse per event and bites when reloading large persisted runs.
+
+This is a SEPARATE surface from LDG-2410 ("Typed Memory Event Representation",
+shipped v0.1.8.3, `scope: sweep_memory_path`): LDG-2410 typed the *in-memory*
+sweep events and never touched the persistent DB-replay path.
+
+Fix without a schema change: push the delta aggregation into DuckDB SQL, e.g.
+`SELECT instrument_id, SUM(CAST(json_extract(meta_json,'$.position_delta') AS
+DOUBLE)) ... GROUP BY instrument_id` (cash is the ungrouped sum). DuckDB does the
+JSON extract + grouped sum in C, eliminating the R loop and the per-row parse.
+The typed-DB-columns alternative also works but requires a `ledger_events` schema
+migration.
+
+Secondary (reopen/resume) cost today, but O(events) with a per-row JSON parse;
+the obvious next target once persisted-run reload or walk-forward replay becomes
+load-bearing. Surfaced by the v0.1.8.5 feature-payload spike's collapse-alignment
+review.
+
+
+<a id="open-132"></a>
+
+### 2026-05-25 [architecture] Primitive internals and collapse acceleration
+
+The LDG-2413 pulse-view construction spike found that the important design
+lesson is broader than any single package choice: ledgr should prefer primitive
+internal shapes (vectors, matrices, lists, and index maps) and treat
+data.frames as public boundary views rather than hot-path state.
+
+Spike artifact:
+
+- `dev/spikes/ledgr_v0_1_8_3_pulse_view_construction/`;
+- `inst/design/spikes/ledgr_v0_1_8_3_pulse_view_construction/pulse_view_construction_report.md`.
+
+Reference-shape median timings from the spike:
+
+| construction path | median |
+| --- | ---: |
+| current feature views, 50 candidates | 8.03s |
+| base `split()` feature views, 50 candidates | 1.96s |
+| `tidyr` feature views, 50 candidates | 3.64s |
+| `data.table` data-frame feature views, 50 candidates | 6.27s |
+| `data.table` native feature views, 50 candidates | 5.06s |
+| `collapse` feature views, 50 candidates | 0.68s |
+
+All tested alternatives preserved the current `ctx$feature_table` and
+`ctx$features_wide` schemas in the equality checks. `collapse::rsplit()` was
+the fastest tested implementation, but importing `collapse` only for LDG-2413
+would make a broad dependency decision from a narrow optimization surface.
+
+Accepted planning authority:
+
+- `inst/design/rfc/rfc_collapse_primitive_internals_v0_1_9_synthesis.md`.
+
+Near-term policy:
+
+- v0.1.8.3 should use base R split/nest-style construction where it is enough
+  to recover the measured pulse-view setup cost;
+- do not add `collapse` as an `Imports` dependency during v0.1.8.3 solely for
+  pulse-view construction;
+- preserve the spike results as evidence for the v0.1.9 primitive-internals
+  planning gates (canonical roadmap slot
+  `v0.1.9 Primitive Internals Planning Gates`).
+
+Promoted v0.1.9 planning direction (status of each item shown):
+
+- write a primitive-internals developer guide before broad implementation
+  work — open;
+- deterministic `collapse` wrapping with scoped `collapse::set_collapse()`
+  state restoration — shipped v0.1.8.7 (commit "Add deterministic collapse
+  wrapper") and bound by ADR 0004;
+- micro-profile event-boundary output buffer path — diagnostics landed in
+  v0.1.8.8 Batch 2 (per-pulse telemetry sampling) and the `setv` rewrite
+  shipped in v0.1.8.9 Batches 5-7;
+- decide whether `collapse` becomes the package's R-side acceleration layer
+  — bound by ADR 0004 (collapse added as `Imports` in v0.1.8.7); future
+  micro-passes follow the deterministic-wrapper rules above;
+- keep FIFO redesign, arbitrary strategy callback compilation, and a
+  compiled fold core as separate decisions with their own parity gates —
+  preserved (compiled core is now the `ledgrcore-spike` external repo per
+  the 2026-05-30 entry).
+
+This direction also supports the longer-term DuckDB and compiled-core horizon
+items. Primitive matrices/lists map more cleanly to DuckDB columns, block
+buffers, and eventual FFI boundaries than repeatedly constructed data.frame
+objects.
+
+
+<a id="open-133"></a>
+
+### 2026-05-25 [api] Future ctx$feature_table deprecation review
+
+The LDG-2413 usage audit found `ctx$feature_table` usage in internal
+validation/inspection helpers and test scaffolds, but no documented vignette or
+example strategy pattern that depends on the long-form feature table. v0.1.8.3
+therefore preserves and prebuilds the field to avoid a context-contract change,
+but the field is a plausible future simplification target.
+
+A later RFC can decide whether `ctx$feature_table` should remain a public
+strategy-facing field, move behind an inspection helper, or enter a formal
+pre-CRAN deprecation path. That decision should be based on strategy-author
+usage evidence and must not be folded into LDG-2413.
+
+
+<a id="open-134"></a>
+
+### 2026-05-25 [infrastructure] Compiled fold core after pipeline stabilization
+
+The v0.1.8.3 sweep baseline shows that R-side fold execution dominates the
+reference workload after v0.1.8.2. A future C, Fortran, C++, or Rust fold core
+may become worthwhile if R-only optimizations leave walk-forward and large
+sweep workloads too slow.
+
+Do not start this rewrite while the fold pipeline is still moving. A compiled
+core should wait until the surrounding execution contracts are stable enough
+that the port can be contract-following rather than contract-setting.
+
+Minimum gates before a serious port RFC:
+
+- v0.1.8.4 active parameterized feature aliases have landed or been abandoned;
+- the v0.1.9 target-risk chain has stabilized, including second-pass target
+  validation and risk identity;
+- walk-forward has produced real large-sweep workloads that justify native
+  fold speed;
+- public cost/liquidity/order-policy boundaries are stable enough that the
+  compiled core will not immediately need structural rewrites;
+- parity tests cover persistent versus memory accounting, typed events,
+  metric-kernel behavior, target validation, promotion context, risk policy,
+  and cost/liquidity semantics;
+- fold-core values are represented by typed, serializable value objects where
+  possible rather than loose ad hoc lists.
+
+Near-term work that helps without committing to a port:
+
+- keep expanding parity tests so a future port has a clear acceptance suite;
+- formalize event, fill, lot-state, and fill-proposal shapes as typed value
+  objects when touched by ordinary tickets;
+- defer any FFI feasibility spike until after the v0.1.8.7 single-core pure-R
+  cleanup and the v0.1.8.8 parallel-dispatch window have produced an optimized
+  baseline. When revived, the spike should port only an
+  isolated helper such as `ledgr_lot_apply_event()` via `extendr`, measure
+  per-call FFI overhead against the LDG-2402 harness, reuse the LDG-2403 parity
+  fixtures, and document Windows/Linux build friction. It must not introduce a
+  production Rust path.
+
+The port should not be treated as a v0.1.8.x optimization. The v0.1.8.x path
+remains R-side optimization first: typed memory events, single-pass summaries,
+fast context, and lazy context payloads.
+
+
+<a id="open-137"></a>
+
+### 2026-05-27 [evaluation] Walk-forward post-v0.1.9.x direction
+
+The accepted v0.1.9.x walk-forward synthesis
+(`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md`, with
+Amendment 1 dated 2026-06-04 in Section 14, Amendment 2 dated 2026-06-04 in
+Section 16, Section 17 ticket-cut gates, and the final-review artifact and
+closure update at
+`inst/design/rfc/rfc_walk_forward_evaluation_v0_1_9_x_final_review.md`) binds
+the first walk-forward implementation: rolling and anchored folds,
+calendar-time boundaries, single sealed snapshot, classed selection rules,
+scalar score matrix, and extraction-for-promotion. Amendment 1 corrected the
+Section 3 train-fold scoring binding (now `scoring_start = train_start_utc`,
+scoring the full fold window with overlap accepted across folds for rolling)
+and bound procedural constraints on Section 11 Open Questions Q1/Q5/Q7/Q10
+(opening-state cold-start distortion, rate/annualized selection metrics,
+extract_candidate default discipline, train-vs-test degradation as primary
+print signal), plus a survivorship disclosure obligation, two additional
+tests, and a compute-scaling caveat. Amendment 2 strengthened four of those
+routings into substantive defaults and operational contracts: v1 default
+`opening_state_policy = carry_test_state` with warned `flat_test_state` opt-in
+(Section 16.2); fail-closed selection-rule behavior for level metrics via a
+metric-classification registry field (Section 16.3); no-default
+`fold_seq` on `ledgr_walk_forward_extract_candidate()` with a required
+`selection_rationale` when `"latest"` is used (Section 16.4); an operational
+per-fold degradation table data contract for the default print method
+(Section 16.5); and a path-dependency obligation for the
+`carry_test_state` default (Section 16.6 -- diagnostic RFCs must not assume
+per-fold statistical independence). Section 17 added a two-gate ticket-cut
+matrix (packet-open and release-gate enforcement) binding the v0.1.9.x
+ticket packet's acceptance criteria for every Amendment 1 and Amendment 2
+obligation. The closure rule recorded in `rfc_cycle.md` is now: a
+post-synthesis amendment that routes only procedural constraints is
+insufficient closure; either substantive defaults or ticket-cut gates or
+both must land. The synthesis uses "v1" as shorthand
+for that first implementation; ledgr's roadmap does not have a "walk-forward
+v2" milestone. The post-v0.1.9.x direction lives in named follow-up RFCs at
+their own roadmap windows. This entry records the shape of that direction so
+the
+follow-up work has a target rather than being invented under pressure.
+
+Diagnostic retention and selection-integrity diagnostics:
+
+- the v1 scalar score matrix is sufficient for inspection, scalar-metric PBO
+  approximation, and a CRAN `pbo`-compatible pivot; it is explicitly
+  insufficient for DSR, CPCV, nonlinear-metric recomputation, or per-candidate
+  equity reconstruction;
+- richer diagnostic retention tiers (per-candidate per-fold return series,
+  equity payload references, sufficient statistics, partition/path identity,
+  family/effective-trial metadata) belong in a future diagnostic-retention RFC;
+- selection-integrity diagnostic implementation (PBO/CSCV/CPCV/DSR/Holm-BH,
+  Harvey-Liu-Zhu thresholds, MinTRL) belongs in a separate diagnostics RFC and
+  must consume the score matrix and future retention tiers, not redefine them;
+- both RFCs land after the first walk-forward release ships and produces
+  operational evidence.
+
+Fold-definition extensions:
+
+- purged and embargoed folds activate the v1 schema's reserved `gap` field;
+  the embargo RFC must include explicit label-interval overlap test fixtures
+  (mlfinlab's public purge-logic bugs are the right regression set);
+- combinatorial purged CV adds path identity (`path_id`) to the score schema,
+  multiple chronology-respecting train/test partitions, and pathwise return
+  artifacts;
+- trading-time, market-state, and regime-aware folds require a market-calendar
+  abstraction ledgr does not currently have; regime-aware folds also need
+  explicit treatment of the regime-classifier-as-look-ahead hazard;
+- cross-snapshot walk-forward (one fold = one snapshot) coordinates with
+  snapshot-lineage work and changes the snapshot identity story; v1's
+  single-snapshot binding is deliberately the simpler shape.
+
+Composition and policy:
+
+- a selection-rule DSL would admit composite multi-metric selection,
+  stability-region selection ("plateau wins, not spike"), and top-N robust
+  selection; the v1 `ledgr_select_argmax` / `ledgr_select_argmin` interface
+  is the smallest useful surface and the DSL is its natural extension once
+  user demand for composite selection surfaces;
+- walk-forward nested inside `ledgr_sweep()` as candidate inputs is a v1
+  non-goal; future composition must address how walk-forward identity
+  participates in sweep candidate identity without exploding artifact counts;
+- per-fold universe restriction coordinates with PIT data and survivorship-
+  aware universe construction; the v1 "experiment universe applies uniformly"
+  default is correct until the PIT data RFC binds the universe-at-time-T
+  contract;
+- promoting a parameter path (a schedule of candidates per future period) or
+  promoting a selection rule (commit a process, not a candidate) are
+  promotion-semantics extensions beyond the v1 extract-then-`ledgr_promote()`
+  baseline; both need their own design rounds.
+
+Paper/live walk-forward and OMS interaction:
+
+- v1 research walk-forward writes no OMS lifecycle artifacts; paper/live
+  walk-forward must revisit OMS streams and target-decision persistence per
+  the accepted OMS synthesis;
+- each fold's test run as its own `order_events` stream is the natural shape
+  but creates artifact multiplication that the paper/live walk-forward RFC
+  must address;
+- fold definitions translate to a retraining schedule in paper/live (LEAN's
+  `train()` pattern); the schedule artifact is a future-RFC concern, not a
+  v1 walk-forward shape.
+
+Promoted roadmap hooks (named follow-up RFCs):
+
+- diagnostic retention tiers RFC (v0.1.9.x or later);
+- selection-integrity diagnostics RFC (v0.1.9.x, after retention tiers
+  stabilize enough to consume);
+- purged and embargoed folds RFC (v0.1.9.x or v0.2.x);
+- combinatorial purged CV RFC (after purging);
+- trading-time / state-fold RFC (v0.2.x, coordinated with market-calendar
+  work);
+- cross-snapshot walk-forward RFC (v0.2.x, coordinated with snapshot lineage);
+- selection-rule DSL RFC (when user demand for composite selection surfaces);
+- survivorship-aware universe RFC (v0.2.x, coordinated with PIT data and
+  instrument master work);
+- paper/live walk-forward RFC (v0.3.0+, coordinated with OMS implementation);
+- OMS interaction RFC for walk-forward (between OMS data-model implementation
+  and paper/live walk-forward).
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when each follow-up cycle opens, the seed author can start
+from a known shape rather than re-deriving the boundary.
+
+
+<a id="open-138"></a>
+
+### 2026-05-27 [execution] Cost-model post-v0.1.9.x direction
+
+The accepted v0.1.9.x/v0.2.0 public transaction-cost API synthesis
+(`inst/design/rfc/rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md`)
+binds the first public cost API: classed `ledgr_cost_*` objects, ordered
+`ledgr_cost_chain()` composition with two-stage discipline (price transforms
+then fee adders), four v1 primitives (`spread_bps`, `fixed_fee`,
+`notional_bps_fee`, `zero`), `timing_model` argument replacing `fill_model`,
+quoted-spread semantics for `spread_bps`, single account currency, one total
+fee per fill, cost identity via `cost_model_hash` + `cost_plan_json`, and
+experiment-level (non-per-candidate) cost in v1. The synthesis explicitly
+defers ~18 cost-adjacent capabilities and records 10 future-RFC obligations.
+This entry groups the post-v0.1.9.x direction so each follow-up cycle starts
+from a known shape.
+
+Cost-model expressiveness extensions:
+
+- asymmetric price-adjustment constructor (`ledgr_cost_price_adjust_bps(bps,
+  side = ...)`) is reserved as a future constructor for users who need per-leg
+  markup/markdown semantics distinct from quoted-spread; both can coexist
+  under clearly different names;
+- side-filtered fee steps (apply only to BUY, only to SELL, or only to
+  specific instrument groups);
+- min/max fee caps (per-step semantics; the chain-level interaction was the
+  reason v1 deferred them);
+- per-share and per-contract fee primitives (currently aliasable from
+  `notional_bps_fee` via user calculation but lack the asset-class vocabulary
+  users expect).
+
+Stateful fee modeling:
+
+- rolling-volume fee tiers (IBKR-style monthly-share-volume tiers, Binance-
+  style rolling-30-day tiers, CME participant-status tiers) — require a
+  cost-state envelope that v1's stateless per-fill contract deliberately
+  excludes;
+- maker/taker fee inference from order aggressiveness — requires either an
+  explicit user convention (which v1 cost API rejects) or a liquidity layer
+  that can classify fills as passive vs aggressive;
+- rebates (negative fees) — admitted only via explicit rebate or maker/taker
+  classes, not as arbitrary negative outputs from any fee step.
+
+Multi-asset and multi-venue cost assignment:
+
+- per-instrument cost-model assignment (LEAN-style per-security models);
+- per-asset-class cost templates (equity / futures / crypto / FX / options
+  defaults with fallback rules);
+- per-venue cost objects (NautilusTrader-style venue-level fee models for
+  multi-venue portfolios);
+- assignment-rule ordering (fallback from per-instrument → per-asset-class →
+  experiment-default).
+
+Cost sweep and parameterization:
+
+- `ledgr_cost_grid()` or `ledgr_grid_cross(..., cost = ...)` for sweeping cost
+  assumptions across candidates;
+- `ledgr_cost_param("spread_bps")` parameter references inside cost objects
+  for cost-varying sweep candidates;
+- both require explicit namespace and identity rules to keep cost-varying
+  candidates distinguishable from strategy-param-varying candidates in
+  provenance, reporting, and promotion context.
+
+Cost-adjacent families that are not cost:
+
+- borrow cost, margin interest, carry, and perpetual funding — stateful
+  position or calendar cashflows; belong in a separate financing/margin RFC
+  family, not in the cost API;
+- multi-currency fee accounting and conversion — once fees can be denominated
+  in something other than the account currency, conversion, missing FX data,
+  and multi-currency ledger semantics enter scope; a separate RFC;
+- tax-lot and capital-gains policy — stateful accounting-policy problem, not
+  a fill-time cost transform; transaction taxes (stamp duty, FTT) can be
+  modeled as fee adders in v1, but realized-tax accounting waits;
+- broker-certified fee schedules in core — adapter packages own these;
+  core ships primitives and educational approximations only.
+
+Cost in OMS and paper/live:
+
+- broker-reported fee ingestion for paper/live reconciliation — requires the
+  OMS event-stream layer to exist first;
+- live cost calibration against actual broker-reported fees — v0.3.0+ work;
+- broker-fee schedules versioned per account/date — coordinates with
+  snapshot lineage and live-data-log work.
+
+TCA and reporting:
+
+- implementation-shortfall computation;
+- delay cost and opportunity cost;
+- benchmark-relative shortfall (VWAP/TWAP comparison);
+- venue analysis and pre/intra/post-trade workflow reporting;
+- all belong to a future TCA/reporting layer that consumes cost-resolved fill
+  rows plus future order-lifecycle artifacts; the cost API need not become a
+  full benchmark engine.
+
+Cost component diagnostic retention:
+
+- v1 sums chain-fee components into one total `fee` per fill in
+  `ledger_events`; component breakdowns may live in `meta_json` when retained;
+- a future diagnostic retention tier may add a `cost_details` table with
+  per-step attribution rows for inspection and TCA-style analysis;
+- the same pattern as the walk-forward "diagnostic retention tier" deferral.
+
+Promoted roadmap hooks (named follow-up RFCs):
+
+- asymmetric price-adjustment constructor RFC (when concrete demand
+  surfaces);
+- stateful fee tiers RFC (after operational experience with v1);
+- maker/taker and rebates RFC (coordinated with liquidity layer);
+- per-instrument / per-asset / per-venue assignment RFC (v0.2.x, when
+  multi-asset portfolios become common);
+- cost sweep / parameterization RFC (after sweep + walk-forward
+  artifact-multiplication patterns stabilize);
+- financing and margin-interest RFC (v0.2.x, separate from cost);
+- multi-currency fee accounting RFC (coordinated with multi-currency ledger
+  work);
+- TCA / reporting layer RFC (v0.2.x or later, consumes cost + future OMS
+  data);
+- broker-reported fee reconciliation RFC (v0.3.0+, with OMS implementation);
+- cost component diagnostic retention RFC (coordinated with walk-forward
+  diagnostic tiers).
+
+Immediate cross-cycle obligations recorded by the synthesis (not horizon
+material, just noted for follow-on cycles):
+
+- v0.1.9.x walk-forward spec packet must extend `candidate_key` and
+  `session_id` to include `cost_model_hash`;
+- v0.1.9.x cost-API spec packet must update
+  `vignettes/metrics-and-accounting.Rmd` which currently teaches the legacy
+  full-per-leg spread convention.
+
+This horizon entry does not authorize any of the above. It records the
+direction so that when each follow-up cycle opens, the seed author starts
+from a known shape rather than re-deriving the boundary.
+
+
+<a id="open-141"></a>
+
+### 2026-05-27 [ux] Research-loop ergonomics helpers surfaced by the v0.1.8.5 workflow vignette
+
+The v0.1.8.5 canonical research workflow article
+(`vignettes/research-workflow.qmd`) explicitly flags two API gaps in
+user-visible callouts. They surfaced during teaching, not speculation:
+the article had to fall back to lower-level patterns to keep the
+research-loop story honest, and the callouts mark exactly where the
+helpers should land.
+
+Both gaps share a shape: ledgr already records the underlying data.
+The gap is in the summary surface that exposes the data compactly
+without flattening the visible selection rule or provenance reasoning.
+
+This entry supersedes the earlier 2026-05-25 "Sweep candidate ranking views"
+stub (the `ledgr_rank_candidates()` sketch). The sweep-review helper below is
+the same idea, taken further and tied to the vignette gap that motivates it.
+
+#### Gap 1: Sweep review helper (resolved in v0.1.9.5)
+
+Resolved by `ledgr_sweep_review()` in v0.1.9.5 as LDG-2642. The shipped helper
+requires an explicit `rank_by` expression, returns review tables, separates
+issue rows, and does not select or promote a candidate. The old teaching
+boilerplate and design note were removed from the consuming articles.
+
+#### Gap 2: Promotion recovery summary
+
+Vignette location: the "Reopen The Artifact" section and its
+"API gap" callout-warning.
+
+The article currently teaches users to inspect:
+
+- `info$promotion_context$source`
+- `info$promotion_context$selected_candidate$run_id`
+- `info$promotion_context$selected_candidate$params_json`
+- `info$promotion_context$selected_candidate$feature_params_json`
+
+plus a separate `ledgr_extract_strategy()` call returning
+`strategy_params`, `reproducibility_level`, and `hash_verified`.
+
+What is missing: a single helper that summarizes a promoted run's
+"what caused this result?" record in one compact object: promotion
+source, selected candidate identity, strategy and feature parameters,
+strategy source provenance, and hash-verification status, without
+requiring nested-field navigation across multiple objects. A shape
+such as `ledgr_promotion_summary(snapshot, run_id, trust = FALSE)`
+returning a named list or compact tibble would fit.
+
+#### Shared design constraints
+
+- Remaining helpers preserve the styleguide rule that selection or ranking rules
+  stay visible to the reader. A "show me the best candidate" helper
+  that picks Sharpe silently is exactly what the workflow article
+  warns against.
+- Helpers do not replace `ledgr_results()`, `ledgr_run_info()`,
+  `ledgr_extract_strategy()`, or `ledgr_candidate()`. They are
+  summary surfaces over those lower-level APIs, not parallel ones.
+- Output is inspectable as a plain data frame or named list, never an
+  opaque print-only object.
+- The recovery summary distinguishes stored facts (parameters, hashes,
+  note) from interpretation (reproducibility tier, hash-verification
+  status, recovery limitations). Tier 1 and Tier 2 strategies must
+  not collapse into a single "verified" status.
+
+#### Scope risks
+
+- **Provenance summary as truth.** Easiest failure mode for the
+  recovery helper is collapsing tier-1 and tier-2 strategies into one
+  "verified" status. Tier 2 strategies have real recovery limitations
+  and the summary must surface them honestly.
+- **Over-abstraction.** The current low-level paths are verbose but
+  not user-hostile. The helpers should compress the common case
+  without removing the lower-level paths from the public API.
+
+#### Dependencies on prior cycles
+
+- v0.1.8.4 active aliases and grid helpers shipped (precondition:
+  `sweep` carries `feature_params` and `params` columns and `status`
+  is canonical);
+- v0.1.8.5 canonical workflow article (Batch 1 / LDG-2435) is the
+  surface that demonstrates the gap and constrains the helper shape;
+- v0.1.8.5 sweeps documentation (Batch 4 / LDG-2438) should teach
+  the helpers if they ship in the same cycle, otherwise it should not
+  pre-document them.
+
+#### Promoted roadmap hooks
+
+- promotion-recovery-summary helper: remains deferred with the snapshot
+  administration / research-loop helpers path.
+- the remaining promotion-recovery-summary helper should revise or remove the
+  research-workflow "API gap" callout if it ships.
+
+#### Cross-cycle note
+
+The remaining research-workflow "API gap" callout is the user-visible marker
+for the promotion-recovery gap. If that helper lands, revise or remove the
+callout in the same packet. Leaving stale callouts in the article is a worse
+failure than the gap itself.
+
+This horizon entry does not authorize any of the above. It records
+the direction so that when a research-loop ergonomics cycle opens,
+the author starts from a known shape rather than re-deriving the
+boundary.
+
+
+<a id="open-144"></a>
+
+### 2026-05-28 [execution] RNG resume is non-deterministic for stochastic strategies
+
+Verified correctness gap (2026-05-28), found during the fold-core validation.
+
+On resume, **state** is correct: cash and positions are reconstructed by
+replaying events as-of the resume timestamp via `ledgr_state_asof()`
+(`backtest-runner.R:1088-1099`). But the **RNG stream** is not restored. The
+runner calls `set.seed(seed)` (`backtest-runner.R:589`) and the fold calls
+`set.seed(execution_seed)` (`fold-core.R:69`); the loop then jumps to
+`start_idx` without replaying pulses 1..start_idx-1, and there is no
+`.Random.seed` checkpoint/restore anywhere (it exists only in `sim-bars.R`, the
+unrelated bar simulator).
+
+Consequence: a **deterministic** strategy resumes byte-identically (no RNG
+dependence). A **stochastic** strategy (Tier 2, e.g. `runif()`) drawing at
+pulse k on resume gets the *pulse-1* RNG draw, not the advanced stream a
+continuous run would have at pulse k. The execution-seed contract guarantees
+within-continuous-run repeatability, not resume equivalence for stochastic
+strategies.
+
+Decision needed (one of):
+
+- checkpoint `.Random.seed` at each flushed pulse and restore it on resume;
+- replay pulses 1..start_idx-1 on resume to re-advance the RNG (expensive);
+- document the limitation and restrict resume guarantees to deterministic
+  strategies (cheapest, honest).
+
+Cross-link: the v0.1.8.8 parallel-dispatch work faces the same RNG-state
+question - per-candidate seed derivation must not depend on worker scheduling
+or global RNG state. Whatever resolves resume should align with that.
+
+This entry records a verified gap, not a committed fix.
+
+
+<a id="open-145"></a>
+
+### 2026-05-28 [architecture] Fold-core structural debt surfaced by adversarial review
+
+Two adversarial reviews of the fold-core workbook surfaced design debt that is
+survivable today but should be addressed before OMS / risk / intraday land.
+None is a correctness bug — the one alleged SELL cash-sign bug was a workbook
+paraphrase typo, not a code bug; the code uses absolute `fill$qty` and is
+correct (`fold-core.R:280-284`, `ledger-writer.R:66-71`). These are refactor
+candidates.
+
+- **One production replay kernel.** Two equity-reconstruction implementations
+  share one algorithm: the inline run-path copy (`backtest-runner.R:1378-1478`)
+  and the sweep reconstructor (`ledgr_sweep_summary_from_ordered_events`), with
+  `ledgr_equity_from_events`/`ledgr_fills_from_events` as test-only parity
+  twins. The split is perf-motivated (v0.1.8.3: sweep avoids the DB round-trip)
+  and guarded by `test-sweep-parity`. End-state: one production replay kernel
+  fed by DB or memory event sinks; everything else an adapter. Partial fills,
+  dividends, borrow fees, or margin would multiply the drift risk.
+- **Phased pulse for portfolio-level risk.** The per-pulse loop interleaves
+  delta -> proposal -> cost -> event -> state-mutation per instrument. That
+  shape resists portfolio-level risk and net affordability. Target shape: plan
+  (targets -> deltas) -> batch proposals -> batch cost -> batch/portfolio risk
+  + net affordability -> emit -> apply atomically. This is the structural
+  prerequisite for the v0.1.9 affordability check (see the 2026-05-27
+  affordability-in-target-risk entry) and is a v0.1.9 target-risk RFC input.
+- **Typed execution spec.** The `execution` list is a large untyped bag; run
+  and sweep hand-build equivalent-but-not-identical lists (verified divergences
+  in seed derivation, `event_mode`, hardcoded vs config fields, metric-kernel
+  timing). A typed `ledgr_execution_spec()` constructor with validation would
+  prevent run/sweep drift.
+- **Split `fold-core.R`.** It holds the engine, the reconstructors, and metrics
+  helpers in one file. Split before OMS/risk/intraday add more concerns.
+- **Explicit event types.** Opening positions are seeded as `CASHFLOW` events
+  with meta flags. Accounting-critical semantics should not live only in
+  `meta_json`; add a `POSITION_SEED` type (and reserve `FEE`, `DIVIDEND`,
+  `SPLIT` for later) rather than overloading `CASHFLOW`. This is deferred from
+  v0.1.8.8 and scheduled as a dedicated v0.2.x RFC coordinated with corporate
+  actions / instrument-master work; do not slip it into fold-core documentation
+  or parallel-dispatch tickets.
+- **Batch-aware cost model.** The per-proposal `cost_resolver` cannot model
+  batch/portfolio slippage or liquidity. Routes to the v0.2.x
+  liquidity/capacity arc; the single-order resolver remains the default
+  adapter.
+
+Verified-and-fine (recorded so the design audit does not re-raise them): the
+no-lookahead invariant holds; the `findInterval` equity mapping is correct for
+next-open fills; the dense-panel fail-fast plus whole-run DuckDB transaction
+(`run_transaction = dbWithTransaction`) make state/event consistency clean
+(state is replayed from events, never separately persisted); open-position
+drawdowns are captured by the equity curve, so there is no survivorship bias in
+the headline return/drawdown metrics.
+
+This entry records direction, not committed work.

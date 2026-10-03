@@ -54,7 +54,7 @@ workstreams:
   - id: 4
     name: "Horizon migration"
     cut: 1
-    status: "in_progress"
+    status: "review_pending"
     depends_on_workstream: 3
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 4", reason: "One claim joins LDG-2930 through LDG-2932: every horizon body survives, every old heading still resolves, and no accepted obligation or operative binding citation remains hidden in parking-lot prose. The review recounts entries from the pre-migration file, reconciles each heading to one active body or one redirect plus archive body, samples bodies from every disposition, independently searches obligation language and operative citations, verifies pipeline ownership, and confirms historical packets and syntheses were not rewritten."}
@@ -159,13 +159,13 @@ tickets:
   - id: "LDG-2932"
     title: "Archive classified horizon entries and reconcile the migration"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2931"]
     scope: "Treat horizon bodies as the migration proxy for accepted unscheduled obligations, then sample operative syntheses for obligations that were never mirrored there: at minimum the point-in-time historical projection synthesis v11 and every synthesis represented by an Obligations open pipeline row. Route any omission before moving bodies. Move every classified non-parked Open body byte-identically to horizon_archive.md, retain its exact heading as a one-line redirect naming disposition and destination, never delete a body, and reconcile all entry and citation counts. Do not edit released packets or historical syntheses; their citations continue through stubs."
     acceptance: ["the synthesis sample is named in evidence and every accepted unscheduled obligation found there is either already represented by the horizon proxy or added once to Obligations open", "every pre-migration Open entry reconciles to exactly one active parked body or one redirect plus one byte-identical archive body", "promoted redirects point to standing authority or committed scope, evidence redirects point to their evidence record, and refuted or dropped redirects say so without inventing authority", "released packets and historical syntheses are unchanged and their sampled old horizon links resolve through stubs", "a heading-and-body reconciliation command fails after deleting, duplicating or renaming one sampled entry, and final counts reconcile every pre-migration Open and Resolved entry without deletion or duplication"]
-    evidence: []
+    evidence: ["The accepted-source sweep in horizon_migration_reconciliation.md names historical-projection v11 plus every accepted synthesis represented by an Obligations open pipeline row. After LDG-2931's routing, it found no further accepted unscheduled obligation without an operational home; no historical synthesis or released packet was edited.", "Of the 146 tracked Open entries, 57 remain active parked bodies and 89 moved byte-identically behind explicit open-001 through open-146 anchors: 57 promoted, 30 measured evidence and two dropped current routes. Their exact headings remain as disposition redirects. Together with LDG-2930, horizon.md has 103 historical redirects and horizon_archive.md has 103 bodies, including the unchanged 14-entry Resolved migration. The only normalization is the section-separator blank after the final moved body; the body itself is unchanged. The maintainer's concurrent 2026-10-02 research entry remains an additional active parked body outside the claimed baseline.", "The one-off reconciliation reported HORIZON_RECONCILIATION_OK tracked=146 parked=57 moved=89 resolved=14 and compared every parked or archived body with the pre-migration bytes. Renaming the sampled untradable-holdings redirect reported HEADING_MUTATION_DETECTED. All 134 distinct local redirect targets and all 36 local RFC-pipeline links resolve after repairing the older v0.1.9.1 stub from a nonexistent packet README to its packet spec; the focused documentation-contract suite, YAML parse and git diff --check passed before close review."]
   - id: "LDG-2933"
     title: "Compact the roadmap and current agent context"
     workstream: 5

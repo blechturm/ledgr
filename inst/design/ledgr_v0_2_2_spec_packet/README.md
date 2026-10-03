@@ -1,8 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1
-through 3 are accepted after Type 1 close review; Workstream 4 is in progress
-and Workstream 5 remains pending.
+through 3 are accepted after Type 1 close review; Workstream 4 is ready for
+Type 1 close review and Workstream 5 remains pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -22,6 +22,9 @@ the packet state and does not become a second editable ticket ledger.
   maintainer accepted it for Cut 1 on 2026-10-03.
 - `contract_census.md`: the bounded LDG-2923 migration input and LDG-2924
   reconciliation; it is evidence, not a replacement contract.
+- `horizon_migration_reconciliation.md`: the LDG-2931 classification,
+  obligation sweep and LDG-2932 body/redirect reconciliation; it is migration
+  evidence, not authority or a backlog.
 - `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
   evidence for the two retired catalogues; it is not a decision index.
 - `../README.md`: the LDG-2926 short front door for current authority and
@@ -30,7 +33,7 @@ the packet state and does not become a second editable ticket ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstreams 1 through 3 are complete,
-  Workstream 4 is in progress and Workstream 5 is pending.
+  Workstream 4 is review pending and Workstream 5 is pending.
 
 ## Cut 1: Design-memory authority and discoverability
 

@@ -205,3 +205,26 @@ independent completeness check.
 The concurrent research entry adds one still-parked body to the live tree.
 The final reconciliation verifies each tracked non-parked row against one
 redirect and one archive body and each parked row against one active body.
+
+## Final migration reconciliation
+
+LDG-2932 leaves 57 tracked Open bodies active and moves 89 tracked bodies:
+57 promoted, 30 measured evidence and two dropped current routes. Together
+with the 14 entries migrated from Resolved under LDG-2930, the historical
+section now has 103 exact-heading redirects and the archive has 103 bodies.
+The concurrent research entry remains one additional active body and is not
+counted as Workstream 4 output.
+
+A one-off body comparison reported `tracked=146 parked=57 moved=89` and
+`resolved=14`. Every parked segment matched its pre-migration bytes; every
+moved body matched the bytes following its explicit archive anchor. The only
+normalization was the section-separator blank after the final moved body; its
+body bytes are unchanged. The same check failed after renaming the sampled
+untradable-holdings redirect, reporting `HEADING_MUTATION_DETECTED`.
+
+The accepted-source sweep above found no additional unscheduled obligation
+after LDG-2931 added or expanded the named pipeline rows. Historical packets
+and syntheses were not edited. Old heading links continue to resolve in
+`horizon.md`; all 134 distinct local redirect targets and all 36 local
+RFC-pipeline links resolve in the current tree. The check repaired the older
+v0.1.9.1 redirect from a nonexistent packet README to the packet spec.
