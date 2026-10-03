@@ -72,6 +72,8 @@ Accepted change pending:
 - [Walk-forward snapshot override](decisions.md#walk-forward-snapshot-override)
 - [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
 - [OMS order lifecycle](decisions.md#oms-order-lifecycle)
+- [Equity corporate actions](decisions.md#equity-corporate-actions)
+- [Accounting-core consolidation](decisions.md#accounting-core-consolidation)
 
 - v0.1.7 makes `ledgr_run()` the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
@@ -338,6 +340,7 @@ Accepted change pending:
 Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+- [Equity corporate actions](decisions.md#equity-corporate-actions)
 
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
@@ -1109,6 +1112,7 @@ Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
 - [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
+- [Equity corporate actions](decisions.md#equity-corporate-actions)
 
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the
@@ -1513,6 +1517,10 @@ Accepted change pending:
   guarantee an absence of fills.
 
 ## Verification Contract
+
+Accepted change pending:
+
+- [Testing architecture](decisions.md#testing-architecture)
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:

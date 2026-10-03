@@ -123,6 +123,20 @@ the rule is not "break freely." Internal coherence, code-citation accuracy, and
 roadmap alignment still matter. Pre-CRAN rules out external user-breakage cost;
 it does not rule out internal-code cost.
 
+## Pre-CRAN Compatibility Policy
+
+Until ledgr is released on CRAN, stored artifacts, database schemas, config
+hashes, provenance formats, and experimental APIs may change without backward
+compatibility or a deprecation cycle. Pre-CRAN artifacts are development
+artifacts; rerun experiments after upgrading when a cycle changes storage,
+hashing, or execution contracts.
+
+This policy permits intentional breaking changes before CRAN. It does not
+permit accidental drift. Fingerprint pins, release gates, contract tests,
+hash-verification checks, and reproducibility discipline remain load-bearing
+for current-version trust and agent containment. Once ledgr reaches CRAN, the
+project must define an explicit compatibility and deprecation policy.
+
 ---
 
 ## Open questions vs future obligations

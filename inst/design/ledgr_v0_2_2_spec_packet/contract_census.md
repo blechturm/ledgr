@@ -166,10 +166,14 @@ and where to consolidate them. LDG-2924 does not add their semantics.
 | --- | --- | --- |
 | v0.2.0.0 | Its spec Section 3 maps every behavior-changing area to same-release contract edits. The release history contains contract commits for public hardening, risk/selection metrics and availability. | Recorded. Current Snapshot, Availability, Persistence, Strategy, Context, Result and Verification sections carry the shipped rules. |
 | v0.2.0.1 | The release optimized internal representation and set `collapse >= 2.1.8`. The tag range changes `DESCRIPTION`, not `contracts.md`. | No missing public-behavior contract found. The dependency floor belongs in `DESCRIPTION`; accepted exact-parity and fail-closed behavior reuse existing contracts. |
-| v0.2.1.0 | The tag range contains eighteen contract commits, including the event envelope, TTR SMA availability support, context surface, session axis and strategy helper semantics. | Recorded. `git diff` from v0.2.0.1 to v0.2.1.0 changes 284 contract lines. |
+| v0.2.1.0 | The tag range contains eighteen contract commits, including the event envelope, TTR SMA availability support, context surface, session axis and strategy helper semantics. It also shipped equity corporate actions, accounting-core consolidation and the testing control plane without consolidating all of their accepted rules into a standing contract or process document. | Partly recorded. `git diff` from v0.2.0.1 to v0.2.1.0 changes 284 contract lines, but the three unconsolidated topic groups are routed through LDG-2925 and LDG-2927 rather than treated as standing. |
 
 The later-release check found no rule that conflicts with the current contract.
-It does not cure the four older v0.1.9.5 consolidation gaps above.
+It exposed three accepted and shipped topic groups that are not consolidated
+strongly enough for the new normative role: equity corporate actions, testing
+architecture and accounting-core internal invariants. LDG-2925 and LDG-2927
+must bridge them and add their pending links. This is in addition to the four
+older v0.1.9.5 consolidation gaps above.
 
 ## 8. Routed Findings And LDG-2924 Input
 
@@ -178,6 +182,9 @@ It does not cure the four older v0.1.9.5 consolidation gaps above.
 | global v0.1.9.5 authority delegation | stale authority text | LDG-2924 header correction |
 | broken v0.1.8 packet path | stale authority text | LDG-2924 header correction |
 | H-1, H-2, M-7 and candidate override semantics live only in accepted historical authority | stale authority handoff; shipped but unconsolidated | LDG-2925 exact-source bridge; later authorized consolidation |
+| equity corporate-action semantics shipped without standing Availability, Execution and Result clauses | stale authority handoff; shipped but unconsolidated | LDG-2925 exact-source bridge and LDG-2927 pending links; later authorized consolidation |
+| testing-architecture decisions live in the accepted synthesis while the control plane and claims registry are evidence | stale authority handoff; shipped but unconsolidated | LDG-2925 exact-source bridge and LDG-2927 Verification pending link; later authorized consolidation |
+| accounting-core internal invariants are only partly represented by current Execution clauses | partial stale authority handoff | LDG-2925 exact-source bridge and LDG-2927 Execution pending link; later authorized consolidation |
 | Strategy line 761 binds to a horizon entry | conflict with the accepted horizon role, not a product-rule conflict | LDG-2931 citation routing; preserve current clause until then |
 | recursive-indicator availability support is still future-facing | accepted but unimplemented direction | LDG-2925/2929 exact-source bridge and pipeline classification |
 
@@ -203,6 +210,9 @@ The other census findings remain routed rather than edited:
 
 - H-1, H-2, M-7 and the walk-forward override rule go to LDG-2925 and
   LDG-2927 for exact-source bridge entries and pending links;
+- equity corporate actions, testing architecture and accounting-core internal
+  invariants go to LDG-2925 and LDG-2927 for exact-source bridge entries and
+  pending links;
 - the 2026-09-29 horizon dependency goes to LDG-2931; and
 - recursive-indicator direction goes to the bridge and RFC pipeline under
   LDG-2925 and LDG-2929.

@@ -1,8 +1,9 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Design-memory
-Cut 1 Workstream 1 is accepted, Workstream 2 awaits Type 1 close review and
-the other macro workstreams are pre-ticket and non-executable.
+Cut 1 Workstreams 1 and 2 are accepted after Type 1 close review, Workstream 3
+is in progress and the other macro workstreams are pre-ticket and
+non-executable.
 
 **Date:** 2026-10-03
 

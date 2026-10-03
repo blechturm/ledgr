@@ -81,7 +81,7 @@ records explain what shipped; they do not authorize new work.
 | [ledgr_roadmap.md](ledgr_roadmap.md) | Committed release goals and sequencing |
 | [horizon.md](horizon.md) | Non-binding parking |
 | [rfc/README.md](rfc/README.md) | Active, due, parked and open-obligation RFC pipeline |
-| [adr/README.md](adr/README.md) | ADR routing and operative ADR records |
+| [adr/README.md](adr/README.md) | Historical ADR routing and records; the ADR process is wound down |
 | [manual/](manual/) | Maintainer explanation and implementation guidance |
 | [research/](research/README.md) | Research evidence and vendor-specific interpretation |
 | [audits/](audits/) | Bounded findings and their routing evidence |

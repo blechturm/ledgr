@@ -35,9 +35,9 @@ Count: 13 old rows reconciled to 13 dispositions.
 
 | Old row | Disposition | Current route |
 | --- | --- | --- |
-| Testing architecture | Standing process | [RFC cycle](../rfc_cycle.md), test control plane and claims registry |
-| Equity corporate actions | Standing | [Availability Contract](../contracts.md#availability-contract), [Execution Contract](../contracts.md#execution-contract) and [Result Contract](../contracts.md#result-contract) |
-| Accounting-core consolidation | Standing and historical | [Execution Contract](../contracts.md#execution-contract) and accepted synthesis |
+| Testing architecture | Bridge | [Testing-architecture bridge](../decisions.md#testing-architecture); consolidation destination: [Verification Contract](../contracts.md#verification-contract) |
+| Equity corporate actions | Bridge | [Equity-corporate-actions bridge](../decisions.md#equity-corporate-actions); consolidation destinations: [Availability Contract](../contracts.md#availability-contract), [Execution Contract](../contracts.md#execution-contract) and [Result Contract](../contracts.md#result-contract) |
+| Accounting-core consolidation | Standing in part; bridge for unconsolidated internal invariants | [Execution Contract](../contracts.md#execution-contract); [accounting-core bridge](../decisions.md#accounting-core-consolidation) |
 | Post-v0.2.0.1 governance loop | Standing process | [RFC cycle](../rfc_cycle.md) and `AGENTS.md` |
 | Design-governance process | Standing process | [RFC cycle](../rfc_cycle.md) |
 | Sweep candidate contract and promotion | Standing | [Sweep Promotion Contract](../contracts.md#sweep-promotion-contract) |
