@@ -440,11 +440,18 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
     feature_ids = feature_ids
   )
   if (!is.null(projection)) {
+    prepared_feature_lookup <- ledgr_projection_feature_lookup_state(
+      projection,
+      feature_ids = feature_ids,
+      universe = universe,
+      active_alias_map = active_alias_map
+    )
     out$feature <- ledgr_pulse_context_feature_accessor(
       ledgr_projection_feature_accessor_state(
         projection,
         feature_state,
-        feature_ids = feature_ids
+        feature_ids = feature_ids,
+        prepared = prepared_feature_lookup
       ),
       lookup,
       track_scalar_access = length(universe) >= 100L
@@ -454,7 +461,8 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
       feature_state,
       universe = universe,
       feature_ids = feature_ids,
-      active_alias_map = active_alias_map
+      active_alias_map = active_alias_map,
+      prepared = prepared_feature_lookup
     )
     out$feature_table_current <- function() {
       ledgr_projection_feature_table(

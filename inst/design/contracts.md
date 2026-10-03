@@ -1008,6 +1008,10 @@ Accepted change pending:
 - The decision-time guarantee concerns supported context operations. Public
   accessors may retain engine-owned prepared state internally only when every
   supported operation enforces the invoking pulse and permitted axis.
+  Instrument, universe and feature-ID indexes and the active alias map are
+  prepared once for one run-local context factory. The active alias map is
+  fixed for that run and prepared state is never shared across runs or sweep
+  candidates.
   Dot-prefixed context fields are not API and carry no guarantees; deliberate
   R introspection of closure environments, call stacks or internal bindings is
   outside this contract.

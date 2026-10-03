@@ -262,13 +262,13 @@ tickets:
   - id: "LDG-2938"
     title: "Prepare scalar feature accessors once per run"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Reproduce the current-tree accessor baseline and preregister a 5% materiality gate on a scalar-accessor strategy. If it passes, prepare instrument, universe and feature-id lookup state and normalize the active alias map once in each run-local accessor factory. The active alias map is fixed for a run. Preserve exact values and the existing error classes and messages for every supported and invalid call shape. Do not alter the vector accessor or public context surface."
     acceptance: ["a current-tree call-shape matrix covers known and unknown instruments, universes, engine ids and active aliases, and public run and sweep clocks use the cut-wide paired-arm rule to register the 5% gate before implementation", "values or error class and literal message remain exact across the matrix, including availability-aware and scalar cases", "a row-shift mutation fails and counters prove lookup indexes and active-alias normalization are built once per run rather than per accessor call", "a one-worker sweep with two candidates whose universes or alias maps differ proves no prepared object crosses a run or candidate boundary; a mutation hoisting prepared state to shared scope fails", "the Context Contract records that the active alias map is fixed for a run", "if the materiality gate fails, evidence records rejection and production stays unchanged"]
-    evidence: []
+    evidence: ["At 9064743, dev/spikes/feature-accessor-lookup/spike_runner.R was rerun on R 4.6.1 with collapse 2.1.8 and duckdb 1.5.6.9000 into ws7_accessor_evidence. Three uncontended paired observations at 500 instruments x 1,260 pulses measured ledgr_run 56.291 to 49.605 seconds (11.9%), canonical ledgr_sweep 32.822 to 25.837 seconds (21.3%) and compiled spot-FIFO sweep 27.086 to 20.107 seconds (25.8%); all kept rows had zero other R processes and below one other busy CPU core. All 48 public parity comparisons and all 33 call-shape comparisons were exact.", "The production implementation creates one prepared object in ledgr_fast_context_state() and shares its hashed instrument, universe and feature-ID indexes and normalized active alias map between ctx$feature() and ctx$features(). LTB-0139 pins literal scalar, bundle, default and error outcomes and proves preparation and alias normalization occur once across repeated reads. LTB-0140 runs two sequential sweep candidates resolving signal to sma_2 and sma_3 and observes distinct run-local prepared environments, so candidate state cannot leak."]
   - id: "LDG-2939"
     title: "Validate explicit feature maps once and memoize exactly"
     workstream: 7

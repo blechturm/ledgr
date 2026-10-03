@@ -429,13 +429,75 @@ ledgr_projection_feature_vector_accessor <- function(projection, pulse_idx, feat
   }
 }
 
-ledgr_projection_feature_accessor_state <- function(projection, state, feature_ids = NULL) {
+ledgr_projection_feature_lookup_state <- function(projection,
+                                                  feature_ids = NULL,
+                                                  universe = NULL,
+                                                  active_alias_map = NULL) {
+  available_features <- ledgr_projection_feature_ids(projection, feature_ids)
+  instrument_index <- projection$instrument_index
+  instrument_rows <- list2env(
+    stats::setNames(as.list(unname(instrument_index)), names(instrument_index)),
+    hash = TRUE,
+    parent = emptyenv()
+  )
+  known_features <- list2env(
+    stats::setNames(
+      as.list(rep(TRUE, length(available_features))),
+      available_features
+    ),
+    hash = TRUE,
+    parent = emptyenv()
+  )
+  universe <- if (is.null(universe)) NULL else as.character(universe)
+  universe_members <- if (is.null(universe)) {
+    NULL
+  } else {
+    list2env(
+      stats::setNames(as.list(rep(TRUE, length(universe))), universe),
+      hash = TRUE,
+      parent = emptyenv()
+    )
+  }
+  active_lookup <- tryCatch(
+    list(
+      valid = TRUE,
+      value = ledgr_feature_lookup_map(
+        NULL,
+        active_alias_map = active_alias_map
+      )
+    ),
+    error = function(e) list(valid = FALSE, value = NULL)
+  )
+
+  list(
+    available_features = available_features,
+    available_message = ledgr_feature_names_message(sort(available_features)),
+    instrument_rows = instrument_rows,
+    known_features = known_features,
+    feature_values = projection$feature_values,
+    universe = universe,
+    universe_members = universe_members,
+    active_lookup = active_lookup
+  )
+}
+
+ledgr_projection_feature_accessor_state <- function(projection,
+                                                    state,
+                                                    feature_ids = NULL,
+                                                    prepared = NULL) {
   force(projection)
   force(state)
-  available_features <- ledgr_projection_feature_ids(projection, feature_ids)
-  available_message <- ledgr_feature_names_message(sort(available_features))
-  instrument_index <- projection$instrument_index
-  feature_values <- projection$feature_values
+  if (is.null(prepared)) {
+    prepared <- ledgr_projection_feature_lookup_state(
+      projection,
+      feature_ids = feature_ids
+    )
+  }
+  available_features <- prepared$available_features
+  available_message <- prepared$available_message
+  instrument_rows <- prepared$instrument_rows
+  known_features <- prepared$known_features
+  feature_values <- prepared$feature_values
   function(instrument_id, feature_name, default = NA_real_) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
@@ -443,7 +505,7 @@ ledgr_projection_feature_accessor_state <- function(projection, state, feature_i
     if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
       rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
-    if (length(available_features) == 0L || !(feature_name %in% available_features)) {
+    if (length(available_features) == 0L || is.null(known_features[[feature_name]])) {
       rlang::abort(
         sprintf(
           "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
@@ -454,8 +516,8 @@ ledgr_projection_feature_accessor_state <- function(projection, state, feature_i
         class = "ledgr_unknown_feature_id"
       )
     }
-    inst_idx <- unname(instrument_index[instrument_id])
-    if (length(inst_idx) != 1L || is.na(inst_idx)) {
+    inst_idx <- instrument_rows[[instrument_id]]
+    if (is.null(inst_idx) || is.na(inst_idx)) {
       return(default)
     }
     mat <- feature_values[[feature_name]]
@@ -507,17 +569,37 @@ ledgr_projection_feature_bundle_accessor <- function(projection, pulse_idx, univ
   }
 }
 
-ledgr_projection_feature_bundle_accessor_state <- function(projection, state, universe, feature_ids = NULL, active_alias_map = NULL) {
+ledgr_projection_feature_bundle_accessor_state <- function(projection,
+                                                           state,
+                                                           universe,
+                                                           feature_ids = NULL,
+                                                           active_alias_map = NULL,
+                                                           prepared = NULL) {
   force(projection)
   force(state)
-  feature <- ledgr_projection_feature_accessor_state(projection, state, feature_ids)
-  universe <- as.character(universe)
+  if (is.null(prepared)) {
+    prepared <- ledgr_projection_feature_lookup_state(
+      projection,
+      feature_ids = feature_ids,
+      universe = universe,
+      active_alias_map = active_alias_map
+    )
+  }
+  feature <- ledgr_projection_feature_accessor_state(
+    projection,
+    state,
+    feature_ids,
+    prepared = prepared
+  )
+  universe <- prepared$universe
+  members <- prepared$universe_members
+  active_lookup <- prepared$active_lookup
 
   function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
-    if (!(instrument_id %in% universe)) {
+    if (is.null(members[[instrument_id]])) {
       rlang::abort(
         sprintf(
           "Unknown instrument_id '%s'. Available ctx$universe: %s.",
@@ -528,7 +610,14 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection, state, un
       )
     }
 
-    lookup_map <- ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+    lookup_map <- if (is.null(feature_map) && isTRUE(active_lookup$valid)) {
+      active_lookup$value
+    } else {
+      ledgr_feature_lookup_map(
+        feature_map,
+        active_alias_map = active_alias_map
+      )
+    }
     values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
       if (!is.numeric(value) || length(value) != 1L) {
