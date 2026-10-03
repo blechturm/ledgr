@@ -47,16 +47,22 @@ Existing fast-profile resume evidence also remained green, including
 LTB-0007's exact ledger, state, feature, equity, fill and trade comparison
 after recovery.
 
-The record is reproduced from the repository root with:
+The record must be reproduced from a detached checkout of baseline `4055454`,
+not from the current tree. Create and enter that worktree, then build the
+package DLL once before running the record:
 
 ```text
-Rscript dev/spikes/fill-event-block-write/spike_runner.R --phase all \
-  --out inst/design/ledgr_v0_2_2_spec_packet/ws6_fill_event_flush_evidence \
-  --reps 3
+git worktree add --detach C:/tmp/ledgr-ws6-record 4055454
+Set-Location C:/tmp/ledgr-ws6-record
+Rscript -e "pkgload::load_all('.', quiet = TRUE)"
+Rscript dev/spikes/fill-event-block-write/spike_runner.R --phase all --out inst/design/ledgr_v0_2_2_spec_packet/ws6_fill_event_flush_evidence --reps 3
 ```
 
-The runner applies `dev/spikes/fill-event-block-write/seam.R` to the candidate
-arm and compares it with baseline `4055454` in one interleaved R process.
+The runner loads the checkout containing it as the base arm, applies
+`dev/spikes/fill-event-block-write/seam.R` to the candidate arm and compares
+both in one interleaved R process. Running it from HEAD would instead compare
+shipped code with shipped code plus the old seam and would not reproduce this
+record.
 
 Production keeps direct `buffer_event()` behavior for existing internal
 callers. Only canonical `write_fill_events()` stages rows. The fold calls
@@ -85,8 +91,7 @@ The persistent failure witness reads status and row count from DuckDB. Its
 durable half protects the existing fold transaction: publishing each fill
 directly still rolls back and is not claimed as a staging detector. Running
 the fold outside that transaction is the registered smallest failing change.
-The
-sweep witness compares the completed candidate's semantic result with a
+The sweep witness compares the completed candidate's semantic result with a
 separate one-candidate sweep. It does not treat a shared helper as the oracle.
 
 ## LDG-2936: Diagnostic Sequence
@@ -112,6 +117,13 @@ in-memory value even though their rows rolled back. LTB-0138 starts from a
 durable sequence seven, writes blocks of two and one rows, and obtains exact
 sequences 7 through 10 with one initializer call. Calling the initializer for
 each block fails the detector.
+
+The heavy-protocol block `ported fold witnesses preserve every persisted
+surface` in `tests/testthat/test-availability-fold-witnesses.R` protects the
+rollback refresh. Replacing `next_diagnostic_seq(refresh = TRUE)` with the
+cached call makes that block fail; the corrected block passed independently
+with 43 expectations. It is the failed-fold detector, while LTB-0138 protects
+ordinary and resumed block allocation.
 
 Evidence is under `ws6_diagnostic_sequence_evidence/`. The removed query work
 is 0.3734 seconds at the registered shape; no separate end-to-end speedup is
