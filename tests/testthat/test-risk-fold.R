@@ -118,6 +118,150 @@ testthat::test_that("pulse plan resolves same-pulse fills before emitting events
   testthat::expect_identical(as.integer(events$event_seq), 1:2)
 })
 
+testthat::test_that("[LTB-0136] the fold flushes its handler once per pulse", {
+  strategy <- function(ctx, params) {
+    if (identical(ctx$ts_utc, "2024-01-01T00:00:00Z")) {
+      targets <- ctx$flat()
+      targets[c("AAA", "BBB")] <- 1
+      return(targets)
+    }
+    ctx$hold()
+  }
+  handler <- ledgr:::ledgr_memory_output_handler("pulse-flush-counter")
+  writes <- 0L
+  flushes <- 0L
+  original_write <- handler$write_fill_events
+  original_flush <- handler$flush_pulse_events
+  handler$write_fill_events <- function(...) {
+    writes <<- writes + 1L
+    original_write(...)
+  }
+  handler$flush_pulse_events <- function() {
+    flushes <<- flushes + 1L
+    original_flush()
+  }
+
+  execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = ledgr_test_cost_resolver(
+      spread_bps = 0,
+      commission_fixed = 0
+    ),
+    run_id = "pulse-flush-counter"
+  )
+  ledgr:::ledgr_execute_fold(execution, handler)
+
+  testthat::expect_identical(writes, 2L)
+  testthat::expect_identical(flushes, 3L)
+  testthat::expect_identical(handler$events()$instrument_id, c("AAA", "BBB"))
+
+  final_handler <- ledgr:::ledgr_memory_output_handler("pulse-final-flush")
+  final_execution <- ledgr_risk_fold_test_execution(
+    strategy = strategy,
+    cost_resolver = ledgr_test_cost_resolver(
+      spread_bps = 0,
+      commission_fixed = 0
+    ),
+    run_id = "pulse-final-flush"
+  )
+  final_execution$max_pulses <- 2L
+  ledgr:::ledgr_execute_fold(final_execution, final_handler)
+  testthat::expect_identical(
+    final_handler$events()$instrument_id,
+    c("AAA", "BBB")
+  )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0137] a failed pulse publishes no partial fill rows", {
+  pulses <- as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2
+  bars <- do.call(rbind, lapply(c("AAA", "BBB"), function(instrument_id) {
+    data.frame(
+      ts_utc = pulses,
+      instrument_id = instrument_id,
+      open = c(10, 11, 12),
+      high = c(10, 11, 12),
+      low = c(10, 11, 12),
+      close = c(10, 11, 12),
+      volume = 1000,
+      stringsAsFactors = FALSE
+    )
+  }))
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  strategy <- function(ctx, params) {
+    targets <- ctx$flat()
+    targets[] <- params$qty
+    targets
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    cost_model = ledgr_cost_zero()
+  )
+
+  original_apply <- ledgr:::ledgr_lot_apply_fill
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_lot_apply_fill = function(...) {
+      calls <<- calls + 1L
+      if (calls == 2L) {
+        rlang::abort("injected second-fill failure", class = "ledgr_test_fill_failure")
+      }
+      original_apply(...)
+    },
+    .package = "ledgr"
+  )
+
+  testthat::expect_error(
+    ledgr_run(
+      experiment,
+      params = list(qty = 1),
+      run_id = "pulse-atomic-failure",
+      seed = 1L
+    ),
+    class = "ledgr_test_fill_failure"
+  )
+  con <- get_connection(snapshot)
+  run_row <- DBI::dbGetQuery(
+    con,
+    "SELECT status FROM runs WHERE run_id = 'pulse-atomic-failure'"
+  )
+  event_count <- DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = 'pulse-atomic-failure'"
+  )$n[[1L]]
+  testthat::expect_identical(run_row$status, "FAILED")
+  testthat::expect_identical(as.integer(event_count), 0L)
+
+  calls <- 0L
+  mixed <- ledgr_sweep(
+    experiment,
+    ledgr_param_grid(failed = list(qty = 1), completed = list(qty = 2)),
+    seed = 1L
+  )
+  reference <- ledgr_sweep(
+    experiment,
+    ledgr_param_grid(completed = list(qty = 2)),
+    seed = 1L
+  )
+  testthat::expect_identical(mixed$status, c("FAILED", "DONE"))
+  testthat::expect_identical(mixed$error_class[[1L]], "ledgr_test_fill_failure")
+  stable_columns <- c(
+    "status", "completion_json", "final_equity", "total_return",
+    "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
+    "n_trades", "win_rate", "avg_trade", "time_in_market", "params",
+    "feature_params", "warnings", "feature_fingerprints", "risk_chain_hash"
+  )
+  for (name in stable_columns) {
+    testthat::expect_identical(
+      mixed[[name]][[2L]],
+      reference[[name]][[1L]],
+      info = name
+    )
+  }
+})
+
 testthat::test_that("no-op feasibility hook does not sequentially reject same-pulse rebalances", {
   cost_resolver <- ledgr_test_cost_resolver(
     spread_bps = 0,

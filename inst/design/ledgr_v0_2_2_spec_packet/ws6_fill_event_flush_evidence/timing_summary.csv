@@ -1,0 +1,3 @@
+"workflow","reps","base_median_s","base_rel_iqr","block_median_s","block_rel_iqr","ratio_block_to_base","paired_saving_median_s","paired_saving_q25_s","paired_saving_q75_s","paired_saving_median_pct","base_gc_median_s","block_gc_median_s"
+"ledgr_run",3,65.463,0.023,58.381,0.004,0.892,6.597,5.864,7.324,10.08,8.6,7.92
+"ledgr_sweep",3,52.914,0.049,45.432,0.066,0.859,11.616,9.308,11.794,20.36,7.35,5.55

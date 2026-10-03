@@ -110,6 +110,12 @@ Accepted change pending:
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- The canonical R fold stages successful fill-event rows inside the output
+  handler until `flush_pulse_events()` publishes the complete pulse. No code
+  may read a staged row before that flush except the handler-local
+  `record_accounting_fact()` patch for that same fill. A handler with no staged
+  canonical rows treats the flush as a no-op; this preserves live database and
+  compiled-accounting behavior while keeping event order and meaning common.
 - Parallel sweep is candidate-level dispatch over the same fold core. Workers
   return compact candidate result rows to the orchestrator; they must not write
   candidate ledgers, equity curves, feature panels, run telemetry, or promotion
@@ -534,6 +540,11 @@ Accepted change pending:
   transaction, and record error diagnostics only after that rollback.
   Deliberately interrupted `RUNNING` invocations retain their decision trace;
   resumed invocations append rather than replace those diagnostic rows.
+- Pulse-level fill staging does not create a partial-flush persistence promise.
+  The fold transaction remains the durable atomicity boundary: an unexpected
+  exception before or after a pulse flush rolls back all fill rows from that
+  invocation, and a failed in-memory sweep candidate exposes none of its
+  staged rows to another candidate.
 - Experiment-store schema 115 adds nullable canonical `completion_json` to
   sweep-candidate and walk-forward score evidence and admits `INCOMPLETE` on
   those rows. Migration rebuilds the two constrained tables transactionally,

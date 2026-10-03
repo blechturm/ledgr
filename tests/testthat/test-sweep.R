@@ -48,6 +48,8 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   )
   full_write_res <- ledgr:::ledgr_fill_event_row("typed-memory", fill, 2L)
   write_res <- handler$write_fill_events(fill, 2L)
+  testthat::expect_identical(nrow(handler$events()), 1L)
+  handler$flush_pulse_events()
 
   expected <- tibble::as_tibble(rbind(opening, ledgr:::ledgr_event_row_df(full_write_res$row)))
   events <- handler$events()
@@ -146,6 +148,7 @@ testthat::test_that("single-pass sweep summary matches separate reconstruction h
     class = "ledgr_fill_intent"
   )
   handler$write_fill_events(fill, 2L)
+  handler$flush_pulse_events()
   events <- handler$typed_events()
   close_mat <- matrix(c(10, 12), nrow = 1L, dimnames = list("AAA", NULL))
   metric_kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = pulses)
@@ -243,6 +246,7 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   lot_state <- lot_res$state
   write_res <- handler$write_fill_events(fill, 2L)
   handler$record_accounting_fact(write_res, lot_res, lot_state)
+  handler$flush_pulse_events()
   handler$record_equity_fact(
     ts_utc = pulses[[2L]],
     cash = 1000 + write_res$cash_delta,

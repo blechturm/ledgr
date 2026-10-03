@@ -126,18 +126,101 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
 
   res <- handler$write_fill_events(fill, 1L, use_transaction = FALSE)
   testthat::expect_identical(res$status, "WROTE")
-  testthat::expect_identical(handler$pending_event_count(), 1L)
+  testthat::expect_identical(handler$pending_event_count(), 0L)
   testthat::expect_equal(
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]],
     0
   )
 
+  handler$flush_pulse_events()
+  testthat::expect_identical(handler$pending_event_count(), 1L)
   handler$flush_pending()
   testthat::expect_identical(handler$pending_event_count(), 0L)
   testthat::expect_equal(
     DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]],
     1
   )
+})
+
+testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact order", {
+  fills <- list(
+    ledgr_test_next_open_fill(
+      desired_qty_delta = 2,
+      next_bar = list(
+        instrument_id = "AAA",
+        ts_utc = "2020-01-02T00:00:00Z",
+        open = 100
+      ),
+      spread_bps = 10,
+      commission_fixed = 1.25
+    ),
+    ledgr_test_next_open_fill(
+      desired_qty_delta = -3,
+      next_bar = list(
+        instrument_id = "BBB",
+        ts_utc = "2020-01-02T00:00:00Z",
+        open = 200
+      ),
+      spread_bps = 20,
+      commission_fixed = 2.5
+    )
+  )
+
+  memory <- ledgr:::ledgr_memory_output_handler("pulse-memory", .event_initial_capacity = 1L)
+  memory$init_buffers(2L)
+  invisible(memory$write_fill_events(fills[[1L]], 1L))
+  invisible(memory$write_fill_events(fills[[2L]], 2L))
+  testthat::expect_identical(nrow(memory$events()), 0L)
+  memory$flush_pulse_events()
+  memory_rows <- memory$events()
+  expected_memory <- do.call(rbind, lapply(seq_along(fills), function(i) {
+    ledgr:::ledgr_event_row_df(
+      ledgr:::ledgr_fill_event_row("pulse-memory", fills[[i]], i)$row
+    )
+  }))
+  testthat::expect_equal(
+    as.data.frame(memory_rows),
+    as.data.frame(expected_memory),
+    ignore_attr = TRUE
+  )
+  memory$flush_pulse_events()
+  testthat::expect_identical(nrow(memory$events()), 2L)
+
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  insert_test_run(con, "pulse-durable")
+  durable <- ledgr:::ledgr_persistent_output_handler(
+    con = con,
+    run_id = "pulse-durable",
+    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+    execution_mode = "audit_log",
+    persist_features = FALSE,
+    .event_initial_capacity = 1L
+  )
+  durable$init_buffers(2L)
+  invisible(durable$write_fill_events(fills[[1L]], 1L))
+  invisible(durable$write_fill_events(fills[[2L]], 2L))
+  testthat::expect_identical(durable$pending_event_count(), 0L)
+  durable$flush_pulse_events()
+  testthat::expect_identical(durable$pending_event_count(), 2L)
+  durable$flush_pulse_events()
+  testthat::expect_identical(durable$pending_event_count(), 2L)
+  durable$flush_pending()
+  durable_rows <- DBI::dbGetQuery(
+    con,
+    "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+    params = list("pulse-durable")
+  )
+  expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) {
+    ledgr:::ledgr_event_row_df(
+      ledgr:::ledgr_fill_event_row("pulse-durable", fills[[i]], i)$row
+    )
+  }))
+  expected_durable$meta_json <- as.character(expected_durable$meta_json)
+  for (name in names(expected_durable)) {
+    testthat::expect_identical(durable_rows[[name]], expected_durable[[name]])
+  }
 })
 
 # ledgr-test-profile: review

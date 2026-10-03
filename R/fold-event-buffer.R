@@ -83,6 +83,34 @@ ledgr_event_buffer_setv <- function(columns, name, index, value) {
   invisible(TRUE)
 }
 
+ledgr_event_buffer_write_rows <- function(columns, index, rows) {
+  field <- function(name, type) {
+    vapply(rows, `[[`, type, name)
+  }
+  ledgr_event_buffer_setv(columns, "event_id", index, field("event_id", character(1)))
+  ledgr_event_buffer_setv(columns, "run_id", index, field("run_id", character(1)))
+  ledgr_event_buffer_setv(
+    columns,
+    "ts_utc",
+    index,
+    .POSIXct(field("ts_utc", numeric(1)), tz = "UTC")
+  )
+  ledgr_event_buffer_setv(columns, "event_type", index, field("event_type", character(1)))
+  ledgr_event_buffer_setv(
+    columns,
+    "instrument_id",
+    index,
+    field("instrument_id", character(1))
+  )
+  ledgr_event_buffer_setv(columns, "side", index, field("side", character(1)))
+  ledgr_event_buffer_setv(columns, "qty", index, field("qty", numeric(1)))
+  ledgr_event_buffer_setv(columns, "price", index, field("price", numeric(1)))
+  ledgr_event_buffer_setv(columns, "fee", index, field("fee", numeric(1)))
+  ledgr_event_buffer_setv(columns, "meta_json", index, field("meta_json", character(1)))
+  ledgr_event_buffer_setv(columns, "event_seq", index, field("event_seq", integer(1)))
+  invisible(TRUE)
+}
+
 ledgr_opening_position_event_rows <- function(run_id,
                                               ts_utc,
                                               positions,

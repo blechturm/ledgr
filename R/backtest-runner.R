@@ -259,6 +259,8 @@ ledgr_persistent_output_handler <- function(con,
   )
   state$pending_states <- vector("list", 0)
   state$pending_states_idx <- 0L
+  state$pulse_fill_rows <- vector("list", 256L)
+  state$pulse_fill_n <- 0L
 
   handler <- list()
 
@@ -380,6 +382,7 @@ ledgr_persistent_output_handler <- function(con,
     ))
     state$pending_states <- vector("list", 0)
     state$pending_states_idx <- 0L
+    state$pulse_fill_n <- 0L
     invisible(TRUE)
   }
 
@@ -418,6 +421,47 @@ ledgr_persistent_output_handler <- function(con,
     set_pending_value("meta_json", i, write_res$row$meta_json)
     set_pending_value("event_seq", i, write_res$row$event_seq)
     state$pending_idx <- i
+    invisible(TRUE)
+  }
+
+  stage_fill_event <- function(write_res) {
+    if (!inherits(write_res, "ledgr_ledger_write_result") ||
+        !identical(write_res$status, "WROTE")) {
+      return(invisible(FALSE))
+    }
+    if (is.null(state$pending_cols)) {
+      rlang::abort(
+        "Ledger event buffer has not been initialized.",
+        class = "ledgr_invalid_state"
+      )
+    }
+    i <- state$pulse_fill_n + 1L
+    if (i > length(state$pulse_fill_rows)) {
+      state$pulse_fill_rows <- c(
+        state$pulse_fill_rows,
+        vector("list", length(state$pulse_fill_rows))
+      )
+    }
+    state$pulse_fill_rows[[i]] <- write_res$row
+    state$pulse_fill_n <- i
+    invisible(TRUE)
+  }
+
+  handler$flush_pulse_events <- function() {
+    n <- state$pulse_fill_n
+    if (n == 0L) {
+      return(invisible(TRUE))
+    }
+    start <- state$pending_idx + 1L
+    end <- state$pending_idx + n
+    ensure_pending_capacity(end)
+    ledgr_event_buffer_write_rows(
+      state$pending_cols,
+      start:end,
+      state$pulse_fill_rows[seq_len(n)]
+    )
+    state$pending_idx <- end
+    state$pulse_fill_n <- 0L
     invisible(TRUE)
   }
 
@@ -490,7 +534,7 @@ ledgr_persistent_output_handler <- function(con,
       ))
     }
     write_res <- ledgr_fill_event_row(run_id, fill_intent, event_seq)
-    handler$buffer_event(write_res)
+    stage_fill_event(write_res)
     write_res
   }
 

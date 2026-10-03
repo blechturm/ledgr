@@ -1006,6 +1006,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
         }
       }
 
+      if (is.function(output_handler$flush_pulse_events)) {
+        output_handler$flush_pulse_events()
+      }
+
       if (availability_active) {
         if (length(pulse_plan$fills) > 0L) {
           fill_times <- as.POSIXct(vapply(
