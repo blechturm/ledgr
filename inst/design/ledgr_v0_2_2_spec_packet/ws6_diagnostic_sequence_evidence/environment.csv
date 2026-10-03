@@ -1,0 +1,6 @@
+"key","value"
+"r_version","R version 4.6.1 (2026-06-24 ucrt)"
+"duckdb","1.5.6.9000"
+"git_head","c0ea8d703e072a72f723fefb3808e6bb0d8f8912"
+"chunk_size","4096"
+"query_repetitions","7 batches x 100 static; 10 per incremental point"

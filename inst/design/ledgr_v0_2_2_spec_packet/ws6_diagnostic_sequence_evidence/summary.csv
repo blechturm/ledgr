@@ -1,0 +1,2 @@
+"public_shape","public_denominator_seconds","wall_gate_seconds","measured_query_seconds_750000_rows","measured_share_of_public_run","static_query_exponent","cumulative_query_exponent","superlinear_exponent_gate","wall_gate_passed","superlinear_gate_passed","proceed"
+"s1_release_shape: ledgr_run, 500 instruments x 1260 pulses",58.381,0.58381,0.424999999999999,0.00727976567718948,0.300748817899268,1.14044659364805,1.1,FALSE,TRUE,FALSE
