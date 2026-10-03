@@ -119,13 +119,13 @@ tickets:
   - id: "LDG-2928"
     title: "Amend RFC stage 9 for obligations and speculation"
     workstream: 3
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Amend both the stage-9 list item and the Post-synthesis horizon entry pattern in rfc_cycle.md. Define an obligation as a later-work constraint an accepted synthesis makes binding, and keep it in the RFC pipeline until ticket cut or maintainer drop. Bind the synthesis-acceptance update of decisions.md and the ticket-cut removal of newly owned obligations at those same gates. Route merely deferred possibilities to the non-binding horizon. Keep stages 1 through 8, review modes and rotation unchanged."
     acceptance: ["both stage-9 passages state the same obligation and speculation boundary and neither calls horizon the durable home of accepted obligations", "the text requires synthesis acceptance to update the decision bridge and names ticket cut and explicit maintainer drop as the only obligation-removal routes", "the diff outside stage 9 and its post-synthesis pattern is empty except necessary cross-references or revision history", "examples include one accepted obligation and one speculative deferral whose destinations differ"]
-    evidence: []
+    evidence: ["rfc_cycle.md stage 9 and the post-synthesis routing section now use the same boundary: a binding later-work constraint is an accepted obligation in the RFC pipeline, while an unbound possibility may be parked in the non-binding horizon. Stages 1 through 8, review modes and rotation are unchanged.", "The post-synthesis gate requires the exact accepted source section, trigger and intended route; synthesis acceptance updates decisions.md when consolidation is pending; ticket cut and explicit maintainer drop with a recorded reason are the only removal routes. The equity exact-quantity RFC and a merely possible adapter family demonstrate the two destinations.", "A one-off structural check required both removal routes and both contrasting examples. Restoring the old stage-9 line or old horizon-durable-home paragraph makes that check fail. git diff --check is clean; no retained checker was added."]
   - id: "LDG-2929"
     title: "Make the RFC index a pipeline with open obligations"
     workstream: 3

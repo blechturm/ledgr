@@ -26,7 +26,8 @@ Each RFC cycle produces a sequence of artifacts. Not every cycle needs every sta
 6. maintainer decisions      (only for product-level binary choices)
 7. synthesis                 (different author from v2)
 8. final review              (verification, not design)
-9. horizon entry             (post-synthesis durable home for deferrals)
+9. obligation/speculation routing (accepted obligations -> RFC pipeline;
+                                    speculative deferrals -> horizon)
 ```
 
 Examples from completed cycles:
@@ -165,7 +166,29 @@ Don't mix them. An open question that's really a future obligation will get punt
 
 ## Post-synthesis horizon entry pattern
 
-When a synthesis is accepted, the post-cycle direction goes into one horizon entry. The pattern is now consistent across walk-forward and cost-API:
+An accepted synthesis can leave two different kinds of later work. Route them
+at synthesis acceptance rather than calling both "deferrals."
+
+An **accepted obligation** is a later-work constraint that the synthesis makes
+binding: a named prerequisite, a `must`, a `before ticket cut` condition or an
+explicit handoff to another packet or RFC. It lives in the
+[RFC pipeline](rfc/README.md#rfc-pipeline) with state `Obligations open`, its
+exact accepted source section, its trigger and its intended route. Synthesis
+acceptance also updates [decisions.md](decisions.md) when the accepted choice
+awaits consolidation. The obligation stays in the pipeline until a ticket cut
+owns it or the maintainer explicitly drops it with a recorded reason. Those
+are the only removal routes.
+
+A **speculative deferral** is a possibility the synthesis deliberately does
+not bind. It may go into one non-binding horizon entry when preserving it is
+useful. It creates neither a roadmap promise nor an implementation duty.
+
+Example: the equity-settlement synthesis's requirement for a later
+exact-quantity RFC is an accepted obligation and belongs in the RFC pipeline.
+A possible adapter family that the synthesis merely says may be worth
+exploring is speculation and belongs in the horizon.
+
+For speculative deferrals, use this horizon shape:
 
 ```text
 ### YYYY-MM-DD [tag] <Topic> post-<window> direction
@@ -179,16 +202,16 @@ naming the deferred capability and what RFC would own it.
 A "Promoted roadmap hooks" subsection listing 5-12 follow-up RFCs with
 target windows (e.g., "v0.2.x, when multi-asset portfolios become common").
 
-A separate "Immediate cross-cycle obligations" subsection for handoffs that
-are spec-packet-level, not horizon-level (e.g., "walk-forward spec packet
-must extend candidate_key to include cost_model_hash"). These obligations
-go to the next concrete spec packet, not into horizon waiting indefinitely.
-
 Closing one-paragraph disclaimer: "this entry does not authorize any of the
 above; it records the direction."
 ```
 
-The horizon entry is the durable home for "what comes after this synthesis." The synthesis itself stays binding for the immediate window; the horizon entry takes the rest.
+Open questions for the immediate spec cut remain in the synthesis's promoted
+open-question section and are resolved by that cut. They are neither future
+RFC obligations nor horizon speculation. When a ticket cut takes ownership of
+an accepted obligation, remove that item from the pipeline in the same cut;
+the packet's `tickets.yml` becomes its executable home. The horizon never
+becomes authority merely because it preserves an idea.
 
 ---
 
