@@ -139,13 +139,13 @@ tickets:
   - id: "LDG-2930"
     title: "Archive resolved horizon entries with stable redirects"
     workstream: 4
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: []
     scope: "Create horizon_archive.md with a historical-only header and a historical-redirect section in horizon.md. Before moving a Resolved body, search it for obligation language and route any accepted unscheduled obligation. Then move every body currently under Resolved without rewriting it, retain each exact heading as a redirect and add one disposition line linking the archive body and durable authority when one exists. Preserve the example heading as an example rather than an entry."
     acceptance: ["the migration-time count of Resolved entries is recorded and each original heading appears as one horizon stub and one archive body", "every Resolved body is searched and its obligation hits are dispositioned before it moves", "archive bodies are byte-identical apart from unavoidable heading-level or link adjustments disclosed in evidence", "every pre-migration link to a resolved horizon heading still resolves in horizon.md", "horizon_archive.md states that it is historical evidence and not authority or a backlog"]
-    evidence: []
+    evidence: ["Migration began with 14 dated entries under Resolved. Their bodies moved byte-for-byte to horizon_archive.md apart from a preceding explicit archive anchor; each exact heading remains in horizon.md under Historical redirects with one disposition line linking the archive body and its released packet or closeout.", "horizon_archive.md states that it is historical evidence only, neither authority nor backlog. The five obligation-token hits in the moved population were read in context: one heading, one already-shipped explicit-cost rule, one historical pointer to separate open entries and two completed measurement gates. None created a new accepted unscheduled obligation.", "A one-off reconciliation counted 14 redirects and 14 archive bodies, required each exact heading once in each file and resolved all fourteen durable-authority targets. Removing one sampled redirect or archive anchor makes the reconciliation fail. The pre-existing example heading remains in the template and is not counted as an entry."]
   - id: "LDG-2931"
     title: "Classify the open horizon and route its obligations"
     workstream: 4
