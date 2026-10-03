@@ -15,21 +15,35 @@ cuts:
     accepted: "2026-10-03 by the maintainer for ticket cut; all five workstreams and Cut 1 accepted 2026-10-03 after the focused Workstream 5 correction at 79363fb"
     close_review: "Workstreams 1 through 4 accepted after Type 1 review. Workstream 5 close review at 8c05e6e returned CHANGES_REQUIRED; correction ebd5dd2; focused re-review returned three factual residuals; record-only correction 79363fb accepted by the maintainer without a ninth review. Actual count 8/12 = 0.667, recorded as a historical gate breach."
     status: "closed"
+  - id: 2
+    name: "Proven long-window optimizations"
+    cut: "2026-10-03"
+    opening: "The accepted v0.2.2 macro plan WS1 and the maintained roadmap authorize a direct cut for bounded internal optimizations whose public boundary stays unchanged. This cut remeasures every candidate on the current tree before implementation. A candidate that misses its preregistered materiality or structural gate closes honestly as measured and rejected; old spike results do not authorize code by themselves. No implementation starts before independent cut review and maintainer acceptance."
+    cut_review: "PASS_AFTER_PATCHES on 2026-10-03. The combined Type 1 and Type 2 review accepted the eleven-ticket, four-workstream shape and required bounded fidelity and detector corrections P1 through P10. The draft now separates SMA and returns gates, fingerprints built-ins, records the expected availability feature-engine provenance change, preserves complete-set omission evidence and set-less overlays, binds the writer and accessor invariants, names the no-op flush behavior, makes every clock paired and public-path, adds the missing isolation, OHLC and timezone witnesses, and uses the four workstream closeouts instead of an unowned cut closeout. Maintainer acceptance still opens the workstreams."
+    authority: "inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md WS1 is authority for all seven mechanisms and the sole planning authority for LDG-2936 and LDG-2941 through LDG-2944. The maintained roadmap row v0.2.2 opening fold-writer and accessor optimization additionally authorizes LDG-2935, LDG-2938 and LDG-2939; it does not authorize the strict availability-feature path. Evidence: inst/design/spikes/fold_writer_accessor_levers_spike/summary_report.md; dev/bench/notes/long_window_scaling_findings.md; inst/design/exact_parity_internal_optimization_proof_template.md."
+    source_table: "Current tree e5d4769. The writer/accessor spike measured at b14579f and checked drift only through f96b495, so LDG-2935, LDG-2938 and LDG-2939 must reproduce current-tree baselines. The long-window record measures the production paths still present at e5d4769: strict bounded-feature computation at 393-543x slower than its vector candidate, session construction at 42.8 seconds for 10,473 New York dates, membership resolution from 0.20 seconds at 6,000 rows to 11.33 seconds at 300,000 rows, and a diagnostic MAX scan whose direct wall contribution remains unmeasured."
+    decisions: "Maintainer, 2026-10-03. (1) Stage one pulse's fill events and flush once through the persistent and memory R handlers; preserve the existing durable transaction boundary and do not invent block-failure semantics. (2) Prepare scalar feature-accessor indexes and the normalized active alias map once per run; the active alias map is fixed for that run. (3) Validate explicit maps once and keep an exact, run-local last-map memo keyed by identical content. (4) Accelerate only ledgr's own bounded strict SMA and returns indicators in this cut; each has an independent gate and outcome, while custom, external and TTR indicators stay with the indicator-design workstream. (5) Session and membership changes preserve exact fact rows, order, errors, evidence and snapshot identity. (6) No public API, schema, run or snapshot identity, snapshot hash, tolerance, default, persistence contract, verification-policy or failure-semantics change is authorized. The availability feature-engine-version digest is provenance for the implementation body, so LDG-2941's expected digest change is required rather than forbidden; dense provenance stays unchanged unless a shared helper changes, and precomputed-object compatibility is disclosed. db_live and compiled accounting behavior remain unchanged. (7) Every candidate first registers a current-tree baseline, semantic oracle, failure-sensitive structural detector and materiality threshold. If the gate fails, record the rejection and do not implement it. (8) Performance gates use public paths and interleaved paired arms on one commit that differ only by the candidate, with one measurement process at a time and a retry rule declared before the run. Internal clocks support but never replace the public-path gate."
+    sequencing: "Workstreams 6 through 9 are independent and may open after this cut is accepted. Within each workstream the optimization tickets precede its closeout. Workstream 6 may land either writer candidate independently; rejection of diagnostic sequence tracking does not block the fill-event change. tickets.yml is the sole sequencing authority."
+    out_of_scope: "Public API or condition changes; schema, snapshot-hash or run-identity changes; new numerical tolerances; db_live or compiled-accounting changes; custom, external or TTR indicator semantics; recursive-indicator gap and warmup design; feature-cache lifecycle; snapshot verification policy; write-only feature persistence; collapse::rsplit; and any mechanism that fails its registered current-tree gate."
+    workstreams: [6, 7, 8, 9]
+    closeout: "The four owned workstream closeouts under LDG-2937, LDG-2940, LDG-2942 and LDG-2945 form the Cut 2 record; no separate cut-level closeout is created."
+    accepted: "2026-10-03 by the maintainer after PASS_AFTER_PATCHES and the bounded P1 through P10 ticket corrections"
+    close_review: null
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
-  Within this cut, a workstream opens only when the previous workstream's
-  close review is accepted by the maintainer. Ticket dependencies are
-  intra-workstream only. tickets.yml is the sole sequencing authority.
+  Each cut entry states whether its workstreams are serial or independent.
+  Ticket dependencies bind within a workstream. tickets.yml is the sole
+  sequencing authority.
 review_obligations: >-
-  Each workstream receives one Type 1 close review. The reviewer independently
-  checks that the inputs are the right inputs, that every stated migration is
-  complete, that no binding rule or obligation was lost, and that an index has
-  not become a second authority. This documentation-only cut requires no
-  production hot-path clock or seven-shape walk; the reviewer records that as
-  not applicable rather than silently omitting it. A correction review counts
-  as another invocation and any breach of 0.5 is recorded rather than hidden
-  by merging or padding tickets.
+  Each workstream receives one Type 1 close review against its recorded claim.
+  The reviewer independently checks that the inputs are the right inputs and
+  applies the evidence obligations appropriate to the cut. Optimization work
+  uses the exact-parity proof template, a current-tree clock, a failure-sensitive
+  structural detector and the seven-shape walk. A correction review counts as
+  another invocation and any breach of 0.5 is recorded rather than hidden by
+  merging or padding tickets.
 workstreams:
   - id: 1
     name: "Contract authority baseline"
@@ -66,6 +80,34 @@ workstreams:
     depends_on_workstream: 4
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 5", reason: "One claim joins LDG-2933 and LDG-2934: after migration, the roadmap, AGENTS.md, packet, consumer links and front door describe one current state and a human or agent can follow the documented routes without reconstructing history. The review runs the scenario walk from the accepted plan on real topics, checks released narrative remains recoverable, verifies the bounded deterministic evidence sample and any one-time routing without a new ledger, checks the optional-link-check decision against the least-machinery rule, and reconciles all twelve tickets and five workstreams in the closeout."}
+  - id: 6
+    name: "Writer scaling"
+    cut: 2
+    status: "in_progress"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 6", reason: "One claim joins LDG-2935 through LDG-2937: the persistent and memory R handlers remove scale-growing writer work while preserving exact event, fill, equity, trade, ordering, resume and failure behavior. The review reproduces the current-tree clocks, checks the registered mutations and structural counters, verifies durable transaction atomicity rather than invented partial-flush semantics, and confirms db_live and compiled accounting were untouched. A rejected diagnostic candidate is acceptable only when its preregistered gate and evidence say why."}
+  - id: 7
+    name: "Feature-accessor scaling"
+    cut: 2
+    status: "pending"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 7", reason: "One claim joins LDG-2938 through LDG-2940: run-local preparation and exact last-map memoization remove repeated accessor work without changing values, error classes, messages, map validation, alias resolution, worker behavior or identity. The review checks the conformance matrices, mutations, allocation and call counters, explicit-map run and sweep parity, current-tree clocks and that no cache or mutable state escapes its run-local owner."}
+  - id: 8
+    name: "Built-in strict-feature acceleration"
+    cut: 2
+    status: "pending"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 8", reason: "One claim joins LDG-2941 and LDG-2942: only ledgr's bounded strict SMA and returns definitions use one vector series calculation plus an exact completeness mask, with values, NA masks, warmup and errors identical to the retained scalar reference. The review independently tests dense histories, isolated gaps, consecutive gaps, mid-history entrants and short histories, runs the mutation and series-call counter, checks the registered clock, and confirms custom, external and TTR indicators still use their old paths."}
+  - id: 9
+    name: "Availability fact scaling"
+    cut: 2
+    status: "pending"
+    depends_on_workstream: null
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 9", reason: "One claim joins LDG-2943 through LDG-2945: session construction and public membership resolution remove repeated element or full-table work while preserving exact fact rows, ordering, evidence, errors and snapshot identity. The review reproduces current-tree scaling, compares fixtures across timezones, DST boundaries, complete and incremental sets and cutoff positions, runs the registered mutations, and confirms provider run paths and unrelated fact families did not change."}
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -187,3 +229,113 @@ tickets:
     scope: "Reconcile a bounded evidence population without creating a ledger: evidence cited by an operative document, plus spikes and audits closed since v0.2.0.0. Sample the first and last path lexicographically within research records, audits and spikes, plus every Red or inconclusive outcome; record the population and sample. Route an unconsumed sampled finding once to horizon when needed. Decide whether ordinary Markdown tooling makes a four-file local-link checker useful; if not, record that no checker was added. Add the design-memory steps to release_ci_playbook.md: at ticket cut, a horizon entry promoted into committed scope leaves active parking, its body is archived and its exact heading becomes a redirect to the owning packet or ticket; at release closeout, every horizon reference in the packet resolves either to a deliberately parked entry or to a promoted, refuted, dropped or measured-evidence redirect rather than stale active prose. Write design_memory_overhaul_closeout.md and run the accepted scenario walk over real topics."
     acceptance: ["the workstream record names the bounded evidence population and deterministic sample; sampled consumed evidence is reachable from its synthesis, ticket, roadmap or research consumer, and sampled unconsumed findings are parked once rather than copied into another backlog", "the link-checker decision is recorded against an observed failure and the least-machinery rule; any checker added validates only local Markdown targets in README.md, decisions.md, rfc/README.md and AGENTS.md, is not a package test or CI workflow, and is not a release-gate requirement", "release_ci_playbook.md requires ticket cut to archive a promoted horizon body and retain its exact heading as a redirect to the owning packet or ticket", "release_ci_playbook.md requires release closeout to update the front door and AGENTS.md, remove a decision-bridge row only with the exact replacement contract heading, verify that no ticketed obligation remains in the RFC pipeline, and reconcile every packet horizon reference as either deliberately parked or an exact-heading promoted, refuted, dropped or measured-evidence redirect", "the closeout demonstrates on real topics that current behavior, accepted pending change, active RFC, executable ticket, parked idea and historical evidence are normally reachable within two links from the front door", "all twelve tickets and five workstreams reconcile, no ticketed obligation remains listed as Obligations open, no horizon-derived ticket remains represented by stale active parking prose, and the closeout names every routed semantic finding without claiming it was fixed"]
     evidence: ["design_memory_overhaul_closeout.md defines a 48-unit population at 57ea840: thirteen operative citations plus forty post-v0.2.0.0 closed Markdown evidence records, with five overlaps. Its deterministic eleven-row sample uses case-insensitive ordinal path ordering for category endpoints, covers all three declared RED records and includes the conservative NEITHER and partly outcomes. Every sampled material finding has a named consumer or recorded rejection; none required another horizon entry.", "No checker was retained because no recurring four-file failure justified one. A one-off pass over README.md, decisions.md, rfc/README.md and AGENTS.md resolved 143 local Markdown targets with zero missing files. release_ci_playbook.md instead adds the accepted ticket-cut horizon archive/redirect duty and the four release-closeout design-memory duties to gates that already exist, including the measured-evidence disposition.", "The closeout demonstrates current behavior, accepted pending change, active RFC, executable ticket, parked idea and historical evidence in at most two links from the front door. All twelve tickets are complete and five workstreams reconcile; Cut 1 owns no RFC-pipeline obligation and its two originating horizon entries are exact-heading redirects rather than stale active bodies. The record names routed semantic findings without claiming that discoverability fixed them."]
+  - id: "LDG-2935"
+    title: "Flush fill events once per pulse"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "On the current tree, reproduce the per-fill writer cost and register the semantic oracle, staged-column mutation and at least 5% run-and-sweep materiality gate before editing production code. If the gate passes, add flush_pulse_events() to the internal output-handler contract and call it once after the canonical fill loop. The persistent and memory R handlers stage canonical rows and flush them; every handler treats a call with no staged canonical rows as a no-op, which is how db_live and compiled execution preserve their existing behavior. Preserve event order, metadata, accounting facts, resume and the existing durable transaction boundary. Do not change public APIs or partial-failure semantics. If the gate fails, record the measured rejection and do not implement the seam."
+    acceptance: ["the current-tree record names the public run and sweep shapes, clocks interleaved paired baseline and candidate arms under the cut-wide measurement rule, and preregisters a gain of at least 5% for each affected shape", "when the gate passes, events, fills, equity and trades are exact for alias SMA, reversal with fees, uneven availability, checkpoint-every-two, resume and multiple candidates; db_live and compiled-accounting witnesses exercise the no-staged-rows flush and remain exact", "a failure after earlier fills in the pulse preserves the existing durable FAILED and zero-persisted-event outcome, while a failing sweep candidate does not contaminate another candidate", "failure-sensitive detectors catch misordered staged columns and a read of a staged row before flush; a structural counter proves one handler flush per pulse rather than one write per fill", "the Execution Contract records that no code reads a staged row before flush except the handler's own record_accounting_fact(), and the Persistence Contract records durable atomicity through the fold transaction without inventing a partial-flush promise", "the seven-shape walk finds no new scale-growing copy, parse, scan or validation; if the materiality gate fails, evidence records rejection and production stays unchanged"]
+    evidence: []
+  - id: "LDG-2936"
+    title: "Make diagnostic sequence allocation constant time"
+    workstream: 6
+    status: "pending"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "Measure the current-tree contribution of the repeated MAX(diagnostic_seq) query over multiple diagnostic-row counts before changing code. Preregister a proceed gate of at least one percent of a named public long-window run and observed superlinear query work. If both pass, initialize the handler's next sequence once for a new or resumed run and advance it in memory per appended diagnostic block. Preserve exact diagnostic rows and resume ordering. If either wall or scaling evidence misses the gate, close this ticket as measured and rejected without production changes."
+    acceptance: ["the probe separates the MAX-query clock from unrelated fold work at no fewer than three diagnostic-row counts and records the public-run denominator before implementation", "implementation proceeds only when the preregistered wall and superlinear-growth gate passes; otherwise the ticket records a rejection and no production source changes", "if implemented, diagnostic rows including diagnostic_seq are exact for new runs, resume after multiple flushes and empty or failed pulses", "a mutation restoring a table MAX scan fails a structural query counter, and a mutation starting the in-memory sequence incorrectly fails exact row parity", "the change introduces no public state, schema, identity, transaction or failure-semantics change"]
+    evidence: []
+  - id: "LDG-2937"
+    title: "Close writer-scaling evidence"
+    workstream: 6
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2935", "LDG-2936"]
+    scope: "Write the Workstream 6 closeout. Reconcile each candidate as shipped or measured-and-rejected, report current-tree clocks without inheriting spike claims, map detectors to claims, record the seven-shape walk and request one Type 1 close review."
+    acceptance: ["the closeout distinguishes baseline, implementation and rejection records and gives no speedup to a candidate that did not ship", "all parity surfaces, mutations, clocks and structural counters are named with reproducible paths", "the record confirms the public, schema, identity, persistence and failure boundaries and names db_live and compiled accounting as unchanged", "tickets LDG-2935 through LDG-2937 and Workstream 6 status reconcile before review"]
+    evidence: []
+  - id: "LDG-2938"
+    title: "Prepare scalar feature accessors once per run"
+    workstream: 7
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Reproduce the current-tree accessor baseline and preregister a 5% materiality gate on a scalar-accessor strategy. If it passes, prepare instrument, universe and feature-id lookup state and normalize the active alias map once in each run-local accessor factory. The active alias map is fixed for a run. Preserve exact values and the existing error classes and messages for every supported and invalid call shape. Do not alter the vector accessor or public context surface."
+    acceptance: ["a current-tree call-shape matrix covers known and unknown instruments, universes, engine ids and active aliases, and public run and sweep clocks use the cut-wide paired-arm rule to register the 5% gate before implementation", "values or error class and literal message remain exact across the matrix, including availability-aware and scalar cases", "a row-shift mutation fails and counters prove lookup indexes and active-alias normalization are built once per run rather than per accessor call", "a one-worker sweep with two candidates whose universes or alias maps differ proves no prepared object crosses a run or candidate boundary; a mutation hoisting prepared state to shared scope fails", "the Context Contract records that the active alias map is fixed for a run", "if the materiality gate fails, evidence records rejection and production stays unchanged"]
+    evidence: []
+  - id: "LDG-2939"
+    title: "Validate explicit feature maps once and memoize exactly"
+    workstream: 7
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2938"]
+    scope: "On the current tree, reproduce explicit-map validation cost and preregister a 5% public explicit-map run gate. If it passes, remove duplicate validation and keep the last successfully resolved concrete map in the run-local accessor, reusing it only when the next object is identical. Rebuilt equal maps may reuse only when identical; changed, reordered, unresolved or tampered maps must revalidate and retain their current outcomes."
+    acceptance: ["the conformance sequence covers repeated, rebuilt-equal, reordered, parameterized, unresolved, tampered, swapped-alias, unknown-feature, character and non-map inputs with exact values or exact error class and message", "an explicit-map run and sweep remain exact and clear the preregistered 5% current-tree gate under the cut-wide paired-arm rule before the implementation is accepted", "validation and memo counters prove one validation for repeated identical successful maps and renewed validation after every non-identical or failed input", "mutations using identity-insensitive reuse or caching a failed map are detected", "the memo is owned by one accessor for one run, is absent from package-global state and changes no feature-map identity or validation contract; the Context Contract records this run-local ownership"]
+    evidence: []
+  - id: "LDG-2940"
+    title: "Close feature-accessor scaling evidence"
+    workstream: 7
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2938", "LDG-2939"]
+    scope: "Write the Workstream 7 closeout, reconcile shipped and rejected candidates, report current-tree calls, allocations and public clocks, map every semantic claim to a failure-sensitive detector, record the seven-shape walk and request one Type 1 close review."
+    acceptance: ["the closeout separates micro-call, allocation, run and sweep clocks and does not present an old spike clock as a current effect", "the call-shape and explicit-map matrices, mutations and ownership checks are reproducible from named evidence", "the record confirms unchanged public context, feature-map identity, errors, workers and run isolation", "tickets LDG-2938 through LDG-2940 and Workstream 7 status reconcile before review"]
+    evidence: []
+  - id: "LDG-2941"
+    title: "Vectorize ledgr bounded strict indicators"
+    workstream: 8
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Macro-plan WS1, not the older roadmap exclusion, authorizes this ticket. Register a current-tree scalar reference, exact matrix oracle, construction counter and separate SMA and returns gates. Each candidate must clear an internal 10x strict-computation threshold and a preregistered material public cold-run threshold under the cut-wide paired-arm rule. Returns may use one exact series calculation plus a four-column trailing-completeness mask. SMA must reproduce mean(window$close) bit-for-bit under identical() across every fixture; ledgr_rolling_mean(), tolerance parity and the cumsum series are forbidden as strict values. Dispatch keys on the fingerprint of the canonical built-in definition with the same parameters, never source or id. Retain the scalar strict implementation as the oracle. If SMA identity fails, reject SMA independently and route any proposed semantic change to the leakage-boundary and indicator-warmup design session; returns may still ship. Custom, external, TTR and recursive indicators stay on the scalar path."
+    acceptance: ["SMA and returns have separate recorded baseline, candidate, public cold-run and outcome rows; either may close as rejected without blocking the other", "feature matrices and NA masks are identical to the retained scalar reference for dense input, isolated and consecutive gaps, leading and mid-history entrants, warmup boundaries and histories shorter than the window", "SMA values are bit-identical to per-window mean(); substituting ledgr_rolling_mean() or its cumsum series fails parity, and no tolerance is introduced", "the completeness mask covers open, high, low and close; mutations that omit or shift the mask, including a close-only mask, fail", "the exact construction counter proves bounded vector work rather than one scalar call per window, and each shipped candidate clears the internal 10x and public cold-run gates", "dispatch matches the canonical built-in fingerprint for the same parameters; a custom indicator impersonating ledgr source and a built-in id stays on the scalar path with its own values and errors", "ledgr_ind_sma() and ledgr_ind_returns() objects and the sma_20 and return_5 fingerprint pins remain byte-identical", "the availability feature-engine-version payload includes every new semantic helper and a mutation omitting one fails; the availability digest changes as expected, the dense feature_engine pin stays unchanged unless a shared helper changed, and precomputed-object compatibility is stated", "public run and sweep results are exact, while custom, external and TTR indicators preserve their old value and error paths"]
+    evidence: []
+  - id: "LDG-2942"
+    title: "Close built-in strict-feature evidence"
+    workstream: 8
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2941"]
+    scope: "Write the Workstream 8 closeout with the full parity matrix, call-count mutation, public clocks, exclusion proof and seven-shape walk, then request one Type 1 close review."
+    acceptance: ["the closeout reports scalar-reference and vector-path clocks separately and labels the registered fixture", "every supported history shape and every excluded indicator family has named evidence", "the record states that exact values and NA masks passed and does not convert this internal optimization into a new indicator semantic claim", "tickets LDG-2941 through LDG-2942 and Workstream 8 status reconcile before review"]
+    evidence: []
+  - id: "LDG-2943"
+    title: "Vectorize declared-session construction"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Reproduce current-tree session construction at short and long horizons in UTC and a DST-observing timezone, then preregister a 5x constructor gate under the cut-wide paired-arm rule. If it passes, replace per-civil-date timestamp formatting and parsing with a vectorized timezone-aware construction while preserving the public constructor's validations and exact sealed facts."
+    acceptance: ["session fact rows, ordering, evidence and snapshot hash are identical for UTC, America/New_York, ordinary DST boundaries, leap dates, partial ranges and invalid inputs", "nonexistent spring-forward and ambiguous fall-back local times produce the same rows or exact errors in old and new arms on Windows, and the same witness repeats on the Linux CI platform", "the long-horizon constructor clears the preregistered 5x current-tree gate before implementation is accepted; a failed gate leaves production unchanged", "a mutation restoring per-date formatting fails a structural format-or-parse counter and an offset mutation fails exact fact and hash parity", "no other fact family, session policy, bar axis or public error contract changes"]
+    evidence: []
+  - id: "LDG-2944"
+    title: "Resolve membership facts in linear work"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Reproduce current-tree membership resolution over at least three row counts and preregister a scaling exponent no greater than 1.15 plus at least 50% wall reduction in the public ledgr_facts_resolve() call at 300,000 rows, reporting snapshot re-hash time separately. If it passes, group rows by set once. At the last complete set at or before the cutoff, seed earlier-seen omitted instruments with that set's omitted_from_complete_set evidence, apply the complete set and subsequent changes, then apply every set-less row after all sets as the current resolver does. Preserve exact rows, evidence, ordering, cutoffs and errors. Do not alter prepared-provider run semantics."
+    acceptance: ["exact resolved rows and evidence match for complete-only, incremental, repeated-member, before-first, exact-cutoff, between-set and after-last queries across multiple instruments", "an explicitly requested instrument last asserted before the last complete set retains that set's omitted_from_complete_set reason and support, and a set-less nonmember fact dated before the complete set still overrides after all sets", "the current-tree and candidate scaling records use interleaved paired public ledgr_facts_resolve() arms and the same fixtures; acceptance requires exponent no greater than 1.15 and at least 50% public-call reduction at 300,000 rows, with re-hash share reported separately, otherwise production stays unchanged", "mutations choosing the wrong complete-set boundary, failing to seed earlier ids, applying set-less rows by date or dropping a later change fail semantic parity; a row-visit counter detects renewed full-table-per-set scans", "public history and resolver errors remain unchanged and provider run paths and snapshot identity are unaffected"]
+    evidence: []
+  - id: "LDG-2945"
+    title: "Close availability fact-scaling evidence"
+    workstream: 9
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2943", "LDG-2944"]
+    scope: "Write the Workstream 9 closeout, reconcile shipped and rejected candidates, report exact fact and hash parity, current-tree scaling, mutations and the seven-shape walk, then request one Type 1 close review."
+    acceptance: ["the closeout separates session construction from membership resolution and gives each its own baseline, gate and result", "all timezone, cutoff, evidence, error and identity witnesses are named with reproducible paths", "the record confirms no unrelated fact family or provider-run semantic changed", "tickets LDG-2943 through LDG-2945 and Workstream 9 status reconcile before review"]
+    evidence: []

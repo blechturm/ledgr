@@ -2,6 +2,8 @@
 
 **Status:** Cut 1 and all five workstreams accepted by the maintainer on
 2026-10-03 after Type 1 close review and the focused Workstream 5 corrections.
+Cut 2 passed independent review after bounded patches and was accepted by the
+maintainer on 2026-10-03. Workstream 6 is open.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -36,7 +38,8 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete tickets in five accepted workstreams; Cut 1 is closed.
+  complete Cut 1 tickets and eleven pending Cut 2 tickets; Cut 1 is closed and
+  Cut 2 remains a draft.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -69,6 +72,47 @@ record-only correction at `79363fb`, without a ninth review invocation.
 This cut changes no package behavior. Other v0.2.2 product, optimization and
 RFC work remains outside it and may be cut separately after its own authority
 is ready.
+
+## Cut 2: Proven long-window optimizations
+
+**Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
+ticket corrections are incorporated. The maintainer accepted Cut 2 on
+2026-10-03 and opened Workstream 6. Workstreams 7-9 remain pending.
+
+Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
+optimization row additionally authorizes the writer and accessor tickets but
+not the strict-feature ticket. Evidence comes from the fold-writer/accessor
+spike, the long-window scaling record and the accepted exact-parity
+internal-optimization proof template.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 6 Writer scaling | LDG-2935-2937 | per-pulse fill flush; conditional constant-time diagnostic sequence; closeout | scale-growing writer work is removed with exact outputs, ordering, resume and existing failure behavior |
+| 7 Feature-accessor scaling | LDG-2938-2940 | prepared scalar lookups; validate-once and exact run-local last-map memo; closeout | repeated accessor work disappears without changing values, errors, validation, workers or isolation |
+| 8 Built-in strict-feature acceleration | LDG-2941-2942 | vector path for ledgr SMA and returns only; closeout | values and NA masks remain exact while one series call replaces window-by-window recomputation |
+| 9 Availability fact scaling | LDG-2943-2945 | vector session construction; linear membership resolution; closeout | exact fact rows, evidence, errors, ordering and snapshot identity survive the scaling repair |
+
+The four workstreams are independent after cut acceptance. Each candidate
+starts with a current-tree baseline, semantic oracle, failure-sensitive
+structural detector and preregistered materiality threshold. A candidate that
+misses its gate closes as measured and rejected; it does not acquire production
+changes merely because an older spike looked promising.
+
+One combined Type 1 and Type 2 cut review plus four Type 1 close reviews is five
+planned invocations over eleven tickets, 0.455 against the 0.5 gate. Without
+the four owned evidence closeouts it would be 5/7 = 0.714; the closeout tickets
+are retained because each produces the independently reviewable evidence for
+one workstream, not to pad the denominator. Correction reviews count and any
+breach is recorded rather than repaired by padding.
+
+The cut authorizes no public API, schema, run or snapshot identity, snapshot
+hash, tolerance, default, persistence contract, verification-policy or
+failure-semantics change. The availability feature-engine provenance digest
+must change when its implementation body changes; that expected digest update
+and its compatibility disclosure are not a public identity change. The cut
+excludes custom, external and TTR indicator semantics, db_live and compiled
+accounting behavior, snapshot-verification redesign and every candidate that
+fails its gate.
 
 ## Expected later artifacts
 
