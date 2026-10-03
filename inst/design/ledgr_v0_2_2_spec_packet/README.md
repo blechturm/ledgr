@@ -2,7 +2,7 @@
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstreams 1
 through 4 are accepted after Type 1 close review and maintainer acceptance.
-Workstream 5 is in progress.
+Workstream 5 is complete and awaits Type 1 close review.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -28,6 +28,9 @@ the packet state and does not become a second editable ticket ledger.
 - `../roadmap_history.md`: the verbatim planning tail displaced when LDG-2933
   reduced the roadmap to its maintained sequence; it is historical context,
   not current scope or sequencing authority.
+- `design_memory_overhaul_closeout.md`: the LDG-2934 evidence reconciliation,
+  least-machinery decision and six-scenario navigation walk; agent-provisional
+  until the Workstream 5 close review and maintainer acceptance.
 - `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
   evidence for the two retired catalogues; it is not a decision index.
 - `../README.md`: the LDG-2926 short front door for current authority and
@@ -36,7 +39,7 @@ the packet state and does not become a second editable ticket ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstreams 1 through 4 are complete
-  and Workstream 5 is in progress.
+  and accepted, while Workstream 5 is complete and review pending.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -57,6 +60,11 @@ count is six invocations over twelve tickets, exactly 0.500. That review
 returned `PASS_AFTER_PATCHES`; its bounded corrections are incorporated. A
 correction review is recorded honestly rather than hidden by merging or
 padding work.
+
+The actual count is six invocations before the Workstream 5 close review. That
+review will be invocation seven, so a one-round acceptance closes Cut 1 at
+7/12 = 0.583. The historical breach is recorded rather than repaired by adding
+tickets or combining reviews.
 
 This cut changes no package behavior. Other v0.2.2 product, optimization and
 RFC work remains outside it and may be cut separately after its own authority

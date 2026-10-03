@@ -162,6 +162,30 @@ When adding, moving, renaming, or retiring any cross-cycle design document:
 Versioned spec packet internals do not need every file listed individually, but
 the active packet directory itself should be discoverable from the design index.
 
+### Ticket-cut design-memory duties
+
+When a ticket cut promotes a `horizon.md` entry into committed scope, the cut
+must remove that entry from active parking in the same change. Preserve its
+body in `horizon_archive.md`, keep the exact old heading in `horizon.md`, and
+make that heading a redirect to the owning packet or ticket. A copied backlog
+entry is not a redirect and leaves two apparent owners.
+
+### Release-closeout design-memory duties
+
+Before a release closes:
+
+1. Update `inst/design/README.md` and `AGENTS.md` to name the next current
+   release, packet and normal navigation routes.
+2. Remove a row from `inst/design/decisions.md` only after its rule has an exact
+   replacement heading in `contracts.md` or another standing binding document;
+   link that replacement in the closeout.
+3. Verify that no obligation owned by a ticket remains under `Obligations open`
+   in `inst/design/rfc/README.md`.
+4. Reconcile every horizon reference in the release packet. It must resolve to
+   either a deliberately parked active entry or an exact-heading redirect whose
+   disposition is promoted, refuted or dropped. Stale active prose is a
+   closeout defect.
+
 ## Release-Gate Ticket Requirements
 
 Every final release-gate ticket must point future maintainers and agents at
