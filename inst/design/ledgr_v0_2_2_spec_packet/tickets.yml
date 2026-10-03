@@ -83,7 +83,7 @@ workstreams:
   - id: 6
     name: "Writer scaling"
     cut: 2
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 6", reason: "One claim joins LDG-2935 through LDG-2937: the persistent and memory R handlers remove scale-growing writer work while preserving exact event, fill, equity, trade, ordering, resume and failure behavior. The review reproduces the current-tree clocks, checks the registered mutations and structural counters, verifies durable transaction atomicity rather than invented partial-flush semantics, and confirms db_live and compiled accounting were untouched. A rejected diagnostic candidate is acceptable only when its preregistered gate and evidence say why."}
@@ -252,13 +252,13 @@ tickets:
   - id: "LDG-2937"
     title: "Close writer-scaling evidence"
     workstream: 6
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2935", "LDG-2936"]
     scope: "Write the Workstream 6 closeout. Reconcile each candidate as shipped or measured-and-rejected, report current-tree clocks without inheriting spike claims, map detectors to claims, record the seven-shape walk and request one Type 1 close review."
     acceptance: ["the closeout distinguishes baseline, implementation and rejection records and gives no speedup to a candidate that did not ship", "all parity surfaces, mutations, clocks and structural counters are named with reproducible paths", "the record confirms the public, schema, identity, persistence and failure boundaries and names db_live and compiled accounting as unchanged", "tickets LDG-2935 through LDG-2937 and Workstream 6 status reconcile before review"]
-    evidence: ["writer_scaling_closeout.md reconciles the shipped LDG-2935 fill-event flush and the corrected LDG-2936 diagnostic implementation. It names the 4055454 writer baseline, c0ea8d7 implementation, 6765e9f first rejection and 19d99b9 correction; the two evidence directories contain the raw clocks, parity and environments. Its rerun instructions require a detached 4055454 checkout with src built once, because running the spike harness at HEAD would not reproduce the recorded arms.", "The closeout maps LTB-0135 through LTB-0138 to LCL-0135 through LCL-0138, records the independent mutations, the repaired final-pulse witness, exact resumed diagnostic ordering, the heavy-protocol rollback-refresh detector and the corrected availability-aware materiality decision, then walks all seven optimization shapes.", "The correction ordinary fast profile executed 498 of 498 blocks in 81.660 seconds with zero skips or failures and passed the 112-second gate. The named heavy failed-fold block independently passed with 43 expectations. Public, schema, identity, persistence and failure boundaries are unchanged; db_live and compiled accounting remain exact no-staged paths. Workstream 6 is review pending."]
+    evidence: ["writer_scaling_closeout.md reconciles the shipped LDG-2935 fill-event flush and the corrected LDG-2936 diagnostic implementation. It names the 4055454 writer baseline, c0ea8d7 implementation, 6765e9f first rejection and 19d99b9 correction; the two evidence directories contain the raw clocks, parity and environments. Its rerun instructions require a detached 4055454 checkout with src built once, because running the spike harness at HEAD would not reproduce the recorded arms.", "The closeout maps LTB-0135 through LTB-0138 to LCL-0135 through LCL-0138, records the independent mutations, the repaired final-pulse witness, exact resumed diagnostic ordering, the heavy-protocol rollback-refresh detector and the corrected availability-aware materiality decision, then walks all seven optimization shapes.", "The correction ordinary fast profile executed 498 of 498 blocks in 81.660 seconds with zero skips or failures and passed the 112-second gate. The named heavy failed-fold block independently passed with 43 expectations. Public, schema, identity, persistence and failure boundaries are unchanged; db_live and compiled accounting remain exact no-staged paths. The maintainer accepted Workstream 6 on 2026-10-03 after three review invocations over eleven Cut 2 tickets, 0.273."]
   - id: "LDG-2938"
     title: "Prepare scalar feature accessors once per run"
     workstream: 7

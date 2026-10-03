@@ -79,7 +79,8 @@ is ready.
 
 **Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
 ticket corrections are incorporated. The maintainer accepted Cut 2 on
-2026-10-03. Workstream 6 is review pending; Workstreams 7-9 remain pending.
+2026-10-03. Workstream 6 was accepted on 2026-10-03; Workstreams 7-9 remain
+pending.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but

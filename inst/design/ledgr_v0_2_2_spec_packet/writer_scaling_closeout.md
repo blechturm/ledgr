@@ -1,6 +1,6 @@
 # Workstream 6 Closeout: Writer Scaling
 
-**Status:** Agent-provisional; ready for Type 1 close review.
+**Status:** Accepted by the maintainer on 2026-10-03.
 **Date:** 2026-10-03
 **Implementation range:** `4055454..19d99b9`
 **Tickets:** LDG-2935 through LDG-2937
