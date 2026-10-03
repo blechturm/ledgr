@@ -2,17 +2,20 @@
 
 **Status:** Agent-provisional; ready for Type 1 close review.
 **Date:** 2026-10-03
-**Range:** `4055454..6765e9f`
+**Implementation range:** `4055454..19d99b9`
 **Tickets:** LDG-2935 through LDG-2937
 
 ## Outcome
 
 The fill-event candidate shipped at `c0ea8d7`. Canonical R fill rows are now
 staged inside the persistent and memory output handlers and published once per
-pulse through typed column writes. The diagnostic-sequence candidate was
-measured at `c0ea8d7` and rejected at `6765e9f`: its repeated query is
-superlinear, but its full measured contribution is below the registered
-one-percent public-run gate. No diagnostic production code changed.
+pulse through typed column writes. The first diagnostic-sequence decision at
+`6765e9f` used a dense public-run denominator that never executes the query.
+The Type 1 correction at `19d99b9` remeasured it in a file-backed store
+against the named warm availability-aware long-window run. Both registered
+gates pass, so the
+persistent handler now initializes the next sequence once and advances it in
+memory for later diagnostic blocks.
 
 ## LDG-2935: Fill-Event Flush
 
@@ -33,12 +36,27 @@ environment and fixture are under `ws6_fill_event_flush_evidence/`. These are
 the registered two-arm gate clocks, not a separately claimed post-commit
 speedup.
 
-All 39 registered comparisons were identical. They cover alias SMA, reversals
-with fees, uneven availability, multiple sweep candidates, `db_live`,
-checkpoint-every-two and the release shape. Compared surfaces include ledger
-events, fills, equity, trades, sweep columns and retained results. Existing
-fast-profile resume evidence also remained green, including LTB-0007's exact
-ledger, state, feature, equity, fill and trade comparison after recovery.
+The record contains 39 identical parity rows: 35 cross-arm comparisons and
+four base-versus-base comparator checks. They cover alias SMA, reversals with
+fees, uneven availability, multiple sweep candidates, `db_live`,
+checkpoint-every-two and the release shape. The release-shape sweep retained
+no return or trade rows, so its parity rows compare zero rows and the populated
+sweep return and trade comparisons come from p1 and p3. Other compared surfaces
+include ledger events, fills, equity, sweep columns and retained results.
+Existing fast-profile resume evidence also remained green, including
+LTB-0007's exact ledger, state, feature, equity, fill and trade comparison
+after recovery.
+
+The record is reproduced from the repository root with:
+
+```text
+Rscript dev/spikes/fill-event-block-write/spike_runner.R --phase all \
+  --out inst/design/ledgr_v0_2_2_spec_packet/ws6_fill_event_flush_evidence \
+  --reps 3
+```
+
+The runner applies `dev/spikes/fill-event-block-write/seam.R` to the candidate
+arm and compares it with baseline `4055454` in one interleaved R process.
 
 Production keeps direct `buffer_event()` behavior for existing internal
 callers. Only canonical `write_fill_events()` stages rows. The fold calls
@@ -48,8 +66,11 @@ the current staged memory row. Calls with no staged canonical rows are no-ops,
 so live database and compiled-accounting paths stay direct.
 
 The first local edit placed the flush before event production. Source review
-caught it before commit, and LTB-0136 gained a two-pulse final-fill witness
-that fails under that placement. The committed code flushes after production.
+caught it before commit. The first LTB-0136 final-pulse witness was defective:
+it traded on pulse one, so a pulse-two pre-production flush still published
+the rows. The Type 1 correction makes a two-pulse run trade on pulse two. Moving
+the flush before event production now fails that witness with the two final
+rows absent. The committed code flushes after production.
 
 ## Detectors And Mutations
 
@@ -57,37 +78,52 @@ that fails under that placement. The committed code flushes after production.
 | --- | --- | --- |
 | staged rows are hidden and columns remain aligned | LTB-0135 / LCL-0135 | changing the second staged instrument fails twice |
 | publication does not occur through the scalar buffer | LTB-0135 / LCL-0135 | restoring `buffer_event()` publication fails three times |
-| one flush occurs per pulse and final-pulse rows publish | LTB-0136 / LCL-0136 | removing the fold flush fails fifteen assertions |
+| one flush occurs per pulse and final-pulse rows publish | LTB-0136 / LCL-0136 | moving the flush before production fails the final-pulse assertion; removing it fails fifteen assertions |
 | failure after one valid fill is atomic and candidate-local | LTB-0137 / LCL-0137 | one-shot second-fill failure yields durable FAILED with zero rows; the next candidate equals an isolated reference |
 
-The persistent failure witness reads status and row count from DuckDB. The
+The persistent failure witness reads status and row count from DuckDB. Its
+durable half protects the existing fold transaction: publishing each fill
+directly still rolls back and is not claimed as a staging detector. Running
+the fold outside that transaction is the registered smallest failing change.
+The
 sweep witness compares the completed candidate's semantic result with a
 separate one-candidate sweep. It does not treat a shared helper as the oracle.
 
 ## LDG-2936: Diagnostic Sequence
 
 `dev/bench/v0_2_2_workstream6/diagnostic_sequence_probe.R` uses the real
-`run_diagnostics` table and the production `MAX(diagnostic_seq)` query.
-It measured seven batches of 100 queries at zero, 50,000, 250,000 and 750,000
-rows, then simulated 4,096-row appends through 750,000 rows and clocked each
-sequence allocation.
+`run_diagnostics` table and the production `MAX(diagnostic_seq)` query in a
+temporary file-backed DuckDB store. It measured seven batches of 100 queries
+at zero, 50,000, 250,000 and 750,000 rows, then simulated 4,096-row appends
+through 750,000 rows and clocked 100 queries at each allocation point.
 
-The registered denominator is the Workstream 6 public long-window run above:
-58.381 seconds, so one percent is 0.58381 seconds. The complete 184-query
-sequence measured 0.425 seconds, or 0.728% of that run. Accumulated query work
-had exponent 1.14045 against the registered greater-than-1.10 scaling gate.
-The scaling gate passed and the wall gate failed. Because both were required,
-the candidate was rejected and the handler remains unchanged.
+The corrected denominator is the registered warm availability-aware public
+run at 500 members and 1,514 pulses: 29.0 seconds with approximately 758,514
+diagnostic rows. One percent is 0.29 seconds. The complete 184-query sequence
+measured 0.3734 seconds, or 1.288% of that run. Accumulated query work had
+exponent 1.26273 against the registered greater-than-1.10 scaling gate. Both
+the wall and scaling gates pass.
 
-Evidence is under `ws6_diagnostic_sequence_evidence/`. No speedup is credited
-to this rejected candidate.
+The handler therefore reads the next sequence once, lazily on its first
+diagnostic block, and advances the value in memory. Resume starts from the
+durable maximum. An exception after transaction rollback deliberately
+re-reads once, because attempted diagnostic blocks may have advanced the
+in-memory value even though their rows rolled back. LTB-0138 starts from a
+durable sequence seven, writes blocks of two and one rows, and obtains exact
+sequences 7 through 10 with one initializer call. Calling the initializer for
+each block fails the detector.
+
+Evidence is under `ws6_diagnostic_sequence_evidence/`. The removed query work
+is 0.3734 seconds at the registered shape; no separate end-to-end speedup is
+claimed for the implementation.
 
 ## Seven-Shape Walk
 
-1. Repeated lookup: the diagnostic `MAX()` lookup remains but is measured and
-   rejected below the materiality gate; no new repeated lookup was added.
-2. Growing scans: pulse staging has no scan over prior pulses. The diagnostic
-   scan is the rejected candidate recorded above.
+1. Repeated lookup: the scale-growing diagnostic `MAX()` lookup was removed
+   from ordinary block writes. One initialization lookup remains per handler,
+   plus one recovery lookup only after a rolled-back fold exception.
+2. Growing scans: pulse staging has no scan over prior pulses. The repeated
+   diagnostic history scan was removed after its corrected gate passed.
 3. Per-element work with a batch replacement: eleven persistent columns and
    sixteen memory columns now receive one vector write per pulse, replacing
    scalar writes per fill.
@@ -115,11 +151,13 @@ transaction as the durable atomicity boundary; it makes no partial-flush
 promise. `db_live` and compiled accounting were exercised as no-staged paths
 and stayed exact.
 
-Focused writer, sweep and fold suites pass. The control-plane and
-documentation-contract suites pass. The isolated ordinary fast profile ran
-497 of 497 blocks with zero skips or failures in 83.780 seconds; the
-112-second gate passed. Its summary is retained with the fill-flush evidence.
+Focused writer, sweep, fold and availability-economics suites pass. The
+control-plane and documentation-contract suites pass. The corrected isolated
+ordinary fast profile ran 498 of 498 blocks with zero skips or failures in
+81.660 seconds; the 112-second gate passed. Its summary is retained with the
+fill-flush evidence. The full census remains in the scratch record at
+`C:/tmp/ledgr_ws6_correction_fast`.
 
-The Cut 2 review is one invocation over eleven tickets. This requested
-Workstream 6 close review would make two invocations over eleven tickets,
-0.182 against the 0.5 gate.
+The Cut 2 review and first Workstream 6 close review are two invocations over
+eleven tickets. A focused correction review would make three over eleven,
+0.273 against the 0.5 gate.
