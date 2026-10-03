@@ -25,7 +25,7 @@ the execution contracts in `inst/design/contracts.md`.
   table, keep provenance in the product rather than the harness, and deliver
   a runner, a diff-based checker, and a gut demonstration. Size budgets in
   that document are stop signals, not targets.
-- Governance loop (accepted 2026-09-21, pilot on the next packet): the
+- Governance loop (accepted 2026-09-21 and applied since v0.2.1.0): the
   maintainer writes every operative brief and names its mode. `Type 1`
   verifies an accepted direction and always asks independently whether the
   inputs are right; `Type 2` challenges the design; a design concern found
@@ -73,8 +73,8 @@ Current planning context (2026-10-03):
   implementation authority.
 - The current release branch is `v0.2.2`. Its active packet is
   `inst/design/ledgr_v0_2_2_spec_packet/`; `tickets.yml` is the sole status and
-  sequencing authority. Cut 1 Workstreams 1 through 4 are accepted and
-  Workstream 5 is in progress.
+  sequencing authority. Read that file for live workstream state; this file
+  does not duplicate it.
 - `inst/design/contracts.md` is the normative current-behavior source. Cite its
   stable topic headings, not line numbers. Accepted RFC syntheses bind pending
   design; they do not override shipped behavior before implementation.
@@ -101,6 +101,7 @@ planning are evidence, not authorization for new work.
 | What is the cross-version sequence? | `inst/design/ledgr_roadmap.md` |
 | Where is displaced planning history? | `inst/design/roadmap_history.md` and `inst/design/planning_context_history.md` |
 | What governs optimization work? | `inst/design/manual/optimization_coding_style.qmd` and `inst/design/manual/benchmark_methodology.qmd` |
+
 ## Local Verification
 
 Current Windows R path used here; it does not change the `DESCRIPTION` floor.

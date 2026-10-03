@@ -1,7 +1,8 @@
 # Design-Memory Overhaul Closeout
 
 **Status:** Agent-provisional closeout for Cut 1, Workstream 5.
-**Range:** `a93e7e3..HEAD`; twelve tickets in five serial workstreams.
+**Implementation range:** `a93e7e3..8c05e6e`; twelve tickets in five serial
+workstreams. The focused correction after that range changes records only.
 **Behavior:** Documentation and process routing only. No package behavior,
 public API or semantic contract changed.
 
@@ -15,6 +16,34 @@ bodies remain at stable paths or behind exact-heading redirects.
 The migration deliberately did not add a database, generated registry, audit
 ledger, spike index or semantic governance checker. The design system remains
 Markdown maintained at the lifecycle gates that already exist.
+
+## Root Design-Document Classification
+
+Every Markdown file directly under `inst/design/` has one declared role. This
+classification prevents a historical plan from looking current without
+renaming historical paths.
+
+| File | Current role |
+| --- | --- |
+| `collapse_optimization_map.md` | Historical v0.1.8.7 optimization input; non-binding evidence. |
+| `contracts.md` | Normative current-release behavior and internal invariants. |
+| `decisions.md` | Temporary exact-source bridge to accepted pending decisions; not a second authority. |
+| `exact_parity_internal_optimization_proof_template.md` | Accepted evidence template; it authorizes no optimization by itself. |
+| `horizon.md` | Active non-binding parking space. |
+| `horizon_archive.md` | Historical bodies displaced from active parking. |
+| `ledgr_design_document.md` | Historical superseded proposal; no current authority. |
+| `ledgr_design_philosophy.md` | Non-enforceable design guidance. |
+| `ledgr_roadmap.md` | Compact committed cross-version sequence. |
+| `ledgr_ux_decisions.md` | Historical v0.1.7 proposal; no current API authority. |
+| `methodology_references.md` | Non-binding index of external design priors. |
+| `model_routing.md` | Historical superseded workflow proposal; no current authority. |
+| `planning_context_history.md` | Historical planning narrative. |
+| `README.md` | Current routing front door. |
+| `release_ci_playbook.md` | Binding release and release-closeout process. |
+| `rfc_cycle.md` | Current RFC-cycle reference and accepted review discipline. |
+| `roadmap_history.md` | Historical displaced roadmap detail. |
+| `spike_protocol.md` | Binding protocol for spikes and prototypes. |
+| `vignette_styleguide.md` | Accepted user-facing article standard. |
 
 ## Bounded Evidence Population
 
@@ -34,9 +63,10 @@ five research routes, eight audits and 35 spike records or cited spike
 directories. The protected untracked availability spike is outside the tracked
 population and was not read.
 
-The deterministic sample is the first and last path lexicographically in each
-category, plus every record declaring a top-level RED or inconclusive outcome.
-`NEITHER` was included conservatively as a non-binary outcome.
+The deterministic sample is the first and last path under case-insensitive
+ordinal path ordering in each category, plus every record declaring a
+top-level RED, inconclusive or other non-binary outcome. `NEITHER` and
+`partly` were included conservatively as non-binary outcomes.
 
 | Sample | Route or disposition |
 | --- | --- |
@@ -49,6 +79,7 @@ category, plus every record declaring a top-level RED or inconclusive outcome.
 | `dev/spikes/availability-hot-path-representation/probe_findings.md` (RED component) | The rejected representation and green prerequisite are recorded in the availability-hot-path RFC cycle; neither is open work. |
 | `dev/spikes/collapse-preparation/findings.md` (RED) | The rejected `collapse::rsplit()` route is recorded in `collapse_optimization_map.md` and the fold-writer/accessor summary. |
 | `dev/spikes/v0_2_0_1_availability_timestamp_prerequisite/probe_findings.md` (`NEITHER`) | Consumed and explicitly closed without ingestion work in the v0.2.1 packet and release closeout. |
+| `dev/spikes/strategy-context-surface/probe_findings.md` (`partly`) | Consumed by the accepted strategy-context synthesis and the v0.2.1 Cut 13 closeout; full-run performance was measured by its implementation packet rather than claimed by the probe. |
 | `spikes/settlement_quantity_primitive_spike/closeout.md` (RED) | Consumed by equity-settlement seed v3 and the accepted synthesis's exact-quantity boundary. |
 
 The terminal-disposition row is both the final spike path and a consumed green

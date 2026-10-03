@@ -1,5 +1,9 @@
 # Model Routing Rulebook
 
+**Authority:** Historical and superseded workflow proposal; it is not an
+active routing rule. Use `rfc_cycle.md` and the active packet for current review
+and implementation roles.
+
 **Status:** Active  
 **Scope:** ledgr ticket classification, implementation, and review  
 **Purpose:** Stable, repeatable rules for assigning work to model tiers and

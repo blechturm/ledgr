@@ -1,5 +1,9 @@
 # Ledgr: Event-Sourced Trading Framework (R)
 
+**Authority:** Historical and superseded design proposal; it has no current
+binding force. Use `contracts.md` for current behavior and `rfc_cycle.md` plus
+the active packet for accepted design and implementation sequencing.
+
 **Status:** v0.4 -- Amended April 2026
 
 **Primary goal:** A correctness-first, restart-safe, low-frequency (EOD / daily) systematic trading framework implemented as an R package, suitable for rule-based and ML-based strategies, with strict no-lookahead guarantees and reproducible backtests.

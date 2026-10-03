@@ -183,7 +183,8 @@ Before a release closes:
    in `inst/design/rfc/README.md`.
 4. Reconcile every horizon reference in the release packet. It must resolve to
    either a deliberately parked active entry or an exact-heading redirect whose
-   disposition is promoted, refuted or dropped. Stale active prose is a
+   disposition is promoted, refuted, dropped or retained as measured evidence.
+   Stale active prose is a
    closeout defect.
 
 ## Release-Gate Ticket Requirements

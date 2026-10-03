@@ -1,5 +1,9 @@
 # ledgr Research Workflow -- UX Design Decisions
 
+**Authority:** Historical v0.1.7 proposal; it is design history, not a current
+API contract. Use `contracts.md`, current help and vignettes for shipped
+behavior, and `rfc_cycle.md` plus the active packet for pending changes.
+
 **Status:** v0.1.7 UX overhaul proposal. Decisions made during v0.1.6 review cycle.
 **Scope:** Public API shape, interaction patterns, and object model for the
 research workflow. Implementation targeted at v0.1.7 (API overhaul) and
