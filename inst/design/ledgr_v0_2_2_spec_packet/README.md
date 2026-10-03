@@ -1,7 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cut 1 accepted by the maintainer on 2026-10-03. Workstream 1 is
-complete and awaiting Type 1 close review; later workstreams remain pending.
+accepted after Type 1 close review; Workstream 2 is in progress and later
+workstreams remain pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -22,8 +23,8 @@ the packet state and does not become a second editable ticket ledger.
 - `contract_census.md`: the bounded LDG-2923 migration input and LDG-2924
   reconciliation; it is evidence, not a replacement contract.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
-  twelve tickets in five workstreams; Workstream 1 is review-pending and the
-  remaining workstreams are pending.
+  twelve tickets in five workstreams; Workstream 1 is complete, Workstream 2
+  is in progress and the remaining workstreams are pending.
 
 ## Cut 1: Design-memory authority and discoverability
 

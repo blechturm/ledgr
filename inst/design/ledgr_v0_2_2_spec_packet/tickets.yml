@@ -33,14 +33,14 @@ workstreams:
   - id: 1
     name: "Contract authority baseline"
     cut: 1
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "One claim joins LDG-2923 and LDG-2924: contracts.md can safely become the normative current-release source without losing a rule that lives only in an older packet or making a code defect authoritative. The review independently recounts the thirteen H2 sections, inspects every authority handoff and future-reference disposition, samples the test comparisons, checks the v0.1.8 and v0.1.9.5 outbound reconciliation and the later released packets, confirms the H2-only contents links resolve, and verifies that every semantic disagreement was routed rather than editorially rewritten."}
   - id: 2
     name: "Front door and decision bridge"
     cut: 1
-    status: "pending"
+    status: "in_progress"
     depends_on_workstream: 1
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 2", reason: "One claim joins LDG-2925 through LDG-2927: a reader starting at inst/design/README.md reaches current contract behavior or an accepted pending decision within two links, without relying on either old decision catalogue or a prose summary that became authoritative. The review samples real public-behavior and internal-invariant topics, checks every bridge row against exact accepted sections, verifies pending and partial-supersession links in both directions, and confirms no implementation-state ledger or permanent architecture catalogue was created."}

@@ -1,8 +1,8 @@
 # v0.2.2 Design-Memory Overhaul Plan
 
 **Status:** Accepted by the maintainer for Cut 1 on 2026-10-03; the independent
-ticket-cut review returned `PASS_AFTER_PATCHES`, the patched cut is accepted
-and Workstream 1 awaits close review.
+ticket-cut review returned `PASS_AFTER_PATCHES`, Workstream 1 is accepted
+after Type 1 close review and Workstream 2 is in progress.
 
 **Date:** 2026-10-03
 
