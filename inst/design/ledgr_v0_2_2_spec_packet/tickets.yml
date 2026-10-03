@@ -272,13 +272,13 @@ tickets:
   - id: "LDG-2939"
     title: "Validate explicit feature maps once and memoize exactly"
     workstream: 7
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2938"]
     scope: "On the current tree, reproduce explicit-map validation cost and preregister a 5% public explicit-map run gate. If it passes, remove duplicate validation and keep the last successfully resolved concrete map in the run-local accessor, reusing it only when the next object is identical. Rebuilt equal maps may reuse only when identical; changed, reordered, unresolved or tampered maps must revalidate and retain their current outcomes."
     acceptance: ["the conformance sequence covers repeated, rebuilt-equal, reordered, parameterized, unresolved, tampered, swapped-alias, unknown-feature, character and non-map inputs with exact values or exact error class and message", "an explicit-map run and sweep remain exact and clear the preregistered 5% current-tree gate under the cut-wide paired-arm rule before the implementation is accepted", "validation and memo counters prove one validation for repeated identical successful maps and renewed validation after every non-identical or failed input", "mutations using identity-insensitive reuse or caching a failed map are detected", "the memo is owned by one accessor for one run, is absent from package-global state and changes no feature-map identity or validation contract; the Context Contract records this run-local ownership"]
-    evidence: []
+    evidence: ["On the post-LDG-2938 tree 726d87e, dev/bench/v0_2_2_workstream7/explicit_map_benchmark.R alternated three current-tree production and in-memory candidate arms for each public workflow at 500 instruments x 1,260 pulses. The run median was 136.567 to 45.956 seconds (66.3%) and the one-candidate sweep median was 117.511 to 25.440 seconds (78.4%), clearing the preregistered 5% gate. All twelve timed semantic comparisons were exact and every row recorded zero other R processes. Evidence is in ws7_explicit_map_evidence/.", "ledgr_feature_lookup_map() now performs the full object validation once and reads the already-validated concrete IDs directly. Each bundled accessor keeps only its last successful concrete map lookup, reuses it only for an identical next object, and clears the memo before every non-identical attempt so failures cannot be cached. LTB-0141 covers repeated, rebuilt-equal, reordered, parameterized/unresolved, tampered, swapped-alias, unknown-feature, character and non-map inputs with literal values or conditions and a nine-call validation counter; restoring duplicate validation raises the count, identity-insensitive reuse changes ordered output, and retaining failed input lowers it."]
   - id: "LDG-2940"
     title: "Close feature-accessor scaling evidence"
     workstream: 7

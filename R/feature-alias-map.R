@@ -191,7 +191,14 @@ ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL
   }
 
   ledgr_validate_feature_map_object(feature_map)
-  feature_ids <- ledgr_feature_id(feature_map)
+  if (any(vapply(
+    feature_map$indicators,
+    ledgr_feature_declaration_is_unresolved,
+    logical(1)
+  ))) {
+    ledgr_abort_unresolved_feature_id()
+  }
+  feature_ids <- feature_map$feature_ids
   if (!is.character(feature_ids) || is.null(names(feature_ids)) ||
       anyNA(feature_ids) || any(!nzchar(feature_ids)) ||
       anyNA(names(feature_ids)) || any(!nzchar(names(feature_ids)))) {

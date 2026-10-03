@@ -139,3 +139,103 @@ testthat::test_that("[LTB-0140] prepared feature state stays inside one sweep ca
     )))
   }
 })
+
+testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures", {
+  projection <- workstream7_projection()
+  state <- new.env(parent = emptyenv())
+  state$pulse_idx <- 2L
+  prepared <- ledgr:::ledgr_projection_feature_lookup_state(
+    projection,
+    feature_ids = c("sma_2", "sma_3"),
+    universe = c("AAA", "BBB")
+  )
+  accessor <- ledgr:::ledgr_projection_feature_bundle_accessor_state(
+    projection,
+    state,
+    universe = c("AAA", "BBB"),
+    feature_ids = c("sma_2", "sma_3"),
+    prepared = prepared
+  )
+  concrete <- ledgr_feature_map(
+    fast = ledgr_ind_sma(2L),
+    slow = ledgr_ind_sma(3L)
+  )
+  rebuilt <- ledgr_feature_map(
+    fast = ledgr_ind_sma(2L),
+    slow = ledgr_ind_sma(3L)
+  )
+  reordered <- ledgr_feature_map(
+    slow = ledgr_ind_sma(3L),
+    fast = ledgr_ind_sma(2L)
+  )
+  parameterized <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("n")),
+    slow = ledgr_ind_sma(3L)
+  )
+  tampered <- concrete
+  tampered$feature_ids[["fast"]] <- "sma_3"
+  swapped <- concrete
+  swapped$aliases <- rev(swapped$aliases)
+  unknown <- ledgr_feature_map(missing = ledgr_ind_sma(99L))
+
+  testthat::expect_false(identical(concrete, rebuilt))
+  testthat::expect_identical(accessor("AAA", concrete), c(fast = 11, slow = 31))
+  testthat::expect_identical(accessor("AAA", rebuilt), c(fast = 11, slow = 31))
+  testthat::expect_identical(accessor("AAA", reordered), c(slow = 31, fast = 11))
+  testthat::expect_identical(
+    accessor("AAA", c(second = "sma_3", first = "sma_2")),
+    c(second = 31, first = 11)
+  )
+  testthat::expect_error(
+    accessor("AAA", parameterized),
+    class = "ledgr_unresolved_feature_id"
+  )
+  testthat::expect_error(
+    accessor("AAA", tampered),
+    class = "ledgr_invalid_feature_map"
+  )
+  testthat::expect_error(
+    accessor("AAA", swapped),
+    class = "ledgr_invalid_feature_map"
+  )
+  testthat::expect_error(
+    accessor("AAA", unknown),
+    "Unknown feature ID `sma_99` for instrument_id `AAA`. Available feature IDs: sma_2, sma_3.",
+    class = "ledgr_unknown_feature_id",
+    fixed = TRUE
+  )
+  testthat::expect_error(
+    accessor("AAA", list(fast = "sma_2")),
+    "`x` must be a ledgr_feature_map object.",
+    class = "ledgr_invalid_feature_map",
+    fixed = TRUE
+  )
+
+  validation_calls <- 0L
+  original_validate <- ledgr:::ledgr_validate_feature_map_object
+  testthat::local_mocked_bindings(
+    ledgr_validate_feature_map_object = function(x) {
+      validation_calls <<- validation_calls + 1L
+      original_validate(x)
+    },
+    .package = "ledgr"
+  )
+  counted <- ledgr:::ledgr_projection_feature_bundle_accessor_state(
+    projection,
+    state,
+    universe = c("AAA", "BBB"),
+    feature_ids = c("sma_2", "sma_3"),
+    prepared = prepared
+  )
+  counted("AAA", concrete)
+  counted("BBB", concrete)
+  counted("AAA", rebuilt)
+  counted("AAA", reordered)
+  testthat::expect_error(counted("AAA", tampered))
+  counted("AAA", reordered)
+  testthat::expect_error(counted("AAA", parameterized))
+  testthat::expect_error(counted("AAA", parameterized))
+  testthat::expect_error(counted("AAA", list(fast = "sma_2")))
+  testthat::expect_error(counted("AAA", list(fast = "sma_2")))
+  testthat::expect_identical(validation_calls, 9L)
+})

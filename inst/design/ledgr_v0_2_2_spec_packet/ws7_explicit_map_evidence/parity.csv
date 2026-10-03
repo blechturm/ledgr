@@ -1,0 +1,13 @@
+"workflow","rep","arm","identical"
+"ledgr_run",1,"production",TRUE
+"ledgr_run",1,"candidate",TRUE
+"ledgr_run",2,"candidate",TRUE
+"ledgr_run",2,"production",TRUE
+"ledgr_run",3,"production",TRUE
+"ledgr_run",3,"candidate",TRUE
+"ledgr_sweep",1,"production",TRUE
+"ledgr_sweep",1,"candidate",TRUE
+"ledgr_sweep",2,"candidate",TRUE
+"ledgr_sweep",2,"production",TRUE
+"ledgr_sweep",3,"production",TRUE
+"ledgr_sweep",3,"candidate",TRUE

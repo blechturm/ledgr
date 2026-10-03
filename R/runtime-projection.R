@@ -594,6 +594,9 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
   universe <- prepared$universe
   members <- prepared$universe_members
   active_lookup <- prepared$active_lookup
+  last_feature_map <- NULL
+  last_feature_lookup <- NULL
+  has_last_feature_map <- FALSE
 
   function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
@@ -612,11 +615,24 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
 
     lookup_map <- if (is.null(feature_map) && isTRUE(active_lookup$valid)) {
       active_lookup$value
+    } else if (inherits(feature_map, "ledgr_feature_map") &&
+               has_last_feature_map &&
+               identical(feature_map, last_feature_map)) {
+      last_feature_lookup
     } else {
-      ledgr_feature_lookup_map(
+      has_last_feature_map <<- FALSE
+      last_feature_map <<- NULL
+      last_feature_lookup <<- NULL
+      value <- ledgr_feature_lookup_map(
         feature_map,
         active_alias_map = active_alias_map
       )
+      if (inherits(feature_map, "ledgr_feature_map")) {
+        last_feature_map <<- feature_map
+        last_feature_lookup <<- value
+        has_last_feature_map <<- TRUE
+      }
+      value
     }
     values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
