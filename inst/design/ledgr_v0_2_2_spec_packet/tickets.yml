@@ -33,7 +33,7 @@ workstreams:
   - id: 1
     name: "Contract authority baseline"
     cut: 1
-    status: "in_progress"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 1", reason: "One claim joins LDG-2923 and LDG-2924: contracts.md can safely become the normative current-release source without losing a rule that lives only in an older packet or making a code defect authoritative. The review independently recounts the thirteen H2 sections, inspects every authority handoff and future-reference disposition, samples the test comparisons, checks the v0.1.8 and v0.1.9.5 outbound reconciliation and the later released packets, confirms the H2-only contents links resolve, and verifies that every semantic disagreement was routed rather than editorially rewritten."}
@@ -79,13 +79,13 @@ tickets:
   - id: "LDG-2924"
     title: "Normalize contracts as the current normative source"
     workstream: 1
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2923"]
     scope: "Apply only the census dispositions that are safe documentation corrections. Replace the stale header handoff with the normative-current-release role covering public behavior and internal invariants; add an H2-only table of contents without changing heading text; record each current-rule dependence on roadmap or horizon prose for LDG-2931 to re-point; and route rather than rewrite accepted pending direction, code disagreements and binding-document conflicts. Hand every affected-clause pending-link requirement to LDG-2927. State in the contracts header that the implementing packet removes an Accepted change pending link when it rewrites the clause."
     acceptance: ["the header no longer delegates authority to the v0.1.9.5 or v0.1.8 packet and states the normative role without making code behavior authoritative", "the table of contents contains exactly the thirteen existing H2 contract headings and every link resolves without changing an existing heading", "every census row is reconciled to an applied stale-text correction, an accepted pending link owned by LDG-2927, a roadmap-or-horizon dependency handed to LDG-2931, or a routed semantic finding", "the header assigns removal of an Accepted change pending link to the implementing packet when it rewrites the clause", "no semantic contract clause changes without separately recorded authority, and a review diff can distinguish header, navigation and reference repair from routed semantics"]
-    evidence: []
+    evidence: ["contracts.md now states its normative current-release role without delegating authority to the v0.1.9.5 packet or the broken v0.1.8 packet path. It distinguishes contract authority from code and test evidence and assigns removal of an Accepted change pending link to the implementing packet that rewrites the clause.", "The Contents list links exactly the thirteen unchanged H2 headings. A local anchor check reports H2=13, links=13 and missing=0. The diff changes only the header and navigation; no existing heading or semantic clause changed.", "contract_census.md section 9 reconciles every finding: the four shipped unconsolidated rules remain owned by LDG-2925/2927, the binding horizon citation remains owned by LDG-2931, and recursive-indicator direction remains owned by LDG-2925/2929. The focused documentation-contract suite passed 13 blocks and 823 expectations under R 4.6.1 with duckdb 1.5.6.9000 first on the library path."]
   - id: "LDG-2925"
     title: "Create the accepted-decision bridge"
     workstream: 2

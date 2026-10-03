@@ -1,12 +1,33 @@
 # ledgr Contract Index
 
-This file is a compact index of the contracts that future contributors and
-coding agents must preserve. The active design index
-(`inst/design/README.md`) names the current authoritative spec packet; the
-authoritative narrative remains in the active versioned spec packet, currently
-`inst/design/ledgr_v0_1_9_5_spec_packet/`.
-The strategy preflight boundary originated in
-`inst/design/ledgr_v0_1_8_spec_packet/` and remains binding.
+This file is the normative current-release source for shipped public behavior
+and preserved internal invariants. Code and tests are implementation evidence;
+they do not silently change these rules. When code disagrees with a clause,
+the clause stands provisionally while the defect or an authorized contract
+change is routed.
+
+Accepted direction that has not yet been consolidated remains authoritative
+in its exact accepted source. An affected clause links to that source through
+an `Accepted change pending` entry in the design-decision bridge. The
+implementing packet removes that link only when it rewrites the clause under
+the accepted authority. Historical packets explain how rules arose; they are
+not the current contract merely because they are newer or nearby.
+
+**Contents**
+
+- [Public Naming Contract](#public-naming-contract)
+- [Execution Contract](#execution-contract)
+- [Sweep Promotion Contract](#sweep-promotion-contract)
+- [Config Contract](#config-contract)
+- [Snapshot Contract](#snapshot-contract)
+- [Availability Contract](#availability-contract)
+- [Persistence Contract](#persistence-contract)
+- [Canonical JSON Contract](#canonical-json-contract)
+- [Strategy Contract](#strategy-contract)
+- [Context Contract](#context-contract)
+- [Result Contract](#result-contract)
+- [Documentation Contract](#documentation-contract)
+- [Verification Contract](#verification-contract)
 
 ## Public Naming Contract
 

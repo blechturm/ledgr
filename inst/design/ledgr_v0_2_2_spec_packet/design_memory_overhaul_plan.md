@@ -2,7 +2,7 @@
 
 **Status:** Accepted by the maintainer for Cut 1 on 2026-10-03; the independent
 ticket-cut review returned `PASS_AFTER_PATCHES`, the patched cut is accepted
-and Workstream 1 is in progress.
+and Workstream 1 awaits close review.
 
 **Date:** 2026-10-03
 

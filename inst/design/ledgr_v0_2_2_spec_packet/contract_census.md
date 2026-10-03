@@ -190,3 +190,22 @@ LDG-2924 may therefore change only the global authority header, add the H2
 navigation table and state the pending-link lifecycle. It must not add the
 four unconsolidated v0.1.9.5 rules or re-point the 2026-09-29 horizon citation;
 those actions belong to later tickets named above.
+
+## 9. LDG-2924 Reconciliation
+
+LDG-2924 applied the two safe stale-text corrections: it replaced both global
+packet handoffs with the normative-current-release role and added navigation
+to the thirteen unchanged H2 headings. The header now assigns removal of an
+`Accepted change pending` link to the implementing packet that rewrites the
+clause.
+
+The other census findings remain routed rather than edited:
+
+- H-1, H-2, M-7 and the walk-forward override rule go to LDG-2925 and
+  LDG-2927 for exact-source bridge entries and pending links;
+- the 2026-09-29 horizon dependency goes to LDG-2931; and
+- recursive-indicator direction goes to the bridge and RFC pipeline under
+  LDG-2925 and LDG-2929.
+
+The diff under LDG-2924 changes only the header and navigation. It changes no
+existing H2 heading and no semantic clause.
