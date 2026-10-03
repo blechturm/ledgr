@@ -1,6 +1,17 @@
 # RFC Synthesis: Chainable Risk And OMS Policy Boundary
 
 **Status:** Accepted synthesis - binding for v0.1.9 target-risk ticket cut; broader execution-policy pipeline deferred to a new RFC.
+**Superseded in part by:** the OMS synthesis
+[Section 3](rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture),
+[Section 4](rfc_ledgr_oms_seed_synthesis.md#4-data-model-decisions),
+[Section 5](rfc_ledgr_oms_seed_synthesis.md#5-lifecycle-state-model-decisions),
+[Section 6](rfc_ledgr_oms_seed_synthesis.md#6-fold-core-integration-decisions),
+[Section 7](rfc_ledgr_oms_seed_synthesis.md#7-mode-and-retention-decisions),
+[Section 8](rfc_ledgr_oms_seed_synthesis.md#8-safety-arming-and-reconciliation-boundaries),
+[Section 9](rfc_ledgr_oms_seed_synthesis.md#9-identity-provenance-and-replay),
+[Section 10](rfc_ledgr_oms_seed_synthesis.md#10-implementation-constraints)
+and [Section 12](rfc_ledgr_oms_seed_synthesis.md#12-v02x-minimum-scope).
+The target-risk decisions in this document remain operative.
 **Date:** 2026-05-16
 **Source RFC:** `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary.md`
 **Reviewer response:** `inst/design/rfc/rfc_chainable_risk_oms_policy_boundary_response.md`

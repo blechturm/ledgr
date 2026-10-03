@@ -1,4 +1,4 @@
-# ledgr Contract Index
+# ledgr Contracts
 
 This file is the normative current-release source for shipped public behavior
 and preserved internal invariants. Code and tests are implementation evidence;
@@ -6,12 +6,12 @@ they do not silently change these rules. When code disagrees with a clause,
 the clause stands provisionally while the defect or an authorized contract
 change is routed.
 
-Accepted direction that has not yet been consolidated remains authoritative
-in its exact accepted source. An affected clause links to that source through
-an `Accepted change pending` entry in the design-decision bridge. The
-implementing packet removes that link only when it rewrites the clause under
-the accepted authority. Historical packets explain how rules arose; they are
-not the current contract merely because they are newer or nearby.
+Accepted rules or direction not yet consolidated remain authoritative in their
+exact accepted source. An affected clause links to that source through an
+`Accepted change pending` entry in the design-decision bridge. The implementing
+packet removes that link only when it rewrites the clause under the accepted
+authority. Historical packets explain how rules arose; they are not the
+current contract merely because they are newer or nearby.
 
 **Contents**
 
@@ -63,6 +63,15 @@ not the current contract merely because they are newer or nearby.
   exported merely to avoid writing a narrow public wrapper.
 
 ## Execution Contract
+
+Accepted change pending:
+
+- [Execution-window minimum](decisions.md#execution-window-minimum)
+- [Fill-transition validity](decisions.md#fill-transition-validity)
+- [Cost rounding and fees](decisions.md#cost-rounding-and-fees)
+- [Walk-forward snapshot override](decisions.md#walk-forward-snapshot-override)
+- [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
+- [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 - v0.1.7 makes `ledgr_run()` the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
@@ -263,6 +272,10 @@ not the current contract merely because they are newer or nearby.
 
 ## Snapshot Contract
 
+Accepted change pending:
+
+- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+
 - Backtests run against sealed snapshots.
 - Snapshot hash rule 1 covers normalized bars and instruments only and remains
   byte-identical for snapshots with no declared availability facts. Snapshot
@@ -321,6 +334,10 @@ not the current contract merely because they are newer or nearby.
   run-window bar values.
 
 ## Availability Contract
+
+Accepted change pending:
+
+- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
 
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
@@ -934,6 +951,11 @@ domain table.
 
 ## Context Contract
 
+Accepted change pending:
+
+- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+- [Recursive-indicator history boundary](decisions.md#recursive-indicator-boundary)
+
 - Runtime and interactive pulse contexts expose data-frame-compatible
   `ctx$bars` and long-table `ctx$feature_table`.
 - Ergonomic helpers such as `ctx$feature()`, `ctx$features()`, `ctx$idx()`,
@@ -1082,6 +1104,11 @@ domain table.
   tables.
 
 ## Result Contract
+
+Accepted change pending:
+
+- [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+- [Objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity)
 
 - Results are derived from ledger and equity tables.
 - `print()`, `summary()`, `plot()`, and `tibble::as_tibble()` must not mutate the

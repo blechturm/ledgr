@@ -3,6 +3,16 @@
 **Status:** Accepted synthesis - binding planning direction for v0.1.8.6
 feature-projection materialization work and later lookback/export/storage
 follow-ups. Final review accepted with no blocking issues.
+**Superseded in part by:** historical-projection v11
+[Section 1](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#1-decision-and-scope),
+[Section 3](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#3-information-shape-and-ownership),
+[Section 5](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#5-the-simple-missing-data-policy),
+[Section 6](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#6-preparation-without-mandatory-revision-machinery),
+[Section 7](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#7-checkpoint-disposition-and-ticket-cut-boundary),
+[Section 8](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#8-contract-changes-and-detecting-requirements)
+and [Section 9](rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md#9-deferred-work-and-reopening).
+Direction 5.4 remains operative where v11 leaves recursive dependencies to
+separate treatment.
 **Date:** 2026-05-28
 **Author:** Codex
 **Thread:**
