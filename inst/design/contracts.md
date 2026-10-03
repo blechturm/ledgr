@@ -799,9 +799,9 @@ changes it.
 - **Literal targets and today's behaviour.** Raw named targets,
   `ledgr_target()`, `ctx$flat()` and `ctx$hold()` are literal. A strategy
   states intent; ledgr's later steps judge and execute it (Cut 22 decision
-  4). Until the design work recorded in `horizon.md` on 2026-09-29 lands, the
-  consequences are these. Every target is attempted at the next open and is
-  never queued. A rule starting from `ctx$flat()` sells a departed holding at
+  4). The current consequences are these. Every target is attempted at the
+  next open and is never queued. A rule starting from `ctx$flat()` sells a
+  departed holding at
   the next open. A zero target for a halted holding is recorded as not
   executed (`trading_halted`) and discarded; the holding is sold only if the
   strategy states zero again on a pulse whose next open can fill. A rule

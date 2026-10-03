@@ -5,6 +5,9 @@
 
 This file holds design observations that are not ready for the roadmap, an ADR,
 or a versioned spec packet. It is not a backlog and does not imply commitment.
+`Open` contains non-binding parked ideas. `Historical redirects` preserves old
+heading links after bodies move to `horizon_archive.md`; those stubs are
+navigation, not active work or authority.
 
 Use lightweight entries only:
 

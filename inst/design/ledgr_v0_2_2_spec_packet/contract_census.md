@@ -69,7 +69,7 @@ export rationale, JSON `NULL` versus `NA`, and the universal read-only claim.
 | --- | --- | --- | --- |
 | header lines 3-7, `README.md` and v0.1.9.5 packet | delegates current authority to an old packet | stale authority text | LDG-2924 replaces it with the normative-current-release role. |
 | header lines 8-9, nonexistent `ledgr_v0_1_8_spec_packet/` | says the preflight boundary remains binding | stale and broken handoff | The rule is already consolidated; remove the handoff under LDG-2924. |
-| Strategy line 761, 2026-09-29 `horizon.md` entry | makes current literal-target behavior depend on parking prose | operative dependency on a non-binding file | Record now; LDG-2931 re-points it after classifying the entry. |
+| Strategy line 761, former 2026-09-29 `horizon.md` entry | made current literal-target behavior depend on parking prose | operative dependency on a non-binding file | Resolved by LDG-2931: the contract now states current consequences directly; future execution-policy work routes through the RFC pipeline. |
 | Strategy line 802, strategy-helper-axis audit | provenance for the domain table | evidence citation, not delegated authority | Retain as explanatory evidence. |
 | Verification line 1481, release playbook | assigns release execution to its native gate | correct process reference | Retain. |
 

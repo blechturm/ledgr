@@ -6,8 +6,9 @@ ADR-0004 have been migrated into maintainer manual articles and deleted.
 **Authority:** ADRs in this directory are historical. New binding constraints
 land in `../contracts.md` (the WHAT) and accepted RFC syntheses (the decision
 history). New rationale lives in maintainer manual articles under
-`../manual/` (the WHY). Forward direction and scope guards live as horizon
-entries in `../horizon.md`.
+`../manual/` (the WHY). Accepted unfinished direction lives in the
+[`RFC pipeline`](../rfc/README.md); uncommitted ideas may be parked in the
+non-binding [`horizon`](../horizon.md).
 
 ## Why This Pattern Is Wound Down
 
@@ -31,8 +32,6 @@ binding artifacts. That is the horizon-entry shape, not the ADR shape.
 
 ADR-0005 was deprecated on 2026-06-04. The constraint it carried is bound by:
 
-- the horizon entry `2026-06-02 [architecture] B2 spot-FIFO accelerator is
-  not a derivatives accounting model`;
 - the maintainer-decisions narrowing
   `../rfc/rfc_compiled_hot_frame_b2_v0_1_9_x_maintainer_decisions.md`
   (Decision 2);
@@ -60,15 +59,16 @@ The bar is three conditions, all required:
 3. **Consequences with named tradeoffs**. What it costs as well as what it
    gains.
 
-If a constraint does not meet all three, it goes in a horizon entry or in
-`contracts.md`, not a new ADR. "We shipped a scoped X" is horizon-shaped.
+If a constraint does not meet all three, it goes through the RFC pipeline or
+into `contracts.md`, not a new ADR. A merely interesting possibility may be
+parked in the horizon. "We shipped a scoped X" is closeout-shaped.
 "We deliberately chose X over Y after considering Z" is ADR-shaped, and even
 then only when defending the choice against a future PR will plausibly require
 the rationale narrative.
 
 The default expectation is that the next new ADR is unlikely. The cycles are
-expected to deposit decisions into `contracts.md` + manual articles + horizon
-entries + RFC syntheses, not new ADRs.
+expected to deposit decisions into `contracts.md`, manual articles and RFC
+syntheses, not new ADRs.
 
 ## Existing Records
 
@@ -78,12 +78,12 @@ entries + RFC syntheses, not new ADRs.
 | `0002-registry-fingerprint-policy.md` | Registry fingerprint policy | Migrated and deleted in LDG-2540 | `../manual/observability_determinism.qmd` |
 | `0003-closure-fingerprinting.md` | Functional strategy closure fingerprinting | Migrated and deleted in LDG-2540 | `../manual/observability_determinism.qmd` |
 | `0004-dependency-footprint-and-strategy-interface.md` | Lean deps and function-only strategy interface | Migrated and deleted in LDG-2544 | `../manual/execution_fold_core.qmd` + `../manual/performance_arc_v0_1_8_x.qmd` |
-| `0005-b2-spot-fifo-scope-guard.md` | B2 spot-FIFO scope guard | Deprecated 2026-06-04; file removed | n/a; content was horizon-shaped and is bound by horizon entry + maintainer-decisions + contracts |
+| `0005-b2-spot-fifo-scope-guard.md` | B2 spot-FIFO scope guard | Deprecated 2026-06-04; file removed | n/a; bound by maintainer decisions and contracts |
 
 ## Related References
 
 - `../contracts.md` - current binding contracts.
-- `../horizon.md` - forward direction and scope guards.
+- `../rfc/README.md` - current RFC work and accepted open obligations.
+- `../horizon.md` - non-binding parking and historical redirects.
 - `../manual/` - maintainer manual articles (the WHY).
-- `../rfc/README.md` - RFC decision index.
 - `../rfc_cycle.md` - RFC cycle process reference.
