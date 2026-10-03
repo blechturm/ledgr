@@ -22,6 +22,8 @@ the packet state and does not become a second editable ticket ledger.
   maintainer accepted it for Cut 1 on 2026-10-03.
 - `contract_census.md`: the bounded LDG-2923 migration input and LDG-2924
   reconciliation; it is evidence, not a replacement contract.
+- `decision_catalogue_reconciliation.md`: LDG-2925 row-by-row migration
+  evidence for the two retired catalogues; it is not a decision index.
 - `tickets.yml`: sole ticket and sequencing authority. It currently records
   twelve tickets in five workstreams; Workstream 1 is complete, Workstream 2
   is in progress and the remaining workstreams are pending.
