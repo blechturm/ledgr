@@ -72,9 +72,9 @@ cuts:
     out_of_scope: "Removing or lazily rebuilding static pulse views (scheduled for the next release: inst/design/rfc/README.md#ctx-frame-retirement); changing bars_mat or runtime-projection representation; per-pulse fold churn (asset-state normalization, diagnostic JSON, context helpers), which the next-release memory pass owns; snapshot re-hash churn, which the WS5 verification session owns; feature-persistence or cache policy; sweep, walk-forward or parallel-worker memory beyond LDG-2952's shared dispatch; worker-count defaults; explicit garbage collection; removing execution-spec fields; public or peer performance claims; and any candidate that misses its registered memory, runtime or exactness gate."
     workstreams: [12]
     closeout: "LDG-2951's and LDG-2952's checked-in records and ticket evidence form the Cut 5 closeout; no separate prose closeout ticket or essay is created."
-    accepted: "2026-10-04 by the maintainer after the readiness review patches"
-    close_review: "The Type 1 close review at 26ac946 returned PASS after independently reproducing both gains, exact outputs, source-liveness and dispatch mutations. Its required record-only correction narrowed LCL-0155 to the two inspected boundaries; the records now also name the fold as the peak-setting phase and refresh the LDG-2951 summary under the current checker. Actual review count is 4/2 = 2.000, recorded rather than padded. Maintainer close acceptance remains pending."
-    status: "open"
+    accepted: "2026-10-04 by the maintainer for implementation after the readiness review patches; Workstream 12 and Cut 5 accepted and closed on 2026-10-04 after the Type 1 PASS and record-only correction 4edd4b3"
+    close_review: "The Type 1 close review at 26ac946 returned PASS after independently reproducing both gains, exact outputs, source-liveness and dispatch mutations. Its required record-only correction narrowed LCL-0155 to the two inspected boundaries; the records now also name the fold as the peak-setting phase and refresh the LDG-2951 summary under the current checker. The maintainer accepted Workstream 12 and closed Cut 5 after correction 4edd4b3. Actual review count is 4/2 = 2.000, recorded rather than padded."
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -173,7 +173,7 @@ workstreams:
   - id: 12
     name: "Durable-run preparation memory"
     cut: 5
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 11
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 12", reason: "One claim is shared by LDG-2951 and LDG-2952: a public durable run stops retaining and recomputing preparation work that has no remaining use. Unmarked gate runs must show at least 10% lower peak child RSS under LDG-2951 for each persistence variant, while LDG-2952 must not regress unmarked elapsed time or the separately and symmetrically measured feature-phase peak. Outputs and every public, persistence, run-identity and failure contract are unchanged; the only expected provenance change is the recorded availability feature-engine digest. The review independently checks source liveness at the feature boundary and fold entry, the finalization call and query counters and the dispatch call count, reproduces at least one fresh-process pair, recomputes the memory and runtime gates from raw rows, and compares every registered public result surface on the trading oracle and the dense run. It removes one staged release, restores the full-range projection slice, restores the unused availability ledger read, swaps the SMA and returns kind mapping and reverts the dispatch hoist to prove their detectors fail, and confirms production contains no explicit gc() or representation change."}

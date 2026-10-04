@@ -1,7 +1,7 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 4 are closed. Cut 5 has passed independent close
-review and awaits maintainer close acceptance.
+**Status:** Cuts 1 through 5 are closed after maintainer acceptance of all
+twelve workstreams.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -36,8 +36,9 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, eleven complete Cut 2 tickets and four complete
-  Cut 3 tickets; all three cuts are closed.
+  complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
+  tickets, one complete Cut 4 ticket and two complete Cut 5 tickets; all five
+  cuts are closed.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -322,7 +323,8 @@ reproducing both gains, exact outputs, source-liveness and dispatch mutations.
 Its required record correction narrows LCL-0155 to the two boundaries its
 detector observes. The evidence now also names the fold as the peak-setting
 phase and refreshes the LDG-2951 summary under the current checker. The actual
-review count is 4/2 = 2.000. Maintainer close acceptance remains pending.
+review count is 4/2 = 2.000. The maintainer accepted Workstream 12 and closed
+Cut 5 on 2026-10-04 after record correction `4edd4b3`.
 
 ## Expected later artifacts
 

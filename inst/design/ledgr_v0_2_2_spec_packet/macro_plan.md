@@ -1,9 +1,9 @@
 # ledgr v0.2.2 Macro Plan
 
-**Status:** Maintainer planning record; accepted on 2026-10-03. Design-memory
-Cut 1 is complete and accepted. Cut 2's WS1 optimization tickets passed
-independent review after bounded patches; the maintainer accepted the cut and
-opened Workstream 6 on 2026-10-03. Later macro workstreams remain pre-ticket.
+**Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
+5 are complete and accepted. They close the design-memory, direct-performance,
+exact-verification, regression-evidence and durable-preparation foundation.
+Later macro workstreams remain pre-ticket.
 
 **Date:** 2026-10-03
 
