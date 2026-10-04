@@ -1,0 +1,2 @@
+"baseline_commit","r_version","duckdb_version","digest_version","yyjsonr_version","large_fact_rows","large_bar_rows","low_rows_per_family","low_total_rows"
+"0c0c6949ba04661b47e96b97cc1d5971865e67da","4.6.1","1.5.6.9000","0.6.39","0.1.22",300000,500,40000,120000
