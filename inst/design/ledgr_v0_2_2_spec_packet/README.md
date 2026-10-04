@@ -85,7 +85,8 @@ is ready.
 ticket corrections are incorporated. The maintainer accepted Cut 2 on
 2026-10-03. Workstream 6 was accepted on 2026-10-03 and Workstream 7 on
 2026-10-04. Workstream 8 was accepted on 2026-10-04 after its focused
-correction review returned `PASS`; Workstream 9 remains pending.
+correction review returned `PASS`; Workstream 9 is agent-provisional and
+awaits its Type 1 close review plus Linux CI confirmation.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but
@@ -109,6 +110,14 @@ public outputs. The first close review disproved the original
 invocation 7/11 = 0.636, recorded as a historical review-gate breach.
 The maintainer accepted the workstream after that `PASS`; no redundant eighth
 review was counted.
+
+Workstream 9 implementation is `b272967`, `de7f4e3`, `a5443f3` and the
+bounded fast-witness correction `9f807ec`; its agent-provisional record is
+`availability_fact_scaling_closeout.md`. The 10,473-date session record
+measured 13.62x in UTC and 30.39x in New York. Public membership resolution at
+300,000 rows fell from 9.75 to 4.67 seconds with exponent 0.941 and exact
+rows and evidence. The correction fast record passed 506/506 blocks in 89.03
+seconds. Linux CI repetition remains external until the branch is pushed.
 
 The four workstreams are independent after cut acceptance. Each candidate
 starts with a current-tree baseline, semantic oracle, failure-sensitive

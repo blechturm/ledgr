@@ -104,7 +104,7 @@ workstreams:
   - id: 9
     name: "Availability fact scaling"
     cut: 2
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 9", reason: "One claim joins LDG-2943 through LDG-2945: session construction and public membership resolution remove repeated element or full-table work while preserving exact fact rows, ordering, evidence, errors and snapshot identity. The review reproduces current-tree scaling, compares fixtures across timezones, DST boundaries, complete and incremental sets and cutoff positions, runs the registered mutations, and confirms provider run paths and unrelated fact families did not change."}
@@ -312,30 +312,30 @@ tickets:
   - id: "LDG-2943"
     title: "Vectorize declared-session construction"
     workstream: 9
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Reproduce current-tree session construction at short and long horizons in UTC and a DST-observing timezone, then preregister a 5x constructor gate under the cut-wide paired-arm rule. If it passes, replace per-civil-date timestamp formatting and parsing with a vectorized timezone-aware construction while preserving the public constructor's validations and exact sealed facts."
     acceptance: ["session fact rows, ordering, evidence and snapshot hash are identical for UTC, America/New_York, ordinary DST boundaries, leap dates, partial ranges and invalid inputs", "nonexistent spring-forward and ambiguous fall-back local times produce the same rows or exact errors in old and new arms on Windows, and the same witness repeats on the Linux CI platform", "the long-horizon constructor clears the preregistered 5x current-tree gate before implementation is accepted; a failed gate leaves production unchanged", "a mutation restoring per-date formatting fails a structural format-or-parse counter and an offset mutation fails exact fact and hash parity", "no other fact family, session policy, bar axis or public error contract changes"]
-    evidence: []
+    evidence: ["Commit b272967 replaces per-label local-time resolution with one vectorized timezone pass while retaining ledgr_local_time_resolve as the scalar oracle. The 10,473-date paired record is exact by rows and fact hash: UTC 19.61 to 1.44 seconds (13.62x), America/New_York 48.93 to 1.61 (30.39x), clearing the 5x gate. LTB-0145 covers leap, ordinary, nonexistent and ambiguous labels and detects scalar restoration and offset reversal; LTB-0148 seals both arms to the same snapshot hash. The Windows witnesses pass. Linux CI confirmation remains external until the branch is pushed."]
   - id: "LDG-2944"
     title: "Resolve membership facts in linear work"
     workstream: 9
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Reproduce current-tree membership resolution over at least three row counts and preregister a scaling exponent no greater than 1.15 plus at least 50% wall reduction in the public ledgr_facts_resolve() call at 300,000 rows, reporting snapshot re-hash time separately. If it passes, group rows by set once. At the last complete set at or before the cutoff, seed earlier-seen omitted instruments with that set's omitted_from_complete_set evidence, apply the complete set and subsequent changes, then apply every set-less row after all sets as the current resolver does. Preserve exact rows, evidence, ordering, cutoffs and errors. Do not alter prepared-provider run semantics."
     acceptance: ["exact resolved rows and evidence match for complete-only, incremental, repeated-member, before-first, exact-cutoff, between-set and after-last queries across multiple instruments", "an explicitly requested instrument last asserted before the last complete set retains that set's omitted_from_complete_set reason and support, and a set-less nonmember fact dated before the complete set still overrides after all sets", "the current-tree and candidate scaling records use interleaved paired public ledgr_facts_resolve() arms and the same fixtures; acceptance requires exponent no greater than 1.15 and at least 50% public-call reduction at 300,000 rows, with re-hash share reported separately, otherwise production stays unchanged", "mutations choosing the wrong complete-set boundary, failing to seed earlier ids, applying set-less rows by date or dropping a later change fail semantic parity; a row-visit counter detects renewed full-table-per-set scans", "public history and resolver errors remain unchanged and provider run paths and snapshot identity are unaffected"]
-    evidence: []
+    evidence: ["Commits de7f4e3 and a5443f3 index applicable set rows once and preserve the last-complete, later-change and set-less precedence rules. Three paired public ledgr_facts_resolve points are exact by rows and evidence: 6,000 rows 0.17 to 0.12 seconds, 30,000 0.77 to 0.45, and 300,000 9.75 to 4.67. Candidate exponent is 0.941 and the 300,000-row saving is 52.1%; re-hashing alone is 3.80 seconds. LTB-0146 and LTB-0147 detect five semantic or scaling regressions, and 100 randomized cases matched the retained resolver exactly."]
   - id: "LDG-2945"
     title: "Close availability fact-scaling evidence"
     workstream: 9
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2943", "LDG-2944"]
     scope: "Write the Workstream 9 closeout, reconcile shipped and rejected candidates, report exact fact and hash parity, current-tree scaling, mutations and the seven-shape walk, then request one Type 1 close review."
     acceptance: ["the closeout separates session construction from membership resolution and gives each its own baseline, gate and result", "all timezone, cutoff, evidence, error and identity witnesses are named with reproducible paths", "the record confirms no unrelated fact family or provider-run semantic changed", "tickets LDG-2943 through LDG-2945 and Workstream 9 status reconcile before review"]
-    evidence: []
+    evidence: ["availability_fact_scaling_closeout.md separates both gates, records exact identity, re-hash share, seven failure probes, the seven-shape walk and reproduction paths. The first green fast record missed its timing bound because one pre-existing block absorbed about 29 seconds. Commit 9f807ec shrank only the redundant scalar-oracle fixture while retaining the 10,473-date durable record. The correction profile passed 506/506 blocks in 89.03 seconds against 112 at C:/Users/maxth/ledgr-research/ws9-correction-fast-9f807ec. The planned Type 1 close review is invocation 8/11 = 0.727, an already-historical Cut 2 gate breach recorded rather than padded."]
