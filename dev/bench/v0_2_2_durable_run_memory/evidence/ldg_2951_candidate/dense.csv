@@ -1,0 +1,3 @@
+"arm","pair","persistence","mode","availability","commit","elapsed_s","peak_rss_bytes","output_file"
+"accepted_dense",0,"off","oracle",FALSE,"55e817d27dcb6a5f3dbcaa959b8b039e3d24819a",13.5,1167540224,"accepted_dense_00_off_oracle.json"
+"candidate_dense",0,"off","oracle",FALSE,"f8080a7ac5252eb2ce7febb7c3628d11f61f4101",12.32,1112461312,"candidate_dense_00_off_oracle.json"

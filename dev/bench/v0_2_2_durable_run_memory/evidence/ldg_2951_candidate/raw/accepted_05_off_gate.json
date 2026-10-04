@@ -1,0 +1,15 @@
+{
+  "commit": "55e817d27dcb6a5f3dbcaa959b8b039e3d24819a",
+  "product_tree_status": "",
+  "availability": true,
+  "persist_features": false,
+  "mode": "gate",
+  "status": "DONE",
+  "elapsed_s": 26.77,
+  "identities": null,
+  "phases": null,
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6.9000",
+  "collapse_version": "2.1.8"
+}

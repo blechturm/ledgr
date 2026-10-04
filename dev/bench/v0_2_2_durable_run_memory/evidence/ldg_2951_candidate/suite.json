@@ -1,0 +1,10 @@
+{
+  "accepted_commit": "55e817d27dcb6a5f3dbcaa959b8b039e3d24819a",
+  "candidate_commit": "f8080a7ac5252eb2ce7febb7c3628d11f61f4101",
+  "pairs": 5,
+  "peak_ratio_limit": 0.9,
+  "elapsed_ratio_limit": 1.05,
+  "retry_rule": "one complete fresh retry of the same pair count; a miss stands only when the retry also misses",
+  "gate_runs": "unmarked",
+  "phase_runs": "separate paired marked runs"
+}

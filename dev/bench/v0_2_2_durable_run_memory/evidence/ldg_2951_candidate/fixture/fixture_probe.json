@@ -1,0 +1,21 @@
+{
+  "shape_id": "durable_memory",
+  "sessions": 1514,
+  "instruments": 600,
+  "members": 500,
+  "membership_sets": 12,
+  "membership_rows": 6000,
+  "churn": 0.02,
+  "terminals": 0,
+  "terminal_ownership": "none",
+  "terminal_member_overlap": 0,
+  "gap_instruments": [],
+  "gap_lengths": [],
+  "gap_starts": [],
+  "gaps_within_budget": true,
+  "bar_rows": 908400,
+  "first_session": "1998-01-05",
+  "last_session": "2003-10-23",
+  "features": "returns_63+returns_126+returns_252",
+  "expected_status": "DONE"
+}

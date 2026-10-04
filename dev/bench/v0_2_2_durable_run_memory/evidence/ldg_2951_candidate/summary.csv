@@ -1,0 +1,3 @@
+"persistence","pairs","peak_rss_ratio","elapsed_ratio","peak_gate","elapsed_gate"
+"off",5,0.85664654153644,0.998138495904691,TRUE,TRUE
+"on",5,0.868330020721445,0.999105278854757,TRUE,TRUE

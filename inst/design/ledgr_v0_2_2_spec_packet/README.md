@@ -299,6 +299,14 @@ that differs only by the dispatch hoist. Three cut-review invocations and one
 planned close review over two tickets is 4/2 = 2.000. That historical breach
 is recorded rather than repaired by padding.
 
+LDG-2951 is complete. Its five-pair record compares `55e817d` with `f8080a7`.
+Median peak-child-RSS ratios are 0.8566 with persistence off and 0.8683 with
+persistence on, while elapsed ratios are 0.9981 and 0.9991. Exact public
+outputs and the dense witness match, the fast profile passed 513 blocks in
+85.61 seconds, and the ordinary Workstream 11 suite remained below its 1.10
+timing ceiling. LDG-2952 now uses this committed post-LDG-2951 tree as its
+isolated baseline.
+
 ## Expected later artifacts
 
 - accepted design records or explicit references to their existing locations;
