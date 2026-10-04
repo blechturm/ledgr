@@ -239,7 +239,8 @@ to improve the ratio.
 
 ## Cut 5: Durable-run preparation memory
 
-**Status:** Draft cut. The original one-ticket cut review returned
+**Status:** Accepted by the maintainer on 2026-10-04; Workstream 12 is in
+progress. The original one-ticket cut review returned
 `PASS_AFTER_PATCHES`. On 2026-10-04 the maintainer adopted every patch and
 widened the cut with LDG-2952. A focused review of that broadened draft
 returned `CHANGES_REQUIRED`; its four bounded corrections are incorporated.
