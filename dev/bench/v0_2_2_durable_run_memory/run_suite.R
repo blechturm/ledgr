@@ -1,3 +1,6 @@
+bench_lib <- Sys.getenv("LEDGR_BENCH_LIB", "")
+if (nzchar(bench_lib)) .libPaths(c(bench_lib, .libPaths()))
+
 args <- commandArgs(TRUE)
 if (length(args) != 4L) {
   stop("Usage: run_suite.R <accepted_repo> <candidate_repo> <out_dir> <pairs>")

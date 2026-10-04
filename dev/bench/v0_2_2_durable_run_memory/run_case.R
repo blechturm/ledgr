@@ -1,3 +1,6 @@
+bench_lib <- Sys.getenv("LEDGR_BENCH_LIB", "")
+if (nzchar(bench_lib)) .libPaths(c(bench_lib, .libPaths()))
+
 args <- commandArgs(TRUE)
 if (length(args) != 6L) {
   stop(paste("Usage: run_case.R <repo> <fixture_db> <availability>",

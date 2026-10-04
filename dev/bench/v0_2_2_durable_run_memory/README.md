@@ -18,3 +18,7 @@ The checker compares completion and normalized public equity, fills, trades,
 diagnostics, decoded strategy state, persisted features and availability
 surfaces. It also compares the dense witness and proves that changing a
 normalized output is detected.
+
+`LEDGR_BENCH_LIB` may name an isolated dependency library. The runner prepends
+it inside every controller and child process and records the resolved package
+versions; leaving it unset uses the ordinary R library resolution.

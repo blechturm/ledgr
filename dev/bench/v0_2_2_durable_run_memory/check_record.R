@@ -1,3 +1,6 @@
+bench_lib <- Sys.getenv("LEDGR_BENCH_LIB", "")
+if (nzchar(bench_lib)) .libPaths(c(bench_lib, .libPaths()))
+
 args <- commandArgs(TRUE)
 if (length(args) != 1L) stop("Usage: check_record.R <record_dir>")
 record <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
