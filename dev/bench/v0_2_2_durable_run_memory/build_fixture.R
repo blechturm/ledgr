@@ -17,17 +17,23 @@ availability_con <- ledgr:::ledgr_snapshot_connection(availability_snapshot)$con
 bars <- DBI::dbGetQuery(
   availability_con,
   "SELECT ts_utc, instrument_id, open, high, low, close, volume
-   FROM bars ORDER BY instrument_id, ts_utc"
+   FROM snapshot_bars WHERE snapshot_id = ?
+   ORDER BY instrument_id, ts_utc",
+  params = list(availability_snapshot$snapshot_id)
 )
 instruments <- DBI::dbGetQuery(
   availability_con,
-  "SELECT instrument_id FROM instruments ORDER BY instrument_id"
+  "SELECT instrument_id FROM snapshot_instruments WHERE snapshot_id = ?
+   ORDER BY instrument_id",
+  params = list(availability_snapshot$snapshot_id)
 )
 ledgr_snapshot_close(availability_snapshot)
+dense_db <- file.path(out_dir, "dense.duckdb")
+unlink(c(dense_db, paste0(dense_db, ".wal")))
 dense_snapshot <- ledgr_snapshot_from_df(
   bars,
   instruments_df = instruments,
-  db_path = file.path(out_dir, "dense.duckdb"),
+  db_path = dense_db,
   snapshot_id = "durable_memory_dense"
 )
 ledgr_snapshot_close(dense_snapshot)
