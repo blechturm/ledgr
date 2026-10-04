@@ -126,7 +126,7 @@ workstreams:
   - id: 10
     name: "Exact fact-integrity verification"
     cut: 3
-    status: "pending"
+    status: "active"
     depends_on_workstream: 9
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 10", reason: "One claim joins LDG-2946 through LDG-2949: repeated timestamp formatting is removed from exact fact verification while canonical family, bundle and rule-2 snapshot bytes, every existing hash and corruption failure remain exact, the public sealed-snapshot resolver becomes materially faster and low-repetition families do not regress materially. The review checks LDG-2946's separate commit and oracle record, independently recomputes the internal, public and low-repetition gates, verifies formatter elements rather than calls, compares every fact-family clock shape, runs wrong-token, per-row-format, in-memory timestamp and persisted-table timestamp mutations, checks fresh and reopened sealed snapshots and confirms no stored-digest trust, identity, schema or verification-policy change."}
@@ -364,13 +364,13 @@ tickets:
   - id: "LDG-2946"
     title: "Register exact fact-verification identity and corruption oracles"
     workstream: 10
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
     scope: "Before production changes, turn the reviewed spike into durable exact semantic, byte, identity and corruption oracles on the accepted Workstream 9 tree. Exercise membership, sessions, trading status, lifetime and equity corporate actions, including repeated clocks, optional clocks, fractional instants and empty headers where applicable. Test fresh and reopened sealed snapshots and both constructed and persisted corruption. Commit the tests, claim registration and machine-readable oracle record as this ticket's own artifact before LDG-2947 starts."
     acceptance: ["family rows, canonical payload bytes, family hashes, explicitly recorded bundle hashes and rule-2 snapshot hashes are identical for every registered family shape, and fresh and reopened snapshots agree", "changing a constructed membership timestamp by one second fails with the current class and stable message fragment", "changing a persisted membership timestamp makes rule-2 verification fail with the current class and stable message fragment", "membership flags and the remaining family clocks retain corruption witnesses so timestamp mapping is not the only protected field", "one dedicated commit contains the tests, claims entry and machine-readable oracle record with byte lengths, digests, environment, public boundary and oracle independence, and LDG-2947 does not begin in that commit"]
-    evidence: []
+    evidence: ["The dedicated pre-change oracle commit freezes 20 machine-readable records under tests/testthat/fixtures/ws10-fact-integrity: exact row, header, family and bundle JSON bytes; byte lengths and independent SHA-256 digests; six family hashes; the explicit bundle hash; the rule-2 snapshot hash; R, DuckDB, digest and yyjsonr versions; public boundaries; and oracle-independence statements. The six shapes cover membership snapshots and intervals, trading status, lifetime, equity corporate actions and sessions, including repeated and optional clocks and the membership interval family's empty header. A half-second public membership clock retains LEDGR_SUBSECOND_TIMESTAMP and ledgr_fact_invalid_time.", "LTB-0149 through LTB-0151 compare all frozen bytes and identities, fresh and reopened public membership resolution, a one-second constructed membership-clock mutation, a membership-flag mutation, one clock mutation in every remaining family and a one-second persisted membership-clock mutation. The three independent guts all failed: a wrong timestamp token produced more than 40 exact-byte and identity failures; bypassing ledgr_facts_assert produced 12 corruption-oracle failures; and returning the stored snapshot hash after seal produced two public-boundary failures.", "Focused oracle, persistence, control-plane and documentation-contract suites passed under R 4.6.1 with duckdb 1.5.6.9000. The required ordinary fast record at C:/tmp/ledgr-ws10-ldg2946-fast-a9cd0a9-r461 passed 508 of 508 blocks in 83.14 seconds against the 112-second bound. No production file changed and LDG-2947 had not begun."]
   - id: "LDG-2947"
     title: "Register repetition-sensitive fact-verification scaling gates"
     workstream: 10

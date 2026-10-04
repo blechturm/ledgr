@@ -144,10 +144,10 @@ fails its gate.
 
 ## Cut 3: Exact fact-integrity verification
 
-**Status:** Open after maintainer acceptance on 2026-10-04. Independent spike
-review passed the fact-integrity result and invalidated the DuckDB membership
-result. The cut review accepted the corrected four-ticket shape, and Workstream
-10 may now start.
+**Status:** Active after maintainer acceptance on 2026-10-04. LDG-2946 has
+committed the pre-change exact-byte, identity, reopen and corruption oracles;
+LDG-2947 is the next ticket. Independent spike review passed the fact-integrity
+result and invalidated the DuckDB membership result.
 
 Authority: macro-plan WS5, the reviewed fact-integrity spike and the accepted
 exact-parity internal-optimization proof template. The corrected membership
