@@ -10,8 +10,10 @@ source(file.path(script, "helpers.R"), local = TRUE)
 lwreg_check <- function(path) {
   errors <- character()
   fail <- function(...) errors <<- c(errors, paste0(...))
-  required <- c("suite.json", "processes.csv", "measurements.csv",
-                "fixture_probes.json")
+  required <- c(
+    "suite.json", "processes.csv", "measurements.csv",
+    "fixture_probes.json", "summary.csv", "record_hashes.csv"
+  )
   missing <- required[!file.exists(file.path(path, required))]
   if (length(missing)) return(paste("Missing", missing))
   suite <- jsonlite::read_json(file.path(path, "suite.json"),
@@ -20,6 +22,21 @@ lwreg_check <- function(path) {
                                stringsAsFactors = FALSE)
   measurements <- utils::read.csv(file.path(path, "measurements.csv"),
                                   stringsAsFactors = FALSE)
+  recorded_hashes <- utils::read.csv(
+    file.path(path, "record_hashes.csv"), stringsAsFactors = FALSE
+  )
+  normalized_hash <- function(file) {
+    bytes <- readBin(file, "raw", n = file.info(file)$size)
+    value <- gsub("\r\n", "\n", rawToChar(bytes), fixed = TRUE)
+    digest::digest(charToRaw(value), algo = "sha256", serialize = FALSE)
+  }
+  hash_files <- file.path(path, recorded_hashes$path)
+  if (any(!file.exists(hash_files)) || !identical(
+    unname(vapply(hash_files, normalized_hash, character(1L))),
+    recorded_hashes$sha256_lf
+  )) {
+    fail("Recorded LF-normalized file hashes do not match")
+  }
   manifest <- lwreg_manifest(script)
   if (any(processes$exit_status != 0L)) fail("A child process failed")
   if (identical(suite$profile, "ordinary") && suite$elapsed_s > 1200) {
@@ -179,6 +196,19 @@ if (self_test) {
                        null = "null", digits = 16)
   if (!any(grepl("Semantic drift", lwreg_check(scratch), fixed = TRUE))) {
     stop("Self-test failed to detect semantic drift")
+  }
+  measurements <- utils::read.csv(file.path(scratch, "measurements.csv"),
+                                  stringsAsFactors = FALSE)
+  target <- which(measurements$arm == "candidate" &
+                  measurements$attempt == "initial" &
+                  measurements$shape_id == "feature_gaps")
+  measurements$cold_s[target] <- measurements$cold_s[target] * 10
+  utils::write.csv(measurements, file.path(scratch, "measurements.csv"),
+                   row.names = FALSE)
+  timing_errors <- lwreg_check(scratch)
+  if (!any(grepl("Performance regression lacks retry: feature_gaps cold_s",
+                 timing_errors, fixed = TRUE))) {
+    stop("Self-test failed to detect a timing regression without retry")
   }
 }
 cat("LWREG_CHECK_OK\n")

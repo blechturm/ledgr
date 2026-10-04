@@ -186,8 +186,8 @@ measured direct typed fill-payload spike with WS8.
 ## Cut 4: Long-window regression evidence
 
 **Status:** Accepted by the maintainer on 2026-10-04 after
-`PASS_AFTER_PATCHES`; P1 through P7 are incorporated. Workstream 11 is open
-and no implementation has started.
+`PASS_AFTER_PATCHES`; P1 through P7 are incorporated. Workstream 11 is
+agent-provisional and awaits its Type 1 close review.
 
 Authority: macro-plan WS8's early long-window baseline and regression-suite
 item, the accepted Cut 3 tree and
@@ -205,6 +205,14 @@ fell from about 156 to 39 seconds and three-fold walk forward from 313 to 110
 seconds. The current profile is led by fold execution, snapshot hashing,
 persistence and finalization. Those observations route later work; Cut 4 does
 not optimize them.
+
+The agent-provisional record compares `d08c8f4` with `6220683` in five live
+alternating pairs per ordinary shape. It finishes in 535.59 seconds; all six
+cold/warm median paired ratios are between 0.991 and 1.006 and all normalized
+semantic outputs match. The accepted orientation arm reproduces 300 fills,
+757 equity rows, 379,873 diagnostics and 757 decoded state rows. The fast
+profile passes 511 of 511 blocks in 82.94 seconds. These are local regression
+facts, not a public performance claim; maintainer acceptance has not occurred.
 
 The ticket deliberately keeps machine clocks local. Hosted CI owns stable
 semantic outcomes, the existing detector inventory and one missing public

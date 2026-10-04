@@ -30,6 +30,10 @@ Run from the ledgr repository root:
   C:/tmp/ledgr-v022-ws11-base . C:/tmp/ledgr-ws11-record 5 ordinary
 
 & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" `
+  dev/bench/v0_2_2_long_window_regression/summarize_record.R `
+  C:/tmp/ledgr-ws11-record
+
+& "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" `
   dev/bench/v0_2_2_long_window_regression/check_record.R `
   C:/tmp/ledgr-ws11-record --self-test
 ```
@@ -42,3 +46,28 @@ convenient implementation is not authority to replace a semantic record.
 The separate `baseline_757` orientation row runs once on the accepted arm. It
 reproduces the four result counts frozen by the post-Cut-3 757-pulse record;
 it is not included in timing ratios or the ordinary three-shape budget.
+
+`record_hashes.csv` hashes LF-normalized record bytes, so a CRLF checkout does
+not alter the evidence identity. It excludes only itself.
+
+## Agent-Provisional Accepted Record
+
+The ordinary record compares accepted commit `d08c8f4` with candidate commit
+`6220683` in five alternating fresh-process pairs per shape. It completed in
+535.59 seconds against the preregistered 1,200-second budget. Median paired
+candidate/accepted ratios were 0.991 to 1.004 cold and 0.993 to 1.006 warm;
+none crossed 1.10, so no retry was triggered. Ordinary peak child RSS was
+777,592,832 bytes.
+
+All cold and warm semantic hashes match. The fact-heavy public resolver also
+matches. The accepted orientation run reproduces 300 fills, 757 equity rows,
+379,873 diagnostics and 757 state rows from the `d08c8f4` record. The checker
+self-test detects a changed equity hash and a fabricated cold regression with
+no retry. LTB-0153 also failed at 160/4 and 320/4 observed row-visits/calls
+when one extra strict-feature pass was injected, against expected 80/2 and
+160/2.
+
+The ordinary fast profile passed 511 of 511 blocks in 82.94 seconds against
+the 112-second bound. This is local regression evidence, not a public or peer
+performance claim. The record is agent-provisional until the Workstream 11
+Type 1 close review and maintainer acceptance.
