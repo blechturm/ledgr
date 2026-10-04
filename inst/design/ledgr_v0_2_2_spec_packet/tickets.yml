@@ -90,7 +90,7 @@ workstreams:
   - id: 7
     name: "Feature-accessor scaling"
     cut: 2
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 7", reason: "One claim joins LDG-2938 through LDG-2940: run-local preparation and exact last-map memoization remove repeated accessor work without changing values, error classes, messages, map validation, alias resolution, worker behavior or identity. The review checks the conformance matrices, mutations, allocation and call counters, explicit-map run and sweep parity, current-tree clocks and that no cache or mutable state escapes its run-local owner."}
@@ -282,13 +282,13 @@ tickets:
   - id: "LDG-2940"
     title: "Close feature-accessor scaling evidence"
     workstream: 7
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2938", "LDG-2939"]
     scope: "Write the Workstream 7 closeout, reconcile shipped and rejected candidates, report current-tree calls, allocations and public clocks, map every semantic claim to a failure-sensitive detector, record the seven-shape walk and request one Type 1 close review."
     acceptance: ["the closeout separates micro-call, allocation, run and sweep clocks and does not present an old spike clock as a current effect", "the call-shape and explicit-map matrices, mutations and ownership checks are reproducible from named evidence", "the record confirms unchanged public context, feature-map identity, errors, workers and run isolation", "tickets LDG-2938 through LDG-2940 and Workstream 7 status reconcile before review"]
-    evidence: ["feature_accessor_scaling_closeout.md reconciles the clean 9064743 prepared-accessor record, the 726d87e explicit-map paired record, current-tree micro/allocation evidence and production commits 726d87e and eb5d2a9. It distinguishes ratio-of-medians public effect estimates from paired-median supporting statistics and from micro and single-run orientation clocks, and discloses the discarded harness attempts.", "LTB-0139 through LTB-0141 and LCL-0139 through LCL-0141 bind exact call behavior and messages, once-only hashed preparation, candidate ownership and exact memo invalidation. Independent mutations shifted instrument rows, restored the old per-call linear membership checks, replaced identical() with set equality and retained memo state across a failed input; all four were detected. The correction ordinary fast profile executed 500 of 500 blocks in 84.020 seconds with zero failures or skips and passed the 112-second gate; its record is C:/Users/maxth/ledgr-research/ws7-correction-fast."]
+    evidence: ["feature_accessor_scaling_closeout.md reconciles the clean 9064743 prepared-accessor record, the 726d87e explicit-map paired record, current-tree micro/allocation evidence and production commits 726d87e and eb5d2a9. It distinguishes ratio-of-medians public effect estimates from paired-median supporting statistics and from micro and single-run orientation clocks, and discloses the discarded harness attempts.", "LTB-0139 through LTB-0141 and LCL-0139 through LCL-0141 bind exact call behavior and messages, once-only hashed preparation, candidate ownership and exact memo invalidation. Independent mutations shifted instrument rows, restored the old per-call linear membership checks, replaced identical() with set equality and retained memo state across a failed input; all four were detected. The correction ordinary fast profile executed 500 of 500 blocks in 84.020 seconds with zero failures or skips and passed the 112-second gate; its record is C:/Users/maxth/ledgr-research/ws7-correction-fast.", "The focused Type 1 re-review at ff8c4a3 returned PASS. It independently reproduced exactly five LTB-0139 failures when all three old lookup paths were restored, verified the four literal messages and timing label, confirmed no R/ or src/ change, and closed Workstream 7 at five review invocations over eleven Cut 2 tickets, 0.455. The maintainer accepted Workstream 7 on 2026-10-04."]
   - id: "LDG-2941"
     title: "Vectorize ledgr bounded strict indicators"
     workstream: 8

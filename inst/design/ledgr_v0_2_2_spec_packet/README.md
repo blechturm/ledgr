@@ -3,8 +3,8 @@
 **Status:** Cut 1 and all five workstreams accepted by the maintainer on
 2026-10-03 after Type 1 close review and the focused Workstream 5 corrections.
 Cut 2 passed independent review after bounded patches and was accepted by the
-maintainer on 2026-10-03. Workstream 6 is accepted; Workstream 7 is review
-pending.
+maintainer on 2026-10-03. Workstreams 6 and 7 are accepted; Workstreams 8 and
+9 are pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -39,13 +39,13 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, five complete Cut 2 implementation tickets, one
-  review-pending Workstream 7 closeout and five pending Cut 2 tickets; Cut 1
-  is closed and Cut 2 is open.
+  complete Cut 1 tickets, six complete Cut 2 tickets and five pending Cut 2
+  tickets; Cut 1 is closed and Cut 2 is open.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
-  record for prepared feature accessors and exact explicit-map memoization.
+  record for the accepted prepared feature accessors and exact explicit-map
+  memoization.
 
 ## Cut 1: Design-memory authority and discoverability
 
@@ -83,8 +83,8 @@ is ready.
 
 **Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
 ticket corrections are incorporated. The maintainer accepted Cut 2 on
-2026-10-03. Workstream 6 was accepted on 2026-10-03; Workstream 7 is review
-pending and Workstreams 8-9 remain pending.
+2026-10-03. Workstream 6 was accepted on 2026-10-03 and Workstream 7 on
+2026-10-04; Workstreams 8-9 remain pending.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but

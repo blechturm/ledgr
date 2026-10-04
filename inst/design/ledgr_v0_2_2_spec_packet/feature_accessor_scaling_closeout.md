@@ -1,6 +1,6 @@
 # Workstream 7 Closeout: Feature-Accessor Scaling
 
-**Status:** Agent-provisional; awaiting Type 1 close review.
+**Status:** Accepted by the maintainer on 2026-10-04 after Type 1 review.
 **Date:** 2026-10-03
 **Implementation range:** `9064743..eb5d2a9`
 **Tickets:** LDG-2938 through LDG-2940
@@ -183,3 +183,8 @@ cut review and the two Workstream 6 review rounds. The requested Workstream 7
 close review is invocation four over eleven tickets, 0.364 against the 0.5
 gate. A focused re-review of these corrections would be invocation five,
 5/11 = 0.455, still within the gate.
+
+The focused re-review at `ff8c4a3` returned PASS after independently
+reproducing the five-failure linear-membership mutation, the four literal
+messages and the correction gate. The maintainer accepted Workstream 7 on
+2026-10-04. The final Cut 2 review count is 5/11 = 0.455.
