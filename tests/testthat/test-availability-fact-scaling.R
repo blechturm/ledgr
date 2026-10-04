@@ -35,29 +35,33 @@ workstream9_scalar_local_times <- function(labels, timezone) {
 
 workstream9_membership_data <- function() {
   at <- as.POSIXct(c(
-    "2024-01-01", "2024-02-01", "2024-03-01"
+    "2024-01-01", "2024-01-20", "2024-02-01", "2024-03-01"
   ), tz = "UTC")
   headers <- data.frame(
     universe_id = "research",
-    set_id = c("later", "early", "complete"),
-    effective_from = at[c(3L, 1L, 2L)],
-    knowledge_time = at[c(3L, 1L, 2L)] - 86400,
-    complete = c(FALSE, FALSE, TRUE),
+    set_id = c("later", "complete_old", "early", "complete"),
+    effective_from = at[c(4L, 2L, 1L, 3L)],
+    knowledge_time = at[c(4L, 2L, 1L, 3L)] - 86400,
+    complete = c(FALSE, TRUE, FALSE, TRUE),
     provenance_json = "{}",
     source = "workstream9",
     stringsAsFactors = FALSE
   )
   rows <- data.frame(
-    fact_id = c("f-later", "f-early", "f-complete", "f-interval"),
-    instrument_id = c("BBB", "EARLY", "AAA", "INTERVAL"),
+    fact_id = c(
+      "f-later", "f-complete-old", "f-early", "f-complete", "f-interval"
+    ),
+    instrument_id = c("BBB", "OLD", "EARLY", "AAA", "INTERVAL"),
     universe_id = "research",
-    set_id = c("later", "early", "complete", NA_character_),
+    set_id = c("later", "complete_old", "early", "complete", NA_character_),
     effective_from = as.POSIXct(c(
-      "2024-03-01", "2024-01-01", "2024-02-01", "2024-01-15"
+      "2024-03-01", "2024-01-20", "2024-01-01", "2024-02-01",
+      "2024-01-15"
     ), tz = "UTC"),
-    effective_to = as.POSIXct(rep(NA_real_, 4L), origin = "1970-01-01", tz = "UTC"),
+    effective_to = as.POSIXct(rep(NA_real_, 5L), origin = "1970-01-01", tz = "UTC"),
     knowledge_time = as.POSIXct(c(
-      "2024-02-29", "2023-12-31", "2024-01-31", "2024-01-14"
+      "2024-02-29", "2024-01-19", "2023-12-31", "2024-01-31",
+      "2024-01-14"
     ), tz = "UTC"),
     member = TRUE,
     provenance_json = "{}",
@@ -119,7 +123,7 @@ testthat::test_that("[LTB-0145] session construction preserves civil-time semant
 testthat::test_that("[LTB-0146] membership resolution preserves set precedence", {
   data <- workstream9_membership_data()
   at <- as.POSIXct("2024-03-15", tz = "UTC")
-  requested <- c("EARLY", "AAA", "BBB", "INTERVAL", "UNKNOWN")
+  requested <- c("EARLY", "OLD", "AAA", "BBB", "INTERVAL", "UNKNOWN")
   result <- ledgr:::ledgr_membership_resolve_at(
     data,
     "research",
@@ -127,10 +131,14 @@ testthat::test_that("[LTB-0146] membership resolution preserves set precedence",
     requested
   )
   testthat::expect_identical(result$rows$instrument_id, requested)
-  testthat::expect_identical(result$rows$member, c(FALSE, TRUE, TRUE, TRUE, FALSE))
+  testthat::expect_identical(
+    result$rows$member,
+    c(FALSE, FALSE, TRUE, TRUE, TRUE, FALSE)
+  )
   testthat::expect_identical(
     result$rows$reason,
     c(
+      "omitted_from_complete_set",
       "omitted_from_complete_set",
       "member_asserted",
       "member_asserted",
@@ -141,6 +149,7 @@ testthat::test_that("[LTB-0146] membership resolution preserves set precedence",
   testthat::expect_identical(
     result$rows$evidence_ids,
     c(
+      "set:complete",
       "set:complete",
       "set:complete|fact:f-complete",
       "set:later|fact:f-later",
