@@ -19,6 +19,7 @@ read_case <- function(name) jsonlite::read_json(
 same_outputs <- function(a, b) identical(a$identities, b$identities) &&
   identical(a$status, b$status)
 summary_rows <- list()
+calibration <- identical(suite$accepted_commit, suite$candidate_commit)
 for (persistence in c("off", "on")) {
   part <- gate[gate$persistence == persistence, , drop = FALSE]
   accepted <- part[part$arm == "accepted", , drop = FALSE]
@@ -31,14 +32,26 @@ for (persistence in c("off", "on")) {
   summary_rows[[length(summary_rows) + 1L]] <- data.frame(
     persistence = persistence, pairs = nrow(accepted),
     peak_rss_ratio = peak_ratio, elapsed_ratio = elapsed_ratio,
-    peak_gate = peak_ratio <= suite$peak_ratio_limit,
-    elapsed_gate = elapsed_ratio <= suite$elapsed_ratio_limit
+    peak_gate = if (calibration) {
+      peak_ratio >= 0.95 && peak_ratio <= 1.05
+    } else {
+      peak_ratio <= suite$peak_ratio_limit
+    },
+    elapsed_gate = if (calibration) {
+      elapsed_ratio >= 0.95 && elapsed_ratio <= 1.05
+    } else {
+      elapsed_ratio <= suite$elapsed_ratio_limit
+    }
   )
 }
 summary <- do.call(rbind, summary_rows)
 utils::write.csv(summary, file.path(record, "summary.csv"), row.names = FALSE)
 if (!all(summary$peak_gate) || !all(summary$elapsed_gate)) {
-  stop("A registered unmarked gate missed; apply the recorded retry rule")
+  stop(if (calibration) {
+    "The same-commit calibration fell outside its 0.95 to 1.05 band"
+  } else {
+    "A registered unmarked gate missed; apply the recorded retry rule"
+  })
 }
 
 oracles <- utils::read.csv(file.path(record, "oracles.csv"),

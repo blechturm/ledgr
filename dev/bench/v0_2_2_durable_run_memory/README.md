@@ -14,6 +14,10 @@ ratio at most 1.05 over at least five alternating pairs. A miss receives one
 complete fresh retry at the same pair count and stands only when the retry also
 misses.
 
+Before production changes, a same-commit calibration uses the same protocol and
+requires both ratios to remain between 0.95 and 1.05. It validates the harness
+and freezes the current-tree oracle; it does not claim the candidate gain.
+
 Gate children stop after recording completion and elapsed time, so post-run
 result materialization cannot set their process RSS peak. Separate oracle
 children compare normalized public equity, fills, trades, diagnostics, decoded
