@@ -1,7 +1,7 @@
 # Workstream 9 Closeout: Availability Fact Scaling
 
-**Status:** Agent-provisional; ready for Type 1 close review, with the Linux
-CI repetition identified as an external confirmation.
+**Status:** Accepted by the maintainer after Type 1 close review; the Linux CI
+repetition remains a pre-release confirmation on the next branch push.
 **Date:** 2026-10-04
 **Implementation range:** `09d6849..9f807ec`
 **Tickets:** LDG-2943 through LDG-2945
@@ -131,11 +131,15 @@ while the new session block took 1.48 to 2.15 seconds.
 
 The semantic block was then reduced from a redundant 370-date scalar family
 to the smallest 20-date leap-day and spring-DST family; the 10,473-date paired
-record remains the long-horizon oracle. The correction record at
+record remains the long-horizon oracle. That reduction accounts for only about
+two seconds. The unexplained 29 to 31 second anomaly did not recur in the
+correction run, so the gate recovery is not attributed to the fixture change.
+The correction record at
 `C:/Users/maxth/ledgr-research/ws9-correction-fast-9f807ec` executed 506 of
 506 blocks with zero skips or failures in 89.03 seconds. The independent
 checker returned `LEDGR_TEST_GATE_OK` against the 112-second bound.
 
-The planned close review is Cut 2 invocation eight over eleven tickets,
-8/11 = 0.727. The cut already breached its 0.5 review gate during prior
-workstreams; this count is recorded rather than hidden or repaired by padding.
+The close review was Cut 2 invocation eight over eleven tickets, 8/11 = 0.727.
+It returned PASS and the maintainer accepted the workstream on 2026-10-04.
+The cut already breached its 0.5 review gate during prior workstreams; this
+count is recorded rather than hidden or repaired by padding.

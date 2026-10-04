@@ -28,6 +28,21 @@ cuts:
     workstreams: [6, 7, 8, 9]
     closeout: "The four owned workstream closeouts under LDG-2937, LDG-2940, LDG-2942 and LDG-2945 form the Cut 2 record; no separate cut-level closeout is created."
     accepted: "2026-10-03 by the maintainer after PASS_AFTER_PATCHES and the bounded P1 through P10 ticket corrections"
+    close_review: "Workstreams 6 through 8 were accepted after Type 1 review and their recorded correction rounds. Workstream 9 close review returned PASS on 2026-10-04 after independently reproducing exact session and membership semantics, clocks and five mutations. The maintainer accepted Workstream 9 the same day, with its Linux DST repetition retained as a pre-release confirmation on the next branch push. Actual Cut 2 review count 8/11 = 0.727, recorded as a historical gate breach."
+    status: "closed"
+  - id: 3
+    name: "Exact fact-integrity verification"
+    cut: "2026-10-04"
+    opening: "The independent spike review passed the exact fact-integrity result and invalidated the DuckDB membership result on a mixed-case tied-complete-set counterexample. Cut 3 therefore contains only the bounded exact-verification optimization. Membership pushdown returns to macro WS5 until its boundary order, gut and scope guard are corrected and it is remeasured after this workstream. This draft still awaits independent cut review and maintainer acceptance before implementation."
+    cut_review: "PASS_AFTER_PATCHES on 2026-10-04. The combined Type 1 and Type 2 review accepted the content, exclusion and four-ticket grain after requiring three bounded gate corrections: a public ledgr_facts_resolve() materiality gate, formatter work counted by elements rather than calls, and a calibrated five-pair low-repetition gate. The split is valid only because LDG-2946 must commit its tests and machine-readable oracle record before LDG-2947 begins. One cut review plus one planned workstream close review is 2 invocations over 4 tickets, 0.500 against the review gate. Maintainer acceptance still opens Workstream 10."
+    authority: "inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md WS5; inst/design/spikes/fact_integrity_verification_spike/charter.md and closeout.md as independently reviewed on 2026-10-04; inst/design/exact_parity_internal_optimization_proof_template.md. The DuckDB membership spike is a corrected future input, not Cut 3 authority."
+    source_table: "Current implementation baseline a3f54cc after accepted Workstream 9. The reviewed spike measured the 300,000-row in-memory assertion at 3.06 versus 0.58 seconds and a rule-2 snapshot with 300,000 fact rows and 500 bars at 3.25 versus 0.73 seconds, with identical hashes and corruption failure. Independent review measured a low-repetition bundle at 0.34 versus 0.38 seconds, found no gain, and required a no-regression gate plus timestamp and persisted-table tamper witnesses."
+    decisions: "Maintainer, 2026-10-04. (1) Exact verification may format each distinct non-missing instant once only through the retained token formatter; canonical bytes, hashes, schema, identity and corruption failure cannot change. (2) Both repeated-clock and low-repetition fact shapes are gated; this optimization may not buy the membership gain by regressing ordinary fact families materially. (3) A public sealed-snapshot ledgr_facts_resolve() gate is binding; internal assertion and hash clocks cannot authorize implementation alone. (4) In-memory timestamp and persisted-table timestamp corruption must fail closed through the same public verification boundaries. (5) No stored-hash trust, component-hash policy, schema change, public API or general R-to-DuckDB migration is authorized. (6) The reviewed DuckDB membership candidate is excluded because its SQL collation disagreed with the retained R resolver for tied mixed-case set IDs. (7) A failed current-tree materiality, no-regression or exactness gate records rejection and leaves production unchanged."
+    sequencing: "Workstream 10 depends on accepted Workstream 9. LDG-2946 registers and commits exact semantic, identity and corruption oracles plus its machine-readable proof record before LDG-2947 starts. LDG-2947 independently registers the internal, public-path and low-repetition gates. Only then may LDG-2948 change production; LDG-2949 closes the proof. tickets.yml is the sole sequencing authority."
+    out_of_scope: "DuckDB membership pushdown until its spike is corrected and rerun after Workstream 10; verification-policy or component-hash design; trusting stored digests; hash-version, canonical-byte, schema, snapshot-identity or run-identity changes; new database indexes; SQL for in-memory fact families; provider-run semantics; public API or error changes; general data-layer migration; strategy callbacks; accounting semantics; residual writer work routed to macro WS8; scalar-accessor call-count work routed to macro WS3; indicator residuals routed to macro WS4; and any candidate that misses its registered current-tree gate."
+    workstreams: [10]
+    closeout: "The LDG-2949 workstream closeout forms the Cut 3 record; no separate cut-level evidence essay is created."
+    accepted: "2026-10-04 by the maintainer after PASS_AFTER_PATCHES and the P1 through P3 gate corrections"
     close_review: null
     status: "open"
 review_gate:
@@ -104,10 +119,17 @@ workstreams:
   - id: 9
     name: "Availability fact scaling"
     cut: 2
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 9", reason: "One claim joins LDG-2943 through LDG-2945: session construction and public membership resolution remove repeated element or full-table work while preserving exact fact rows, ordering, evidence, errors and snapshot identity. The review reproduces current-tree scaling, compares fixtures across timezones, DST boundaries, complete and incremental sets and cutoff positions, runs the registered mutations, and confirms provider run paths and unrelated fact families did not change."}
+  - id: 10
+    name: "Exact fact-integrity verification"
+    cut: 3
+    status: "pending"
+    depends_on_workstream: 9
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 10", reason: "One claim joins LDG-2946 through LDG-2949: repeated timestamp formatting is removed from exact fact verification while canonical family, bundle and rule-2 snapshot bytes, every existing hash and corruption failure remain exact, the public sealed-snapshot resolver becomes materially faster and low-repetition families do not regress materially. The review checks LDG-2946's separate commit and oracle record, independently recomputes the internal, public and low-repetition gates, verifies formatter elements rather than calls, compares every fact-family clock shape, runs wrong-token, per-row-format, in-memory timestamp and persisted-table timestamp mutations, checks fresh and reopened sealed snapshots and confirms no stored-digest trust, identity, schema or verification-policy change."}
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -332,10 +354,50 @@ tickets:
   - id: "LDG-2945"
     title: "Close availability fact-scaling evidence"
     workstream: 9
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2943", "LDG-2944"]
     scope: "Write the Workstream 9 closeout, reconcile shipped and rejected candidates, report exact fact and hash parity, current-tree scaling, mutations and the seven-shape walk, then request one Type 1 close review."
     acceptance: ["the closeout separates session construction from membership resolution and gives each its own baseline, gate and result", "all timezone, cutoff, evidence, error and identity witnesses are named with reproducible paths", "the record confirms no unrelated fact family or provider-run semantic changed", "tickets LDG-2943 through LDG-2945 and Workstream 9 status reconcile before review"]
-    evidence: ["availability_fact_scaling_closeout.md separates both gates, records exact identity, re-hash share, seven failure probes, the seven-shape walk and reproduction paths. The first green fast record missed its timing bound because one pre-existing block absorbed about 29 seconds. Commit 9f807ec shrank only the redundant scalar-oracle fixture while retaining the 10,473-date durable record. The correction profile passed 506/506 blocks in 89.03 seconds against 112 at C:/Users/maxth/ledgr-research/ws9-correction-fast-9f807ec. The planned Type 1 close review is invocation 8/11 = 0.727, an already-historical Cut 2 gate breach recorded rather than padded."]
+    evidence: ["availability_fact_scaling_closeout.md separates both gates, records exact identity, re-hash share, seven failure probes, the seven-shape walk and reproduction paths. The first green fast record missed its timing bound at a 118.18-second median while a 29 to 31 second unrelated anomaly was present. Commit 9f807ec shrank the redundant scalar-oracle fixture by about two seconds; the unexplained anomaly did not recur, so the 89.03-second correction record is gate evidence rather than an attributed fixture speedup. The Type 1 close review was invocation 8/11 = 0.727 and returned PASS. The maintainer accepted Workstream 9 on 2026-10-04, with Linux DST repetition retained as a pre-release confirmation on the next branch push; the historical review-gate breach remains recorded."]
+  - id: "LDG-2946"
+    title: "Register exact fact-verification identity and corruption oracles"
+    workstream: 10
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: "Before production changes, turn the reviewed spike into durable exact semantic, byte, identity and corruption oracles on the accepted Workstream 9 tree. Exercise membership, sessions, trading status, lifetime and equity corporate actions, including repeated clocks, optional clocks, fractional instants and empty headers where applicable. Test fresh and reopened sealed snapshots and both constructed and persisted corruption. Commit the tests, claim registration and machine-readable oracle record as this ticket's own artifact before LDG-2947 starts."
+    acceptance: ["family rows, canonical payload bytes, family hashes, explicitly recorded bundle hashes and rule-2 snapshot hashes are identical for every registered family shape, and fresh and reopened snapshots agree", "changing a constructed membership timestamp by one second fails with the current class and stable message fragment", "changing a persisted membership timestamp makes rule-2 verification fail with the current class and stable message fragment", "membership flags and the remaining family clocks retain corruption witnesses so timestamp mapping is not the only protected field", "one dedicated commit contains the tests, claims entry and machine-readable oracle record with byte lengths, digests, environment, public boundary and oracle independence, and LDG-2947 does not begin in that commit"]
+    evidence: []
+  - id: "LDG-2947"
+    title: "Register repetition-sensitive fact-verification scaling gates"
+    workstream: 10
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2946"]
+    scope: "Before production changes, register separate repeated-clock gain, public-path materiality and low-repetition no-regression gates. Measure the 300,000-row membership assertion and rule-2 snapshot with 300,000 fact rows and 500 bars in alternating fresh arms. Measure public sealed-snapshot ledgr_facts_resolve() on the same fact-heavy shape. Calibrate a low-repetition bundle of sessions, status and lifetime families until an untimed pilot puts both arms at or above one second, freeze that shape, then run at least five alternating fresh pairs. Register formatter element accounting and the per-row-format and wrong-token mutations."
+    acceptance: ["at 300,000 membership rows the median of per-pair current/candidate exact-assertion ratios is at least 2.0, and the fact-versus-bar shape of the sealed clock is explicit", "at least three alternating fresh pairs of public sealed-snapshot ledgr_facts_resolve() at 300,000 membership rows have a median per-pair current/candidate ratio of at least 1.5 with exact rows and evidence", "after an untimed calibration puts both low-repetition arms at or above one second, at least five alternating fresh pairs have a median per-pair candidate/current ratio no greater than 1.25", "for each timestamp column, a formatter counter sums the number of elements passed to the retained token formatter and proves the candidate total is no greater than that column's distinct non-missing instant count", "restoring per-row formatting and mapping one instant to the wrong token independently fail registered detectors, and the record reports all family, bundle and snapshot hashes"]
+    evidence: []
+  - id: "LDG-2948"
+    title: "Deduplicate canonical timestamp formatting during exact verification"
+    workstream: 10
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2947"]
+    scope: "If LDG-2946 and LDG-2947 clear every gate, replace repeated row-wise timestamp-token formatting in canonical fact frames with one distinct-value map. Every distinct non-missing instant still passes through the retained scalar ledgr_fact_time_token() implementation and maps its exact token back to all matching rows. Do not cache a mutable fact object or trust a stored digest."
+    acceptance: ["all LDG-2946 semantic, byte, identity, reopen and corruption witnesses pass against production", "canonical JSON, every existing fact and snapshot hash, schema and snapshot identity remain byte-identical", "NA and optional clocks, fractional instants, repeated values and all registered fact families preserve their current tokens and errors", "the element-count detector rejects restored full-column formatting and a wrong-token mutation, while the retained token formatter remains independently callable as the oracle", "all three LDG-2947 gates are rerun on the implementation commit and still pass without widening scope"]
+    evidence: []
+  - id: "LDG-2949"
+    title: "Close exact fact-integrity verification evidence"
+    workstream: 10
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2948"]
+    scope: "Write the Workstream 10 exact-parity closeout, reconcile the reviewed spike with current-tree production evidence, record implementation and baseline commits, semantic and identity matrices, corruption and structural mutations, both performance gates, fast-profile gate and the seven-shape walk, then request one Type 1 close review."
+    acceptance: ["the closeout distinguishes spike evidence from implementation evidence and names the exact baseline, four ticket commits, commands and record directories", "the record proves LDG-2946 committed its oracle artifact before the gate and implementation commits", "all exact-parity-template sections are completed, including byte identity, fresh and reopened persistence, constructed and persisted timestamp tamper detection, formatter element accounting, environment and smallest failing mutations", "the internal 2x, public 1.5x and calibrated low-repetition 1.25 ceiling results are reported separately", "the record states that verification policy and stored-hash trust did not change, labels the sealed fixture by fact and bar counts and makes no DuckDB-migration claim", "LDG-2946 through LDG-2949, Workstream 10 and Cut 3 status reconcile before review"]
+    evidence: []

@@ -1,0 +1,6 @@
+"case","rows","current_hash","candidate_hash","candidate_status","condition_class","exact"
+"bundle_6000",6000,"c6e98c9ab0c44d61c732f848e8337ad2ba9b0edc3b2a401a65ac3947a3f9cd27","c6e98c9ab0c44d61c732f848e8337ad2ba9b0edc3b2a401a65ac3947a3f9cd27","ok","",TRUE
+"bundle_30000",30000,"dce72cbd0471e2c05e6160d65f364c0113c468c8b54e465285721b2628ab16a7","dce72cbd0471e2c05e6160d65f364c0113c468c8b54e465285721b2628ab16a7","ok","",TRUE
+"bundle_300000",300000,"2d0e73cf8b1641c1abf0cb4799bb38a23267c9693680669a137207f82d2fe6d1","2d0e73cf8b1641c1abf0cb4799bb38a23267c9693680669a137207f82d2fe6d1","ok","",TRUE
+"sealed_snapshot_300000",300000,"2ffc931eec666e7cce74fe9afce6a1d2936df2a85759132a8e23f2ee6895bf4e","2ffc931eec666e7cce74fe9afce6a1d2936df2a85759132a8e23f2ee6895bf4e","ok","",TRUE
+"tampered_bundle",6000,"c6e98c9ab0c44d61c732f848e8337ad2ba9b0edc3b2a401a65ac3947a3f9cd27",NA,"error","ledgr_invalid_facts",TRUE

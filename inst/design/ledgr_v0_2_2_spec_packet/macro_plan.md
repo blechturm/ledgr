@@ -39,6 +39,11 @@ authority.
    boundary stays unchanged and a failure-sensitive detector can protect it.
 6. The release ends with one integrated product record. Component benchmarks
    inform tickets but do not substitute for a usable end-to-end result.
+7. Residual costs exposed by WS1 are routed by their next honest lever, not
+   automatically appended to the direct-optimization cut. Fact verification
+   and sealed membership reads may proceed through the bounded WS5 candidates;
+   reducing scalar feature-call count belongs to WS3; broader indicator work
+   belongs to WS4; and remaining writer work is re-profiled in WS8.
 
 ## 2. Dependency structure
 
@@ -147,6 +152,10 @@ remain visible, and interruptions become resumable or classed failures.
   knowledge time.
 - Resolve feature-map addressing so aliases, concrete feature IDs and
   whole-universe historical reads are coherent.
+- Remove the need for active-alias strategies to loop over instruments for a
+  whole-universe feature read. The prepared scalar accessor is retained as a
+  valid narrow read; do not spend another internal ticket shaving its remaining
+  proportional per-feature work before this call-count reduction is measured.
 - Bind missingness treatment, disclosure and numerical correctness at the
   history boundary.
 - Narrow expected sessions by instrument where the evidence requires it.
@@ -178,6 +187,14 @@ already measurable. Any equivalent shortcut for custom or external indicators
 waits for these semantics. Do not let a speed implementation choose the
 meaning of gaps or convergence implicitly.
 
+After those semantics are bound, re-profile the exact built-in SMA at long
+lookbacks. Its retained `mean()`-per-window implementation is deliberately
+O(rows x lookback) because the measured rolling alternatives changed exact
+floating results. Consider another accelerator only if a current public path
+still attributes at least five percent to that implementation and the candidate
+preserves exact values, NA masks and failure behavior. Built-in returns is
+already linear and has no planned second optimization.
+
 Exit: native, external and custom indicators have an explicit causal contract
 and availability behavior, and the strict path is tractable at long-window
 scale.
@@ -193,6 +210,24 @@ scale.
   WS4.
 - Capture a phase-level memory profile before changing representation solely
   to reduce memory.
+
+Measured inputs registered on 2026-10-04:
+
+- [exact fact-integrity verification](../spikes/fact_integrity_verification_spike/closeout.md)
+  passed independent review with a hash-identical 5.28x candidate at 300,000
+  membership rows, subject to a low-repetition no-regression gate and stronger
+  timestamp corruption witnesses; and
+- [DuckDB membership resolution](../spikes/duckdb_membership_resolution_spike/closeout.md)
+  measured a conditional 1.63-1.66x candidate, but independent review
+  invalidated exactness because SQL and R ordered tied mixed-case set IDs
+  differently.
+
+The spikes bind nothing. Cut 3 owns exact verification only. Correct the SQL
+boundary under the retained resolver's ordering, add a too-late gut and narrow
+the scope guard, then remeasure one candidate path after Cut 3. Do not invent a
+small-history fallback unless that rerun measures a regression. A later SQL
+ticket remains eligible only while hash bytes, verification policy, schema and
+resolver authority remain unchanged.
 
 Exit: verification remains fail-closed and reproducible without dominating
 ordinary long-window runs.
@@ -233,12 +268,23 @@ model-management system.
 
 Re-profile after the architectural work. Reconsider only costs still material:
 
-- per-fill payload and JSON work;
+- per-fill payload and JSON work. The WS1 block flush reduced measured fill
+  writing from 11.8 to 6.2 seconds at 68,201 fills but deliberately retained
+  one-row payload construction. If the current public run still attributes at
+  least five percent to it, run one bounded spike comparing that path with
+  direct typed pulse-column construction. Require exact ledger events, fills,
+  equity and trades plus durable failure atomicity before cutting a ticket;
 - availability fill-timing matching;
 - strategy-state serialization;
 - `db_live` writes;
 - availability result and recovery replay; and
 - peak working memory.
+
+Do not promote `ledgr_fill_row_buffer_add_many()` alone from the old
+three-percent compiled-sweep observation. Re-measure it only as part of the
+writer profile. Likewise, do not reopen scalar accessor micro-optimization
+here: WS3 first removes avoidable per-instrument calls, and WS4 owns any
+post-semantics indicator residual.
 
 Promote a remaining candidate only when the current product path, not a private
 harness, shows the cost. Then run one integrated long-window record covering:

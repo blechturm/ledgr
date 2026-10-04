@@ -1,10 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cut 1 and all five workstreams accepted by the maintainer on
-2026-10-03 after Type 1 close review and the focused Workstream 5 corrections.
-Cut 2 passed independent review after bounded patches and was accepted by the
-maintainer on 2026-10-03. Workstreams 6 and 7 are accepted; Workstreams 8 and
-9 are pending.
+**Status:** Cuts 1 and 2 are closed after maintainer acceptance of their nine
+workstreams. Cut 3 is open after maintainer acceptance of its four-ticket,
+one-workstream shape; Workstream 10 is active.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -39,8 +37,8 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, six complete Cut 2 tickets and five pending Cut 2
-  tickets; Cut 1 is closed and Cut 2 is open.
+  complete Cut 1 tickets, eleven complete Cut 2 tickets and four pending Cut 3
+  tickets; Cuts 1 and 2 are closed and Cut 3 is open.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -81,12 +79,10 @@ is ready.
 
 ## Cut 2: Proven long-window optimizations
 
-**Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
-ticket corrections are incorporated. The maintainer accepted Cut 2 on
-2026-10-03. Workstream 6 was accepted on 2026-10-03 and Workstream 7 on
-2026-10-04. Workstream 8 was accepted on 2026-10-04 after its focused
-correction review returned `PASS`; Workstream 9 is agent-provisional and
-awaits its Type 1 close review plus Linux CI confirmation.
+**Status:** Closed. Independent review returned `PASS_AFTER_PATCHES`; its
+bounded ticket corrections are incorporated. The maintainer accepted Cut 2
+on 2026-10-03 and accepted its last workstream on 2026-10-04. Workstream 9's
+Linux DST repetition remains a pre-release confirmation on the next push.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but
@@ -112,12 +108,17 @@ The maintainer accepted the workstream after that `PASS`; no redundant eighth
 review was counted.
 
 Workstream 9 implementation is `b272967`, `de7f4e3`, `a5443f3` and the
-bounded fast-witness correction `9f807ec`; its agent-provisional record is
+bounded fast-witness correction `9f807ec`; its accepted record is
 `availability_fact_scaling_closeout.md`. The 10,473-date session record
 measured 13.62x in UTC and 30.39x in New York. Public membership resolution at
 300,000 rows fell from 9.75 to 4.67 seconds with exponent 0.941 and exact
 rows and evidence. The correction fast record passed 506/506 blocks in 89.03
-seconds. Linux CI repetition remains external until the branch is pushed.
+seconds. Its Type 1 close review returned PASS and the maintainer accepted the
+workstream on 2026-10-04. Shrinking the redundant semantic fixture explains
+only about two seconds of the gate reduction; the 29 to 31 second anomaly in
+the failed record disappeared for unknown reasons and is not attributed to
+this workstream. Linux CI repetition remains external until the branch is
+pushed.
 
 The four workstreams are independent after cut acceptance. Each candidate
 starts with a current-tree baseline, semantic oracle, failure-sensitive
@@ -140,6 +141,42 @@ and its compatibility disclosure are not a public identity change. The cut
 excludes custom, external and TTR indicator semantics, db_live and compiled
 accounting behavior, snapshot-verification redesign and every candidate that
 fails its gate.
+
+## Cut 3: Exact fact-integrity verification
+
+**Status:** Open after maintainer acceptance on 2026-10-04. Independent spike
+review passed the fact-integrity result and invalidated the DuckDB membership
+result. The cut review accepted the corrected four-ticket shape, and Workstream
+10 may now start.
+
+Authority: macro-plan WS5, the reviewed fact-integrity spike and the accepted
+exact-parity internal-optimization proof template. The corrected membership
+spike is future evidence rather than authority for this cut.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 10 Exact fact-integrity verification | LDG-2946-2949 | commit cross-family byte and corruption oracles; register internal, public-path and calibrated low-repetition gates; deduplicate timestamp formatting; close exact-parity evidence | canonical fact, bundle and rule-2 snapshot bytes and corruption failures remain exact while public resolution becomes materially faster without materially regressing low-repetition families |
+
+The DuckDB workstream was removed rather than patched inside this cut. Its
+candidate chose tied complete headers under SQL byte collation while the
+retained resolver uses R locale ordering, so the exactness premise failed. A
+corrected spike must choose the boundary under the resolver's ordering, use a
+too-late gut, narrow its scope guard and rerun after Workstream 10. It may then
+support a later cut; no small-history fallback is presumed without evidence.
+
+One cut review plus one workstream close review is two planned invocations over
+four real tickets, exactly 0.500. The completed independent spike review is
+evidence qualification rather than a ticket-review invocation. No separate
+cut evidence essay is planned. The pre-implementation split is substantive
+only because LDG-2946 commits its own tests, claim and machine-readable oracle
+record before LDG-2947 begins.
+
+Cut 3 changes no public API, schema, canonical bytes, hash or identity rule,
+verification policy, condition class, provider-run behavior or resolver
+authority. It adds no index and authorizes no general migration to DuckDB.
+It also does not absorb the other WS1 residuals: whole-universe alias reads
+remain with macro WS3, post-semantics indicator work with WS4, and a newly
+measured direct typed fill-payload spike with WS8.
 
 ## Expected later artifacts
 
