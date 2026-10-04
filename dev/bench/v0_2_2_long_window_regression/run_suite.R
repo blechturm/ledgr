@@ -7,6 +7,11 @@ if (length(args) < 4L) {
 }
 accepted_repo <- normalizePath(args[[1L]], winslash = "/")
 candidate_repo <- normalizePath(args[[2L]], winslash = "/")
+git_commit <- function(repo) trimws(system2(
+  "git", c("-C", repo, "rev-parse", "HEAD"), stdout = TRUE
+))
+accepted_commit <- git_commit(accepted_repo)
+candidate_commit <- git_commit(candidate_repo)
 out_dir <- normalizePath(args[[3L]], winslash = "/", mustWork = FALSE)
 pairs <- as.integer(args[[4L]])
 profile <- if (length(args) >= 5L) args[[5L]] else "ordinary"
@@ -76,7 +81,7 @@ run_child <- function(kind, shape_id, arm, pair, attempt, repo, child_args) {
   elapsed <- as.numeric(difftime(Sys.time(), started, units = "secs"))
   append_process(data.frame(
     kind = kind, shape_id = shape_id, arm = arm, pair = pair,
-    attempt = attempt, repo = repo, exit_status = status,
+    attempt = attempt, repo_commit = git_commit(repo), exit_status = status,
     elapsed_s = elapsed, peak_rss_bytes = peak_rss,
     stdout = basename(stdout), stderr = basename(stderr),
     stringsAsFactors = FALSE
@@ -185,11 +190,10 @@ if (identical(profile, "ordinary")) {
 suite <- list(
   profile = profile,
   pairs = pairs,
-  accepted_repo = accepted_repo,
-  candidate_repo = candidate_repo,
+  accepted_commit = accepted_commit,
+  candidate_commit = candidate_commit,
   started_at_utc = format(start_suite, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-  elapsed_s = as.numeric(difftime(Sys.time(), start_suite, units = "secs")),
-  cache_root = cache_root
+  elapsed_s = as.numeric(difftime(Sys.time(), start_suite, units = "secs"))
 )
 case_files <- list.files(raw_dir, pattern = "\\.json$", full.names = TRUE)
 measurements <- do.call(rbind, lapply(case_files, function(path) {
