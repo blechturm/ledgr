@@ -66,79 +66,110 @@ ledgr_membership_resolve_at <- function(data,
     eligible <- !is.na(headers$effective_from) & headers$effective_from <= cutoff &
       !is.na(headers$knowledge_time) & headers$knowledge_time <= cutoff
     headers <- headers[eligible, , drop = FALSE]
-  }
-  state <- logical()
-  reason <- character()
-  support <- list()
-  last_complete <- NULL
-  if (nrow(headers) > 0L) {
     header_order <- order(
       headers$effective_from,
       headers$knowledge_time,
       headers$set_id
     )
     headers <- headers[header_order, , drop = FALSE]
-    rows <- data$membership
+  }
+  set_index <- ledgr_membership_index_set_rows(
+    data$membership,
+    universe_id,
+    headers$set_id
+  )
+  rows <- data$membership
+  interval_rows <- rows[
+    rows$universe_id == universe_id & is.na(rows$set_id),
+    ,
+    drop = FALSE
+  ]
+  interval_rows <- interval_rows[
+    ledgr_availability_applicable(interval_rows, cutoff),
+    ,
+    drop = FALSE
+  ]
+  if (nrow(interval_rows) > 0L) {
+    interval_rows <- interval_rows[
+      order(
+        interval_rows$effective_from,
+        interval_rows$knowledge_time,
+        interval_rows$fact_id
+      ),
+      ,
+      drop = FALSE
+    ]
+  }
+  all_ids <- unique(c(
+    as.character(set_index$rows$instrument_id),
+    as.character(interval_rows$instrument_id)
+  ))
+  known <- rep(FALSE, length(all_ids))
+  state <- rep(FALSE, length(all_ids))
+  reason <- rep("", length(all_ids))
+  support <- rep(list(character()), length(all_ids))
+  set_instrument_index <- match(set_index$rows$instrument_id, all_ids)
+  interval_instrument_index <- match(interval_rows$instrument_id, all_ids)
+  last_complete <- NULL
+  if (nrow(headers) > 0L) {
     for (i in seq_len(nrow(headers))) {
-      set_rows <- rows[
-        rows$universe_id == universe_id & rows$set_id == headers$set_id[[i]],
-        ,
-        drop = FALSE
-      ]
-      set_ids <- as.character(set_rows$instrument_id)
       header_ref <- paste0("set:", headers$set_id[[i]])
       if (isTRUE(headers$complete[[i]])) {
-        if (length(state) > 0L) {
-          state[] <- FALSE
-          reason[] <- "omitted_from_complete_set"
-          support <- stats::setNames(
-            rep(list(header_ref), length(state)),
-            names(state)
-          )
+        if (any(known)) {
+          state[known] <- FALSE
+          reason[known] <- "omitted_from_complete_set"
+          support[known] <- rep(list(header_ref), sum(known))
         }
         last_complete <- list(
           header = headers[i, , drop = FALSE],
           reference = header_ref
         )
       }
-      for (id in set_ids) {
-        state[[id]] <- TRUE
-        reason[[id]] <- "member_asserted"
-        fact_ref <- paste0("fact:", set_rows$fact_id[set_rows$instrument_id == id][[1L]])
-        support[[id]] <- c(header_ref, fact_ref)
+      row_index <- set_index$by_header[[i]]
+      if (length(row_index) > 0L) {
+        row_index <- row_index[!duplicated(set_index$rows$instrument_id[row_index])]
+        instrument_index <- set_instrument_index[row_index]
+        known[instrument_index] <- TRUE
+        state[instrument_index] <- TRUE
+        reason[instrument_index] <- "member_asserted"
+        support[instrument_index] <- Map(
+          c,
+          rep(header_ref, length(row_index)),
+          paste0("fact:", set_index$rows$fact_id[row_index])
+        )
       }
     }
   }
-  rows <- data$membership
-  rows <- rows[rows$universe_id == universe_id & is.na(rows$set_id), , drop = FALSE]
-  rows <- rows[ledgr_availability_applicable(rows, cutoff), , drop = FALSE]
-  if (nrow(rows) > 0L) {
-    rows <- rows[order(rows$effective_from, rows$knowledge_time, rows$fact_id), , drop = FALSE]
-    for (i in seq_len(nrow(rows))) {
-      id <- as.character(rows$instrument_id[[i]])
-      if (isTRUE(rows$member[[i]])) {
-        state[[id]] <- TRUE
-        reason[[id]] <- "member_asserted"
+  if (nrow(interval_rows) > 0L) {
+    for (i in seq_len(nrow(interval_rows))) {
+      instrument_index <- interval_instrument_index[[i]]
+      known[[instrument_index]] <- TRUE
+      if (isTRUE(interval_rows$member[[i]])) {
+        state[[instrument_index]] <- TRUE
+        reason[[instrument_index]] <- "member_asserted"
       } else {
-        state[[id]] <- FALSE
-        reason[[id]] <- "nonmember_asserted"
+        state[[instrument_index]] <- FALSE
+        reason[[instrument_index]] <- "nonmember_asserted"
       }
-      support[[id]] <- paste0("fact:", rows$fact_id[[i]])
+      support[[instrument_index]] <- paste0("fact:", interval_rows$fact_id[[i]])
     }
   }
-  members <- ledgr_availability_stable_ids(names(state)[state])
+  members <- ledgr_availability_stable_ids(all_ids[known & state])
   requested <- if (is.null(instruments)) {
     members
   } else {
     unique(as.character(instruments))
   }
-  resolved <- lapply(requested, function(id) {
-    if (id %in% names(state)) {
+  requested_index <- match(requested, all_ids)
+  resolved <- lapply(seq_along(requested), function(row) {
+    id <- requested[[row]]
+    instrument_index <- requested_index[[row]]
+    if (!is.na(instrument_index) && known[[instrument_index]]) {
       return(list(
         instrument_id = id,
-        member = unname(state[[id]]),
-        reason = unname(reason[[id]]),
-        evidence_ids = support[[id]] %||% character()
+        member = state[[instrument_index]],
+        reason = reason[[instrument_index]],
+        evidence_ids = support[[instrument_index]] %||% character()
       ))
     }
     if (!is.null(last_complete)) {
@@ -171,8 +202,23 @@ ledgr_membership_resolve_at <- function(data,
     members = members,
     rows = resolution_rows,
     applicable_headers = headers,
-    applicable_rows = rows
+    applicable_rows = interval_rows
   )
+}
+
+ledgr_membership_index_set_rows <- function(rows, universe_id, set_ids) {
+  scoped <- rows$universe_id == universe_id & !is.na(rows$set_id)
+  rows <- rows[scoped, , drop = FALSE]
+  header_index <- match(rows$set_id, set_ids)
+  keep <- !is.na(header_index)
+  rows <- rows[keep, , drop = FALSE]
+  header_index <- header_index[keep]
+  by_header <- split(
+    seq_len(nrow(rows)),
+    factor(header_index, levels = seq_along(set_ids)),
+    drop = FALSE
+  )
+  list(rows = rows, by_header = unname(by_header))
 }
 
 ledgr_availability_restrictions <- function(status, lifetime, status_declared, lifetime_declared) {

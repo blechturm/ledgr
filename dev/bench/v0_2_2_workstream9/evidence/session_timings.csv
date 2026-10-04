@@ -1,0 +1,13 @@
+"timezone","replicate","arm","rows","seconds"
+"UTC",1,"baseline",10473,19.81
+"UTC",1,"candidate",10473,1.47
+"UTC",2,"candidate",10473,1.39
+"UTC",2,"baseline",10473,19.61
+"UTC",3,"baseline",10473,19.16
+"UTC",3,"candidate",10473,1.44
+"America/New_York",1,"baseline",10473,48.85
+"America/New_York",1,"candidate",10473,1.58999999999999
+"America/New_York",2,"candidate",10473,1.76000000000001
+"America/New_York",2,"baseline",10473,48.93
+"America/New_York",3,"baseline",10473,49.79
+"America/New_York",3,"candidate",10473,1.60999999999999
