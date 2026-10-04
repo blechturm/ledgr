@@ -163,3 +163,30 @@ testthat::test_that("[LTB-0150] constructed fact corruption fails at the exact b
     fixed = TRUE
   )
 })
+
+testthat::test_that("[LTB-0152] canonical fact clocks format each distinct instant once", {
+  original <- ledgr:::ledgr_fact_time_token
+  values <- as.POSIXct(
+    c(1, 1, NA, 2, 2, 2, 3, NA),
+    origin = "2020-01-01",
+    tz = "UTC"
+  )
+  formatted_elements <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_fact_time_token = function(x) {
+      formatted_elements <<- formatted_elements + length(x)
+      original(x)
+    },
+    .package = "ledgr"
+  )
+  actual <- ledgr:::ledgr_fact_canonical_frame(data.frame(clock = values))
+  testthat::expect_identical(actual$clock, original(values))
+  testthat::expect_identical(
+    formatted_elements,
+    length(unique(values[!is.na(values)]))
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_fact_time_tokens_distinct(values),
+    original(values)
+  )
+})

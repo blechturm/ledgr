@@ -1084,7 +1084,7 @@ ledgr_fact_canonical_frame <- function(df) {
   for (name in names(out)) {
     column <- out[[name]]
     if (inherits(column, "POSIXt")) {
-      out[[name]] <- ledgr_fact_time_token(column)
+      out[[name]] <- ledgr_fact_time_tokens_distinct(column)
     } else if (inherits(column, "Date")) {
       out[[name]] <- as.character(column)
     } else if (is.factor(column)) {
@@ -1093,6 +1093,17 @@ ledgr_fact_canonical_frame <- function(df) {
       out[[name]] <- unname(column)
     }
   }
+  out
+}
+
+ledgr_fact_time_tokens_distinct <- function(x) {
+  out <- rep(NA_character_, length(x))
+  keep <- !is.na(x)
+  if (!any(keep)) return(out)
+  values <- x[keep]
+  distinct <- unique(values)
+  tokens <- ledgr_fact_time_token(distinct)
+  out[keep] <- tokens[match(values, distinct)]
   out
 }
 

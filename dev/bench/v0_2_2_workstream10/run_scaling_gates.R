@@ -24,6 +24,8 @@ source(file.path(
 
 ns <- asNamespace("ledgr")
 current_time_token <- ns$ledgr_fact_time_token
+candidate_time_token <- ns$ledgr_fact_time_tokens_distinct
+candidate_canonical_frame <- ns$ledgr_fact_canonical_frame
 
 replace_binding <- function(name, value) {
   was_locked <- bindingIsLocked(name, ns)
@@ -32,20 +34,32 @@ replace_binding <- function(name, value) {
   if (was_locked) lockBinding(name, ns)
 }
 on.exit(replace_binding("ledgr_fact_time_token", current_time_token), add = TRUE)
+on.exit(
+  replace_binding("ledgr_fact_canonical_frame", candidate_canonical_frame),
+  add = TRUE
+)
 
-candidate_time_token <- function(x, token = current_time_token) {
-  out <- rep(NA_character_, length(x))
-  keep <- !is.na(x)
-  if (!any(keep)) return(out)
-  values <- x[keep]
-  distinct <- unique(values)
-  tokens <- token(distinct)
-  out[keep] <- tokens[match(values, distinct)]
+baseline_canonical_frame <- function(df) {
+  if (is.null(df) || nrow(df) == 0L) return(data.frame())
+  out <- as.data.frame(df, stringsAsFactors = FALSE)
+  out <- out[order(names(out))]
+  for (name in names(out)) {
+    column <- out[[name]]
+    if (inherits(column, "POSIXt")) {
+      out[[name]] <- current_time_token(column)
+    } else if (inherits(column, "Date")) {
+      out[[name]] <- as.character(column)
+    } else if (is.factor(column)) {
+      out[[name]] <- as.character(column)
+    } else {
+      out[[name]] <- unname(column)
+    }
+  }
   out
 }
 
 wrong_time_token <- function(x) {
-  out <- candidate_time_token(x)
+  out <- current_time_token(x)
   hit <- which(!is.na(out))
   if (length(hit) > 0L) out[[hit[[1L]]]] <- "1970-01-01T00:00:00Z"
   out
@@ -186,8 +200,12 @@ for (replicate in seq_len(3L)) {
   values <- list()
   for (arm in pair_order(replicate)) {
     replace_binding(
-      "ledgr_fact_time_token",
-      if (identical(arm, "current")) current_time_token else candidate_time_token
+      "ledgr_fact_canonical_frame",
+      if (identical(arm, "current")) {
+        baseline_canonical_frame
+      } else {
+        candidate_canonical_frame
+      }
     )
     measured <- clock(ns$ledgr_facts_assert(large_facts))
     values[[arm]] <- measured$value
@@ -205,7 +223,7 @@ for (replicate in seq_len(3L)) {
   stopifnot(identical(values$current, values$candidate))
 }
 
-replace_binding("ledgr_fact_time_token", current_time_token)
+replace_binding("ledgr_fact_canonical_frame", candidate_canonical_frame)
 instruments <- sprintf("I%04d", seq_len(500L))
 bars <- data.frame(
   instrument_id = instruments,
@@ -242,8 +260,12 @@ for (replicate in seq_len(3L)) {
   values <- list()
   for (arm in pair_order(replicate)) {
     replace_binding(
-      "ledgr_fact_time_token",
-      if (identical(arm, "current")) current_time_token else candidate_time_token
+      "ledgr_fact_canonical_frame",
+      if (identical(arm, "current")) {
+        baseline_canonical_frame
+      } else {
+        candidate_canonical_frame
+      }
     )
     handle <- ledgr_snapshot_open(snapshot_path, snapshot_id, verify = FALSE)
     measured <- clock(ns$ledgr_snapshot_hash(
@@ -272,8 +294,12 @@ for (replicate in seq_len(3L)) {
   values <- list()
   for (arm in pair_order(replicate)) {
     replace_binding(
-      "ledgr_fact_time_token",
-      if (identical(arm, "current")) current_time_token else candidate_time_token
+      "ledgr_fact_canonical_frame",
+      if (identical(arm, "current")) {
+        baseline_canonical_frame
+      } else {
+        candidate_canonical_frame
+      }
     )
     handle <- ledgr_snapshot_open(snapshot_path, snapshot_id, verify = FALSE)
     measured <- clock(ledgr_facts_resolve(
@@ -306,10 +332,10 @@ for (replicate in seq_len(3L)) {
 pilot <- list()
 rows_per_family <- 5000L
 repeat {
-  replace_binding("ledgr_fact_time_token", current_time_token)
+  replace_binding("ledgr_fact_canonical_frame", baseline_canonical_frame)
   low_bundle <- low_repetition_bundle(rows_per_family)
   current_pilot <- clock(ns$ledgr_facts_assert(low_bundle))$seconds
-  replace_binding("ledgr_fact_time_token", candidate_time_token)
+  replace_binding("ledgr_fact_canonical_frame", candidate_canonical_frame)
   candidate_pilot <- clock(ns$ledgr_facts_assert(low_bundle))$seconds
   pilot[[length(pilot) + 1L]] <- data.frame(
     rows_per_family = rows_per_family,
@@ -329,8 +355,12 @@ for (replicate in seq_len(5L)) {
   values <- list()
   for (arm in pair_order(replicate)) {
     replace_binding(
-      "ledgr_fact_time_token",
-      if (identical(arm, "current")) current_time_token else candidate_time_token
+      "ledgr_fact_canonical_frame",
+      if (identical(arm, "current")) {
+        baseline_canonical_frame
+      } else {
+        candidate_canonical_frame
+      }
     )
     measured <- clock(ns$ledgr_facts_assert(low_bundle))
     values[[arm]] <- measured$value
@@ -348,7 +378,7 @@ for (replicate in seq_len(5L)) {
   stopifnot(identical(values$current, values$candidate))
 }
 
-replace_binding("ledgr_fact_time_token", candidate_time_token)
+replace_binding("ledgr_fact_canonical_frame", candidate_canonical_frame)
 candidate_large_hash <- ns$ledgr_fact_family_hash(
   large_family$family,
   large_family$scope_id,
@@ -437,7 +467,9 @@ count_column <- function(shape, location, column, values) {
     formatted <<- formatted + length(x)
     current_time_token(x)
   }
-  result <- candidate_time_token(values, token = counting_token)
+  replace_binding("ledgr_fact_time_token", counting_token)
+  result <- candidate_time_token(values)
+  replace_binding("ledgr_fact_time_token", current_time_token)
   reference <- current_time_token(values)
   data.frame(
     shape = shape,
@@ -482,6 +514,7 @@ candidate_elements <- element_counts$formatted_elements[
 distinct_elements <- length(unique(repeated[!is.na(repeated)]))
 
 replace_binding("ledgr_fact_time_token", wrong_time_token)
+replace_binding("ledgr_fact_canonical_frame", candidate_canonical_frame)
 wrong_condition <- tryCatch(ns$ledgr_facts_assert(large_facts), error = identity)
 mutations <- data.frame(
   mutation = c("restore_full_column_formatting", "map_one_instant_wrong"),
