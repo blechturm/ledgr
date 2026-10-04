@@ -65,6 +65,21 @@ lwreg_check <- function(path) {
         }
         a <- read_case(rows$file[rows$arm == "accepted"])
         c <- read_case(rows$file[rows$arm == "candidate"])
+        if (!identical(a$commit, suite$accepted_commit) ||
+            !identical(c$commit, suite$candidate_commit)) {
+          fail("Case commit does not match suite provenance: ", shape, " ",
+               pair, " ", attempt)
+        }
+        environment_fields <- c(
+          "package_version", "r_version", "duckdb_version", "collapse_version"
+        )
+        if (!identical(a[environment_fields], c[environment_fields])) {
+          fail("Accepted and candidate environments differ: ", shape, " ",
+               pair, " ", attempt)
+        }
+        expected_status <- manifest$expected_status[
+          match(shape, manifest$shape_id)
+        ]
         for (phase in c("cold", "warm")) {
           if (!identical(a[[phase]]$identities, c[[phase]]$identities)) {
             fail("Semantic drift: ", shape, " ", pair, " ", attempt,
@@ -72,6 +87,11 @@ lwreg_check <- function(path) {
           }
           if (!identical(a[[phase]]$status, c[[phase]]$status)) {
             fail("Status drift: ", shape, " ", pair, " ", attempt,
+                 " ", phase)
+          }
+          actual_status <- strsplit(a[[phase]]$status, "+", fixed = TRUE)[[1L]]
+          if (!all(actual_status == expected_status)) {
+            fail("Unexpected status: ", shape, " ", pair, " ", attempt,
                  " ", phase)
           }
         }
