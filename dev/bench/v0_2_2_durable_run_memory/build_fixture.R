@@ -13,7 +13,7 @@ suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 probe <- lwreg_build_fixture(memory_fixture_row(), out_dir)
 availability_db <- file.path(out_dir, "snapshot.duckdb")
 availability_snapshot <- ledgr_snapshot_open(availability_db)
-availability_con <- ledgr:::ledgr_snapshot_connection(availability_snapshot)
+availability_con <- ledgr:::ledgr_snapshot_connection(availability_snapshot)$con
 bars <- DBI::dbGetQuery(
   availability_con,
   "SELECT ts_utc, instrument_id, open, high, low, close, volume
