@@ -317,6 +317,15 @@ lwreg_identity <- function(x, keep = NULL) {
   list(rows = nrow(value), hash = lwreg_hash(value))
 }
 
+lwreg_resolution_identity <- function(x) {
+  list(
+    schema_version = x$schema_version,
+    rows = lwreg_identity(x$rows),
+    evidence = lwreg_identity(x$evidence),
+    metadata = lwreg_hash(x$metadata)
+  )
+}
+
 lwreg_strategy_state_identity <- function(bt) {
   con <- DBI::dbConnect(duckdb::duckdb(), bt$db_path, read_only = TRUE)
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

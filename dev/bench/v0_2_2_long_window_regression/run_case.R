@@ -130,8 +130,8 @@ if (identical(row$mode, "run") || identical(row$mode, "run_resolve")) {
     resolve <- list(
       cold_s = first$seconds,
       warm_s = second$seconds,
-      cold = lwreg_identity(first$value),
-      warm = lwreg_identity(second$value)
+      cold = lwreg_resolution_identity(first$value),
+      warm = lwreg_resolution_identity(second$value)
     )
   }
 } else if (identical(row$mode, "sweep")) {
