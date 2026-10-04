@@ -2,7 +2,7 @@
 
 **Status:** Cuts 1 and 2 are closed after maintainer acceptance of their nine
 workstreams. Cut 3 is open after maintainer acceptance of its four-ticket,
-one-workstream shape; Workstream 10 is active.
+one-workstream shape; Workstream 10 is ready for Type 1 close review.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -37,8 +37,9 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, eleven complete Cut 2 tickets and four pending Cut 3
-  tickets; Cuts 1 and 2 are closed and Cut 3 is open.
+  complete Cut 1 tickets, eleven complete Cut 2 tickets and four implemented
+  Cut 3 tickets awaiting close review; Cuts 1 and 2 are closed and Cut 3 is
+  open.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -144,12 +145,13 @@ fails its gate.
 
 ## Cut 3: Exact fact-integrity verification
 
-**Status:** Active after maintainer acceptance on 2026-10-04. LDG-2946 has
-committed the pre-change exact-byte, identity, reopen and corruption oracles.
-LDG-2947's internal, public and calibrated low-repetition gates all pass, so
-LDG-2948 implemented and reverified the bounded candidate at all three gates.
-LDG-2949 now owns the closeout. Independent spike review passed the
-fact-integrity result and invalidated the DuckDB membership result.
+**Status:** Ready for Type 1 close review. LDG-2946 committed the pre-change
+exact-byte, identity, reopen and corruption oracles. LDG-2947's internal,
+public and calibrated low-repetition gates all passed; LDG-2948 implemented
+and reverified the bounded candidate at all three gates. LDG-2949's
+agent-provisional closeout is `fact_integrity_verification_closeout.md`.
+Independent spike review passed the fact-integrity result and invalidated the
+DuckDB membership result.
 
 Authority: macro-plan WS5, the reviewed fact-integrity spike and the accepted
 exact-parity internal-optimization proof template. The corrected membership
