@@ -1,0 +1,58 @@
+{
+  "commit": "9896a71f9ea5298d5f9ba625d9e33eacf8f2d074",
+  "product_tree_status": "",
+  "availability": true,
+  "persist_features": true,
+  "mode": "phase",
+  "status": "DONE",
+  "elapsed_s": 33.75,
+  "identities": null,
+  "phases": [
+    {
+      "marker": "before_run",
+      "timestamp_utc": "2026-10-04T19:47:17.063Z",
+      "live_mib": 112.80000000000001,
+      "peak_since_last_mib": 198.5
+    },
+    {
+      "marker": "start_hydration",
+      "timestamp_utc": "2026-10-04T19:47:25.417Z",
+      "live_mib": 203.70000000000002,
+      "peak_since_last_mib": 451.30000000000007
+    },
+    {
+      "marker": "start_features",
+      "timestamp_utc": "2026-10-04T19:47:26.756Z",
+      "live_mib": 361.89999999999998,
+      "peak_since_last_mib": 509.90000000000003
+    },
+    {
+      "marker": "start_setup",
+      "timestamp_utc": "2026-10-04T19:47:29.032Z",
+      "live_mib": 352,
+      "peak_since_last_mib": 590.80000000000007
+    },
+    {
+      "marker": "start_fold",
+      "timestamp_utc": "2026-10-04T19:47:29.329Z",
+      "live_mib": 352.20000000000005,
+      "peak_since_last_mib": 435
+    },
+    {
+      "marker": "start_finalize",
+      "timestamp_utc": "2026-10-04T19:47:44.335Z",
+      "live_mib": 356.90000000000003,
+      "peak_since_last_mib": 601.70000000000005
+    },
+    {
+      "marker": "after_run",
+      "timestamp_utc": "2026-10-04T19:47:51.078Z",
+      "live_mib": 226.90000000000001,
+      "peak_since_last_mib": 498.90000000000003
+    }
+  ],
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6.9000",
+  "collapse_version": "2.1.8"
+}

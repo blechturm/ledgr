@@ -239,8 +239,8 @@ to improve the ratio.
 
 ## Cut 5: Durable-run preparation memory
 
-**Status:** Accepted by the maintainer on 2026-10-04; Workstream 12 is in
-progress. The original one-ticket cut review returned
+**Status:** Accepted by the maintainer on 2026-10-04; Workstream 12 is
+`review_pending`. The original one-ticket cut review returned
 `PASS_AFTER_PATCHES`. On 2026-10-04 the maintainer adopted every patch and
 widened the cut with LDG-2952. A focused review of that broadened draft
 returned `CHANGES_REQUIRED`; its four bounded corrections are incorporated.
@@ -306,6 +306,15 @@ outputs and the dense witness match, the fast profile passed 513 blocks in
 85.61 seconds, and the ordinary Workstream 11 suite remained below its 1.10
 timing ceiling. LDG-2952 now uses this committed post-LDG-2951 tree as its
 isolated baseline.
+
+LDG-2952 is complete. Its isolated five-pair record compares `9896a71` with
+`5f327a8`. Median elapsed ratios are 0.9466 with persistence off and 0.9504
+with persistence on; separately marked feature-phase peak ratios are 0.9570
+and 0.9568. Exact public outputs and the dense witness match. The availability
+feature-engine digest changes as expected, while the dense digest and built-in
+indicator fingerprints do not. The final fast profile passed 514 blocks in
+87.22 seconds, and the ordinary Workstream 11 suite remained below its 1.10
+ceiling. Cut 5 now awaits its single Type 1 workstream close review.
 
 ## Expected later artifacts
 

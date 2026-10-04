@@ -1,0 +1,44 @@
+{
+  "commit": "9896a71f9ea5298d5f9ba625d9e33eacf8f2d074",
+  "product_tree_status": "",
+  "availability": true,
+  "persist_features": false,
+  "mode": "oracle",
+  "status": "DONE",
+  "elapsed_s": 26.640000000000001,
+  "identities": {
+    "equity": {
+      "rows": 1514,
+      "hash": "951f22844dd7b784aa764ccf0c3389722eff18258768e86e2d129da2f9194c3d"
+    },
+    "fills": {
+      "rows": 792,
+      "hash": "118c0dd596d73adbc07df2620463b3c3f0f3694723160da09a1a08ca2c2cc43b"
+    },
+    "trades": {
+      "rows": 444,
+      "hash": "9096844f5a06dafde045d15f9ef0a72007262eea7d7885a3f0740e9adad2dea6"
+    },
+    "diagnostics": {
+      "rows": 760270,
+      "hash": "37252d8cb788501e4f4457e626cf1547440b4d31f5857bc90d94a6173821d7b0"
+    },
+    "strategy_state": {
+      "rows": 1514,
+      "hash": "c8563c1b2b451f7b29a871b996617f3ebae909269f39d5237e0aba8741a00a2c"
+    },
+    "availability": {
+      "rows": 757964,
+      "hash": "fc256e5d982226a980e9e534e07a78546274a3166991b99ff6d1078d297ccc3c"
+    },
+    "features": {
+      "rows": 0,
+      "hash": "a2fe6e618dd0b33c38aac6b0137ec476dd13ece1208632c3eb4487a232e6656f"
+    }
+  },
+  "phases": null,
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6.9000",
+  "collapse_version": "2.1.8"
+}

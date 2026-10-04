@@ -1,0 +1,13 @@
+{
+  "accepted_commit": "9896a71f9ea5298d5f9ba625d9e33eacf8f2d074",
+  "candidate_commit": "5f327a8535d4ab43cb62e7c3c8256402afef1f87",
+  "pairs": 5,
+  "gate_profile": "dispatch",
+  "peak_ratio_limit": 1,
+  "elapsed_ratio_limit": 1,
+  "peak_gate_target": "marked feature-phase peak-so-far at start_setup",
+  "feature_phase_end_marker": "start_setup",
+  "retry_rule": "one complete fresh retry of the same pair count; a miss stands only when the retry also misses",
+  "gate_runs": "unmarked",
+  "phase_runs": "separate paired marked runs"
+}
