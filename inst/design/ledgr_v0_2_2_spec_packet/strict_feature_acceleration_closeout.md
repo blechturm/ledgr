@@ -1,6 +1,6 @@
 # Workstream 8 Closeout: Built-In Strict-Feature Acceleration
 
-**Status:** Agent-provisional; awaiting focused Type 1 correction review.
+**Status:** Accepted by the maintainer after focused Type 1 `PASS`.
 **Date:** 2026-10-04
 **Implementation range:** `dcb3130..11bd294`
 **Tickets:** LDG-2941 through LDG-2942
@@ -157,6 +157,10 @@ the 112-second bound. Its record is
 `C:/Users/maxth/ledgr-research/ws8-correction-fast-11bd294`.
 
 The first Workstream 8 close review was invocation six over eleven tickets and
-returned `CHANGES_REQUIRED`. The focused correction review will be invocation
+returned `CHANGES_REQUIRED`. The focused correction review was invocation
 seven, 7/11 = 0.636, a historical review-gate breach. It is recorded rather
 than hidden or repaired by padding the cut.
+
+The focused reviewer verified both corrections at `35bf5ba` and returned
+`PASS`. The maintainer accepted Workstream 8 on 2026-10-04. No repeat review
+was run; the final count remains 7/11 = 0.636.

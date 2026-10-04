@@ -97,7 +97,7 @@ workstreams:
   - id: 8
     name: "Built-in strict-feature acceleration"
     cut: 2
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 8", reason: "One claim joins LDG-2941 and LDG-2942: only ledgr's bounded strict SMA and returns definitions use accelerated construction plus an exact completeness mask, with values, NA masks, warmup and errors identical to the retained scalar reference. Exact SMA retains one base mean per numeric window while removing frame, validation, dispatch and parity work; returns uses one vector series. The review independently tests dense and hostile floating-point histories, isolated and consecutive gaps, mid-history entrants and short histories, runs the mutations and call counter, checks the registered clock, and confirms custom, external and TTR indicators still use their old paths."}
@@ -302,13 +302,13 @@ tickets:
   - id: "LDG-2942"
     title: "Close built-in strict-feature evidence"
     workstream: 8
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2941"]
     scope: "Write the Workstream 8 closeout with the full parity matrix, call-count mutation, public clocks, exclusion proof and seven-shape walk, then request one Type 1 close review."
     acceptance: ["the closeout reports scalar-reference and vector-path clocks separately and labels the registered fixture", "every supported history shape and every excluded indicator family has named evidence", "the record states that exact values and NA masks passed and does not convert this internal optimization into a new indicator semantic claim", "tickets LDG-2941 through LDG-2942 and Workstream 8 status reconcile before review"]
-    evidence: ["strict_feature_acceleration_closeout.md reconciles the corrected two-commit public gate, direct clocks, exact history-shape and hostile arithmetic witnesses, excluded-family dispatch counter, provenance pins, four failure probes and corrected seven-shape walk. It gives the exact per-process commands, arm order, full commit hashes and candidate source blobs required to reproduce the packet CSVs. The correction ordinary fast profile executed 503 of 503 blocks in 83.680 seconds with zero failures or skips and passed the 112-second gate; its record is C:/Users/maxth/ledgr-research/ws8-correction-fast-11bd294.", "Two in-process harness attempts and the superseded source-fork timing record are excluded from the performance claim. Only the alternating fresh-process dcb3130-versus-11bd294 record under ws8_strict_feature_evidence/ supports it. The first close review was invocation six over eleven tickets and returned CHANGES_REQUIRED; the focused correction review is invocation seven, 7/11 = 0.636, recorded as a historical review-gate breach rather than hidden by padding."]
+    evidence: ["strict_feature_acceleration_closeout.md reconciles the corrected two-commit public gate, direct clocks, exact history-shape and hostile arithmetic witnesses, excluded-family dispatch counter, provenance pins, four failure probes and corrected seven-shape walk. It gives the exact per-process commands, arm order, full commit hashes and candidate source blobs required to reproduce the packet CSVs. The correction ordinary fast profile executed 503 of 503 blocks in 83.680 seconds with zero failures or skips and passed the 112-second gate; its record is C:/Users/maxth/ledgr-research/ws8-correction-fast-11bd294.", "Two in-process harness attempts and the superseded source-fork timing record are excluded from the performance claim. Only the alternating fresh-process dcb3130-versus-11bd294 record under ws8_strict_feature_evidence/ supports it. The first close review was invocation six over eleven tickets and returned CHANGES_REQUIRED. The focused correction review verified exact SMA arithmetic, reproducibility and gates at 35bf5ba and returned PASS. The maintainer accepted Workstream 8 on 2026-10-04 at 7/11 = 0.636; no redundant eighth review was counted."]
   - id: "LDG-2943"
     title: "Vectorize declared-session construction"
     workstream: 9

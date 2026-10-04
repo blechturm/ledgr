@@ -84,8 +84,8 @@ is ready.
 **Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
 ticket corrections are incorporated. The maintainer accepted Cut 2 on
 2026-10-03. Workstream 6 was accepted on 2026-10-03 and Workstream 7 on
-2026-10-04. Workstream 8 is review pending after both candidates passed their
-independent gates; Workstream 9 remains pending.
+2026-10-04. Workstream 8 was accepted on 2026-10-04 after its focused
+correction review returned `PASS`; Workstream 9 remains pending.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but
@@ -107,6 +107,8 @@ Workstream 8 implementation is `9bde734` plus the exact-SMA correction
 public outputs. The first close review disproved the original
 `rowMeans(embed())` identity claim. Its focused correction review is Cut 2
 invocation 7/11 = 0.636, recorded as a historical review-gate breach.
+The maintainer accepted the workstream after that `PASS`; no redundant eighth
+review was counted.
 
 The four workstreams are independent after cut acceptance. Each candidate
 starts with a current-tree baseline, semantic oracle, failure-sensitive
