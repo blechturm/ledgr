@@ -1,8 +1,7 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 and 2 are closed after maintainer acceptance of their nine
-workstreams. Cut 3 is open after maintainer acceptance of its four-ticket,
-one-workstream shape; Workstream 10 is ready for Type 1 close review.
+**Status:** Cuts 1 through 3 are closed after maintainer acceptance of all ten
+workstreams.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -37,9 +36,8 @@ the packet state and does not become a second editable ticket ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, eleven complete Cut 2 tickets and four implemented
-  Cut 3 tickets awaiting close review; Cuts 1 and 2 are closed and Cut 3 is
-  open.
+  complete Cut 1 tickets, eleven complete Cut 2 tickets and four complete
+  Cut 3 tickets; all three cuts are closed.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -145,13 +143,13 @@ fails its gate.
 
 ## Cut 3: Exact fact-integrity verification
 
-**Status:** Ready for Type 1 close review. LDG-2946 committed the pre-change
-exact-byte, identity, reopen and corruption oracles. LDG-2947's internal,
-public and calibrated low-repetition gates all passed; LDG-2948 implemented
-and reverified the bounded candidate at all three gates. LDG-2949's
-agent-provisional closeout is `fact_integrity_verification_closeout.md`.
-Independent spike review passed the fact-integrity result and invalidated the
-DuckDB membership result.
+**Status:** Closed after independent Type 1 `PASS` and maintainer acceptance
+on 2026-10-04. LDG-2946 committed the pre-change exact-byte, identity, reopen
+and corruption oracles. LDG-2947's internal, public and calibrated
+low-repetition gates all passed; LDG-2948 implemented and reverified the
+bounded candidate at all three gates. LDG-2949's accepted record is
+`fact_integrity_verification_closeout.md`. Independent spike review passed
+the fact-integrity result and invalidated the DuckDB membership result.
 
 Authority: macro-plan WS5, the reviewed fact-integrity spike and the accepted
 exact-parity internal-optimization proof template. The corrected membership
@@ -174,6 +172,9 @@ evidence qualification rather than a ticket-review invocation. No separate
 cut evidence essay is planned. The pre-implementation split is substantive
 only because LDG-2946 commits its own tests, claim and machine-readable oracle
 record before LDG-2947 begins.
+
+The close review returned `PASS` at `ff995ae`; the maintainer accepted the
+workstream without a correction round. The actual count is 2/4 = 0.500.
 
 Cut 3 changes no public API, schema, canonical bytes, hash or identity rule,
 verification policy, condition class, provider-run behavior or resolver

@@ -43,8 +43,8 @@ cuts:
     workstreams: [10]
     closeout: "The LDG-2949 workstream closeout forms the Cut 3 record; no separate cut-level evidence essay is created."
     accepted: "2026-10-04 by the maintainer after PASS_AFTER_PATCHES and the P1 through P3 gate corrections"
-    close_review: null
-    status: "open"
+    close_review: "Workstream 10 Type 1 close review at ff995ae returned PASS after independently reproducing four mutations, recomputing all three gates from raw evidence and running the affected suites. The maintainer accepted Workstream 10 and closed Cut 3 on 2026-10-04. Actual review count 2/4 = 0.500."
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -126,7 +126,7 @@ workstreams:
   - id: 10
     name: "Exact fact-integrity verification"
     cut: 3
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 9
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 10", reason: "One claim joins LDG-2946 through LDG-2949: repeated timestamp formatting is removed from exact fact verification while canonical family, bundle and rule-2 snapshot bytes, every existing hash and corruption failure remain exact, the public sealed-snapshot resolver becomes materially faster and low-repetition families do not regress materially. The review checks LDG-2946's separate commit and oracle record, independently recomputes the internal, public and low-repetition gates, verifies formatter elements rather than calls, compares every fact-family clock shape, runs wrong-token, per-row-format, in-memory timestamp and persisted-table timestamp mutations, checks fresh and reopened sealed snapshots and confirms no stored-digest trust, identity, schema or verification-policy change."}
@@ -394,10 +394,10 @@ tickets:
   - id: "LDG-2949"
     title: "Close exact fact-integrity verification evidence"
     workstream: 10
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2948"]
     scope: "Write the Workstream 10 exact-parity closeout, reconcile the reviewed spike with current-tree production evidence, record implementation and baseline commits, semantic and identity matrices, corruption and structural mutations, both performance gates, fast-profile gate and the seven-shape walk, then request one Type 1 close review."
     acceptance: ["the closeout distinguishes spike evidence from implementation evidence and names the exact baseline, four ticket commits, commands and record directories", "the record proves LDG-2946 committed its oracle artifact before the gate and implementation commits", "all exact-parity-template sections are completed, including byte identity, fresh and reopened persistence, constructed and persisted timestamp tamper detection, formatter element accounting, environment and smallest failing mutations", "the internal 2x, public 1.5x and calibrated low-repetition 1.25 ceiling results are reported separately", "the record states that verification policy and stored-hash trust did not change, labels the sealed fixture by fact and bar counts and makes no DuckDB-migration claim", "LDG-2946 through LDG-2949, Workstream 10 and Cut 3 status reconcile before review"]
-    evidence: ["fact_integrity_verification_closeout.md records the accepted pre-change baseline a9cd0a9, the dedicated oracle commit 0c0c694, the gate commit 86723ba, the production commit 22c0b3f and implementation-evidence commit 3d2f50c. It distinguishes the independently reviewed spike from current-tree implementation evidence and names the two checked-in records and reproduction commands.", "All exact-parity template sections are complete. Twenty frozen artifacts and all family, bundle and rule-2 snapshot hashes are byte-identical; fresh and reopened public resolution agree; constructed and persisted timestamp corruption fail closed; formatter elements are bounded by distinct non-missing instants; and the wrong-token, full-column, assertion-bypass and stored-hash-trust mutations all fail registered evidence.", "The implementation record separately passes the 300,000-row internal gate at 5.085x old/new, the public ledgr_facts_resolve gate at 1.625x old/new on 300,000 facts and 500 bars, and the calibrated 120,000-row low-repetition ceiling at 1.026x new/old. The ordinary fast record at C:/tmp/ledgr-ws10-ldg2948-fast-22c0b3f passed 509 of 509 blocks in 81.65 seconds against 112 seconds. The closeout makes no DuckDB-migration claim and records no schema, identity, verification-policy or stored-hash-trust change."]
+    evidence: ["fact_integrity_verification_closeout.md records the accepted pre-change baseline a9cd0a9, the dedicated oracle commit 0c0c694, the gate commit 86723ba, the production commit 22c0b3f and implementation-evidence commit 3d2f50c. It distinguishes the independently reviewed spike from current-tree implementation evidence and names the two checked-in records and reproduction commands.", "All exact-parity template sections are complete. Twenty frozen artifacts and all family, bundle and rule-2 snapshot hashes are byte-identical; fresh and reopened public resolution agree; constructed and persisted timestamp corruption fail closed; formatter elements are bounded by distinct non-missing instants; and the wrong-token, full-column, assertion-bypass and stored-hash-trust mutations all fail registered evidence.", "The implementation record separately passes the 300,000-row internal gate at 5.085x old/new, the public ledgr_facts_resolve gate at 1.625x old/new on 300,000 facts and 500 bars, and the calibrated 120,000-row low-repetition ceiling at 1.026x new/old. The ordinary fast record at C:/tmp/ledgr-ws10-ldg2948-fast-22c0b3f passed 509 of 509 blocks in 81.65 seconds against 112 seconds. The closeout makes no DuckDB-migration claim and records no schema, identity, verification-policy or stored-hash-trust change.", "Independent Type 1 review at ff995ae returned PASS after reproducing the full-column, wrong-token, assertion-bypass and stored-hash-trust mutations, recomputing every gate and running the affected suites. The maintainer accepted Workstream 10 on 2026-10-04; Cut 3 closes at 2/4 = 0.500 review invocations per completed ticket."]

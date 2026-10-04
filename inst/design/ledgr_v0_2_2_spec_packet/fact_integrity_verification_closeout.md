@@ -1,6 +1,6 @@
 # Workstream 10 Closeout: Exact Fact-Integrity Verification
 
-**Status:** Agent-provisional; ready for independent Type 1 close review.
+**Status:** Accepted by the maintainer after independent Type 1 `PASS`.
 **Date:** 2026-10-04
 **Implementation commit:** `22c0b3fec1076744cb885a074c0639b01aaecfca`
 **Baseline commit:** `a9cd0a9f86b017aebfb2ad59a46ad4871aa66aab`
@@ -11,10 +11,10 @@
 Optimization ID: LDG-2948.
 
 Old mechanism: every POSIXt value in a canonical fact column passed through
-the scalar canonical timestamp formatter, including repeated instants.
+the retained canonical timestamp formatter, including repeated instants.
 
 New mechanism: each distinct non-missing instant passes once through the
-unchanged scalar formatter and its exact token is matched back to every row.
+unchanged retained formatter and its exact token is matched back to every row.
 
 Expected complexity change: `O(rows * timestamp-format cost)` to
 `O(distinct instants * timestamp-format cost + rows)` per timestamp column.
@@ -46,7 +46,7 @@ assertion and rule-2 snapshot-hash recomputation.
 | Schema, hashes and identity unchanged | PASS | 20 frozen byte artifacts plus all family, bundle and snapshot hashes |
 | Accounting and tolerance unchanged | PASS | accounting is outside the diff; all comparisons are exact |
 | Dependencies, workers and caches unchanged | PASS | no dependency, worker, cache or persistence code changed |
-| Retained oracle available | PASS | unchanged scalar `ledgr_fact_time_token()` plus frozen pre-change artifacts |
+| Retained oracle available | PASS | unchanged `ledgr_fact_time_token()` plus frozen pre-change artifacts |
 | Bounded rerun | PASS | runner, checker and fixtures are committed under `dev/bench` and `tests/testthat/fixtures` |
 | Independent review possible | PASS | two production functions, four load-bearing blocks and machine-readable records |
 
@@ -151,7 +151,7 @@ introduced or widened; maximum residuals are therefore not applicable.
 
 ## G. Structural Regression Gate
 
-- forbidden shape: a POSIXt column passed in full to the scalar formatter;
+- forbidden shape: a POSIXt column passed in full to the retained formatter;
 - required shape: formatter elements are no greater than distinct non-missing
   instants for every registered timestamp column;
 - operation bound: the 300,000-row membership `effective_from` column has
@@ -203,9 +203,12 @@ and that review-only environment issue is not used as evidence here.
 
 The ordinary fast record at
 `C:/tmp/ledgr-ws10-ldg2948-fast-22c0b3f` passed 509 of 509 blocks in 81.65
-seconds against the 112-second bound. `git diff --check` is clean for the
-workstream. Generated oracle output lives under `C:/tmp`; no temporary or
-generated artifact is committed outside the named fixtures and evidence.
+seconds against the 112-second bound. Its final checked copy, including
+`gate-record.csv`, is
+`C:/Users/maxth/ledgr-research/ws10-final-gate-3d2f50c`. `git diff --check`
+is clean for the workstream. Generated oracle output lives under `C:/tmp`;
+no temporary or generated artifact is committed outside the named fixtures
+and evidence.
 
 Seven-shape walk:
 
@@ -213,7 +216,7 @@ Seven-shape walk:
 2. Growing scans: no row triggers a new scan over prior rows; `unique()` and
    `match()` each consume the column once.
 3. Per-element work: formatting is bounded by distinct non-missing instants,
-   while the retained scalar formatter remains the semantic oracle.
+   while the retained token formatter remains the semantic oracle.
 4. Scale-growing collections: token and match vectors are linear in rows;
    no history-growing list, frame or registry is introduced.
 5. Recomputed work: rule-2 verification still recomputes canonical evidence
@@ -225,23 +228,27 @@ Seven-shape walk:
 
 ## J. Independent Review
 
-Reviewer: pending (Claude requested).
+Reviewer: Claude, independent Type 1 close review.
 
-Reviewed commit: pending; the exact closeout commit is supplied in the review
-request.
+Reviewed commit: `ff995ae`.
 
 The Type 1 review must independently inspect or rerun exact semantic and byte
 gates, perturb an identity artifact, gut the distinct-value mechanism, verify
-the public clock and confirm the old scalar oracle was not weakened. It must
+the public clock and confirm the retained token oracle was not weakened. It must
 also confirm that no public API, schema, identity, verification policy or
 stored-hash trust changed.
 
-Findings: pending.
+Findings: none. The reviewer independently reproduced four mutations,
+recomputed every gate from raw evidence, ran the affected suites and verified
+the exact production boundary. Three record notes were non-blocking: cite the
+checked gate copy, describe the retained formatter as vectorized, and note
+that the evidence checker trusts recorded ratio rows after validating their
+flags and counts. The reviewer independently recomputed those ratios exactly.
 
-Verdict: pending.
+Verdict: `PASS`; maintainer accepted 2026-10-04.
 
 One cut review has run. The planned close review will make two invocations
 over four tickets, 0.500. The independent spike review qualified evidence and
 is not a ticket-review invocation, as the accepted cut records.
 
-EXACT_PARITY_PROOF_DISPOSITION: PENDING
+EXACT_PARITY_PROOF_DISPOSITION: ACCEPT
