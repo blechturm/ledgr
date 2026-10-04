@@ -1355,8 +1355,8 @@ ledgr_session_times <- function(x, session_date, timezone, field) {
       rlang::abort(sprintf("`%s` must use HH:MM:SS local times.", field), class = c("ledgr_session_invalid", "ledgr_invalid_args"))
     }
     labels <- paste(session_date[keep], raw[keep])
-    resolved <- lapply(labels, ledgr_local_time_resolve, timezone = timezone)
-    counts <- vapply(resolved, length, integer(1))
+    resolved <- ledgr_local_times_resolve(labels, timezone)
+    counts <- resolved$counts
     if (any(counts == 0L)) {
       rlang::abort(
         sprintf("`%s` contains a nonexistent local wall time.", field),
@@ -1372,13 +1372,53 @@ ledgr_session_times <- function(x, session_date, timezone, field) {
         class = c("ledgr_session_time_ambiguous", "ledgr_session_invalid", "ledgr_invalid_args")
       )
     }
-    out[keep] <- as.POSIXct(
-      vapply(resolved, function(value) as.numeric(value[[1L]]), numeric(1)),
+    out[keep] <- resolved$values
+  }
+  as.POSIXct(out, tz = "UTC")
+}
+
+ledgr_local_times_resolve <- function(labels, timezone) {
+  wall <- as.POSIXct(
+    labels,
+    tz = "UTC",
+    format = "%Y-%m-%d %H:%M:%S"
+  )
+  shifts <- seq.int(-2L, 2L) * 86400
+  probes <- as.POSIXct(
+    rep(as.numeric(wall), times = length(shifts)) +
+      rep(shifts, each = length(wall)),
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  offsets <- unique(format(probes, "%z", tz = timezone))
+  offset_seconds <- vapply(offsets, ledgr_utc_offset_seconds, numeric(1))
+  candidates <- outer(as.numeric(wall), offset_seconds, `-`)
+  roundtrip <- matrix(
+    format(
+      as.POSIXct(as.vector(candidates), origin = "1970-01-01", tz = "UTC"),
+      "%Y-%m-%d %H:%M:%S",
+      tz = timezone
+    ),
+    nrow = length(labels),
+    ncol = length(offsets)
+  )
+  matches <- roundtrip == labels
+  counts <- as.integer(rowSums(matches))
+  values <- as.POSIXct(
+    rep(NA_real_, length(labels)),
+    origin = "1970-01-01",
+    tz = "UTC"
+  )
+  unique_match <- counts == 1L
+  if (any(unique_match)) {
+    columns <- max.col(matches[unique_match, , drop = FALSE], ties.method = "first")
+    values[unique_match] <- as.POSIXct(
+      candidates[cbind(which(unique_match), columns)],
       origin = "1970-01-01",
       tz = "UTC"
     )
   }
-  as.POSIXct(out, tz = "UTC")
+  list(values = values, counts = counts)
 }
 
 ledgr_local_time_resolve <- function(label, timezone) {
