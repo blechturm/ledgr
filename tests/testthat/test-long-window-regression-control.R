@@ -1,0 +1,76 @@
+testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
+  original <- ledgr:::ledgr_compute_feature_series_strict_builtin
+  work <- 0L
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    ledgr_compute_feature_series_strict_builtin = function(
+      bars_df, feature_def, kind
+    ) {
+      work <<- work + nrow(bars_df)
+      calls <<- calls + 1L
+      original(bars_df, feature_def, kind)
+    },
+    .package = "ledgr"
+  )
+
+  observed <- lapply(c(40L, 80L), function(days) {
+    work <<- 0L
+    calls <<- 0L
+    snapshot <- availability_runtime_fixture(days = days)
+    on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+    experiment <- ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$hold(),
+      features = list(ledgr_ind_sma(20L), ledgr_ind_returns(20L)),
+      valuation_policy = ledgr_valuation_stale(2L),
+      cost_model = ledgr_cost_zero()
+    )
+    bt <- ledgr_run(experiment, run_id = paste0("linear-strict-", days))
+    on.exit(close(bt), add = TRUE)
+    testthat::expect_identical(ledgr_run_info(snapshot, bt$run_id)$status,
+                               "DONE")
+    c(work = work, calls = calls)
+  })
+
+  testthat::expect_identical(unname(observed[[1L]]), c(80L, 2L))
+  testthat::expect_identical(unname(observed[[2L]]), c(160L, 2L))
+  testthat::expect_identical(
+    unname(observed[[2L]][["work"]] / observed[[1L]][["work"]]),
+    2
+  )
+})
+
+testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {
+  release_name <- paste0("run_", "release.R")
+  repository <- if (exists("ledgr_test_source_root", mode = "function")) {
+    ledgr_test_source_root()
+  } else {
+    normalizePath(".", winslash = "/")
+  }
+  forbidden <- c(
+    list.files(file.path(repository, "tests"), recursive = TRUE,
+               full.names = TRUE),
+    list.files(file.path(repository, ".github", "workflows"), recursive = TRUE,
+               full.names = TRUE)
+  )
+  forbidden <- forbidden[file.info(forbidden)$isdir %in% FALSE]
+  uses <- vapply(forbidden, function(path) {
+    any(grepl(release_name, readLines(path, warn = FALSE), fixed = TRUE))
+  }, logical(1L))
+  testthat::expect_false(any(uses))
+
+  script <- file.path(
+    repository, "dev", "bench", "v0_2_2_long_window_regression",
+    release_name
+  )
+  result <- suppressWarnings(system2(
+    file.path(R.home("bin"), "Rscript"), shQuote(script),
+    stdout = TRUE, stderr = TRUE
+  ))
+  testthat::expect_false(is.null(attr(result, "status")))
+  testthat::expect_match(
+    paste(result, collapse = "\n"),
+    "Release-only cases require the explicit --release flag.",
+    fixed = TRUE
+  )
+})

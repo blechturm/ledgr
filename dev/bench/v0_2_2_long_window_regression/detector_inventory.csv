@@ -1,0 +1,11 @@
+claim_id,detecting_block,optimization,role_in_suite
+LCL-0136,LTB-0136,one fill-event flush per pulse,reuse
+LCL-0138,LTB-0138,constant-time diagnostic sequence,reuse
+LCL-0139,LTB-0139,prepared scalar feature accessors,reuse
+LCL-0141,LTB-0141,exact run-local feature-map memo,reuse
+LCL-0142,LTB-0142,exact strict built-in values and masks,reuse
+LCL-0143,LTB-0143,canonical bounded built-in dispatch,reuse
+LCL-0145,LTB-0145,vector declared-session construction,reuse
+LCL-0147,LTB-0147,one-pass membership indexing,reuse
+LCL-0152,LTB-0152,distinct timestamp formatting,reuse
+LCL-0153,LTB-0153,public strict built-in work grows linearly,add
