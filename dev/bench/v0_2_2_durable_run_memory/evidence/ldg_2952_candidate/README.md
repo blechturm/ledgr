@@ -17,8 +17,10 @@ produced these independent persistence results:
 The binding unmarked elapsed gate therefore improved 5.3% with persistence off
 and 5.0% with persistence on. The separately and symmetrically marked feature
 phase ended at 565.4 and 565.3 MiB, versus 590.8 MiB in both baseline arms,
-about 4.3% lower. Whole-process RSS was diagnostic and essentially unchanged,
-as expected after LDG-2951 moved the run's peak outside this repeated work.
+about 4.3% lower. Whole-process RSS was diagnostic and essentially unchanged.
+The fold interval set the marked peak in every baseline and candidate arm; it
+already set the peak before LDG-2951, so no whole-process memory gain is
+attributed to this dispatch change.
 
 A supporting base-R `Rprofmem()` measurement over the registered three returns
 definitions and 600 instruments attributes 270,552,976 allocation bytes to

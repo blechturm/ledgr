@@ -73,7 +73,7 @@ cuts:
     workstreams: [12]
     closeout: "LDG-2951's and LDG-2952's checked-in records and ticket evidence form the Cut 5 closeout; no separate prose closeout ticket or essay is created."
     accepted: "2026-10-04 by the maintainer after the readiness review patches"
-    close_review: null
+    close_review: "The Type 1 close review at 26ac946 returned PASS after independently reproducing both gains, exact outputs, source-liveness and dispatch mutations. Its required record-only correction narrowed LCL-0155 to the two inspected boundaries; the records now also name the fold as the peak-setting phase and refresh the LDG-2951 summary under the current checker. Actual review count is 4/2 = 2.000, recorded rather than padded. Maintainer close acceptance remains pending."
     status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5

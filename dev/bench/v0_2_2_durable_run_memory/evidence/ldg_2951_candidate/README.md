@@ -22,6 +22,9 @@ Separate marked runs attribute the reduction without using their `gc()`
 measurements as a gate. Live memory at the feature boundary fell from 483.8
 MiB to 361.9 MiB. At fold entry it fell from 526.7 MiB to 352.2 MiB, and at
 finalization from 531.4 MiB to 356.9 MiB, in both persistence variants.
+The fold interval set the marked peak in every arm: 775.6 and 776.1 MiB in
+the accepted persistence-off and persistence-on arms, and 603.6 MiB in both
+candidate arms. The feature interval was lower in every arm.
 
 Separate oracle runs compare completion, equity, fills, trades, diagnostics,
 decoded strategy state, persisted feature rows and availability output

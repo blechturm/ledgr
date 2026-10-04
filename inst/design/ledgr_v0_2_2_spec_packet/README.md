@@ -1,7 +1,7 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 3 are closed after maintainer acceptance of all ten
-workstreams.
+**Status:** Cuts 1 through 4 are closed. Cut 5 has passed independent close
+review and awaits maintainer close acceptance.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -314,7 +314,15 @@ and 0.9568. Exact public outputs and the dense witness match. The availability
 feature-engine digest changes as expected, while the dense digest and built-in
 indicator fingerprints do not. The final fast profile passed 514 blocks in
 87.22 seconds, and the ordinary Workstream 11 suite remained below its 1.10
-ceiling. Cut 5 now awaits its single Type 1 workstream close review.
+ceiling. These records were submitted to the single Type 1 workstream close
+review.
+
+That Type 1 close review returned `PASS` at `26ac946` after independently
+reproducing both gains, exact outputs, source-liveness and dispatch mutations.
+Its required record correction narrows LCL-0155 to the two boundaries its
+detector observes. The evidence now also names the fold as the peak-setting
+phase and refreshes the LDG-2951 summary under the current checker. The actual
+review count is 4/2 = 2.000. Maintainer close acceptance remains pending.
 
 ## Expected later artifacts
 
