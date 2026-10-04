@@ -35,6 +35,16 @@ summary$peak_rss_bytes <- vapply(summary$shape_id, function(shape) {
 }, numeric(1L))
 utils::write.csv(summary, file.path(record, "summary.csv"), row.names = FALSE)
 
+# Process logs are evidence text, but toolchains may append terminal spaces to
+# diagnostic lines. Preserve every line while making the checked-in record
+# pass the repository whitespace contract.
+logs <- list.files(file.path(record, "raw"), pattern = "[.](stdout|stderr)$",
+                   full.names = TRUE)
+for (log in logs) {
+  lines <- readLines(log, warn = FALSE)
+  writeLines(sub("[ \t]+$", "", lines), log, useBytes = TRUE)
+}
+
 normalized_hash <- function(path) {
   bytes <- readBin(path, "raw", n = file.info(path)$size)
   text <- rawToChar(bytes)
