@@ -5,6 +5,8 @@ args <- commandArgs(TRUE)
 if (length(args) != 2L) stop("Usage: build_fixture.R <repo> <out_dir>")
 repo <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
 out_dir <- args[[2L]]
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- normalizePath(out_dir, winslash = "/", mustWork = TRUE)
 script <- dirname(normalizePath(sub("^--file=", "", grep(
   "^--file=", commandArgs(FALSE), value = TRUE
 )[[1L]]), winslash = "/"))
