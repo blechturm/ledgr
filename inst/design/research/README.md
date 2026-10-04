@@ -16,6 +16,8 @@ promote to a user-facing docs surface.
 
 | File | Evidence source | Intended RFC use |
 |---|---|---|
+| `ledgr-research-findings-index.md` | Living index of every open or filed ledgr-research finding (LFB register) and its ledgr home, synced from private source commit `369c1d490c6bf20c9652c025622eb3cbdde3bce7` | Discovery entry point for research-side findings; tickets cite `LFB-###`, the register records the ticket. |
+| `Sharadar-Long-Window-Usability-Evidence.md` | EXP-0003 (30-year availability-aware usability) and LFB-017 to LFB-026 at private source commit `369c1d490c6bf20c9652c025622eb3cbdde3bce7` | v0.2.2 untradable-holdings, indicator-warmup and snapshot-verification sessions and the long-window performance workstream; roadmap owns scheduling. |
 | `Sharadar-Workflow-Improvement-Evidence.md` | LFB-006/008/009/010 and Batch B/C workflow observations at private source commit `a7b24b3b694a3ee754c61537339ec24679e9d3a0` | v0.2.0.2 reader, progress, validation and inspection scope; roadmap owns scheduling, API decisions pending. |
 | `Sharadar-Corporate-Event-Evidence.md` | Baselines Batch C, corporate-event census, terminal-translation follow-up and LFB-001/LFB-011 at private source commit `a7b24b3b694a3ee754c61537339ec24679e9d3a0` | v0.2.0.2 equity accounting scheduled in the roadmap; empirical evidence remains non-binding and design decisions are pending. |
 | `Sharadar-Empirical-Evidence.md` | Sharadar Data MVP and Evidence Promotion v0.1.0, private authoritative source commit `e53bda3b108e51ad44720b9812c8072624b8820e` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (Seed v1, non-binding) |
@@ -61,6 +63,14 @@ For any claim that becomes load-bearing in a synthesis, look up the primary sour
 | `Cross-Asset-Accounting-Critical-Events.md` | Informs the 2026-06-28 horizon entry "Cross-asset accounting-critical economic events"; the corporate-actions / instrument-master and explicit accounting-critical event-types RFCs are parked at v0.2.x and not yet opened. | Pending (conducted ahead of the RFC cycles after vendor-ingestion work surfaced LFB-001; synthesis deferred to v0.2.x). |
 | `ledgr_ragged_universe_prior_art_review.md` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (source-based prior-art input; load-bearing claims rechecked rather than adopted wholesale). | Pending (Seed v1 opened; response-stage adversarial review and comparative architecture evidence precede synthesis). |
 | `rfc-evidence-handoff.md` | `inst/design/rfc/rfc_asset_availability_point_in_time_universes_v0_1_9_8_seed.md` (compact empirical routing memo; the expanded Sharadar synthesis controls if they differ). | Pending (evidence handoff only; Seed v1 is non-binding and synthesis is not written). |
+| `Terminal-outcome_prior_art.md` | Stage-1 prior art for the Due terminal-outcome RFC (`rfc/README.md#terminal-outcome-policy`, v0.2.2 macro plan WS2): delisting-return literature, vendor delisting records, peer backtester handling, halts and suspensions, fair-value disclosure and selection bias. Fact-checked 2026-10-04; the appended amendments prevail over the original text. | Pending (seed not yet written; it should cite this file by path). |
+
+`Terminal-outcome_prior_art.md` is a ChatGPT Deep Research output that was
+fact-checked before seed use. Its amendments section corrects the Sharadar
+ACTIONS vocabulary, QuantConnect LEAN and Zipline delisting behavior, the
+Macey et al. attribution and several market-rule details, and it lists
+unverified claims. Recheck any figure against its primary source before a
+seed or synthesis relies on it.
 
 `Reproducible-Leakage-Safe-ML.md` was conducted ahead of its RFC cycle to inform the parked horizon seed rather than at stage 1 of an open cycle; when the v0.2.x ML-architecture RFC opens, its seed should cite this file by path per the normal convention.
 

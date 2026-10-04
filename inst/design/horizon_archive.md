@@ -338,6 +338,18 @@ It belongs to the accounting-critical-events RFC (v0.2.x), whose entry point
 the 2026-09-08 availability entry already names as
 `terminal_settlement_unsupported`.
 
+Measured at scale on 2026-10-02 (EXP-0003,
+`research/Sharadar-Long-Window-Usability-Evidence.md`):
+
+- On 30 years of S&P 500 data, no run passed 6.2% of the window.
+- A 3 x 3 sweep produced nine `INCOMPLETE` candidates, so every selection
+  tool refused.
+- Walk-forward selection, when no train candidate is `DONE`, aborts the
+  whole session instead of reporting the exclusion (LFB-023).
+
+`research/ledgr-research-findings-index.md` maps LFB-011, LFB-013,
+LFB-014, LFB-017 and LFB-023 to this entry.
+
 One part is small and separate: the silent handling on the comparison and
 selection surfaces is a disclosure defect that needs no RFC. That covers the
 default comparison set, the sweep count, the unreported walk-forward
@@ -1196,6 +1208,10 @@ unsupported economics. Inspect existing diagnostics and summary surfaces first.
 Computational completion is not a guarantee of complete event coverage, and no
 reader can certify events absent from the supplied data. This belongs with the
 equity work, not a parallel provenance or certification mechanism.
+
+Later research-side findings, including LFB-009 reconfirmed by a silent
+25-minute feature phase, are listed in
+`research/ledgr-research-findings-index.md`.
 
 The existing single-cutoff inspection and availability reconstruction entries
 below retain their specific boundaries. LFB-007 remains obsolete: explicit

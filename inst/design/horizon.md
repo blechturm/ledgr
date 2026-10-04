@@ -29,6 +29,118 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-04 [infrastructure] Long-window memory and parallel workers
+
+The post-Cut-3 long-window record makes memory efficiency a standing design
+concern, but not a v0.2.2 release blocker. Peak working set was about 1.3 GiB
+at 1,514 sessions by 600 instruments, 2.1 GiB at 3,028 by 600, 3.8 GiB at
+6,056 by 600 and 2.3 GiB at 1,514 by 2,300. EXP-0003 previously observed
+about 7 GiB at its larger research shape. The measured growth is not an
+obvious quadratic failure, and one process remains practical on a research
+workstation.
+
+The unresolved product risk is multiplication. Candidate or fold workers can
+each retain hydrated bars, availability state, feature matrices, fold state,
+DuckDB buffers and result materialization. A tolerable single-run peak can
+therefore become unacceptable when multiplied by parallel workers. Parallel
+defaults and worker-count guidance should eventually account for a memory
+budget rather than CPU count alone.
+
+Before changing representation, take a phase-level memory profile that
+separates bar hydration, availability and feature matrices, fold state,
+feature-persistence preparation, database buffers, finalization, result
+materialization and retained caches. Check that sequential candidates and
+walk-forward folds release memory, then measure representative parallel
+worker counts. Feature persistence is already a known contributor, but its
+policy remains a macro-plan WS5 decision and should not be removed merely to
+improve a memory clock.
+
+Evidence: `ledgr_v0_2_2_spec_packet/long_window_cut3_baseline.md` and the
+ledgr-research record at commit `e95a581`, directory `long-window-cut3/`.
+The bounded dead-hydration lifecycle repair is promoted to v0.2.2 Cut 5,
+Workstream 12 and LDG-2951 after a phase profile measured about 14% lower peak
+RSS without a runtime tradeoff. The broader representation, feature-policy,
+sweep, walk-forward and parallel-worker questions remain parked here. This
+entry authorizes no other implementation, memory target, worker default or
+RFC.
+
+### 2026-10-04 [research] Sweeping experiment assumptions, not only strategy parameters
+
+Parked by the maintainer while scoping the terminal-outcome RFC. Sweeps and
+walk-forward vary strategy and feature parameters. They cannot vary the
+assumptions an experiment is run under: the untradable-holding policy, the
+valuation horizon, the cost model, the corporate-action policy or the risk
+chain. A researcher who wants to see a result under write-off, a 50% haircut
+and the last permissible mark has to run the experiment once per assumption
+and compare by hand.
+
+The question is broader than adding a grid axis. Every assumption enters
+experiment and run identity, so a grid over assumptions changes what a
+candidate is. It also interacts with:
+- the business objective and selection, which should not pick the most
+  favorable assumption;
+- trial counting, where an assumption scenario is a sensitivity case, not a
+  separate trial;
+- saved-sweep compatibility.
+
+Design work is needed before any API. The terminal-outcome seed
+(`rfc/rfc_terminal_outcomes_v0_2_2_seed.md`) compares scenarios by separate
+runs and does not depend on this. This entry authorizes no implementation.
+
+### 2026-10-04 [ux] Experiment templates that carry opinionated defaults
+
+Raised by the maintainer while deciding the terminal-outcome defaults. ledgr
+must stay usable with opinionated defaults, while every default used is
+recorded, shown and changeable. Experiment templates could bundle such
+defaults into named starting points, for example a research template and a
+strict audit template, instead of each policy constructor carrying its own
+preset. The existing `ledgr_corporate_actions_research()` and
+`ledgr_corporate_actions_strict()` pair is the nearest precedent.
+
+Open questions:
+- how a template enters identity;
+- how a run discloses which template and which overrides applied;
+- how templates relate to the 2026-09-29 "Sensible defaults versus required
+  configuration" entry.
+
+The terminal-outcome seed must not block templates but does not design them.
+This entry authorizes no implementation.
+
+### 2026-10-02 [research] Research-side findings index and the EXP-0003 handoff
+
+`inst/design/research/ledgr-research-findings-index.md` lists every ledgr
+finding from the research repository that is not yet closed, and the
+ledgr entry that owns it: the LFB register, synced at a fixed private
+commit. Read it before working in an area a finding touches.
+
+The loop has two halves:
+
+- a ticket that takes a finding cites its `LFB-###`;
+- the research side then records the ticket in the finding's register
+  entry.
+
+Each new handoff re-syncs the index.
+
+The 2026-10-02 handoff is
+`inst/design/research/Sharadar-Long-Window-Usability-Evidence.md`.
+EXP-0003 exercised the public surface on 30 years of point-in-time S&P 500
+data. It found the surface mechanically sound, and long-window research
+blocked three ways:
+
+1. **Terminal stops (LFB-011).** No run passed 6.2% of the window, and
+   sweep selection and walk-forward had no completed candidates.
+2. **Gap fragility (LFB-017).** One member without a current close
+   aborted the documented rebalance pipeline.
+3. **Availability-aware feature cost (LFB-024 to LFB-026).**
+
+The performance causes are already routed by
+`dev/bench/notes/long_window_scaling_findings.md`. The behavioural findings
+LFB-017 to LFB-023 have vendor-neutral reproducers on the research side.
+Four have no ledgr home yet: LFB-018, LFB-019, LFB-020 and LFB-021 (see
+the index). Whether they need one is the maintainer's call.
+
+This entry authorizes no implementation, spike or RFC.
+
 ### 2026-10-01 [benchmark] A suite of peer workloads, not one
 
 The maintainer wants the peer benchmark to grow from one workload into a
@@ -62,6 +174,25 @@ coming from those peers.
 The release-claim rule is bound in the v0.2.2 macro plan and the RFC
 pipeline's `benchmark-methodology` row. The candidate suite design remains
 parked here.
+
+**Memory as a measured dimension (maintainer, 2026-10-04).** The suite reports
+peak memory per engine and workload row, beside time and parity. Today's
+record samples one combined process-tree peak once per second: 2,284.1 MiB at
+500 instruments × 1,260 days, Python peers included. It cannot say which engine
+used what (`dev/bench/peer_benchmark/peer_benchmark.md`). Each engine row
+therefore runs in its own process with its own peak sampler, like the
+Workstream 11 runner's per-child RSS polling. The suite should include at
+least one long-window, wide-universe shape near the EXP-0003 scale, because
+memory separates engine architectures there. Full-array vectorized engines,
+event-driven engines that keep full per-feed history, and streaming engines
+that keep only lookback windows behave differently as history grows. That
+characterization is general knowledge, not a measurement; the suite is what
+would measure it. The motivation is the next release's memory work and its
+lofty goal of 2 GB peak at the EXP-0003 shape (`ledgr_roadmap.md`,
+"Post-v0.2.2 memory optimization release";
+`dev/spikes/ctx_frame_views/churn_findings.md`). The publication rule above
+applies to memory as well: no comparative memory claim until the suite
+exists.
 
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 

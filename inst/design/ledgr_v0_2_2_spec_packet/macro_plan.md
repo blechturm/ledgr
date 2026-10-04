@@ -166,6 +166,19 @@ remain visible, and interruptions become resumable or classed failures.
 No optimizer or estimator may assemble a private history panel from scalar
 accessors.
 
+Measured input, 2026-10-04, non-binding: building a frame on demand from
+prepared matrix columns with `collapse::qDF()` or a bare data-frame
+constructor costs about 12-28 µs per 600-instrument frame and reproduces the
+prebuilt pulse views exactly
+([`dev/spikes/ctx_frame_views/probe_findings.md`](../../../dev/spikes/ctx_frame_views/probe_findings.md)).
+History-panel design may use that pattern: one prepared representation, with
+frames built on request. A follow-up attribution
+([`churn_findings.md`](../../../dev/spikes/ctx_frame_views/churn_findings.md))
+found that peak memory is the highest of the run's phases: live state plus
+the churn of preparation and the fold. History preparation adds a phase, so
+WS3 measures that phase's peak alongside its time and avoids per-instrument
+data-frame construction during preparation.
+
 Exit: a strategy can request causal multi-instrument history through one public
 surface with stable identity and missingness semantics.
 
@@ -209,7 +222,21 @@ scale.
 - Apply direct long-window optimizations that remain material after WS1 through
   WS4.
 - Capture a phase-level memory profile before changing representation solely
-  to reduce memory.
+  to reduce memory. A first R-heap attribution exists
+  ([`dev/spikes/ctx_frame_views/probe_findings.md`](../../../dev/spikes/ctx_frame_views/probe_findings.md),
+  757 pulses × 600 instruments). Peak is 634 MiB of `gc()` max used against at
+  most 379 MiB live, so about 40% of peak is preparation and fold churn.
+  Hydration alone reaches 530 MiB, the dead hydration intermediates targeted by
+  Cut 5 are the largest live block, and the precomputed `ctx` views are 6-8%.
+  [`churn_findings.md`](../../../dev/spikes/ctx_frame_views/churn_findings.md)
+  attributes the churn by phase:
+  - fold: 231 MiB above live; per-pulse asset-state normalization, diagnostic
+    JSON and context helpers;
+  - features: 189 MiB; `ledgr_strict_builtin_kind()` re-fingerprints the
+    built-ins on every instrument call;
+  - hydration: 253 MiB;
+  - run start: 314 MiB, mostly the snapshot re-hash, which stays below the fold
+    peak at this shape.
 
 Measured inputs registered on 2026-10-04:
 
@@ -266,6 +293,40 @@ model-management system.
 
 ### WS8. Residual performance pass and integrated release evidence
 
+**Early item: long-window baseline and regression suite (after Cut 3 is
+accepted).** Most WS1 and Cut 3 gains are on the availability path: strict
+built-ins, fact construction and verification, and diagnostics. The dense peer
+benchmark exercises only the fill flush, because its strategy reads
+`ctx$features_wide`, so it cannot catch availability regressions. Each
+workstream gated its own piece, but nobody has remeasured the long-window shape
+end to end. Before further optimization cuts:
+
+1. **Baseline.** Rerun the 2026-10-02 drivers in `dev/bench/long_window/` on
+   the accepted Cut 3 tree, cold and warm, at the recorded shapes, with a phase
+   profile. The record states what remains of the EXP-0003 cold run and which
+   phases now lead.
+2. **Internal regression suite.** Promote a fixed set of those synthetic
+   availability shapes (sessions, membership churn, terminals, gaps, returns
+   and SMA features) into a registered local suite:
+   - shapes that run in minutes;
+   - one large shape run only at release;
+   - paired-arm comparison against the last accepted record, flagging any
+     registered shape that is more than 10% slower.
+
+   It runs locally at each optimization-cut close and before each release, not
+   in hosted CI, whose timing is too noisy to gate on.
+3. **Structural detectors in CI.** Catch complexity regressions in CI with
+   counters rather than clocks:
+   - every accepted hot-path optimization keeps its counter detector;
+   - small scaling tests assert that counted work grows linearly.
+4. **Release-scale record.** One synthetic record at the EXP-0003 scale per
+   release, so research on vendor data confirms numbers rather than
+   discovering them.
+
+The suite is internal evidence. It is separate from the peer-workload suite,
+needs no peer parity and supports no public performance claim. Cut it as one
+chore ticket after the baseline exists.
+
 Re-profile after the architectural work. Reconsider only costs still material:
 
 - per-fill payload and JSON work. The WS1 block flush reduced measured fill
@@ -274,6 +335,14 @@ Re-profile after the architectural work. Reconsider only costs still material:
   least five percent to it, run one bounded spike comparing that path with
   direct typed pulse-column construction. Require exact ledger events, fills,
   equity and trades plus durable failure atomicity before cutting a ticket;
+- the availability pulse context. Availability runs build accessors through
+  the general per-pulse helper path, because the fast context is prepared once
+  for a fixed universe (`use_fast_context <- !availability_active`). So the
+  WS1 prepared-accessor gains do not reach them. Spike an availability-aware
+  fast context (prepared lookups plus a per-pulse decision-axis mask) only if
+  the baseline profile attributes at least five percent of an availability
+  run to context construction or accessor calls. Non-member and off-axis reads
+  must keep their current failures or `NA` results at every pulse;
 - availability fill-timing matching;
 - strategy-state serialization;
 - `db_live` writes;
@@ -310,7 +379,10 @@ Tickets should be cut in dependency waves rather than all at once:
 
 0. Governance foundation: WS0. It may run alongside WS1 but finishes before
    the terminal, history, indicator and verification RFC cycles open.
-1. Direct performance foundation: WS1.
+1. Direct performance foundation: WS1, then the bounded WS5 exact-verification
+   cut (Cut 3). Once Cut 3 is accepted, take the early WS8 long-window baseline
+   and cut its regression-suite chore, so later optimization and design cuts
+   start from a current availability-path measurement.
 2. Product and cost-policy decisions: WS2, plus the WS5 verification and
    persistence decisions. Their implementations need accepted authorities.
 3. History and indicators: WS3 and WS4 in one design wave, sharing the
@@ -339,6 +411,13 @@ The following do not gate v0.2.2:
 - compiled execution becoming authoritative or the default;
 - broad compiled-path expansion;
 - rewriting or deleting historical RFCs, reviews and closeouts;
+- retiring the precomputed `ctx` frame views in favour of explicit frame
+  helpers. The maintainer scheduled this for the next release on 2026-10-04
+  ([RFC pipeline](../rfc/README.md#ctx-frame-retirement));
+- the broader memory optimization pass: per-phase memory gates, per-pulse fold
+  churn, a memory budget and feature-cache lifetime. It is scheduled as the
+  next release's memory release (roadmap, "Post-v0.2.2 memory optimization
+  release"). v0.2.2 keeps Cut 5 and the WS5 feature-persistence decision;
 - plotting, print and CI polish unrelated to a release claim; and
 - broad optimization cleanup without a measured product-path cost.
 
