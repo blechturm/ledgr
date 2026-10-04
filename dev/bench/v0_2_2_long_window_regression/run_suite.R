@@ -79,15 +79,22 @@ run_child <- function(kind, shape_id, arm, pair, attempt, repo, child_args) {
   }
   status <- process$get_exit_status()
   elapsed <- as.numeric(difftime(Sys.time(), started, units = "secs"))
+  read_log <- function(path) {
+    lines <- sub("[ \t]+$", "", readLines(path, warn = FALSE))
+    paste(lines, collapse = "\n")
+  }
+  stdout_text <- read_log(stdout)
+  stderr_text <- read_log(stderr)
+  unlink(c(stdout, stderr))
   append_process(data.frame(
     kind = kind, shape_id = shape_id, arm = arm, pair = pair,
     attempt = attempt, repo_commit = git_commit(repo), exit_status = status,
     elapsed_s = elapsed, peak_rss_bytes = peak_rss,
-    stdout = basename(stdout), stderr = basename(stderr),
+    stdout_text = stdout_text, stderr_text = stderr_text,
     stringsAsFactors = FALSE
   ))
   if (!identical(status, 0L)) {
-    stop("Child failed: ", shape_id, " ", arm, "; see ", stderr)
+    stop("Child failed: ", shape_id, " ", arm, "; ", stderr_text)
   }
   invisible(stdout)
 }

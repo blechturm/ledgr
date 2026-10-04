@@ -7,6 +7,20 @@ measurements <- utils::read.csv(
 processes <- utils::read.csv(
   file.path(record, "processes.csv"), stringsAsFactors = FALSE
 )
+if (all(c("stdout", "stderr") %in% names(processes))) {
+  read_log <- function(name) {
+    path <- file.path(record, "raw", name)
+    lines <- sub("[ \t]+$", "", readLines(path, warn = FALSE))
+    paste(lines, collapse = "\n")
+  }
+  processes$stdout_text <- vapply(processes$stdout, read_log, character(1L))
+  processes$stderr_text <- vapply(processes$stderr, read_log, character(1L))
+  unlink(file.path(record, "raw", c(processes$stdout, processes$stderr)))
+  processes$stdout <- NULL
+  processes$stderr <- NULL
+  utils::write.csv(processes, file.path(record, "processes.csv"),
+                   row.names = FALSE)
+}
 
 initial <- measurements[measurements$attempt == "initial", , drop = FALSE]
 summary <- do.call(rbind, lapply(unique(initial$shape_id), function(shape) {
@@ -34,16 +48,6 @@ summary$peak_rss_bytes <- vapply(summary$shape_id, function(shape) {
   max(processes$peak_rss_bytes[processes$shape_id == shape])
 }, numeric(1L))
 utils::write.csv(summary, file.path(record, "summary.csv"), row.names = FALSE)
-
-# Process logs are evidence text, but toolchains may append terminal spaces to
-# diagnostic lines. Preserve every line while making the checked-in record
-# pass the repository whitespace contract.
-logs <- list.files(file.path(record, "raw"), pattern = "[.](stdout|stderr)$",
-                   full.names = TRUE)
-for (log in logs) {
-  lines <- readLines(log, warn = FALSE)
-  writeLines(sub("[ \t]+$", "", lines), log, useBytes = TRUE)
-}
 
 normalized_hash <- function(path) {
   bytes <- readBin(path, "raw", n = file.info(path)$size)

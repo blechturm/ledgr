@@ -1,36 +1,84 @@
-"kind","shape_id","arm","pair","attempt","repo_commit","exit_status","elapsed_s","peak_rss_bytes","stdout","stderr"
-"fixture","feature_gaps","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,4.10883903503418,397492224,"fixture_feature_gaps_candidate_00_initial.stdout","fixture_feature_gaps_candidate_00_initial.stderr"
-"fixture","fact_churn_terminal","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,18.4621779918671,575111168,"fixture_fact_churn_terminal_candidate_00_initial.stdout","fixture_fact_churn_terminal_candidate_00_initial.stderr"
-"fixture","availability_sweep","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,3.51499700546265,393687040,"fixture_availability_sweep_candidate_00_initial.stdout","fixture_availability_sweep_candidate_00_initial.stderr"
-"fixture","baseline_757","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,12.2805349826813,643145728,"fixture_baseline_757_candidate_00_initial.stdout","fixture_baseline_757_candidate_00_initial.stderr"
-"case","feature_gaps","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,13.8264229297638,686043136,"case_feature_gaps_accepted_01_initial.stdout","case_feature_gaps_accepted_01_initial.stderr"
-"case","feature_gaps","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.1637160778046,668753920,"case_feature_gaps_candidate_01_initial.stdout","case_feature_gaps_candidate_01_initial.stderr"
-"case","feature_gaps","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.8304741382599,663252992,"case_feature_gaps_candidate_02_initial.stdout","case_feature_gaps_candidate_02_initial.stderr"
-"case","feature_gaps","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.9291281700134,668307456,"case_feature_gaps_accepted_02_initial.stdout","case_feature_gaps_accepted_02_initial.stderr"
-"case","feature_gaps","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.0437049865723,673583104,"case_feature_gaps_accepted_03_initial.stdout","case_feature_gaps_accepted_03_initial.stderr"
-"case","feature_gaps","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.1261548995972,689979392,"case_feature_gaps_candidate_03_initial.stdout","case_feature_gaps_candidate_03_initial.stderr"
-"case","feature_gaps","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.2602548599243,655937536,"case_feature_gaps_candidate_04_initial.stdout","case_feature_gaps_candidate_04_initial.stderr"
-"case","feature_gaps","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.1211400032043,699740160,"case_feature_gaps_accepted_04_initial.stdout","case_feature_gaps_accepted_04_initial.stderr"
-"case","feature_gaps","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.1390600204468,703455232,"case_feature_gaps_accepted_05_initial.stdout","case_feature_gaps_accepted_05_initial.stderr"
-"case","feature_gaps","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.292711019516,699019264,"case_feature_gaps_candidate_05_initial.stdout","case_feature_gaps_candidate_05_initial.stderr"
-"case","fact_churn_terminal","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.7691380977631,767660032,"case_fact_churn_terminal_accepted_01_initial.stdout","case_fact_churn_terminal_accepted_01_initial.stderr"
-"case","fact_churn_terminal","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.661612033844,768184320,"case_fact_churn_terminal_candidate_01_initial.stdout","case_fact_churn_terminal_candidate_01_initial.stderr"
-"case","fact_churn_terminal","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.4019410610199,774217728,"case_fact_churn_terminal_candidate_02_initial.stdout","case_fact_churn_terminal_candidate_02_initial.stderr"
-"case","fact_churn_terminal","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.5713648796082,767029248,"case_fact_churn_terminal_accepted_02_initial.stdout","case_fact_churn_terminal_accepted_02_initial.stderr"
-"case","fact_churn_terminal","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.4944489002228,732971008,"case_fact_churn_terminal_accepted_03_initial.stdout","case_fact_churn_terminal_accepted_03_initial.stderr"
-"case","fact_churn_terminal","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.3386311531067,774721536,"case_fact_churn_terminal_candidate_03_initial.stdout","case_fact_churn_terminal_candidate_03_initial.stderr"
-"case","fact_churn_terminal","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.2549948692322,774373376,"case_fact_churn_terminal_candidate_04_initial.stdout","case_fact_churn_terminal_candidate_04_initial.stderr"
-"case","fact_churn_terminal","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.4422519207001,771489792,"case_fact_churn_terminal_accepted_04_initial.stdout","case_fact_churn_terminal_accepted_04_initial.stderr"
-"case","fact_churn_terminal","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.3984000682831,777592832,"case_fact_churn_terminal_accepted_05_initial.stdout","case_fact_churn_terminal_accepted_05_initial.stderr"
-"case","fact_churn_terminal","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.201740026474,775049216,"case_fact_churn_terminal_candidate_05_initial.stdout","case_fact_churn_terminal_candidate_05_initial.stderr"
-"case","availability_sweep","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.6866497993469,596090880,"case_availability_sweep_accepted_01_initial.stdout","case_availability_sweep_accepted_01_initial.stderr"
-"case","availability_sweep","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7741191387177,608088064,"case_availability_sweep_candidate_01_initial.stdout","case_availability_sweep_candidate_01_initial.stderr"
-"case","availability_sweep","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7357621192932,604770304,"case_availability_sweep_candidate_02_initial.stdout","case_availability_sweep_candidate_02_initial.stderr"
-"case","availability_sweep","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.790452003479,593543168,"case_availability_sweep_accepted_02_initial.stdout","case_availability_sweep_accepted_02_initial.stderr"
-"case","availability_sweep","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7252068519592,587710464,"case_availability_sweep_accepted_03_initial.stdout","case_availability_sweep_accepted_03_initial.stderr"
-"case","availability_sweep","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.6025738716125,596914176,"case_availability_sweep_candidate_03_initial.stdout","case_availability_sweep_candidate_03_initial.stderr"
-"case","availability_sweep","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7049331665039,605822976,"case_availability_sweep_candidate_04_initial.stdout","case_availability_sweep_candidate_04_initial.stderr"
-"case","availability_sweep","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7637829780579,586350592,"case_availability_sweep_accepted_04_initial.stdout","case_availability_sweep_accepted_04_initial.stderr"
-"case","availability_sweep","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7833960056305,594186240,"case_availability_sweep_accepted_05_initial.stdout","case_availability_sweep_accepted_05_initial.stderr"
-"case","availability_sweep","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.6495199203491,605716480,"case_availability_sweep_candidate_05_initial.stdout","case_availability_sweep_candidate_05_initial.stderr"
-"orientation","baseline_757","accepted",1,"orientation","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,35.2250521183014,1180180480,"orientation_baseline_757_accepted_01_orientation.stdout","orientation_baseline_757_accepted_01_orientation.stderr"
+"kind","shape_id","arm","pair","attempt","repo_commit","exit_status","elapsed_s","peak_rss_bytes","stdout_text","stderr_text"
+"fixture","feature_gaps","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,4.10883903503418,397492224,"FIXTURE_OK feature_gaps 90837 bars",""
+"fixture","fact_churn_terminal","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,18.4621779918671,575111168,"FIXTURE_OK fact_churn_terminal 189250 bars",""
+"fixture","availability_sweep","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,3.51499700546265,393687040,"FIXTURE_OK availability_sweep 60000 bars",""
+"fixture","baseline_757","candidate",0,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,12.2805349826813,643145728,"FIXTURE_OK baseline_757 454200 bars",""
+"case","feature_gaps","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,13.8264229297638,686043136,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.1637160778046,668753920,"",""
+"case","feature_gaps","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.8304741382599,663252992,"",""
+"case","feature_gaps","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.9291281700134,668307456,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.0437049865723,673583104,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.1261548995972,689979392,"",""
+"case","feature_gaps","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.2602548599243,655937536,"",""
+"case","feature_gaps","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.1211400032043,699740160,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,14.1390600204468,703455232,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,14.292711019516,699019264,"",""
+"case","fact_churn_terminal","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.7691380977631,767660032,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.661612033844,768184320,"",""
+"case","fact_churn_terminal","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.4019410610199,774217728,"",""
+"case","fact_churn_terminal","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.5713648796082,767029248,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.4944489002228,732971008,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.3386311531067,774721536,"",""
+"case","fact_churn_terminal","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.2549948692322,774373376,"",""
+"case","fact_churn_terminal","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.4422519207001,771489792,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,19.3984000682831,777592832,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,19.201740026474,775049216,"",""
+"case","availability_sweep","accepted",1,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.6866497993469,596090880,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",1,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7741191387177,608088064,"",""
+"case","availability_sweep","candidate",2,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7357621192932,604770304,"",""
+"case","availability_sweep","accepted",2,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.790452003479,593543168,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",3,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7252068519592,587710464,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",3,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.6025738716125,596914176,"",""
+"case","availability_sweep","candidate",4,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.7049331665039,605822976,"",""
+"case","availability_sweep","accepted",4,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7637829780579,586350592,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",5,"initial","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,11.7833960056305,594186240,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",5,"initial","6220683f15af3c8bd85da2791e43314be10495e0",0,11.6495199203491,605716480,"",""
+"orientation","baseline_757","accepted",1,"orientation","d08c8f42900ab1ad03e2786ecd38611e313d2451",0,35.2250521183014,1180180480,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
