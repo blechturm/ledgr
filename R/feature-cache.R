@@ -44,6 +44,31 @@ ledgr_feature_engine_version <- function(availability_active = FALSE) {
         include_captures = FALSE,
         label = "`ledgr_compute_feature_series_strict()`"
       ),
+      scalar_reference = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict_scalar,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict_scalar()`"
+      ),
+      builtin_kind = ledgr_function_fingerprint(
+        ledgr_strict_builtin_kind,
+        include_captures = FALSE,
+        label = "`ledgr_strict_builtin_kind()`"
+      ),
+      completeness = ledgr_function_fingerprint(
+        ledgr_strict_complete_window_mask,
+        include_captures = FALSE,
+        label = "`ledgr_strict_complete_window_mask()`"
+      ),
+      strict_sma = ledgr_function_fingerprint(
+        ledgr_strict_sma_series,
+        include_captures = FALSE,
+        label = "`ledgr_strict_sma_series()`"
+      ),
+      builtin_compute = ledgr_function_fingerprint(
+        ledgr_compute_feature_series_strict_builtin,
+        include_captures = FALSE,
+        label = "`ledgr_compute_feature_series_strict_builtin()`"
+      ),
       fingerprint = ledgr_function_fingerprint(
         ledgr_active_feature_fingerprint,
         include_captures = FALSE,

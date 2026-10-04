@@ -288,7 +288,7 @@ ledgr_compute_feature_series <- function(bars_df, feature_def) {
   out
 }
 
-ledgr_compute_feature_series_strict <- function(bars_df, feature_def) {
+ledgr_compute_feature_series_strict_scalar <- function(bars_df, feature_def) {
   ledgr_validate_feature_def(feature_def)
   if (!identical(feature_def$gap_contract, "strict_window")) {
     rlang::abort(
@@ -346,6 +346,119 @@ ledgr_compute_feature_series_strict <- function(bars_df, feature_def) {
     out[[i]] <- scalar
   }
   out
+}
+
+ledgr_strict_builtin_kind <- function(feature_def) {
+  params <- feature_def$params
+  width <- if (is.list(params)) params$n else NULL
+  if (!is.numeric(width) || length(width) != 1L || is.na(width) ||
+      !is.finite(width) || width < 1 || width %% 1 != 0) {
+    return(NULL)
+  }
+  width <- as.integer(width)
+  fingerprint <- ledgr_feature_def_fingerprint(feature_def)
+  sma <- ledgr_precompute_feature_def_from_indicator(ledgr_ind_sma(width))
+  sma_fingerprints <- c(
+    ledgr_feature_def_fingerprint(sma),
+    ledgr_active_feature_fingerprint(sma)
+  )
+  if (fingerprint %in% sma_fingerprints) {
+    return("sma")
+  }
+  returns <- ledgr_precompute_feature_def_from_indicator(
+    ledgr_ind_returns(width)
+  )
+  returns_fingerprints <- c(
+    ledgr_feature_def_fingerprint(returns),
+    ledgr_active_feature_fingerprint(returns)
+  )
+  if (fingerprint %in% returns_fingerprints) {
+    return("returns")
+  }
+  NULL
+}
+
+ledgr_strict_complete_window_mask <- function(bars_df, width) {
+  columns <- intersect(c("open", "high", "low", "close"), names(bars_df))
+  values <- do.call(cbind, lapply(bars_df[columns], function(x) {
+    suppressWarnings(as.numeric(x))
+  }))
+  if (is.null(dim(values))) values <- matrix(values, ncol = 1L)
+  complete <- stats::complete.cases(values) &
+    rowSums(is.finite(values)) == ncol(values)
+  cumulative <- cumsum(!complete)
+  previous <- c(rep(0, width), cumulative)[seq_along(cumulative)]
+  seq_along(cumulative) >= width & cumulative - previous == 0
+}
+
+ledgr_strict_sma_series <- function(values, width) {
+  values <- as.numeric(values)
+  width <- as.integer(width)
+  out <- rep(NA_real_, length(values))
+  if (length(values) < width) return(out)
+  out[seq.int(width, length(values))] <- rowMeans(embed(values, width))
+  out
+}
+
+ledgr_compute_feature_series_strict_builtin <- function(bars_df,
+                                                        feature_def,
+                                                        kind) {
+  n <- nrow(bars_df)
+  width <- as.integer(feature_def$stable_after)
+  if (n < width) return(rep(NA_real_, n))
+  value <- if (identical(kind, "sma")) {
+    ledgr_strict_sma_series(bars_df$close, width)
+  } else {
+    ledgr_call_feature_series_fn(
+      feature_def$series_fn,
+      bars_df,
+      feature_def$params %||% list()
+    )
+  }
+  if (!is.numeric(value) || !is.atomic(value) || !is.null(dim(value))) {
+    rlang::abort(
+      sprintf(
+        "Feature %s returned a non-numeric or non-vector series.",
+        feature_def$id
+      ),
+      class = "ledgr_invalid_feature_output"
+    )
+  }
+  if (length(value) != n) {
+    rlang::abort(
+      sprintf(
+        "Feature %s returned %d values; expected %d.",
+        feature_def$id,
+        length(value),
+        n
+      ),
+      class = "ledgr_invalid_feature_output"
+    )
+  }
+  value <- as.numeric(value)
+  complete <- ledgr_strict_complete_window_mask(bars_df, width)
+  if (any(is.nan(value[complete])) || any(is.infinite(value[complete]))) {
+    rlang::abort(
+      sprintf("Feature %s returned a non-finite value.", feature_def$id),
+      class = "ledgr_invalid_feature_output"
+    )
+  }
+  value[!complete] <- NA_real_
+  value
+}
+
+ledgr_compute_feature_series_strict <- function(bars_df, feature_def) {
+  ledgr_validate_feature_def(feature_def)
+  if (!identical(feature_def$gap_contract, "strict_window") ||
+      !is.data.frame(bars_df) ||
+      !all(c("ts_utc", "close") %in% names(bars_df))) {
+    return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
+  }
+  kind <- ledgr_strict_builtin_kind(feature_def)
+  if (is.null(kind)) {
+    return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
+  }
+  ledgr_compute_feature_series_strict_builtin(bars_df, feature_def, kind)
 }
 
 ledgr_compute_feature_latest <- function(bars_df, feature_def) {
