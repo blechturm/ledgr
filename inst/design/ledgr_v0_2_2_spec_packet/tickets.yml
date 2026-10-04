@@ -97,7 +97,7 @@ workstreams:
   - id: 8
     name: "Built-in strict-feature acceleration"
     cut: 2
-    status: "pending"
+    status: "review_pending"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 8", reason: "One claim joins LDG-2941 and LDG-2942: only ledgr's bounded strict SMA and returns definitions use one vector series calculation plus an exact completeness mask, with values, NA masks, warmup and errors identical to the retained scalar reference. The review independently tests dense histories, isolated gaps, consecutive gaps, mid-history entrants and short histories, runs the mutation and series-call counter, checks the registered clock, and confirms custom, external and TTR indicators still use their old paths."}
@@ -302,13 +302,13 @@ tickets:
   - id: "LDG-2942"
     title: "Close built-in strict-feature evidence"
     workstream: 8
-    status: "pending"
+    status: "review_pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2941"]
     scope: "Write the Workstream 8 closeout with the full parity matrix, call-count mutation, public clocks, exclusion proof and seven-shape walk, then request one Type 1 close review."
     acceptance: ["the closeout reports scalar-reference and vector-path clocks separately and labels the registered fixture", "every supported history shape and every excluded indicator family has named evidence", "the record states that exact values and NA masks passed and does not convert this internal optimization into a new indicator semantic claim", "tickets LDG-2941 through LDG-2942 and Workstream 8 status reconcile before review"]
-    evidence: []
+    evidence: ["strict_feature_acceleration_closeout.md reconciles the source-fork public gate, internal construction clocks, exact history-shape matrix, excluded-family dispatch counter, provenance pins, three failure probes and seven-shape walk. The committed-tree ordinary fast profile executed 503 of 503 blocks in 87.610 seconds with zero failures or skips and passed the 112-second gate; its record is C:/Users/maxth/ledgr-research/ws8-fast-9bde734.", "Two in-process harness attempts were discarded: one failed at environment metadata after writing provisional rows, and the next was invalidated when a counter proved that its namespace candidate had not executed publicly. Only the alternating fresh-process source-fork record under ws8_strict_feature_evidence/ supports the performance claim. The requested Type 1 close review is Cut 2 invocation six over eleven tickets, 0.545, recorded as a historical review-gate breach rather than hidden by padding."]
   - id: "LDG-2943"
     title: "Vectorize declared-session construction"
     workstream: 9

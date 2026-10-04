@@ -84,7 +84,8 @@ is ready.
 **Status:** Independent review returned `PASS_AFTER_PATCHES`; its bounded
 ticket corrections are incorporated. The maintainer accepted Cut 2 on
 2026-10-03. Workstream 6 was accepted on 2026-10-03 and Workstream 7 on
-2026-10-04; Workstreams 8-9 remain pending.
+2026-10-04. Workstream 8 is review pending after both candidates passed their
+independent gates; Workstream 9 remains pending.
 
 Authority: macro-plan WS1 for all mechanisms; the maintained roadmap's opening
 optimization row additionally authorizes the writer and accessor tickets but
@@ -98,6 +99,12 @@ internal-optimization proof template.
 | 7 Feature-accessor scaling | LDG-2938-2940 | prepared scalar lookups; validate-once and exact run-local last-map memo; closeout | repeated accessor work disappears without changing values, errors, validation, workers or isolation |
 | 8 Built-in strict-feature acceleration | LDG-2941-2942 | vector path for ledgr SMA and returns only; closeout | values and NA masks remain exact while one series call replaces window-by-window recomputation |
 | 9 Availability fact scaling | LDG-2943-2945 | vector session construction; linear membership resolution; closeout | exact fact rows, evidence, errors, ordering and snapshot identity survive the scaling repair |
+
+Workstream 8 implementation is `9bde734`; its agent-provisional record is
+`strict_feature_acceleration_closeout.md`. The registered 50-instrument by
+500-pulse source-fork gate measured 32.9-42.3% cold-run savings and exact
+public outputs. Its required close review is Cut 2 invocation 6/11 = 0.545,
+recorded as a historical review-gate breach.
 
 The four workstreams are independent after cut acceptance. Each candidate
 starts with a current-tree baseline, semantic oracle, failure-sensitive
