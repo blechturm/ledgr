@@ -927,6 +927,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     }
 
     raw_bars_by_id <- split(bars_all, as.character(bars_all$instrument_id))
+    bars_all <- NULL
     bars_by_id <- list()
     for (instrument_id in instrument_ids) {
       b <- raw_bars_by_id[[instrument_id]]
@@ -962,6 +963,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       }
       bars_by_id[[instrument_id]] <- b
     }
+    raw_bars_by_id <- NULL
     bars_cols_by_id <- lapply(
       bars_by_id,
       function(b) {
@@ -1000,6 +1002,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       bars_mat$gap_type[j, ] <- as.character(cols[[bar_col_map$gap_type]])
       bars_mat$is_synthetic[j, ] <- as.logical(cols[[bar_col_map$is_synthetic]])
     }
+    bars_cols_by_id <- NULL
     static_bars_views <- ledgr_bars_pulse_views(
       bars_mat = bars_mat,
       instrument_ids = instrument_ids,
@@ -1044,6 +1047,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       }
       run_feature_series[[def$id]] <- per_inst
     }
+    bars_by_id <- NULL
     def_ids <- vapply(feature_defs, function(d) d$id, character(1))
     n_inst <- length(instrument_ids)
     n_def <- length(def_ids)
@@ -1057,6 +1061,9 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       run_feature_matrix[[d]] <- mat
     }
     names(run_feature_matrix) <- def_ids
+    run_feature_series <- NULL
+  } else {
+    bars_by_id <- NULL
   }
   runtime_projection <- ledgr_projection_from_feature_matrix(
     feature_matrix = run_feature_matrix %||% list(),
@@ -1065,6 +1072,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     feature_engine_version = feature_engine_version,
     alias_index = NULL
   )
+  run_feature_matrix <- NULL
   telemetry$t_pre <- ledgr_time_elapsed(preflight_start, ledgr_time_now())
 
   if (isTRUE(terminal_recovery)) {
@@ -1154,7 +1162,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     telemetry_stride = telemetry_stride,
     state = state_env$current,
     state_prev = state_prev_mem,
-    bars_by_id = bars_by_id,
+    bars_by_id = list(),
     bars_mat = bars_mat,
     static_bars_views = static_bars_views,
     static_feature_views = NULL,

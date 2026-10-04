@@ -420,6 +420,19 @@ ledgr_run_equity_prefix_commit <- function(con,
   })
 }
 
+ledgr_run_finalize_events <- function(con, run_id) {
+  DBI::dbGetQuery(
+    con,
+    "
+    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
+    FROM ledger_events
+    WHERE run_id = ?
+    ORDER BY event_seq
+    ",
+    params = list(run_id)
+  )
+}
+
 ledgr_run_finalize <- function(con,
                                output_handler,
                                run,
@@ -444,17 +457,6 @@ ledgr_run_finalize <- function(con,
 
   finalization_error <- tryCatch({
     post_start <- ledgr_time_now()
-    events_df <- DBI::dbGetQuery(
-      con,
-      "
-      SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
-      FROM ledger_events
-      WHERE run_id = ?
-      ORDER BY event_seq
-      ",
-      params = list(run_id)
-    )
-
     pulses_posix <- if (use_fold_equity) {
       as.POSIXct(vapply(fold_equity, function(x) as.numeric(x$ts_utc), numeric(1)), origin = "1970-01-01", tz = "UTC")
     } else {
@@ -521,6 +523,7 @@ ledgr_run_finalize <- function(con,
         stringsAsFactors = FALSE
       )
     } else {
+      events_df <- ledgr_run_finalize_events(con, run_id)
       prepared <- ledgr_prepare_accounting_events(events_df, instrument_ids)
       replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
       eq_df <- ledgr_accounting_equity_from_replay(
@@ -537,10 +540,17 @@ ledgr_run_finalize <- function(con,
       n_def <- length(def_ids)
       n_p <- length(pulses_posix)
       if (n_p > 0 && n_def > 0) {
-        persisted_projection <- ledgr_projection_slice(
-          runtime_projection,
-          pulses_posix
-        )
+        full_projection <- length(pulses_posix) ==
+          length(runtime_projection$pulses_posix) &&
+          identical(
+            as.numeric(pulses_posix),
+            as.numeric(runtime_projection$pulses_posix)
+          )
+        persisted_projection <- if (full_projection) {
+          runtime_projection
+        } else {
+          ledgr_projection_slice(runtime_projection, pulses_posix)
+        }
         DBI::dbWithTransaction(con, {
           DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ?", params = list(run_id))
           for (j in seq_along(instrument_ids)) {
