@@ -565,9 +565,14 @@ ledgr_precompute_payload <- function(unique_defs, bars_by_id, availability_activ
   out <- list()
   for (fingerprint in names(unique_defs)) {
     def <- unique_defs[[fingerprint]]
+    strict_kind <- if (isTRUE(availability_active)) {
+      ledgr_strict_builtin_kind(def)
+    } else {
+      NULL
+    }
     values <- lapply(bars_by_id, function(bars) {
       if (isTRUE(availability_active)) {
-        ledgr_compute_feature_series_strict(bars, def)
+        ledgr_compute_feature_series_strict(bars, def, kind = strict_kind)
       } else {
         ledgr_compute_feature_series(bars, def)
       }

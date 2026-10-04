@@ -181,7 +181,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   )
   testthat::expect_identical(
     ledgr:::ledgr_feature_engine_version(TRUE),
-    "90e2932cc2794212119b60d7be4abd5ea7fd4ead28119adbc278247f2bad267e"
+    "6bd61d705a94f2cd955b5eab2a526f65e36419393de0baef4d95c64718658a76"
   )
   source <- paste(deparse(body(ledgr:::ledgr_feature_engine_version)), collapse = "\n")
   helpers <- c(

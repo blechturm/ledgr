@@ -1017,6 +1017,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     for (def_idx in seq_along(feature_defs)) {
       def <- feature_defs[[def_idx]]
       feature_fingerprint <- feature_fingerprints[[def_idx]]
+      strict_kind <- if (availability_active) {
+        ledgr_strict_builtin_kind(def)
+      } else {
+        NULL
+      }
       per_inst <- list()
       for (instrument_id in instrument_ids) {
         b <- bars_by_id[[instrument_id]]
@@ -1031,7 +1036,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         values <- ledgr_feature_cache_get(cache_key, expected_len = nrow(b))
         if (is.null(values)) {
           values <- if (availability_active) {
-            ledgr_compute_feature_series_strict(b, def)
+            ledgr_compute_feature_series_strict(b, def, kind = strict_kind)
           } else {
             ledgr_compute_feature_series(b, def)
           }

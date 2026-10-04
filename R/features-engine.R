@@ -454,14 +454,17 @@ ledgr_compute_feature_series_strict_builtin <- function(bars_df,
   value
 }
 
-ledgr_compute_feature_series_strict <- function(bars_df, feature_def) {
+ledgr_compute_feature_series_strict <- function(
+  bars_df,
+  feature_def,
+  kind = ledgr_strict_builtin_kind(feature_def)
+) {
   ledgr_validate_feature_def(feature_def)
   if (!identical(feature_def$gap_contract, "strict_window") ||
       !is.data.frame(bars_df) ||
       !all(c("ts_utc", "close") %in% names(bars_df))) {
     return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
   }
-  kind <- ledgr_strict_builtin_kind(feature_def)
   if (is.null(kind)) {
     return(ledgr_compute_feature_series_strict_scalar(bars_df, feature_def))
   }
