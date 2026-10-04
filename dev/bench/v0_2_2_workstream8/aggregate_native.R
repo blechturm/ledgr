@@ -1,5 +1,11 @@
 args <- commandArgs(trailingOnly = TRUE)
 root <- normalizePath(args[[1L]], winslash = "/")
+baseline_commit <- if (length(args) >= 2L) args[[2L]] else {
+  "dcb31309c8b95dfd33d3ede5712105d2421bb5fb"
+}
+candidate_commit <- if (length(args) >= 3L) args[[3L]] else {
+  "detached source fork of dcb3130; exact LDG-2941 candidate"
+}
 
 timing <- list()
 parity <- list()
@@ -94,15 +100,15 @@ utils::write.csv(micro, file.path(root, "internal.csv"), row.names = FALSE)
 utils::write.csv(gates, file.path(root, "gates.csv"), row.names = FALSE)
 utils::write.csv(data.frame(
   key = c(
-    "r_version", "collapse", "duckdb", "baseline_commit", "candidate_tree",
+    "r_version", "collapse", "duckdb", "baseline_commit", "candidate_commit",
     "instruments", "pulses", "internal_gate", "public_run_gate"
   ),
   value = c(
     R.version.string,
     as.character(utils::packageVersion("collapse")),
     as.character(utils::packageVersion("duckdb")),
-    "dcb31309c8b95dfd33d3ede5712105d2421bb5fb",
-    "detached source fork of dcb3130; exact LDG-2941 candidate",
+    baseline_commit,
+    candidate_commit,
     "50", "500", "10x", "5%"
   )
 ), file.path(root, "environment.csv"), row.names = FALSE)

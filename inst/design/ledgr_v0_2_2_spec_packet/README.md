@@ -97,14 +97,16 @@ internal-optimization proof template.
 | --- | --- | --- | --- |
 | 6 Writer scaling | LDG-2935-2937 | per-pulse fill flush; conditional constant-time diagnostic sequence; closeout | scale-growing writer work is removed with exact outputs, ordering, resume and existing failure behavior |
 | 7 Feature-accessor scaling | LDG-2938-2940 | prepared scalar lookups; validate-once and exact run-local last-map memo; closeout | repeated accessor work disappears without changing values, errors, validation, workers or isolation |
-| 8 Built-in strict-feature acceleration | LDG-2941-2942 | vector path for ledgr SMA and returns only; closeout | values and NA masks remain exact while one series call replaces window-by-window recomputation |
+| 8 Built-in strict-feature acceleration | LDG-2941-2942 | accelerated path for ledgr SMA and returns only; closeout | values and NA masks remain exact while repeated frame, validation and dispatch work is removed |
 | 9 Availability fact scaling | LDG-2943-2945 | vector session construction; linear membership resolution; closeout | exact fact rows, evidence, errors, ordering and snapshot identity survive the scaling repair |
 
-Workstream 8 implementation is `9bde734`; its agent-provisional record is
-`strict_feature_acceleration_closeout.md`. The registered 50-instrument by
-500-pulse source-fork gate measured 32.9-42.3% cold-run savings and exact
-public outputs. Its required close review is Cut 2 invocation 6/11 = 0.545,
-recorded as a historical review-gate breach.
+Workstream 8 implementation is `9bde734` plus the exact-SMA correction
+`11bd294`; its agent-provisional record is
+`strict_feature_acceleration_closeout.md`. The corrected reproducible
+50-instrument by 500-pulse gate measured 34.7-40.7% cold-run savings and exact
+public outputs. The first close review disproved the original
+`rowMeans(embed())` identity claim. Its focused correction review is Cut 2
+invocation 7/11 = 0.636, recorded as a historical review-gate breach.
 
 The four workstreams are independent after cut acceptance. Each candidate
 starts with a current-tree baseline, semantic oracle, failure-sensitive

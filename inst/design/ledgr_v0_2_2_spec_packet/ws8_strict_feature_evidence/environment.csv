@@ -3,7 +3,7 @@
 "collapse","2.1.8"
 "duckdb","1.5.6.9000"
 "baseline_commit","dcb31309c8b95dfd33d3ede5712105d2421bb5fb"
-"candidate_tree","detached source fork of dcb3130; exact LDG-2941 candidate"
+"candidate_commit","11bd294906e4a00c0740198c6f532d3096980d49"
 "instruments","50"
 "pulses","500"
 "internal_gate","10x"
