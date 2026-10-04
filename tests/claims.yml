@@ -1601,7 +1601,7 @@ claims:
     protected_contract_or_defect: "Vectorized session construction preserves exact UTC instants, nonexistent and ambiguous counts, rows and fact identity without one scalar resolution per civil timestamp."
     oracle_independence: "The expected values are produced by the retained pre-cut scalar resolver one label at a time; the structural counter wraps that resolver independently of the vector helper."
     smallest_failing_change: "Restore scalar per-label resolution, alter an offset sign, or collapse an ambiguous or nonexistent wall time into one instant."
-    cheapest_adequate_lane: "One 370-day family and six adversarial labels; fast, because Linux CI runs the same block and no snapshot is needed to prove canonical family identity."
+    cheapest_adequate_lane: "One 20-date family spanning leap day and spring DST plus six adversarial labels; fast, because the 10,473-date benchmark carries long-horizon parity and Linux CI runs the same semantic block."
     overlapping_evidence: "The existing DST tests pin the public errors for one ambiguous and one nonexistent time but do not compare all resolved rows or detect scalar iteration."
   - id: "LCL-0146"
     source: "Cut 2 LDG-2944"

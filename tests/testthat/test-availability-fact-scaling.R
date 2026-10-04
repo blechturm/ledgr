@@ -1,4 +1,4 @@
-workstream9_sessions <- function(from = as.Date("2023-03-10"), days = 370L) {
+workstream9_sessions <- function(from = as.Date("2024-02-25"), days = 20L) {
   dates <- from + seq_len(days) - 1L
   open <- as.POSIXlt(dates)$wday %in% 1:5
   data.frame(
