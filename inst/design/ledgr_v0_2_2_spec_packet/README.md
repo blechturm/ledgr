@@ -147,8 +147,9 @@ fails its gate.
 **Status:** Active after maintainer acceptance on 2026-10-04. LDG-2946 has
 committed the pre-change exact-byte, identity, reopen and corruption oracles.
 LDG-2947's internal, public and calibrated low-repetition gates all pass, so
-LDG-2948 may implement the bounded candidate. Independent spike review passed
-the fact-integrity result and invalidated the DuckDB membership result.
+LDG-2948 implemented and reverified the bounded candidate at all three gates.
+LDG-2949 now owns the closeout. Independent spike review passed the
+fact-integrity result and invalidated the DuckDB membership result.
 
 Authority: macro-plan WS5, the reviewed fact-integrity spike and the accepted
 exact-parity internal-optimization proof template. The corrected membership

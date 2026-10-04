@@ -384,13 +384,13 @@ tickets:
   - id: "LDG-2948"
     title: "Deduplicate canonical timestamp formatting during exact verification"
     workstream: 10
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2947"]
     scope: "If LDG-2946 and LDG-2947 clear every gate, replace repeated row-wise timestamp-token formatting in canonical fact frames with one distinct-value map. Every distinct non-missing instant still passes through the retained scalar ledgr_fact_time_token() implementation and maps its exact token back to all matching rows. Do not cache a mutable fact object or trust a stored digest."
     acceptance: ["all LDG-2946 semantic, byte, identity, reopen and corruption witnesses pass against production", "canonical JSON, every existing fact and snapshot hash, schema and snapshot identity remain byte-identical", "NA and optional clocks, fractional instants, repeated values and all registered fact families preserve their current tokens and errors", "the element-count detector rejects restored full-column formatting and a wrong-token mutation, while the retained token formatter remains independently callable as the oracle", "all three LDG-2947 gates are rerun on the implementation commit and still pass without widening scope"]
-    evidence: []
+    evidence: ["Commit 22c0b3f adds ledgr_fact_time_tokens_distinct() and routes only POSIXt columns in ledgr_fact_canonical_frame() through it. Each unique non-missing instant passes once through the unchanged ledgr_fact_time_token() scalar formatter and is matched back to its original rows; no hash, cache, schema, policy, public API or stored-digest shortcut changed. LTB-0152 records three formatted elements for eight input rows containing three distinct instants and two missing values, with exact scalar-oracle tokens.", "The complete LDG-2946 oracle regenerated after implementation into C:/tmp/ledgr-ws10-oracle-post-22c0b3f and byte-compared equal across all 20 files. Focused exact-byte, constructed-corruption, persisted-corruption, fact-family, availability-fact and control-plane tests passed. The fresh-process availability-inspection review block could not load the required DuckDB version under its subprocess library resolution; the same block is not part of the fast lane and no product assertion failed.", "The implementation evidence under dev/bench/v0_2_2_workstream10/evidence/implementation ran at exact commit 22c0b3f. Median per-pair ratios remain 5.085 for the 300,000-row internal assertion and 1.625 for public ledgr_facts_resolve(); the calibrated 120,000-row low-repetition candidate/current ratio is 1.026. All hashes, rows and evidence are exact, the full-column and wrong-token mutations are detected, and the checker reports WORKSTREAM10_SCALING_GATE_RECORD_OK. The ordinary fast record at C:/tmp/ledgr-ws10-ldg2948-fast-22c0b3f passed 509 of 509 blocks in 81.65 seconds against 112 seconds."]
   - id: "LDG-2949"
     title: "Close exact fact-integrity verification evidence"
     workstream: 10

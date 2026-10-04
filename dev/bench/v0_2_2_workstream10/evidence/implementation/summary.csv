@@ -1,0 +1,4 @@
+"gate","threshold","observed","passed"
+"internal_repeated_clock",">=2.0 current/candidate",5.08474576271187,TRUE
+"public_facts_resolve",">=1.5 current/candidate",1.62532981530343,TRUE
+"low_repetition_no_regression","<=1.25 candidate/current",1.02604166666667,TRUE
