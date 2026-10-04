@@ -66,7 +66,10 @@ exact_sma_series <- function(values, width) {
   width <- as.integer(width)
   out <- rep(NA_real_, length(values))
   if (length(values) < width) return(out)
-  out[seq.int(width, length(values))] <- rowMeans(embed(values, width))
+  ends <- seq.int(width, length(values))
+  out[ends] <- vapply(ends, function(i) {
+    mean(values[seq.int(i - width + 1L, i)])
+  }, numeric(1))
   out
 }
 

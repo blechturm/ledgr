@@ -89,6 +89,26 @@ testthat::test_that("[LTB-0142] strict built-ins preserve exact values and masks
     ledgr:::ledgr_strict_sma_series(floating, 5L),
     ledgr:::ledgr_rolling_mean(floating, 5L)
   ))
+
+  set.seed(7L)
+  volatile <- 100 * exp(cumsum(stats::rnorm(1200L, 0, 0.20)))
+  width <- 500L
+  ends <- seq.int(width, length(volatile))
+  scalar_mean <- c(
+    rep(NA_real_, width - 1L),
+    vapply(ends, function(i) {
+      mean(volatile[seq.int(i - width + 1L, i)])
+    }, numeric(1))
+  )
+  row_mean <- c(
+    rep(NA_real_, width - 1L),
+    rowMeans(embed(volatile, width))
+  )
+  testthat::expect_false(identical(row_mean, scalar_mean))
+  testthat::expect_identical(
+    ledgr:::ledgr_strict_sma_series(volatile, width),
+    scalar_mean
+  )
 })
 
 testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
@@ -161,7 +181,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   )
   testthat::expect_identical(
     ledgr:::ledgr_feature_engine_version(TRUE),
-    "52f2c3ef901cdb0cfacd60c366978db5084a6249289b303e5d9ef5a3787f215a"
+    "90e2932cc2794212119b60d7be4abd5ea7fd4ead28119adbc278247f2bad267e"
   )
   source <- paste(deparse(body(ledgr:::ledgr_feature_engine_version)), collapse = "\n")
   helpers <- c(

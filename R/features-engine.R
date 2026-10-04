@@ -396,7 +396,14 @@ ledgr_strict_sma_series <- function(values, width) {
   width <- as.integer(width)
   out <- rep(NA_real_, length(values))
   if (length(values) < width) return(out)
-  out[seq.int(width, length(values))] <- rowMeans(embed(values, width))
+  ends <- seq.int(width, length(values))
+  # Exact parity is the contract here. R's mean() may use a correction pass
+  # and platform-specific extended precision, while rowMeans(embed()) changes
+  # summation order. Retain one numeric slice per bounded window so this path
+  # is bit-identical to the scalar mean(window$close) oracle.
+  out[ends] <- vapply(ends, function(i) {
+    mean(values[seq.int(i - width + 1L, i)])
+  }, numeric(1))
   out
 }
 
