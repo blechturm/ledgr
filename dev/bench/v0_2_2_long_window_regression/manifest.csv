@@ -1,7 +1,7 @@
 shape_id,profile,mode,sessions,instruments,members,sets,churn,terminals,terminal_ownership,gap_pattern,stale_budget,features,strategy,expected_status,pairs,wall_budget_s,semantic_change_ticket
 baseline_757,orientation,run,757,600,500,12,0.02,0,none,none,2,returns_63+returns_126+returns_252,momentum,DONE,1,0,
-feature_gaps,ordinary,run,757,120,100,12,0.02,0,none,held:I0001:1@303;held:I0002:2@454,2,returns_63+sma_20,hold_state,DONE,5,1200,
+feature_gaps,ordinary,run,757,120,100,12,0.02,0,none,held:I0001:1@303;held:I0002:2@454,2,returns_63+sma_20,feature_rebalance,DONE,5,1200,
 fact_churn_terminal,ordinary,run_resolve,757,300,100,300,0.02,100,never-held,none,2,none,flat_state,DONE,5,1200,
-availability_sweep,ordinary,sweep,500,120,100,12,0.02,0,none,none,2,returns_63+sma_20,hold_state,DONE,5,1200,
+availability_sweep,ordinary,sweep,500,120,100,12,0.02,0,none,none,2,returns_63+sma_20,feature_rebalance,DONE,5,1200,
 exp0003_scale,release,run,7470,1150,500,360,0.02,0,none,none,2,returns_63+returns_126+returns_252,momentum,DONE,1,0,
 walk_forward,release,walk_forward,757,600,500,12,0.02,0,none,none,2,returns_63+returns_126+returns_252,momentum,returned,1,0,

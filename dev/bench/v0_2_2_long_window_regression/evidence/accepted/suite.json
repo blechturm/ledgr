@@ -2,7 +2,9 @@
   "profile": "ordinary",
   "pairs": 5,
   "accepted_commit": "d08c8f42900ab1ad03e2786ecd38611e313d2451",
-  "candidate_commit": "6220683f15af3c8bd85da2791e43314be10495e0",
-  "started_at_utc": "2026-10-04T14:48:31Z",
-  "elapsed_s": 535.5936
+  "candidate_commit": "ff04a3244428aad58615c987a1588501fd884761",
+  "accepted_tree_status": "",
+  "candidate_tree_status": "",
+  "started_at_utc": "2026-10-04T15:54:59Z",
+  "elapsed_s": 627.471
 }

@@ -1,6 +1,7 @@
 {
   "shape_id": "fact_churn_terminal",
-  "commit": "6220683f15af3c8bd85da2791e43314be10495e0",
+  "commit": "ff04a3244428aad58615c987a1588501fd884761",
+  "product_tree_status": "",
   "package_version": "0.2.1.0",
   "r_version": "4.6.1",
   "duckdb_version": "1.5.6.9000",
@@ -12,10 +13,10 @@
   },
   "cold": {
     "status": "DONE",
-    "elapsed_s": 6.2899999999999991,
-    "setup_s": 3.5399999999999996,
-    "loop_s": 2.5800000000000001,
-    "finalize_s": 0.16999999999999993,
+    "elapsed_s": 6.6299999999999999,
+    "setup_s": 3.7999999999999998,
+    "loop_s": 2.6400000000000006,
+    "finalize_s": 0.1899999999999995,
     "strategy_calls": 757,
     "identities": {
       "equity": {
@@ -42,10 +43,10 @@
   },
   "warm": {
     "status": "DONE",
-    "elapsed_s": 5.6600000000000001,
-    "setup_s": 3.3699999999999992,
-    "loop_s": 1.9700000000000006,
-    "finalize_s": 0.32000000000000028,
+    "elapsed_s": 5.8499999999999996,
+    "setup_s": 3.4699999999999989,
+    "loop_s": 2.0200000000000014,
+    "finalize_s": 0.35999999999999943,
     "strategy_calls": 757,
     "identities": {
       "equity": {
@@ -71,8 +72,8 @@
     }
   },
   "facts_resolve": {
-    "cold_s": 1.8300000000000001,
-    "warm_s": 1.9400000000000013,
+    "cold_s": 1.9700000000000024,
+    "warm_s": 2.1199999999999974,
     "cold": {
       "schema_version": 1,
       "rows": {

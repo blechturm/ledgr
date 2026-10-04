@@ -264,6 +264,34 @@ lwreg_strategy <- function(name, timing) {
     if (identical(name, "hold_state")) {
       return(list(targets = ctx$hold(), state_update = update))
     }
+    if (identical(name, "feature_rebalance")) {
+      returns <- ctx$vec$feature("return_63")
+      trend <- ctx$vec$feature("sma_20")
+      close <- ctx$vec$close
+      ready <- is.finite(returns) & is.finite(trend) & is.finite(close)
+      score <- returns + close / trend - 1
+      tradable <- match(ctx$universe, ctx$tradable(), nomatch = 0L) > 0L
+      targets <- ctx$hold()
+      protected <- intersect(names(targets), c("I0001", "I0002"))
+      protected_values <- targets[protected]
+      targets[tradable] <- 0
+      variant <- if (is.null(params$variant)) 1L else {
+        as.integer(params$variant)
+      }
+      count <- if (variant >= 2L) 10L else 5L
+      eligible <- which(ready & tradable)
+      selected <- integer()
+      if (length(eligible)) {
+        ranked <- eligible[order(score[eligible], decreasing = TRUE)]
+        selected <- head(ranked, count)
+        targets[selected] <- if (variant >= 2L) 2 else 1
+      }
+      targets[protected] <- protected_values
+      update$returns_sum <- sum(returns[is.finite(returns)])
+      update$sma_sum <- sum(trend[is.finite(trend)])
+      update$selected <- unname(ctx$universe[selected])
+      return(list(targets = targets, state_update = update))
+    }
     if (!identical(name, "momentum")) stop("Unknown strategy: ", name)
     month <- format(ledgr_utc(ctx$ts_utc), "%Y-%m", tz = "UTC")
     update$month <- month
@@ -281,6 +309,47 @@ lwreg_strategy <- function(name, timing) {
       ledgr_target_rebalance(ctx, equity_fraction = 0.95)
     list(targets = targets, state_update = update)
   }
+}
+
+lwreg_git <- function(repo, args, stderr = TRUE) {
+  normalized <- normalizePath(repo, winslash = "/", mustWork = TRUE)
+  dot_git <- file.path(normalized, ".git")
+  git_dir <- if (dir.exists(dot_git)) {
+    dot_git
+  } else {
+    pointer <- readLines(dot_git, warn = FALSE, n = 1L)
+    if (length(pointer) != 1L || !startsWith(pointer, "gitdir: ")) {
+      stop("Repository has no readable git directory: ", normalized)
+    }
+    value <- sub("^gitdir: ", "", pointer)
+    if (!grepl("^([A-Za-z]:)?/", value)) value <- file.path(normalized, value)
+    normalizePath(value, winslash = "/", mustWork = TRUE)
+  }
+  system2(
+    "git",
+    c(paste0("--git-dir=", git_dir), paste0("--work-tree=", normalized),
+      args),
+    stdout = TRUE,
+    stderr = stderr
+  )
+}
+
+lwreg_git_commit <- function(repo) {
+  trimws(lwreg_git(repo, c("rev-parse", "HEAD")))
+}
+
+lwreg_product_tree_status <- function(repo) {
+  value <- lwreg_git(
+    repo,
+    c("status", "--porcelain", "--", "R", "src", "DESCRIPTION",
+      "NAMESPACE")
+  )
+  status <- attr(value, "status")
+  if (!is.null(status) && status != 0L) {
+    stop("Could not inspect product-tree status in ", repo)
+  }
+  generated <- grepl("^\\?\\? src/[^/]+[.]gcda$", value)
+  paste(value[!generated], collapse = "\n")
 }
 
 lwreg_opening <- function(row) {
@@ -410,6 +479,10 @@ lwreg_sweep_identity <- function(x) {
                                       keep)
   list(
     candidates = list(rows = nrow(x), hash = lwreg_hash(candidate_values)),
+    distinct_decision_outcomes = nrow(unique(data.frame(
+      final_equity = x$final_equity,
+      n_trades = x$n_trades
+    ))),
     returns = lwreg_identity(returns)
   )
 }

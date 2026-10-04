@@ -10,6 +10,10 @@ script <- dirname(normalizePath(sub("^--file=", "", grep(
   "^--file=", commandArgs(FALSE), value = TRUE
 )[[1L]]), winslash = "/"))
 source(file.path(script, "helpers.R"), local = TRUE)
+product_tree_status <- lwreg_product_tree_status(repo)
+if (nzchar(product_tree_status)) {
+  stop("Product tree is dirty:\n", product_tree_status)
+}
 suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 
 row <- lwreg_shape(shape_id, script)
@@ -148,11 +152,11 @@ if (identical(row$mode, "run") || identical(row$mode, "run_resolve")) {
   stop("run_case.R does not execute mode: ", row$mode)
 }
 
-commit <- trimws(system2("git", c("-C", repo, "rev-parse", "HEAD"),
-                         stdout = TRUE))
+commit <- lwreg_git_commit(repo)
 out <- list(
   shape_id = shape_id,
   commit = commit,
+  product_tree_status = product_tree_status,
   package_version = as.character(utils::packageVersion("ledgr")),
   r_version = paste(R.version$major, R.version$minor, sep = "."),
   duckdb_version = as.character(utils::packageVersion("duckdb")),

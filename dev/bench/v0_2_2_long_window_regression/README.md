@@ -17,6 +17,13 @@ longer than the two-session stale-valuation budget. Held terminals and gaps
 beyond that budget belong to the terminal-outcome decision and are not frozen
 here.
 
+The `feature_gaps` run and both `availability_sweep` candidates read
+`return_63` and `sma_20` through the public vector context on every pulse.
+They rebalance from those values, while `I0001` and `I0002` retain their
+opening quantities through the declared gaps. Sweep variant one selects five
+one-unit positions and variant two selects ten two-unit positions, so the
+candidate parameter changes decisions rather than identity alone.
+
 The ordinary suite has a 1,200-second reference-host budget including fixture
 construction. Release-only EXP-0003 scale and walk-forward cases require the
 separate `run_release.R --release` entry point. Neither `tests/` nor hosted CI
@@ -47,27 +54,43 @@ The separate `baseline_757` orientation row runs once on the accepted arm. It
 reproduces the four result counts frozen by the post-Cut-3 757-pulse record;
 it is not included in timing ratios or the ordinary three-shape budget.
 
+ledgr exports no strategy-state result kind. The harness therefore decodes
+`strategy_state` read-only through the public backtest object's `db_path` and
+the run ID, rather than claiming an exported state reader. This is the
+smallest valid interpretation of LDG-2950's state comparison and changes no
+package state.
+
 `record_hashes.csv` hashes LF-normalized record bytes, so a CRLF checkout does
 not alter the evidence identity. It excludes only itself.
 
-## Agent-Provisional Accepted Record
+Every case records the Git status of `R/`, `src/`, `DESCRIPTION` and
+`NAMESPACE` and refuses a dirty product tree. Generated `src/*.gcda` coverage
+artifacts are excluded; tracked or untracked product source is not.
 
-The ordinary record compares accepted commit `d08c8f4` with candidate commit
-`6220683` in five alternating fresh-process pairs per shape. It completed in
-535.59 seconds against the preregistered 1,200-second budget. Median paired
-candidate/accepted ratios were 0.991 to 1.004 cold and 0.993 to 1.006 warm;
-none crossed 1.10, so no retry was triggered. Ordinary peak child RSS was
-777,592,832 bytes.
+## Corrected Agent-Provisional Record
 
-All cold and warm semantic hashes match. The fact-heavy public resolver also
-matches. The accepted orientation run reproduces 300 fills, 757 equity rows,
-379,873 diagnostics and 757 state rows from the `d08c8f4` record. The checker
-self-test detects a changed equity hash and a fabricated cold regression with
-no retry. LTB-0153 also failed at 160/4 and 320/4 observed row-visits/calls
-when one extra strict-feature pass was injected, against expected 80/2 and
-160/2.
+The corrected ordinary record compares accepted commit `d08c8f4` with
+candidate commit `ff04a32` in five alternating fresh-process pairs per shape.
+It completed in 627.47 seconds against the preregistered 1,200-second budget.
+Median paired candidate/accepted ratios were 1.011 to 1.024 cold and 0.985 to
+0.998 warm; none crossed 1.10, so no retry was triggered. Ordinary peak child
+RSS was 815,497,216 bytes.
 
-The ordinary fast profile passed 511 of 511 blocks in 82.94 seconds against
+All cold and warm semantic hashes and the fact-heavy public resolver match.
+The feature-gap shape records 1,347 fills and 671 closed trades in every arm,
+and both sweep phases record two distinct candidate outcomes. The accepted
+orientation run still reproduces 300 fills, 757 equity rows, 379,873
+diagnostics and 757 state rows from the `d08c8f4` record.
+
+The checker self-test detects semantic drift, a timing regression without its
+retry, a missing ordinary shape, a missing pair, a partial retry, disagreement
+between raw elapsed time and `measurements.csv`, a successful process without
+a measurement and dirty product provenance. A real mutation multiplying every
+strict built-in value by `1 + 1e-6` produces `Semantic drift` for both cold and
+warm feature-gap runs. LTB-0153 still fails when one extra strict-feature pass
+is injected.
+
+The correction fast profile passed 511 of 511 blocks in 85.07 seconds against
 the 112-second bound. This is local regression evidence, not a public or peer
-performance claim. The record is agent-provisional until the Workstream 11
-Type 1 close review and maintainer acceptance.
+performance claim. The corrected record remains agent-provisional until the
+Workstream 11 focused Type 1 re-review and maintainer acceptance.

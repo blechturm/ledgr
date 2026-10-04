@@ -7,11 +7,6 @@ if (length(args) < 4L) {
 }
 accepted_repo <- normalizePath(args[[1L]], winslash = "/")
 candidate_repo <- normalizePath(args[[2L]], winslash = "/")
-git_commit <- function(repo) trimws(system2(
-  "git", c("-C", repo, "rev-parse", "HEAD"), stdout = TRUE
-))
-accepted_commit <- git_commit(accepted_repo)
-candidate_commit <- git_commit(candidate_repo)
 out_dir <- normalizePath(args[[3L]], winslash = "/", mustWork = FALSE)
 pairs <- as.integer(args[[4L]])
 profile <- if (length(args) >= 5L) args[[5L]] else "ordinary"
@@ -31,6 +26,14 @@ script <- dirname(normalizePath(sub("^--file=", "", grep(
   "^--file=", commandArgs(FALSE), value = TRUE
 )[[1L]]), winslash = "/"))
 source(file.path(script, "helpers.R"), local = TRUE)
+git_commit <- lwreg_git_commit
+accepted_commit <- git_commit(accepted_repo)
+candidate_commit <- git_commit(candidate_repo)
+accepted_tree_status <- lwreg_product_tree_status(accepted_repo)
+candidate_tree_status <- lwreg_product_tree_status(candidate_repo)
+if (nzchar(accepted_tree_status) || nzchar(candidate_tree_status)) {
+  stop("Product trees must be clean before the suite runs.")
+}
 manifest <- lwreg_manifest(script)
 selected <- manifest[manifest$profile == profile, , drop = FALSE]
 orientation <- if (identical(profile, "ordinary")) {
@@ -85,7 +88,12 @@ run_child <- function(kind, shape_id, arm, pair, attempt, repo, child_args) {
   }
   stdout_text <- read_log(stdout)
   stderr_text <- read_log(stderr)
-  unlink(c(stdout, stderr))
+  process <- NULL
+  invisible(gc(verbose = FALSE))
+  removed <- unlink(c(stdout, stderr))
+  if (any(removed != 0L)) {
+    stop("Could not remove captured child logs: ", stdout, ", ", stderr)
+  }
   append_process(data.frame(
     kind = kind, shape_id = shape_id, arm = arm, pair = pair,
     attempt = attempt, repo_commit = git_commit(repo), exit_status = status,
@@ -199,6 +207,8 @@ suite <- list(
   pairs = pairs,
   accepted_commit = accepted_commit,
   candidate_commit = candidate_commit,
+  accepted_tree_status = accepted_tree_status,
+  candidate_tree_status = candidate_tree_status,
   started_at_utc = format(start_suite, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
   elapsed_s = as.numeric(difftime(Sys.time(), start_suite, units = "secs"))
 )
