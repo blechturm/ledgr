@@ -185,9 +185,9 @@ measured direct typed fill-payload spike with WS8.
 
 ## Cut 4: Long-window regression evidence
 
-**Status:** Accepted by the maintainer on 2026-10-04 after
-`PASS_AFTER_PATCHES`; P1 through P7 are incorporated. Workstream 11 is
-agent-provisional and awaits its Type 1 close review.
+**Status:** Closed and accepted by the maintainer on 2026-10-04. The first
+Type 1 close review returned `CHANGES_REQUIRED`; the focused re-review passed
+all four corrections.
 
 Authority: macro-plan WS8's early long-window baseline and regression-suite
 item, the accepted Cut 3 tree and
@@ -206,13 +206,14 @@ seconds. The current profile is led by fold execution, snapshot hashing,
 persistence and finalization. Those observations route later work; Cut 4 does
 not optimize them.
 
-The agent-provisional record compares `d08c8f4` with `6220683` in five live
-alternating pairs per ordinary shape. It finishes in 535.59 seconds; all six
-cold/warm median paired ratios are between 0.991 and 1.006 and all normalized
-semantic outputs match. The accepted orientation arm reproduces 300 fills,
-757 equity rows, 379,873 diagnostics and 757 decoded state rows. The fast
-profile passes 511 of 511 blocks in 82.94 seconds. These are local regression
-facts, not a public performance claim; maintainer acceptance has not occurred.
+The corrected agent-provisional record compares `d08c8f4` with `ff04a32` in
+five live alternating pairs per ordinary shape. It finishes in 627.47 seconds;
+all six cold/warm median paired ratios are between 0.985 and 1.024 and all
+normalized semantic outputs match. The feature-gap run records 1,347 fills
+and 671 trades, and the two sweep candidates have distinct outcomes. The
+accepted orientation arm reproduces 300 fills, 757 equity rows, 379,873
+diagnostics and 757 decoded state rows. These are local regression facts, not
+a public performance claim; maintainer acceptance has not occurred.
 
 The ticket deliberately keeps machine clocks local. Hosted CI owns stable
 semantic outcomes, the existing detector inventory and one missing public
@@ -231,10 +232,71 @@ require an explicit release-only entry point and cannot be invoked from tests
 or hosted workflows. Once accepted, the ordinary suite runs at every later
 optimization-cut close and both suites run before release.
 
-One cut review and one close review over one real ticket gives 2/1 = 2.000,
-above the 0.5 review gate. The macro plan explicitly asks for one chore ticket,
-so the draft records the unavoidable breach instead of manufacturing tickets
+The cut review and two close-review invocations give 3/1 = 3.000, above the
+0.5 review gate. The macro plan explicitly asks for one chore ticket, so the
+record keeps the historical breach visible instead of manufacturing tickets
 to improve the ratio.
+
+## Cut 5: Durable-run preparation memory
+
+**Status:** Draft cut. The original one-ticket cut review returned
+`PASS_AFTER_PATCHES`. On 2026-10-04 the maintainer adopted every patch and
+widened the cut with LDG-2952. A focused review of that broadened draft
+returned `CHANGES_REQUIRED`; its four bounded corrections are incorporated.
+The readiness review returned `PASS_AFTER_PATCHES`; its three required wording
+patches and recommended SMA/returns kind witness are incorporated here.
+Implementation waits for maintainer acceptance and accepted Workstream 11.
+
+Authority: macro-plan WS5's phase-memory prerequisite, WS8's residual
+peak-working-memory item, macro-plan decision 5 for direct exact optimizations,
+the partially promoted horizon entry
+`2026-10-04 [infrastructure] Long-window memory and parallel workers`, and the
+`dev/spikes/ctx_frame_views/` probe and churn findings.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 12 Durable-run preparation memory | LDG-2951, LDG-2952 | LDG-2951: the per-phase memory runner and trading plus dense oracles; release six dead hydration intermediates at their last read; skip the full-range persistence slice copy and the unused finalization read. LDG-2952: resolve strict built-in dispatch once per feature definition instead of once per instrument | a durable run stops retaining and recomputing preparation work with no remaining use; phase peaks are measured and attributed, LDG-2951 lowers peak child RSS by at least 10%, and LDG-2952 does not regress feature-phase peak or elapsed time; outputs and contracts are unchanged apart from the recorded availability feature-engine digest |
+
+The churn attribution after the cut review found that peak memory is the
+highest of the run's phases, not one block. At 757 sessions the fold reaches
+593 MiB, feature series 529, hydration 452 and the run-start re-hash 427.
+`ledgr_strict_builtin_kind()` re-fingerprints the built-in definitions on
+every per-instrument call: about 1.26 GiB of allocation and about 12% of
+sampled run time. LDG-2952 removes that. Per-pulse fold churn and the snapshot
+re-hash stay with their owners, the next-release memory pass and the WS5
+verification session.
+
+The exploratory current-tree probe used 1,514 sessions, 600 physical
+instruments, 500 members and three returns features. In two clean
+fresh-process comparisons without forced collection, baseline peak child RSS
+was 1,219.2 and 1,223.9 MiB; the lifecycle-only candidate measured 1,048.4
+and 1,050.3 MiB, about 14% lower. Elapsed time was effectively unchanged.
+Explicit garbage collection provided no further benefit and is excluded.
+
+The exploratory runner had a post-run assertion defect after `ledgr_run()`
+returned; reopening confirmed `DONE`. The draft therefore treats those clocks
+as qualification evidence, not the accepted record. LDG-2951 first commits a
+corrected runner, exact public-result oracle and preregistered thresholds. It
+may change production only if source liveness and the current-tree gates pass.
+The peak-RSS and elapsed gates use unmarked runs. Phase peaks use separate
+paired marked runs with the same method in each arm, or non-perturbing external
+RSS sampling aligned to phase timestamps. The persistence-on and
+persistence-off variants must each pass the registered memory and runtime
+gates.
+The full-range projection slice and unused availability ledger read also have
+call or query counters: restoring either discarded operation must fail its
+detector even though public outputs would remain equal.
+
+The cut preserves the execution-spec field set and changes no representation,
+feature-persistence policy, cache, schema, run identity, hash, numerical rule
+or failure behavior. The availability feature-engine digest changes, and
+LDG-2952 records it as expected provenance, as Cut 2 did. Static pulse views
+(scheduled for the next release), per-pulse fold churn, sweep and
+walk-forward retention, parallel workers and worker defaults remain outside
+this cut. LDG-2952 compares the committed post-LDG-2951 tree with a candidate
+that differs only by the dispatch hoist. Three cut-review invocations and one
+planned close review over two tickets is 4/2 = 2.000. That historical breach
+is recorded rather than repaired by padding.
 
 ## Expected later artifacts
 
