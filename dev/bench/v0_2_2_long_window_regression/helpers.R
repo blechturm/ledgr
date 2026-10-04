@@ -396,11 +396,20 @@ lwreg_snapshot_info <- function(snapshot) {
 }
 
 lwreg_sweep_identity <- function(x) {
-  keep <- intersect(
-    c("candidate_id", "status", "score", "completion_json"), names(x)
-  )
+  keep <- intersect(c(
+    "status", "final_equity", "total_return", "annualized_return",
+    "volatility", "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
+    "avg_trade", "time_in_market", "error_class", "error_msg", "params",
+    "feature_params", "warnings"
+  ), names(x))
+  returns <- as.data.frame(ledgr_sweep_returns(x), stringsAsFactors = FALSE)
+  returns$candidate_row <- match(returns$candidate_id, x$candidate_id)
+  returns$sweep_id <- NULL
+  returns$candidate_id <- NULL
+  candidate_values <- stats::setNames(lapply(keep, function(name) x[[name]]),
+                                      keep)
   list(
-    candidates = lwreg_identity(x[, keep, drop = FALSE]),
-    returns = lwreg_identity(ledgr_sweep_returns(x))
+    candidates = list(rows = nrow(x), hash = lwreg_hash(candidate_values)),
+    returns = lwreg_identity(returns)
   )
 }
