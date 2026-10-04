@@ -183,6 +183,51 @@ It also does not absorb the other WS1 residuals: whole-universe alias reads
 remain with macro WS3, post-semantics indicator work with WS4, and a newly
 measured direct typed fill-payload spike with WS8.
 
+## Cut 4: Long-window regression evidence
+
+**Status:** Accepted by the maintainer on 2026-10-04 after
+`PASS_AFTER_PATCHES`; P1 through P7 are incorporated. Workstream 11 is open
+and no implementation has started.
+
+Authority: macro-plan WS8's early long-window baseline and regression-suite
+item, the accepted Cut 3 tree and
+`long_window_cut3_baseline.md`.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 11 Long-window regression evidence | LDG-2950 | fixed local availability shapes; exact outcome and structural detectors; paired 10% comparison; one release-only large shape | later optimization cuts cannot silently regress long-window semantics, scaling shape or accepted host-relative timing |
+
+The accepted-tree rerun removed the dominant cold strict-feature cost rather
+than moving it elsewhere. Across 252 to 6,056 pulses, cold momentum runs are
+2.76x to 11.67x faster than the 2026-10-02 record; warm runs and the flat
+fact, terminal and width controls are stable or faster. A four-candidate sweep
+fell from about 156 to 39 seconds and three-fold walk forward from 313 to 110
+seconds. The current profile is led by fold execution, snapshot hashing,
+persistence and finalization. Those observations route later work; Cut 4 does
+not optimize them.
+
+The ticket deliberately keeps machine clocks local. Hosted CI owns stable
+semantic outcomes, the existing detector inventory and one missing public
+linear-growth witness; it does not own absolute wall time. Performance compares
+at least five live candidate/accepted pairs in alternating fresh processes,
+with cold and warm gated separately. A ratio above 1.10 reruns once and stands
+only if the retry also exceeds 1.10. Stored seconds are orientation, not the
+denominator, and phase clocks diagnose movement without becoming thresholds.
+
+The ordinary set is limited to about three availability shapes, including a
+fact-heavy public resolver call and a two-candidate sweep. It uses never-held
+terminals and in-budget gaps for `DONE` outcomes; held terminals and exhausted
+gaps remain owned by the terminal-outcome decision. The full ordinary paired
+suite has a 20-minute reference-host budget. EXP-0003 scale and walk forward
+require an explicit release-only entry point and cannot be invoked from tests
+or hosted workflows. Once accepted, the ordinary suite runs at every later
+optimization-cut close and both suites run before release.
+
+One cut review and one close review over one real ticket gives 2/1 = 2.000,
+above the 0.5 review gate. The macro plan explicitly asks for one chore ticket,
+so the draft records the unavoidable breach instead of manufacturing tickets
+to improve the ratio.
+
 ## Expected later artifacts
 
 - accepted design records or explicit references to their existing locations;

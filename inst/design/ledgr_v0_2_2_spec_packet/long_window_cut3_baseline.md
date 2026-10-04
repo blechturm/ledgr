@@ -22,16 +22,16 @@ run; snapshot construction and sealing are therefore not in the clocks.
 
 Primary generated records are committed in the sibling ledgr-research
 repository at `e95a581`, under `long-window-cut3/`. The measuring checkout
-also has them at `C:/Users/maxth/ledgr-research/long-window-cut3/`. Their
-SHA-256 digests are:
+also has them at `C:/Users/maxth/ledgr-research/long-window-cut3/`. The table
+hashes the committed LF blob bytes, so it reproduces on every checkout:
 
 | File | SHA-256 |
 | --- | --- |
-| `results.csv` | `1daabeb41d92865428e9a0df7f52e8e1d61999f6a235da779d503db73308e21c` |
-| `cut3_baseline.csv` | `aa5fa58a09f0c0c17b5b37a5f54ed16df4e4b4467c145bac826b57d5ce09b40f` |
-| `comparison.csv` | `fac8bd9a02c04b4e2411948e6f6a2a3c99d4722364cb11785e011000ecccfb49` |
-| `cut3_sweepwf.json` | `550c7f9753f7dafae511abc9c944e351537820e4b1e63ea35063a854c3b13c54` |
-| `profile_summary.csv` | `627ce56935bb941589feb598b16e6788947445c8df95f777d7a6a8f726423e90` |
+| `results.csv` | `09c6a6d05cc384d090f6bd3d55a35a3210a4d0b50aaa4cf6dbc5dce58d056fb9` |
+| `cut3_baseline.csv` | `076ac9fff03eeb3e266ef0fab50ad74d14f0bc6a58c40388760e8346740cabf2` |
+| `comparison.csv` | `120e8ff60a572c5d9f3d8fa0ad171753ab4810b89d8df8bad01c08f27861ed3a` |
+| `cut3_sweepwf.json` | `caf922547fd66737b3d445045514a39675db18ef299d695375e7a17d08766d04` |
+| `profile_summary.csv` | `6ca7b6147341539374e97e76d4eac90332761628e2a68131fd5f3552af3be5be` |
 
 `results.csv` deliberately retains two failed startup attempts. The labels
 `cut3_pulses_252` and `cut3_pulses_252_valid` have no run measurements and are
