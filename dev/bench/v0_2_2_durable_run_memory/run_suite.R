@@ -28,10 +28,10 @@ dir.create(raw_dir, recursive = TRUE, showWarnings = FALSE)
 fixture_dir <- file.path(out_dir, "fixture")
 dir.create(fixture_dir, recursive = TRUE, showWarnings = FALSE)
 
-run_child <- function(repo, arm, pair, persistence, marked = FALSE,
+run_child <- function(repo, arm, pair, persistence, mode = "gate",
                       availability = TRUE) {
   tag <- sprintf("%s_%02d_%s_%s", arm, pair, persistence,
-                 if (marked) "marked" else "gate")
+                 mode)
   out_json <- file.path(raw_dir, paste0(tag, ".json"))
   stdout <- file.path(raw_dir, paste0(tag, ".stdout"))
   stderr <- file.path(raw_dir, paste0(tag, ".stderr"))
@@ -45,7 +45,7 @@ run_child <- function(repo, arm, pair, persistence, marked = FALSE,
       fixture_db,
       if (availability) "true" else "false",
       if (identical(persistence, "on")) "true" else "false",
-      if (marked) "true" else "false", out_json),
+      mode, out_json),
     stdout = stdout, stderr = stderr, cleanup = TRUE
   )
   peak <- 0
@@ -60,7 +60,7 @@ run_child <- function(repo, arm, pair, persistence, marked = FALSE,
   if (!identical(status, 0L)) stop("Child failed: ", tag, "\n", err)
   value <- jsonlite::read_json(out_json, simplifyVector = TRUE)
   data.frame(
-    arm = arm, pair = pair, persistence = persistence, marked = marked,
+    arm = arm, pair = pair, persistence = persistence, mode = mode,
     availability = availability, commit = value$commit,
     elapsed_s = value$elapsed_s, peak_rss_bytes = peak,
     output_file = basename(out_json), stringsAsFactors = FALSE
@@ -82,14 +82,14 @@ for (persistence in c("off", "on")) {
     repos <- c(accepted = accepted_repo, candidate = candidate_repo)
     for (arm in order) {
       rows[[length(rows) + 1L]] <- run_child(
-        repos[[arm]], arm, pair, persistence, FALSE, TRUE
+        repos[[arm]], arm, pair, persistence, "gate", TRUE
       )
     }
   }
   for (arm in c("accepted", "candidate")) {
     repos <- c(accepted = accepted_repo, candidate = candidate_repo)
     rows[[length(rows) + 1L]] <- run_child(
-      repos[[arm]], arm, 0L, persistence, TRUE, TRUE
+      repos[[arm]], arm, 0L, persistence, "phase", TRUE
     )
   }
 }
@@ -97,9 +97,20 @@ measurements <- do.call(rbind, rows)
 utils::write.csv(measurements, file.path(out_dir, "measurements.csv"),
                  row.names = FALSE)
 
-dense_a <- run_child(accepted_repo, "accepted_dense", 0L, "off", FALSE,
+oracles <- list()
+for (persistence in c("off", "on")) {
+  oracles[[length(oracles) + 1L]] <- run_child(
+    accepted_repo, "accepted", 0L, persistence, "oracle", TRUE
+  )
+  oracles[[length(oracles) + 1L]] <- run_child(
+    candidate_repo, "candidate", 0L, persistence, "oracle", TRUE
+  )
+}
+utils::write.csv(do.call(rbind, oracles), file.path(out_dir, "oracles.csv"),
+                 row.names = FALSE)
+dense_a <- run_child(accepted_repo, "accepted_dense", 0L, "off", "oracle",
                      FALSE)
-dense_c <- run_child(candidate_repo, "candidate_dense", 0L, "off", FALSE,
+dense_c <- run_child(candidate_repo, "candidate_dense", 0L, "off", "oracle",
                      FALSE)
 utils::write.csv(rbind(dense_a, dense_c), file.path(out_dir, "dense.csv"),
                  row.names = FALSE)

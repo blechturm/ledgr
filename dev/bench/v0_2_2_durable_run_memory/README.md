@@ -14,10 +14,12 @@ ratio at most 1.05 over at least five alternating pairs. A miss receives one
 complete fresh retry at the same pair count and stands only when the retry also
 misses.
 
-The checker compares completion and normalized public equity, fills, trades,
-diagnostics, decoded strategy state, persisted features and availability
-surfaces. It also compares the dense witness and proves that changing a
-normalized output is detected.
+Gate children stop after recording completion and elapsed time, so post-run
+result materialization cannot set their process RSS peak. Separate oracle
+children compare normalized public equity, fills, trades, diagnostics, decoded
+strategy state, persisted features and availability surfaces. The checker also
+compares the dense witness and proves that changing a normalized output is
+detected.
 
 `LEDGR_BENCH_LIB` may name an isolated dependency library. The runner prepends
 it inside every controller and child process and records the resolved package

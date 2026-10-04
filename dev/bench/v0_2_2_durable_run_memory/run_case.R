@@ -4,13 +4,15 @@ if (nzchar(bench_lib)) .libPaths(c(bench_lib, .libPaths()))
 args <- commandArgs(TRUE)
 if (length(args) != 6L) {
   stop(paste("Usage: run_case.R <repo> <fixture_db> <availability>",
-             "<persist_features> <marked> <out_json>"))
+             "<persist_features> <gate|phase|oracle> <out_json>"))
 }
 repo <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
 fixture_db <- normalizePath(args[[2L]], winslash = "/", mustWork = TRUE)
 availability <- identical(args[[3L]], "true")
 persist_features <- identical(args[[4L]], "true")
-marked <- identical(args[[5L]], "true")
+mode <- args[[5L]]
+if (!mode %in% c("gate", "phase", "oracle")) stop("Unknown case mode")
+marked <- identical(mode, "phase")
 out_json <- args[[6L]]
 script <- dirname(normalizePath(sub("^--file=", "", grep(
   "^--file=", commandArgs(FALSE), value = TRUE
@@ -68,10 +70,14 @@ out <- list(
   product_tree_status = product_tree_status,
   availability = availability,
   persist_features = persist_features,
-  marked = marked,
+  mode = mode,
   status = info$status,
   elapsed_s = elapsed,
-  identities = memory_run_identities(bt, persist_features),
+  identities = if (identical(mode, "oracle")) {
+    memory_run_identities(bt, persist_features)
+  } else {
+    NULL
+  },
   phases = if (length(phase_rows)) do.call(rbind, phase_rows) else NULL,
   package_version = as.character(utils::packageVersion("ledgr")),
   r_version = paste(R.version$major, R.version$minor, sep = "."),
@@ -81,4 +87,4 @@ out <- list(
 dir.create(dirname(out_json), recursive = TRUE, showWarnings = FALSE)
 jsonlite::write_json(out, out_json, auto_unbox = TRUE, pretty = TRUE,
                      null = "null", digits = 16)
-cat("DURABLE_MEMORY_CASE_OK", availability, persist_features, marked, "\n")
+cat("DURABLE_MEMORY_CASE_OK", availability, persist_features, mode, "\n")
