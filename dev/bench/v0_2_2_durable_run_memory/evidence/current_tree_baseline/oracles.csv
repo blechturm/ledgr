@@ -1,0 +1,5 @@
+"arm","pair","persistence","mode","availability","commit","elapsed_s","peak_rss_bytes","output_file"
+"accepted",0,"off","oracle",TRUE,"e3c31f12382a17e6b586c22c93f0ddd3bd475ecf",27.14,1532317696,"accepted_00_off_oracle.json"
+"candidate",0,"off","oracle",TRUE,"e3c31f12382a17e6b586c22c93f0ddd3bd475ecf",27.1,1589395456,"candidate_00_off_oracle.json"
+"accepted",0,"on","oracle",TRUE,"e3c31f12382a17e6b586c22c93f0ddd3bd475ecf",33.26,1588015104,"accepted_00_on_oracle.json"
+"candidate",0,"on","oracle",TRUE,"e3c31f12382a17e6b586c22c93f0ddd3bd475ecf",33.49,1589121024,"candidate_00_on_oracle.json"
