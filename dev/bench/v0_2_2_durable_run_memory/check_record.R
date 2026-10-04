@@ -18,8 +18,28 @@ read_case <- function(name) jsonlite::read_json(
 )
 same_outputs <- function(a, b) identical(a$identities, b$identities) &&
   identical(a$status, b$status)
+phase_peak <- function(row) {
+  value <- read_case(row$output_file[[1L]])
+  marker <- if (is.null(suite$feature_phase_end_marker)) {
+    "start_setup"
+  } else {
+    suite$feature_phase_end_marker
+  }
+  markers <- vapply(value$phases, `[[`, character(1L), "marker")
+  peaks <- vapply(
+    value$phases,
+    function(x) as.numeric(x$peak_since_last_mib),
+    numeric(1L)
+  )
+  hit <- which(markers == marker)
+  stopifnot(length(hit) == 1L)
+  peaks[[hit]]
+}
 summary_rows <- list()
 calibration <- identical(suite$accepted_commit, suite$candidate_commit)
+gate_profile <- if (is.null(suite$gate_profile)) "memory" else {
+  suite$gate_profile
+}
 for (persistence in c("off", "on")) {
   part <- gate[gate$persistence == persistence, , drop = FALSE]
   accepted <- part[part$arm == "accepted", , drop = FALSE]
@@ -29,13 +49,30 @@ for (persistence in c("off", "on")) {
   stopifnot(identical(accepted$pair, candidate$pair))
   peak_ratio <- median(candidate$peak_rss_bytes / accepted$peak_rss_bytes)
   elapsed_ratio <- median(candidate$elapsed_s / accepted$elapsed_s)
+  accepted_marked <- marked[
+    marked$arm == "accepted" & marked$persistence == persistence,
+    , drop = FALSE
+  ]
+  candidate_marked <- marked[
+    marked$arm == "candidate" & marked$persistence == persistence,
+    , drop = FALSE
+  ]
+  stopifnot(nrow(accepted_marked) == 1L, nrow(candidate_marked) == 1L)
+  feature_phase_ratio <- phase_peak(candidate_marked) /
+    phase_peak(accepted_marked)
+  gated_peak_ratio <- if (identical(gate_profile, "dispatch")) {
+    feature_phase_ratio
+  } else {
+    peak_ratio
+  }
   summary_rows[[length(summary_rows) + 1L]] <- data.frame(
     persistence = persistence, pairs = nrow(accepted),
     peak_rss_ratio = peak_ratio, elapsed_ratio = elapsed_ratio,
+    feature_phase_peak_ratio = feature_phase_ratio,
     peak_gate = if (calibration) {
-      peak_ratio >= 0.95 && peak_ratio <= 1.05
+      gated_peak_ratio >= 0.95 && gated_peak_ratio <= 1.05
     } else {
-      peak_ratio <= suite$peak_ratio_limit
+      gated_peak_ratio <= suite$peak_ratio_limit
     },
     elapsed_gate = if (calibration) {
       elapsed_ratio >= 0.95 && elapsed_ratio <= 1.05

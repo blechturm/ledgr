@@ -28,3 +28,10 @@ detected.
 `LEDGR_BENCH_LIB` may name an isolated dependency library. The runner prepends
 it inside every controller and child process and records the resolved package
 versions; leaving it unset uses the ordinary R library resolution.
+
+An optional final `run_suite.R` argument selects the registered gate. `memory`
+is the LDG-2951 default: unmarked peak child RSS must be at most 0.90 and
+elapsed at most 1.05 for each persistence variant. `dispatch` is LDG-2952:
+unmarked elapsed must be at most 1.00 and the separately marked feature-phase
+peak-so-far, read at `start_setup`, must be at most 1.00. Both profiles retain
+the same fixture, oracle, dense witness, five-pair minimum and retry rule.

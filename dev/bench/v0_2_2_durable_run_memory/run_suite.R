@@ -2,14 +2,21 @@ bench_lib <- Sys.getenv("LEDGR_BENCH_LIB", "")
 if (nzchar(bench_lib)) .libPaths(c(bench_lib, .libPaths()))
 
 args <- commandArgs(TRUE)
-if (length(args) != 4L) {
-  stop("Usage: run_suite.R <accepted_repo> <candidate_repo> <out_dir> <pairs>")
+if (!length(args) %in% 4:5) {
+  stop(paste(
+    "Usage: run_suite.R <accepted_repo> <candidate_repo> <out_dir>",
+    "<pairs> [memory|dispatch]"
+  ))
 }
 accepted_repo <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
 candidate_repo <- normalizePath(args[[2L]], winslash = "/", mustWork = TRUE)
 out_dir <- normalizePath(args[[3L]], winslash = "/", mustWork = FALSE)
 pairs <- as.integer(args[[4L]])
+gate_profile <- if (length(args) == 5L) args[[5L]] else "memory"
 if (is.na(pairs) || pairs < 5L) stop("At least five pairs are required")
+if (!gate_profile %in% c("memory", "dispatch")) {
+  stop("Gate profile must be memory or dispatch")
+}
 if (!requireNamespace("processx", quietly = TRUE) ||
     !requireNamespace("ps", quietly = TRUE)) {
   stop("processx and ps are required")
@@ -117,7 +124,15 @@ utils::write.csv(rbind(dense_a, dense_c), file.path(out_dir, "dense.csv"),
 jsonlite::write_json(list(
   accepted_commit = memory_git_commit(accepted_repo),
   candidate_commit = memory_git_commit(candidate_repo), pairs = pairs,
-  peak_ratio_limit = 0.90, elapsed_ratio_limit = 1.05,
+  gate_profile = gate_profile,
+  peak_ratio_limit = if (identical(gate_profile, "memory")) 0.90 else 1.00,
+  elapsed_ratio_limit = if (identical(gate_profile, "memory")) 1.05 else 1.00,
+  peak_gate_target = if (identical(gate_profile, "memory")) {
+    "unmarked peak child RSS"
+  } else {
+    "marked feature-phase peak-so-far at start_setup"
+  },
+  feature_phase_end_marker = "start_setup",
   retry_rule = paste("one complete fresh retry of the same pair count;",
                      "a miss stands only when the retry also misses"),
   gate_runs = "unmarked", phase_runs = "separate paired marked runs"
