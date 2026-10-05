@@ -445,7 +445,14 @@ v0.2.2 is ready for its release gate only when:
 7. an interruption before the pulse loop cannot leave an ambiguous `CREATED`
    run, and resume preserves the same economic and historical result;
 8. the integrated record states its clocks, workload, exclusions and public
-   boundary without extrapolating component speedups.
+   boundary without extrapolating component speedups; and
+9. no release note, README, article or record claims that the reference
+   Sharadar workflow ages halted or untraded carried prices, or prevents fills
+   on them, unless accepted upstream untraded-bar evidence (ledgr-research
+   LFB-027) and a passing end-to-end record are linked. Otherwise the release
+   states the exclusion explicitly. Registered on 2026-10-05 from the
+   terminal-outcomes synthesis Section 6 and the Cut 6 cut review; LDG-2961
+   pins it with a documentation-contract test.
 
 ## 7. Change control
 
