@@ -193,7 +193,7 @@ testthat::test_that("INCOMPLETE reopen builds one prepared provider", {
       target
     },
     universe = ledgr_universe_members("U"),
-    valuation_policy = ledgr_valuation_stale(0L),
+    valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
 

@@ -491,7 +491,7 @@ testthat::test_that("venue sessions age marks across a whole-feed outage", {
     snapshot,
     function(ctx, params) ctx$hold(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2), cost_basis = c(AAA = 100)),
-    valuation_policy = ledgr_valuation_stale(1),
+    valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "whole-feed-outage")
@@ -523,7 +523,7 @@ testthat::test_that("current-mark-only valuation stops on the first missing sess
     snapshot,
     function(ctx, params) ctx$hold(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 100)),
-    valuation_policy = ledgr_valuation_stale(0),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "current-mark-only")
@@ -536,7 +536,7 @@ testthat::test_that("current-mark-only valuation stops on the first missing sess
 })
 
 # ledgr-test-profile: review
-testthat::test_that("known inactivity does not freeze valuation age", {
+testthat::test_that("an unlabeled known-inactive holding stops before it can freeze", {
   dates <- as.POSIXct(paste(as.Date("2020-01-01") + 0:3, "16:00:00"), tz = "UTC")
   lifetime <- ledgr_facts_lifetime(data.frame(
     instrument_id = "AAA",
@@ -572,10 +572,12 @@ testthat::test_that("known inactivity does not freeze valuation age", {
   stored <- availability_economics_tables(bt)
   stop_row <- stored$diagnostics[stored$diagnostics$outcome == "stopped", , drop = FALSE]
   testthat::expect_identical(stored$run$status, "INCOMPLETE")
-  testthat::expect_identical(stop_row$mark_age, 2L)
+  testthat::expect_identical(stored$completion$stop_reason, "terminal_settlement_unsupported")
+  testthat::expect_identical(stop_row$mark_age, 1L)
+  testthat::expect_false(any(stored$diagnostics$outcome == "frozen"))
   testthat::expect_identical(
     stop_row$reasons,
-    "valuation_horizon_exhausted|lifetime_inactive"
+    "terminal_settlement_unsupported|terminal_label_missing"
   )
 })
 
@@ -599,7 +601,7 @@ testthat::test_that("valuation exhaustion commits an incomplete direct-run prefi
       if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) c(AAA = 2, CLOCK = 0) else ctx$hold()
     },
     opening = ledgr_opening(cash = 1000),
-    valuation_policy = ledgr_valuation_stale(1),
+    valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "valuation-exhaustion")
@@ -642,6 +644,7 @@ testthat::test_that("terminal assertions stop without fabricated settlement", {
     function(ctx, params) ctx$hold(),
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2), cost_basis = c(AAA = 100)),
     valuation_policy = ledgr_valuation_stale(2),
+    corporate_action_policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "terminal-settlement")
@@ -993,6 +996,7 @@ testthat::test_that("prepared valuation and linear event growth coexist in one e
     strategy,
     universe = ledgr_universe_members("combined"),
     valuation_policy = ledgr_valuation_stale(1L),
+    corporate_action_policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
     cost_model = ledgr_cost_fixed_fee(0.5),
     opening = ledgr_opening(cash = 1000)
   )

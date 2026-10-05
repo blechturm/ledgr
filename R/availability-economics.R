@@ -3,7 +3,8 @@ ledgr_availability_cash_tolerance <- 1e-8
 ledgr_availability_valuation_state <- function(bars_mat,
                                                 instrument_ids,
                                                 pulses_posix,
-                                                max_sessions) {
+                                                max_sessions,
+                                                exhausted = "refuse") {
   instrument_ids <- as.character(instrument_ids)
   pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
   close <- bars_mat$close
@@ -25,6 +26,15 @@ ledgr_availability_valuation_state <- function(bars_mat,
     )
   }
 
+  if (!is.character(exhausted) || length(exhausted) != 1L ||
+      !exhausted %in% ledgr_valuation_exhausted_choices()) {
+    rlang::abort(
+      "Availability valuation state requires one declared exhaustion choice.",
+      class = "ledgr_invalid_fold_execution"
+    )
+  }
+  freeze <- identical(exhausted, "freeze")
+
   n_source <- length(instrument_ids)
   row_index_builds <- 0L
   row_by_id <- stats::setNames(seq_len(n_source), instrument_ids)
@@ -36,7 +46,10 @@ ledgr_availability_valuation_state <- function(bars_mat,
   close_cells_read <- 0
   source_index_lookups <- 0
 
-  advance <- function(pulse_idx, axis) {
+  # `held` marks axis holdings. Under exhausted = "freeze" a held holding
+  # whose last observed close is older than max_sessions keeps that close as an
+  # assumption-backed frozen mark; quantity and cash are never touched here.
+  advance <- function(pulse_idx, axis, held = NULL) {
     pulse_idx <- as.integer(pulse_idx)
     if (length(pulse_idx) != 1L || is.na(pulse_idx) ||
         pulse_idx < 1L || pulse_idx > ncol(close)) {
@@ -86,6 +99,12 @@ ledgr_availability_valuation_state <- function(bars_mat,
     source[!is.na(age) & !permissible] <- "expired_close"
     source[permissible & age == 0L] <- "current_close"
     source[permissible & age > 0L] <- "stale_close"
+    frozen <- rep(FALSE, length(axis))
+    if (freeze && !is.null(held)) {
+      frozen <- as.logical(held) & !permissible & !is.na(age)
+      mark[frozen] <- reference[frozen]
+      source[frozen] <- "frozen_close"
+    }
     names(source) <- axis
     source_ts <- stats::setNames(
       as.POSIXct(rep(NA_real_, length(axis)), origin = "1970-01-01", tz = "UTC"),
@@ -101,6 +120,7 @@ ledgr_availability_valuation_state <- function(bars_mat,
       age = age,
       source = source,
       permissible = permissible,
+      frozen = stats::setNames(frozen, axis),
       priced = is.finite(mark),
       source_row = stats::setNames(as.integer(source_row), axis)
     )
@@ -118,6 +138,74 @@ ledgr_availability_valuation_state <- function(bars_mat,
   }
 
   list(advance = advance, stats = stats)
+}
+
+# The exhaustion choice a recorded valuation policy declares. A schema-1
+# record predates the choice and always stopped at the horizon, so its
+# recorded behavior reads as "refuse"; it is never executed under schema 2.
+ledgr_availability_exhausted_choice <- function(valuation_policy) {
+  valuation_policy$exhausted %||% "refuse"
+}
+
+# A frozen holding stays on the decision axis but is target-restricted, so
+# ctx$tradable() and helper allocation exclude it while hold and zero targets
+# remain admissible.
+ledgr_availability_restrict_frozen <- function(view, valuation) {
+  frozen <- valuation$frozen
+  if (is.null(frozen) || !any(frozen)) {
+    return(view)
+  }
+  ids <- names(frozen)[frozen]
+  view$target_restricted[ids] <- TRUE
+  reason <- as.character(view$target_restriction_reason[ids])
+  view$target_restriction_reason[ids] <- ifelse(nzchar(reason), reason, "valuation_frozen")
+  reasons <- as.character(view$target_restriction_reasons[ids])
+  view$target_restriction_reasons[ids] <- ifelse(
+    nzchar(reasons),
+    paste(reasons, "valuation_frozen", sep = "|"),
+    "valuation_frozen"
+  )
+  view
+}
+
+# Holdings frozen at one committed pulse, rebuilt for a resume. Ledger events
+# up to the pulse timestamp give the decision-time holdings after that pulse's
+# dispositions, so freeze entry and exit diagnostics after the resume match an
+# uninterrupted run.
+ledgr_availability_frozen_at <- function(con,
+                                         run_id,
+                                         initial_cash,
+                                         provider,
+                                         bars_mat,
+                                         instrument_ids,
+                                         pulses_posix,
+                                         pulse_idx) {
+  exhausted <- ledgr_availability_exhausted_choice(provider$valuation_policy)
+  if (!identical(exhausted, "freeze")) return(character())
+  ts <- pulses_posix[[pulse_idx]]
+  state <- ledgr_state_asof(con, run_id, initial_cash, ts, instrument_ids = instrument_ids)
+  positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
+  present <- intersect(names(state$positions), instrument_ids)
+  positions[present] <- as.numeric(state$positions[present])
+  view <- provider$decision_view(ts, positions)
+  ids <- as.character(view$axis)
+  valuation <- ledgr_availability_valuation_state(
+    bars_mat,
+    instrument_ids,
+    pulses_posix,
+    as.integer(provider$valuation_policy$max_sessions),
+    exhausted
+  )$advance(pulse_idx, ids, held = as.logical(view$held[ids]))
+  ids[valuation$frozen[ids]]
+}
+
+# Diagnostic detail JSON omits values that do not exist, such as the reference
+# price of a holding that never had a mark; canonical JSON rejects NA.
+ledgr_availability_detail_json <- function(detail) {
+  missing <- vapply(detail, function(v) {
+    length(v) == 1L && (is.na(v) || (is.numeric(v) && !is.finite(v)))
+  }, logical(1))
+  canonical_json(detail[!missing])
 }
 
 ledgr_availability_affected_exposure <- function(ids, positions, valuation) {

@@ -121,6 +121,30 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       }
       expected_config$strategy$params$strategy_key <- NULL
       actual_config$strategy$params$strategy_key <- NULL
+      # LDG-2953 and LDG-2954 advanced both policy identities to schema 2.
+      # The frozen run keeps its schema-1 record. The current run declares the
+      # refusing terminal and exhaustion choices that reproduce the recorded
+      # stops under schema 2 (see availability_v201_run_case()).
+      testthat::expect_identical(expected_config$corporate_actions$policy_schema_version, 1L)
+      testthat::expect_identical(
+        actual_config$corporate_actions,
+        ledgr:::ledgr_json_read_nested(canonical_json(
+          ledgr:::ledgr_corporate_action_policy_identity(
+            ledgr_corporate_actions(held_terminal_position = "refuse")
+          )
+        ))
+      )
+      frozen_valuation <- expected_config$availability$valuation_policy
+      testthat::expect_identical(frozen_valuation$schema_version, 1L)
+      testthat::expect_identical(
+        actual_config$availability$valuation_policy,
+        ledgr:::ledgr_json_read_nested(canonical_json(unclass(
+          ledgr_valuation_stale(frozen_valuation$max_sessions, exhausted = "refuse")
+        )))
+      )
+      expected_config$corporate_actions <- actual_config$corporate_actions <- NULL
+      expected_config$availability$valuation_policy <- NULL
+      actual_config$availability$valuation_policy <- NULL
       testthat::expect_identical(actual_config, expected_config)
       actual$config_json <- expected$config_json <- NULL
       actual$config_hash <- expected$config_hash <- NULL

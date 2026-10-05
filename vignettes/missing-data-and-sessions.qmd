@@ -372,7 +372,7 @@ tight <- ledgr_experiment(
   buy_what_is_tradable,
   opening = ledgr_opening(cash = 100000),
   cost_model = ledgr_cost_zero(),
-  valuation_policy = ledgr_valuation_stale(max_sessions = 1)
+  valuation_policy = ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")
 )
 
 tight_run <- ledgr_run(tight, run_id = "tolerance-one")

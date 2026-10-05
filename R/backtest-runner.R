@@ -1188,7 +1188,20 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     } else {
       NULL
     },
-    corporate_action_plan = corporate_action_plan
+    corporate_action_plan = corporate_action_plan,
+    corporate_action_policy = if (is.null(cfg$corporate_actions)) {
+      NULL
+    } else {
+      ledgr_corporate_action_identity_decode(cfg$corporate_actions)$policy
+    },
+    frozen_at_resume = if (availability_active && is_resume && start_idx > 1L) {
+      ledgr_availability_frozen_at(
+        con, run_id, initial_cash, availability_provider, bars_mat,
+        instrument_ids, pulses_posix, start_idx - 1L
+      )
+    } else {
+      NULL
+    }
   )
 
   fold_result <- tryCatch(

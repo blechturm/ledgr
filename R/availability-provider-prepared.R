@@ -210,6 +210,7 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
 
   lifetime_levels <- c("unknown", "known_active", "known_inactive")
   terminal_levels <- ""
+  lifetime_fact_ids <- character()
   lifetime_cursor <- NULL
   if (has_lifetime) {
     rows <- data$lifetime
@@ -219,6 +220,7 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
     terminal_levels <- unique(c("", terminal))
     lifetime_code <- match(as.character(rows$assertion), lifetime_levels)
     terminal_code <- match(terminal, terminal_levels)
+    lifetime_fact_ids <- as.character(rows$fact_id %||% rep("", nrow(rows)))
     rank <- order(order(
       ledgr_availability_prepared_seconds(rows$effective_from),
       ledgr_availability_prepared_seconds(rows$knowledge_time),
@@ -226,10 +228,10 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
     ))
     resolve_lifetime <- function(applicable) {
       winner <- applicable[[which.max(rank[applicable])]]
-      c(lifetime_code[[winner]], terminal_code[[winner]])
+      c(lifetime_code[[winner]], terminal_code[[winner]], winner)
     }
     lifetime_cursor <- ledgr_availability_prepared_cursor(
-      ledgr_availability_prepared_segments(rows, key, 2L, c(1L, 1L), resolve_lifetime)
+      ledgr_availability_prepared_segments(rows, key, 3L, c(1L, 1L, 0L), resolve_lifetime)
     )
   }
 
@@ -241,6 +243,7 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
     status <- rep(if (has_status) "unknown" else "active", length(ids))
     lifetime <- rep("unknown", length(ids))
     terminal_event <- rep("", length(ids))
+    lifetime_fact_id <- rep("", length(ids))
     if (has_status && any(known)) {
       status_cursor$seek(seconds)
       status[known] <- status_levels[status_cursor$read(1L, idx[known])]
@@ -249,11 +252,14 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
       lifetime_cursor$seek(seconds)
       lifetime[known] <- lifetime_levels[lifetime_cursor$read(1L, idx[known])]
       terminal_event[known] <- terminal_levels[lifetime_cursor$read(2L, idx[known])]
+      winner <- lifetime_cursor$read(3L, idx[known])
+      lifetime_fact_id[known] <- ifelse(winner > 0L, lifetime_fact_ids[pmax(winner, 1L)], "")
     }
     list(
       status = stats::setNames(status, ids),
       lifetime = stats::setNames(lifetime, ids),
       terminal_event = stats::setNames(terminal_event, ids),
+      lifetime_fact_id = stats::setNames(lifetime_fact_id, ids),
       cutoff = cutoff
     )
   }
@@ -281,7 +287,8 @@ ledgr_availability_provider_build_prepared <- function(data, config, snapshot_ha
       target_restriction_reasons = restrictions$reasons,
       status = resolved$status,
       lifetime = resolved$lifetime,
-      terminal_event = resolved$terminal_event
+      terminal_event = resolved$terminal_event,
+      lifetime_fact_id = resolved$lifetime_fact_id
     )
   }
 

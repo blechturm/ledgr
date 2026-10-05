@@ -181,13 +181,13 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
         "disposition_policy_id"
       )
       if (length(forbidden) > 0L ||
-          !identical(meta[[i]]$source, "corporate_action_disposition") ||
+          !isTRUE(meta[[i]]$source %in% ledgr_disposition_sources()) ||
           any(!required_meta %in% names(meta[[i]])) ||
           is.na(instrument_id[[i]]) || !nzchar(instrument_id[[i]]) ||
           !is.numeric(meta[[i]]$quantity) || length(meta[[i]]$quantity) != 1L ||
           !is.finite(meta[[i]]$quantity) || meta[[i]]$quantity <= 0 ||
           !is.numeric(meta[[i]]$mark) || length(meta[[i]]$mark) != 1L ||
-          !is.finite(meta[[i]]$mark) || meta[[i]]$mark <= 0 ||
+          !is.finite(meta[[i]]$mark) || meta[[i]]$mark < 0 ||
           !is.numeric(meta[[i]]$position_before) ||
           length(meta[[i]]$position_before) != 1L ||
           !is.finite(meta[[i]]$position_before) ||
@@ -211,8 +211,12 @@ ledgr_prepare_accounting_events <- function(columns, instrument_ids = character(
       }
       expected_position <- -as.numeric(meta[[i]]$position_before)
       expected_cash <- -expected_position * as.numeric(meta[[i]]$mark)
+      # The persisted event row must agree with its metadata, so an event
+      # quantity or price cannot drift from the amount replay disposes.
       if (!isTRUE(all.equal(position_delta[[i]], expected_position, tolerance = 0)) ||
-          !isTRUE(all.equal(cash_delta[[i]], expected_cash, tolerance = 0))) {
+          !isTRUE(all.equal(cash_delta[[i]], expected_cash, tolerance = 0)) ||
+          !isTRUE(all.equal(qty[[i]], as.numeric(meta[[i]]$quantity), tolerance = 0)) ||
+          !isTRUE(all.equal(price[[i]], as.numeric(meta[[i]]$mark), tolerance = 0))) {
         ledgr_accounting_event_error(
           "DISPOSITION cash and position deltas do not reconcile to its position and mark.",
           "ledgr_invalid_ledger_meta"

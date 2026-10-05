@@ -354,7 +354,8 @@ ledgr_availability_marks_state <- function(con,
                                            instrument_ids,
                                            calendar,
                                            final_pulse_idx,
-                                           max_sessions) {
+                                           max_sessions,
+                                           exhausted = "refuse") {
   instrument_ids <- ledgr_availability_stable_ids(instrument_ids)
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
   final_pulse_idx <- as.integer(final_pulse_idx)
@@ -391,7 +392,8 @@ ledgr_availability_marks_state <- function(con,
     bars_mat = list(close = close),
     instrument_ids = instrument_ids,
     pulses_posix = pulses,
-    max_sessions = as.integer(max_sessions)
+    max_sessions = as.integer(max_sessions),
+    exhausted = exhausted
   )
 }
 
@@ -450,7 +452,8 @@ ledgr_backtest_availability_active <- function(bt, con) {
     mark_axis,
     calendar,
     final_pulse_idx,
-    provider$valuation_policy$max_sessions
+    provider$valuation_policy$max_sessions,
+    ledgr_availability_exhausted_choice(provider$valuation_policy)
   )
 
   rows <- vector("list", length(times))
@@ -458,7 +461,8 @@ ledgr_backtest_availability_active <- function(bt, con) {
     item <- prepared[[i]]
     ids <- item$ids
     view <- item$view
-    valuation <- valuation_state$advance(item$pulse_idx, ids)
+    valuation <- valuation_state$advance(item$pulse_idx, ids, held = as.logical(view$held[ids]))
+    view <- ledgr_availability_restrict_frozen(view, valuation)
     rows[[i]] <- data.frame(
       ts_utc = rep(as.POSIXct(times[[i]], tz = "UTC"), length(ids)),
       instrument_id = ids,

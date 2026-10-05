@@ -22,6 +22,7 @@
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
 \alias{ledgr_execution_timing_version_mismatch}
+\alias{ledgr_policy_schema_mismatch}
 \alias{ledgr_fill_timing_not_comparable}
 \alias{ledgr_session_time_ambiguous}
 \alias{ledgr_session_time_nonexistent}
@@ -205,6 +206,12 @@ availability-aware execution is combined with the compiled spot-FIFO path.
 \code{ledgr_execution_timing_version_mismatch} is raised when an active legacy or
 unknown timing config is submitted for current execution. Historical runs
 remain inspectable, but they cannot resume under corrected timing semantics.
+
+\code{ledgr_policy_schema_mismatch} is raised when a config or stored run carries
+a retired corporate-action or valuation policy schema and is submitted for
+execution, resume, rerun or promotion. Such runs remain readable through
+\code{ledgr_run_open()}, \code{ledgr_run_info()} and result readers, which report the
+recorded identity unchanged; they are never reinterpreted under schema 2.
 
 \code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
 when selected runs have differing or unknown execution-timing conventions.
@@ -515,7 +522,7 @@ without a complication uses an empty reason code.\tabular{lll}{
    \code{quotation_only} \tab restriction \tab hold or exit only \cr
    \code{status_unknown} \tab restriction \tab hold or exit only \cr
    \code{status_unknown_or_conflicting} \tab restriction \tab hold or exit only \cr
-   \code{lifetime_inactive} \tab restriction / terminal \tab hold or exit; no fabricated settlement \cr
+   \code{lifetime_inactive} \tab restriction / terminal \tab hold or exit until the terminal resolves under the declared policy \cr
    \code{stale_mark_reduction} \tab risk \tab reducing target accepted with a stale mark \cr
    \code{stale_mark_pass_through} \tab risk \tab unchanged target accepted with a stale mark \cr
    \code{risk_mark_unavailable} \tab risk stop \tab accepted prefix finalized incomplete \cr
@@ -529,8 +536,12 @@ without a complication uses an empty reason code.\tabular{lll}{
    \code{final_pulse_no_execution} \tab execution \tab no fill without a later pulse \cr
    \code{affordability_reconciled} \tab reconciliation \tab accepted fills applied and reconciled \cr
    \code{affordability_reconciliation_failed} \tab reconciliation stop \tab accepted prefix finalized incomplete \cr
-   \code{valuation_horizon_exhausted} \tab valuation stop \tab accepted prefix finalized incomplete \cr
-   \code{terminal_settlement_unsupported} \tab valuation stop \tab holding preserved; no fabricated settlement \cr
+   \code{valuation_horizon_exhausted} \tab valuation stop \tab under \code{exhausted = "refuse"}, or a holding with no mark at all; accepted prefix finalized incomplete \cr
+   \code{valuation_frozen} \tab valuation / restriction \tab under \code{exhausted = "freeze"}, carried at its last close; hold or exit only, no transaction \cr
+   \code{valuation_freeze_exited} \tab valuation diagnostic \tab a frozen holding resumed, was exited or was disposed \cr
+   \code{terminal_disposition} \tab valuation \tab modeled terminal outcome posted as one \code{DISPOSITION} before the strategy decision \cr
+   \code{terminal_settlement_unsupported} \tab valuation stop \tab unlabeled or refused terminal; holding preserved, no fabricated settlement \cr
+   \code{terminal_mark_unavailable} \tab valuation stop \tab the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete \cr
    \code{fold_exception} \tab error \tab failed after transaction rollback \cr
 }
 

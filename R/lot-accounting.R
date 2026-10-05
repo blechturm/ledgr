@@ -219,7 +219,8 @@ ledgr_lot_state_asof <- function(con, run_id, instrument_ids, ts_utc) {
   ledgr_lot_state_from_events(rows, instrument_ids = instrument_ids)
 }
 
-ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0) {
+ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0,
+                                 allow_zero_price = FALSE) {
   direction <- ledgr_lot_direction(side)
   qty <- suppressWarnings(as.numeric(qty))
   price <- suppressWarnings(as.numeric(price))
@@ -228,7 +229,8 @@ ledgr_lot_apply_fill <- function(state, instrument_id, side, qty, price, fee = 0
     !is.character(instrument_id) || length(instrument_id) != 1L ||
     is.na(instrument_id) || !nzchar(instrument_id) ||
     length(qty) != 1L || is.na(qty) || !is.finite(qty) || qty <= 0 ||
-    length(price) != 1L || is.na(price) || !is.finite(price) || price <= 0 ||
+    length(price) != 1L || is.na(price) || !is.finite(price) || price < 0 ||
+    (price == 0 && !isTRUE(allow_zero_price)) ||
     length(fee) != 1L || is.na(fee) || !is.finite(fee) || fee < 0) {
     rlang::abort(
       "Invalid fill input for lot accounting.",
@@ -426,7 +428,7 @@ ledgr_lot_apply_event <- function(state,
     mark <- as.numeric(meta$mark %||% NA_real_)
     if (!is.finite(before) || before == 0 || !is.finite(quantity) ||
         quantity <= 0 || !isTRUE(all.equal(abs(before), quantity, tolerance = 0)) ||
-        !is.finite(mark) || mark <= 0) {
+        !is.finite(mark) || mark < 0) {
       ledgr_accounting_event_error(
         "DISPOSITION lot metadata is malformed.",
         "ledgr_invalid_ledger_meta"
@@ -438,7 +440,8 @@ ledgr_lot_apply_event <- function(state,
       side = if (before > 0) "SELL" else "BUY",
       qty = quantity,
       price = mark,
-      fee = 0
+      fee = 0,
+      allow_zero_price = TRUE
     )
     remaining <- as.numeric(out$state$net_by_inst[[instrument_id]] %||% NA_real_)
     live_lots <- ledgr_lot_count(out$state, instrument_id)

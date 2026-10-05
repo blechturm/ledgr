@@ -575,7 +575,7 @@ point_in_time_experiment <- ledgr_experiment(
   snapshot,
   rebalance_declared_members,
   universe = ledgr_universe_members("demo_members"),
-  valuation_policy = ledgr_valuation_stale(max_sessions = 2),
+  valuation_policy = ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse"),
   cost_model = ledgr_cost_zero(),
   opening = ledgr_opening(cash = 10000)
 )
@@ -618,7 +618,7 @@ universe_experiment <- function(universe) {
     snapshot,
     rebalance_declared_members,
     universe = universe,
-    valuation_policy = ledgr_valuation_stale(max_sessions = 2),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse"),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 10000)
   )
@@ -917,11 +917,11 @@ shows.
 > ### Try it: move the valuation boundary
 >
 > Rebuild `point_in_time_experiment` with
-> `ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
-> it. Predict first: does the run stop earlier, later, or on the same
-> session? Then compare `achieved_end_utc` and the `mark_age` on the stop
-> row. One fewer permitted stale session moves the boundary. It does not
-> change when `AAA` was delisted.
+> `ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")`, use a
+> new `run_id`, and rerun it. Predict first: does the run stop earlier,
+> later, or on the same session? Then compare `achieved_end_utc` and the
+> `mark_age` on the stop row. One fewer permitted stale session moves the
+> boundary. It does not change when `AAA` was delisted.
 
 
 ## When The Bar You Need Is Not There

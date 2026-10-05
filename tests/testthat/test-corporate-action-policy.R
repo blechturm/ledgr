@@ -18,14 +18,24 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
   testthat::expect_identical(
     unname(unlist(strict[c(
       "cash_amount", "cash_posting", "held_terminal_position",
-      "unsupported_quantity"
+      "unsupported_quantity", "frozen_terminal_position"
     )], use.names = FALSE)),
-    rep("refuse", 4L)
+    rep("refuse", 5L)
   )
-  testthat::expect_true(all(grepl("[.]v001$", unlist(research$identity))))
+  testthat::expect_true(all(grepl(
+    "[.]v001$",
+    unlist(research$identity[c(
+      "cash_amount", "cash_posting", "unsupported_quantity",
+      "frozen_terminal_position"
+    )])
+  )))
+  testthat::expect_true(all(grepl(
+    "[.]v002$",
+    research$identity$held_terminal_position$policy_ids
+  )))
   short_values <- unlist(research[c(
     "cash_amount", "cash_posting", "held_terminal_position",
-    "unsupported_quantity"
+    "unsupported_quantity", "frozen_terminal_position"
   )], use.names = FALSE)
   testthat::expect_false(any(unlist(research$identity) %in% short_values))
 

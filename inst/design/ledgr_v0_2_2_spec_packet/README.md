@@ -1,7 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cuts 1 through 5 are closed after maintainer acceptance of all
-twelve workstreams.
+twelve workstreams. Cut 6, from the accepted terminal-outcomes synthesis, was
+accepted on 2026-10-05; Workstreams 13 and 14 are accepted and Workstream 15 is next.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -37,8 +38,8 @@ the packet state and does not become a second editable ticket ledger.
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
   complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
-  tickets, one complete Cut 4 ticket and two complete Cut 5 tickets; all five
-  cuts are closed.
+  tickets, one complete Cut 4 ticket, two complete Cut 5 tickets and nine
+  Cut 6 tickets, six complete and three open. Cuts 1 through 5 are closed; Cut 6 is open.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -325,6 +326,46 @@ detector observes. The evidence now also names the fold as the peak-setting
 phase and refreshes the LDG-2951 summary under the current checker. The actual
 review count is 4/2 = 2.000. The maintainer accepted Workstream 12 and closed
 Cut 5 on 2026-10-04 after record correction `4edd4b3`.
+
+## Cut 6: Terminal outcomes and frozen holdings
+
+**Status:** Open. The terminal-outcomes synthesis was accepted by the
+maintainer on 2026-10-05 after Type 1 final review returned
+`PASS_AFTER_PATCHES` and both precision patches were applied. The combined
+Type 1 and Type 2 cut review returned `PASS_AFTER_PATCHES` on 2026-10-05, and
+its patches C1-C4 and P5 are incorporated (see `tickets.yml`, Cut 6). Stored
+schema-1 runs stay readable but cannot be resumed, rerun or promoted under
+schema 2. The Sharadar claim gate is now a standing release condition
+(macro-plan Section 6, item 9). The maintainer accepted the cut on 2026-10-05
+and Workstream 13 opened. Workstreams 13 and 14 were accepted on 2026-10-05 after their Type 1 reviews; the Workstream 14 review led to the maintainer's Type 2 amendment on scheduled corporate-action evidence (decision 9).
+
+Authority: the accepted
+`rfc/rfc_terminal_outcomes_v0_2_2_synthesis.md`, macro-plan WS2 and the current
+contracts for shipped behavior until each accepted change is implemented and
+consolidated.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 13 Terminal and valuation policy identities | LDG-2953, LDG-2954 | version-2 corporate-action and valuation policies; exact-label terminal maps; ordinary and frozen terminal defaults; frozen versus refuse exhaustion identity | both accepted policy surfaces are closed, versioned and identity-complete before execution consumes them |
+| 14 Terminal and freeze execution economics | LDG-2955-LDG-2958 | lifetime-terminal dispositions and typed stops; freeze, resume and no-fill state machine; strategy reservation; frozen-terminal fallback; memory, durable and resume parity | a terminal or exhausted mark changes economic state only under the declared model and a known-dead holding never freezes |
+| 15 Terminal outcome reporting and selection visibility | LDG-2959-LDG-2961 | terminal and valuation summaries, warnings and bounds; attempted and excluded candidate visibility; unchanged DSR panels; contract consolidation and conditional Sharadar claim gate | every assumption and refusal remains conspicuous through selection while completed-panel mathematics and the upstream adapter boundary remain honest |
+
+The cut is deliberately serial. Workstream 13 closes identity before execution
+stores or interprets it. Workstream 14 closes economic behavior before results
+summarize it. Workstream 15 then binds ordinary reporting, evaluation and
+standing contracts. The cut review plus three planned Type 1 close reviews is
+four invocations over nine substantive tickets, 0.444 against the 0.5 gate.
+
+The upstream Sharadar problem is not smuggled into ledgr. Until accepted
+research-side evidence establishes how zero-volume carried rows are represented
+and an end-to-end record passes, v0.2.2 may not claim that the reference
+workflow ages those marks or prevents fills. The package behavior can still be
+implemented and tested with vendor-neutral missing-bar fixtures.
+
+No ticket adds a second execution engine, terminal-policy authority, valuation
+plane or DSR rule. Queueing exits, OTC continuation, shorts and leverage,
+exact-quantity settlement, fair-value models, assumption sweeps, stale-robust
+statistics and a default stale horizon remain outside this cut.
 
 ## Expected later artifacts
 

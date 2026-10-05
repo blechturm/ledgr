@@ -422,7 +422,11 @@ availability_v201_run_case <- function(arm,
     snapshot,
     availability_v201_fold_strategy,
     universe = ledgr_universe_members("U"),
-    valuation_policy = ledgr_valuation_stale(max_sessions = 2L),
+    # The frozen v0.2.0.1 evidence predates modeled terminal outcomes and
+    # freeze-and-carry: its terminal holding stopped the run, so the witness
+    # declares the refusing choices that reproduce that recorded behavior.
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2L, exhausted = "refuse"),
+    corporate_action_policy = ledgr_corporate_actions(held_terminal_position = "refuse"),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1e6)
   )

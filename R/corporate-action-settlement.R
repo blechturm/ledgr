@@ -209,6 +209,7 @@ ledgr_corporate_action_plan <- function(rows,
   state$disposition_posted <- rep(FALSE, nrow(rows))
   state$quantity_checked <- rep(FALSE, nrow(rows))
   state$settings <- settings
+  state$policy <- ledgr_corporate_action_identity_decode(policy_identity)$policy
   state$identity <- policy_identity
   state$instrument_ids <- instrument_ids
   state$entitlement_by_pulse <- split(seq_len(nrow(rows)), entitlement_idx)
@@ -394,18 +395,19 @@ ledgr_corporate_action_plan <- function(rows,
                                output_handler,
                                state_value,
                                valuation) {
+    none <- list(
+      state = state_value,
+      next_event_seq = as.integer(event_seq),
+      dispositions = 0L,
+      stopped = NULL
+    )
     selected <- state$disposition_due_by_pulse[[as.character(index)]] %||%
       integer()
     selected <- selected[
       !state$disposition_posted[selected] & state$bound[selected]
     ]
-    if (length(selected) == 0L ||
-        identical(state$settings[["held_terminal_position"]], "refuse")) {
-      return(list(
-        state = state_value,
-        next_event_seq = as.integer(event_seq),
-        dispositions = 0L
-      ))
+    if (length(selected) == 0L) {
+      return(none)
     }
 
     ids <- as.character(state$rows$parent_instrument_id[selected])
@@ -414,8 +416,7 @@ ledgr_corporate_action_plan <- function(rows,
         length(state_value$positions) == length(state$instrument_ids)) {
       position_names <- state$instrument_ids
     }
-    position_index <- match(ids, position_names)
-    before <- as.numeric(state_value$positions[position_index])
+    before <- as.numeric(state_value$positions[match(ids, position_names)])
     before[is.na(before)] <- 0
     held <- which(before != 0)
     if (length(held) == 0L) {
@@ -424,127 +425,79 @@ ledgr_corporate_action_plan <- function(rows,
         selected,
         TRUE
       )
-      return(list(
-        state = state_value,
-        next_event_seq = as.integer(event_seq),
-        dispositions = 0L
-      ))
+      return(none)
     }
     selected <- selected[held]
     ids <- ids[held]
-    position_index <- position_index[held]
-    before <- before[held]
-    if (anyDuplicated(ids)) {
-      rlang::abort(
-        "One pulse cannot dispose the same parent instrument more than once.",
-        class = c(
-          "ledgr_duplicate_corporate_action_event",
-          "ledgr_invalid_fold_execution"
+
+    # Scheduled rows are settlement evidence. A refused or unpriceable row
+    # stops typed, which also keeps the lifetime path from disposing the
+    # holding on this pulse.
+    resolved <- ledgr_terminal_resolve_scheduled(state$policy, ids, valuation)
+    blocked <- resolved$outcome != "dispose"
+    if (any(blocked)) {
+      refused <- any(resolved$outcome == "refuse")
+      return(c(none[c("state", "next_event_seq", "dispositions")], list(
+        stopped = list(
+          ids = ids[blocked],
+          reason_code = if (refused) {
+            "terminal_settlement_unsupported"
+          } else {
+            "terminal_mark_unavailable"
+          },
+          reasons = ifelse(
+            resolved$outcome[blocked] == "refuse",
+            "terminal_settlement_unsupported",
+            paste("terminal_mark_unavailable", resolved$choice[blocked], sep = "|")
+          )
         )
-      )
+      )))
     }
 
-    choice <- state$settings[["held_terminal_position"]]
-    mark <- if (identical(choice, "last_mark")) {
-      as.numeric(valuation$reference[ids])
-    } else {
-      as.numeric(valuation$mark[ids])
-    }
-    age <- as.integer(valuation$age[ids])
-    source <- as.character(valuation$source[ids])
-    source_ts <- as.POSIXct(valuation$source_ts[ids], tz = "UTC")
-    unavailable <- !is.finite(mark) | mark <= 0 | is.na(source_ts)
-    if (any(unavailable)) {
-      rlang::abort(
-        sprintf(
-          "Corporate-action disposition has no finite qualifying mark for: %s.",
-          paste(ids[unavailable], collapse = ", ")
-        ),
-        class = c(
-          "ledgr_corporate_action_disposition_mark_unavailable",
-          "ledgr_corporate_action_unsupported",
-          "ledgr_invalid_fold_execution"
-        ),
-        instrument_ids = ids[unavailable]
-      )
-    }
-
-    candidate <- state_value
-    realized <- numeric(length(selected))
-    for (k in seq_along(selected)) {
-      lot_result <- ledgr_lot_apply_fill(
-        candidate$lot_state,
-        instrument_id = ids[[k]],
-        side = if (before[[k]] > 0) "SELL" else "BUY",
-        qty = abs(before[[k]]),
-        price = mark[[k]],
-        fee = 0
-      )
-      candidate$lot_state <- lot_result$state
-      realized[[k]] <- as.numeric(lot_result$realized_delta)
-      candidate$positions[[position_index[[k]]]] <- 0
-      candidate$cash <- as.numeric(candidate$cash) + before[[k]] * mark[[k]]
-    }
-    remaining_lots <- vapply(
-      ids,
-      function(id) ledgr_lot_count(candidate$lot_state, id),
-      integer(1)
+    mark_meta <- ledgr_terminal_mark_meta(
+      resolved,
+      valuation,
+      pulses_posix[[index]]
     )
-    if (any(remaining_lots != 0L)) {
-      rlang::abort(
-        "Corporate-action disposition left live lots after reaching zero position.",
-        class = c("ledgr_lot_state_invariant", "ledgr_invalid_state")
-      )
-    }
-
     source_rows <- state$rows[selected, , drop = FALSE]
-    position_delta <- -before
-    cash_delta <- before * mark
-    disposition_id <- state$identity$held_terminal_position
-    meta_json <- vapply(seq_along(selected), function(k) {
-      canonical_json(list(
+    meta <- lapply(seq_along(ids), function(k) {
+      out <- list(
         source = "corporate_action_disposition",
         source_fact_id = as.character(source_rows$fact_id[[k]]),
-        disposition_policy_id = disposition_id,
-        quantity = abs(before[[k]]),
-        mark = mark[[k]],
-        mark_source = source[[k]],
-        mark_source_ts_utc = ledgr_normalize_ts_utc(source_ts[[k]]),
-        mark_age = age[[k]],
-        position_before = before[[k]],
-        position_after = 0,
-        position_delta = position_delta[[k]],
-        cash_delta = cash_delta[[k]],
-        realized_model_pnl = realized[[k]],
-        affected_marked_exposure = abs(before[[k]] * mark[[k]])
-      ))
-    }, character(1))
-    seq_value <- as.integer(event_seq) + seq_along(selected) - 1L
-    event_rows <- data.frame(
-      event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
-      run_id = rep(run_id, length(selected)),
-      ts_utc = rep(pulses_posix[[index]], length(selected)),
-      event_type = rep("DISPOSITION", length(selected)),
-      instrument_id = ids,
-      side = rep(NA_character_, length(selected)),
-      qty = abs(before),
-      price = mark,
-      fee = rep(0, length(selected)),
-      meta_json = meta_json,
-      event_seq = seq_value,
-      stringsAsFactors = FALSE
+        disposition_policy_id = resolved$policy_id[[k]],
+        disposition_choice = resolved$choice[[k]],
+        disposition_basis = resolved$basis[[k]],
+        mark_source = mark_meta$source[[k]],
+        mark_source_ts_utc = mark_meta$source_ts[[k]],
+        mark_age = mark_meta$age[[k]]
+      )
+      if (identical(resolved$choice[[k]], "haircut")) {
+        out$haircut_fraction <- resolved$haircut
+      }
+      out
+    })
+    posted <- ledgr_disposition_post(
+      ids = ids,
+      price = resolved$price,
+      meta = meta,
+      ts = pulses_posix[[index]],
+      run_id = run_id,
+      event_seq = event_seq,
+      output_handler = output_handler,
+      state_value = state_value,
+      instrument_ids = state$instrument_ids,
+      exposure_mark = resolved$reference
     )
-    ledgr_prepare_accounting_events(event_rows, instrument_ids)
-    output_handler$append_event_rows(event_rows)
     state$disposition_posted <- replace(
       state$disposition_posted,
       selected,
       TRUE
     )
     list(
-      state = candidate,
-      next_event_seq = as.integer(event_seq) + nrow(event_rows),
-      dispositions = as.integer(nrow(event_rows))
+      state = posted$state,
+      next_event_seq = posted$next_event_seq,
+      dispositions = posted$dispositions,
+      stopped = NULL
     )
   }
 

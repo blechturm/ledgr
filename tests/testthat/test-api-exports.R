@@ -173,7 +173,7 @@ testthat::test_that("exported API surface is locked", {
 
   testthat::expect_identical(exports, expected)
   testthat::expect_identical(names(formals(ledgr_universe_members)), "universe_id")
-  testthat::expect_identical(names(formals(ledgr_valuation_stale)), "max_sessions")
+  testthat::expect_identical(names(formals(ledgr_valuation_stale)), c("max_sessions", "exhausted"))
   testthat::expect_identical(names(formals(ledgr_experiment_plan)), c("x", "..."))
   testthat::expect_false("ledgr_snapshot_hash" %in% exports)
   testthat::expect_false("ledgr_run_fold" %in% exports)

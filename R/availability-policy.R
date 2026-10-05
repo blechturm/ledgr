@@ -5,9 +5,25 @@
 #' one declared membership universe. A stale-valuation policy supplies the
 #' explicit session horizon required by every availability-aware experiment.
 #'
+#' `max_sessions` separates ordinarily stale valuation from what happens after
+#' it. Up to that age a carried close is a permissible mark. Beyond it,
+#' `exhausted` decides: `"freeze"` keeps the holding at its last reference as
+#' an explicitly assumption-backed frozen valuation, with quantity and cash
+#' unchanged, while `"refuse"` stops the run `INCOMPLETE`. Neither choice
+#' establishes an economic terminal: an aged mark proves no delisting, sale or
+#' loss, so it never creates a fill, a disposition or a cash change. Terminal
+#' outcomes come only from sealed lifetime facts and the corporate-action
+#' policy. There is no default horizon.
+#'
+#' The valuation policy and its stored identity use `schema_version` 2. Runs
+#' recorded under schema 1 remain readable, but cannot be resumed, rerun or
+#' promoted into under schema 2.
+#'
 #' @param universe_id Non-empty membership-universe identifier.
 #' @param max_sessions Non-negative whole number of venue sessions for which a
 #'   prior accepted close remains a permissible valuation mark.
+#' @param exhausted What happens to a holding whose mark is older than
+#'   `max_sessions`: `"freeze"` (the default) or `"refuse"`.
 #'
 #' @return A classed universe rule or valuation policy.
 #' @section Articles:
@@ -33,7 +49,7 @@ ledgr_universe_members <- function(universe_id) {
 
 #' @rdname ledgr_availability_policy
 #' @export
-ledgr_valuation_stale <- function(max_sessions) {
+ledgr_valuation_stale <- function(max_sessions, exhausted = "freeze") {
   if (!is.numeric(max_sessions) || length(max_sessions) != 1L ||
       is.na(max_sessions) || !is.finite(max_sessions) ||
       max_sessions < 0 || max_sessions %% 1 != 0) {
@@ -42,14 +58,56 @@ ledgr_valuation_stale <- function(max_sessions) {
       class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_args")
     )
   }
+  choices <- ledgr_valuation_exhausted_choices()
+  if (!is.character(exhausted) || length(exhausted) != 1L ||
+      is.na(exhausted) || !is.null(names(exhausted)) ||
+      !exhausted %in% choices) {
+    rlang::abort(
+      sprintf(
+        "`exhausted` must be exactly one of: %s.",
+        paste(sprintf('"%s"', choices), collapse = ", ")
+      ),
+      class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_args")
+    )
+  }
   structure(
     list(
-      schema_version = 1L,
+      schema_version = ledgr_valuation_policy_schema_version,
       type_id = "stale_sessions",
-      max_sessions = as.integer(max_sessions)
+      max_sessions = as.integer(max_sessions),
+      exhausted = exhausted
     ),
     class = c("ledgr_valuation_policy", "list")
   )
+}
+
+ledgr_valuation_policy_schema_version <- 2L
+
+ledgr_valuation_exhausted_choices <- function() {
+  c("freeze", "refuse")
+}
+
+# Returns the schema version of a valuation-policy record, or NA when the
+# record matches neither the exact historical schema-1 shape nor schema 2.
+ledgr_valuation_policy_record_version <- function(x) {
+  if (!is.list(x) || !identical(x$type_id, "stale_sessions") ||
+      !is.integer(x$max_sessions) || length(x$max_sessions) != 1L ||
+      is.na(x$max_sessions) || x$max_sessions < 0L) {
+    return(NA_integer_)
+  }
+  fields <- sort(names(x))
+  v1_fields <- sort(c("schema_version", "type_id", "max_sessions"))
+  if (identical(x$schema_version, 1L) && identical(fields, v1_fields)) {
+    return(1L)
+  }
+  if (identical(x$schema_version, 2L) &&
+      identical(fields, sort(c(v1_fields, "exhausted"))) &&
+      is.character(x$exhausted) && length(x$exhausted) == 1L &&
+      !is.na(x$exhausted) &&
+      x$exhausted %in% ledgr_valuation_exhausted_choices()) {
+    return(2L)
+  }
+  NA_integer_
 }
 
 #' @rdname ledgr_availability_policy
@@ -68,6 +126,7 @@ print.ledgr_valuation_policy <- function(x, ...) {
   cat("ledgr stale-valuation policy\n")
   suffix <- if (x$max_sessions == 1L) "" else "s"
   cat("Maximum age: ", x$max_sessions, " session", suffix, "\n", sep = "")
+  cat("Exhausted marks: ", x$exhausted %||% "not recorded", "\n", sep = "")
   invisible(x)
 }
 
@@ -109,10 +168,18 @@ ledgr_availability_activation <- function(snapshot, valuation_policy = NULL) {
 }
 
 ledgr_validate_valuation_policy <- function(x) {
+  version <- ledgr_valuation_policy_record_version(x)
+  if (inherits(x, "ledgr_valuation_policy") && identical(version, 1L)) {
+    rlang::abort(
+      paste0(
+        "Valuation policy schema 1 is retired. Construct the policy again ",
+        "with `ledgr_valuation_stale()` (schema 2)."
+      ),
+      class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_experiment")
+    )
+  }
   if (!inherits(x, "ledgr_valuation_policy") ||
-      !identical(x$type_id, "stale_sessions") ||
-      !is.integer(x$max_sessions) || length(x$max_sessions) != 1L ||
-      is.na(x$max_sessions) || x$max_sessions < 0L) {
+      !identical(version, ledgr_valuation_policy_schema_version)) {
     rlang::abort(
       "`valuation_policy` must be created by `ledgr_valuation_stale()`.",
       class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_experiment")

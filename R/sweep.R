@@ -1449,7 +1449,8 @@ ledgr_sweep_run_candidate <- function(exp,
     compiled_accounting_model = compiled_accounting_model,
     availability_provider = availability_provider,
     execution_opportunities_posix = execution_opportunities_posix,
-    corporate_action_plan = corporate_action_plan
+    corporate_action_plan = corporate_action_plan,
+    corporate_action_policy = exp$corporate_action_policy
   )
   engine_start <- ledgr_time_now()
   fold_result <- ledgr_execute_fold(execution, output_handler)

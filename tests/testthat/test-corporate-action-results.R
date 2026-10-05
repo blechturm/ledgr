@@ -67,7 +67,8 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
       cash_amount = "gross",
       cash_posting = "effective_close",
       held_terminal_position = "last_permissible",
-      unsupported_quantity = "report_only"
+      unsupported_quantity = "report_only",
+      frozen_terminal_position = "write_off"
     )
   )
   testthat::expect_identical(
@@ -75,8 +76,9 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
     c(
       cash_amount = "ledgr.corporate_action.cash_amount.gross.v001",
       cash_posting = "ledgr.corporate_action.cash_posting.effective_close.v001",
-      held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v001",
-      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001"
+      held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v002",
+      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
+      frozen_terminal_position = "ledgr.corporate_action.frozen_terminal_position.write_off.v001"
     )
   )
   testthat::expect_identical(
@@ -89,7 +91,8 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
       cash_amount = "gross",
       cash_posting = "effective_close",
       held_terminal_position = "last_permissible",
-      unsupported_quantity = "report_only"
+      unsupported_quantity = "report_only",
+      frozen_terminal_position = "write_off"
     )
   )
   testthat::expect_identical(
@@ -97,8 +100,9 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
     c(
       cash_amount = "ledgr.corporate_action.cash_amount.gross.v001",
       cash_posting = "ledgr.corporate_action.cash_posting.effective_close.v001",
-      held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v001",
-      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001"
+      held_terminal_position = "ledgr.corporate_action.held_terminal_position.last_permissible.v002",
+      unsupported_quantity = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
+      frozen_terminal_position = "ledgr.corporate_action.frozen_terminal_position.write_off.v001"
     )
   )
   testthat::expect_true(all(none$choice_counts == 0L))
@@ -121,8 +125,8 @@ testthat::test_that("[LTB-0034] ordinary results distinguish absent from unused 
   detailed <- capture.output(summary(supplied$bt))
   expected_lines <- c(
     "Corporate actions: NONE - supplied facts did not affect held instruments",
-    "  Setting cash_amount:              gross",
-    "  Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001",
+    "  Setting cash_amount:               gross",
+    "  Identity cash_amount:              ledgr.corporate_action.cash_amount.gross.v001",
     "    cash_amount.gross: 0",
     "    missing_terms: 0",
     "  Late arrivals:               0",

@@ -28,7 +28,7 @@ ledgr_run_registration <- function(con,
 
   run_row <- DBI::dbGetQuery(
     con,
-    "SELECT run_id, status, config_hash, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
+    "SELECT run_id, status, config_hash, config_json, snapshot_id, metric_context_hash FROM runs WHERE run_id = ?",
     params = list(run_id)
   )
   if (nrow(run_row) > 0) {
@@ -92,6 +92,15 @@ ledgr_run_registration <- function(con,
       )
     }
   } else {
+    # A run recorded under a retired policy schema is inspection-only. Refuse
+    # it by name before the hash check rather than reinterpreting it.
+    stored_cfg <- tryCatch(
+      ledgr_json_read_config(run_row$config_json[[1]]),
+      error = function(e) NULL
+    )
+    if (is.list(stored_cfg)) {
+      ledgr_policy_schema_require_current(stored_cfg, run_id = run_id)
+    }
     stored_cfg_hash <- run_row$config_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")

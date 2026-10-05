@@ -73,7 +73,9 @@ ledgr_execution_spec <- function(run_id,
                                  compiled_accounting_model = NULL,
                                  availability_provider = NULL,
                                  execution_opportunities_posix = NULL,
-                                 corporate_action_plan = NULL) {
+                                 corporate_action_plan = NULL,
+                                 corporate_action_policy = NULL,
+                                 frozen_at_resume = NULL) {
   event_mode <- match.arg(event_mode)
   id_to_idx <- ledgr_execution_id_to_idx(instrument_ids)
   compiled_accounting_model <- ledgr_normalize_compiled_accounting_model(compiled_accounting_model)
@@ -117,6 +119,12 @@ ledgr_execution_spec <- function(run_id,
   )
   if (!is.null(corporate_action_plan)) {
     spec$corporate_action_plan <- corporate_action_plan
+  }
+  if (!is.null(corporate_action_policy)) {
+    spec$corporate_action_policy <- corporate_action_policy
+  }
+  if (length(frozen_at_resume) > 0L) {
+    spec$frozen_at_resume <- as.character(frozen_at_resume)
   }
   if (!is.null(availability_provider)) {
     spec$availability_provider <- availability_provider

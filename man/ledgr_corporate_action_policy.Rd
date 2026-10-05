@@ -11,7 +11,9 @@ ledgr_corporate_actions(
   cash_amount = "gross",
   cash_posting = "effective_close",
   held_terminal_position = "last_permissible",
-  unsupported_quantity = "report_only"
+  unsupported_quantity = "report_only",
+  frozen_terminal_position = "write_off",
+  haircut = NULL
 )
 
 ledgr_corporate_actions_research()
@@ -25,9 +27,17 @@ ledgr_corporate_actions_strict()
 \code{"refuse"}.}
 
 \item{held_terminal_position}{One of \code{"last_permissible"}, \code{"last_mark"},
-or \code{"refuse"}.}
+\code{"haircut"}, \code{"write_off"}, or \code{"refuse"}, or an ordered named character
+map of exact terminal labels to those choices with a required \code{default}
+entry.}
 
 \item{unsupported_quantity}{One of \code{"report_only"} or \code{"refuse"}.}
+
+\item{frozen_terminal_position}{One of \code{"write_off"}, \code{"last_mark"}, or
+\code{"refuse"}. Applies to a terminal reached while the holding is frozen.}
+
+\item{haircut}{One finite fraction in \verb{[0, 1]}, required when and only when
+\code{held_terminal_position} selects \code{"haircut"}.}
 }
 \value{
 A validated \code{ledgr_corporate_action_policy} object.
@@ -36,4 +46,39 @@ A validated \code{ledgr_corporate_action_policy} object.
 Corporate-action policy is part of experiment identity. The research preset
 permits the bounded modeled behavior supported by ledgr; the strict preset
 refuses every corporate-action settlement choice.
+}
+\details{
+Sealed facts are evidence; every choice below is a declared model of what
+happened to the money. Supported settlement evidence, such as a complete
+acquisition or distribution fact, is applied as recorded and always outranks
+a modeled terminal outcome. The modeled choices only decide what ledgr
+assumes when a held instrument ends without that evidence:
+\itemize{
+\item \code{"last_permissible"} disposes at the mark that is permissible at the
+terminal pulse.
+\item \code{"last_mark"} disposes at the last observed mark, however old. This is an
+explicit unbounded last-observation assumption.
+\item \code{"haircut"} disposes at \code{(1 - haircut)} times the permissible mark.
+\item \code{"write_off"} disposes for zero proceeds. It is a conservative assumption,
+not evidence that the security was worthless.
+\item \code{"refuse"} models nothing and stops the run \code{INCOMPLETE}.
+}
+
+\code{held_terminal_position} accepts either one choice, which applies to every
+terminal, or an ordered named character map such as
+\code{c(bankruptcy = "write_off", default = "last_permissible")}. Names other
+than \code{default} match exact sealed \code{terminal_event} labels byte for byte;
+an unmatched label takes the required \code{default} entry. ledgr does not trim,
+case-fold or interpret vendor synonyms, so exact label normalization belongs
+upstream in the adapter that seals the facts. Map order, labels, choices and
+the haircut fraction all enter identity.
+
+\code{frozen_terminal_position} is consulted only when the selected terminal
+choice needs a currently permissible mark and the holding is already frozen
+beyond its valuation horizon. Its research default \code{"write_off"} is reported
+as an assumption; the strict preset refuses.
+
+The policy object and its stored identity use \code{policy_schema_version} 2.
+Runs recorded under schema 1 remain readable, but cannot be resumed, rerun
+or promoted into under schema 2.
 }

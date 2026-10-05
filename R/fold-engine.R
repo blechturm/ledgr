@@ -278,7 +278,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
       bars_mat,
       instrument_ids,
       pulses_posix,
-      max_stale_sessions
+      max_stale_sessions,
+      ledgr_availability_exhausted_choice(availability_provider$valuation_policy)
     )
   } else {
     NULL
@@ -391,6 +392,46 @@ ledgr_execute_fold <- function(execution, output_handler) {
   # prepared once here and shared by every pulse's context.
   dense_planes <- if (availability_active) NULL else ledgr_dense_eligibility_planes(length(instrument_ids))
 
+  # Terminal and freeze handling (terminal-outcomes synthesis sections 3.1 to
+  # 3.4). The decoded policy is NULL for a historical config without a policy
+  # identity, which refuses every terminal as before.
+  terminal_policy <- execution$corporate_action_policy %||% NULL
+  frozen_prev <- as.character(execution$frozen_at_resume %||% character())
+  availability_decision <- function(ts, pulse_idx, positions) {
+    full_positions <- ledgr_fold_positions_snapshot(positions, instrument_ids)
+    view <- availability_provider$decision_view(ts, full_positions)
+    ids <- as.character(view$axis)
+    valuation <- valuation_state$advance(pulse_idx, ids, held = as.logical(view$held[ids]))
+    view$priced <- valuation$priced
+    view$mark_age <- valuation$age
+    view$risk_mark <- valuation$mark
+    view$mark_source <- valuation$source
+    view <- ledgr_availability_restrict_frozen(view, valuation)
+    list(
+      view = view,
+      valuation = valuation,
+      ids = ids,
+      held_ids = ids[as.logical(view$held[ids])],
+      full_positions = full_positions
+    )
+  }
+  stop_valuation <- function(ts, ids, reason_code, reasons, positions, valuation) {
+    terminal_status <<- "INCOMPLETE"
+    stop_reason <<- reason_code
+    affected_value <- ledgr_availability_affected_exposure(ids, positions, valuation)
+    affected <<- c(affected_value, list(ts_utc = ts, specified = TRUE))
+    add_segment(list(
+      n = length(ids), instrument_id = ids, stage = "valuation", outcome = "stopped",
+      reason_code = reason_code, reasons = reasons,
+      quantity = positions[ids], price = valuation$reference[ids],
+      mark_source = valuation$source[ids], mark_age = valuation$age[ids],
+      position_before = positions[ids], position_after = positions[ids],
+      detail_json = vapply(seq_along(ids), function(k) ledgr_availability_detail_json(affected_value$details[[k]]), character(1))
+    ))
+    flush_pulse_block(ts)
+    invisible(NULL)
+  }
+
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
       return(invisible(NULL))
@@ -450,15 +491,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       valuation <- NULL
       context_ids <- instrument_ids
       if (availability_active) {
-        full_positions <- ledgr_fold_positions_snapshot(state$positions, instrument_ids)
-        availability_view <- availability_provider$decision_view(ts, full_positions)
-        context_ids <- as.character(availability_view$axis)
-        valuation <- valuation_state$advance(i, context_ids)
-        availability_view$priced <- valuation$priced
-        availability_view$mark_age <- valuation$age
-        availability_view$risk_mark <- valuation$mark
-        availability_view$mark_source <- valuation$source
-        held_ids <- context_ids[as.logical(availability_view$held)]
+        decision <- availability_decision(ts, i, state$positions)
         if (!is.null(corporate_action_plan) &&
             isTRUE(corporate_action_plan$has_disposition())) {
           disposed <- corporate_action_plan$post_disposition(
@@ -467,61 +500,146 @@ ledgr_execute_fold <- function(execution, output_handler) {
             event_seq = event_seq,
             output_handler = output_handler,
             state_value = state,
-            valuation = valuation
+            valuation = decision$valuation
           )
           state <- disposed$state
           event_seq <- disposed$next_event_seq
+          if (!is.null(disposed$stopped)) {
+            stop_valuation(
+              ts, disposed$stopped$ids, disposed$stopped$reason_code,
+              disposed$stopped$reasons, decision$full_positions, decision$valuation
+            )
+            break
+          }
           if (disposed$dispositions > 0L) {
-            full_positions <- ledgr_fold_positions_snapshot(
-              state$positions,
-              instrument_ids
-            )
-            availability_view <- availability_provider$decision_view(
-              ts,
-              full_positions
-            )
-            context_ids <- as.character(availability_view$axis)
-            valuation <- valuation_state$advance(i, context_ids)
-            availability_view$priced <- valuation$priced
-            availability_view$mark_age <- valuation$age
-            availability_view$risk_mark <- valuation$mark
-            availability_view$mark_source <- valuation$source
-            held_ids <- context_ids[as.logical(availability_view$held)]
+            decision <- availability_decision(ts, i, state$positions)
           }
         }
-        terminal_ids <- held_ids[nzchar(as.character(availability_view$terminal_event[held_ids]))]
-        expired_ids <- setdiff(held_ids[!valuation$permissible[held_ids]], terminal_ids)
-        if (length(terminal_ids) > 0L || length(expired_ids) > 0L) {
-          stopped_ids <- if (length(terminal_ids) > 0L) terminal_ids else expired_ids
-          terminal_status <<- "INCOMPLETE"
-          stop_reason <<- if (length(terminal_ids) > 0L) {
-            "terminal_settlement_unsupported"
-          } else {
-            "valuation_horizon_exhausted"
-          }
-          affected_value <- ledgr_availability_affected_exposure(
-            stopped_ids,
-            full_positions,
-            valuation
+
+        # Sealed lifetime terminals resolve after supported settlement
+        # evidence and before the strategy decision. A known-inactive
+        # holding is disposed or stopped here and therefore never freezes.
+        inactive_ids <- decision$held_ids[
+          as.character(decision$view$lifetime[decision$held_ids]) %in% "known_inactive"
+        ]
+        if (length(inactive_ids) > 0L) {
+          labels <- as.character(decision$view$terminal_event[inactive_ids])
+          resolved <- ledgr_terminal_resolve(
+            terminal_policy,
+            inactive_ids,
+            labels,
+            decision$valuation
           )
-          affected <<- c(affected_value, list(ts_utc = ts, specified = TRUE))
+          resolved$outcome[!nzchar(labels)] <- "unlabeled"
+          blocked <- resolved$outcome != "dispose"
+          if (any(blocked)) {
+            unsupported <- resolved$outcome %in% c("unlabeled", "refuse")
+            reasons <- ifelse(
+              resolved$outcome == "unlabeled",
+              "terminal_settlement_unsupported|terminal_label_missing",
+              ifelse(
+                resolved$outcome == "refuse",
+                ifelse(
+                  resolved$basis == "frozen_fallback",
+                  "terminal_settlement_unsupported|frozen_terminal_refuse",
+                  "terminal_settlement_unsupported"
+                ),
+                paste("terminal_mark_unavailable", resolved$choice, sep = "|")
+              )
+            )
+            stop_valuation(
+              ts, inactive_ids[blocked],
+              if (any(unsupported)) "terminal_settlement_unsupported" else "terminal_mark_unavailable",
+              reasons[blocked], decision$full_positions, decision$valuation
+            )
+            break
+          }
+          mark_meta <- ledgr_terminal_mark_meta(resolved, decision$valuation, ts)
+          fact_ids <- as.character(decision$view$lifetime_fact_id[inactive_ids])
+          meta <- lapply(seq_along(inactive_ids), function(k) {
+            out <- list(
+              source = "lifetime_terminal_disposition",
+              source_fact_id = fact_ids[[k]],
+              terminal_event = labels[[k]],
+              matched_label = resolved$matched_label[[k]],
+              disposition_policy_id = resolved$policy_id[[k]],
+              disposition_choice = resolved$choice[[k]],
+              disposition_basis = resolved$basis[[k]],
+              mark_source = mark_meta$source[[k]],
+              mark_source_ts_utc = mark_meta$source_ts[[k]],
+              mark_age = mark_meta$age[[k]]
+            )
+            if (identical(resolved$choice[[k]], "haircut")) {
+              out$haircut_fraction <- resolved$haircut
+            }
+            out
+          })
+          posted <- ledgr_disposition_post(
+            ids = inactive_ids,
+            price = resolved$price,
+            meta = meta,
+            ts = ts,
+            run_id = run_id,
+            event_seq = event_seq,
+            output_handler = output_handler,
+            state_value = state,
+            instrument_ids = instrument_ids,
+            exposure_mark = resolved$reference
+          )
+          state <- posted$state
+          event_seq <- posted$next_event_seq
           add_segment(list(
-            n = length(stopped_ids), instrument_id = stopped_ids, stage = "valuation", outcome = "stopped",
-            reason_code = stop_reason,
-            reasons = ifelse(
-              identical(stop_reason, "valuation_horizon_exhausted") &
-                as.character(availability_view$lifetime[stopped_ids]) %in% "known_inactive",
-              paste(stop_reason, "lifetime_inactive", sep = "|"),
-              stop_reason
-            ),
-            quantity = full_positions[stopped_ids], price = valuation$reference[stopped_ids],
-            mark_source = valuation$source[stopped_ids], mark_age = valuation$age[stopped_ids],
-            position_before = full_positions[stopped_ids], position_after = full_positions[stopped_ids],
-            detail_json = vapply(seq_along(stopped_ids), function(k) canonical_json(affected_value$details[[k]]), character(1))
+            n = length(inactive_ids), instrument_id = inactive_ids, stage = "valuation",
+            outcome = "disposed", reason_code = "terminal_disposition",
+            reasons = paste("terminal_disposition", resolved$choice, resolved$basis, sep = "|"),
+            quantity = abs(posted$before), price = resolved$price,
+            mark_source = mark_meta$source, mark_age = mark_meta$age,
+            event_seq = posted$event_seq,
+            position_before = posted$before, position_after = 0
           ))
-          flush_pulse_block(ts)
+          decision <- availability_decision(ts, i, state$positions)
+        }
+
+        availability_view <- decision$view
+        valuation <- decision$valuation
+        context_ids <- decision$ids
+        full_positions <- decision$full_positions
+        held_ids <- decision$held_ids
+        # Under exhausted = "freeze" an aged holding carries a frozen mark and
+        # stays priced; a holding with no mark at all, or any aged holding
+        # under exhausted = "refuse", stops the run here.
+        unvalued_ids <- held_ids[!valuation$priced[held_ids]]
+        if (length(unvalued_ids) > 0L) {
+          stop_valuation(
+            ts, unvalued_ids, "valuation_horizon_exhausted",
+            "valuation_horizon_exhausted", full_positions, valuation
+          )
           break
         }
+        frozen_now <- held_ids[valuation$frozen[held_ids]]
+        entered <- setdiff(frozen_now, frozen_prev)
+        exited <- setdiff(frozen_prev, frozen_now)
+        if (length(entered) > 0L) {
+          add_segment(list(
+            n = length(entered), instrument_id = entered, stage = "valuation",
+            outcome = "frozen", reason_code = "valuation_frozen",
+            quantity = full_positions[entered], price = valuation$mark[entered],
+            mark_source = valuation$source[entered], mark_age = valuation$age[entered],
+            position_before = full_positions[entered], position_after = full_positions[entered]
+          ))
+        }
+        if (length(exited) > 0L) {
+          exit_source <- as.character(valuation$source[exited])
+          exit_source[is.na(exit_source)] <- ""
+          add_segment(list(
+            n = length(exited), instrument_id = exited, stage = "valuation",
+            outcome = "exited", reason_code = "valuation_freeze_exited",
+            quantity = full_positions[exited], price = as.numeric(valuation$mark[exited]),
+            mark_source = exit_source, mark_age = as.integer(valuation$age[exited]),
+            position_before = full_positions[exited], position_after = full_positions[exited]
+          ))
+        }
+        frozen_prev <<- frozen_now
         bars_current <- bars_current[valuation$source_row, , drop = FALSE]
         if (nrow(features_current) > 0L) {
           features_current <- features_current[

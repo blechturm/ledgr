@@ -31,7 +31,7 @@ availability_incomplete_experiment <- function(path, calls) {
     experiment = ledgr_experiment(
       copied,
       strategy,
-      valuation_policy = ledgr_valuation_stale(0),
+      valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
       cost_model = ledgr_cost_zero()
     )
   )
@@ -248,7 +248,7 @@ testthat::test_that("completion affected IDs come only from stopped diagnostics"
     snapshot,
     strategy,
     universe = c("AAA", "BBB"),
-    valuation_policy = ledgr_valuation_stale(0),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(experiment, run_id = "affected-id-source")
@@ -356,7 +356,7 @@ testthat::test_that("complete availability runs recover finalization without str
       calls$n <- calls$n + 1L
       ctx$hold()
     },
-    valuation_policy = ledgr_valuation_stale(1),
+    valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   seam <- new.env(parent = emptyenv())
@@ -519,7 +519,7 @@ testthat::test_that("availability completion propagates through sweep persistenc
   exp <- ledgr_experiment(
     snapshot,
     strategy,
-    valuation_policy = ledgr_valuation_stale(0),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(one = list(qty = 1))
@@ -564,7 +564,7 @@ testthat::test_that("parallel availability sweeps return the same compact termin
       target[["AAA"]] <- params$qty
       target
     },
-    valuation_policy = ledgr_valuation_stale(0),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(one = list(qty = 1), two = list(qty = 2))
@@ -616,7 +616,7 @@ testthat::test_that("direct and sweep paths both apply the opening-time status c
   exp <- ledgr_experiment(
     snapshot,
     strategy,
-    valuation_policy = ledgr_valuation_stale(1),
+    valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
 
@@ -648,7 +648,7 @@ testthat::test_that("[LTB-0063] explanation history is durable read-only evidenc
   exp <- ledgr_experiment(
     snapshot,
     strategy,
-    valuation_policy = ledgr_valuation_stale(1),
+    valuation_policy = ledgr_valuation_stale(1, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   bt <- ledgr_run(exp, run_id = "availability-explain")
@@ -813,7 +813,7 @@ testthat::test_that("walk-forward stops a carry-state chain on incomplete test e
       positions = c(AAA = 1),
       cost_basis = c(AAA = 101)
     ),
-    valuation_policy = ledgr_valuation_stale(0),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   folds <- ledgr:::ledgr_fold_list(list(
@@ -900,7 +900,7 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
       positions = c(AAA = 1, BBB = 1),
       cost_basis = c(AAA = 101, BBB = 121)
     ),
-    valuation_policy = ledgr_valuation_stale(3),
+    valuation_policy = ledgr_valuation_stale(3, exhausted = "refuse"),
     cost_model = ledgr_cost_zero()
   )
   grid <- ledgr_param_grid(one = list(qty = 2))

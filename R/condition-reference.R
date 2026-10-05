@@ -72,6 +72,12 @@
 #' unknown timing config is submitted for current execution. Historical runs
 #' remain inspectable, but they cannot resume under corrected timing semantics.
 #'
+#' `ledgr_policy_schema_mismatch` is raised when a config or stored run carries
+#' a retired corporate-action or valuation policy schema and is submitted for
+#' execution, resume, rerun or promotion. Such runs remain readable through
+#' `ledgr_run_open()`, `ledgr_run_info()` and result readers, which report the
+#' recorded identity unchanged; they are never reinterpreted under schema 2.
+#'
 #' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
 #' when selected runs have differing or unknown execution-timing conventions.
 #'
@@ -373,7 +379,7 @@
 #' | `quotation_only` | restriction | hold or exit only |
 #' | `status_unknown` | restriction | hold or exit only |
 #' | `status_unknown_or_conflicting` | restriction | hold or exit only |
-#' | `lifetime_inactive` | restriction / terminal | hold or exit; no fabricated settlement |
+#' | `lifetime_inactive` | restriction / terminal | hold or exit until the terminal resolves under the declared policy |
 #' | `stale_mark_reduction` | risk | reducing target accepted with a stale mark |
 #' | `stale_mark_pass_through` | risk | unchanged target accepted with a stale mark |
 #' | `risk_mark_unavailable` | risk stop | accepted prefix finalized incomplete |
@@ -387,8 +393,12 @@
 #' | `final_pulse_no_execution` | execution | no fill without a later pulse |
 #' | `affordability_reconciled` | reconciliation | accepted fills applied and reconciled |
 #' | `affordability_reconciliation_failed` | reconciliation stop | accepted prefix finalized incomplete |
-#' | `valuation_horizon_exhausted` | valuation stop | accepted prefix finalized incomplete |
-#' | `terminal_settlement_unsupported` | valuation stop | holding preserved; no fabricated settlement |
+#' | `valuation_horizon_exhausted` | valuation stop | under `exhausted = "refuse"`, or a holding with no mark at all; accepted prefix finalized incomplete |
+#' | `valuation_frozen` | valuation / restriction | under `exhausted = "freeze"`, carried at its last close; hold or exit only, no transaction |
+#' | `valuation_freeze_exited` | valuation diagnostic | a frozen holding resumed, was exited or was disposed |
+#' | `terminal_disposition` | valuation | modeled terminal outcome posted as one `DISPOSITION` before the strategy decision |
+#' | `terminal_settlement_unsupported` | valuation stop | unlabeled or refused terminal; holding preserved, no fabricated settlement |
+#' | `terminal_mark_unavailable` | valuation stop | the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete |
 #' | `fold_exception` | error | failed after transaction rollback |
 #'
 #' For the connected workflow and interpretation, see
@@ -424,7 +434,7 @@
 #' @aliases ledgr_availability_sessions_required ledgr_valuation_policy_required
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
-#' @aliases ledgr_execution_timing_version_mismatch
+#' @aliases ledgr_execution_timing_version_mismatch ledgr_policy_schema_mismatch
 #' @aliases ledgr_fill_timing_not_comparable
 #' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
 #' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list

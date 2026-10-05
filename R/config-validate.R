@@ -101,9 +101,14 @@ validate_ledgr_config <- function(config) {
         class = "ledgr_invalid_config"
       )
     }
-    ledgr_validate_valuation_policy(
-      structure(availability$valuation_policy, class = c("ledgr_valuation_policy", "list"))
-    )
+    # Stored schema-1 records stay readable; execution requires schema 2
+    # through ledgr_policy_schema_require_current().
+    if (is.na(ledgr_valuation_policy_record_version(availability$valuation_policy))) {
+      rlang::abort(
+        "`valuation_policy` must be created by `ledgr_valuation_stale()`.",
+        class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_experiment")
+      )
+    }
     timing_version <- availability$execution_timing_version
     if (!is.null(timing_version) &&
         (!is.numeric(timing_version) || length(timing_version) != 1L ||
@@ -372,6 +377,58 @@ validate_ledgr_config <- function(config) {
 ledgr_validate_config <- function(config) {
   validate_ledgr_config(config)
   invisible(TRUE)
+}
+
+# Execution, resume, rerun and promotion require current policy schemas.
+# Older recorded policies remain readable by validate_ledgr_config(); they are
+# refused here rather than reinterpreted under schema-2 meaning.
+ledgr_policy_schema_require_current <- function(config, run_id = NULL) {
+  retired <- character()
+  identity <- config$corporate_actions
+  if (!is.null(identity) &&
+      !identical(
+        ledgr_corporate_action_identity_schema(identity),
+        ledgr_corporate_action_policy_schema_version
+      )) {
+    retired <- c(
+      retired,
+      sprintf("corporate-action policy schema %s", identity$policy_schema_version)
+    )
+  }
+  valuation <- if (is.list(config$availability)) {
+    config$availability$valuation_policy
+  } else {
+    NULL
+  }
+  if (!is.null(valuation) &&
+      !identical(
+        ledgr_valuation_policy_record_version(valuation),
+        ledgr_valuation_policy_schema_version
+      )) {
+    retired <- c(
+      retired,
+      sprintf(
+        "valuation policy schema %s",
+        format(valuation$schema_version %||% "unknown")
+      )
+    )
+  }
+  if (length(retired) == 0L) {
+    return(invisible(TRUE))
+  }
+  subject <- if (is.null(run_id)) {
+    "This config was"
+  } else {
+    sprintf("Run '%s' was", run_id)
+  }
+  rlang::abort(
+    paste0(
+      subject, " recorded under ", paste(retired, collapse = " and "),
+      ". It remains readable, but cannot be executed, resumed, rerun or ",
+      "promoted into under the current schema 2. Start a new run_id."
+    ),
+    class = c("ledgr_policy_schema_mismatch", "ledgr_run_hash_mismatch")
+  )
 }
 
 ledgr_config_noop_risk_identity <- function() {

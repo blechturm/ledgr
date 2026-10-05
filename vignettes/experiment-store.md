@@ -188,14 +188,14 @@ info
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: 7f66b2149bc31cb90d63fa3a985d214ebf16cc1d3a0c698b4013ee5a4798091e
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      20f271989efdb9ba34fca1b21a2e691aca3160d33fa117590b54084cbae8139c
+    Config Hash:      3c4c166846aaca82b96f6bb2dbc8a363110138f25da50afd96c39b330abb97c5
     Strategy Hash:    2e232e77ee059fecf01d125877ea3b9bca61e6a484825fd059ddd3d50985f3fc
     Params Hash:      69e7ad01d1e85237d7f1593f9505f7c45d29bb55766b05abe6c067f0324ba47e
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      0.960
+    Elapsed Sec:      1.010
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2

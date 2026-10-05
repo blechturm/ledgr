@@ -123,14 +123,16 @@ summary(research_run)
 #> Corporate-Action Evidence:
 #> Corporate actions: MODELED - configured settlement conventions were exercised
 #> Price basis: split_adjusted
-#>   Setting cash_amount:              gross
-#>   Identity cash_amount:             ledgr.corporate_action.cash_amount.gross.v001
-#>   Setting cash_posting:             effective_close
-#>   Identity cash_posting:            ledgr.corporate_action.cash_posting.effective_close.v001
-#>   Setting held_terminal_position:   last_permissible
-#>   Identity held_terminal_position:  ledgr.corporate_action.held_terminal_position.last_permissible.v001
-#>   Setting unsupported_quantity:     report_only
-#>   Identity unsupported_quantity:    ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Setting cash_amount:               gross
+#>   Identity cash_amount:              ledgr.corporate_action.cash_amount.gross.v001
+#>   Setting cash_posting:              effective_close
+#>   Identity cash_posting:             ledgr.corporate_action.cash_posting.effective_close.v001
+#>   Setting held_terminal_position:    last_permissible
+#>   Identity held_terminal_position:   ledgr.corporate_action.held_terminal_position.last_permissible.v002
+#>   Setting unsupported_quantity:      report_only
+#>   Identity unsupported_quantity:     ledgr.corporate_action.unsupported_quantity.report_only.v001
+#>   Setting frozen_terminal_position:  write_off
+#>   Identity frozen_terminal_position: ledgr.corporate_action.frozen_terminal_position.write_off.v001
 #>   Exercised choices:
 #>     cash_amount.gross: 1
 #>     cash_amount.refuse: 0
@@ -139,9 +141,14 @@ summary(research_run)
 #>     cash_posting.refuse: 0
 #>     held_terminal_position.last_permissible: 0
 #>     held_terminal_position.last_mark: 0
+#>     held_terminal_position.haircut: 0
+#>     held_terminal_position.write_off: 0
 #>     held_terminal_position.refuse: 0
 #>     unsupported_quantity.report_only: 0
 #>     unsupported_quantity.refuse: 0
+#>     frozen_terminal_position.write_off: 0
+#>     frozen_terminal_position.last_mark: 0
+#>     frozen_terminal_position.refuse: 0
 #>   Refusal reasons:
 #>     none declared: 0
 #>   Late arrivals:               0

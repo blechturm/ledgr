@@ -10,7 +10,7 @@
 \usage{
 ledgr_universe_members(universe_id)
 
-ledgr_valuation_stale(max_sessions)
+ledgr_valuation_stale(max_sessions, exhausted = "freeze")
 
 \method{print}{ledgr_universe_rule}(x, ...)
 
@@ -21,6 +21,9 @@ ledgr_valuation_stale(max_sessions)
 
 \item{max_sessions}{Non-negative whole number of venue sessions for which a
 prior accepted close remains a permissible valuation mark.}
+
+\item{exhausted}{What happens to a holding whose mark is older than
+\code{max_sessions}: \code{"freeze"} (the default) or \code{"refuse"}.}
 
 \item{x}{A universe rule or valuation policy.}
 
@@ -34,6 +37,21 @@ These constructors opt an experiment into point-in-time availability
 semantics without adding an execution-mode flag. A membership rule selects
 one declared membership universe. A stale-valuation policy supplies the
 explicit session horizon required by every availability-aware experiment.
+}
+\details{
+\code{max_sessions} separates ordinarily stale valuation from what happens after
+it. Up to that age a carried close is a permissible mark. Beyond it,
+\code{exhausted} decides: \code{"freeze"} keeps the holding at its last reference as
+an explicitly assumption-backed frozen valuation, with quantity and cash
+unchanged, while \code{"refuse"} stops the run \code{INCOMPLETE}. Neither choice
+establishes an economic terminal: an aged mark proves no delisting, sale or
+loss, so it never creates a fill, a disposition or a cash change. Terminal
+outcomes come only from sealed lifetime facts and the corporate-action
+policy. There is no default horizon.
+
+The valuation policy and its stored identity use \code{schema_version} 2. Runs
+recorded under schema 1 remain readable, but cannot be resumed, rerun or
+promoted into under schema 2.
 }
 \section{Articles}{
 

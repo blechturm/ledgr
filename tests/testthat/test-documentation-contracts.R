@@ -1705,7 +1705,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
   testthat::expect_match(
     qmd,
-    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1)`",
+    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1, exhausted = \"refuse\")`",
     fixed = TRUE
   )
   testthat::expect_no_match(qmd, "max_sessions = 1` in `declare()`", fixed = TRUE)

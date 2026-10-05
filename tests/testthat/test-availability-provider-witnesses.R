@@ -26,6 +26,16 @@ testthat::test_that("prepared provider preserves the frozen provider witnesses",
       execution = providers$production$execution_view(cutoff, execution_ids),
       facts = providers$production$facts(cutoff)
     )
+    # LDG-2955 adds the winning lifetime fact identity for terminal
+    # dispositions; the frozen reference predates it. Every frozen field
+    # must still match exactly.
+    for (part in names(reference)) {
+      testthat::expect_identical(
+        setdiff(names(production[[part]]), names(reference[[part]])),
+        "lifetime_fact_id"
+      )
+      production[[part]] <- production[[part]][names(reference[[part]])]
+    }
     testthat::expect_identical(production, reference)
     signatures[[i]] <- data.frame(
       cutoff = format(cutoff, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
@@ -116,6 +126,9 @@ testthat::test_that("declared empty status family keeps the row-presence default
   views <- lapply(providers, function(provider) {
     provider$facts(availability_v201_at(8L), fixture$ids)
   })
+  # The frozen reference predates the LDG-2955 lifetime fact identity.
+  testthat::expect_identical(setdiff(names(views[[2L]]), names(views[[1L]])), "lifetime_fact_id")
+  views[[2L]] <- views[[2L]][names(views[[1L]])]
   testthat::expect_identical(views[[2L]], views[[1L]])
   testthat::expect_identical(
     unname(views[[2L]]$status),

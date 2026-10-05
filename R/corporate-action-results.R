@@ -19,17 +19,73 @@ ledgr_corporate_action_fidelity <- function(value) {
 
 ledgr_corporate_action_policy_settings <- function(identity) {
   if (is.null(identity)) {
-    return(stats::setNames(rep(NA_character_, 4L), names(
-      ledgr_corporate_action_policy_choices()
-    )))
+    return(stats::setNames(
+      rep(NA_character_, length(ledgr_corporate_action_policy_choices())),
+      names(ledgr_corporate_action_policy_choices())
+    ))
   }
-  ledgr_validate_corporate_action_policy_identity(identity)
-  ids <- ledgr_corporate_action_policy_ids()
-  out <- vapply(names(ids), function(field) {
-    match_idx <- match(identity[[field]], ids[[field]])
-    names(ids[[field]])[[match_idx]]
-  }, character(1))
-  out
+  ledgr_corporate_action_decoded_settings(
+    identity,
+    ledgr_corporate_action_identity_decode(identity)
+  )
+}
+
+ledgr_corporate_action_decoded_settings <- function(identity, decoded) {
+  if (identical(decoded$schema, 1L)) {
+    ids <- ledgr_corporate_action_policy_ids_v1()
+    return(vapply(names(ids), function(field) {
+      names(ids[[field]])[[match(identity[[field]], ids[[field]])]]
+    }, character(1)))
+  }
+  policy <- decoded$policy
+  # Scheduled corporate-action rows carry no terminal label, so they resolve
+  # the held-terminal map through its required default entry.
+  c(
+    cash_amount = policy$cash_amount,
+    cash_posting = policy$cash_posting,
+    held_terminal_position = unname(policy$held_terminal_position[["default"]]),
+    unsupported_quantity = policy$unsupported_quantity,
+    frozen_terminal_position = policy$frozen_terminal_position
+  )
+}
+
+# Display form of a recorded policy: one string per setting and identity.
+# Schema-1 records are reported exactly as recorded.
+ledgr_corporate_action_policy_display <- function(identity) {
+  if (is.null(identity)) {
+    settings <- ledgr_corporate_action_policy_settings(identity)
+    return(list(settings = settings, identities = settings))
+  }
+  decoded <- ledgr_corporate_action_identity_decode(identity)
+  settings <- ledgr_corporate_action_decoded_settings(identity, decoded)
+  if (identical(decoded$schema, 1L)) {
+    return(list(
+      settings = settings,
+      identities = unlist(identity[names(settings)], use.names = TRUE)
+    ))
+  }
+  policy <- decoded$policy
+  map_text <- function(values) {
+    if (length(values) == 1L) return(unname(values))
+    paste(paste0(names(values), "=", values), collapse = "; ")
+  }
+  held <- identity$held_terminal_position
+  settings[["held_terminal_position"]] <- map_text(policy$held_terminal_position)
+  identities <- c(
+    cash_amount = identity$cash_amount,
+    cash_posting = identity$cash_posting,
+    held_terminal_position = map_text(
+      stats::setNames(held$policy_ids, held$labels)
+    ),
+    unsupported_quantity = identity$unsupported_quantity,
+    frozen_terminal_position = identity$frozen_terminal_position
+  )
+  if (!is.null(policy$haircut)) {
+    haircut <- format(policy$haircut, scientific = FALSE, trim = TRUE)
+    settings[["haircut_fraction"]] <- haircut
+    identities[["haircut_fraction"]] <- haircut
+  }
+  list(settings = settings, identities = identities)
 }
 
 ledgr_corporate_action_choice_keys <- function() {
@@ -286,12 +342,9 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   snapshot_id <- config$data$snapshot_id
   facts <- ledgr_corporate_action_fact_state(con, snapshot_id)
   identity <- config$corporate_actions %||% NULL
-  settings <- ledgr_corporate_action_policy_settings(identity)
-  identities <- if (is.null(identity)) {
-    stats::setNames(rep(NA_character_, 4L), names(settings))
-  } else {
-    unlist(identity[names(settings)], use.names = TRUE)
-  }
+  display <- ledgr_corporate_action_policy_display(identity)
+  settings <- display$settings
+  identities <- display$identities
   choice_counts <- stats::setNames(
     integer(length(ledgr_corporate_action_choice_keys())),
     ledgr_corporate_action_choice_keys()
@@ -339,13 +392,18 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       character(1),
       "disposition_policy_id"
     )
-    ids <- ledgr_corporate_action_policy_ids()
-    choice_counts[["held_terminal_position.last_permissible"]] <- sum(
-      disposition_ids == ids$held_terminal_position[["last_permissible"]]
+    # Stored schema-1 runs carry v001 disposition ids; count both versions.
+    held_ids <- c(
+      ledgr_corporate_action_policy_ids()$held_terminal_position,
+      ledgr_corporate_action_policy_ids_v1()$held_terminal_position
     )
-    choice_counts[["held_terminal_position.last_mark"]] <- sum(
-      disposition_ids == ids$held_terminal_position[["last_mark"]]
-    )
+    disposition_choices <- names(held_ids)[match(disposition_ids, held_ids)]
+    for (choice in unique(disposition_choices[!is.na(disposition_choices)])) {
+      choice_counts[[paste0("held_terminal_position.", choice)]] <- sum(
+        disposition_choices == choice,
+        na.rm = TRUE
+      )
+    }
   }
   sum_meta <- function(values, name) {
     if (length(values) == 0L) return(0)
@@ -436,12 +494,12 @@ ledgr_print_corporate_action_summary <- function(summary) {
   ledgr_print_corporate_action_headline(summary)
   for (field in names(summary$selected_settings)) {
     cat(sprintf(
-      "  Setting %-25s %s\n",
+      "  Setting %-26s %s\n",
       paste0(field, ":"),
       ledgr_corporate_action_value(summary$selected_settings[[field]])
     ))
     cat(sprintf(
-      "  Identity %-24s %s\n",
+      "  Identity %-25s %s\n",
       paste0(field, ":"),
       ledgr_corporate_action_value(summary$selected_identities[[field]])
     ))

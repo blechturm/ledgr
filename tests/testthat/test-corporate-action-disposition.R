@@ -25,6 +25,8 @@ corporate_action_disposition_valuation <- function(mark = 90,
     mark = c(AAA = mark),
     reference = c(AAA = reference),
     age = c(AAA = as.integer(age)),
+    permissible = c(AAA = is.finite(mark)),
+    frozen = c(AAA = FALSE),
     source = c(AAA = source),
     source_ts = stats::setNames(
       as.POSIXct("2020-01-02 16:00:00", tz = "UTC"),
@@ -249,22 +251,25 @@ testthat::test_that("[LTB-0051] terminal mark policy disposes or refuses without
   unavailable <- corporate_action_disposition_plan()
   untouched <- corporate_action_disposition_state()
   before <- unserialize(serialize(untouched, NULL))
-  testthat::expect_error(
-    unavailable$plan$post_disposition(
-      2L,
-      "no-mark",
-      1L,
-      handler,
-      untouched,
-      corporate_action_disposition_valuation(
-        mark = NA_real_,
-        reference = NA_real_,
-        age = NA_integer_,
-        source = "missing"
-      )
-    ),
-    class = "ledgr_corporate_action_disposition_mark_unavailable"
+  # LDG-2955: a missing qualifying mark is a typed INCOMPLETE stop signal for
+  # the fold, not an abort, and it leaves state and events untouched.
+  no_mark <- unavailable$plan$post_disposition(
+    2L,
+    "no-mark",
+    1L,
+    handler,
+    untouched,
+    corporate_action_disposition_valuation(
+      mark = NA_real_,
+      reference = NA_real_,
+      age = NA_integer_,
+      source = "missing"
+    )
   )
+  testthat::expect_identical(no_mark$dispositions, 0L)
+  testthat::expect_identical(no_mark$stopped$ids, "AAA")
+  testthat::expect_identical(no_mark$stopped$reason_code, "terminal_mark_unavailable")
+  testthat::expect_identical(no_mark$state, before)
   testthat::expect_identical(untouched, before)
   testthat::expect_length(emitted, 2L)
 
