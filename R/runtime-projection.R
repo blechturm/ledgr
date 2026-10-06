@@ -564,6 +564,9 @@ ledgr_projection_feature_bundle_accessor <- function(projection,
   )
   universe <- as.character(universe)
   active_lookup <- prepared$active_lookup
+  last_feature_map <- NULL
+  last_feature_lookup <- NULL
+  has_last_feature_map <- FALSE
 
   function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
@@ -583,8 +586,21 @@ ledgr_projection_feature_bundle_accessor <- function(projection,
     lookup_map <- if (is.null(feature_map)) {
       if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
       active_lookup$value
+    } else if (has_last_feature_map &&
+               identical(feature_map, last_feature_map)) {
+      last_feature_lookup
     } else {
-      ledgr_explicit_feature_lookup(feature_map, prepared$name_lookup)
+      has_last_feature_map <<- FALSE
+      last_feature_map <<- NULL
+      last_feature_lookup <<- NULL
+      value <- ledgr_explicit_feature_lookup(
+        feature_map,
+        prepared$name_lookup
+      )
+      last_feature_map <<- feature_map
+      last_feature_lookup <<- value
+      has_last_feature_map <<- TRUE
+      value
     }
     values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
@@ -652,8 +668,7 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
     lookup_map <- if (is.null(feature_map)) {
       if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
       active_lookup$value
-    } else if (inherits(feature_map, "ledgr_feature_map") &&
-               has_last_feature_map &&
+    } else if (has_last_feature_map &&
                identical(feature_map, last_feature_map)) {
       last_feature_lookup
     } else {
@@ -664,11 +679,9 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
         feature_map,
         prepared$name_lookup
       )
-      if (inherits(feature_map, "ledgr_feature_map")) {
-        last_feature_map <<- feature_map
-        last_feature_lookup <<- value
-        has_last_feature_map <<- TRUE
-      }
+      last_feature_map <<- feature_map
+      last_feature_lookup <<- value
+      has_last_feature_map <<- TRUE
       value
     }
     values <- vapply(lookup_map, function(feature_id) {

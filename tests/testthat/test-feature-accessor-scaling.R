@@ -315,4 +315,30 @@ testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures"
   testthat::expect_error(counted("AAA", list(fast = "sma_2")))
   testthat::expect_error(counted("AAA", list(fast = "sma_2")))
   testthat::expect_identical(validation_calls, 9L)
+
+  lookup_calls <- 0L
+  original_lookup <- ledgr:::ledgr_explicit_feature_lookup
+  testthat::local_mocked_bindings(
+    ledgr_explicit_feature_lookup = function(feature_map, name_lookup) {
+      lookup_calls <<- lookup_calls + 1L
+      original_lookup(feature_map, name_lookup)
+    },
+    .package = "ledgr"
+  )
+  character_map <- c(second = "sma_3", first = "sma_2")
+  rebuilt_character_map <- stats::setNames(
+    unname(character_map),
+    names(character_map)
+  )
+  reordered_character_map <- c(first = "sma_2", second = "sma_3")
+  testthat::expect_identical(
+    counted("AAA", character_map),
+    c(second = 31, first = 11)
+  )
+  counted("BBB", character_map)
+  counted("AAA", rebuilt_character_map)
+  counted("AAA", reordered_character_map)
+  testthat::expect_error(counted("AAA", c(missing = "sma_99")))
+  counted("AAA", reordered_character_map)
+  testthat::expect_identical(lookup_calls, 4L)
 })

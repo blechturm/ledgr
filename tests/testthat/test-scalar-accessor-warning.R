@@ -252,36 +252,32 @@ testthat::test_that("[LTB-0102] scalar and active-map bundle loops warn at the a
     "ctx$vec$feature(name)"
   )
 
-  explicit_conditions <- list()
-  explicit <- withCallingHandlers(
-    ledgr_run(
-      ledgr_experiment(
-        snapshot,
-        function(ctx, params) {
-          values <- lapply(ctx$universe, function(id) {
-            ctx$features(id, c(signal = "sma_1"))
-          })
-          targets <- ctx$flat()
-          if (all(vapply(values, function(value) {
-            all(is.finite(value))
-          }, logical(1)))) {
-            targets[[1L]] <- 1
-          }
-          targets
-        },
-        features = feature_map,
-        opening = ledgr_opening(cash = 10000),
-        cost_model = ledgr_cost_zero()
-      ),
-      run_id = "explicit-feature-loop"
-    ),
-    ledgr_scalar_accessor_loop = function(condition) {
-      explicit_conditions[[length(explicit_conditions) + 1L]] <<- condition
-      invokeRestart("muffleWarning")
-    }
+  lookup <- new.env(parent = emptyenv())
+  lookup$universe <- fixture$ids
+  lookup$scalar_access_state <- ledgr:::ledgr_pulse_context_scalar_access_state()
+  explicit_accessor <- ledgr:::ledgr_pulse_context_feature_bundle_accessor(
+    function(instrument_id, feature_map = NULL) c(signal = 100),
+    lookup,
+    track_active_bundle = TRUE
   )
-  on.exit(close(explicit), add = TRUE)
-  testthat::expect_length(explicit_conditions, 0L)
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_pulse_context_record_scalar_access = function(...) {
+        rlang::abort(
+          "Explicit maps must stay outside active-bundle accounting.",
+          class = "ledgr_test_explicit_map_counted"
+        )
+      },
+      .package = "ledgr"
+    )
+    testthat::expect_silent(lapply(fixture$ids, function(id) {
+      explicit_accessor(id, c(signal = "sma_1"))
+    }))
+    testthat::expect_error(
+      explicit_accessor(fixture$ids[[1L]]),
+      class = "ledgr_test_explicit_map_counted"
+    )
+  })
 
   suppressed <- suppressWarnings(ledgr_run(
     exact_experiment,

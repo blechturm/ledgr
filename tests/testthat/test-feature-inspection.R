@@ -179,6 +179,18 @@ testthat::test_that("[LTB-0112] feature inspection refuses unresolved maps", {
       stable_after = c(2L, 4L)
     )
   )
+
+  validation_calls <- 0L
+  original_validate <- ledgr:::ledgr_validate_feature_map_object
+  testthat::local_mocked_bindings(
+    ledgr_validate_feature_map_object = function(x) {
+      validation_calls <<- validation_calls + 1L
+      original_validate(x)
+    },
+    .package = "ledgr"
+  )
+  ledgr_feature_contracts(concrete)
+  testthat::expect_identical(validation_calls, 1L)
 })
 
 testthat::test_that("[LTB-0186] feature params resolve inspection like execution", {

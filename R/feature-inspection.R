@@ -33,7 +33,10 @@
 #' @export
 ledgr_feature_contracts <- function(features, feature_params = NULL) {
   features <- ledgr_feature_contract_resolve(features, feature_params)
-  normalized <- ledgr_feature_contract_input(features)
+  normalized <- ledgr_feature_contract_input(
+    features,
+    feature_map_validated = inherits(features, "ledgr_feature_map")
+  )
   indicators <- normalized$indicators
   aliases <- normalized$aliases
   feature_ids <- vapply(indicators, function(ind) as.character(ind$id), character(1))
@@ -228,9 +231,12 @@ ledgr_feature_contract_resolve <- function(features, feature_params = NULL) {
   ledgr_resolve_feature_map(features, feature_params = feature_params)
 }
 
-ledgr_feature_contract_input <- function(features) {
+ledgr_feature_contract_input <- function(features,
+                                         feature_map_validated = FALSE) {
   if (inherits(features, "ledgr_feature_map")) {
-    ledgr_validate_feature_map_object(features)
+    if (!isTRUE(feature_map_validated)) {
+      ledgr_validate_feature_map_object(features)
+    }
     unresolved <- vapply(
       features$indicators,
       ledgr_feature_declaration_is_unresolved,
