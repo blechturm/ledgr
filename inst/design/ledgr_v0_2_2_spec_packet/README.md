@@ -424,6 +424,21 @@ corrected-tree fast run passed all 530 blocks in 105.46 seconds, and the gate
 checker passed run 1 against 112 seconds. The workstream is ready for Type 1
 close review; neither timing record is presented as a general speed claim.
 
+That review returned `CHANGES_REQUIRED`: quiet pairs showed the accepted retry
+had hidden a roughly 6% bundle-loop regression, and the memo contract still
+named concrete feature-map objects only. Commit `d72a73b` removes redundant
+singular resolution inside bundles, self-disables warning accounting after its
+one run-level warning and corrects the contract. A new three-triplet record
+passes on its first attempt: pre-cut bundle 34.72 seconds, candidate bundle
+36.06 and candidate plane 27.43, for ratios 1.039 and 0.761 with exact outputs.
+The review's availability-rebuild observation remains owned by LDG-2967.
+The corrected-tree fast profile also passes 530 of 530 blocks in 104.97
+seconds against the unchanged 112-second bound. Focused Type 1 re-review
+returned `PASS`: five independent mutations were detected, C1 and C2 were
+closed, and C3 remained correctly owned by LDG-2967. The maintainer accepted
+Workstream 16 on 2026-10-06. Three review invocations over four tickets is
+0.750, a historical review-gate breach recorded rather than padded.
+
 No ticket implements historical projection, recursive-indicator semantics,
 missingness, scheduling, context-frame retirement or a plural or subset
 feature-plane API. The conditional `ctx$feature_at()` shortcut remains in the
@@ -431,8 +446,8 @@ strategy-callback follow-up route because no measurement yet requires it.
 
 ## Cut 8: Audited antipattern repairs
 
-**Status:** Drafted on 2026-10-06; awaiting independent cut review and
-maintainer acceptance.
+**Status:** Accepted by the maintainer on 2026-10-06 without a separate cut
+review. Workstream 17 opens once Workstream 16 is accepted.
 
 The audit in `../audits/v0_2_2_antipattern_audit.md` walked every R and src
 change since `refs/tags/v0.2.1.0` against the seven shapes in the optimization
@@ -448,9 +463,7 @@ checklist that omits two of the manual's shapes.
 | --- | --- | --- | --- |
 | 17 Audited antipattern repairs | LDG-2966, LDG-2967 | copy-free fill staging; prepared availability lookups; batched run flags; closeout walk bound to the manual | the three shapes are gone with every public output exact, and closeouts walk the manual's shapes verbatim |
 
-One cut review plus one close review over two tickets is 1.000 against the
-0.5 gate, a planned breach. The maintainer may instead fold the tickets into
-the macro-plan WS8 residual performance cut.
+One planned close review over two tickets is 0.500 against the review gate.
 
 ## Expected later artifacts
 
