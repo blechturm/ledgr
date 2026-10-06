@@ -22,3 +22,17 @@ Rscript dev/bench/v0_2_2_feature_map_read_surface/check_record.R <record-dir>
 ```
 
 The record is implementation evidence, not a general engine-speed claim.
+
+## Close-review correction
+
+The Type 1 close review found that the accepted retry hid a repeatable cost on
+the bundle-loop arm. Commit `d72a73b` removes redundant singular resolution
+inside an already-resolved bundle and stops warning accounting after its one
+run-level warning. The independent correction record is under
+`evidence/close_review_correction/`.
+
+Its first three-triplet attempt compares pre-cut `6ef9b19` with candidate
+`d72a73b`. Median seconds are 34.72 for the pre-cut bundle, 36.06 for the
+candidate bundle and 27.43 for the candidate plane. Candidate/pre-cut is 1.039
+against the 1.05 gate; plane/candidate is 0.761 against 0.90. Fills, equity and
+strategy state are exact, and no retry was triggered.

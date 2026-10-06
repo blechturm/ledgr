@@ -1,0 +1,17 @@
+{
+  "repo_commit": "d72a73b9f43eb6ea9d270542749dd9009fb34f78",
+  "mode": "bundle",
+  "elapsed_s": 36.29,
+  "fills": {
+    "rows": 38957,
+    "hash": "37dfbd20cee5f49e44a4769fdd9d6e721130adc68c06730afe269303e7ff0b05"
+  },
+  "equity": {
+    "rows": 1260,
+    "hash": "f6a38dff9b32c0e0278a4bc289b8e693b5ee488b48bce638871c0dd4128f30ff"
+  },
+  "strategy_state": {
+    "rows": 1260,
+    "hash": "c85e879eef4357ac4e5131f2709d90f4b5d34d8455b8a34198229a6e569759d2"
+  }
+}

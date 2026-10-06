@@ -122,3 +122,44 @@ executed all 530 blocks with zero non-passes in 105.46 seconds. The ordinary
 gate checker passed run 1 against the unchanged 112-second bound, so the
 registered rule did not call for two more runs. Workstream 16 is ready for its
 Type 1 close review; this closeout remains agent-provisional until acceptance.
+
+## Type 1 Close-Review Corrections
+
+The Type 1 close review returned `CHANGES_REQUIRED` at invocation 2 of 4. It
+accepted the functional surface and all seven requested mutations, but found
+that quiet pairs consistently missed the 1.05 bundle-loop no-regression gate.
+It also found the memo sentence in `contracts.md` still limited the cache to a
+concrete feature-map object. Finally, it recorded the per-pulse availability
+rebuild of `instrument_rows` and `universe_members`; that finding is already
+owned by accepted Cut 8 ticket LDG-2967 and is not folded into this workstream.
+
+Commit `d72a73b` resolves the two Workstream 16 findings. Bundled reads consume
+the concrete IDs their active or explicit map has already resolved, rather
+than routing every ID through the singular resolver again. The shared explicit
+boundary now resolves and rejects unknown targets before the direct reader;
+the first focused run caught this preservation requirement before timing.
+Active-bundle warning accounting disables itself after its one run-level
+warning. LTB-0139 counts singular resolver calls and fails if bundle IDs are
+sent through it; LTB-0102 counts the post-warning recorder calls. The contract
+now covers both character and concrete explicit-map forms.
+
+The checked-in correction record under
+`dev/bench/v0_2_2_feature_map_read_surface/evidence/close_review_correction/`
+compares pre-cut `6ef9b19` with candidate `d72a73b` in three alternating fresh
+triplets. It passed on the initial attempt with medians 34.72 seconds for the
+pre-cut bundle, 36.06 for the candidate bundle and 27.43 for the candidate
+plane. Candidate/pre-cut is 1.039 against 1.05; plane/candidate is 0.761
+against 0.90. Fills, equity and strategy state are exact. The record checker
+prints `LEDGR_WS16_RECORD_OK`; no retry ran. Three earlier launch attempts
+produced no measurement row because Git refused the detached worktree during
+commit capture; the successful run used an explicit temporary safe-directory
+configuration and a new output directory.
+
+The final corrected-tree ordinary fast record at
+`C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-c1-fast-d72a73b` executes all
+530 blocks with zero non-passes in 104.97 seconds. The checker passes run 1
+against the unchanged 112-second bound, so no three-run series is required.
+
+A focused re-review would be invocation 3 over four tickets, 0.750 against the
+0.5 gate. That is recorded as a historical breach rather than repaired by
+padding the cut.
