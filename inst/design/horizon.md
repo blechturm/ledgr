@@ -29,6 +29,33 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-05 [ux] Non-fungible portfolio sleeves and mandate attribution
+
+The Momento application case distinguishes an active stock book, a benchmark
+sleeve and a risk-free sleeve. Ordinary ledgr positions are sufficient when
+the latter two are simply tradable instruments excluded from active selection.
+No new representation is needed for that case.
+
+The unresolved case is one instrument owned by more than one mandate, for
+example SPY held both as an active selection and as harvested-profit benchmark
+exposure. ledgr correctly nets both into one instrument position, but the
+target, fill and result contracts cannot preserve which mandate owns which
+shares after costs, failed fills, resume or later rebalancing. Strategy state
+can remember intended attribution but is not authoritative accounting evidence.
+
+Do not introduce subaccounts, sleeve IDs or tagged fills from this single
+application. Reopen in the portfolio-construction RFC only when a second real
+workflow requires non-fungible ownership or when a product claim requires
+mandate-level accounting rather than ordinary instrument-level positions. The
+RFC must first decide whether this is allocation diagnostics, subportfolio
+accounting or an external reporting concern. This entry authorizes no code,
+schema or ticket.
+
+Evidence and routing:
+`ledgr_v0_2_2_spec_packet/portfolio_method_ux_exercises.md`, application case
+"Momento cross-sectional momentum", inspected at upstream commit
+`b7264cd290d717b7bb3fe4f7f8a861c09529a4f4`.
+
 ### 2026-10-04 [infrastructure] Long-window memory and parallel workers
 
 The post-Cut-3 long-window record makes memory efficiency a standing design
@@ -1062,6 +1089,81 @@ Non-commitments:
 - the optimizer-is-a-strategy placement is a recommendation, not a resolved
   decision;
 - the constraint-placement and doc-reconciliation items are open design forks.
+
+**Status update 2026-10-05: history-first research UX.** The v0.2.2 research
+strategy UX discussion sharpened this later RFC's inputs without advancing its
+trigger. The public history object should retain instrument identity through
+the estimator boundary. A turnover-aware optimizer needs an authoritative
+current-weight helper whose denominator, cash, reserved exposure, held
+nonmembers, stale and frozen marks and rounding semantics are not yet bound.
+Those questions belong here after causal history ships; they must not be
+smuggled into the v0.2.2 representative minimum-variance proof.
+
+The placement conclusion is now clearer: constraints that define an optimum
+belong inside the allocation model, while the target-risk chain independently
+enforces post-intent limits. A constrained solution followed by the same hard
+risk guard is not duplication; solving unconstrained and clipping later is not
+equivalent. The Tidy Finance 120-period constrained-backtest workflow is a
+useful future acceptance scenario. The active non-binding narrative is
+`ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md`.
+
+**Status update 2026-10-05: Schur frontier-method exercise.** Schur
+complementary allocation fits the intended boundary without a Schur-specific
+engine surface: causal return history, an identity-preserving matrix adapter,
+an ordinary batch estimator, identified weights, then ledgr-owned targets,
+execution and accounting. Its damping parameter and lookback are ordinary
+candidate parameters; selecting them and reporting them on the same interval
+would still be selection leakage.
+
+The exercise exposed one general allocation question. Dropping an instrument
+from an estimation matrix because its history is incomplete is not the same as
+assigning it a zero target. The later portfolio-construction RFC must bind an
+explicit keep, liquidate or refuse policy for omitted held instruments and
+decide whether bare `ledgr_weights` remain sufficient or a small allocation
+result must also carry exclusions and deterministic model diagnostics. The
+history implementation owns included IDs, excluded IDs and exclusion reasons;
+it does not choose the execution consequence.
+
+Park the method integration itself behind that RFC trigger. Compare a native R
+implementation with a locked adapter to the maintained external implementation,
+require parity evidence, and preserve requested versus effective damping when
+the implementation can cap it. External runtime provenance belongs to the
+research adapter. None of this makes Schur, a Python bridge or a generic method
+catalogue a v0.2.2 commitment.
+
+### 2026-10-05 [strategy] Declared source bundles for reusable user strategy helpers
+
+The strategy tier model currently leaves a usability cliff. An unqualified
+user helper outside `function(ctx, params)` is Tier 3 and refused. Nesting the
+helper inside the strategy makes its source capturable but prevents ordinary
+reuse; putting every emerging estimator in a package is safe but premature.
+The v0.1.7.2 strategy specification anticipated `strategy_helpers` and
+deliberately deferred it until parallel sweeps made dependency transport a
+real product concern. That prerequisite now exists.
+
+Park a focused post-v0.2.2 RFC for an explicit strategy source bundle. Its
+candidate UX is a strategy entry function plus a named list of user functions.
+The mechanism must capture and hash every helper's source, recursively
+preflight declared dependencies, include the bundle in strategy identity,
+store and recover the complete source set, reconstruct the same private
+environment for ordinary runs, resume and parallel workers, record qualified
+package dependencies, and reject undeclared functions and mutable closure
+state. Serializing an arbitrary closure environment is not an acceptable
+shortcut.
+
+This is independent of portfolio optimization. The constrained-optimization
+example exposed the gap, but indicators, schedules and other substantial
+strategies can need the same reusable pure helpers. The RFC should therefore
+remain a strategy reproducibility and transport cycle, not become an optimizer
+API. It is explicitly outside v0.2.2.
+
+Non-commitments:
+
+- no public constructor name or helper-bundle syntax is bound;
+- no Tier 1 promotion occurs until source recovery and worker parity are
+  proven; and
+- this entry does not authorize function objects in JSON strategy parameters
+  or arbitrary environment capture.
 
 ### 2026-06-13 [ux] Walk-forward fold visualization helper and plotting dependency posture
 

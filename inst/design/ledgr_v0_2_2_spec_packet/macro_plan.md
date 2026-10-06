@@ -44,6 +44,14 @@ authority.
    and sealed membership reads may proceed through the bounded WS5 candidates;
    reducing scalar feature-call count belongs to WS3; broader indicator work
    belongs to WS4; and remaining writer work is re-profiled in WS8.
+8. Peak memory is an architectural constraint for history, estimators and
+   parallel execution, not release polish. Before WS3 binds a history
+   representation, it records the accepted current-tree phase baseline and a
+   preregistered memory budget for one run and a representative parallel
+   workload. New history or estimator capability may not materially exceed
+   that budget without an explicit maintainer decision and a routed follow-up;
+   equivalent matrices, per-instrument frames, wide frames and history panels
+   are not retained together merely for convenience.
 
 ## 2. Dependency structure
 
@@ -147,6 +155,14 @@ remain visible, and interruptions become resumable or classed failures.
 
 ### WS3. Point-in-time history and feature-map addressing
 
+- Use the [research strategy UX brief](research_strategy_ux_brief.md) as the
+  non-binding cross-RFC product direction. The owning feature, history,
+  indicator and scheduler syntheses decide which proposed surfaces survive.
+- Consume the completed
+  [cross-method UX exercise](portfolio_method_ux_exercises.md): eight
+  materially different portfolio methods reused the same proposed history,
+  identity, exclusion and target boundary without earning a method-specific
+  ledgr type.
 - Implement the accepted historical-projection direction from synthesis v11.
 - Provide a two-clock history representation that preserves observation and
   knowledge time.
@@ -158,8 +174,29 @@ remain visible, and interruptions become resumable or classed failures.
   proportional per-feature work before this call-count reduction is measured.
 - Bind missingness treatment, disclosure and numerical correctness at the
   history boundary.
+- Preserve the included instrument IDs, excluded instrument IDs and exclusion
+  reasons in the classed history result. An identity-preserving matrix adapter
+  exposes only the included estimation sample without requiring callers to
+  remove a time column or reconstruct names.
+- Provide a structural-completeness query for requested lookback and minimum
+  instrument count. Keep it distinct from WS4 indicator readiness and from
+  current execution admissibility.
 - Narrow expected sessions by instrument where the evidence requires it.
 - Use the same substrate in run, sweep and walk-forward paths.
+- Register a current-tree phase-memory baseline and an implementation budget
+  before choosing the representation. Measure live size, peak temporary
+  allocation and representative worker multiplication separately; do not
+  accept a representation whose peak exceeds the budget without an explicit
+  maintainer decision and a routed memory obligation.
+- Run one bounded local-worker spike against the existing `mirai` path using
+  `mori` shared memory for immutable prepared bars and feature matrices.
+  Compare setup and elapsed time, parent and worker RSS as worker count grows,
+  worker restart and cleanup, and whether history-frame, `collapse` and
+  indicator operations materialize private copies. The spike covers same-host
+  sharing only: it does not share DuckDB connections or mutable run state and
+  does not choose a dependency. Promote the mechanism only if public outputs
+  remain identical and the representative parallel workload shows a material
+  memory reduction.
 - Share ownership with WS4 for the history-start boundary: run-window warmup,
   walk-forward hydration and recursive history must use one causal rule.
 
@@ -180,7 +217,8 @@ WS3 measures that phase's peak alongside its time and avoids per-instrument
 data-frame construction during preparation.
 
 Exit: a strategy can request causal multi-instrument history through one public
-surface with stable identity and missingness semantics.
+surface with stable identity, explicit inclusion and exclusion evidence,
+structural completeness and missingness semantics.
 
 ### WS4. Recursive indicator semantics and strict-feature acceleration
 
@@ -286,10 +324,21 @@ valid exit when the measured cost is immaterial.
   this one public proof.
 - Keep the implementation ordinary enough to expose missing public capability
   rather than hiding it in strategy-specific plumbing.
+- Exercise a frontier-shaped acceptance case: causal observations-by-assets
+  input, an identity-preserving matrix boundary, identified long-only weights
+  and target conversion. Schur complementary allocation is evidence for this
+  shape, not a required dependency or the estimator that must ship.
+- Treat the completed method cards as design evidence, not as a substitute for
+  this runnable proof. Black-Litterman's upstream views and the paper-level DRO
+  adapter are explicitly outside the proof.
+- Make the behavior of an admissible held instrument omitted from the
+  estimation sample explicit in the proof. Do not let absence from a weight
+  vector silently choose between keep, liquidation and refusal.
 
 Exit: at least one nontrivial long-only portfolio strategy runs without private
 engine access, private history construction, research-side accounting or a
-model-management system.
+model-management system, and its estimation exclusions cannot silently become
+execution decisions.
 
 ### WS8. Residual performance pass and integrated release evidence
 
@@ -452,7 +501,12 @@ v0.2.2 is ready for its release gate only when:
    LFB-027) and a passing end-to-end record are linked. Otherwise the release
    states the exclusion explicitly. Registered on 2026-10-05 from the
    terminal-outcomes synthesis Section 6 and the Cut 6 cut review; LDG-2961
-   pins it with a documentation-contract test.
+   pins it with a documentation-contract test; and
+10. history preparation and the public estimator proof report live and peak
+    memory for one run and a representative parallel workload against the
+    preregistered WS3 budget. A breach is either corrected before release or
+    accepted explicitly with its user-visible limit and a durable follow-up;
+    it is not hidden inside the integrated runtime record.
 
 ## 7. Change control
 
