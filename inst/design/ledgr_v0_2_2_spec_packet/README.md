@@ -446,8 +446,8 @@ strategy-callback follow-up route because no measurement yet requires it.
 
 ## Cut 8: Audited antipattern repairs
 
-**Status:** Accepted by the maintainer on 2026-10-06 without a separate cut
-review. Workstream 17 opens once Workstream 16 is accepted.
+**Status:** Workstream 17 is `review_pending`. Both tickets are implemented;
+the agent-provisional closeout is ready for its single Type 1 close review.
 
 The audit in `../audits/v0_2_2_antipattern_audit.md` walked every R and src
 change since `refs/tags/v0.2.1.0` against the seven shapes in the optimization
@@ -473,6 +473,23 @@ candidate/pre-cut ratio with exact event and fill hashes. The ordinary
 Workstream 11 comparison passed all three shapes without retry: cold ratios
 0.984 to 1.003 and warm ratios 0.992 to 1.015 against the 1.10 gates.
 LDG-2967 now owns the two remaining code shapes and the closeout walk.
+
+LDG-2967 landed at `16e660b`. Availability folds now prepare their physical-
+axis hashed lookup once and enforce the changing decision axis through the
+pulse lookup. LTB-0189 counts one fold preparation for both a durable run and
+a sweep candidate; restoring the per-pulse build produces six and fails four
+assertions. Frozen exposure for run lists and comparisons now uses a constant
+four DBI reads independent of frozen-run count. LTB-0190 compares several
+frozen runs with their individual valuation summaries, preserves repeated IDs
+and dense typed-missing flags; restoring the old reader raises the count from
+four to six.
+
+The final ordinary Workstream 11 record passed all three shapes without retry:
+cold ratios 0.984 to 1.003 and warm ratios 0.992 to 1.004. Exact semantic
+hashes, the 757-pulse orientation and checker self-test pass. The fast profile
+passed 531 of 531 blocks in 104.51 seconds against 112. The closeout walks the
+manual's seven shapes verbatim for all seven changed production functions.
+One planned close review over two completed tickets is 0.500.
 
 ## Expected later artifacts
 

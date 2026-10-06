@@ -122,10 +122,10 @@ cuts:
     sequencing: "Workstream 17 is one serial claim. LDG-2966 repairs the material writer copy first and carries the wide-shape clock. LDG-2967 then removes the two minor shapes and binds the closeout walk to the manual's list. tickets.yml is the sole sequencing authority."
     out_of_scope: "The older sweep-diagnostics max() and rbind pattern that predates v0.2.2 (route separately if wanted); availability's per-pulse accessor-factory reconstruction beyond the two named environments, which remains macro-plan WS8; any change to events, fills, equity, trades, diagnostics, completion evidence, flags, identity, schemas or public API; parallel execution; new tolerances."
     workstreams: [17]
-    closeout: "LDG-2967's reconciliation and checked-in clocks form the Cut 8 closeout; no separate cut-level essay is created."
+    closeout: "audited_antipattern_repairs_closeout.md"
     accepted: "2026-10-06 by the maintainer. Workstream 17 opens after Workstream 16 is accepted, per its dependency."
-    close_review: "Pending Workstream 17 Type 1 close review."
-    status: "open"
+    close_review: "Agent-provisional at 16e660b; pending the single Workstream 17 Type 1 close review. One planned invocation over two completed tickets is 0.500."
+    status: "review_pending"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -265,7 +265,7 @@ workstreams:
   - id: 17
     name: "Audited antipattern repairs"
     cut: 8
-    status: "open"
+    status: "review_pending"
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17", reason: "One claim joins LDG-2966 and LDG-2967: the three audited shapes are removed without changing any public output, and the closeout walk now uses the manual's seven shapes verbatim. The review reproduces the per-fill write clock at small and large staging capacity, checks exact events, fills, equity, trades and diagnostics for run and sweep, mutates each repair back to its old shape, confirms the availability pulse builds no per-pulse hashed environment, confirms run-list and comparison flags equal the per-run valuation summary through one batched read, and walks the manual's seven shapes on every changed function."}
@@ -735,10 +735,10 @@ tickets:
   - id: "LDG-2967"
     title: "Remove the minor audited shapes and bind the closeout walk"
     workstream: 17
-    status: "pending"
+    status: "review_pending"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2966"]
     scope: "Repair audit findings F2 and F3 and the process gap. F2: build instrument_rows and universe_members once in run preparation and pass them to the availability path instead of rebuilding them per pulse, or remove them where nothing reads them (R/runtime-projection.R:475-491). F3: compute run-list and comparison frozen exposure for all frozen runs in one batched query and one grouped computation instead of two queries and a scan per run (R/valuation-summary.R:495-519). Process: amend review_obligations so every optimization closeout walks the seven shapes exactly as named in optimization_coding_style.qmd, The Seven Shapes And Their Replacements, rather than a locally restated list. Reconcile Workstream 17."
     acceptance: ["a structural counter shows the availability fold builds no per-pulse hashed environment for those two tables, and restoring the per-pulse build fails it; availability run and sweep outputs are exact", "ledgr_run_list() and ledgr_run_compare() report flags identical to ledgr_valuation_summary() for every run in a store holding several frozen runs, repeated IDs and dense runs; a counter shows a constant number of store reads independent of the frozen-run count, and restoring the per-run loop fails it", "review_obligations names the manual's seven shapes by reference, and the Workstream 17 closeout walks them verbatim on every changed function", "the fast profile, focused suites and ordinary Workstream 11 suite pass; each new load-bearing block is registered in tests/claims.yml; tickets LDG-2966 and LDG-2967 and Workstream 17 reconcile before Type 1 close review"]
-    evidence: []
+    evidence: ["Commit 16e660b prepares availability feature lookup state once per fold over the fixed physical axis and passes it through the pulse-context update. The changing decision axis remains enforced through the pulse lookup. It also avoids building and discarding the dense fast context on availability execution. LTB-0189 counts one preparation inside both a public durable fold and a one-candidate sweep fold, compares exact final equity, and fails four assertions when the old per-pulse build is reintroduced (six preparations).", "ledgr_run_assumption_flags_many() now performs one table check and three grouped queries independent of frozen-run count, splits frozen and equity rows once, computes each frozen valuation once and maps repeated output IDs with match(). LTB-0190 uses two frozen runs, a repeated ID and a dense run; public run-list and comparison values equal each frozen run's ledgr_valuation_summary(), dense flags retain typed missing, and restoring the pre-cut loop raises the multi-run count from four DBI reads to six and fails two assertions.", "review_obligations now names by reference and verbatim all seven headings in optimization_coding_style.qmd. audited_antipattern_repairs_closeout.md walks all seven for each of the seven production functions changed by LDG-2966 and LDG-2967. Focused suites pass. The checked-in ordinary Workstream 11 record compares a8669a3 with 16e660b in five alternating pairs per shape and passes without retry: cold ratios 0.9844 to 1.0029, warm ratios 0.9917 to 1.0036, exact semantic hashes and checker self-test. The fast profile passed 531/531 blocks in 104.51 seconds against 112 at C:/tmp/ledgr-ws17-fast."]

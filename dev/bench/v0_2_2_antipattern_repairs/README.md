@@ -48,3 +48,13 @@ Combine the six arm files as `writer_record.csv`, then run:
   dev/bench/v0_2_2_antipattern_repairs/evidence/writer/writer_record.csv
 ```
 
+## LDG-2967 Long-Window Record
+
+`evidence/ldg2967_long_window/` is the durable summary of the ordinary
+Workstream 11 comparison between accepted pre-Cut-8 commit `a8669a3` and
+candidate `16e660b`. It contains five alternating fresh-process pairs for all
+three ordinary shapes. The checker passed without retry: cold paired-median
+ratios range from 0.9844 to 1.0029 and warm ratios from 0.9917 to 1.0036,
+against the retained 1.10 ceiling. Semantic hashes and the accepted 757-pulse
+orientation match. These are regression gates, not a speedup claim for the two
+minor repairs.
