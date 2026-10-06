@@ -1,0 +1,75 @@
+{
+  "shape_id": "feature_gaps",
+  "commit": "a473140ebffcc12280b2e7ab297db22385fd7cf0",
+  "product_tree_status": "",
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6.9000",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_feature_gaps",
+    "snapshot_hash": "fd8705f9a020251300f4ed5f3eb7d535112b7605a5eb9e944d65907bfa74b983",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE",
+    "elapsed_s": 7.3800000000000008,
+    "setup_s": 2.9100000000000001,
+    "loop_s": 4.3000000000000007,
+    "finalize_s": 0.16999999999999993,
+    "strategy_calls": 757,
+    "identities": {
+      "equity": {
+        "rows": 757,
+        "hash": "8d45a0c4f778b20046d8e33d2e3d81967ffe5edee532ba0d5c24b0bf899d55c4"
+      },
+      "fills": {
+        "rows": 1347,
+        "hash": "a7f9f5763197c9167e1140d7d84ec480f3073ade5424348de475e433540cb2ea"
+      },
+      "trades": {
+        "rows": 671,
+        "hash": "214d4cacb35fce23eb77102c3d2d1709b40dad511e4271b40e2a968f816b94a3"
+      },
+      "diagnostics": {
+        "rows": 78292,
+        "hash": "c66543284e6aed51912f36edb12c544903bb3f97aa17cf5c35b30b2f687bf227"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "42b3c08eaee488a7259a84c2643cb1b4c1e575395abd028a280116d0015912ab"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE",
+    "elapsed_s": 6.3099999999999987,
+    "setup_s": 2.2599999999999998,
+    "loop_s": 3.7000000000000011,
+    "finalize_s": 0.34999999999999787,
+    "strategy_calls": 757,
+    "identities": {
+      "equity": {
+        "rows": 757,
+        "hash": "8d45a0c4f778b20046d8e33d2e3d81967ffe5edee532ba0d5c24b0bf899d55c4"
+      },
+      "fills": {
+        "rows": 1347,
+        "hash": "a7f9f5763197c9167e1140d7d84ec480f3073ade5424348de475e433540cb2ea"
+      },
+      "trades": {
+        "rows": 671,
+        "hash": "214d4cacb35fce23eb77102c3d2d1709b40dad511e4271b40e2a968f816b94a3"
+      },
+      "diagnostics": {
+        "rows": 78292,
+        "hash": "c66543284e6aed51912f36edb12c544903bb3f97aa17cf5c35b30b2f687bf227"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "42b3c08eaee488a7259a84c2643cb1b4c1e575395abd028a280116d0015912ab"
+      }
+    }
+  },
+  "facts_resolve": null
+}
