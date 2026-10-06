@@ -429,6 +429,29 @@ missingness, scheduling, context-frame retirement or a plural or subset
 feature-plane API. The conditional `ctx$feature_at()` shortcut remains in the
 strategy-callback follow-up route because no measurement yet requires it.
 
+## Cut 8: Audited antipattern repairs
+
+**Status:** Drafted on 2026-10-06; awaiting independent cut review and
+maintainer acceptance.
+
+The audit in `../audits/v0_2_2_antipattern_audit.md` walked every R and src
+change since `refs/tags/v0.2.1.0` against the seven shapes in the optimization
+coding-style manual. It found three introduced shapes. The writer's per-pulse
+fill staging copies its whole list on each write, which is minor at 500
+instruments but material when thousands of names trade in one pulse. Two
+smaller ones are a per-pulse rebuild of two lookup environments on the
+availability path and a per-frozen-run read loop under run lists and
+comparison. It also found that v0.2.2 closeouts walked a locally restated
+checklist that omits two of the manual's shapes.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 17 Audited antipattern repairs | LDG-2966, LDG-2967 | copy-free fill staging; prepared availability lookups; batched run flags; closeout walk bound to the manual | the three shapes are gone with every public output exact, and closeouts walk the manual's shapes verbatim |
+
+One cut review plus one close review over two tickets is 1.000 against the
+0.5 gate, a planned breach. The maintainer may instead fold the tickets into
+the macro-plan WS8 residual performance cut.
+
 ## Expected later artifacts
 
 - accepted design records or explicit references to their existing locations;
