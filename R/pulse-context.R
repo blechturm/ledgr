@@ -593,6 +593,7 @@ ledgr_pulse_context_record_scalar_access <- function(lookup,
                                                        vector_form) {
   state <- lookup$scalar_access_state
   if (!is.environment(state)) return(invisible(NULL))
+  if (isTRUE(state$warning_emitted)) return(invisible(NULL))
   universe_size <- length(lookup$universe %||% character())
   if (universe_size < 100L) return(invisible(NULL))
   if (!identical(state$count_pulse, state$pulse)) {
