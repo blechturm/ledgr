@@ -209,3 +209,63 @@ ledgr_feature_lookup_map <- function(feature_map = NULL, active_alias_map = NULL
   }
   stats::setNames(unname(feature_ids), names(feature_ids))
 }
+
+ledgr_feature_name_lookup_state <- function(feature_ids,
+                                            active_alias_map = NULL,
+                                            normalized = FALSE) {
+  feature_ids <- sort(unique(as.character(feature_ids)))
+  feature_ids <- feature_ids[!is.na(feature_ids) & nzchar(feature_ids)]
+  alias_map <- if (isTRUE(normalized)) {
+    active_alias_map
+  } else {
+    ledgr_normalize_alias_map(active_alias_map)
+  }
+  alias_env <- list2env(
+    as.list(alias_map %||% stats::setNames(character(), character())),
+    hash = TRUE,
+    parent = emptyenv()
+  )
+  feature_env <- list2env(
+    stats::setNames(as.list(feature_ids), feature_ids),
+    hash = TRUE,
+    parent = emptyenv()
+  )
+  list(
+    alias_map = alias_map,
+    aliases = names(alias_map) %||% character(),
+    feature_ids = feature_ids,
+    alias_env = alias_env,
+    feature_env = feature_env
+  )
+}
+
+ledgr_resolve_feature_name <- function(feature_name,
+                                       prepared,
+                                       instrument_id = NULL) {
+  if (!is.character(feature_name) || length(feature_name) != 1L ||
+      is.na(feature_name) || !nzchar(feature_name)) {
+    rlang::abort(
+      "`feature_name` must be a non-empty character scalar.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  resolved <- prepared$alias_env[[feature_name]]
+  if (is.null(resolved)) resolved <- prepared$feature_env[[feature_name]]
+  if (!is.null(resolved)) return(as.character(resolved))
+
+  where <- if (is.null(instrument_id)) {
+    ""
+  } else {
+    sprintf(" for instrument_id `%s`", instrument_id)
+  }
+  rlang::abort(
+    sprintf(
+      "Unknown feature name `%s`%s. Active aliases: %s. Concrete feature IDs: %s.",
+      feature_name,
+      where,
+      ledgr_feature_names_message(prepared$aliases),
+      ledgr_feature_names_message(prepared$feature_ids)
+    ),
+    class = "ledgr_unknown_feature_id"
+  )
+}

@@ -407,7 +407,7 @@ testthat::test_that("pulse context feature accessor fails loudly on unknown feat
   )
   testthat::expect_error(
     ctx$feature("AAA", "returns_20"),
-    "Available feature IDs: return_20",
+    "Active aliases: <none>. Concrete feature IDs: return_20",
     fixed = TRUE
   )
   testthat::expect_error(
@@ -444,7 +444,7 @@ testthat::test_that("pulse context feature accessor fails when no features are r
   )
   testthat::expect_error(
     ctx$feature("AAA", "rsi_20"),
-    "Available feature IDs: <none>",
+    "Active aliases: <none>. Concrete feature IDs: <none>",
     fixed = TRUE
   )
 })
@@ -539,7 +539,7 @@ testthat::test_that("pulse context feature maps fail loudly for invalid lookup",
   )
   testthat::expect_error(
     ctx$features("AAA", ledgr_feature_map(ret = ledgr_ind_returns(2))),
-    "Available feature IDs: sma_2",
+    "Active aliases: <none>. Concrete feature IDs: sma_2",
     fixed = TRUE,
     class = "ledgr_unknown_feature_id"
   )

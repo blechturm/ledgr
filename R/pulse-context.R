@@ -52,39 +52,27 @@ ledgr_feature_names_message <- function(feature_names) {
   paste(feature_names, collapse = ", ")
 }
 
-ledgr_feature_accessor <- function(features) {
+ledgr_feature_accessor <- function(features,
+                                   active_alias_map = NULL,
+                                   prepared = NULL) {
   force(features)
   available_features <- ledgr_feature_names(features)
+  if (is.null(prepared)) {
+    prepared <- ledgr_feature_name_lookup_state(
+      available_features,
+      active_alias_map = active_alias_map
+    )
+  }
 
   function(instrument_id, feature_name, default = NA_real_) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
       rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
     }
-    if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
-      rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-    }
-    if (!ledgr_feature_table_ready(features)) {
-      rlang::abort(
-        sprintf(
-          "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
-          feature_name,
-          instrument_id,
-          ledgr_feature_names_message(available_features)
-        ),
-        class = "ledgr_unknown_feature_id"
-      )
-    }
-    if (!(feature_name %in% available_features)) {
-      rlang::abort(
-        sprintf(
-          "Unknown feature ID `%s` for instrument_id `%s`. Available feature IDs: %s.",
-          feature_name,
-          instrument_id,
-          ledgr_feature_names_message(available_features)
-        ),
-        class = "ledgr_unknown_feature_id"
-      )
-    }
+    feature_name <- ledgr_resolve_feature_name(
+      feature_name,
+      prepared,
+      instrument_id = instrument_id
+    )
 
     idx <- which(
       as.character(features[["instrument_id"]]) == instrument_id &
@@ -96,10 +84,20 @@ ledgr_feature_accessor <- function(features) {
   }
 }
 
-ledgr_feature_bundle_accessor <- function(features, universe, active_alias_map = NULL) {
+ledgr_feature_bundle_accessor <- function(features,
+                                          universe,
+                                          active_alias_map = NULL,
+                                          prepared = NULL) {
   force(features)
-  feature <- ledgr_feature_accessor(features)
+  if (is.null(prepared)) {
+    prepared <- ledgr_feature_name_lookup_state(
+      ledgr_feature_names(features),
+      active_alias_map = active_alias_map
+    )
+  }
+  feature <- ledgr_feature_accessor(features, prepared = prepared)
   universe <- as.character(universe)
+  active_lookup <- prepared$alias_map
 
   function(instrument_id, feature_map = NULL) {
     if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
@@ -116,7 +114,11 @@ ledgr_feature_bundle_accessor <- function(features, universe, active_alias_map =
       )
     }
 
-    lookup_map <- ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+    lookup_map <- if (is.null(feature_map) && !is.null(active_lookup)) {
+      active_lookup
+    } else {
+      ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+    }
 
     values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
@@ -137,25 +139,22 @@ ledgr_feature_bundle_accessor <- function(features, universe, active_alias_map =
   }
 }
 
-ledgr_feature_vector_accessor <- function(features, universe) {
+ledgr_feature_vector_accessor <- function(features,
+                                          universe,
+                                          active_alias_map = NULL,
+                                          prepared = NULL) {
   force(features)
   universe <- as.character(universe)
   available_features <- ledgr_feature_names(features)
+  if (is.null(prepared)) {
+    prepared <- ledgr_feature_name_lookup_state(
+      available_features,
+      active_alias_map = active_alias_map
+    )
+  }
 
   function(feature_name, default = NA_real_) {
-    if (!is.character(feature_name) || length(feature_name) != 1L || is.na(feature_name) || !nzchar(feature_name)) {
-      rlang::abort("`feature_name` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-    }
-    if (!ledgr_feature_table_ready(features) || !(feature_name %in% available_features)) {
-      rlang::abort(
-        sprintf(
-          "Unknown feature ID `%s`. Available feature IDs: %s.",
-          feature_name,
-          ledgr_feature_names_message(available_features)
-        ),
-        class = "ledgr_unknown_feature_id"
-      )
-    }
+    feature_name <- ledgr_resolve_feature_name(feature_name, prepared)
 
     out <- rep(as.numeric(default), length(universe))
     instrument_id <- as.character(features[["instrument_id"]])
@@ -265,25 +264,48 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          features_wide = NULL,
                                          active_alias_map = NULL) {
   if (!is.null(projection)) {
+    prepared_feature_lookup <- ledgr_projection_feature_lookup_state(
+      projection,
+      feature_ids = feature_ids,
+      universe = universe,
+      active_alias_map = active_alias_map
+    )
     if (!is.data.frame(features)) {
       features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
     }
     if (!is.data.frame(features_wide)) {
       features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
     }
-    feature <- ledgr_projection_feature_accessor(projection, pulse_idx, feature_ids = feature_ids)
+    feature <- ledgr_projection_feature_accessor(
+      projection,
+      pulse_idx,
+      feature_ids = feature_ids,
+      prepared = prepared_feature_lookup
+    )
     feature <- ledgr_pulse_context_feature_accessor(
       feature,
       ctx$.pulse_lookup,
       track_scalar_access = length(universe) >= 100L
     )
-    feature_vector <- ledgr_projection_feature_vector_accessor(projection, pulse_idx, feature_ids = feature_ids)
+    feature_vector <- ledgr_projection_feature_vector_accessor(
+      projection,
+      pulse_idx,
+      feature_ids = feature_ids,
+      prepared = prepared_feature_lookup
+    )
     feature_bundle <- ledgr_projection_feature_bundle_accessor(
       projection,
       pulse_idx,
       universe,
       feature_ids = feature_ids,
-      active_alias_map = active_alias_map
+      active_alias_map = active_alias_map,
+      prepared = prepared_feature_lookup
+    )
+    feature_bundle <- ledgr_pulse_context_feature_bundle_accessor(
+      feature_bundle,
+      ctx$.pulse_lookup,
+      track_active_bundle = length(universe) >= 100L &&
+        isTRUE(prepared_feature_lookup$active_lookup$valid)
     )
     current_pulse_idx <- as.integer(pulse_idx)
     current_feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
@@ -313,17 +335,40 @@ ledgr_attach_feature_helpers <- function(ctx,
     return(ctx)
   }
 
+  prepared_feature_lookup <- ledgr_feature_name_lookup_state(
+    ledgr_feature_names(features),
+    active_alias_map = active_alias_map
+  )
+  feature <- ledgr_feature_accessor(features, prepared = prepared_feature_lookup)
+  feature_vector <- ledgr_feature_vector_accessor(
+    features,
+    universe,
+    prepared = prepared_feature_lookup
+  )
+  feature_bundle <- ledgr_feature_bundle_accessor(
+    features,
+    universe,
+    active_alias_map = active_alias_map,
+    prepared = prepared_feature_lookup
+  )
+  feature_bundle <- ledgr_pulse_context_feature_bundle_accessor(
+    feature_bundle,
+    ctx$.pulse_lookup,
+    track_active_bundle = length(universe) >= 100L &&
+      !is.null(prepared_feature_lookup$alias_map)
+  )
+
   if (is.environment(ctx)) {
     ctx$feature_table <- features
     ctx$features_wide <- ledgr_features_wide(features)
     ctx$.feature_table_current <- NULL
     ctx$feature <- ledgr_pulse_context_feature_accessor(
-      ledgr_feature_accessor(features),
+      feature,
       ctx$.pulse_lookup,
       track_scalar_access = length(universe) >= 100L
     )
-    ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
-    ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
+    ctx$.feature_vector <- feature_vector
+    ctx$features <- feature_bundle
     return(invisible(ctx))
   }
 
@@ -331,12 +376,12 @@ ledgr_attach_feature_helpers <- function(ctx,
   ctx$features_wide <- ledgr_features_wide(features)
   ctx$.feature_table_current <- NULL
   ctx$feature <- ledgr_pulse_context_feature_accessor(
-    ledgr_feature_accessor(features),
+    feature,
     ctx$.pulse_lookup,
     track_scalar_access = length(universe) >= 100L
   )
-  ctx$.feature_vector <- ledgr_feature_vector_accessor(features, universe)
-  ctx$features <- ledgr_feature_bundle_accessor(features, universe, active_alias_map = active_alias_map)
+  ctx$.feature_vector <- feature_vector
+  ctx$features <- feature_bundle
   ctx
 }
 
@@ -464,6 +509,13 @@ ledgr_fast_context_state <- function(universe, projection = NULL, feature_ids = 
       active_alias_map = active_alias_map,
       prepared = prepared_feature_lookup
     )
+    out$features <- ledgr_pulse_context_feature_bundle_accessor(
+      out$features,
+      lookup,
+      track_active_bundle = length(universe) >= 100L &&
+        isTRUE(prepared_feature_lookup$active_lookup$valid)
+    )
+    out$prepared_feature_lookup <- prepared_feature_lookup
     out$feature_table_current <- function() {
       ledgr_projection_feature_table(
         projection,
@@ -499,7 +551,8 @@ ledgr_update_fast_pulse_context_helpers <- function(ctx,
     ctx$.feature_vector <- ledgr_projection_feature_vector_accessor(
       projection,
       pulse_idx,
-      feature_ids = fast_context$feature_ids
+      feature_ids = fast_context$feature_ids,
+      prepared = fast_context$prepared_feature_lookup
     )
     if (!is.data.frame(features_wide)) {
       features_wide <- ledgr_projection_features_wide(
@@ -580,6 +633,24 @@ ledgr_pulse_context_feature_accessor <- function(feature,
       "ctx$vec$feature(feature_id)"
     )
     feature(instrument_id, feature_name, default = default)
+  }
+}
+
+ledgr_pulse_context_feature_bundle_accessor <- function(features,
+                                                         lookup,
+                                                         track_active_bundle = FALSE) {
+  force(features)
+  if (!isTRUE(track_active_bundle)) return(features)
+
+  function(instrument_id, feature_map = NULL) {
+    if (is.null(feature_map)) {
+      ledgr_pulse_context_record_scalar_access(
+        lookup,
+        "features",
+        "ctx$vec$feature(name)"
+      )
+    }
+    features(instrument_id, feature_map = feature_map)
   }
 }
 

@@ -172,7 +172,7 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without f
   testthat::expect_identical(small_ctx$close(ids[[1L]]), 100)
 })
 
-testthat::test_that("[LTB-0102] exact-ID feature loops warn but mapped alias loops do not", {
+testthat::test_that("[LTB-0102] scalar and active-map bundle loops warn at the axis size", {
   fixture <- ledgr_scalar_warning_fixture()
   snapshot <- fixture$snapshot
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -241,7 +241,47 @@ testthat::test_that("[LTB-0102] exact-ID feature loops warn but mapped alias loo
     }
   )
   on.exit(close(mapped), add = TRUE)
-  testthat::expect_length(mapped_conditions, 0L)
+  testthat::expect_length(mapped_conditions, 1L)
+  testthat::expect_identical(mapped_conditions[[1L]]$accessor, "features")
+  testthat::expect_identical(
+    mapped_conditions[[1L]]$observed_call_count,
+    100L
+  )
+  testthat::expect_identical(
+    mapped_conditions[[1L]]$vector_form,
+    "ctx$vec$feature(name)"
+  )
+
+  explicit_conditions <- list()
+  explicit <- withCallingHandlers(
+    ledgr_run(
+      ledgr_experiment(
+        snapshot,
+        function(ctx, params) {
+          values <- lapply(ctx$universe, function(id) {
+            ctx$features(id, c(signal = "sma_1"))
+          })
+          targets <- ctx$flat()
+          if (all(vapply(values, function(value) {
+            all(is.finite(value))
+          }, logical(1)))) {
+            targets[[1L]] <- 1
+          }
+          targets
+        },
+        features = feature_map,
+        opening = ledgr_opening(cash = 10000),
+        cost_model = ledgr_cost_zero()
+      ),
+      run_id = "explicit-feature-loop"
+    ),
+    ledgr_scalar_accessor_loop = function(condition) {
+      explicit_conditions[[length(explicit_conditions) + 1L]] <<- condition
+      invokeRestart("muffleWarning")
+    }
+  )
+  on.exit(close(explicit), add = TRUE)
+  testthat::expect_length(explicit_conditions, 0L)
 
   suppressed <- suppressWarnings(ledgr_run(
     exact_experiment,

@@ -32,9 +32,18 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
     active_alias_map = c(short = "sma_2", long = "sma_3"),
     prepared = prepared
   )
+  feature_vector <- ledgr:::ledgr_projection_feature_vector_accessor(
+    projection,
+    2L,
+    feature_ids = c("sma_2", "sma_3"),
+    prepared = prepared
+  )
 
   testthat::expect_identical(feature("AAA", "sma_2"), 11)
+  testthat::expect_identical(feature("AAA", "short"), 11)
   testthat::expect_identical(feature("BBB", "sma_3"), 41)
+  testthat::expect_identical(feature_vector("short"), c(11, 21))
+  testthat::expect_identical(feature_vector("sma_2"), c(11, 21))
   testthat::expect_identical(feature("NOPE", "sma_2"), NA_real_)
   testthat::expect_identical(feature("NOPE", "sma_2", default = -1), -1)
   testthat::expect_identical(
@@ -47,7 +56,7 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   )
   testthat::expect_error(
     feature("AAA", "missing"),
-    "Unknown feature ID `missing` for instrument_id `AAA`. Available feature IDs: sma_2, sma_3.",
+    "Unknown feature name `missing` for instrument_id `AAA`. Active aliases: short, long. Concrete feature IDs: sma_2, sma_3.",
     class = "ledgr_unknown_feature_id",
     fixed = TRUE
   )
@@ -81,6 +90,7 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   )
   for (i in seq_len(20L)) {
     testthat::expect_identical(fast$feature("AAA", "sma_2"), 10)
+    testthat::expect_identical(fast$feature("AAA", "short"), 10)
     testthat::expect_identical(fast$features("BBB"), c(short = 20, long = 40))
   }
   testthat::expect_identical(calls, 1L)
@@ -94,7 +104,7 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   )), collapse = "\n")
   testthat::expect_match(
     scalar_source,
-    "is.null(known_features[[feature_name]])",
+    "ledgr_resolve_feature_name(",
     fixed = TRUE
   )
   testthat::expect_match(
@@ -243,7 +253,7 @@ testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures"
   )
   testthat::expect_error(
     accessor("AAA", unknown),
-    "Unknown feature ID `sma_99` for instrument_id `AAA`. Available feature IDs: sma_2, sma_3.",
+    "Unknown feature name `sma_99` for instrument_id `AAA`. Active aliases: <none>. Concrete feature IDs: sma_2, sma_3.",
     class = "ledgr_unknown_feature_id",
     fixed = TRUE
   )
