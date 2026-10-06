@@ -71,6 +71,38 @@ restating its naming design.
 
 ## Verification Record
 
-The performance and final gate rows are filled only from checked-in raw
-evidence. Until those rows exist and pass, this closeout remains
-agent-provisional and Workstream 16 remains open.
+The checked-in three-arm record under
+`dev/bench/v0_2_2_feature_map_read_surface/evidence/accepted/` has exact
+normalized fills, equity and strategy state across every arm. Its initial
+triplet measured 35.24 seconds for the pre-cut bundle loop, 37.31 seconds for
+the candidate bundle loop and 27.88 seconds for the candidate plane. Because
+the candidate/pre-cut ratio was 1.059, the preregistered retry ran. The retry
+measured 44.07, 45.10 and 28.21 seconds respectively: the plane/loop ratio is
+0.625 and the candidate/pre-cut ratio is 1.023. Both gates pass.
+
+The first ordinary Workstream 11 run exposed a real implementation defect:
+availability rebuilt immutable alias and feature-name environments on every
+pulse. `a1f9349` prepares that state once per run. The provenance-clean
+five-pair record under `evidence/long_window/` compares accepted `6ef9b19`
+with candidate `a473140`; its checker and self-test pass without a retry.
+Cold ratios are 1.000 for `feature_gaps`, 1.034 for `fact_churn_terminal` and
+1.045 for `availability_sweep`. Warm ratios are 0.994, 1.037 and 1.000. All
+are within the existing 1.10 gate. A prior timing-equivalent run was rejected
+because another session advanced the candidate commit during measurement;
+its mixed provenance was not checked in.
+
+The focused feature-map, accessor, warning, inspection,
+documentation-contract and control-plane suites pass. The four named Quarto
+articles reproduce their checked-in Markdown renders. The first final fast
+run also exposed and caused correction of a claim registration error:
+LCL-0187 promised `fast` while its file-level detector belongs to `review`.
+
+The remaining blocker is the absolute ordinary fast timing gate. The final
+committed tree executes all 530 blocks with zero non-passes, but its clean
+three-run record at
+`C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-final-fast-cool` is 122.41,
+108.62 and 119.51 seconds. The 119.51-second median exceeds the unchanged
+112-second bound. A same-host accepted pre-cut control took 140.55 seconds,
+so this does not attribute a regression to Workstream 16, but it also does not
+satisfy the absolute gate. The closeout remains agent-provisional and
+Workstream 16 remains open. No further timing series is selected post hoc.

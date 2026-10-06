@@ -41,8 +41,8 @@ ledger.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
   complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
   tickets, one complete Cut 4 ticket, two complete Cut 5 tickets and nine
-  complete Cut 6 tickets. Four corrected Cut 7 tickets await maintainer
-  acceptance.
+  complete Cut 6 tickets. Cut 7 has three complete implementation tickets;
+  its evidence ticket remains open on the absolute fast timing gate.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -405,6 +405,21 @@ Outputs must be exact. The preregistered candidate plane/loop ratio is at most
 0.90 and the candidate/pre-cut loop ratio at most 1.05. The existing
 Workstream 11 `feature_gaps` comparison remains the availability no-regression
 gate. None is a general engine-speed claim.
+
+Implementation through `a4cfc21` supplies the singular resolver, explicit-map
+guard, parameterized inspection, standing contracts, public teaching and
+checked-in performance records. Exact outputs hold across all three timing
+arms. The preregistered retry passes at 0.625 for candidate plane over
+candidate loop and 1.023 for candidate loop over pre-cut loop. The ordinary
+Workstream 11 record passes all three shapes, with cold ratios from 1.000 to
+1.045 and warm ratios from 0.994 to 1.037 against the 1.10 bound.
+
+Workstream 16 is not ready for close review. All 530 blocks pass in each final
+fast run, but the clean 122.41, 108.62 and 119.51 second series has a 119.51
+second median against the unchanged 112 second bound. A same-host accepted
+pre-cut control took 140.55 seconds, so the record does not attribute this
+absolute overrun to the workstream. It remains a gate failure rather than a
+speed claim or an invitation to select another timing series post hoc.
 
 No ticket implements historical projection, recursive-indicator semantics,
 missingness, scheduling, context-frame retirement or a plural or subset
