@@ -269,3 +269,24 @@ ledgr_resolve_feature_name <- function(feature_name,
     class = "ledgr_unknown_feature_id"
   )
 }
+
+ledgr_explicit_feature_lookup <- function(feature_map, prepared) {
+  lookup <- ledgr_feature_lookup_map(feature_map)
+  for (alias in names(lookup)) {
+    existing <- prepared$alias_env[[alias]]
+    if (is.null(existing)) existing <- prepared$feature_env[[alias]]
+    requested <- unname(lookup[[alias]])
+    if (!is.null(existing) && !identical(as.character(existing), requested)) {
+      rlang::abort(
+        sprintf(
+          "Explicit feature alias `%s` requests `%s`, but that name already resolves to `%s` in this context.",
+          alias,
+          requested,
+          as.character(existing)
+        ),
+        class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
+      )
+    }
+  }
+  lookup
+}

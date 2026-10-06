@@ -117,7 +117,7 @@ ledgr_feature_bundle_accessor <- function(features,
     lookup_map <- if (is.null(feature_map) && !is.null(active_lookup)) {
       active_lookup
     } else {
-      ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+      ledgr_explicit_feature_lookup(feature_map, prepared)
     }
 
     values <- vapply(lookup_map, function(feature_id) {

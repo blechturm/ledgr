@@ -463,7 +463,7 @@ ledgr_projection_feature_lookup_state <- function(projection,
         active_alias_map = active_alias_map
       )
     ),
-    error = function(e) list(valid = FALSE, value = NULL)
+    error = function(e) list(valid = FALSE, value = NULL, error = e)
   )
   name_lookup <- ledgr_feature_name_lookup_state(
     available_features,
@@ -560,10 +560,11 @@ ledgr_projection_feature_bundle_accessor <- function(projection,
       )
     }
 
-    lookup_map <- if (is.null(feature_map) && isTRUE(active_lookup$valid)) {
+    lookup_map <- if (is.null(feature_map)) {
+      if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
       active_lookup$value
     } else {
-      ledgr_feature_lookup_map(feature_map, active_alias_map = active_alias_map)
+      ledgr_explicit_feature_lookup(feature_map, prepared$name_lookup)
     }
     values <- vapply(lookup_map, function(feature_id) {
       value <- feature(instrument_id, feature_id)
@@ -628,7 +629,8 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
       )
     }
 
-    lookup_map <- if (is.null(feature_map) && isTRUE(active_lookup$valid)) {
+    lookup_map <- if (is.null(feature_map)) {
+      if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
       active_lookup$value
     } else if (inherits(feature_map, "ledgr_feature_map") &&
                has_last_feature_map &&
@@ -638,9 +640,9 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
       has_last_feature_map <<- FALSE
       last_feature_map <<- NULL
       last_feature_lookup <<- NULL
-      value <- ledgr_feature_lookup_map(
+      value <- ledgr_explicit_feature_lookup(
         feature_map,
-        active_alias_map = active_alias_map
+        prepared$name_lookup
       )
       if (inherits(feature_map, "ledgr_feature_map")) {
         last_feature_map <<- feature_map

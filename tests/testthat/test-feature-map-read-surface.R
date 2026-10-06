@@ -101,6 +101,76 @@ testthat::test_that("[LTB-0183] singular reads share active-alias resolution", {
   testthat::expect_identical(empty_ctx$vec$feature("short"), numeric())
 })
 
+testthat::test_that("[LTB-0185] explicit maps cannot redefine known names", {
+  bars <- feature_map_read_surface_bars("AAA", 4L)
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(2L),
+    slow = ledgr_ind_sma(3L)
+  )
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = "AAA",
+    ts_utc = max(bars$ts_utc),
+    features = features
+  )
+  on.exit(close(pulse), add = TRUE)
+  conflict <- c(fast = "sma_3")
+  object_conflict <- ledgr_feature_map(fast = ledgr_ind_sma(3L))
+  message <- paste(
+    "Explicit feature alias `fast` requests `sma_3`, but that name",
+    "already resolves to `sma_2` in this context."
+  )
+  consumers <- list(
+    bundle_character = function() pulse$features("AAA", conflict),
+    bundle_object = function() pulse$features("AAA", object_conflict),
+    long_character = function() ledgr_pulse_features(pulse, conflict),
+    long_object = function() ledgr_pulse_features(pulse, object_conflict),
+    wide_character = function() ledgr_pulse_wide(pulse, conflict),
+    wide_object = function() ledgr_pulse_wide(pulse, object_conflict)
+  )
+  for (consumer in consumers) {
+    testthat::expect_error(
+      consumer(),
+      message,
+      class = "ledgr_invalid_feature_map",
+      fixed = TRUE
+    )
+  }
+  testthat::expect_error(
+    pulse$features("AAA", c(sma_2 = "sma_3")),
+    "Explicit feature alias `sma_2` requests `sma_3`, but that name already resolves to `sma_2` in this context.",
+    class = "ledgr_invalid_feature_map",
+    fixed = TRUE
+  )
+
+  own <- pulse$features("AAA", c(fast = "sma_2"))
+  local <- pulse$features("AAA", c(local_fast = "sma_2"))
+  reused_local <- pulse$features("AAA", c(local_fast = "sma_3"))
+  testthat::expect_identical(unname(own), unname(local))
+  testthat::expect_false(identical(unname(local), unname(reused_local)))
+  long <- ledgr_pulse_features(pulse, c(local_fast = "sma_2"))
+  wide <- ledgr_pulse_wide(pulse, c(local_fast = "sma_2"))
+  testthat::expect_identical(unique(long$alias), "local_fast")
+  testthat::expect_identical(unique(long$feature_id), "sma_2")
+  testthat::expect_true("AAA__feature_local_fast" %in% names(wide))
+
+  unmapped <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = "AAA",
+    ts_utc = max(bars$ts_utc),
+    features = list(ledgr_ind_sma(2L))
+  )
+  on.exit(close(unmapped), add = TRUE)
+  testthat::expect_true(
+    "AAA__feature_sma_2" %in% names(ledgr_pulse_wide(unmapped))
+  )
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0184] public execution and pulse inspection agree on aliases", {
   bars <- feature_map_read_surface_bars()

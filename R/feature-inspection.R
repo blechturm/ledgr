@@ -303,7 +303,13 @@ ledgr_pulse_features <- function(pulse, feature_map = NULL) {
   ledgr_pulse_feature_rows_for_alias_map(
     table,
     pulse$universe,
-    ledgr_feature_lookup_map(feature_map)
+    ledgr_explicit_feature_lookup(
+      feature_map,
+      ledgr_feature_name_lookup_state(
+        unique(as.character(table$feature_name %||% character())),
+        active_alias_map = ledgr_pulse_active_alias_map(pulse)
+      )
+    )
   )
 }
 
