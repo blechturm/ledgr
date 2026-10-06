@@ -197,9 +197,11 @@ resolved for that candidate. `params$threshold` and `params$qty` come from the
 strategy grid. For the full strategy contract, read
 `vignette("strategy-development", package = "ledgr")`.
 
-ledgr has no alias-aware whole-universe feature read yet, so a strategy that
-reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
-use `ctx$vec$feature()`.
+Read an active alias once across the decision axis with
+`ctx$vec$feature("alias")`. The same alias resolves to the concrete indicator
+owned by each candidate, so strategy code stays fixed while feature parameters
+vary. Use `ctx$features(id)` only when you deliberately need several mapped
+values for one instrument. There is no plural whole-universe accessor.
 
 An **active alias** is a stable strategy-facing feature name whose concrete
 indicator can vary by candidate. The strategy can keep reading

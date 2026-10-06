@@ -804,7 +804,7 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(strategy_development_doc, "#| label: incomplete-target", fixed = TRUE)
   testthat::expect_match(
     strategy_authoring_doc,
-    "exact-ID\nfeature accessor triggers one",
+    "or active-map bundle accessor triggers one",
     fixed = TRUE
   )
   testthat::expect_match(strategy_authoring_doc, "### Keep A Position While Rebalancing The Rest", fixed = TRUE)
@@ -841,8 +841,8 @@ testthat::test_that("public result and helper documentation states current seman
   testthat::expect_match(signal_strategy_help, "vignette(\"strategy-development\", package = \"ledgr\")", fixed = TRUE)
   testthat::expect_match(signal_help, "\\examples{", fixed = TRUE)
   testthat::expect_match(signal_help, "ledgr_signal_return(ctx, lookback = 5)", fixed = TRUE)
-  testthat::expect_match(signal_help, "register every concrete \\verb{return_<lookback>} feature before", fixed = TRUE)
-  testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(5)}", fixed = TRUE)
+  testthat::expect_match(signal_help, "stable active alias with \\code{ledgr_signal_feature()}", fixed = TRUE)
+  testthat::expect_match(signal_help, "\\code{ledgr_ind_returns(ledgr_param(\"lookback\"))}", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_empty_selection}", fixed = TRUE)
   testthat::expect_match(select_help, "without warning", fixed = TRUE)
   testthat::expect_match(select_help, "\\code{ledgr_partial_selection}", fixed = TRUE)
@@ -992,12 +992,12 @@ testthat::test_that("[LTB-0103] feature-loop teaching names the actionable bound
 
   testthat::expect_match(
     strategy_doc,
-    "exact-ID\nfeature accessor triggers one",
+    "or active-map bundle accessor triggers one",
     fixed = TRUE
   )
   testthat::expect_match(
     strategy_doc,
-    "`ctx\\$features\\(id\\)` stays unrecorded: ledgr has no alias-aware\\s+whole-universe feature read yet"
+    "Read each required active alias once with\\s+`ctx\\$vec\\$feature\\(\"alias\"\\)`"
   )
   testthat::expect_match(
     context_help,
@@ -1006,7 +1006,7 @@ testthat::test_that("[LTB-0103] feature-loop teaching names the actionable bound
   )
   testthat::expect_match(
     context_help,
-    "warning without a replacement would not be",
+    "Explicit-map bundle",
     fixed = TRUE
   )
 })
@@ -1904,11 +1904,7 @@ ledgr_doc_idiom_violations <- function(root) {
     file.path(root, "README.Rmd"),
     list.files(file.path(root, "vignettes"), pattern = "[.]qmd$", full.names = TRUE, recursive = TRUE)
   )
-  disclosure <- paste(
-    "ledgr has no alias-aware whole-universe feature read yet, so a strategy that",
-    "reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,",
-    "use `ctx$vec$feature()`."
-  )
+  disclosure <- "ctx$vec$feature(\"alias\")"
   squish <- function(x) gsub("\\s+", " ", x)
   out <- character()
   for (path in sources) {
@@ -2010,6 +2006,54 @@ testthat::test_that("[LTB-0126] no rendered article or the README shows stray co
   testthat::expect_identical(ledgr_doc_stray_output(root), character())
 })
 
+testthat::test_that("[LTB-0187] feature-map read teaching matches the accepted contract", {
+  root <- testthat::test_path("..", "..")
+  testthat::skip_if_not(
+    file.exists(file.path(root, "inst", "design", "contracts.md")),
+    "design sources not available during installed-package tests"
+  )
+  read <- function(...) paste(
+    readLines(file.path(root, ...), warn = FALSE, encoding = "UTF-8"),
+    collapse = "\n"
+  )
+  contracts <- read("inst", "design", "contracts.md")
+  context_help <- read("man", "ledgr_strategy_context.Rd")
+  return_help <- read("man", "ledgr_signal_return.Rd")
+  demo <- read("R", "demo-strategies.R")
+  reconciliation <- read(
+    "inst", "design", "ledgr_v0_2_2_spec_packet",
+    "feature_map_read_surface_reconciliation.md"
+  )
+  articles <- vapply(
+    c(
+      "indicators.qmd", "strategy-authoring-tools.qmd", "sweeps.qmd",
+      "missing-data-and-sessions.qmd"
+    ),
+    function(path) read("vignettes", path),
+    character(1)
+  )
+
+  testthat::expect_match(contracts, "active alias or registered engine feature")
+  testthat::expect_match(contracts, "may not redefine an\\s+active alias")
+  testthat::expect_match(contracts, "A mapped view uses its stable alias")
+  testthat::expect_match(context_help, "No plural whole-universe accessor")
+  testthat::expect_match(return_help, "stable active alias")
+  testthat::expect_match(demo, 'ctx\\$vec\\$feature\\("fast"\\)')
+  testthat::expect_match(demo, 'ctx\\$vec\\$feature\\("slow"\\)')
+  testthat::expect_no_match(demo, "for \\(id in ctx\\$universe\\)")
+  testthat::expect_true(all(grepl("ctx\\$vec\\$feature", articles)))
+  testthat::expect_false(any(grepl(
+    "no alias-aware whole-universe feature read yet", articles,
+    fixed = TRUE
+  )))
+  for (decision in paste0("D", 1:8)) {
+    testthat::expect_match(reconciliation, decision, fixed = TRUE)
+  }
+  for (block in paste0("LTB-", sprintf("%04d", 183:187))) {
+    testthat::expect_match(reconciliation, block, fixed = TRUE)
+  }
+})
+
 # House rule 9 and style guide section 9: each shared fact is stated in its home
 # article, and known contradicting phrases appear nowhere. Returns one message
 # per problem, so it can also run against an older tree.
@@ -2024,7 +2068,7 @@ ledgr_doc_fact_home_problems <- function(root) {
     c("execution-semantics", "records the refusal with reason `insufficient_cash`"),
     c("execution-semantics", "`dense_bar_timestamp` means a dense run"),
     c("indicators", "| Public TTR SMA | `ledgr_ind_ttr(\"SMA\", input = \"close\", n = n)` | Supported for this exact single-output shape |"),
-    c("indicators", "ledgr has no alias-aware whole-universe feature read yet, so a strategy that reads active aliases loops over `ctx$features(id)`. With fixed feature IDs, use `ctx$vec$feature()`."),
+    c("indicators", "Read it once across the decision axis with `ctx$vec$feature(\"alias\")`"),
     c("sweeps", "Promotion records a choice; it does not make that choice out-of-sample."),
     c("selection-integrity", "Deflated Sharpe Ratio with effective trials"),
     c("walk-forward", "so a good walk-forward result does not prove that the rule generalizes"),

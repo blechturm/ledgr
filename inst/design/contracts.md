@@ -832,8 +832,12 @@ Accepted change pending:
   fails with `ledgr_invalid_strategy_helper` when that plane is absent.
   It must not silently create fractional share targets, and ranking, leverage,
   negative-weight and final-target rules are unchanged.
-- `ledgr_signal_feature()` reads one registered feature over the decision
-  axis, and `ledgr_signal_return()` is its return-feature specialization.
+- `ledgr_signal_feature()` reads one active alias or registered feature ID over
+  the decision axis through the same alias-first resolver as the strategy
+  context. It records the literal author-supplied name as origin.
+  `ledgr_signal_return()` is the exact-ID specialization for one concrete
+  return lookback; a parameterized return map is read through its stable alias
+  with `ledgr_signal_feature()`.
   Neither masks: ineligible IDs keep their raw score, and eligibility travels
   in the signal's `eligible` attribute, so ineligible is never reported as
   missing. `ledgr_select_top_n()` ranks only eligible, non-missing scores with
@@ -1087,7 +1091,9 @@ Accepted change pending:
   `position`, and `feature`, and in every context the eligibility planes
   `member`, `target_restricted`, `target_restriction_reason`, and
   `admissible`. `ctx$vec$feature(feature_id)` returns the current
-  universe-aligned vector for one engine feature ID.
+  universe-aligned vector for one active alias or registered engine feature
+  ID. Active aliases resolve before concrete IDs; an unknown name fails with
+  `ledgr_unknown_feature_id` and lists both namespaces separately.
 - Availability-aware pulse contexts restrict bars, feature tables, scalar
   feature access, vector feature access, positions, and errors to the current
   decision axis. Dense contexts retain the existing fixed-universe fields and
@@ -1101,14 +1107,20 @@ Accepted change pending:
   scalar quantity. `ctx$hold()` constructs a full target vector initialized to
   current positions. Strategies choose between them based on whether the default
   behavior is flat-unless-signal or hold-unless-signal.
-- `ctx$feature(instrument_id, feature_id)` must fail loudly for unknown feature
-  IDs, including the requested feature, instrument, and available feature IDs
-  (`<none>` if no features are registered). A known feature whose current value
-  is warmup `NA` remains a normal `NA` lookup, not an error.
+- `ctx$feature(instrument_id, feature_id)` uses the same alias-first singular
+  resolver as `ctx$vec$feature()`. It fails loudly for unknown names, including
+  the requested feature, instrument, active aliases and concrete feature IDs.
+  A known feature whose current value is warmup `NA` remains a normal `NA`
+  lookup, not an error.
 - `ctx$features(instrument_id, feature_map)` is a pulse-scoped bundled view
   over `ctx$feature()`. It must preserve no-lookahead semantics, fail loudly
   for unregistered mapped feature IDs, and return warmup `NA` for known
   features that are not usable yet.
+- Every explicit-map consumer (`ctx$features()`, `ledgr_pulse_features()` and
+  `ledgr_pulse_wide()`) may add a call-local alias but may not redefine an
+  active alias or registered engine ID to mean another feature. A conflict
+  fails with `ledgr_invalid_feature_map`, naming the alias, requested feature
+  and existing feature. An own-name same-feature mapping remains valid.
 - The decision-time guarantee concerns supported context operations. Public
   accessors may retain engine-owned prepared state internally only when every
   supported operation enforces the invoking pulse and permitted axis.
@@ -1122,6 +1134,10 @@ Accepted change pending:
   Dot-prefixed context fields are not API and carry no guarantees; deliberate
   R introspection of closure environments, call stacks or internal bindings is
   outside this contract.
+- The prepared singular resolver is owned by one run or sweep candidate and is
+  reused by dense and availability reads. Resolution precedes decision-axis
+  restriction. No package-global resolver cache or plural feature plane is
+  part of this contract.
 - `ctx$bars`, `ctx$feature_table`, and `ctx$features_wide` remain available.
   The long feature table may be a schema-only zero-row frame while registered
   feature accessors and the wide view carry current values. No equivalence is
@@ -1150,8 +1166,22 @@ Accepted change pending:
   persistent ledgr tables, or change strategy execution semantics.
 - `ledgr_pulse_wide()` uses stable names
   `{instrument_id}__ohlcv_{field}` and
-  `{instrument_id}__feature_{feature_id}`. Feature-map aliases may filter or
-  order the view but must not replace engine feature IDs in wide column names.
+  `{instrument_id}__feature_{key}`. A mapped view uses its stable alias as
+  `key`; an unmapped view uses the engine feature ID. The long
+  `ledgr_pulse_features()` view retains both `alias` and `feature_id`.
+- `ledgr_signal_feature()` uses the singular alias-first resolver, keeps raw
+  decision-axis values and eligibility unchanged, and records the literal
+  author-supplied name as signal origin. `ledgr_signal_return()` remains the
+  exact-ID convenience for one concrete return lookback; parameterized return
+  maps are read through a stable alias with `ledgr_signal_feature()`.
+- `ledgr_feature_contracts()` and `ledgr_feature_contract_check()` accept
+  `feature_params` and resolve parameterized maps through the same validator
+  and resolver as execution. Without concrete parameters they retain a classed
+  refusal; no general map materializer is exported.
+- On an axis of at least 100 instruments, scalar and active-map bundle loops
+  warn once per run when calls in one pulse reach the axis size. The warning
+  names singular `ctx$vec$feature()` reads as the replacement. Explicit-map
+  bundle loops remain unrecorded.
 - v0.1.7.4 feature maps do not add a new `ctx$features_wide()` contract; the
   public wide pulse inspection API is `ledgr_pulse_wide()`.
 - Strategy evaluation errors are wrapped with pulse context while preserving the

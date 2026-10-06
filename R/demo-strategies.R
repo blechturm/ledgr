@@ -66,33 +66,11 @@ ledgr_demo_sma_crossover_strategy <- function() {
     }
 
     targets <- ctx$flat()
-    required_aliases <- c("fast", "slow")
-
-    for (id in ctx$universe) {
-      values <- ctx$features(id)
-      missing_aliases <- required_aliases[!(required_aliases %in% names(values))]
-      if (length(missing_aliases) > 0L) {
-        stop(structure(
-          list(message = paste0(
-            "The demo SMA crossover strategy requires active aliases `fast` and `slow`; missing: ",
-            paste(missing_aliases, collapse = ", "),
-            "."
-          )),
-          class = c(
-            "ledgr_unknown_active_alias",
-            "ledgr_invalid_pulse_context",
-            "simpleError",
-            "error",
-            "condition"
-          )
-        ))
-      }
-
-      values <- values[required_aliases]
-      if (ledgr_passed_warmup(values) && ((values[["fast"]] / values[["slow"]]) - 1) > threshold) {
-        targets[id] <- qty
-      }
-    }
+    fast <- ctx$vec$feature("fast")
+    slow <- ctx$vec$feature("slow")
+    ready <- is.finite(fast) & is.finite(slow)
+    selected <- ready & ((fast / slow) - 1) > threshold
+    targets[selected] <- qty
 
     targets
   }

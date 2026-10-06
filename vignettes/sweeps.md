@@ -168,9 +168,12 @@ indicators resolved for that candidate. `params$threshold` and
 `params$qty` come from the strategy grid. For the full strategy
 contract, read `vignette("strategy-development", package = "ledgr")`.
 
-ledgr has no alias-aware whole-universe feature read yet, so a strategy
-that reads active aliases loops over `ctx$features(id)`. With fixed
-feature IDs, use `ctx$vec$feature()`.
+Read an active alias once across the decision axis with
+`ctx$vec$feature("alias")`. The same alias resolves to the concrete
+indicator owned by each candidate, so strategy code stays fixed while
+feature parameters vary. Use `ctx$features(id)` only when you
+deliberately need several mapped values for one instrument. There is no
+plural whole-universe accessor.
 
 An **active alias** is a stable strategy-facing feature name whose
 concrete indicator can vary by candidate. The strategy can keep reading
@@ -360,7 +363,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_c4a1476209db807a
+    # ledgr sweep -- sweep_ce12b8115836ec8b
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -401,7 +404,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_c4a1476209db807a
+    # ledgr sweep -- sweep_ce12b8115836ec8b
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -481,14 +484,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_36309ceef1a99138 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -575,7 +578,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-10-05 19:55:28                    4           16          16
+    1 sma_retained_sweep 2026-10-06 11:36:43                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -602,7 +605,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-10-05 19:55:28.33104
+    Created At:        2026-10-06 11:36:43.242044
     Schema Version:    4
     Engine Version:    0.2.1.0
     Note:              Exploratory SMA sweep with retained return series.
@@ -757,7 +760,7 @@ failed_sweep |>
   select(candidate_id, qty, status, error_class, error_msg)
 ```
 
-    # ledgr sweep -- sweep_d86b9602a87b6a3b
+    # ledgr sweep -- sweep_cdb96014c53a8800
     # A tibble: 2 x 5
       candidate_id            qty status error_class          error_msg
       <chr>                 <dbl> <chr>  <chr>                <chr>
@@ -863,7 +866,7 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_c4a1476209db807a
+    # ledgr sweep -- sweep_ce12b8115836ec8b
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>

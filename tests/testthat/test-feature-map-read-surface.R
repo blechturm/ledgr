@@ -260,4 +260,37 @@ testthat::test_that("[LTB-0184] public execution and pulse inspection agree on a
   maps <- attr(sweep, "candidate_features")$alias_map
   testthat::expect_true(any(vapply(maps, identical, logical(1), c(signal = "sma_2"))))
   testthat::expect_true(any(vapply(maps, identical, logical(1), c(signal = "sma_3"))))
+
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(
+      "2020-01-01", "2020-01-04", "2020-01-05", "2020-01-06",
+      fold_seq = 1L
+    )),
+    constructor = list(type_id = "explicit")
+  )
+  walk_experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      value <- ctx$vec$feature("signal")
+      target <- ctx$flat()
+      target[is.finite(value)] <- 1
+      target
+    },
+    features = features,
+    opening = ledgr_opening(cash = 10000),
+    cost_model = ledgr_cost_zero()
+  )
+  walk_forward <- suppressWarnings(ledgr_walk_forward(
+    walk_experiment,
+    grid = ledgr_grid_cross(
+      features = ledgr_feature_grid(n = c(2L, 3L)),
+      strategy = ledgr_strategy_grid(unused = 1L)
+    ),
+    folds = folds,
+    selection_rule = ledgr_rule_argmax("sharpe_ratio"),
+    seed = 1L
+  ))
+  on.exit(lapply(walk_forward$test_runs, close), add = TRUE)
+  testthat::expect_s3_class(walk_forward, "ledgr_walk_forward_results")
+  testthat::expect_identical(walk_forward$folds$status, "DONE")
 })

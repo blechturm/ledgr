@@ -118,8 +118,8 @@ The strategy context then exposes the computed values through accessors:
 
 | Accessor | Name type | Use |
 |---|---|---|
-| `ctx$vec$feature(feature_id)` | engine feature ID string | reads one feature across the whole decision axis |
-| `ctx$feature(id, feature_id)` | engine feature ID string | reads one scalar value by exact ID |
+| `ctx$vec$feature(feature_id)` | active alias or engine feature ID | reads one feature across the whole decision axis |
+| `ctx$feature(id, feature_id)` | active alias or engine feature ID | reads one scalar value |
 | `ctx$features(id, feature_map)` | feature map | returns a named vector keyed by alias |
 
 The canonical strategy workflow is: register features on
@@ -476,10 +476,14 @@ ledgr_snapshot_close(snapshot)
 `vignette("sweeps", package = "ledgr")` composes the feature and strategy grids
 for this map, runs the sweep and reads the candidate rows.
 
-For single-output indicators, the feature-map alias is the strategy-facing name
-returned by `ctx$features(id)`. ledgr has no alias-aware whole-universe feature read yet, so a strategy that
-reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
-use `ctx$vec$feature()`.
+For single-output indicators, the feature-map alias is the strategy-facing
+name. Read it once across the decision axis with
+`ctx$vec$feature("alias")`; use `ctx$features(id)` when you deliberately need
+several mapped values for one instrument. On an axis of at least 100
+instruments, an active-map bundle loop warns when its calls reach the axis
+size and names the plane replacement. Explicit-map bundle calls remain local
+and unrecorded. There is no plural whole-universe accessor: read each required
+alias through the singular plane.
 Bundle entries are intentionally flat; the TTR companion explains why bundles
 use `prefix` or `naming` rather than one outer alias.
 

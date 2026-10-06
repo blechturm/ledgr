@@ -36,11 +36,10 @@ instrument.
 \code{ctx$vec$close}, \code{ctx$vec$volume}: current bar values for the full
 universe, aligned to \code{ctx$universe}.
 \item \code{ctx$bar(id)}: the current OHLCV row for one instrument.
-\item \code{ctx$feature(id, feature_id)}: one registered feature value for one
-instrument, addressed by ledgr's exact engine feature ID such as
-\code{"return_5"}.
-\item \code{ctx$vec$feature(feature_id)}: one registered feature value vector
-for the full universe, aligned to \code{ctx$universe}.
+\item \code{ctx$feature(id, feature_id)}: one feature value for one instrument,
+addressed by an active alias or concrete engine feature ID.
+\item \code{ctx$vec$feature(feature_id)}: one active alias or concrete feature
+ID across the full universe, aligned to \code{ctx$universe}.
 \item \code{ctx$features(id, feature_map)}: mapped feature values for one
 instrument, returned as a named numeric vector keyed by feature-map aliases.
 \item \code{ctx$position(id)}: current simulated position for one instrument.
@@ -59,19 +58,20 @@ the predicate without supplying a current sizing close, and the result does not
 promise execution at the next open.
 }
 
-Feature IDs and feature-map aliases are different namespaces.
-\code{ctx$feature()} uses engine IDs from \code{ledgr_feature_id()}.
-\code{ctx$features()} uses a \code{ledgr_feature_map} object and returns values
-named by alias. Unknown engine feature IDs fail loudly; warmup for a known
-feature is represented by \code{NA_real_}.
+Singular reads resolve an active feature-map alias first, then a concrete
+engine ID from \code{ledgr_feature_id()}. \code{ctx$features()} returns one
+instrument's mapped values named by alias. Unknown names fail loudly and list
+active aliases separately from concrete IDs; warmup for a known feature is
+represented by \code{NA_real_}. No plural whole-universe accessor is added:
+read each required alias once with \code{ctx$vec$feature()}.
 
-For universes of at least 100 instruments, reading one exact feature ID through
+For universes of at least 100 instruments, reading one name through
 \code{ctx$feature()} once per instrument emits one
 \code{ledgr_scalar_accessor_loop} warning per run and names
-\code{ctx$vec$feature(feature_id)} as the whole-universe alternative. Mapped
-\code{ctx$features(id)} reads are not recorded because an active-alias map has
-no whole-universe accessor yet; warning without a replacement would not be
-actionable.
+\code{ctx$vec$feature(feature_id)} as the whole-universe alternative. An
+active-map \code{ctx$features(id)} loop warns at the same axis-sized threshold
+and names the active aliases to read through that plane. Explicit-map bundle
+reads remain unrecorded because the plane does not accept an explicit map.
 
 \code{ctx$idx(id)} fails loudly for unknown instruments by default. Use
 \code{ctx$idx(id, missing = "na")} only when an explicit \code{NA_integer_}

@@ -244,10 +244,11 @@ unavailable at its current quantity. Starting from `ctx$flat()` would
 sell it at the next open as soon as its signal went missing, which a
 feed gap or warmup rarely justifies.
 
-This uses one concrete engine feature ID over the full decision axis.
-ledgr has no alias-aware whole-universe feature read yet, so a strategy
-that reads active aliases loops over `ctx$features(id)`. With fixed
-feature IDs, use `ctx$vec$feature()`.
+This uses one singular feature name over the full decision axis. That
+name may be a concrete engine ID or an active feature-map alias. In a
+sweep, the alias stays fixed while each candidate resolves it to its
+concrete feature. Read each required alias once through
+`ctx$vec$feature()`; there is no plural whole-universe accessor.
 
 This is stricter than a generic warmup check in one useful way: it says
 what the strategy actually needs at this pulse. See

@@ -178,12 +178,14 @@ position size before you run months of bars.
 single read. The scalar forms `ctx$close(id)`, `ctx$feature(id, feature_id)`,
 and `ctx$position(id)` are for an instrument you have already singled out.
 Calling them in a loop over `ctx$universe` repeats per-instrument work at every
-pulse and is the most common way to make a strategy slow. For universes of at
-least 100 instruments, a loop over the bar, price, position, or exact-ID
-feature accessor triggers one `ledgr_scalar_accessor_loop` warning per run that
-names the vector to use; the warning changes no result. `ctx$features(id)` stays unrecorded: ledgr has no alias-aware whole-universe feature read yet, so a strategy that
-reads active aliases loops over `ctx$features(id)`. With fixed feature IDs,
-use `ctx$vec$feature()`.
+pulse and is the most common way to make a strategy slow. Singular feature
+reads accept either an active alias or a concrete feature ID. For universes of
+at least 100 instruments, a loop over the bar, price, position, scalar feature,
+or active-map bundle accessor triggers one `ledgr_scalar_accessor_loop` warning
+per run when its calls reach the axis size and names the vector replacement;
+the warning changes no result. Read each required active alias once with
+`ctx$vec$feature("alias")`. Explicit-map bundle calls stay unrecorded because
+the plane does not accept an explicit map.
 :::
 
 ## From Scores To Shares

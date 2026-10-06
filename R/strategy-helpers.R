@@ -69,7 +69,8 @@ ledgr_signal_feature_values <- function(ctx, feature_id, universe) {
 #' its `values` entrance to turn a transformed vector back into a signal.
 #'
 #' @param ctx ledgr strategy context.
-#' @param feature_id One non-empty registered feature ID.
+#' @param feature_id One non-empty active feature-map alias or registered
+#'   feature ID. The supplied name is retained as the signal origin.
 #' @return A `ledgr_signal` object.
 #' @examples
 #' ctx <- list(
@@ -109,11 +110,12 @@ ledgr_signal_feature <- function(ctx, feature_id) {
 #' indicators. Like [ledgr_signal_feature()], it returns raw scores over the
 #' whole decision axis and marks eligibility in the `eligible` attribute.
 #'
-#' If `lookback` is supplied through `params$lookback` in a strategy or
-#' parameter grid, register every concrete `return_<lookback>` feature before
-#' `ledgr_run()`. For example, a sweep over 5, 10, and 20 bars needs
-#' `ledgr_ind_returns(5)`, `ledgr_ind_returns(10)`, and
-#' `ledgr_ind_returns(20)` in the experiment's `features`.
+#' For a fixed concrete lookback, register the matching return indicator. For
+#' a parameterized sweep, put `ledgr_ind_returns(ledgr_param("lookback"))` in a
+#' feature map and read its stable active alias with [ledgr_signal_feature()].
+#' The generic helper resolves that alias to each candidate's concrete return
+#' feature; strategy code does not need to register or switch among every
+#' concrete `return_<lookback>` name.
 #'
 #' @param ctx ledgr strategy context.
 #' @param lookback Positive integer return lookback.
