@@ -465,6 +465,15 @@ checklist that omits two of the manual's shapes.
 
 One planned close review over two tickets is 0.500 against the review gate.
 
+LDG-2966 landed at `f318453`. Pulse fill rows and memory fill legs are now
+closure-owned rather than copied through environment-held lists. LTB-0188
+rejects the old shape and pins constant allocation at capacities 256 and
+8,192. A three-pair 5,000-fill pulse record measured a 0.319 median
+candidate/pre-cut ratio with exact event and fill hashes. The ordinary
+Workstream 11 comparison passed all three shapes without retry: cold ratios
+0.984 to 1.003 and warm ratios 0.992 to 1.015 against the 1.10 gates.
+LDG-2967 now owns the two remaining code shapes and the closeout walk.
+
 ## Expected later artifacts
 
 - accepted design records or explicit references to their existing locations;

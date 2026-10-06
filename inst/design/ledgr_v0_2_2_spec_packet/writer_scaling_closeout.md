@@ -19,6 +19,24 @@ memory for later diagnostic blocks.
 
 ## LDG-2935: Fill-Event Flush
 
+### Cut 8 correction
+
+The accepted seven-shape walk below said the bounded staging lists did not
+copy. The cumulative typed event store did not copy, but the audit at
+`a6525fe` proved that each indexed write into `state$pulse_fill_rows` and
+`state$pulse_fill_legs` copied the whole environment-held list. LDG-2966
+corrects that record without changing the accepted block-flush evidence.
+
+Commit `f318453` keeps both handlers' staging lists as closure locals and
+updates them in place. LTB-0188 rejects the old source shape and compares the
+allocation of one production write at capacities 256 and 8,192; both allocate
+zero bytes in the measured write, with a 16 KiB allowance that remains below
+the old 8,192-pointer copy. At three alternating 5,000-fill pulse pairs, the
+pre-cut medians were 0.95, 0.91 and 0.89 seconds and the candidate medians
+were 0.28, 0.29 and 0.30 seconds. The median paired ratio was 0.319, with
+exact event and fill hashes. This wide-pulse result is shape evidence, not an
+ordinary-run speed claim.
+
 The current-tree record was started from `4055454` before production editing.
 Its two arms ran in one R 4.6.1 process, on the same sealed fixture, with
 interleaved order and three repetitions. The candidate arm was the previously
