@@ -4,7 +4,7 @@
 \alias{ledgr_feature_contract_check}
 \title{Check feature warmup feasibility against a snapshot}
 \usage{
-ledgr_feature_contract_check(snapshot, features)
+ledgr_feature_contract_check(snapshot, features, feature_params = NULL)
 }
 \arguments{
 \item{snapshot}{A sealed \code{ledgr_snapshot}.}
@@ -12,6 +12,9 @@ ledgr_feature_contract_check(snapshot, features)
 \item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} or
 \code{ledgr_indicator_bundle} objects, one \code{ledgr_indicator}, or one
 \code{ledgr_indicator_bundle}.}
+
+\item{feature_params}{\code{NULL} or a JSON-safe list used to resolve a
+parameterized feature map before inspection.}
 }
 \value{
 A tibble with one row per \verb{(instrument_id, feature_id)} pair. It
@@ -32,8 +35,9 @@ Feature factories of the form \verb{function(params)} are intentionally rejected
 here because the helper cannot know which concrete parameter set to use.
 Materialize the factory first, then pass the resulting indicators or feature
 map. The error class is \code{ledgr_feature_factory_requires_params}.
-Unresolved parameterized feature maps use the same class and must first be
-resolved with concrete \code{feature_params}.
+Unresolved parameterized feature maps use the same class when
+\code{feature_params} is omitted. Supplying concrete values resolves the same map
+through the validator and resolver used by execution.
 }
 \section{Articles}{
 

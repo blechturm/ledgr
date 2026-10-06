@@ -139,8 +139,8 @@ testthat::test_that("[LTB-0112] feature inspection refuses unresolved maps", {
     baseline = ledgr_ind_sma(4)
   )
   expected_message <- paste(
-    "`features` must be materialized before feature contracts can be inspected.",
-    "Resolve parameterized declarations with concrete `feature_params`, then pass the resulting indicators or feature map."
+    "`features` contains parameterized declarations.",
+    "Supply concrete values through `feature_params` before inspection."
   )
 
   contracts_error <- rlang::catch_cnd(ledgr_feature_contracts(features))
@@ -178,6 +178,85 @@ testthat::test_that("[LTB-0112] feature inspection refuses unresolved maps", {
       requires_bars = c(2L, 4L),
       stable_after = c(2L, 4L)
     )
+  )
+})
+
+testthat::test_that("[LTB-0186] feature params resolve inspection like execution", {
+  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  features <- ledgr_feature_map(
+    fast = ledgr_ind_sma(ledgr_param("fast_n")),
+    baseline = ledgr_ind_sma(4L)
+  )
+  before <- features
+  params <- list(fast_n = 2L)
+  contracts <- ledgr_feature_contracts(features, feature_params = params)
+  checked <- ledgr_feature_contract_check(
+    snapshot,
+    features,
+    feature_params = params
+  )
+  expected_map <- c(fast = "sma_2", baseline = "sma_4")
+
+  testthat::expect_identical(contracts$alias, names(expected_map))
+  testthat::expect_identical(contracts$feature_id, unname(expected_map))
+  testthat::expect_identical(
+    unique(checked[, c("alias", "feature_id")]),
+    contracts[, c("alias", "feature_id")]
+  )
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = "AAA",
+    ts_utc = max(bars$ts_utc),
+    features = features,
+    feature_params = params
+  )
+  on.exit(close(pulse), add = TRUE)
+  testthat::expect_identical(pulse$active_alias_map, expected_map)
+
+  run <- ledgr_run(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$flat(),
+      features = features,
+      cost_model = ledgr_cost_zero()
+    ),
+    feature_params = params,
+    run_id = "feature-contract-params"
+  )
+  on.exit(close(run), add = TRUE)
+  run_map <- ledgr:::ledgr_alias_map_from_json(run$config$alias_map_json)
+  testthat::expect_identical(run_map[names(expected_map)], expected_map)
+  testthat::expect_identical(features, before)
+  testthat::expect_identical(
+    names(formals(ledgr_feature_contracts)),
+    c("features", "feature_params")
+  )
+  testthat::expect_identical(
+    names(formals(ledgr_feature_contract_check)),
+    c("snapshot", "features", "feature_params")
+  )
+  testthat::expect_error(
+    ledgr_feature_contracts(features, feature_params = 2L),
+    "`feature_params` must be NULL or a list.",
+    class = "ledgr_invalid_args",
+    fixed = TRUE
+  )
+  testthat::expect_error(
+    ledgr_feature_contracts(features, feature_params = list()),
+    regexp = "alias `fast` argument `n`",
+    class = "ledgr_param_missing"
+  )
+  testthat::expect_error(
+    ledgr_feature_contracts(
+      function(params) list(ledgr_ind_sma(params$n)),
+      feature_params = list(n = 2L)
+    ),
+    class = "ledgr_feature_factory_requires_params"
   )
 })
 

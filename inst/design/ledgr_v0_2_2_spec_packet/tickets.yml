@@ -677,13 +677,13 @@ tickets:
   - id: "LDG-2964"
     title: "Resolve concrete parameters in feature-contract inspection"
     workstream: 16
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2963"]
     scope: "Implement synthesis D6. Add feature_params = NULL to ledgr_feature_contracts() and ledgr_feature_contract_check(). For a parameterized feature map with concrete parameters, reuse the same validator and resolver used by ledgr_pulse_snapshot() and run preparation, then inspect that resolved map. Without concrete parameters, retain the classed refusal and revise it to name feature_params rather than an unavailable public materialization step. Feature factories remain refused. Export no resolver or general map materializer and add no grid-union inspection surface."
     acceptance: ["for a parameterized map, both inspection helpers with feature_params return the exact aliases, concrete IDs and contracts used by ledgr_pulse_snapshot() and a public run with the same parameters; resolving through a different parameter path fails a registered detector", "omitted or malformed feature_params fail with the intended existing condition vocabulary and an exact actionable message, while concrete maps, lists, indicators, bundles and feature factories keep their current accepted or refused behavior", "function formals, help and examples expose feature_params consistently, no resolver is exported, and config, feature-set and alias-map identities are unchanged", "each new load-bearing block is registered in tests/claims.yml with the five review obligations and LDG-2964 reconciles before LDG-2965 starts"]
-    evidence: []
+    evidence: ["ledgr_feature_contracts() and ledgr_feature_contract_check() now expose feature_params = NULL. Parameterized feature maps supplied with concrete values pass through ledgr_validate_feature_params_for_declarations() and ledgr_resolve_feature_map(), the same path used by ledgr_pulse_snapshot() and execution. Omitted values retain ledgr_feature_factory_requires_params with an actionable feature_params message; malformed values and missing declarations keep the existing classed validator errors. Feature factories remain refused and no resolver is exported.", "LTB-0186 compares literal aliases, IDs and contracts from both helpers with a parameterized public pulse and the persisted alias map of a public run. It pins formals, input immutability, malformed and missing-param conditions, and factory refusal. Existing LTB-0112 retains the omitted-parameter oracle with the revised actionable message. The two Rd pages and their roxygen sources expose the new argument consistently.", "Focused feature-inspection, feature-map read-surface and control-plane suites pass. The ordinary fast profile passed 530 of 530 blocks in 106.33 seconds against 112 at C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-ldg2964-fast; the gate checker passed."]
   - id: "LDG-2965"
     title: "Consolidate feature-map read contracts and close evidence"
     workstream: 16

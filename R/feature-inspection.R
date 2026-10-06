@@ -5,14 +5,15 @@
 #' named or unnamed list of indicators and indicator bundles, one indicator, or
 #' one indicator bundle.
 #'
-#' Parameterized feature maps must be resolved with concrete `feature_params`
-#' before inspection. Unresolved declarations fail with
-#' `ledgr_feature_factory_requires_params` rather than an internal extraction
-#' error.
+#' Parameterized feature maps are resolved for inspection when concrete
+#' `feature_params` are supplied. Without them, unresolved declarations fail
+#' with `ledgr_feature_factory_requires_params`.
 #'
 #' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
 #'   `ledgr_indicator_bundle` objects, one `ledgr_indicator`, or one
 #'   `ledgr_indicator_bundle`.
+#' @param feature_params `NULL` or a JSON-safe list used to resolve a
+#'   parameterized feature map before inspection.
 #'
 #' @return A tibble with columns `alias`, `feature_id`, `source`,
 #'   `requires_bars`, and `stable_after`.
@@ -30,7 +31,8 @@
 #' `vignette("indicators", package = "ledgr")`
 #' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
-ledgr_feature_contracts <- function(features) {
+ledgr_feature_contracts <- function(features, feature_params = NULL) {
+  features <- ledgr_feature_contract_resolve(features, feature_params)
   normalized <- ledgr_feature_contract_input(features)
   indicators <- normalized$indicators
   aliases <- normalized$aliases
@@ -57,13 +59,16 @@ ledgr_feature_contracts <- function(features) {
 #' here because the helper cannot know which concrete parameter set to use.
 #' Materialize the factory first, then pass the resulting indicators or feature
 #' map. The error class is `ledgr_feature_factory_requires_params`.
-#' Unresolved parameterized feature maps use the same class and must first be
-#' resolved with concrete `feature_params`.
+#' Unresolved parameterized feature maps use the same class when
+#' `feature_params` is omitted. Supplying concrete values resolves the same map
+#' through the validator and resolver used by execution.
 #'
 #' @param snapshot A sealed `ledgr_snapshot`.
 #' @param features A `ledgr_feature_map`, a list of `ledgr_indicator` or
 #'   `ledgr_indicator_bundle` objects, one `ledgr_indicator`, or one
 #'   `ledgr_indicator_bundle`.
+#' @param feature_params `NULL` or a JSON-safe list used to resolve a
+#'   parameterized feature map before inspection.
 #'
 #' @return A tibble with one row per `(instrument_id, feature_id)` pair. It
 #'   includes `alias`, `instrument_id`, `feature_id`, `source`,
@@ -91,7 +96,9 @@ ledgr_feature_contracts <- function(features) {
 #' `vignette("indicators", package = "ledgr")`
 #' `system.file("doc", "indicators.html", package = "ledgr")`
 #' @export
-ledgr_feature_contract_check <- function(snapshot, features) {
+ledgr_feature_contract_check <- function(snapshot,
+                                         features,
+                                         feature_params = NULL) {
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
   ledgr_feature_contract_check_validate_snapshot(snapshot)
@@ -105,7 +112,10 @@ ledgr_feature_contract_check <- function(snapshot, features) {
     )
   }
 
-  contracts <- ledgr_feature_contracts(features)
+  contracts <- ledgr_feature_contracts(
+    features,
+    feature_params = feature_params
+  )
   counts <- ledgr_snapshot_bar_counts(snapshot)
 
   if (nrow(contracts) == 0L || nrow(counts) == 0L) {
@@ -176,6 +186,46 @@ ledgr_snapshot_bar_counts <- function(snapshot) {
     instrument_id = as.character(rows$instrument_id),
     available_bars = as.integer(rows$available_bars)
   )
+}
+
+ledgr_feature_contract_resolve <- function(features, feature_params = NULL) {
+  if (!is.null(feature_params) &&
+      (!is.list(feature_params) || is.data.frame(feature_params))) {
+    rlang::abort(
+      "`feature_params` must be NULL or a list.",
+      class = "ledgr_invalid_args"
+    )
+  }
+  if (is.function(features) && !inherits(features, "ledgr_indicator")) {
+    rlang::abort(
+      paste(
+        "`features` must be materialized before feature contracts can be inspected.",
+        "Feature factories cannot be resolved by this helper."
+      ),
+      class = c("ledgr_feature_factory_requires_params", "ledgr_invalid_args")
+    )
+  }
+  if (!inherits(features, "ledgr_feature_map")) return(features)
+
+  ledgr_validate_feature_map_object(features)
+  unresolved <- vapply(
+    features$indicators,
+    ledgr_feature_declaration_is_unresolved,
+    logical(1)
+  )
+  if (any(unresolved) && is.null(feature_params)) {
+    rlang::abort(
+      paste(
+        "`features` contains parameterized declarations.",
+        "Supply concrete values through `feature_params` before inspection."
+      ),
+      class = c("ledgr_feature_factory_requires_params", "ledgr_invalid_args")
+    )
+  }
+  if (is.null(feature_params)) return(features)
+
+  ledgr_validate_feature_params_for_declarations(features, feature_params)
+  ledgr_resolve_feature_map(features, feature_params = feature_params)
 }
 
 ledgr_feature_contract_input <- function(features) {

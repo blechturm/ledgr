@@ -4,12 +4,15 @@
 \alias{ledgr_feature_contracts}
 \title{Inspect feature contracts}
 \usage{
-ledgr_feature_contracts(features)
+ledgr_feature_contracts(features, feature_params = NULL)
 }
 \arguments{
 \item{features}{A \code{ledgr_feature_map}, a list of \code{ledgr_indicator} or
 \code{ledgr_indicator_bundle} objects, one \code{ledgr_indicator}, or one
 \code{ledgr_indicator_bundle}.}
+
+\item{feature_params}{\code{NULL} or a JSON-safe list used to resolve a
+parameterized feature map before inspection.}
 }
 \value{
 A tibble with columns \code{alias}, \code{feature_id}, \code{source},
@@ -21,10 +24,9 @@ accepts the same feature declarations used by experiments: a feature map, a
 named or unnamed list of indicators and indicator bundles, one indicator, or
 one indicator bundle.
 
-Parameterized feature maps must be resolved with concrete \code{feature_params}
-before inspection. Unresolved declarations fail with
-\code{ledgr_feature_factory_requires_params} rather than an internal extraction
-error.
+Parameterized feature maps are resolved for inspection when concrete
+\code{feature_params} are supplied. Without them, unresolved declarations fail
+with \code{ledgr_feature_factory_requires_params}.
 }
 \section{Articles}{
 
