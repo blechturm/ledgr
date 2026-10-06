@@ -492,30 +492,59 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
   out$frozen_at_end_value[hit] <- 0
   out$assumed_terminal_outcomes[hit] <- as.integer(g$assumed)
   frozen_runs <- as.character(grouped$run_id[grouped$frozen > 0])
-  for (run_id in frozen_runs) {
+  if (length(frozen_runs) > 0L) {
+    frozen_quoted <- paste(DBI::dbQuoteString(con, frozen_runs), collapse = ", ")
     frozen <- DBI::dbGetQuery(
       con,
-      paste(
-        "SELECT ts_utc, instrument_id, quantity, price FROM run_diagnostics",
-        "WHERE run_id = ? AND stage = 'decision' AND quantity <> 0",
-        "AND mark_source = 'frozen_close'"
-      ),
-      params = list(run_id)
+      sprintf(
+        paste(
+          "SELECT run_id, ts_utc, instrument_id, quantity, price",
+          "FROM run_diagnostics WHERE run_id IN (%s)",
+          "AND stage = 'decision' AND quantity <> 0",
+          "AND mark_source = 'frozen_close'",
+          "ORDER BY run_id, instrument_id, ts_utc"
+        ),
+        frozen_quoted
+      )
     )
     equity <- DBI::dbGetQuery(
       con,
-      "SELECT ts_utc, equity FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
-      params = list(run_id)
+      sprintf(
+        paste(
+          "SELECT run_id, ts_utc, equity FROM equity_curve",
+          "WHERE run_id IN (%s) ORDER BY run_id, ts_utc"
+        ),
+        frozen_quoted
+      )
     )
-    valuation <- ledgr_valuation_summary_compute(
-      list(),
-      data.frame(sessions = 0L, instruments = 0L, longest_age = NA_integer_),
-      frozen,
-      equity
+    frozen_by_run <- split(frozen, as.character(frozen$run_id), drop = TRUE)
+    equity_by_run <- split(equity, as.character(equity$run_id), drop = TRUE)
+    zero_stale <- data.frame(
+      sessions = 0L,
+      instruments = 0L,
+      longest_age = NA_integer_
     )
-    i <- out$run_id == run_id
-    out$max_frozen_equity_weight[i] <- valuation$max_frozen_equity_weight
-    out$frozen_at_end_value[i] <- valuation$frozen_at_end_value
+    valuations <- lapply(frozen_runs, function(run_id) {
+      ledgr_valuation_summary_compute(
+        list(),
+        zero_stale,
+        frozen_by_run[[run_id]] %||% frozen[FALSE, , drop = FALSE],
+        equity_by_run[[run_id]] %||% equity[FALSE, , drop = FALSE]
+      )
+    })
+    names(valuations) <- frozen_runs
+    frozen_at <- match(out$run_id, frozen_runs)
+    frozen_hit <- !is.na(frozen_at)
+    out$max_frozen_equity_weight[frozen_hit] <- vapply(
+      valuations[frozen_at[frozen_hit]],
+      function(x) x$max_frozen_equity_weight,
+      numeric(1)
+    )
+    out$frozen_at_end_value[frozen_hit] <- vapply(
+      valuations[frozen_at[frozen_hit]],
+      function(x) x$frozen_at_end_value,
+      numeric(1)
+    )
   }
   out
 }

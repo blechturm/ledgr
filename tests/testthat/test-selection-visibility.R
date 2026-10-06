@@ -266,6 +266,100 @@ testthat::test_that("[LTB-0178] run lists and comparison disclose incomplete run
 })
 
 # ledgr-test-profile: review
+testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped store reads", {
+  fx <- selection_visibility_fixture()
+  on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
+  frozen_ids <- c("batch-frozen-a", "batch-frozen-b")
+  for (run_id in frozen_ids) {
+    bt <- ledgr_run(
+      fx$exp,
+      params = selection_visibility_params()$frozen,
+      run_id = run_id
+    )
+    close(bt)
+  }
+
+  dense_bars <- ledgr_test_make_bars("DENSE", as.Date("2020-02-01") + 0:2)
+  dense_snapshot <- ledgr_snapshot_from_df(
+    dense_bars,
+    db_path = fx$snapshot$db_path
+  )
+  on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
+  dense <- ledgr_run(
+    ledgr_experiment(
+      dense_snapshot,
+      function(ctx, params) ctx$flat(),
+      cost_model = ledgr_cost_zero()
+    ),
+    run_id = "batch-dense"
+  )
+  close(dense)
+
+  individual <- lapply(frozen_ids, function(run_id) {
+    bt <- ledgr_run_open(fx$snapshot, run_id)
+    on.exit(close(bt), add = TRUE)
+    ledgr_valuation_summary(bt)
+  })
+  names(individual) <- frozen_ids
+  con <- ledgr:::get_connection(fx$snapshot)
+  query_count <- 0L
+  original_query <- DBI::dbGetQuery
+  testthat::local_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      query_count <<- query_count + 1L
+      original_query(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+  ledgr:::ledgr_run_assumption_flags_many(con, frozen_ids[[1L]])
+  one_run_queries <- query_count
+  query_count <- 0L
+  ids <- c(frozen_ids, frozen_ids[[1L]], "batch-dense")
+  flags <- ledgr:::ledgr_run_assumption_flags_many(con, ids)
+  testthat::expect_identical(query_count, one_run_queries)
+  testthat::expect_identical(query_count, 4L)
+  testthat::expect_identical(flags$run_id, ids)
+  testthat::expect_identical(
+    flags$valuation_state,
+    c("frozen", "frozen", "frozen", NA_character_)
+  )
+  for (run_id in frozen_ids) {
+    at <- which(flags$run_id == run_id)
+    testthat::expect_true(all(
+      flags$max_frozen_equity_weight[at] ==
+        individual[[run_id]]$max_frozen_equity_weight
+    ))
+    testthat::expect_true(all(
+      flags$frozen_at_end_value[at] ==
+        individual[[run_id]]$frozen_at_end_value
+    ))
+  }
+
+  listed <- ledgr_run_list(fx$snapshot)
+  compared <- ledgr_run_compare(
+    fx$snapshot,
+    run_ids = c(frozen_ids, frozen_ids[[1L]])
+  )
+  for (surface in list(listed, compared)) {
+    for (run_id in frozen_ids) {
+      at <- which(surface$run_id == run_id)
+      testthat::expect_true(all(
+        surface$max_frozen_equity_weight[at] ==
+          individual[[run_id]]$max_frozen_equity_weight
+      ))
+      testthat::expect_true(all(
+        surface$frozen_at_end_value[at] ==
+          individual[[run_id]]$frozen_at_end_value
+      ))
+    }
+  }
+  dense_listed <- ledgr_run_list(dense_snapshot)
+  dense_compared <- ledgr_run_compare(dense_snapshot, run_ids = "batch-dense")
+  testthat::expect_true(is.na(dense_listed$valuation_state[[1L]]))
+  testthat::expect_true(is.na(dense_compared$valuation_state[[1L]]))
+})
+
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0179] walk-forward scores and print carry counts, reasons and flags", {
   fx <- selection_visibility_fixture()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)

@@ -373,7 +373,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
     invisible(NULL)
   }
   telemetry_idx <- as.integer(telemetry$telemetry_samples %||% 0L)
-  fast_context <- if (isTRUE(use_fast_context)) {
+  fast_context <- if (isTRUE(use_fast_context) && !availability_active) {
     ledgr_fast_context_state(
       universe = instrument_ids,
       projection = runtime_projection,
@@ -390,6 +390,21 @@ ledgr_execute_fold <- function(execution, output_handler) {
       runtime_projection,
       feature_ids = def_ids,
       active_alias_map = active_alias_map
+    )
+  } else {
+    NULL
+  }
+  # The physical axis is fixed for the run. Build its hashed instrument
+  # lookups once; the changing decision axis is checked by the pulse lookup.
+  availability_feature_lookup_state <- if (
+    availability_active && !is.null(runtime_projection)
+  ) {
+    ledgr_projection_feature_lookup_state(
+      runtime_projection,
+      feature_ids = def_ids,
+      universe = instrument_ids,
+      active_alias_map = active_alias_map,
+      feature_name_state = availability_feature_name_state
     )
   } else {
     NULL
@@ -775,6 +790,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           features_wide = features_wide_current,
           active_alias_map = active_alias_map,
           feature_name_state = availability_feature_name_state,
+          feature_lookup_state = availability_feature_lookup_state,
           id_to_idx = if (availability_active) NULL else id_to_idx,
           availability = availability_view,
           scalar_access_state = scalar_access_state,

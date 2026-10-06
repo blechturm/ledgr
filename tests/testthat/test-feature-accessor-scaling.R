@@ -355,3 +355,82 @@ testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures"
   counted("AAA", reordered_character_map)
   testthat::expect_identical(lookup_calls, 4L)
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookups once", {
+  snapshot <- terminal_outcome_snapshot(list(
+    AAA = c(100, 101, 102, 103, 104),
+    BBB = c(50, 49, 51, 52, 53)
+  ))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  feature_map <- ledgr_feature_map(
+    signal = ledgr_ind_sma(ledgr_param("n"))
+  )
+  strategy <- function(ctx, params) {
+    signal <- ctx$vec$feature("signal")
+    target <- ctx$flat()
+    target[is.finite(signal) & signal > 51] <- 1
+    target
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    features = feature_map,
+    valuation_policy = ledgr_valuation_stale(1L),
+    cost_model = ledgr_cost_zero()
+  )
+
+  prepare_calls <- 0L
+  fold_prepare_calls <- 0L
+  original_prepare <- ledgr:::ledgr_projection_feature_lookup_state
+  testthat::local_mocked_bindings(
+    ledgr_projection_feature_lookup_state = function(...) {
+      prepare_calls <<- prepare_calls + 1L
+      calls <- vapply(
+        sys.calls(),
+        function(x) paste(deparse(x), collapse = ""),
+        character(1)
+      )
+      if (any(grepl("ledgr_execute_fold", calls, fixed = TRUE))) {
+        fold_prepare_calls <<- fold_prepare_calls + 1L
+      }
+      original_prepare(...)
+    },
+    .package = "ledgr"
+  )
+  direct <- ledgr_run(
+    experiment,
+    feature_params = list(n = 2L),
+    run_id = "availability-lookup-once"
+  )
+  on.exit(close(direct), add = TRUE)
+  testthat::expect_identical(prepare_calls, 1L)
+  testthat::expect_identical(fold_prepare_calls, 1L)
+
+  prepare_calls <- 0L
+  fold_prepare_calls <- 0L
+  swept <- ledgr_sweep(
+    experiment,
+    ledgr_grid_cross(
+      features = ledgr_feature_grid(n = 2L),
+      strategy = ledgr_strategy_grid(unused = 1)
+    ),
+    workers = 1L,
+    seed = 1L
+  )
+  testthat::expect_lte(prepare_calls, 2L)
+  testthat::expect_identical(fold_prepare_calls, 1L)
+  testthat::expect_identical(swept$status, "DONE")
+  direct_equity <- ledgr_results(direct, "equity")
+  testthat::expect_identical(
+    swept$final_equity[[1L]],
+    direct_equity$equity[[nrow(direct_equity)]]
+  )
+
+  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  testthat::expect_match(
+    fold_source,
+    "feature_lookup_state = availability_feature_lookup_state",
+    fixed = TRUE
+  )
+})

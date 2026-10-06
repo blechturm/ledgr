@@ -263,15 +263,19 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          feature_ids = NULL,
                                          features_wide = NULL,
                                          active_alias_map = NULL,
-                                         feature_name_state = NULL) {
+                                         feature_name_state = NULL,
+                                         feature_lookup_state = NULL) {
   if (!is.null(projection)) {
-    prepared_feature_lookup <- ledgr_projection_feature_lookup_state(
-      projection,
-      feature_ids = feature_ids,
-      universe = universe,
-      active_alias_map = active_alias_map,
-      feature_name_state = feature_name_state
-    )
+    prepared_feature_lookup <- feature_lookup_state
+    if (is.null(prepared_feature_lookup)) {
+      prepared_feature_lookup <- ledgr_projection_feature_lookup_state(
+        projection,
+        feature_ids = feature_ids,
+        universe = universe,
+        active_alias_map = active_alias_map,
+        feature_name_state = feature_name_state
+      )
+    }
     if (!is.data.frame(features)) {
       features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
     }
@@ -398,6 +402,7 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                features_wide = NULL,
                                                active_alias_map = NULL,
                                                feature_name_state = NULL,
+                                               feature_lookup_state = NULL,
                                                id_to_idx = NULL,
                                                availability = NULL,
                                                scalar_access_state = NULL,
@@ -412,7 +417,8 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     feature_ids = feature_ids,
     features_wide = features_wide,
     active_alias_map = active_alias_map,
-    feature_name_state = feature_name_state
+    feature_name_state = feature_name_state,
+    feature_lookup_state = feature_lookup_state
   )
   ledgr_refresh_pulse_context_lookup(
     ctx,
@@ -444,17 +450,13 @@ ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe)
   private_universe <- as.character(private_universe)
   feature <- ctx$feature
   ctx$feature <- function(instrument_id, feature_name, default = NA_real_) {
-    if (!instrument_id %in% universe) {
-      rlang::abort(
-        sprintf(
-          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
-          instrument_id,
-          ledgr_pulse_context_universe_message(universe)
-        ),
-        class = "ledgr_invalid_pulse_context"
-      )
-    }
+    ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
     feature(instrument_id, feature_name, default = default)
+  }
+  features <- ctx$features
+  ctx$features <- function(instrument_id, feature_map = NULL) {
+    ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
+    features(instrument_id, feature_map = feature_map)
   }
   feature_vector <- ctx$.feature_vector
   context_index <- match(universe, private_universe)

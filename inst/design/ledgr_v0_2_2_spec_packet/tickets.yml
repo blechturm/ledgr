@@ -137,7 +137,13 @@ review_obligations: >-
   The reviewer independently checks that the inputs are the right inputs and
   applies the evidence obligations appropriate to the cut. Optimization work
   uses the exact-parity proof template, a current-tree clock, a failure-sensitive
-  structural detector and the seven-shape walk. A correction review counts as
+  structural detector and walks, verbatim, the seven shapes named in
+  optimization_coding_style.qmd, The Seven Shapes And Their Replacements:
+  One-row frame per element, bound at the end; Full-table subset inside a loop
+  over ids; Per-element parsing or formatting where a vectorised call exists;
+  Per-row JSON on repetitive strings; Work computed and discarded, or
+  recomputed on every call; Quadratic validators; Scalar writes into an
+  environment-held vector. A correction review counts as
   another invocation and any breach of 0.5 is recorded rather than hidden by
   merging or padding tickets. Once LDG-2950 is accepted, every later
   optimization-cut close runs its ordinary local long-window suite and every
