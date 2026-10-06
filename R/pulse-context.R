@@ -262,13 +262,15 @@ ledgr_attach_feature_helpers <- function(ctx,
                                          pulse_idx = NULL,
                                          feature_ids = NULL,
                                          features_wide = NULL,
-                                         active_alias_map = NULL) {
+                                         active_alias_map = NULL,
+                                         feature_name_state = NULL) {
   if (!is.null(projection)) {
     prepared_feature_lookup <- ledgr_projection_feature_lookup_state(
       projection,
       feature_ids = feature_ids,
       universe = universe,
-      active_alias_map = active_alias_map
+      active_alias_map = active_alias_map,
+      feature_name_state = feature_name_state
     )
     if (!is.data.frame(features)) {
       features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
@@ -395,6 +397,7 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                feature_ids = NULL,
                                                features_wide = NULL,
                                                active_alias_map = NULL,
+                                               feature_name_state = NULL,
                                                id_to_idx = NULL,
                                                availability = NULL,
                                                scalar_access_state = NULL,
@@ -408,7 +411,8 @@ ledgr_update_pulse_context_helpers <- function(ctx,
     pulse_idx = pulse_idx,
     feature_ids = feature_ids,
     features_wide = features_wide,
-    active_alias_map = active_alias_map
+    active_alias_map = active_alias_map,
+    feature_name_state = feature_name_state
   )
   ledgr_refresh_pulse_context_lookup(
     ctx,

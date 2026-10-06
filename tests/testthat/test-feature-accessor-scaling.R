@@ -96,6 +96,30 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(normalize_calls, 1L)
 
+  name_state <- ledgr:::ledgr_projection_feature_name_state(
+    projection,
+    feature_ids = c("sma_2", "sma_3"),
+    active_alias_map = c(short = "sma_2", long = "sma_3")
+  )
+  lookup_a <- ledgr:::ledgr_projection_feature_lookup_state(
+    projection,
+    universe = "AAA",
+    feature_name_state = name_state
+  )
+  lookup_b <- ledgr:::ledgr_projection_feature_lookup_state(
+    projection,
+    universe = "BBB",
+    feature_name_state = name_state
+  )
+  testthat::expect_identical(lookup_a$name_lookup, lookup_b$name_lookup)
+  testthat::expect_identical(lookup_a$known_features, lookup_b$known_features)
+  fold_source <- paste(deparse(body(ledgr:::ledgr_execute_fold)), collapse = "\n")
+  testthat::expect_match(
+    fold_source,
+    "feature_name_state = availability_feature_name_state",
+    fixed = TRUE
+  )
+
   scalar_source <- paste(deparse(body(
     ledgr:::ledgr_projection_feature_accessor_state
   )), collapse = "\n")

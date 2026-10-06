@@ -139,7 +139,7 @@ utils::write.csv(decision, file.path(out_dir, "decision.csv"), row.names = FALSE
 writeLines(c(
   paste("Rscript", shQuote(case_script), "<repo> <bundle|plane> <output.json>"),
   paste(
-    "Rscript", shQuote(normalizePath(sys.frame(1)$ofile, winslash = "/")),
+    "Rscript", shQuote(file.path(script_dir, "run_record.R")),
     shQuote(pre_cut_repo), shQuote(candidate_repo), shQuote(out_dir), reps
   )
 ), file.path(out_dir, "commands.txt"))

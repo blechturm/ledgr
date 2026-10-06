@@ -1526,9 +1526,9 @@ claims:
     detecting_blocks: ["LTB-0139"]
     promised_profile: "fast"
     owner: "maintainer"
-    protected_contract_or_defect: "One run-local context factory prepares instrument, universe and feature-ID indexes and its active alias map once; scalar and bundled reads preserve known, unknown and default behavior without repeating preparation per call."
+    protected_contract_or_defect: "One run-local context factory prepares instrument, universe and feature-ID indexes and its active alias map once; availability reuses the immutable alias-and-ID name table while rebuilding its changing axis membership; scalar and bundled reads preserve known, unknown and default behavior without repeating name preparation per pulse or per call."
     oracle_independence: "Expected values come from a literal two-instrument matrix and expected failures name literal invalid inputs; counters wrap the preparation boundary, while source assertions independently require the three prepared-environment reads and reject `%in%` in either returned accessor closure."
-    smallest_failing_change: "Shift an instrument row, restore the old `%in%` feature or universe membership inside an accessor call, restore alias normalization there, or build separate prepared states for ctx$feature and ctx$features."
+    smallest_failing_change: "Shift an instrument row, restore the old `%in%` feature or universe membership inside an accessor call, rebuild the name table per availability pulse, restore alias normalization there, or build separate prepared states for ctx$feature and ctx$features."
     cheapest_adequate_lane: "A two-by-two in-memory projection; fast, because every feature-reading strategy takes this path."
     overlapping_evidence: "The current-tree WS7 benchmark covers public run and sweep parity at 500 by 1,260; this block protects exact call behavior and construction shape."
   - id: "LCL-0140"

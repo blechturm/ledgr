@@ -426,35 +426,10 @@ ledgr_projection_feature_vector_accessor <- function(projection,
   }
 }
 
-ledgr_projection_feature_lookup_state <- function(projection,
-                                                  feature_ids = NULL,
-                                                  universe = NULL,
-                                                  active_alias_map = NULL) {
+ledgr_projection_feature_name_state <- function(projection,
+                                                feature_ids = NULL,
+                                                active_alias_map = NULL) {
   available_features <- ledgr_projection_feature_ids(projection, feature_ids)
-  instrument_index <- projection$instrument_index
-  instrument_rows <- list2env(
-    stats::setNames(as.list(unname(instrument_index)), names(instrument_index)),
-    hash = TRUE,
-    parent = emptyenv()
-  )
-  known_features <- list2env(
-    stats::setNames(
-      as.list(rep(TRUE, length(available_features))),
-      available_features
-    ),
-    hash = TRUE,
-    parent = emptyenv()
-  )
-  universe <- if (is.null(universe)) NULL else as.character(universe)
-  universe_members <- if (is.null(universe)) {
-    NULL
-  } else {
-    list2env(
-      stats::setNames(as.list(rep(TRUE, length(universe))), universe),
-      hash = TRUE,
-      parent = emptyenv()
-    )
-  }
   active_lookup <- tryCatch(
     list(
       valid = TRUE,
@@ -467,13 +442,58 @@ ledgr_projection_feature_lookup_state <- function(projection,
   )
   name_lookup <- ledgr_feature_name_lookup_state(
     available_features,
-    active_alias_map = if (isTRUE(active_lookup$valid)) active_lookup$value else NULL,
+    active_alias_map = if (isTRUE(active_lookup$valid)) {
+      active_lookup$value
+    } else {
+      NULL
+    },
     normalized = TRUE
   )
-
   list(
     available_features = available_features,
     available_message = ledgr_feature_names_message(sort(available_features)),
+    known_features = name_lookup$feature_env,
+    active_lookup = active_lookup,
+    name_lookup = name_lookup
+  )
+}
+
+ledgr_projection_feature_lookup_state <- function(projection,
+                                                  feature_ids = NULL,
+                                                  universe = NULL,
+                                                  active_alias_map = NULL,
+                                                  feature_name_state = NULL) {
+  if (is.null(feature_name_state)) {
+    feature_name_state <- ledgr_projection_feature_name_state(
+      projection,
+      feature_ids = feature_ids,
+      active_alias_map = active_alias_map
+    )
+  }
+  available_features <- feature_name_state$available_features
+  instrument_index <- projection$instrument_index
+  instrument_rows <- list2env(
+    stats::setNames(as.list(unname(instrument_index)), names(instrument_index)),
+    hash = TRUE,
+    parent = emptyenv()
+  )
+  known_features <- feature_name_state$known_features
+  universe <- if (is.null(universe)) NULL else as.character(universe)
+  universe_members <- if (is.null(universe)) {
+    NULL
+  } else {
+    list2env(
+      stats::setNames(as.list(rep(TRUE, length(universe))), universe),
+      hash = TRUE,
+      parent = emptyenv()
+    )
+  }
+  active_lookup <- feature_name_state$active_lookup
+  name_lookup <- feature_name_state$name_lookup
+
+  list(
+    available_features = available_features,
+    available_message = feature_name_state$available_message,
     instrument_rows = instrument_rows,
     known_features = known_features,
     feature_values = projection$feature_values,

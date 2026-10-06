@@ -383,6 +383,17 @@ ledgr_execute_fold <- function(execution, output_handler) {
   } else {
     NULL
   }
+  availability_feature_name_state <- if (
+    availability_active && !is.null(runtime_projection)
+  ) {
+    ledgr_projection_feature_name_state(
+      runtime_projection,
+      feature_ids = def_ids,
+      active_alias_map = active_alias_map
+    )
+  } else {
+    NULL
+  }
   scalar_access_state <- if (length(instrument_ids) >= 100L) {
     ledgr_pulse_context_scalar_access_state()
   } else {
@@ -763,6 +774,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
           feature_ids = def_ids,
           features_wide = features_wide_current,
           active_alias_map = active_alias_map,
+          feature_name_state = availability_feature_name_state,
           id_to_idx = if (availability_active) NULL else id_to_idx,
           availability = availability_view,
           scalar_access_state = scalar_access_state,

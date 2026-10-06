@@ -1,0 +1,2 @@
+Rscript C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_2_feature_map_read_surface/run_case.R <repo> <bundle|plane> <output.json>
+Rscript C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_2_feature_map_read_surface/run_record.R C:/tmp/ledgr-ws16-precut C:/Users/maxth/Documents/GitHub/ledgr C:/Users/maxth/ledgr-research/ws16-feature-map-record 3
