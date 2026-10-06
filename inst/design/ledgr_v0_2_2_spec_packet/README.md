@@ -3,7 +3,7 @@
 **Status:** Cuts 1 through 6 are closed after maintainer acceptance of all
 fifteen workstreams. Cut 7's independent review returned
 `PASS_AFTER_PATCHES`; its four patches are incorporated, the maintainer
-accepted the cut on 2026-10-06, and Workstream 16 is open.
+accepted the cut on 2026-10-06, and Workstream 16 is review-pending.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -406,7 +406,7 @@ Outputs must be exact. The preregistered candidate plane/loop ratio is at most
 Workstream 11 `feature_gaps` comparison remains the availability no-regression
 gate. None is a general engine-speed claim.
 
-Implementation through `a4cfc21` supplies the singular resolver, explicit-map
+Implementation through `de3180b` supplies the singular resolver, explicit-map
 guard, parameterized inspection, standing contracts, public teaching and
 checked-in performance records. Exact outputs hold across all three timing
 arms. The preregistered retry passes at 0.625 for candidate plane over
@@ -414,12 +414,15 @@ candidate loop and 1.023 for candidate loop over pre-cut loop. The ordinary
 Workstream 11 record passes all three shapes, with cold ratios from 1.000 to
 1.045 and warm ratios from 0.994 to 1.037 against the 1.10 bound.
 
-Workstream 16 is not ready for close review. All 530 blocks pass in each final
-fast run, but the clean 122.41, 108.62 and 119.51 second series has a 119.51
-second median against the unchanged 112 second bound. A same-host accepted
-pre-cut control took 140.55 seconds, so the record does not attribute this
-absolute overrun to the workstream. It remains a gate failure rather than a
-speed claim or an invitation to select another timing series post hoc.
+The first final fast series remains recorded as a failed gate: its 119.51
+second median exceeded the unchanged 112 second bound, while a same-host
+accepted pre-cut control took 140.55 seconds. A subsequent shape audit found
+three bounded workstream costs: repeated character-map resolution, duplicate
+inspection validation and an unnecessary full-run negative warning detector.
+Commit `de3180b` removes them and adds failure-sensitive counters. Its justified
+corrected-tree fast run passed all 530 blocks in 105.46 seconds, and the gate
+checker passed run 1 against 112 seconds. The workstream is ready for Type 1
+close review; neither timing record is presented as a general speed claim.
 
 No ticket implements historical projection, recursive-indicator semantics,
 missingness, scheduling, context-frame retirement or a plural or subset

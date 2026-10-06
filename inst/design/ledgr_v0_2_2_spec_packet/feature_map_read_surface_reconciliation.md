@@ -97,12 +97,28 @@ articles reproduce their checked-in Markdown renders. The first final fast
 run also exposed and caused correction of a claim registration error:
 LCL-0187 promised `fast` while its file-level detector belongs to `review`.
 
-The remaining blocker is the absolute ordinary fast timing gate. The final
-committed tree executes all 530 blocks with zero non-passes, but its clean
-three-run record at
-`C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-final-fast-cool` is 122.41,
-108.62 and 119.51 seconds. The 119.51-second median exceeds the unchanged
-112-second bound. A same-host accepted pre-cut control took 140.55 seconds,
-so this does not attribute a regression to Workstream 16, but it also does not
-satisfy the absolute gate. The closeout remains agent-provisional and
-Workstream 16 remains open. No further timing series is selected post hoc.
+The first final series did not pass the absolute ordinary fast timing gate.
+All 530 blocks passed, but the clean three-run record at
+`C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-final-fast-cool` was 122.41,
+108.62 and 119.51 seconds, with a 119.51-second median against the unchanged
+112-second bound. A same-host accepted pre-cut control took 140.55 seconds.
+The failed series remains part of the record and no favorable run was selected.
+
+The ensuing shape audit found three bounded costs in the workstream. Explicit
+character maps repeated the common collision scan on every bundled read;
+feature-contract inspection validated the same concrete map twice; and
+LTB-0102 used a full public run only to prove the explicit-map warning
+exclusion. Commit `de3180b` memoizes the last exactly identical successful map
+for both explicit forms, keeps failed and changed inputs invalidating the memo,
+passes the already-validated inspection map forward, and replaces that extra
+run with a direct failure-sensitive production-wrapper probe. LTB-0141 and
+LTB-0112 count the affected resolver and validator calls. The same 100,000-call
+character-map microprobe moved from a prior 1.59-second median to 0.95 seconds;
+this is shape evidence, not a product effect estimate.
+
+The justified corrected-tree run at
+`C:/Users/maxth/ledgr-research/.tmp/ledgr-ws16-antipattern-fast-de3180b`
+executed all 530 blocks with zero non-passes in 105.46 seconds. The ordinary
+gate checker passed run 1 against the unchanged 112-second bound, so the
+registered rule did not call for two more runs. Workstream 16 is ready for its
+Type 1 close review; this closeout remains agent-provisional until acceptance.
