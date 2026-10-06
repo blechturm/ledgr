@@ -88,6 +88,9 @@ first place a documentation break surfaces.
    - README cold-start under installed-package semantics:
      `Rscript --vanilla tools/check-readme-example.R`;
    - `R CMD check --no-manual --no-build-vignettes`;
+   - `Rscript tools/render-vignettes-gfm.R --check --all`, which re-renders
+     every article into a temporary directory and fails if a committed `.md`
+     render is stale; the documentation-contract pins read those renders;
    - `tools/check-coverage.R` when coverage behavior changed;
    - pkgdown build when documentation, vignettes, or pkgdown changed.
    Use release-gate timeouts, not short exploratory command timeouts. Full
@@ -198,6 +201,7 @@ this playbook before local verification starts. The ticket should include:
   - full package tests;
   - `Rscript --vanilla tools/check-readme-example.R`;
   - `R CMD check --no-manual --no-build-vignettes`;
+  - `Rscript tools/render-vignettes-gfm.R --check --all`;
   - `tools/check-coverage.R` when coverage behavior changed or coverage is part
     of the release evidence;
   - pkgdown build when documentation, vignettes, README, examples, or pkgdown
