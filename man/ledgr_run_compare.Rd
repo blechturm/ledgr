@@ -21,7 +21,8 @@ DuckDB file in a new R session.}
 preserves this order, including duplicates, and may include archived
 completed runs. A named non-completed run raises
 \code{ledgr_run_not_complete}. If \code{NULL}, compares all non-archived completed
-runs and silently excludes other statuses.}
+runs and excludes other statuses; the excluded counts are disclosed in
+the \code{selection_counts} attribute and the print footer.}
 
 \item{include_archived}{Logical scalar. Used only when \code{run_ids = NULL}.}
 
@@ -46,6 +47,13 @@ can support a fill-equivalence claim; they never filter or alter metrics.
 Incomplete runs remain visible through \code{\link[=ledgr_run_list]{ledgr_run_list()}} and
 \code{\link[=ledgr_run_info]{ledgr_run_info()}}, but cannot enter this ranking surface because a shorter
 horizon changes what return, Sharpe ratio, and drawdown mean.
+Completed runs that froze a holding or used an assumed terminal outcome
+stay comparable and carry \code{valuation_state},
+\code{frozen_instrument_sessions}, \code{max_frozen_equity_weight},
+\code{frozen_at_end_value}, and \code{assumed_terminal_outcomes} beside their
+metrics; these columns are \code{NA} for runs without availability evidence.
+The \code{selection_counts} attribute lists attempted, done, incomplete, and
+failed counts; it is disclosure only and never changes the metrics.
 Use \code{as.data.frame(comparison)} or
 tibble operations when exporting report-ready numeric columns.
 }

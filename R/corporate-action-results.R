@@ -356,7 +356,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   event_rows <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT meta_json FROM ledger_events",
+      "SELECT ts_utc, instrument_id, qty, price, meta_json FROM ledger_events",
       "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
       "ORDER BY event_seq"
     ),
@@ -367,9 +367,18 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     function(value) identical(value$source, "corporate_action_cash"),
     event_meta
   )
-  disposition_meta <- Filter(
-    function(value) identical(value$source, "corporate_action_disposition"),
-    event_meta
+  # Scheduled corporate-action dispositions and lifetime terminal
+  # dispositions share one terminal fidelity authority.
+  event_sources <- vapply(
+    event_meta,
+    function(value) as.character(value$source %||% ""),
+    character(1)
+  )
+  is_disposition <- event_sources %in% ledgr_disposition_sources()
+  disposition_meta <- event_meta[is_disposition]
+  terminal_outcomes <- ledgr_terminal_outcome_rows(
+    event_rows[is_disposition, , drop = FALSE],
+    disposition_meta
   )
   if (length(cash_meta) > 0L) {
     amount_ids <- vapply(cash_meta, `[[`, character(1), "amount_policy_id")
@@ -393,16 +402,11 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       "disposition_policy_id"
     )
     # Stored schema-1 runs carry v001 disposition ids; count both versions.
-    held_ids <- c(
-      ledgr_corporate_action_policy_ids()$held_terminal_position,
-      ledgr_corporate_action_policy_ids_v1()$held_terminal_position
-    )
-    disposition_choices <- names(held_ids)[match(disposition_ids, held_ids)]
-    for (choice in unique(disposition_choices[!is.na(disposition_choices)])) {
-      choice_counts[[paste0("held_terminal_position.", choice)]] <- sum(
-        disposition_choices == choice,
-        na.rm = TRUE
-      )
+    # A frozen-terminal fallback is counted under its own field.
+    keys <- ledgr_terminal_policy_id_keys()
+    disposition_keys <- unname(keys[disposition_ids])
+    for (key in unique(disposition_keys[!is.na(disposition_keys)])) {
+      choice_counts[[key]] <- sum(disposition_keys == key, na.rm = TRUE)
     }
   }
   sum_meta <- function(values, name) {
@@ -443,6 +447,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     price_basis = config$data$price_basis %||% "undeclared",
     selected_settings = settings,
     selected_identities = identities,
+    terminal_outcomes = terminal_outcomes,
     choice_counts = choice_counts,
     refusal_counts = refusal_counts,
     late_arrival_count = as.integer(sum_meta(cash_meta, "late_arrival")),
@@ -507,6 +512,22 @@ ledgr_print_corporate_action_summary <- function(summary) {
   cat("  Exercised choices:\n")
   for (key in names(summary$choice_counts)) {
     cat(sprintf("    %s: %d\n", key, summary$choice_counts[[key]]))
+  }
+  outcomes <- summary$terminal_outcomes
+  if (is.data.frame(outcomes) && nrow(outcomes) > 0L) {
+    cat("  Terminal outcomes:\n")
+    cat(sprintf(
+      "    %s %s: %s, proceeds %s%s\n",
+      outcomes$instrument_id,
+      format(outcomes$ts_utc, "%Y-%m-%d", tz = "UTC"),
+      outcomes$assumption_label,
+      vapply(outcomes$proceeds, ledgr_corporate_action_value, character(1)),
+      ifelse(
+        is.na(outcomes$terminal_event),
+        "",
+        sprintf(" (label %s)", outcomes$terminal_event)
+      )
+    ), sep = "")
   }
   cat("  Refusal reasons:\n")
   if (length(summary$refusal_counts) == 0L) {

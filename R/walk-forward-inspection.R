@@ -10,7 +10,12 @@
 #'   backtest objects in `test_runs`; that field contains linked test `run_id`
 #'   strings. The reopened object includes the same programmatic `degradation`
 #'   table fields used by print. `ledgr_walk_forward_scores()` and
-#'   `ledgr_walk_forward_folds()` return tibbles.
+#'   `ledgr_walk_forward_folds()` return tibbles. Score rows derive
+#'   `stop_reason`, `affected_instrument_ids`, and the valuation flags
+#'   (`valuation_state`, `frozen_instrument_sessions`,
+#'   `max_frozen_equity_weight`, `frozen_at_end_value`,
+#'   `assumed_terminal_outcomes`) from `completion_json`, and print reports
+#'   attempted, done, incomplete, and failed counts per window.
 #' @export
 ledgr_walk_forward_open <- function(snapshot, session_id) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)
@@ -315,6 +320,7 @@ ledgr_walk_forward_read_session <- function(snapshot, session_id, verify_runs = 
     "SELECT * FROM walk_forward_scores WHERE session_id = ? ORDER BY fold_seq, \"window\", candidate_key, metric_name",
     params = list(session_id)
   ))
+  scores <- ledgr_add_completion_columns(scores)
   if (isTRUE(verify_runs) && nrow(folds) > 0L) {
     ledgr_walk_forward_verify_linked_runs(opened$con, snapshot, session, folds)
   }

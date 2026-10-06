@@ -11,9 +11,14 @@
 #'   Use `desc(metric)` or `-metric` for descending numeric rankings.
 #' @param n Number of top completed candidates to keep in `top`.
 #' @return A `ledgr_sweep_review` list with `ranked`, `top`, `issues`,
-#'   `rank_by`, and `n`. For classed sweep input, `ranked` retains the source
-#'   sweep lineage needed for explicit candidate extraction; `top` is always a
-#'   lineage-free presentation table.
+#'   `counts`, `rank_by`, and `n`. For classed sweep input, `ranked` retains
+#'   the source sweep lineage needed for explicit candidate extraction; `top`
+#'   is always a lineage-free presentation table. `top` carries the valuation
+#'   flags beside the ranking columns, so a completed candidate that froze a
+#'   holding or used an assumed terminal outcome stays rankable but visible.
+#'   `issues` shows each incomplete or failed candidate's `stop_reason` and
+#'   `affected_instrument_ids`. `counts` lists attempted, done, incomplete,
+#'   and failed candidates; it is disclosure only.
 #' @examples
 #' \dontrun{
 #' review <- ledgr_sweep_review(sweep, rank_by = desc(sharpe_ratio), n = 5)
@@ -55,11 +60,17 @@ ledgr_sweep_review <- function(sweep, rank_by, n = 5L) {
   top_view <- tibble::as_tibble(top_data)
   top <- top_view[seq_len(min(n, nrow(top_view))), intersect(top_cols, names(top_view)), drop = FALSE]
   issues <- ledgr_sweep_review_issue_rows(view)
+  counts <- ledgr_selection_counts(
+    view$status,
+    valuation_state = view[["valuation_state"]],
+    assumed = view[["assumed_terminal_outcomes"]]
+  )
 
   out <- list(
     ranked = ranked,
     top = top,
     issues = issues,
+    counts = counts,
     rank_by = paste(deparse(rank_expr), collapse = " "),
     n = n
   )
@@ -73,7 +84,11 @@ print.ledgr_sweep_review <- function(x, ...) {
   }
   cat("# ledgr sweep review\n", sep = "")
   cat("# i rank_by: ", x$rank_by, "\n", sep = "")
-  cat("# i top rows: ", nrow(x$top), "\n\n", sep = "")
+  cat("# i top rows: ", nrow(x$top), "\n", sep = "")
+  if (!is.null(x$counts)) {
+    cat(paste0("# i ", ledgr_selection_count_lines(x$counts)), sep = "\n")
+  }
+  cat("\n")
   cat("Top candidates:\n")
   print(x$top, ...)
   cat("\nIssue rows:\n")
@@ -129,12 +144,16 @@ ledgr_sweep_review_top_cols <- function() {
   c(
     "rank", "candidate_id", "candidate_row", "status", "final_equity",
     "total_return", "sharpe_ratio", "max_drawdown", "n_trades",
-    "execution_seed", "params", "feature_params"
+    "valuation_state", "max_frozen_equity_weight", "frozen_at_end_value",
+    "assumed_terminal_outcomes", "execution_seed", "params", "feature_params"
   )
 }
 
 ledgr_sweep_review_issue_cols <- function() {
-  c("candidate_id", "candidate_row", "status", "error_class", "error_msg", "warnings")
+  c(
+    "candidate_id", "candidate_row", "status", "stop_reason", "affected_instrument_ids",
+    "error_class", "error_msg", "warnings"
+  )
 }
 
 #' Create a disposable ledgr store path

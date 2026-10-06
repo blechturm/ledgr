@@ -17,9 +17,14 @@ Use \code{desc(metric)} or \code{-metric} for descending numeric rankings.}
 }
 \value{
 A \code{ledgr_sweep_review} list with \code{ranked}, \code{top}, \code{issues},
-\code{rank_by}, and \code{n}. For classed sweep input, \code{ranked} retains the source
-sweep lineage needed for explicit candidate extraction; \code{top} is always a
-lineage-free presentation table.
+\code{counts}, \code{rank_by}, and \code{n}. For classed sweep input, \code{ranked} retains
+the source sweep lineage needed for explicit candidate extraction; \code{top}
+is always a lineage-free presentation table. \code{top} carries the valuation
+flags beside the ranking columns, so a completed candidate that froze a
+holding or used an assumed terminal outcome stays rankable but visible.
+\code{issues} shows each incomplete or failed candidate's \code{stop_reason} and
+\code{affected_instrument_ids}. \code{counts} lists attempted, done, incomplete,
+and failed candidates; it is disclosure only.
 }
 \description{
 \code{ledgr_sweep_review()} packages the common sweep-inspection shape into a

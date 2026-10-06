@@ -18,8 +18,12 @@ The input object, invisibly.
 Print a backtest result
 }
 \details{
-The ordinary print includes the headline corporate-action fidelity and
-declares when the execution-bar price basis was not supplied.
+The ordinary print includes the headline corporate-action fidelity
+and declares when the execution-bar price basis was not supplied.
+Availability-aware runs add one valuation headline: current, stale or
+frozen. When any holding froze or any terminal outcome rested on an
+assumption rather than settlement evidence, one warning precedes the
+metrics; it has no materiality threshold.
 }
 \examples{
 bars <- data.frame(

@@ -671,6 +671,10 @@ ledgr_backtest_headline_metrics <- function(con, run_id) {
 #' @return The input object, invisibly.
 #' @details The ordinary print includes the headline corporate-action fidelity
 #'   and declares when the execution-bar price basis was not supplied.
+#'   Availability-aware runs add one valuation headline: current, stale or
+#'   frozen. When any holding froze or any terminal outcome rested on an
+#'   assumption rather than settlement evidence, one warning precedes the
+#'   metrics; it has no materiality threshold.
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
@@ -703,6 +707,7 @@ print.ledgr_backtest <- function(x, ...) {
   on.exit(opened$close(), add = TRUE)
   headline <- ledgr_backtest_headline_metrics(con, x$run_id)
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
+  valuation <- ledgr_valuation_summary(x, con = con)
   completion <- ledgr_run_completion_info(con, x$run_id)
   prefix_only <- ledgr_summary_prefix_only(completion)
   period <- ledgr_result_period_label(
@@ -714,6 +719,7 @@ print.ledgr_backtest <- function(x, ...) {
 
   cat("ledgr Backtest Results\n")
   cat("======================\n\n")
+  ledgr_print_result_assumption_warning(valuation, corporate_actions)
   cat(sprintf("%-34s %s\n", "Run ID:", x$run_id))
   cat(sprintf("%-34s %s\n", "Period:", period))
   cat(sprintf("%-34s $%.2f\n", "Opening Cash:", initial_cash))
@@ -722,6 +728,8 @@ print.ledgr_backtest <- function(x, ...) {
   cat(sprintf("%-34s %.2f%%\n", drawdown_label, headline$max_drawdown * 100))
   cat(sprintf("%-34s %d\n\n", "Closed Trades:", headline$n_trades))
   ledgr_print_corporate_action_headline(corporate_actions)
+  valuation_headline <- ledgr_valuation_headline(valuation)
+  if (!is.null(valuation_headline)) cat(valuation_headline, "\n", sep = "")
   cat("\n")
   cat("Use summary(bt) for metrics and evidence\n")
 
@@ -792,7 +800,15 @@ ledgr_summary_prefix_only <- function(completion) {
 #' explanation.
 #' The summary also prints the corporate-action fidelity, selected versioned
 #' policy identities, exercised-choice and refusal counts, and explicit zeros
-#' for settlement fields that were not exercised.
+#' for settlement fields that were not exercised, and lists each terminal
+#' outcome with its assumption: evidence, declared by an exact label, or
+#' default (for example `default: assumed worthless`).
+#' Availability-aware runs also print the valuation evidence from
+#' [ledgr_valuation_summary()]. When any holding froze or any terminal outcome
+#' rested on an assumption, one warning precedes the metrics, names the
+#' argument that produced it and whether it is the default, and gives the
+#' frozen-at-end value with `total_return_if_frozen_worthless`. That bound
+#' never changes the metrics shown.
 #'
 #' @section Articles:
 #' Metrics and accounting:
@@ -841,6 +857,9 @@ summary.ledgr_backtest <- function(object,
 
   cat("ledgr Backtest Summary\n")
   cat("======================\n\n")
+  corporate_actions <- ledgr_corporate_action_summary(object)
+  valuation <- ledgr_valuation_summary(object)
+  ledgr_print_result_assumption_warning(valuation, corporate_actions)
 
   completion <- ledgr_backtest_completion_info(object)
   prefix_only <- ledgr_summary_prefix_only(completion)
@@ -905,11 +924,10 @@ summary.ledgr_backtest <- function(object,
     cat(sprintf("  Timing Version:      %s\n", as.character(timing_version)))
   }
 
+  ledgr_print_valuation_summary(valuation)
   if (isTRUE(completion$completion_evidence_available)) cat("\n")
   ledgr_print_completion_info(completion, trailing_blank = FALSE)
-  ledgr_print_corporate_action_summary_compact(
-    ledgr_corporate_action_summary(object)
-  )
+  ledgr_print_corporate_action_summary_compact(corporate_actions)
 
   invisible(object)
 }

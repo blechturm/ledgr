@@ -29,6 +29,19 @@ construction. Release-only EXP-0003 scale and walk-forward cases require the
 separate `run_release.R --release` entry point. Neither `tests/` nor hosted CI
 may invoke it.
 
+`run_release.R --release terminal <repo> <out_dir>` runs the single-arm
+terminal-outcome fixture owned by LDG-2961 (`terminal_release.R`). A two-year,
+30-instrument availability run crosses a freeze that resumes, a bankruptcy
+reached while frozen (default write-off), a declared `last_mark` terminal, a
+default `last_permissible` terminal, a short stale gap and a holding still
+frozen at the end. The run is executed straight, reopened, and interrupted
+during the freeze then resumed; all three must agree exactly, independent
+oracles check the disposition prices and the frozen-at-end value against the
+fixture bars and ledger, and the normalized outputs must equal
+`evidence/terminal_release/expected.json`. `--accept` rewrites that record and
+needs the accepted ticket that authorizes the semantic change. It runs in
+about 11 seconds and refuses a dirty product tree.
+
 Run from the ledgr repository root:
 
 ```powershell

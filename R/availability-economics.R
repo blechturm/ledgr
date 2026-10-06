@@ -546,9 +546,26 @@ ledgr_completion_record <- function(completion) {
   )
 }
 
-ledgr_completion_json <- function(completion) {
+# Selection surfaces store the completion record with two optional
+# extensions: the stopped instrument IDs and the compact assumption flags.
+ledgr_completion_json <- function(completion,
+                                  affected_instrument_ids = NULL,
+                                  assumptions = NULL) {
   record <- ledgr_completion_record(completion)
-  if (is.null(record)) NA_character_ else as.character(canonical_json(record))
+  if (is.null(record)) return(NA_character_)
+  if (length(affected_instrument_ids) > 0L) {
+    record$affected_instrument_ids <- as.list(as.character(affected_instrument_ids))
+  }
+  if (!is.null(assumptions)) {
+    record$assumptions <- assumptions
+  }
+  as.character(canonical_json(record))
+}
+
+ledgr_stopped_instrument_ids <- function(diagnostics) {
+  if (is.null(diagnostics) || nrow(diagnostics) == 0L) return(character())
+  ids <- as.character(diagnostics$instrument_id[diagnostics$outcome %in% "stopped"])
+  unique(ids[!is.na(ids) & nzchar(ids)])
 }
 
 ledgr_availability_diagnostic_row <- function(run_id,

@@ -23,7 +23,12 @@ ledgr_walk_forward_folds(snapshot, session_id)
 backtest objects in \code{test_runs}; that field contains linked test \code{run_id}
 strings. The reopened object includes the same programmatic \code{degradation}
 table fields used by print. \code{ledgr_walk_forward_scores()} and
-\code{ledgr_walk_forward_folds()} return tibbles.
+\code{ledgr_walk_forward_folds()} return tibbles. Score rows derive
+\code{stop_reason}, \code{affected_instrument_ids}, and the valuation flags
+(\code{valuation_state}, \code{frozen_instrument_sessions},
+\code{max_frozen_equity_weight}, \code{frozen_at_end_value},
+\code{assumed_terminal_outcomes}) from \code{completion_json}, and print reports
+attempted, done, incomplete, and failed counts per window.
 }
 \description{
 These helpers reopen compact walk-forward evidence from the experiment store

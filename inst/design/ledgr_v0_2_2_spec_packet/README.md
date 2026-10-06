@@ -1,8 +1,8 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 5 are closed after maintainer acceptance of all
-twelve workstreams. Cut 6, from the accepted terminal-outcomes synthesis, was
-accepted on 2026-10-05; Workstreams 13 and 14 are accepted and Workstream 15 is next.
+**Status:** Cuts 1 through 6 are closed after maintainer acceptance of all
+fifteen workstreams. Cut 6, from the accepted terminal-outcomes synthesis, was
+accepted on 2026-10-05 and closed on 2026-10-06.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -39,7 +39,10 @@ the packet state and does not become a second editable ticket ledger.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
   complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
   tickets, one complete Cut 4 ticket, two complete Cut 5 tickets and nine
-  Cut 6 tickets, six complete and three open. Cuts 1 through 5 are closed; Cut 6 is open.
+  Cut 6 tickets, all complete. Cuts 1 through 6 are closed.
+- `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
+  terminal-outcomes synthesis rule and gate case to one ticket, block and
+  contract section.
 - `writer_scaling_closeout.md`: accepted Workstream 6 record for the shipped
   fill-event flush and diagnostic-sequence repair.
 - `feature_accessor_scaling_closeout.md`: agent-provisional Workstream 7
@@ -329,7 +332,8 @@ Cut 5 on 2026-10-04 after record correction `4edd4b3`.
 
 ## Cut 6: Terminal outcomes and frozen holdings
 
-**Status:** Open. The terminal-outcomes synthesis was accepted by the
+**Status:** Closed on 2026-10-06 after maintainer acceptance of Workstream 15.
+The terminal-outcomes synthesis was accepted by the
 maintainer on 2026-10-05 after Type 1 final review returned
 `PASS_AFTER_PATCHES` and both precision patches were applied. The combined
 Type 1 and Type 2 cut review returned `PASS_AFTER_PATCHES` on 2026-10-05, and

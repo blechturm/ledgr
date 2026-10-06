@@ -26,7 +26,14 @@
 #' @param compiled_accounting_model Optional accounting accelerator selector.
 #'   `NULL` uses the canonical R accounting path. `"spot_fifo"` opts into the
 #'   scoped spot-asset FIFO accelerator for memory-backed sweep candidates.
-#' @return A `ledgr_sweep_results` tibble.
+#' @return A `ledgr_sweep_results` tibble. Each row keeps its `status` and
+#'   `completion_json`; the columns directly after `completion_json` are
+#'   derived from it: `stop_reason`, `affected_instrument_ids`, and the
+#'   valuation flags `valuation_state`, `frozen_instrument_sessions`,
+#'   `max_frozen_equity_weight`, `frozen_at_end_value`, and
+#'   `assumed_terminal_outcomes` (`NA` without availability evidence). Print
+#'   reports attempted, done, incomplete, and failed counts. Only `DONE` rows
+#'   enter ranking, filtering, promotion, and validation panels.
 #' @details
 #' For larger grids, precompute shared feature payloads with
 #' [ledgr_precompute_features()]. When a grid has more than 20 combinations and
@@ -345,7 +352,7 @@ ledgr_sweep_impl <- function(exp,
   }
   rows <- lapply(results, `[[`, "row")
 
-  out <- tibble::as_tibble(do.call(rbind, rows))
+  out <- ledgr_add_completion_columns(tibble::as_tibble(do.call(rbind, rows)))
   feature_union <- ledgr_sweep_feature_union(resolved$candidate_features)
   attr(out, "sweep_id") <- sweep_id
   attr(out, "snapshot_id") <- exp$snapshot$snapshot_id
@@ -728,9 +735,7 @@ print.ledgr_sweep_candidate <- function(x, ...) {
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_sweep_results <- function(x, ...) {
-  status <- as.character(x$status)
-  n_done <- sum(status == "DONE", na.rm = TRUE)
-  n_failed <- sum(status == "FAILED", na.rm = TRUE)
+  count_lines <- ledgr_selection_table_lines(x)
   retention <- attr(x, "sweep_retention", exact = TRUE)
   retention_returns <- if (inherits(retention, "ledgr_sweep_retention")) retention$returns else "unknown"
   retention_trades <- if (inherits(retention, "ledgr_sweep_retention")) retention$trades else "unknown"
@@ -748,13 +753,24 @@ print.ledgr_sweep_results <- function(x, ...) {
     "candidate_id", "candidate_row", "status", "sharpe_ratio", "total_return",
     "max_drawdown", "n_trades", "execution_seed"
   )
+  # Freeze and assumed-terminal flags travel beside the ranking columns
+  # whenever any candidate carries them.
+  flagged <- function(name, test) {
+    value <- x[[name]]
+    !is.null(value) && any(test(value), na.rm = TRUE)
+  }
+  if (flagged("valuation_state", function(v) v %in% "frozen") ||
+      flagged("assumed_terminal_outcomes", function(v) v > 0L) ||
+      flagged("status", function(v) !as.character(v) %in% "DONE")) {
+    visible <- c(visible, "stop_reason", "valuation_state", "assumed_terminal_outcomes")
+  }
   hidden <- setdiff(names(x), visible)
   ledgr_print_curated_tibble(
     sprintf("# ledgr sweep -- %s", attr(x, "sweep_id") %||% "<unknown>"),
     x,
     cols = visible,
     footer = c(
-      sprintf("%d combinations: %d done, %d failed.", nrow(x), n_done, n_failed),
+      count_lines,
       sprintf("Retention returns: %s.", retention_returns),
       sprintf("Retention trades: %s.", retention_trades),
       sprintf("Snapshot hash: %s.", attr(x, "snapshot_hash") %||% "<unknown>"),
@@ -764,7 +780,7 @@ print.ledgr_sweep_results <- function(x, ...) {
       "Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.",
       sprintf("Hidden columns (%d): %s", length(hidden), paste(hidden, collapse = ", "))
     ),
-    footer_requires_complete = c(rep(FALSE, 8L), TRUE),
+    footer_requires_complete = c(rep(FALSE, 7L + length(count_lines)), TRUE),
     ...
   )
 }
@@ -1493,6 +1509,12 @@ ledgr_sweep_run_candidate <- function(exp,
   telemetry$t_fills_extract <- 0
 
   completion <- output_handler$completion()
+  candidate_diagnostics <- if (isTRUE(exp$availability$active)) output_handler$diagnostics() else NULL
+  candidate_flags <- if (isTRUE(exp$availability$active)) {
+    ledgr_assumption_flags_from_memory(exp$valuation_policy, candidate_diagnostics, summary$equity)
+  } else {
+    NULL
+  }
   row <- ledgr_sweep_success_row(
     candidate_id = candidate_id,
     candidate_row = candidate_row,
@@ -1521,7 +1543,11 @@ ledgr_sweep_run_candidate <- function(exp,
     t_fills_extract = telemetry$t_fills_extract,
     warnings = list(),
     status = fold_result$status,
-    completion_json = ledgr_completion_json(completion)
+    completion_json = ledgr_completion_json(
+      completion,
+      affected_instrument_ids = ledgr_stopped_instrument_ids(candidate_diagnostics),
+      assumptions = candidate_flags
+    )
   )
   retained_returns <- if (identical(retain$returns, "completed")) {
     ledgr_sweep_retained_returns_from_equity(

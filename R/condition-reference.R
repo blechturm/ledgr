@@ -405,6 +405,31 @@
 #' `vignette("survivorship-bias", package = "ledgr")` and
 #' `system.file("doc", "survivorship-bias.html", package = "ledgr")`.
 #'
+#' @section Evidence, assumptions and refusals:
+#' Availability-aware results keep six cases apart.
+#'
+#' - **Settlement evidence.** A supported settlement fact or a scheduled
+#'   corporate-action row disposes a holding as recorded. It is evidence, not
+#'   an assumption, and it pre-empts every modeled choice.
+#' - **Modeled terminal disposition** (`terminal_disposition`). A labeled
+#'   `known_inactive` holding without settlement evidence is disposed under the
+#'   declared `held_terminal_position` choice. The result names the choice and
+#'   whether it was declared or a default, for example
+#'   `default: assumed worthless`.
+#' - **Stale valuation** (`stale_close`). A holding is valued at a close no
+#'   older than `max_sessions`. Cash and quantity stay exact.
+#' - **Frozen valuation** (`valuation_frozen`, `frozen_close`). Under
+#'   `exhausted = "freeze"` a holding is carried at its last close beyond
+#'   `max_sessions`. Cash and quantity stay exact, but equity during the freeze
+#'   is an assumption-backed estimate, not an exact value.
+#' - **Refusal.** `valuation_horizon_exhausted`,
+#'   `terminal_settlement_unsupported` and `terminal_mark_unavailable` stop the
+#'   run `INCOMPLETE` and keep the accepted prefix. Nothing is fabricated.
+#' - **Frozen-at-end bound.** `total_return_if_frozen_worthless` in
+#'   [ledgr_valuation_summary()] restates endpoint return with holdings still
+#'   frozen at the end valued at zero. It is a bound, not a corrected return,
+#'   Sharpe ratio or drawdown.
+#'
 #' @section Related existing classes:
 #' `ledgr_run_not_found` is raised when run-store inspection helpers cannot
 #' find the requested run. `ledgr_unresolved_feature_id` is raised when callers

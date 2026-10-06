@@ -550,6 +550,7 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     risk_chain_hash = risk_identity$candidate_hashes,
     provenance = provenance
   )
+  out <- ledgr_add_completion_columns(out)
   first_provenance <- ledgr_sweep_first_reconstructed_provenance(out)
 
   attr(out, "sweep_id") <- as.character(parent$sweep_id[[1]])

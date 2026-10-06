@@ -3,6 +3,9 @@
 **Status:** Accepted by the maintainer on 2026-10-05 after Type 1 final review
 returned `PASS_AFTER_PATCHES` and both patches were applied. Binding for the
 v0.2.2 terminal-outcomes ticket cut.
+**Consolidated:** 2026-10-05 by LDG-2961 into the standing sections of
+`contracts.md`; `ledgr_v0_2_2_spec_packet/terminal_outcomes_reconciliation.md`
+maps each rule to its section, ticket and block. This file keeps the reasons.
 **Author/date:** Codex, 2026-10-04. Codex wrote the Type 2 response, not either
 seed. Claude wrote seed v1 and seed v2.
 **Inputs:** seed v1, the Type 2 response, seed v2, the executed probes and

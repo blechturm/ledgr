@@ -157,10 +157,12 @@ wf
 #> 2        2 sharpe_ratio                   2.08             3.64             1.56
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: 33b0c7f177f89c1bde817fb13ac95441ebda1d0762930927bdd42fc3dda11f29
+#> Session: 768664780593273cc146c2874e45562136027f853234e775404cc7021f41f2ee
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 2
+#> 4 train evaluations attempted: 4 done, 0 incomplete, 0 failed.
+#> 2 test runs attempted: 2 done, 0 incomplete, 0 failed.
 ```
 
 ## Read The Degradation Table First

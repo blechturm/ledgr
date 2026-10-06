@@ -360,7 +360,7 @@ sweep <- ledgr_sweep(
 sweep
 ```
 
-    # ledgr sweep -- sweep_8e18b57103a034d9
+    # ledgr sweep -- sweep_c4a1476209db807a
     # A tibble: 16 x 8
        candidate_id       candidate_row status sharpe_ratio total_return max_drawdown n_trades
        <chr>                      <int> <chr>         <dbl> <chr>        <chr>           <int>
@@ -382,7 +382,7 @@ sweep
     16 feature_fa560ccbe~            16 DONE          1.31  +1.0%        -0.8%               2
     # i 1 more variable: execution_seed <int>
 
-    # i 16 combinations: 16 done, 0 failed.
+    # i 16 candidates attempted: 16 done, 0 incomplete, 0 failed.
     # i Retention returns: none.
     # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -390,7 +390,7 @@ sweep
     # i Metric context hash: 794b69bd7f9c704447d4b0208b8420cdf132ec7bd6582eaa037bf1066133c1bb.
     # i Saved artifact: not saved.
     # i Rows are printed in their current table order; rank or arrange explicitly before selecting candidates.
-    # i Hidden columns (18): completion_json, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
+    # i Hidden columns (25): completion_json, stop_reason, affected_instrument_ids, valuation_state, frozen_instrument_sessions, max_frozen_equity_weight, frozen_at_end_value, assumed_terminal_outcomes, final_equity, annualized_return, volatility, win_rate, avg_trade, time_in_market, error_class, error_msg, params, feature_params, warnings, feature_fingerprints, risk_chain_hash, provenance, t_engine, t_results, t_fills_extract
 
 ``` r
 candidate_table <- bind_cols(
@@ -401,7 +401,7 @@ candidate_table <- bind_cols(
 candidate_table
 ```
 
-    # ledgr sweep -- sweep_8e18b57103a034d9
+    # ledgr sweep -- sweep_c4a1476209db807a
     # A tibble: 16 x 6
        candidate_id                               status threshold   qty fast_n slow_n
        <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
@@ -422,7 +422,7 @@ candidate_table
     15 feature_fa560ccbec9f/strategy_ab759ad88623 DONE        0       10     10     40
     16 feature_fa560ccbec9f/strategy_dc6315936028 DONE        0.01    10     10     40
 
-    # i 16 combinations: 16 done, 0 failed.
+    # i 16 candidates attempted: 16 done, 0 incomplete, 0 failed.
     # i Retention returns: none.
     # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -481,14 +481,14 @@ retained_long |>
     # A tibble: 8 x 5
       sweep_id               candidate_id             ts_utc              equity period_return
       <chr>                  <chr>                    <dttm>               <dbl>         <dbl>
-    1 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
-    2 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
-    3 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
-    4 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
-    5 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
-    6 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
-    7 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
-    8 sweep_481a98babb69d4a2 feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
+    1 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-01 00:00:00  10000            NA
+    2 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-02 00:00:00  10000             0
+    3 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-03 00:00:00  10000             0
+    4 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-04 00:00:00  10000             0
+    5 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-07 00:00:00  10000             0
+    6 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-08 00:00:00  10000             0
+    7 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-09 00:00:00  10000             0
+    8 sweep_fd3d504209a9b03d feature_9a29b31dae19/st~ 2019-01-10 00:00:00  10000             0
 
 Each `candidate_id` here is a row of `candidate_table` above, which
 lists the parameters that produced it.
@@ -575,7 +575,7 @@ ledgr_sweep_list(snapshot)
     # A tibble: 1 x 8
       sweep_id           created_at_utc      sweep_schema_version n_candidates n_completed
       <chr>              <dttm>                             <int>        <int>       <int>
-    1 sma_retained_sweep 2026-10-01 09:11:47                    4           16          16
+    1 sma_retained_sweep 2026-10-05 19:55:28                    4           16          16
     # i 3 more variables: retention_returns <chr>, retention_trades <chr>, note <chr>
 
     # i Open one saved sweep with ledgr_sweep_open(snapshot, sweep_id).
@@ -602,7 +602,7 @@ ledgr_sweep_info(reopened_sweep)
     Feature Union:     ec14bedb02755979b16a79f7f101e821c00df9ec24f778a0a54ea53be608aca6
 
     Saved artifact
-    Created At:        2026-10-01 09:11:47.699974
+    Created At:        2026-10-05 19:55:28.33104
     Schema Version:    4
     Engine Version:    0.2.1.0
     Note:              Exploratory SMA sweep with retained return series.
@@ -757,14 +757,14 @@ failed_sweep |>
   select(candidate_id, qty, status, error_class, error_msg)
 ```
 
-    # ledgr sweep -- sweep_185a569e7b3537f4
+    # ledgr sweep -- sweep_d86b9602a87b6a3b
     # A tibble: 2 x 5
       candidate_id            qty status error_class          error_msg
       <chr>                 <dbl> <chr>  <chr>                <chr>
     1 strategy_69e7ad01d1e8     5 DONE   <NA>                  <NA>
     2 strategy_8d5f90d900e7    -1 FAILED ledgr_strategy_error "Strategy error at ts_utc=2019-~
 
-    # i 2 combinations: 1 done, 1 failed.
+    # i 2 candidates attempted: 1 done, 0 incomplete, 1 failed.
     # i Retention returns: none.
     # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -820,9 +820,10 @@ review$top |>
 review$issues
 ```
 
-    # A tibble: 0 x 6
-    # i 6 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
-    #   error_class <chr>, error_msg <chr>, warnings <list>
+    # A tibble: 0 x 8
+    # i 8 variables: candidate_id <chr>, candidate_row <int>, status <chr>,
+    #   stop_reason <chr>, affected_instrument_ids <list>, error_class <chr>,
+    #   error_msg <chr>, warnings <list>
 
 ``` r
 ranked <- review$ranked
@@ -862,13 +863,13 @@ candidate_table |>
   filter(candidate_id == candidate$candidate_id)
 ```
 
-    # ledgr sweep -- sweep_8e18b57103a034d9
+    # ledgr sweep -- sweep_c4a1476209db807a
     # A tibble: 1 x 6
       candidate_id                               status threshold   qty fast_n slow_n
       <chr>                                      <chr>      <dbl> <dbl>  <int>  <int>
     1 feature_9a29b31dae19/strategy_dc6315936028 DONE        0.01    10      5     20
 
-    # i 1 combinations: 1 done, 0 failed.
+    # i 1 candidates attempted: 1 done, 0 incomplete, 0 failed.
     # i Retention returns: none.
     # i Retention trades: none.
     # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.
@@ -948,14 +949,18 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 1 x 10
+    # A tibble: 1 x 11
       run_id                      label tags  status final_equity total_return
       <chr>                       <chr> <chr> <chr>         <dbl> <chr>
     1 workflow_promoted_candidate <NA>  <NA>  DONE         10225. +2.3%
-      complete_performance achieved_end_utc execution_mode reproducibility_level
-      <lgl>                <dttm>           <chr>          <chr>
-    1 NA                   NA               audit_log      tier_1
+      complete_performance achieved_end_utc valuation_state execution_mode
+      <lgl>                <dttm>           <chr>           <chr>
+    1 NA                   NA               <NA>            audit_log
+      reproducibility_level
+      <chr>
+    1 tier_1
 
+    # i 1 runs attempted: 1 done, 0 incomplete, 0 failed.
     # i INCOMPLETE metrics describe the achieved prefix only.
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).

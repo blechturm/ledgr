@@ -670,7 +670,8 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   preserves this order, including duplicates, and may include archived
 #'   completed runs. A named non-completed run raises
 #'   `ledgr_run_not_complete`. If `NULL`, compares all non-archived completed
-#'   runs and silently excludes other statuses.
+#'   runs and excludes other statuses; the excluded counts are disclosed in
+#'   the `selection_counts` attribute and the print footer.
 #' @param include_archived Logical scalar. Used only when `run_ids = NULL`.
 #' @param metrics Metrics set. Only `"standard"` is supported.
 #' @param metric_context Optional metric context for this comparison table.
@@ -690,6 +691,13 @@ ledgr_run_info_from_row <- function(row, db_path) {
 #'   Incomplete runs remain visible through [ledgr_run_list()] and
 #'   [ledgr_run_info()], but cannot enter this ranking surface because a shorter
 #'   horizon changes what return, Sharpe ratio, and drawdown mean.
+#'   Completed runs that froze a holding or used an assumed terminal outcome
+#'   stay comparable and carry `valuation_state`,
+#'   `frozen_instrument_sessions`, `max_frozen_equity_weight`,
+#'   `frozen_at_end_value`, and `assumed_terminal_outcomes` beside their
+#'   metrics; these columns are `NA` for runs without availability evidence.
+#'   The `selection_counts` attribute lists attempted, done, incomplete, and
+#'   failed counts; it is disclosure only and never changes the metrics.
 #'   Use `as.data.frame(comparison)` or
 #'   tibble operations when exporting report-ready numeric columns.
 #' @section Articles:
@@ -740,8 +748,10 @@ ledgr_run_compare <- function(snapshot,
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
 
+  counts <- NULL
   if (is.null(run_ids)) {
     rows <- ledgr_run_store_fetch(opened$con, include_archived = include_archived, snapshot_id = snapshot_id)
+    counts <- ledgr_selection_counts(rows$status)
     rows <- rows[rows$status == "DONE", , drop = FALSE]
   } else {
     unique_ids <- unique(run_ids)
@@ -773,7 +783,7 @@ ledgr_run_compare <- function(snapshot,
   }
 
   if (nrow(rows) == 0L) {
-    return(ledgr_compare_runs_select(
+    out <- ledgr_compare_runs_select(
       rows,
       tibble::tibble(run_id = character(), n_trades = integer(), win_rate = numeric(), avg_trade = numeric()),
       tibble::tibble(
@@ -784,12 +794,17 @@ ledgr_run_compare <- function(snapshot,
         time_in_market = numeric()
       ),
       metric_context = metric_context
-    ))
+    )
+  } else {
+    unique_run_ids <- as.character(unique(rows$run_id))
+    fill_stats <- ledgr_compare_runs_fill_stats(opened$con, unique_run_ids)
+    metric_stats <- ledgr_compare_runs_metric_stats(opened$con, unique_run_ids, metric_kernel = metric_kernel)
+    out <- ledgr_compare_runs_select(rows, fill_stats, metric_stats, metric_context = metric_context)
   }
-  unique_run_ids <- as.character(unique(rows$run_id))
-  fill_stats <- ledgr_compare_runs_fill_stats(opened$con, unique_run_ids)
-  metric_stats <- ledgr_compare_runs_metric_stats(opened$con, unique_run_ids, metric_kernel = metric_kernel)
-  out <- ledgr_compare_runs_select(rows, fill_stats, metric_stats, metric_context = metric_context)
+  flags <- ledgr_run_assumption_flags_many(opened$con, out$run_id)
+  for (name in setdiff(names(flags), "run_id")) out[[name]] <- flags[[name]]
+  attr(out, "ledgr_complete_names") <- names(out)
+  attr(out, "selection_counts") <- counts %||% ledgr_selection_counts(out$status)
   out
 }
 
@@ -800,6 +815,11 @@ ledgr_run_compare <- function(snapshot,
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_comparison <- function(x, ...) {
+  counts <- attr(x, "selection_counts", exact = TRUE)
+  count_lines <- if (is.null(counts)) character() else c(
+    ledgr_selection_count_lines(counts, noun = "runs"),
+    "Only DONE runs are compared; incomplete and failed runs stay listed by ledgr_run_list()."
+  )
   comparable <- attr(x, "fill_timing_comparable", exact = TRUE)
   comparable_label <- if (isTRUE(comparable)) "yes" else "no"
   comparability_reason <- attr(x, "fill_timing_comparability_reason", exact = TRUE) %||% "unknown"
@@ -809,9 +829,10 @@ print.ledgr_comparison <- function(x, ...) {
     cols = c(
       "run_id", "label", "final_equity", "total_return",
       "sharpe_ratio", "max_drawdown", "n_trades", "win_rate",
-      "reproducibility_level"
+      "valuation_state", "assumed_terminal_outcomes", "reproducibility_level"
     ),
     footer = c(
+      count_lines,
       sprintf(
         "Fill timing comparable: %s (%s).",
         comparable_label,
@@ -820,7 +841,7 @@ print.ledgr_comparison <- function(x, ...) {
       "Full identity and telemetry columns remain available on this tibble.",
       "Inspect one run with ledgr_run_info(snapshot, run_id)."
     ),
-    footer_requires_complete = c(FALSE, TRUE, FALSE),
+    footer_requires_complete = c(rep(FALSE, length(count_lines) + 1L), TRUE, FALSE),
     ...
   )
 }
@@ -838,9 +859,15 @@ print.ledgr_comparison <- function(x, ...) {
 #'   identity, including `feature_set_hash`, provenance, status, telemetry
 #'   summary, and basic result summary columns. Eleven appended completion
 #'   columns distinguish requested and achieved windows, completion status,
-#'   prefix-only performance, and affected instruments. Typed missing values
-#'   mean that completion evidence is unavailable, as for dense or historical
-#'   runs. See [ledgr_identity_fields] for hash-field semantics.
+#'   prefix-only performance, and affected instruments. Five further columns
+#'   flag declared valuation assumptions: `valuation_state` (`"current"`,
+#'   `"stale"`, or `"frozen"`), `frozen_instrument_sessions`,
+#'   `max_frozen_equity_weight`, `frozen_at_end_value`, and
+#'   `assumed_terminal_outcomes`; [ledgr_valuation_summary()] gives the full
+#'   evidence for one run. Typed missing values mean that completion or
+#'   availability evidence is unavailable, as for dense or historical runs.
+#'   Print adds attempted, done, incomplete, and failed counts. See
+#'   [ledgr_identity_fields] for hash-field semantics.
 #' @examples
 #' bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")
 #' snapshot <- ledgr_snapshot_from_df(utils::head(bars, 10))
@@ -887,6 +914,8 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
   }
   out$complete_performance <- vapply(completion, `[[`, logical(1), "complete_performance")
   out$affected_instrument_ids <- unname(lapply(completion, `[[`, "affected_instrument_ids"))
+  flags <- ledgr_run_assumption_flags_many(opened$con, out$run_id)
+  for (name in setdiff(names(flags), "run_id")) out[[name]] <- flags[[name]]
   ledgr_classed_tibble(out, "ledgr_run_list")
 }
 
@@ -897,10 +926,11 @@ ledgr_run_list <- function(snapshot, include_archived = FALSE) {
 #' @return The input object, invisibly.
 #' @export
 print.ledgr_run_list <- function(x, ...) {
+  count_lines <- ledgr_selection_table_lines(x, noun = "runs")
   cols <- c(
     "run_id", "label", "tags", "status", "final_equity",
     "total_return", "complete_performance", "achieved_end_utc",
-    "execution_mode", "reproducibility_level"
+    "valuation_state", "execution_mode", "reproducibility_level"
   )
   if ("archived" %in% names(x) && any(as.logical(x$archived), na.rm = TRUE)) {
     cols <- c(
@@ -914,11 +944,12 @@ print.ledgr_run_list <- function(x, ...) {
       x = x,
       cols = cols,
       footer = c(
+        count_lines,
         "INCOMPLETE metrics describe the achieved prefix only.",
         "Full identity and telemetry columns remain available on this tibble.",
         "Inspect one run with ledgr_run_info(snapshot, run_id)."
       ),
-      footer_requires_complete = c(FALSE, TRUE, FALSE)
+      footer_requires_complete = c(rep(FALSE, length(count_lines) + 1L), TRUE, FALSE)
     ),
     list(...)
   )

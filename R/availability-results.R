@@ -16,7 +16,23 @@ ledgr_backtest_terminal_evidence <- function(bt, con = NULL) {
   list(
     status = if (nrow(status) == 1L) as.character(status$status[[1L]]) else NA_character_,
     completion = completion,
-    completion_json = ledgr_completion_json(completion)
+    completion_json = ledgr_completion_json(
+      completion,
+      affected_instrument_ids = if (ledgr_experiment_store_table_exists(opened$con, "run_diagnostics")) {
+        ledgr_stopped_instrument_ids(DBI::dbGetQuery(
+          opened$con,
+          "SELECT instrument_id, outcome FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq",
+          params = list(bt$run_id)
+        ))
+      } else {
+        character()
+      },
+      assumptions = if (ledgr_availability_config_active(bt$config)) {
+        ledgr_assumption_flags_for_run(bt, opened$con)
+      } else {
+        NULL
+      }
+    )
   )
 }
 

@@ -131,14 +131,14 @@ sweep |>
   mutate(threshold = vapply(params, function(p) p$threshold, numeric(1))) |>
   select(candidate_id, threshold, status, total_return, sharpe_ratio) |>
   arrange(desc(sharpe_ratio))
-#> # ledgr sweep -- sweep_9d81d1eaae19d51c
+#> # ledgr sweep -- sweep_fa7f1b6bcbd08670
 #> # A tibble: 2 x 5
 #>   candidate_id          threshold status total_return sharpe_ratio
 #>   <chr>                     <dbl> <chr>  <chr>               <dbl>
 #> 1 strategy_7ccbbefd14d1      0.01 DONE   +0.5%               1.25
 #> 2 strategy_86be010cf688      0    DONE   +0.4%               0.838
 #>
-#> # i 2 combinations: 2 done, 0 failed.
+#> # i 2 candidates attempted: 2 done, 0 incomplete, 0 failed.
 #> # i Retention returns: none.
 #> # i Retention trades: none.
 #> # i Snapshot hash: 6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e.

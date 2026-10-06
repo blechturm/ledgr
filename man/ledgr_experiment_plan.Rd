@@ -17,7 +17,12 @@ ledgr_experiment_plan(x, ...)
 \value{
 A \code{ledgr_experiment_plan} object. Its \code{checks} tibble reports each
 family status and keeps generated-schedule and assumed-knowledge reasons
-separate in \code{assumption_reasons}.
+separate in \code{assumption_reasons}. Its \code{assumptions} tibble lists the
+declared valuation-horizon and terminal-outcome choices, one row per
+\code{setting}, with \code{value} and a \code{default} flag that is \code{TRUE} when the
+value is the constructor default rather than a choice the caller changed.
+The held terminal map has one \verb{held_terminal_position.<label>} row per
+entry, in map order.
 }
 \description{
 Reports whether point-in-time availability is active and which fact-family
@@ -30,3 +35,4 @@ Point-in-time universe workflow:
 \code{vignette("survivorship-bias", package = "ledgr")}
 \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
+

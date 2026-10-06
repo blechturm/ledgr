@@ -281,7 +281,12 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #'
 #' @return A `ledgr_experiment_plan` object. Its `checks` tibble reports each
 #'   family status and keeps generated-schedule and assumed-knowledge reasons
-#'   separate in `assumption_reasons`.
+#'   separate in `assumption_reasons`. Its `assumptions` tibble lists the
+#'   declared valuation-horizon and terminal-outcome choices, one row per
+#'   `setting`, with `value` and a `default` flag that is `TRUE` when the
+#'   value is the constructor default rather than a choice the caller changed.
+#'   The held terminal map has one `held_terminal_position.<label>` row per
+#'   entry, in map order.
 #' @section Articles:
 #' Point-in-time universe workflow:
 #' `vignette("survivorship-bias", package = "ledgr")`
@@ -341,7 +346,11 @@ ledgr_experiment_plan <- function(x, ...) {
       universe_type = if (is.null(x$universe_rule)) "fixed" else "membership",
       universe_id = x$universe_rule$universe_id %||% NA_character_,
       valuation_policy = x$valuation_policy,
-      checks = tibble::as_tibble(checks)
+      checks = tibble::as_tibble(checks),
+      assumptions = ledgr_experiment_plan_assumptions(
+        x$valuation_policy,
+        x$corporate_action_policy
+      )
     ),
     class = c("ledgr_experiment_plan", "list")
   )
@@ -357,5 +366,53 @@ print.ledgr_experiment_plan <- function(x, ...) {
     cat("Checks:\n")
     print(x$checks, row.names = FALSE)
   }
+  assumptions <- x$assumptions
+  if (!is.null(assumptions) && nrow(assumptions) > 0L) {
+    cat("Declared assumptions:\n")
+    shown <- paste0(
+      "  ", format(assumptions$setting), "  ", assumptions$value,
+      ifelse(assumptions$default, " (default)", "")
+    )
+    cat(shown, sep = "\n")
+  }
   invisible(x)
+}
+
+# Declared valuation-horizon and terminal-outcome choices with a default
+# marker against the constructor defaults. Disclosure only.
+ledgr_experiment_plan_assumptions <- function(valuation_policy, corporate_action_policy) {
+  setting <- character()
+  value <- character()
+  default <- logical()
+  if (!is.null(valuation_policy)) {
+    setting <- c(setting, "valuation.max_sessions", "valuation.exhausted")
+    value <- c(
+      value,
+      as.character(valuation_policy$max_sessions),
+      as.character(valuation_policy$exhausted %||% "freeze")
+    )
+    default <- c(default, FALSE, identical(valuation_policy$exhausted %||% "freeze", "freeze"))
+  }
+  if (!is.null(corporate_action_policy)) {
+    research <- ledgr_corporate_actions_research()
+    map <- corporate_action_policy$held_terminal_position
+    setting <- c(setting, paste0("held_terminal_position.", names(map)))
+    value <- c(value, unname(map))
+    # Added labels are always declared; the default entry keeps its marker
+    # when it still holds the research default choice.
+    default <- c(
+      default,
+      names(map) == "default" & unname(map) == unname(research$held_terminal_position[["default"]])
+    )
+    frozen <- corporate_action_policy$frozen_terminal_position
+    setting <- c(setting, "frozen_terminal_position")
+    value <- c(value, frozen)
+    default <- c(default, identical(frozen, research$frozen_terminal_position))
+    if (!is.null(corporate_action_policy$haircut)) {
+      setting <- c(setting, "haircut")
+      value <- c(value, format(corporate_action_policy$haircut))
+      default <- c(default, FALSE)
+    }
+  }
+  tibble::tibble(setting = setting, value = value, default = default)
 }

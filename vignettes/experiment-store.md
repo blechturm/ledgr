@@ -105,16 +105,17 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 2 x 10
+    # A tibble: 2 x 11
       run_id       label tags  status final_equity total_return complete_performance
       <chr>        <chr> <chr> <chr>         <dbl> <chr>        <lgl>
     1 trend_qty_5  <NA>  <NA>  DONE         10042. +0.4%        NA
     2 trend_qty_15 <NA>  <NA>  DONE         10125. +1.3%        NA
-      achieved_end_utc execution_mode reproducibility_level
-      <dttm>           <chr>          <chr>
-    1 NA               audit_log      tier_1
-    2 NA               audit_log      tier_1
+      achieved_end_utc valuation_state execution_mode reproducibility_level
+      <dttm>           <chr>           <chr>          <chr>
+    1 NA               <NA>            audit_log      tier_1
+    2 NA               <NA>            audit_log      tier_1
 
+    # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
     # i INCOMPLETE metrics describe the achieved prefix only.
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -137,16 +138,21 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 2 x 10
+    # A tibble: 2 x 11
       run_id       label             tags               status final_equity total_return
       <chr>        <chr>             <chr>              <chr>         <dbl> <chr>
     1 trend_qty_5  Baseline quantity baseline, trend    DONE         10042. +0.4%
     2 trend_qty_15 <NA>              larger-size, trend DONE         10125. +1.3%
-      complete_performance achieved_end_utc execution_mode reproducibility_level
-      <lgl>                <dttm>           <chr>          <chr>
-    1 NA                   NA               audit_log      tier_1
-    2 NA                   NA               audit_log      tier_1
+      complete_performance achieved_end_utc valuation_state execution_mode
+      <lgl>                <dttm>           <chr>           <chr>
+    1 NA                   NA               <NA>            audit_log
+    2 NA                   NA               <NA>            audit_log
+      reproducibility_level
+      <chr>
+    1 tier_1
+    2 tier_1
 
+    # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
     # i INCOMPLETE metrics describe the achieved prefix only.
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -195,7 +201,7 @@ info
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.010
+    Elapsed Sec:      0.940
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2
@@ -225,13 +231,16 @@ comparison
 ```
 
     # ledgr comparison
-    # A tibble: 2 x 9
+    # A tibble: 2 x 11
       run_id       label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
       <chr>        <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
     1 trend_qty_5  Base~       10042. +0.4%               0.838 -0.5%              12 25.0%
     2 trend_qty_15 <NA>        10125. +1.3%               0.851 -1.5%              12 25.0%
-    # i 1 more variable: reproducibility_level <chr>
+    # i 3 more variables: valuation_state <chr>, assumed_terminal_outcomes <int>,
+    #   reproducibility_level <chr>
 
+    # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
+    # i Only DONE runs are compared; incomplete and failed runs stay listed by ledgr_run_list().
     # i Fill timing comparable: yes (same_timing_convention).
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).
@@ -437,14 +446,18 @@ ledgr_run_list(snapshot)
 ```
 
     # ledgr run list
-    # A tibble: 1 x 10
+    # A tibble: 1 x 11
       run_id      label             tags            status final_equity total_return
       <chr>       <chr>             <chr>           <chr>         <dbl> <chr>
     1 trend_qty_5 Baseline quantity baseline, trend DONE         10042. +0.4%
-      complete_performance achieved_end_utc execution_mode reproducibility_level
-      <lgl>                <dttm>           <chr>          <chr>
-    1 NA                   NA               audit_log      tier_1
+      complete_performance achieved_end_utc valuation_state execution_mode
+      <lgl>                <dttm>           <chr>           <chr>
+    1 NA                   NA               <NA>            audit_log
+      reproducibility_level
+      <chr>
+    1 tier_1
 
+    # i 1 runs attempted: 1 done, 0 incomplete, 0 failed.
     # i INCOMPLETE metrics describe the achieved prefix only.
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).

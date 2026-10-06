@@ -18,9 +18,15 @@ A \code{ledgr_run_list} object, which is a classed tibble with run
 identity, including \code{feature_set_hash}, provenance, status, telemetry
 summary, and basic result summary columns. Eleven appended completion
 columns distinguish requested and achieved windows, completion status,
-prefix-only performance, and affected instruments. Typed missing values
-mean that completion evidence is unavailable, as for dense or historical
-runs. See \link{ledgr_identity_fields} for hash-field semantics.
+prefix-only performance, and affected instruments. Five further columns
+flag declared valuation assumptions: \code{valuation_state} (\code{"current"},
+\code{"stale"}, or \code{"frozen"}), \code{frozen_instrument_sessions},
+\code{max_frozen_equity_weight}, \code{frozen_at_end_value}, and
+\code{assumed_terminal_outcomes}; \code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}} gives the full
+evidence for one run. Typed missing values mean that completion or
+availability evidence is unavailable, as for dense or historical runs.
+Print adds attempted, done, incomplete, and failed counts. See
+\link{ledgr_identity_fields} for hash-field semantics.
 }
 \description{
 Discovers stored runs in a DuckDB experiment-store file without recomputing

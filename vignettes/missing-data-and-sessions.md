@@ -12,10 +12,11 @@ once a carried price is in the panel, nothing distinguishes it from a
 real one, and your backtest will fill orders at prices no venue ever
 printed.
 
-ledgr takes the other path. It never manufactures a price. Instead it
-asks you to say which sessions were supposed to exist, and then tells
-you, session by session and instrument by instrument, what it knew and
-what it did not.
+ledgr takes the other path. It never manufactures an execution price: a
+carried close may value a holding, but it never becomes a bar to trade
+on. Instead it asks you to say which sessions were supposed to exist,
+and then tells you, session by session and instrument by instrument,
+what it knew and what it did not.
 
 By the end of this article you will have run a backtest over a panel
 with a real three-session hole in it, seen why nothing filled during the
@@ -32,7 +33,7 @@ and each one has its own home in the data you supply.
 | The question | Answered by | Consequence when the answer is no |
 |----|----|----|
 | Was the venue open at all? | the session calendar | there is no pulse; nothing is expected of anyone |
-| Did this instrument trade? | whether a bar row exists | the instrument is unpriced; its last mark starts ageing |
+| Was a bar supplied for this instrument? | whether a bar row exists | nothing can fill on that session; its last mark starts ageing and may still value a holding |
 | Was it allowed to trade? | trading-status facts | you may hold it or target an exit, but not resize it; while it is halted, an exit target is not executed or queued (Step 5) |
 | Was its declared lifetime active? | lifetime facts | it stays on the decision axis when membership or holdings put it there, but target changes are restricted and terminal rules may apply |
 
@@ -195,9 +196,10 @@ Availability mode instead advances on the independently declared
 expected-session calendar. A declared open session remains a pulse even
 when one or every instrument lacks an observation.
 
-The small matrix below is a worked comparison. It has one closed date,
-one missing open-session observation for `AAA`, and a `BBB` series that
-starts late. Both moving averages use a two-session window.
+The small matrix below is an illustrative calendar, separate from the
+NYSE window above. It has one closed date, one missing open-session
+observation for `AAA`, and a `BBB` series that starts late. Both moving
+averages use a two-session window.
 
 <!-- strict-gap-table:start -->
 
@@ -233,9 +235,14 @@ instrument’s current trading permission:
 ``` r
 signal <- ctx$vec$feature("sma_2")
 ready <- !is.na(signal) & ctx$vec$admissible
-targets <- ctx$flat()
+targets <- ctx$hold()
 targets[ready] <- 1
 ```
+
+Starting from `ctx$hold()` keeps an instrument whose signal is
+unavailable at its current quantity. Starting from `ctx$flat()` would
+sell it at the next open as soon as its signal went missing, which a
+feed gap or warmup rarely justifies.
 
 This uses one concrete engine feature ID over the full decision axis.
 ledgr has no alias-aware whole-universe feature read yet, so a strategy
@@ -250,9 +257,10 @@ strict-window behavior.
 
 ## Step 3: Say Which Instruments Were Tradable
 
-A missing row says an instrument did not trade. It does not say why.
-Trading status is where you record the reason when you know it, and it
-changes what a strategy is allowed to ask for.
+A missing row says no observation was supplied. It does not say whether
+the instrument traded, or why it did not. Trading status is where you
+record what you know, and it changes what a strategy is allowed to ask
+for.
 
 Each row below asserts a status from `effective_from` until
 `effective_to`, with the higher `precedence` winning where two rows
@@ -275,12 +283,13 @@ status <- tribble(
   ledgr_facts_trading_status(knowledge = "assume_effective")
 ```
 
-`knowledge = "assume_effective"` says each assertion is known from the
-moment it takes effect, which is the right reading for a reference file
-you treat as settled history. When your source records when you
-*learned* something, use `knowledge = "evidenced"` with a
-`knowledge_time` column instead, so that a late correction cannot leak
-backwards into earlier decisions.
+`knowledge = "assume_effective"` assumes each assertion was known the
+moment it took effect. That is acceptable for this synthetic example.
+For real data it is an assumption that can hide delayed reporting and
+later corrections. When your source records when you *learned*
+something, use `knowledge = "evidenced"` with a `knowledge_time` column
+instead, so that a late correction cannot leak backwards into earlier
+decisions.
 
 > [!WARNING]
 >
@@ -322,16 +331,18 @@ An availability-aware strategy receives universe-aligned planes on
   accepts?
 - `mark_age` — how many sessions old is that mark?
 - `mark_source` — `current_close` when it traded today, `stale_close`
-  when you are carrying an older one, `expired_close` once it is too old
-  to use.
+  when you are carrying an older one within your tolerance,
+  `frozen_close` once you hold it beyond that tolerance and its last
+  close is carried as an assumption, `expired_close` when an unheld
+  instrument’s close is too old.
 - `target_restricted`, with `target_restriction_reason` — may you resize
   it?
 
 The strategy below buys ten units of everything it is allowed to buy.
 `ctx$hold()` starts from the positions already held, while
 `ctx$tradable()` returns the current members that are admissible and
-priced. Anything halted, unlisted, or unpriced therefore stays at its
-current quantity without a strategy-side eligibility reconstruction.
+priced. Anything halted, unlisted, frozen or unpriced therefore stays at
+its current quantity without a strategy-side eligibility reconstruction.
 
 ``` r
 buy_what_is_tradable <- function(ctx, params) {
@@ -358,8 +369,9 @@ work.
 When an instrument has no price today and you still hold it, something
 has to decide whether yesterday’s close is good enough to value the
 position. `ledgr_valuation_stale(max_sessions)` is the only place that
-decision lives, and ledgr ships no default, because there is no
-defensible universal answer.
+decision lives, and ledgr ships no default `max_sessions`, because there
+is no defensible universal answer. Its second argument, `exhausted`,
+says what happens when a held mark grows older than that.
 
 Start strict: a mark may be at most one session old.
 
@@ -369,19 +381,78 @@ tight <- ledgr_experiment(
   buy_what_is_tradable,
   opening = ledgr_opening(cash = 100000),
   cost_model = ledgr_cost_zero(),
-  valuation_policy = ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")
+  valuation_policy = ledgr_valuation_stale(max_sessions = 1)
 )
 
 tight_run <- ledgr_run(tight, run_id = "tolerance-one")
-tight_completion <- ledgr_run_completion(tight_run)
-close(tight_run)
 ```
 
 The call returns without an error, so look at what the run actually
 claims.
 
 ``` r
-tight_completion
+tight_run
+#> ledgr Backtest Results
+#> ======================
+#>
+#> WARNING: this result relies on declared valuation or terminal assumptions.
+#>   Frozen valuation: 1 holding carried at the last close beyond max_sessions = 1 for 2 instrument-sessions (exhausted = "freeze", the default).
+#>
+#> Run ID:                            tolerance-one
+#> Period:                            2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
+#> Opening Cash:                      $100000.00
+#> Final Equity:                      $100140.00
+#> Total Return:                      0.14%
+#> Max Drawdown:                      0.00%
+#> Closed Trades:                     0
+#>
+#> Corporate actions: NOT SUPPLIED - returns may omit distributions
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#> Valuation: FROZEN - 1 holding frozen (longest 2 sessions, max 530 or 0.53% of equity)
+#>
+#> Use summary(bt) for metrics and evidence
+```
+
+The run completes, but it opens with a warning. On the second session of
+the hole, `BBB`’s last close became older than the one session you
+allowed. Under the default `exhausted = "freeze"`, ledgr **froze** the
+holding: it kept the quantity and the cash, carried the last close,
+stopped `BBB` from being resized, and kept going. When `BBB` traded
+again it was valued at its real close and the freeze ended, which is why
+nothing is still frozen at the end. The equity on the frozen sessions is
+an estimate, and the warning says so before any metric.
+
+``` r
+ledgr_run_explain(tight_run, "BBB") |>
+  select(ts_utc, mark_source, mark_age, target_restriction_reason)
+#> # A tibble: 9 x 4
+#>   ts_utc              mark_source   mark_age target_restriction_reason
+#>   <dttm>              <chr>            <int> <chr>
+#> 1 2020-01-13 21:00:00 current_close        0 ""
+#> 2 2020-01-14 21:00:00 current_close        0 ""
+#> 3 2020-01-15 21:00:00 current_close        0 ""
+#> 4 2020-01-16 21:00:00 stale_close          1 ""
+#> 5 2020-01-17 21:00:00 frozen_close         2 "valuation_frozen"
+#> 6 2020-01-21 21:00:00 frozen_close         3 "valuation_frozen"
+#> 7 2020-01-22 21:00:00 current_close        0 ""
+#> 8 2020-01-23 21:00:00 current_close        0 ""
+#> 9 2020-01-24 21:00:00 current_close        0 ""
+```
+
+If you would rather stop than estimate, say so:
+
+``` r
+refuse_run <- ledgr_run(
+  ledgr_experiment(
+    snapshot,
+    buy_what_is_tradable,
+    opening = ledgr_opening(cash = 100000),
+    cost_model = ledgr_cost_zero(),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")
+  ),
+  run_id = "tolerance-one-refuse"
+)
+ledgr_run_completion(refuse_run)
 #> Completion Evidence:
 #>   Status:           INCOMPLETE
 #>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
@@ -396,13 +467,28 @@ tight_completion
 #>   Exposure Basis:    last_accepted_close_gross
 ```
 
-The run is `INCOMPLETE`, and it says why: `valuation_horizon_exhausted`.
-On the second session of the hole, `BBB`’s last close became older than
-the one session you allowed, the portfolio could no longer be valued,
-and the run stopped. It did not truncate silently and it did not carry
-the price forward to keep going. An incomplete result with a named stop
-reason is usable evidence about a shorter window; a complete-looking
-result built on invented prices is not.
+Now the run is `INCOMPLETE`, and it says why:
+`valuation_horizon_exhausted`. It did not truncate silently and it did
+not carry the price forward to keep going. An incomplete result with a
+named stop reason is usable evidence about a shorter window; a
+complete-looking result built on invented prices is not. Freezing is the
+middle ground: complete, but with the assumption named.
+
+`summary()` keeps the incomplete run honest too. It labels the metrics
+as covering the achieved prefix only and withholds the annualized ones:
+
+``` r
+# Print only the metric lines of summary(refuse_run).
+summary_lines <- capture.output(summary(refuse_run))
+cat(summary_lines[grepl("prefix|withheld", summary_lines, ignore.case = TRUE)],
+    sep = "\n")
+#> Achieved-Prefix Metrics (2020-01-13T21:00:00Z to 2020-01-16T21:00:00Z):
+#>   Total Return (prefix):    0.03%
+#>   Annualized Return:        withheld (achieved window is shorter than requested)
+#>   Max Drawdown (prefix):    0.00%
+#>   Volatility (annual): withheld (achieved window is shorter than requested)
+#>   Sharpe Ratio:        withheld (achieved window is shorter than requested)
+```
 
 Now allow a mark to be up to five sessions old, and run the same panel
 again.
@@ -418,25 +504,25 @@ loose <- ledgr_experiment(
 
 loose_run <- ledgr_run(loose, run_id = "tolerance-five")
 
-ledgr_run_completion(loose_run)
-#> Completion Evidence:
-#>   Status:           DONE
-#>   Requested Window: 2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
-#>   Achieved Window:  2020-01-13T21:00:00Z to 2020-01-24T21:00:00Z
-#>   Stop Reason:      none
-#>   Last Fully Valued: 2020-01-24T21:00:00Z
-#>   Last Executed:    2020-01-14T14:30:00Z
-#>   Performance:       complete
-#>   Affected IDs:      none recorded
+ledgr_valuation_summary(loose_run)
 #>
-#>   Affected Exposure: unknown
-#>   Exposure Basis:    unknown
+#> Valuation Evidence:
+#> Valuation: STALE - 1 holding valued at a permitted stale close (longest age 3 sessions)
+#>   Max sessions:                5
+#>   Exhausted marks:             freeze
+#>   Stale instrument-sessions:   3
+#>   Frozen instrument-sessions:  0
+#>   Longest freeze:              0 sessions
+#>   Max frozen value:            0
+#>   Max frozen weight:           0.00%
+#>   Frozen at end:               0 holdings, 0 (0.00% of equity)
+#>   Return if frozen worthless:  not applicable
 ```
 
-Same data, same strategy, a different answer about whether the result
-covers the window you asked for. The valuation policy is part of run
-identity, so a reader can always see which tolerance produced which
-result.
+Same data, same strategy, and no warning this time: every carried mark
+stayed within five sessions, so nothing was frozen. The valuation policy
+is part of run identity, so a reader can always see which tolerance
+produced which result.
 
 ## Reading Back What Happened to One Instrument
 
@@ -462,9 +548,52 @@ ledgr_run_explain(loose_run, "BBB") |>
 ```
 
 Across the hole `BBB` is carried at a `stale_close` that grows one, two
-and three sessions old, and nothing executes. The mark is doing
-valuation work only. It is never an execution price, and no fill is ever
-produced on a session where an instrument has no observation.
+and three sessions old. Nothing executes, but nothing was requested
+either, so this table alone proves little. Ask for a change whose
+execution falls inside the hole: halve `BBB` at the January 15 close,
+whose next open is January 16.
+
+``` r
+trim_in_hole <- function(ctx, params) {
+  targets <- ctx$hold()
+  targets[ctx$tradable()] <- 10
+  if (format(ledgr_utc(ctx$ts_utc), "%Y-%m-%d", tz = "UTC") == "2020-01-15") {
+    targets[["BBB"]] <- 5
+  }
+  targets
+}
+
+trim_run <- ledgr_run(
+  ledgr_experiment(
+    snapshot,
+    trim_in_hole,
+    opening = ledgr_opening(cash = 100000),
+    cost_model = ledgr_cost_zero(),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 5)
+  ),
+  run_id = "trim-in-hole"
+)
+
+ledgr_run_explain(trim_run, "BBB") |>
+  select(ts_utc, target_before_risk, execution_reason, resulting_position) |>
+  head(5)
+#> # A tibble: 5 x 4
+#>   ts_utc              target_before_risk execution_reason        resulting_position
+#>   <dttm>                           <dbl> <chr>                                <dbl>
+#> 1 2020-01-13 21:00:00                 10 ""                                      10
+#> 2 2020-01-14 21:00:00                 10 "no_target_change"                      10
+#> 3 2020-01-15 21:00:00                  5 "execution_bar_missing"                 10
+#> 4 2020-01-16 21:00:00                 10 "no_target_change"                      10
+#> 5 2020-01-17 21:00:00                 10 "no_target_change"                      10
+```
+
+The January 15 request meets no `BBB` bar at the January 16 open, so it
+is recorded as `execution_bar_missing` and the position stays at 10. On
+January 16 the rule asks for 10 again, the quantity already held, so
+there is no change to make and the earlier request is not retried. The
+mark is doing valuation work only. It is never an execution price, and
+no fill is ever produced on a session where an instrument has no
+observation.
 
 Supplying one timestamp keeps the focused form. Ask about `AAA` on the
 session it was halted:
@@ -481,18 +610,20 @@ ledgr_run_explain(loose_run, "AAA", ts_utc = halt_session) |>
 #> 1 current_close TRUE              trading_halted
 ```
 
-`AAA` has a perfectly good price that session, so it is valued normally,
-but `trading_halted` blocks a resize. Being priced and being tradable
-are separate properties, and this is the case that shows why.
+The example keeps an ordinary `AAA` bar on the halted session on
+purpose: a supplied bar does not lift a trading-status restriction. The
+bar values the holding, but `trading_halted` blocks a resize, and the
+bar is not evidence of executable liquidity. Being priced and being
+tradable are separate properties, and this is the case that shows why.
 
 > [!TIP]
 >
 > ### Try it
 >
 > Set `max_sessions = 2` and run again under a new `run_id`, since a store
-> keeps one run per ID. Does the run complete? Then widen the hole to four
-> sessions and re-seal. Which of the two knobs, your data or your
-> tolerance, decides whether you get a full-window result?
+> keeps one run per ID. Does `BBB` still freeze? Then widen the hole to
+> four sessions and re-seal. Which of the two knobs, your data or your
+> tolerance, decides whether the result rests on an assumed mark?
 
 
 ## Rows That Are Present but Wrong
@@ -565,7 +696,7 @@ is that the snapshot records why it is missing.
 
 ## What Stays Your Decision
 
-ledgr represents absence. It does not interpret it. Three judgments
+ledgr represents absence. It does not interpret it. Four judgments
 remain yours, and each is expressed as data you supply rather than as a
 price you patch.
 
@@ -577,9 +708,15 @@ price you patch.
   a claim about your instruments and your holding period. Short-horizon
   work on liquid names tolerates far less than a quarterly rebalance on
   small caps.
-- **Whether an incomplete run is good enough.** An `INCOMPLETE` result
-  with a named stop reason is a real answer about a shorter window.
-  Reporting it as a full-window result is the error.
+- **What happens beyond that.** `exhausted = "freeze"` carries the last
+  close as a named assumption and keeps the run going;
+  `exhausted = "refuse"` stops it. A frozen result is complete but
+  estimated; an `INCOMPLETE` result is a real answer about a shorter
+  window. Reporting either as an exact full-window result is the error.
+- **Whether a row is really a trade.** Halts and untraded sessions that
+  a data source encodes as zero-volume bars carrying the previous close,
+  as the reference Sharadar data does, are still read as observed
+  prices: they can fill and they bypass valuation ageing and freezing.
 
 What is not yours to decide is whether a missing price may become a
 traded price. It may not, and no setting changes that.

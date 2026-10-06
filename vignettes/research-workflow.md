@@ -212,13 +212,16 @@ ledgr_run_compare(snapshot, run_ids = c("momentum_v1", "momentum_v2"))
 ```
 
     # ledgr comparison
-    # A tibble: 2 x 9
+    # A tibble: 2 x 11
       run_id      label  final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
       <chr>       <chr>         <dbl> <chr>               <dbl> <chr>           <int> <chr>
     1 momentum_v1 20-ba~       10432. +4.3%               1.55  -1.7%              29 55.2%
     2 momentum_v2 20-ba~       10250. +2.5%               0.983 -1.9%              27 48.1%
-    # i 1 more variable: reproducibility_level <chr>
+    # i 3 more variables: valuation_state <chr>, assumed_terminal_outcomes <int>,
+    #   reproducibility_level <chr>
 
+    # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
+    # i Only DONE runs are compared; incomplete and failed runs stay listed by ledgr_run_list().
     # i Fill timing comparable: yes (same_timing_convention).
     # i Full identity and telemetry columns remain available on this tibble.
     # i Inspect one run with ledgr_run_info(snapshot, run_id).

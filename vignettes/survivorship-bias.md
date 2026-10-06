@@ -6,7 +6,8 @@ backtest a simple rule. The equity curve looks good. You check the
 arithmetic, reseal the snapshot, confirm the hashes. Everything
 reproduces.
 
-The number is still wrong, and nothing in the output says so.
+The arithmetic is right. The experiment still answers the wrong
+historical question, and nothing in the output says so.
 
 The file you downloaded lists the companies that are in the index
 *today*. The ones that were dropped along the way never appear in it.
@@ -15,9 +16,11 @@ didn’t choose to exclude them. The data did, using information from the
 end of your sample.
 
 You need this article whenever your universe comes from a list that
-changes over time, such as index constituents. A fixed set of
-instruments that all trade through the whole window does not have this
-problem.
+changes over time, such as index constituents. A fixed universe chosen
+only from information available before the backtest begins avoids this
+particular retrospective selection problem. A fixed list chosen because
+its members survived the whole window does not: that is the same
+selection, made by hand.
 
 ``` r
 library(ledgr)
@@ -39,6 +42,18 @@ library(dplyr)
 By the end of this article you will be able to declare a universe-aware
 experiment, explain the assumptions it rests on, and say why its
 positions, fills, and reported horizon differ from what you asked for.
+
+Here is where the example ends up, so you know what the machinery is
+for:
+
+| Experiment | Total return | What it rests on |
+|----|---:|----|
+| Survivor list (`BBB` only) | +14.3% | the company that is still listed today |
+| Point-in-time (`AAA` and `BBB`) | -14.1% | `AAA` carried at its last observed close after it stopped trading |
+| Point-in-time, `AAA` worth nothing | -33.9% | the same run with that holding valued at zero |
+
+The rest of the article builds those three numbers and shows where each
+assumption is recorded.
 
 ## Two Companies, Ten Sessions
 
@@ -133,13 +148,15 @@ tibble(
 ```
 
 One view reports a gain, the other a loss, from the same file. That is
-the shape of the problem.
+the shape of the problem. It is an illustrative valuation, not a
+portfolio return anyone could have executed over one horizon: it values
+`AAA` at its January 10 close and `BBB` at its January 17 close.
 
 It is only a sketch, and one assumption is doing quiet work: it treats
 `AAA`’s last observed price as its ending value. No settlement was
 observed. Nobody told us what a holder actually received. Hold onto
-that, because it is exactly the point at which ledgr later refuses to
-produce a number.
+that, because ledgr will make the same assumption only when you can see
+it, and will name it in the result.
 
 ## The Objects You Are About To Build
 
@@ -153,14 +170,14 @@ and what the run recorded.
 | **Facts** | Declared expected sessions and dated membership, including when each assertion became knowable. |
 | **Snapshot** | A sealed version of those inputs, so a run can be reproduced and reopened. |
 | **Strategy** | The positions you want at each decision. |
-| **Experiment** | The snapshot and strategy combined with a universe rule, a valuation policy, and cost rules. |
+| **Experiment** | The snapshot and strategy combined with a universe rule, a valuation policy, a terminal-outcome policy, and cost rules. |
 | **Run** | The execution of that configuration, plus the evidence and explanations it retained. |
 
-Bars and facts are **source evidence**. The universe rule, valuation
-policy, and strategy are **your choices**. Everything a run reports
-afterwards is a **recorded outcome** of those two. Most confusion about
-point-in-time backtesting comes from mixing the three, which a single
-wide price table encourages you to do.
+Bars and facts are **source evidence**. The universe rule, the valuation
+and terminal-outcome policies, and the strategy are **your choices**.
+Everything a run reports afterwards is a **recorded outcome** of those
+two. Most confusion about point-in-time backtesting comes from mixing
+the three, which a single wide price table encourages you to do.
 
 ## Declaring The Facts
 
@@ -310,7 +327,10 @@ leaks.
 > it, as the January 13 removal does here: it was announced the day it
 > took effect. What you cannot do is copy `effective_from` as a default,
 > because that asserts every change was knowable the instant it took
-> effect, which is exactly the assumption survivorship bias hides behind.
+> effect. That is a different leak from survivorship: it makes information
+> available too early, while survivorship removes opportunities the
+> strategy really had. The two often travel together, but neither requires
+> the other.
 
 
 ``` r
@@ -575,7 +595,7 @@ point_in_time_experiment <- ledgr_experiment(
   snapshot,
   rebalance_declared_members,
   universe = ledgr_universe_members("demo_members"),
-  valuation_policy = ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse"),
+  valuation_policy = ledgr_valuation_stale(max_sessions = 2),
   cost_model = ledgr_cost_zero(),
   opening = ledgr_opening(cash = 10000)
 )
@@ -583,10 +603,12 @@ point_in_time_experiment <- ledgr_experiment(
 
 Read those arguments as four separate decisions. `universe` selects the
 membership history you declared, rather than a fixed list.
-`valuation_policy` says how long a stale mark may be carried before the
-run must stop. `cost_model` and `opening` fix the trading frictions and
-the starting account. Only the first of them differs between the two
-runs below, so the comparison isolates the universe.
+`valuation_policy` says how many sessions an old close may still value a
+holding, and what happens after that. By default the holding is
+**frozen**: it keeps its last close, the run continues, and the result
+says so. `cost_model` and `opening` fix the trading frictions and the
+starting account. Only the first of them differs between the two runs
+below, so the comparison isolates the universe.
 
 ``` r
 ledgr_experiment_plan(point_in_time_experiment)
@@ -601,6 +623,11 @@ ledgr_experiment_plan(point_in_time_experiment)
 #> 2 sessions       declared ""
 #> 3 trading_status omitted  ""
 #> 4 lifetime       omitted  ""
+#> Declared assumptions:
+#>   valuation.max_sessions          2
+#>   valuation.exhausted             freeze (default)
+#>   held_terminal_position.default  last_permissible (default)
+#>   frozen_terminal_position        write_off (default)
 ```
 
 The plan states which checks actually participate. Membership and
@@ -608,7 +635,9 @@ sessions are declared. Trading-status and lifetime are **omitted**, and
 omitted does not mean the source said every instrument was active and
 listed. It means no such check ran, which is why ledgr never learns that
 `AAA`’s silence after January 10 was a delisting rather than a halt or a
-feed gap.
+feed gap. The declared assumptions at the end list the choices that
+decide what happens if a holding goes unpriced or ends; `(default)`
+marks the ones you did not set yourself.
 
 ``` r
 # The survivor experiment repeats every argument above and changes one, so
@@ -618,7 +647,7 @@ universe_experiment <- function(universe) {
     snapshot,
     rebalance_declared_members,
     universe = universe,
-    valuation_policy = ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse"),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2),
     cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 10000)
   )
@@ -688,16 +717,19 @@ pit_equity_for_join |>
     by = c("ts_utc" = "recording_pulse_ts_utc")
   ) |>
   select(ts_utc, equity, fill_count, filled_notional)
-#> # A tibble: 7 x 4
-#>   ts_utc              equity fill_count filled_notional
-#>   <dttm>               <dbl>      <int>           <dbl>
-#> 1 2020-01-06 21:00:00  10000         NA              NA
-#> 2 2020-01-07 21:00:00  10000          2            8730
-#> 3 2020-01-08 21:00:00   9460         NA              NA
-#> 4 2020-01-09 21:00:00   9460         NA              NA
-#> 5 2020-01-10 21:00:00   8110         NA              NA
-#> 6 2020-01-13 21:00:00   8200         NA              NA
-#> 7 2020-01-14 21:00:00   8290          1             616
+#> # A tibble: 10 x 4
+#>    ts_utc              equity fill_count filled_notional
+#>    <dttm>               <dbl>      <int>           <dbl>
+#>  1 2020-01-06 21:00:00  10000         NA              NA
+#>  2 2020-01-07 21:00:00  10000          2            8730
+#>  3 2020-01-08 21:00:00   9460         NA              NA
+#>  4 2020-01-09 21:00:00   9460         NA              NA
+#>  5 2020-01-10 21:00:00   8110         NA              NA
+#>  6 2020-01-13 21:00:00   8200         NA              NA
+#>  7 2020-01-14 21:00:00   8290          1             616
+#>  8 2020-01-15 21:00:00   8391         NA              NA
+#>  9 2020-01-16 21:00:00   8492         NA              NA
+#> 10 2020-01-17 21:00:00   8593         NA              NA
 ```
 
 The aggregation preserves one row per equity pulse even when several
@@ -709,43 +741,65 @@ instruments fill at the same opening.
 run_inventory <- ledgr_run_list(snapshot)
 run_inventory
 #> # ledgr run list
-#> # A tibble: 2 x 10
-#>   run_id            label tags  status     final_equity total_return complete_performance
-#>   <chr>             <chr> <chr> <chr>             <dbl> <chr>        <lgl>
-#> 1 pit-universe      <NA>  <NA>  INCOMPLETE         8290 -17.1%       FALSE
-#> 2 survivor-universe <NA>  <NA>  DONE              11425 +14.3%       TRUE
-#>   achieved_end_utc    execution_mode reproducibility_level
-#>   <dttm>              <chr>          <chr>
-#> 1 2020-01-14 21:00:00 audit_log      tier_1
-#> 2 2020-01-17 21:00:00 audit_log      tier_1
+#> # A tibble: 2 x 11
+#>   run_id            label tags  status final_equity total_return complete_performance
+#>   <chr>             <chr> <chr> <chr>         <dbl> <chr>        <lgl>
+#> 1 pit-universe      <NA>  <NA>  DONE           8593 -14.1%       TRUE
+#> 2 survivor-universe <NA>  <NA>  DONE          11425 +14.3%       TRUE
+#>   achieved_end_utc    valuation_state execution_mode reproducibility_level
+#>   <dttm>              <chr>           <chr>          <chr>
+#> 1 2020-01-17 21:00:00 frozen          audit_log      tier_1
+#> 2 2020-01-17 21:00:00 stale           audit_log      tier_1
 #>
+#> # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
+#> # i Of the done runs, 1 froze a holding and 0 used an assumed terminal outcome; see valuation_state and assumed_terminal_outcomes.
 #> # i INCOMPLETE metrics describe the achieved prefix only.
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).
 ```
 
-The inventory puts completion beside the raw metrics. The survivor run
-reaches its requested end; the point-in-time run ends early. Its return
-describes only the achieved prefix, so the two terminal returns are not
-comparable and `ledgr_run_compare()` will not rank them together. Read
-the size of the effect from the figure below, where both paths are drawn
-against the same clock and the point-in-time evidence visibly stops.
+The inventory puts completion beside the raw metrics. Both runs reach
+their requested end, so `ledgr_run_compare()` can rank them together:
+
+``` r
+ledgr_run_compare(snapshot)
+#> # ledgr comparison
+#> # A tibble: 2 x 11
+#>   run_id         label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
+#>   <chr>          <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
+#> 1 pit-universe   <NA>          8593 -14.1%            -4.6775 -18.9%              0 <NA>
+#> 2 survivor-univ~ <NA>         11425 +14.3%            22.602  0.0%                1 100.0%
+#> # i 3 more variables: valuation_state <chr>, assumed_terminal_outcomes <int>,
+#> #   reproducibility_level <chr>
+#>
+#> # i 2 runs attempted: 2 done, 0 incomplete, 0 failed.
+#> # i Only DONE runs are compared; incomplete and failed runs stay listed by ledgr_run_list().
+#> # i Fill timing comparable: yes (same_timing_convention).
+#> # i Full identity and telemetry columns remain available on this tibble.
+#> # i Inspect one run with ledgr_run_info(snapshot, run_id).
+```
+
+The `valuation_state` column is the part a survivor file could never
+show. The point-in-time run finished `frozen`: on its last sessions part
+of its equity rests on a price nobody observed. Read the size of the
+effect from the figure below, where both paths are drawn against the
+same clock and the assumed sessions are shaded.
 
 <div id="fig-comparison">
 
 <img
 src="survivorship-bias_files/figure-commonmark/fig-comparison-1.png"
-data-fig-alt="Two equity lines from 10,000. The survivor line rises and continues to 17 January. The point-in-time line falls and ends at 14 January, where a marker shows the run stopped. The remaining intended horizon is shaded." />
+data-fig-alt="Two equity lines from 10,000. The survivor line rises to 17 January. The point-in-time line falls and also runs to 17 January; from 15 January the background is shaded because AAA is carried at its frozen last close. A dotted segment shows the endpoint if AAA were worth nothing." />
 
-Figure 2: Survivor-only and point-in-time equity paths diverge, and the
-point-in-time run stops before the requested horizon.
+Figure 2: Survivor-only and point-in-time equity paths diverge; the
+shaded sessions value AAA at an assumed, frozen mark.
 
 </div>
 
 The universe declaration explains the difference between *these two
-runs*. It does not follow that point-in-time backtests cannot finish.
-This one stops for a specific, inspectable reason, which the next two
-sections work through.
+runs*. The shading marks where the point-in-time number stops being an
+observation and becomes an assumption, which the next sections work
+through.
 
 ## What The Strategy Could See
 
@@ -758,17 +812,19 @@ availability <- ledgr_results(point_in_time, "availability")
 availability |>
   filter(instrument_id == "AAA") |>
   select(ts_utc, member, held, admissible, priced, mark_source, mark_age)
-#> # A tibble: 8 x 7
-#>   ts_utc              member held  admissible priced mark_source   mark_age
-#>   <dttm>              <lgl>  <lgl> <lgl>      <lgl>  <chr>            <int>
-#> 1 2020-01-06 21:00:00 TRUE   FALSE TRUE       TRUE   current_close        0
-#> 2 2020-01-07 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
-#> 3 2020-01-08 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
-#> 4 2020-01-09 21:00:00 TRUE   TRUE  TRUE       TRUE   stale_close          1
-#> 5 2020-01-10 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
-#> 6 2020-01-13 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          1
-#> 7 2020-01-14 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          2
-#> 8 2020-01-15 21:00:00 FALSE  TRUE  FALSE      FALSE  expired_close        3
+#> # A tibble: 10 x 7
+#>    ts_utc              member held  admissible priced mark_source   mark_age
+#>    <dttm>              <lgl>  <lgl> <lgl>      <lgl>  <chr>            <int>
+#>  1 2020-01-06 21:00:00 TRUE   FALSE TRUE       TRUE   current_close        0
+#>  2 2020-01-07 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
+#>  3 2020-01-08 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
+#>  4 2020-01-09 21:00:00 TRUE   TRUE  TRUE       TRUE   stale_close          1
+#>  5 2020-01-10 21:00:00 TRUE   TRUE  TRUE       TRUE   current_close        0
+#>  6 2020-01-13 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          1
+#>  7 2020-01-14 21:00:00 FALSE  TRUE  FALSE      TRUE   stale_close          2
+#>  8 2020-01-15 21:00:00 FALSE  TRUE  FALSE      TRUE   frozen_close         3
+#>  9 2020-01-16 21:00:00 FALSE  TRUE  FALSE      TRUE   frozen_close         4
+#> 10 2020-01-17 21:00:00 FALSE  TRUE  FALSE      TRUE   frozen_close         5
 ```
 
 These columns are not stages of one process. They answer four different
@@ -786,6 +842,13 @@ still owned, and still valued, using a mark that is one session old.
 Membership, ownership, and the ability to value a position are three
 separate things, and a survivor-filtered file cannot represent any of
 them, because the instrument is simply absent.
+
+January 15 is the second row worth studying. The mark is now three
+sessions old, one more than `max_sessions = 2` permits, so `mark_source`
+becomes `frozen_close`. The holding is still owned and still on the
+equity curve at its January 10 close, but that value is now an
+assumption rather than an observation, and `admissible` is `FALSE`
+because ledgr will not size new exposure on it.
 
 > [!NOTE]
 >
@@ -816,113 +879,233 @@ them, because the instrument is simply absent.
 <div id="fig-timeline">
 
 <img src="survivorship-bias_files/figure-commonmark/fig-timeline-1.png"
-data-fig-alt="Three tracks for AAA against the same dates. Membership goes from member to non-member on 13 January. Position goes from unheld to held and stays held. Valuation goes current, then stale, then expired, where the run stops." />
+data-fig-alt="Three tracks for AAA against the same dates. Membership goes from member to non-member on 13 January. Position goes from unheld to held and stays held. Valuation goes current, then stale, then frozen for the last three sessions." />
 
 Figure 3: Membership, ownership, and valuation for AAA change
 independently.
 
 </div>
 
-## Why The Point-In-Time Run Is Incomplete
+## What The Point-In-Time Run Assumed
 
-`AAA` is delisted, still held, and by January 15 its last observation is
-three sessions old. The valuation policy permits two. ledgr will not
-carry the number forward and will not quietly drop the position.
+`AAA` is delisted, still held, and from January 15 its last observation
+is older than the valuation policy permits. ledgr does not drop the
+position and does not invent a sale. It keeps the quantity and the cash
+exact, carries the January 10 close, and puts the assumption in front of
+the metrics:
 
 ``` r
-ledgr_results(point_in_time, "diagnostics") |>
-  filter(outcome == "stopped") |>
-  select(ts_utc, stage, outcome, reason_code, instrument_id, mark_age)
-#> # A tibble: 1 x 6
-#>   ts_utc              stage     outcome reason_code                 instrument_id mark_age
-#>   <dttm>              <chr>     <chr>   <chr>                       <chr>            <int>
-#> 1 2020-01-15 21:00:00 valuation stopped valuation_horizon_exhausted AAA                  3
-
-summary(point_in_time)
-#> ledgr Backtest Summary
+point_in_time
+#> ledgr Backtest Results
 #> ======================
 #>
-#> Achieved-Prefix Metrics (2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z):
-#>   Total Return (prefix):    -17.10%
-#>   Annualized Return:        withheld (achieved window is shorter than requested)
-#>   Max Drawdown (prefix):    -18.90%
+#> WARNING: this result relies on declared valuation or terminal assumptions.
+#>   Frozen valuation: 1 holding carried at the last close beyond max_sessions = 2 for 3 instrument-sessions (exhausted = "freeze", the default).
+#>   Still frozen at end: 1 holding worth 1980 (23.04% of final equity); total return if worthless: -33.87%.
 #>
-#> Risk Metrics:
-#>   Risk-Free Rate:      0.00% annual
-#>   Annualization:       252 periods/year (US equity daily)
-#>   Volatility (annual): withheld (achieved window is shorter than requested)
-#>   Sharpe Ratio:        withheld (achieved window is shorter than requested)
+#> Run ID:                            pit-universe
+#> Period:                            2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $8593.00
+#> Total Return:                      -14.07%
+#> Max Drawdown:                      -18.90%
+#> Closed Trades:                     0
 #>
-#> Trade Statistics:
-#>   Closed Trades:       0
-#>   Win Rate:            N/A (no trades)
-#>   Avg Trade:           N/A (no trades)
-#>
-#> Exposure:
-#>   Time in Market:      85.71%
-#>
-#> Execution Evidence:
-#>   Fill Timing:         availability_open_v2
-#>   Timing Version:      2
-#>
-#> Completion Evidence:
-#>   Status:           INCOMPLETE
-#>   Requested Window: 2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
-#>   Achieved Window:  2020-01-06T21:00:00Z to 2020-01-14T21:00:00Z
-#>   Stop Reason:      valuation_horizon_exhausted
-#>   Last Fully Valued: 2020-01-14T21:00:00Z
-#>   Last Executed:    2020-01-14T14:30:00Z
-#>   Performance:       incomplete
-#>   Affected IDs:      AAA
-#>
-#> Corporate-Action Evidence:
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
 #> Price basis: UNDECLARED - distribution double counting cannot be ruled out
-#>   Full policy record: ledgr_corporate_action_summary(bt)
+#> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
+#>
+#> Use summary(bt) for metrics and evidence
 ```
 
-This is the hand calculation’s quiet assumption coming due. Earlier,
-marking `AAA` at its last observed price produced a tidy ending number.
-ledgr declines to make that assumption for you: no settlement was
-observed, and no lifetime or terminal-event fact was declared, so the
-run keeps the prefix it could value and labels the rest missing. Inspect
-the prefix, correct evidence or policy, then rerun under a new identity.
+The warning comes first and has no threshold: a frozen holding worth one
+dollar would trigger it too. The valuation line underneath gives the
+size. `ledgr_valuation_summary()` returns the same evidence as fields
+you can test:
 
-Share-changing corporate actions, delisting cash flows, borrow and short
-financing, order-management behaviour, and general imputation are
-outside this first availability surface. Cash distributions are
-modelled, as `vignette("corporate-action-cash", package = "ledgr")`
-shows.
+``` r
+pit_valuation <- ledgr_valuation_summary(point_in_time)
+pit_valuation
+#>
+#> Valuation Evidence:
+#> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
+#>   Max sessions:                2
+#>   Exhausted marks:             freeze
+#>   Stale instrument-sessions:   4
+#>   Frozen instrument-sessions:  3
+#>   Longest freeze:              3 sessions
+#>   Max frozen value:            1980
+#>   Max frozen weight:           23.60%
+#>   Frozen at end:               1 holdings, 1980 (23.04% of equity)
+#>   Return if frozen worthless:  -33.87%
+pit_valuation$total_return_if_frozen_worthless
+#> [1] -0.3387
+```
+
+This is the hand calculation’s quiet assumption coming due, now with a
+name. The reported total return values `AAA` at its last observed close.
+The `total_return_if_frozen_worthless` field restates the endpoint as if
+that holding paid nothing. It is a bound for the long-only case, not a
+corrected return: Sharpe ratio and drawdown still follow the assumed
+path.
 
 > [!IMPORTANT]
 >
-> ### A holding you cannot sell ends the run
+> ### Frozen equity is an estimate
 >
-> When a held instrument delists, or cannot be traded or valued for longer
-> than the valuation policy allows, the run stops `INCOMPLETE` instead of
-> booking a loss. That omits a real outcome: a botched exit can cost
-> money. The stop also ends every other position’s path, and comparison,
-> sweep ranking and walk-forward selection consider completed runs only.
-> So the variants that met this event drop out of the comparison. Treat an
-> incomplete run as evidence about the strategy, not as noise to filter
-> away.
->
-> A way to book the outcome is being designed. It would use settlement
-> evidence where it exists, and a loss assumption you declare, such as a
-> write-off, where it does not.
+> During a freeze, cash, quantity and the ledger stay exact; the equity
+> number does not. It assumes the last close still holds. If the holding
+> later trades again, the whole price move lands on the session it
+> resumes, so the endpoint return converges, provided the carried mark
+> changed no decision in between, but the path statistics stay distorted.
+> A run that ends with a holding still frozen is a complete run built on a
+> stated assumption, which is why every result surface carries
+> `valuation_state`.
 
+
+If you would rather have no number than an assumed one, say so:
+`ledgr_valuation_stale(max_sessions = 2, exhausted = "refuse")` stops
+the run `INCOMPLETE` at the first session a mark expires, and keeps the
+prefix it could value. Comparison, sweep ranking and walk-forward
+selection then leave that run out and report it as incomplete, rather
+than dropping it silently.
+
+Share-changing corporate actions, borrow and short financing,
+order-management behaviour, and general imputation are outside this
+availability surface. Cash distributions are modelled, as
+`vignette("corporate-action-cash", package = "ledgr")` shows.
 
 > [!TIP]
 >
 > ### Try it: move the valuation boundary
 >
 > Rebuild `point_in_time_experiment` with
-> `ledgr_valuation_stale(max_sessions = 1, exhausted = "refuse")`, use a
-> new `run_id`, and rerun it. Predict first: does the run stop earlier,
-> later, or on the same session? Then compare `achieved_end_utc` and the
-> `mark_age` on the stop row. One fewer permitted stale session moves the
-> boundary. It does not change when `AAA` was delisted.
+> `ledgr_valuation_stale(max_sessions = 1)`, use a new `run_id`, and rerun
+> it. Predict first: does freezing start earlier, later, or on the same
+> session? Then compare `frozen_instrument_sessions` in
+> `ledgr_valuation_summary()`. Finally add `exhausted = "refuse"` and
+> compare `achieved_end_utc` with the frozen run’s. One fewer permitted
+> stale session moves the boundary. It does not change when `AAA` was
+> delisted.
 
+
+## Telling ledgr What Happened To AAA
+
+Freezing is what ledgr does when it knows nothing. Here we do know
+something: `AAA` left the index because it was delisted. A lifetime fact
+says so, dated when the delisting took effect, with the reason as the
+vendor would label it. `knowledge = "assume_effective"` makes the
+delisting knowable the moment it takes effect. That is an assumption for
+this synthetic example; with real data, record when the delisting was
+announced.
+
+``` r
+delisting <- ledgr_facts_lifetime(
+  tibble(
+    instrument_id = "AAA",
+    effective_from = ledgr_utc("2020-01-13 00:00:00"),
+    assertion = "known_inactive",
+    terminal_event = "delisted"
+  ),
+  knowledge = "assume_effective"
+)
+
+terminal_snapshot <- ledgr_snapshot_from_df(
+  bars_input,
+  instruments_df = instruments,
+  facts = ledgr_facts(session_facts, membership_facts, delisting),
+  db_path = store_path,
+  snapshot_id = "survivorship-terminal"
+)
+```
+
+A delisting is a fact. What a holder received is not in this data, so
+ledgr still has to assume something, and the corporate-action policy is
+where you declare it. `held_terminal_position` maps exact terminal
+labels to choices. The research default, `"last_permissible"`, disposes
+the holding at its last permissible mark. Here we also run the
+conservative alternative, a write-off for the `"delisted"` label:
+
+``` r
+terminal_experiment <- function(policy) {
+  ledgr_experiment(
+    terminal_snapshot,
+    rebalance_declared_members,
+    universe = ledgr_universe_members("demo_members"),
+    valuation_policy = ledgr_valuation_stale(max_sessions = 2),
+    corporate_action_policy = policy,
+    cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 10000)
+  )
+}
+
+at_last_mark <- ledgr_run(
+  terminal_experiment(ledgr_corporate_actions()),
+  params = list(invested = 0.9), run_id = "pit-terminal-default"
+)
+written_off <- ledgr_run(
+  terminal_experiment(ledgr_corporate_actions(
+    held_terminal_position = c(delisted = "write_off", default = "last_permissible")
+  )),
+  params = list(invested = 0.9), run_id = "pit-terminal-write-off"
+)
+
+bind_rows(
+  ledgr_corporate_action_summary(at_last_mark)$terminal_outcomes,
+  ledgr_corporate_action_summary(written_off)$terminal_outcomes
+) |>
+  select(instrument_id, terminal_event, choice, assumption_label, proceeds)
+#> # A tibble: 2 x 5
+#>   instrument_id terminal_event choice           assumption_label               proceeds
+#>   <chr>         <chr>          <chr>            <chr>                             <dbl>
+#> 1 AAA           delisted       last_permissible default: last permissible mark     1980
+#> 2 AAA           delisted       write_off        declared: assumed worthless           0
+```
+
+Each terminal becomes one `DISPOSITION` on January 13, before the
+strategy decides, so the default run’s 1,980 in proceeds is already cash
+when the January 13 rebalance buys more `BBB`. Neither run freezes
+anything, because `AAA` is no longer held when its mark would have
+expired. Both runs still warn: the outcome is a modeled choice, and
+`assumption_label` says whether it was your choice (`declared`) or
+ledgr’s (`default`).
+
+``` r
+written_off
+#> ledgr Backtest Results
+#> ======================
+#>
+#> WARNING: this result relies on declared valuation or terminal assumptions.
+#>   Assumed terminal outcomes: 1.
+#>     AAA 2020-01-13: declared: assumed worthless (held_terminal_position["delisted"] = "write_off").
+#>
+#> Run ID:                            pit-terminal-write-off
+#> Period:                            2020-01-06T21:00:00Z to 2020-01-17T21:00:00Z
+#> Opening Cash:                      $10000.00
+#> Final Equity:                      $6613.00
+#> Total Return:                      -33.87%
+#> Max Drawdown:                      -37.80%
+#> Closed Trades:                     0
+#>
+#> Corporate actions: MODELED - configured settlement conventions were exercised
+#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#> Valuation: STALE - 2 holdings valued at a permitted stale close (longest age 1 session)
+#>
+#> Use summary(bt) for metrics and evidence
+```
+
+The write-off lands on -33.87%, the same number the frozen run reported
+as `total_return_if_frozen_worthless`: both value the same `AAA` shares
+at zero. That equality is specific to this example. `AAA` paid nothing
+in either run, so every later decision saw the same cash; a choice that
+pays proceeds changes the later decisions too, as the default run shows.
+The three runs differ only in what they assume about how `AAA` ended,
+and the spread between them is how much the result depends on that
+assumption. None of them is evidence of what `AAA` actually paid.
+Evidence would be a settlement fact, such as a recorded cash
+acquisition; it pre-empts every choice above and is reported as evidence
+rather than as an assumption.
+`vignette("corporate-action-cash", package = "ledgr")` shows that path.
 
 ## When The Bar You Need Is Not There
 
@@ -995,10 +1178,14 @@ completion_fields <- c(
   "complete_performance", "affected_instrument_ids"
 )
 expected_completion <- ledgr_run_info(snapshot, pit_run_id)[completion_fields]
+expected_valuation <- ledgr_valuation_summary(point_in_time)
 
 close(point_in_time)
 close(survivor)
 close(trim_run)
+close(at_last_mark)
+close(written_off)
+ledgr_snapshot_close(terminal_snapshot)
 ledgr_snapshot_close(snapshot)
 
 reopened_snapshot <- ledgr_snapshot_open(
@@ -1017,10 +1204,14 @@ identical(
   expected_completion
 )
 #> [1] TRUE
+
+identical(ledgr_valuation_summary(reopened_run), expected_valuation)
+#> [1] TRUE
 ```
 
-The same recorded decision and completion boundary come back from a
-fresh handle, without running the strategy again.
+The same recorded decision, completion boundary and valuation
+assumptions come back from a fresh handle, without running the strategy
+again.
 
 ## Invalid Observations Are Refused By Default
 
@@ -1096,7 +1287,9 @@ The example shows five distinctions worth preserving:
   it;
 - valuation marks and execution prices answer different questions;
 - expected sessions remain visible when observations are absent;
-- incomplete terminal evidence stays incomplete after reopening.
+- a value carried past the valuation horizon is reported as an
+  assumption, and a terminal outcome as a declared or default choice,
+  unless evidence settles it.
 
 It does not show that ledgr detects survivorship bias. A company omitted
 entirely from the evidence you supply stays invisible, and no amount of
@@ -1110,6 +1303,18 @@ assumed from effective time, `ledgr_experiment_plan()` labels the family
 their checks remain omitted. The gap shown here belongs to one synthetic
 example chosen to make the mechanism legible; it is not an estimate of
 survivorship bias in any real index.
+
+> [!WARNING]
+>
+> ### A carried price is not a missing price
+>
+> Freezing starts only when a bar is absent. Halts and untraded sessions
+> that a data source encodes as zero-volume bars carrying the previous
+> close, as the reference Sharadar data does, are still read as observed
+> prices: they can fill and they bypass valuation ageing and freezing. If
+> your source fills untraded sessions that way, remove those rows or mark
+> the instrument halted with a trading-status fact before you seal.
+
 
 For sealing details, read
 `vignette("data-input-and-snapshots", package = "ledgr")`. For execution

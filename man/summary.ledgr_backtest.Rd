@@ -66,10 +66,17 @@ When that evidence says performance is incomplete, the achieved-window block
 keeps prefix total return and maximum drawdown visible, but withholds
 annualized return, annualized volatility, and Sharpe ratio with an explicit
 explanation.
-
 The summary also prints the corporate-action fidelity, selected versioned
 policy identities, exercised-choice and refusal counts, and explicit zeros
-for settlement fields that were not exercised.
+for settlement fields that were not exercised, and lists each terminal
+outcome with its assumption: evidence, declared by an exact label, or
+default (for example \verb{default: assumed worthless}).
+Availability-aware runs also print the valuation evidence from
+\code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}}. When any holding froze or any terminal outcome
+rested on an assumption, one warning precedes the metrics, names the
+argument that produced it and whether it is the default, and gives the
+frozen-at-end value with \code{total_return_if_frozen_worthless}. That bound
+never changes the metrics shown.
 }
 \section{Articles}{
 

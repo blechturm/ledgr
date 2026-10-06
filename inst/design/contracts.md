@@ -140,6 +140,17 @@ Accepted change pending:
 - Pulse plans declare every economic-event kind they carry. Each accounting
   arm must handle every declared kind or fail closed before accounting; neither
   canonical nor compiled execution may complete after silently dropping one.
+- A terminal outcome, modeled or evidenced, posts one `DISPOSITION` event at
+  the effective pulse before the strategy decision. It is not a fill and uses
+  no fill timing or cost model. The event, its lot close, its cash change and
+  its policy summary commit together: an error raised before the append
+  leaves none of them. The event's quantity and price equal those recorded in
+  its canonical `meta_json`, which also names the source
+  (`corporate_action_disposition` or `lifetime_terminal_disposition`), source
+  fact, terminal event, matched label, choice, basis (`label`, `default`,
+  `frozen_fallback` or `evidence`), policy identity, haircut fraction, mark
+  provenance, cash delta and realized P&L. Replay rejects a disposition whose
+  event fields disagree with that record.
 - Compiled accounting dispatch is closed by accounting model. In v0.1.8.10 the
   only scoped public opt-in model is
   `compiled_accounting_model = "spot_fifo"` for memory-backed sweep execution;
@@ -266,6 +277,21 @@ Accepted change pending:
   persistence. v0.1.8 did not add durable sweep artifact helpers or full sweep
   replay/verification helpers; v0.1.9.2 later added compact saved-sweep
   persistence through the family-first sweep surfaces.
+- Every selection surface reports attempted, done, incomplete and failed
+  counts: run-list and comparison prints, sweep prints, `ledgr_sweep_review()`
+  (as `counts`) and walk-forward prints, per window. Typed `stop_reason` and
+  `affected_instrument_ids` stay inspectable: sweep tables and walk-forward
+  score rows derive them, with the five valuation flags, from
+  `completion_json` into the columns directly after it, and review issue rows
+  show them. Counts are disclosure only.
+- A frozen or assumed-terminal `DONE` candidate or run stays eligible for
+  ranking, filtering, extraction and promotion under its declared model; its
+  valuation flags travel beside ranking output in review and comparison.
+  `INCOMPLETE` and `FAILED` candidates stay visible in inventory and review
+  issues but never enter ranking, filtering, promotion or full-run
+  comparison. An `INCOMPLETE` candidate is never extracted. A `FAILED`
+  candidate is extractable only through explicit
+  `ledgr_candidate(..., allow_failed = TRUE)`, for diagnosis.
 
 ## Config Contract
 
@@ -277,6 +303,27 @@ Accepted change pending:
   `ledgr_validate_config()` helper.
 - Exporting direct config construction remains deferred. v0.1.7 public
   workflows start with `ledgr_experiment()` and run with `ledgr_run()`.
+- Corporate-action and valuation policies use schema 2 (terminal-outcomes
+  synthesis, accepted 2026-10-05). `ledgr_corporate_actions()` takes
+  `held_terminal_position` as one choice or as an ordered named map of exact
+  sealed `terminal_event` labels to choices with a required `default` entry.
+  The choices are `last_permissible` (research default), `last_mark`,
+  `haircut`, `write_off` and `refuse`. `haircut` requires one finite fraction
+  in `[0, 1]`, accepted only when an entry selects it.
+  `frozen_terminal_position` is `write_off` (research default), `last_mark` or
+  `refuse` (strict preset). Map order, labels, choices, the haircut fraction
+  and the frozen fallback enter identity. Every terminal choice carries a
+  `v002` identity because its trigger widened to lifetime terminal facts;
+  `v001` keeps its earlier meaning.
+- `ledgr_valuation_stale(max_sessions, exhausted = "freeze")` records
+  `schema_version = 2` with `exhausted` of `"freeze"` or `"refuse"`. The field
+  is invalid under schema 1, and no default `max_sessions` exists.
+- Schema-1 policy records stay readable in their exact historical shape. A
+  schema-1 valuation record reads as `exhausted = "refuse"`, the only behavior
+  it ever had. Executing, resuming, rerunning or promoting into a run recorded
+  under either schema-1 policy fails with `ledgr_policy_schema_mismatch`, and
+  a schema-1 corporate-action policy object is refused when validated. Nothing
+  recorded under schema 1 is reinterpreted under schema-2 meaning.
 
 ## Snapshot Contract
 
@@ -365,7 +412,10 @@ Accepted change pending:
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
   strategy or writing evidence. Its `assumption_reasons` keep assumed
-  knowledge time separate from generated schedule content.
+  knowledge time separate from generated schedule content. Its `assumptions`
+  table lists the declared valuation horizon, exhaustion choice, held
+  terminal map entries in order and frozen fallback, marking each value that
+  equals its constructor default.
 - `ledgr_facts_history()` is a retrospective audit of supplied membership or
   session assertions. `ledgr_facts_resolve()` is a separate decision-cutoff
   view using only evidence both effective and knowable at its required `at`.
@@ -469,8 +519,42 @@ Accepted change pending:
 - Fresh and policy-permitted stale closes may value holdings and feed target
   risk through the separate risk-mark plane. Stale marks never become observed
   closes or execution prices. Held marks age on the declared venue-open-session
-  clock, including during known inactivity, and an exhausted mark stops before
-  a new decision.
+  clock, including during known inactivity. An exhausted mark follows the
+  declared exhaustion choice before the next decision.
+- Terminal triggers are distinct (terminal-outcomes synthesis Sections 3.1 to
+  3.4). A modeled terminal disposition is eligible only for a held instrument
+  with an effective and knowable `known_inactive` lifetime row whose
+  `terminal_event` is nonempty, when no supported settlement fact resolves it
+  and the declared policy does not refuse it. An empty label is never
+  normalized to a reason; it stops `terminal_settlement_unsupported`. Labels
+  match map keys byte for byte; ledgr interprets no vendor synonym.
+- Settlement evidence runs first. A supported settlement fact pre-empts every
+  modeled terminal choice. A scheduled corporate-action disposition row is
+  evidence: it disposes at the permissible mark, or at the frozen last close
+  when the holding is frozen. Only an explicit `last_mark` default, which uses
+  the last observed close of any age, or `refuse` changes that; `haircut`,
+  `write_off` and `frozen_terminal_position` never apply to it. A scheduled
+  row is a precedence barrier: when its settlement is refused or has no usable
+  mark, the run stops typed and the lifetime path does not dispose that
+  holding on that pulse.
+- Valuation-horizon exhaustion proves no economic event. It never creates a
+  fill, a disposition, cash or a quantity change. Under `exhausted = "refuse"`
+  it stops `valuation_horizon_exhausted` with affected IDs, age and last
+  reference, and no frozen state exists. Under `exhausted = "freeze"`, a
+  holding whose last mark crosses `max_sessions` freezes: quantity and cash
+  are unchanged, its last close stays the risk mark, `mark_source` becomes
+  `frozen_close` while age keeps increasing, it becomes target-restricted with
+  reason `valuation_frozen`, and the next traded bar restores
+  `current_close`. A holding with no mark at all still stops
+  `valuation_horizon_exhausted`. A holding covered by an effective
+  `known_inactive` row never freezes: a labeled terminal resolves under the
+  terminal policy and an unlabeled one stops.
+- A terminal reached while frozen consults `frozen_terminal_position` only
+  when the matched choice needs a currently permissible mark
+  (`last_permissible` or `haircut`). An explicit `write_off`, `last_mark` or
+  `refuse` choice applies directly, and `haircut` is never a frozen fallback.
+  A choice whose mark does not exist stops `terminal_mark_unavailable` with the
+  accepted prefix; it never aborts the run.
 - Active affordability evaluates accepted cash-generating reductions first,
   then cash-consuming fills in C-locale stable-ID order against the fixed
   `1e-8` tolerance. Rejected sales fund nothing. Accepted fills remain emitted
@@ -501,8 +585,12 @@ Accepted change pending:
   | `final_pulse_no_execution` | execution | record no fill because no later execution pulse exists |
   | `affordability_reconciled` | reconciliation | apply accepted fills and record reconciliation |
   | `affordability_reconciliation_failed` | reconciliation stop | preserve the accepted prefix and finalize incomplete |
-  | `valuation_horizon_exhausted` | valuation stop | preserve the accepted prefix and finalize incomplete |
-  | `terminal_settlement_unsupported` | valuation stop | preserve the holding; never fabricate cash settlement |
+  | `valuation_horizon_exhausted` | valuation stop | under `exhausted = "refuse"`, or for a holding with no mark at all, preserve the accepted prefix and finalize incomplete |
+  | `valuation_frozen` | valuation / restriction | under `exhausted = "freeze"`, carry the holding at its last close; hold or exit only, no transaction |
+  | `valuation_freeze_exited` | valuation diagnostic | record that a frozen holding resumed, was exited or was disposed |
+  | `terminal_disposition` | valuation | post one modeled `DISPOSITION` before the strategy decision |
+  | `terminal_settlement_unsupported` | valuation stop | unlabeled or refused terminal; preserve the holding and never fabricate cash settlement |
+  | `terminal_mark_unavailable` | valuation stop | the terminal choice needs a mark that does not exist; preserve the accepted prefix and finalize incomplete |
   | `fold_exception` | error | finalize failed after the fold transaction rolls back |
 
   An uncomplicated accepted fill has an empty reason code.
@@ -559,6 +647,14 @@ Accepted change pending:
   commits the intended terminal status without replaying the fold or
   duplicating evidence. Malformed or inconsistent terminal evidence fails
   closed with `ledgr_run_terminal_evidence_invalid`.
+- Availability-aware sweep-candidate and walk-forward score
+  `completion_json` records `affected_instrument_ids` as an array and an
+  `assumptions` object holding the five valuation flags. Freeze and terminal
+  state is never stored as separate accounting state. Freeze entry and exit
+  are diagnostics; resume and replay rebuild the frozen set from sealed bars,
+  facts, policy identity and committed ledger events. Memory, durable reopen
+  and an interrupted resume therefore agree on events, equity, diagnostics
+  and summary fields.
 - DuckDB constraint metadata is an introspection contract. If a runtime
   validator or create-side compatibility check cannot interpret expected
   constraint metadata, it must fail loudly rather than mutate user rows or
@@ -597,7 +693,10 @@ Accepted change pending:
   `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,
   `achieved_end_utc`, `stop_reason`, `last_fully_valued_ts_utc`,
   `last_executed_ts_utc`, `complete_performance`, and
-  `affected_instrument_ids`. Status does not gate real completion evidence,
+  `affected_instrument_ids`, then the valuation flags `valuation_state`,
+  `frozen_instrument_sessions`, `max_frozen_equity_weight`,
+  `frozen_at_end_value`, and `assumed_terminal_outcomes`, read from stored
+  diagnostics in one grouped query. Status does not gate real completion evidence,
   including evidence retained by a `FAILED` run. Missing evidence stays typed
   unknown. The affected-ID list column distinguishes unavailable, known-empty,
   and known sets. Inventory printing places completion beside raw metrics and
@@ -806,7 +905,12 @@ changes it.
   `ledgr_invalid_strategy_helper`; unselected ineligible names are accepted.
   `ledgr_signal_strategy()` requires a signal for every eligible ID, may omit
   or include ineligible ones, and fails with `ledgr_invalid_strategy_result`
-  otherwise.
+  otherwise. A frozen holding is a target-restricted member: the helpers keep
+  its quantity and reserve its absolute exposure at its frozen risk mark, so
+  reported equity includes that value but allocation never spends it a second
+  time. No second equity basis exists. Hand-written targets may hold a frozen
+  quantity or request zero; a zero target is an attempted exit, and no order
+  is queued or filled until an execution bar exists.
 - **Literal targets and today's behaviour.** Raw named targets,
   `ledgr_target()`, `ctx$flat()` and `ctx$hold()` are literal. A strategy
   states intent; ledgr's later steps judge and execute it (Cut 22 decision
@@ -1028,6 +1132,12 @@ Accepted change pending:
   finite positive close. A permissible stale mark may satisfy `priced` while
   still failing current-close sizing, so this helper guarantees neither a
   current sizing close nor execution at the next open.
+- A frozen holding stays on the decision axis with its position. Its
+  `risk_mark` is its last close, `mark_source` is `frozen_close`, `priced` is
+  `TRUE` and `mark_age` keeps increasing. It is `target_restricted` with
+  reason `valuation_frozen` unless an earlier restriction reason applies, so
+  `admissible` is `FALSE` and `ctx$tradable()` excludes it. The frozen close
+  is not an observed close and is never an execution price.
 - `ledgr_passed_warmup()` is a strategy-authoring guard for named numeric vectors
   produced by `ctx$features()`. It is not a helper-pipeline transformation and
   zero-length input must fail loudly rather than returning vacuous success.
@@ -1193,8 +1303,9 @@ Accepted change pending:
   rerun strategy code, evaluate recovered source, or mutate the experiment
   store while producing comparison tables.
 - With explicit `run_ids`, `ledgr_run_compare()` rejects every non-`DONE` run
-  with `ledgr_run_not_complete`. Without `run_ids`, it silently excludes
-  non-`DONE` rows. An incomplete horizon changes the meaning of return, Sharpe,
+  with `ledgr_run_not_complete`. Without `run_ids`, it excludes non-`DONE`
+  rows and discloses the attempted, done, incomplete and failed counts in its
+  `selection_counts` attribute and print. An incomplete horizon changes the meaning of return, Sharpe,
   and drawdown rather than merely qualifying those metrics. The completion-aware
   run inventory is the supported side-by-side view of runs with different
   horizons.
@@ -1211,6 +1322,34 @@ Accepted change pending:
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
   stored artifacts, comparison semantics, or strategy provenance.
 - Metrics are descriptive only and must never feed back into strategy execution.
+- Terminal outcomes extend `ledgr_corporate_action_summary()` and
+  `corporate_action_fidelity`; there is no separate terminal headline. Its
+  `terminal_outcomes` table lists every scheduled and lifetime `DISPOSITION`
+  with source, terminal event, matched label, choice, whether the choice was
+  `declared` or `default`, an assumption label, price, quantity, proceeds and
+  realized model P&L. A defaulted frozen-fallback write-off reads exactly
+  `default: assumed worthless`. Settlement evidence is reported as evidence,
+  not as an assumption.
+- `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
+  `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
+  instrument-sessions and holdings, longest stale age and longest freeze,
+  maximum frozen gross value and equity weight, frozen-at-end count, value
+  and weight, and `total_return_if_frozen_worthless`. That field subtracts
+  the frozen-at-end marked value from final equity before computing endpoint
+  return; it is a long-only bound, not a corrected return, Sharpe or
+  drawdown. Stored equity and standard metrics are unchanged.
+- During a freeze, cash, quantity and ledger accounting are exact under the
+  declared model, but equity is an assumption-backed estimate. Endpoint
+  return converges once every freeze resolves, provided the carried marks
+  changed no decision in between; path statistics may remain distorted
+  because the price move books on the resumption date.
+- `print()` and `summary()` of an availability-aware run show one valuation
+  headline (`CURRENT`, `STALE` or `FROZEN`). Whenever the run entered frozen
+  valuation or used an assumed terminal outcome, they print one warning before
+  any metric that names each assumption and the argument that declared it.
+  The warning has no materiality threshold. Refused exhaustion, settlement
+  evidence alone and a clean run do not warn, and a dense run shows no
+  valuation output.
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild
   path, which verifies snapshot-backed sources before rebuilding derived
@@ -1534,6 +1673,19 @@ Accepted change pending:
   when held nonmembers are reserved, and that hold does not bypass risk or
   guarantee an absence of fills.
 
+- Public documentation distinguishes settlement evidence, a modeled terminal
+  disposition, stale valuation, frozen valuation, refusal and the
+  frozen-at-end bound, and never calls assumption-backed equity exact.
+- Release claim boundary (terminal-outcomes synthesis Section 6; v0.2.2
+  release definition of done item 9). Until accepted upstream untraded-bar
+  evidence (ledgr-research LFB-027) and a passing end-to-end record are
+  linked, no release note, README, article or record may claim that the
+  reference Sharadar workflow ages halted or untraded carried prices or
+  prevents fills on them. The survivorship-bias and missing-data-and-sessions
+  articles and the v0.2.2 release notes state this boundary verbatim: "Halts and untraded sessions that a data source encodes as zero-volume bars carrying the previous close, as the reference Sharadar data does, are still read as observed prices: they can fill and they bypass valuation ageing and freezing." A documentation-contract
+  test pins the sentence. It is removed only together with linking that
+  evidence.
+
 ## Verification Contract
 
 Accepted change pending:
@@ -1555,6 +1707,19 @@ Accepted change pending:
 - Release-ticket execution should follow `inst/design/release_ci_playbook.md`.
   Main-branch CI and tag-triggered CI are separate gates; a release tag is not
   valid until the tag workflow is green.
+- Effective-trial and DSR inputs remain completed comparable panels.
+  Attempted, incomplete and failed counts never become trials, raw-trial
+  counts or return columns, and naming an incomplete or failed candidate in a
+  panel, effective-trial or DSR input fails with
+  `ledgr_sweep_returns_candidate_not_completed`. On a mixed sweep these
+  diagnostics equal those of a sweep over its completed candidates only,
+  apart from sweep identity and the excluded-ID disclosure.
+- The terminal-outcomes gate is one registry. Each of the eight synthesis
+  Section 7 cases has one owning ticket and one failure-sensitive block, as
+  mapped in the v0.2.2 packet's `terminal_outcomes_reconciliation.md`. A
+  vendor-neutral release fixture crossing a held terminal, freeze, resume and
+  frozen-at-end case runs only through the long-window suite's
+  `run_release.R --release` entry point.
 - Fold-core trust-boundary work must include regression coverage proving that
   public production run/sweep paths cannot reach fold execution without the
   accepted sealed-snapshot guard. The guard belongs at entry/setup boundaries,

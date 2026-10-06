@@ -173,7 +173,7 @@ ledgr_walk_forward <- function(exp,
       opening_state_policy = opening_state_policy,
       cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
       folds = fold_table,
-      scores = score_table,
+      scores = ledgr_add_completion_columns(score_table),
       degradation = ledgr_walk_forward_degradation_table(
         folds = fold_table,
         scores = score_table,
@@ -212,7 +212,26 @@ print.ledgr_walk_forward_results <- function(x, ...) {
     cat("Cold-start distorted: TRUE\n")
   }
   cat("Folds: ", nrow(x$folds %||% data.frame()), "\n", sep = "")
+  lines <- ledgr_walk_forward_selection_lines(x$scores)
+  if (length(lines) > 0L) cat(lines, sep = "\n")
   invisible(x)
+}
+
+# One count line per window over distinct fold-candidate evaluations. The
+# long score table repeats each evaluation once per metric.
+ledgr_walk_forward_selection_lines <- function(scores) {
+  if (is.null(scores) || nrow(scores) == 0L) return(character())
+  scores <- ledgr_add_completion_columns(scores)
+  key <- c("fold_seq", "window", "candidate_key")
+  if (!all(key %in% names(scores))) return(character())
+  rows <- scores[!duplicated(as.data.frame(scores)[key]), , drop = FALSE]
+  out <- character()
+  for (window in intersect(c("train", "test"), unique(as.character(rows$window)))) {
+    at <- as.character(rows$window) == window
+    noun <- if (identical(window, "train")) "train evaluations" else "test runs"
+    out <- c(out, ledgr_selection_table_lines(rows[at, , drop = FALSE], noun = noun))
+  }
+  out
 }
 
 ledgr_walk_forward_session_identity <- function(exp,

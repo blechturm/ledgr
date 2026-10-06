@@ -45,7 +45,14 @@ parallel workers for unqualified package calls in strategy code.}
 scoped spot-asset FIFO accelerator for memory-backed sweep candidates.}
 }
 \value{
-A \code{ledgr_sweep_results} tibble.
+A \code{ledgr_sweep_results} tibble. Each row keeps its \code{status} and
+\code{completion_json}; the columns directly after \code{completion_json} are
+derived from it: \code{stop_reason}, \code{affected_instrument_ids}, and the
+valuation flags \code{valuation_state}, \code{frozen_instrument_sessions},
+\code{max_frozen_equity_weight}, \code{frozen_at_end_value}, and
+\code{assumed_terminal_outcomes} (\code{NA} without availability evidence). Print
+reports attempted, done, incomplete, and failed counts. Only \code{DONE} rows
+enter ranking, filtering, promotion, and validation panels.
 }
 \description{
 \code{ledgr_sweep()} evaluates a \code{ledgr_param_grid} against a \code{ledgr_experiment}
@@ -108,3 +115,4 @@ Selection-integrity diagnostics:
 \code{vignette("selection-integrity", package = "ledgr")}
 \code{system.file("doc", "selection-integrity.html", package = "ledgr")}
 }
+

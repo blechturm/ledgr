@@ -551,6 +551,34 @@ For the connected workflow and interpretation, see
 \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}.
 }
 
+\section{Evidence, assumptions and refusals}{
+
+Availability-aware results keep six cases apart.
+\itemize{
+\item \strong{Settlement evidence.} A supported settlement fact or a scheduled
+corporate-action row disposes a holding as recorded. It is evidence, not
+an assumption, and it pre-empts every modeled choice.
+\item \strong{Modeled terminal disposition} (\code{terminal_disposition}). A labeled
+\code{known_inactive} holding without settlement evidence is disposed under the
+declared \code{held_terminal_position} choice. The result names the choice and
+whether it was declared or a default, for example
+\verb{default: assumed worthless}.
+\item \strong{Stale valuation} (\code{stale_close}). A holding is valued at a close no
+older than \code{max_sessions}. Cash and quantity stay exact.
+\item \strong{Frozen valuation} (\code{valuation_frozen}, \code{frozen_close}). Under
+\code{exhausted = "freeze"} a holding is carried at its last close beyond
+\code{max_sessions}. Cash and quantity stay exact, but equity during the freeze
+is an assumption-backed estimate, not an exact value.
+\item \strong{Refusal.} \code{valuation_horizon_exhausted},
+\code{terminal_settlement_unsupported} and \code{terminal_mark_unavailable} stop the
+run \code{INCOMPLETE} and keep the accepted prefix. Nothing is fabricated.
+\item \strong{Frozen-at-end bound.} \code{total_return_if_frozen_worthless} in
+\code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}} restates endpoint return with holdings still
+frozen at the end valued at zero. It is a bound, not a corrected return,
+Sharpe ratio or drawdown.
+}
+}
+
 \section{Related existing classes}{
 
 \code{ledgr_run_not_found} is raised when run-store inspection helpers cannot

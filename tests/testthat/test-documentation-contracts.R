@@ -1705,7 +1705,7 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   testthat::expect_match(qmd, "Try it: move the valuation boundary", fixed = TRUE)
   testthat::expect_match(
     qmd,
-    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1, exhausted = \"refuse\")`",
+    "Rebuild `point_in_time_experiment` with `ledgr_valuation_stale(max_sessions = 1)`",
     fixed = TRUE
   )
   testthat::expect_no_match(qmd, "max_sessions = 1` in `declare()`", fixed = TRUE)
@@ -1784,8 +1784,10 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   }
 
   rendered_evidence <- c(
-    "execution_bar_missing", "no_target_change", "stale_close",
-    "valuation_horizon_exhausted", "INCOMPLETE", "#> [1] TRUE"
+    "execution_bar_missing", "no_target_change", "stale_close", "frozen_close",
+    "WARNING: this result relies on declared valuation or terminal assumptions.",
+    "Valuation: FROZEN", "default: last permissible mark",
+    "declared: assumed worthless", "#> [1] TRUE"
   )
   for (evidence in rendered_evidence) {
     testthat::expect_match(md, evidence, fixed = TRUE)
@@ -1804,29 +1806,45 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
     "2020-01-07 14:30:00\\s+2020-01-07 21:00:00"
   )
   testthat::expect_match(md, "survivor-universe[^\\n]+DONE[^\\n]+TRUE")
-  testthat::expect_match(md, "pit-universe[^\\n]+INCOMPLETE[^\\n]+FALSE")
-  testthat::expect_match(md, "Completion Evidence:", fixed = TRUE)
-  completion_blocks <- gregexpr("Completion Evidence:", md, fixed = TRUE)[[1L]]
-  testthat::expect_identical(sum(completion_blocks > 0L), 1L)
-  point_in_time_summaries <- gregexpr("summary(point_in_time)", qmd, fixed = TRUE)[[1L]]
-  testthat::expect_identical(sum(point_in_time_summaries > 0L), 1L)
-  testthat::expect_match(md, "Achieved-Prefix Metrics (", fixed = TRUE)
-  testthat::expect_match(md, "Total Return (prefix):", fixed = TRUE)
-  testthat::expect_match(md, "Max Drawdown (prefix):", fixed = TRUE)
+  # Under the default freeze both runs complete; the point-in-time run ends
+  # frozen and names its assumption, and the comparison carries the flag.
+  testthat::expect_match(md, "pit-universe[^\\n]+DONE")
+  testthat::expect_match(md, "Valuation: FROZEN - 1 holding frozen", fixed = TRUE)
+  testthat::expect_match(qmd, "pit_valuation <- ledgr_valuation_summary(point_in_time)", fixed = TRUE)
+  testthat::expect_match(md, "Return if frozen worthless:  -33.87%", fixed = TRUE)
+  testthat::expect_match(md, "Closed Trades:", fixed = TRUE)
+  # The incomplete-prefix teaching lives in the missing-data article.
+  missing_md <- paste(
+    readLines(file.path(root, "vignettes", "missing-data-and-sessions.md"), warn = FALSE),
+    collapse = "\n"
+  )
+  testthat::expect_match(missing_md, "Completion Evidence:", fixed = TRUE)
+  testthat::expect_match(missing_md, "valuation_horizon_exhausted", fixed = TRUE)
+  testthat::expect_match(missing_md, "Achieved-Prefix Metrics (", fixed = TRUE)
+  testthat::expect_match(missing_md, "Total Return (prefix):", fixed = TRUE)
+  testthat::expect_match(missing_md, "Max Drawdown (prefix):", fixed = TRUE)
   testthat::expect_match(
-    md,
+    missing_md,
     "Annualized Return:        withheld (achieved window is shorter than requested)",
     fixed = TRUE
   )
-  testthat::expect_match(md, "Closed Trades:", fixed = TRUE)
-  testthat::expect_match(md, "Affected IDs:      AAA", fixed = TRUE)
+  testthat::expect_match(missing_md, "Affected IDs:      BBB", fixed = TRUE)
+  # A requested change inside the hole is shown failing, not merely absent.
+  testthat::expect_match(missing_md, "2020-01-15 21:00:00\\s+5\\s+\"?execution_bar_missing\"?\\s+10")
+  # The opening result table repeats numbers the article computes later.
+  for (figure in c("+14.3%", "-14.1%", "-33.9%")) {
+    testthat::expect_match(qmd, paste0("| ", figure, " |"), fixed = TRUE)
+  }
+  testthat::expect_match(md, "survivor-univ[^\\n]+\\+14\\.3%")
+  testthat::expect_match(md, "pit-universe[^\\n]+-14\\.1%")
+  testthat::expect_match(md, "Return if frozen worthless:  -33.87%", fixed = TRUE)
   reopen_true <- gregexpr("#> [1] TRUE", md, fixed = TRUE)[[1L]]
   testthat::expect_gte(sum(reopen_true > 0L), 2L)
   testthat::expect_match(md, "ledgr_availability_validation_failed", fixed = TRUE)
   # Rendered Markdown rewraps prose, so every space must tolerate a line break.
   testthat::expect_match(
     md,
-    "Inspect\\s+the\\s+prefix,\\s+correct\\s+evidence\\s+or\\s+policy"
+    "Frozen\\s+equity\\s+is\\s+an\\s+estimate"
   )
   }
   })

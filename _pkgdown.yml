@@ -157,6 +157,7 @@ reference:
       - ledgr_run_completion
       - ledgr_corporate_action_policy
       - ledgr_corporate_action_summary
+      - ledgr_valuation_summary
       - as_tibble.ledgr_result_table
       - print.ledgr_result_table
       - close.ledgr_backtest

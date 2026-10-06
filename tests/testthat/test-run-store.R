@@ -54,9 +54,13 @@ testthat::test_that("ledgr_run_list discovers multiple runs and hides archived r
     "completion_evidence_available", "completion_status",
     "requested_start_utc", "requested_end_utc", "achieved_start_utc",
     "achieved_end_utc", "stop_reason", "last_fully_valued_ts_utc",
-    "last_executed_ts_utc", "complete_performance", "affected_instrument_ids"
+    "last_executed_ts_utc", "complete_performance", "affected_instrument_ids",
+    "valuation_state", "frozen_instrument_sessions", "max_frozen_equity_weight",
+    "frozen_at_end_value", "assumed_terminal_outcomes"
   )
-  testthat::expect_identical(utils::tail(names(runs), 11L), completion_fields)
+  testthat::expect_identical(utils::tail(names(runs), 16L), completion_fields)
+  # Dense runs write no availability diagnostics, so their flags stay NA.
+  testthat::expect_true(all(is.na(runs$valuation_state)))
   testthat::expect_false(any(runs$completion_evidence_available))
   testthat::expect_s3_class(runs$requested_start_utc, "POSIXct")
   testthat::expect_s3_class(runs$achieved_end_utc, "POSIXct")

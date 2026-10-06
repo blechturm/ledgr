@@ -212,6 +212,32 @@ name the playbook and the exact local gates, update the ticket before starting
 the gate. This makes the process inspectable in code review and keeps agent
 context from depending on memory.
 
+### Standing release-claim gates
+
+A standing claim gate holds for every release until its named evidence lands.
+The release-gate ticket checks each one before tagging and records the result
+in its closeout note.
+
+- **Reference Sharadar carried bars** (registered 2026-10-05 by v0.2.2
+  LDG-2961; v0.2.2 macro plan, release definition of done item 9). No
+  release note, README, article or record may claim that the reference
+  Sharadar workflow ages halted or untraded carried prices, or prevents fills
+  on them, until accepted upstream untraded-bar evidence (ledgr-research
+  LFB-027) and a passing end-to-end record are linked. Until then the release
+  notes state this boundary verbatim, as the Documentation Contract of
+  `inst/design/contracts.md` does: "Halts and untraded sessions that a data
+  source encodes as zero-volume bars carrying the previous close, as the
+  reference Sharadar data does, are still read as observed prices: they can
+  fill and they bypass valuation ageing and freezing." LTB-0181 in
+  `tests/testthat/test-release-claim-boundary.R` must pass. Removing the
+  sentence or the test is allowed only in the change that links that evidence.
+- **Terminal-outcome release fixture** (registered 2026-10-05 by LDG-2961).
+  Run `dev/bench/v0_2_2_long_window_regression/run_release.R --release
+  terminal <repo> <out_dir>` on the committed release candidate and record
+  `LEDGR_TERMINAL_RELEASE_OK`. A semantic change to its checked-in
+  `evidence/terminal_release/expected.json` needs the accepted ticket that
+  authorizes it, as for the ordinary long-window record.
+
 ## Tag Handling
 
 Use tags deliberately. A tag push is a release candidate, not a proof of

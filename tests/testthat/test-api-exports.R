@@ -157,6 +157,7 @@ testthat::test_that("exported API surface is locked", {
     "ledgr_utc",
     "ledgr_validate_schema",
     "ledgr_valuation_stale",
+    "ledgr_valuation_summary",
     "ledgr_walk_forward",
     "ledgr_walk_forward_folds",
     "ledgr_walk_forward_open",

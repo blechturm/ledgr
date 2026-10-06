@@ -643,14 +643,17 @@ weekly_run <- ledgr_experiment(
 
 ledgr_run_compare(snapshot)
 #> # ledgr comparison
-#> # A tibble: 3 x 9
+#> # A tibble: 3 x 11
 #>   run_id     label final_equity total_return sharpe_ratio max_drawdown n_trades win_rate
 #>   <chr>      <chr>        <dbl> <chr>               <dbl> <chr>           <int> <chr>
 #> 1 v1_ranking <NA>        11372. +13.7%               2.63 -4.2%              76 69.7%
 #> 2 v2_rule    <NA>        10874. +8.7%                1.88 -3.7%              93 63.4%
 #> 3 v3_weekly  <NA>        10577. +5.8%                1.46 -3.3%              36 55.6%
-#> # i 1 more variable: reproducibility_level <chr>
+#> # i 3 more variables: valuation_state <chr>, assumed_terminal_outcomes <int>,
+#> #   reproducibility_level <chr>
 #>
+#> # i 3 runs attempted: 3 done, 0 incomplete, 0 failed.
+#> # i Only DONE runs are compared; incomplete and failed runs stay listed by ledgr_run_list().
 #> # i Fill timing comparable: yes (same_timing_convention).
 #> # i Full identity and telemetry columns remain available on this tibble.
 #> # i Inspect one run with ledgr_run_info(snapshot, run_id).

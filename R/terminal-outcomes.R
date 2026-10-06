@@ -233,3 +233,117 @@ ledgr_disposition_post <- function(ids,
     event_seq = seq_value
   )
 }
+
+# Summary key for every recorded disposition policy id: held-terminal choices
+# (v002 and the historical v001) and frozen-terminal fallbacks.
+ledgr_terminal_policy_id_keys <- function() {
+  ids <- ledgr_corporate_action_policy_ids()
+  held <- c(ids$held_terminal_position, ledgr_corporate_action_policy_ids_v1()$held_terminal_position)
+  frozen <- ids$frozen_terminal_position
+  stats::setNames(
+    c(paste0("held_terminal_position.", names(held)), paste0("frozen_terminal_position.", names(frozen))),
+    c(unname(held), unname(frozen))
+  )
+}
+
+# Plain-language status of one terminal outcome. Settlement evidence is
+# "evidence"; an exact sealed label match is "declared"; the map's default
+# entry and the frozen fallback are "default".
+ledgr_terminal_assumption_label <- function(choice, assumption, haircut = NA_real_) {
+  describe <- c(
+    last_permissible = "last permissible mark",
+    last_mark = "last observed mark",
+    write_off = "assumed worthless"
+  )
+  text <- unname(describe[choice])
+  is_haircut <- choice == "haircut"
+  text[is_haircut] <- sprintf(
+    "%s%% haircut of the permissible mark",
+    format(100 * haircut[is_haircut], trim = TRUE)
+  )
+  paste0(assumption, ": ", text)
+}
+
+ledgr_terminal_outcome_rows <- function(events, meta) {
+  empty <- tibble::tibble(
+    ts_utc = as.POSIXct(character(), tz = "UTC"),
+    instrument_id = character(),
+    source = character(),
+    source_fact_id = character(),
+    terminal_event = character(),
+    matched_label = character(),
+    choice = character(),
+    basis = character(),
+    assumption = character(),
+    assumption_label = character(),
+    disposition_policy_id = character(),
+    quantity = numeric(),
+    price = numeric(),
+    proceeds = numeric(),
+    realized_model_pnl = numeric(),
+    haircut_fraction = numeric()
+  )
+  if (length(meta) == 0L) return(empty)
+  field <- function(name, default, type) {
+    vapply(meta, function(m) {
+      value <- m[[name]]
+      if (is.null(value) || length(value) != 1L) default else type(value)
+    }, type(default))
+  }
+  keys <- ledgr_terminal_policy_id_keys()
+  policy_id <- field("disposition_policy_id", NA_character_, as.character)
+  # Events recorded before choice and basis were persisted derive the choice
+  # from the policy id; a scheduled row is always settlement evidence.
+  key_choice <- sub("^[a-z_]+[.]", "", unname(keys[policy_id]))
+  choice <- field("disposition_choice", NA_character_, as.character)
+  choice[is.na(choice)] <- key_choice[is.na(choice)]
+  source <- field("source", NA_character_, as.character)
+  basis <- field("disposition_basis", NA_character_, as.character)
+  basis[is.na(basis) & source == "corporate_action_disposition"] <- "evidence"
+  basis[is.na(basis)] <- "default"
+  assumption <- ifelse(
+    basis == "evidence",
+    "evidence",
+    ifelse(basis == "label", "declared", "default")
+  )
+  haircut <- field("haircut_fraction", NA_real_, as.numeric)
+  tibble::tibble(
+    ts_utc = as.POSIXct(events$ts_utc, tz = "UTC"),
+    instrument_id = as.character(events$instrument_id),
+    source = ifelse(source == "corporate_action_disposition", "scheduled_evidence", "lifetime_terminal"),
+    source_fact_id = field("source_fact_id", NA_character_, as.character),
+    terminal_event = field("terminal_event", NA_character_, as.character),
+    matched_label = field("matched_label", NA_character_, as.character),
+    choice = choice,
+    basis = basis,
+    assumption = assumption,
+    assumption_label = ledgr_terminal_assumption_label(choice, assumption, haircut),
+    disposition_policy_id = policy_id,
+    quantity = as.numeric(events$qty),
+    price = as.numeric(events$price),
+    proceeds = field("cash_delta", NA_real_, as.numeric),
+    realized_model_pnl = field("realized_model_pnl", NA_real_, as.numeric),
+    haircut_fraction = haircut
+  )
+}
+
+# The argument that produced an assumed terminal outcome, named for warnings.
+ledgr_terminal_assumption_argument <- function(choice, basis, matched_label) {
+  ifelse(
+    basis == "frozen_fallback",
+    sprintf(
+      "frozen_terminal_position = \"%s\"%s",
+      choice,
+      ifelse(choice == "write_off", ", the research default", "")
+    ),
+    ifelse(
+      basis == "label",
+      sprintf("held_terminal_position[\"%s\"] = \"%s\"", matched_label, choice),
+      sprintf(
+        "held_terminal_position default \"%s\"%s",
+        choice,
+        ifelse(choice == "last_permissible", ", the research default", "")
+      )
+    )
+  )
+}
