@@ -293,6 +293,54 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
   }
 })
 
+testthat::test_that("[LTB-0188] pulse staging writes do not copy with capacity", {
+  persistent_source <- paste(
+    deparse(body(ledgr:::ledgr_persistent_output_handler)),
+    collapse = "\n"
+  )
+  memory_source <- paste(
+    deparse(body(ledgr:::ledgr_memory_output_handler)),
+    collapse = "\n"
+  )
+  testthat::expect_false(grepl("state\\$pulse_fill_rows", persistent_source))
+  testthat::expect_false(grepl("state\\$pulse_fill_rows", memory_source))
+  testthat::expect_false(grepl("state\\$pulse_fill_legs", memory_source))
+  testthat::expect_match(persistent_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
+  testthat::expect_match(memory_source, "pulse_fill_rows\\[\\[i\\]\\] <<-")
+  testthat::expect_match(memory_source, "pulse_fill_legs\\[\\[i\\]\\] <<-")
+
+  fill <- ledgr_test_next_open_fill(
+    desired_qty_delta = 1,
+    next_bar = list(
+      instrument_id = "AAA",
+      ts_utc = "2020-01-02T00:00:00Z",
+      open = 100
+    ),
+    spread_bps = 0,
+    commission_fixed = 0
+  )
+  allocated_for_last_write <- function(capacity) {
+    handler <- ledgr:::ledgr_memory_output_handler("allocation-probe")
+    handler$init_buffers(capacity)
+    for (i in seq_len(capacity - 1L)) {
+      handler$write_fill_events(fill, i)
+    }
+    path <- tempfile(fileext = ".out")
+    on.exit(unlink(path), add = TRUE)
+    Rprofmem(path)
+    on.exit(Rprofmem(NULL), add = TRUE)
+    handler$write_fill_events(fill, capacity)
+    Rprofmem(NULL)
+    lines <- readLines(path, warn = FALSE)
+    sizes <- suppressWarnings(as.numeric(sub(" .*", "", lines)))
+    sum(sizes, na.rm = TRUE)
+  }
+
+  small <- allocated_for_last_write(256L)
+  large <- allocated_for_last_write(8192L)
+  testthat::expect_lte(large, small + 16384)
+})
+
 # ledgr-test-profile: review
 testthat::test_that("persistent output handler grows event buffer without changing rows", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")

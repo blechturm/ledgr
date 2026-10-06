@@ -1580,13 +1580,13 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
     "`.event_initial_capacity`"
   )
   state$event_cols <- NULL
-  state$pulse_fill_rows <- vector("list", 256L)
-  state$pulse_fill_n <- 0L
-  state$pulse_fill_legs <- vector("list", 256L)
-  state$pulse_fill_leg_n <- 0L
   state$status <- "RUNNING"
   state$completion <- NULL
   state$diagnostics <- NULL
+  pulse_fill_rows <- vector("list", 256L)
+  pulse_fill_n <- 0L
+  pulse_fill_legs <- vector("list", 256L)
+  pulse_fill_leg_n <- 0L
   handler <- list()
 
   init_event_cols <- function(capacity) {
@@ -1750,8 +1750,8 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
       "`max_events`"
     )
     ensure_event_capacity(state$event_count + 1L)
-    state$pulse_fill_n <- 0L
-    state$pulse_fill_leg_n <- 0L
+    pulse_fill_n <<- 0L
+    pulse_fill_leg_n <<- 0L
     invisible(TRUE)
   }
   handler$append_event_rows <- function(rows) {
@@ -1862,14 +1862,14 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
         !identical(write_res$status, "WROTE")) {
       return(invisible(FALSE))
     }
-    i <- state$pulse_fill_n + 1L
-    if (i > length(state$pulse_fill_rows)) {
-      state$pulse_fill_rows <- c(
-        state$pulse_fill_rows,
-        vector("list", length(state$pulse_fill_rows))
+    i <- pulse_fill_n + 1L
+    if (i > length(pulse_fill_rows)) {
+      pulse_fill_rows <<- c(
+        pulse_fill_rows,
+        vector("list", length(pulse_fill_rows))
       )
     }
-    state$pulse_fill_rows[[i]] <- list(
+    pulse_fill_rows[[i]] <<- list(
       row = write_res$row,
       cash_delta = write_res$cash_delta,
       position_delta = write_res$position_delta,
@@ -1877,19 +1877,19 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
       event_realized = NA_real_,
       event_cost_basis = NA_real_
     )
-    state$pulse_fill_n <- i
+    pulse_fill_n <<- i
     invisible(TRUE)
   }
 
   stage_fill_leg <- function(row, qty, fee, realized_pnl, action) {
-    i <- state$pulse_fill_leg_n + 1L
-    if (i > length(state$pulse_fill_legs)) {
-      state$pulse_fill_legs <- c(
-        state$pulse_fill_legs,
-        vector("list", length(state$pulse_fill_legs))
+    i <- pulse_fill_leg_n + 1L
+    if (i > length(pulse_fill_legs)) {
+      pulse_fill_legs <<- c(
+        pulse_fill_legs,
+        vector("list", length(pulse_fill_legs))
       )
     }
-    state$pulse_fill_legs[[i]] <- list(
+    pulse_fill_legs[[i]] <<- list(
       event_seq = row$event_seq,
       ts_utc = row$ts_utc,
       instrument_id = row$instrument_id,
@@ -1900,14 +1900,14 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
       realized_pnl = as.numeric(realized_pnl),
       action = action
     )
-    state$pulse_fill_leg_n <- i
+    pulse_fill_leg_n <<- i
     invisible(TRUE)
   }
 
   handler$flush_pulse_events <- function() {
-    n <- state$pulse_fill_n
+    n <- pulse_fill_n
     if (n > 0L) {
-      staged <- state$pulse_fill_rows[seq_len(n)]
+      staged <- pulse_fill_rows[seq_len(n)]
       rows <- lapply(staged, `[[`, "row")
       start <- state$event_count + 1L
       end <- state$event_count + n
@@ -1945,12 +1945,12 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
         lapply(staged, `[[`, "meta")
       )
       state$event_count <- end
-      state$pulse_fill_n <- 0L
+      pulse_fill_n <<- 0L
     }
 
-    n_legs <- state$pulse_fill_leg_n
+    n_legs <- pulse_fill_leg_n
     if (n_legs > 0L) {
-      legs <- state$pulse_fill_legs[seq_len(n_legs)]
+      legs <- pulse_fill_legs[seq_len(n_legs)]
       fill_buffer <- state$inline_fills
       start <- fill_buffer$n + 1L
       end <- fill_buffer$n + n_legs
@@ -1982,7 +1982,7 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
       )
       collapse::setv(fill_buffer$action, index, field("action", character(1)), vind1 = TRUE)
       fill_buffer$n <- end
-      state$pulse_fill_leg_n <- 0L
+      pulse_fill_leg_n <<- 0L
     }
     invisible(TRUE)
   }
@@ -1992,16 +1992,16 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   handler$record_accounting_fact <- function(write_res, lot_res, lot_state) {
     if (!inherits(write_res, "ledgr_ledger_write_result") ||
         !identical(write_res$status, "WROTE") ||
-        state$pulse_fill_n == 0L && state$event_count == 0L) {
+        pulse_fill_n == 0L && state$event_count == 0L) {
       return(invisible(FALSE))
     }
-    staged <- state$pulse_fill_n > 0L
+    staged <- pulse_fill_n > 0L
     if (staged) {
-      i <- state$pulse_fill_n
-      entry <- state$pulse_fill_rows[[i]]
+      i <- pulse_fill_n
+      entry <- pulse_fill_rows[[i]]
       entry$event_realized <- as.numeric(lot_state$realized_pnl)[[1L]]
       entry$event_cost_basis <- as.numeric(lot_state$total_cost_basis)[[1L]]
-      state$pulse_fill_rows[[i]] <- entry
+      pulse_fill_rows[[i]] <<- entry
     } else {
       i <- state$event_count
       set_event_value("event_realized", i, as.numeric(lot_state$realized_pnl))

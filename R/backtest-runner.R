@@ -270,9 +270,9 @@ ledgr_persistent_output_handler <- function(con,
   )
   state$pending_states <- vector("list", 0)
   state$pending_states_idx <- 0L
-  state$pulse_fill_rows <- vector("list", 256L)
-  state$pulse_fill_n <- 0L
   state$next_diagnostic_seq <- NULL
+  pulse_fill_rows <- vector("list", 256L)
+  pulse_fill_n <- 0L
 
   next_diagnostic_seq <- function(refresh = FALSE) {
     if (isTRUE(refresh) || is.null(state$next_diagnostic_seq)) {
@@ -401,7 +401,7 @@ ledgr_persistent_output_handler <- function(con,
     ))
     state$pending_states <- vector("list", 0)
     state$pending_states_idx <- 0L
-    state$pulse_fill_n <- 0L
+    pulse_fill_n <<- 0L
     invisible(TRUE)
   }
 
@@ -454,20 +454,20 @@ ledgr_persistent_output_handler <- function(con,
         class = "ledgr_invalid_state"
       )
     }
-    i <- state$pulse_fill_n + 1L
-    if (i > length(state$pulse_fill_rows)) {
-      state$pulse_fill_rows <- c(
-        state$pulse_fill_rows,
-        vector("list", length(state$pulse_fill_rows))
+    i <- pulse_fill_n + 1L
+    if (i > length(pulse_fill_rows)) {
+      pulse_fill_rows <<- c(
+        pulse_fill_rows,
+        vector("list", length(pulse_fill_rows))
       )
     }
-    state$pulse_fill_rows[[i]] <- write_res$row
-    state$pulse_fill_n <- i
+    pulse_fill_rows[[i]] <<- write_res$row
+    pulse_fill_n <<- i
     invisible(TRUE)
   }
 
   handler$flush_pulse_events <- function() {
-    n <- state$pulse_fill_n
+    n <- pulse_fill_n
     if (n == 0L) {
       return(invisible(TRUE))
     }
@@ -477,10 +477,10 @@ ledgr_persistent_output_handler <- function(con,
     ledgr_event_buffer_write_rows(
       state$pending_cols,
       start:end,
-      state$pulse_fill_rows[seq_len(n)]
+      pulse_fill_rows[seq_len(n)]
     )
     state$pending_idx <- end
-    state$pulse_fill_n <- 0L
+    pulse_fill_n <<- 0L
     invisible(TRUE)
   }
 
