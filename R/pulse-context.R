@@ -646,14 +646,19 @@ ledgr_pulse_context_feature_bundle_accessor <- function(features,
                                                          track_active_bundle = FALSE) {
   force(features)
   if (!isTRUE(track_active_bundle)) return(features)
+  record_active_bundle <- TRUE
 
   function(instrument_id, feature_map = NULL) {
-    if (is.null(feature_map)) {
+    if (record_active_bundle && is.null(feature_map)) {
       ledgr_pulse_context_record_scalar_access(
         lookup,
         "features",
         "ctx$vec$feature(name)"
       )
+      state <- lookup$scalar_access_state
+      if (is.environment(state) && isTRUE(state$warning_emitted)) {
+        record_active_bundle <<- FALSE
+      }
     }
     features(instrument_id, feature_map = feature_map)
   }

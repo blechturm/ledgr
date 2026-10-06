@@ -540,6 +540,34 @@ ledgr_projection_feature_accessor_state <- function(projection,
   }
 }
 
+ledgr_projection_feature_bundle_values <- function(lookup_map,
+                                                     feature_values,
+                                                     instrument_idx,
+                                                     pulse_idx,
+                                                     instrument_id) {
+  values <- vapply(lookup_map, function(feature_id) {
+    mat <- feature_values[[feature_id]]
+    value <- if (is.null(mat)) {
+      NA_real_
+    } else {
+      mat[[as.integer(instrument_idx), as.integer(pulse_idx)]]
+    }
+    if (!is.numeric(value) || length(value) != 1L) {
+      rlang::abort(
+        sprintf(
+          "Feature `%s` for instrument_id `%s` must be a scalar numeric value.",
+          feature_id,
+          instrument_id
+        ),
+        class = "ledgr_invalid_feature_value"
+      )
+    }
+    as.numeric(value)
+  }, numeric(1))
+
+  stats::setNames(unname(values), names(lookup_map))
+}
+
 ledgr_projection_feature_bundle_accessor <- function(projection,
                                                       pulse_idx,
                                                       universe,
@@ -556,95 +584,10 @@ ledgr_projection_feature_bundle_accessor <- function(projection,
       active_alias_map = active_alias_map
     )
   }
-  feature <- ledgr_projection_feature_accessor(
-    projection,
-    pulse_idx,
-    feature_ids,
-    prepared = prepared
-  )
-  universe <- as.character(universe)
-  active_lookup <- prepared$active_lookup
-  last_feature_map <- NULL
-  last_feature_lookup <- NULL
-  has_last_feature_map <- FALSE
-
-  function(instrument_id, feature_map = NULL) {
-    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
-      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-    }
-    if (!(instrument_id %in% universe)) {
-      rlang::abort(
-        sprintf(
-          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
-          instrument_id,
-          ledgr_pulse_context_universe_message(universe)
-        ),
-        class = "ledgr_invalid_pulse_context"
-      )
-    }
-
-    lookup_map <- if (is.null(feature_map)) {
-      if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
-      active_lookup$value
-    } else if (has_last_feature_map &&
-               identical(feature_map, last_feature_map)) {
-      last_feature_lookup
-    } else {
-      has_last_feature_map <<- FALSE
-      last_feature_map <<- NULL
-      last_feature_lookup <<- NULL
-      value <- ledgr_explicit_feature_lookup(
-        feature_map,
-        prepared$name_lookup
-      )
-      last_feature_map <<- feature_map
-      last_feature_lookup <<- value
-      has_last_feature_map <<- TRUE
-      value
-    }
-    values <- vapply(lookup_map, function(feature_id) {
-      value <- feature(instrument_id, feature_id)
-      if (!is.numeric(value) || length(value) != 1L) {
-        rlang::abort(
-          sprintf(
-            "Feature `%s` for instrument_id `%s` must be a scalar numeric value.",
-            feature_id,
-            instrument_id
-          ),
-          class = "ledgr_invalid_feature_value"
-        )
-      }
-      as.numeric(value)
-    }, numeric(1))
-
-    stats::setNames(unname(values), names(lookup_map))
-  }
-}
-
-ledgr_projection_feature_bundle_accessor_state <- function(projection,
-                                                           state,
-                                                           universe,
-                                                           feature_ids = NULL,
-                                                           active_alias_map = NULL,
-                                                           prepared = NULL) {
-  force(projection)
-  force(state)
-  if (is.null(prepared)) {
-    prepared <- ledgr_projection_feature_lookup_state(
-      projection,
-      feature_ids = feature_ids,
-      universe = universe,
-      active_alias_map = active_alias_map
-    )
-  }
-  feature <- ledgr_projection_feature_accessor_state(
-    projection,
-    state,
-    feature_ids,
-    prepared = prepared
-  )
   universe <- prepared$universe
   members <- prepared$universe_members
+  instrument_rows <- prepared$instrument_rows
+  feature_values <- prepared$feature_values
   active_lookup <- prepared$active_lookup
   last_feature_map <- NULL
   last_feature_lookup <- NULL
@@ -677,28 +620,90 @@ ledgr_projection_feature_bundle_accessor_state <- function(projection,
       last_feature_lookup <<- NULL
       value <- ledgr_explicit_feature_lookup(
         feature_map,
-        prepared$name_lookup
+        prepared$name_lookup,
+        instrument_id = instrument_id
       )
       last_feature_map <<- feature_map
       last_feature_lookup <<- value
       has_last_feature_map <<- TRUE
       value
     }
-    values <- vapply(lookup_map, function(feature_id) {
-      value <- feature(instrument_id, feature_id)
-      if (!is.numeric(value) || length(value) != 1L) {
-        rlang::abort(
-          sprintf(
-            "Feature `%s` for instrument_id `%s` must be a scalar numeric value.",
-            feature_id,
-            instrument_id
-          ),
-          class = "ledgr_invalid_feature_value"
-        )
-      }
-      as.numeric(value)
-    }, numeric(1))
+    ledgr_projection_feature_bundle_values(
+      lookup_map,
+      feature_values,
+      instrument_rows[[instrument_id]],
+      pulse_idx,
+      instrument_id
+    )
+  }
+}
 
-    stats::setNames(unname(values), names(lookup_map))
+ledgr_projection_feature_bundle_accessor_state <- function(projection,
+                                                           state,
+                                                           universe,
+                                                           feature_ids = NULL,
+                                                           active_alias_map = NULL,
+                                                           prepared = NULL) {
+  force(projection)
+  force(state)
+  if (is.null(prepared)) {
+    prepared <- ledgr_projection_feature_lookup_state(
+      projection,
+      feature_ids = feature_ids,
+      universe = universe,
+      active_alias_map = active_alias_map
+    )
+  }
+  universe <- prepared$universe
+  members <- prepared$universe_members
+  instrument_rows <- prepared$instrument_rows
+  feature_values <- prepared$feature_values
+  active_lookup <- prepared$active_lookup
+  last_feature_map <- NULL
+  last_feature_lookup <- NULL
+  has_last_feature_map <- FALSE
+
+  function(instrument_id, feature_map = NULL) {
+    if (!is.character(instrument_id) || length(instrument_id) != 1L || is.na(instrument_id) || !nzchar(instrument_id)) {
+      rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
+    }
+    if (is.null(members[[instrument_id]])) {
+      rlang::abort(
+        sprintf(
+          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
+          instrument_id,
+          ledgr_pulse_context_universe_message(universe)
+        ),
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+
+    lookup_map <- if (is.null(feature_map)) {
+      if (!isTRUE(active_lookup$valid)) rlang::cnd_signal(active_lookup$error)
+      active_lookup$value
+    } else if (has_last_feature_map &&
+               identical(feature_map, last_feature_map)) {
+      last_feature_lookup
+    } else {
+      has_last_feature_map <<- FALSE
+      last_feature_map <<- NULL
+      last_feature_lookup <<- NULL
+      value <- ledgr_explicit_feature_lookup(
+        feature_map,
+        prepared$name_lookup,
+        instrument_id = instrument_id
+      )
+      last_feature_map <<- feature_map
+      last_feature_lookup <<- value
+      has_last_feature_map <<- TRUE
+      value
+    }
+    ledgr_projection_feature_bundle_values(
+      lookup_map,
+      feature_values,
+      instrument_rows[[instrument_id]],
+      state$pulse_idx,
+      instrument_id
+    )
   }
 }

@@ -69,8 +69,10 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
 
   calls <- 0L
   normalize_calls <- 0L
+  resolve_calls <- 0L
   original_prepare <- ledgr:::ledgr_projection_feature_lookup_state
   original_normalize <- ledgr:::ledgr_normalize_alias_map
+  original_resolve <- ledgr:::ledgr_resolve_feature_name
   testthat::local_mocked_bindings(
     ledgr_projection_feature_lookup_state = function(...) {
       calls <<- calls + 1L
@@ -79,6 +81,10 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
     ledgr_normalize_alias_map = function(...) {
       normalize_calls <<- normalize_calls + 1L
       original_normalize(...)
+    },
+    ledgr_resolve_feature_name = function(...) {
+      resolve_calls <<- resolve_calls + 1L
+      original_resolve(...)
     },
     .package = "ledgr"
   )
@@ -95,6 +101,7 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
   }
   testthat::expect_identical(calls, 1L)
   testthat::expect_identical(normalize_calls, 1L)
+  testthat::expect_identical(resolve_calls, 40L)
 
   name_state <- ledgr:::ledgr_projection_feature_name_state(
     projection,
@@ -319,9 +326,15 @@ testthat::test_that("[LTB-0141] explicit map memo is exact and forgets failures"
   lookup_calls <- 0L
   original_lookup <- ledgr:::ledgr_explicit_feature_lookup
   testthat::local_mocked_bindings(
-    ledgr_explicit_feature_lookup = function(feature_map, name_lookup) {
+    ledgr_explicit_feature_lookup = function(feature_map,
+                                             name_lookup,
+                                             instrument_id = NULL) {
       lookup_calls <<- lookup_calls + 1L
-      original_lookup(feature_map, name_lookup)
+      original_lookup(
+        feature_map,
+        name_lookup,
+        instrument_id = instrument_id
+      )
     },
     .package = "ledgr"
   )

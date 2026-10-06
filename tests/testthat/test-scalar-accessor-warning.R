@@ -279,6 +279,25 @@ testthat::test_that("[LTB-0102] scalar and active-map bundle loops warn at the a
     )
   })
 
+  record_calls <- 0L
+  tracked_accessor <- ledgr:::ledgr_pulse_context_feature_bundle_accessor(
+    function(instrument_id, feature_map = NULL) c(signal = 100),
+    lookup,
+    track_active_bundle = TRUE
+  )
+  local({
+    testthat::local_mocked_bindings(
+      ledgr_pulse_context_record_scalar_access = function(...) {
+        record_calls <<- record_calls + 1L
+        lookup$scalar_access_state$warning_emitted <- TRUE
+        invisible(NULL)
+      },
+      .package = "ledgr"
+    )
+    invisible(lapply(fixture$ids, tracked_accessor))
+  })
+  testthat::expect_identical(record_calls, 1L)
+
   suppressed <- suppressWarnings(ledgr_run(
     exact_experiment,
     params = list(n_reads = 100L, feature_id = feature_id),

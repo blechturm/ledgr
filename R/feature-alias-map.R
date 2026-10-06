@@ -270,7 +270,9 @@ ledgr_resolve_feature_name <- function(feature_name,
   )
 }
 
-ledgr_explicit_feature_lookup <- function(feature_map, prepared) {
+ledgr_explicit_feature_lookup <- function(feature_map,
+                                          prepared,
+                                          instrument_id = NULL) {
   lookup <- ledgr_feature_lookup_map(feature_map)
   for (alias in names(lookup)) {
     existing <- prepared$alias_env[[alias]]
@@ -287,6 +289,11 @@ ledgr_explicit_feature_lookup <- function(feature_map, prepared) {
         class = c("ledgr_invalid_feature_map", "ledgr_invalid_args")
       )
     }
+    lookup[[alias]] <- ledgr_resolve_feature_name(
+      requested,
+      prepared,
+      instrument_id = instrument_id
+    )
   }
   lookup
 }
