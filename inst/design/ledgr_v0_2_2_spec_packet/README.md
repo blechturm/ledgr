@@ -1,8 +1,9 @@
 # ledgr v0.2.2 Spec Packet
 
 **Status:** Cuts 1 through 6 are closed after maintainer acceptance of all
-fifteen workstreams. Cut 6, from the accepted terminal-outcomes synthesis, was
-accepted on 2026-10-05 and closed on 2026-10-06.
+fifteen workstreams. Cut 7's independent review returned
+`PASS_AFTER_PATCHES`; its four patches are incorporated, the maintainer
+accepted the cut on 2026-10-06, and Workstream 16 is open.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -10,8 +11,9 @@ plan does not authorize implementation and does not replace an accepted RFC,
 contract or research finding.
 
 `tickets.yml` is the sole ticket and sequencing authority. Independent cut
-review and maintainer acceptance open Workstream 1; this README only summarizes
-the packet state and does not become a second editable ticket ledger.
+review and maintainer acceptance open a cut's first workstream; this README
+only summarizes the packet state and does not become a second editable ticket
+ledger.
 
 ## Current artifacts
 
@@ -39,7 +41,8 @@ the packet state and does not become a second editable ticket ledger.
 - `tickets.yml`: sole ticket and sequencing authority. It records twelve
   complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
   tickets, one complete Cut 4 ticket, two complete Cut 5 tickets and nine
-  Cut 6 tickets, all complete. Cuts 1 through 6 are closed.
+  complete Cut 6 tickets. Four corrected Cut 7 tickets await maintainer
+  acceptance.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -370,6 +373,43 @@ No ticket adds a second execution engine, terminal-policy authority, valuation
 plane or DSR rule. Queueing exits, OTC continuation, shorts and leverage,
 exact-quantity settlement, fair-value models, assumption sweeps, stale-robust
 statistics and a default stale horizon remain outside this cut.
+
+## Cut 7: Feature-map read surface
+
+**Status:** `PASS_AFTER_PATCHES` on 2026-10-06; all four cut-review patches are
+incorporated and the maintainer accepted the cut. The feature-map read-surface
+synthesis was accepted by the maintainer after Type 1 final review and its four
+in-place patches. This cut is the first bounded implementation slice of
+macro-plan WS3; point-in-time history remains outside it.
+
+Authority: the accepted
+`rfc/rfc_feature_map_read_surface_v0_2_x_synthesis.md`, macro-plan WS3 and the
+current Strategy and Context contracts until LDG-2965 consolidates the
+accepted changes.
+
+| Workstream | Tickets | Content | Review claim |
+| --- | --- | --- | --- |
+| 16 Feature-map read surface | LDG-2962-LDG-2965 | alias-first singular resolver; explicit-map refusal; mapped pulse-view identity; parameterized inspection; warnings, contracts and evidence | one prepared naming rule governs every singular read and explicit maps cannot silently redefine names, without adding a plural plane or changing feature values, identity or eligibility |
+
+The workstream is serial. LDG-2962 establishes the runtime resolver and
+warning boundary. LDG-2963 applies the explicit-map and wide-view rule.
+LDG-2964 reuses the same resolution path for inspection. LDG-2965 then
+consolidates contracts and teaching and closes the parity and performance
+record. One cut review plus one planned Type 1 close review is two invocations
+over four tickets, exactly 0.500 against the review gate.
+
+The performance record is deliberately narrow. Three alternating triplets at
+500 instruments by 1,260 pulses compare the pre-cut alias-bundle loop, the
+candidate bundle loop and one singular plane read on the candidate tree.
+Outputs must be exact. The preregistered candidate plane/loop ratio is at most
+0.90 and the candidate/pre-cut loop ratio at most 1.05. The existing
+Workstream 11 `feature_gaps` comparison remains the availability no-regression
+gate. None is a general engine-speed claim.
+
+No ticket implements historical projection, recursive-indicator semantics,
+missingness, scheduling, context-frame retirement or a plural or subset
+feature-plane API. The conditional `ctx$feature_at()` shortcut remains in the
+strategy-callback follow-up route because no measurement yet requires it.
 
 ## Expected later artifacts
 
