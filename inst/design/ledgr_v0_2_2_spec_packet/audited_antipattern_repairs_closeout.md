@@ -1,7 +1,7 @@
 # Audited Antipattern Repairs Closeout
 
-**Status:** Agent-provisional; awaiting focused Type 1 re-review.
-**Range:** `a8669a3..682b84b`
+**Status:** Accepted by the maintainer on 2026-10-07.
+**Range:** `a8669a3..32314af`
 **Tickets:** LDG-2966 and LDG-2967
 
 ## Result
@@ -136,3 +136,8 @@ assigning every run the first grouped valuation fails LTB-0190 three times.
 LCL-0190 no longer claims to detect the semantically correct former output
 scan, and LDG-2967's acceptance now distinguishes availability-summary parity
 from dense typed-missing flags.
+
+The focused Type 1 re-review returned `PASS` on 2026-10-07. It independently
+reproduced all four corrections and all four mutation families, confirmed the
+fast record and YAML authorities, and found no new defect. The maintainer
+accepted Workstream 17 and closed Cut 8 the same day.

@@ -446,8 +446,7 @@ strategy-callback follow-up route because no measurement yet requires it.
 
 ## Cut 8: Audited antipattern repairs
 
-**Status:** Workstream 17 is `review_pending`. Both tickets are implemented;
-the agent-provisional closeout is ready for its single Type 1 close review.
+**Status:** Workstream 17 and Cut 8 are closed and accepted.
 
 The audit in `../audits/v0_2_2_antipattern_audit.md` walked every R and src
 change since `refs/tags/v0.2.1.0` against the seven shapes in the optimization
@@ -494,8 +493,11 @@ tickets. Commit `682b84b` adds the missing shrinking-decision-axis detector,
 preserves the three pre-cut invalid-input conditions, and gives the two frozen
 runs distinct exposure. The two requested mutations fail LTB-0191 twice and
 LTB-0190 three times. Its correction fast record passes 531 of 531 blocks in
-103.39 seconds against 112. A focused re-review will make the final count two
-over two, 1.000, recorded as a historical gate breach rather than padded.
+103.39 seconds against 112. The focused Type 1 re-review returned `PASS` on
+2026-10-07 after independently reproducing all four corrections and mutation
+families. The maintainer accepted Workstream 17 and closed Cut 8 the same day.
+The final count is two reviews over two tickets, 1.000, recorded as a
+historical gate breach rather than padded.
 
 ## Expected later artifacts
 

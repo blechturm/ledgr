@@ -123,9 +123,9 @@ cuts:
     out_of_scope: "The older sweep-diagnostics max() and rbind pattern that predates v0.2.2 (route separately if wanted); availability's per-pulse accessor-factory reconstruction beyond the two named environments, which remains macro-plan WS8; any change to events, fills, equity, trades, diagnostics, completion evidence, flags, identity, schemas or public API; parallel execution; new tolerances."
     workstreams: [17]
     closeout: "audited_antipattern_repairs_closeout.md"
-    accepted: "2026-10-06 by the maintainer. Workstream 17 opens after Workstream 16 is accepted, per its dependency."
-    close_review: "The Type 1 close review returned CHANGES_REQUIRED at one invocation over two tickets, 0.500. Commit 682b84b adds a shrinking sealed-membership detector for scalar, active-bundle and explicit-map feature reads; restores the three pre-cut invalid-input conditions; and makes the two frozen-run exposures distinct. Removing the bundle dynamic-axis wrapper fails LTB-0191 twice, and assigning every run the first grouped valuation fails LTB-0190 three times. A focused re-review will make the final count two over two, 1.000, a historical gate breach recorded rather than padded."
-    status: "review_pending"
+    accepted: "2026-10-06 by the maintainer for implementation after Workstream 16 was accepted; Workstream 17 and Cut 8 accepted and closed on 2026-10-07 after the focused re-review PASS"
+    close_review: "The Type 1 close review returned CHANGES_REQUIRED at one invocation over two tickets, 0.500. Commit 682b84b adds a shrinking sealed-membership detector for scalar, active-bundle and explicit-map feature reads; restores the three pre-cut invalid-input conditions; and makes the two frozen-run exposures distinct. Removing the bundle dynamic-axis wrapper fails LTB-0191 twice, and assigning every run the first grouped valuation fails LTB-0190 three times. The focused Type 1 re-review returned PASS on 2026-10-07 after independently reproducing all four corrections, all four mutation families, the focused suites and the fast record. The maintainer accepted Workstream 17 and closed Cut 8 the same day. Final count two reviews over two tickets, 1.000, a historical gate breach recorded rather than padded."
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -735,7 +735,7 @@ tickets:
   - id: "LDG-2967"
     title: "Remove the minor audited shapes and bind the closeout walk"
     workstream: 17
-    status: "review_pending"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2966"]
