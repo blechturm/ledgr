@@ -161,7 +161,7 @@ assertions <- function(obs) {
   add("value", "hydration", "earlier_outcome", identical(v("hydration", "earlier_outcome"), hydration_class),
       sprintf("expected %s, got %s", hydration_class, v("hydration", "earlier_outcome")))
 
-  seen <- function(arm, observable) as.numeric(suppressWarnings(strsplit(v(arm, observable), ",", fixed = TRUE)[[1L]]))
+  seen <- function(arm, observable) suppressWarnings(as.numeric(strsplit(v(arm, observable), ",", fixed = TRUE)[[1L]]))
   same <- function(x, y) length(x) == length(y) && identical(is.na(x), is.na(y)) && all(x[!is.na(x)] == y[!is.na(y)])
   add("value", "ema_run", "recursive_seen", same(seen("ema_run", "recursive_seen"), ema_restart$recursive),
       sprintf("expected %s, got %s", paste(ema_restart$recursive, collapse = ","), v("ema_run", "recursive_seen")))
