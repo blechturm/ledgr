@@ -1,7 +1,8 @@
 # Probe findings: two-clock history
 
-**Ran:** 2026-10-07, `dev/spikes/two-clock-history/probe.R` at `9452e9e`.
-Evidence in `probe_evidence.csv`. **Purpose:** spike protocol section 1, before
+**Ran:** 2026-10-07, rerun 2026-10-08 after peer review;
+`dev/spikes/two-clock-history/probe.R` against the unchanged package code of
+`9452e9e`. Evidence in `probe_evidence.csv`. **Purpose:** spike protocol section 1, before
 the charter. Binds nothing; no package file changed. Provider calls are
 internal and labelled so; fact construction, sealing and
 `ledgr_facts_resolve()` are public.
