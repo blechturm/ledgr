@@ -1,0 +1,17 @@
+"path","indicator","bars","na_pattern_equal","values_identical"
+"sine","sma5",120,TRUE,TRUE
+"sine","sma20",120,TRUE,TRUE
+"sine","ledgr_ema5",120,TRUE,TRUE
+"sine","rolling_max5",120,TRUE,TRUE
+"sine","ttr_ema5",120,TRUE,TRUE
+"sine","ttr_rsi14",120,TRUE,TRUE
+"sine","running_max",120,TRUE,TRUE
+"sine","running_max_strict",120,TRUE,TRUE
+"walk","sma5",120,TRUE,TRUE
+"walk","sma20",120,TRUE,TRUE
+"walk","ledgr_ema5",120,TRUE,TRUE
+"walk","rolling_max5",120,TRUE,TRUE
+"walk","ttr_ema5",120,TRUE,TRUE
+"walk","ttr_rsi14",120,TRUE,TRUE
+"walk","running_max",120,TRUE,TRUE
+"walk","running_max_strict",120,TRUE,TRUE
