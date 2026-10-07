@@ -153,11 +153,11 @@ wf
 #> # A tibble: 2 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
-#> 1        1 sharpe_ratio                   1.98             0.800           -1.18
-#> 2        2 sharpe_ratio                   2.08             3.64             1.56
+#> 1        1 sharpe_ratio                  1.98              0.800           -1.18
+#> 2        2 sharpe_ratio                  0.657             3.64             2.99
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: 768664780593273cc146c2874e45562136027f853234e775404cc7021f41f2ee
+#> Session: a9939863a040e4d60820813bf285b80c30ad2208d09b85f37cc1b33178ec8d9b
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 2
@@ -177,8 +177,8 @@ wf$degradation
 #> # A tibble: 2 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
-#> 1        1 sharpe_ratio                   1.98             0.800           -1.18
-#> 2        2 sharpe_ratio                   2.08             3.64             1.56
+#> 1        1 sharpe_ratio                  1.98              0.800           -1.18
+#> 2        2 sharpe_ratio                  0.657             3.64             2.99
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
 #> # i Hidden columns: train_window, test_window, metric_diff_pct. Use as_tibble() for the full table.
@@ -211,8 +211,8 @@ candidate
 #> =====================
 #> Candidate ID:     feature_af0f94c90243/strategy_86be010cf688
 #> Status:           DONE
-#> Execution seed:   618380647
-#> Strategy:         1bf04a8ccca8
+#> Execution seed:   1116619927
+#> Strategy:         7a84341722d5
 #> Snapshot hash:    689d79faf5dc3ef9e7335e46bc583d6027bb8bfe9416a4c944a4294689269d26
 #> Feature-set hash: e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70
 #> Evaluation scope: walk_forward

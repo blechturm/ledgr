@@ -1,0 +1,4 @@
+"shape_id","pairs","accepted_cold_median_s","candidate_cold_median_s","cold_pair_ratio_median","accepted_warm_median_s","candidate_warm_median_s","warm_pair_ratio_median","retry","peak_rss_bytes"
+"availability_sweep",5,7.23,7.23,1,5.39,5.5,1.01883239171375,FALSE,626491392
+"fact_churn_terminal",5,6.36,6.35,0.998427672955975,6.07,6,0.985294117647059,FALSE,744054784
+"feature_gaps",5,6.66,6.65,0.998498498498498,5.84,5.89,1.00856164383562,FALSE,691367936

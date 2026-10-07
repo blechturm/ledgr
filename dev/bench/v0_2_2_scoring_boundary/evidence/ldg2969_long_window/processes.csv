@@ -1,0 +1,93 @@
+"kind","shape_id","arm","pair","attempt","repo_commit","exit_status","elapsed_s","peak_rss_bytes","stdout_text","stderr_text"
+"fixture","feature_gaps","candidate",0,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,4.84299898147583,404729856,"FIXTURE_OK feature_gaps 90837 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","fact_churn_terminal","candidate",0,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,18.8794460296631,591323136,"FIXTURE_OK fact_churn_terminal 189250 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","availability_sweep","candidate",0,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,3.56048917770386,399147008,"FIXTURE_OK availability_sweep 60000 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","baseline_757","candidate",0,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,12.6574130058289,652722176,"FIXTURE_OK baseline_757 454200 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",1,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,17.5835649967194,687071232,"",""
+"case","feature_gaps","candidate",1,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,17.6636140346527,654516224,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",2,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,17.5296728610992,664190976,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",2,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,17.4686598777771,685092864,"",""
+"case","feature_gaps","accepted",3,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,17.439975976944,691367936,"",""
+"case","feature_gaps","candidate",3,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,17.4227328300476,656154624,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",4,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,17.3776421546936,657461248,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",4,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,17.36740899086,683495424,"",""
+"case","feature_gaps","accepted",5,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,17.4717428684235,687763456,"",""
+"case","feature_gaps","candidate",5,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,17.4734120368958,651907072,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",1,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,20.2939939498901,744001536,"",""
+"case","fact_churn_terminal","candidate",1,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,19.9701788425446,701829120,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",2,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,20.408872127533,723271680,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",2,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,20.4239401817322,712306688,"",""
+"case","fact_churn_terminal","accepted",3,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,19.93794298172,730243072,"",""
+"case","fact_churn_terminal","candidate",3,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,20.2010400295258,700661760,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",4,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,20.255047082901,723943424,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",4,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,20.3908169269562,719843328,"",""
+"case","fact_churn_terminal","accepted",5,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,20.4114680290222,744054784,"",""
+"case","fact_churn_terminal","candidate",5,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,20.2772581577301,705511424,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",1,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,14.8713290691376,620974080,"",""
+"case","availability_sweep","candidate",1,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,14.8605887889862,610074624,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",2,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,14.7260229587555,605765632,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",2,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,14.6935977935791,616591360,"",""
+"case","availability_sweep","accepted",3,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,14.746200799942,612052992,"",""
+"case","availability_sweep","candidate",3,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,14.7908170223236,604692480,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",4,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,14.7440168857574,619544576,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",4,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,14.7473039627075,626491392,"",""
+"case","availability_sweep","accepted",5,"initial","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,14.6934559345245,622190592,"",""
+"case","availability_sweep","candidate",5,"initial","ae5c27b0ffdf3f4d2264db748a7a584c069af5e1",0,14.6825098991394,614498304,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"orientation","baseline_757","accepted",1,"orientation","06e20b920dfeb34fa27b18e0b2055f4695c5971a",0,34.340047121048,988413952,"",""

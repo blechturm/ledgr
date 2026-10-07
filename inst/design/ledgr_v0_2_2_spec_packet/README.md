@@ -502,8 +502,11 @@ historical gate breach rather than padded.
 ## Cut 9: Scoring boundaries and temporary feature starts
 
 **Status:** Independent cut review returned `PASS_AFTER_PATCHES`; all seven
-patches are incorporated. The maintainer accepted the cut on 2026-10-07, and
-Workstream 18 is in progress.
+patches are incorporated. The maintainer accepted the cut on 2026-10-07.
+LDG-2968 registered the oracle at `0589741`/`06e20b9`; LDG-2969 enforced the
+scoring boundary at `ae5c27b`. Its record passes the boundary group while the
+value group stays red for Workstream 19. Workstream 18 awaits its Type 1 close
+review.
 
 Preparation for macro-plan WS3 exposed a present correctness mismatch rather
 than merely an unanswered history-design question. On the same ten-bar SMA(3)
