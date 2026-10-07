@@ -63,10 +63,11 @@ rule from them. `horizon.md` is non-binding parking.
 ## Current release
 
 Release `v0.2.2` is active. Its maintained scope and dependency plan is
-[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md). Cut 1 implements the
-accepted design-memory overhaul; its live state is in
-[tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml). Other macro workstreams
-remain non-executable until their own accepted designs or ticket cuts exist.
+[macro_plan.md](ledgr_v0_2_2_spec_packet/macro_plan.md). Cuts 1 through 8 are
+complete and accepted: 45 tickets across 17 workstreams. Their live record is
+in [tickets.yml](ledgr_v0_2_2_spec_packet/tickets.yml). Point-in-time history
+is the next uncut dependency; later macro work remains non-executable until
+its accepted designs or ticket cuts exist.
 
 The latest tagged release and older release outcomes remain discoverable in
 the [roadmap](ledgr_roadmap.md) and their versioned packet directories. Those

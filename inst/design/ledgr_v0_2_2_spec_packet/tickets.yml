@@ -265,7 +265,7 @@ workstreams:
   - id: 17
     name: "Audited antipattern repairs"
     cut: 8
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 16
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 17", reason: "One claim joins LDG-2966 and LDG-2967: the three audited shapes are removed without changing any public output, and the closeout walk now uses the manual's seven shapes verbatim. The review reproduces the per-fill write clock at small and large staging capacity, checks exact events, fills, equity, trades and diagnostics for run and sweep, mutates each repair back to its old shape, confirms the availability pulse builds no per-pulse hashed environment, confirms run-list and comparison flags equal the per-run valuation summary through one batched read, and walks the manual's seven shapes on every changed function."}

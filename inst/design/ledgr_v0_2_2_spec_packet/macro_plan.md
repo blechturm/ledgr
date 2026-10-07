@@ -1,9 +1,10 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-5 are complete and accepted. They close the design-memory, direct-performance,
-exact-verification, regression-evidence and durable-preparation foundation.
-Later macro workstreams remain pre-ticket.
+8 are complete and accepted: 45 tickets across 17 workstreams. They close the
+design-memory and long-window optimization foundation, terminal outcomes and
+frozen holdings, feature-map addressing, and the audited antipattern repairs.
+Point-in-time history is the next uncut release dependency.
 
 **Date:** 2026-10-03
 
