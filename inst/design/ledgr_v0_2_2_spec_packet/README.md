@@ -489,7 +489,13 @@ cold ratios 0.984 to 1.003 and warm ratios 0.992 to 1.004. Exact semantic
 hashes, the 757-pulse orientation and checker self-test pass. The fast profile
 passed 531 of 531 blocks in 104.51 seconds against 112. The closeout walks the
 manual's seven shapes verbatim for all seven changed production functions.
-One planned close review over two completed tickets is 0.500.
+The Type 1 close review returned `CHANGES_REQUIRED` at one invocation over two
+tickets. Commit `682b84b` adds the missing shrinking-decision-axis detector,
+preserves the three pre-cut invalid-input conditions, and gives the two frozen
+runs distinct exposure. The two requested mutations fail LTB-0191 twice and
+LTB-0190 three times. Its correction fast record passes 531 of 531 blocks in
+103.39 seconds against 112. A focused re-review will make the final count two
+over two, 1.000, recorded as a historical gate breach rather than padded.
 
 ## Expected later artifacts
 

@@ -1,7 +1,7 @@
 # Audited Antipattern Repairs Closeout
 
-**Status:** Agent-provisional; awaiting the Workstream 17 Type 1 close review.
-**Range:** `a8669a3..16e660b`
+**Status:** Agent-provisional; awaiting focused Type 1 re-review.
+**Range:** `a8669a3..682b84b`
 **Tickets:** LDG-2966 and LDG-2967
 
 ## Result
@@ -33,6 +33,8 @@ missing flags on run-list and comparison surfaces.
 | LTB-0188 | move the three staged lists back into handler state | source guard fails; the large-capacity write regains the old copy allocation |
 | LTB-0189 | add the old hashed lookup build to every availability pulse | four assertions fail; direct and sweep folds each prepare six times instead of once |
 | LTB-0190 | restore the pre-cut per-frozen-run query loop | two assertions fail; two frozen runs use six DBI reads against four for one run |
+| LTB-0190 | assign every frozen run the first run's grouped valuation | three assertions fail against the distinct public single-run summaries |
+| LTB-0191 | remove the dynamic-axis wrapper from `ctx$features()` | two assertions fail when active and explicit bundle reads return departed BBB data |
 
 ## Exactness And Gates
 
@@ -45,8 +47,11 @@ missing flags on run-list and comparison surfaces.
 - LTB-0189 compares the public durable and one-candidate sweep paths at the
   same resolved feature parameters and obtains identical final equity.
 - LTB-0190 compares both frozen runs with their individual public
-  `ledgr_valuation_summary()` values, preserves repeated IDs, and checks dense
-  typed-missing behavior.
+  `ledgr_valuation_summary()` values. Their exposures are deliberately
+  different, repeated IDs are preserved, and dense runs keep typed missing.
+- LTB-0191 seals a membership set that removes BBB while its bars and feature
+  values remain on the physical axis. Scalar, active-bundle and explicit-map
+  reads all refuse BBB, and the pre-cut invalid-input messages stay exact.
 - The ordinary Workstream 11 record compares `a8669a3` with `16e660b` in five
   alternating fresh-process pairs per shape. It completed in 624.90 seconds.
   Cold ratios are 0.9844, 0.9853 and 1.0029; warm ratios are 1.0036, 0.9950
@@ -54,9 +59,9 @@ missing flags on run-list and comparison surfaces.
   757-pulse orientation match, and the checker self-test passes. The durable
   summary is under
   `dev/bench/v0_2_2_antipattern_repairs/evidence/ldg2967_long_window/`.
-- The ordinary fast profile at `16e660b` passed 531 of 531 blocks in 104.51
+- The correction fast profile at `682b84b` passed 531 of 531 blocks in 103.39
   seconds against 112, with zero failures, errors or skips. The record is
-  `C:/tmp/ledgr-ws17-fast`.
+  `C:/tmp/ledgr-ws17-correction-fast-682b84b`.
 
 ## The Seven Shapes And Their Replacements
 
@@ -119,5 +124,15 @@ not one element at a time through an environment.
 
 ## Review Accounting
 
-Cut 8 had no separate cut review. The requested Type 1 close review is its
-first review invocation: one invocation over two completed tickets, 0.500.
+Cut 8 had no separate cut review. Its Type 1 close review returned
+`CHANGES_REQUIRED` at one invocation over two completed tickets, 0.500. A
+focused re-review will make the final count two over two, 1.000: a historical
+gate breach recorded rather than repaired through padding.
+
+The correction restores the pre-cut invalid-input conditions, adds a sealed
+shrinking-universe witness and makes the two frozen runs economically
+different. Removing the bundle decision-axis wrapper fails LTB-0191 twice;
+assigning every run the first grouped valuation fails LTB-0190 three times.
+LCL-0190 no longer claims to detect the semantically correct former output
+scan, and LDG-2967's acceptance now distinguishes availability-summary parity
+from dense typed-missing flags.
