@@ -502,7 +502,8 @@ historical gate breach rather than padded.
 ## Cut 9: Scoring boundaries and temporary feature starts
 
 **Status:** Independent cut review returned `PASS_AFTER_PATCHES`; all seven
-patches are incorporated, and the cut awaits maintainer acceptance.
+patches are incorporated. The maintainer accepted the cut on 2026-10-07, and
+Workstream 18 is in progress.
 
 Preparation for macro-plan WS3 exposed a present correctness mismatch rather
 than merely an unanswered history-design question. On the same ten-bar SMA(3)

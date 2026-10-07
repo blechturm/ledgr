@@ -138,7 +138,7 @@ cuts:
     out_of_scope: "The permanent causal hydration rule; recursive-indicator convergence, reset or gap semantics; the WS3 two-clock carrier and semantic fixture; ctx$window(), ledgr_history_frame() or ledgr_history_matrix() implementation; missingness treatment; instrument-specific session narrowing; model or estimator APIs; parallel-worker sharing; choosing a history representation; changing fills, costs, accounting or opening-state carry after scoring begins; and editing any released packet."
     workstreams: [18, 19]
     closeout: "LDG-2969 and LDG-2971 evidence and the two accepted close reviews form the Cut 9 closeout; no separate cut-level essay is created."
-    accepted: null
+    accepted: "2026-10-07 by the maintainer after the PASS_AFTER_PATCHES cut review and the incorporated patches. Workstream 18 opens; Workstream 19 opens only after Workstream 18 is accepted."
     close_review: null
     status: "open"
 review_gate:
