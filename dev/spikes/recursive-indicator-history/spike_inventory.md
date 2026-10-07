@@ -13,7 +13,7 @@ Executor deliverables for
 | `spike_checker.R` | reruns both modes into scratch, diffs, asserts the gut's named rows, reports agreement with `expected.csv`, guards package scope | prints `SPIKE CHECK OK` |
 | `expected.csv` | eight frozen class answers with their basis | |
 
-Harness: `probe.R` 142 lines, `spike_runner.R` 161, `spike_checker.R` 88, within
+Harness: `probe.R` 142 lines, `spike_runner.R` 159, `spike_checker.R` 77, within
 the 1,500-line budget.
 
 ## Gutted path
