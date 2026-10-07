@@ -511,8 +511,11 @@ oracle with the feature-start arms at `878fe93`, including a recursive TTR EMA
 witness, because `ledgr_ind_ema()` is a bounded four-bar filter. LDG-2971
 applies the temporary rule: every entry point starts feature state at its
 scoring start, omitted hydration is stored as the scoring start, an earlier
-hydration start refuses, and the oracle's value group turns green. Workstream
-19 awaits its close review.
+hydration start refuses, and the oracle's value group turns green. The
+maintainer accepted Workstream 19 on 2026-10-07 on the strength of an
+agent-run adversarial review and focused re-review, and Cut 9 closed. One cut
+review and four agent close-review invocations over four tickets is 1.250,
+recorded rather than padded.
 
 Preparation for macro-plan WS3 exposed a present correctness mismatch rather
 than merely an unanswered history-design question. On the same ten-bar SMA(3)

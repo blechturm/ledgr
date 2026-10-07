@@ -1,12 +1,13 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-8 are complete and accepted: 45 tickets across 17 workstreams. They close the
+9 are complete and accepted: 49 tickets across 19 workstreams. They close the
 design-memory and long-window optimization foundation, terminal outcomes and
-frozen holdings, feature-map addressing, and the audited antipattern repairs.
-Cut 9 is reviewed `PASS_AFTER_PATCHES` for the scoring-boundary defect and
-temporary feature-start contract that must land before point-in-time history;
-its seven review patches are incorporated and it awaits maintainer acceptance.
+frozen holdings, feature-map addressing, the audited antipattern repairs, and
+(Cut 9) one scoring boundary with a temporary rule that restarts feature state
+at every scoring start. Point-in-time history (WS3) and recursive-indicator
+semantics (WS4) are the next design wave; their shared history-start decision
+replaces the temporary rule.
 
 **Date:** 2026-10-03
 

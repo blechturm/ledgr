@@ -139,8 +139,8 @@ cuts:
     workstreams: [18, 19]
     closeout: "LDG-2969 and LDG-2971 evidence and the two accepted close reviews form the Cut 9 closeout; no separate cut-level essay is created."
     accepted: "2026-10-07 by the maintainer after the PASS_AFTER_PATCHES cut review and the incorporated patches. Workstream 18 opens; Workstream 19 opens only after Workstream 18 is accepted."
-    close_review: "Workstream 18: an agent-run adversarial review of 1cd9e52..29fc9f4 returned CHANGES_REQUIRED with four execution-confirmed findings; d9a4776 corrected them and the focused agent re-review of 29fc9f4..3bee575 returned PASS. With no independent second reviewer available, the maintainer accepted Workstream 18 on 2026-10-07 on the strength of those agent reviews and opened Workstream 19. Workstream 19: an agent-run adversarial review of 7fe26f5..4b94d8e returned CHANGES_REQUIRED with three findings; 3043657 and 5009278 corrected them and the focused agent re-review of 4b94d8e..dff3e63 returned PASS. Workstream 19 awaits maintainer acceptance."
-    status: "open"
+    close_review: "Workstream 18: an agent-run adversarial review of 1cd9e52..29fc9f4 returned CHANGES_REQUIRED with four execution-confirmed findings; d9a4776 corrected them and the focused agent re-review of 29fc9f4..3bee575 returned PASS. With no independent second reviewer available, the maintainer accepted Workstream 18 on 2026-10-07 on the strength of those agent reviews and opened Workstream 19. Workstream 19: an agent-run adversarial review of 7fe26f5..4b94d8e returned CHANGES_REQUIRED with three findings; 3043657 and 5009278 corrected them and the focused agent re-review of 4b94d8e..dff3e63 returned PASS. With no independent second reviewer available, the maintainer accepted Workstream 19 on 2026-10-07 on the strength of those agent reviews and closed Cut 9. Review accounting: one cut review and four agent close-review invocations over four tickets, 1.250, recorded rather than padded."
+    status: "closed"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -294,7 +294,7 @@ workstreams:
   - id: 19
     name: "Temporary feature-start contract"
     cut: 9
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 18
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 19", reason: "One claim joins LDG-2970 and LDG-2971: until WS3/WS4 replaces it, every run, backtest, sweep, promotion, fold and public precompute starts feature state at scoring_start, and no recorded hydration_start is ignored. The review compares exact feature values and outputs across all entry points, checks SMA and ledgr_ind_ema() restart witnesses, proves any explicit non-identical hydration start refuses with the documented class, removes each range and validation guard, verifies help, contracts, NEWS and roadmap handover, and confirms no permanent hydration or history surface was designed."}
