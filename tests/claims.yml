@@ -2210,8 +2210,8 @@ claims:
     detecting_blocks: ["LTB-0196"]
     promised_profile: "review"
     owner: "maintainer"
-    protected_contract_or_defect: "Until the joint WS3/WS4 history-start design, ledgr_run(), ledgr_backtest(), ledgr_sweep() with and without a precomputed payload, ledgr_promote(), windowed runs and sweeps, and walk-forward training and test windows all start feature state at their scoring start, so a recursive TTR EMA and SMA give the same restart values and final equity on every path."
-    oracle_independence: "Closes 30 then 6..10 make the recursive EMA differ by start: restarted on day 6 it reads 7, 8, 9 on days 8-10, carried from day 1 it stays above 9. The restart final equity 1000 - 9 + 10, the training final 1000 and the stored fold hydration are written from fixture arithmetic."
+    protected_contract_or_defect: "Until the joint WS3/WS4 history-start design, ledgr_run(), ledgr_backtest(), ledgr_sweep() with and without a precomputed payload, ledgr_promote(), windowed runs and sweeps, and walk-forward training and test windows all start feature state at their scoring start: a strategy reading the recursive TTR EMA and one reading SMA(3) each reach the same restart final equity on every path they exercise, and walk-forward training restarts like testing."
+    oracle_independence: "Closes 30 then 6..10 make both features differ by start: restarted on day 6 the recursive EMA reads 7, 8, 9 on days 8-10 while carried it stays above 9, and restarted SMA(3) first exists on day 8 while carried it exists on day 6. The restart finals 1001, the SMA training final 1000 (carried 1001) and the stored fold hydration are written from fixture arithmetic."
     smallest_failing_change: "Let precompute or sweeps warm up from the snapshot start, store the snapshot start as fold hydration, or hydrate only windowed (training) sweeps; a sweep, precomputed sweep, window sweep or training score keeps day-1 state and differs."
     cheapest_adequate_lane: "One ten-bar snapshot, two indicators and every public entry point once; review, because several durable runs and a walk-forward session are required."
     overlapping_evidence: "LCL-0192 to LCL-0195 pin the scoring boundary with feature-free strategies; dev/bench/v0_2_2_scoring_boundary records the same rule through its value group."
@@ -2222,8 +2222,8 @@ claims:
     detecting_blocks: ["LTB-0197"]
     promised_profile: "fast"
     owner: "maintainer"
-    protected_contract_or_defect: "An omitted hydration_start_utc is stored equal to scoring_start_utc in explicit and fold-derived windows; an earlier explicit value refuses with ledgr_unsupported_hydration_start; precompute records warmup_range$start equal to its start; and a window refuses a precomputed payload whose feature state starts earlier with ledgr_precomputed_hydration_mismatch."
+    protected_contract_or_defect: "An omitted hydration_start_utc is stored equal to scoring_start_utc in explicit and fold-derived windows; an earlier explicit value refuses with ledgr_unsupported_hydration_start; precompute records warmup_range$start equal to its start; and both a window and an ordinary sweep refuse a precomputed payload whose feature state starts earlier, as one built before Cut 9 would, with ledgr_precomputed_hydration_mismatch."
     oracle_independence: "Expected clocks and the refusal message are written literally from the fixture dates; the accepted payload is the one precomputed from the window start."
-    smallest_failing_change: "Default hydration to the snapshot start, accept an earlier hydration value, or accept a precomputed payload that starts before the window."
+    smallest_failing_change: "Default hydration to the snapshot start, accept an earlier hydration value, or accept a precomputed payload that starts before the window or before an ordinary sweep scoring start."
     cheapest_adequate_lane: "Window construction and two small precomputes on a ten-bar snapshot; fast, because no run executes."
     overlapping_evidence: "LCL-0194 pins the execution-start refusal; the windowed precompute test in test-precompute-features.R covers the range-mismatch class."

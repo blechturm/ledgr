@@ -131,9 +131,12 @@ Accepted change pending:
   stored equal to `scoring_start_utc`, and any other value refuses before
   execution with `ledgr_unsupported_hydration_start`.
   `ledgr_precompute_features()` records `warmup_range$start` equal to its
-  scoring start, and a windowed sweep refuses a precomputed payload whose
-  feature state starts at any other time with
-  `ledgr_precomputed_hydration_mismatch`.
+  scoring start, and a sweep, windowed or not, refuses a precomputed payload
+  whose feature state starts at any other time with
+  `ledgr_precomputed_hydration_mismatch`. When no candidate trades in a
+  walk-forward training window, volatility-based selection metrics have no
+  finite value and `ledgr_walk_forward()` stops with
+  `ledgr_walk_forward_no_selection`.
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local

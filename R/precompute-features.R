@@ -203,6 +203,21 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
         !identical(precomputed$scoring_range$end, range$scoring_end)) {
       rlang::abort("`precomputed_features` scoring range does not match the requested sweep range.", class = "ledgr_precomputed_range_mismatch")
     }
+    # A payload built before Cut 9 can match the scoring range while its
+    # feature state starts at the snapshot start; it must not be reused.
+    if (!identical(precomputed$warmup_range$start, range$scoring_start)) {
+      rlang::abort(
+        sprintf(
+          paste(
+            "`precomputed_features` feature state starts at %s, but the sweep's",
+            "feature state starts at %s. Rerun ledgr_precompute_features()."
+          ),
+          as.character(precomputed$warmup_range$start %||% "an unrecorded time"),
+          range$scoring_start
+        ),
+        class = "ledgr_precomputed_hydration_mismatch"
+      )
+    }
     return(invisible(TRUE))
   }
 

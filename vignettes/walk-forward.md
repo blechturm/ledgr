@@ -111,10 +111,12 @@ reads bars from before its own start, so every indicator warms up again
 inside every window: the 20-session slow moving average used below is
 missing for the first 19 sessions of each train and test window, and the
 strategy cannot cross into a position until it exists. Size windows so
-that warmup is a small part of each one. This restart concerns features
-only; the opening-state policy described later concerns positions.
-Hydrating features from earlier history is planned with ledgr’s
-point-in-time history design.
+that warmup is a small part of each one: if no candidate trades in a
+train window, the Sharpe ratio used for selection has no finite value
+and `ledgr_walk_forward()` stops with `ledgr_walk_forward_no_selection`.
+This restart concerns features only; the opening-state policy described
+later concerns positions. Hydrating features from earlier history is
+planned with ledgr’s point-in-time history design.
 
 Plotting the folds makes the core contract easier to see. The blue train
 window sweeps and scores the grid. At the boundary, ledgr locks one

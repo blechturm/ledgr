@@ -13,12 +13,15 @@ sweeps are unchanged.
 - Feature state now starts at the scoring start on every path. Indicators warm
   up again in every run, sweep, precompute range and walk-forward training and
   test window, and no path reads bars before its start. A training window
-  shorter than an indicator's warmup cannot trade. This is a temporary rule;
+  shorter than an indicator's warmup cannot trade; if no candidate trades,
+  `sharpe_ratio` has no finite value and `ledgr_walk_forward()` stops with
+  `ledgr_walk_forward_no_selection`. This is a temporary rule;
   hydrating features from earlier history is planned with the point-in-time
   history design.
 - `ledgr_precompute_features()` records `warmup_range$start` equal to its
-  scoring start, and a windowed sweep refuses a precomputed payload whose
-  features start earlier with `ledgr_precomputed_hydration_mismatch`.
+  scoring start. A sweep, windowed or not, refuses a precomputed payload whose
+  features start at another time with `ledgr_precomputed_hydration_mismatch`,
+  so payloads saved before this change must be rebuilt.
 - An opening date before the snapshot starts at the first bar in sweeps and
   precompute, as in runs. A sweep whose scoring range has fewer than two
   pulses refuses with `ledgr_run_window_too_short`, as a run does.

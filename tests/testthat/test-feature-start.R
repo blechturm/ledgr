@@ -29,7 +29,8 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
   # Closes 30 on days 1-5, then 6..10; every path opens or scores from day 6.
   # Restarted there, TTR's recursive EMA(3) seeds with mean(6, 7, 8) = 7 and
   # reads NA, NA, 7, 8, 9; carried from day 1 it reads 18, 12.5, 10.25, 9.625,
-  # 9.8125. SMA(3) reads NA, NA, 7, 8, 9 either way only when restarted.
+  # 9.8125. SMA(3) restarted reads NA, NA, 7, 8, 9; carried it reads 22,
+  # 14.33, 7, 8, 9, so it differs only while the restarted SMA warms up.
   snapshot <- feature_start_snapshot(c(rep(30, 5), 6:10))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   features <- ledgr_feature_map(
@@ -113,6 +114,54 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
     feature_start_iso(6L)
   )
   testthat::expect_identical(final(walk_forward$test_runs[[1L]]), 1000)
+
+  # Fixed-window witness: hold one share once SMA(3) exists. Restarted on day
+  # 6 it first exists on day 8, fills at the day-9 open of 9 and ends at 1001;
+  # carried from day 1 it exists on day 6, fills at 7 and would end at 1003.
+  # Training on days 6-8 restarted cannot fill (1000); carried it would buy at
+  # 7 and close at 8 (1001).
+  sma_strategy <- function(ctx, params) {
+    value <- ctx$feature("AAA", "sma_3")
+    target <- ctx$flat()
+    if (!is.na(value)) target[["AAA"]] <- 1
+    target
+  }
+  sma_dated <- ledgr_experiment(
+    snapshot, sma_strategy, features = features,
+    opening = ledgr_opening(cash = 1000, date = feature_start_iso(6L)),
+    cost_model = ledgr_cost_zero()
+  )
+  sma_undated <- ledgr_experiment(
+    snapshot, sma_strategy, features = features,
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  )
+  sma_run <- ledgr_run(sma_dated, run_id = "feature-start-sma-run")
+  on.exit(close(sma_run), add = TRUE)
+  sma_precomputed <- ledgr_precompute_features(sma_dated, grid)
+  sma_finals <- c(
+    run = final(sma_run),
+    sweep = ledgr_sweep(sma_dated, grid, workers = 1L, seed = 1L)$final_equity[[1L]],
+    precomputed_sweep = ledgr_sweep(
+      sma_dated, grid, precomputed_features = sma_precomputed, workers = 1L, seed = 1L
+    )$final_equity[[1L]],
+    window_sweep = ledgr:::ledgr_sweep_window(
+      sma_undated, grid,
+      window = ledgr:::ledgr_experiment_window(sma_undated, feature_start_iso(6L), feature_start_iso(10L)),
+      workers = 1L, seed = 1L
+    )$final_equity[[1L]]
+  )
+  testthat::expect_identical(sma_finals, stats::setNames(rep(1001, 4L), names(sma_finals)))
+  sma_walk_forward <- suppressWarnings(ledgr_walk_forward(
+    sma_undated, grid, folds,
+    selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
+  ))
+  on.exit(lapply(sma_walk_forward$test_runs, close), add = TRUE)
+  sma_scores <- sma_walk_forward$scores
+  testthat::expect_identical(
+    sma_scores$metric_value[sma_scores$window == "train" & sma_scores$metric_name == "final_equity"][[1L]],
+    1000
+  )
 })
 
 testthat::test_that("[LTB-0197] hydration is stored as the scoring start and earlier starts refuse", {
@@ -161,4 +210,22 @@ testthat::test_that("[LTB-0197] hydration is stored as the scoring start and ear
     fixed = TRUE
   )
   testthat::expect_true(ledgr:::ledgr_validate_precomputed_features(explicit, experiment, grid, window = window))
+
+  # An ordinary sweep also refuses a payload whose scoring range matches but
+  # whose feature state starts earlier, as one built before Cut 9 would.
+  dated <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$flat(),
+    features = list(ledgr_ind_sma(3L)),
+    opening = ledgr_opening(cash = 1000, date = feature_start_iso(6L)),
+    cost_model = ledgr_cost_zero()
+  )
+  stale <- ledgr_precompute_features(dated, grid)
+  stale$warmup_range$start <- feature_start_iso(1L)
+  testthat::expect_error(
+    ledgr_sweep(dated, grid, precomputed_features = stale, workers = 1L, seed = 1L),
+    "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
+    class = "ledgr_precomputed_hydration_mismatch",
+    fixed = TRUE
+  )
 })

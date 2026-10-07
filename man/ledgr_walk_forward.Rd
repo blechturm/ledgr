@@ -62,7 +62,10 @@ improvement or degradation depends on the selection rule direction.
 Every training and test window starts feature state at its own start:
 indicators warm up again inside each window and no window reads bars before
 it. A training window shorter than a candidate's indicator warmup therefore
-cannot trade, and its score reflects only the pulses after warmup. This is
+cannot trade. When no candidate trades in a training window, volatility-based
+metrics such as \code{sharpe_ratio} have no finite value and the call stops with
+\code{ledgr_walk_forward_no_selection}; size training windows well beyond the
+longest warmup, or select on a metric that is defined without trades. This is
 separate from \code{cold_start_distorted}, which concerns opening positions, not
 features. Hydrating features from earlier history is planned with ledgr's
 point-in-time history design.
