@@ -111,9 +111,15 @@ retimed_answer <- function(s, t) {
   lt <- keep(lifetime$rows); lt$knowledge_time <- lt$effective_from
   fams <- list(sessions)
   if (nrow(st) > 0L) fams <- c(fams, list(ledgr_facts_trading_status(st[, intersect(names(st), c("instrument_id", "effective_from", "effective_to", "knowledge_time", "status", "source", "precedence", "fact_id", "supersedes_fact_id"))])))
+  # Each family is re-timed on its own, so one family's refusal is recorded
+  # without hiding the others' answers.
   mi <- membership_input[membership_input$knowledge_time <= day(t, "12:00:00"), , drop = FALSE]
   mi$knowledge_time <- mi$effective_from
-  if (membership_ok && nrow(mi) > 0L) fams <- c(fams, list(ledgr_facts_membership_snapshots(mi, universe_id = "u", complete = TRUE)))
+  retimed_membership <- if (membership_ok && nrow(mi) > 0L) {
+    tryCatch(ledgr_facts_membership_snapshots(mi, universe_id = "u", complete = TRUE), error = function(e) e)
+  } else NULL
+  membership_refusal <- if (inherits(retimed_membership, "error")) paste("refused:", conditionMessage(retimed_membership)) else NULL
+  if (!is.null(retimed_membership) && is.null(membership_refusal)) fams <- c(fams, list(retimed_membership))
   if (nrow(lt) > 0L) fams <- c(fams, list(ledgr_facts_lifetime(lt[, intersect(names(lt), c("instrument_id", "effective_from", "knowledge_time", "assertion", "terminal_event", "fact_id"))])))
   snap <- ledgr_snapshot_from_df(bars, facts = do.call(ledgr_facts, fams), price_basis = "split_adjusted",
                                  db_path = tempfile(fileext = ".duckdb"))
@@ -125,9 +131,11 @@ retimed_answer <- function(s, t) {
     ledgr:::ledgr_availability_provider_data(con, snap$snapshot_id), ledgr:::ledgr_sweep_availability_config(exp),
     ledgr:::ledgr_precompute_snapshot_meta(snap)$snapshot_hash, list())
   f <- p$facts(day(s, "12:00:00"), ids = c("AAA", "BBB"))
-  resolved <- ledgr_facts_resolve(snap, "membership", "u", at = day(s, "12:00:00"))$rows
-  c(aaa_status = f$status[["AAA"]], bbb_lifetime = f$lifetime[["BBB"]],
-    members = paste(sort(as.character(resolved$instrument_id[resolved$member %in% TRUE])), collapse = "+"))
+  members <- membership_refusal %||% {
+    resolved <- ledgr_facts_resolve(snap, "membership", "u", at = day(s, "12:00:00"))$rows
+    paste(sort(as.character(resolved$instrument_id[resolved$member %in% TRUE])), collapse = "+")
+  }
+  c(aaa_status = f$status[["AAA"]], bbb_lifetime = f$lifetime[["BBB"]], members = members)
 }
 for (st in list(c(4L, 5L), c(4L, 8L), c(5L, 9L))) {
   value <- tryCatch(retimed_answer(st[[1L]], st[[2L]]), error = function(e) c(error = conditionMessage(e)))

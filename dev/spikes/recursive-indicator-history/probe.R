@@ -46,6 +46,7 @@ for (name in names(indicators)) {
   add("P1 declaration", name, "id", ids[[name]])
   add("P1 declaration", name, "requires_bars", indicators[[name]]$requires_bars)
   add("P1 declaration", name, "stable_after", indicators[[name]]$stable_after)
+  add("P1 declaration", name, "gap_contract", indicators[[name]]$gap_contract %||% "none")
 }
 
 strategy <- function(ctx, params) {
@@ -78,15 +79,21 @@ for (name in names(indicators)) {
   series <- lapply(seen, function(s) suppressWarnings(as.numeric(s[[id]][match(common, s$ts)])))
   for (other in c("start_21", "start_41")) {
     diff <- abs(series$start_1 - series[[other]])
-    agree <- !is.na(diff) & diff < 1e-9
-    first_agree <- if (any(agree)) common[which(agree)[[1L]]] else "never"
+    first_within <- function(tol) {
+      ok <- !is.na(diff) & diff < tol
+      if (any(ok)) common[which(ok)[[1L]]] else "not by day 80"
+    }
     add("P2 history start", name, paste0("max_abs_diff_vs_", other), format(max(diff, na.rm = TRUE), digits = 6))
-    add("P2 history start", name, paste0("first_exact_day_vs_", other), first_agree)
+    add("P2 history start", name, paste0("final_day_abs_diff_vs_", other), format(diff[[length(diff)]], digits = 6))
+    add("P2 history start", name, paste0("first_day_within_1e-9_vs_", other), first_within(1e-9))
+    add("P2 history start", name, paste0("first_day_within_1e-6_vs_", other), first_within(1e-6))
     add("P2 history start", name, paste0("na_days_", other), sum(is.na(series[[other]])))
   }
 }
 
-# P3: which indicators an availability-aware (strict-window) experiment accepts.
+# P3: availability-aware experiments accept an indicator only if it declares
+# `gap_contract = "strict_window"`. P3b then runs a recursive indicator that
+# declares it and compares what the strategy sees with its own series_fn.
 avail_snapshot <- ledgr_snapshot_from_df(
   data.frame(instrument_id = "AAA", ts_utc = day(seq_len(10)) + 16 * 3600, open = closes[1:10],
              high = closes[1:10] + 1, low = closes[1:10] - 1, close = closes[1:10], volume = 1000),
@@ -105,6 +112,30 @@ for (name in names(indicators)) {
   }, error = function(e) class(e)[[1L]])
   add("P3 availability", name, "experiment", outcome)
 }
+running_max_strict <- ledgr_indicator(
+  id = "running_max_strict", fn = function(window) max(window$close),
+  series_fn = function(bars, params) cummax(bars$close),
+  requires_bars = 1L, stable_after = 1L, gap_contract = "strict_window"
+)
+strict_strategy <- function(ctx, params) {
+  value <- ctx$feature("AAA", "running_max_strict")
+  list(targets = ctx$flat(), state_update = list(seen = c(ctx$state_prev$seen, format(value, digits = 15))))
+}
+strict_outcome <- tryCatch({
+  bt <- ledgr_run(ledgr_experiment(avail_snapshot, strict_strategy, features = list(running_max_strict),
+                                   valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero()),
+                  run_id = "strict-running-max")
+  avail_con <- ledgr:::get_connection(avail_snapshot)
+  json <- DBI::dbGetQuery(avail_con, "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc DESC LIMIT 1",
+                          params = list(bt$run_id))$state_json[[1L]]
+  status <- ledgr_run_info(avail_snapshot, bt$run_id)$status
+  close(bt)
+  seen <- as.numeric(ledgr:::ledgr_json_read_nested(json)$seen)
+  c(status = status, seen = paste(format(seen, digits = 10), collapse = ","),
+    series_fn_cummax = paste(format(cummax(closes[1:10]), digits = 10), collapse = ","),
+    fn_window_close = paste(format(closes[1:10], digits = 10), collapse = ","))
+}, error = function(e) c(error = paste(class(e)[[1L]], conditionMessage(e))))
+for (key in names(strict_outcome)) add("P3b declared strict recursion", "running_max_strict", key, strict_outcome[[key]])
 
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(out_dir, "probe_evidence.csv"), row.names = FALSE)

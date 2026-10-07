@@ -29,9 +29,11 @@ Asked at decision day `t` about day `t` itself, the prepared provider and
 
 There is no call that answers "day 4 as known on day 8". The prepared segments
 start at the later of effective and knowledge time and end at the effective
-end, so the retraction, known on day 8 for an interval that closed on day 6,
-**never appears at any cutoff**. A history read on day 8 or later that looked
-back at day 4 could not see that the halt was withdrawn. This is the defect
+end (`R/availability-provider-prepared.R:102-108`), so the retraction, known on
+day 8 for an interval that closed on day 6, gets an empty segment. It appears
+at none of the probed cutoffs, and by that construction at no cutoff. A
+history read on day 8 or later that looked back at day 4 could not see that
+the halt was withdrawn. This is the defect
 v11 section 7(b) names: a diagonal-only lookup fails the detecting case.
 
 ## P2. Re-timing facts to reuse the unchanged resolvers is not enough
@@ -46,7 +48,9 @@ unchanged provider:
 | (4, 8) | active | unknown | refused |
 | (5, 9) | active | known_inactive | refused |
 
-For trading status and lifetime the re-timed answers match what v11 section 3
+Each family is re-timed and resolved separately, so the membership refusal is
+recorded on its own row and does not hide the other answers. For trading
+status and lifetime the re-timed answers match what v11 section 3
 demands: the retraction applies to day 4 once known, and BBB's inactivity
 applies to day 5 once known. For membership the trick fails outright: moving
 the correction onto the original's effective and knowledge time makes the
@@ -55,27 +59,33 @@ exactly one `set_id`". Knowledge time is part of how a membership correction
 is identified and ordered, so a history representation must keep both clocks;
 it cannot collapse one into the other.
 
-## P3. Lifetime cannot express a correction
+## P3. Lifetime refuses the one correction shape tried
 
 A lifetime assertion followed by a contradicting one for the same effective
 time, learned later, is refused at construction with
 `ledgr_fact_structural_conflict` ("Lifetime facts cannot assert incompatible
 overlapping states"). Trading status has `supersedes_fact_id`; membership
-uses later-known complete sets; lifetime has neither. Lifetime can carry
-late-known facts but not revisions. Whether that is a deliberate contract or
-a gap belongs to the semantic question, not to a representation.
+uses later-known complete sets; lifetime offers neither for this shape. Only
+this same-time contradiction was tried; other lifetime revision shapes are
+untested. Whether that is a deliberate contract or a gap belongs to the
+semantic question, not to a representation.
 
 ## What a charter may consume
 
 - The detecting case exists and is cheap: one superseded halt shows the
   diagonal losing a revision, with expected answers fixed by v11 section 3.
-- Supersession and precedence for trading status are pure functions of the
-  applicable fact set; P2 shows the existing rule gives the right historical
-  answer once the applicable set is chosen by `(s, t)`.
+- The trading-status rule reads only the applicable fact set (supersession,
+  then precedence, in the prepared provider's `resolve_status`); P2 shows
+  supersession giving the right historical answer once the set is chosen by
+  `(s, t)`. Precedence ties were not exercised.
 - Membership needs knowledge time inside its ordering, so `(s, t)` selection
   must filter on knowledge while keeping knowledge in the sort key.
-- Lifetime revisions are not expressible today; the spike must not invent a
-  revision rule for them.
+- The tried lifetime revision is refused at construction; the spike must not
+  invent a revision rule for lifetime.
+- Only trading status, membership snapshots and lifetime were probed.
+  Membership intervals use their own segment start
+  (`R/availability-provider-prepared.R:47`), and sessions and corporate
+  actions carry knowledge times too; none of these was exercised here.
 
 **Scale:** two instruments and ten sessions are a semantic fixture, not a
 size measurement. Per protocol section 9 nothing here ranks representations.
