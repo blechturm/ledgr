@@ -499,6 +499,55 @@ families. The maintainer accepted Workstream 17 and closed Cut 8 the same day.
 The final count is two reviews over two tickets, 1.000, recorded as a
 historical gate breach rather than padded.
 
+## Cut 9: Scoring boundaries and temporary feature starts
+
+**Status:** Independent cut review returned `PASS_AFTER_PATCHES`; all seven
+patches are incorporated, and the cut awaits maintainer acceptance.
+
+Preparation for macro-plan WS3 exposed a present correctness mismatch rather
+than merely an unanswered history-design question. On the same ten-bar SMA(3)
+fixture, a dated durable run and explicit windowed run begin on day 6 and
+finish at 1001, while ordinary and windowed sweeps consume earlier history
+and finish at 1006. A public `ledgr_walk_forward()` fold records hydration on
+day 1 and training scoring on day 6; its training arm finishes at 1004 while
+the day-9 test arm restarts and finishes at 1000. Its training time in market
+is 0.625, five of eight pulses, directly showing that metrics include pulses
+before the declared day-6 scoring start.
+
+The cut keeps two claims separate:
+
+| Workstream | Tickets | Claim |
+| --- | --- | --- |
+| 18 Scoring-boundary correctness | LDG-2968, LDG-2969 | scoring is the sole temporary evaluation, execution and result boundary; run, backtest, sweep, promotion and walk-forward agree on it |
+| 19 Temporary feature-start contract | LDG-2970, LDG-2971 | until WS3/WS4 binds causal hydration, every feature state restarts at scoring and no persisted hydration clock is ignored |
+
+The temporary feature rule is an explicit product decision, not neutral
+cleanup. Fixed-window and recursive features re-warm in each scoring window.
+Omitted execution and hydration starts normalize to scoring start; any explicit
+different value refuses rather than being recorded and ignored. The fields
+remain future identity seams for the joint WS3/WS4 design, but this cut gives
+no meaning to targets between distinct clocks.
+
+The maintained checker has two named groups. Workstream 18 turns the boundary
+group green using each public surface's real observables; sweep evidence is its
+scoring metadata, candidate metrics and retained-return timestamps, not fills
+or events that the surface does not expose. The value group remains red until
+Workstream 19 aligns feature starts and makes run, sweep and promotion values
+agree. The matrix includes `ledgr_backtest(start = ...)`, and the recursive
+witness is `ledgr_ind_ema()` on data whose result changes with its start.
+
+Cut 9 consumes the unfinished substance of archived v0.1.9.4 LDG-2615 without
+editing that released packet. It does not design permanent hydration,
+recursive-indicator convergence, point-in-time history, missingness or the
+two-clock carrier. After Cut 9, WS3 remeasures the current-tree memory baseline
+and sets its representation budget.
+
+One cut review and two planned workstream close reviews are three invocations
+over four tickets, 0.750. This is chosen rather than inherent: one combined
+workstream would meet 0.500, but would combine a present defect with a distinct
+temporary product-semantic decision. The cut records that cost rather than
+adding ceremonial work.
+
 ## Expected later artifacts
 
 - accepted design records or explicit references to their existing locations;

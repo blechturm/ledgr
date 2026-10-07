@@ -4,7 +4,9 @@
 8 are complete and accepted: 45 tickets across 17 workstreams. They close the
 design-memory and long-window optimization foundation, terminal outcomes and
 frozen holdings, feature-map addressing, and the audited antipattern repairs.
-Point-in-time history is the next uncut release dependency.
+Cut 9 is reviewed `PASS_AFTER_PATCHES` for the scoring-boundary defect and
+temporary feature-start contract that must land before point-in-time history;
+its seven review patches are incorporated and it awaits maintainer acceptance.
 
 **Date:** 2026-10-03
 
@@ -179,6 +181,9 @@ remain visible, and interruptions become resumable or classed failures.
   reasons in the classed history result. An identity-preserving matrix adapter
   exposes only the included estimation sample without requiring callers to
   remove a time column or reconstruct names.
+- The WS3 amendment must bind that the matrix adapter operates only on an
+  already-constructed history result. It is not a second reader and owns no
+  cutoff, axis or missingness logic.
 - Provide a structural-completeness query for requested lookback and minimum
   instrument count. Keep it distinct from WS4 indicator readiness and from
   current execution admissibility.

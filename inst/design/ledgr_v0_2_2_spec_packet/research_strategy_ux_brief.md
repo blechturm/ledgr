@@ -105,8 +105,10 @@ x <- returns |>
   ledgr_history_matrix()
 ```
 
-The adapter excludes the time key by contract and preserves instrument
-identity. Teaching must not require users to remove `ts_utc`, call
+The adapter operates only on the supplied history result; it is not a second
+reader and owns no cutoff, axis or missingness logic. It excludes the time key
+by contract and preserves instrument identity. Teaching must not require users
+to remove `ts_utc`, call
 `colnames()` and reconstruct names around solver output. An estimator written
 for ledgr history should return a `ledgr_weights` object; a general solver may
 use a small identity-preserving bridge decided by the history implementation.
