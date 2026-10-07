@@ -13,20 +13,24 @@ diagnostics" scope in the roadmap's leakage row).
 ## 1. Question
 
 > Can a mechanical check that uses only an indicator's own definition
-> classify every indicator ledgr accepts as bounded, decaying or
-> path-dependent, and flag the case where its `fn` and `series_fn` disagree,
-> without false alarms on bounded indicators?
+> classify the indicators in section 4 as bounded, decaying or
+> path-dependent, without false alarms on bounded indicators, so that an
+> indicator that is not bounded but declares `strict_window` (probe P3b) is
+> flagged?
 
 That is the only question. Its answer decides whether the history-start rule
 can treat indicators by class (for example, hydrate a bounded indicator by
 `stable_after` bars) without a new declaration, and whether the silent wrong
 value of probe P3b can be caught. It designs neither the rule nor an API.
 
-The check has two parts on sampled positions of a seeded series:
-- **history sensitivity:** compute the series from two or more history starts
-  and compare values on common days after warmup;
-- **definition agreement:** compare `fn` on its declared window with
-  `series_fn` at the same positions.
+The check is **history sensitivity** on sampled positions of a seeded
+series: compute `series_fn` from two or more history starts and compare the
+values on common days after warmup. `fn` evaluated on its declared window is
+the same thing as a series that starts at the window, so comparing `fn` with
+the full-history `series_fn` is this check again, not a second one; it flags
+every windowed recursion. The P3b flag is then a rule over the result: not
+bounded **and** declares `strict_window`. The shipped strict path certifies
+`fn` only against `series_fn` over the same window, which P3b passes.
 
 ## 2. Cheaper Prerequisite
 
@@ -41,8 +45,8 @@ not, the spike stops; a recharter would measure through public runs only.
 
 No package fork is needed. The core is one harness function,
 `classify(indicator, bars)`, built from public indicator constructors and the
-internal engine named above, returning the two parts of the check and a
-class. The prerequisite is its first case.
+internal engine named above, returning the history-sensitivity gaps, a
+class and the P3b flag. The prerequisite is its first case.
 
 ## 4. Cases
 
@@ -64,9 +68,9 @@ smoothing constant and add nothing a declaration needs.
 ## 5. Evidence
 
 The runner writes one CSV row per indicator and path: the largest
-history-sensitivity gap after warmup at the sampled positions, the largest
-`fn` and `series_fn` gap, the tolerance used, the declared `requires_bars`,
-`stable_after` and `gap_contract`, and the resulting class. Every row is
+history-sensitivity gap after warmup at the sampled positions, how that gap
+changes with the distance between starts, the tolerance used, the declared `requires_bars`,
+`stable_after` and `gap_contract`, the resulting class and the P3b flag. Every row is
 derived by computation over the seeded bars; none is narrated.
 
 ## 6. Kill And Recharter
@@ -92,10 +96,12 @@ Exactly three executor deliverables, under
   `DESCRIPTION`, `man`, `inst/design`);
 - `spike_inventory.md`, naming what was demoted, deleted and learned.
 
-The gut removes the definition-agreement part. The declared-`strict_window`
-running max must then pass as an ordinary indicator on a named row, the P3b
-defect going undetected, while every other classification is unchanged.
-Merely changing bytes is insufficient.
+The gut replaces the history-sensitivity comparison with the shipped
+window-local certification (`fn` against `series_fn` over the same window).
+The declared-`strict_window` running max must then pass unflagged on its
+named row, the P3b defect going undetected, and TTR `EMA(5)` must be
+misclassified as bounded on its named row. Merely changing bytes is
+insufficient.
 
 The closeout is the protocol's one-page terminal record under
 `inst/design/spikes/recursive_indicator_history_spike/closeout.md`.

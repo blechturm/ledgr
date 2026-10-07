@@ -24,9 +24,9 @@ actions also carry knowledge times; they are out of scope here and stay open
 
 ## 2. Cheaper Prerequisite
 
-> On the probe fixture, does choosing the applicable facts by both clocks
-> (effective at `s`, knowable at `t`) and handing them to the unchanged
-> production resolution rules give the answers v11 section 3 demands, while
+> On the case fixtures of section 4, does choosing the applicable facts by
+> both clocks (effective at `s`, knowable at `t`) and handing them to the
+> unchanged production resolution rules give the answers v11 section 3 demands, while
 > keeping knowledge time in each family's ordering?
 
 The probe already shows part of the answer. Re-timing facts makes trading
@@ -96,8 +96,9 @@ Stop and return to the maintainer if any of these happens:
 - the prerequisite needs a change to a resolution rule (section 2);
 - the representation needs fact filtering or SQL per query rather than once
   before the fold;
-- segments written exceed a constant multiple of facts plus revisions on any
-  case, so its size is not bounded by the facts;
+- segments written exceed twice the family's fact rows on any case (each
+  fact can open and close at most one segment; a membership snapshot counts
+  one row per member), so its size is not bounded by the facts;
 - a correct answer needs a lifetime revision rule the constructors refuse.
 
 ## 7. Deliverables And Gut
