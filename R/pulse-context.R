@@ -450,11 +450,31 @@ ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe)
   private_universe <- as.character(private_universe)
   feature <- ctx$feature
   ctx$feature <- function(instrument_id, feature_name, default = NA_real_) {
+    if (!is.character(instrument_id) || length(instrument_id) != 1L ||
+        is.na(instrument_id) || !nzchar(instrument_id)) {
+      label <- if (length(instrument_id) == 1L) {
+        as.character(instrument_id)
+      } else {
+        paste(instrument_id, collapse = ", ")
+      }
+      rlang::abort(
+        sprintf(
+          "Unknown instrument_id '%s'. Available ctx$universe: %s.",
+          label,
+          ledgr_pulse_context_universe_message(universe)
+        ),
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
     ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
     feature(instrument_id, feature_name, default = default)
   }
   features <- ctx$features
   ctx$features <- function(instrument_id, feature_map = NULL) {
+    if (!is.character(instrument_id) || length(instrument_id) != 1L ||
+        is.na(instrument_id) || !nzchar(instrument_id)) {
+      return(features(instrument_id, feature_map = feature_map))
+    }
     ledgr_pulse_context_idx(ctx$.pulse_lookup, instrument_id)
     features(instrument_id, feature_map = feature_map)
   }

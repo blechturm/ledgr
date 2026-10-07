@@ -434,3 +434,105 @@ testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookup
     fixed = TRUE
   )
 })
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0191] availability feature reads enforce the current decision axis", {
+  dates <- as.Date("2020-01-01") + 0:3
+  pulses <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = as.POSIXct(dates, tz = "UTC") - 1,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  membership_input <- data.frame(
+    effective_from = pulses[c(1L, 3L)],
+    knowledge_time = pulses[c(1L, 3L)] - 1,
+    source = "decision-axis-witness",
+    stringsAsFactors = FALSE
+  )
+  membership_input$members <- I(list(c("AAA", "BBB"), "AAA"))
+  membership <- ledgr_facts_membership_snapshots(
+    membership_input,
+    universe_id = "shrinking",
+    complete = TRUE
+  )
+  snapshot <- ledgr_snapshot_from_df(
+    ledgr_test_make_bars(c("AAA", "BBB"), pulses),
+    facts = ledgr_facts(sessions, membership)
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  observed <- new.env(parent = emptyenv())
+  strategy <- function(ctx, params) {
+    capture <- function(call) {
+      tryCatch(
+        {
+          call()
+          list(class = NA_character_, message = NA_character_)
+        },
+        error = function(err) {
+          list(class = class(err)[[1L]], message = conditionMessage(err))
+        }
+      )
+    }
+    if (identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
+      observed$universe <- ctx$universe
+      observed$checks <- list(
+        scalar = capture(function() ctx$feature("BBB", "signal")),
+        bundle = capture(function() ctx$features("BBB")),
+        explicit = capture(function() {
+          ctx$features("BBB", c(local_signal = "sma_2"))
+        }),
+        scalar_na = capture(function() ctx$feature(NA_character_, "signal")),
+        scalar_empty = capture(function() ctx$feature("", "signal")),
+        bundle_numeric = capture(function() ctx$features(1L))
+      )
+    }
+    ctx$flat()
+  }
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    universe = ledgr_universe_members("shrinking"),
+    features = ledgr_feature_map(signal = ledgr_ind_sma(2L)),
+    valuation_policy = ledgr_valuation_stale(1L),
+    cost_model = ledgr_cost_zero()
+  )
+  backtest <- ledgr_run(experiment, run_id = "shrinking-feature-axis")
+  on.exit(close(backtest), add = TRUE)
+
+  testthat::expect_identical(observed$universe, "AAA")
+  outside_message <- "Unknown instrument_id 'BBB'. Available ctx$universe: AAA."
+  for (name in c("scalar", "bundle", "explicit")) {
+    testthat::expect_identical(
+      observed$checks[[name]],
+      list(class = "ledgr_invalid_pulse_context", message = outside_message)
+    )
+  }
+  testthat::expect_identical(
+    observed$checks$scalar_na,
+    list(
+      class = "ledgr_invalid_pulse_context",
+      message = "Unknown instrument_id 'NA'. Available ctx$universe: AAA."
+    )
+  )
+  testthat::expect_identical(
+    observed$checks$scalar_empty,
+    list(
+      class = "ledgr_invalid_pulse_context",
+      message = "Unknown instrument_id ''. Available ctx$universe: AAA."
+    )
+  )
+  testthat::expect_identical(
+    observed$checks$bundle_numeric,
+    list(
+      class = "ledgr_invalid_args",
+      message = "`instrument_id` must be a non-empty character scalar."
+    )
+  )
+})

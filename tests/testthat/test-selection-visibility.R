@@ -270,14 +270,38 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   fx <- selection_visibility_fixture()
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
   frozen_ids <- c("batch-frozen-a", "batch-frozen-b")
-  for (run_id in frozen_ids) {
-    bt <- ledgr_run(
-      fx$exp,
-      params = selection_visibility_params()$frozen,
-      run_id = run_id
-    )
-    close(bt)
+  first <- ledgr_run(
+    fx$exp,
+    params = selection_visibility_params()$frozen,
+    run_id = frozen_ids[[1L]]
+  )
+  close(first)
+  different_exposure_strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    target[["CLK"]] <- 5
+    if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) {
+      target[["AAA"]] <- 2
+    }
+    target
   }
+  different_exposure_experiment <- ledgr_experiment(
+    fx$snapshot,
+    different_exposure_strategy,
+    opening = ledgr_opening(cash = 1000),
+    valuation_policy = ledgr_valuation_stale(1),
+    corporate_action_policy = ledgr_corporate_actions(
+      held_terminal_position = c(
+        delisted = "refuse",
+        default = "last_permissible"
+      )
+    ),
+    cost_model = ledgr_cost_zero()
+  )
+  second <- ledgr_run(
+    different_exposure_experiment,
+    run_id = frozen_ids[[2L]]
+  )
+  close(second)
 
   dense_bars <- ledgr_test_make_bars("DENSE", as.Date("2020-02-01") + 0:2)
   dense_snapshot <- ledgr_snapshot_from_df(
@@ -301,6 +325,10 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
     ledgr_valuation_summary(bt)
   })
   names(individual) <- frozen_ids
+  testthat::expect_gt(
+    individual[[frozen_ids[[2L]]]]$max_frozen_equity_weight,
+    individual[[frozen_ids[[1L]]]]$max_frozen_equity_weight
+  )
   con <- ledgr:::get_connection(fx$snapshot)
   query_count <- 0L
   original_query <- DBI::dbGetQuery
