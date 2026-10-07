@@ -9,8 +9,11 @@ ledgr_opening(cash, date = NULL, positions = NULL, cost_basis = NULL)
 \arguments{
 \item{cash}{Finite positive cash balance.}
 
-\item{date}{Optional opening timestamp. \code{NULL} lets ledgr choose the first
-valid pulse after indicator warmup.}
+\item{date}{Optional opening timestamp. It is also the scoring start: runs,
+sweeps, promotion and feature precompute evaluate the strategy and start
+feature state from the first pulse at or after it, so indicators warm up
+again from this date and earlier bars are not read. \code{NULL}, or a date
+before the snapshot, starts at the snapshot start.}
 
 \item{positions}{Optional named numeric vector of starting long positions.}
 

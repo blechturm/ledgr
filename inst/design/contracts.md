@@ -110,6 +110,30 @@ Accepted change pending:
   definitions, and date range. A persisted run's ledger rows and a sweep
   candidate's in-memory event stream must be semantically equivalent even when
   one is written to DuckDB and the other is accumulated in memory.
+- **Scoring start (Cut 9).** Every entry point evaluates the strategy, fills,
+  writes equity and contributes metric input only from its scoring start: the
+  experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
+  `ledgr_promote()` and `ledgr_precompute_features()` (the snapshot start when
+  the opening is undated or dated earlier), `start` for `ledgr_backtest()`,
+  and the window start for walk-forward training and test windows. A distinct
+  `execution_start_utc` refuses with `ledgr_unsupported_execution_start`; a
+  scoring range with fewer than two pulses refuses with
+  `ledgr_run_window_too_short` in runs and sweeps alike. A sweep's
+  `scoring_range` names the first and last pulse it scored, in memory and
+  after reopening.
+- **Feature start (temporary, Cut 9).** Until the joint WS3/WS4 history-start
+  design replaces it, every run, backtest, sweep, promotion, explicit window,
+  walk-forward training and test window, and public feature precompute starts
+  feature state at its scoring start. Fixed-window and recursive features
+  re-warm in every scoring window, and no entry point reads a bar before its
+  scoring start; a training window shorter than an indicator's warmup cannot
+  trade. `hydration_start_utc` is kept as an identity seam: when omitted it is
+  stored equal to `scoring_start_utc`, and any other value refuses before
+  execution with `ledgr_unsupported_hydration_start`.
+  `ledgr_precompute_features()` records `warmup_range$start` equal to its
+  scoring start, and a windowed sweep refuses a precomputed payload whose
+  feature state starts at any other time with
+  `ledgr_precomputed_hydration_mismatch`.
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local

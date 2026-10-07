@@ -527,14 +527,31 @@ ledgr_experiment_window <- function(exp,
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   scoring_start <- ledgr_walk_forward_posix(start_utc, "`start_utc`")
   scoring_end <- ledgr_walk_forward_posix(end_utc, "`end_utc`")
-  hydration_start <- if (is.null(hydration_start_utc)) {
-    ledgr_walk_forward_posix(meta$start, "`hydration_start_utc`")
-  } else {
-    ledgr_walk_forward_posix(hydration_start_utc, "`hydration_start_utc`")
-  }
   # Until the joint WS3/WS4 history-start design, scoring_start is the sole
-  # evaluation and execution boundary. A distinct execution start would need
-  # semantics for targets returned between two clocks, so it refuses.
+  # evaluation, execution and feature-state boundary. hydration_start_utc is
+  # kept as the identity seam for that design: it is stored equal to the
+  # scoring start, and any other value refuses rather than being ignored.
+  if (!is.null(hydration_start_utc)) {
+    requested_hydration_start <- ledgr_walk_forward_posix(hydration_start_utc, "`hydration_start_utc`")
+    if (!identical(as.numeric(requested_hydration_start), as.numeric(scoring_start))) {
+      rlang::abort(
+        sprintf(
+          paste(
+            "`hydration_start_utc` (%s) differs from the scoring start (%s).",
+            "Feature state starts at the scoring start; hydration from earlier",
+            "history is planned with the point-in-time history design. Omit",
+            "`hydration_start_utc` or set it equal to `start_utc`."
+          ),
+          ledgr_walk_forward_iso(requested_hydration_start),
+          ledgr_walk_forward_iso(scoring_start)
+        ),
+        class = c("ledgr_unsupported_hydration_start", "ledgr_walk_forward_invalid_fold_window")
+      )
+    }
+  }
+  hydration_start <- scoring_start
+  # A distinct execution start would need semantics for targets returned
+  # between two clocks, so it refuses.
   if (!is.null(execution_start_utc)) {
     requested_execution_start <- ledgr_walk_forward_posix(execution_start_utc, "`execution_start_utc`")
     if (!identical(as.numeric(requested_execution_start), as.numeric(scoring_start))) {
@@ -559,10 +576,7 @@ ledgr_experiment_window <- function(exp,
   if (scoring_start > scoring_end) {
     rlang::abort("Window scoring start must be before or equal to scoring end.", class = "ledgr_walk_forward_invalid_fold_window")
   }
-  if (hydration_start > execution_start) {
-    rlang::abort("Window hydration start must be before or equal to execution start.", class = "ledgr_walk_forward_invalid_fold_window")
-  }
-  if (hydration_start < snapshot_start || scoring_end > snapshot_end) {
+  if (scoring_start < snapshot_start || scoring_end > snapshot_end) {
     rlang::abort("Experiment window must be inside the sealed snapshot range.", class = "ledgr_walk_forward_invalid_fold_window")
   }
 

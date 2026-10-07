@@ -106,6 +106,16 @@ folds
 #> 2     2 2019-03-01 -> 2019-05-31 2019-06-01 -> 2019-06-30
 ```
 
+Each window also starts its features fresh. A train or test window never
+reads bars from before its own start, so every indicator warms up again
+inside every window: the 20-session slow moving average used below is
+missing for the first 19 sessions of each train and test window, and the
+strategy cannot cross into a position until it exists. Size windows so
+that warmup is a small part of each one. This restart concerns features
+only; the opening-state policy described later concerns positions.
+Hydrating features from earlier history is planned with ledgr’s
+point-in-time history design.
+
 Plotting the folds makes the core contract easier to see. The blue train
 window sweeps and scores the grid. At the boundary, ledgr locks one
 selected candidate. The green test window then runs only that candidate.
@@ -153,8 +163,8 @@ wf
 #> # A tibble: 2 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
-#> 1        1 sharpe_ratio                  1.98              0.800           -1.18
-#> 2        2 sharpe_ratio                  0.657             3.64             2.99
+#> 1        1 sharpe_ratio                   1.98             0.800           -1.18
+#> 2        2 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
 #> Session: a9939863a040e4d60820813bf285b80c30ad2208d09b85f37cc1b33178ec8d9b
@@ -177,8 +187,8 @@ wf$degradation
 #> # A tibble: 2 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
-#> 1        1 sharpe_ratio                  1.98              0.800           -1.18
-#> 2        2 sharpe_ratio                  0.657             3.64             2.99
+#> 1        1 sharpe_ratio                   1.98             0.800           -1.18
+#> 2        2 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
 #> # i Hidden columns: train_window, test_window, metric_diff_pct. Use as_tibble() for the full table.

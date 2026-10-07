@@ -58,4 +58,12 @@ fold definitions intentionally grow the train window over time, so compute
 cost grows with later folds and larger candidate grids. \code{metric_diff_abs} is
 \code{test_metric_value - train_metric_value}; whether a positive value indicates
 improvement or degradation depends on the selection rule direction.
+
+Every training and test window starts feature state at its own start:
+indicators warm up again inside each window and no window reads bars before
+it. A training window shorter than a candidate's indicator warmup therefore
+cannot trade, and its score reflects only the pulses after warmup. This is
+separate from \code{cold_start_distorted}, which concerns opening positions, not
+features. Hydrating features from earlier history is planned with ledgr's
+point-in-time history design.
 }

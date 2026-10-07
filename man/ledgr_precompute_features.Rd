@@ -30,6 +30,13 @@ The payload is validated by \code{ledgr_sweep()} against the snapshot hash,
 universe, scoring range, feature engine version, grid labels, and resolved
 feature fingerprints. Use it for larger exploratory grids; \code{ledgr_sweep()}
 warns when more than 20 combinations run without precomputed features.
+
+Feature state starts at the scoring start, as in a run: bars before \code{start}
+are not read, so warmup \code{NA} values repeat at the start of every scoring
+range. \code{warmup_range$start} therefore equals the scoring start, and a sweep
+refuses a payload whose features start before its own scoring start. Until
+ledgr defines causal hydration from earlier history, this is the only
+supported feature start.
 }
 \section{Articles}{
 

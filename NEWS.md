@@ -1,3 +1,31 @@
+# ledgr (development version)
+
+## Scoring and feature starts
+
+These changes alter results for dated and windowed work; undated runs and
+sweeps are unchanged.
+
+- `ledgr_sweep()`, `ledgr_promote()` and `ledgr_precompute_features()` now
+  honor `ledgr_opening(date = )` as the scoring start, as `ledgr_run()`
+  already did. Sweeps previously scored and traded from the snapshot start.
+  Walk-forward training windows no longer execute or score pulses before
+  their start, so their scores and selections can change.
+- Feature state now starts at the scoring start on every path. Indicators warm
+  up again in every run, sweep, precompute range and walk-forward training and
+  test window, and no path reads bars before its start. A training window
+  shorter than an indicator's warmup cannot trade. This is a temporary rule;
+  hydrating features from earlier history is planned with the point-in-time
+  history design.
+- `ledgr_precompute_features()` records `warmup_range$start` equal to its
+  scoring start, and a windowed sweep refuses a precomputed payload whose
+  features start earlier with `ledgr_precomputed_hydration_mismatch`.
+- An opening date before the snapshot starts at the first bar in sweeps and
+  precompute, as in runs. A sweep whose scoring range has fewer than two
+  pulses refuses with `ledgr_run_window_too_short`, as a run does.
+- A sweep's `scoring_range` attribute names the first and last pulse it
+  scored, so it matches the same sweep after `ledgr_sweep_save()` and
+  `ledgr_sweep_open()`.
+
 # ledgr 0.2.1.0
 
 ledgr 0.2.1.0 models equity corporate actions from sealed facts, gives

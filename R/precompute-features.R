@@ -10,6 +10,13 @@
 #' feature fingerprints. Use it for larger exploratory grids; `ledgr_sweep()`
 #' warns when more than 20 combinations run without precomputed features.
 #'
+#' Feature state starts at the scoring start, as in a run: bars before `start`
+#' are not read, so warmup `NA` values repeat at the start of every scoring
+#' range. `warmup_range$start` therefore equals the scoring start, and a sweep
+#' refuses a payload whose features start before its own scoring start. Until
+#' ledgr defines causal hydration from earlier history, this is the only
+#' supported feature start.
+#'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -57,8 +64,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     end = end
   )
   bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
-  scoring_bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$scoring_start, range$scoring_end)
-  ledgr_precompute_validate_static_coverage(scoring_bars_by_id, exp$universe)
+  ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
 
   resolved <- ledgr_precompute_resolve_grid(exp, param_grid)
   unique_defs <- ledgr_precompute_unique_feature_defs(resolved$candidates)
@@ -218,11 +224,21 @@ ledgr_precompute_validate_window_coverage <- function(precomputed, range, window
       class = "ledgr_precomputed_hydration_mismatch"
     )
   }
+  # Feature state must start where the window's does. A payload that starts
+  # earlier would carry state from bars before the scoring start.
   pre_warmup_start <- ledgr_precompute_posix(warmup_start)
   req_hydration_start <- as.POSIXct(window$hydration_start_utc, tz = "UTC")
-  if (req_hydration_start < pre_warmup_start) {
+  if (!identical(as.numeric(req_hydration_start), as.numeric(pre_warmup_start))) {
     rlang::abort(
-      "`precomputed_features` hydration range does not cover the requested fold hydration window.",
+      sprintf(
+        paste(
+          "`precomputed_features` feature state starts at %s, but the window's",
+          "feature state starts at %s. Precompute with `start` equal to the",
+          "window's scoring start."
+        ),
+        ledgr_walk_forward_iso(pre_warmup_start),
+        ledgr_walk_forward_iso(req_hydration_start)
+      ),
       class = "ledgr_precomputed_hydration_mismatch"
     )
   }
@@ -296,7 +312,9 @@ ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
   if (start_posix < meta_start || end_posix > meta_end) {
     rlang::abort("Precompute scoring range must be inside the sealed snapshot range.", class = "ledgr_invalid_precompute_range")
   }
-  list(scoring_start = scoring_start, scoring_end = scoring_end, warmup_start = meta$start)
+  # Feature state starts at the scoring start until the joint history-start
+  # design defines causal hydration from earlier bars (Cut 9).
+  list(scoring_start = scoring_start, scoring_end = scoring_end, warmup_start = scoring_start)
 }
 
 ledgr_precompute_fetch_bars <- function(snapshot, universe, start, end) {

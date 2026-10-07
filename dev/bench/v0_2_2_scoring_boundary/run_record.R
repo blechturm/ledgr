@@ -150,7 +150,7 @@ folds <- ledgr:::ledgr_fold_list(
 )
 walk_forward <- suppressWarnings(ledgr_walk_forward(
   exp_plain, grid, folds,
-  selection_rule = ledgr_rule_argmax("sharpe_ratio"), seed = 1L
+  selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
 ))
 fold <- as.data.frame(walk_forward$folds)
 scores <- as.data.frame(walk_forward$scores)

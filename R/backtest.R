@@ -445,8 +445,6 @@ ledgr_run_experiment <- function(exp,
     start <- ledgr_experiment_scoring_start(exp) %||% exp$snapshot$metadata$start_date
     end <- exp$snapshot$metadata$end_date
   } else {
-    # Window-driven bar fetch uses scoring_start_utc here. Hydration-range bar
-    # fetch and slice-aware feature precompute validation land in LDG-2615.
     start <- window$scoring_start_utc
     end <- window$scoring_end_utc
   }

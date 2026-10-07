@@ -5,8 +5,11 @@
 #' long positions and cost basis.
 #'
 #' @param cash Finite positive cash balance.
-#' @param date Optional opening timestamp. `NULL` lets ledgr choose the first
-#'   valid pulse after indicator warmup.
+#' @param date Optional opening timestamp. It is also the scoring start: runs,
+#'   sweeps, promotion and feature precompute evaluate the strategy and start
+#'   feature state from the first pulse at or after it, so indicators warm up
+#'   again from this date and earlier bars are not read. `NULL`, or a date
+#'   before the snapshot, starts at the snapshot start.
 #' @param positions Optional named numeric vector of starting long positions.
 #' @param cost_basis Optional named numeric vector with the same names as
 #'   `positions`.
