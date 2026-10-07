@@ -1,0 +1,5 @@
+"key","value"
+"commit","75e58ae7146f3eadffecafb6bb2a88ed45833331"
+"fixture","dev/bench/v0_2_2_long_window_regression/build_fixture.R baseline_757 (757 pulses, 600 instruments, 500 members, three returns features, momentum)"
+"command","Rscript dev/spikes/ctx_frame_views/probe_churn.R <clean clone at 75e58ae> <fixture_dir> <out_dir>"
+"note","Run A phase markers force full collections; peaks are attribution, not production peaks. Input to the WS3 memory budget, not a budget."

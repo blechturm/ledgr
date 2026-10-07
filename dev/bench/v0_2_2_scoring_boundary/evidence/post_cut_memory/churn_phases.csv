@@ -1,0 +1,9 @@
+"marker","live_mib","peak_since_last_mib","phase_ending_here","churn_above_start_live_mib"
+"before_run",114.6,200.1,NA,NA
+"start_bars_hydration",201.4,428.6,"before_run",314
+"start_feature_series",280.9,427.1,"start_bars_hydration",225.7
+"start_runtime_projection",276.1,498.8,"start_feature_series",217.9
+"start_strategy_and_spec",276.2,276.7,"start_runtime_projection",0.6
+"start_fold",276.4,359.2,"start_strategy_and_spec",83
+"start_finalize",280.4,504.2,"start_fold",227.8
+"after_run",214.2,297.5,"start_finalize",17.1

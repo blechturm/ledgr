@@ -1,0 +1,10 @@
+{
+  "profile": "ordinary",
+  "pairs": 5,
+  "accepted_commit": "72267c2154d0ec0018478dd5dbb710cc62cf87e8",
+  "candidate_commit": "75e58ae7146f3eadffecafb6bb2a88ed45833331",
+  "accepted_tree_status": "",
+  "candidate_tree_status": "",
+  "started_at_utc": "2026-10-07T18:00:10Z",
+  "elapsed_s": 606.413
+}

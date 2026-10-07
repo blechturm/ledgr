@@ -1,0 +1,7 @@
+"key","value"
+"commit","75e58ae7146f3eadffecafb6bb2a88ed45833331"
+"tracked_tree_clean","TRUE"
+"r_version","4.6.1"
+"ledgr_version","0.2.1.0"
+"duckdb_version","1.5.6.9000"
+"command","Rscript dev/bench/v0_2_2_scoring_boundary/run_record.R <repo> <out_dir>"
