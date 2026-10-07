@@ -152,6 +152,16 @@ testthat::test_that("[LTB-0196] fixed-window and recursive features restart at e
     )$final_equity[[1L]]
   )
   testthat::expect_identical(sma_finals, stats::setNames(rep(1001, 4L), names(sma_finals)))
+  # A payload whose scoring range matches but whose feature state starts on
+  # day 1, as one built before Cut 9 would, is refused by the sweep itself.
+  stale <- sma_precomputed
+  stale$warmup_range$start <- feature_start_iso(1L)
+  testthat::expect_error(
+    ledgr_sweep(sma_dated, grid, precomputed_features = stale, workers = 1L, seed = 1L),
+    "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
+    class = "ledgr_precomputed_hydration_mismatch",
+    fixed = TRUE
+  )
   sma_walk_forward <- suppressWarnings(ledgr_walk_forward(
     sma_undated, grid, folds,
     selection_rule = ledgr_rule_argmax("annualized_return"), seed = 1L
@@ -211,8 +221,9 @@ testthat::test_that("[LTB-0197] hydration is stored as the scoring start and ear
   )
   testthat::expect_true(ledgr:::ledgr_validate_precomputed_features(explicit, experiment, grid, window = window))
 
-  # An ordinary sweep also refuses a payload whose scoring range matches but
-  # whose feature state starts earlier, as one built before Cut 9 would.
+  # An ordinary sweep validates a payload whose scoring range matches but
+  # whose feature state starts earlier, as one built before Cut 9 would, with
+  # this check; LTB-0196 asserts the same refusal through ledgr_sweep().
   dated <- ledgr_experiment(
     snapshot,
     function(ctx, params) ctx$flat(),
@@ -223,7 +234,7 @@ testthat::test_that("[LTB-0197] hydration is stored as the scoring start and ear
   stale <- ledgr_precompute_features(dated, grid)
   stale$warmup_range$start <- feature_start_iso(1L)
   testthat::expect_error(
-    ledgr_sweep(dated, grid, precomputed_features = stale, workers = 1L, seed = 1L),
+    ledgr:::ledgr_validate_precomputed_features(stale, dated, grid),
     "`precomputed_features` feature state starts at 2020-01-01T00:00:00Z",
     class = "ledgr_precomputed_hydration_mismatch",
     fixed = TRUE
