@@ -17,7 +17,8 @@
 #'
 #' @param exp A `ledgr_experiment` object.
 #' @param param_grid A `ledgr_param_grid` object.
-#' @param start Optional scoring-range start. Defaults to the snapshot start.
+#' @param start Optional scoring-range start. Defaults to the experiment's opening
+#'   date, or to the snapshot start when the opening is undated.
 #' @param end Optional scoring-range end. Defaults to the snapshot end.
 #' @return A `ledgr_precomputed_features` object.
 #' @examples
@@ -50,7 +51,11 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   on.exit(release(), add = TRUE)
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
-  range <- ledgr_precompute_scoring_range(meta, start = start, end = end)
+  range <- ledgr_precompute_scoring_range(
+    meta,
+    start = start %||% ledgr_experiment_scoring_start(exp),
+    end = end
+  )
   bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
   scoring_bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$scoring_start, range$scoring_end)
   ledgr_precompute_validate_static_coverage(scoring_bars_by_id, exp$universe)
@@ -126,7 +131,11 @@ ledgr_validate_precomputed_features <- function(precomputed,
   window <- ledgr_experiment_window_resolve(exp, window)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- if (is.null(window)) {
-    ledgr_precompute_scoring_range(meta, start = start, end = end)
+    ledgr_precompute_scoring_range(
+      meta,
+      start = start %||% ledgr_experiment_scoring_start(exp),
+      end = end
+    )
   } else {
     ledgr_precompute_scoring_range(
       meta,
@@ -257,6 +266,13 @@ ledgr_precompute_snapshot_meta <- function(snapshot) {
     rlang::abort("`snapshot` must provide start/end metadata.", class = "ledgr_invalid_snapshot")
   }
   list(snapshot_hash = snapshot_hash, start = ledgr_normalize_ts_utc(start), end = ledgr_normalize_ts_utc(end))
+}
+
+# The scoring start an experiment declares without an explicit window: its
+# opening date, or NULL for the snapshot start. Durable runs, sweeps and
+# feature precompute share it so every entry point evaluates from one pulse.
+ledgr_experiment_scoring_start <- function(exp) {
+  exp$opening$date
 }
 
 ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {

@@ -442,7 +442,7 @@ ledgr_run_experiment <- function(exp,
   )
   window <- ledgr_experiment_window_resolve(exp, window)
   if (is.null(window)) {
-    start <- if (!is.null(exp$opening$date)) exp$opening$date else exp$snapshot$metadata$start_date
+    start <- ledgr_experiment_scoring_start(exp) %||% exp$snapshot$metadata$start_date
     end <- exp$snapshot$metadata$end_date
   } else {
     # Window-driven bar fetch uses scoring_start_utc here. Hydration-range bar

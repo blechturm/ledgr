@@ -213,7 +213,7 @@ ledgr_sweep_impl <- function(exp,
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- if (is.null(window)) {
-    ledgr_precompute_scoring_range(meta)
+    ledgr_precompute_scoring_range(meta, start = ledgr_experiment_scoring_start(exp))
   } else {
     ledgr_precompute_scoring_range(
       meta,
@@ -262,14 +262,16 @@ ledgr_sweep_impl <- function(exp,
     pulses_posix <- as.POSIXct(bars_by_id[[exp$universe[[1L]]]]$ts_utc, tz = "UTC")
     pulses_iso <- format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   }
-  bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
-  static_bars_views <- ledgr_bars_pulse_views(
-    bars_mat = bars_mat,
-    instrument_ids = exp$universe,
-    pulses_posix = pulses_posix
+  # Feature state is prepared over the fetched history (Workstream 19 owns
+  # where it starts). Evaluation, execution, equity and metric input begin at
+  # the scoring start, as in a durable run.
+  scoring_index <- ledgr_sweep_scoring_index(
+    pulses_posix,
+    range$scoring_start,
+    availability_active = availability_active
   )
-  metric_context <- ledgr_metric_context_resolve(exp$metric_context)
-  metric_kernel <- ledgr_metric_kernel(context = metric_context, pulses = pulses_posix)
+  scoring_sliced <- scoring_index[[1L]] > 1L
+  scoring_pulses_posix <- pulses_posix[scoring_index]
 
   if (is.null(precomputed_features)) {
     resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = FALSE)
@@ -288,9 +290,8 @@ ledgr_sweep_impl <- function(exp,
     resolved <- ledgr_sweep_resolved_from_precomputed(precomputed_features, param_grid)
     runtime_projection <- precomputed_features$projection
     if (!is.null(runtime_projection)) {
-      runtime_projection <- ledgr_projection_slice(runtime_projection, pulses_posix)
-    }
-    if (is.null(runtime_projection)) {
+      runtime_projection <- ledgr_projection_slice(runtime_projection, scoring_pulses_posix)
+    } else {
       runtime_projection <- ledgr_projection_from_payload(
         payload = precomputed_features$payload,
         universe = exp$universe,
@@ -300,6 +301,29 @@ ledgr_sweep_impl <- function(exp,
       )
     }
   }
+  if (scoring_sliced) {
+    if (length(runtime_projection$pulses_posix) != length(scoring_pulses_posix)) {
+      runtime_projection <- ledgr_projection_slice(runtime_projection, scoring_pulses_posix)
+    }
+    # One row subset per instrument, once per sweep: every candidate then
+    # shares bars aligned to the scoring pulses, as a durable run fetches them.
+    bars_by_id <- lapply(bars_by_id, function(bars) bars[scoring_index, , drop = FALSE])
+    pulses_posix <- scoring_pulses_posix
+    pulses_iso <- pulses_iso[scoring_index]
+    if (!is.null(execution_opportunities_posix)) {
+      execution_opportunities_posix <- execution_opportunities_posix[
+        seq.int(scoring_index[[1L]], length(execution_opportunities_posix))
+      ]
+    }
+  }
+  bars_mat <- ledgr_sweep_bars_matrix(bars_by_id, exp$universe)
+  static_bars_views <- ledgr_bars_pulse_views(
+    bars_mat = bars_mat,
+    instrument_ids = exp$universe,
+    pulses_posix = pulses_posix
+  )
+  metric_context <- ledgr_metric_context_resolve(exp$metric_context)
+  metric_kernel <- ledgr_metric_kernel(context = metric_context, pulses = pulses_posix)
 
   sweep_id <- ledgr_generate_sweep_id()
   rows <- vector("list", length(param_grid$params))
@@ -2423,6 +2447,31 @@ ledgr_sweep_availability_config <- function(exp) {
       execution_timing_version = ledgr_availability_execution_timing_version()
     )
   )
+}
+
+# Indexes of the prepared pulses at or after the scoring start. Pulses are
+# ascending, so the result is one contiguous run ending at the last pulse.
+# Availability keeps the calendar's two-pulse minimum for the scoring window.
+ledgr_sweep_scoring_index <- function(pulses_posix, scoring_start, availability_active = FALSE) {
+  start <- as.POSIXct(
+    ledgr_normalize_ts_utc(scoring_start),
+    tz = "UTC",
+    format = "%Y-%m-%dT%H:%M:%SZ"
+  )
+  index <- which(as.POSIXct(pulses_posix, tz = "UTC") >= start)
+  minimum <- if (isTRUE(availability_active)) 2L else 1L
+  if (length(index) < minimum) {
+    rlang::abort(
+      sprintf(
+        "The scoring range starting %s must contain at least %d pulse%s.",
+        ledgr_normalize_ts_utc(scoring_start),
+        minimum,
+        if (minimum > 1L) "s" else ""
+      ),
+      class = c("ledgr_run_window_too_short", "ledgr_invalid_config")
+    )
+  }
+  index
 }
 
 ledgr_sweep_align_availability_bars <- function(bars_by_id, universe, pulses_posix) {

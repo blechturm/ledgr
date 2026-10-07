@@ -532,11 +532,27 @@ ledgr_experiment_window <- function(exp,
   } else {
     ledgr_walk_forward_posix(hydration_start_utc, "`hydration_start_utc`")
   }
-  execution_start <- if (is.null(execution_start_utc)) {
-    scoring_start
-  } else {
-    ledgr_walk_forward_posix(execution_start_utc, "`execution_start_utc`")
+  # Until the joint WS3/WS4 history-start design, scoring_start is the sole
+  # evaluation and execution boundary. A distinct execution start would need
+  # semantics for targets returned between two clocks, so it refuses.
+  if (!is.null(execution_start_utc)) {
+    requested_execution_start <- ledgr_walk_forward_posix(execution_start_utc, "`execution_start_utc`")
+    if (!identical(as.numeric(requested_execution_start), as.numeric(scoring_start))) {
+      rlang::abort(
+        sprintf(
+          paste(
+            "`execution_start_utc` (%s) differs from the scoring start (%s).",
+            "Execution starts at the scoring start; omit `execution_start_utc`",
+            "or set it equal to `start_utc`."
+          ),
+          ledgr_walk_forward_iso(requested_execution_start),
+          ledgr_walk_forward_iso(scoring_start)
+        ),
+        class = c("ledgr_unsupported_execution_start", "ledgr_walk_forward_invalid_fold_window")
+      )
+    }
   }
+  execution_start <- scoring_start
   snapshot_start <- ledgr_walk_forward_posix(meta$start, "`snapshot_start`")
   snapshot_end <- ledgr_walk_forward_posix(meta$end, "`snapshot_end`")
 
@@ -545,9 +561,6 @@ ledgr_experiment_window <- function(exp,
   }
   if (hydration_start > execution_start) {
     rlang::abort("Window hydration start must be before or equal to execution start.", class = "ledgr_walk_forward_invalid_fold_window")
-  }
-  if (execution_start < scoring_start || execution_start > scoring_end) {
-    rlang::abort("Window execution start must fall inside the scoring window.", class = "ledgr_walk_forward_invalid_fold_window")
   }
   if (hydration_start < snapshot_start || scoring_end > snapshot_end) {
     rlang::abort("Experiment window must be inside the sealed snapshot range.", class = "ledgr_walk_forward_invalid_fold_window")

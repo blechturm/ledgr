@@ -11,7 +11,8 @@ ledgr_precompute_features(exp, param_grid, start = NULL, end = NULL)
 
 \item{param_grid}{A \code{ledgr_param_grid} object.}
 
-\item{start}{Optional scoring-range start. Defaults to the snapshot start.}
+\item{start}{Optional scoring-range start. Defaults to the experiment's opening
+date, or to the snapshot start when the opening is undated.}
 
 \item{end}{Optional scoring-range end. Defaults to the snapshot end.}
 }
