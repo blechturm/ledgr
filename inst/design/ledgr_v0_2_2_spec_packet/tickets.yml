@@ -139,7 +139,7 @@ cuts:
     workstreams: [18, 19]
     closeout: "LDG-2969 and LDG-2971 evidence and the two accepted close reviews form the Cut 9 closeout; no separate cut-level essay is created."
     accepted: "2026-10-07 by the maintainer after the PASS_AFTER_PATCHES cut review and the incorporated patches. Workstream 18 opens; Workstream 19 opens only after Workstream 18 is accepted."
-    close_review: "Workstream 18: an agent-run adversarial review of 1cd9e52..29fc9f4 returned CHANGES_REQUIRED with four execution-confirmed findings; d9a4776 corrected them and the focused agent re-review of 29fc9f4..3bee575 returned PASS. These agent reviews are provisional; the maintainer Type 1 close review of Workstream 18 is pending, and Workstream 19 opens only after Workstream 18 is accepted."
+    close_review: "Workstream 18: an agent-run adversarial review of 1cd9e52..29fc9f4 returned CHANGES_REQUIRED with four execution-confirmed findings; d9a4776 corrected them and the focused agent re-review of 29fc9f4..3bee575 returned PASS. With no independent second reviewer available, the maintainer accepted Workstream 18 on 2026-10-07 on the strength of those agent reviews and opened Workstream 19. Workstream 19 close review is pending."
     status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
@@ -287,7 +287,7 @@ workstreams:
   - id: 18
     name: "Scoring-boundary correctness"
     cut: 9
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: 17
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 18", reason: "One claim joins LDG-2968 and LDG-2969: a dated experiment or explicit fold window never evaluates, trades, writes equity or contributes metrics before scoring_start_utc, and any distinct execution_start_utc refuses. Ordinary run, backtest, sweep, promotion and an end-to-end walk-forward fold agree on that boundary. The review reruns the maintained public probe, checks each arm through the observables it actually exposes, restores each pre-cut range selection independently, confirms the boundary group is green while the named value group remains red for Workstream 19, and confirms the archived LDG-2615 packet was not edited."}

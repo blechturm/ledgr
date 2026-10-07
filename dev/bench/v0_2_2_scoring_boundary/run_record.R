@@ -181,6 +181,92 @@ refusal <- tryCatch(
 record("execution_start", "outcome", refusal$class, "internal")
 record("execution_start", "message", refusal$message, "internal")
 
+# Workstream 19 feature-start arms (LDG-2970). Precompute must not carry state
+# from before its start, omitted hydration must be stored as the scoring start,
+# and an earlier explicit hydration start must refuse.
+precomputed <- ledgr_precompute_features(exp_dated, grid)
+record("precompute", "scoring_start", precomputed$scoring_range$start)
+record("precompute", "warmup_start", precomputed$warmup_range$start)
+precomputed_sweep <- ledgr_sweep(
+  exp_dated, grid, precomputed_features = precomputed,
+  retain = retain, workers = 1L, seed = 1L
+)
+record_sweep("precompute_sweep", precomputed_sweep)
+explicit <- ledgr_precompute_features(exp_plain, grid, start = iso(day(6)))
+record("precompute_explicit", "warmup_start", explicit$warmup_range$start)
+record("hydration", "window_hydration_start", ts_text(window$hydration_start_utc), "internal")
+hydration_refusal <- tryCatch(
+  {
+    ledgr:::ledgr_experiment_window(
+      exp_plain, iso(day(6)), iso(day(10)),
+      hydration_start_utc = iso(day(1))
+    )
+    list(class = "accepted", message = "")
+  },
+  error = function(e) list(class = class(e)[[1L]], message = conditionMessage(e))
+)
+record("hydration", "earlier_outcome", hydration_refusal$class, "internal")
+record("hydration", "earlier_message", hydration_refusal$message, "internal")
+
+# Recursive witness. Closes 30 on days 1-5 then 6..10. TTR's EMA(3) is
+# recursive: from day 1 it reads 18, 12.5, 10.25, 9.625, 9.8125 on days 6-10;
+# restarted on day 6 it reads NA, NA, 7, 8, 9. ledgr_ind_ema(3) is a bounded
+# four-bar filter, so a restart shows only as three warmup NAs. The strategy
+# holds one share while the recursive EMA is below 9.
+ema_bars <- data.frame(
+  instrument_id = "AAA",
+  ts_utc = day(1:10),
+  open = c(rep(30, 5), 6:10),
+  high = c(rep(30, 5), 6:10) + 0.5,
+  low = c(rep(30, 5), 6:10) - 0.5,
+  close = c(rep(30, 5), 6:10),
+  volume = 1000
+)
+ema_snapshot <- ledgr_snapshot_from_df(ema_bars, db_path = tempfile(fileext = ".duckdb"))
+on.exit(ledgr_snapshot_close(ema_snapshot), add = TRUE)
+ema_con <- ledgr:::get_connection(ema_snapshot)
+ema_strategy <- function(ctx, params) {
+  recursive <- ctx$feature("AAA", "recursive")
+  bounded <- ctx$feature("AAA", "bounded")
+  label <- function(x) if (is.na(x)) "NA" else format(x)
+  target <- ctx$flat()
+  if (!is.na(recursive) && recursive < 9) target[["AAA"]] <- 1
+  list(
+    targets = target,
+    state_update = list(
+      recursive = c(ctx$state_prev$recursive, label(recursive)),
+      bounded = c(ctx$state_prev$bounded, label(bounded))
+    )
+  )
+}
+ema_exp <- ledgr_experiment(
+  ema_snapshot, ema_strategy,
+  features = ledgr_feature_map(
+    recursive = ledgr_ind_ttr("EMA", input = "close", n = 3L),
+    bounded = ledgr_ind_ema(3L)
+  ),
+  opening = ledgr_opening(cash = 1000, date = iso(day(6))),
+  cost_model = ledgr_cost_zero()
+)
+ema_run <- ledgr_run(ema_exp, run_id = "boundary-ema-run")
+ema_equity <- ledgr_results(ema_run, "equity")
+ema_state <- DBI::dbGetQuery(
+  ema_con,
+  "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc DESC LIMIT 1",
+  params = list(ema_run$run_id)
+)$state_json
+ema_seen <- ledgr:::ledgr_json_read_nested(ema_state[[1L]])
+record("ema_run", "final_equity", format(ema_equity$equity[[nrow(ema_equity)]], digits = 15))
+record("ema_run", "recursive_seen", ema_seen$recursive)
+record("ema_run", "bounded_seen", ema_seen$bounded)
+close(ema_run)
+ema_sweep <- ledgr_sweep(ema_exp, grid, retain = retain, workers = 1L, seed = 1L)
+record("ema_sweep", "final_equity", format(ema_sweep$final_equity[[1L]], digits = 15))
+ema_promoted <- ledgr_promote(ema_exp, ledgr_candidate(ema_sweep, 1L), run_id = "boundary-ema-promote")
+ema_promoted_equity <- ledgr_results(ema_promoted, "equity")
+record("ema_promote", "final_equity", format(ema_promoted_equity$equity[[nrow(ema_promoted_equity)]], digits = 15))
+close(ema_promoted)
+
 observations <- do.call(rbind, rows)
 utils::write.csv(observations, file.path(out_dir, "observations.csv"), row.names = FALSE)
 environment <- data.frame(

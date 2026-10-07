@@ -28,6 +28,24 @@ scoring_end <- 10L
 train <- c(6L, 8L)
 test <- c(9L, 10L)
 execution_start_class <- "ledgr_unsupported_execution_start"
+hydration_class <- "ledgr_unsupported_hydration_start"
+
+# EMA fixture: closes 30 on days 1-5, then 6..10, opening on day 6. Restarted
+# at day 6, TTR's EMA(3) seeds with the mean of the first three closes and then
+# recurses with alpha 0.5; ledgr_ind_ema(3) is the four-bar filter with weights
+# 0.5, 0.25, 0.125, 0.125. The strategy holds one share while the recursive EMA
+# is below 9, so it buys on day 8 (7 < 9), fills at the day-9 open of 9 and is
+# valued at the day-10 close of 10; the day-10 exit cannot fill.
+ema_restart <- local({
+  closes <- 6:10
+  recursive <- rep(NA_real_, 5L)
+  recursive[[3L]] <- mean(closes[1:3])
+  for (i in 4:5) recursive[[i]] <- 0.5 * closes[[i]] + 0.5 * recursive[[i - 1L]]
+  weights <- c(0.5, 0.25, 0.125, 0.125)
+  bounded <- rep(NA_real_, 5L)
+  for (i in 4:5) bounded[[i]] <- sum(weights * closes[i:(i - 3L)])
+  list(recursive = recursive, bounded = bounded, final = initial - 9 + 10)
+})
 
 # Final equity when SMA(3) state starts at `feature_start` and the strategy is
 # evaluated over [start, end]: first finite SMA on max(start, feature_start + 2),
@@ -124,6 +142,37 @@ assertions <- function(obs) {
       sprintf("training uses the test rule: expected %g, got %s", restart_train, v("walk_forward", "train_final_equity")))
   add("value", "walk_forward_test", "final_equity", identical(num("walk_forward_test", "final_equity"), restart_test),
       sprintf("expected %g, got %s", restart_test, v("walk_forward_test", "final_equity")))
+
+  # Workstream 19 feature-start contract (LDG-2970).
+  add("value", "backtest", "final_equity", identical(num("backtest", "final_equity"), num("run", "final_equity")),
+      sprintf("backtest %s, run %s", v("backtest", "final_equity"), v("run", "final_equity")))
+  add("value", "precompute", "warmup_start", identical(v("precompute", "warmup_start"), day_iso(scoring_start)),
+      sprintf("default precompute warmup starts %s", v("precompute", "warmup_start")))
+  add("value", "precompute", "scoring_start", identical(v("precompute", "scoring_start"), day_iso(scoring_start)),
+      sprintf("default precompute scoring starts %s", v("precompute", "scoring_start")))
+  add("value", "precompute_explicit", "warmup_start", identical(v("precompute_explicit", "warmup_start"), day_iso(scoring_start)),
+      sprintf("explicit start precompute warmup starts %s", v("precompute_explicit", "warmup_start")))
+  add("value", "precompute_sweep", "final_equity", identical(num("precompute_sweep", "final_equity"), restart_full),
+      sprintf("expected %g, got %s", restart_full, v("precompute_sweep", "final_equity")))
+  add("value", "hydration", "window_hydration_start", identical(v("hydration", "window_hydration_start"), day_iso(scoring_start)),
+      sprintf("omitted hydration stored as %s", v("hydration", "window_hydration_start")))
+  add("value", "walk_forward", "hydration_start", identical(v("walk_forward", "hydration_start"), day_iso(train[[1L]])),
+      sprintf("fold hydration stored as %s", v("walk_forward", "hydration_start")))
+  add("value", "hydration", "earlier_outcome", identical(v("hydration", "earlier_outcome"), hydration_class),
+      sprintf("expected %s, got %s", hydration_class, v("hydration", "earlier_outcome")))
+
+  seen <- function(arm, observable) as.numeric(suppressWarnings(strsplit(v(arm, observable), ",", fixed = TRUE)[[1L]]))
+  same <- function(x, y) length(x) == length(y) && identical(is.na(x), is.na(y)) && all(x[!is.na(x)] == y[!is.na(y)])
+  add("value", "ema_run", "recursive_seen", same(seen("ema_run", "recursive_seen"), ema_restart$recursive),
+      sprintf("expected %s, got %s", paste(ema_restart$recursive, collapse = ","), v("ema_run", "recursive_seen")))
+  add("value", "ema_run", "bounded_seen", same(seen("ema_run", "bounded_seen"), ema_restart$bounded),
+      sprintf("expected %s, got %s", paste(ema_restart$bounded, collapse = ","), v("ema_run", "bounded_seen")))
+  add("value", "ema_run", "final_equity", identical(num("ema_run", "final_equity"), ema_restart$final),
+      sprintf("expected %g, got %s", ema_restart$final, v("ema_run", "final_equity")))
+  for (arm in c("ema_sweep", "ema_promote")) {
+    add("value", arm, "final_equity", identical(num(arm, "final_equity"), ema_restart$final),
+        sprintf("expected %g, got %s", ema_restart$final, v(arm, "final_equity")))
+  }
   do.call(rbind, out)
 }
 
