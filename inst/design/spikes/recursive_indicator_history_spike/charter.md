@@ -1,8 +1,8 @@
 # Charter: Recursive-Indicator History Spike
 
-**Status:** Draft charter, written by Claude at the maintainer's request on
-2026-10-07 and rewritten after peer review on 2026-10-08; awaiting maintainer
-acceptance. Binds nothing.
+**Status:** Executable charter, written by Claude at the maintainer's request on
+2026-10-07 and rewritten after peer review on 2026-10-08; accepted by the maintainer
+on 2026-10-08 after two review rounds. Binds nothing.
 **Protocol:** `inst/design/spike_protocol.md`
 **Probe:** `dev/spikes/recursive-indicator-history/probe_findings.md`
 **Feeds:** the joint WS3/WS4 history-start decision that replaces Cut 9's

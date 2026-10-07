@@ -1,8 +1,8 @@
 # Charter: Two-Clock History Spike
 
-**Status:** Draft charter, written by Claude at the maintainer's request on
-2026-10-07 and revised after peer review on 2026-10-08; awaiting maintainer
-acceptance. Binds nothing.
+**Status:** Executable charter, written by Claude at the maintainer's request on
+2026-10-07 and revised after peer review on 2026-10-08; accepted by the maintainer
+on 2026-10-08 after two review rounds. Binds nothing.
 **Protocol:** `inst/design/spike_protocol.md`
 **Probe:** `dev/spikes/two-clock-history/probe_findings.md` (run at `9452e9e`)
 **Feeds:** accepted synthesis v11 section 7, parts (a) semantic evidence and
