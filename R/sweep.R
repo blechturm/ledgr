@@ -213,7 +213,7 @@ ledgr_sweep_impl <- function(exp,
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- if (is.null(window)) {
-    ledgr_precompute_scoring_range(meta, start = ledgr_experiment_scoring_start(exp))
+    ledgr_precompute_scoring_range(meta, start = ledgr_experiment_scoring_start(exp, meta$start))
   } else {
     ledgr_precompute_scoring_range(
       meta,
@@ -265,11 +265,7 @@ ledgr_sweep_impl <- function(exp,
   # Feature state is prepared over the fetched history (Workstream 19 owns
   # where it starts). Evaluation, execution, equity and metric input begin at
   # the scoring start, as in a durable run.
-  scoring_index <- ledgr_sweep_scoring_index(
-    pulses_posix,
-    range$scoring_start,
-    availability_active = availability_active
-  )
+  scoring_index <- ledgr_sweep_scoring_index(pulses_posix, range$scoring_start)
   scoring_sliced <- scoring_index[[1L]] > 1L
   scoring_pulses_posix <- pulses_posix[scoring_index]
 
@@ -381,7 +377,8 @@ ledgr_sweep_impl <- function(exp,
   attr(out, "sweep_id") <- sweep_id
   attr(out, "snapshot_id") <- exp$snapshot$snapshot_id
   attr(out, "snapshot_hash") <- meta$snapshot_hash
-  attr(out, "scoring_range") <- list(start = range$scoring_start, end = range$scoring_end)
+  # The pulses actually scored, as a reopened sweep reconstructs them.
+  attr(out, "scoring_range") <- list(start = pulses_iso[[1L]], end = pulses_iso[[length(pulses_iso)]])
   attr(out, "universe") <- exp$universe
   attr(out, "master_seed") <- seed
   attr(out, "seed_contract") <- "ledgr_seed_v1"
@@ -2451,22 +2448,19 @@ ledgr_sweep_availability_config <- function(exp) {
 
 # Indexes of the prepared pulses at or after the scoring start. Pulses are
 # ascending, so the result is one contiguous run ending at the last pulse.
-# Availability keeps the calendar's two-pulse minimum for the scoring window.
-ledgr_sweep_scoring_index <- function(pulses_posix, scoring_start, availability_active = FALSE) {
+# Like a durable run, next-bar fills need at least two scoring pulses.
+ledgr_sweep_scoring_index <- function(pulses_posix, scoring_start) {
   start <- as.POSIXct(
     ledgr_normalize_ts_utc(scoring_start),
     tz = "UTC",
     format = "%Y-%m-%dT%H:%M:%SZ"
   )
   index <- which(as.POSIXct(pulses_posix, tz = "UTC") >= start)
-  minimum <- if (isTRUE(availability_active)) 2L else 1L
-  if (length(index) < minimum) {
+  if (length(index) < 2L) {
     rlang::abort(
-      sprintf(
-        "The scoring range starting %s must contain at least %d pulse%s.",
-        ledgr_normalize_ts_utc(scoring_start),
-        minimum,
-        if (minimum > 1L) "s" else ""
+      paste0(
+        "Execution window must contain at least two pulses for next-bar ",
+        "fill semantics."
       ),
       class = c("ledgr_run_window_too_short", "ledgr_invalid_config")
     )

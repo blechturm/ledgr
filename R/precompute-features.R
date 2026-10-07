@@ -53,7 +53,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- ledgr_precompute_scoring_range(
     meta,
-    start = start %||% ledgr_experiment_scoring_start(exp),
+    start = start %||% ledgr_experiment_scoring_start(exp, meta$start),
     end = end
   )
   bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
@@ -133,7 +133,7 @@ ledgr_validate_precomputed_features <- function(precomputed,
   range <- if (is.null(window)) {
     ledgr_precompute_scoring_range(
       meta,
-      start = start %||% ledgr_experiment_scoring_start(exp),
+      start = start %||% ledgr_experiment_scoring_start(exp, meta$start),
       end = end
     )
   } else {
@@ -271,8 +271,16 @@ ledgr_precompute_snapshot_meta <- function(snapshot) {
 # The scoring start an experiment declares without an explicit window: its
 # opening date, or NULL for the snapshot start. Durable runs, sweeps and
 # feature precompute share it so every entry point evaluates from one pulse.
-ledgr_experiment_scoring_start <- function(exp) {
-  exp$opening$date
+# An opening date before the snapshot start begins at the snapshot start, as a
+# durable run's bar fetch does, when `snapshot_start` is supplied.
+ledgr_experiment_scoring_start <- function(exp, snapshot_start = NULL) {
+  date <- exp$opening$date
+  if (is.null(date) || is.null(snapshot_start)) {
+    return(date)
+  }
+  date_posix <- as.POSIXct(ledgr_normalize_ts_utc(date), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  start_posix <- as.POSIXct(ledgr_normalize_ts_utc(snapshot_start), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  if (date_posix < start_posix) snapshot_start else date
 }
 
 ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {

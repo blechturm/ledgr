@@ -125,7 +125,7 @@ testthat::test_that("[LTB-0193] a dated availability sweep executes and values l
     snapshot,
     function(ctx, params) {
       target <- ctx$hold()
-      target[["AAA"]] <- 2
+      target[["AAA"]] <- if (ctx$ts_utc < "2020-01-09") 2 else 0
       target
     },
     opening = ledgr_opening(
@@ -141,22 +141,29 @@ testthat::test_that("[LTB-0193] a dated availability sweep executes and values l
   on.exit(close(run), add = TRUE)
   run_equity <- scoring_boundary_equity(ledgr_results(run, "equity"))
   # Day 6 decides; the next session opens at 7, so one more share costs 7.
-  # Day 8 has no bar and is valued at the stale day-7 close.
+  # Day 8 has no bar and is valued at the stale day-7 close. Day 9 decides to
+  # sell both shares at the day-10 open of 10.
   testthat::expect_identical(run_equity$ts_utc, as.Date("2020-01-01") + 5:9)
   testthat::expect_identical(run_equity$equity, c(1006, 1007, 1007, 1011, 1013))
   fills <- ledgr_results(run, "fills")
-  testthat::expect_identical(nrow(fills), 1L)
-  testthat::expect_identical(as.numeric(fills$price), 7)
+  session_open <- function(d) as.POSIXct(paste0("2020-01-", sprintf("%02d", d), " 09:30:00"), tz = "UTC")
+  testthat::expect_identical(as.numeric(fills$price), c(7, 10))
+  testthat::expect_identical(as.numeric(fills$ts_utc), as.numeric(session_open(c(7L, 10L))))
 
   sweep <- ledgr_sweep(
     experiment,
     ledgr_param_grid(only = list()),
-    retain = ledgr_sweep_retention(returns = "completed"),
+    retain = ledgr_sweep_retention(returns = "completed", trades = "closed"),
     workers = 1L,
     seed = 1L
   )
   testthat::expect_identical(sweep$status[[1L]], "DONE")
   testthat::expect_identical(scoring_boundary_equity(ledgr_sweep_returns(sweep)), run_equity)
+  # The execution-opportunity vector times the fill: the closed trade must
+  # carry the run's day-10 session-open timestamp, not a neighbouring session.
+  trades <- ledgr_sweep_trades(sweep)
+  testthat::expect_identical(as.numeric(trades$close_ts_utc), as.numeric(session_open(10L)))
+  testthat::expect_identical(as.numeric(trades$realized_pnl), 12)
 })
 
 testthat::test_that("[LTB-0194] a distinct execution start refuses before execution", {
@@ -186,4 +193,52 @@ testthat::test_that("[LTB-0194] a distinct execution start refuses before execut
     execution_start_utc = scoring_boundary_iso(6L)
   )
   testthat::expect_identical(same$execution_start_utc, same$scoring_start_utc)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0195] run and sweep agree on boundary edges and keep the scored range on reopen", {
+  snapshot <- scoring_boundary_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  always_long <- function(ctx, params) {
+    target <- ctx$flat()
+    target[["AAA"]] <- 1
+    target
+  }
+  dated <- function(date) {
+    ledgr_experiment(
+      snapshot,
+      always_long,
+      opening = ledgr_opening(cash = 1000, date = date),
+      cost_model = ledgr_cost_zero()
+    )
+  }
+  grid <- ledgr_param_grid(only = list())
+  retain <- ledgr_sweep_retention(returns = "completed")
+
+  # An opening date before the snapshot starts at the first bar in both paths:
+  # day 1 decides, day 2 fills at 2, day 10 closes at 10.
+  early <- dated("2019-12-31")
+  run <- ledgr_run(early, run_id = "scoring-boundary-early")
+  on.exit(close(run), add = TRUE)
+  sweep <- ledgr_sweep(early, grid, retain = retain, workers = 1L, seed = 1L)
+  testthat::expect_identical(sweep$final_equity[[1L]], 1008)
+  testthat::expect_identical(scoring_boundary_equity(ledgr_sweep_returns(sweep)),
+                             scoring_boundary_equity(ledgr_results(run, "equity")))
+  testthat::expect_identical(ledgr_precompute_features(early, grid)$scoring_range$start,
+                             scoring_boundary_iso(1L))
+
+  # One scoring pulse cannot fill at a next bar: both paths refuse.
+  last <- dated(scoring_boundary_iso(10L))
+  testthat::expect_error(ledgr_run(last, run_id = "scoring-boundary-last"),
+                         class = "ledgr_run_window_too_short")
+  testthat::expect_error(ledgr_sweep(last, grid, workers = 1L, seed = 1L),
+                         class = "ledgr_run_window_too_short")
+
+  # A start between bars scores from the next bar, in memory and after reopen.
+  between <- ledgr_sweep(dated("2020-01-06T12:00:00Z"), grid, retain = retain, workers = 1L, seed = 1L)
+  scored <- list(start = scoring_boundary_iso(7L), end = scoring_boundary_iso(10L))
+  testthat::expect_identical(attr(between, "scoring_range"), scored)
+  ledgr_sweep_save(between, snapshot, sweep_id = "scoring-boundary-between")
+  reopened <- ledgr_sweep_open(snapshot, "scoring-boundary-between")
+  testthat::expect_identical(attr(reopened, "scoring_range"), scored)
 })
