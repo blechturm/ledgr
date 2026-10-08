@@ -1,0 +1,49 @@
+== D2-a: constructor today refuses a same-precedence 3-chain (expected, 4.2 direct-pair rule)
+refused: ledgr_fact_structural_conflict 
+
+== D2-b: what the resolver does with a same-precedence 3-chain if D2 admits it (monotone knowledge)
+  diagonal day 4: halted
+  diagonal day 6: active
+  diagonal day 8: quotation_only
+
+== D2-c: same chain, but the MIDDLE link becomes known last (f2 known day 8)
+  diagonal day 4.0: halted
+  diagonal day 6.0: conflicting
+  diagonal day 7.0: conflicting
+  diagonal day 8.5: unknown
+  (f1 and f3 are chain-linked, so D2 exempts the pair; at t in [5, 8) only f1 and f3 are knowable,
+    f3 names an unknown f2, and the resolver returns the tied-precedence answer.)
+
+== D2-d: fork: f2 and f3 both directly supersede f1, and disagree with each other
+  today's pairwise validator: refused today: ledgr_fact_structural_conflict 
+  diagonal day 4.0: halted
+  diagonal day 5.5: conflicting
+  diagonal day 7.0: conflicting
+  (a connected-component exemption would exempt (f2, f3); an ancestor-only exemption would not.)
+
+== D2-e: ingest-time runtime-conflict helper reads supersession differently (predecessor truncated)
+  ledgr_status_runtime_conflicts:  
+  prepared diagonal day 4: halted
+  prepared diagonal day 7: active
+
+== D5-a: interval membership: TRUE [1,10) known day 2; FALSE [10,inf) known day 11
+  constructor: accepted (touching half-open intervals)
+  day 9 noon: fold members_at = {X}; ledgr_facts_resolve member = TRUE (member_asserted)
+  day 10 noon: fold members_at = {}; ledgr_facts_resolve member = NA (unknown_no_usable_evidence)
+  day 11 noon: fold members_at = {}; ledgr_facts_resolve member = FALSE (nonmember_asserted)
+  (the exit on day 10 is visible on day 10 although its only encoding is knowable on day 11;
+    the end date rides on the day-2 row, so the diagonal shows the exit one day before it is knowable.)
+
+== D5-b: the honest encoding (open TRUE known day 2, open FALSE known day 11) is refused
+  refused: ledgr_fact_structural_conflict 
+
+== D3/D4-a: TTR SMA is certified strict_window today (so a 'TTR defaults history_dependent' rule contradicts it)
+  ledgr_ind_ttr('SMA', n=5)$gap_contract = strict_window 
+
+== D4-b: bounded built-ins are not bit-stable across starts on the dense path (cumsum rolling mean)
+  SMA(20) dense path: max |full - restart@1001| on common rows = 2.91e-12; identical = FALSE
+  SMA(20) strict built-in path: identical across starts = TRUE
+  TTR::SMA(20): max gap across starts = 9.95e-14; identical = FALSE
+  TTR::BBands up(20): max gap across starts = 1.14e-13
+  TTR::RSI(14): max gap across starts after 500 bars = 0 (recursive, decays)
+  TTR::WMA(20): max gap across starts = 0

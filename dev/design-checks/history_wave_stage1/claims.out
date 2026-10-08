@@ -1,0 +1,33 @@
+== D3-F2: TTR rules: gap_contract and max cross-start gap (3000-bar walk, restart at 1001, compare after 600 bars)
+  RSI              gap_contract=none          max_rel_gap=0 
+  SMA              gap_contract=strict_window max_rel_gap=6.41e-16 
+  EMA              gap_contract=none          max_rel_gap=0 
+  ATR              ERROR TTR::ATR returned multiple columns; choose `output`. Available outputs: tr, atr, trueHigh, trueLow. 
+  MACD             ERROR TTR::MACD returned multiple columns; choose `output`. Available outputs: macd, signal. 
+  WMA              gap_contract=none          max_rel_gap=0 
+  ROC              gap_contract=none          max_rel_gap=0 
+  momentum         gap_contract=none          max_rel_gap=0 
+  CCI              gap_contract=none          max_rel_gap=1.15e-11 
+  BBands           ERROR TTR::BBands returned multiple columns; choose `output`. Available outputs: dn, mavg, up, pctB. 
+  aroon            ERROR TTR::aroon returned multiple columns; choose `output`. Available outputs: aroonUp, aroonDn, oscillator. 
+  DonchianChannel  ERROR TTR::DonchianChannel returned multiple columns; choose `output`. Available outputs: high, mid, low. 
+  MFI              gap_contract=none          max_rel_gap=0 
+  CMF              gap_contract=none          max_rel_gap=8.33e-16 
+  runMean          gap_contract=none          max_rel_gap=6.41e-16 
+  runSD            gap_contract=none          max_rel_gap=0 
+  runVar           gap_contract=none          max_rel_gap=0 
+  runMAD           gap_contract=none          max_rel_gap=0 
+ledgr_ind_ema(5) gap_contract: none 
+ledgr_ind_sma(5) gap_contract: strict_window 
+
+== D5-F2: lifetime: same-assertion restatement vs opposing overlap
+  known_inactive then known_inactive (restated later): accepted 
+  known_active then known_inactive (opposing): refused: ledgr_fact_structural_conflict 
+
+== D1-F6: a fact known before it takes effect is accepted
+  status known day 2, effective day 5: accepted 
+
+== D1-F7: constructors with knowledge_time
+  ledgr_facts_sessions               formals: df, venue_id, knowledge, timezone
+  ledgr_facts_membership_snapshots   formals: df, universe_id, complete, knowledge
+  ledgr_facts_lifetime               formals: df, knowledge

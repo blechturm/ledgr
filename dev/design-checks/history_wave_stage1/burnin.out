@@ -1,0 +1,4 @@
+bars after restart until bit-identical to the full-history series (then identical to the end):
+  EMA14   226  (identical thereafter: TRUE)
+  RSI14   489  (identical thereafter: TRUE)
+  EMA50   859  (identical thereafter: TRUE)

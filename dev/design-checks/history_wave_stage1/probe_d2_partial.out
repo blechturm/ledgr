@@ -1,0 +1,14 @@
+f1 halted [3,9) known 3; f2 active [5,7) known 5, supersedes f1
+constructor: accepted 
+  prepared provider (resolve_status) day 4: halted
+  prepared provider (resolve_status) day 6: active
+  prepared provider (resolve_status) day 8: halted
+  ingest helper ledgr_status_runtime_conflicts truncates f1 at f2's start: f1 end becomes day 5, so on day 8 f1 is not 'usable' there.
+Error in `ledgr_facts_inspection_family()` at ledgr/R/availability-inspection.R:99:3:
+! `family` must be one of: membership, sessions.
+Backtrace:
+    ▆
+ 1. └─ledgr::ledgr_facts_resolve(...)
+ 2.   └─ledgr:::ledgr_facts_inspection_family(family) at ledgr/R/availability-inspection.R:99:3
+ 3.     └─rlang::abort(...) at ledgr/R/availability-inspection.R:241:5
+Execution halted
