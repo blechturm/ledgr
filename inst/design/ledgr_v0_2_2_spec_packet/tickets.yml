@@ -156,6 +156,21 @@ cuts:
     accepted: "2026-10-08 by the maintainer, who instructed implementation once the cut review is green."
     close_review: "Workstream 20: an agent-run adversarial Type 1 close review of 21eae89..47f739b returned CHANGES_REQUIRED with one blocking finding (F1: DBI::dbWithTransaction() rolled back a user interrupt in the pulse loop and returned normally, so a dense run finished DONE without its rolled-back pulses and could not resume; pre-existing but contrary to the new Early exit contract) and six should-fix or nit findings (stale walk-forward article, three behaviours without a detector, a weak resumed arm, an evidence count, an unnamed pre-existing shape, a flat-price comparison). a478551, ecb00e5 and b203b80 corrected them; the focused agent re-review of 47f739b..b203b80 returned PASS after rerunning the oracle, the F1 probes and the F3 mutations. Review accounting: one cut review, two focused cut re-reviews, one close review and one focused close re-review over four tickets, 1.250 against the 0.5 gate, recorded rather than padded. Maintainer acceptance of Workstream 20 and Cut 10 is pending."
     status: "open"
+  - id: 11
+    name: "Real-data continuity II"
+    cut: "2026-10-08"
+    opening: "Cut 10's close routed three confirmed real-data problems to the maintainer: LFB-019, walk-forward carry across gapped test windows, and resume of interrupted walk-forward test runs. The maintainer decided on 2026-10-08 to fix all three, together with whatever the 1998-2026 Sharadar run exposes, in one cut rather than two, so the cut opens with the run that measures them. The eight Sharadar adapter patches (inst/design/ledgr_v0_2_2_spec_packet/sharadar_adapter_survey.md, section 2) live in ledgr-research and are an external prerequisite of LDG-2976, not ledgr tickets. This draft is incomplete by design: LDG-2976 may add tickets through a recorded cut amendment, and no implementation starts before that amendment, independent cut review and maintainer acceptance."
+    cut_review: "Pending; held until LDG-2976 records the Sharadar run and any amendment."
+    authority: "inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md WS2 (ordinary gaps must not abort the helper pipeline; availability-aware state reconstruction once a vendor-neutral reproducer confirms the gap; interruptions become resumable or classed failures), WS8 (the integrated end-to-end record) and its 2026-10-08 change-control amendment; release definition of done items 7 and 8; Cut 10 out_of_scope and close_review; inst/design/rfc/rfc_history_wave_v0_2_2_decisions.md, section Cut goal (the 1998-2026 Sharadar goal and the carried-bar decision); inst/design/ledgr_v0_2_2_spec_packet/sharadar_adapter_survey.md"
+    source_table: "Current tree 6ade195. LFB-019: on the ledgr-research reproducer's gap fixture, ledgr_state_reconstruct() on a completed availability run whose member misses a bar fails with ledgr_missing_bars (reproduced on 0c1fe2b during Cut 10). Walk-forward carry: with opening_state_policy = carry_test_state and rolling folds whose step exceeds the test window, an instrument that delists between two test windows makes the next test run INCOMPLETE with terminal_mark_unavailable and the session PARTIAL; flat_test_state completes (reproduced on 0c1fe2b and in the Cut 10 cut review). Walk-forward resume: ledgr_walk_forward_run_or_open() (R/walk-forward.R) opens any existing test run ID with ledgr_run_open(), which refuses a run that is not DONE or INCOMPLETE with ledgr_run_not_complete (R/run-store.R), so after Cut 10 records an interrupted test run FAILED a rerun of the session fails that fold (read, not yet executed). Fast profile: 536 blocks in 106.29 to 111.92 seconds against the 112-second bound across Cut 10 runs. EXP-0003 on ledgr 0.2.1.0 ran about 25 minutes cold and peaked at 7.0 GB; no v0.2.2 record exists at this scale."
+    decisions: "Maintainer, 2026-10-08. (1) Fix LFB-019, the gapped-window carry and walk-forward test-run resume in this cut, together with stoppers found by the Sharadar run. (2) Run the Sharadar census and end-to-end run first, on the patched adapter over 1998-2026 with carried zero-volume bars dropped, and log every stop; each stop is fixed in this cut through a recorded amendment, or routed with a durable reason. (3) Executor drafts, for acceptance at cut review: carry_test_state with test windows that leave sessions between them is refused when the walk-forward is set up, naming contiguous folds or flat_test_state, rather than carrying positions through unobserved sessions; an existing walk-forward test run that is not DONE or INCOMPLETE is resumed through the ordinary run path rather than opened; reconstruction follows the run's own expected-session and availability rules instead of requiring a bar for every instrument at every pulse. (4) Trim the fast profile so it keeps at least ten seconds of headroom, moving blocks to the review lane rather than weakening them."
+    sequencing: "LDG-2976 first; its record and any cut amendment precede the cut review. LDG-2977 then commits the oracle, red on the current tree. LDG-2978, LDG-2979 and LDG-2980 are mutually independent and each turns its own oracle group green; any amended stopper tickets follow the same pattern. LDG-2981 runs last, after the new tests exist. One cut review and one planned workstream close review over six tickets is 0.333 before any amendment. tickets.yml is the sole sequencing authority."
+    out_of_scope: "The Sharadar adapter code in ledgr-research; settlement of acquisitions and spin-offs; snapshot re-hash cost (WS5); feature reuse across calls (LFB-026); the WS3/WS4 history wave and its register; memory reduction beyond the measurement LDG-2976 records; NEWS entries for Cuts 6 and 7 (WS8 release gate); and any change to fills, costs, accounting, terminal outcomes or valuation policy not required by a recorded stopper."
+    workstreams: [21]
+    closeout: "LDG-2976's run record, the oracle records, the implementation tickets' evidence and the accepted close review form the Cut 11 closeout."
+    accepted: "Pending."
+    close_review: "Pending."
+    status: "draft"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -320,6 +335,13 @@ workstreams:
     depends_on_workstream: 19
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 20", reason: "One claim joins LDG-2972 through LDG-2975: an ordinary vendor gap, a fold with no selectable candidate and an early interruption no longer end a run or an evaluation silently or ambiguously, and every substitute behavior is recorded where a user reads results. The review reruns the LDG-2972 oracle on the candidate tree and on the pre-cut tree, recomputes the expected quantities, cap scaling, fold sources and statuses from fixture arithmetic, checks the diagnostics, fold rows, session identity, schema migration from version 117 and run status through public readers, removes each skip, cap, note-slot recording, policy and exit guard, and reintroduces the full reservation, to prove its detector fails, confirms the dense path, raw targets, fills, costs, terminal outcomes and resume are unchanged, and walks the seven shapes verbatim on every changed function."}
+  - id: 21
+    name: "Real-data continuity II"
+    cut: 11
+    status: "draft"
+    depends_on_workstream: 20
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 21", reason: "One claim joins LDG-2976 through LDG-2981 and any amended stopper ticket: the 1998-2026 Sharadar run is recorded with every stop classified, and each stop fixed in this cut no longer ends a run, session or inspection, with the substitute behavior recorded where users read results. The review reruns the oracle on the candidate and pre-cut trees, recomputes reconstruction, walk-forward refusal and resume results from fixture arithmetic, compares resumed and uninterrupted sessions exactly, removes each fix to prove its detector fails, checks the Sharadar record discloses only aggregates and that every stop is fixed or routed with a reason, confirms the fast profile's headroom over three runs, and walks the seven shapes verbatim on every changed function."}
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -873,3 +895,63 @@ tickets:
     scope: "Implement Cut 10 decision (3) in ledgr_run_fold(). After registration, observe the exit condition with calling handlers for error and interrupt without catching it. Run the guard from an exit handler registered so that it executes before the existing DuckDB disconnect handler and after any transaction rollback, for example on.exit(after = FALSE). When the call exits by a condition, this invocation wrote no terminal status, and the row is CREATED, RUNNING or FAILED, record FAILED through the existing output handler, or a direct status update if the handler does not exist yet, overwriting error_msg with the condition's message or a named interruption message for a condition of class interrupt. DONE and INCOMPLETE rows are never touched; existing failure paths keep their messages and classes; the ledgr.interrupt soft stop keeps returning normally with RUNNING. Update help, contracts and NEWS."
     acceptance: ["the LDG-2972 LFB-018 group is green and the invariance group stays green", "an elapsed-time interruption during feature computation, a simulated interrupt and an interruption of a resumed row that started FAILED each leave status FAILED with that attempt's error message, and the caller still receives the original condition", "a run that ends DONE or INCOMPLETE, a classed failure already recorded before the fold, and the ledgr.interrupt soft stop keep exactly their pre-cut status and message", "rerunning the same experiment and run_id after an interrupted attempt resumes and finishes with the same equity, fills and ledger as an uninterrupted run", "removing the exit guard, or registering it after the disconnect handler, makes a named check fail", "focused run, persistence and resume suites and the fast profile pass; each new load-bearing block is registered in tests/claims.yml, and Workstream 20 and Cut 10 reconcile before Type 1 close review"]
     evidence: ["Commit 001a7a4 implements decision (3): ledgr_run_fold() is a wrapper that observes error and interrupt conditions with calling handlers and calls ledgr_run_fold_impl(); after registration the body registers an exit guard with after = FALSE, so it runs before the DuckDB disconnect and after any rollback. Normal returns set a flag; the output handler reports whether it wrote a terminal status; otherwise the guard updates a CREATED, RUNNING or FAILED row to FAILED with the condition message or Run interrupted before completion. by direct SQL, never touching DONE or INCOMPLETE.", "LTB-0198/LCL-0198 (fast) pin an error during feature computation, an rlang::interrupt() exit, a resumed FAILED row taking the new attempt's message, an untouched DONE run and the ledgr.interrupt soft stop staying RUNNING; registering the guard with after = TRUE fails three expectations. The oracle adds an R time limit and the resumed case on an availability snapshot. bb98258 points LTB-0155's source check and the durable-run memory bench's phase markers at ledgr_run_fold_impl(); all five markers resolve uniquely. Focused run, store, persistence, finalization, acceptance and snapshot suites pass.", "Workstream close: the fast profile passed 536 blocks in 106.29 s against the 112 s bound; the full local suite ran 1,040 blocks with the pre-existing demo-strategy error and one fixture schema literal, corrected in 2979227. Contracts (Persistence Contract, Early exit), ledgr_run() help and NEWS updated. Workstream 20 awaits its Type 1 close review.", "Close-review correction a478551 (finding F1, blocking): DBI::dbWithTransaction() rolls back on an interrupt and returns normally, so a user interrupt during the pulse loop finished a dense run DONE without its rolled-back pulses and an availability run FAILED with a terminal-evidence error; this predates the cut but contradicted its contract. The persistent handler's run_transaction() observes the interrupt and re-raises it after the rollback, so the guard records FAILED, the caller sees the interrupt and a rerun resumes to the reference fills and equity. LTB-0202/LCL-0202 (review) pin the mid-loop interrupt with resume and that an INCOMPLETE row whose resume fails after registration stays INCOMPLETE (the guard's status filter); removing the re-raise fails five expectations and dropping the status filter fails one. NEWS and the Persistence Contract describe the re-raise. Fast profile 536 blocks in 106.70 s."]
+  - id: "LDG-2976"
+    title: "Record the 1998-2026 Sharadar census and end-to-end run"
+    workstream: 21
+    status: "draft"
+    priority: "P0"
+    effort: "L"
+    dependencies: []
+    scope: "With the patched ledgr-research adapter (external prerequisite), build the 1998-01-02 to 2026-09-04 S&P snapshot with carried zero-volume bars dropped, then record, from the private lake and aggregates only: every fact-rule refusal at construction and seal; the distribution of gap lengths per instrument after dropping carried bars; delisting reasons as passed through; trading-status supersession chains; and end-to-end runs on this branch of a monthly top-N momentum strategy, an equal-weight membership strategy, a small sweep and a contiguous walk-forward. Log every stop with class, date and instrument count, plus elapsed time and per-phase peak memory. Scripts and aggregate CSVs live under dev/bench/v0_2_2_sharadar_run/; no instrument-level vendor rows leave the lake."
+    acceptance: ["the build and every run are scripted, rerunnable and record ledgr and adapter commits, environment and elapsed time", "every stop is listed with its condition class and classified as fixed by an existing ticket, a new ticket added to this cut by recorded amendment, or routed with a durable reason", "the gap-length distribution and supersession-chain count are recorded for the history-wave register (Sessions B and F), and per-phase peak memory for Session E", "no instrument-level vendor data is committed; aggregate outputs only"]
+    evidence: []
+  - id: "LDG-2977"
+    title: "Register continuity II oracles"
+    workstream: 21
+    status: "draft"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-2976"]
+    scope: "Extend dev/bench/v0_2_2_real_data_continuity with one group per implementation ticket in this cut (LDG-2978 to LDG-2980 and any amended stopper ticket) on vendor-neutral fixtures, expectations from fixture arithmetic, plus invariance arms for the behavior each fix must not change. The groups fail on the current tree for their source-table reason and the existing Cut 10 groups stay green."
+    acceptance: ["on the clean LDG-2977 commit every new group fails for its source-table reason, every Cut 10 group and the invariance group pass", "the checker fails rather than passing when an expected observation is missing", "fixtures need no private data and the oracle runs in under two minutes"]
+    evidence: []
+  - id: "LDG-2978"
+    title: "Reconstruct state on gap-bearing availability runs"
+    workstream: 21
+    status: "draft"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-2977"]
+    scope: "Make ledgr_state_reconstruct() succeed on a completed availability-aware run whose members miss bars, following the run's expected sessions and availability rules rather than requiring a bar for every instrument at every pulse, and reproduce the run's stored positions, cash and equity exactly. Dense-run reconstruction is unchanged."
+    acceptance: ["the LDG-2977 group for LFB-019 is green and the invariance group stays green", "reconstruction of a gap-bearing availability run matches its stored positions, cash and equity at every pulse, including across a skipped (sizing_unavailable) member and a frozen mark", "dense reconstruction output is byte-identical to the pre-cut tree", "focused suites and the fast profile pass; new blocks are registered in tests/claims.yml"]
+    evidence: []
+  - id: "LDG-2979"
+    title: "Refuse carried opening state across gapped test windows"
+    workstream: 21
+    status: "draft"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-2977"]
+    scope: "When ledgr_walk_forward() is called with opening_state_policy = carry_test_state and the fold list leaves open sessions between consecutive test windows, refuse before any fold runs with one classed condition naming the first gap and the two remedies (contiguous folds or flat_test_state). Contiguous fold lists and flat_test_state are unchanged."
+    acceptance: ["the LDG-2977 group for gapped carry is green and the invariance group stays green", "the refusal happens before any train sweep or store write and names the first gap and both remedies", "contiguous rolling and anchored fold lists under carry_test_state, and any fold list under flat_test_state, produce results identical to the pre-cut tree", "help, contracts, the condition reference and NEWS describe the rule; focused walk-forward suites and the fast profile pass"]
+    evidence: []
+  - id: "LDG-2980"
+    title: "Resume interrupted walk-forward test runs"
+    workstream: 21
+    status: "draft"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-2977"]
+    scope: "In ledgr_walk_forward_run_or_open(), resume an existing test run that is not DONE or INCOMPLETE through the ordinary run path with its window, parameters and seed, instead of opening it, so rerunning an interrupted session completes. DONE and INCOMPLETE test runs are still opened, not rerun."
+    acceptance: ["the LDG-2977 group for walk-forward resume is green and the invariance group stays green", "a session interrupted during a test run, rerun with the same arguments, completes with fold rows, scores and test-run fills and equity identical to an uninterrupted session", "DONE and INCOMPLETE test runs are opened without re-execution, and a test run whose configuration no longer matches still refuses", "focused walk-forward and resume suites and the fast profile pass; new blocks are registered in tests/claims.yml"]
+    evidence: []
+  - id: "LDG-2981"
+    title: "Restore fast-profile headroom"
+    workstream: 21
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: ["LDG-2978", "LDG-2979", "LDG-2980"]
+    scope: "Profile the fast lane after this cut's tests land and move the slowest blocks whose claims allow it to the review lane, so the ordinary fast profile keeps at least ten seconds below its 112-second bound. No block is weakened or deleted, and every moved block keeps its claim and LTB ID."
+    acceptance: ["three consecutive ordinary fast-profile runs each finish at least ten seconds below the bound", "every moved block's claim records its new promised_profile and the review profile still passes", "Workstream 21 and Cut 11 reconcile before Type 1 close review"]
+    evidence: []
