@@ -15,6 +15,14 @@
 #' @param opening_state_policy Either `"carry_test_state"` or
 #'   `"flat_test_state"`. The default carries selected test-run terminal state
 #'   into the next test run. Flat-test state is an explicit cold-start opt-in.
+#' @param no_selection What a fold does when no training candidate has a
+#'   finite, `DONE` selection metric. `"previous"` (the default) runs the test
+#'   window with the parameters most recently selected from a training window,
+#'   or, before any training window has selected, runs no test window and
+#'   leaves the carried opening unchanged. `"fail"` stops the session with
+#'   `ledgr_walk_forward_no_selection`. Each fold records its `selection_source`
+#'   (`"train"`, `"previous"` or `"none"`), and the policy is part of the
+#'   session identity.
 #' @param ... Reserved for later walk-forward options.
 #' @return A `ledgr_walk_forward_results` list with `folds`, `scores`,
 #'   `selected`, `degradation`, and selected test-run handles.
@@ -38,9 +46,10 @@
 #' indicators warm up again inside each window and no window reads bars before
 #' it. A training window shorter than a candidate's indicator warmup therefore
 #' cannot trade. When no candidate trades in a training window, volatility-based
-#' metrics such as `sharpe_ratio` have no finite value and the call stops with
-#' `ledgr_walk_forward_no_selection`; size training windows well beyond the
-#' longest warmup, or select on a metric that is defined without trades. This is
+#' metrics such as `sharpe_ratio` have no finite value and the fold has no
+#' selection; `no_selection` decides what happens then. Size training windows
+#' well beyond the longest warmup, or select on a metric that is defined
+#' without trades, to keep selections coming from training. This is
 #' separate from `cold_start_distorted`, which concerns opening positions, not
 #' features. Hydrating features from earlier history is planned with ledgr's
 #' point-in-time history design.
@@ -51,7 +60,9 @@ ledgr_walk_forward <- function(exp,
                                selection_rule,
                                seed = NULL,
                                opening_state_policy = c("carry_test_state", "flat_test_state"),
+                               no_selection = c("previous", "fail"),
                                ...) {
+  no_selection <- match.arg(no_selection)
   dots <- list(...)
   if (length(dots) > 0L) {
     rlang::abort("`...` is reserved for future walk-forward options.", class = "ledgr_invalid_args")
@@ -81,7 +92,7 @@ ledgr_walk_forward <- function(exp,
     )
   }
 
-  session_identity <- ledgr_walk_forward_session_identity(exp, grid, folds, selection_rule, seed, opening_state_policy)
+  session_identity <- ledgr_walk_forward_session_identity(exp, grid, folds, selection_rule, seed, opening_state_policy, no_selection)
   session_id <- session_identity$session_id
   fold_rows <- list()
   score_rows <- list()
@@ -92,6 +103,8 @@ ledgr_walk_forward <- function(exp,
   terminal_error <- NULL
   completed_folds <- 0L
   interrupt_after_completed_folds <- getOption("ledgr.walk_forward_interrupt_after_completed_folds", NULL)
+  # Parameters most recently selected from a training window, for no_selection = "previous".
+  previous_params_hash <- NULL
 
   for (fold_idx in seq_along(folds)) {
     result <- tryCatch(
@@ -103,7 +116,9 @@ ledgr_walk_forward <- function(exp,
         seed = seed,
         opening_state_policy = opening_state_policy,
         session_id = session_id,
-        carried_opening = carried_opening
+        carried_opening = carried_opening,
+        no_selection = no_selection,
+        previous_params_hash = previous_params_hash
       ),
       interrupt = function(e) {
         terminal_status <<- if (completed_folds > 0L) "PARTIAL" else "INTERRUPTED"
@@ -123,6 +138,9 @@ ledgr_walk_forward <- function(exp,
     }
     if (!is.null(result$test_run)) {
       selected_tests[[length(selected_tests) + 1L]] <- result$test_run
+    }
+    if (identical(result$selection_source, "train")) {
+      previous_params_hash <- result$params_hash
     }
     if (identical(result$status, "DONE")) {
       completed_folds <- completed_folds + 1L
@@ -166,7 +184,8 @@ ledgr_walk_forward <- function(exp,
     opening_state_policy = opening_state_policy,
     cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
     selection_metric = selection_rule$metric,
-    status = terminal_status
+    status = terminal_status,
+    no_selection = no_selection
   )
   ledgr_walk_forward_write_session(exp, session_row, fold_table, score_table)
 
@@ -182,6 +201,7 @@ ledgr_walk_forward <- function(exp,
       session_id = session_id,
       status = terminal_status,
       opening_state_policy = opening_state_policy,
+      no_selection = no_selection,
       cold_start_distorted = identical(opening_state_policy, "flat_test_state"),
       folds = fold_table,
       scores = ledgr_add_completion_columns(score_table),
@@ -203,6 +223,19 @@ ledgr_walk_forward <- function(exp,
 print.ledgr_walk_forward_results <- function(x, ...) {
   cat("ledgr walk-forward\n")
   cat("==================\n")
+  folds <- x$folds %||% tibble::tibble()
+  if (nrow(folds) > 0L && "selection_source" %in% names(folds)) {
+    source <- as.character(folds$selection_source)
+    counts <- c(train = sum(source %in% "train"), previous = sum(source %in% "previous"), none = sum(source %in% "none"))
+    cat(sprintf("Fold selections: %d from training, %d reused from an earlier fold, %d without a candidate.\n",
+                counts[["train"]], counts[["previous"]], counts[["none"]]))
+    if (counts[["none"]] > 0L) {
+      cat(sprintf("Health warning: %d fold(s) had no candidate before any training selection and ran no test window.\n", counts[["none"]]))
+    }
+    if (counts[["none"]] == nrow(folds)) {
+      cat("Health warning: no fold selected a candidate; this session has no test evidence.\n")
+    }
+  }
   degradation <- x$degradation %||% tibble::tibble()
   if (nrow(degradation) > 0L) {
     if (any(ledgr_walk_forward_has_flag(degradation$warning_flags, "short_test_window"), na.rm = TRUE)) {
@@ -250,7 +283,8 @@ ledgr_walk_forward_session_identity <- function(exp,
                                                 folds,
                                                 selection_rule,
                                                 seed,
-                                                opening_state_policy) {
+                                                opening_state_policy,
+                                                no_selection = "fail") {
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   metric_context <- ledgr_metric_context_resolve(exp$metric_context)
   metric_context_hash <- ledgr_metric_context_hash(metric_context)
@@ -271,7 +305,8 @@ ledgr_walk_forward_session_identity <- function(exp,
     cost_model_hash = cost_model_hash,
     risk_chain_hash = risk_chain_hash,
     master_seed = seed,
-    opening_state_policy = opening_state_policy
+    opening_state_policy = opening_state_policy,
+    no_selection = no_selection
   )
   list(
     session_id = session_id,
@@ -412,7 +447,9 @@ ledgr_walk_forward_eval_fold <- function(exp,
                                          seed,
                                          opening_state_policy,
                                          session_id,
-                                         carried_opening) {
+                                         carried_opening,
+                                         no_selection = "fail",
+                                         previous_params_hash = NULL) {
   fold <- ledgr_validate_fold(fold)
   train_window <- ledgr_experiment_window_from_fold(
     exp,
@@ -479,16 +516,44 @@ ledgr_walk_forward_eval_fold <- function(exp,
     ledgr_selection_rule_select(selection_rule, train_scores),
     error = function(e) e
   )
+  selection_source <- "train"
   if (inherits(selected, "condition")) {
-    return(ledgr_walk_forward_failed_fold_result(
-      session_id = session_id,
-      fold = fold,
-      train_window = train_window,
-      test_window = base_test_window,
-      opening_state_policy = opening_state_policy,
-      error = selected,
-      score_rows = train_score_rows
-    ))
+    fallback <- identical(no_selection, "previous") && inherits(selected, "ledgr_walk_forward_no_selection")
+    previous_idx <- if (fallback && !is.null(previous_params_hash)) {
+      which(train_identities$params_hash == previous_params_hash)
+    } else {
+      integer()
+    }
+    if (fallback && is.null(previous_params_hash)) {
+      # Nothing has been selected or carried yet: run no test window.
+      return(ledgr_walk_forward_none_fold_result(
+        session_id = session_id,
+        fold = fold,
+        train_window = train_window,
+        test_window = base_test_window,
+        opening_state_policy = opening_state_policy,
+        score_rows = train_score_rows,
+        carried_opening = carried_opening
+      ))
+    }
+    if (!fallback || length(previous_idx) < 1L) {
+      return(ledgr_walk_forward_failed_fold_result(
+        session_id = session_id,
+        fold = fold,
+        train_window = train_window,
+        test_window = base_test_window,
+        opening_state_policy = opening_state_policy,
+        error = selected,
+        score_rows = train_score_rows
+      ))
+    }
+    # Reuse the parameters most recently selected from a training window. The
+    # fold names this fold's train candidate for them; its metric is not a
+    # selection score, so it is reported as NA.
+    previous_key <- train_identities$candidate_key[[previous_idx[[1L]]]]
+    selected <- train_scores[train_scores$candidate_key == previous_key, , drop = FALSE]
+    selected[[selection_rule$metric]] <- NA_real_
+    selection_source <- "previous"
   }
 
   selected_idx <- which(train_scores$candidate_key == selected$candidate_key[[1]])[[1]]
@@ -530,6 +595,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
       test_window = test_window,
       opening_state_policy = opening_state_policy,
       selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selection_source = selection_source,
       test_run_id = test_run_id,
       error = test_run,
       score_rows = train_score_rows
@@ -556,6 +622,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
         test_window = test_window,
         opening_state_policy = opening_state_policy,
         selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selection_source = selection_source,
         selected_at_utc = selected_at,
         test_run_id = test_run_id,
         status = "PARTIAL"
@@ -564,10 +631,13 @@ ledgr_walk_forward_eval_fold <- function(exp,
       selected = tibble::as_tibble(cbind(
         fold_seq = fold$fold_seq,
         selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE],
-        test_run_id = test_run_id
+        test_run_id = test_run_id,
+        selection_source = selection_source
       )),
       test_run = test_run,
-      carried_opening = NULL
+      carried_opening = NULL,
+      selection_source = selection_source,
+      params_hash = selected_train_identity$params_hash[[1]]
     ))
   }
   if (identical(as.character(test_scores$status[[1]]), "FAILED")) {
@@ -584,6 +654,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
       test_window = test_window,
       opening_state_policy = opening_state_policy,
       selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selection_source = selection_source,
       selected_at_utc = selected_at,
       test_run_id = test_run_id,
       error = err,
@@ -605,6 +676,7 @@ ledgr_walk_forward_eval_fold <- function(exp,
       test_window = test_window,
       opening_state_policy = opening_state_policy,
       selected_candidate_key = selected_train_identity$candidate_key[[1]],
+      selection_source = selection_source,
       selected_at_utc = selected_at,
       test_run_id = test_run_id,
       status = "DONE"
@@ -613,10 +685,13 @@ ledgr_walk_forward_eval_fold <- function(exp,
     selected = tibble::as_tibble(cbind(
       fold_seq = fold$fold_seq,
       selected[, c("candidate_key", "candidate_id", selection_rule$metric), drop = FALSE],
-      test_run_id = test_run_id
+      test_run_id = test_run_id,
+      selection_source = selection_source
     )),
     test_run = test_run,
-    carried_opening = next_opening
+    carried_opening = next_opening,
+    selection_source = selection_source,
+    params_hash = selected_train_identity$params_hash[[1]]
   )
 }
 
@@ -629,7 +704,8 @@ ledgr_walk_forward_failed_fold_result <- function(session_id,
                                                   score_rows = NULL,
                                                   selected_candidate_key = NA_character_,
                                                   selected_at_utc = ledgr_walk_forward_na_time(),
-                                                  test_run_id = NA_character_) {
+                                                  test_run_id = NA_character_,
+                                                  selection_source = NA_character_) {
   list(
     status = "FAILED",
     error = error,
@@ -642,12 +718,46 @@ ledgr_walk_forward_failed_fold_result <- function(session_id,
       selected_candidate_key = selected_candidate_key,
       selected_at_utc = selected_at_utc,
       test_run_id = test_run_id,
-      status = "FAILED"
+      status = "FAILED",
+      selection_source = selection_source
     ),
     score_rows = score_rows,
     selected = NULL,
     test_run = NULL,
-    carried_opening = NULL
+    carried_opening = NULL,
+    selection_source = selection_source
+  )
+}
+
+# A fold with no selection before any training window has selected runs no
+# test window and carries the opening it received. It is DONE with source none.
+ledgr_walk_forward_none_fold_result <- function(session_id,
+                                                fold,
+                                                train_window,
+                                                test_window,
+                                                opening_state_policy,
+                                                score_rows,
+                                                carried_opening) {
+  list(
+    status = "DONE",
+    error = NULL,
+    fold_row = ledgr_walk_forward_fold_row(
+      session_id = session_id,
+      fold = fold,
+      train_window = train_window,
+      test_window = test_window,
+      opening_state_policy = opening_state_policy,
+      selected_candidate_key = NA_character_,
+      selected_at_utc = ledgr_walk_forward_na_time(),
+      test_run_id = NA_character_,
+      status = "DONE",
+      selection_source = "none"
+    ),
+    score_rows = score_rows,
+    selected = NULL,
+    test_run = NULL,
+    carried_opening = carried_opening,
+    selection_source = "none"
   )
 }
 
@@ -790,7 +900,8 @@ ledgr_walk_forward_fold_row <- function(session_id,
                                         selected_candidate_key,
                                         selected_at_utc,
                                         test_run_id,
-                                        status) {
+                                        status,
+                                        selection_source = NA_character_) {
   data.frame(
     session_id = session_id,
     fold_id = fold$fold_id,
@@ -808,6 +919,7 @@ ledgr_walk_forward_fold_row <- function(session_id,
     selected_at_utc = as.POSIXct(selected_at_utc, tz = "UTC"),
     test_run_id = test_run_id,
     status = status,
+    selection_source = as.character(selection_source),
     stringsAsFactors = FALSE
   )
 }
@@ -817,7 +929,8 @@ ledgr_walk_forward_session_row <- function(identity,
                                            opening_state_policy,
                                            cold_start_distorted,
                                            selection_metric = NULL,
-                                           status = "DONE") {
+                                           status = "DONE",
+                                           no_selection = "fail") {
   data.frame(
     session_id = identity$session_id,
     snapshot_hash = identity$snapshot_hash,
@@ -840,6 +953,7 @@ ledgr_walk_forward_session_row <- function(identity,
       status = status,
       cold_start_distorted = isTRUE(cold_start_distorted),
       selection_metric = selection_metric %||% NULL,
+      no_selection = no_selection,
       walk_forward_schema_version = ledgr_walk_forward_schema_version
     ))),
     stringsAsFactors = FALSE

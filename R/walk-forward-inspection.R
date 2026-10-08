@@ -25,6 +25,7 @@ ledgr_walk_forward_open <- function(snapshot, session_id) {
       session_id = data$session$session_id[[1]],
       status = data$status,
       opening_state_policy = data$session$opening_state_policy[[1]],
+      no_selection = data$meta$no_selection,
       cold_start_distorted = isTRUE(data$meta$cold_start_distorted),
       folds = data$folds,
       scores = data$scores,
@@ -140,7 +141,19 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
   )
 
   selection_metric <- data$meta$selection_metric %||% NULL
-  train_metric <- ledgr_walk_forward_metric_value(train_rows, selection_metric)
+  selection_source <- ledgr_walk_forward_fold_source(fold)
+  source_fold_seq <- as.integer(fold_seq)
+  if (identical(selection_source, "previous")) {
+    earlier <- data$folds[data$folds$fold_seq < fold_seq, , drop = FALSE]
+    earlier_sources <- vapply(seq_len(nrow(earlier)), function(i) ledgr_walk_forward_fold_source(earlier[i, , drop = FALSE]), character(1))
+    trained <- earlier$fold_seq[earlier_sources %in% "train"]
+    source_fold_seq <- if (length(trained)) as.integer(max(trained)) else NA_integer_
+  }
+  train_metric <- if (identical(selection_source, "previous")) {
+    NA_real_
+  } else {
+    ledgr_walk_forward_metric_value(train_rows, selection_metric)
+  }
   test_metric <- ledgr_walk_forward_metric_value(test_rows, selection_metric)
   test_metrics <- ledgr_walk_forward_metric_values(test_rows)
   train_metrics <- ledgr_walk_forward_metric_values(train_rows)
@@ -178,7 +191,9 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
       selection_metric = selection_metric,
       selected_train_metric_value = train_metric,
       selected_test_metric_value = test_metric,
-      selection_rationale = rationale
+      selection_rationale = rationale,
+      selection_source = selection_source,
+      selection_source_fold_seq = source_fold_seq
     )
   )
 
@@ -369,7 +384,17 @@ ledgr_walk_forward_parse_session_meta <- function(meta_json) {
   if (!identical(meta$walk_forward_schema_version, ledgr_walk_forward_schema_version)) {
     rlang::abort("Walk-forward session schema version is not supported.", class = "ledgr_walk_forward_invalid_session")
   }
+  if (is.null(meta$no_selection)) meta$no_selection <- "fail"
   meta
+}
+
+# The selection source of one fold row; folds from a store without the
+# column were selected in training.
+ledgr_walk_forward_fold_source <- function(fold) {
+  source <- fold$selection_source
+  if (is.null(source)) return("train")
+  source <- as.character(source[[1L]])
+  if (is.na(source)) NA_character_ else source
 }
 
 ledgr_walk_forward_read_run_config <- function(con, snapshot, run_id) {
@@ -476,7 +501,9 @@ ledgr_walk_forward_selected_from_rows <- function(folds, scores, selection_metri
   if (nrow(folds) < 1L || nrow(scores) < 1L) {
     return(tibble::tibble())
   }
-  selected <- folds[as.character(folds$status) == "DONE", , drop = FALSE]
+  selected <- folds[as.character(folds$status) == "DONE" &
+                     !is.na(folds$selected_candidate_key) &
+                     nzchar(as.character(folds$selected_candidate_key)), , drop = FALSE]
   if (nrow(selected) < 1L) {
     return(tibble::tibble())
   }
@@ -495,11 +522,17 @@ ledgr_walk_forward_selected_from_rows <- function(folds, scores, selection_metri
       candidate_key = as.character(fold$selected_candidate_key[[1]]),
       candidate_id = label,
       test_run_id = as.character(fold$test_run_id[[1]]),
+      selection_source = ledgr_walk_forward_fold_source(fold),
       stringsAsFactors = FALSE
     )
     if (!is.null(selection_metric) && !ledgr_walk_forward_is_missing_text(selection_metric)) {
-      out[[as.character(selection_metric)]] <- ledgr_walk_forward_metric_value(score, selection_metric)
-      out <- out[, c("fold_seq", "candidate_key", "candidate_id", as.character(selection_metric), "test_run_id"), drop = FALSE]
+      # A previous-sourced fold did not select on this score.
+      out[[as.character(selection_metric)]] <- if (identical(out$selection_source, "previous")) {
+        NA_real_
+      } else {
+        ledgr_walk_forward_metric_value(score, selection_metric)
+      }
+      out <- out[, c("fold_seq", "candidate_key", "candidate_id", as.character(selection_metric), "test_run_id", "selection_source"), drop = FALSE]
     }
     out
   })
@@ -568,7 +601,8 @@ ledgr_walk_forward_degradation_table <- function(folds,
       test_metric_value = numeric(),
       metric_diff_abs = numeric(),
       metric_diff_pct = numeric(),
-      warning_flags = character()
+      warning_flags = character(),
+      selection_source = character()
     )))
   }
   rows <- lapply(seq_len(nrow(folds)), function(i) {
@@ -587,7 +621,12 @@ ledgr_walk_forward_degradation_table <- function(folds,
       ,
       drop = FALSE
     ]
-    train_value <- ledgr_walk_forward_metric_value(train_rows, selection_metric)
+    source <- ledgr_walk_forward_fold_source(fold)
+    train_value <- if (identical(source, "previous")) {
+      NA_real_
+    } else {
+      ledgr_walk_forward_metric_value(train_rows, selection_metric)
+    }
     test_value <- ledgr_walk_forward_metric_value(test_rows, selection_metric)
     diff_abs <- test_value - train_value
     diff_pct <- if (is.finite(train_value) && abs(train_value) > .Machine$double.eps) {
@@ -620,6 +659,7 @@ ledgr_walk_forward_degradation_table <- function(folds,
       metric_diff_pct = as.numeric(diff_pct),
       # Keep storage/export scalar; use ledgr_walk_forward_has_flag() for membership.
       warning_flags = paste(flags, collapse = ","),
+      selection_source = source,
       stringsAsFactors = FALSE
     )
   })

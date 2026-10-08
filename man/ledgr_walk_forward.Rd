@@ -11,6 +11,7 @@ ledgr_walk_forward(
   selection_rule,
   seed = NULL,
   opening_state_policy = c("carry_test_state", "flat_test_state"),
+  no_selection = c("previous", "fail"),
   ...
 )
 }
@@ -29,6 +30,15 @@ ledgr_walk_forward(
 \item{opening_state_policy}{Either \code{"carry_test_state"} or
 \code{"flat_test_state"}. The default carries selected test-run terminal state
 into the next test run. Flat-test state is an explicit cold-start opt-in.}
+
+\item{no_selection}{What a fold does when no training candidate has a
+finite, \code{DONE} selection metric. \code{"previous"} (the default) runs the test
+window with the parameters most recently selected from a training window,
+or, before any training window has selected, runs no test window and
+leaves the carried opening unchanged. \code{"fail"} stops the session with
+\code{ledgr_walk_forward_no_selection}. Each fold records its \code{selection_source}
+(\code{"train"}, \code{"previous"} or \code{"none"}), and the policy is part of the
+session identity.}
 
 \item{...}{Reserved for later walk-forward options.}
 }
@@ -63,9 +73,10 @@ Every training and test window starts feature state at its own start:
 indicators warm up again inside each window and no window reads bars before
 it. A training window shorter than a candidate's indicator warmup therefore
 cannot trade. When no candidate trades in a training window, volatility-based
-metrics such as \code{sharpe_ratio} have no finite value and the call stops with
-\code{ledgr_walk_forward_no_selection}; size training windows well beyond the
-longest warmup, or select on a metric that is defined without trades. This is
+metrics such as \code{sharpe_ratio} have no finite value and the fold has no
+selection; \code{no_selection} decides what happens then. Size training windows
+well beyond the longest warmup, or select on a metric that is defined
+without trades, to keep selections coming from training. This is
 separate from \code{cold_start_distorted}, which concerns opening positions, not
 features. Hydrating features from earlier history is planned with ledgr's
 point-in-time history design.

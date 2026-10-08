@@ -278,7 +278,8 @@ ledgr_validate_schema <- function(con) {
         selected_candidate_key = "TEXT",
         selected_at_utc = "TIMESTAMP",
         test_run_id = "TEXT",
-        status = "TEXT"
+        status = "TEXT",
+        selection_source = "TEXT"
       ),
       pk = c("session_id", "fold_seq"),
       unique = list(c("session_id", "fold_id")),
@@ -742,6 +743,12 @@ ledgr_validate_schema <- function(con) {
     "status",
     c("DONE", "INCOMPLETE", "FAILED"),
     "walk_forward_scores.status"
+  )
+  check_enum_constraint_metadata(
+    "walk_forward_folds",
+    "selection_source",
+    c("train", "previous", "none"),
+    "walk_forward_folds.selection_source"
   )
   check_enum_constraint_metadata(
     "snapshot_trading_status",

@@ -200,8 +200,9 @@ ledgr_walk_forward_session_payload <- function(snapshot_hash,
                                                risk_chain_hash,
                                                master_seed = NULL,
                                                opening_state_policy = "carry_test_state",
-                                               ledgr_version = as.character(utils::packageVersion("ledgr"))) {
-  list(
+                                               ledgr_version = as.character(utils::packageVersion("ledgr")),
+                                               no_selection = "fail") {
+  payload <- list(
     snapshot_hash = ledgr_walk_forward_hash_scalar(snapshot_hash, "`snapshot_hash`"),
     experiment_hash = ledgr_walk_forward_hash_scalar(experiment_hash, "`experiment_hash`"),
     param_grid_hash = ledgr_walk_forward_hash_scalar(param_grid_hash, "`param_grid_hash`"),
@@ -215,6 +216,12 @@ ledgr_walk_forward_session_payload <- function(snapshot_hash,
     walk_forward_schema_version = ledgr_walk_forward_schema_version,
     ledgr_version = ledgr_walk_forward_hash_scalar(ledgr_version, "`ledgr_version`")
   )
+  # "fail" is the pre-Cut-10 behavior and keeps its identity; any other
+  # no-selection policy changes results and therefore the session ID.
+  if (!identical(no_selection, "fail")) {
+    payload$no_selection <- ledgr_walk_forward_hash_scalar(no_selection, "`no_selection`")
+  }
+  payload
 }
 
 ledgr_walk_forward_session_id <- function(snapshot_hash,
@@ -227,7 +234,8 @@ ledgr_walk_forward_session_id <- function(snapshot_hash,
                                           risk_chain_hash,
                                           master_seed = NULL,
                                           opening_state_policy = "carry_test_state",
-                                          ledgr_version = as.character(utils::packageVersion("ledgr"))) {
+                                          ledgr_version = as.character(utils::packageVersion("ledgr")),
+                                          no_selection = "fail") {
   ledgr_walk_forward_hash_payload(ledgr_walk_forward_session_payload(
     snapshot_hash = snapshot_hash,
     experiment_hash = experiment_hash,
@@ -239,7 +247,8 @@ ledgr_walk_forward_session_id <- function(snapshot_hash,
     risk_chain_hash = risk_chain_hash,
     master_seed = master_seed,
     opening_state_policy = opening_state_policy,
-    ledgr_version = ledgr_version
+    ledgr_version = ledgr_version,
+    no_selection = no_selection
   ))
 }
 

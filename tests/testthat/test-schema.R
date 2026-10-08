@@ -144,7 +144,7 @@ testthat::test_that("[LTB-0040] schema fast path requires the exact version", {
   current_shape <- schema_information_shape(con)
   testthat::expect_identical(
     digest::digest(schema_shape_text(current_shape), algo = "sha256", serialize = FALSE),
-    "8654cb7d2e49e6554f3ca67b221145e8438f9ade114c709a24aa75cf1bfc7c52"
+    "b28c7c693636f404319c5c8e9b0c0359919e30b36c7c975a01d9f8f100662ed8"
   )
 
   DBI::dbExecute(

@@ -135,8 +135,25 @@ Accepted change pending:
   whose feature state starts at any other time with
   `ledgr_precomputed_hydration_mismatch`. When no candidate trades in a
   walk-forward training window, volatility-based selection metrics have no
-  finite value and `ledgr_walk_forward()` stops with
-  `ledgr_walk_forward_no_selection`.
+  finite value and that fold has no selection; see No selection.
+- No selection (Cut 10, LDG-2974). `ledgr_walk_forward(no_selection = )`
+  decides what a fold does when no training candidate has a finite, `DONE`
+  selection metric. Under the default `"previous"` the fold runs its test
+  window with the parameters most recently selected from a training window;
+  its `selected_candidate_key` is this fold's train key for those parameters,
+  and its train selection metric is reported as `NA` in degradation, selected
+  rows and candidate provenance while the stored train score row is unchanged.
+  Before any training window has selected, the fold runs no test window,
+  carries the opening it received and is `DONE`. A previous fold follows the
+  train-fold status rules (`DONE`, `PARTIAL` on an `INCOMPLETE` test run,
+  `FAILED` on a failed test run). `"fail"` keeps the session-ending
+  `ledgr_walk_forward_no_selection`. Every fold row records `selection_source`
+  (`train`, `previous`, `none`, or `NULL` for a failed fold without a
+  selection; experiment-store schema 118). None folds are omitted from
+  selected rows and refuse candidate extraction; a previous fold's candidate
+  provenance names its source and source fold. The policy is stored in
+  session meta, a session without it reads as `"fail"`, and the printed
+  session counts folds by source.
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local
@@ -237,7 +254,9 @@ Accepted change pending:
   includes strategy, feature, alias, metric-context, cost, risk, seed, fold, and
   window-role inputs. `session_id` identifies the walk-forward session envelope
   and includes snapshot, experiment, grid, fold-list, selection-rule,
-  metric-context, cost, risk, seed, and opening-state policy identity.
+  metric-context, cost, risk, seed, and opening-state policy identity, plus
+  the no-selection policy when it is not `"fail"`, so `"fail"` sessions
+  keep their pre-Cut-10 identity.
   Locator attributes on `ledgr_walk_forward_results` objects (`db_path`,
   `snapshot_id`, and `snapshot_hash`) are recovery and resolve-at-call
   verification metadata. They are not identity bytes and must not enter

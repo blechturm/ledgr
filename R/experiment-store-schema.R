@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 117L
+ledgr_experiment_store_schema_version <- 118L
 ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
@@ -391,8 +391,62 @@ ledgr_experiment_store_ensure_sweep_tables <- function(con) {
   invisible(TRUE)
 }
 
+# Schema 118 (Cut 10) records where each fold's selection came from. A store
+# without the column is rebuilt, keeping every row, key and CHECK; folds with a
+# selected candidate become 'train' and folds without one stay NULL.
+ledgr_experiment_store_upgrade_walk_forward_folds <- function(con) {
+  if (!ledgr_experiment_store_table_exists(con, "walk_forward_folds") ||
+      "selection_source" %in% ledgr_experiment_store_columns(con, "walk_forward_folds")) {
+    return(invisible(FALSE))
+  }
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS walk_forward_folds_v118")
+  DBI::dbExecute(
+    con,
+    "
+    CREATE TABLE walk_forward_folds_v118 (
+      session_id TEXT NOT NULL,
+      fold_id TEXT NOT NULL,
+      fold_seq INTEGER NOT NULL,
+      scheme TEXT NOT NULL,
+      train_start_utc TIMESTAMP NOT NULL,
+      train_end_utc TIMESTAMP NOT NULL,
+      test_start_utc TIMESTAMP NOT NULL,
+      test_end_utc TIMESTAMP NOT NULL,
+      hydration_start_utc TIMESTAMP NOT NULL,
+      train_scoring_start_utc TIMESTAMP NOT NULL,
+      test_scoring_start_utc TIMESTAMP NOT NULL,
+      opening_state_policy TEXT NOT NULL CHECK (opening_state_policy IN ('carry_test_state','flat_test_state')),
+      selected_candidate_key TEXT,
+      selected_at_utc TIMESTAMP,
+      test_run_id TEXT,
+      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED','INTERRUPTED','PARTIAL')),
+      selection_source TEXT CHECK (selection_source IS NULL OR selection_source IN ('train','previous','none')),
+      PRIMARY KEY (session_id, fold_seq),
+      UNIQUE (session_id, fold_id)
+    )
+    "
+  )
+  DBI::dbExecute(
+    con,
+    "
+    INSERT INTO walk_forward_folds_v118
+    SELECT
+      session_id, fold_id, fold_seq, scheme, train_start_utc, train_end_utc,
+      test_start_utc, test_end_utc, hydration_start_utc, train_scoring_start_utc,
+      test_scoring_start_utc, opening_state_policy, selected_candidate_key,
+      selected_at_utc, test_run_id, status,
+      CASE WHEN selected_candidate_key IS NOT NULL THEN 'train' ELSE NULL END
+    FROM walk_forward_folds
+    "
+  )
+  DBI::dbExecute(con, "DROP TABLE walk_forward_folds")
+  DBI::dbExecute(con, "ALTER TABLE walk_forward_folds_v118 RENAME TO walk_forward_folds")
+  invisible(TRUE)
+}
+
 ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
   ledgr_experiment_store_upgrade_walk_forward_scores(con)
+  ledgr_experiment_store_upgrade_walk_forward_folds(con)
   DBI::dbExecute(
     con,
     "
@@ -434,6 +488,7 @@ ledgr_experiment_store_ensure_walk_forward_tables <- function(con) {
       selected_at_utc TIMESTAMP,
       test_run_id TEXT,
       status TEXT NOT NULL CHECK (status IN ('DONE','FAILED','INTERRUPTED','PARTIAL')),
+      selection_source TEXT CHECK (selection_source IS NULL OR selection_source IN ('train','previous','none')),
       PRIMARY KEY (session_id, fold_seq),
       UNIQUE (session_id, fold_id)
     )

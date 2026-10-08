@@ -218,7 +218,7 @@ testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move id
   DBI::dbDisconnect(con, shutdown = TRUE)
   testthat::expect_message(
     con <- ledgr_db_init(no_facts_path),
-    "Upgraded ledgr experiment-store schema from version 115 to 117"
+    "Upgraded ledgr experiment-store schema from version 115 to 118"
   )
   testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(
     con,
@@ -226,7 +226,7 @@ testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move id
   ))
   testthat::expect_identical(
     ledgr:::ledgr_experiment_store_version(con),
-    117L
+    118L
   )
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash(con, no_facts$snapshot_id),

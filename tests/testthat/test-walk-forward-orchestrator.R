@@ -126,7 +126,7 @@ testthat::test_that("walk-forward orchestrates train sweeps, selected test runs,
     c(
       "fold_seq", "train_window", "test_window", "selected_candidate",
       "selection_metric", "train_metric_value", "test_metric_value",
-      "metric_diff_abs", "metric_diff_pct", "warning_flags"
+      "metric_diff_abs", "metric_diff_pct", "warning_flags", "selection_source"
     )
   )
   testthat::expect_equal(nrow(wf$degradation), 2L)
@@ -448,7 +448,8 @@ testthat::test_that("walk-forward persists no-selection failure evidence", {
         constructor = list(type_id = "explicit")
       ),
       selection_rule = ledgr_rule_argmax("sharpe_ratio"),
-      seed = 606L
+      seed = 606L,
+      no_selection = "fail"
     ),
     class = "ledgr_walk_forward_no_selection"
   )

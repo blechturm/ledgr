@@ -2,6 +2,16 @@
 
 ## Runs and evaluations that keep going on real data
 
+- `ledgr_walk_forward()` gains `no_selection = c("previous", "fail")`. A fold
+  in which no training candidate has a finite selection metric no longer ends
+  the whole session: by default it runs its test window with the parameters
+  most recently selected from training, or, before any training selection,
+  runs no test window. Each fold records its `selection_source` (`train`,
+  `previous` or `none`), the printed session counts them, and
+  `no_selection = "fail"` keeps the old refusal. Default sessions get new
+  session IDs; the experiment store moves to schema 118 and upgrades in
+  place.
+
 - In an availability-aware run, `ledgr_target_rebalance()` no longer stops the
   run when an eligible member has no current close, which is common in vendor
   data. That member is skipped for the rebalance: it keeps its current
