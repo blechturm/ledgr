@@ -114,9 +114,12 @@ for (i in seq_len(nrow(fixture_rows))) {
   row <- fixture_rows[i, , drop = FALSE]
   fixture_dir <- file.path(cache_root, row$shape_id)
   dir.create(fixture_dir, recursive = TRUE, showWarnings = FALSE)
+  # The accepted arm builds the shared fixture: a candidate that advances the
+  # experiment-store schema migrates an older store on open, but the accepted
+  # arm refuses a newer one (Cut 10 moved the store from 117 to 118).
   run_child(
-    "fixture", row$shape_id, "candidate", 0L, "initial", candidate_repo,
-    c(file.path(script, "build_fixture.R"), candidate_repo,
+    "fixture", row$shape_id, "accepted", 0L, "initial", accepted_repo,
+    c(file.path(script, "build_fixture.R"), accepted_repo,
       row$shape_id, fixture_dir)
   )
   fixture_probes[[row$shape_id]] <- jsonlite::read_json(
