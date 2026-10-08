@@ -916,53 +916,53 @@ tickets:
   - id: "LDG-2977"
     title: "Register continuity II oracles"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2976"]
     scope: "Extend dev/bench/v0_2_2_real_data_continuity with one group per Workstream 21 implementation ticket (LDG-2978 to LDG-2980, LDG-2991 and any amended stopper ticket) on vendor-neutral fixtures, expectations from fixture arithmetic, plus invariance arms for the behavior each fix must not change. The groups fail on the current tree for their source-table reason and the existing Cut 10 groups stay green."
     acceptance: ["on the clean LDG-2977 commit every new group fails for its source-table reason, every Cut 10 group and the invariance group pass", "the checker fails rather than passing when an expected observation is missing", "fixtures need no private data and the oracle runs in under two minutes"]
-    evidence: []
+    evidence: ["218c410 extends dev/bench/v0_2_2_real_data_continuity with groups lfb019 (LDG-2978), wfgap (LDG-2979), wfresume (LDG-2980) and bounds (LDG-2991), Cut 11 invariance arms (flat_test_state over gapped folds, rerun of a finished session with unchanged run_telemetry stamps, in-range folds) and reason11, which pins each group's pre-cut failure to its source-table reason (ledgr_missing_bars, a PARTIAL session with an INCOMPLETE test run after a delisting in the gap, ledgr_run_not_complete, and the old range refusal). The checker gains pre11 and post10 modes and --against, which compares every inv_* and lfb017_* observable with an earlier record except telemetry stamps and session IDs (a session ID hashes the snapshot's temporary store path). Expectations are fixture arithmetic in check_record.R and the README.", "8be6222 records evidence/pre_cut11 from the clean 218c410 commit: --expect pre11 --against evidence/after_ws20 is OK, every Cut 11 group fails, reason11 is 4/4, the Cut 10 groups, invariance and invariance11 pass, and 50 shared invariance observables are unchanged. The historical records still pass: evidence/pre_cut --expect pre and evidence/after_ws20 --expect post10. A missing observation fails rather than passes. The oracle runs in about one minute and needs no private data."]
   - id: "LDG-2978"
     title: "Reconstruct state on gap-bearing availability runs"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2977"]
     scope: "Make ledgr_state_reconstruct() succeed on a completed availability-aware run whose members miss bars, following the run's expected sessions and availability rules rather than requiring a bar for every instrument at every pulse, and reproduce the run's stored positions, cash and equity exactly. Dense-run reconstruction is unchanged."
     acceptance: ["the LDG-2977 group for LFB-019 is green and the invariance group stays green", "reconstruction of a gap-bearing availability run matches its stored positions, cash and equity at every pulse, including across a skipped (sizing_unavailable) member and a frozen mark", "dense reconstruction output is byte-identical to the pre-cut tree", "focused suites and the fast profile pass; new blocks are registered in tests/claims.yml"]
-    evidence: []
+    evidence: ["5b07709: ledgr_rebuild_derived_state() rebuilds an availability-aware run on its open-session calendar (ledgr_availability_calendar() over the run's provider) through run_completion.last_fully_valued_ts_utc, valuing each holding at its last observed close in the window. On every pulse the fold valued, a held mark is that close (current or stale within the policy, or frozen at it under exhausted = freeze; a holding without a permissible mark stops the run before the pulse is valued), so the rebuild needs no decision view. The last observation is carried forward with one cummax over the column-major pulse-by-instrument index; the dense close map moved verbatim into ledgr_derived_state_dense_close_map(), so dense reconstruction is unchanged.", "LTB-0203/LCL-0203 (review, 5.6 s) pin the gap fixture (stale mark 21 gives 912), the freeze fixture (frozen mark 22 gives 991 and 1058), exact equality of all five equity columns with the stored curve, final positions, and an INCOMPLETE run rebuilt through its three valued pulses; removing the last-valued cut fails two expectations, and without the fix every case fails with ledgr_missing_bars. Oracle group lfb019 is 8/8 after the fix.", "Real data: on a copy of the LDG-2976 snapshot the 1998-2026 Sharadar momentum and equal-weight runs (7,213 pulses each, with terminal dispositions, stale and frozen marks) reconstruct with cash, positions_value, equity, realized_pnl and unrealized_pnl identical to the stored curve bit for bit, in 61 and 72 s, most of it the F3 snapshot rehash."]
   - id: "LDG-2979"
     title: "Refuse carried opening state across gapped test windows"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2977"]
     scope: "When ledgr_walk_forward() is called with opening_state_policy = carry_test_state and the fold list leaves open sessions between consecutive test windows, refuse before any fold runs with one classed condition naming the first gap and the two remedies (contiguous folds or flat_test_state). Contiguous fold lists and flat_test_state are unchanged."
     acceptance: ["the LDG-2977 group for gapped carry is green and the invariance group stays green", "the refusal happens before any train sweep or store write and names the first gap and both remedies", "contiguous rolling and anchored fold lists under carry_test_state, and any fold list under flat_test_state, produce results identical to the pre-cut tree", "help, contracts, the condition reference and NEWS describe the rule; focused walk-forward suites and the fast profile pass"]
-    evidence: []
+    evidence: ["4fcbc3e: ledgr_walk_forward() calls ledgr_walk_forward_refuse_gapped_carry() under carry_test_state before the session identity, any training sweep or store write. It reads the pulse calendar once over the test span (open-session closes for availability experiments, the universe's distinct bar timestamps for dense ones) and counts pulses between consecutive test windows with two findInterval() calls; the first gap raises ledgr_walk_forward_gapped_carry (also ledgr_walk_forward_invalid_fold_window) naming both windows, the pulse count and the two remedies. Single folds, contiguous and overlapping fold lists and flat_test_state are unchanged; the existing walk-forward suites pass unchanged.", "LTB-0204/LCL-0204 (fast, 0.9 s) pin the class, message, empty store, contiguous and single-fold acceptance and the dense calendar. Oracle group wfgap is 3/3 after the fix and invariance11 keeps flat_test_state over the same folds DONE; before it the session was PARTIAL with an INCOMPLETE test run after CCC delisted inside the gap. Help, contracts (Walk-forward, Gapped carry), the condition reference and NEWS describe the rule.", "Side finding, routed and not fixed here: ledgr_folds_rolling() started on the 31st of a month with a one-month step builds non-contiguous test windows (2020-05-01 falls between two test windows when starting 2019-12-31), because month arithmetic from day 31 overflows; the new check refuses such a list under carry_test_state. The fold constructor's month arithmetic needs its own ticket.", "725eb4e: the full local suite found LTB-0024 (heavy protocol) and the walk-forward article using test windows with a session between them under the default carry_test_state, now refused. LTB-0024 ends its first test window the day before the second starts, keeping both instrument gaps inside and its assertions unchanged; the article steps by one month (three folds instead of two), explains why carrying needs contiguous test windows, widens test_window and step together in its exercise and quotes the new Sharpe range. This is a user-visible behavior change for gapped fold lists, disclosed in NEWS."]
   - id: "LDG-2980"
     title: "Resume interrupted walk-forward test runs"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2977"]
     scope: "In ledgr_walk_forward_run_or_open(), resume an existing test run that is not DONE or INCOMPLETE through the ordinary run path with its window, parameters and seed, instead of opening it, so rerunning an interrupted session completes. DONE and INCOMPLETE test runs are still opened, not rerun."
     acceptance: ["the LDG-2977 group for walk-forward resume is green and the invariance group stays green", "a session interrupted during a test run, rerun with the same arguments, completes with fold rows, scores and test-run fills and equity identical to an uninterrupted session", "DONE and INCOMPLETE test runs are opened without re-execution, and a test run whose configuration no longer matches still refuses", "focused walk-forward and resume suites and the fast profile pass; new blocks are registered in tests/claims.yml"]
-    evidence: []
+    evidence: ["4fcbc3e: ledgr_walk_forward_run_or_open() reads the existing test run's status (ledgr_walk_forward_run_status(), replacing the existence check) and opens it only when it is DONE or INCOMPLETE; any other existing row resumes through ledgr_run_window() with the same window, parameters and seed, whose resume path refuses a configuration mismatch with ledgr_run_hash_mismatch.", "LTB-0205/LCL-0205 (review, 10.5 s) interrupt fold 2's test run, check the caller sees the interrupt and one FAILED test run remains, check a mismatched configuration refuses, and require the rerun to be DONE with the uninterrupted reference session's folds, selections and test equity; rerunning a finished session leaves every run_telemetry stamp unchanged. Oracle group wfresume is 3/3 after the fix, with the reference digest equal to the rerun digest; before it the rerun stopped on ledgr_run_not_complete. Help, contracts (Walk-forward, Test-run resume) and NEWS describe it."]
   - id: "LDG-2981"
     title: "Restore fast-profile headroom"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
-    dependencies: ["LDG-2978", "LDG-2979", "LDG-2980", "LDG-2991", "LDG-2990", "LDG-2992"]
+    dependencies: ["LDG-2978", "LDG-2979", "LDG-2980", "LDG-2991"]
     scope: "Profile the fast lane after this cut's tests land and move the slowest blocks whose claims allow it to the review lane, so the ordinary fast profile keeps at least ten seconds below its 112-second bound. No block is weakened or deleted, and every moved block keeps its claim and LTB ID."
     acceptance: ["three consecutive ordinary fast-profile runs each finish at least ten seconds below the bound", "every moved block's claim records its new promised_profile and the review profile still passes", "Workstream 21 and Cut 11 reconcile before Type 1 close review"]
-    evidence: []
+    evidence: ["Dependency deviation, recorded: the amended dependency on LDG-2990 and LDG-2992 was dropped because the maintainer scheduled Workstream 21 to close on its own (2026-10-08); Workstream 22's tests must therefore keep the same ten-second headroom at its own close, which its close review checks.", "fc4ce6e moves four structural blocks whose materiality belongs to the maintained benchmarks to the review lane, keeping their claims and IDs: LTB-0046 (LCL-0037), LTB-0102 (LCL-0102), LTB-0153 (LCL-0153) and LTB-0157 (LCL-0157); LTB-0203 and LTB-0205 were registered review from the start. LTB-0164 and LTB-0082 stay fast because their claims argue for it.", "Before the move one ordinary fast run took 118.8 s over 538 blocks; LTB-0164 took 13.2 s in it against 3.0 s in isolation, the stall noted since Cut 9, so the lane without the stall was about 108.6 s. After the move three consecutive ordinary fast runs took 98.47, 98.87 and 98.77 s over 534 blocks against the 112 s bound, LTB-0164 about 3.0 s in each; test-test-control-plane.R passes.", "Workstream close, 2026-10-08. The real-data continuity oracle recorded from the clean 4fcbc3e commit (evidence/after_ws21) passes --expect post --against evidence/pre_cut11: every Cut 10 and Cut 11 group, invariance, invariance11, and 50 unchanged shared invariance observables. The ordinary long-window regression suite comparing accepted 8be6222 with candidate fc4ce6e (five interleaved pairs per shape, evidence/ws21_long_window) gave LWREG_SUITE_OK in 617 s and LWREG_CHECK_OK, with cold and warm candidate-to-accepted median ratios 0.993 to 1.006 (availability_sweep 0.999/0.993, fact_churn_terminal 1.006/1.003, feature_gaps 0.993/0.995). The full local suite ran 1,045 blocks: the pre-existing demo-strategy error and LTB-0024, corrected in 725eb4e (see LDG-2979). On Sharadar, a contiguous rolling walk-forward from the snapshot first date 1998-01-02 (dev/bench/v0_2_2_sharadar_run/evidence/run2_first_date, at 725eb4e) completed DONE with 26 of 26 folds DONE and train-selected in 2,461 s at 2.75 GB, passing the gapped-carry check on the 28-year session calendar. Workstream 21 awaits its Type 1 close review."]
   - id: "LDG-2982"
     title: "Register the real-data scale oracle and baselines"
     workstream: 22
@@ -1056,13 +1056,13 @@ tickets:
   - id: "LDG-2991"
     title: "Accept fold boundaries on the snapshot first and last session dates"
     workstream: 21
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2977"]
     scope: "Stop S1. Executor draft for acceptance at cut review: the sealed-range check for walk-forward and window entry points (R/walk-forward-folds.R and every caller of the same check) compares date-only boundaries with the snapshot first and last session dates, so a fold that starts or ends on those dates runs; a boundary outside the sealed sessions still refuses, and the condition message names the sealed first and last session dates. Fold identity, fold hashes and results for folds inside the range are unchanged."
     acceptance: ["the LDG-2977 group for S1 is green and the invariance group stays green", "ledgr_folds_rolling() starting on the snapshot first date runs on the scale fixture and on Sharadar", "a boundary before the first or after the last session still refuses with the same class and a message that names both dates", "help, contracts and NEWS describe the rule; focused walk-forward suites and the fast profile pass"]
-    evidence: []
+    evidence: ["4fcbc3e: ledgr_sealed_range_window() compares window and precompute boundaries with the sealed range by UTC calendar date, resolves a start on the first sealed date before the first bar to that bar's timestamp and an end on the last sealed date after the last bar to that bar's timestamp, keeps in-range boundaries as given, and refuses a date outside the range with a message naming the requested window and the sealed first and last dates. ledgr_experiment_window() (every walk-forward, run-window and sweep-window entry point) and ledgr_precompute_scoring_range() both use it, so the hydration and execution starts follow the resolved scoring start. Fold lists, fold hashes and in-range windows are unchanged.", "LTB-0206/LCL-0206 (fast, 0.7 s) pin the resolved first and last timestamps, kept in-range boundaries, both refusal messages and the precompute rule. Oracle group bounds is 3/3: a rolling walk-forward from 2020-01-01, the fixture's first session, completes DONE, and starts or ends on dates outside the snapshot refuse naming 2020-01-01 to 2020-12-31; before the fix the first date was refused as outside the range. Help, contracts (Walk-forward, Sealed-date boundaries) and NEWS describe it."]
   - id: "LDG-2992"
     title: "Spike: compiled accounting on availability-aware runs"
     workstream: 22
