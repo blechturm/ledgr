@@ -113,10 +113,15 @@ missing for the first 19 sessions of each train and test window, and the
 strategy cannot cross into a position until it exists. Size windows so
 that warmup is a small part of each one: if no candidate trades in a
 train window, the Sharpe ratio used for selection has no finite value
-and `ledgr_walk_forward()` stops with `ledgr_walk_forward_no_selection`.
-This restart concerns features only; the opening-state policy described
-later concerns positions. Hydrating features from earlier history is
-planned with ledgr’s point-in-time history design.
+and that fold has no selection. By default (`no_selection = "previous"`)
+the fold then runs its test window with the candidate most recently
+selected from training, or runs no test window if training has not
+selected anything yet; each fold’s `selection_source` says which, and
+the printed session counts them. `no_selection = "fail"` stops the
+session with `ledgr_walk_forward_no_selection` instead. This restart
+concerns features only; the opening-state policy described later
+concerns positions. Hydrating features from earlier history is planned
+with ledgr’s point-in-time history design.
 
 Plotting the folds makes the core contract easier to see. The blue train
 window sweeps and scores the grid. At the boundary, ledgr locks one
@@ -159,6 +164,7 @@ wf <- ledgr_walk_forward(
 wf
 #> ledgr walk-forward
 #> ==================
+#> Fold selections: 2 from training, 0 reused from an earlier fold, 0 without a candidate.
 #> Health warning: one or more test windows are shorter than 90 calendar days.
 #>
 #> Train/test degradation:
@@ -169,7 +175,7 @@ wf
 #> 2        2 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: a9939863a040e4d60820813bf285b80c30ad2208d09b85f37cc1b33178ec8d9b
+#> Session: 3540df018b1b4dc46767e777726d1b6eaae73be205ef7e1c7749cc45a7ce6e5a
 #> Status: DONE
 #> Opening state: carry_test_state
 #> Folds: 2
@@ -193,7 +199,7 @@ wf$degradation
 #> 2        2 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> # i Hidden columns: train_window, test_window, metric_diff_pct. Use as_tibble() for the full table.
+#> # i Hidden columns: train_window, test_window, metric_diff_pct, selection_source. Use as_tibble() for the full table.
 ```
 
 `metric_diff_abs` is `test_metric_value - train_metric_value`. Whether a

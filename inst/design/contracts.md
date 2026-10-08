@@ -695,7 +695,9 @@ Accepted change pending:
   already `FAILED` from an earlier attempt; `DONE` and `INCOMPLETE` rows are
   never changed. The `ledgr.interrupt` soft stop still returns normally and
   leaves the row `RUNNING`. A `FAILED` row resumes like any non-`DONE` row with
-  a matching configuration.
+  a matching configuration. An interrupt inside the durable fold transaction
+  rolls the transaction back and is then re-raised, so the invocation ends
+  `FAILED` rather than finalizing the rolled-back pulses as a completed run.
 - Pulse-level fill staging does not create a partial-flush persistence promise.
   The fold transaction remains the durable atomicity boundary: an unexpected
   exception before or after a pulse flush rolls back all fill rows from that

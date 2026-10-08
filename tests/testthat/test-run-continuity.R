@@ -74,6 +74,71 @@ testthat::test_that("[LTB-0198] an early exit after registration records FAILED 
   testthat::expect_true(is.na(row$error_msg))
 })
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0202] a mid-loop interrupt is re-raised and an INCOMPLETE row is never rewritten", {
+  hold <- function(ctx, params) ctx$hold()
+  # An interrupt inside the pulse loop is not swallowed by the fold
+  # transaction: the row is FAILED, the caller sees it, and a rerun resumes to
+  # the uninterrupted result.
+  moving <- continuity_bars()
+  moving$close <- moving$open <- moving$high <- moving$low <- c(10:14, 20:24)
+  moving_snapshot <- ledgr_snapshot_from_df(moving, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(moving_snapshot), add = TRUE)
+  midloop <- function(ctx, params) {
+    if (identical(getOption("ledgr.test.continuity_midloop"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()
+    target <- ctx$flat()
+    target[["AAA"]] <- if (substr(ctx$ts_utc, 9, 10) %in% c("06", "08")) 10 else 5
+    target
+  }
+  midloop_exp <- ledgr_experiment(moving_snapshot, midloop, opening = ledgr_opening(cash = 1000),
+                                  cost_model = ledgr_cost_zero())
+  reference <- ledgr_run(midloop_exp, run_id = "midloop-reference")
+  on.exit(close(reference), add = TRUE)
+  old <- options(ledgr.test.continuity_midloop = "2020-01-09")
+  got <- tryCatch(ledgr_run(midloop_exp, run_id = "midloop"), interrupt = function(e) "interrupted")
+  options(old)
+  testthat::expect_identical(got, "interrupted")
+  row <- continuity_run_row(moving_snapshot, "midloop")
+  testthat::expect_identical(row$status, "FAILED")
+  testthat::expect_identical(row$error_msg, "Run interrupted before completion.")
+  resumed <- ledgr_run(midloop_exp, run_id = "midloop")
+  on.exit(close(resumed), add = TRUE)
+  testthat::expect_gt(nrow(ledgr_results(reference, "fills")), 1L)
+  testthat::expect_identical(ledgr_results(resumed, "fills")$qty, ledgr_results(reference, "fills")$qty)
+  testthat::expect_identical(ledgr_results(resumed, "equity")$equity, ledgr_results(reference, "equity")$equity)
+
+  # The guard never touches an INCOMPLETE row: corrupt its completion evidence
+  # so the resume path fails after registration, and the status must stay.
+  days <- as.Date(c("2020-01-06", "2020-01-07", "2020-01-08"))
+  utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  gap_bars <- data.frame(instrument_id = "AAA", ts_utc = utc(days[c(1, 3)]), open = 10, high = 10,
+                         low = 10, close = 10, volume = 100)
+  membership <- data.frame(effective_from = utc(days[[1]] - 1), knowledge_time = utc(days[[1]] - 1), source = "d")
+  membership$members <- I(list("AAA"))
+  gap_snapshot <- ledgr_snapshot_from_df(
+    gap_bars, data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"),
+    facts = ledgr_facts(
+      ledgr_facts_sessions(
+        data.frame(session_date = days, status = "open", session_open = "14:30:00", session_close = "21:00:00"),
+        venue_id = "V", timezone = "UTC", knowledge = "assume_effective"),
+      ledgr_facts_membership_snapshots(membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective")
+    )
+  )
+  on.exit(ledgr_snapshot_close(gap_snapshot), add = TRUE)
+  incomplete_exp <- ledgr_experiment(
+    gap_snapshot, hold, universe = ledgr_universe_members("u"),
+    opening = ledgr_opening(cash = 1000, positions = c(AAA = 1), cost_basis = c(AAA = 10)),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero()
+  )
+  incomplete <- ledgr_run(incomplete_exp, run_id = "kept-incomplete")
+  close(incomplete)
+  testthat::expect_identical(continuity_run_row(gap_snapshot, "kept-incomplete")$status, "INCOMPLETE")
+  DBI::dbExecute(ledgr:::get_connection(gap_snapshot), "DELETE FROM run_completion WHERE run_id = 'kept-incomplete'")
+  testthat::expect_error(ledgr_run(incomplete_exp, run_id = "kept-incomplete"))
+  testthat::expect_identical(continuity_run_row(gap_snapshot, "kept-incomplete")$status, "INCOMPLETE")
+
+})
+
 testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped and recorded, not fatal", {
   ctx_with <- function(close, position, risk_mark, equity = 1000) {
     ctx <- list(
@@ -171,6 +236,12 @@ testthat::test_that("[LTB-0200] the walk-forward no-selection policy, its record
   testthat::expect_identical(degradation$selection_source, c("none", "train", "previous"))
   testthat::expect_identical(degradation$train_metric_value[2:3], c(1.5, NA_real_))
   testthat::expect_identical(degradation$test_metric_value[2:3], c(0.5, 0.25))
+  # The in-memory selected row for a previous fold blanks the metric too.
+  train_wide <- tibble::tibble(candidate_key = c("k3", "other"), candidate_id = "cand",
+                               sharpe_ratio = c(2.5, 1), status = c("INCOMPLETE", "DONE"))
+  previous_row <- ledgr:::ledgr_walk_forward_previous_selection(train_wide, "k3", "sharpe_ratio")
+  testthat::expect_identical(previous_row$candidate_key, "k3")
+  testthat::expect_identical(previous_row$sharpe_ratio, NA_real_)
   selected <- ledgr:::ledgr_walk_forward_selected_from_rows(folds, scores, "sharpe_ratio")
   testthat::expect_identical(selected$fold_seq, 2:3)
   testthat::expect_identical(selected$selection_source, c("train", "previous"))
@@ -224,11 +295,17 @@ testthat::test_that("[LTB-0201] walk-forward reuses the previous selection or ru
   all_days <- seq(as.Date("2020-01-01"), as.Date("2020-06-30"), by = "day")
   weekday <- as.integer(format(all_days, "%u")) <= 5L
   days <- all_days[weekday]
-  close <- 10 + seq_along(days) %% 7 / 10
+  # AAA rises through January and falls through February; BBB does the
+  # opposite. A one-month training window therefore selects AAA in fold 1
+  # and BBB in fold 2, so "most recent" and "first" selections differ.
+  month <- format(days, "%m")
+  wiggle <- rep(c(0.02, 0.06), length.out = length(days))
+  step_aaa <- ifelse(month == "01", wiggle, ifelse(month == "02", -wiggle, 0))
+  aaa <- 10 + cumsum(step_aaa)
+  bbb <- 10 + cumsum(-step_aaa)
   bars <- rbind(
-    data.frame(instrument_id = "AAA", ts_utc = utc(days), open = close, high = close, low = close, close = close, volume = 100),
-    data.frame(instrument_id = "BBB", ts_utc = utc(days), open = rev(close), high = rev(close), low = rev(close),
-               close = rev(close), volume = 100)
+    data.frame(instrument_id = "AAA", ts_utc = utc(days), open = aaa, high = aaa, low = aaa, close = aaa, volume = 100),
+    data.frame(instrument_id = "BBB", ts_utc = utc(days), open = bbb, high = bbb, low = bbb, close = bbb, volume = 100)
   )
   membership <- data.frame(effective_from = utc(days[[1]]), knowledge_time = utc(days[[1]]), source = "d")
   membership$members <- I(list(c("AAA", "BBB")))
@@ -245,15 +322,16 @@ testthat::test_that("[LTB-0201] walk-forward reuses the previous selection or ru
   # Trade through February, then hold cash: training windows starting in
   # March or later have constant equity and no finite Sharpe ratio.
   strategy <- function(ctx, params) {
-    if (substr(ctx$ts_utc, 1, 10) > "2020-02-29") return(ctx$flat())
-    ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = params$f)
+    target <- ctx$flat()
+    if (substr(ctx$ts_utc, 1, 10) <= "2020-02-29") target[[params$asset]] <- 50
+    target
   }
   exp <- ledgr_experiment(snapshot, strategy, universe = ledgr_universe_members("u"),
                           valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
                           opening = ledgr_opening(cash = 1000))
   folds <- ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
                                test_window = "1 month", step = "1 month")
-  wf <- ledgr_walk_forward(exp, ledgr_strategy_grid(f = c(0.5, 0.9)), folds,
+  wf <- ledgr_walk_forward(exp, ledgr_strategy_grid(asset = c("AAA", "BBB")), folds,
                            ledgr_rule_argmax("sharpe_ratio"), seed = 1L)
   testthat::expect_identical(wf$status, "DONE")
   testthat::expect_identical(wf$no_selection, "previous")
@@ -267,6 +345,15 @@ testthat::test_that("[LTB-0201] walk-forward reuses the previous selection or ru
   candidate <- ledgr_candidate(wf, previous_seq)
   testthat::expect_identical(candidate$provenance$walk_forward$selection_source, "previous")
   testthat::expect_true(is.na(candidate$provenance$walk_forward$selected_train_metric_value))
+  # Previous folds reuse the latest training selection (BBB, fold 2), not the
+  # first (AAA, fold 1), and report no selection score in memory either.
+  testthat::expect_identical(ledgr_candidate(wf, 1L)$params$asset, "AAA")
+  testthat::expect_identical(ledgr_candidate(wf, 2L)$params$asset, "BBB")
+  testthat::expect_identical(candidate$params$asset, "BBB")
+  testthat::expect_identical(candidate$provenance$walk_forward$selection_source_fold_seq, 2L)
+  previous_rows <- wf$selected$selection_source == "previous"
+  testthat::expect_true(any(previous_rows))
+  testthat::expect_true(all(is.na(wf$selected$sharpe_ratio[previous_rows])))
 
   cash <- function(ctx, params) ctx$flat()
   cash_exp <- ledgr_experiment(snapshot, cash, universe = ledgr_universe_members("u"),

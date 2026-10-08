@@ -283,8 +283,17 @@ ledgr_persistent_output_handler <- function(con,
 
   handler <- list()
 
+  # DBI::dbWithTransaction() rolls back on an interrupt but then returns
+  # normally, which would let a run finalize as if its rolled-back pulses had
+  # never existed. Re-raise the interrupt after the rollback instead.
   handler$run_transaction <- function(fn) {
-    DBI::dbWithTransaction(con, fn())
+    interrupted <- FALSE
+    result <- DBI::dbWithTransaction(
+      con,
+      withCallingHandlers(fn(), interrupt = function(cnd) interrupted <<- TRUE)
+    )
+    if (interrupted) rlang::interrupt()
+    result
   }
 
   handler$record_run_status <- function(status, error_msg = NA_character_) {

@@ -27,6 +27,9 @@
   or a user interrupt, is now recorded `FAILED` with the reason in
   `error_msg`, instead of staying `CREATED` forever. The condition still
   reaches the caller, and rerunning the same experiment and run ID resumes it.
+  Previously a user interrupt during the pulse loop was absorbed by the fold's
+  database transaction: the run rolled back its pulses and then finished
+  `DONE` as if they had never happened, which could not be resumed.
 
 ## Scoring and feature starts
 

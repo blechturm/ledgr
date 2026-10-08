@@ -242,18 +242,29 @@ if (!is.null(wf_none)) {
 ledgr_snapshot_close(s23)
 
 # ---- LFB-018: runs that exit early ------------------------------------------
-s18 <- availability_snapshot(bars_full, gap_days, c("AAA", "BBB"))
+# Moving prices, so equity comparisons between arms have power.
+bars18 <- rbind(bar_rows("AAA", gap_days, c(10, 11, 12, 13, 14)), bar_rows("BBB", gap_days, c(20, 22, 21, 23, 24)))
+s18 <- availability_snapshot(bars18, gap_days, c("AAA", "BBB"))
 slow_feature <- ledgr_indicator(id = "slow_close", requires_bars = 1L, gap_contract = "strict_window",
                                 fn = function(window) { Sys.sleep(0.4); window$close[[nrow(window)]] })
+# One definition, so a rerun resumes the same row; the option picks the exit.
 interrupt_feature <- ledgr_indicator(id = "interrupt_close", requires_bars = 1L, gap_contract = "strict_window",
-                                     fn = function(window) rlang::interrupt())
-exp18 <- function(features, strategy = function(ctx, params) ctx$hold()) {
-  ledgr_experiment(s18, strategy, features = features, universe = ledgr_universe_members("u"),
-                   valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
-                   opening = ledgr_opening(cash = 1000))
+                                     fn = function(window) {
+                                       if (identical(getOption("ledgr.oracle.exit"), "error")) stop("second attempt failed")
+                                       rlang::interrupt()
+                                     })
+exp18 <- function(features, strategy = function(ctx, params) ctx$hold(), snapshot = s18, availability = TRUE) {
+  if (availability) {
+    ledgr_experiment(snapshot, strategy, features = features, universe = ledgr_universe_members("u"),
+                     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+                     opening = ledgr_opening(cash = 1000))
+  } else {
+    ledgr_experiment(snapshot, strategy, features = features, opening = ledgr_opening(cash = 1000),
+                     cost_model = ledgr_cost_zero())
+  }
 }
-record_status <- function(arm, run_id) {
-  st <- tryCatch(DBI::dbGetQuery(ledgr:::get_connection(s18),
+record_status <- function(arm, run_id, snapshot = s18) {
+  st <- tryCatch(DBI::dbGetQuery(ledgr:::get_connection(snapshot),
                                  "SELECT status, error_msg FROM runs WHERE run_id = ?", params = list(run_id)),
                  error = function(e) data.frame(status = "<unreadable>", error_msg = conditionMessage(e)))
   record(arm, "status", st$status)
@@ -269,9 +280,34 @@ setTimeLimit(elapsed = Inf)
 record_status("lfb018_timelimit", "lfb018-timelimit")
 attempt("lfb018_interrupt", ledgr_run(exp18(list(interrupt_feature)), run_id = "lfb018-interrupt"))
 record_status("lfb018_interrupt", "lfb018-interrupt")
-# A resumed row that already says FAILED is interrupted again before the fold.
+# The FAILED row resumes and exits differently; its message must be the new one.
+old <- options(ledgr.oracle.exit = "error")
 attempt("lfb018_resumed", ledgr_run(exp18(list(interrupt_feature)), run_id = "lfb018-interrupt"))
+options(old)
 record_status("lfb018_resumed", "lfb018-interrupt")
+
+# An interrupt inside the pulse loop, dense and availability-aware: the row is
+# FAILED, the caller sees the interrupt, and rerunning resumes to the
+# uninterrupted result.
+rebalance_mid <- function(ctx, params) {
+  if (identical(getOption("ledgr.oracle.midloop"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()
+  ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = 0.9)
+}
+s18_dense <- ledgr_snapshot_from_df(bars18, db_path = tempfile(fileext = ".duckdb"))
+for (mode in c("dense", "availability")) {
+  snap <- if (identical(mode, "dense")) s18_dense else s18
+  make <- function() exp18(list(), rebalance_mid, snapshot = snap, availability = identical(mode, "availability"))
+  arm <- paste0("lfb018_midloop_", mode)
+  ref <- attempt(paste0(arm, "_reference"), ledgr_run(make(), run_id = paste0("midloop-ref-", mode)))
+  if (!is.null(ref)) record_run(paste0(arm, "_reference"), ref, snap)
+  old <- options(ledgr.oracle.midloop = "2020-01-08")
+  attempt(arm, ledgr_run(make(), run_id = paste0("midloop-", mode)))
+  options(old)
+  record_status(arm, paste0("midloop-", mode), snap)
+  resumed <- attempt(paste0(arm, "_resume"), ledgr_run(make(), run_id = paste0("midloop-", mode)))
+  if (!is.null(resumed)) record_run(paste0(arm, "_resume"), resumed, snap)
+}
+ledgr_snapshot_close(s18_dense)
 
 # Invariance: the soft stop keeps RUNNING, and resume reaches the
 # uninterrupted result.

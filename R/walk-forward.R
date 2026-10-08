@@ -550,9 +550,11 @@ ledgr_walk_forward_eval_fold <- function(exp,
     # Reuse the parameters most recently selected from a training window. The
     # fold names this fold's train candidate for them; its metric is not a
     # selection score, so it is reported as NA.
-    previous_key <- train_identities$candidate_key[[previous_idx[[1L]]]]
-    selected <- train_scores[train_scores$candidate_key == previous_key, , drop = FALSE]
-    selected[[selection_rule$metric]] <- NA_real_
+    selected <- ledgr_walk_forward_previous_selection(
+      train_scores,
+      train_identities$candidate_key[[previous_idx[[1L]]]],
+      selection_rule$metric
+    )
     selection_source <- "previous"
   }
 
@@ -693,6 +695,15 @@ ledgr_walk_forward_eval_fold <- function(exp,
     selection_source = selection_source,
     params_hash = selected_train_identity$params_hash[[1]]
   )
+}
+
+# The selected row for a previous-sourced fold: this fold's train row for the
+# reused parameters, with the selection metric blanked because it was not
+# used to select (it may even be a finite value on an INCOMPLETE row).
+ledgr_walk_forward_previous_selection <- function(train_scores, candidate_key, metric) {
+  selected <- train_scores[train_scores$candidate_key == candidate_key, , drop = FALSE]
+  selected[[metric]] <- NA_real_
+  selected
 }
 
 ledgr_walk_forward_failed_fold_result <- function(session_id,

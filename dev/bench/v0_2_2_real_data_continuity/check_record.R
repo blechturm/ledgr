@@ -102,8 +102,25 @@ for (arm in c("lfb018_timelimit", "lfb018_interrupt", "lfb018_resumed")) {
 check("lfb018", "time limit still reaches the caller",
       grepl("error", get("lfb018_timelimit", "condition_class"), fixed = TRUE))
 check("lfb018", "interrupt still reaches the caller",
-      grepl("interrupt", get("lfb018_interrupt", "condition_class"), fixed = TRUE) &&
-        grepl("interrupt", get("lfb018_resumed", "condition_class"), fixed = TRUE))
+      grepl("interrupt", get("lfb018_interrupt", "condition_class"), fixed = TRUE))
+check("lfb018", "a resumed FAILED row takes the new attempt's message",
+      grepl("second attempt failed", get("lfb018_resumed", "error_msg"), fixed = TRUE) &&
+        grepl("error", get("lfb018_resumed", "condition_class"), fixed = TRUE))
+# An interrupt inside the pulse loop (strategy on 2020-01-08). The reference
+# must trade, so the resume comparison has power.
+for (mode in c("dense", "availability")) {
+  arm <- paste0("lfb018_midloop_", mode)
+  ref_fills <- split_list(get(paste0(arm, "_reference"), "fills"))
+  check("lfb018", paste(mode, "mid-loop interrupt: FAILED, named message, caller sees the interrupt"),
+        identical(get(arm, "status"), "FAILED") &&
+          identical(get(arm, "error_msg"), "Run interrupted before completion.") &&
+          grepl("interrupt", get(arm, "condition_class"), fixed = TRUE))
+  check("lfb018", paste(mode, "mid-loop resume reaches the uninterrupted result"),
+        length(ref_fills) >= 2L && ran(paste0(arm, "_resume")) &&
+          identical(get(paste0(arm, "_resume"), "status"), "DONE") &&
+          identical(get(paste0(arm, "_resume"), "fills"), get(paste0(arm, "_reference"), "fills")) &&
+          identical(get(paste0(arm, "_resume"), "equity"), get(paste0(arm, "_reference"), "equity")))
+}
 
 # ---- Invariance ---------------------------------------------------------------
 check("invariance", "close-filter pipeline unchanged", ran("inv_where") && identical(get("inv_where", "status"), "DONE") &&
@@ -120,8 +137,12 @@ check("invariance", "all-select walk-forward unchanged", ran("inv_wf_all_select"
         identical(get("inv_wf_all_select", "session_status"), "DONE") && length(folds_all) >= 6L &&
         all(fold_part(folds_all, 3L) == "DONE") && all(fold_part(folds_all, 4L) %in% c("train", "<absent>")) &&
         all(fold_part(folds_all, 5L) == "test"))
-check("invariance", "uninterrupted run", ran("inv_uninterrupted") && identical(get("inv_uninterrupted", "status"), "DONE") &&
-        identical(split_list(get("inv_uninterrupted", "fills")), c("2020-01-07:AAA:BUY:45", "2020-01-07:BBB:BUY:22")))
+# Moving prices: the uninterrupted run trades and its equity moves, so the
+# soft-stop resume comparison below cannot pass on a flat curve.
+inv_equity <- as.numeric(split_list(get("inv_uninterrupted", "equity")))
+check("invariance", "uninterrupted run trades with moving equity",
+      ran("inv_uninterrupted") && identical(get("inv_uninterrupted", "status"), "DONE") &&
+        length(split_list(get("inv_uninterrupted", "fills"))) >= 2L && length(unique(inv_equity)) > 1L)
 check("invariance", "soft stop keeps RUNNING without an error message",
       identical(get("inv_soft_stop", "status"), "RUNNING") && identical(get("inv_soft_stop", "error_msg_nonempty"), "FALSE"))
 check("invariance", "soft-stop resume reaches the uninterrupted result",
