@@ -7,12 +7,66 @@ decision on every finding of the
 writes the accepted decisions into an amendment.
 **Owner:** maintainer decides; executor verifies and drafts.
 
+## Resume here
+
+**Paused 2026-10-08 in stage 2** while the WS2 remainder (real-data stoppers
+LFB-017, LFB-023, LFB-018) is finished first (maintainer decision, recorded in
+the [macro plan change control](../ledgr_v0_2_2_spec_packet/macro_plan.md#7-change-control)).
+This register is the single place to resume WS3/WS4; everything needed is
+linked below.
+
+**Decided so far** (details in the rows):
+- Session 0: the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md)
+  is the WS3 history API direction (`ledgr_history_frame()`,
+  `ledgr_history_matrix()`, exclusions kept). The amendment must reconcile it
+  with v11's `ctx$window()`.
+- A: history reaches back to the start of the data; shorter lookbacks on
+  request; every read strictly point-in-time (columns s <= t, facts knowable
+  at t); decisions only on scoring pulses.
+- B: every indicator starts at the beginning of the data in every run, sweep,
+  walk-forward window and inspection. Every supported built-in and TTR
+  indicator must work on ragged and dense universes; WS4 owns the five
+  blockers listed under Session B.
+- C: pragmatic clocks. Facts without a knowledge clock are known when
+  effective, disclosed; interval membership is single-clock, snapshot sets are
+  the two-clock path; lifetime corrections deferred with a trigger.
+- Sharadar goal: the full available S&P span, 1998-2026, runs without stops;
+  the adapter drops carried zero-volume bars (LFB-027).
+
+**Still open:** Session D (indicator labels, recommendations ready), Session E
+(memory budget: proposed no more than +10% peak from WS3/WS4, the real
+28-year baseline from the census, structural memory reduction as the next
+release's headline), Session F (after the Sharadar census), and the
+remaining consider-level rows (one batch).
+
+**Next steps when resuming:**
+1. Sharadar track: eight adapter patches in `ledgr-research`, build the
+   1998-2026 snapshot, census (fact refusals, gap lengths after dropping
+   carried bars, delisting reasons, correction chains), end-to-end runs with
+   runtime and per-phase memory. Feeds B's gap thresholds, E's baseline, F.
+2. Close stage 2, then stage 3 (one v11 amendment), 4 (Type 1 final review),
+   5 (WS3/WS4 cut).
+
+**Evidence index:**
+- Proposal, review: [proposal](rfc_history_wave_v0_2_2_proposal.md),
+  [Type 2 review](rfc_history_wave_v0_2_2_review.md).
+- Spikes: [two-clock history](../spikes/two_clock_history_spike/closeout.md)
+  (with `sharadar_census.csv`, `sharadar_vintage_diff.csv`) and
+  [recursive-indicator history](../spikes/recursive_indicator_history_spike/closeout.md)
+  (with `fragility.csv`).
+- Stage 1 checks: `dev/design-checks/history_wave_stage1/` (probes, TTR gap
+  behavior, burn-in, speed).
+- Adapter and long-run state: [Sharadar adapter survey](../ledgr_v0_2_2_spec_packet/sharadar_adapter_survey.md).
+- Memory baseline: [long-window Cut 3 baseline](../ledgr_v0_2_2_spec_packet/long_window_cut3_baseline.md)
+  (peak 512 MiB at 252 pulses to 3,832 MiB at 6,056 pulses, 600
+  instruments); Cut 5 removed about 14%; EXP-0003 peaked at 7.0 GB on 0.2.1.0.
+
 ## Stages
 
 | Stage | What | Exit | State |
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
-| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | in progress: Session 0, A and B decided 2026-10-08 |
+| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | paused 2026-10-08 after Sessions 0, A, B, C; resumes after the WS2 remainder |
 | 3 | Amend | One amendment to v11 (sections 3, 6, 7) carrying the accepted decisions under the amendment discipline in `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
 | 4 | Final review | Type 1 review of the amendment against this register | open |
 | 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |

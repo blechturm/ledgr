@@ -97,6 +97,7 @@ planning are evidence, not authorization for new work.
 | What is the v0.2.2 dependency plan? | `inst/design/ledgr_v0_2_2_spec_packet/macro_plan.md` |
 | Which accepted decisions are pending implementation? | `inst/design/decisions.md`, then the linked accepted source |
 | Which RFC is active or due? | `inst/design/rfc/README.md` |
+| What is decided for WS3/WS4 history so far? | `inst/design/rfc/rfc_history_wave_v0_2_2_decisions.md` ("Resume here") |
 | Where is a non-binding idea parked? | `inst/design/horizon.md` |
 | What is the cross-version sequence? | `inst/design/ledgr_roadmap.md` |
 | Where is displaced planning history? | `inst/design/roadmap_history.md` and `inst/design/planning_context_history.md` |

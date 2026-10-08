@@ -436,8 +436,8 @@ the original discussion:
 | Direction | State | Authority |
 | --- | --- | --- |
 | Singular alias-aware feature read | proposed | feature-map RFC cycle |
-| On-demand causal history frame | proposed | WS3 history route |
-| Identity-preserving history and matrix bridge | proposed | WS3 history route |
+| On-demand causal history frame | adopted as the WS3 direction, 2026-10-08 | WS3 history route; [history-wave register](../rfc/rfc_history_wave_v0_2_2_decisions.md) Session 0 |
+| Identity-preserving history and matrix bridge | adopted as the WS3 direction, 2026-10-08 | WS3 history route; [history-wave register](../rfc/rfc_history_wave_v0_2_2_decisions.md) Session 0 |
 | History-to-selection bridge | proposed | WS3 and WS7 |
 | Strategy schedule decorator | proposed, conditional | WS6 scheduler route |
 | Shared prepared inputs through `mori` | spike scheduled | v0.2.2 macro plan WS3 |

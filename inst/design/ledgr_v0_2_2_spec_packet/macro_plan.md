@@ -552,3 +552,17 @@ hashing evidence, permits a new hash rule, separates faster full verification
 from verification-policy changes, and binds public-operation measurements.
 Feature reuse depends on the WS3/WS4 semantics. This clarifies the existing
 workstream without adding release scope or authorizing implementation.
+
+2026-10-08 maintainer amendment: the WS2 remainder is finished before the
+WS3/WS4 cut. Cut 6 closed WS2's terminal-outcome half; the real-data stoppers
+LFB-017 (an eligible member without a price is skipped for that rebalance and
+recorded, not a run failure), LFB-023 (an explicit per-fold policy instead of
+aborting walk-forward) and LFB-018 (an early exit ends `FAILED`, not
+`CREATED`) are cut next. The WS3/WS4 design wave pauses in stage 2 of its
+[decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md), which holds
+every decision so far and resumes the wave. Two clarifications of existing
+scope, not new scope: WS4's exit means every supported built-in and TTR
+indicator works on ragged and dense universes; and the WS8 integrated record
+is an end-to-end Sharadar run over the full available S&P span, 1998-2026,
+with the adapter dropping carried zero-volume bars (LFB-027). The memory budget
+of decision 8 remains open in the register (Session E).
