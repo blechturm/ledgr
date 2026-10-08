@@ -1,0 +1,17 @@
+{
+  "stage": "profile_momentum",
+  "attempts": {
+    "momentum": {
+      "elapsed_s": 167.83
+    }
+  },
+  "telemetry_stride": 100,
+  "telemetry_samples": 72,
+  "t_pre": 7.03,
+  "t_loop": 81.45,
+  "t_post": 19.94,
+  "fills": 8798,
+  "elapsed_s": 171,
+  "ledgr_commit": "8febb92a2a4807c3dccf85aa7a3a1a9c9da5da55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

@@ -1,0 +1,17 @@
+{
+  "stage": "profile_equal_weight",
+  "attempts": {
+    "equal_weight": {
+      "elapsed_s": 268.51
+    }
+  },
+  "telemetry_stride": 100,
+  "telemetry_samples": 72,
+  "t_pre": 6.09,
+  "t_loop": 196.61,
+  "t_post": 0.09,
+  "fills": 155402,
+  "elapsed_s": 411.8,
+  "ledgr_commit": "8febb92a2a4807c3dccf85aa7a3a1a9c9da5da55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

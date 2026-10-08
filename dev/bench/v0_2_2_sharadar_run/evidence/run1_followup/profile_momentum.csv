@@ -1,0 +1,10 @@
+"stage","phase","sampled_s","share_of_pulse"
+"momentum","t_bars",0,0
+"momentum","t_feats",0.23,0.2771
+"momentum","t_ctx",0.14,0.1687
+"momentum","t_strat",0,0
+"momentum","t_target",0.03,0.0361
+"momentum","t_fill",0,0
+"momentum","t_event",0,0
+"momentum","t_state",0.06,0.0723
+"momentum","t_pulse",0.83,1

@@ -1,0 +1,4 @@
+"stage","exit_status","elapsed_s","peak_rss_mib"
+"walk_forward",0,2553.4,2560
+"profile_momentum",0,173.2,3013
+"profile_equal_weight",0,413.9,2859

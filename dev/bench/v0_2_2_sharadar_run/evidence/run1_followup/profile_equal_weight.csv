@@ -1,0 +1,10 @@
+"stage","phase","sampled_s","share_of_pulse"
+"equal_weight","t_bars",0,0
+"equal_weight","t_feats",0.27,0.2328
+"equal_weight","t_ctx",0.06,0.0517
+"equal_weight","t_strat",0,0
+"equal_weight","t_target",0.15,0.1293
+"equal_weight","t_fill",0.08,0.069
+"equal_weight","t_event",0.04,0.0345
+"equal_weight","t_state",0.17,0.1466
+"equal_weight","t_pulse",1.16,1
