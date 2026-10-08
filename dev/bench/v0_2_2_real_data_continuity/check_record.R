@@ -18,7 +18,7 @@
 #
 # `--against` compares every observable of the invariance arms (inv_*) and the
 # lfb017 arms with an earlier record, except telemetry stamps and session IDs
-# (a session ID hashes the temporary store path): the cut must
+# (a session ID hashes the generated snapshot_id): the cut must
 # not change them. A missing observation is a failure, never a pass.
 
 args <- commandArgs(trailingOnly = TRUE)

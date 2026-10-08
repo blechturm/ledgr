@@ -566,3 +566,29 @@ indicator works on ragged and dense universes; and the WS8 integrated record
 is an end-to-end Sharadar run over the full available S&P span, 1998-2026,
 with the adapter dropping carried zero-volume bars (LFB-027). The memory budget
 of decision 8 remains open in the register (Session E).
+
+2026-10-08 maintainer amendment, after Cut 11 Workstream 21: a small
+maintenance cut follows Cut 11 Workstream 22, before the WS3/WS4 cut. It holds
+five unowned findings, each needing a ticket:
+(1) dense `ledgr_state_reconstruct()` builds its close map by scanning every
+bar once per pulse (`ledgr_derived_state_dense_close_map()`, moved verbatim by
+LDG-2978), quadratic in pulses, a sibling of Cut 11 finding F1;
+(2) the full local suite errors in "demo SMA crossover strategy fails through
+active alias classes" (`tests/testthat/test-demo-strategies.R`), unowned since
+Cut 10;
+(3) LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane,
+open since Cut 9; one stall nearly breaks the 112-second bound, so the cause
+is investigated rather than the block moved;
+(4) `tools/check-test-gate.R --records` refused three recorded ordinary runs
+with "Timing gate requires 1 run(s), received 3", so the tool or
+`tests/README.md` is wrong;
+(5) walk-forward `experiment_hash` and `session_id` include the snapshot's
+generated `snapshot_id`, so identical data sealed twice (same
+`snapshot_hash`) yields different session IDs, while contracts.md (identity
+layers) lists `snapshot_id` among locators that must not enter `session_id`;
+the store path is correctly excluded. The cut decides whether the identity or
+the contract wording changes.
+Two further findings are routed elsewhere: `ledgr_folds_rolling()` month
+arithmetic from the 31st and decision-trace diagnostic volume go to the
+[decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md) (Sessions B
+and E), and carry over overlapping test windows to `horizon.md`.

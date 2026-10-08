@@ -39,7 +39,8 @@ instead of stopping, and writes `record.csv` with the commit and command.
 
 `--against` compares every observable of the `inv_*` and `lfb017_*` arms with
 an earlier record, except telemetry stamps and session IDs; a session ID
-hashes the snapshot's temporary store path, so it differs between records.
+hashes the snapshot's generated `snapshot_id`, so it differs between records
+(routed to the post-Cut-11 maintenance cut, macro plan 2026-10-08).
 
 ## Fixture arithmetic
 

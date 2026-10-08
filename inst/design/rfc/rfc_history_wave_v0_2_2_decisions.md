@@ -126,6 +126,7 @@ Decides everything after it. Amends v11 section 3.
 | D4-F4 | should-fix | History-dependent indicators are refused in availability mode, so WS7 on a PIT universe has no EMA/RSI/ATR/MACD | confirmed and stronger: refusal is anything not `strict_window` (`R/availability-policy.R:246-269`); `ledgr_ind_ema` is not `strict_window`, nor are bounded TTR functions other than SMA | Decide: v0.2.2 scope statement, or WS4 decides the gap rule | **decided** (maintainer, 2026-10-08): every supported indicator, built-in and TTR, must work on both ragged (availability) and dense universes in v0.2.2. WS4 owns the gap rule and the remaining blockers (see "B blockers" below) |
 | D4-F5 | consider | `ledgr_check_no_lookahead` is never called; full-history hydration spreads a lookahead | confirmed: defined at `R/features-engine.R:487`, used only in `tests/testthat/test-features.R` | Sampled build-time causality check beside D3's refutation | pending |
 | D4-F6 | consider | Stance on convergence for readiness and structural completeness | confirmed (no premise); burn-in measurement above is relevant | `stable_after` stays first-valid; convergence undisclosed in v0.2.2 | pending |
+| C11-F1 | should-fix | `ledgr_folds_rolling()` started on the 31st of a month builds non-contiguous test windows: month arithmetic from day 31 overflows, so a one-month step from 2019-12-31 leaves 2020-05-01 between two test windows | confirmed by the Cut 11 LDG-2977 oracle (2026-10-08); since LDG-2979 `carry_test_state` refuses such a list, `flat_test_state` still runs it with the gap | Fix the constructor's month arithmetic (clamp to month end) in the WS3/WS4 cut, which owns window and history starts; routed by the maintainer 2026-10-08 | pending |
 
 ### B blockers: every indicator on ragged and dense universes
 
@@ -225,6 +226,7 @@ Maintainer, 2026-10-08, after the adapter survey:
 | D1-F8 | consider | Diagonal parity needs a carve-out if the end clock lands | confirmed; moot if D5-F1 chooses documentation | Follows from D5-F1 | pending |
 | I-F1 | should-fix | Evidence wording overclaims "no restatement" | confirmed: one acquisition; the only knowledge clock is a synthetic one-day lag | Guard exists because the shape is unmeasured | pending |
 | I-F4 | consider | State what spike A discharged | confirmed | Accept | pending |
+| C11-F2 | consider | Decision-trace volume drives diagnostic memory: availability runs write one `decision_recorded` row per member per pulse, about 3.6 million (momentum) and 4.2 million (equal-weight) rows on the 1998-2026 Sharadar runs, including pulses where the strategy holds | measured in Cut 11 LDG-2976 (`dev/bench/v0_2_2_sharadar_run/evidence/run1`); Workstream 22 removes the sweep's quadratic copy (F4) but not the volume | Decide with the memory budget whether the default decision trace stays per member per pulse; changing it changes what `ledgr_results(bt, 'diagnostics')` and `ledgr_run_explain()` show, so it is a design decision, not an optimization; routed by the maintainer 2026-10-08 | pending |
 
 ## Session F: correction chains
 
