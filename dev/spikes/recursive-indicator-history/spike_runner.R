@@ -115,15 +115,15 @@ window_gaps <- function(indicator, bars) {
 }
 
 tolerance <- 1e-9
-classify <- function(indicator, bars) {
+classify <- function(indicator, bars, at = starts) {
   if (gut) {
     g <- window_gaps(indicator, bars)
     sensitive <- any(g$gap > tolerance * g$scale)
     return(list(max_gap_31 = max(g$gap), max_gap_61 = NA_real_, final_gap_61 = NA_real_,
                 nondecreasing_steps_61 = NA_integer_, class = if (sensitive) "history_dependent" else "bounded"))
   }
-  g31 <- gaps_from(indicator, bars, starts[[1L]])
-  g61 <- gaps_from(indicator, bars, starts[[2L]])
+  g31 <- gaps_from(indicator, bars, at[[1L]])
+  g61 <- gaps_from(indicator, bars, at[[2L]])
   sensitive <- any(g31$gap > tolerance * g31$scale) || any(g61$gap > tolerance * g61$scale)
   above <- g61$gap[g61$gap > tolerance * g61$scale]
   nondecreasing <- if (length(above) > 1L) sum(diff(above) >= 0) else 0L
@@ -151,6 +151,31 @@ for (path in names(paths)) {
   }
 }
 classification <- do.call(rbind, classification)
+
+# Fragility of the decaying/path-dependent rule (added after independent
+# review): the three history-dependent indicators on a monotone path, the sine
+# path with other second starts, and five more random-walk seeds.
+if (!gut) {
+  probes <- list(list(label = "monotone", closes = 100 + 0.5 * seq_len(n_bars), at = starts))
+  for (second in c(40L, 47L, 55L)) {
+    probes[[length(probes) + 1L]] <- list(label = paste0("sine, starts 31/", second), closes = paths$sine,
+                                          at = c(31L, second))
+  }
+  set.seed(1L)
+  for (i in 1:5) {
+    probes[[length(probes) + 1L]] <- list(label = paste0("walk seed 1 draw ", i), at = starts,
+                                          closes = round(100 + cumsum(stats::rnorm(n_bars)), 6))
+  }
+  fragility <- do.call(rbind, lapply(probes, function(p) {
+    bars <- bars_for(p$closes)
+    do.call(rbind, lapply(c("ttr_ema5", "ttr_rsi14", "running_max_strict"), function(name) {
+      data.frame(probe = p$label, indicator = name, class = classify(indicators[[name]], bars, p$at)$class,
+                 stringsAsFactors = FALSE)
+    }))
+  }))
+  utils::write.csv(fragility, file.path(out_dir, "fragility.csv"), row.names = FALSE)
+  print(stats::reshape(fragility, idvar = "probe", timevar = "indicator", direction = "wide"), row.names = FALSE)
+}
 
 utils::write.csv(prerequisite, file.path(out_dir, "prerequisite.csv"), row.names = FALSE)
 utils::write.csv(classification, file.path(out_dir, "classification.csv"), row.names = FALSE)

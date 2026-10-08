@@ -73,8 +73,11 @@ cat(sprintf("size kill condition (segments > 2 x fact rows) fires on %d of %d fi
 
 growth <- utils::read.csv(file.path(scratch, "normal", "growth.csv"), stringsAsFactors = FALSE)
 print(growth, row.names = FALSE)
-cat(sprintf("case 9: append-only max %.2f segments per fact row; with restatements max %.2f\n",
-            max(growth$segments_per_fact_row[growth$long_facts == 0]), max(growth$segments_per_fact_row)))
+for (kind in unique(growth$kind)) {
+  g <- growth[growth$kind == kind, , drop = FALSE]
+  cat(sprintf("case 9, %s: max %.2f segments per fact row; merged max %.2f\n",
+              kind, max(g$segments_per_fact_row), max(g$merged_per_fact_row)))
+}
 
 status_after <-git("status", "--porcelain", "--", c(package_paths, "inst/design"))
 if (!identical(status_before, status_after)) fail("package or design scope changed during the rerun")

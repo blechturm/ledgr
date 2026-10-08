@@ -15,7 +15,7 @@ fail <- function(...) failures <<- c(failures, paste0(...))
 
 git <- function(...) suppressWarnings(system2("git", c("-C", shQuote(repo), ...), stdout = TRUE, stderr = TRUE))
 package_paths <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man")
-status_before <- git("status", "--porcelain", "--", package_paths)
+status_before <- git("status", "--porcelain", "--", c(package_paths, "inst/design"))
 
 run <- function(out, extra = character()) {
   code <- system2(rscript, c(shQuote(file.path(spike, "spike_runner.R")), shQuote(repo), shQuote(out), extra),
@@ -31,7 +31,7 @@ scratch <- tempfile("rih-check-")
 run(file.path(scratch, "normal"))
 run(file.path(scratch, "gut"), "--gut")
 for (pair in list(c("normal", ""), c("gut", "gut"))) {
-  for (file in c("prerequisite.csv", "classification.csv")) {
+  for (file in c("prerequisite.csv", "classification.csv", if (pair[[1L]] == "normal") "fragility.csv")) {
     recorded <- file.path(evidence, pair[[2L]], file)
     fresh <- file.path(scratch, pair[[1L]], file)
     if (!file.exists(recorded) || !file.exists(fresh) || !same_file(recorded, fresh)) {
@@ -64,8 +64,13 @@ compared$class_agrees <- compared$class == compared$class_expected
 compared$flag_agrees <- compared$p3b_flag == compared$p3b_flag_expected
 print(compared[, c("path", "indicator", "class", "class_expected", "class_agrees", "flag_agrees")], row.names = FALSE)
 
-status_after <- git("status", "--porcelain", "--", package_paths)
-if (!identical(status_before, status_after)) fail("package scope changed during the rerun")
+fragility <- utils::read.csv(file.path(scratch, "normal", "fragility.csv"), stringsAsFactors = FALSE)
+cat(sprintf("fragility: %d of %d probe classes differ from expected\n",
+            sum(fragility$class != expected$class_expected[match(fragility$indicator, expected$indicator)]),
+            nrow(fragility)))
+
+status_after <- git("status", "--porcelain", "--", c(package_paths, "inst/design"))
+if (!identical(status_before, status_after)) fail("package or design scope changed during the rerun")
 committed <- git("diff", "--name-only", "9452e9e", "HEAD", "--", package_paths)
 if (length(committed)) fail("package files changed since spike start 9452e9e: ", paste(committed, collapse = ", "))
 

@@ -97,6 +97,9 @@ spike_build <- function(data, plane, key, ids) {
   epochs <- c(-Inf, ranks)
   segments <- data.frame(eff_from = numeric(), eff_to = numeric(), k_from = numeric(),
                          k_to = numeric(), state = character(), stringsAsFactors = FALSE)
+  # Each effective interval is evaluated at its start plus 12 hours. This
+  # assumes intervals of at least a day and knowledge-rank offsets (seconds)
+  # well under 12 hours, which holds for every fixture here.
   probe_offset <- 12 * 3600
   for (e in epochs) {
     known <- spike_known_by(data, e, ranks)
@@ -123,10 +126,7 @@ spike_build <- function(data, plane, key, ids) {
   segments
 }
 
-spike_lookups <- new.env(parent = emptyenv())
-spike_lookups$n <- 0L
 spike_query <- function(segments, s, t) {
-  spike_lookups$n <- spike_lookups$n + 1L
   hit <- segments$eff_from <= s & s < segments$eff_to & segments$k_from <= t & t < segments$k_to
   if (sum(hit) != 1L) return(sprintf("ERROR:%d segments", sum(hit)))
   segments$state[hit]

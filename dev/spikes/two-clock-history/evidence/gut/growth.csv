@@ -1,10 +1,10 @@
-"case","short_facts","long_facts","fact_rows","segments_written","segments_per_fact_row"
-9,5,0,5,NA,NA
-9,10,0,10,NA,NA
-9,20,0,20,NA,NA
-9,5,1,6,NA,NA
-9,10,1,11,NA,NA
-9,20,1,21,NA,NA
-9,5,5,10,NA,NA
-9,10,10,20,NA,NA
-9,20,20,40,NA,NA
+"case","kind","short_facts","long_facts","fact_rows","segments_written","segments_per_fact_row","merged_segments_written","merged_per_fact_row","final_epoch_runs"
+9,"append only",5,0,5,NA,NA,NA,NA,NA
+9,"append only",10,0,10,NA,NA,NA,NA,NA
+9,"append only",20,0,20,NA,NA,NA,NA,NA
+9,"dominating restater",5,5,10,NA,NA,NA,NA,NA
+9,"dominating restater",10,10,20,NA,NA,NA,NA,NA
+9,"dominating restater",20,20,40,NA,NA,NA,NA,NA
+9,"low-precedence filler",5,5,10,NA,NA,NA,NA,NA
+9,"low-precedence filler",10,10,20,NA,NA,NA,NA,NA
+9,"low-precedence filler",20,20,40,NA,NA,NA,NA,NA

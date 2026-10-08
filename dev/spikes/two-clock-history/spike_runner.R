@@ -28,14 +28,15 @@ cases <- list(
                                   precedence = 1L, fact_id = c("halt", "retract"),
                                   supersedes_fact_id = c(NA, "halt"))),
        queries = list(c(4, 5), c(4, 8), c(5, 9))),
-  # Supersession must stay within one source, and a three-status chain from one
-  # source is refused because its first and third facts conflict (recorded
-  # below). The expressible chain reverts: halted, corrected to active,
-  # corrected back to halted.
+  # Supersession must stay within one source, and a three-status chain at one
+  # precedence is refused because its first and third facts are not a direct
+  # pair (recorded below). Lowering f3's precedence makes the chain expressible
+  # and distinguishing: if f1 revived once f2 is superseded, (4, 9) would be
+  # halted (f1 outranks f3); with the chain honoured it is quotation_only.
   list(id = 2L, name = "supersession chain", plane = "status", key = "AAA",
        facts = ledgr_facts(status(instrument_id = "AAA", effective_from = day(3), effective_to = day(6),
                                   knowledge_time = c(day(3), day(5), day(8)),
-                                  status = c("halted", "active", "halted"), precedence = 1L,
+                                  status = c("halted", "active", "quotation_only"), precedence = c(2L, 2L, 1L),
                                   fact_id = c("f1", "f2", "f3"), supersedes_fact_id = c(NA, "f1", "f2"))),
        queries = list(c(4, 4), c(4, 6), c(4, 9))),
   list(id = 3L, name = "precedence tie", plane = "status", key = "AAA",
@@ -80,9 +81,29 @@ same_source_chain <- tryCatch({
          precedence = 1L, fact_id = c("f1", "f2", "f3"), supersedes_fact_id = c(NA, "f1", "f2"))
   "accepted"
 }, error = function(e) paste("refused:", class(e)[[1L]]))
-rows[[1L]] <- data.frame(case = 2L, shape = "one-source supersession chain (constructor)", plane = "status",
+rows[[1L]] <- data.frame(case = 2L, shape = "one-precedence supersession chain (constructor)", plane = "status",
   key = "AAA", s_day = NA_integer_, t_day = NA_integer_, answer = same_source_chain,
-  diagonal_at_s = "public constructor", stringsAsFactors = FALSE)
+  diagonal_at_s = "public constructor", deciding_facts = "", stringsAsFactors = FALSE)
+
+# Facts knowable at `t` and applicable at `s` for one plane and key: the
+# inputs that decided a bitemporal answer.
+deciding <- function(data, plane, key, s, t) {
+  sec <- spike_seconds
+  open_end <- function(x) { x <- sec(x); x[is.na(x)] <- Inf; x }
+  if (identical(plane, "membership")) {
+    sets <- data$membership_sets
+    sets <- sets[sets$universe_id == key & sec(sets$knowledge_time) <= t & sec(sets$effective_from) <= s, , drop = FALSE]
+    iv <- data$membership
+    iv <- iv[iv$universe_id == key & is.na(iv$set_id) & sec(iv$knowledge_time) <= t &
+               sec(iv$effective_from) <= s & s < open_end(iv$effective_to), , drop = FALSE]
+    return(paste(c(if (nrow(sets)) paste0("set:", sets$set_id, ifelse(sets$complete, "", "(incomplete)")),
+                   if (nrow(iv)) paste0("interval:", iv$instrument_id)), collapse = " "))
+  }
+  table <- if (identical(plane, "status")) data$status else data$lifetime
+  hit <- table$instrument_id == key & sec(table$knowledge_time) <= t &
+    sec(table$effective_from) <= s & s < open_end(table$effective_to)
+  paste(table$fact_id[hit], collapse = " ")
+}
 for (case in cases) {
   data <- ledgr:::ledgr_facts_inspection_data(case$facts)
   shipped <- spike_provider(data, ids)
@@ -96,41 +117,76 @@ for (case in cases) {
     s <- noon(q[[1L]]); t <- noon(q[[2L]])
     rows[[length(rows) + 1L]] <- data.frame(case = case$id, shape = case$name, plane = case$plane,
       key = case$key, s_day = q[[1L]], t_day = q[[2L]], answer = answer(s, t), diagonal_at_s = diagonal(s),
-      stringsAsFactors = FALSE)
+      deciding_facts = deciding(data, case$plane, case$key, s, t), stringsAsFactors = FALSE)
   }
-  # Case 8: the diagonal (d, d) must equal the shipped provider for every day.
+  # Case 8: the diagonal (d, d) must equal the shipped answer for every day.
+  # Status and lifetime compare with the fold's prepared provider. Membership
+  # compares with the inspection resolver and, for members, with the fold's
+  # prepared membership (`members_at`), which does not distinguish FALSE from NA.
   diag_ok <- vapply(1:10, function(d) identical(answer(noon(d), noon(d)), diagonal(noon(d))), logical(1))
+  against <- "fold prepared provider"
+  if (identical(case$plane, "membership")) {
+    members_at <- ledgr:::ledgr_availability_prepared_membership(data, case$key, ids)
+    fold_ok <- vapply(1:10, function(d) {
+      flags <- strsplit(strsplit(answer(noon(d), noon(d)), "|", fixed = TRUE)[[1L]], ":", fixed = TRUE)
+      members <- vapply(flags, `[[`, character(1), 1L)[vapply(flags, `[[`, character(1), 2L) == "TRUE"]
+      identical(sort(members), sort(members_at(noon(d))))
+    }, logical(1))
+    diag_ok <- diag_ok & fold_ok
+    against <- "inspection resolver and fold prepared membership"
+  }
   rows[[length(rows) + 1L]] <- data.frame(case = 8L, shape = paste("diagonal of", case$name), plane = case$plane,
     key = case$key, s_day = NA_integer_, t_day = NA_integer_, answer = paste(sum(diag_ok), "of 10 days equal"),
-    diagonal_at_s = "shipped provider", stringsAsFactors = FALSE)
+    diagonal_at_s = against, deciding_facts = "", stringsAsFactors = FALSE)
   fact_rows <- sum(vapply(c("status", "lifetime", "membership"), function(tab) {
     df <- data[[tab]]; if (is.data.frame(df)) nrow(df) else 0L
   }, integer(1)))
-  spike_lookups$n <- 0L
-  invisible(lapply(seq(9, 5), function(d) spike_query(segments, noon(d), noon(10))))
   shape[[length(shape) + 1L]] <- data.frame(case = case$id, plane = case$plane, fact_rows = fact_rows,
     epochs = length(spike_epochs(data)), segments_written = nrow(segments),
-    bound_twice_fact_rows = nrow(segments) <= 2L * fact_rows,
-    lookups_per_window_read_k5 = spike_lookups$n, stringsAsFactors = FALSE)
+    bound_twice_fact_rows = nrow(segments) <= 2L * fact_rows, stringsAsFactors = FALSE)
 }
 # Case 9: growth under restatement. `n` short one-day halts known on their own
 # day (source a), then `k` long facts spanning all of them, each known later
-# with higher precedence and alternating status (source b).
-restated <- function(n, k) {
+# with alternating status (source b). A dominating restater outranks the
+# halts; a low-precedence filler sits under them and fills the gaps between.
+# `merged_segments_written` counts what a representation that merges adjacent
+# equal states would write: per epoch, the runs of equal state not already
+# present in the previous epoch. `final_epoch_runs` is what it holds at the end.
+restated <- function(n, k, kind) {
+  low <- identical(kind, "low-precedence filler")
   short <- data.frame(instrument_id = "AAA", effective_from = day(2 * seq_len(n)),
     effective_to = day(2 * seq_len(n) + 1), knowledge_time = day(2 * seq_len(n)),
-    status = "halted", source = "a", precedence = 1L, fact_id = paste0("s", seq_len(n)))
+    status = "halted", source = "a", precedence = if (low) k + 1L else 1L, fact_id = paste0("s", seq_len(n)))
   long <- if (k > 0) data.frame(instrument_id = "AAA", effective_from = day(1),
     effective_to = day(2 * n + 2), knowledge_time = day(2 * n + 2 + seq_len(k)),
     status = rep(c("active", "quotation_only"), length.out = k), source = "b",
-    precedence = 1L + seq_len(k), fact_id = paste0("l", seq_len(k)))
+    precedence = if (low) seq_len(k) else 1L + seq_len(k), fact_id = paste0("l", seq_len(k)))
   data <- ledgr:::ledgr_facts_inspection_data(ledgr_facts(ledgr_facts_trading_status(rbind(short, long))))
-  written <- if (gut) NA_integer_ else nrow(spike_build(data, "status", "AAA", "AAA"))
-  data.frame(case = 9L, short_facts = n, long_facts = k, fact_rows = n + k, segments_written = written,
-             segments_per_fact_row = round(written / (n + k), 2))
+  written <- merged <- final_runs <- NA_integer_
+  if (!gut) {
+    s <- spike_build(data, "status", "AAA", "AAA")
+    written <- nrow(s)
+    runs_at <- lapply(sort(unique(s$k_from)), function(e) {
+      live <- s[s$k_from <= e & e < s$k_to, , drop = FALSE]
+      live <- live[order(live$eff_from), , drop = FALSE]
+      run <- cumsum(c(TRUE, live$state[-1L] != live$state[-nrow(live)]))
+      paste(tapply(live$eff_from, run, min), tapply(live$eff_to, run, max), tapply(live$state, run, `[[`, 1L))
+    })
+    merged <- sum(vapply(seq_along(runs_at), function(i) {
+      length(setdiff(runs_at[[i]], if (i > 1L) runs_at[[i - 1L]] else character()))
+    }, integer(1)))
+    final_runs <- length(runs_at[[length(runs_at)]])
+  }
+  data.frame(case = 9L, kind = kind, short_facts = n, long_facts = k, fact_rows = n + k,
+             segments_written = written, segments_per_fact_row = round(written / (n + k), 2),
+             merged_segments_written = merged, merged_per_fact_row = round(merged / (n + k), 2),
+             final_epoch_runs = final_runs, stringsAsFactors = FALSE)
 }
-grid <- list(c(5, 0), c(10, 0), c(20, 0), c(5, 1), c(10, 1), c(20, 1), c(5, 5), c(10, 10), c(20, 20))
-growth_out <- do.call(rbind, lapply(grid, function(g) restated(g[[1L]], g[[2L]])))
+grid <- list(list(5, 0, "append only"), list(10, 0, "append only"), list(20, 0, "append only"),
+             list(5, 5, "dominating restater"), list(10, 10, "dominating restater"), list(20, 20, "dominating restater"),
+             list(5, 5, "low-precedence filler"), list(10, 10, "low-precedence filler"),
+             list(20, 20, "low-precedence filler"))
+growth_out <- do.call(rbind, lapply(grid, function(g) restated(g[[1L]], g[[2L]], g[[3L]])))
 utils::write.csv(growth_out, file.path(out_dir, "growth.csv"), row.names = FALSE)
 print(growth_out, row.names = FALSE)
 

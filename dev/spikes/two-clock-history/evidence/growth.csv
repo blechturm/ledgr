@@ -1,10 +1,10 @@
-"case","short_facts","long_facts","fact_rows","segments_written","segments_per_fact_row"
-9,5,0,5,16,3.2
-9,10,0,10,31,3.1
-9,20,0,20,61,3.05
-9,5,1,6,29,4.83
-9,10,1,11,54,4.91
-9,20,1,21,104,4.95
-9,5,5,10,73,7.3
-9,10,10,20,243,12.15
-9,20,20,40,883,22.08
+"case","kind","short_facts","long_facts","fact_rows","segments_written","segments_per_fact_row","merged_segments_written","merged_per_fact_row","final_epoch_runs"
+9,"append only",5,0,5,16,3.2,16,3.2,11
+9,"append only",10,0,10,31,3.1,31,3.1,21
+9,"append only",20,0,20,61,3.05,61,3.05,41
+9,"dominating restater",5,5,10,73,7.3,23,2.3,3
+9,"dominating restater",10,10,20,243,12.15,43,2.15,3
+9,"dominating restater",20,20,40,883,22.08,83,2.08,3
+9,"low-precedence filler",5,5,10,48,4.8,48,4.8,13
+9,"low-precedence filler",10,10,20,143,7.15,143,7.15,23
+9,"low-precedence filler",20,20,40,483,12.07,483,12.07,43
