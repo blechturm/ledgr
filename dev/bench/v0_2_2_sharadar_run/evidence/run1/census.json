@@ -1,0 +1,14 @@
+{
+  "stage": "census",
+  "bars": 5481906,
+  "instruments_with_bars": 1166,
+  "open_sessions": 7213,
+  "membership_rows": 290811,
+  "membership_sets": 580,
+  "lifetime_rows": 829,
+  "trading_status_facts": 0,
+  "superseding_status_facts": 0,
+  "elapsed_s": 0.6,
+  "ledgr_commit": "dfde5b3c3cd0d87896b4d77619b431981a708b55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

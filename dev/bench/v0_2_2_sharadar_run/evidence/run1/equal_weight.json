@@ -1,0 +1,30 @@
+{
+  "stage": "equal_weight",
+  "attempts": {
+    "equal_weight": {
+      "elapsed_s": 240.29
+    }
+  },
+  "status": "DONE",
+  "stop_reason": null,
+  "fills": 155402,
+  "equity_rows": 7213,
+  "final_equity": 8371627.33,
+  "sizing_unavailable_rows": 11,
+  "diagnostic_reasons": {
+    "1": 155367,
+    "affordability_reconciled": 7213,
+    "decision_recorded": 4212544,
+    "execution_bar_missing": 1,
+    "lifetime_inactive": 730,
+    "membership_changed_before_execution": 35,
+    "sizing_unavailable": 11,
+    "stale_mark_pass_through": 283,
+    "terminal_disposition": 527,
+    "valuation_freeze_exited": 6,
+    "valuation_frozen": 43
+  },
+  "elapsed_s": 380.6,
+  "ledgr_commit": "dfde5b3c3cd0d87896b4d77619b431981a708b55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

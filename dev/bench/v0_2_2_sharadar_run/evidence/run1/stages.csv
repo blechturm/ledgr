@@ -1,0 +1,7 @@
+"stage","exit_status","elapsed_s","peak_rss_mib"
+"build",0,359,7621
+"census",0,3.1,697
+"momentum",0,161.9,4759
+"equal_weight",0,382.7,3559
+"sweep",1,1382.3,5767
+"walk_forward",0,3.1,323

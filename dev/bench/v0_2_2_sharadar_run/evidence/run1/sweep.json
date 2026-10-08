@@ -1,0 +1,15 @@
+{
+  "stage": "sweep",
+  "attempts": {
+    "sweep": {
+      "elapsed_s": 1379.86
+    }
+  },
+  "candidates": 3,
+  "candidate_status": {
+    "DONE": 3
+  },
+  "elapsed_s": 1380.2,
+  "ledgr_commit": "dfde5b3c3cd0d87896b4d77619b431981a708b55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

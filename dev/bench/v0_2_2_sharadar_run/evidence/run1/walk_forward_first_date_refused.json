@@ -1,0 +1,15 @@
+{
+  "stage": "walk_forward",
+  "attempts": {
+    "walk_forward": {
+      "elapsed_s": 0.17,
+      "condition": {
+        "class": "ledgr_walk_forward_invalid_fold_window|rlang_error|error|condition",
+        "message": "Experiment window must be inside the sealed snapshot range."
+      }
+    }
+  },
+  "elapsed_s": 0.6,
+  "ledgr_commit": "dfde5b3c3cd0d87896b4d77619b431981a708b55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

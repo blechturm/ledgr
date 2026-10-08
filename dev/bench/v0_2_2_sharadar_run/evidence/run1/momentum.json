@@ -1,0 +1,26 @@
+{
+  "stage": "momentum",
+  "attempts": {
+    "momentum": {
+      "elapsed_s": 155.19
+    }
+  },
+  "status": "DONE",
+  "stop_reason": null,
+  "fills": 8798,
+  "equity_rows": 7213,
+  "final_equity": 14153681,
+  "sizing_unavailable_rows": 0,
+  "diagnostic_reasons": {
+    "1": 8797,
+    "affordability_reconciled": 7213,
+    "decision_recorded": 3619624,
+    "lifetime_inactive": 717,
+    "membership_changed_before_execution": 1,
+    "stale_mark_pass_through": 1,
+    "terminal_disposition": 48
+  },
+  "elapsed_s": 159.8,
+  "ledgr_commit": "dfde5b3c3cd0d87896b4d77619b431981a708b55",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

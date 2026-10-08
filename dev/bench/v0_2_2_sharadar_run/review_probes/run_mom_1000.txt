@@ -1,0 +1,216 @@
+run momentum elapsed 37.47499 secs 
+                                              total.time total.pct self.time self.pct
+"ledgr_run"                                        24.04     99.92      0.00     0.00
+"ledgr_run_experiment"                             24.04     99.92      0.00     0.00
+"ledgr_run_fold_impl"                              23.96     99.58      0.14     0.58
+"withCallingHandlers"                              23.96     99.58      0.04     0.17
+"ledgr_run_config"                                 23.96     99.58      0.00     0.00
+"ledgr_run_fold"                                   23.96     99.58      0.00     0.00
+"tryCatch"                                         14.94     62.09      0.10     0.42
+"tryCatchList"                                     14.94     62.09      0.10     0.42
+"tryCatchOne"                                      14.92     62.01      0.18     0.75
+"doTryCatch"                                       14.90     61.93      0.12     0.50
+".local"                                           14.58     60.60      0.02     0.08
+"DBI::dbWithTransaction"                           14.16     58.85      0.00     0.00
+"force"                                            13.60     56.53      0.06     0.25
+"ledgr_execute_fold"                                9.48     39.40      0.00     0.00
+"output_handler$run_transaction"                    9.44     39.24      0.00     0.00
+"fn"                                                9.30     38.65      0.30     1.25
+"ledgr_run_snapshot_guard"                          7.88     32.75      0.00     0.00
+"ledgr_snapshot_hash"                               7.86     32.67      0.00     0.00
+"hash_query_streaming"                              7.56     31.42      0.16     0.67
+"paste"                                             6.52     27.10      0.60     2.49
+"row_to_lines"                                      6.38     26.52      0.00     0.00
+"token_vec"                                         5.62     23.36      0.00     0.00
+"DBI::dbAppendTable"                                5.58     23.19      0.04     0.17
+"ledgr_run_finalize"                                4.74     19.70      0.00     0.00
+"fmt_num_vec"                                       4.52     18.79      0.58     2.41
+"sprintf"                                           3.80     15.79      3.80    15.79
+"rlang::try_fetch"                                  3.70     15.38      0.04     0.17
+".External"                                         3.66     15.21      0.08     0.33
+"dbSendQuery"                                       3.58     14.88      0.02     0.08
+"ledgr_fold_asset_state_normalize"                  2.50     10.39      1.46     6.07
+"duckdb_result"                                     2.46     10.22      0.00     0.00
+"dbSendStatement"                                   2.42     10.06      0.00     0.00
+"dbExecute"                                         2.34      9.73      0.00     0.00
+"duckdb_execute"                                    2.26      9.39      0.00     0.00
+"rethrow_rapi_execute"                              2.20      9.14      0.00     0.00
+"rapi_execute"                                      2.16      8.98      2.10     8.73
+"flush_pulse_block"                                 2.12      8.81      0.00     0.00
+"FUN"                                               2.02      8.40      0.20     0.83
+"diagnostic_writer$append_block"                    1.96      8.15      0.18     0.75
+"dbGetQuery"                                        1.74      7.23      0.00     0.00
+"flush"                                             1.74      7.23      0.00     0.00
+"output_handler$write_run_diagnostics"              1.70      7.07      0.00     0.00
+"dbQuoteIdentifier"                                 1.50      6.23      0.08     0.33
+"structure"                                         1.40      5.82      0.12     0.50
+"new"                                               1.30      5.40      0.02     0.08
+"initialize"                                        1.26      5.24      0.16     0.67
+"vapply"                                            1.26      5.24      0.14     0.58
+"paste0"                                            1.24      5.15      0.92     3.82
+"lapply"                                            1.16      4.82      0.08     0.33
+"["                                                 1.12      4.66      0.02     0.08
+"%||%"                                              1.10      4.57      1.00     4.16
+"SQL"                                               1.10      4.57      0.00     0.00
+"format.POSIXlt"                                    1.08      4.49      1.04     4.32
+"dbListFields"                                      1.08      4.49      0.00     0.00
+"format"                                            1.08      4.49      0.00     0.00
+"format.POSIXct"                                    1.08      4.49      0.00     0.00
+"[.data.frame"                                      1.06      4.41      0.40     1.66
+"ledgr_snapshot_hash_format_distinct_ts_utc"        1.06      4.41      0.00     0.00
+"ledgr_snapshot_hash_format_ts_utc"                 1.02      4.24      0.00     0.00
+"digest::digest"                                    0.98      4.07      0.30     1.25
+"canonical_json"                                    0.94      3.91      0.02     0.08
+"duckdb_select_exprs_for_target"                    0.94      3.91      0.00     0.00
+"duckdb_target_column_types"                        0.68      2.83      0.00     0.00
+"%in%"                                              0.66      2.74      0.28     1.16
+"rethrow_rapi_prepare"                              0.66      2.74      0.06     0.25
+"serialize"                                         0.66      2.74      0.06     0.25
+"data.frame"                                        0.62      2.58      0.20     0.83
+"cmpfun"                                            0.60      2.49      0.00     0.00
+"compiler:::tryCmpfun"                              0.60      2.49      0.00     0.00
+"duckdb_register"                                   0.60      2.49      0.00     0.00
+"as<-"                                              0.58      2.41      0.02     0.08
+"dbCommit"                                          0.58      2.41      0.00     0.00
+"h"                                                 0.52      2.16      0.04     0.17
+"cmpCall"                                           0.52      2.16      0.02     0.08
+"setdiff"                                           0.52      2.16      0.02     0.08
+"cmp"                                               0.52      2.16      0.00     0.00
+"genCode"                                           0.52      2.16      0.00     0.00
+"ledgr_update_pulse_context_helpers"                0.52      2.16      0.00     0.00
+"tryInline"                                         0.52      2.16      0.00     0.00
+"availability_decision"                             0.50      2.08      0.00     0.00
+"sqlInterpolate"                                    0.48      2.00      0.02     0.08
+"rapi_prepare"                                      0.46      1.91      0.46     1.91
+"is"                                                0.46      1.91      0.26     1.08
+"ledgr_pulse_context_vec"                           0.42      1.75      0.00     0.00
+"unname"                                            0.38      1.58      0.20     0.83
+"as.data.frame"                                     0.38      1.58      0.04     0.17
+"rapi_bind"                                         0.36      1.50      0.36     1.50
+"ledgr_refresh_pulse_context_lookup"                0.36      1.50      0.02     0.08
+"dbBind"                                            0.36      1.50      0.00     0.00
+"rethrow_rapi_bind"                                 0.36      1.50      0.00     0.00
+"rethrow_rapi_register_df"                          0.34      1.41      0.00     0.00
+"rapi_register_df"                                  0.32      1.33      0.32     1.33
+"stats::setNames"                                   0.32      1.33      0.16     0.67
+"[["                                                0.32      1.33      0.08     0.33
+"ledgr_validate_strategy_targets"                   0.32      1.33      0.06     0.25
+"unique"                                            0.32      1.33      0.06     0.25
+".set_ops_need_as_vector"                           0.32      1.33      0.04     0.17
+"canonicalize"                                      0.32      1.33      0.02     0.08
+"split"                                             0.32      1.33      0.00     0.00
+"split.data.frame"                                  0.32      1.33      0.00     0.00
+"validObject"                                       0.30      1.25      0.10     0.42
+"valuation_state$advance"                           0.28      1.16      0.06     0.25
+"asMethod"                                          0.28      1.16      0.04     0.17
+"anyDuplicated"                                     0.26      1.08      0.14     0.58
+"ledgr_filter_pulse_context_features"               0.26      1.08      0.10     0.42
+"ledgr_snapshot_availability_hash_payload"          0.26      1.08      0.00     0.00
+"<Anonymous>"                                       0.24      1.00      0.12     0.50
+"append_decision_trace"                             0.24      1.00      0.08     0.33
+".POSIXct"                                          0.24      1.00      0.04     0.17
+"[[.data.frame"                                     0.24      1.00      0.04     0.17
+"ledgr_bars_pulse_views"                            0.24      1.00      0.00     0.00
+"output_handler$write_fill_events"                  0.24      1.00      0.00     0.00
+"ledgr_pulse_context_vector_field"                  0.22      0.91      0.18     0.75
+"yyjsonr::write_json_str"                           0.22      0.91      0.16     0.67
+"order"                                             0.22      0.91      0.08     0.33
+"as.POSIXct"                                        0.22      0.91      0.06     0.25
+"extends"                                           0.22      0.91      0.06     0.25
+"availability_provider$decision_view"               0.22      0.91      0.00     0.00
+"encode_values"                                     0.22      0.91      0.00     0.00
+"ledgr_compute_feature_series_strict"               0.22      0.91      0.00     0.00
+"ledgr_fact_frame_payload_json"                     0.22      0.91      0.00     0.00
+"ledgr_fact_json_verbatim"                          0.22      0.91      0.00     0.00
+"ledgr_fill_event_payload"                          0.22      0.91      0.00     0.00
+"ledgr_fill_event_row"                              0.22      0.91      0.00     0.00
+"ledgr_json_write_canonical_v2_verbatim"            0.22      0.91      0.00     0.00
+"ledgr_split_pulse_data_frame"                      0.22      0.91      0.00     0.00
+"ledgr_validate_post_risk_targets"                  0.22      0.91      0.00     0.00
+"$"                                                 0.20      0.83      0.20     0.83
+"unique.default"                                    0.20      0.83      0.20     0.83
+"add_segment"                                       0.20      0.83      0.16     0.67
+"is.na"                                             0.20      0.83      0.16     0.67
+"cmpSymbolAssign"                                   0.20      0.83      0.00     0.00
+"DBI::dbGetQuery"                                   0.20      0.83      0.00     0.00
+"ledgr_call_strategy_fn"                            0.20      0.83      0.00     0.00
+"ledgr_fold_build_availability_pulse_plan"          0.20      0.83      0.00     0.00
+"setDataPart"                                       0.18      0.75      0.08     0.33
+"ledgr_compute_feature_series_strict_builtin"       0.18      0.75      0.06     0.25
+".findMethodInTable"                                0.18      0.75      0.02     0.08
+"output_handler$buffer_strategy_state"              0.18      0.75      0.02     0.08
+".quickCoerceSelect"                                0.18      0.75      0.00     0.00
+"deparse1"                                          0.18      0.75      0.00     0.00
+"do.call"                                           0.18      0.75      0.00     0.00
+"take"                                              0.18      0.75      0.00     0.00
+"cmpCallSymFun"                                     0.16      0.67      0.02     0.08
+"ledgr_availability_diagnostic_block"               0.16      0.67      0.02     0.08
+"as.POSIXlt"                                        0.16      0.67      0.00     0.00
+"duckdb_unregister"                                 0.16      0.67      0.00     0.00
+"rethrow_rapi_unregister_df"                        0.16      0.67      0.00     0.00
+"is.finite"                                         0.14      0.58      0.14     0.58
+"sqlParseVariablesImpl"                             0.14      0.58      0.10     0.42
+"cb$putcode"                                        0.14      0.58      0.08     0.33
+"findCenvVar"                                       0.14      0.58      0.08     0.33
+"stopifnot"                                         0.14      0.58      0.08     0.33
+"deparse"                                           0.14      0.58      0.06     0.25
+"ledgr_availability_marked_gross"                   0.14      0.58      0.04     0.17
+"as.POSIXct.default"                                0.14      0.58      0.02     0.08
+"ledgr_lot_apply_fill"                              0.14      0.58      0.02     0.08
+".ledgr_json_cache_key"                             0.14      0.58      0.00     0.00
+"as.data.frame.character"                           0.14      0.58      0.00     0.00
+"build"                                             0.14      0.58      0.00     0.00
+---- self
+                                   self.time self.pct total.time total.pct
+"sprintf"                               3.80    15.79       3.80     15.79
+"rapi_execute"                          2.10     8.73       2.16      8.98
+"ledgr_fold_asset_state_normalize"      1.46     6.07       2.50     10.39
+"format.POSIXlt"                        1.04     4.32       1.08      4.49
+"%||%"                                  1.00     4.16       1.10      4.57
+"paste0"                                0.92     3.82       1.24      5.15
+"paste"                                 0.60     2.49       6.52     27.10
+"fmt_num_vec"                           0.58     2.41       4.52     18.79
+"rapi_prepare"                          0.46     1.91       0.46      1.91
+"[.data.frame"                          0.40     1.66       1.06      4.41
+"rapi_bind"                             0.36     1.50       0.36      1.50
+"rapi_register_df"                      0.32     1.33       0.32      1.33
+"fn"                                    0.30     1.25       9.30     38.65
+"digest::digest"                        0.30     1.25       0.98      4.07
+"%in%"                                  0.28     1.16       0.66      2.74
+"is"                                    0.26     1.08       0.46      1.91
+"FUN"                                   0.20     0.83       2.02      8.40
+"data.frame"                            0.20     0.83       0.62      2.58
+"unname"                                0.20     0.83       0.38      1.58
+"$"                                     0.20     0.83       0.20      0.83
+"unique.default"                        0.20     0.83       0.20      0.83
+"tryCatchOne"                           0.18     0.75      14.92     62.01
+"diagnostic_writer$append_block"        0.18     0.75       1.96      8.15
+"ledgr_pulse_context_vector_field"      0.18     0.75       0.22      0.91
+"hash_query_streaming"                  0.16     0.67       7.56     31.42
+"initialize"                            0.16     0.67       1.26      5.24
+"stats::setNames"                       0.16     0.67       0.32      1.33
+"yyjsonr::write_json_str"               0.16     0.67       0.22      0.91
+"add_segment"                           0.16     0.67       0.20      0.83
+"is.na"                                 0.16     0.67       0.20      0.83
+t_pre 2.42 t_loop 14.7 t_post 7.35 
+diag rows 763621 0.25176 secs 
+equity read 0.05402994 secs 
+fills 2195 0.6078341 secs 
+trades read 0.7043369 secs 
+ledgr Backtest Results
+======================
+
+Run ID:                            p200430.076
+Period:                            2000-01-03T21:00:00Z to 2005-09-30T21:00:00Z
+Opening Cash:                      $1000000.00
+Final Equity:                      $2248107.49
+Total Return:                      124.81%
+Max Drawdown:                      -5.06%
+Closed Trades:                     1235
+
+Corporate actions: NOT SUPPLIED - returns may omit distributions
+Price basis: UNDECLARED - distribution double counting cannot be ruled out
+Valuation: CURRENT - every held mark was a current close
+
+Use summary(bt) for metrics and evidence
+print 0.074332 secs 

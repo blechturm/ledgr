@@ -1,0 +1,10 @@
+.libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
+suppressMessages(pkgload::load_all("C:/Users/maxth/Documents/GitHub/ledgr", quiet = TRUE, compile = FALSE))
+ni <- 1166L; np <- 2000L
+ids <- sprintf("I%04d", seq_len(ni)); p <- as.POSIXct("2000-01-01", tz = "UTC") + 86400 * seq_len(np)
+m <- matrix(runif(ni * np), ni, np)
+bars_mat <- list(open = m, high = m, low = m, close = m, volume = m, gap_type = matrix("", ni, np), is_synthetic = matrix(FALSE, ni, np))
+cat("bars_mat MB", format(object.size(bars_mat), units = "MB"), "\n")
+t0 <- Sys.time(); v <- ledgr_bars_pulse_views(bars_mat, ids, p); cat("bars views s", as.numeric(difftime(Sys.time(), t0, units = "secs")), " MB", format(object.size(v), units = "MB"), "\n")
+proj <- ledgr_runtime_projection(list(f1 = m), ids, p)
+t0 <- Sys.time(); fv <- ledgr_projection_pulse_views(proj, feature_ids = "f1"); cat("feature views s", as.numeric(difftime(Sys.time(), t0, units = "secs")), " MB", format(object.size(fv), units = "MB"), "\n")

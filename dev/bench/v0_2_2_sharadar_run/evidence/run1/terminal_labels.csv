@@ -1,0 +1,14 @@
+"terminal_event","n"
+"acquisitionby+acquisitioncash",191
+"acquisitionby+acquisitionstock",134
+"bankruptcyliquidation",56
+"acquisitionby+acquisitioncash+acquisitionstock",56
+"acquisitionby",47
+"delisting",12
+"acquisitionby+acquisitionelectcash",12
+"acquisitionby+acquisitionelectstock",7
+"acquisitionby+acquisitionelectcash+acquisitionelectstock",3
+"acquisitionstock+mergerto",3
+"acquisitioncash+mergerto",2
+"acquisitioncash+acquisitionstock+mergerto",2
+"mergerto",2
