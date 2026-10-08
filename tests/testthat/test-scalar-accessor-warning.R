@@ -172,6 +172,7 @@ testthat::test_that("[LTB-0067] universe-wide scalar access warns once without f
   testthat::expect_identical(small_ctx$close(ids[[1L]]), 100)
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0102] scalar and active-map bundle loops warn at the axis size", {
   fixture <- ledgr_scalar_warning_fixture()
   snapshot <- fixture$snapshot

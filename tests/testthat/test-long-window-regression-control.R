@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0153] strict built-ins do linear public-run work", {
   original <- ledgr:::ledgr_compute_feature_series_strict_builtin
   work <- 0L

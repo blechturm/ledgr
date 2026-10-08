@@ -220,6 +220,7 @@ test_that("[LTB-0045] rule-2 identity retains frozen hashes", {
   )
 })
 
+# ledgr-test-profile: review
 test_that("[LTB-0046] rule-2 hashing performs fixed encoding work", {
   snapshots <- lapply(c(20L, 200L), function(size) {
     ledgr_snapshot_from_df(

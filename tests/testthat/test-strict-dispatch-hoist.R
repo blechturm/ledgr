@@ -56,6 +56,7 @@ strict_dispatch_experiment <- function(snapshot, instruments) {
   )
 }
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
   original_kind <- ledgr:::ledgr_strict_builtin_kind
   calls <- character()
