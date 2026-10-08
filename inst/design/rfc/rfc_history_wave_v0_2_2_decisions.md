@@ -12,7 +12,7 @@ writes the accepted decisions into an amendment.
 | Stage | What | Exit | State |
 | --- | --- | --- | --- |
 | 1 | Verify | Every finding's premise rerun or read at `e38b0d7`; result in the Verified column | done 2026-10-08 |
-| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | open |
+| 2 | Decide | Every row has a decision or a recorded deferral, in the order of the sessions below | in progress: Session 0, A and B decided 2026-10-08 |
 | 3 | Amend | One amendment to v11 (sections 3, 6, 7) carrying the accepted decisions under the amendment discipline in `../rfc_cycle.md`; `decisions.md` and `README.md` updated | open |
 | 4 | Final review | Type 1 review of the amendment against this register | open |
 | 5 | Ticket cut | WS3/WS4 cut in `tickets.yml`; cut review; pipeline rows leave `README.md` | open |
@@ -46,26 +46,67 @@ executor's checks (`claims`, `burnin`) with outputs, and the adapter read
   for EMA(14), 489 for RSI(14), 859 for EMA(50) on a 3,000-bar walk. Path-
   dependent ones (running max) never do.
 
+## Session 0: public history API
+
+| ID | Sev | Finding | Verified | Recommendation | Decision |
+| --- | --- | --- | --- | --- | --- |
+| UX-1 | blocking | The public history surface is proposed in the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md) but not adopted; v11 s3 binds `ctx$window()` while the brief proposes `ledgr_history_frame()` outside `ctx` | confirmed: brief status "Active, non-binding" | Adopt the brief; reconcile with `ctx$window()` in the amendment | **accept** (maintainer, 2026-10-08): the brief is the WS3 history direction. The amendment reconciles it with v11's `ctx$window()` and settles the brief's remaining open names |
+
 ## Session A: what history a strategy sees
 
 Decides everything after it. Amends v11 section 3.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| X-F1 / D4-F2 | blocking | Public history axis undecided: a 252-day read at the first scoring pulse returns 251 NA; WS7 sees mostly NA in short test windows | confirmed: v11 s3 says columns count "consecutive prepared decision pulses", early requests have leading NA, "no hidden fetch of pre-range history", hydration "may supply a carry seed without expanding the public axis"; `ctx$window()` and `ledgr_history_*` do not exist yet | Option (a): history axis = prepared pulses from the hydration start; decision axis = scoring pulses; causal, s <= t | pending |
-| D1-F6 | consider | The representation can answer s > t (facts known before effect) | confirmed: a status fact known day 2, effective day 5 is accepted; Sharadar listed seven splits five days ahead | History API refuses s > t; columns are s <= t | pending |
+| X-F1 / D4-F2 | blocking | Public history axis undecided: a 252-day read at the first scoring pulse returns 251 NA; WS7 sees mostly NA in short test windows | confirmed: v11 s3 says columns count "consecutive prepared decision pulses", early requests have leading NA, "no hidden fetch of pre-range history", hydration "may supply a carry seed without expanding the public axis"; `ctx$window()` and `ledgr_history_*` do not exist yet | Option (a): history axis = prepared pulses from the hydration start; decision axis = scoring pulses; causal, s <= t | **accept with change** (maintainer, 2026-10-08): history reaches back to the start of the data; the user may request any shorter lookback; every history read is strictly point-in-time (as of the decision pulse: columns s <= t, facts knowable at t). Decisions occur only on scoring pulses |
+| D1-F6 | consider | The representation can answer s > t (facts known before effect) | confirmed: a status fact known day 2, effective day 5 is accepted; Sharadar listed seven splits five days ahead | History API refuses s > t; columns are s <= t | **accept** (maintainer, 2026-10-08), as part of the as-of rule above |
 
 ## Session B: one hydration rule
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D4-F1 | blocking | Two hydration rules create a per-feature clock identity and inspection cannot carry | confirmed: one `hydration_start_utc` per window (`R/walk-forward-folds.R:583-592`), one per fold row (`R/walk-forward.R:803`), one `warmup_range$start` per payload (`R/precompute-features.R:200-261`). New input: decaying indicators reach bit-exact parity after a finite burn-in | One rule: feature state starts at the snapshot start for every entry point and class; bounded shortcut only as a proven exact optimization | pending |
-| D4-F3 | should-fix | Cut 9 oracle must flip to the carried arms; dense bounded parity is about 1e-12 under two rules | confirmed: LTB-0196 asserts restart and documents the carried values (`tests/testthat/test-feature-start.R:28-35`); dense SMA(20) cross-start gap 2.91e-12, strict built-in identical | Flip LTB-0196 expectations under the single rule | pending |
-| X-F4 | consider | Pulse inspection reproduces hydration only under one rule | confirmed: `ledgr_pulse_snapshot()` computes each series over bars up to the cutoff (`R/pulse-snapshot.R:285-300`) | Follows from D4-F1 | pending |
+| D4-F1 | blocking | Two hydration rules create a per-feature clock identity and inspection cannot carry | confirmed: one `hydration_start_utc` per window (`R/walk-forward-folds.R:583-592`), one per fold row (`R/walk-forward.R:803`), one `warmup_range$start` per payload (`R/precompute-features.R:200-261`). New input: decaying indicators reach bit-exact parity after a finite burn-in | One rule: feature state starts at the snapshot start for every entry point and class; bounded shortcut only as a proven exact optimization | **accept** (maintainer, 2026-10-08): every indicator starts at the beginning of the data in every run, sweep, walk-forward window and inspection |
+| D4-F3 | should-fix | Cut 9 oracle must flip to the carried arms; dense bounded parity is about 1e-12 under two rules | confirmed: LTB-0196 asserts restart and documents the carried values (`tests/testthat/test-feature-start.R:28-35`); dense SMA(20) cross-start gap 2.91e-12, strict built-in identical | Flip LTB-0196 expectations under the single rule | **accept** (follows from D4-F1) |
+| X-F4 | consider | Pulse inspection reproduces hydration only under one rule | confirmed: `ledgr_pulse_snapshot()` computes each series over bars up to the cutoff (`R/pulse-snapshot.R:285-300`) | Follows from D4-F1 | **accept** (follows from D4-F1) |
 | X-F5 | consider | Sweep feature-matrix helper may take the dense path in availability mode | refuted: called only by `tests/testthat/test-sweep.R`; production uses `R/precompute-features.R:632` and `R/backtest-runner.R:1039`, both strict-branching | No decision needed; optionally delete the test-only helper | pending |
-| D4-F4 | should-fix | History-dependent indicators are refused in availability mode, so WS7 on a PIT universe has no EMA/RSI/ATR/MACD | confirmed and stronger: refusal is anything not `strict_window` (`R/availability-policy.R:246-269`); `ledgr_ind_ema` is not `strict_window`, nor are bounded TTR functions other than SMA | Decide: v0.2.2 scope statement, or WS4 decides the gap rule | pending |
+| D4-F4 | should-fix | History-dependent indicators are refused in availability mode, so WS7 on a PIT universe has no EMA/RSI/ATR/MACD | confirmed and stronger: refusal is anything not `strict_window` (`R/availability-policy.R:246-269`); `ledgr_ind_ema` is not `strict_window`, nor are bounded TTR functions other than SMA | Decide: v0.2.2 scope statement, or WS4 decides the gap rule | **decided** (maintainer, 2026-10-08): every supported indicator, built-in and TTR, must work on both ragged (availability) and dense universes in v0.2.2. WS4 owns the gap rule and the remaining blockers (see "B blockers" below) |
 | D4-F5 | consider | `ledgr_check_no_lookahead` is never called; full-history hydration spreads a lookahead | confirmed: defined at `R/features-engine.R:487`, used only in `tests/testthat/test-features.R` | Sampled build-time causality check beside D3's refutation | pending |
 | D4-F6 | consider | Stance on convergence for readiness and structural completeness | confirmed (no premise); burn-in measurement above is relevant | `stable_after` stays first-valid; convergence undisclosed in v0.2.2 | pending |
+
+### B blockers: every indicator on ragged and dense universes
+
+Verified 2026-10-08 (`dev/design-checks/history_wave_stage1/`). These become
+WS4 decisions and tickets:
+
+1. **TTR refuses gaps.** `TTR::SMA`, `EMA` and `RSI` stop with "Series contains
+   non-leading NAs" on one interior missing value. Ragged universes have gaps
+   (halts, missing prints, late listings), so a TTR indicator cannot be called
+   on an instrument's raw series.
+2. **No gap rule for history-dependent indicators.** The strict path computes
+   bounded indicators window by window and skips incomplete windows; an
+   EMA-style recursion has no window to skip. Needs a decision: short gaps
+   filled by v11 s5 price carry (default five sessions), and what happens after
+   a longer gap (proposal: the indicator restarts its warm-up after the gap).
+3. **Certification is narrower than the evidence.** Only built-in SMA and
+   returns, TTR SMA and custom indicators declaring `strict_window` run in
+   availability mode. Bounded indicators such as `ledgr_ind_ema` (an n+1
+   filter), TTR WMA, ROC, momentum, MFI, CMF, CCI and the run* family are not
+   declared. Declaration plus tests per function.
+4. **The strict path does not scale.** For custom and TTR indicators it calls
+   the indicator once per window per instrument
+   (`R/features-engine.R:291-347`); at 32 years and about 1,200 instruments
+   that is millions of R calls per feature. Compute per contiguous segment
+   instead.
+5. **Multi-output TTR works** through `output =` (for example BBands `up`); not
+   a blocker.
+
+## Cut goal: 32-year Sharadar history without stops
+
+Maintainer, 2026-10-08: the wave's goal is to make ledgr usable with 32 years
+of Sharadar history. No rule may stop a run on something that happens often in
+real data. Every fact rule touched by this wave is tested empirically against
+the full Sharadar history before its decision is accepted, and an end-to-end
+32-year run is an acceptance gate of the cut.
 
 ## Session C: knowledge clocks the history must carry
 
@@ -108,7 +149,7 @@ Decides everything after it. Amends v11 section 3.
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D2-F4 | consider | Route chains out of the WS3 wave | confirmed: Sharadar has no trading-status facts; the validator runs on the seal path (`R/availability-persistence.R:587`) | Small facts ticket under the Cut 3 exact-byte oracles | pending |
+| D2-F4 | consider | Route chains out of the WS3 wave | confirmed: Sharadar has no trading-status facts; the validator runs on the seal path (`R/availability-persistence.R:587`) | Small facts ticket under the Cut 3 exact-byte oracles | **conditional** (maintainer, 2026-10-08): not accepted until each rule is tested against the full Sharadar history and shown not to stop real data |
 | D2-F1 | blocking | Chain learned out of order: resolver says `conflicting` | confirmed: f1 known 3, f2 known 8, f3 known 5 answers `conflicting` on days 5-7 (the probe's "day 8.5 unknown" line is an artifact: `day(8.5)` lands on day 9, outside the interval) | Constructor rule: superseder knowledge >= predecessor knowledge | pending |
 | D2-F2 | should-fix | Exempt ancestor pairs, not whole components | confirmed: two facts superseding f1 and disagreeing are refused today and resolve `conflicting` | Accept | pending |
 | D2-F3 | should-fix | Resolver revives a predecessor; ingest helper truncates it | confirmed by reading: `resolve_status` revives (day 8 `halted`); `ledgr_status_runtime_conflicts` ends the predecessor at the superseder's start (`R/availability-facts.R:1891-1898`) and feeds ingest outcomes (`R/availability-ingest.R:282-286`). The probe's own D2-e line does not show the truncation | Superseder must cover its predecessor's interval; align the ingest helper | pending |
