@@ -470,6 +470,10 @@ ledgr_execute_fold <- function(execution, output_handler) {
       )
     }
 
+    # Per-pulse note slot that strategy helpers write to (reset each pulse), so
+    # what they record survives whatever the strategy does to its target.
+    pulse_notes <- new.env(parent = emptyenv())
+
     for (i in seq(from = start_idx, to = length(pulses_posix))) {
       ts <- pulses_posix[[i]]
       ts_iso <- pulses_iso[[i]]
@@ -806,6 +810,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
         sample_start <- sample_now
       }
 
+      pulse_notes$sizing_skipped <- character()
+      ctx$.notes <- pulse_notes
       result <- tryCatch(
         {
           current_fold_stage <<- "strategy"
@@ -857,9 +863,19 @@ ledgr_execute_fold <- function(execution, output_handler) {
         restriction <- as.character(availability_view$target_restriction_reason[context_ids])
         restrictions <- as.character(availability_view$target_restriction_reasons[context_ids])
         reason <- ifelse(nzchar(restriction), restriction, "decision_recorded")
+        reasons <- ifelse(nzchar(restrictions), restrictions, reason)
+        skipped <- context_ids %in% pulse_notes$sizing_skipped
+        if (any(skipped)) {
+          reason[skipped] <- "sizing_unavailable"
+          reasons[skipped] <- ifelse(
+            nzchar(restrictions[skipped]),
+            paste(restrictions[skipped], "sizing_unavailable", sep = "|"),
+            "sizing_unavailable"
+          )
+        }
         add_segment(list(
           n = length(context_ids), instrument_id = context_ids, stage = "decision", outcome = "recorded",
-          reason_code = reason, reasons = ifelse(nzchar(restrictions), restrictions, reason),
+          reason_code = reason, reasons = reasons,
           target = strategy_targets[context_ids], quantity = positions_snapshot[context_ids],
           price = valuation$mark[context_ids], mark_source = valuation$source[context_ids],
           mark_age = valuation$age[context_ids], target_before_risk = strategy_targets[context_ids],

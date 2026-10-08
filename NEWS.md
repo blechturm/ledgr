@@ -2,6 +2,17 @@
 
 ## Runs and evaluations that keep going on real data
 
+- In an availability-aware run, `ledgr_target_rebalance()` no longer stops the
+  run when an eligible member has no current close, which is common in vendor
+  data. That member is skipped for the rebalance: it keeps its current
+  quantity, its weight stays in cash, and a `sizing_unavailable` decision row
+  in `ledgr_results(bt, "diagnostics")` records the skip. Other members keep
+  their usual size unless the skipped holdings would push the total above
+  allocatable equity, in which case they are scaled down. The
+  `where = is.finite(ctx$vec$close)` workaround is no longer needed, and it
+  sells and rebuys around every gap where the skip does not. Dense runs still
+  warn and target zero.
+
 - A run interrupted before or during execution, by an error, an R time limit
   or a user interrupt, is now recorded `FAILED` with the reason in
   `error_msg`, instead of staying `CREATED` forever. The condition still

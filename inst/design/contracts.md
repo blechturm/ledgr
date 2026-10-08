@@ -538,11 +538,24 @@ Accepted change pending:
   `floor(weight * equity_fraction * A / close)`. For NAV 100, held-nonmember
   exposure 40 and member close 10, full member weight targets 6 shares and
   weight 0.6 targets 3; these are residual-budget weights, not total-NAV
-  weights. Missing sizing evidence for a positive member weight fails with
-  `ledgr_target_sizing_unavailable`; an explicit zero member weight targets
-  zero without consulting a sizing close. The dense positive-weight
-  warn-and-zero path is unchanged. Raw full named numeric target vectors remain
-  literal.
+  weights. An explicit zero member weight targets zero without consulting a
+  sizing close. Raw full named numeric target vectors remain literal.
+- Unpriced members (Cut 10, LDG-2973). In an availability-aware rebalance, an
+  eligible member with a positive weight but no positive accepted current
+  close is skipped for that rebalance: it keeps its current quantity, zero if
+  unheld, and its weight is never redistributed. Let A be allocatable capital,
+  V the sum of `weight * equity_fraction * A` over priced positive-weight
+  members and E the sum of `abs(quantity * risk_mark)` over held skipped
+  members. Priced targets are `floor(s * weight * equity_fraction * A / close)`
+  with `s = 1` when `V + E <= A` and `s = max(0, A - E) / V` otherwise. A held
+  skipped member, or a preserved holding, without a finite mark fails with
+  `ledgr_target_sizing_unavailable`. Each skip is written to the fold's
+  per-pulse note slot and recorded as the instrument's decision diagnostic
+  with reason `sizing_unavailable`, whatever the strategy does to the returned
+  target; memory sweep candidates and walk-forward training keep these rows in
+  their in-memory diagnostics only. Dense runs keep the positive-weight
+  warn-and-zero path, so dense and availability-aware runs now diverge on an
+  unpriced member: dense targets zero with a warning, availability-aware skips.
 - Fresh and policy-permitted stale closes may value holdings and feed target
   risk through the separate risk-mark plane. Stale marks never become observed
   closes or execution prices. Held marks age on the declared venue-open-session

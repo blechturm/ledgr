@@ -362,10 +362,21 @@ testthat::test_that("[LTB-0088] explicit zero weights never require sizing price
   ))
   testthat::expect_identical(available_zero, available_omitted)
   testthat::expect_identical(unclass(available_zero), c(AAA = 10, OLD = 0))
+  # Cut 10: a positive weight on an unpriced held member skips it at its
+  # current quantity (E = 2 * 20 = 40, V = 50, V + E <= 100, so AAA keeps
+  # floor(50 / 10) = 5); without a permissible mark it still fails closed.
+  skipped <- ledgr_target_rebalance(
+    ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = available$universe),
+    available
+  )
+  testthat::expect_identical(c(skipped), c(AAA = 5, OLD = 2))
+  testthat::expect_identical(attr(skipped, "sizing_skipped"), "OLD")
+  unmarked <- available
+  unmarked$vec$risk_mark[[2L]] <- NA_real_
   testthat::expect_error(
     ledgr_target_rebalance(
-      ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = available$universe),
-      available
+      ledgr_weights(c(AAA = 0.5, OLD = 0.5), universe = unmarked$universe),
+      unmarked
     ),
     class = "ledgr_target_sizing_unavailable"
   )

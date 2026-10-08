@@ -115,7 +115,8 @@ cap_weights <- function(ctx, params) {
   day <- substr(ctx$ts_utc, 1, 10)
   w <- if (day %in% c("2020-01-07", "2020-01-08")) c(AAA = 0.1, BBB = 0.9) else c(AAA = 0.5, BBB = 0.5)
   if (identical(day, "2020-01-06")) return(ctx$flat())
-  priced <- names(w)[is.finite(ctx$vec$close[names(w)]) & ctx$vec$close[names(w)] > 0]
+  close <- stats::setNames(as.numeric(ctx$vec$close), ctx$universe)
+  priced <- names(w)[is.finite(close[names(w)]) & close[names(w)] > 0]
   if (identical(day, "2020-01-09")) priced <- names(w)
   ledgr_weights(w[priced], universe = ctx$universe) |> ledgr_target_rebalance(ctx, equity_fraction = 1)
 }

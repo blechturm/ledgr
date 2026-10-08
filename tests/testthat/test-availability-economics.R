@@ -293,11 +293,11 @@ testthat::test_that("active rebalance preserves held nonmembers and reserves exp
   )
   testthat::expect_identical(c(target), c(FORMER = 3, MEMBER = 14))
 
+  # Cut 10: an unpriced, unheld member is skipped at zero instead of failing.
   ctx$vec$close[[2L]] <- NA_real_
-  testthat::expect_error(
-    ledgr_target_rebalance(ledgr_weights(c(MEMBER = 1), universe = "MEMBER"), ctx),
-    class = "ledgr_target_sizing_unavailable"
-  )
+  skipped <- ledgr_target_rebalance(ledgr_weights(c(MEMBER = 1), universe = "MEMBER"), ctx)
+  testthat::expect_identical(c(skipped), c(FORMER = 3, MEMBER = 0))
+  testthat::expect_identical(attr(skipped, "sizing_skipped"), "MEMBER")
 })
 
 testthat::test_that("affordability credits accepted reductions before purchases", {

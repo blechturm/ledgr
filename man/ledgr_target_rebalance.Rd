@@ -37,15 +37,25 @@ Share quantities are floored to whole numbers with
 \code{floor(weight * equity_fraction * allocation_equity / close_price)}. An
 exact zero member weight targets zero without consulting that instrument's
 sizing close.
+
+In an availability-aware run, an eligible member with a positive weight but
+no positive current close is skipped for that rebalance: it keeps its
+current quantity (zero if not held) and its weight is not redistributed.
+Priced members keep their fully priced size, unless the skipped members'
+held exposure at their risk marks plus the priced value would exceed
+allocatable equity; then the priced quantities are scaled down, before
+flooring, by \code{max(0, allocatable - held_exposure) / priced_value}. Each skip
+is recorded as a \code{sizing_unavailable} decision row in
+\code{ledgr_results(bt, "diagnostics")}.
 }
 \details{
 Warning and error classes:
 \itemize{
 \item \code{ledgr_invalid_target_price} when a selected instrument has missing,
-non-finite, or non-positive close price;
-\item \code{ledgr_target_sizing_unavailable} for the same condition when
-availability-aware execution is active; unlike the dense warning path,
-this is an error and never creates an unintended zero target;
+non-finite, or non-positive close price in a dense run, which targets zero;
+\item \code{ledgr_target_sizing_unavailable} when an availability-aware rebalance
+must keep a held member, or reserve a preserved holding, that has no
+permissible valuation mark;
 \item \code{ledgr_negative_weights} for negative weights;
 \item \code{ledgr_levered_weights} when \code{sum(abs(weights)) > 1}.
 }

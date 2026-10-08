@@ -271,12 +271,22 @@ ledgr_weight_equal <- function(selection) {
 #' exact zero member weight targets zero without consulting that instrument's
 #' sizing close.
 #'
+#' In an availability-aware run, an eligible member with a positive weight but
+#' no positive current close is skipped for that rebalance: it keeps its
+#' current quantity (zero if not held) and its weight is not redistributed.
+#' Priced members keep their fully priced size, unless the skipped members'
+#' held exposure at their risk marks plus the priced value would exceed
+#' allocatable equity; then the priced quantities are scaled down, before
+#' flooring, by `max(0, allocatable - held_exposure) / priced_value`. Each skip
+#' is recorded as a `sizing_unavailable` decision row in
+#' `ledgr_results(bt, "diagnostics")`.
+#'
 #' Warning and error classes:
 #' - `ledgr_invalid_target_price` when a selected instrument has missing,
-#'   non-finite, or non-positive close price;
-#' - `ledgr_target_sizing_unavailable` for the same condition when
-#'   availability-aware execution is active; unlike the dense warning path,
-#'   this is an error and never creates an unintended zero target;
+#'   non-finite, or non-positive close price in a dense run, which targets zero;
+#' - `ledgr_target_sizing_unavailable` when an availability-aware rebalance
+#'   must keep a held member, or reserve a preserved holding, that has no
+#'   permissible valuation mark;
 #' - `ledgr_negative_weights` for negative weights;
 #' - `ledgr_levered_weights` when `sum(abs(weights)) > 1`.
 #'
@@ -419,15 +429,40 @@ ledgr_target_rebalance <- function(weights,
   weight_values <- weight_values[positive_weight]
   price <- close_vec[match(weight_ids, universe)]
   invalid_price <- is.na(price) | !is.finite(price) | price <= 0
+  skipped <- character()
+  scale <- 1
   if (availability_active && any(invalid_price)) {
-    id <- weight_ids[which(invalid_price)[[1L]]]
-    rlang::abort(
-      sprintf("Cannot size target for `%s`: no positive accepted current close is available.", id),
-      class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
-      instrument_id = id
-    )
-  }
-  if (any(invalid_price)) {
+    # An eligible member without a current close is skipped for this
+    # rebalance: it keeps its current quantity and its weight is not
+    # redistributed. Priced members keep their fully priced size unless a held
+    # skipped member's marked exposure would push the total above allocatable
+    # equity, in which case they are scaled down before flooring.
+    skipped <- weight_ids[invalid_price]
+    skip_idx <- match(skipped, universe)
+    target[skipped] <- position_vec[skip_idx]
+    held <- position_vec[skip_idx] != 0
+    held_exposure <- 0
+    if (any(held)) {
+      marks <- as.numeric(ctx$vec$risk_mark[skip_idx[held]])
+      if (any(!is.finite(marks))) {
+        id <- skipped[held][which(!is.finite(marks))[[1L]]]
+        rlang::abort(
+          sprintf("Cannot keep `%s` while skipping it: it has no current close and no permissible valuation mark.", id),
+          class = c("ledgr_target_sizing_unavailable", "ledgr_invalid_strategy_helper"),
+          instrument_id = id
+        )
+      }
+      held_exposure <- sum(abs(position_vec[skip_idx[held]] * marks))
+    }
+    priced_value <- sum(weight_values[!invalid_price] * equity_fraction * allocation_equity)
+    if (priced_value > 0 && priced_value + held_exposure > allocation_equity) {
+      scale <- max(0, allocation_equity - held_exposure) / priced_value
+    }
+    notes <- ctx$.notes
+    if (is.environment(notes)) {
+      notes$sizing_skipped <- union(notes$sizing_skipped, skipped)
+    }
+  } else if (any(invalid_price)) {
     rlang::warn(
       sprintf(
         "Cannot size targets for %s: close price is missing, non-finite, or non-positive. Targeting 0.",
@@ -437,12 +472,13 @@ ledgr_target_rebalance <- function(weights,
     )
   }
   valid <- !invalid_price
-  target[weight_ids[valid]] <- floor(
-    (weight_values[valid] * equity_fraction * allocation_equity) /
-      price[valid]
-  )
+  sized_value <- weight_values[valid] * equity_fraction * allocation_equity
+  if (scale != 1) sized_value <- scale * sized_value
+  target[weight_ids[valid]] <- floor(sized_value / price[valid])
 
-  ledgr_target(target, universe = universe, origin = attr(weights, "origin"))
+  out <- ledgr_target(target, universe = universe, origin = attr(weights, "origin"))
+  if (length(skipped) > 0L) attr(out, "sizing_skipped") <- skipped
+  out
 }
 
 #' Construct full target quantities from a selection

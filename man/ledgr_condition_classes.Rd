@@ -244,8 +244,10 @@ implementations disagree at the end of a finite strict window.
 is not a named list keyed only by instruments on the current public axis.
 
 \code{ledgr_target_sizing_unavailable} is raised when an availability-aware
-rebalance helper cannot obtain a positive accepted current close or a
-permissible mark needed to reserve held nonmember exposure.
+rebalance helper needs a permissible mark it cannot obtain: to reserve the
+exposure of a preserved holding, or to keep a held member that has no
+current close. A member without a current close is otherwise skipped for
+that rebalance and recorded, not an error.
 
 \code{ledgr_restricted_target} and \code{ledgr_nonmember_exposure_increase} are raised
 when availability-aware strategy output violates the decision-time target
