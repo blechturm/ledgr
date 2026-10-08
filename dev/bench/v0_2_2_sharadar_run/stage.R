@@ -147,8 +147,10 @@ run_stage <- function(label, strategy, features, params_list, mode) {
   } else {
     grid <- do.call(ledgr_strategy_grid, params_list)
     # Fold boundaries are UTC midnight but the snapshot starts at the first
-    # close (21:00 UTC), so the first date is refused (LDG-2976 finding).
-    folds <- ledgr_folds_rolling("1998-01-05", "2026-09-04", train_window = "2 years",
+    # close (21:00 UTC): before LDG-2991 the first date was refused (stop S1),
+    # so the LDG-2976 record starts on 1998-01-05.
+    wf_start <- if (identical(label, "walk_forward_first_date")) "1998-01-02" else "1998-01-05"
+    folds <- ledgr_folds_rolling(wf_start, "2026-09-04", train_window = "2 years",
                                  test_window = "1 year", step = "1 year")
     wf <- attempt(label, ledgr_walk_forward(exp, grid, folds, ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
     if (!is.null(wf)) {
@@ -184,8 +186,8 @@ if (identical(stage, "equal_weight")) {
 if (identical(stage, "sweep")) {
   run_stage("sweep", momentum, list(ledgr_ind_returns(252L)), list(lookback = 252L, n = c(10L, 20L, 40L)), "sweep")
 }
-if (identical(stage, "walk_forward")) {
-  run_stage("walk_forward", momentum, list(ledgr_ind_returns(63L)), list(lookback = 63L, n = c(10L, 20L, 40L)), "wf")
+if (stage %in% c("walk_forward", "walk_forward_first_date")) {
+  run_stage(stage, momentum, list(ledgr_ind_returns(63L)), list(lookback = 63L, n = c(10L, 20L, 40L)), "wf")
 }
 
 # Phase shares of one canonical-R run, from the fold's own sampled telemetry
