@@ -32,7 +32,7 @@ scratch <- tempfile("tch-check-")
 run(file.path(scratch, "normal"))
 run(file.path(scratch, "gut"), "--gut")
 for (pair in list(c("normal", ""), c("gut", "gut"))) {
-  for (file in c("cases.csv", "shape.csv")) {
+  for (file in c("cases.csv", "shape.csv", "growth.csv")) {
     recorded <- file.path(evidence, pair[[2L]], file)
     fresh <- file.path(scratch, pair[[1L]], file)
     if (!file.exists(recorded) || !file.exists(fresh) || !same_file(recorded, fresh)) {
@@ -71,7 +71,12 @@ print(shape, row.names = FALSE)
 cat(sprintf("size kill condition (segments > 2 x fact rows) fires on %d of %d fixtures; max segments per fact row %.2f\n",
             sum(!shape$bound_twice_fact_rows), nrow(shape), max(shape$segments_written / shape$fact_rows)))
 
-status_after <- git("status", "--porcelain", "--", c(package_paths, "inst/design"))
+growth <- utils::read.csv(file.path(scratch, "normal", "growth.csv"), stringsAsFactors = FALSE)
+print(growth, row.names = FALSE)
+cat(sprintf("case 9: append-only max %.2f segments per fact row; with restatements max %.2f\n",
+            max(growth$segments_per_fact_row[growth$long_facts == 0]), max(growth$segments_per_fact_row)))
+
+status_after <-git("status", "--porcelain", "--", c(package_paths, "inst/design"))
 if (!identical(status_before, status_after)) fail("package or design scope changed during the rerun")
 committed <- git("diff", "--name-only", "9452e9e", "HEAD", "--", package_paths)
 if (length(committed)) fail("package files changed since spike start 9452e9e: ", paste(committed, collapse = ", "))

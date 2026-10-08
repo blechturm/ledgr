@@ -113,6 +113,27 @@ for (case in cases) {
     bound_twice_fact_rows = nrow(segments) <= 2L * fact_rows,
     lookups_per_window_read_k5 = spike_lookups$n, stringsAsFactors = FALSE)
 }
+# Case 9: growth under restatement. `n` short one-day halts known on their own
+# day (source a), then `k` long facts spanning all of them, each known later
+# with higher precedence and alternating status (source b).
+restated <- function(n, k) {
+  short <- data.frame(instrument_id = "AAA", effective_from = day(2 * seq_len(n)),
+    effective_to = day(2 * seq_len(n) + 1), knowledge_time = day(2 * seq_len(n)),
+    status = "halted", source = "a", precedence = 1L, fact_id = paste0("s", seq_len(n)))
+  long <- if (k > 0) data.frame(instrument_id = "AAA", effective_from = day(1),
+    effective_to = day(2 * n + 2), knowledge_time = day(2 * n + 2 + seq_len(k)),
+    status = rep(c("active", "quotation_only"), length.out = k), source = "b",
+    precedence = 1L + seq_len(k), fact_id = paste0("l", seq_len(k)))
+  data <- ledgr:::ledgr_facts_inspection_data(ledgr_facts(ledgr_facts_trading_status(rbind(short, long))))
+  written <- if (gut) NA_integer_ else nrow(spike_build(data, "status", "AAA", "AAA"))
+  data.frame(case = 9L, short_facts = n, long_facts = k, fact_rows = n + k, segments_written = written,
+             segments_per_fact_row = round(written / (n + k), 2))
+}
+grid <- list(c(5, 0), c(10, 0), c(20, 0), c(5, 1), c(10, 1), c(20, 1), c(5, 5), c(10, 10), c(20, 20))
+growth_out <- do.call(rbind, lapply(grid, function(g) restated(g[[1L]], g[[2L]])))
+utils::write.csv(growth_out, file.path(out_dir, "growth.csv"), row.names = FALSE)
+print(growth_out, row.names = FALSE)
+
 cases_out <- do.call(rbind, rows)
 shape_out <- do.call(rbind, shape)
 cases_out$mode <- if (gut) "gut_diagonal" else "bitemporal"

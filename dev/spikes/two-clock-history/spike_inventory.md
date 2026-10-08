@@ -10,12 +10,12 @@ against the unchanged package code of `9452e9e`.
 | --- | --- | --- |
 | `probe.R` | section 1 probe, before the charter | `probe_evidence.csv` |
 | `spike_core.R` | bitemporal segments: per knowledge epoch, filter facts known by the epoch, hand them to the unchanged prepared provider and membership resolver, write a segment only when an epoch changes it | |
-| `spike_runner.R` | builds segments for the seven fixtures, answers the `(s, t)` queries, checks the diagonal over ten days, records shape; `--gut` answers with the shipped diagonal | `evidence/cases.csv`, `evidence/shape.csv`, `evidence/gut/` |
+| `spike_runner.R` | builds segments for the seven fixtures, answers the `(s, t)` queries, checks the diagonal over ten days, records shape, measures growth under restatement (case 9); `--gut` answers with the shipped diagonal | `evidence/cases.csv`, `evidence/shape.csv`, `evidence/growth.csv`, `evidence/gut/` |
 | `spike_checker.R` | reruns both modes into scratch, diffs, compares with `expected.csv`, asserts the gut's named rows, reports the size bound, guards scope | prints `SPIKE CHECK OK` |
 | `expected.csv` | sixteen frozen `(s, t)` answers with their v11 basis | |
 
-Harness: `probe.R` 147 lines, `spike_core.R` 133, `spike_runner.R` 122,
-`spike_checker.R` 83; 485 in all, within the 1,500-line budget.
+Harness: `probe.R` 147 lines, `spike_core.R` 133, `spike_runner.R` 143,
+`spike_checker.R` 88; 511 in all, within the 1,500-line budget.
 
 ## Deviations from the charter
 
@@ -28,17 +28,19 @@ Harness: `probe.R` 147 lines, `spike_core.R` 133, `spike_runner.R` 122,
   and supersession across sources is refused too. The runner records the
   refusal as an evidence row and runs the expressible chain: halted, then
   active, then halted again.
-- **Shape omits bytes and revisions.** `shape.csv` records fact rows, epochs,
-  segments written and lookups per window read. Bytes and the revision count
-  were not measured; on fixtures this small they would not change the verdict.
+- **Case 9 added** after the first closeout, at the maintainer's go-ahead, to
+  test the size bound on a fixture built to stress it. Nine shapes, within the
+  cap of ten.
+- **Shape omits bytes and revisions.** Bytes and the revision count were not
+  measured; segment counts already decide the size question.
 
 ## Gutted path
 
 With the shipped diagonal answering every query, the historical rows collapse
 to today's answer: case 1 at `(4, 8)` and `(5, 9)`, case 2 at `(4, 6)` and
 case 4 at `(3, 8)` fail, and so do the late-knowledge rows of cases 3, 5, 6
-and 7. Case 8 (the diagonal) stays 10 of 10 for every fixture. The checker
-asserts the named rows.
+and 7. Case 8 (the diagonal) stays 10 of 10 for every fixture. The diagonal
+stores no segments, so case 9 records `NA`. The checker asserts the named rows.
 
 ## Demoted
 
@@ -57,19 +59,24 @@ Nothing in the package. `spike_checker.R` diffs `R`, `src`, `tests`,
 - Filtering facts by both clocks and handing them to the unchanged rules gives
   every v11 answer: 16 of 16 historical rows and the diagonal on all seven
   fixtures.
-- **Declaration is inferred from row presence.** The prepared builder treats
-  the trading-status family as declared only when it has rows. Filter to "known
-  by an early epoch" and a declared family with no known facts yet defaults to
-  `active` instead of `unknown`. `spike_state()` carries the declaration
-  separately (a labelled override). This is a representation need, not a rule
-  change, but the reviewer should confirm that reading.
-- **Segments are not bounded by twice the fact rows.** Each fact splits the
-  effective axis into before, during and after, so one fact can open three
-  segments. Segments written per fact row: 2.5, 2.0, 2.5, 1.3, 2.5, 2.0, 3.0.
-  The worst is 3.0.
-- Supersession must stay within one source, and a one-source chain whose first
-  and third facts carry different statuses is refused as a structural
-  conflict.
+- **The default status depends on row presence.** `facts()` answers
+  `unknown` when the family has rows and `active` when it has none
+  (`R/availability-provider-prepared.R`, `has_status`), while restrictions use
+  the declared-families list. Shipped code never sees the difference, because
+  the constructor refuses an empty trading-status family. A history filter
+  creates the empty case, so `spike_state()` carries the declaration (a
+  labelled override). A representation need, not a rule change.
+- **Size is not linear in facts.** Facts that only append cost about three
+  segments each, because a new fact splits the open tail interval into three.
+  Facts that restate a long span rewrite every interval under it: with `n`
+  short and `k` long facts, segments grow about as `n * k` (883 segments for
+  40 fact rows, 22 per row).
+- Supersession must stay within one source. A one-source chain of three
+  different statuses is refused because the conflict check
+  (`ledgr_fact_validate_source_conflicts`) excuses only direct supersession
+  pairs, while the resolver drops every superseded fact and handles the chain.
+  The two disagree; this looks like a validation defect. The check is also a
+  pairwise validator, one of the seven named shapes.
 - Membership knowledge time cannot be rewritten (probe P2), but it can be
   re-expressed as effective time plus a global knowledge rank, which keeps
   every knowledge-ordered rule intact inside one epoch.
