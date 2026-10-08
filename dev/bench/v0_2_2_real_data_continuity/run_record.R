@@ -324,6 +324,179 @@ bt <- attempt("inv_soft_stop_resume", ledgr_run(exp18(list(), buy_once), run_id 
 if (!is.null(bt)) record_run("inv_soft_stop_resume", bt, s18)
 ledgr_snapshot_close(s18)
 
+# ==== Cut 11 groups (LDG-2977) ================================================
+eq_text <- function(eq, cols = c("cash", "positions_value", "equity", "realized_pnl", "unrealized_pnl")) {
+  apply(vapply(cols, function(c) format(as.numeric(eq[[c]]), digits = 15, trim = TRUE), character(nrow(eq))),
+        1L, paste, collapse = "/")
+}
+
+# ---- LFB-019: reconstruction of gap-bearing availability runs ----------------
+# Gap: BBB has no bar on day 1 (unheld skip) and day 4 (held skip, stale mark).
+# Freeze: BBB's last bar is day 2; with stale(1) its holding is frozen at 22
+# from day 4.
+bars19g <- rbind(bar_rows("AAA", gap_days, 10), bar_rows("BBB", gap_days[-c(1, 4)], c(20, 21, 23)))
+bars19f <- rbind(bar_rows("AAA", gap_days, c(10, 11, 12, 13, 14)), bar_rows("BBB", gap_days[1:2], c(20, 22)))
+for (case in list(list(arm = "lfb019_gap", bars = bars19g, stale = 2L),
+                  list(arm = "lfb019_freeze", bars = bars19f, stale = 1L))) {
+  s19 <- availability_snapshot(case$bars, gap_days, c("AAA", "BBB"))
+  bt <- attempt(paste0(case$arm, "_run"), ledgr_run(
+    ledgr_experiment(s19, equal_weight, universe = ledgr_universe_members("u"),
+                     valuation_policy = ledgr_valuation_stale(case$stale), cost_model = ledgr_cost_zero(),
+                     opening = ledgr_opening(cash = 1000)),
+    run_id = case$arm))
+  if (!is.null(bt)) {
+    con19 <- ledgr:::get_connection(s19)
+    stored <- DBI::dbGetQuery(con19, "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc", params = list(bt$run_id))
+    record(case$arm, "status", ledgr_run_info(s19, bt$run_id)$status)
+    record(case$arm, "stored_equity", eq_text(stored))
+    decision <- ledgr_results(bt, "diagnostics")
+    record(case$arm, "skips", sum(decision$reason_code == "sizing_unavailable"))
+    record(case$arm, "frozen", sum(decision$reason_code == "valuation_frozen"))
+    rebuilt <- attempt(case$arm, ledgr_state_reconstruct(bt$run_id, con19))
+    if (!is.null(rebuilt)) {
+      record(case$arm, "rebuilt_equity", eq_text(rebuilt$equity_curve))
+      record(case$arm, "rebuilt_positions", paste(rebuilt$positions$instrument_id, rebuilt$positions$qty, sep = ":"))
+    }
+    close(bt)
+  }
+  ledgr_snapshot_close(s19)
+}
+
+# Shared 2020 weekday walk-forward fixture: AAA, BBB and, optionally, CCC.
+wf_snapshot <- function(ids, lifetime = NULL) {
+  set.seed(2)
+  bars <- do.call(rbind, lapply(ids, function(id) bar_rows(id, wf_days, wf_close(length(wf_days)))))
+  if (!is.null(lifetime)) bars <- bars[!(bars$instrument_id == lifetime$id & bars$ts_utc >= utc(lifetime$day)), , drop = FALSE]
+  m <- data.frame(effective_from = utc(wf_days[[1]]), knowledge_time = utc(wf_days[[1]]), source = "d")
+  m$members <- I(list(ids))
+  families <- list(
+    ledgr_facts_sessions(
+      data.frame(session_date = all_days, status = ifelse(weekday, "open", "closed"),
+                 session_open = ifelse(weekday, "14:30:00", NA), session_close = ifelse(weekday, "21:00:00", NA)),
+      venue_id = "V", timezone = "UTC", knowledge = "assume_effective"),
+    ledgr_facts_membership_snapshots(m, universe_id = "u", complete = TRUE, knowledge = "assume_effective"))
+  if (!is.null(lifetime)) {
+    families <- c(families, list(ledgr_facts_lifetime(data.frame(
+      instrument_id = lifetime$id, effective_from = utc(lifetime$day), knowledge_time = utc(lifetime$day) - 1,
+      assertion = "known_inactive", terminal_event = "bankruptcy", stringsAsFactors = FALSE))))
+  }
+  ledgr_snapshot_from_df(bars, data.frame(instrument_id = ids), db_path = tempfile(fileext = ".duckdb"),
+                         facts = do.call(ledgr_facts, families))
+}
+wf_exp_on <- function(snapshot, strategy) {
+  ledgr_experiment(snapshot, strategy, universe = ledgr_universe_members("u"),
+                   valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+                   opening = ledgr_opening(cash = 1000))
+}
+store_counts <- function(snapshot) {
+  con <- ledgr:::get_connection(snapshot)
+  n <- function(table) tryCatch(DBI::dbGetQuery(con, paste("SELECT COUNT(*) n FROM", table))$n, error = function(e) 0)
+  sprintf("sessions=%d,runs=%d", n("walk_forward_sessions"), n("runs"))
+}
+
+# ---- Gapped carry (LDG-2979) ---------------------------------------------------
+# Step 2 months, test 1 month: test windows March, May, July, ... leave April,
+# June, ... unobserved. CCC delists on 2020-04-15, inside the first gap.
+s_gap <- wf_snapshot(c("AAA", "BBB", "CCC"), lifetime = list(id = "CCC", day = as.Date("2020-04-15")))
+gap_folds <- ledgr_folds_rolling("2020-01-02", "2020-12-31", train_window = "2 months",
+                                 test_window = "1 month", step = "2 months")
+before <- store_counts(s_gap)
+wf <- attempt("wfgap_carry", ledgr_walk_forward(wf_exp_on(s_gap, trade_always), wf_grid, gap_folds,
+                                                ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+record("wfgap_carry", "store_before", before)
+record("wfgap_carry", "store_after", store_counts(s_gap))
+if (!is.null(wf)) {
+  folds <- ledgr_walk_forward_folds(s_gap, wf$session_id)
+  record("wfgap_carry", "session_status", wf$status)
+  test_status <- vapply(folds$test_run_id[!is.na(folds$test_run_id)],
+                        function(id) ledgr_run_info(s_gap, id)$status, character(1))
+  record("wfgap_carry", "test_status", test_status)
+}
+wf <- attempt("inv_wfgap_flat", suppressWarnings(ledgr_walk_forward(
+  wf_exp_on(s_gap, trade_always), wf_grid, gap_folds, ledgr_rule_argmax("sharpe_ratio"), seed = 1L,
+  opening_state_policy = "flat_test_state")))
+if (!is.null(wf)) record("inv_wfgap_flat", "session_status", wf$status)
+ledgr_snapshot_close(s_gap)
+
+# ---- Walk-forward resume (LDG-2980) ------------------------------------------
+# The strategy interrupts on 2020-05-12, inside fold 3's test window (May),
+# when the option is set. A reference session runs uninterrupted on its own
+# copy of the same data.
+interrupt_may <- function(ctx, params) {
+  if (identical(getOption("ledgr.oracle.wf_interrupt"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()
+  ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = params$f)
+}
+session_digest <- function(snapshot, wf) {
+  folds <- ledgr_walk_forward_folds(snapshot, wf$session_id)
+  equity <- vapply(folds$test_run_id, function(id) {
+    if (is.na(id)) return("none")
+    run <- ledgr_run_open(snapshot, id)
+    on.exit(close(run), add = TRUE)
+    paste(format(ledgr_results(run, "equity")$equity, digits = 15), collapse = "/")
+  }, character(1))
+  sprintf("%d:%s:%s:%s:%s", folds$fold_seq, folds$status, folds$selection_source,
+          substr(folds$selected_candidate_key, 1, 12), equity)
+}
+telemetry_stamp <- function(snapshot, ids) {
+  con <- ledgr:::get_connection(snapshot)
+  if (!"run_telemetry" %in% DBI::dbListTables(con)) return("no_telemetry_table")
+  rows <- DBI::dbGetQuery(con, "SELECT run_id, updated_at_utc FROM run_telemetry ORDER BY run_id")
+  rows <- rows[rows$run_id %in% ids, , drop = FALSE]
+  paste(rows$run_id, format(rows$updated_at_utc, "%Y-%m-%dT%H:%M:%OS6"), sep = "@")
+}
+s_ref <- wf_snapshot(c("AAA", "BBB"))
+ref <- attempt("wfresume_reference", ledgr_walk_forward(wf_exp_on(s_ref, interrupt_may), wf_grid, wf_folds,
+                                                         ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+if (!is.null(ref)) {
+  record("wfresume_reference", "session_status", ref$status)
+  record("wfresume_reference", "digest", session_digest(s_ref, ref))
+  # Rerunning a finished session opens its DONE test runs without executing them.
+  test_ids <- ledgr_walk_forward_folds(s_ref, ref$session_id)$test_run_id
+  stamp <- telemetry_stamp(s_ref, test_ids)
+  again <- attempt("inv_wfresume_reopen", ledgr_walk_forward(wf_exp_on(s_ref, interrupt_may), wf_grid, wf_folds,
+                                                              ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+  record("inv_wfresume_reopen", "stamp_before", stamp)
+  record("inv_wfresume_reopen", "stamp_after", telemetry_stamp(s_ref, test_ids))
+  if (!is.null(again)) record("inv_wfresume_reopen", "digest_matches", identical(session_digest(s_ref, again), session_digest(s_ref, ref)))
+}
+ledgr_snapshot_close(s_ref)
+s_int <- wf_snapshot(c("AAA", "BBB"))
+old <- options(ledgr.oracle.wf_interrupt = "2020-05-12")
+attempt("wfresume_interrupted", ledgr_walk_forward(wf_exp_on(s_int, interrupt_may), wf_grid, wf_folds,
+                                                    ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+options(old)
+stored <- DBI::dbGetQuery(ledgr:::get_connection(s_int), "SELECT meta_json FROM walk_forward_sessions")
+record("wfresume_interrupted", "stored_session_status",
+       vapply(stored$meta_json, function(j) as.character(jsonlite::fromJSON(j)$status %||% ""), character(1)))
+resumed <- attempt("wfresume_rerun", ledgr_walk_forward(wf_exp_on(s_int, interrupt_may), wf_grid, wf_folds,
+                                                         ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+if (!is.null(resumed)) {
+  record("wfresume_rerun", "session_status", resumed$status)
+  record("wfresume_rerun", "digest", session_digest(s_int, resumed))
+}
+ledgr_snapshot_close(s_int)
+
+# ---- Fold boundaries on the sealed first and last dates (LDG-2991) ------------
+# The 2020 weekday fixture starts on Wednesday 2020-01-01; its bars are stamped
+# 21:00 UTC, fold boundaries at midnight UTC.
+s_b <- wf_snapshot(c("AAA", "BBB"))
+bounds <- function(start, end) ledgr_folds_rolling(start, end, train_window = "2 months",
+                                                   test_window = "1 month", step = "1 month")
+for (case in list(list(arm = "bounds_first_date", start = "2020-01-01", end = "2020-12-31"),
+                  list(arm = "bounds_before_first", start = "2019-12-02", end = "2020-12-31"),
+                  list(arm = "bounds_after_last", start = "2020-01-02", end = "2021-01-04"),
+                  list(arm = "inv_bounds_inside", start = "2020-01-02", end = "2020-12-31"))) {
+  folds <- bounds(case$start, case$end)
+  record(case$arm, "fold_list_hash", attr(folds, "fold_list_hash"))
+  wf <- attempt(case$arm, ledgr_walk_forward(wf_exp_on(s_b, trade_always), wf_grid, folds,
+                                             ledgr_rule_argmax("sharpe_ratio"), seed = 1L))
+  if (!is.null(wf)) {
+    record(case$arm, "session_status", wf$status)
+    record(case$arm, "digest", session_digest(s_b, wf))
+  }
+}
+ledgr_snapshot_close(s_b)
+
 record("meta", "commit", git("rev-parse", "HEAD"))
 record("meta", "tracked_clean", !nzchar(tracked_status))
 record("meta", "R", R.version.string)

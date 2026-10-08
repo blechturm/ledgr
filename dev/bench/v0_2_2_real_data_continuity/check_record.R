@@ -1,20 +1,36 @@
-# Cut 10 real-data continuity checker (LDG-2972).
+# Real-data continuity checker (Cut 10 LDG-2972, Cut 11 LDG-2977).
 #
 # Usage:
-#   Rscript dev/bench/v0_2_2_real_data_continuity/check_record.R <record.csv> --expect pre|post
+#   Rscript dev/bench/v0_2_2_real_data_continuity/check_record.R <record.csv>
+#     --expect pre|post10|pre11|post [--against <earlier record.csv>]
 #
-# Groups: lfb017 (LDG-2973), lfb023 (LDG-2974), lfb018 (LDG-2975) and
-# invariance. Expected values are fixture arithmetic (see README.md), not
-# another engine path. `--expect pre` requires every LFB group to fail and the
-# invariance group to pass; `--expect post` requires every group to pass. A
-# missing observation is a failure, never a pass.
+# Cut 10 groups: lfb017 (LDG-2973), lfb023 (LDG-2974), lfb018 (LDG-2975) and
+# invariance. Cut 11 groups: lfb019 (LDG-2978), wfgap (LDG-2979), wfresume
+# (LDG-2980), bounds (LDG-2991), invariance11, and reason11, which pins each
+# Cut 11 group's pre-cut failure to its source-table reason. Expected values
+# are fixture arithmetic (see README.md), not another engine path.
+#
+#   pre     Cut 10 groups fail, invariance passes (Cut 10 pre-cut record).
+#   post10  Cut 10 groups and invariance pass (Cut 10 post record).
+#   pre11   Cut 10 groups, invariance, invariance11 and reason11 pass; every
+#           Cut 11 group fails.
+#   post    every group except reason11 passes.
+#
+# `--against` compares every observable of the invariance arms (inv_*) and the
+# lfb017 arms with an earlier record, except telemetry stamps and session IDs
+# (a session ID hashes the temporary store path): the cut must
+# not change them. A missing observation is a failure, never a pass.
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 3L || args[[2L]] != "--expect" || !args[[3L]] %in% c("pre", "post")) {
-  stop("usage: check_record.R <record.csv> --expect pre|post", call. = FALSE)
+modes <- c("pre", "post10", "pre11", "post")
+if (length(args) < 3L || args[[2L]] != "--expect" || !args[[3L]] %in% modes) {
+  stop("usage: check_record.R <record.csv> --expect pre|post10|pre11|post [--against <record.csv>]", call. = FALSE)
 }
 rec <- utils::read.csv(args[[1L]], stringsAsFactors = FALSE, na.strings = character())
 expect <- args[[3L]]
+against <- if (length(args) >= 5L && args[[4L]] == "--against") {
+  utils::read.csv(args[[5L]], stringsAsFactors = FALSE, na.strings = character())
+}
 
 get <- function(arm, observable) {
   v <- rec$value[rec$arm == arm & rec$observable == observable]
@@ -151,15 +167,122 @@ check("invariance", "soft-stop resume reaches the uninterrupted result",
         identical(get("inv_soft_stop_resume", "equity"), get("inv_uninterrupted", "equity")) &&
         !is.na(get("inv_uninterrupted", "fills")))
 
+# ==== Cut 11 ===================================================================
+msg <- function(arm) get(arm, "condition_message")
+has <- function(x, pattern) !is.na(x) && grepl(pattern, x, fixed = TRUE)
+
+# ---- LFB-019 (LDG-2978) --------------------------------------------------------
+# Rows are cash/positions_value/equity/realized/unrealized per pulse.
+# Gap, stale(2): AAA 10 flat; BBB 20, 21, 23 on days 2, 3, 5. Day 1 buys AAA
+# 45 only (BBB unpriced), filled day 2 at 10: cash 550. Day 2 buys BBB 22,
+# filled day 3 at 21: cash 88. Day 4 has no BBB bar: its stale mark 21 gives
+# 450 + 462 = 912. Day 5: 450 + 22 * 23 = 956, unrealized 956 - 912 = 44.
+gap_rows <- c("1000/0/1000/0/0", "550/450/1000/0/0", "88/912/1000/0/0", "88/912/1000/0/0", "88/956/1044/0/44")
+# Freeze, stale(1): BBB's last bar is day 2 at 22, so from day 4 (age 2) the
+# held 22 shares are frozen at 22. Day 4: AAA 39 at 13 plus 22 * 22 is
+# 507 + 484 = 991; day 5: AAA 41 at 14 plus 484 is 1058.
+freeze_rows <- c("1000/0/1000/0/0", "21/979/1000/0/0", "81/964/1045/5/40", "94/991/1085/7/78", "66/1058/1124/7/117")
+for (case in list(list(arm = "lfb019_gap", rows = gap_rows, pos = c("AAA:45", "BBB:22"), skips = "2", frozen = "0"),
+                  list(arm = "lfb019_freeze", rows = freeze_rows, pos = c("AAA:41", "BBB:22"), skips = "1", frozen = "3"))) {
+  a <- case$arm
+  check("lfb019", paste(a, "run completes with its skip and freeze rows"),
+        ran(paste0(a, "_run")) && identical(get(a, "status"), "DONE") &&
+          identical(get(a, "skips"), case$skips) && identical(get(a, "frozen"), case$frozen))
+  check("lfb019", paste(a, "stored equity matches the fixture arithmetic"),
+        identical(split_list(get(a, "stored_equity")), case$rows))
+  check("lfb019", paste(a, "reconstruction succeeds and reproduces every pulse"),
+        ran(a) && identical(split_list(get(a, "rebuilt_equity")), case$rows))
+  check("lfb019", paste(a, "reconstructed positions"), identical(split_list(get(a, "rebuilt_positions")), case$pos))
+}
+
+# ---- Gapped carry (LDG-2979) ---------------------------------------------------
+# Test windows 2020-03-02..04-01 and 2020-05-02..06-01: the 22 weekdays from
+# 2020-04-02 to 2020-05-01 lie between them.
+check("wfgap", "carry across the gap refuses with the gapped-carry class",
+      has(get("wfgap_carry", "condition_class"), "ledgr_walk_forward_gapped_carry"))
+check("wfgap", "the refusal names the first gap and both remedies",
+      has(msg("wfgap_carry"), "22 unobserved pulse(s) between test window 1 (ends 2020-04-01T23:59:59Z)") &&
+        has(msg("wfgap_carry"), "test window 2 (starts 2020-05-02T00:00:00Z)") &&
+        has(msg("wfgap_carry"), "`step` equal to `test_window`") && has(msg("wfgap_carry"), "flat_test_state"))
+check("wfgap", "nothing is written before the refusal",
+      identical(get("wfgap_carry", "store_before"), "sessions=0,runs=0") &&
+        identical(get("wfgap_carry", "store_after"), "sessions=0,runs=0"))
+
+# ---- Walk-forward resume (LDG-2980) --------------------------------------------
+ref_digest <- split_list(get("wfresume_reference", "digest"))
+ref_equity <- unique(unlist(strsplit(vapply(strsplit(ref_digest, ":", fixed = TRUE), `[[`, "", 5L), "/", fixed = TRUE)))
+check("wfresume", "the reference session completes, trades and moves",
+      identical(get("wfresume_reference", "session_status"), "DONE") && length(ref_digest) >= 6L &&
+        length(ref_equity) > 1L)
+check("wfresume", "the interrupted attempt reaches the caller and stores a PARTIAL session",
+      has(get("wfresume_interrupted", "condition_class"), "interrupt") &&
+        identical(get("wfresume_interrupted", "stored_session_status"), "PARTIAL"))
+check("wfresume", "rerunning completes with the uninterrupted folds, selections and test equity",
+      ran("wfresume_rerun") && identical(get("wfresume_rerun", "session_status"), "DONE") &&
+        identical(get("wfresume_rerun", "digest"), get("wfresume_reference", "digest")))
+
+# ---- Fold boundaries (LDG-2991) ------------------------------------------------
+check("bounds", "folds starting on the first sealed date run",
+      ran("bounds_first_date") && identical(get("bounds_first_date", "session_status"), "DONE"))
+check("bounds", "a start before the first date refuses and names the range",
+      has(get("bounds_before_first", "condition_class"), "ledgr_walk_forward_invalid_fold_window") &&
+        has(msg("bounds_before_first"), "2019-12-02") &&
+        has(msg("bounds_before_first"), "sealed snapshot range 2020-01-01 to 2020-12-31"))
+check("bounds", "an end after the last date refuses and names the range",
+      has(get("bounds_after_last", "condition_class"), "ledgr_walk_forward_invalid_fold_window") &&
+        has(msg("bounds_after_last"), "sealed snapshot range 2020-01-01 to 2020-12-31"))
+
+# ---- Cut 11 invariance ------------------------------------------------------------
+check("invariance11", "flat_test_state over the gapped folds completes",
+      identical(get("inv_wfgap_flat", "session_status"), "DONE"))
+stamp <- get("inv_wfresume_reopen", "stamp_before")
+check("invariance11", "rerunning a finished session reopens its test runs without executing them",
+      ran("inv_wfresume_reopen") && !is.na(stamp) && nzchar(stamp) && !identical(stamp, "no_telemetry_table") &&
+        identical(stamp, get("inv_wfresume_reopen", "stamp_after")) &&
+        identical(get("inv_wfresume_reopen", "digest_matches"), "TRUE"))
+check("invariance11", "folds inside the sealed range run",
+      ran("inv_bounds_inside") && identical(get("inv_bounds_inside", "session_status"), "DONE"))
+
+# ---- Pre-cut source-table reasons (pre11 only) -----------------------------------
+check("reason11", "LFB-019: reconstruction refuses with ledgr_missing_bars",
+      has(get("lfb019_gap", "condition_class"), "ledgr_missing_bars") &&
+        has(get("lfb019_freeze", "condition_class"), "ledgr_missing_bars"))
+check("reason11", "gapped carry: the session is PARTIAL with an INCOMPLETE test run",
+      identical(get("wfgap_carry", "session_status"), "PARTIAL") &&
+        "INCOMPLETE" %in% split_list(get("wfgap_carry", "test_status")))
+check("reason11", "resume: the rerun stops on the FAILED test run (ledgr_run_not_complete)",
+      has(get("wfresume_rerun", "condition_class"), "ledgr_run_not_complete"))
+check("reason11", "boundaries: the first sealed date is refused as outside the range",
+      has(msg("bounds_first_date"), "inside the sealed snapshot range"))
+
+# ---- Against an earlier record --------------------------------------------------
+if (!is.null(against)) {
+  key <- function(r) paste(r$arm, r$observable, sep = "|")
+  pick <- function(r) r[grepl("^(inv_|lfb017_)", r$arm) & !grepl("^stamp|^session_id$", r$observable), , drop = FALSE]
+  now <- pick(rec)
+  then <- pick(against)
+  shared <- intersect(key(now), key(then))
+  same <- now$value[match(shared, key(now))] == then$value[match(shared, key(then))]
+  check("against", sprintf("%d shared invariance observables unchanged", length(shared)),
+        length(shared) > 0L && all(same))
+  for (k in shared[!same]) cat("CHANGED", k, "\n")
+}
+
+cut10 <- c("lfb017", "lfb023", "lfb018")
+cut11 <- c("lfb019", "wfgap", "wfresume", "bounds")
+if (expect %in% c("pre", "post10")) results <- Filter(function(r) !r$group %in% c(cut11, "invariance11", "reason11"), results)
+if (identical(expect, "post")) results <- Filter(function(r) !identical(r$group, "reason11"), results)
 out <- do.call(rbind, results)
 summary <- stats::aggregate(pass ~ group, data = out, FUN = function(p) sprintf("%d/%d", sum(p), length(p)))
 group_pass <- tapply(out$pass, out$group, all)
 for (i in seq_len(nrow(out))) if (!out$pass[[i]]) cat(sprintf("FAIL [%s] %s\n", out$group[[i]], out$check[[i]]))
 print(summary, row.names = FALSE)
-ok <- if (identical(expect, "post")) {
-  all(group_pass)
-} else {
-  isTRUE(group_pass[["invariance"]]) && !any(group_pass[c("lfb017", "lfb023", "lfb018")])
-}
+ok <- isTRUE(switch(expect,
+  pre = isTRUE(group_pass[["invariance"]]) && !any(group_pass[cut10]),
+  post10 = all(group_pass),
+  pre11 = all(group_pass[c(cut10, "invariance", "invariance11", "reason11", if (!is.null(against)) "against")]) &&
+    !any(group_pass[cut11]),
+  post = all(group_pass)
+))
 cat(sprintf("%s: expectation '%s' %s\n", if (ok) "OK" else "MISMATCH", expect, if (ok) "met" else "not met"))
 quit(status = if (ok) 0L else 1L)
