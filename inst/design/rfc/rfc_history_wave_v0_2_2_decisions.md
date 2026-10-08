@@ -110,6 +110,31 @@ real data. Every fact rule touched by this wave is tested empirically against
 the full Sharadar history before its decision is accepted, and an end-to-end
 32-year run is an acceptance gate of the cut.
 
+Maintainer, 2026-10-08, after the adapter survey:
+- **Span:** 1998-01-02 to 2026-09-04, about 28.7 years. The lake holds full
+  daily split-adjusted prices for S&P members only from 1998
+  (`ledgr-research` adoption check, EXP-0003 correction); "32-year" above
+  means the full available history.
+- **Carried zero-volume bars (LFB-027):** the Sharadar adapter drops them, so
+  untraded sessions arrive as missing observations and ledgr's own carry,
+  staleness and freeze rules apply. This changes the snapshot hash.
+- **Real-data stoppers in v0.2.2:** three ledgr-side failures from EXP-0003
+  (`ledgr-research` feedback log) become one small workstream, independent of
+  the history design and able to run in parallel with WS3/WS4:
+  - LFB-017: an eligible member without a price on the decision session no
+    longer aborts the run. It is skipped for that rebalance (no new position;
+    an existing holding is kept) and the skip is recorded.
+  - LFB-023: walk-forward gains an explicit per-fold policy for a fold with no
+    selectable candidate instead of aborting the session; the policy and its
+    use are recorded.
+  - LFB-018: a run that exits early after its row is created ends `FAILED`
+    with the interruption as its error, not `CREATED`.
+- **Adapter patches** (eight, in `ledgr-research`, none in ledgr) precede the
+  Sharadar census: vendor terminal reasons, dropping carried zero-volume bars,
+  explicit stale policy, retiring the 0.2.1.0 diagnostic replica,
+  reconciliation helpers aware of disposals and freezes, re-pinned artifacts,
+  ledgr pinned by commit, runner window sizing.
+
 ## Session C: knowledge clocks the history must carry
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
