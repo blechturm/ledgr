@@ -89,21 +89,22 @@ folds <- ledgr_folds_rolling(
   end = "2019-07-31",
   train_window = "3 months",
   test_window = "1 month",
-  step = "2 months"
+  step = "1 month"
 )
 
 folds
 #> ledgr fold list
 #> ================
 #> Scheme: rolling
-#> Folds:  2
-#> Hash:   12a94353eb09
+#> Folds:  3
+#> Hash:   b901194b80cb
 #>
-#> # A tibble: 2 x 3
+#> # A tibble: 3 x 3
 #>    fold train                    test
 #>   <int> <chr>                    <chr>
 #> 1     1 2019-01-01 -> 2019-03-31 2019-04-01 -> 2019-04-30
-#> 2     2 2019-03-01 -> 2019-05-31 2019-06-01 -> 2019-06-30
+#> 2     2 2019-02-01 -> 2019-04-30 2019-05-01 -> 2019-05-31
+#> 3     3 2019-03-01 -> 2019-05-31 2019-06-01 -> 2019-06-30
 ```
 
 Each window also starts its features fresh. A train or test window never
@@ -164,23 +165,24 @@ wf <- ledgr_walk_forward(
 wf
 #> ledgr walk-forward
 #> ==================
-#> Fold selections: 2 from training, 0 reused from an earlier fold, 0 without a candidate.
+#> Fold selections: 3 from training, 0 reused from an earlier fold, 0 without a candidate.
 #> Health warning: one or more test windows are shorter than 90 calendar days.
 #>
 #> Train/test degradation:
-#> # A tibble: 2 x 7
+#> # A tibble: 3 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
 #> 1        1 sharpe_ratio                   1.98             0.800           -1.18
-#> 2        2 sharpe_ratio                   1.79             3.64             1.85
+#> 2        2 sharpe_ratio                   1.62            -4.47            -6.09
+#> 3        3 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
-#> Session: 3540df018b1b4dc46767e777726d1b6eaae73be205ef7e1c7749cc45a7ce6e5a
+#> Session: 30d3d99097a362bfe4d5dc04088c2a6d8353e1409c00eae34eef3e36b3b82258
 #> Status: DONE
 #> Opening state: carry_test_state
-#> Folds: 2
-#> 4 train evaluations attempted: 4 done, 0 incomplete, 0 failed.
-#> 2 test runs attempted: 2 done, 0 incomplete, 0 failed.
+#> Folds: 3
+#> 6 train evaluations attempted: 6 done, 0 incomplete, 0 failed.
+#> 3 test runs attempted: 3 done, 0 incomplete, 0 failed.
 ```
 
 ## Read The Degradation Table First
@@ -192,11 +194,12 @@ ranges and percentage change, is one `as_tibble()` away.
 ``` r
 wf$degradation
 #> # ledgr walk-forward degradation
-#> # A tibble: 2 x 7
+#> # A tibble: 3 x 7
 #>   fold_seq selection_metric train_metric_value test_metric_value metric_diff_abs
 #>      <int> <chr>                         <dbl>             <dbl>           <dbl>
 #> 1        1 sharpe_ratio                   1.98             0.800           -1.18
-#> 2        2 sharpe_ratio                   1.79             3.64             1.85
+#> 2        2 sharpe_ratio                   1.62            -4.47            -6.09
+#> 3        3 sharpe_ratio                   1.79             3.64             1.85
 #> # i 2 more variables: warning_flags <chr>, selected_candidate <chr>
 #>
 #> # i Hidden columns: train_window, test_window, metric_diff_pct, selection_source. Use as_tibble() for the full table.
@@ -209,7 +212,7 @@ rule direction.
 Short test windows may carry warning flags. Those warnings are not
 failures; they are metadata telling you how to interpret the evidence.
 Here each test window is one month of two demo instruments, so the
-annualized Sharpe ratios swing from 0.80 to 3.64 between folds; at this
+annualized Sharpe ratios swing from -4.47 to 3.64 between folds; at this
 size they show the shape of the evidence, not its strength.
 
 ## Extract A Candidate With A Rationale
@@ -229,7 +232,7 @@ candidate
 #> =====================
 #> Candidate ID:     feature_af0f94c90243/strategy_86be010cf688
 #> Status:           DONE
-#> Execution seed:   1116619927
+#> Execution seed:   1276713596
 #> Strategy:         7a84341722d5
 #> Snapshot hash:    689d79faf5dc3ef9e7335e46bc583d6027bb8bfe9416a4c944a4294689269d26
 #> Feature-set hash: e5fbf0013f67e30f4d6d4bb75e5fa7c056b3e93ea61f08076575a974da10ee70
@@ -311,9 +314,14 @@ survivors hides the instruments that failed along the way, as
 > The default `opening_state_policy = "carry_test_state"` is
 > path-dependent. Each completed selected test run may seed the next test
 > opening state, so per-fold test metrics are not independent
-> observations. The explicit `opening_state_policy = "flat_test_state"`
-> opt-in starts every test window from the original experiment opening
-> state and marks the result as `cold_start_distorted`.
+> observations. Carrying needs contiguous test windows, which is why the
+> folds above step by one month, the length of their test window: with a
+> larger `step`, positions would cross the trading days between two test
+> windows without ever being valued, so `ledgr_walk_forward()` refuses
+> before running anything and names the first gap. The explicit
+> `opening_state_policy = "flat_test_state"` opt-in starts every test
+> window from the original experiment opening state, accepts any gaps
+> between test windows, and marks the result as `cold_start_distorted`.
 
 
 Anchored folds grow their train window over time. That is useful for
@@ -329,11 +337,12 @@ sets.
 >
 > Re-run `ledgr_walk_forward()` with
 > `opening_state_policy = "flat_test_state"`. How does the degradation
-> table change, and why does `cold_start_distorted` appear? Then widen the
-> `test_window` in `ledgr_folds_rolling()` to `"2 months"` and re-run. The
-> short-test-window flags stay, because the health check asks for at least
-> 90 calendar days. How long must a test window be before they go away,
-> and how many folds still fit between `start` and `end`?
+> table change, and why does `cold_start_distorted` appear? Then widen
+> both `test_window` and `step` in `ledgr_folds_rolling()` to `"2 months"`
+> and re-run. The short-test-window flags stay, because the health check
+> asks for at least 90 calendar days. How long must a test window be
+> before they go away, and how many folds still fit between `start` and
+> `end`?
 
 
 ## What This Does Not Do

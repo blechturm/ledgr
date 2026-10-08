@@ -906,9 +906,11 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
   grid <- ledgr_param_grid(one = list(qty = 2))
   folds <- ledgr:::ledgr_fold_list(
     list(
+      # Contiguous test windows: carry_test_state refuses a session between
+      # them (Cut 11, LDG-2979). AAA's day-5 and BBB's day-8 gaps stay inside.
       ledgr_fold(
         "2020-01-01T16:00:00Z", "2020-01-03T16:00:00Z",
-        "2020-01-04T16:00:00Z", "2020-01-05T16:00:00Z",
+        "2020-01-04T16:00:00Z", "2020-01-06T16:00:00Z",
         fold_seq = 1L
       ),
       ledgr_fold(

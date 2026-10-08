@@ -122,7 +122,7 @@ folds <- ledgr_folds_rolling(
   end = "2019-07-31",
   train_window = "3 months",
   test_window = "1 month",
-  step = "2 months"
+  step = "1 month"
 )
 
 folds
@@ -329,7 +329,7 @@ direction.
 Short test windows may carry warning flags. Those warnings are not failures;
 they are metadata telling you how to interpret the evidence. Here each test
 window is one month of two demo instruments, so the annualized Sharpe ratios
-swing from 0.80 to 3.64 between folds; at this size they show the shape of the
+swing from -4.47 to 3.64 between folds; at this size they show the shape of the
 evidence, not its strength.
 
 ## Extract A Candidate With A Rationale
@@ -403,10 +403,14 @@ and does not prove, see
 
 The default `opening_state_policy = "carry_test_state"` is path-dependent. Each
 completed selected test run may seed the next test opening state, so per-fold
-test metrics are not independent observations. The explicit
+test metrics are not independent observations. Carrying needs contiguous test
+windows, which is why the folds above step by one month, the length of their
+test window: with a larger `step`, positions would cross the trading days
+between two test windows without ever being valued, so `ledgr_walk_forward()`
+refuses before running anything and names the first gap. The explicit
 `opening_state_policy = "flat_test_state"` opt-in starts every test window from
-the original experiment opening state and marks the result as
-`cold_start_distorted`.
+the original experiment opening state, accepts any gaps between test windows,
+and marks the result as `cold_start_distorted`.
 :::
 
 Anchored folds grow their train window over time. That is useful for some
@@ -420,8 +424,8 @@ especially with large candidate grids and wide feature sets.
 
 Re-run `ledgr_walk_forward()` with `opening_state_policy = "flat_test_state"`.
 How does the degradation table change, and why does `cold_start_distorted`
-appear? Then widen the `test_window` in `ledgr_folds_rolling()` to `"2 months"`
-and re-run. The short-test-window flags stay, because the health check asks
+appear? Then widen both `test_window` and `step` in `ledgr_folds_rolling()` to
+`"2 months"` and re-run. The short-test-window flags stay, because the health check asks
 for at least 90 calendar days. How long must a test window be before they go
 away, and how many folds still fit between `start` and `end`?
 :::
