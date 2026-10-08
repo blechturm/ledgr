@@ -154,7 +154,7 @@ cuts:
     workstreams: [20]
     closeout: "LDG-2972's oracle record, the three implementation tickets' evidence and the accepted close review form the Cut 10 closeout; no separate cut-level essay is created."
     accepted: "2026-10-08 by the maintainer, who instructed implementation once the cut review is green."
-    close_review: "Pending."
+    close_review: "Workstream 20: an agent-run adversarial Type 1 close review of 21eae89..47f739b returned CHANGES_REQUIRED with one blocking finding (F1: DBI::dbWithTransaction() rolled back a user interrupt in the pulse loop and returned normally, so a dense run finished DONE without its rolled-back pulses and could not resume; pre-existing but contrary to the new Early exit contract) and six should-fix or nit findings (stale walk-forward article, three behaviours without a detector, a weak resumed arm, an evidence count, an unnamed pre-existing shape, a flat-price comparison). a478551, ecb00e5 and b203b80 corrected them; the focused agent re-review of 47f739b..b203b80 returned PASS after rerunning the oracle, the F1 probes and the F3 mutations. Review accounting: one cut review, two focused cut re-reviews, one close review and one focused close re-review over four tickets, 1.250 against the 0.5 gate, recorded rather than padded. Maintainer acceptance of Workstream 20 and Cut 10 is pending."
     status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
