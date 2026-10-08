@@ -13,10 +13,12 @@ against the unchanged package code of `9452e9e`.
 | `spike_runner.R` | builds segments for the seven fixtures, answers the `(s, t)` queries and lists the facts knowable and applicable for each, checks the diagonal over ten days, records shape, measures growth under restatement (case 9); `--gut` answers with the shipped diagonal | `evidence/cases.csv`, `evidence/shape.csv`, `evidence/growth.csv`, `evidence/gut/` |
 | `spike_checker.R` | reruns both modes into scratch, diffs, compares with `expected.csv`, asserts the gut's named rows, reports the size bound and growth, guards scope | prints `SPIKE CHECK OK` |
 | `expected.csv` | sixteen frozen `(s, t)` answers with their v11 basis | |
+| `sharadar_vintage_diff.R` | read-only diff of two raw acquisitions in the private catalog, classifying changed rows as rolling updates or historical revisions per family; aggregates only; not rerun by the checker | `evidence/sharadar_vintage_diff.csv` |
 | `sharadar_census.R` | read-only census of the private Sharadar lake: knowledge clocks, lags, facts per instrument, restatement overlaps, segments written for every real S&P 500 membership history; aggregates only; not rerun by the checker (private data) | `evidence/sharadar_census.csv` |
 
 Harness: `probe.R` 147 lines, `spike_core.R` 133, `spike_runner.R` 199,
-`spike_checker.R` 91, `sharadar_census.R` 104; 674 in all, within the
+`spike_checker.R` 91, `sharadar_census.R` 104, `sharadar_vintage_diff.R` 95;
+769 in all, within the
 1,500-line budget.
 
 ## Deviations from the charter

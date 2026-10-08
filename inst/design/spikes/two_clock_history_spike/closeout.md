@@ -57,39 +57,50 @@ Run 2026-10-08 against the unchanged package code of `9452e9e`. Artifacts in
   resolver drops every superseded fact and handles chains. The spec never
   addresses chains: a contract gap, not a confirmed defect.
 
-## Sharadar census (after closeout, at the maintainer's request)
+## Sharadar evidence (after closeout, at the maintainer's request)
 
-`sharadar_census.R` over the private lake, aggregates only
-(`evidence/sharadar_census.csv`):
-- **No restatement is observable.** One acquisition; S&P 500 membership is
-  the only family with a knowledge column, and it is synthetic: effective
-  date plus exactly one day, at both ends. No later-known interval overlaps
-  an earlier-known one. Corporate actions and lifetime carry no knowledge
-  time; trading status has no facts.
-- **Real size: 2.61 segments per fact** (5,030 for 1,925 facts over 1,180
-  instruments; at most 3 per instrument). 1,146 instruments have one
-  interval, 34 have two.
-- **An honest end cannot be expressed as intervals.** "Member from day 1,
-  known day 2; removed day 10, known day 11" as two open facts is refused as
-  a structural conflict: an interval row holds one knowledge time, so its end
-  must be known when its start is. Membership snapshot sets avoid this.
+Read-only, aggregates only (`evidence/sharadar_census.csv`,
+`evidence/sharadar_vintage_diff.csv`).
+- **Lake census.** The lake holds one acquisition. S&P 500 membership is the
+  only family with a knowledge column, and it is synthetic (effective date
+  plus one day). Over all 1,180 real membership histories the spike core
+  writes **2.61 segments per fact** (at most 3).
+- **Two acquisitions 16 hours apart** (4 and 5 September). Sharadar rewrites
+  history every day, but not in the overlap-heavy shape:
+  - S&P 500 membership: no historical row changed; only the `current` list
+    was re-dated.
+  - Lifetime: one delisting moved five years earlier (2007 to 2002, with
+    1,780 later price bars removed). The constructors refuse lifetime
+    corrections (probe P3), so this is a real case they cannot express.
+  - Corporate actions: 82 events backfilled with dates from 1998 to 2026
+    (72 ticker changes, 7 SIC changes, 2 SPAC mergers, 1 ADR ratio split):
+    known up to decades after effect, but new facts, not corrections. Seven
+    splits appeared five days before taking effect.
+  - Prices (section 7(d), not this spike): adjusted closes recomputed over
+    the full history of 71 tickers, 232 historical volumes revised, 10
+    historical bars backfilled; unadjusted closes revised only on the latest
+    day.
+- **An honest end cannot be expressed as intervals.** A member fact and a
+  later-known non-member fact are refused as a structural conflict: an
+  interval holds one knowledge time, so its end must be known with its start.
 
 ## What the spec may consume
 
 Proposals for the WS3 history interfaces, not decisions:
-1. Bitemporal segments give the right answers with the existing rules, and
-   on the data ledgr actually holds they cost under three segments per fact.
-   Gap-filling restatement stays quadratic per instrument but does not occur
-   in that data.
+1. Bitemporal segments give the right answers with the existing rules and
+   cost under three segments per fact on real data. Gap-filling restatement
+   stays quadratic per instrument; one day of Sharadar revisions shows none.
 2. A prepared history representation must carry family declaration
    explicitly.
 3. Decide whether supersession chains are valid before WS3 relies on them.
 4. Two-clock membership needs snapshot sets, or an interval fact whose end
    can become known later.
+5. Real data needs lifetime corrections and late-known events, which today's
+   constructors refuse or cannot date.
 
 ## What remains open
 
-- Restatement on real data is unmeasured: it needs a second Sharadar
-  acquisition diffed against `20260905T092008Z`.
+- A longer window: diff a fresh acquisition against `20260905T092008Z`
+  (blocked here: no API key in the session).
 - Bytes, revision counts and seek cost on the real cursor (not measured).
 - Sessions and corporate actions as known at `t` (charter section 8).
