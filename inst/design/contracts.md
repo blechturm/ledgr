@@ -154,6 +154,33 @@ Accepted change pending:
   provenance names its source and source fold. The policy is stored in
   session meta, a session without it reads as `"fail"`, and the printed
   session counts folds by source.
+- Gapped carry (Cut 11, LDG-2979). Under `opening_state_policy =
+  "carry_test_state"`, `ledgr_walk_forward()` refuses a fold list whose
+  consecutive test windows leave a pulse between them, before any training
+  sweep or store write, with `ledgr_walk_forward_gapped_carry` (also
+  `ledgr_walk_forward_invalid_fold_window`). The pulses are the open-session
+  closes of an availability-aware experiment, otherwise the universe's bar
+  timestamps. The message names the first gap, its pulse count and both
+  remedies: contiguous folds (`step` equal to `test_window`) or
+  `"flat_test_state"`. Contiguous and overlapping fold lists, single folds
+  and every fold list under `"flat_test_state"` are unchanged.
+- Test-run resume (Cut 11, LDG-2980). When a walk-forward session is rerun, a
+  test run that already exists with status `DONE` or `INCOMPLETE` is opened as
+  recorded and not re-executed. Any other existing test run, such as one an
+  interruption left `FAILED`, resumes through the ordinary run path with the
+  same window, parameters and seed, so rerunning an interrupted session with
+  the same arguments completes with the uninterrupted session's folds,
+  selections and test results. A resumed run whose configuration no longer
+  matches refuses with `ledgr_run_hash_mismatch`.
+- Sealed-date boundaries (Cut 11, LDG-2991). Window and precompute boundaries
+  are checked against the sealed snapshot range by calendar date (UTC). A
+  start on the first sealed date before its first bar resolves to that bar's
+  timestamp, and an end on the last sealed date after its last bar resolves
+  to that bar's timestamp; boundaries already inside the range are kept as
+  given, so fold identity and in-range windows are unchanged. A boundary on
+  a date outside the range refuses (`ledgr_walk_forward_invalid_fold_window`
+  for windows, `ledgr_invalid_precompute_range` for precompute) with a
+  message naming the requested window and the sealed first and last dates.
 - The canonical R fold stages successful fill-event rows inside the output
   handler until `flush_pulse_events()` publishes the complete pulse. No code
   may read a staged row before that flush except the handler-local
@@ -1454,7 +1481,12 @@ Accepted change pending:
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild
   path, which verifies snapshot-backed sources before rebuilding derived
-  artifacts.
+  artifacts. A dense run is rebuilt on its bar timestamps and requires every
+  close. An availability-aware run (Cut 11, LDG-2978) is rebuilt on its
+  open-session calendar through its last fully valued pulse, with each held
+  instrument valued at its last observed close in the run window, which is
+  the current, stale or frozen mark the fold used; members may miss bars. The
+  rebuilt equity equals the stored equity exactly.
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.

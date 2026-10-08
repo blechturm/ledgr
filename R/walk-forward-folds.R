@@ -576,9 +576,14 @@ ledgr_experiment_window <- function(exp,
   if (scoring_start > scoring_end) {
     rlang::abort("Window scoring start must be before or equal to scoring end.", class = "ledgr_walk_forward_invalid_fold_window")
   }
-  if (scoring_start < snapshot_start || scoring_end > snapshot_end) {
-    rlang::abort("Experiment window must be inside the sealed snapshot range.", class = "ledgr_walk_forward_invalid_fold_window")
-  }
+  sealed <- ledgr_sealed_range_window(
+    scoring_start, scoring_end, snapshot_start, snapshot_end,
+    "Experiment window", "ledgr_walk_forward_invalid_fold_window"
+  )
+  scoring_start <- sealed$start
+  scoring_end <- sealed$end
+  hydration_start <- scoring_start
+  execution_start <- scoring_start
 
   out <- structure(
     list(
@@ -694,5 +699,62 @@ ledgr_run_window <- function(exp,
     seed = seed,
     compiled_accounting_model = compiled_accounting_model,
     window = window
+  )
+}
+
+# The experiment's pulse calendar over [start, end]: open-session closes for an
+# availability-aware experiment, otherwise the universe's bar timestamps.
+ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
+  release <- ledgr_snapshot_hold(exp$snapshot)
+  on.exit(release(), add = TRUE)
+  con <- get_connection(exp$snapshot)
+  snapshot_id <- exp$snapshot$snapshot_id
+  if (isTRUE(exp$availability$active)) {
+    sessions <- ledgr_availability_provider_data(con, snapshot_id)$sessions
+    close <- as.POSIXct(sessions$session_close[sessions$status == "open"], tz = "UTC")
+    close <- close[!is.na(close) & close >= start & close <= end]
+    return(sort(unique(close)))
+  }
+  placeholders <- paste(rep("?", length(exp$universe)), collapse = ", ")
+  rows <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT DISTINCT ts_utc FROM snapshot_bars WHERE snapshot_id = ? ",
+      "AND instrument_id IN (", placeholders, ") AND ts_utc >= ? AND ts_utc <= ? ORDER BY ts_utc"
+    ),
+    params = c(list(snapshot_id), as.list(exp$universe), list(start, end))
+  )
+  as.POSIXct(rows$ts_utc, tz = "UTC")
+}
+
+# carry_test_state hands each test window's closing state to the next one. A
+# pulse between two consecutive test windows is never observed, so positions
+# would cross it unvalued and any terminal event inside it would go unsettled.
+# Refuse before any training sweep or store write and name the first gap.
+ledgr_walk_forward_refuse_gapped_carry <- function(exp, folds) {
+  if (length(folds) < 2L) return(invisible(TRUE))
+  test_start <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_start_utc), numeric(1)),
+                           origin = "1970-01-01", tz = "UTC")
+  test_end <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_end_utc), numeric(1)),
+                         origin = "1970-01-01", tz = "UTC")
+  pulses <- as.numeric(ledgr_walk_forward_pulse_calendar(exp, min(test_start), max(test_end)))
+  n <- length(folds)
+  after_end <- findInterval(as.numeric(test_end[-n]), pulses)
+  before_next <- findInterval(as.numeric(test_start[-1L]), pulses, left.open = TRUE)
+  between <- before_next - after_end
+  gap <- which(between > 0L)
+  if (length(gap) == 0L) return(invisible(TRUE))
+  k <- gap[[1L]]
+  rlang::abort(
+    sprintf(
+      paste(
+        "`opening_state_policy = \"carry_test_state\"` cannot carry positions across",
+        "%d unobserved pulse(s) between test window %d (ends %s) and test window %d",
+        "(starts %s). Use contiguous folds, with `step` equal to `test_window`, or",
+        "`opening_state_policy = \"flat_test_state\"`."
+      ),
+      between[[k]], k, ledgr_walk_forward_iso(test_end[[k]]), k + 1L, ledgr_walk_forward_iso(test_start[[k + 1L]])
+    ),
+    class = c("ledgr_walk_forward_gapped_carry", "ledgr_walk_forward_invalid_fold_window")
   )
 }

@@ -314,6 +314,28 @@ ledgr_experiment_scoring_start <- function(exp, snapshot_start = NULL) {
   if (date_posix < start_posix) snapshot_start else date
 }
 
+# Bars carry their session-close stamp, so a boundary given as the first or
+# last sealed date (midnight of the first date, or late on the last) names the
+# first or last session: it resolves to the sealed start or end. A boundary on
+# any date outside the sealed range refuses and names the range.
+ledgr_sealed_range_window <- function(start, end, snapshot_start, snapshot_end, what, class) {
+  first_date <- as.Date(snapshot_start, tz = "UTC")
+  last_date <- as.Date(snapshot_end, tz = "UTC")
+  if (as.Date(start, tz = "UTC") < first_date || as.Date(end, tz = "UTC") > last_date) {
+    rlang::abort(
+      sprintf(
+        "%s %s to %s must lie inside the sealed snapshot range %s to %s.",
+        what, format(as.Date(start, tz = "UTC")), format(as.Date(end, tz = "UTC")),
+        format(first_date), format(last_date)
+      ),
+      class = class
+    )
+  }
+  if (start < snapshot_start) start <- snapshot_start
+  if (end > snapshot_end) end <- snapshot_end
+  list(start = start, end = end)
+}
+
 ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
   scoring_start <- if (is.null(start)) meta$start else ledgr_iso_utc(start)
   scoring_end <- if (is.null(end)) meta$end else ledgr_iso_utc(end)
@@ -324,9 +346,12 @@ ledgr_precompute_scoring_range <- function(meta, start = NULL, end = NULL) {
   if (start_posix > end_posix) {
     rlang::abort("`start` must be <= `end`.", class = "ledgr_invalid_precompute_range")
   }
-  if (start_posix < meta_start || end_posix > meta_end) {
-    rlang::abort("Precompute scoring range must be inside the sealed snapshot range.", class = "ledgr_invalid_precompute_range")
-  }
+  sealed <- ledgr_sealed_range_window(
+    start_posix, end_posix, meta_start, meta_end,
+    "Precompute scoring range", "ledgr_invalid_precompute_range"
+  )
+  if (!identical(as.numeric(sealed$start), as.numeric(start_posix))) scoring_start <- meta$start
+  if (!identical(as.numeric(sealed$end), as.numeric(end_posix))) scoring_end <- meta$end
   # Feature state starts at the scoring start until the joint history-start
   # design defines causal hydration from earlier bars (Cut 9).
   list(scoring_start = scoring_start, scoring_end = scoring_end, warmup_start = scoring_start)

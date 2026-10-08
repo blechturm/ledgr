@@ -31,6 +31,32 @@
   database transaction: the run rolled back its pulses and then finished
   `DONE` as if they had never happened, which could not be resumed.
 
+- Rerunning an interrupted `ledgr_walk_forward()` session with the same
+  arguments now finishes it. A test run the interruption left `FAILED`
+  resumes where it stopped instead of failing its fold; finished test runs
+  are still reused as recorded.
+
+- `ledgr_walk_forward()` with the default `opening_state_policy =
+  "carry_test_state"` now refuses, before running anything, fold lists whose
+  test windows leave trading days between them (for example `step` larger
+  than `test_window`). Positions carried across those days were never
+  valued, and an instrument that delisted in between stopped the next test
+  run. The error names the first gap; use contiguous folds or
+  `opening_state_policy = "flat_test_state"`.
+
+- Walk-forward folds and windows can start on the first date of the snapshot.
+  Bars are stamped at the session close, so a fold starting at midnight of
+  the first date used to be refused as outside the snapshot, as was a
+  precompute range ending late on the last date. A date outside the snapshot
+  still refuses, and the error now names the snapshot's first and last
+  dates.
+
+- `ledgr_state_reconstruct()` works on availability-aware runs whose members
+  miss bars. It rebuilds equity on the run's session calendar with the same
+  current, stale or frozen marks the run used, up to the last fully valued
+  pulse, and matches the stored equity exactly; it used to fail with
+  `ledgr_missing_bars`.
+
 ## Scoring and feature starts
 
 These changes alter results for dated and windowed work; undated runs and

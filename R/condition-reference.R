@@ -346,6 +346,13 @@
 #' `no_selection = "fail"`; the default `"previous"` reuses the latest
 #' training selection, or runs no test window before the first one.
 #'
+#' `ledgr_walk_forward_gapped_carry` (also
+#' `ledgr_walk_forward_invalid_fold_window`) is raised by
+#' `ledgr_walk_forward()` under `opening_state_policy = "carry_test_state"`
+#' when a pulse lies between two consecutive test windows, before any work
+#' runs. Its message names the first gap; use contiguous folds or
+#' `"flat_test_state"`.
+#'
 #' `ledgr_walk_forward_candidate_key_missing` is raised when the train-window
 #' score rows passed to a selection rule do not include a `candidate_key` column.
 #'
@@ -540,6 +547,7 @@
 #' @aliases ledgr_walk_forward_metric_missing
 #' @aliases ledgr_walk_forward_metric_class_invalid
 #' @aliases ledgr_walk_forward_no_selection
+#' @aliases ledgr_walk_forward_gapped_carry
 #' @aliases ledgr_walk_forward_candidate_key_missing
 #' @aliases ledgr_walk_forward_test_run_failed
 #' @aliases ledgr_walk_forward_session_not_found

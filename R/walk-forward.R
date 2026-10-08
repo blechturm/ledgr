@@ -14,7 +14,8 @@
 #' @param seed Optional master seed for deterministic per-row execution seeds.
 #' @param opening_state_policy Either `"carry_test_state"` or
 #'   `"flat_test_state"`. The default carries selected test-run terminal state
-#'   into the next test run. Flat-test state is an explicit cold-start opt-in.
+#'   into the next test run and requires contiguous test windows (see
+#'   Details). Flat-test state is an explicit cold-start opt-in.
 #' @param no_selection What a fold does when no training candidate has a
 #'   finite, `DONE` selection metric. `"previous"` (the default) runs the test
 #'   window with the parameters most recently selected from a training window,
@@ -36,7 +37,16 @@
 #'
 #' With the default `opening_state_policy = "carry_test_state"`, test windows
 #' are path-dependent: each completed selected test run can seed the next test
-#' opening state. Per-fold test metrics are therefore not independent. Anchored
+#' opening state. Per-fold test metrics are therefore not independent. Carrying
+#' needs contiguous test windows: when a trading day lies between two
+#' consecutive test windows, positions would cross it unvalued, so the call
+#' refuses before running anything with `ledgr_walk_forward_gapped_carry`. Use
+#' folds whose `step` equals `test_window`, or `"flat_test_state"`.
+#'
+#' Rerunning a session with the same arguments reuses its finished test runs
+#' as recorded and resumes a test run that an interruption left unfinished.
+#' Fold boundaries on the snapshot's first or last date resolve to its first
+#' or last session; a date outside the snapshot refuses. Anchored
 #' fold definitions intentionally grow the train window over time, so compute
 #' cost grows with later folds and larger candidate grids. `metric_diff_abs` is
 #' `test_metric_value - train_metric_value`; whether a positive value indicates
@@ -80,6 +90,9 @@ ledgr_walk_forward <- function(exp,
   seed <- ledgr_seed_normalize(seed)
   opening_state_policy <- match.arg(opening_state_policy)
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
+  if (identical(opening_state_policy, "carry_test_state")) {
+    ledgr_walk_forward_refuse_gapped_carry(exp, folds)
+  }
   if (identical(opening_state_policy, "flat_test_state")) {
     rlang::warn(
       paste(
@@ -1015,7 +1028,11 @@ ledgr_walk_forward_run_or_open <- function(exp,
                                            window,
                                            run_id,
                                            seed) {
-  if (ledgr_walk_forward_run_exists(exp, run_id)) {
+  # A finished test run (DONE or INCOMPLETE) is reused as recorded. Any other
+  # existing row, such as an interrupted run left FAILED, resumes through the
+  # ordinary run path with the same window, parameters and seed; that path
+  # refuses a run whose configuration no longer matches.
+  if (ledgr_walk_forward_run_status(exp, run_id) %in% c("DONE", "INCOMPLETE")) {
     return(ledgr_run_open(exp$snapshot, run_id))
   }
   ledgr_run_window(
@@ -1028,18 +1045,18 @@ ledgr_walk_forward_run_or_open <- function(exp,
   )
 }
 
-ledgr_walk_forward_run_exists <- function(exp, run_id) {
+ledgr_walk_forward_run_status <- function(exp, run_id) {
   opened <- ledgr_run_store_open(exp$snapshot$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   if (!ledgr_experiment_store_table_exists(opened$con, "runs")) {
-    return(FALSE)
+    return(NA_character_)
   }
   row <- DBI::dbGetQuery(
     opened$con,
-    "SELECT run_id FROM runs WHERE run_id = ? LIMIT 1",
+    "SELECT status FROM runs WHERE run_id = ? LIMIT 1",
     params = list(run_id)
   )
-  nrow(row) == 1L
+  if (nrow(row) == 1L) as.character(row$status[[1L]]) else NA_character_
 }
 
 ledgr_walk_forward_opening_from_run <- function(exp, run_id) {

@@ -29,7 +29,8 @@ ledgr_walk_forward(
 
 \item{opening_state_policy}{Either \code{"carry_test_state"} or
 \code{"flat_test_state"}. The default carries selected test-run terminal state
-into the next test run. Flat-test state is an explicit cold-start opt-in.}
+into the next test run and requires contiguous test windows (see
+Details). Flat-test state is an explicit cold-start opt-in.}
 
 \item{no_selection}{What a fold does when no training candidate has a
 finite, \code{DONE} selection metric. \code{"previous"} (the default) runs the test
@@ -63,7 +64,16 @@ semantics it evaluates.
 
 With the default \code{opening_state_policy = "carry_test_state"}, test windows
 are path-dependent: each completed selected test run can seed the next test
-opening state. Per-fold test metrics are therefore not independent. Anchored
+opening state. Per-fold test metrics are therefore not independent. Carrying
+needs contiguous test windows: when a trading day lies between two
+consecutive test windows, positions would cross it unvalued, so the call
+refuses before running anything with \code{ledgr_walk_forward_gapped_carry}. Use
+folds whose \code{step} equals \code{test_window}, or \code{"flat_test_state"}.
+
+Rerunning a session with the same arguments reuses its finished test runs
+as recorded and resumes a test run that an interruption left unfinished.
+Fold boundaries on the snapshot's first or last date resolve to its first
+or last session; a date outside the snapshot refuses. Anchored
 fold definitions intentionally grow the train window over time, so compute
 cost grows with later folds and larger candidate grids. \code{metric_diff_abs} is
 \code{test_metric_value - train_metric_value}; whether a positive value indicates
