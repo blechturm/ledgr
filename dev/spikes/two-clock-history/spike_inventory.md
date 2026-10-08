@@ -10,7 +10,7 @@ against the unchanged package code of `9452e9e`.
 | --- | --- | --- |
 | `probe.R` | section 1 probe, before the charter | `probe_evidence.csv` |
 | `spike_core.R` | bitemporal segments: per knowledge epoch, filter facts known by the epoch, hand them to the unchanged prepared provider and membership resolver, write a segment only when an epoch changes it | |
-| `spike_runner.R` | builds segments for the seven fixtures, answers the `(s, t)` queries with the facts that decided them, checks the diagonal over ten days, records shape, measures growth under restatement (case 9); `--gut` answers with the shipped diagonal | `evidence/cases.csv`, `evidence/shape.csv`, `evidence/growth.csv`, `evidence/gut/` |
+| `spike_runner.R` | builds segments for the seven fixtures, answers the `(s, t)` queries and lists the facts knowable and applicable for each, checks the diagonal over ten days, records shape, measures growth under restatement (case 9); `--gut` answers with the shipped diagonal | `evidence/cases.csv`, `evidence/shape.csv`, `evidence/growth.csv`, `evidence/gut/` |
 | `spike_checker.R` | reruns both modes into scratch, diffs, compares with `expected.csv`, asserts the gut's named rows, reports the size bound and growth, guards scope | prints `SPIKE CHECK OK` |
 | `expected.csv` | sixteen frozen `(s, t)` answers with their v11 basis | |
 

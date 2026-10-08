@@ -59,8 +59,8 @@ Nothing in the package. `spike_checker.R` diffs `R`, `src`, `tests`,
 - The P3b flag ("not bounded and declares `strict_window`") catches
   `running_max_strict` on both chartered paths and nothing else, and misses it
   on the monotone path.
-- Decaying versus path dependent is a property of the data path as much as
-  of the definition: 11 of 27 fragility probes disagree with the expected
+- The decaying-versus-path-dependent rule is not stable across seeds and
+  start choices: 11 of 27 fragility probes disagree with the expected
   class.
 - Strategy state refuses `NA` numbers in JSON, so the harness stores values
   as 17-significant-digit strings, which round-trip doubles exactly.
