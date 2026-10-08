@@ -1,5 +1,12 @@
 # ledgr (development version)
 
+## Runs and evaluations that keep going on real data
+
+- A run interrupted before or during execution, by an error, an R time limit
+  or a user interrupt, is now recorded `FAILED` with the reason in
+  `error_msg`, instead of staying `CREATED` forever. The condition still
+  reaches the caller, and rerunning the same experiment and run ID resumes it.
+
 ## Scoring and feature starts
 
 These changes alter results for dated and windowed work; undated runs and

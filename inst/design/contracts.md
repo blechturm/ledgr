@@ -655,6 +655,15 @@ Accepted change pending:
   transaction, and record error diagnostics only after that rollback.
   Deliberately interrupted `RUNNING` invocations retain their decision trace;
   resumed invocations append rather than replace those diagnostic rows.
+- Early exit (Cut 10, LDG-2975). Once a run row exists, an invocation that
+  ends by an error or an interrupt condition without having written a terminal
+  status records the row `FAILED`, with the condition's message or
+  `Run interrupted before completion.` as `error_msg`, and the condition still
+  reaches the caller. This applies to rows that are `CREATED`, `RUNNING` or
+  already `FAILED` from an earlier attempt; `DONE` and `INCOMPLETE` rows are
+  never changed. The `ledgr.interrupt` soft stop still returns normally and
+  leaves the row `RUNNING`. A `FAILED` row resumes like any non-`DONE` row with
+  a matching configuration.
 - Pulse-level fill staging does not create a partial-flush persistence promise.
   The fold transaction remains the durable atomicity boundary: an unexpected
   exception before or after a pulse flush rolls back all fill rows from that

@@ -288,6 +288,7 @@ ledgr_persistent_output_handler <- function(con,
   }
 
   handler$record_run_status <- function(status, error_msg = NA_character_) {
+    if (status %in% c("FAILED", "DONE", "INCOMPLETE")) state$terminal_status_written <- TRUE
     DBI::dbExecute(
       con,
       "UPDATE runs SET status = ?, error_msg = ? WHERE run_id = ?",
@@ -295,6 +296,8 @@ ledgr_persistent_output_handler <- function(con,
     )
     invisible(TRUE)
   }
+
+  handler$terminal_status_written <- function() isTRUE(state$terminal_status_written)
 
   handler$write_telemetry <- function(status,
                                       strict = TRUE,
@@ -632,7 +635,58 @@ ledgr_write_opening_position_events <- function(con,
   as.integer(event_seq_start) + as.integer(nrow(rows))
 }
 
+# Observe, without catching, the condition that ends a run so the body's exit
+# guard can record it. Calling handlers run before the body unwinds, so the
+# guard sees the condition while the run store is still open.
 ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL) {
+  exit_state <- new.env(parent = emptyenv())
+  exit_state$condition <- NULL
+  exit_state$returned <- FALSE
+  observe <- function(cnd) exit_state$condition <- cnd
+  withCallingHandlers(
+    ledgr_run_fold_impl(config, run_id, control, metric_context, exit_state),
+    error = observe,
+    interrupt = observe
+  )
+}
+
+ledgr_run_fold_return <- function(exit_state, run_id, db_path) {
+  exit_state$returned <- TRUE
+  list(run_id = run_id, db_path = db_path)
+}
+
+# A run that exits by a condition after its row exists, without this
+# invocation having written a terminal status, is recorded FAILED. DONE and
+# INCOMPLETE rows are never touched. The guard never masks the condition.
+ledgr_run_fold_exit_guard <- function(exit_state, con, run_id, output_handler = NULL) {
+  if (isTRUE(exit_state$returned) || is.null(exit_state$condition)) {
+    return(invisible(FALSE))
+  }
+  if (is.function(output_handler$terminal_status_written) &&
+      isTRUE(output_handler$terminal_status_written())) {
+    return(invisible(FALSE))
+  }
+  cnd <- exit_state$condition
+  msg <- if (inherits(cnd, "interrupt")) {
+    "Run interrupted before completion."
+  } else {
+    conditionMessage(cnd)
+  }
+  if (!is.character(msg) || length(msg) != 1L || is.na(msg) || !nzchar(msg)) {
+    msg <- sprintf("Run exited before completion (%s).", class(cnd)[[1L]])
+  }
+  try(
+    DBI::dbExecute(
+      con,
+      "UPDATE runs SET status = 'FAILED', error_msg = ? WHERE run_id = ? AND status IN ('CREATED', 'RUNNING', 'FAILED')",
+      params = list(msg, run_id)
+    ),
+    silent = TRUE
+  )
+  invisible(TRUE)
+}
+
+ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_state) {
   prepared <- ledgr_run_prepare_config(config)
   cfg <- prepared$config
   db_path <- prepared$db_path
@@ -683,8 +737,11 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   is_resume <- registration$is_resume
   metric_context <- registration$metric_context
   if (isTRUE(registration$is_done)) {
-    return(list(run_id = run_id, db_path = db_path))
+    return(ledgr_run_fold_return(exit_state, run_id, db_path))
   }
+  guard_handler <- NULL
+  # Registered after the connection-closing handler but run before it.
+  on.exit(ledgr_run_fold_exit_guard(exit_state, con, run_id, guard_handler), add = TRUE, after = FALSE)
 
   output_handler <- ledgr_persistent_output_handler(
     con = con,
@@ -693,6 +750,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
     execution_mode = execution_mode,
     persist_features = persist_features
   )
+  guard_handler <- output_handler
   fail_run <- output_handler$abort_run
 
   ledgr_run_registration_provenance(
@@ -766,7 +824,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       run_id,
       calendar
     )
-    return(list(run_id = run_id, db_path = db_path))
+    return(ledgr_run_fold_return(exit_state, run_id, db_path))
   }
   terminal_recovery <- !is.null(terminal_completion) &&
     registration$status %in% c("RUNNING", "FAILED")
@@ -1115,7 +1173,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
         equity_facts = recovery_equity
       )
     )
-    return(list(run_id = run_id, db_path = db_path))
+    return(ledgr_run_fold_return(exit_state, run_id, db_path))
   }
 
   strategy <- ledgr_strategy_from_config(cfg)
@@ -1258,7 +1316,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
       telemetry = telemetry,
       processed = processed
     )
-    return(list(run_id = run_id, db_path = db_path))
+    return(ledgr_run_fold_return(exit_state, run_id, db_path))
   }
   finalized <- ledgr_run_finalize(
     con = con,
@@ -1286,7 +1344,7 @@ ledgr_run_fold <- function(config, run_id = NULL, control = list(), metric_conte
   )
   telemetry <- finalized$telemetry
 
-  list(run_id = run_id, db_path = db_path)
+  ledgr_run_fold_return(exit_state, run_id, db_path)
 }
 
 ledgr_pulse_timestamps <- function(con, instrument_ids, start_ts_utc, end_ts_utc) {

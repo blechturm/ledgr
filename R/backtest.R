@@ -342,6 +342,13 @@ ledgr_run_config <- function(config, run_id = NULL, metric_context = NULL) {
 #'   durable runs currently fail closed because durable compiled integration is
 #'   deferred.
 #' @return A `ledgr_backtest` object.
+#' @section Early exit:
+#' If a run stops by an error or an interrupt after its row was created, for
+#' example during feature computation or under an R time limit, its status is
+#' recorded `FAILED` with the reason in `error_msg`, and the condition still
+#' reaches the caller. Calling `ledgr_run()` again with the same experiment and
+#' `run_id` resumes it. The `ledgr.interrupt` soft stop instead returns normally
+#' and leaves the run `RUNNING`.
 #' @section Identity:
 #' Run identity fields, including `config_hash`, `feature_set_hash`,
 #' `cost_model_hash`, `cost_plan_json`, `risk_chain_hash`, and

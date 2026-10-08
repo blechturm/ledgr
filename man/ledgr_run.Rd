@@ -40,6 +40,16 @@ A \code{ledgr_backtest} object.
 experiment-first workflow. It evaluates run-time feature definitions,
 builds the canonical backtest config, and delegates to the shared runner.
 }
+\section{Early exit}{
+
+If a run stops by an error or an interrupt after its row was created, for
+example during feature computation or under an R time limit, its status is
+recorded \code{FAILED} with the reason in \code{error_msg}, and the condition still
+reaches the caller. Calling \code{ledgr_run()} again with the same experiment and
+\code{run_id} resumes it. The \code{ledgr.interrupt} soft stop instead returns normally
+and leaves the run \code{RUNNING}.
+}
+
 \section{Identity}{
 
 Run identity fields, including \code{config_hash}, \code{feature_set_hash},
