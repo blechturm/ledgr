@@ -96,7 +96,9 @@ WS4 decisions and tickets:
    the indicator once per window per instrument
    (`R/features-engine.R:291-347`); at 32 years and about 1,200 instruments
    that is millions of R calls per feature. Compute per contiguous segment
-   instead.
+   instead. Measured (`speed.R`): a full-history TTR EMA over 8,000 bars takes
+   1.6 ms, about 2 seconds for 1,200 instruments; the per-window path takes
+   about 3 seconds per instrument, about an hour per feature.
 5. **Multi-output TTR works** through `output =` (for example BBands `up`); not
    a blocker.
 
@@ -112,12 +114,12 @@ the full Sharadar history before its decision is accepted, and an end-to-end
 
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
-| D5-F1 | should-fix (was blocking) | Interval membership end applies on its effective date though known a day later; honest encoding refused | corrected: mechanism confirmed (fold drops X on day 10; open TRUE then open FALSE refused), but the production premise is wrong: the Sharadar adapter prohibits intervals and emits complete snapshot sets with equal clocks | Decide: add optional `end_knowledge_time` to interval facts in WS3, or document intervals as single-clock and snapshot sets as the two-clock path | pending |
-| D5-F2 | should-fix | Lifetime deferral needs v11 section 9's reopen trigger and precise wording (only opposing overlaps refused) | confirmed: same-assertion restatement accepted, opposing refused | Defer with trigger: acquisitions merged into bitemporal lifetime facts | pending |
-| D5-F3 | consider | "Treats a correction as a later-known fact" is true of storage, not rules | confirmed | Reword | pending |
-| D1-F7 | should-fix | Sessions and corporate actions as known at t uncovered; 82 CA backfilled in 16 hours | confirmed: corporate actions carry optional `knowledge_time`, sessions carry it under evidenced knowledge (`R/availability-facts.R:36-50`); the spike covered neither | Decide: extend segments to CA and sessions, or ship barriers at the diagonal with a stated reason | pending |
-| X-F3 | should-fix | Carry barriers depend on lifetime and CA at t | confirmed: v11 s5 barriers use knowable `known_inactive`, corporate actions and terminal assertions | Name the dependency in the amendment | pending |
-| X-F2 | should-fix | Feature-value revision (v11 7(d)) has no owner | corrected: the macro plan's WS3 owns "numerical correctness at the history boundary"; what is missing is the proposal's stance | WS3 stance: one prepared series per feature and policy; revision unexercised in this release; keep v11 section 8 fixtures as an obligation | pending |
+| D5-F1 | should-fix (was blocking) | Interval membership end applies on its effective date though known a day later; honest encoding refused | corrected: mechanism confirmed (fold drops X on day 10; open TRUE then open FALSE refused), but the production premise is wrong: the Sharadar adapter prohibits intervals and emits complete snapshot sets with equal clocks | Decide: add optional `end_knowledge_time` to interval facts in WS3, or document intervals as single-clock and snapshot sets as the two-clock path | **decided** (maintainer, 2026-10-08, "be pragmatic"): document interval membership as single-clock (its end is known when its start is) and complete snapshot sets as the two-clock path, which the Sharadar adapter already uses; no `end_knowledge_time` in this wave |
+| D5-F2 | should-fix | Lifetime deferral needs v11 section 9's reopen trigger and precise wording (only opposing overlaps refused) | confirmed: same-assertion restatement accepted, opposing refused | Defer with trigger: acquisitions merged into bitemporal lifetime facts | **defer** (maintainer, 2026-10-08, "be pragmatic"): lifetime corrections reopen when acquisitions are merged into bitemporal lifetime facts (v11 s9); state that only opposing overlaps are refused |
+| D5-F3 | consider | "Treats a correction as a later-known fact" is true of storage, not rules | confirmed | Reword | **accept** (maintainer, 2026-10-08, "be pragmatic"): say the representation, not the rules, treats a correction as a later-known fact |
+| D1-F7 | should-fix | Sessions and corporate actions as known at t uncovered; 82 CA backfilled in 16 hours | confirmed: corporate actions carry optional `knowledge_time`, sessions carry it under evidenced knowledge (`R/availability-facts.R:36-50`); the spike covered neither | Decide: extend segments to CA and sessions, or ship barriers at the diagonal with a stated reason | **decided** (maintainer, 2026-10-08, "be pragmatic"): corporate actions and sessions without a knowledge clock use known-when-effective (`assume_effective`), disclosed in results; the representation keeps a slot for real knowledge clocks when a source supplies them |
+| X-F3 | should-fix | Carry barriers depend on lifetime and CA at t | confirmed: v11 s5 barriers use knowable `known_inactive`, corporate actions and terminal assertions | Name the dependency in the amendment | **accept** (maintainer, 2026-10-08, "be pragmatic"): the amendment names the dependency of carry barriers on lifetime and corporate actions at t |
+| X-F2 | should-fix | Feature-value revision (v11 7(d)) has no owner | corrected: the macro plan's WS3 owns "numerical correctness at the history boundary"; what is missing is the proposal's stance | WS3 stance: one prepared series per feature and policy; revision unexercised in this release; keep v11 section 8 fixtures as an obligation | **accept** (maintainer, 2026-10-08, "be pragmatic"): WS3 states the stance; revision is unexercised by Sharadar in this release; v11 s8 detecting fixtures stay an obligation |
 
 ## Session D: indicator history class
 

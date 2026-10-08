@@ -1,0 +1,6 @@
+full-history series, one instrument, 8,000 bars (mean of 50):
+  ema      1.60 ms  -> x 1,200 instruments = 1.9 s
+  rsi      1.00 ms  -> x 1,200 instruments = 1.2 s
+  sma_ttr  0.20 ms  -> x 1,200 instruments = 0.2 s
+today's strict per-window path, TTR SMA(20), 2,000 bars (one run):
+  0.81 s for 2,000 bars -> 8,000 bars ~ 3.2 s per instrument -> x 1,200 = 65 min
