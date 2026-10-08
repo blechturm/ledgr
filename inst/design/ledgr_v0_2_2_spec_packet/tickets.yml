@@ -169,9 +169,9 @@ cuts:
     out_of_scope: "The Sharadar adapter code in ledgr-research; settlement of acquisitions and spin-offs; snapshot re-hash cost (WS5); feature reuse across calls (LFB-026); the WS3/WS4 history wave and its register; memory reduction beyond the bounded holders Workstream 22 removes; the default volume of decision-trace diagnostics; compiled accounting for availability-aware runs beyond the LDG-2992 measurement; NEWS entries for Cuts 6 and 7 (WS8 release gate); and any change to fills, costs, accounting, terminal outcomes or valuation policy not required by a recorded stopper."
     workstreams: [21, 22]
     closeout: "LDG-2976's run record, the two oracle records and baselines, the implementation tickets' evidence, the LDG-2992 spike closeout and the two accepted close reviews form the Cut 11 closeout."
-    accepted: "Pending."
+    accepted: "2026-10-08 by the maintainer after the PASS_AFTER_PATCHES cut review, the incorporated patches and the routing of F3 with the walk-forward rehash evidence to the WS5 verification session. Workstreams 21 and 22 open; LDG-2977 and LDG-2982 open first."
     close_review: "Pending."
-    status: "draft"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -339,14 +339,14 @@ workstreams:
   - id: 21
     name: "Real-data continuity II"
     cut: 11
-    status: "draft"
+    status: "open"
     depends_on_workstream: 20
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 21", reason: "One claim joins LDG-2976 through LDG-2981, LDG-2991 and any amended stopper ticket: the 1998-2026 Sharadar run is recorded with every stop classified, and each stop fixed in this cut no longer ends a run, session or inspection, with the substitute behavior recorded where users read results. The review reruns the oracle on the candidate and pre-cut trees, recomputes reconstruction, walk-forward refusal and resume results from fixture arithmetic, compares resumed and uninterrupted sessions exactly, checks that a fold starting on the snapshot first date runs while a boundary outside the sealed sessions still refuses and names the range, removes each fix to prove its detector fails, checks the Sharadar record discloses only aggregates and that every stop is fixed or routed with a reason, confirms the fast profile's headroom over three runs, and walks the seven shapes verbatim on every changed function."}
   - id: 22
     name: "Research cycle at real-data scale"
     cut: 11
-    status: "draft"
+    status: "open"
     depends_on_workstream: 20
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 22", reason: "One claim joins LDG-2982 through LDG-2992: on the 1998-2026 Sharadar snapshot and the vendor-neutral scale fixture, the snapshot, experiment, sweep, promote, run and reader cycle produces byte-identical outputs to the pre-cut tree while every accepted change removes its super-linear growth or improves its registered public-path clock or peak memory, and the compiled-accounting spike states its outcome against its charter. The review reruns the LDG-2982 checker and clocks on both trees, reruns each micro-probe to confirm the growth shape is gone, reintroduces each removed shape to prove its probe or checker fails, confirms no other clock regressed beyond the declared noise rule, checks that rejected candidates closed as measured and that the Sharadar record discloses only aggregates, reruns the spike runner and checker, and walks the seven shapes verbatim on every changed function."}
@@ -916,7 +916,7 @@ tickets:
   - id: "LDG-2977"
     title: "Register continuity II oracles"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2976"]
@@ -926,7 +926,7 @@ tickets:
   - id: "LDG-2978"
     title: "Reconstruct state on gap-bearing availability runs"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2977"]
@@ -936,7 +936,7 @@ tickets:
   - id: "LDG-2979"
     title: "Refuse carried opening state across gapped test windows"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2977"]
@@ -946,7 +946,7 @@ tickets:
   - id: "LDG-2980"
     title: "Resume interrupted walk-forward test runs"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2977"]
@@ -956,7 +956,7 @@ tickets:
   - id: "LDG-2981"
     title: "Restore fast-profile headroom"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2978", "LDG-2979", "LDG-2980", "LDG-2991", "LDG-2990", "LDG-2992"]
@@ -966,7 +966,7 @@ tickets:
   - id: "LDG-2982"
     title: "Register the real-data scale oracle and baselines"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2976"]
@@ -976,7 +976,7 @@ tickets:
   - id: "LDG-2983"
     title: "Build the availability results plane in one ledger pass"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2982"]
@@ -986,7 +986,7 @@ tickets:
   - id: "LDG-2984"
     title: "Vectorise fill recording-pulse resolution"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-2982"]
@@ -996,7 +996,7 @@ tickets:
   - id: "LDG-2985"
     title: "Stream sweep diagnostic summaries instead of accumulating rows"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-2982"]
@@ -1006,7 +1006,7 @@ tickets:
   - id: "LDG-2986"
     title: "Remove per-pulse work that scales with the axis without need"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2982"]
@@ -1016,7 +1016,7 @@ tickets:
   - id: "LDG-2987"
     title: "Persist run features in vectorised chunks"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2982"]
@@ -1026,7 +1026,7 @@ tickets:
   - id: "LDG-2988"
     title: "Make the fill-heavy path per-pulse rather than per-fill"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2982", "LDG-2986"]
@@ -1036,7 +1036,7 @@ tickets:
   - id: "LDG-2989"
     title: "Remove per-row formatting and pasted keys from snapshot build"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2982"]
@@ -1046,7 +1046,7 @@ tickets:
   - id: "LDG-2990"
     title: "Prepare candidate-invariant sweep setup once"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2982", "LDG-2985", "LDG-2988"]
@@ -1056,7 +1056,7 @@ tickets:
   - id: "LDG-2991"
     title: "Accept fold boundaries on the snapshot first and last session dates"
     workstream: 21
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2977"]
@@ -1066,7 +1066,7 @@ tickets:
   - id: "LDG-2992"
     title: "Spike: compiled accounting on availability-aware runs"
     workstream: 22
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "M"
     dependencies: ["LDG-2983", "LDG-2984", "LDG-2985", "LDG-2986", "LDG-2987", "LDG-2988", "LDG-2989", "LDG-2990"]
