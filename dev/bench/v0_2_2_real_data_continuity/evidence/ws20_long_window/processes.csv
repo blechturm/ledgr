@@ -1,0 +1,96 @@
+"kind","shape_id","arm","pair","attempt","repo_commit","exit_status","elapsed_s","peak_rss_bytes","stdout_text","stderr_text"
+"fixture","feature_gaps","accepted",0,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,4.17172884941101,410869760,"FIXTURE_OK feature_gaps 90837 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","fact_churn_terminal","accepted",0,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,18.5590410232544,576212992,"FIXTURE_OK fact_churn_terminal 189250 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","availability_sweep","accepted",0,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,3.52648591995239,399400960,"FIXTURE_OK availability_sweep 60000 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"fixture","baseline_757","accepted",0,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,12.4960958957672,656056320,"FIXTURE_OK baseline_757 454200 bars","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",1,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,17.5313258171082,666746880,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",1,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,17.6487231254578,667893760,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","feature_gaps","candidate",2,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,17.7511699199677,655486976,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","feature_gaps","accepted",2,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,17.3992228507996,660774912,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",3,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,17.6231420040131,666128384,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",3,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,17.8760311603546,670498816,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","feature_gaps","candidate",4,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,17.7963290214539,672477184,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","feature_gaps","accepted",4,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,17.5691299438477,663343104,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","accepted",5,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,17.5304431915283,659742720,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","feature_gaps","candidate",5,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,17.7498118877411,671825920,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","fact_churn_terminal","accepted",1,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,19.8915801048279,707203072,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",1,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,20.2943551540375,728965120,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","fact_churn_terminal","candidate",2,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,20.2773160934448,735113216,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","fact_churn_terminal","accepted",2,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,19.9053320884705,703889408,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",3,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,19.8249950408936,707342336,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",3,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,20.4773080348969,737845248,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","fact_churn_terminal","candidate",4,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,20.1490020751953,735207424,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","fact_churn_terminal","accepted",4,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,19.8057208061218,706695168,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","accepted",5,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,19.7229390144348,704970752,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","fact_churn_terminal","candidate",5,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,20.2020738124847,730316800,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","availability_sweep","accepted",1,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,14.7201189994812,608251904,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",1,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,15.0964818000793,621015040,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","availability_sweep","candidate",2,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,15.0080208778381,645787648,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","availability_sweep","accepted",2,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,14.6277348995209,615120896,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",3,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,14.9587559700012,618070016,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",3,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,15.0759780406952,646615040,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","availability_sweep","candidate",4,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,15.4840860366821,599805952,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"case","availability_sweep","accepted",4,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,14.8893218040466,601673728,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","accepted",5,"initial","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,14.942488193512,608415744,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
+"case","availability_sweep","candidate",5,"initial","43224b16f1d2a7fddca511898d2567299d077eba",0,15.303053855896,597405696,"","Upgraded ledgr experiment-store schema from version 117 to 118."
+"orientation","baseline_757","accepted",1,"orientation","d247dc3b72fb4dd7e03f235ab6eb60eddcbfffa5",0,34.3662619590759,961212416,"","Warning message:
+Failed to load at least one DLL.
+Caused by error in `getDLLRegisteredRoutines.DLLInfo()`:
+! must specify DLL via a ""DLLInfo"" object. See getLoadedDLLs()"
