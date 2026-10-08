@@ -144,9 +144,9 @@ ledgr_walk_forward_candidate_from_snapshot <- function(snapshot,
   selection_source <- ledgr_walk_forward_fold_source(fold)
   source_fold_seq <- as.integer(fold_seq)
   if (identical(selection_source, "previous")) {
-    earlier <- data$folds[data$folds$fold_seq < fold_seq, , drop = FALSE]
-    earlier_sources <- vapply(seq_len(nrow(earlier)), function(i) ledgr_walk_forward_fold_source(earlier[i, , drop = FALSE]), character(1))
-    trained <- earlier$fold_seq[earlier_sources %in% "train"]
+    earlier <- data$folds$fold_seq < fold_seq
+    sources <- if ("selection_source" %in% names(data$folds)) data$folds$selection_source else rep("train", nrow(data$folds))
+    trained <- data$folds$fold_seq[earlier & as.character(sources) %in% "train"]
     source_fold_seq <- if (length(trained)) as.integer(max(trained)) else NA_integer_
   }
   train_metric <- if (identical(selection_source, "previous")) {
@@ -391,9 +391,8 @@ ledgr_walk_forward_parse_session_meta <- function(meta_json) {
 # The selection source of one fold row; folds from a store without the
 # column were selected in training.
 ledgr_walk_forward_fold_source <- function(fold) {
-  source <- fold$selection_source
-  if (is.null(source)) return("train")
-  source <- as.character(source[[1L]])
+  if (!"selection_source" %in% names(fold)) return("train")
+  source <- as.character(fold$selection_source[[1L]])
   if (is.na(source)) NA_character_ else source
 }
 

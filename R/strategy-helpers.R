@@ -429,6 +429,8 @@ ledgr_target_rebalance <- function(weights,
   weight_values <- weight_values[positive_weight]
   price <- close_vec[match(weight_ids, universe)]
   invalid_price <- is.na(price) | !is.finite(price) | price <= 0
+  valid <- !invalid_price
+  sized_value <- weight_values[valid] * equity_fraction * allocation_equity
   skipped <- character()
   scale <- 1
   if (availability_active && any(invalid_price)) {
@@ -454,7 +456,7 @@ ledgr_target_rebalance <- function(weights,
       }
       held_exposure <- sum(abs(position_vec[skip_idx[held]] * marks))
     }
-    priced_value <- sum(weight_values[!invalid_price] * equity_fraction * allocation_equity)
+    priced_value <- sum(sized_value)
     if (priced_value > 0 && priced_value + held_exposure > allocation_equity) {
       scale <- max(0, allocation_equity - held_exposure) / priced_value
     }
@@ -471,8 +473,6 @@ ledgr_target_rebalance <- function(weights,
       class = "ledgr_invalid_target_price"
     )
   }
-  valid <- !invalid_price
-  sized_value <- weight_values[valid] * equity_fraction * allocation_equity
   if (scale != 1) sized_value <- scale * sized_value
   target[weight_ids[valid]] <- floor(sized_value / price[valid])
 
