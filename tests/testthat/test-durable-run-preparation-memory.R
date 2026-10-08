@@ -59,7 +59,7 @@ testthat::test_that("[LTB-0155] durable preparation releases each dead copy at i
   testthat::expect_identical(ledgr_run_info(snapshot, bt$run_id)$status, "DONE")
 
   if (!(requireNamespace("covr", quietly = TRUE) && covr::in_covr())) {
-    source <- paste(deparse(body(ledgr:::ledgr_run_fold)), collapse = "\n")
+    source <- paste(deparse(body(ledgr:::ledgr_run_fold_impl)), collapse = "\n")
     testthat::expect_no_match(source, "\\bgc\\s*\\(", perl = TRUE)
     testthat::expect_match(source, "bars_by_id = list()", fixed = TRUE)
   }

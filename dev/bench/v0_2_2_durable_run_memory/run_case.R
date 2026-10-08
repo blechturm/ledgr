@@ -51,9 +51,9 @@ if (marked) {
     pending <<- pending[-1L]
     mark(label)
   }
-  trace("ledgr_run_fold", where = ns, print = FALSE, at = unname(markers),
+  trace("ledgr_run_fold_impl", where = ns, print = FALSE, at = unname(markers),
         tracer = quote(mark_next()))
-  on.exit(untrace("ledgr_run_fold", where = ns), add = TRUE)
+  on.exit(untrace("ledgr_run_fold_impl", where = ns), add = TRUE)
   mark("before_run")
 }
 

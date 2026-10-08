@@ -79,7 +79,7 @@ memory_run_identities <- function(bt, persist_features) {
 }
 
 memory_phase_markers <- function(ns) {
-  steps <- vapply(as.list(body(ns$ledgr_run_fold)), function(step) {
+  steps <- vapply(as.list(body(ns$ledgr_run_fold_impl)), function(step) {
     paste(deparse(step, width.cutoff = 500L), collapse = "\n")
   }, character(1L))
   find_one <- function(pattern) {
