@@ -24,6 +24,8 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   if (!is.character(instrument_ids) || length(instrument_ids) < 1 || anyNA(instrument_ids) || any(!nzchar(instrument_ids))) {
     rlang::abort("runs.config_json must include universe.instrument_ids as a non-empty character vector.", class = "ledgr_invalid_run")
   }
+  availability_active <- ledgr_availability_config_active(cfg)
+  stored_snapshot_hash <- NULL
 
   if (!is.null(cfg$data) && is.list(cfg$data) && identical(cfg$data$source, "snapshot")) {
     snapshot_id <- cfg$data$snapshot_id
@@ -63,7 +65,19 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
   }
 
-  pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
+  # An availability-aware run pulses on its session calendar, where a member
+  # may have no bar, and values holdings at availability marks; a dense run
+  # pulses on bar timestamps and requires every close.
+  if (availability_active) {
+    if (is.null(stored_snapshot_hash)) {
+      rlang::abort("Availability-aware reconstruction requires a snapshot-backed run.", class = "ledgr_invalid_run")
+    }
+    pulses <- ledgr_derived_state_availability_pulses(
+      con, run_id, ledgr_availability_provider(con, cfg, stored_snapshot_hash), start_ts_utc, end_ts_utc
+    )
+  } else {
+    pulses <- ledgr_pulse_timestamps(con, instrument_ids, start_ts_utc, end_ts_utc)
+  }
 
   events <- DBI::dbGetQuery(
     con,
@@ -96,38 +110,10 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   }
 
   ids_sql <- paste(DBI::dbQuoteString(con, instrument_ids), collapse = ", ")
-  bars_close <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT instrument_id, ts_utc, close ",
-      "FROM bars ",
-      "WHERE instrument_id IN (", ids_sql, ") ",
-      "AND ts_utc >= ? AND ts_utc <= ? ",
-      "ORDER BY ts_utc, instrument_id"
-    ),
-    params = list(start_ts, end_ts)
-  )
-
-  if (nrow(bars_close) == 0) {
-    rlang::abort("No bars found for pulse calendar during derived-state reconstruction.", class = "ledgr_missing_bars")
-  }
-
-  close_map <- new.env(parent = emptyenv())
-  for (i in seq_along(pulses)) {
-    t <- pulses[i]
-    key <- format(as.POSIXct(t, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    rows <- bars_close[bars_close$ts_utc == t, , drop = FALSE]
-    if (nrow(rows) != length(instrument_ids)) {
-      rlang::abort(sprintf("Missing bars.close for universe at ts_utc=%s.", key), class = "ledgr_missing_bars")
-    }
-    close_by_id <- stats::setNames(as.numeric(rows$close), as.character(rows$instrument_id))
-    if (any(!(instrument_ids %in% names(close_by_id)))) {
-      rlang::abort(sprintf("Missing bars.close for some instruments at ts_utc=%s.", key), class = "ledgr_missing_bars")
-    }
-    if (anyNA(close_by_id[instrument_ids]) || any(!is.finite(close_by_id[instrument_ids]))) {
-      rlang::abort(sprintf("bars.close must be finite (no NA) at ts_utc=%s for mark-to-market.", key), class = "ledgr_missing_bars")
-    }
-    assign(key, close_by_id[instrument_ids], envir = close_map)
+  if (availability_active) {
+    marks <- ledgr_derived_state_availability_marks(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
+  } else {
+    close_map <- ledgr_derived_state_dense_close_map(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
   }
 
   prepared <- ledgr_prepare_accounting_events(events, instrument_ids)
@@ -158,10 +144,20 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     t <- pulses[i]
     positions <- stats::setNames(positions_mat[, i], instrument_ids)
     held <- positions[abs(positions) > 0]
-    close_by_id <- get(format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), envir = close_map, inherits = FALSE)
+    close_by_id <- if (availability_active) {
+      marks[, i]
+    } else {
+      get(format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), envir = close_map, inherits = FALSE)
+    }
     positions_value <- 0
     if (length(held) > 0) {
       ids <- names(held)
+      if (availability_active && anyNA(close_by_id[ids])) {
+        rlang::abort(
+          sprintf("A held instrument has no observed close at ts_utc=%s.", format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
+          class = "ledgr_invalid_run"
+        )
+      }
       positions_value <- sum(as.numeric(held) * close_by_id[ids])
     }
 
@@ -239,4 +235,102 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     ),
     class = "ledgr_derived_state"
   )
+}
+
+# Dense reconstruction requires a finite close for every instrument at every
+# pulse and keys them by ISO timestamp.
+ledgr_derived_state_dense_close_map <- function(con, ids_sql, instrument_ids, pulses, start_ts, end_ts) {
+  bars_close <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, ts_utc, close ",
+      "FROM bars ",
+      "WHERE instrument_id IN (", ids_sql, ") ",
+      "AND ts_utc >= ? AND ts_utc <= ? ",
+      "ORDER BY ts_utc, instrument_id"
+    ),
+    params = list(start_ts, end_ts)
+  )
+
+  if (nrow(bars_close) == 0) {
+    rlang::abort("No bars found for pulse calendar during derived-state reconstruction.", class = "ledgr_missing_bars")
+  }
+
+  close_map <- new.env(parent = emptyenv())
+  for (i in seq_along(pulses)) {
+    t <- pulses[i]
+    key <- format(as.POSIXct(t, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    rows <- bars_close[bars_close$ts_utc == t, , drop = FALSE]
+    if (nrow(rows) != length(instrument_ids)) {
+      rlang::abort(sprintf("Missing bars.close for universe at ts_utc=%s.", key), class = "ledgr_missing_bars")
+    }
+    close_by_id <- stats::setNames(as.numeric(rows$close), as.character(rows$instrument_id))
+    if (any(!(instrument_ids %in% names(close_by_id)))) {
+      rlang::abort(sprintf("Missing bars.close for some instruments at ts_utc=%s.", key), class = "ledgr_missing_bars")
+    }
+    if (anyNA(close_by_id[instrument_ids]) || any(!is.finite(close_by_id[instrument_ids]))) {
+      rlang::abort(sprintf("bars.close must be finite (no NA) at ts_utc=%s for mark-to-market.", key), class = "ledgr_missing_bars")
+    }
+    assign(key, close_by_id[instrument_ids], envir = close_map)
+  }
+  close_map
+}
+
+# The pulses an availability-aware run valued: its open-session calendar up to
+# the last fully valued pulse recorded at completion. The fold writes an equity
+# row exactly at those pulses, so a run that stopped early is rebuilt only as
+# far as it went.
+ledgr_derived_state_availability_pulses <- function(con, run_id, provider, start_ts_utc, end_ts_utc) {
+  pulses <- as.POSIXct(ledgr_availability_calendar(provider, start_ts_utc, end_ts_utc)$pulses_posix, tz = "UTC")
+  completion <- if (ledgr_experiment_store_table_exists(con, "run_completion")) {
+    DBI::dbGetQuery(
+      con,
+      "SELECT last_fully_valued_ts_utc FROM run_completion WHERE run_id = ?",
+      params = list(run_id)
+    )
+  } else {
+    data.frame()
+  }
+  if (nrow(completion) == 1L) {
+    valued <- as.POSIXct(completion$last_fully_valued_ts_utc[[1L]], tz = "UTC")
+    pulses <- if (is.na(valued)) pulses[0L] else pulses[pulses <= valued]
+  }
+  if (length(pulses) == 0L) {
+    rlang::abort("The availability-aware run has no fully valued pulse to reconstruct.", class = "ledgr_invalid_run")
+  }
+  pulses
+}
+
+# Availability marks for reconstruction, instruments by pulses. On every pulse
+# the fold valued, a held instrument's mark is its last observed close in the
+# run window: current or stale within the policy, or frozen at that close, and
+# a holding with no permissible mark stops the run before that pulse is valued.
+# The last observation is carried forward by one cummax over the column-major
+# pulse-by-instrument index, so no loop runs over pulses or instruments.
+ledgr_derived_state_availability_marks <- function(con, ids_sql, instrument_ids, pulses, start_ts, end_ts) {
+  rows <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT instrument_id, ts_utc, close FROM bars ",
+      "WHERE instrument_id IN (", ids_sql, ") AND ts_utc >= ? AND ts_utc <= ?"
+    ),
+    params = list(start_ts, end_ts)
+  )
+  n_pulse <- length(pulses)
+  n_inst <- length(instrument_ids)
+  close <- matrix(NA_real_, nrow = n_pulse, ncol = n_inst)
+  pulse_idx <- match(as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC")), as.numeric(pulses))
+  inst_idx <- match(as.character(rows$instrument_id), instrument_ids)
+  value <- as.numeric(rows$close)
+  keep <- !is.na(pulse_idx) & !is.na(inst_idx) & is.finite(value)
+  close[cbind(pulse_idx[keep], inst_idx[keep])] <- value[keep]
+  offset <- (col(close) - 1L) * (n_pulse + 1L)
+  key <- ifelse(is.na(close), 0L, row(close)) + offset
+  last <- matrix(cummax(as.vector(key)), nrow = n_pulse) - offset
+  marks <- matrix(NA_real_, nrow = n_pulse, ncol = n_inst)
+  seen <- last > 0L
+  marks[seen] <- close[cbind(last[seen], col(close)[seen])]
+  marks <- t(marks)
+  dimnames(marks) <- list(instrument_ids, NULL)
+  marks
 }

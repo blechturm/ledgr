@@ -122,6 +122,11 @@ ledgr_db_init <- function(db_path) {
 #' to the same ledger-derived state model without requiring users to manage a
 #' raw DBI connection.
 #'
+#' An availability-aware run is rebuilt on its session calendar up to its last
+#' fully valued pulse, valuing each holding at its last observed close, which
+#' is the current, stale or frozen mark the run used, so members may miss
+#' bars. A dense run needs a close for every instrument at every pulse.
+#'
 #' @examples
 #' bars <- data.frame(
 #'   ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
