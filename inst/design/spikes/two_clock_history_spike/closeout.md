@@ -57,20 +57,39 @@ Run 2026-10-08 against the unchanged package code of `9452e9e`. Artifacts in
   resolver drops every superseded fact and handles chains. The spec never
   addresses chains: a contract gap, not a confirmed defect.
 
+## Sharadar census (after closeout, at the maintainer's request)
+
+`sharadar_census.R` over the private lake, aggregates only
+(`evidence/sharadar_census.csv`):
+- **No restatement is observable.** One acquisition; S&P 500 membership is
+  the only family with a knowledge column, and it is synthetic: effective
+  date plus exactly one day, at both ends. No later-known interval overlaps
+  an earlier-known one. Corporate actions and lifetime carry no knowledge
+  time; trading status has no facts.
+- **Real size: 2.61 segments per fact** (5,030 for 1,925 facts over 1,180
+  instruments; at most 3 per instrument). 1,146 instruments have one
+  interval, 34 have two.
+- **An honest end cannot be expressed as intervals.** "Member from day 1,
+  known day 2; removed day 10, known day 11" as two open facts is refused as
+  a structural conflict: an interval row holds one knowledge time, so its end
+  must be known when its start is. Membership snapshot sets avoid this.
+
 ## What the spec may consume
 
 Proposals for the WS3 history interfaces, not decisions:
 1. Bitemporal segments give the right answers with the existing rules, and
-   merging equal states bounds dominant restatement. Gap-filling restatement
-   stays quadratic per instrument; how often it occurs needs counting on real
-   (Sharadar) facts.
+   on the data ledgr actually holds they cost under three segments per fact.
+   Gap-filling restatement stays quadratic per instrument but does not occur
+   in that data.
 2. A prepared history representation must carry family declaration
    explicitly.
 3. Decide whether supersession chains are valid before WS3 relies on them.
+4. Two-clock membership needs snapshot sets, or an interval fact whose end
+   can become known later.
 
 ## What remains open
 
-- Recharter: count restatement on real facts, or try storing facts once and
-  resolving at read time (which kill condition 2 forbids today).
+- Restatement on real data is unmeasured: it needs a second Sharadar
+  acquisition diffed against `20260905T092008Z`.
 - Bytes, revision counts and seek cost on the real cursor (not measured).
 - Sessions and corporate actions as known at `t` (charter section 8).
