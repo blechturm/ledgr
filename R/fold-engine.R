@@ -481,11 +481,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
     # what they record survives whatever the strategy does to its target.
     pulse_notes <- new.env(parent = emptyenv())
 
-    # The axis the carried strategy state was last normalized for, and the
-    # last serialized state with its canonical JSON.
+    # The axis the carried strategy state was last normalized for.
     state_normalized_axis <- NULL
-    state_json_source <- NULL
-    state_json_cache <- NULL
 
     for (i in seq(from = start_idx, to = length(pulses_posix))) {
       ts <- pulses_posix[[i]]
@@ -1256,14 +1253,7 @@ ledgr_execute_fold <- function(execution, output_handler) {
       }
       if (is.list(result) && !is.null(result$state_update)) {
         if (sample_telemetry) sample_start <- ledgr_time_now()
-        # A state identical to the one serialized last pulse (a strategy that
-        # holds and carries its state) has the same canonical JSON, so the
-        # previous serialization and its validation are reused.
-        if (!identical(result$state_update, state_json_source)) {
-          state_json_cache <- canonical_json(result$state_update)
-          state_json_source <- result$state_update
-        }
-        state_json <- state_json_cache
+        state_json <- canonical_json(result$state_update)
         state_prev_mem <- result$state_update
         if (identical(event_mode, "live")) {
           output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)

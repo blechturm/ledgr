@@ -491,13 +491,7 @@ ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe)
       table[as.character(table$instrument_id) %in% universe, , drop = FALSE]
     }
   }
-  vec <- ctx$vec
-  if (is.list(vec)) {
-    vec$feature <- ledgr_pulse_context_vec_feature(ctx$.feature_vector)
-  } else {
-    vec <- ledgr_pulse_context_vec(ctx$.pulse_lookup)
-  }
-  ctx$vec <- vec
+  ctx$vec <- ledgr_pulse_context_vec(ctx$.pulse_lookup)
   ctx
 }
 
@@ -919,18 +913,14 @@ ledgr_pulse_context_vector_positions <- function(lookup) {
   as.numeric(positions)
 }
 
-ledgr_pulse_context_vec_feature <- function(feature_vector) {
-  force(feature_vector)
-  function(feature_id) {
+ledgr_pulse_context_vec <- function(lookup) {
+  feature_vector <- lookup$feature_vector
+  feature <- function(feature_id) {
     if (!is.function(feature_vector)) {
       rlang::abort("Pulse context feature helpers have not been initialized.", class = "ledgr_invalid_pulse_context")
     }
     feature_vector(feature_id)
   }
-}
-
-ledgr_pulse_context_vec <- function(lookup) {
-  feature <- ledgr_pulse_context_vec_feature(lookup$feature_vector)
 
   out <- list(
     id = as.character(lookup$universe %||% character()),
