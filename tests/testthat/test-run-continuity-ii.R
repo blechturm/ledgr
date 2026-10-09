@@ -146,6 +146,23 @@ testthat::test_that("[LTB-0204] carry_test_state refuses test windows that are n
                                 class = "ledgr_walk_forward_overlapping_carry")
   testthat::expect_match(conditionMessage(err), "test window 2 (starts 2020-02-01T00:00:00Z) starts before test window 1",
                          fixed = TRUE)
+  # A window that starts exactly where the previous one ends shares that
+  # instant, so it is not after it and refuses as an overlap.
+  touching <- ledgr:::ledgr_fold_list(
+    list(
+      ledgr_fold("2020-01-02", "2020-01-31", "2020-02-01", "2020-03-01T00:00:00Z", fold_seq = 1L),
+      ledgr_fold("2020-01-02", "2020-02-29", "2020-03-01T00:00:00Z", "2020-03-31", fold_seq = 2L)
+    ),
+    constructor = list(type_id = "explicit")
+  )
+  err <- testthat::expect_error(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, touching),
+                                class = "ledgr_walk_forward_overlapping_carry")
+  testthat::expect_s3_class(err, "ledgr_walk_forward_invalid_fold_window")
+  testthat::expect_match(
+    conditionMessage(err),
+    "test window 2 (starts 2020-03-01T00:00:00Z) overlaps test window 1 (2020-02-01T00:00:00Z to 2020-03-01T00:00:00Z)",
+    fixed = TRUE
+  )
 
   # Contiguous folds, and a single fold, pass the check.
   contiguous <- ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
