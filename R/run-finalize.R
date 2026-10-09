@@ -552,23 +552,19 @@ ledgr_run_finalize <- function(con,
         } else {
           ledgr_projection_slice(runtime_projection, pulses_posix)
         }
+        # Rows keep their order (instrument, then pulse, then feature) and are
+        # appended in blocks of instruments of about 500,000 rows, built from
+        # the feature matrices by one (feature, pulse, instrument) array.
+        per_instrument <- n_def * n_p
+        block <- max(1L, as.integer(500000 %/% per_instrument))
+        starts <- seq.int(1L, length(instrument_ids), by = block)
         DBI::dbWithTransaction(con, {
           DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ?", params = list(run_id))
-          for (j in seq_along(instrument_ids)) {
-            id <- instrument_ids[[j]]
-            feat_vals <- matrix(NA_real_, nrow = n_def, ncol = n_p)
-            for (d in seq_len(n_def)) {
-              feat_vals[d, ] <- persisted_projection$feature_values[[def_ids[[d]]]][j, ]
-            }
-            out <- data.frame(
-              run_id = rep(run_id, n_def * n_p),
-              instrument_id = rep(id, n_def * n_p),
-              ts_utc = rep(pulses_posix, each = n_def),
-              feature_name = rep(def_ids, times = n_p),
-              feature_value = as.vector(feat_vals),
-              stringsAsFactors = FALSE
-            )
-            DBI::dbAppendTable(con, "features", out)
+          for (first in starts) {
+            rows <- seq.int(first, min(first + block - 1L, length(instrument_ids)))
+            DBI::dbAppendTable(con, "features", ledgr_feature_rows_block(
+              run_id, instrument_ids, rows, pulses_posix, def_ids, persisted_projection$feature_values
+            ))
           }
         })
       }
@@ -631,5 +627,29 @@ ledgr_run_finalize <- function(con,
   list(
     status = terminal_status,
     telemetry = telemetry
+  )
+}
+
+# Persisted feature rows for the instruments at `rows`, ordered by
+# instrument, then pulse, then feature (the order of one append per
+# instrument), built from the feature matrices without a per-instrument loop.
+ledgr_feature_rows_block <- function(run_id, instrument_ids, rows, pulses_posix, def_ids, feature_values) {
+  n_j <- length(rows)
+  n_p <- length(pulses_posix)
+  n_def <- length(def_ids)
+  per_instrument <- n_def * n_p
+  values <- vapply(def_ids, function(def) {
+    as.vector(t(feature_values[[def]][rows, , drop = FALSE]))
+  }, numeric(n_p * n_j), USE.NAMES = FALSE)
+  # values holds pulse within instrument, by feature; reorder so the feature
+  # varies fastest, then the pulse, then the instrument.
+  dim(values) <- c(n_p, n_j, n_def)
+  data.frame(
+    run_id = rep(run_id, per_instrument * n_j),
+    instrument_id = rep(instrument_ids[rows], each = per_instrument),
+    ts_utc = rep(rep(pulses_posix, each = n_def), times = n_j),
+    feature_name = rep(rep(def_ids, times = n_p), times = n_j),
+    feature_value = as.vector(aperm(values, c(3L, 1L, 2L))),
+    stringsAsFactors = FALSE
   )
 }
