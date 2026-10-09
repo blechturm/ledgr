@@ -1,8 +1,8 @@
 # Point-in-time universe audit: charter
 
-**Status:** Plan adopted by the maintainer on 2026-10-09 (direction, external
-review changes and refinements below); charter text awaits maintainer
-acceptance. No stage has started.
+**Status:** Accepted by the maintainer on 2026-10-09. No stage has started.
+The external yardstick brief is `yardstick_brief.md`; its result is stored,
+unedited, as `yardstick.md` and frozen before any audit finding is shared.
 **Authority:** None over behavior. `inst/design/contracts.md` stays the only
 source of current behavior; this audit produces evidence and routed findings.
 **Kind:** An audit with its own scope and budgets, not a spike. Bounded spikes
@@ -11,11 +11,12 @@ small probe (`inst/design/spike_protocol.md`).
 
 ## Resume here
 
-1. Maintainer accepts this charter.
-2. While Cut 11 Workstream 22 runs: write the Deep Research brief for the
-   external yardstick (the maintainer runs it; the result is frozen before
-   anyone sees the audit's findings); build the shared semantic fixture and
-   the inventory and path-matrix schema under `dev/audit/pit_universe/`.
+1. Done 2026-10-09: charter accepted; yardstick brief written
+   (`yardstick_brief.md`).
+2. While Cut 11 Workstream 22 runs: the maintainer runs the brief in ChatGPT
+   Deep Research and the result is committed unedited as `yardstick.md`; build
+   the shared semantic fixture and the inventory and path-matrix schema under
+   `dev/audit/pit_universe/`.
 3. After Workstream 22 closes: freeze one commit and run Stages 1 to 3 against
    it, with a maintainer gate after each stage.
 4. The WS3/WS4 history wave resumes only after Gate 3.
