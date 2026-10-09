@@ -17,10 +17,10 @@ small probe (`inst/design/spike_protocol.md`).
    maintainer) is frozen unedited as `yardstick.md`: 48 universal guarantees
    (U1.1 to U9.x), 24 optional capabilities, 41 test scenarios, ranked failure
    modes and open questions. No audit finding has been shared with it.
-   Remaining while Cut 11 Workstream 22 runs: build the shared semantic
-   fixture (seeded from the yardstick's section B scenarios that fall inside
-   ledgr's ownership) and the inventory and path-matrix schema under
-   `dev/audit/pit_universe/`.
+   Done 2026-10-09: the shared semantic fixture, its smoke check, the
+   scenario coverage table (24 of 41 yardstick scenarios expressible in
+   ledgr's inputs, 13 partly, 4 not) and the inventory and path-matrix schema
+   are in `dev/audit/pit_universe/` (README there).
 3. After Workstream 22 closes: freeze one commit and run Stages 1 to 3 against
    it, with a maintainer gate after each stage.
 4. The WS3/WS4 history wave resumes only after Gate 3.

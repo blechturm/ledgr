@@ -1,0 +1,42 @@
+scenario,guarantees,yardstick_owner,ledgr_input,fixture_elements,paths,note
+S01,U1.1 U1.2 U6.3,Data Engine,yes,BBB membership knowledge_time s5 17:15 ET effective s10 (announcement variant),run sweep walk-forward readers,
+S02,U1.1 U1.3,Data,yes,BBB effective-only membership with assume_effective (effective_only variant),run readers,
+S03,U1.1,Data,yes,CCC interval effective_to s19 open (half-open),run readers,ledgr intervals are half-open by contract
+S04,U1.6,Data,no,none,none,membership intervals carry no vendor sentinel dates; adapter-owned
+S05,U1.4,Data,partial,per-session member counts from intervals; bars per member-session,readers,ledgr does not declare an index count to compare against
+S06,U1.5,Research,partial,static universe via ledgr_experiment(universe = ids) instead of ledgr_universe_members(),run,whether ledgr rejects or labels a static list is a Stage 1 observation
+S07,U1.8,Engine,yes,NNN removed s15 while listed,run sweep readers,
+S08,U1.7 U3.6,Data,partial,OOO to OOO2 on s26 as a remove/add pair with lifetime identifier_change,run readers,no series linking in ledgr inputs
+S09,U3.6,Data,partial,KKK and KKK2 as separate permanent IDs,run,ticker history and renames are not ledgr inputs
+S10,U2.1 U2.3 U2.4 U2.7,Data Engine,partial,CCC cash_acquisition 50 payment s20; lifetime known_inactive s19,run reconstruct readers,resting limit orders do not exist in ledgr (targets only)
+S11,U2.1 U2.3 U2.4,Data Engine,yes,DDD stock_acquisition 0.75 AAA effective s25; AAA 40 then 44,run reconstruct readers,
+S12,U2.1 U2.3 U2.5,Data Engine Research,partial,not built (mixed_acquisition subtype exists),run,election variant has no ledgr input
+S13,U2.1 U2.2 U2.5,Data Engine Research,partial,EEE terminal without settlement terms,run readers,no delisting-return field or sentinel; policy is the corporate-action policy
+S14,U2.6 U1.8,Data,yes,EEE quotation_only from s23 with OTC bars s23-s26,run readers,
+S15,U2.4 U2.7,Engine,yes,EEE bars stop s26; run continues to s40,run readers,
+S16,U4.1 U4.2 U4.3 U6.5,Data Engine Research,yes,FFF halted s14-s15 with no bars; reopens s16 at 14,run sweep readers,
+S17,U4.4,Engine,yes,FFF halt gap,readers,
+S18,U4.1 U4.2 U4.3,Data Engine,partial,MMM no bar s8 and s10; zero-volume bar s9,run readers,padded and midpoint bar types are not ledgr inputs
+S19,U3.1 U3.2 U3.3,Data Engine,no,GGG split-adjusted bars only,none,ledgr consumes split-adjusted bars; no split events
+S20,U3.3,Engine,no,GGG split-adjusted bars only,none,as S19
+S21,U3.4,Engine,yes,HHH cash_dividend 1 ex s15 paid s25,run reconstruct readers,shorts depend on ledgr's short support (Stage 1)
+S22,U3.5 U1.8,Engine Data,yes,III spin_off 0.5 JJJ ex s17; JJJ bars from s17 never a member,run readers,
+S23,U3.1 U3.2 U9.1,Data,partial,add a dividend after s40 to a second snapshot,run,needs a second vintage built by the Stage 1 harness
+S24,U5.1 U5.3,Data Engine,yes,two ad hoc closed weekdays after s20; a stray bar on one is a Stage 1 variant,run walk-forward,
+S25,U5.2 U6.3,Data Engine,partial,s30 early close at 13:00 ET; bars stamped at session close,run,ledgr has no intraday query clock; probed through decision-time context
+S26,U6.1 U6.4,Engine,yes,any close-derived signal; AAA s11 open 42,run,
+S27,U6.2,Engine,yes,AAA close 40 on s10 open 42 on s11,run,
+S28,U6.3 U1.2 U6.6 U7.3,Engine Research,yes,truncation variant built by the Stage 1 harness,run,
+S29,U6.6,Research,partial,MMM s10 has no bar (no outlier price),run,
+S30,U6.7,Data,no,none,none,no fundamental data in ledgr inputs (conditional guarantee)
+S31,U7.1 U7.3,Engine Research,yes,LLL listed s8 added s20; NNN re-added s30,run sweep walk-forward,
+S32,U7.2,Engine Research,yes,FFF halt inside a feature window,run,
+S33,U7.3 U1.4,Research Engine,yes,EEE eligible at s10,run,
+S34,U8.1 U8.2,Engine,partial,anchored folds over s1-s40,walk-forward,no label horizon or purge concept in ledgr walk-forward
+S35,U8.3,Research,yes,selection rule hash in walk-forward session identity,walk-forward,
+S36,U8.4 U9.5,Engine,yes,carry_test_state and flat_test_state across s27 with CCC and DDD,walk-forward,
+S37,U8.5,Engine Research,yes,10-candidate sweep grid,sweep,
+S38,U9.1 U9.3,Engine,yes,two runs; a one-byte membership change in a second snapshot,run,
+S39,U9.5,Engine,yes,interrupts at s15 s19 s23 then resume,run reconstruct,
+S40,U9.4 U2.5,Engine,yes,ledger replay through reconstruction and readers,reconstruct readers,
+S41,U9.2,Data Engine,partial,switch corporate_action_policy and valuation policy,run,manifest is ledgr config identity
