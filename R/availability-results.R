@@ -336,6 +336,55 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
   ledgr_replay_accounting_events(prepared)$positions
 }
 
+# Each instrument's position at each requested time, from one ledger read and
+# one replay: the position after its last event at or before that time. Event
+# timestamps never decrease in event order, so the events at or before a time
+# are a prefix of the ledger and the replay's sequential `position_after`
+# values are exactly what replaying that prefix produces (the per-time reader
+# above). ledgr_accounting_positions_at_pulses() is not used: its cumsum()
+# accumulates in long double and can differ from the replay in the last bit.
+# One findInterval() over sorted (instrument, event position) keys
+# resolves every instrument and time pair. Returns NULL when timestamps do
+# decrease in event order; callers then replay per time.
+ledgr_availability_positions_timeline <- function(con, run_id, times) {
+  events <- DBI::dbGetQuery(
+    con,
+    paste(
+      paste(
+        "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
+        "qty, price, fee, meta_json, event_seq FROM ledger_events"
+      ),
+      "WHERE run_id = ? ORDER BY event_seq"
+    ),
+    params = list(run_id)
+  )
+  n_times <- length(times)
+  if (nrow(events) == 0L) {
+    return(list(ids = character(), position = matrix(0, 0L, n_times)))
+  }
+  event_num <- as.numeric(as.POSIXct(events$ts_utc, tz = "UTC"))
+  if (is.unsorted(event_num)) return(NULL)
+  prepared <- ledgr_prepare_accounting_events(events)
+  replay <- ledgr_replay_accounting_events(prepared)
+  ids <- prepared$instrument_ids
+  inst <- prepared$instrument_index
+  has <- !is.na(inst)
+  big <- length(event_num) + 1
+  key <- as.numeric(inst[has]) * big + which(has)
+  ord <- order(key)
+  key <- key[ord]
+  key_inst <- inst[has][ord]
+  after <- replay$position_after[has][ord]
+  prefix <- findInterval(as.numeric(as.POSIXct(times, tz = "UTC")), event_num)
+  q_inst <- rep(seq_along(ids), times = n_times)
+  hit <- findInterval(q_inst * big + rep(prefix, each = length(ids)), key)
+  found <- hit > 0L
+  found[found] <- key_inst[hit[found]] == q_inst[found]
+  position <- numeric(length(q_inst))
+  position[found] <- after[hit[found]]
+  list(ids = ids, position = matrix(position, nrow = length(ids), dimnames = list(ids, NULL)))
+}
+
 ledgr_availability_marks_rows <- function(con,
                                           snapshot_id,
                                           instrument_ids,
@@ -441,93 +490,101 @@ ledgr_backtest_availability_active <- function(bt, con) {
   pulses <- as.POSIXct(calendar$pulses_posix, tz = "UTC")
 
   times <- sort(unique(as.POSIXct(diagnostics$ts_utc, tz = "UTC")))
-  prepared <- vector("list", length(times))
-  mark_axis <- character()
-  for (i in seq_along(times)) {
-    pulse_idx <- match(as.numeric(times[[i]]), as.numeric(pulses))
-    if (is.na(pulse_idx)) {
-      rlang::abort(
-        "Recorded diagnostics contain a timestamp outside the sealed session calendar.",
-        class = "ledgr_invalid_run"
-      )
-    }
-    positions <- ledgr_availability_positions_asof(con, bt$run_id, times[[i]])
-    view <- provider$decision_view(times[[i]], positions)
-    ids <- as.character(view$axis)
-    mark_axis <- c(mark_axis, ids)
-    prepared[[i]] <- list(
-      pulse_idx = pulse_idx,
-      view = view,
-      ids = ids
+  pulse_idx <- match(as.numeric(times), as.numeric(pulses))
+  if (anyNA(pulse_idx)) {
+    rlang::abort(
+      "Recorded diagnostics contain a timestamp outside the sealed session calendar.",
+      class = "ledgr_invalid_run"
     )
   }
-  final_pulse_idx <- max(vapply(prepared, `[[`, integer(1L), "pulse_idx"))
+  timeline <- ledgr_availability_positions_timeline(con, bt$run_id, times)
+  positions_at <- function(i) {
+    if (is.null(timeline)) return(ledgr_availability_positions_asof(con, bt$run_id, times[[i]]))
+    timeline$position[, i]
+  }
+  # The decision view and the valuation state are sequential per pulse, as in
+  # the fold; everything else is read once.
+  views <- lapply(seq_along(times), function(i) provider$decision_view(times[[i]], positions_at(i)))
+  axes <- lapply(views, function(view) as.character(view$axis))
   valuation_state <- ledgr_availability_marks_state(
     snapshot$con,
     snapshot_id,
-    mark_axis,
+    unlist(axes, use.names = FALSE),
     calendar,
-    final_pulse_idx,
+    max(pulse_idx),
     provider$valuation_policy$max_sessions,
     ledgr_availability_exhausted_choice(provider$valuation_policy)
   )
-
-  rows <- vector("list", length(times))
-  for (i in seq_along(times)) {
-    item <- prepared[[i]]
-    ids <- item$ids
-    view <- item$view
-    valuation <- valuation_state$advance(item$pulse_idx, ids, held = as.logical(view$held[ids]))
+  parts <- lapply(seq_along(times), function(i) {
+    ids <- axes[[i]]
+    view <- views[[i]]
+    valuation <- valuation_state$advance(pulse_idx[[i]], ids, held = as.logical(view$held[ids]))
     view <- ledgr_availability_restrict_frozen(view, valuation)
-    rows[[i]] <- data.frame(
-      ts_utc = rep(as.POSIXct(times[[i]], tz = "UTC"), length(ids)),
-      instrument_id = ids,
+    list(
       member = as.logical(view$member[ids]),
       held = as.logical(view$held[ids]),
       target_restricted = as.logical(view$target_restricted[ids]),
-      admissible = as.logical(view$member[ids]) & !as.logical(view$target_restricted[ids]),
       target_restriction_reason = as.character(view$target_restriction_reason[ids]),
       target_restriction_reasons = as.character(view$target_restriction_reasons[ids]),
       priced = as.logical(valuation$priced[ids]),
       mark_source = as.character(valuation$source[ids]),
       mark_age = as.integer(valuation$age[ids]),
-      status = as.character(view$status[ids]),
-      stringsAsFactors = FALSE
+      status = as.character(view$status[ids])
     )
-  }
-  rows <- Filter(Negate(is.null), rows)
-  if (length(rows) == 0L) return(ledgr_availability_result_empty())
-  tibble::as_tibble(do.call(rbind, rows))
+  })
+  column <- function(name) unlist(lapply(parts, `[[`, name), use.names = FALSE)
+  member <- column("member")
+  target_restricted <- column("target_restricted")
+  tibble::as_tibble(data.frame(
+    ts_utc = .POSIXct(rep(as.numeric(times), lengths(axes)), tz = "UTC"),
+    instrument_id = unlist(axes, use.names = FALSE),
+    member = member,
+    held = column("held"),
+    target_restricted = target_restricted,
+    admissible = member & !target_restricted,
+    target_restriction_reason = column("target_restriction_reason"),
+    target_restriction_reasons = column("target_restriction_reasons"),
+    priced = column("priced"),
+    mark_source = column("mark_source"),
+    mark_age = column("mark_age"),
+    status = column("status"),
+    stringsAsFactors = FALSE
+  ))
 }
 
 ledgr_backtest_availability_dense <- function(bt, con) {
   equity <- ledgr_compute_equity_curve_impl(bt, con = con)
   ids <- as.character(bt$config$universe$instrument_ids)
   if (nrow(equity) == 0L || length(ids) == 0L) return(ledgr_availability_result_empty())
-  rows <- vector("list", nrow(equity))
-  for (i in seq_len(nrow(equity))) {
-    ts <- as.POSIXct(equity$ts_utc[[i]], tz = "UTC")
-    positions <- ledgr_availability_positions_asof(con, bt$run_id, ts)
-    quantity <- stats::setNames(rep(0, length(ids)), ids)
-    matched <- intersect(names(positions), ids)
-    quantity[matched] <- positions[matched]
-    rows[[i]] <- data.frame(
-      ts_utc = rep(ts, length(ids)),
-      instrument_id = ids,
-      member = TRUE,
-      held = as.numeric(quantity) != 0,
-      target_restricted = FALSE,
-      admissible = TRUE,
-      target_restriction_reason = "",
-      target_restriction_reasons = "",
-      priced = TRUE,
-      mark_source = "current_close",
-      mark_age = 0L,
-      status = "active",
-      stringsAsFactors = FALSE
-    )
+  times <- as.POSIXct(equity$ts_utc, tz = "UTC")
+  timeline <- ledgr_availability_positions_timeline(con, bt$run_id, times)
+  quantity <- matrix(0, nrow = length(ids), ncol = length(times))
+  if (is.null(timeline)) {
+    for (i in seq_along(times)) {
+      positions <- ledgr_availability_positions_asof(con, bt$run_id, times[[i]])
+      matched <- intersect(names(positions), ids)
+      quantity[match(matched, ids), i] <- positions[matched]
+    }
+  } else {
+    row <- match(ids, timeline$ids)
+    quantity[!is.na(row), ] <- timeline$position[row[!is.na(row)], , drop = FALSE]
   }
-  tibble::as_tibble(do.call(rbind, rows))
+  n <- length(ids) * length(times)
+  tibble::as_tibble(data.frame(
+    ts_utc = .POSIXct(rep(as.numeric(times), each = length(ids)), tz = "UTC"),
+    instrument_id = rep(ids, times = length(times)),
+    member = rep(TRUE, n),
+    held = as.vector(quantity != 0),
+    target_restricted = rep(FALSE, n),
+    admissible = rep(TRUE, n),
+    target_restriction_reason = rep("", n),
+    target_restriction_reasons = rep("", n),
+    priced = rep(TRUE, n),
+    mark_source = rep("current_close", n),
+    mark_age = rep(0L, n),
+    status = rep("active", n),
+    stringsAsFactors = FALSE
+  ))
 }
 
 ledgr_backtest_availability <- function(bt, con) {
