@@ -1068,6 +1068,11 @@ ledgr_sweep_candidate_tasks <- function(exp,
     length(param_grid$params)
   )
   tasks <- vector("list", length(param_grid$params))
+  # Pulse feature views depend only on the projection and the feature IDs.
+  # Candidates run in order and share a one-entry cache, so consecutive
+  # candidates with the same feature set build their views once, while at
+  # most one set is held, as before. A parallel worker gets its own copy.
+  feature_views_cache <- new.env(parent = emptyenv())
   for (i in seq_along(param_grid$params)) {
     label <- param_grid$labels[[i]]
     raw_params <- param_grid$params[[i]]
@@ -1090,6 +1095,7 @@ ledgr_sweep_candidate_tasks <- function(exp,
       bars_by_id = bars_by_id,
       bars_mat = bars_mat,
       static_bars_views = static_bars_views,
+      feature_views_cache = feature_views_cache,
       pulses_posix = pulses_posix,
       pulses_iso = pulses_iso,
       metric_kernel = metric_kernel,
@@ -1234,6 +1240,7 @@ ledgr_sweep_eval_candidate_task <- function(task, stop_on_error = FALSE) {
         bars_by_id = task$bars_by_id,
         bars_mat = task$bars_mat,
         static_bars_views = task$static_bars_views,
+        feature_views_cache = task$feature_views_cache,
         pulses_posix = task$pulses_posix,
         pulses_iso = task$pulses_iso,
         metric_kernel = task$metric_kernel,
@@ -1389,11 +1396,23 @@ ledgr_sweep_run_candidate <- function(exp,
                                       availability_data = NULL,
                                       availability_config = NULL,
                                       execution_opportunities_posix = NULL,
-                                      corporate_action_rows = NULL) {
+                                      corporate_action_rows = NULL,
+                                      feature_views_cache = NULL) {
   feature_defs <- candidate$feature_defs
   feature_fingerprints <- candidate_feature_row$feature_fingerprints[[1]]
   if (is.null(runtime_projection)) {
     rlang::abort("Sweep candidate execution requires `runtime_projection`.", class = "ledgr_invalid_fold_execution")
+  }
+  static_feature_views <- NULL
+  if (is.environment(feature_views_cache)) {
+    feature_ids <- vapply(feature_defs, function(def) def$id, character(1))
+    key <- paste(feature_ids, collapse = "\r")
+    if (!identical(feature_views_cache$key, key)) {
+      feature_views_cache$views <- NULL
+      feature_views_cache$views <- ledgr_projection_pulse_views(runtime_projection, feature_ids = feature_ids)
+      feature_views_cache$key <- key
+    }
+    static_feature_views <- feature_views_cache$views
   }
 
   output_handler <- ledgr_memory_output_handler(run_id)
@@ -1462,7 +1481,7 @@ ledgr_sweep_run_candidate <- function(exp,
     bars_by_id = bars_by_id,
     bars_mat = bars_mat,
     static_bars_views = static_bars_views,
-    static_feature_views = NULL,
+    static_feature_views = static_feature_views,
     feature_defs = feature_defs,
     runtime_projection = runtime_projection,
     active_alias_map = candidate$alias_map,
