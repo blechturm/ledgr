@@ -140,7 +140,7 @@ ledgr_snapshot_from_df <- function(bars_df,
     )
   }
 
-  key <- paste0(instrument_id, "\n", ts_utc)
+  key <- ledgr_pair_key(instrument_id, ts_utc)
   if (anyDuplicated(key)) {
     rlang::abort("bars_df contains duplicate (instrument_id, ts_utc) rows.", class = "ledgr_invalid_args")
   }

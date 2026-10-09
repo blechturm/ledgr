@@ -116,7 +116,8 @@ ledgr_availability_prepare_observations <- function(bars_df,
     facts,
     session_rows = session_rows
   )
-  ts_token <- ledgr_fact_time_token(ts)
+  # Bars share few distinct instants; each is formatted once.
+  ts_token <- ledgr_fact_time_tokens_distinct(ts)
   numeric_values <- lapply(c("open", "high", "low", "close"), function(field) suppressWarnings(as.numeric(bars_df[[field]])))
   names(numeric_values) <- c("open", "high", "low", "close")
   volume <- if ("volume" %in% names(bars_df)) suppressWarnings(as.numeric(bars_df$volume)) else rep(NA_real_, n)
@@ -142,7 +143,7 @@ ledgr_availability_prepare_observations <- function(bars_df,
   )
 
   valid_before_duplicates <- reason == ""
-  key <- paste(instrument_id, ts_token, sep = "\r")
+  key <- ledgr_pair_key(instrument_id, ts_token)
   duplicate_key <- duplicated(key) | duplicated(key, fromLast = TRUE)
   structural_duplicate <- valid_before_duplicates & duplicate_key
   set_reason(structural_duplicate, "duplicate_valid_observation_key")
@@ -325,4 +326,19 @@ ledgr_availability_abort_validation <- function(report) {
     class = c("ledgr_availability_validation_failed", "ledgr_invalid_args"),
     validation = structure(report, class = c("ledgr_facts_report", "list"))
   )
+}
+
+# An exact numeric key for (a, b) pairs, equal exactly when the text of both
+# components is equal, as a pasted key would be (paste renders NA as "NA").
+# Only distinct values are rendered as text, never every row.
+ledgr_pair_key <- function(a, b) {
+  text_code <- function(x) {
+    distinct <- unique(x)
+    text <- as.character(distinct)
+    text[is.na(text)] <- "NA"
+    match(text, unique(text))[match(x, distinct)]
+  }
+  code_a <- text_code(a)
+  code_b <- text_code(b)
+  (code_a - 1) * max(code_b, 0L) + code_b
 }
