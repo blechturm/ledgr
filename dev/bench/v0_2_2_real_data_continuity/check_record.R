@@ -182,11 +182,16 @@ gap_rows <- c("1000/0/1000/0/0", "550/450/1000/0/0", "88/912/1000/0/0", "88/912/
 # held 22 shares are frozen at 22. Day 4: AAA 39 at 13 plus 22 * 22 is
 # 507 + 484 = 991; day 5: AAA 41 at 14 plus 484 is 1058.
 freeze_rows <- c("1000/0/1000/0/0", "21/979/1000/0/0", "81/964/1045/5/40", "94/991/1085/7/78", "66/1058/1124/7/117")
-for (case in list(list(arm = "lfb019_gap", rows = gap_rows, pos = c("AAA:45", "BBB:22"), skips = "2", frozen = "0"),
-                  list(arm = "lfb019_freeze", rows = freeze_rows, pos = c("AAA:41", "BBB:22"), skips = "1", frozen = "3"))) {
+# Stopped, stale(0) with refusal: the same first three pulses, then the held
+# BBB has no bar on day 4 and the run stops INCOMPLETE before valuing it, so
+# reconstruction ends after three rows.
+for (case in list(list(arm = "lfb019_gap", rows = gap_rows, pos = c("AAA:45", "BBB:22"), skips = "2", frozen = "0", status = "DONE"),
+                  list(arm = "lfb019_freeze", rows = freeze_rows, pos = c("AAA:41", "BBB:22"), skips = "1", frozen = "3", status = "DONE"),
+                  list(arm = "lfb019_stopped", rows = gap_rows[1:3], pos = c("AAA:45", "BBB:22"), skips = "1", frozen = "0",
+                       status = "INCOMPLETE"))) {
   a <- case$arm
-  check("lfb019", paste(a, "run completes with its skip and freeze rows"),
-        ran(paste0(a, "_run")) && identical(get(a, "status"), "DONE") &&
+  check("lfb019", paste(a, "run ends with its status, skip and freeze rows"),
+        ran(paste0(a, "_run")) && identical(get(a, "status"), case$status) &&
           identical(get(a, "skips"), case$skips) && identical(get(a, "frozen"), case$frozen))
   check("lfb019", paste(a, "stored equity matches the fixture arithmetic"),
         identical(split_list(get(a, "stored_equity")), case$rows))
@@ -246,7 +251,8 @@ check("invariance11", "folds inside the sealed range run",
 # ---- Pre-cut source-table reasons (pre11 only) -----------------------------------
 check("reason11", "LFB-019: reconstruction refuses with ledgr_missing_bars",
       has(get("lfb019_gap", "condition_class"), "ledgr_missing_bars") &&
-        has(get("lfb019_freeze", "condition_class"), "ledgr_missing_bars"))
+        has(get("lfb019_freeze", "condition_class"), "ledgr_missing_bars") &&
+        has(get("lfb019_stopped", "condition_class"), "ledgr_missing_bars"))
 check("reason11", "gapped carry: the session is PARTIAL with an INCOMPLETE test run",
       identical(get("wfgap_carry", "session_status"), "PARTIAL") &&
         "INCOMPLETE" %in% split_list(get("wfgap_carry", "test_status")))

@@ -336,12 +336,16 @@ eq_text <- function(eq, cols = c("cash", "positions_value", "equity", "realized_
 # from day 4.
 bars19g <- rbind(bar_rows("AAA", gap_days, 10), bar_rows("BBB", gap_days[-c(1, 4)], c(20, 21, 23)))
 bars19f <- rbind(bar_rows("AAA", gap_days, c(10, 11, 12, 13, 14)), bar_rows("BBB", gap_days[1:2], c(20, 22)))
-for (case in list(list(arm = "lfb019_gap", bars = bars19g, stale = 2L),
-                  list(arm = "lfb019_freeze", bars = bars19f, stale = 1L))) {
+# Stopped: the gap fixture under stale(0) with refusal stops INCOMPLETE before
+# valuing day 4, where the held BBB has no bar.
+for (case in list(list(arm = "lfb019_gap", bars = bars19g, valuation = ledgr_valuation_stale(2L)),
+                  list(arm = "lfb019_freeze", bars = bars19f, valuation = ledgr_valuation_stale(1L)),
+                  list(arm = "lfb019_stopped", bars = bars19g,
+                       valuation = ledgr_valuation_stale(0L, exhausted = "refuse")))) {
   s19 <- availability_snapshot(case$bars, gap_days, c("AAA", "BBB"))
   bt <- attempt(paste0(case$arm, "_run"), ledgr_run(
     ledgr_experiment(s19, equal_weight, universe = ledgr_universe_members("u"),
-                     valuation_policy = ledgr_valuation_stale(case$stale), cost_model = ledgr_cost_zero(),
+                     valuation_policy = case$valuation, cost_model = ledgr_cost_zero(),
                      opening = ledgr_opening(cash = 1000)),
     run_id = case$arm))
   if (!is.null(bt)) {
