@@ -58,7 +58,9 @@ ledgr_run_fills <- function(bt) {
   ledgr_extract_fills_impl(bt)
 }
 
-ledgr_extract_fills_impl <- function(bt, con = NULL) {
+# `recording_pulse = FALSE` leaves the recording pulse NA for readers that never
+# use it, such as metrics, which then skip resolving it.
+ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
   had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
   old_seed <- if (had_seed) {
     get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
@@ -166,7 +168,11 @@ ledgr_extract_fills_impl <- function(bt, con = NULL) {
   out <- tibble::as_tibble(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s ORDER BY event_seq", temp_table)))
   ledgr_fills_add_recording_pulse(
     out,
-    ledgr_run_fill_recording_pulses(bt, out, con)
+    if (isTRUE(recording_pulse)) {
+      ledgr_run_fill_recording_pulses(bt, out, con)
+    } else {
+      rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), nrow(out))
+    }
   )
 }
 

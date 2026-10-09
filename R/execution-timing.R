@@ -160,39 +160,58 @@ ledgr_fill_recording_pulses_from_evidence <- function(fills,
   diag_event_seq <- suppressWarnings(as.integer(diagnostics$event_seq))
   fill_event_seq <- suppressWarnings(as.integer(fills$event_seq))
 
-  for (i in seq_len(nrow(fills))) {
-    candidates <- which(!is.na(diag_event_seq) & diag_event_seq == fill_event_seq[[i]])
-    if (length(candidates) == 0L) {
-      candidates <- which(
-        as.character(diagnostics$instrument_id) == as.character(fills$instrument_id[[i]]) &
-          !is.na(diag_execution) & diag_execution == fill_time[[i]]
-      )
-    }
-    if (length(candidates) != 1L) next
-    diagnostic_idx <- candidates[[1L]]
-    if (is.na(diag_execution[[diagnostic_idx]]) ||
-        diag_execution[[diagnostic_idx]] != fill_time[[i]]) {
-      next
-    }
-
-    execution_sessions <- if (identical(timing$execution_timing_version, 2L)) {
-      which(session_open == fill_time[[i]])
-    } else {
-      which(session_close == fill_time[[i]])
-    }
+  # Every fill resolves at once; each step keeps the per-fill rule.
+  # (1) The diagnostic with the fill's event_seq, when exactly one exists.
+  exactly_one <- function(fill_key, diag_key) {
+    hit <- match(fill_key, diag_key, incomparables = NA)
+    repeated <- diag_key[duplicated(diag_key, incomparables = NA)]
+    count <- ifelse(is.na(hit), 0L, ifelse(fill_key %in% repeated, 2L, 1L))
+    list(hit = hit, count = count)
+  }
+  by_seq <- exactly_one(fill_event_seq, diag_event_seq)
+  # (2) Without an event_seq candidate, the diagnostic with the fill's
+  # instrument and execution time, when exactly one exists. The pair is one
+  # exact numeric key; a missing instrument or time never matches.
+  fill_inst <- as.character(fills$instrument_id)
+  diag_inst <- as.character(diagnostics$instrument_id)
+  inst_levels <- unique(c(diag_inst, fill_inst))
+  time_levels <- unique(c(diag_execution, fill_time))
+  pair_key <- function(inst, time) {
+    key <- (match(inst, inst_levels) - 1) * (length(time_levels) + 1) + match(time, time_levels)
+    key[is.na(inst) | is.na(time)] <- NA_real_
+    key
+  }
+  by_pair <- exactly_one(pair_key(fill_inst, fill_time), pair_key(diag_inst, diag_execution))
+  diagnostic_idx <- ifelse(
+    by_seq$count == 0L,
+    ifelse(by_pair$count == 1L, by_pair$hit, NA_integer_),
+    ifelse(by_seq$count == 1L, by_seq$hit, NA_integer_)
+  )
+  # (3) The diagnostic must record the fill's execution time.
+  resolved <- !is.na(diagnostic_idx)
+  same_time <- diag_execution[diagnostic_idx[resolved]] == fill_time[resolved]
+  resolved[resolved] <- !is.na(same_time) & same_time
+  # (4) Exactly one execution session at that time whose previous session
+  # closed at the decision time; its close is the recording pulse.
+  execution_time <- if (identical(timing$execution_timing_version, 2L)) session_open else session_close
+  shared_time <- execution_time[duplicated(execution_time)]
+  session <- match(fill_time, execution_time)
+  simple <- resolved & !(fill_time %in% shared_time) & !is.na(session) & session >= 2L
+  prior_close <- session_close[session[simple] - 1L] == diag_decision[diagnostic_idx[simple]]
+  simple[simple] <- !is.na(prior_close) & prior_close
+  recording <- rep(NA_real_, nrow(fills))
+  recording[simple] <- session_close[session[simple]]
+  # Two sessions sharing one execution time keep the original per-fill rule.
+  for (i in which(resolved & fill_time %in% shared_time)) {
+    execution_sessions <- which(execution_time == fill_time[[i]])
     prior_sessions <- execution_sessions - 1L
     session_candidates <- execution_sessions[
       prior_sessions >= 1L &
-        session_close[prior_sessions] == diag_decision[[diagnostic_idx]]
+        session_close[prior_sessions] == diag_decision[[diagnostic_idx[[i]]]]
     ]
-    if (length(session_candidates) != 1L) next
-    unavailable[[i]] <- as.POSIXct(
-      session_close[[session_candidates[[1L]]]],
-      origin = "1970-01-01",
-      tz = "UTC"
-    )
+    if (length(session_candidates) == 1L) recording[[i]] <- session_close[[session_candidates[[1L]]]]
   }
-  unavailable
+  as.POSIXct(recording, origin = "1970-01-01", tz = "UTC")
 }
 
 ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
@@ -210,7 +229,8 @@ ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
       paste(
         "SELECT event_seq, instrument_id, stage, outcome,",
         "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
-        "WHERE run_id = ? ORDER BY diagnostic_seq"
+        "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
+        "ORDER BY diagnostic_seq"
       ),
       params = list(bt$run_id)
     )

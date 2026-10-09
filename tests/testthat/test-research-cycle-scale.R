@@ -54,3 +54,57 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
     testthat::expect_true(all(got[setdiff(names(got), traded)] == 0))
   }
 })
+
+# The per-fill loop the vectorised resolver replaced.
+scale_test_reference_recording <- function(fills, diagnostics, sessions, version) {
+  out <- rep(NA_real_, nrow(fills))
+  diagnostics <- diagnostics[diagnostics$stage == "execution" & diagnostics$outcome == "filled", , drop = FALSE]
+  fill_time <- as.numeric(fills$ts_utc)
+  diag_execution <- as.numeric(diagnostics$execution_ts_utc)
+  diag_decision <- as.numeric(diagnostics$decision_ts_utc)
+  session_open <- as.numeric(sessions$session_open)
+  session_close <- as.numeric(sessions$session_close)
+  for (i in seq_len(nrow(fills))) {
+    cand <- which(!is.na(diagnostics$event_seq) & diagnostics$event_seq == fills$event_seq[[i]])
+    if (length(cand) == 0L) {
+      cand <- which(diagnostics$instrument_id == fills$instrument_id[[i]] & !is.na(diag_execution) &
+                      diag_execution == fill_time[[i]])
+    }
+    if (length(cand) != 1L) next
+    if (is.na(diag_execution[[cand]]) || diag_execution[[cand]] != fill_time[[i]]) next
+    exec <- if (version == 2L) which(session_open == fill_time[[i]]) else which(session_close == fill_time[[i]])
+    prior <- exec - 1L
+    hit <- exec[prior >= 1L & session_close[prior] == diag_decision[[cand]]]
+    if (length(hit) != 1L) next
+    out[[i]] <- session_close[[hit[[1L]]]]
+  }
+  as.POSIXct(out, origin = "1970-01-01", tz = "UTC")
+}
+
+testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-fill rule", {
+  set.seed(210)
+  day <- as.POSIXct("2021-01-04", tz = "UTC") + 86400 * (0:59)
+  for (version in c(1L, 2L)) {
+    sessions <- data.frame(status = "open", session_open = day + 14.5 * 3600, session_close = day + 21 * 3600)
+    # Two sessions share an execution time (the rare path).
+    sessions$session_open[[31]] <- sessions$session_open[[30]]
+    n <- 400L
+    k <- sample.int(59L, n, TRUE) + 1L
+    exec_time <- if (version == 2L) sessions$session_open[k] else sessions$session_close[k]
+    fills <- data.frame(event_seq = seq_len(n), ts_utc = exec_time, instrument_id = sample(c("A", "B", NA), n, TRUE))
+    diag <- data.frame(event_seq = seq_len(n), instrument_id = fills$instrument_id, stage = "execution",
+                       outcome = "filled", decision_ts_utc = sessions$session_close[k - 1L], execution_ts_utc = exec_time)
+    diag$event_seq[sample.int(n, 40L)] <- NA                # fall back to instrument and time
+    diag$event_seq[sample.int(n, 20L)] <- 7L                # repeated event_seq: unresolved
+    diag$execution_ts_utc[sample.int(n, 20L)] <- NA         # missing execution time
+    diag$decision_ts_utc[sample.int(n, 20L)] <- day[[1]]     # decision does not match
+    diag <- rbind(diag, transform(diag[1:30, ], stage = "decision"))
+    timing <- list(execution_timing_convention = if (version == 2L) "availability_open_v2" else "availability_close_v1",
+                   execution_timing_version = version)
+    got <- ledgr:::ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions, timing)
+    expected <- scale_test_reference_recording(fills, diag, sessions, version)
+    testthat::expect_identical(got, expected)
+    testthat::expect_gt(sum(!is.na(got)), 100L)
+    testthat::expect_gt(sum(is.na(got)), 20L)
+  }
+})

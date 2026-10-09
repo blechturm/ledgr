@@ -260,7 +260,7 @@ ledgr_compute_metrics_internal <- function(bt,
     context = "run metrics"
   )
 
-  fills <- ledgr_extract_fills_impl(bt, con = con)
+  fills <- ledgr_extract_fills_impl(bt, con = con, recording_pulse = FALSE)
   trades <- ledgr_closed_trade_rows(fills)
 
   returns <- compute_period_returns(equity$equity)
