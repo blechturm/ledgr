@@ -1,0 +1,6 @@
+# Full records and their work databases stay local (gigabytes);
+# summaries, phase clocks and probe tables are committed.
+*/accepted-*/
+*/candidate-*/
+*/work/
+*.log

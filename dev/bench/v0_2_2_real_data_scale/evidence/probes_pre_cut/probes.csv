@@ -1,0 +1,40 @@
+"finding","collection","size","metric","value"
+"F1","pulses","120","availability_seconds",1.71744
+"F1","pulses","240","availability_seconds",4.48262
+"F1","pulses","120->240","growth_exponent",1.38408
+"F2","fills","10000","resolution_seconds",1.68722
+"F2","fills","40000","resolution_seconds",11.1001
+"F2","fills","10000->40000","growth_exponent",1.35893
+"F4","diagnostic_rows","204800","append_seconds",2.7761
+"F4","diagnostic_rows","409600","append_seconds",9.07383
+"F4","diagnostic_rows","819200","append_seconds",29.9959
+"F4","diagnostic_rows","204800->819200","growth_exponent",1.71682
+"F5","axis","250","ms_per_pulse",0.726855
+"F5","axis","500","ms_per_pulse",2.61976
+"F5","axis","1000","ms_per_pulse",7.05783
+"F6","instruments","40","feature_appends_per_run",40
+"F7","diagnostic_rows","2451","diagnostic_appends_per_run",1
+"F6","instruments","80","feature_appends_per_run",80
+"F7","diagnostic_rows","4942","diagnostic_appends_per_run",2
+"F8","members","40","run_seconds",1.0179
+"F8","members","40","canonical_json_calls_per_fill",2.22944
+"F8","members","80","run_seconds",1.36258
+"F8","members","80","canonical_json_calls_per_fill",1.60297
+"F8","members","160","run_seconds",2.03129
+"F8","members","160","canonical_json_calls_per_fill",1.30181
+"F8","members(seconds_per_fill)","40->160","growth_exponent",-0.514755
+"F9","rows(1000 distinct)","100000","token_seconds",0.50458
+"F9","rows(1000 distinct)","400000","token_seconds",2.01547
+"F9","rows(1000 distinct)","100000->400000","growth_exponent",0.998982
+"F10","bars","50000","build_seconds",1.96789
+"F10","bars","200000","build_seconds",6.30459
+"F10","bars","50000->200000","growth_exponent",0.839878
+"F11","candidates","1","provider_builds",2
+"F11","candidates","1","pulse_view_builds",1
+"F11","candidates","1","corporate_action_plans",1
+"F12","candidates x pulses","120","canonical_json_calls_per_pulse",3.29167
+"F11","candidates","3","provider_builds",4
+"F11","candidates","3","pulse_view_builds",3
+"F11","candidates","3","corporate_action_plans",3
+"F12","candidates x pulses","360","canonical_json_calls_per_pulse",3.19167
+"F13","pulses","120","context_vec_builds_per_pulse",2

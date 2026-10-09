@@ -68,3 +68,23 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
   run only for the phase a ticket targets.
 - Sharadar outputs leave the private store only as family hashes, row counts
   and clocks.
+
+## Pre-cut baseline (2026-10-09, tree 1370ee0)
+
+`evidence/pre_cut_fixture/` holds two self-pairs of the pre-cut tree (both
+arms identical code): the checker reports 51 of 51 families identical across
+runs, and the median elapsed and peak ratios measure noise. Elapsed ratios
+lie between 0.918 (sweep) and 1.062 (dense, a 0.7 s phase); peak ratios
+between 0.86 and 1.057. A single-phase elapsed difference under about 8
+percent on the sweep or promote phases, or any peak difference under about 14
+percent, is therefore within noise: ticket decisions on those phases use three
+pairs and the growth-shape probes, not one ratio. Medians (seconds): build
+25, momentum run 25, equal-weight run 28, result readers 61, availability
+plane 82, explain 76, sweep 95, promote 27, walk-forward 51.
+`evidence/probes_pre_cut/probes.csv` reproduces every finding's growth shape
+on the pre-cut tree. Full records and work databases stay local.
+
+`profile.R` writes Rprof function shares for the momentum run, the
+equal-weight run and the sweep; a subchange whose code is below 5 percent of
+its workload cannot meet the materiality rule and closes as measured and
+rejected.
