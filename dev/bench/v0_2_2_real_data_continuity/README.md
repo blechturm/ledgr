@@ -80,3 +80,10 @@ AAA at 10 and BBB at 20, cash 1000, zero costs.
 to `0c1fe2b`, and passes `--expect pre`. `evidence/after_ws20` passes
 `--expect post10`. `evidence/pre_cut11` is recorded from the clean LDG-2977
 commit and passes `--expect pre11 --against evidence/after_ws20/record.csv`.
+`evidence/after_ws21` (commit `4fcbc3e`) passes `--expect post --against
+evidence/pre_cut11/record.csv`. The Workstream 21 close review added the
+`lfb019_stopped` arm, so the current pair is `evidence/pre_cut11_r2`
+(recorded with the new runner against the pre-fix commit `8be6222`, passes
+`--expect pre11 --against evidence/after_ws20/record.csv`) and
+`evidence/after_ws21_r2` (commit `6567b73`, passes `--expect post --against
+evidence/pre_cut11_r2/record.csv`).
