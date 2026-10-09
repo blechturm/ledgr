@@ -19,7 +19,7 @@ S17,U4.4,Engine,yes,FFF halt gap,readers,
 S18,U4.1 U4.2 U4.3,Data Engine,partial,MMM no bar s8 and s10; zero-volume bar s9,run readers,padded and midpoint bar types are not ledgr inputs
 S19,U3.1 U3.2 U3.3,Data Engine,no,GGG split-adjusted bars only,none,ledgr consumes split-adjusted bars; no split events
 S20,U3.3,Engine,no,GGG split-adjusted bars only,none,as S19
-S21,U3.4,Engine,yes,HHH cash_dividend 1 ex s15 paid s25,run reconstruct readers,shorts depend on ledgr's short support (Stage 1)
+S21,U3.4,Engine,yes,HHH ordinary_cash_dividend 1 ex s15 paid s25,run reconstruct readers,shorts depend on ledgr's short support (Stage 1)
 S22,U3.5 U1.8,Engine Data,yes,III spin_off 0.5 JJJ ex s17; JJJ bars from s17 never a member,run readers,
 S23,U3.1 U3.2 U9.1,Data,partial,add a dividend after s40 to a second snapshot,run,needs a second vintage built by the Stage 1 harness
 S24,U5.1 U5.3,Data Engine,yes,two ad hoc closed weekdays after s20; a stray bar on one is a Stage 1 variant,run walk-forward,

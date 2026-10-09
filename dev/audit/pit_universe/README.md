@@ -26,7 +26,9 @@ Rscript dev/audit/pit_universe/smoke.R <repo>
 Observed while building (inputs to Stage 1, not findings yet): corporate-action
 clocks that fall between run pulses refuse the run with
 `ledgr_corporate_action_clock_mismatch`; the fixture places them on session
-closes.
+closes. A dividend with subtype `cash_dividend` seals but never posts;
+only `ordinary_cash_dividend` posts (found while building the Cut 11 LDG-2982
+scale fixture), so the fixture uses `ordinary_cash_dividend`.
 
 ## Inventory schema (Stage 1)
 

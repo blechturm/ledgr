@@ -168,7 +168,7 @@ pit_audit_fixture <- function(knowledge = c("announcement", "effective_only")) {
   corporate_actions <- rbind(
     ca_row("ccc-cash", "cash_acquisition", "CCC", 19, 20, cash = 50),
     ca_row("ddd-stock", "stock_acquisition", "DDD", 25, recipient = "AAA", quantity = 0.75),
-    ca_row("hhh-div", "cash_dividend", "HHH", 15, 25, cash = 1),
+    ca_row("hhh-div", "ordinary_cash_dividend", "HHH", 15, 25, cash = 1),
     ca_row("iii-spin", "spin_off", "III", 17, recipient = "JJJ", quantity = 0.5)
   )
 
