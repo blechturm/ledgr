@@ -50,7 +50,9 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
 
 ## Measurement method (declared before the baseline, 2026-10-09)
 
-- One measurement process at a time; no tests or builds run alongside.
+- One measurement process at a time; no tests or builds run alongside. Both arms
+  run from dedicated clean worktrees (never the working repository), compiled
+  once beforehand; the harness loads them with `compile = FALSE`.
 - A failing child is retried once; a second failure stops the pair.
 - Noise rule: a registered phase regresses when the candidate/accepted median
   elapsed or peak ratio exceeds 1.05.

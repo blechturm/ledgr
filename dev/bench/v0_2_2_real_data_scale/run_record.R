@@ -31,7 +31,7 @@ dirty <- git("status", "--porcelain", "--untracked-files=no", "--", "R", "src", 
 if (nzchar(dirty) && !"--allow-dirty" %in% args) stop("Refusing to record from a dirty product tree:\n", dirty, call. = FALSE)
 
 .libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
-suppressMessages(pkgload::load_all(repo, quiet = TRUE))
+suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])))
 source(file.path(here, "fixture.R"))
 fam_dir <- file.path(out_dir, "families")

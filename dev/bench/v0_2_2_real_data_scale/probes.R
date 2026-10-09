@@ -15,7 +15,7 @@ repo <- normalizePath(args[[1L]], winslash = "/")
 out_dir <- args[[2L]]
 only <- if (length(args) > 2L) args[-(1:2)] else NULL
 .libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
-suppressMessages(pkgload::load_all(repo, quiet = TRUE))
+suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])))
 source(file.path(here, "fixture.R"))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
