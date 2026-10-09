@@ -148,7 +148,7 @@ ledgr_fill_event_payload <- function(run_id,
     position_delta = as.numeric(signed_qty),
     realized_pnl = NULL
   )
-  meta_json <- if (isTRUE(serialize_meta_json)) canonical_json(meta) else NA_character_
+  meta_json <- if (isTRUE(serialize_meta_json)) ledgr_canonical_json_encode(meta) else NA_character_
 
   event_id <- paste0(run_id, "_", sprintf("%08d", as.integer(event_seq)))
   row <- list(

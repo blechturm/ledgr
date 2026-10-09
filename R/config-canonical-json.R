@@ -97,6 +97,15 @@ canonical_json <- function(x) {
   cached <- .ledgr_json_cache_get(cache_key)
   if (!is.null(cached)) return(cached)
 
+  out <- ledgr_canonical_json_encode(x)
+  .ledgr_json_cache_set(cache_key, out)
+  out
+}
+
+# The canonical encoding without the cache. A value that cannot repeat, such
+# as one fill's metadata, calls this directly: the cache key costs a
+# serialisation and a hash per call and never hits.
+ledgr_canonical_json_encode <- function(x) {
   if (is.character(x) && length(x) == 1 && !is.na(x)) {
     x <- tryCatch(
       ledgr_json_read_nested(x),
@@ -178,6 +187,5 @@ canonical_json <- function(x) {
   payload <- canonicalize(x)
   out <- ledgr_json_write_canonical_v2(payload)
   attr(out, "ledgr_canonical_json") <- TRUE
-  .ledgr_json_cache_set(cache_key, out)
   out
 }
