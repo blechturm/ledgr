@@ -1593,7 +1593,6 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
   state$event_cols <- NULL
   state$status <- "RUNNING"
   state$completion <- NULL
-  state$diagnostics <- NULL
   pulse_fill_rows <- vector("list", 256L)
   pulse_fill_n <- 0L
   pulse_fill_legs <- vector("list", 256L)
@@ -2126,19 +2125,37 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
       final_equity = equity$equity[[nrow(equity)]]
     )
   }
+  # A memory candidate keeps only the diagnostic rows its candidate row reads:
+  # held decisions on stale or frozen marks (valuation summary), terminal
+  # dispositions (assumed outcomes) and stopped rows (stopped instrument IDs).
+  # The full decision trace grows with members times pulses and is never
+  # held. Rows are numbered as if every row were kept, so diagnostic_seq is
+  # unchanged, and kept chunks are bound once when read.
+  state$diagnostic_count <- 0L
+  state$diagnostic_parts <- vector("list", 64L)
+  state$diagnostic_part_n <- 0L
+  keep_summary_rows <- function(diagnostics) {
+    keep <- (diagnostics$stage %in% "decision" & !is.na(diagnostics$quantity) & diagnostics$quantity != 0 &
+               diagnostics$mark_source %in% c("stale_close", "frozen_close")) |
+      (diagnostics$stage %in% "valuation" & diagnostics$reason_code %in% "terminal_disposition") |
+      diagnostics$outcome %in% "stopped"
+    if (any(keep)) {
+      i <- state$diagnostic_part_n + 1L
+      if (i > length(state$diagnostic_parts)) {
+        state$diagnostic_parts <- c(state$diagnostic_parts, vector("list", length(state$diagnostic_parts)))
+      }
+      state$diagnostic_parts[[i]] <- diagnostics[keep, , drop = FALSE]
+      state$diagnostic_part_n <- i
+    }
+    state$diagnostic_count <- state$diagnostic_count + nrow(diagnostics)
+    invisible(TRUE)
+  }
   handler$write_run_diagnostics <- function(diagnostics) {
     if (is.null(diagnostics) || nrow(diagnostics) == 0L) {
       return(invisible(TRUE))
     }
-    current <- state$diagnostics
-    next_seq <- if (is.null(current) || nrow(current) == 0L) {
-      1L
-    } else {
-      max(as.integer(current$diagnostic_seq)) + 1L
-    }
-    diagnostics$diagnostic_seq <- seq.int(from = next_seq, length.out = nrow(diagnostics))
-    state$diagnostics <- if (is.null(current)) diagnostics else rbind(current, diagnostics)
-    invisible(TRUE)
+    diagnostics$diagnostic_seq <- seq.int(from = state$diagnostic_count + 1L, length.out = nrow(diagnostics))
+    keep_summary_rows(diagnostics)
   }
   handler$write_run_evidence <- function(completion, diagnostics) {
     state$completion <- completion
@@ -2146,17 +2163,15 @@ ledgr_memory_output_handler <- function(run_id, .event_initial_capacity = 1024L)
     invisible(TRUE)
   }
   handler$completion <- function() state$completion
-  handler$diagnostics <- function() state$diagnostics
+  # The kept summary rows, in emission order; NULL when nothing was written.
+  handler$diagnostics <- function() {
+    if (state$diagnostic_count == 0L) return(NULL)
+    if (state$diagnostic_part_n == 0L) return(NULL)
+    do.call(rbind, state$diagnostic_parts[seq_len(state$diagnostic_part_n)])
+  }
   handler$write_exception_diagnostic <- function(diagnostic) {
-    current <- state$diagnostics
-    next_seq <- if (is.null(current) || nrow(current) == 0L) {
-      1L
-    } else {
-      max(as.integer(current$diagnostic_seq)) + 1L
-    }
-    diagnostic$diagnostic_seq <- next_seq
-    state$diagnostics <- if (is.null(current)) diagnostic else rbind(current, diagnostic)
-    invisible(TRUE)
+    diagnostic$diagnostic_seq <- state$diagnostic_count + 1L
+    keep_summary_rows(diagnostic)
   }
   handler$pending_event_count <- function() 0L
   handler$pending_state_count <- function() 0L

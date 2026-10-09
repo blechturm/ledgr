@@ -108,3 +108,29 @@ testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-f
     testthat::expect_gt(sum(is.na(got)), 20L)
   }
 })
+
+testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows its candidate row reads", {
+  handler <- ledgr:::ledgr_memory_output_handler("scale")
+  rows <- data.frame(
+    run_id = "scale", diagnostic_seq = 0L, ts_utc = as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:7,
+    instrument_id = c("A", "B", "A", "C", "B", "A", "D", "E"),
+    stage = c("decision", "decision", "decision", "valuation", "decision", "execution", "valuation", "decision"),
+    outcome = c("recorded", "recorded", "recorded", "disposed", "recorded", "filled", "stopped", "recorded"),
+    reason_code = c("decision_recorded", "decision_recorded", "decision_recorded", "terminal_disposition",
+                    "decision_recorded", "", "valuation_horizon_exhausted", "decision_recorded"),
+    quantity = c(10, 0, 5, 3, 7, 2, 4, NA), price = 1,
+    mark_source = c("stale_close", "stale_close", "current_close", "", "frozen_close", "", "", "frozen_close"),
+    mark_age = c(2L, 3L, 0L, NA, 9L, NA, NA, 4L), stringsAsFactors = FALSE
+  )
+  handler$write_run_diagnostics(rows[1:5, ])
+  handler$write_run_diagnostics(rows[6:8, ])
+  handler$write_exception_diagnostic(rows[7, ])
+  kept <- handler$diagnostics()
+  testthat::expect_identical(kept$diagnostic_seq, c(1L, 4L, 5L, 7L, 9L))
+  full <- rbind(rows, rows[7, ])
+  full$diagnostic_seq <- seq_len(nrow(full))
+  testthat::expect_identical(ledgr:::ledgr_valuation_inputs_from_diagnostics(kept),
+                             ledgr:::ledgr_valuation_inputs_from_diagnostics(full))
+  testthat::expect_identical(ledgr:::ledgr_stopped_instrument_ids(kept), ledgr:::ledgr_stopped_instrument_ids(full))
+  testthat::expect_null(ledgr:::ledgr_memory_output_handler("empty")$diagnostics())
+})
