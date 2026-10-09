@@ -12,7 +12,10 @@
 # dropped; identity hashes go to the informational `identity` family, because
 # ledgr fingerprints implementation bodies and a behavior-preserving change may
 # legitimately move them. The sharadar lane runs on a copy of a private
-# snapshot and writes only hashes and aggregate counts.
+# snapshot and writes full families, which hold vendor rows: its <out_dir> must
+# be in the private store, and the recorder refuses one inside a Git work
+# tree. summarize_record.R writes the aggregate (family hashes, row counts,
+# clocks) that may leave the store.
 
 args <- commandArgs(trailingOnly = TRUE)
 opt <- function(name, default = NULL) {
@@ -27,6 +30,12 @@ all_phases <- c("build", "run_momentum", "run_equal_weight", "readers", "availab
                 "dense", "sweep", "promote", "walk_forward")
 phases <- if (is.null(opt("phases"))) all_phases else strsplit(opt("phases"), ",", fixed = TRUE)[[1L]]
 git <- function(...) paste(suppressWarnings(system2("git", c("-C", shQuote(repo), ...), stdout = TRUE, stderr = TRUE)), collapse = "\n")
+if (identical(lane, "sharadar")) {
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  inside <- suppressWarnings(system2("git", c("-C", shQuote(out_dir), "rev-parse", "--is-inside-work-tree"),
+                                     stdout = TRUE, stderr = FALSE))
+  if (identical(inside, "true")) stop("The sharadar lane writes vendor rows; use an <out_dir> in the private store.", call. = FALSE)
+}
 dirty <- git("status", "--porcelain", "--untracked-files=no", "--", "R", "src", "DESCRIPTION", "NAMESPACE")
 if (nzchar(dirty) && !"--allow-dirty" %in% args) stop("Refusing to record from a dirty product tree:\n", dirty, call. = FALSE)
 

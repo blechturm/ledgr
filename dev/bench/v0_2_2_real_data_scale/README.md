@@ -38,7 +38,13 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
   paths) are dropped; identity hashes go to the informational `identity`
   family. `--lane=sharadar --snapshot=<copy> --universe=<id>` runs the same
   cycle on a private snapshot copy with the LDG-2976 parameters, minus build,
-  refusals and the dense run.
+  refusals and the dense run. Its families hold vendor rows, so its output
+  directory must be in the private store (the recorder refuses a Git work
+  tree).
+- `summarize_record.R`: one row per family (rows, sha256) plus phase clocks;
+  the only form in which a Sharadar record leaves the private store.
+- `ladder.sh`: per-ticket byte identity; records each commit in a clean
+  worktree and compares it with its predecessor's record.
 - `check_record.R`: per-family byte comparison; a missing family fails; the
   `identity` family is reported, never gated, because ledgr fingerprints
   implementation bodies. `--self-test` perturbs each family alone and
