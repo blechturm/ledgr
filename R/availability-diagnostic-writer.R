@@ -2,11 +2,13 @@
 # one typed block per pulse and appends it to bounded typed column buffers. The
 # durable output handler still owns the transaction and assigns diagnostic_seq
 # at write time. Chunk capacity is an unexported constructor seam used by
-# tests; ordinary folds always use 4096 rows.
+# tests; ordinary folds use 65,536 rows.
 
+# A chunk of 65,536 rows keeps the buffer bounded (a few megabytes) while a
+# durable run makes about sixteen times fewer appends than with 4,096.
 ledgr_fold_diagnostic_writer <- function(run_id,
                                          output_handler,
-                                         chunk_rows = 4096L) {
+                                         chunk_rows = 65536L) {
   ledgr_columnar_diagnostic_writer(
     run_id,
     output_handler,
@@ -90,13 +92,12 @@ ledgr_availability_diagnostic_block <- function(run_id, ts_utc, first_seq, segme
 }
 
 # Production column writer. Columns live in an environment so writes target
-# stable preallocated vectors. Numeric, integer, and POSIXct writes use
-# collapse::setv(); character writes use base replacement, the same split the
-# production durable handler adopted in v0.1.8.9 (R/backtest-runner.R:381-394).
-# The writer accepts one typed block per pulse: append_block() fills bounded
-# chunks, splitting a
-# block across a chunk boundary, with base block replacement for character
-# columns and collapse::setv() vector writes for the others.
+# stable preallocated vectors, and every column, character included, is
+# written in place with collapse::setv(). The writer accepts one typed block
+# per pulse: append_block() fills bounded chunks, splitting a block across a
+# chunk boundary. A flush or release replaces the buffers with fresh vectors,
+# so a frame handed to the output handler never shares a buffer that a later
+# write changes.
 ledgr_columnar_diagnostic_writer <- function(run_id,
                                              output_handler,
                                              chunk_rows = 4096L) {
@@ -150,15 +151,11 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
       whole <- take == total
       src <- if (whole) NULL else seq.int(start, length.out = take)
       dest <- seq.int(n + 1L, length.out = take)
+      # Every column, character included, is written in place by index; a
+      # copy-on-write assignment would copy the whole chunk per block.
       for (nm in column_names) {
-        col <- get(nm, envir = cols)
         value <- if (whole) fields[[nm]] else fields[[nm]][src]
-        if (is.character(col)) {
-          col[dest] <- value
-          assign(nm, col, envir = cols)
-        } else {
-          collapse::setv(col, dest, value, vind1 = TRUE)
-        }
+        collapse::setv(get(nm, envir = cols), dest, value, vind1 = TRUE)
       }
       n <<- n + take
       start <- start + take

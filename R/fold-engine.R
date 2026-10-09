@@ -94,8 +94,15 @@ ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FA
       class = "ledgr_invalid_strategy_state"
     )
   }
-  normalized <- stats::setNames(vector("list", length(axis)), axis)
-  for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+  # One positional match instead of a named assignment per axis ID; an entry
+  # that is missing or NULL becomes list().
+  normalized <- stats::setNames(rep(list(list()), length(axis)), axis)
+  if (length(asset_state) > 0L) {
+    idx <- match(axis, names(asset_state))
+    present <- !is.na(idx)
+    present[present] <- !vapply(asset_state, is.null, logical(1))[idx[present]]
+    normalized[present] <- asset_state[idx[present]]
+  }
   state_value$asset_state <- normalized
   state_value
 }
@@ -474,6 +481,12 @@ ledgr_execute_fold <- function(execution, output_handler) {
     # what they record survives whatever the strategy does to its target.
     pulse_notes <- new.env(parent = emptyenv())
 
+    # The axis the carried strategy state was last normalized for, and the
+    # last serialized state with its canonical JSON.
+    state_normalized_axis <- NULL
+    state_json_source <- NULL
+    state_json_cache <- NULL
+
     for (i in seq(from = start_idx, to = length(pulses_posix))) {
       ts <- pulses_posix[[i]]
       ts_iso <- pulses_iso[[i]]
@@ -685,11 +698,16 @@ ledgr_execute_fold <- function(execution, output_handler) {
             drop = FALSE
           ]
         }
-        state_prev_mem <- ledgr_fold_asset_state_normalize(
-          state_prev_mem,
-          context_ids,
-          drop_exited = TRUE
-        )
+        # State normalized for the previous pulse's axis is already normal for
+        # an unchanged axis; normalizing again would return it unchanged.
+        if (!identical(context_ids, state_normalized_axis)) {
+          state_prev_mem <- ledgr_fold_asset_state_normalize(
+            state_prev_mem,
+            context_ids,
+            drop_exited = TRUE
+          )
+          state_normalized_axis <- context_ids
+        }
       }
       if (sample_telemetry) {
         sample_now <- ledgr_time_now()
@@ -1226,16 +1244,26 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
       if (availability_active) {
         if (is.null(result$state_update)) {
+          # The carried state is already normalized for this pulse's axis.
           result$state_update <- state_prev_mem
+        } else {
+          result$state_update <- ledgr_fold_asset_state_normalize(
+            result$state_update,
+            context_ids
+          )
         }
-        result$state_update <- ledgr_fold_asset_state_normalize(
-          result$state_update,
-          context_ids
-        )
+        state_normalized_axis <- context_ids
       }
       if (is.list(result) && !is.null(result$state_update)) {
         if (sample_telemetry) sample_start <- ledgr_time_now()
-        state_json <- canonical_json(result$state_update)
+        # A state identical to the one serialized last pulse (a strategy that
+        # holds and carries its state) has the same canonical JSON, so the
+        # previous serialization and its validation are reused.
+        if (!identical(result$state_update, state_json_source)) {
+          state_json_cache <- canonical_json(result$state_update)
+          state_json_source <- result$state_update
+        }
+        state_json <- state_json_cache
         state_prev_mem <- result$state_update
         if (identical(event_mode, "live")) {
           output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)

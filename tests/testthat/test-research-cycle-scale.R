@@ -134,3 +134,27 @@ testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows it
   testthat::expect_identical(ledgr:::ledgr_stopped_instrument_ids(kept), ledgr:::ledgr_stopped_instrument_ids(full))
   testthat::expect_null(ledgr:::ledgr_memory_output_handler("empty")$diagnostics())
 })
+
+testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the per-ID rule", {
+  reference <- function(state_value, axis) {
+    asset_state <- state_value$asset_state %||% list()
+    normalized <- stats::setNames(vector("list", length(axis)), axis)
+    for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+    state_value$asset_state <- normalized
+    state_value
+  }
+  cases <- list(
+    list(state = list(month = "m"), axis = c("B", "A")),
+    list(state = list(asset_state = list(A = list(x = 1), C = NULL, D = list())), axis = c("C", "A", "B", "D")),
+    list(state = list(asset_state = list(Z = list(y = 2))), axis = character()),
+    list(state = NULL, axis = "A")
+  )
+  for (case in cases) {
+    state <- case$state
+    if (is.null(state)) state <- list()
+    testthat::expect_identical(
+      ledgr:::ledgr_fold_asset_state_normalize(case$state, case$axis, drop_exited = TRUE),
+      reference(state, case$axis)
+    )
+  }
+})
