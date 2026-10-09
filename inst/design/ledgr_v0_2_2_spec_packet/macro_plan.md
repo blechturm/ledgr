@@ -595,3 +595,14 @@ and E). Carry over overlapping test windows, first parked in `horizon.md`, was
 decided by the maintainer on 2026-10-09 (Type 2, after the Workstream 21 close
 review) and implemented in Workstream 21: `carry_test_state` requires ordered,
 contiguous test windows.
+
+2026-10-09 maintainer amendment: a point-in-time universe audit runs before
+the WS3/WS4 history wave resumes
+([charter](../audits/v0_2_2_pit_universe_audit/charter.md)). It describes how
+ledgr handles point-in-time universes today, checks that behavior for internal
+consistency, and judges it against the accepted design and an external
+yardstick. Its preparation (yardstick brief, shared fixture, schema) runs
+alongside Cut 11 Workstream 22; its three stages run on one commit frozen
+after Workstream 22 closes, each ending at a maintainer gate. Findings route
+to tickets, the decision register, horizon or RFC questions; the audit itself
+binds nothing.
