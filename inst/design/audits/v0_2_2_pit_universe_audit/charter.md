@@ -157,8 +157,9 @@ every gate.
 ## Routing of results
 
 Findings never go straight into `decisions.md` or `contracts.md`. Code defects
-and contract corrections become tickets (the planned post-Cut-11 maintenance
-cut, or a cut of their own if numerous). Design questions become history-wave
+and contract corrections become tickets in one point-in-time consistency cut
+after Gate 2, which also absorbs the five held post-Cut-11 maintenance items
+(macro plan, 2026-10-09 sequencing amendment). Design questions become history-wave
 register items, horizon entries or RFC questions. `decisions.md` receives only
 decisions the maintainer has accepted.
 

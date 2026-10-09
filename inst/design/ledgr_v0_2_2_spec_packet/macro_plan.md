@@ -606,3 +606,18 @@ alongside Cut 11 Workstream 22; its three stages run on one commit frozen
 after Workstream 22 closes, each ending at a maintainer gate. Findings route
 to tickets, the decision register, horizon or RFC questions; the audit itself
 binds nothing.
+
+2026-10-09 maintainer amendment, sequencing after Cut 11: (1) the five-item
+maintenance cut recorded above is not cut on its own; it is held until the
+audit's Gate 2 and cut together with the audit's Stage 2 defects and contract
+corrections as one point-in-time consistency cut, one review cycle instead of
+two (the snapshot_id identity item is an audit topic anyway). (2) The WS5
+verification-policy design session (wave 2 of section 4) runs alongside Cut 11
+Workstream 22; it decides when and what to verify, carrying the walk-forward
+rehash finding, while feature-persistence reuse keys stay after WS3/WS4 as
+WS5 already states. (3) The two unscheduled Due RFC items are placed:
+documentation roles and pin reset with the release documentation work and the
+non-gating plotting pass; context-frame retirement with the WS3 cut, which
+changes the same strategy surface. The resulting order is: Workstream 22 (with
+the WS5 session alongside), Cut 11 close, audit Stages 1 to 3, the consistency
+cut, the WS3/WS4 history wave and cut, WS7, the WS6 probe, WS8.
