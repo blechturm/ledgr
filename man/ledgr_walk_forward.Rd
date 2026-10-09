@@ -65,10 +65,13 @@ semantics it evaluates.
 With the default \code{opening_state_policy = "carry_test_state"}, test windows
 are path-dependent: each completed selected test run can seed the next test
 opening state. Per-fold test metrics are therefore not independent. Carrying
-needs contiguous test windows: when a trading day lies between two
-consecutive test windows, positions would cross it unvalued, so the call
-refuses before running anything with \code{ledgr_walk_forward_gapped_carry}. Use
-folds whose \code{step} equals \code{test_window}, or \code{"flat_test_state"}.
+needs test windows in time order that touch exactly: when a trading day lies
+between two consecutive test windows, positions would cross it unvalued, and
+when a test window starts before the previous one ends (overlap or reverse
+order), it would open from that window's later state. The call refuses both
+before running anything, with \code{ledgr_walk_forward_gapped_carry} or
+\code{ledgr_walk_forward_overlapping_carry}. Use folds whose \code{step} equals
+\code{test_window}, or \code{"flat_test_state"}, which accepts any layout.
 
 Rerunning a session with the same arguments reuses its finished test runs
 as recorded and resumes a test run that an interruption left unfinished.

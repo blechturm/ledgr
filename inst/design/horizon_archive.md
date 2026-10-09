@@ -253,6 +253,28 @@ Default execution remains canonical R. Durable compiled integration,
 non-spot compiled accounting, target risk, walk-forward, cost/liquidity, OMS,
 and public benchmark claims remain deferred. See the v0.1.8.10 packet.
 
+<a id="resolved-015"></a>
+
+### 2026-10-08 [execution] Carried state over overlapping walk-forward test windows
+
+Cut 11 (LDG-2979) made `carry_test_state` refuse fold lists with pulses
+between consecutive test windows, because positions would cross them
+unvalued. The opposite layout is still accepted: when `step` is shorter than
+`test_window`, consecutive test windows overlap, and each test run opens from
+the closing state of a window that ends after it starts, so the carried state
+comes from that window's future relative to the next window's start. No
+current test or article uses it. Whether carry should also refuse overlap, or
+open each test run from the earlier window's state at the next start, belongs
+to the next walk-forward design discussion; routed by the maintainer on
+2026-10-08.
+
+Resolved 2026-10-09: the Workstream 21 close review also found reverse-ordered
+fold lists accepted. The maintainer's Type 2 decision requires consecutive
+test windows under `carry_test_state` to be ordered and contiguous; overlap
+and reverse order refuse with `ledgr_walk_forward_overlapping_carry`, gaps
+with `ledgr_walk_forward_gapped_carry`, and `flat_test_state` accepts any
+layout. Reconstructing state at an overlapping window's start was rejected.
+
 ## Open-entry bodies archived by Workstream 4
 
 <a id="open-004"></a>

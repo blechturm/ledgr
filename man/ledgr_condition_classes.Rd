@@ -113,6 +113,7 @@
 \alias{ledgr_walk_forward_metric_class_invalid}
 \alias{ledgr_walk_forward_no_selection}
 \alias{ledgr_walk_forward_gapped_carry}
+\alias{ledgr_walk_forward_overlapping_carry}
 \alias{ledgr_walk_forward_candidate_key_missing}
 \alias{ledgr_walk_forward_test_run_failed}
 \alias{ledgr_walk_forward_session_not_found}
@@ -496,6 +497,13 @@ training selection, or runs no test window before the first one.
 when a pulse lies between two consecutive test windows, before any work
 runs. Its message names the first gap; use contiguous folds or
 \code{"flat_test_state"}.
+
+\code{ledgr_walk_forward_overlapping_carry} (also
+\code{ledgr_walk_forward_invalid_fold_window}) is raised by
+\code{ledgr_walk_forward()} under \code{opening_state_policy = "carry_test_state"}
+when a test window does not start after the previous one ends (overlap or
+reverse order), before any work runs. Its message names the first such pair;
+use contiguous folds or \code{"flat_test_state"}.
 
 \code{ledgr_walk_forward_candidate_key_missing} is raised when the train-window
 score rows passed to a selection rule do not include a \code{candidate_key} column.

@@ -154,16 +154,24 @@ Accepted change pending:
   provenance names its source and source fold. The policy is stored in
   session meta, a session without it reads as `"fail"`, and the printed
   session counts folds by source.
-- Gapped carry (Cut 11, LDG-2979). Under `opening_state_policy =
-  "carry_test_state"`, `ledgr_walk_forward()` refuses a fold list whose
-  consecutive test windows leave a pulse between them, before any training
-  sweep or store write, with `ledgr_walk_forward_gapped_carry` (also
-  `ledgr_walk_forward_invalid_fold_window`). The pulses are the open-session
+- Contiguous carry (Cut 11, LDG-2979; maintainer Type 2 decision 2026-10-09).
+  Under `opening_state_policy = "carry_test_state"`, consecutive test windows
+  must be chronologically ordered and contiguous: each test window starts
+  strictly after the previous one ends, and no pulse lies strictly between
+  them. `ledgr_walk_forward()` checks this before any training sweep or store
+  write. A window that does not start after the previous one ends (overlap or
+  reverse order) would open from state the previous window reached later in
+  time and refuses with `ledgr_walk_forward_overlapping_carry`; a pulse
+  between windows would be carried across unvalued and refuses with
+  `ledgr_walk_forward_gapped_carry`. Both also carry
+  `ledgr_walk_forward_invalid_fold_window`, and each message names the first
+  offending pair and both remedies: contiguous folds (`step` equal to
+  `test_window`) or `"flat_test_state"`. The pulses are the open-session
   closes of an availability-aware experiment, otherwise the universe's bar
-  timestamps. The message names the first gap, its pulse count and both
-  remedies: contiguous folds (`step` equal to `test_window`) or
-  `"flat_test_state"`. Contiguous and overlapping fold lists, single folds
-  and every fold list under `"flat_test_state"` are unchanged.
+  timestamps. Single folds and contiguous fold lists are unchanged.
+  `"flat_test_state"` accepts gapped, overlapping and reverse-ordered fold
+  lists, because no state crosses fold boundaries. Reconstructing carried
+  state at an overlapping window's start is not supported.
 - Test-run resume (Cut 11, LDG-2980). When a walk-forward session is rerun, a
   test run that already exists with status `DONE` or `INCOMPLETE` is opened as
   recorded and not re-executed. Any other existing test run, such as one an

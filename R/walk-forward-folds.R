@@ -727,18 +727,39 @@ ledgr_walk_forward_pulse_calendar <- function(exp, start, end) {
   as.POSIXct(rows$ts_utc, tz = "UTC")
 }
 
-# carry_test_state hands each test window's closing state to the next one. A
-# pulse between two consecutive test windows is never observed, so positions
-# would cross it unvalued and any terminal event inside it would go unsettled.
-# Refuse before any training sweep or store write and name the first gap.
-ledgr_walk_forward_refuse_gapped_carry <- function(exp, folds) {
+# carry_test_state hands each test window's closing state to the next one, so
+# consecutive test windows must be ordered and contiguous. A window that does
+# not start after the previous one ends would open from state the previous
+# window reached later in time (overlap or reverse order), and a pulse between
+# two windows is never observed, so positions would cross it unvalued and any
+# terminal event inside it would go unsettled. Refuse before any training
+# sweep or store write and name the first offending pair.
+ledgr_walk_forward_refuse_noncontiguous_carry <- function(exp, folds) {
   if (length(folds) < 2L) return(invisible(TRUE))
   test_start <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_start_utc), numeric(1)),
                            origin = "1970-01-01", tz = "UTC")
   test_end <- as.POSIXct(vapply(folds, function(f) as.numeric(f$test_end_utc), numeric(1)),
                          origin = "1970-01-01", tz = "UTC")
-  pulses <- as.numeric(ledgr_walk_forward_pulse_calendar(exp, min(test_start), max(test_end)))
   n <- length(folds)
+  unordered <- which(test_start[-1L] <= test_end[-n])
+  if (length(unordered) > 0L) {
+    k <- unordered[[1L]]
+    relation <- if (test_start[[k + 1L]] < test_start[[k]]) "starts before" else "overlaps"
+    rlang::abort(
+      sprintf(
+        paste(
+          "`opening_state_policy = \"carry_test_state\"` needs test windows in time order",
+          "that do not overlap: test window %d (starts %s) %s test window %d (%s to %s),",
+          "so it would open from that window's later state. Use contiguous folds, with",
+          "`step` equal to `test_window`, or `opening_state_policy = \"flat_test_state\"`."
+        ),
+        k + 1L, ledgr_walk_forward_iso(test_start[[k + 1L]]), relation, k,
+        ledgr_walk_forward_iso(test_start[[k]]), ledgr_walk_forward_iso(test_end[[k]])
+      ),
+      class = c("ledgr_walk_forward_overlapping_carry", "ledgr_walk_forward_invalid_fold_window")
+    )
+  }
+  pulses <- as.numeric(ledgr_walk_forward_pulse_calendar(exp, min(test_start), max(test_end)))
   after_end <- findInterval(as.numeric(test_end[-n]), pulses)
   before_next <- findInterval(as.numeric(test_start[-1L]), pulses, left.open = TRUE)
   between <- before_next - after_end

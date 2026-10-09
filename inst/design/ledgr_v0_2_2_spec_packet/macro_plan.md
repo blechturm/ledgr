@@ -591,4 +591,7 @@ the contract wording changes.
 Two further findings are routed elsewhere: `ledgr_folds_rolling()` month
 arithmetic from the 31st and decision-trace diagnostic volume go to the
 [decision register](../rfc/rfc_history_wave_v0_2_2_decisions.md) (Sessions B
-and E), and carry over overlapping test windows to `horizon.md`.
+and E). Carry over overlapping test windows, first parked in `horizon.md`, was
+decided by the maintainer on 2026-10-09 (Type 2, after the Workstream 21 close
+review) and implemented in Workstream 21: `carry_test_state` requires ordered,
+contiguous test windows.

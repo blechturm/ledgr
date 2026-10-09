@@ -39,12 +39,15 @@
   resume without them.
 
 - `ledgr_walk_forward()` with the default `opening_state_policy =
-  "carry_test_state"` now refuses, before running anything, fold lists whose
-  test windows leave trading days between them (for example `step` larger
-  than `test_window`). Positions carried across those days were never
-  valued, and an instrument that delisted in between stopped the next test
-  run. The error names the first gap; use contiguous folds or
-  `opening_state_policy = "flat_test_state"`.
+  "carry_test_state"` now requires test windows that follow each other in
+  time and touch exactly, and refuses other fold lists before running
+  anything. A gap (for example `step` larger than `test_window`) carried
+  positions across days that were never valued, and an instrument that
+  delisted in between stopped the next test run. An overlap (`step` smaller
+  than `test_window`) or a list out of time order opened a test run from
+  state its predecessor reached later. The errors name the first offending
+  pair; use contiguous folds or `opening_state_policy = "flat_test_state"`,
+  which still accepts any layout.
 
 - Walk-forward folds and windows can start on the first date of the snapshot.
   Bars are stamped at the session close, so a fold starting at midnight of

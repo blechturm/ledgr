@@ -98,7 +98,7 @@ testthat::test_that("[LTB-0203] reconstruction rebuilds gap-bearing availability
   testthat::expect_identical(rebuilt$equity_curve$equity, stored$equity)
 })
 
-testthat::test_that("[LTB-0204] carry_test_state refuses test windows with pulses between them", {
+testthat::test_that("[LTB-0204] carry_test_state refuses test windows that are not ordered and contiguous", {
   snapshot <- continuity_ii_wf_snapshot(c("AAA", "BBB"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- continuity_ii_experiment(snapshot, function(ctx, params) ctx$flat())
@@ -123,11 +123,35 @@ testthat::test_that("[LTB-0204] carry_test_state refuses test windows with pulse
     )
   }
 
+  # Overlapping test windows (two months stepped monthly) and a reverse-ordered
+  # list refuse with their own class: each would open from later state.
+  overlapping <- ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
+                                     test_window = "2 months", step = "1 month")
+  err <- testthat::expect_error(
+    ledgr_walk_forward(exp, grid, overlapping, ledgr_rule_argmax("sharpe_ratio"), seed = 1L),
+    class = "ledgr_walk_forward_overlapping_carry"
+  )
+  testthat::expect_s3_class(err, "ledgr_walk_forward_invalid_fold_window")
+  testthat::expect_false(inherits(err, "ledgr_walk_forward_gapped_carry"))
+  testthat::expect_match(conditionMessage(err), "test window 2 (starts 2020-03-02T00:00:00Z) overlaps test window 1",
+                         fixed = TRUE)
+  reverse <- ledgr:::ledgr_fold_list(
+    list(
+      ledgr_fold("2020-03-02", "2020-03-31", "2020-04-01", "2020-04-30", fold_seq = 1L),
+      ledgr_fold("2020-01-02", "2020-01-31", "2020-02-01", "2020-02-29", fold_seq = 2L)
+    ),
+    constructor = list(type_id = "explicit")
+  )
+  err <- testthat::expect_error(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, reverse),
+                                class = "ledgr_walk_forward_overlapping_carry")
+  testthat::expect_match(conditionMessage(err), "test window 2 (starts 2020-02-01T00:00:00Z) starts before test window 1",
+                         fixed = TRUE)
+
   # Contiguous folds, and a single fold, pass the check.
   contiguous <- ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
                                     test_window = "1 month", step = "1 month")
-  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_gapped_carry(exp, contiguous))
-  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_gapped_carry(exp, gapped[1]))
+  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, contiguous))
+  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(exp, gapped[1]))
 
   # A dense experiment pulses on its bar timestamps and refuses the same way.
   dense <- ledgr_snapshot_from_df(
@@ -137,9 +161,9 @@ testthat::test_that("[LTB-0204] carry_test_state refuses test windows with pulse
   on.exit(ledgr_snapshot_close(dense), add = TRUE)
   dense_exp <- ledgr_experiment(dense, function(ctx, params) ctx$flat(), cost_model = ledgr_cost_zero(),
                                 opening = ledgr_opening(cash = 1000))
-  testthat::expect_error(ledgr:::ledgr_walk_forward_refuse_gapped_carry(dense_exp, gapped),
+  testthat::expect_error(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(dense_exp, gapped),
                          class = "ledgr_walk_forward_gapped_carry")
-  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_gapped_carry(dense_exp, contiguous))
+  testthat::expect_true(ledgr:::ledgr_walk_forward_refuse_noncontiguous_carry(dense_exp, contiguous))
 })
 
 testthat::test_that("[LTB-0206] a boundary on the first or last sealed date resolves to that session", {
@@ -211,6 +235,42 @@ testthat::test_that("[LTB-0207] an empty unfinished row resumes with its opening
     testthat::expect_identical(ledgr_run_info(snapshot, "empty-row")$status, "DONE", info = status)
     close(bt)
     ledgr_snapshot_close(snapshot)
+  }
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0208] flat_test_state still runs gapped, overlapping and reverse-ordered folds", {
+  bars <- do.call(rbind, lapply(c("AAA", "BBB"), function(id) {
+    continuity_ii_bars(id, continuity_ii_weekdays, 10 + seq_along(continuity_ii_weekdays) / 100)
+  }))
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  buy <- function(ctx, params) {
+    target <- ctx$flat()
+    target[["AAA"]] <- params$qty
+    target
+  }
+  exp <- ledgr_experiment(snapshot, buy, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+  grid <- ledgr_strategy_grid(qty = 1)
+  layouts <- list(
+    gapped = ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
+                                 test_window = "1 month", step = "2 months"),
+    overlapping = ledgr_folds_rolling("2020-01-02", "2020-06-30", train_window = "1 month",
+                                      test_window = "2 months", step = "1 month"),
+    reverse = ledgr:::ledgr_fold_list(
+      list(
+        ledgr_fold("2020-03-02", "2020-03-31", "2020-04-01", "2020-04-30", fold_seq = 1L),
+        ledgr_fold("2020-01-02", "2020-01-31", "2020-02-01", "2020-02-29", fold_seq = 2L)
+      ),
+      constructor = list(type_id = "explicit")
+    )
+  )
+  for (name in names(layouts)) {
+    wf <- suppressWarnings(ledgr_walk_forward(exp, grid, layouts[[name]], ledgr_rule_argmax("sharpe_ratio"),
+                                              seed = 1L, opening_state_policy = "flat_test_state"))
+    testthat::expect_identical(wf$status, "DONE", info = name)
+    testthat::expect_true(all(wf$folds$status == "DONE"), info = name)
+    lapply(wf$test_runs, close)
   }
 })
 

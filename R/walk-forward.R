@@ -38,10 +38,13 @@
 #' With the default `opening_state_policy = "carry_test_state"`, test windows
 #' are path-dependent: each completed selected test run can seed the next test
 #' opening state. Per-fold test metrics are therefore not independent. Carrying
-#' needs contiguous test windows: when a trading day lies between two
-#' consecutive test windows, positions would cross it unvalued, so the call
-#' refuses before running anything with `ledgr_walk_forward_gapped_carry`. Use
-#' folds whose `step` equals `test_window`, or `"flat_test_state"`.
+#' needs test windows in time order that touch exactly: when a trading day lies
+#' between two consecutive test windows, positions would cross it unvalued, and
+#' when a test window starts before the previous one ends (overlap or reverse
+#' order), it would open from that window's later state. The call refuses both
+#' before running anything, with `ledgr_walk_forward_gapped_carry` or
+#' `ledgr_walk_forward_overlapping_carry`. Use folds whose `step` equals
+#' `test_window`, or `"flat_test_state"`, which accepts any layout.
 #'
 #' Rerunning a session with the same arguments reuses its finished test runs
 #' as recorded and resumes a test run that an interruption left unfinished.
@@ -91,7 +94,7 @@ ledgr_walk_forward <- function(exp,
   opening_state_policy <- match.arg(opening_state_policy)
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
   if (identical(opening_state_policy, "carry_test_state")) {
-    ledgr_walk_forward_refuse_gapped_carry(exp, folds)
+    ledgr_walk_forward_refuse_noncontiguous_carry(exp, folds)
   }
   if (identical(opening_state_policy, "flat_test_state")) {
     rlang::warn(

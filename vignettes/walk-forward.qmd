@@ -403,14 +403,16 @@ and does not prove, see
 
 The default `opening_state_policy = "carry_test_state"` is path-dependent. Each
 completed selected test run may seed the next test opening state, so per-fold
-test metrics are not independent observations. Carrying needs contiguous test
-windows, which is why the folds above step by one month, the length of their
-test window: with a larger `step`, positions would cross the trading days
-between two test windows without ever being valued, so `ledgr_walk_forward()`
-refuses before running anything and names the first gap. The explicit
+test metrics are not independent observations. Carrying needs test windows
+that follow each other and touch exactly, which is why the folds above step by
+one month, the length of their test window. With a larger `step`, positions
+would cross the trading days between two test windows without ever being
+valued; with a smaller one, the windows overlap and a test run would start from
+positions its predecessor only reached later. `ledgr_walk_forward()` refuses
+both before running anything and names the first offending pair. The explicit
 `opening_state_policy = "flat_test_state"` opt-in starts every test window from
-the original experiment opening state, accepts any gaps between test windows,
-and marks the result as `cold_start_distorted`.
+the original experiment opening state, accepts any fold layout, and marks the
+result as `cold_start_distorted`.
 :::
 
 Anchored folds grow their train window over time. That is useful for some
