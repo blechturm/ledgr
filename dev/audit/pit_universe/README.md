@@ -28,7 +28,9 @@ clocks that fall between run pulses refuse the run with
 `ledgr_corporate_action_clock_mismatch`; the fixture places them on session
 closes. A dividend with subtype `cash_dividend` seals but never posts;
 only `ordinary_cash_dividend` posts (found while building the Cut 11 LDG-2982
-scale fixture), so the fixture uses `ordinary_cash_dividend`.
+scale fixture), so the fixture uses `ordinary_cash_dividend`. A bar on a session
+the sealed session facts mark closed seals with no refusal and no quarantine
+row (LDG-2982 recorder, `refusals` family).
 
 ## Inventory schema (Stage 1)
 
