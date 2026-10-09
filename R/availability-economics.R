@@ -381,12 +381,21 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
                                                      provider,
                                                      decision_member,
                                                      cash) {
-  entries <- list()
-  rejected <- list()
+  # Accepted and rejected entries are written by index into lists sized for
+  # every actionable target, then trimmed.
+  entries <- vector("list", length(actionable_idx))
+  n_entries <- 0L
+  rejected <- vector("list", length(actionable_idx))
+  n_rejected <- 0L
   execution_ts <- if (pulse_idx <= length(execution_opportunities_posix)) {
     as.POSIXct(execution_opportunities_posix[[pulse_idx]], tz = "UTC")
   } else {
     as.POSIXct(NA, tz = "UTC")
+  }
+  # One execution view per pulse for every actionable ID; each ID resolves
+  # independently, so it equals one view per target.
+  execution_view <- if (!is.na(execution_ts) && length(actionable_idx) > 0L) {
+    provider$execution_view(execution_ts, target_names[actionable_idx])
   }
 
   for (target_idx in actionable_idx) {
@@ -399,7 +408,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
         ledgr_availability_reason_values(blocking_reasons),
         ledgr_availability_reason_values(informational_reasons)
       )
-      rejected[[length(rejected) + 1L]] <<- list(
+      n_rejected <<- n_rejected + 1L
+      rejected[[n_rejected]] <<- list(
         target_idx = as.integer(target_idx),
         instrument_id = id,
         inst_idx = as.integer(inst_idx),
@@ -415,7 +425,6 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
       reject("final_pulse_no_execution")
       next
     }
-    execution_view <- provider$execution_view(execution_ts, id)
     blocking_reasons <- if (isTRUE(execution_view$restricted[[id]])) {
       ledgr_availability_reason_values(execution_view$reasons[[id]])
     } else {
@@ -454,7 +463,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
     fill$instrument_id <- id
     fill$ts_signal_utc <- ts_signal_utc
     fill$inst_idx <- inst_idx
-    entries[[length(entries) + 1L]] <- list(
+    n_entries <- n_entries + 1L
+    entries[[n_entries]] <- list(
       target_idx = as.integer(target_idx),
       instrument_id = id,
       inst_idx = as.integer(inst_idx),
@@ -468,8 +478,8 @@ ledgr_fold_build_availability_pulse_plan <- function(targets,
     )
   }
 
-  affordability <- ledgr_availability_apply_affordability(entries, cash)
-  rejected <- c(rejected, affordability$rejected)
+  affordability <- ledgr_availability_apply_affordability(entries[seq_len(n_entries)], cash)
+  rejected <- c(rejected[seq_len(n_rejected)], affordability$rejected)
   accepted_ids <- vapply(affordability$accepted, `[[`, integer(1), "target_idx")
   accepted <- affordability$accepted[order(accepted_ids)]
   structure(
