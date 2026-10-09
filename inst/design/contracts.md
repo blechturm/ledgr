@@ -722,7 +722,10 @@ Accepted change pending:
   already `FAILED` from an earlier attempt; `DONE` and `INCOMPLETE` rows are
   never changed. The `ledgr.interrupt` soft stop still returns normally and
   leaves the row `RUNNING`. A `FAILED` row resumes like any non-`DONE` row with
-  a matching configuration. An interrupt inside the durable fold transaction
+  a matching configuration. A resumed row that has no ledger event yet (it
+  stopped before its opening append) posts its configured opening positions
+  before execution, as a first attempt does (Cut 11 close-review correction).
+  An interrupt inside the durable fold transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.
 - Pulse-level fill staging does not create a partial-flush persistence promise.

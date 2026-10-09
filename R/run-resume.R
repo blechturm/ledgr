@@ -88,7 +88,11 @@ ledgr_run_resume <- function(con,
     params = list(run_id)
   )$next_seq[[1]]
   next_event_seq <- as.integer(next_event_seq)
-  if (!is_resume && length(opening_positions) > 0L) {
+  # Opening positions are the first events a run writes, in one append. A
+  # resumed row without any event (left CREATED, RUNNING or FAILED before that
+  # append) has not posted its opening yet, so it posts it now.
+  post_opening <- !is_resume || next_event_seq == 1L
+  if (post_opening && length(opening_positions) > 0L) {
     next_event_seq <- ledgr_write_opening_position_events(
       con = con,
       run_id = run_id,

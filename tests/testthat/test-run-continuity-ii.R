@@ -177,6 +177,44 @@ testthat::test_that("[LTB-0206] a boundary on the first or last sealed date reso
 })
 
 # ledgr-test-profile: review
+testthat::test_that("[LTB-0207] an empty unfinished row resumes with its opening positions", {
+  days <- as.Date(c("2020-01-06", "2020-01-07", "2020-01-08", "2020-01-09"))
+  hold <- function(ctx, params) ctx$hold()
+  # One definition, so the rerun matches the first attempt's configuration;
+  # the option makes the first attempt fail.
+  gate <- ledgr_indicator(id = "gate", requires_bars = 1L, fn = function(window) {
+    if (isTRUE(getOption("ledgr.test.fail_early"))) stop("first attempt failed")
+    window$close[[nrow(window)]]
+  })
+  statuses <- c("CREATED", "RUNNING", "FAILED")
+  for (k in seq_along(statuses)) {
+    status <- statuses[[k]]
+    # A distinct BBB price per case keeps the feature cache from serving the gate.
+    bars <- rbind(continuity_ii_bars("AAA", days, c(10, 11, 12, 13)), continuity_ii_bars("BBB", days, 20 + k))
+    snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+    exp <- ledgr_experiment(snapshot, hold, features = list(gate), cost_model = ledgr_cost_zero(),
+                            opening = ledgr_opening(cash = 1000, positions = c(AAA = 5), cost_basis = c(AAA = 50)))
+    con <- ledgr:::get_connection(snapshot)
+    old <- options(ledgr.test.fail_early = TRUE)
+    testthat::expect_error(ledgr_run(exp, run_id = "empty-row"), "first attempt failed")
+    options(old)
+    # Leave the registered row exactly as a process that stopped before the
+    # opening append would: no ledger events, in the case's status.
+    DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = 'empty-row'")
+    DBI::dbExecute(con, "UPDATE runs SET status = ? WHERE run_id = 'empty-row'", params = list(status))
+
+    bt <- ledgr_run(exp, run_id = "empty-row")
+    events <- ledgr_results(bt, "ledger")
+    testthat::expect_identical(sum(events$event_type == "CASHFLOW"), 1L, info = status)
+    equity <- ledgr_results(bt, "equity")
+    testthat::expect_identical(equity$positions_value, 5 * c(10, 11, 12, 13), info = status)
+    testthat::expect_identical(ledgr_run_info(snapshot, "empty-row")$status, "DONE", info = status)
+    close(bt)
+    ledgr_snapshot_close(snapshot)
+  }
+})
+
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0205] an interrupted walk-forward resumes its test run on rerun", {
   interrupt_march <- function(ctx, params) {
     if (identical(getOption("ledgr.test.wf_interrupt"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()

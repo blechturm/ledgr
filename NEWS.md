@@ -34,7 +34,9 @@
 - Rerunning an interrupted `ledgr_walk_forward()` session with the same
   arguments now finishes it. A test run the interruption left `FAILED`
   resumes where it stopped instead of failing its fold; finished test runs
-  are still reused as recorded.
+  are still reused as recorded. Any `ledgr_run()` resume of a run that stopped
+  before posting its opening positions now posts them first; it used to
+  resume without them.
 
 - `ledgr_walk_forward()` with the default `opening_state_policy =
   "carry_test_state"` now refuses, before running anything, fold lists whose
