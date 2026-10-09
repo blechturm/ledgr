@@ -13,9 +13,13 @@ small probe (`inst/design/spike_protocol.md`).
 
 1. Done 2026-10-09: charter accepted; yardstick brief written
    (`yardstick_brief.md`).
-2. While Cut 11 Workstream 22 runs: the maintainer runs the brief in ChatGPT
-   Deep Research and the result is committed unedited as `yardstick.md`; build
-   the shared semantic fixture and the inventory and path-matrix schema under
+2. Done 2026-10-09: the yardstick (ChatGPT Deep Research, run by the
+   maintainer) is frozen unedited as `yardstick.md`: 48 universal guarantees
+   (U1.1 to U9.x), 24 optional capabilities, 41 test scenarios, ranked failure
+   modes and open questions. No audit finding has been shared with it.
+   Remaining while Cut 11 Workstream 22 runs: build the shared semantic
+   fixture (seeded from the yardstick's section B scenarios that fall inside
+   ledgr's ownership) and the inventory and path-matrix schema under
    `dev/audit/pit_universe/`.
 3. After Workstream 22 closes: freeze one commit and run Stages 1 to 3 against
    it, with a maintainer gate after each stage.
