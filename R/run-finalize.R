@@ -454,7 +454,10 @@ ledgr_run_finalize <- function(con,
   processed <- fold$processed
   terminal_status <- fold$status %||% "DONE"
   fold_equity <- fold$equity_facts %||% list()
-  use_fold_equity <- length(fold_equity) > 0L
+  # An availability run always finalizes through its equity prefix, even when
+  # this invocation valued no pulse (a stop on its first pulse): the stored
+  # prefix stays, and no dense replay over the calendar replaces it.
+  use_fold_equity <- isTRUE(run$availability_active) || length(fold_equity) > 0L
 
   finalization_error <- tryCatch({
     post_start <- ledgr_time_now()
@@ -463,8 +466,11 @@ ledgr_run_finalize <- function(con,
     } else {
       as.POSIXct(pulses, tz = "UTC")
     }
+    # Closes are read only for the dense replay below.
     close_mat <- NULL
-    if (!is.null(bars_mat)) {
+    if (use_fold_equity) {
+      close_mat <- NULL
+    } else if (!is.null(bars_mat)) {
       close_mat <- bars_mat$close
     } else {
       start_iso <- ledgr_normalize_ts_utc(start_ts_utc)

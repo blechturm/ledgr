@@ -9,6 +9,14 @@
   equity; `ledgr_corporate_action_summary()` counted the same way and is
   corrected too.
 
+- An availability-aware run that stops on its very first pulse, for example
+  because an opening holding has no price there, now stores an empty result
+  that opens and reruns. Previously it stored a row of missing equity for
+  every pulse and could be neither opened nor rerun, which also made a
+  walk-forward session that hit it impossible to rerun. A resumed run whose
+  first resumed pulse stops now keeps the results its earlier attempt
+  committed, identical to an uninterrupted run, instead of discarding them.
+
 - `ledgr_walk_forward()` gains `no_selection = c("previous", "fail")`. A fold
   in which no training candidate has a finite selection metric no longer ends
   the whole session: by default it runs its test window with the parameters

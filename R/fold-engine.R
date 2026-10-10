@@ -355,6 +355,16 @@ ledgr_execute_fold <- function(execution, output_handler) {
   stop_reason <- NA_character_
   last_fully_valued_ts <- as.POSIXct(NA, tz = "UTC")
   last_executed_ts <- as.POSIXct(NA, tz = "UTC")
+  # A resumed availability run continues a committed prefix: only RUNNING runs
+  # resume, so every pulse before start_idx was valued, and its last fill is in
+  # the ledger. The completion row then covers the whole run, not only this
+  # invocation, even when the first resumed pulse stops.
+  if (availability_active && start_idx > 1L) {
+    last_fully_valued_ts <- as.POSIXct(pulses_posix[[start_idx - 1L]], tz = "UTC")
+  }
+  if (!is.null(execution$last_executed_at_resume)) {
+    last_executed_ts <- execution$last_executed_at_resume
+  }
   affected <- list(
     value = NA_real_,
     details = list(),

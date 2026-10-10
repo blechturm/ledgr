@@ -739,7 +739,12 @@ Accepted change pending:
   pulse, so a fill executed at the entitlement session's open is not
   entitled; an entitlement on the run's first pulse binds the opening
   positions. `ledgr_corporate_action_summary()` counts the same way (Cut 12
-  LDG-2993).
+  LDG-2993). An availability run whose invocation values no pulse (a stop on
+  its first pulse, or on the first pulse of a resume) still finalizes through
+  its equity prefix: a first-pulse stop stores no equity rows and its run
+  opens and reruns; a resumed run keeps the prefix, achieved end and last
+  execution its earlier invocations committed, so it stores what the
+  uninterrupted run stores (Cut 12 LDG-2994).
   An interrupt inside the durable fold transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.

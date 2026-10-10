@@ -1166,7 +1166,8 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
         start_ts_utc = start_ts_utc,
         end_ts_utc = end_ts_utc,
         instrument_ids = instrument_ids,
-        initial_cash = initial_cash
+        initial_cash = initial_cash,
+        availability_active = availability_active
       ),
       calendar = calendar,
       projection = list(
@@ -1268,6 +1269,15 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
       )
     } else {
       NULL
+    },
+    last_executed_at_resume = if (availability_active && is_resume && start_idx > 1L) {
+      DBI::dbGetQuery(
+        con,
+        "SELECT MAX(ts_utc) AS ts_utc FROM ledger_events WHERE run_id = ? AND event_type = 'FILL'",
+        params = list(run_id)
+      )$ts_utc
+    } else {
+      NULL
     }
   )
 
@@ -1335,7 +1345,8 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
       start_ts_utc = start_ts_utc,
       end_ts_utc = end_ts_utc,
       instrument_ids = instrument_ids,
-      initial_cash = initial_cash
+      initial_cash = initial_cash,
+      availability_active = availability_active
     ),
     calendar = calendar,
     projection = list(
