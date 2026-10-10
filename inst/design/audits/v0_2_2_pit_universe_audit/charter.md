@@ -68,7 +68,8 @@ small probe (`inst/design/spike_protocol.md`).
    snapshots; identity binds `snapshot_hash` under a versioned rule without
    migration; availability-aware experiments must declare a price basis
    (G-009); results label assumption-backed knowledge and universe kind
-   (G-007); off-session bars are reported or refused (G-008). These enter
+   (G-007); off-session bars are recorded and reported, not refused
+   (G-008, decision 10, per availability synthesis s4.4). These enter
    Cut 12 (LDG-3010 to LDG-3012). G-016 (no dividend facts from the Sharadar
    adapter) is a ledgr-research adapter task; until it lands, Sharadar
    results and the WS7 proof state "dividends excluded". The history-wave
