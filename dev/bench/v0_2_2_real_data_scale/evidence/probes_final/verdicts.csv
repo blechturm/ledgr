@@ -1,13 +1,13 @@
 "finding","measure","pre_cut","final","verdict","ok"
-"F1","growth exponent",1.384,-0.5728,"shape removed",TRUE
-"F2","growth exponent",1.359,1.136,"NOT removed",FALSE
-"F4","growth exponent",1.717,0.7928,"shape removed",TRUE
-"F5","growth exponent (ms per pulse, axis 250 to 1000)",1.64,0.8751,"shape removed",TRUE
+"F1","growth exponent",1.384,-0.635,"shape removed",TRUE
+"F2","growth exponent",1.359,1.073,"shape removed",TRUE
+"F4","growth exponent",1.717,0.7246,"shape removed",TRUE
+"F5","growth exponent (ms per pulse, axis 250 to 1000)",1.64,0.6469,"shape removed",TRUE
 "F6","feature_appends_per_run (small, large)",80,1,"count no longer grows",TRUE
 "F7","diagnostic_appends_per_run (small, large)",2,1,"count no longer grows",TRUE
-"F9","token_seconds at the largest size",2.015,0.02233,"time ratio 0.01",TRUE
-"F10","build_seconds at the largest size",6.305,4.552,"time ratio 0.72",TRUE
-"F8","seconds per fill growth exponent",-0.5148,-0.6038,"no per-fill growth",TRUE
+"F9","token_seconds at the largest size",2.015,0.024,"time ratio 0.01",TRUE
+"F10","build_seconds at the largest size",6.305,4.621,"time ratio 0.73",TRUE
+"F8","seconds per fill growth exponent",-0.5148,-0.7198,"no per-fill growth",TRUE
 "F11","provider_builds",4,4,"rejected: shape unchanged as recorded",TRUE
-"F12","canonical_json_calls_per_pulse",3.192,2.25,"per-pulse work reduced",TRUE
+"F12","canonical_json_calls_per_pulse",3.192,3.192,"rejected: shape unchanged as recorded",TRUE
 "F13","context_vec_builds_per_pulse",2,1,"per-pulse work reduced",TRUE

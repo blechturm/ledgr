@@ -1,40 +1,40 @@
 "finding","collection","size","metric","value"
-"F1","pulses","120","availability_seconds",0.29247
-"F1","pulses","240","availability_seconds",0.196636
-"F1","pulses","120->240","growth_exponent",-0.572761
-"F2","fills","10000","resolution_seconds",0.00490236
-"F2","fills","160000","resolution_seconds",0.114299
-"F2","fills","10000->160000","growth_exponent",1.1358
-"F4","diagnostic_rows","204800","append_seconds",0.0146949
-"F4","diagnostic_rows","409600","append_seconds",0.021456
-"F4","diagnostic_rows","819200","append_seconds",0.044107
-"F4","diagnostic_rows","204800->819200","growth_exponent",0.792844
-"F5","axis","250","ms_per_pulse",0.177215
-"F5","axis","500","ms_per_pulse",0.329859
-"F5","axis","1000","ms_per_pulse",0.596161
+"F1","pulses","120","availability_seconds",0.44164
+"F1","pulses","240","availability_seconds",0.284391
+"F1","pulses","120->240","growth_exponent",-0.634995
+"F2","fills","10000","resolution_seconds",0.00653246
+"F2","fills","160000","resolution_seconds",0.128096
+"F2","fills","10000->160000","growth_exponent",1.07336
+"F4","diagnostic_rows","204800","append_seconds",0.0184729
+"F4","diagnostic_rows","409600","append_seconds",0.02742
+"F4","diagnostic_rows","819200","append_seconds",0.0504401
+"F4","diagnostic_rows","204800->819200","growth_exponent",0.72458
+"F5","axis","250","ms_per_pulse",0.292825
+"F5","axis","500","ms_per_pulse",0.5313
+"F5","axis","1000","ms_per_pulse",0.71789
 "F6","instruments","40","feature_appends_per_run",1
 "F7","diagnostic_rows","2451","diagnostic_appends_per_run",1
 "F6","instruments","80","feature_appends_per_run",1
 "F7","diagnostic_rows","4942","diagnostic_appends_per_run",1
-"F8","members","40","run_seconds",0.907443
-"F8","members","40","canonical_json_calls_per_fill",0.74026
-"F8","members","80","run_seconds",1.16999
-"F8","members","80","canonical_json_calls_per_fill",0.363057
-"F8","members","160","run_seconds",1.60058
-"F8","members","160","canonical_json_calls_per_fill",0.181722
-"F8","members(seconds_per_fill)","40->160","growth_exponent",-0.603791
-"F9","rows(1000 distinct)","100000","token_seconds",0.00846218
-"F9","rows(1000 distinct)","400000","token_seconds",0.0223293
-"F9","rows(1000 distinct)","100000->400000","growth_exponent",0.699918
-"F10","bars","50000","build_seconds",1.51846
-"F10","bars","200000","build_seconds",4.55177
-"F10","bars","50000->200000","growth_exponent",0.791907
+"F8","members","40","run_seconds",1.42491
+"F8","members","40","canonical_json_calls_per_fill",1.22944
+"F8","members","80","run_seconds",1.61334
+"F8","members","80","canonical_json_calls_per_fill",0.602972
+"F8","members","160","run_seconds",2.13989
+"F8","members","160","canonical_json_calls_per_fill",0.301807
+"F8","members(seconds_per_fill)","40->160","growth_exponent",-0.719816
+"F9","rows(1000 distinct)","100000","token_seconds",0.0125595
+"F9","rows(1000 distinct)","400000","token_seconds",0.0239977
+"F9","rows(1000 distinct)","100000->400000","growth_exponent",0.467061
+"F10","bars","50000","build_seconds",1.54792
+"F10","bars","200000","build_seconds",4.62143
+"F10","bars","50000->200000","growth_exponent",0.789006
 "F11","candidates","1","provider_builds",2
 "F11","candidates","1","pulse_view_builds",1
 "F11","candidates","1","corporate_action_plans",1
-"F12","candidates x pulses","120","canonical_json_calls_per_pulse",2.35
+"F12","candidates x pulses","120","canonical_json_calls_per_pulse",3.29167
 "F11","candidates","3","provider_builds",4
 "F11","candidates","3","pulse_view_builds",3
 "F11","candidates","3","corporate_action_plans",3
-"F12","candidates x pulses","360","canonical_json_calls_per_pulse",2.25
+"F12","candidates x pulses","360","canonical_json_calls_per_pulse",3.19167
 "F13","pulses","120","context_vec_builds_per_pulse",1
