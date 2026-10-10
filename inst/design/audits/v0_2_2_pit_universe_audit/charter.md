@@ -63,6 +63,19 @@ small probe (`inst/design/spike_protocol.md`).
    planned capabilities, 2 true external gaps. Next: Gate 3, the maintainer's
    decision on which gaps to address, in what order, and the history wave's
    scope.
+   Gate 3 passed 2026-10-10 (maintainer), together with the Cut 12 cut
+   review's two decisions: `ledgr_backtest()` refuses availability-aware
+   snapshots; identity binds `snapshot_hash` under a versioned rule without
+   migration; availability-aware experiments must declare a price basis
+   (G-009); results label assumption-backed knowledge and universe kind
+   (G-007); off-session bars are reported or refused (G-008). These enter
+   Cut 12 (LDG-3010 to LDG-3012). G-016 (no dividend facts from the Sharadar
+   adapter) is a ledgr-research adapter task; until it lands, Sharadar
+   results and the WS7 proof state "dividends excluded". The history-wave
+   scope widens (register rows PIT-G-013, PIT-G-014, PIT-G-015, and a
+   Session E caution on C11-F2). WS7 and WS8 acceptance gain the checks in
+   the macro plan's 2026-10-10 amendment. The audit is complete; the
+   history wave may resume after Cut 12.
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)

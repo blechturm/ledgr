@@ -175,14 +175,15 @@ cuts:
   - id: 12
     name: "Point-in-time consistency"
     cut: "2026-10-10"
-    opening: "The point-in-time universe audit (inst/design/audits/v0_2_2_pit_universe_audit/, frozen commit 289d57c) passed Gate 1 and Gate 2 on 2026-10-10. Stage 2 found code defects and contract errors in recovery, silently ignored inputs and entry-point consistency; the challenger reproduced every probe and kept 17 of 18 findings (12 as stated, 5 with changes) and added two. The maintainer routed the code defects and contract fixes here, with the five maintenance items held since Cut 11 (macro plan, 2026-10-08 and 2026-10-09 amendments), as one review cycle."
-    authority: "inst/design/audits/v0_2_2_pit_universe_audit/charter.md (Routing of results: code defects and contract corrections become tickets in one point-in-time consistency cut after Gate 2); stage2/findings.md and stage2/challenge.md for each finding's evidence, probe and falsification line; macro_plan.md 2026-10-08 and 2026-10-09 amendments for the five held items; inst/design/contracts.md as the behavior each fix restores."
-    source_table: "Frozen audit commit 289d57c; current tree at cut time 432a3a5 (contracts.md, R/ and tests/ unchanged since 289d57c). Every behavioral ticket names its audit probe in dev/audit/pit_universe/probes/ (S2_*, S2C_*, I_*); each probe must show the defect on the pre-cut tree and its absence after the fix."
-    decisions: "Maintainer, 2026-10-10, at Gate 2. (1) S2-009: a corporate-action refusal declared by policy (strict preset) becomes a typed INCOMPLETE stop with its accepted prefix, like terminal refusals, instead of a FAILED rollback; the research preset is unaffected. (2) S2-010: non-positive prices are refused at ingest. (3) S2-014: ledgr_compute_metrics() follows completion evidence and withholds annualized metrics where summary() does. (4) S2-006: promotion records the candidate's strategy, universe and policy identities and warns on a mismatch; it does not refuse, since cross-snapshot promotion is designed. (5) S2-003 D1 and M1 take the policy route of the equity-settlement synthesis (s3.3, s3.5): an unknown subtype or an unmodeled held corporate action reports fidelity unsupported under research and stops under strict; ingest keeps the subtype vocabulary open. Routed elsewhere: S2-007 and S2-011 to the history-wave register (Session B); S2-012 with LFB-006 and LFB-022; S2-003 D2 with history-wave decision C and LFB-013."
-    sequencing: "Workstream 23 (recovery) first, as it holds the high-severity defects and Workstream 25's identity change touches the same finalization paths; then 24; then 25. Stage 3 of the audit may run alongside; a code-level Stage 3 finding enters as a cut amendment, not a new cut."
-    out_of_scope: "Design questions routed at Gate 2 (S2-007 carry boundaries, S2-011 venue dates, S2-012 pulse inspection planes, S2-003 D2 disclosure); the snapshot verification policy (WS5 session); the peer-benchmark harness parity drift (dev/bench, not point-in-time); LDG-2992. ledgr_backtest() is refused on availability-aware snapshots, not rebuilt on the experiment path."
-    workstreams: [23, 24, 25]
-    closeout: "Every audit probe named by a ticket flips on the final tree; fixture and Sharadar byte identity hold for runs no finding touches; fast profile within its bound; contracts, NEWS and the audit charter record each finding's resolution."
+    opening: "The point-in-time universe audit (inst/design/audits/v0_2_2_pit_universe_audit/, frozen commit 289d57c) passed Gates 1 to 3 on 2026-10-10. Stage 2 found code defects and contract errors in recovery, silently ignored inputs and entry-point consistency; the challenger reproduced every probe and kept 17 of 18 findings and added two. Stage 3 found the point-in-time core sound against the external yardstick and added two disclosure defects and one design debt this cut takes. The maintainer routed the code defects and contract fixes here, with the five maintenance items held since Cut 11 (macro plan, 2026-10-08 and 2026-10-09 amendments), as one review cycle."
+    cut_review: "NEEDS_TYPE_2 on 2026-10-10. An independent Codex cut review (Type 1 with input check) of draft c6631cc confirmed that every challenged Stage 2 finding, M1, M2 and the five held items are owned or routed, and reproduced S2C_backtest, S2C_dense_acquisition, S2_nonpositive, S2C_session_posix and S2_calendar_short on the frozen tree. It returned two product decisions left to the executor (ledgr_backtest() refusal versus routing; the identity migration of existing stores) and Type 1 patches: separate LDG-2996 and LDG-2997 ownership, economic meaning of 'Sharadar results unchanged', a Sharadar non-positive preflight and a zero-volume detector, independent session-instant detectors, promotion-context compatibility, exact gates for the held items with LDG-3007 decided, a separate held-maintenance workstream, and byte identity carved out for intended changes. The maintainer took both decisions (decisions 6 and 7) and the patches are incorporated here; a focused re-review follows."
+    authority: "inst/design/audits/v0_2_2_pit_universe_audit/charter.md (Routing of results; Gate 2 and Gate 3 records); stage2/findings.md, stage2/challenge.md and gap_analysis.md for each finding's evidence, probe and falsification line; macro_plan.md 2026-10-08 and 2026-10-09 amendments for the five held items; inst/design/contracts.md for the behavior each fix restores."
+    source_table: "Frozen audit commit 289d57c; current tree at cut time 78977ef (contracts.md, R/ and tests/ unchanged since 289d57c). Every behavioral ticket names its audit probe in dev/audit/pit_universe/probes/ (S2_*, S2C_*, I_*); each probe must show the defect on the pre-cut tree and its absence after the fix. LDG-3006 and LDG-3008 record current-tree baselines before implementation."
+    decisions: "Maintainer, 2026-10-10. Gate 2: (1) S2-009: a corporate-action refusal declared by policy (strict preset) becomes a typed INCOMPLETE stop with its accepted prefix, like terminal refusals; the research preset is unaffected. (2) S2-010: non-positive prices are refused at ingest. (3) S2-014: ledgr_compute_metrics() follows completion evidence and withholds annualized metrics where summary() does. (4) S2-006: promotion records the candidate's strategy, universe and policy identities and warns on a mismatch; it does not refuse. (5) S2-003 D1 and M1 take the policy route of the equity-settlement synthesis (s3.3, s3.5): an unmodeled held corporate action reports fidelity unsupported under research and stops under strict; ingest keeps the subtype vocabulary open. After the cut review and Gate 3: (6) ledgr_backtest() refuses availability-aware snapshots with a classed error naming ledgr_experiment() and ledgr_run(); it is not routed through availability semantics. (7) Identity binds snapshot_hash under a versioned identity rule without migration: stored runs stay readable under their recorded rule; resuming an old-rule run or rerunning an old-rule walk-forward session refuses with a classed error. (8) An availability-aware experiment must declare its price basis, and the contract states that ledgr's accounting assumes split-adjusted share units (gap G-009). (9) Results label assumption-backed knowledge and the universe kind (G-007), and off-session bars are reported or refused (G-008). Routed elsewhere: S2-007, S2-011 and the Gate 3 history-wave scope changes (G-013, G-014, G-015, Session E) to the history-wave register; S2-012 with LFB-006 and LFB-022; S2-003 D2 with history-wave decision C and LFB-013; dividends for the Sharadar adapter (G-016) as a ledgr-research adapter task, with Sharadar results and the WS7 proof stating 'dividends excluded' until it lands; WS7 and WS8 acceptance additions (G-013, G-016, G-025) in the macro plan."
+    sequencing: "Workstream 23 (recovery) first, as it holds the high-severity defects and LDG-3004 touches the finalization paths LDG-2994 changes; then 24; then 25; then 26 (held maintenance; LDG-3006 after LDG-2995)."
+    out_of_scope: "Design questions routed at Gates 2 and 3 (S2-007, S2-011, S2-012, S2-003 D2, G-013, G-014, G-015); the snapshot verification policy (WS5 session); the ledgr-research adapter changes (dividend facts, G-016); the peer-benchmark harness parity drift (dev/bench, not point-in-time); LDG-2992; exact-quantity settlement (G-010, G-019)."
+    workstreams: [23, 24, 25, 26]
+    closeout: "Every audit probe named by a ticket flips on the final tree; fills, ledger, equity and positions stay byte-identical on the fixture and Sharadar lanes for runs no finding touches, and every intended change (config identity, promotion evidence, metrics, corporate-action and result summaries) is listed by its ticket; fast profile within its bound; contracts, NEWS and the audit charter record each finding's resolution."
     status: "draft"
 review_gate:
   max_review_invocations_per_ticket: 0.5
@@ -377,14 +378,21 @@ workstreams:
     status: "draft"
     depends_on_workstream: 23
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins LDG-2996 to LDG-3000: an input ledgr cannot honor is refused at ingest or reported, never silently ignored. The review reruns S2_ca_inert, S2C_dense_acquisition, S2_calendar_short, S2_nonpositive and S2C_session_posix on both trees, removes each guard to prove its detector fails, confirms the research preset's Sharadar results are unchanged, and walks the seven shapes on every changed function."}
+    review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins LDG-2996 to LDG-3000, LDG-3011 and LDG-3012: an input ledgr cannot honor is refused at ingest or reported, never silently ignored. The review reruns S2_ca_inert, S2C_dense_acquisition, S2_calendar_short, S2_nonpositive, S2C_session_posix and I_paths P11 on both trees, removes each guard to prove its detector fails, confirms research-preset Sharadar fills, ledger and equity are unchanged, and walks the seven shapes on every changed function."}
   - id: 25
-    name: "Entry points, identity and held maintenance"
+    name: "Entry points, identity and disclosure"
     cut: 12
     status: "draft"
     depends_on_workstream: 24
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins LDG-3001 to LDG-3009: every public entry point applies the same point-in-time semantics or refuses, identity binds content rather than store-local names, and the five held maintenance items are closed. The review reruns S2C_backtest, B_helper_ties, S2C_ties, S2_stops, S2_promote_config and A_calendar_window C6 on both trees, checks the identity change against existing walk-forward and run stores, and walks the seven shapes on every changed function."}
+    review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins LDG-3001 to LDG-3005 and LDG-3010: every public entry point applies the same point-in-time semantics or refuses, identity binds content under a versioned rule, and results disclose assumption-backed knowledge and the universe kind. The review reruns S2C_backtest, B_helper_ties, S2C_ties, S2_stops, S2_promote_config, A_calendar_window C6 and I_paths P6 on both trees, checks old-rule stores open and refuse resume, and walks the seven shapes on every changed function."}
+  - id: 26
+    name: "Held maintenance"
+    cut: 12
+    status: "draft"
+    depends_on_workstream: 25
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 26", reason: "One claim joins LDG-3006 to LDG-3009: the five maintenance items held since Cut 11 are closed by their exact gates: the dense reconstruction close map grows linearly with byte-identical equity; the alias-class test expects ledgr_unknown_feature_id and the full local suite has no failures; the LTB-0164 stall has a named cause with evidence and a fix or a bounded detector; check-test-gate --records accepts the documented record set; the S2-017 and S2-018 contract sentences are present; and the PIT-12-005 probe result is recorded."}
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -1116,7 +1124,7 @@ tickets:
     effort: "S"
     dependencies: []
     scope: "Audit S2-001 (high). ledgr_corporate_action_past_quantities() counts events stamped before entitlement_time, including the fill at the entitlement session's open, so a resumed run and the corporate-action summary bind a different entitled quantity from the fresh fold and the sweep (S2_entitlement: 99990 fresh against 100000 resumed, under effective_close and next_open). The fresh fold's boundary (bind before that pulse's open fills; LTB-0035) is the rule; the recount follows it."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_entitlement BUY and SELL cases give equal fresh, swept and resumed cash under both posting choices"]
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_entitlement BUY and SELL cases give equal fresh, swept and resumed cash under both posting choices"]
     evidence: []
   - id: "LDG-2994"
     title: "Finalize a run that values no pulse as an availability run"
@@ -1126,7 +1134,7 @@ tickets:
     effort: "M"
     dependencies: []
     scope: "Audit S2-002 (high). ledgr_run_finalize() takes the dense replay branch when the current invocation recorded no equity fact: it stores NA equity over every pulse, deletes a resumed run's valued prefix, and leaves a run that neither ledgr_run_open() nor a rerun accepts (ledgr_run_terminal_evidence_invalid); a walk-forward session that hits it cannot be rerun (I_walk_forward W4). An availability run always finalizes through its prefix, empty or not."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_stops cases O and R reopen and rerun; R stores the same prefix as the fresh P", "I_walk_forward W4 reruns its session"]
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_stops cases O and R reopen and rerun; R stores the same prefix as the fresh P", "I_walk_forward W4 reruns its session"]
     evidence: []
   - id: "LDG-2995"
     title: "Reconstruct an INCOMPLETE run through its achieved end"
@@ -1136,17 +1144,17 @@ tickets:
     effort: "S"
     dependencies: []
     scope: "Audit S2-008. ledgr_rebuild_derived_state() compares the last rebuilt cash with every ledger cash delta, so an INCOMPLETE run whose last fill executed after the achieved end (disclosed by last_executed_ts_utc) fails the cash identity. The identity is checked through the last fully valued pulse, as the Result Contract states."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "ledgr_state_reconstruct() on S2_stops P succeeds and equals the stored equity"]
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "ledgr_state_reconstruct() on S2_stops P succeeds and equals the stored equity"]
     evidence: []
   - id: "LDG-2996"
-    title: "Report or stop on held corporate actions ledgr does not model"
+    title: "Detect and report held corporate actions ledgr does not model"
     workstream: 24
     status: "draft"
     priority: "P0"
     effort: "M"
     dependencies: []
-    scope: "Audit S2-003 D1 (high) and M1, extending LFB-014. A complete corporate-action row on a held instrument with an unknown subtype, or a cash acquisition in a dense run, never acts and the summary reports fidelity none. Per the maintainer's Gate 2 decision (policy route): the research preset reports fidelity unsupported and counts the fact; the strict preset stops (typed, per LDG-2997). Ingest keeps the subtype vocabulary open."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_ca_inert D1 and S2C_dense_acquisition report unsupported under research and stop under strict", "research-preset Sharadar results are unchanged"]
+    scope: "Audit S2-003 D1 (high) and M1, extending LFB-014; cut decision 5. A complete corporate-action row on a held instrument with an unknown subtype, or a cash acquisition in a dense run, never acts and the summary reports fidelity none. This ticket owns detection and the research outcome: the research preset reports fidelity unsupported and counts the fact, and the strict preset reaches its existing refusal for such a fact. The typed stop is LDG-2997's. Ingest keeps the subtype vocabulary open. Intended changes: corporate-action summaries gain unsupported counts."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_ca_inert D1 and S2C_dense_acquisition report unsupported under research and reach the strict refusal under strict", "research-preset Sharadar fills, ledger and equity are unchanged (aggregates only from E:)"]
     evidence: []
   - id: "LDG-2997"
     title: "Make a declared corporate-action refusal a typed stop"
@@ -1155,8 +1163,8 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2996"]
-    scope: "Audit S2-009, maintainer decision 1. A corporate-action cash or quantity refusal declared by policy aborts the fold (FAILED, rollback). It becomes a typed INCOMPLETE stop with its accepted prefix and a reason token in the Availability Contract table, like terminal refusals. Existing tests pinning the abort (test-corporate-action-cash.R:116-122, test-sim-pit-inputs.R:490-493) are updated, not deleted."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_nonpositive N2 strict_dividend ends INCOMPLETE with its prefix and opens"]
+    scope: "Audit S2-009, cut decision 1. A corporate-action cash or quantity refusal declared by policy aborts the fold (FAILED, rollback). This ticket alone owns the change: the run ends INCOMPLETE with its accepted prefix and an exact reason token added to the Availability Contract table, like terminal refusals. Tests pinning the abort (test-corporate-action-cash.R:116-122, test-sim-pit-inputs.R:490-493) are updated, not deleted."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_nonpositive N2 strict_dividend and the LDG-2996 strict cases end INCOMPLETE with their prefix, the exact reason token, and open"]
     evidence: []
   - id: "LDG-2998"
     title: "Refuse a session calendar that does not cover the requested range"
@@ -1165,8 +1173,8 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: []
-    scope: "Audit S2-005. Nothing checks that declared sessions span the requested run range, so a short calendar truncates the run, which reports DONE and complete over a requested window taken from the calendar. Refuse with ledgr_sessions_incomplete, as the availability synthesis s3 states, and add 'over the requested range' to the Availability Contract."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_calendar_short K1 and K2 refuse with ledgr_sessions_incomplete on run, sweep and walk-forward"]
+    scope: "Audit S2-005. Nothing checks that declared sessions span the requested run range, so a short calendar truncates the run, which reports DONE and complete over a requested window taken from the calendar. Refuse with ledgr_sessions_incomplete, as the availability synthesis s3 states, on run, sweep and walk-forward windows, and add 'over the requested range' to the Availability Contract."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_calendar_short K1 and K2 refuse with ledgr_sessions_incomplete on run, sweep and walk-forward"]
     evidence: []
   - id: "LDG-2999"
     title: "Refuse non-positive prices at ingest"
@@ -1175,18 +1183,18 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: []
-    scope: "Audit S2-010, maintainer decision 2. Zero and negative OHLC seal today and a zero close becomes a priced current mark. Ingest refuses non-positive open, high, low and close (rejected outcome with a reason), so the runtime's priced plane and the sizing helpers agree."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_nonpositive N1 refuses at ingest with a classed reason"]
+    scope: "Audit S2-010, cut decision 2. Zero and negative OHLC seal today and a zero close becomes a priced current mark. Ingest refuses non-positive open, high, low and close (rejected outcome with a reason), so the runtime's priced plane and the sizing helpers agree. Before implementation, an aggregate preflight on the Sharadar lake counts non-positive OHLC rows (count only, no rows leave E:). Zero volume with positive prices stays valid."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_nonpositive N1 refuses at ingest with a classed reason", "a detector proves a zero-volume bar with positive prices still seals and fills", "the Sharadar preflight count is recorded before the change"]
     evidence: []
   - id: "LDG-3000"
-    title: "Refuse session instants that do not fall on their session date"
+    title: "Refuse session instants off their date and duplicate session instants"
     workstream: 24
     status: "draft"
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Audit M2. A session row whose POSIXct open and close fall on another date seals; ledgr_run() then fails with an unclassified DuckDB transaction error while ledgr_sweep() returns DONE. The sessions constructor or validation refuses instants that are not on their session_date in the venue zone, and duplicate session instants."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2C_session_posix refuses at ingest with a classed error"]
+    scope: "Audit M2. A session row whose POSIXct open and close fall on another date seals; ledgr_run() then fails with an unclassified DuckDB transaction error while ledgr_sweep() returns DONE. The sessions constructor or validation refuses instants that are not on their session_date in the venue zone, and duplicate session instants, each with its own classed error."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2C_session_posix refuses at ingest with a classed error", "independent cases for an off-date instant and for duplicate instants each fail when their own check is removed"]
     evidence: []
   - id: "LDG-3001"
     title: "Refuse ledgr_backtest() on availability-aware snapshots"
@@ -1195,8 +1203,8 @@ tickets:
     priority: "P1"
     effort: "S"
     dependencies: []
-    scope: "Audit S2-004 (medium after challenge). ledgr_backtest() never builds the availability block, so on a snapshot with declared facts it runs a dense fold that skips the fill clock, status, lifetime and the mandatory valuation policy that ledgr_run() enforces on the same basket. It refuses such snapshots with a classed error naming ledgr_experiment() and ledgr_run()."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2C_backtest B refuses; dense snapshots behave as before"]
+    scope: "Audit S2-004 (medium after challenge), cut decision 6. ledgr_backtest() never builds the availability block, so on a snapshot with declared facts it runs a dense fold that skips the fill clock, status, lifetime and the mandatory valuation policy that ledgr_run() enforces on the same basket. It refuses such snapshots with a classed error naming ledgr_experiment() and ledgr_run(). Intended change: ledgr_backtest() calls on availability-aware snapshots now fail."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2C_backtest B refuses; dense snapshots behave as before"]
     evidence: []
   - id: "LDG-3002"
     title: "Break top-n ties in C-locale order"
@@ -1206,7 +1214,7 @@ tickets:
     effort: "S"
     dependencies: []
     scope: "Audit S2-013. ledgr_select_top_n() orders ties with order(-values, ids), which follows LC_COLLATE; the provider uses C-locale radix order. Use radix order."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "B_helper_ties and S2C_ties select identically under C and English collation"]
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "B_helper_ties and S2C_ties select identically under C and English collation"]
     evidence: []
   - id: "LDG-3003"
     title: "Withhold metrics for incomplete performance in ledgr_compute_metrics()"
@@ -1215,18 +1223,18 @@ tickets:
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Audit S2-014, maintainer decision 3. ledgr_compute_metrics() reports annualized metrics for an INCOMPLETE run that summary() withholds. It follows the same completion evidence and withholds them."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_stops P: compute_metrics and summary withhold the same metrics"]
+    scope: "Audit S2-014, cut decision 3. ledgr_compute_metrics() reports annualized metrics for an INCOMPLETE run that summary() withholds. It follows the same completion evidence and withholds them. Intended change: metrics for INCOMPLETE runs."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_stops P: compute_metrics and summary withhold the same metrics"]
     evidence: []
   - id: "LDG-3004"
-    title: "Bind run and session identity to snapshot content"
+    title: "Bind run and session identity to snapshot content under a versioned rule"
     workstream: 25
     status: "draft"
     priority: "P1"
     effort: "M"
-    dependencies: []
-    scope: "Audit S2-016 and S2-015 with held item 5. config_hash carries the store-local data.snapshot_id and no snapshot_hash; walk-forward experiment_hash and session_id include the generated snapshot_id; ledgr_run() records an opening date before the sealed start as the config start. Identity binds snapshot_hash instead of snapshot_id (dropping the ID alone would leave config_hash without a snapshot binding; LTB test-availability-causality.R:124-127 must still distinguish snapshots differing only in facts), the contract's identity layers are kept, and the recorded start is the clamped scoring start. Existing stores: decide in the ticket whether stored hashes are recomputed or versioned, with the reason."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "A_calendar_window C6 gives equal config hashes for identical data under two IDs", "S2_calendar_short K3 and I_paths P10 record the sealed start"]
+    dependencies: ["LDG-2994"]
+    scope: "Audit S2-016 and S2-015 with held item 5; cut decision 7. config_hash carries the store-local data.snapshot_id and no snapshot_hash; walk-forward experiment_hash and session_id include the generated snapshot_id; ledgr_run() records an opening date before the sealed start as the config start. Identity binds snapshot_hash instead of snapshot_id under a new identity-rule version recorded with every run and session; LTB test-availability-causality.R:124-127 must still distinguish snapshots differing only in facts; the recorded start is the clamped scoring start. No migration: stored runs stay readable under their recorded rule, and resuming an old-rule run or rerunning an old-rule walk-forward session refuses with a classed error. Intended changes: config_hash, experiment_hash and session_id values."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "identical content sealed under two snapshot IDs gives equal new identity (A_calendar_window C6)", "different content under one reused snapshot ID gives different identity", "an old-rule run opens and its resume refuses with the classed error; an old-rule walk-forward session rerun refuses", "S2_calendar_short K3 and I_paths P10 record the sealed start"]
     evidence: []
   - id: "LDG-3005"
     title: "Record the candidate's identity at promotion and warn on mismatch"
@@ -1235,46 +1243,76 @@ tickets:
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Audit S2-006, maintainer decision 4. ledgr_promote() checks only the snapshot hash. It records the candidate's strategy, feature-set, universe and policy identities with the promotion context and warns when the promoting experiment differs; it does not refuse."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_promote_config variants warn and record both identities; the same variant is silent"]
+    scope: "Audit S2-006, cut decision 4. ledgr_promote() checks only the snapshot hash. It records the candidate's strategy, feature-set, universe and policy identities with the promotion context and warns when the promoting experiment differs; it does not refuse. The promotion context version increments for the new fields, and records written under the previous version stay readable. Intended change: promotion evidence."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "S2_promote_config variants warn and record both identities; the same variant is silent", "a promotion record of the previous context version reads unchanged"]
+    evidence: []
+  - id: "LDG-3010"
+    title: "Label assumption-backed knowledge and the universe kind in results"
+    workstream: 25
+    status: "draft"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "Audit Stage 3 G-007, cut decision 9. Only ledgr_experiment_plan() labels families whose knowledge clocks were assumed (assume_effective); summary() and print() say nothing, against availability synthesis s4.2, and nothing states that a fixed basket ran on a snapshot with membership facts. Results carry one line and a structured field naming the assumption-backed families and the universe kind (membership rule or fixed basket); history-wave decision C later extends the same field to corporate actions. Intended change: result summaries."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "I_paths P6 shows the label in summary() and print() for an assumption-backed run and its absence for an evidenced one"]
+    evidence: []
+  - id: "LDG-3011"
+    title: "Report or refuse off-session bars"
+    workstream: 24
+    status: "draft"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: "Audit Stage 3 G-008, cut decision 9. A valid bar not at a declared open-session close seals, is excluded at runtime and appears in no retrospective view; the ingest report is discarded on success, against availability synthesis s4.4. When sessions are declared, such bars are refused at ingest, or counted in a persisted ingest summary the snapshot info and run results expose; the ticket chooses one and states why in its evidence."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "I_paths P11 refuses the off-session bar or exposes its count after sealing"]
+    evidence: []
+  - id: "LDG-3012"
+    title: "Require a declared price basis for availability-aware experiments"
+    workstream: 24
+    status: "draft"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: "Audit Stage 3 G-009, cut decision 8. An undeclared price basis runs, and no contract states that ledgr's accounting assumes split-adjusted share units, so as-traded bars across a split book a phantom loss without a signal. An availability-aware experiment refuses an undeclared basis with a classed error; the Availability Contract states the split-adjusted share-unit model and what it implies for level rules and integer sizing; the plan and summary show the declared basis. Intended change: availability-aware experiments without a basis now refuse; adapters declare one."
+    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fills, ledger, equity and positions stay byte-identical on the fixture lane for every run the finding does not touch, and the ticket lists its intended changes; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "an availability-aware experiment on a snapshot without a declared basis refuses; one with split_adjusted runs unchanged"]
     evidence: []
   - id: "LDG-3006"
     title: "Build the dense reconstruction close map in one pass"
-    workstream: 25
+    workstream: 26
     status: "draft"
     priority: "P2"
     effort: "S"
-    dependencies: []
-    scope: "Held item 1. ledgr_derived_state_dense_close_map() scans every bar once per pulse, quadratic in pulses (a sibling of Cut 11 F1). Build it once by index."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "its growth probe is linear; reconstructed equity is byte-identical"]
+    dependencies: ["LDG-2995"]
+    scope: "Held item 1. ledgr_derived_state_dense_close_map() scans every bar once per pulse, quadratic in pulses (a sibling of Cut 11 F1). Build it once by index. A current-tree growth baseline is recorded before the change."
+    acceptance: ["the growth probe's exponent is at most 1.10 after the change against its recorded baseline", "reconstructed equity is byte-identical on the fixture lane", "focused reconstruction suites and the fast profile pass"]
     evidence: []
   - id: "LDG-3007"
-    title: "Fix the demo-strategy alias-class test"
-    workstream: 25
+    title: "Update the demo-strategy alias-class test"
+    workstream: 26
     status: "draft"
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Held item 2. test-demo-strategies.R:134 expects ledgr_no_active_alias_map and receives ledgr_unknown_feature_id; it fails identically on the pre-cut tree. Decide whether the class or the test is wrong and fix that side."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "the full local suite has no failures"]
+    scope: "Held item 2. test-demo-strategies.R:134 expects ledgr_no_active_alias_map and receives ledgr_unknown_feature_id; it fails identically on the pre-cut tree. Under the accepted feature-map read-surface authority ledgr_unknown_feature_id is correct, so the stale test is updated."
+    acceptance: ["the block expects ledgr_unknown_feature_id with its message", "the full local suite has no failures"]
     evidence: []
   - id: "LDG-3008"
     title: "Find the LTB-0164 fast-lane stall"
-    workstream: 25
+    workstream: 26
     status: "draft"
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Held item 3. LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane; the cause is investigated, not the block moved."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "the cause is named with evidence and fixed, or recorded with a bounded detector"]
+    scope: "Held item 3. LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane, open since Cut 9. A current-tree timing baseline over repeated runs is recorded first; the cause is investigated, not the block moved."
+    acceptance: ["the cause is named with evidence", "it is fixed, or a bounded detector records the stall", "the fast profile stays within its bound over three runs"]
     evidence: []
   - id: "LDG-3009"
-    title: "Make check-test-gate accept recorded runs"
-    workstream: 25
+    title: "Fix check-test-gate records and the remaining contract sentences"
+    workstream: 26
     status: "draft"
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Held item 4. tools/check-test-gate.R --records refused three recorded ordinary runs ('Timing gate requires 1 run(s), received 3'); the tool or tests/README.md is wrong. Fix the wrong side. Also adds the contract sentences for S2-017 (risk_mark and mark_source planes) and S2-018 (partial status coverage), and probes PIT-12-005 (recording pulse derived two ways) once."
-    acceptance: ["the named audit probe shows the defect on the pre-cut tree and its absence on the candidate tree", "a registered block in tests/claims.yml fails when the fix is removed", "fixture-lane byte identity holds for every run the finding does not touch; affected public paths show no clock regression beyond the declared noise rule", "contracts.md and NEWS describe the behavior; focused suites and the fast profile pass", "check-test-gate --records accepts the documented record set", "the PIT-12-005 probe result is recorded"]
+    scope: "Held item 4 plus contract residuals. tools/check-test-gate.R --records refused three recorded ordinary runs ('Timing gate requires 1 run(s), received 3'); the tool or tests/README.md is wrong and is fixed. The Context and Availability Contracts name the risk_mark and mark_source planes (S2-017) and state that partial trading-status coverage makes uncovered instrument-times status_unknown (S2-018 residual). PIT-12-005 (recording pulse derived two ways) is probed once on the fixture."
+    acceptance: ["check-test-gate --records accepts the documented record set and refuses an incomplete one", "both contract sentences are present", "the PIT-12-005 probe result (agree or diverge, with evidence) is recorded"]
     evidence: []

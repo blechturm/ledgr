@@ -630,3 +630,22 @@ non-gating plotting pass; context-frame retirement with the WS3 cut, which
 changes the same strategy surface. The resulting order is: Workstream 22, the
 WS5 verification session, Cut 11 close, audit Stages 1 to 3, the consistency
 cut, the WS3/WS4 history wave and cut, WS7, the WS6 probe, WS8.
+
+2026-10-10 maintainer amendment, after the point-in-time universe audit
+(`inst/design/audits/v0_2_2_pit_universe_audit/`, Gates 1 to 3): the
+consistency cut is Cut 12 "Point-in-time consistency" (Workstreams 23 to 26,
+LDG-2993 to LDG-3012), including the audit's Stage 3 disclosure and price-basis
+items. The history wave's scope widens by the register rows PIT-G-013 (v11
+price-input carry must not feed zero returns into return and volatility
+features), PIT-G-014 (whether a carry chain equals one continuous run) and
+PIT-G-015 (the history start covers mark history and dividend entitlement),
+and Session E trims the decision trace only where omitted rows are exactly
+reconstructible. WS7 acceptance adds two checks: the estimator's sample on
+carried inputs (G-013) and the run's dividend status (G-016). WS8 adds one
+buy-and-hold reconciliation of the Sharadar build against the vendor's
+dividend-adjusted close (G-025). The Sharadar adapter emits no corporate-action
+facts, so every Sharadar result so far excludes dividends; emitting
+`ordinary_cash_dividend` facts is a ledgr-research adapter task (G-016,
+related LFB-013), and until it lands Sharadar results and the WS7 proof state
+"dividends excluded" in their headline. The WS5 verification session was
+moved after audit Stage 1 and is next after Cut 12's cut review.
