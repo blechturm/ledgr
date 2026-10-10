@@ -1509,7 +1509,11 @@ Accepted change pending:
   open-session calendar through its last fully valued pulse, with each held
   instrument valued at its last observed close in the run window, which is
   the current, stale or frozen mark the fold used; members may miss bars. The
-  rebuilt equity equals the stored equity exactly.
+  rebuilt equity equals the stored equity exactly. The rebuild and its cash
+  and position identities cover the ledger events at or before that pulse; a
+  fill an INCOMPLETE run executed after its last fully valued pulse
+  (disclosed by `last_executed_ts_utc`) stays in the ledger and the fills
+  reader but outside the rebuilt state (Cut 12 LDG-2995).
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.

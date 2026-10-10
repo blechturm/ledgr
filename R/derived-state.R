@@ -116,6 +116,14 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     close_map <- ledgr_derived_state_dense_close_map(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
   }
 
+  # The rebuild covers events through its last pulse. An INCOMPLETE run can hold
+  # a fill executed after its last fully valued pulse (disclosed as
+  # last_executed_ts_utc) that no equity row values; the identities and the
+  # returned state describe the valued prefix. DONE and dense runs execute
+  # nothing after their last pulse, so nothing is dropped for them.
+  last_pulse <- as.numeric(as.POSIXct(pulses[[length(pulses)]], tz = "UTC"))
+  events <- events[as.numeric(as.POSIXct(events$ts_utc, tz = "UTC")) <= last_pulse, , drop = FALSE]
+
   prepared <- ledgr_prepare_accounting_events(events, instrument_ids)
   replay <- ledgr_replay_accounting_events(prepared, initial_cash = initial_cash)
   event_at_pulse <- findInterval(

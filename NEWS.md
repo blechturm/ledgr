@@ -17,6 +17,12 @@
   first resumed pulse stops now keeps the results its earlier attempt
   committed, identical to an uninterrupted run, instead of discarding them.
 
+- `ledgr_state_reconstruct()` now rebuilds an incomplete availability-aware
+  run whose last fill executed after its last valued pulse. It used to stop
+  with a cash-identity error; the rebuild now covers the ledger up to the last
+  valued pulse, matching the stored equity, while the later fill stays visible
+  in the ledger and in `ledgr_results(bt, "fills")`.
+
 - `ledgr_walk_forward()` gains `no_selection = c("previous", "fail")`. A fold
   in which no training candidate has a finite selection metric no longer ends
   the whole session: by default it runs its test window with the parameters

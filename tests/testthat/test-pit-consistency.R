@@ -76,3 +76,39 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   testthat::expect_identical(resumed$completion, fresh$completion)
   close(ledgr_run_open(snapshot, "resumed_stop"))
 })
+
+testthat::test_that("[LTB-0219] an INCOMPLETE run with a fill after its achieved end reconstructs", {
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  con <- ledgr:::get_connection(snapshot)
+  days <- pit_consistency_days()
+  # BBB bought for the day-5 open stops the run at day 6 (no bar, no stale
+  # allowance); AAA decided on day 5 fills at day 6's open, after the achieved end.
+  bbb_day <- as.character(days[[4]])
+  aaa_day <- as.character(days[[5]])
+  strategy <- function(ctx, params) {
+    target <- ctx$hold()
+    day <- substr(ctx$ts_utc, 1, 10)
+    if (identical(day, bbb_day)) target[["BBB"]] <- 1
+    if (identical(day, aaa_day)) target[["AAA"]] <- 1
+    target
+  }
+  exp <- ledgr_experiment(
+    snapshot, strategy, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  close(ledgr_run(exp, run_id = "post_prefix_fill"))
+  stored <- pit_consistency_stored(con, "post_prefix_fill")
+  testthat::expect_identical(stored$completion$intended_terminal_status, "INCOMPLETE")
+  testthat::expect_true(stored$completion$last_executed_ts_utc > stored$completion$achieved_end_utc)
+  fills <- DBI::dbGetQuery(con, "SELECT instrument_id FROM ledger_events WHERE run_id = 'post_prefix_fill' AND event_type = 'FILL' ORDER BY event_seq")
+  testthat::expect_identical(fills$instrument_id, c("BBB", "AAA"))
+
+  rebuilt <- ledgr_state_reconstruct("post_prefix_fill", con)
+  after <- pit_consistency_stored(con, "post_prefix_fill")
+  testthat::expect_equal(after$equity, stored$equity, tolerance = 0)
+  qty <- stats::setNames(rebuilt$positions$qty, rebuilt$positions$instrument_id)
+  testthat::expect_identical(unname(qty[["BBB"]]), 1)
+  testthat::expect_identical(unname(qty[["AAA"]]), 0)
+})
