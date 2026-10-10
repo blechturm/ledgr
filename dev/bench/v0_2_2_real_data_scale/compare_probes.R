@@ -49,12 +49,15 @@ for (f in c("F9", "F10")) {
 }
 b <- exponent_of(pre, "F8"); a <- exponent_of(fin, "F8")
 add("F8", "seconds per fill growth exponent", b, a, a <= 1.10, "no per-fill growth")
-b <- val(pre, "F11", "provider_builds"); a <- val(fin, "F11", "provider_builds")
-add("F11", "provider_builds", b[[length(b)]], a[[length(a)]], isTRUE(all.equal(a, b, tolerance = 0.05)),
-    "rejected: shape unchanged as recorded")
-# F12 and F13 were reinstated on their combined effective speedup (maintainer,
-# 2026-10-10): the repeated per-pulse work must be reduced.
-for (spec in list(c("F12", "canonical_json_calls_per_pulse"), c("F13", "context_vec_builds_per_pulse"))) {
+# F11 was rejected; F12 was reinstated and reverted again after the Codex close
+# review found it persisted stale in-place-changed state (LTB-0215).
+for (spec in list(c("F11", "provider_builds"), c("F12", "canonical_json_calls_per_pulse"))) {
+  b <- val(pre, spec[[1L]], spec[[2L]]); a <- val(fin, spec[[1L]], spec[[2L]])
+  add(spec[[1L]], spec[[2L]], b[[length(b)]], a[[length(a)]], isTRUE(all.equal(a, b, tolerance = 0.05)),
+      "rejected: shape unchanged as recorded")
+}
+# The single ctx$vec build (F13) stays: its repeated per-pulse work must be reduced.
+for (spec in list(c("F13", "context_vec_builds_per_pulse"))) {
   b <- val(pre, spec[[1L]], spec[[2L]]); a <- val(fin, spec[[1L]], spec[[2L]])
   add(spec[[1L]], spec[[2L]], b[[length(b)]], a[[length(a)]], a[[length(a)]] < b[[length(b)]],
       if (a[[length(a)]] < b[[length(b)]]) "per-pulse work reduced" else "NOT reduced")

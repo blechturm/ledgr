@@ -87,6 +87,15 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   mutant <- ledgr:::ledgr_accounting_positions_at_pulses(replay, at, "AAA")
   testthat::expect_false(identical(unname(mutant[1L, ]), unname(fractional$position["AAA", ])))
 
+  # A ledger whose timestamps decrease in event order is refused, so readers
+  # replay per time.
+  backwards <- synthetic[1:3, , drop = FALSE]
+  backwards$run_id <- "backwards"
+  backwards$event_id <- sprintf("backwards_%08d", 1:3)
+  backwards$ts_utc <- as.POSIXct("2021-03-01 21:00", tz = "UTC") + 86400 * c(2, 0, 1)
+  DBI::dbAppendTable(con, "ledger_events", backwards)
+  testthat::expect_null(ledgr:::ledgr_availability_positions_timeline(con, "backwards", at))
+
   # The active result branch equals its per-time fallback.
   active <- ledgr_results(bt, "availability")
   testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
@@ -265,4 +274,58 @@ testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the origin
   got <- rbind(ledgr:::ledgr_feature_rows_block("r", ids, 1:2, pulses, defs, values),
                ledgr:::ledgr_feature_rows_block("r", ids, 3L, pulses, defs, values))
   testthat::expect_identical(got, expected)
+})
+
+testthat::test_that("[LTB-0215] strategy state changed in place is persisted as it is on every pulse", {
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  live <- new.env()
+  live$x <- numeric()
+  mutate <- function(ctx, params) {
+    st <- ctx$state_prev
+    if (!is.list(st) || is.null(st$x)) {
+      st <- list(x = 0)
+    } else {
+      collapse::setv(st, 1L, st$x + 1, vind1 = TRUE)
+    }
+    live$x <- c(live$x, st$x)
+    list(targets = ctx$flat(), state_update = st)
+  }
+  bt <- ledgr_run(ledgr_experiment(snapshot, mutate, cost_model = ledgr_cost_zero(),
+                                   opening = ledgr_opening(cash = 1000)), run_id = "in_place")
+  on.exit(close(bt), add = TRUE)
+  got <- DBI::dbGetQuery(ledgr:::get_connection(snapshot),
+                         "SELECT state_json FROM strategy_state WHERE run_id = 'in_place' ORDER BY ts_utc")$state_json
+  expected <- vapply(live$x, function(x) as.character(ledgr:::canonical_json(list(x = x))), character(1))
+  testthat::expect_gt(length(unique(live$x)), 3L)
+  testthat::expect_identical(got, expected)
+})
+
+testthat::test_that("[LTB-0216] the dense results plane replays the ledger once, not per time", {
+  bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
+  snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  flip <- function(ctx, params) {
+    target <- ctx$flat()
+    target[[if (as.integer(format(as.Date(substr(ctx$ts_utc, 1, 10)), "%d")) %% 2L == 0L) "AAA" else "BBB"]] <- 3
+    target
+  }
+  bt <- suppressWarnings(ledgr_run(ledgr_experiment(snapshot, flip, cost_model = ledgr_cost_zero(),
+                                   opening = ledgr_opening(cash = 10000)), run_id = "dense_once"))
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_gt(nrow(ledgr_results(bt, "fills")), 4L)
+  per_time <- new.env()
+  per_time$calls <- 0L
+  asof <- ledgr:::ledgr_availability_positions_asof
+  testthat::local_mocked_bindings(
+    ledgr_availability_positions_asof = function(...) { per_time$calls <- per_time$calls + 1L; asof(...) },
+    .package = "ledgr"
+  )
+  once <- ledgr_results(bt, "availability")
+  testthat::expect_identical(per_time$calls, 0L)
+  testthat::expect_true(any(once$held))
+  testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
+  testthat::expect_identical(ledgr_results(bt, "availability"), once)
+  testthat::expect_identical(per_time$calls, length(unique(once$ts_utc)))
 })
