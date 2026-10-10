@@ -56,6 +56,13 @@ small probe (`inst/design/spike_protocol.md`).
    to the history-wave register; S2-012 and S2-003 D2 to their existing
    routes. The 641-line findings file is accepted over its budget. Next:
    Stage 3 (may run alongside Cut 12).
+   Stage 3 complete 2026-10-10: `gap_analysis.md` (294 lines). Yardstick: 19
+   of 48 universal guarantees met, 26 partly, 2 not met (exact-quantity
+   settlement, a declared non-goal), 1 not applicable; 23 met after Cut 12.
+   25 gaps: 8 defects (6 in Cut 12, new G-007 and G-008), 4 design debt, 11
+   planned capabilities, 2 true external gaps. Next: Gate 3, the maintainer's
+   decision on which gaps to address, in what order, and the history wave's
+   scope.
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
