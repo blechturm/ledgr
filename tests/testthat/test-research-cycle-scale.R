@@ -87,7 +87,7 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   mutant <- ledgr:::ledgr_accounting_positions_at_pulses(replay, at, "AAA")
   testthat::expect_false(identical(unname(mutant[1L, ]), unname(fractional$position["AAA", ])))
 
-  # Both result branches equal their per-time fallback.
+  # The active result branch equals its per-time fallback.
   active <- ledgr_results(bt, "availability")
   testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
   testthat::expect_identical(ledgr_results(bt, "availability"), active)
