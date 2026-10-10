@@ -1,7 +1,7 @@
 # Cut 11 Workstream 22: research-cycle scaling repairs. Each rewritten shape
 # is compared with the original algorithm, kept here as the reference.
 
-scale_test_events_snapshot <- function() {
+scale_test_events_snapshot <- function(second_members = NULL) {
   days <- as.Date("2021-01-04") + c(0:4, 7:11, 14:18)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   ids <- c("AAA", "BBB", "CCC")
@@ -16,6 +16,11 @@ scale_test_events_snapshot <- function() {
   open <- calendar %in% days
   membership <- data.frame(effective_from = utc(days[[1]] - 1), knowledge_time = utc(days[[1]] - 1), source = "t")
   membership$members <- I(list(ids))
+  if (!is.null(second_members)) {
+    later <- data.frame(effective_from = utc(days[[4]]), knowledge_time = utc(days[[4]]), source = "t")
+    later$members <- I(list(second_members))
+    membership <- rbind(membership, later)
+  }
   facts <- ledgr_facts(
     ledgr_facts_sessions(data.frame(session_date = calendar, status = ifelse(open, "open", "closed"),
                                     session_open = ifelse(open, "14:30:00", NA), session_close = ifelse(open, "21:00:00", NA)),
@@ -45,14 +50,47 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   times <- sort(unique(ledgr_results(bt, "diagnostics")$ts_utc))
   testthat::expect_gt(nrow(ledgr_results(bt, "fills")), 5L)
   testthat::expect_true(any(ledgr_results(bt, "ledger")$event_type == "DISPOSITION"))
+  full_expected <- function(run_id, ids, time) {
+    expected <- ledgr:::ledgr_availability_positions_asof(con, run_id, time)
+    out <- stats::setNames(rep(0, length(ids)), ids)
+    out[names(expected)] <- expected
+    out
+  }
   timeline <- ledgr:::ledgr_availability_positions_timeline(con, "timeline", times)
   for (i in seq_along(times)) {
-    expected <- ledgr:::ledgr_availability_positions_asof(con, "timeline", times[[i]])
-    got <- timeline$position[, i]
-    traded <- names(expected) %||% character()
-    testthat::expect_identical(unname(got[traded]), unname(expected))
-    testthat::expect_true(all(got[setdiff(names(got), traded)] == 0))
+    testthat::expect_identical(timeline$position[, i], full_expected("timeline", timeline$ids, times[[i]]))
   }
+
+  # Ten 0.1 buys and one 1.0 sell: the sequential replay ends at -1.1e-16,
+  # which long-double cumsum() would round to 0, flipping the held flag.
+  template <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = 'timeline' AND event_type = 'FILL' LIMIT 1")
+  synthetic <- template[rep(1L, 11L), , drop = FALSE]
+  synthetic$run_id <- "synthetic"
+  synthetic$event_id <- sprintf("synthetic_%08d", 1:11)
+  synthetic$event_seq <- 1:11
+  synthetic$ts_utc <- as.POSIXct("2021-02-01 21:00", tz = "UTC") + 86400 * c(0:9, 9)
+  synthetic$instrument_id <- "AAA"
+  synthetic$side <- c(rep("BUY", 10L), "SELL")
+  synthetic$qty <- c(rep(0.1, 10L), 1)
+  synthetic$price <- 10
+  synthetic$fee <- 0
+  synthetic$meta_json <- "{}"
+  DBI::dbAppendTable(con, "ledger_events", synthetic)
+  at <- as.POSIXct("2021-02-01 21:00", tz = "UTC") + 86400 * c(-1, 0:9)
+  fractional <- ledgr:::ledgr_availability_positions_timeline(con, "synthetic", at)
+  for (i in seq_along(at)) {
+    testthat::expect_identical(fractional$position[, i], full_expected("synthetic", fractional$ids, at[[i]]))
+  }
+  testthat::expect_true(fractional$position["AAA", 11L] != 0)
+  events <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = 'synthetic' ORDER BY event_seq")
+  replay <- ledgr:::ledgr_replay_accounting_events(ledgr:::ledgr_prepare_accounting_events(events))
+  mutant <- ledgr:::ledgr_accounting_positions_at_pulses(replay, at, "AAA")
+  testthat::expect_false(identical(unname(mutant[1L, ]), unname(fractional$position["AAA", ])))
+
+  # Both result branches equal their per-time fallback.
+  active <- ledgr_results(bt, "availability")
+  testthat::local_mocked_bindings(ledgr_availability_positions_timeline = function(...) NULL, .package = "ledgr")
+  testthat::expect_identical(ledgr_results(bt, "availability"), active)
 })
 
 # The per-fill loop the vectorised resolver replaced.
@@ -152,11 +190,49 @@ testthat::test_that("[LTB-0212] vectorised asset-state normalisation equals the 
   for (case in cases) {
     state <- case$state
     if (is.null(state)) state <- list()
-    testthat::expect_identical(
-      ledgr:::ledgr_fold_asset_state_normalize(case$state, case$axis, drop_exited = TRUE),
-      reference(state, case$axis)
-    )
+    once <- ledgr:::ledgr_fold_asset_state_normalize(case$state, case$axis, drop_exited = TRUE)
+    testthat::expect_identical(once, reference(state, case$axis))
+    testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis), once)
+    testthat::expect_identical(ledgr:::ledgr_fold_asset_state_normalize(once, case$axis, drop_exited = TRUE), once)
   }
+})
+
+testthat::test_that("[LTB-0214] carried strategy state equals normalising it on every pulse", {
+  snapshot <- scale_test_events_snapshot(second_members = c("AAA", "BBB"))
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  reference <- function(state_value, axis) {
+    asset_state <- state_value$asset_state %||% list()
+    normalized <- stats::setNames(vector("list", length(axis)), axis)
+    for (id in axis) normalized[[id]] <- asset_state[[id]] %||% list()
+    state_value$asset_state <- normalized
+    state_value
+  }
+  seen <- new.env()
+  seen$axes <- list()
+  seen$updates <- list()
+  carry <- function(ctx, params) {
+    k <- length(seen$axes) + 1L
+    seen$axes[[k]] <- ctx$universe
+    extra <- if ("CCC" %in% ctx$universe) list(CCC = list(m = k)) else list()
+    update <- if (k %% 3L == 2L) list(k = k, asset_state = c(list(AAA = list(n = k), BBB = NULL), extra)) else NULL
+    seen$updates[k] <- list(update)
+    list(targets = ctx$flat(), state_update = update)
+  }
+  bt <- ledgr_run(ledgr_experiment(snapshot, carry, universe = ledgr_universe_members("u"),
+                                   valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+                                   opening = ledgr_opening(cash = 1000)), run_id = "carry")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_true(any(lengths(seen$axes) == 3L) && any(lengths(seen$axes) == 2L))
+  expected <- character(length(seen$axes))
+  previous <- list()
+  for (k in seq_along(seen$axes)) {
+    state <- if (is.null(seen$updates[[k]])) previous else seen$updates[[k]]
+    previous <- reference(state, seen$axes[[k]])
+    expected[[k]] <- as.character(ledgr:::canonical_json(previous))
+  }
+  got <- DBI::dbGetQuery(ledgr:::get_connection(snapshot),
+                         "SELECT state_json FROM strategy_state WHERE run_id = 'carry' ORDER BY ts_utc")$state_json
+  testthat::expect_identical(got, expected)
 })
 
 testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the original duplicates and order", {
@@ -166,6 +242,12 @@ testthat::test_that("[LTB-0213] pair keys and feature row blocks keep the origin
   ts <- as.POSIXct("2021-01-04 21:00", tz = "UTC") + c(0, 0, 86400, 86400)
   testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(c("A", "A", "A", "B"), ts)),
                              duplicated(paste0(c("A", "A", "A", "B"), "\n", ts)))
+  fall_back <- as.POSIXct("2021-11-07 05:30", tz = "UTC") + c(0, 3600)
+  local <- .POSIXct(as.numeric(fall_back), tz = "America/New_York")
+  testthat::expect_identical(as.character(local[[1]]), as.character(local[[2]]))
+  testthat::expect_false(identical(as.numeric(local[[1]]), as.numeric(local[[2]])))
+  testthat::expect_identical(duplicated(ledgr:::ledgr_pair_key(c("A", "A"), local)),
+                             duplicated(paste(c("A", "A"), local, sep = "\r")))
 
   ids <- c("I1", "I2", "I3")
   pulses <- as.POSIXct("2021-01-04 21:00", tz = "UTC") + 86400 * 0:3

@@ -100,7 +100,11 @@ ledgr_fold_asset_state_normalize <- function(state_value, axis, drop_exited = FA
   if (length(asset_state) > 0L) {
     idx <- match(axis, names(asset_state))
     present <- !is.na(idx)
-    present[present] <- !vapply(asset_state, is.null, logical(1))[idx[present]]
+    # Only zero-length entries can be NULL; is.null() runs on those alone.
+    empty <- which(lengths(asset_state) == 0L)
+    is_null <- logical(length(asset_state))
+    is_null[empty] <- vapply(asset_state[empty], is.null, logical(1))
+    present[present] <- !is_null[idx[present]]
     normalized[present] <- asset_state[idx[present]]
   }
   state_value$asset_state <- normalized

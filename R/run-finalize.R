@@ -557,7 +557,7 @@ ledgr_run_finalize <- function(con,
         # the feature matrices by one (feature, pulse, instrument) array.
         per_instrument <- n_def * n_p
         block <- max(1L, as.integer(500000 %/% per_instrument))
-        starts <- seq.int(1L, length(instrument_ids), by = block)
+        starts <- if (length(instrument_ids) > 0L) seq.int(1L, length(instrument_ids), by = block) else integer()
         DBI::dbWithTransaction(con, {
           DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ?", params = list(run_id))
           for (first in starts) {

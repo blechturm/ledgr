@@ -382,7 +382,7 @@ ledgr_availability_positions_timeline <- function(con, run_id, times) {
   found[found] <- key_inst[hit[found]] == q_inst[found]
   position <- numeric(length(q_inst))
   position[found] <- after[hit[found]]
-  list(ids = ids, position = matrix(position, nrow = length(ids), dimnames = list(ids, NULL)))
+  list(ids = ids, position = matrix(position, nrow = length(ids), ncol = n_times, dimnames = list(ids, NULL)))
 }
 
 ledgr_availability_marks_rows <- function(con,
