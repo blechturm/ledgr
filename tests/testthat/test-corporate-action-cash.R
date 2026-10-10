@@ -208,6 +208,27 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   # Dense stamping (fills at the bar time): a fill decided at pulse 2 is
   # stamped at pulse 3 and stays excluded.
   testthat::expect_identical(bound(fill(1L, close[[3L]], "BUY", 10), 3L), 0)
+  # A ledger whose timestamps decrease in event order (never written by ledgr)
+  # counts its events at or before the boundary, in event order.
+  testthat::expect_identical(
+    bound(rbind(fill(1L, open[[3L]], "BUY", 10), fill(2L, open[[2L]], "BUY", 0.1), fill(3L, open[[2L]], "BUY", 0.2)), 3L),
+    0.1 + 0.2
+  )
+  # The position-only pass behind the recount equals the full replay's
+  # positions on interleaved instruments, whole and fractional.
+  mixed <- function(qty) {
+    out <- rbind(fill(1L, open[[2L]], "BUY", qty[[1L]]), fill(2L, open[[2L]] + 1, "BUY", qty[[2L]]),
+                 fill(3L, open[[3L]], "SELL", qty[[3L]]), fill(4L, open[[3L]] + 1, "BUY", qty[[4L]]))
+    out$instrument_id <- c("AAA", "BBB", "AAA", "BBB")
+    ledgr:::ledgr_prepare_accounting_events(out)
+  }
+  for (qty in list(c(3, 2, 1, 4), c(0.3, 0.2, 0.1, 0.7))) {
+    prepared <- mixed(qty)
+    testthat::expect_identical(
+      ledgr:::ledgr_accounting_position_after(prepared),
+      ledgr:::ledgr_replay_accounting_events(prepared)$position_after
+    )
+  }
 })
 
 # ledgr-test-profile: review

@@ -355,9 +355,9 @@ ledgr_execute_fold <- function(execution, output_handler) {
   stop_reason <- NA_character_
   last_fully_valued_ts <- as.POSIXct(NA, tz = "UTC")
   last_executed_ts <- as.POSIXct(NA, tz = "UTC")
-  # A resumed availability run continues a committed prefix: only RUNNING runs
-  # resume, so every pulse before start_idx was valued, and its last fill is in
-  # the ledger. The completion row then covers the whole run, not only this
+  # A resumed availability run continues the prefix committed with its strategy
+  # state: every pulse before start_idx was valued, and its last fill is in the
+  # ledger. The completion row then covers the whole run, not only this
   # invocation, even when the first resumed pulse stops.
   if (availability_active && start_idx > 1L) {
     last_fully_valued_ts <- as.POSIXct(pulses_posix[[start_idx - 1L]], tz = "UTC")
@@ -481,6 +481,23 @@ ledgr_execute_fold <- function(execution, output_handler) {
 
   run_loop <- function() {
     if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
+      # A resume after the last pulse values nothing new; an availability run
+      # still closes with its completion row, from the seeded prefix.
+      if (availability_active && length(pulses_posix) > 0L) {
+        output_handler$write_run_evidence(
+          ledgr_availability_completion_row(
+            run_id = run_id,
+            pulses_posix = pulses_posix,
+            status = terminal_status,
+            stop_reason = stop_reason,
+            affected = affected,
+            last_fully_valued_ts_utc = last_fully_valued_ts,
+            last_executed_ts_utc = last_executed_ts
+          ),
+          diagnostic_writer$drain()
+        )
+        diagnostic_writer$release()
+      }
       return(invisible(NULL))
     }
 

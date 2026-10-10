@@ -201,21 +201,26 @@ ledgr_corporate_action_composition_report <- function(con,
     params = list(snapshot_id)
   )$instrument_id
   # The run's own pulses are its equity timestamps; each fact binds at the pulse
-  # before its entitlement pulse, as the fold does.
+  # before its entitlement pulse, as the fold does. The fold binds no fact
+  # entitled outside its pulses, so neither does the report.
   pulses <- as.numeric(as.POSIXct(DBI::dbGetQuery(
     con,
     "SELECT ts_utc FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
     params = list(run_id)
   )$ts_utc, tz = "UTC"))
   entitlement <- as.numeric(as.POSIXct(rows$entitlement_time[selected], tz = "UTC"))
+  inside <- length(pulses) > 0L & !is.na(entitlement) &
+    entitlement >= pulses[1L] & entitlement <= pulses[length(pulses)]
   before <- findInterval(entitlement, pulses, left.open = TRUE)
   cum_boundaries <- .POSIXct(ifelse(before >= 1L, pulses[pmax(before, 1L)], NA_real_), tz = "UTC")
-  quantity <- ledgr_corporate_action_past_quantities(
+  quantity <- numeric(length(selected))
+  quantity[inside] <- ledgr_corporate_action_past_quantities(
     events,
+    meta,
     rows,
-    selected,
+    selected[inside],
     as.character(instrument_ids),
-    cum_boundaries
+    cum_boundaries[inside]
   )
   relevant <- quantity != 0
   if (!any(relevant)) return(empty)

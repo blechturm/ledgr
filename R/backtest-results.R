@@ -738,7 +738,9 @@ print.ledgr_backtest <- function(x, ...) {
 
 ledgr_result_period_label <- function(start, end) {
   values <- as.POSIXct(c(start, end), tz = "UTC")
-  midnight <- format(values, "%H:%M:%S", tz = "UTC") == "00:00:00"
+  # A run that stopped on its first pulse valued nothing.
+  if (length(values) != 2L || anyNA(values)) return("no valued pulse")
+  midnight <-format(values, "%H:%M:%S", tz = "UTC") == "00:00:00"
   labels <- if (all(midnight)) {
     format(values, "%Y-%m-%d", tz = "UTC")
   } else {

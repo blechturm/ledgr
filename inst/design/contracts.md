@@ -738,13 +738,17 @@ Accepted change pending:
   position after every event at or before the pulse before the entitlement
   pulse, so a fill executed at the entitlement session's open is not
   entitled; an entitlement on the run's first pulse binds the opening
-  positions. `ledgr_corporate_action_summary()` counts the same way (Cut 12
-  LDG-2993). An availability run whose invocation values no pulse (a stop on
-  its first pulse, or on the first pulse of a resume) still finalizes through
-  its equity prefix: a first-pulse stop stores no equity rows and its run
-  opens and reruns; a resumed run keeps the prefix, achieved end and last
-  execution its earlier invocations committed, so it stores what the
-  uninterrupted run stores (Cut 12 LDG-2994).
+  positions. The acquisition and spin-off composition in
+  `ledgr_corporate_action_summary()` counts the same way and, like the fold,
+  binds no fact entitled outside the run's pulses (Cut 12 LDG-2993). An
+  availability run whose invocation values no pulse (a stop on its first
+  pulse, a stop on the first pulse of a resume, or a resume after its last
+  pulse) still finalizes through its equity prefix: a first-pulse stop stores
+  no equity rows and its run opens and reruns; a resumed run keeps the
+  prefix, achieved end and last execution its earlier invocations committed,
+  so its equity, completion row, ledger and diagnostics equal the
+  uninterrupted run's (Cut 12 LDG-2994). Persisted feature rows are not part
+  of that agreement: a resumed run's can differ from the uninterrupted run's.
   An interrupt inside the durable fold transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.

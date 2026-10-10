@@ -270,6 +270,49 @@ testthat::test_that("[LTB-0068] composition evidence is filtered and prepared on
   testthat::expect_true(grepl("rowsum", body_text, fixed = TRUE))
 })
 
+# The report recounts each fact's entitled quantity as the fold binds it: at the
+# pulse before its entitlement pulse, the opening positions on the first pulse,
+# and nothing for a fact entitled outside the run's pulses.
+testthat::test_that("[LTB-0220] composition binds each fact at the fold's boundary", {
+  value <- corporate_action_composition_run(
+    "spin_off",
+    ledgr_corporate_actions_research(),
+    "composition-boundary"
+  )
+  withr::defer(close(value$run))
+  withr::defer(ledgr_snapshot_close(value$snapshot))
+  opened <- ledgr:::ledgr_backtest_read_connection(value$run)
+  withr::defer(opened$close())
+  snapshot_id <- value$run$config$data$snapshot_id
+  base <- ledgr:::ledgr_corporate_action_rows(opened$con, snapshot_id)
+  pulses <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:2
+  entitlement <- c(pulses, pulses[[1L]] - 86400, pulses[[3L]] + 86400)
+  facts <- base[rep(1L, length(entitlement)), , drop = FALSE]
+  facts$fact_id <- c("first", "second", "third", "before", "after")
+  facts$entitlement_time <- entitlement
+
+  seen <- list()
+  original <- ledgr:::ledgr_corporate_action_past_quantities
+  testthat::local_mocked_bindings(
+    ledgr_corporate_action_past_quantities = function(events, meta, rows, selected, instrument_ids, cum_boundaries) {
+      seen[[length(seen) + 1L]] <<- list(fact_id = rows$fact_id[selected], boundary = cum_boundaries)
+      original(events, meta, rows, selected, instrument_ids, cum_boundaries)
+    },
+    .package = "ledgr"
+  )
+  report <- ledgr:::ledgr_corporate_action_composition_report(
+    opened$con, snapshot_id, value$run$run_id, facts
+  )
+  testthat::expect_length(seen, 1L)
+  testthat::expect_identical(seen[[1L]]$fact_id, c("first", "second", "third"))
+  testthat::expect_identical(
+    as.numeric(seen[[1L]]$boundary),
+    c(NA, as.numeric(pulses[[1L]]), as.numeric(pulses[[2L]]))
+  )
+  testthat::expect_identical(report$source_fact_id, c("first", "second", "third"))
+  testthat::expect_identical(report$entitled_parent_quantity, c(2, 2, 2))
+})
+
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0053] quantity refusal and transaction identity fail closed", {
   reported <- corporate_action_composition_run(

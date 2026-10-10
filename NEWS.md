@@ -6,16 +6,22 @@
   an uninterrupted run and a sweep. Previously the resumed run counted a fill
   executed at the entitlement session's open, so a buyer on that open received
   the dividend only after a resume and a seller lost it, changing cash and
-  equity; `ledgr_corporate_action_summary()` counted the same way and is
-  corrected too.
+  equity.
+
+- The acquisition and spin-off composition in
+  `ledgr_corporate_action_summary()` now counts each holder's entitled
+  quantity as the run binds it: a fill at the entitlement session's open is
+  not counted, and a fact entitled outside the run's dates is not reported.
 
 - An availability-aware run that stops on its very first pulse, for example
   because an opening holding has no price there, now stores an empty result
-  that opens and reruns. Previously it stored a row of missing equity for
-  every pulse and could be neither opened nor rerun, which also made a
+  that opens, prints and reruns. Previously it stored a row of missing equity
+  for every pulse and could be neither opened nor rerun, which also made a
   walk-forward session that hit it impossible to rerun. A resumed run whose
-  first resumed pulse stops now keeps the results its earlier attempt
-  committed, identical to an uninterrupted run, instead of discarding them.
+  first resumed pulse stops now keeps the equity and completion record its
+  earlier attempt committed, identical to an uninterrupted run, instead of
+  discarding them. A run interrupted after its last pulse now finishes on
+  resume; previously it stored missing equity and no completion record.
 
 - `ledgr_state_reconstruct()` now rebuilds an incomplete availability-aware
   run whose last fill executed after its last valued pulse. It used to stop

@@ -40,6 +40,7 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   testthat::expect_identical(stored$completion$intended_terminal_status, "INCOMPLETE")
   testthat::expect_true(is.na(stored$completion$achieved_end_utc))
   reopened <- ledgr_run_open(snapshot, "first_pulse_stop")
+  testthat::expect_true(any(grepl("no valued pulse", utils::capture.output(print(reopened)), fixed = TRUE)))
   close(reopened)
   close(ledgr_run(first, run_id = "first_pulse_stop"))
 
@@ -75,6 +76,30 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   testthat::expect_identical(resumed$equity, fresh$equity)
   testthat::expect_identical(resumed$completion, fresh$completion)
   close(ledgr_run_open(snapshot, "resumed_stop"))
+
+  # A run interrupted after its last pulse values nothing on resume and still
+  # finishes as the uninterrupted run does.
+  hold_or_interrupt <- function(ctx, params) {
+    if (identical(substr(ctx$ts_utc, 1, 10), getOption("ledgr.test.interrupt_on", ""))) {
+      options(ledgr.interrupt = TRUE)
+    }
+    ctx$hold()
+  }
+  held <- ledgr_experiment(
+    snapshot, hold_or_interrupt, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(),
+    opening = ledgr_opening(cash = 1000)
+  )
+  close(ledgr_run(held, run_id = "fresh_done"))
+  options(ledgr.test.interrupt_on = as.character(days[[length(days)]]))
+  close(ledgr_run(held, run_id = "resumed_done"))
+  testthat::expect_identical(ledgr_run_info(snapshot, "resumed_done")$status, "RUNNING")
+  options(ledgr.interrupt = FALSE, ledgr.test.interrupt_on = "")
+  close(ledgr_run(held, run_id = "resumed_done"))
+  done <- pit_consistency_stored(con, "fresh_done")
+  testthat::expect_identical(done$completion$intended_terminal_status, "DONE")
+  testthat::expect_identical(pit_consistency_stored(con, "resumed_done"), done)
+  close(ledgr_run_open(snapshot, "resumed_done"))
 })
 
 testthat::test_that("[LTB-0219] an INCOMPLETE run with a fill after its achieved end reconstructs", {

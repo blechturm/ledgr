@@ -38,10 +38,15 @@ ledgr_corporate_action_event_meta <- function(events) {
 # earlier, and before the fills decided at e - 1, which execute at pulse e's
 # session open (or bar, in a dense run). So the recount is the position after
 # every event at or before pulse e - 1 (`cum_boundaries`); an entitlement on
-# the run's first pulse (NA boundary) binds the opening positions. Positions
-# come from one sequential replay; a ledger whose timestamps decrease in event
-# order (never written by ledgr) is replayed per boundary instead.
+# the run's first pulse (NA boundary) binds the opening positions. Only the
+# facts' parent instruments are read. Position deltas come from the caller's
+# parsed `meta` (a fill without one moves by its signed quantity, as the
+# accounting replay reads it), and positions from one position-only
+# sequential pass (ledgr_accounting_position_after()). A ledger whose
+# timestamps decrease in event order (never written by ledgr) has no prefix to
+# look up, so each boundary then adds its own events in order.
 ledgr_corporate_action_past_quantities <- function(events,
+                                                    meta,
                                                     rows,
                                                     selected,
                                                     instrument_ids,
@@ -53,19 +58,46 @@ ledgr_corporate_action_past_quantities <- function(events,
   ids <- as.character(rows$parent_instrument_id[selected])
   cum_boundaries <- as.POSIXct(cum_boundaries, tz = "UTC")
   known <- ids %in% instrument_ids
-  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  keep <- which(as.character(events$instrument_id) %in% ids[known])
+  if (length(keep) == 0L) return(out)
+  keep <- keep[order(as.integer(events$event_seq[keep]))]
+  meta <- meta[keep]
+  event_instrument <- as.character(events$instrument_id[keep])
+  delta <- vapply(meta, function(x) {
+    value <- x$position_delta
+    if (is.numeric(value) && length(value) == 1L) as.numeric(value) else NA_real_
+  }, numeric(1))
+  fill <- events$event_type[keep] == "FILL" & is.na(delta)
+  side <- toupper(as.character(events$side[keep]))
+  delta[fill] <- ifelse(side[fill] == "SELL", -1, 1) * as.numeric(events$qty[keep][fill])
+  delta[is.na(delta)] <- 0
+  if (any(!is.finite(delta))) {
+    rlang::abort(
+      "Corporate-action entitlement encountered a non-finite position delta.",
+      class = c("ledgr_invalid_corporate_action_event", "ledgr_invalid_state")
+    )
+  }
+  parents <- unique(event_instrument)
+  ledger <- list(
+    ts_utc = as.POSIXct(events$ts_utc[keep], tz = "UTC"),
+    instrument_id = event_instrument,
+    instrument_index = match(event_instrument, parents),
+    instrument_ids = parents,
+    position_delta = delta
+  )
 
   later <- which(known & !is.na(cum_boundaries))
   if (length(later) > 0L) {
-    position <- ledgr_accounting_positions_at_pairs(replay, ids[later], cum_boundaries[later])
+    position <- ledgr_accounting_positions_at_pairs(
+      list(prepared = ledger, position_after = ledgr_accounting_position_after(ledger)),
+      ids[later],
+      cum_boundaries[later]
+    )
     if (is.null(position)) {
-      event_time <- as.POSIXct(events$ts_utc, tz = "UTC")
+      event_num <- as.numeric(ledger$ts_utc)
       position <- vapply(later, function(k) {
-        prefix <- events[event_time <= cum_boundaries[[k]], , drop = FALSE]
-        if (nrow(prefix) == 0L) return(0)
-        held <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(prefix))$positions
-        value <- unname(held[ids[[k]]])
-        if (length(value) == 0L || is.na(value)) 0 else value
+        own <- event_instrument == ids[[k]] & event_num <= as.numeric(cum_boundaries[[k]])
+        Reduce(`+`, delta[own], 0)
       }, numeric(1))
     }
     out[later] <- position
@@ -73,13 +105,8 @@ ledgr_corporate_action_past_quantities <- function(events,
 
   first <- which(known & is.na(cum_boundaries))
   if (length(first) > 0L) {
-    prepared <- replay$prepared
-    opening <- prepared$operation == 3L
-    opening_position <- rowsum(
-      prepared$position_delta[opening],
-      group = prepared$instrument_id[opening],
-      reorder = FALSE
-    )
+    opening <- vapply(meta, function(x) identical(x$source, "opening_position"), logical(1))
+    opening_position <- rowsum(delta[opening], group = event_instrument[opening], reorder = FALSE)
     value <- opening_position[match(ids[first], rownames(opening_position)), 1L]
     out[first] <- ifelse(is.na(value), 0, value)
   }
@@ -258,6 +285,7 @@ ledgr_corporate_action_plan <- function(rows,
     )
     past_quantity <- ledgr_corporate_action_past_quantities(
       existing_events,
+      meta,
       rows,
       past,
       instrument_ids,
