@@ -23,6 +23,12 @@ small probe (`inst/design/spike_protocol.md`).
    are in `dev/audit/pit_universe/` (README there).
 3. After Workstream 22 closes: freeze one commit and run Stages 1 to 3 against
    it, with a maintainer gate after each stage.
+   Started 2026-10-10: Workstream 22 accepted at 289d57c, which is the frozen
+   commit (worktree `C:/tmp/ws22-b`, pinned, precompiled). Stage 1 runs in the
+   background (three readers by subsystem, then the integrator; partial
+   outputs in `stage1/`); probes run at idle CPU priority through
+   `dev/audit/pit_universe/run_low.sh`. The maintainer moved the WS5
+   verification session after Stage 1 (the two are independent).
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
