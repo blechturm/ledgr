@@ -17,6 +17,23 @@ pit_consistency_stored <- function(con, run_id) {
         "last_fully_valued_ts_utc, last_executed_ts_utc, stop_reason FROM run_completion WHERE run_id = ?"
       ),
       params = list(run_id)
+    ),
+    ledger = DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
+      ),
+      params = list(run_id)
+    ),
+    diagnostics = DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT diagnostic_seq, ts_utc, instrument_id, stage, outcome, reason_code, reasons,",
+        "quantity, price, position_before, position_after, detail_json",
+        "FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq"
+      ),
+      params = list(run_id)
     )
   )
 }
@@ -75,6 +92,8 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   resumed <- pit_consistency_stored(con, "resumed_stop")
   testthat::expect_identical(resumed$equity, fresh$equity)
   testthat::expect_identical(resumed$completion, fresh$completion)
+  testthat::expect_identical(resumed$ledger, fresh$ledger)
+  testthat::expect_identical(resumed$diagnostics, fresh$diagnostics)
   close(ledgr_run_open(snapshot, "resumed_stop"))
 
   # A run interrupted after its last pulse values nothing on resume and still

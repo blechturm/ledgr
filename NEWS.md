@@ -11,7 +11,8 @@
 - The acquisition and spin-off composition in
   `ledgr_corporate_action_summary()` now counts each holder's entitled
   quantity as the run binds it: a fill at the entitlement session's open is
-  not counted, and a fact entitled outside the run's dates is not reported.
+  not counted, and a fact entitled before the run's first date or after the
+  date it stopped is not reported.
 
 - An availability-aware run that stops on its very first pulse, for example
   because an opening holding has no price there, now stores an empty result

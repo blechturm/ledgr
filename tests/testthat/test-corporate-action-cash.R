@@ -214,6 +214,15 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
     bound(rbind(fill(1L, open[[3L]], "BUY", 10), fill(2L, open[[2L]], "BUY", 0.1), fill(3L, open[[2L]], "BUY", 0.2)), 3L),
     0.1 + 0.2
   )
+  # A fill whose meta records its position delta, as the fold writes it, and a
+  # disposition that closes the holding before the boundary.
+  bought <- fill(1L, open[[2L]], "BUY", 10)
+  bought$meta_json <- '{"position_delta":10,"cash_delta":-500}'
+  disposed <- fill(2L, close[[2L]], "SELL", 10)
+  disposed$event_type <- "DISPOSITION"
+  disposed$meta_json <- '{"position_delta":-10,"cash_delta":500,"source":"delisting"}'
+  testthat::expect_identical(bound(bought, 3L), 10)
+  testthat::expect_identical(bound(rbind(bought, disposed), 3L), 0)
   # The position-only pass behind the recount equals the full replay's
   # positions on interleaved instruments, whole and fractional.
   mixed <- function(qty) {

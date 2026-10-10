@@ -1,4 +1,4 @@
-corporate_action_composition_fixture <- function(subtype) {
+corporate_action_composition_fixture <- function(subtype, drop_bbb_pulse = NULL) {
   dates <- as.Date("2020-01-01") + 0:2
   pulses <- as.POSIXct(paste(dates, "16:00:00"), tz = "UTC")
   bars <- rbind(
@@ -13,6 +13,9 @@ corporate_action_composition_fixture <- function(subtype) {
       low = c(49, 50, 51), close = c(49, 50, 51), volume = 1000
     )
   )
+  if (!is.null(drop_bbb_pulse)) {
+    bars <- bars[!(bars$instrument_id == "BBB" & bars$ts_utc == pulses[[drop_bbb_pulse]]), , drop = FALSE]
+  }
   security <- subtype %in% c("stock_acquisition", "mixed_acquisition", "spin_off")
   cash <- subtype %in% c("cash_acquisition", "mixed_acquisition")
   action <- ledgr_facts_equity_corporate_actions(data.frame(
@@ -68,8 +71,10 @@ corporate_action_composition_run <- function(subtype,
                                                policy,
                                                run_id,
                                                opening_positions = c(AAA = 2),
-                                               opening_cost_basis = c(AAA = 100)) {
-  fixture <- corporate_action_composition_fixture(subtype)
+                                               opening_cost_basis = c(AAA = 100),
+                                               valuation_policy = ledgr_valuation_stale(1L),
+                                               drop_bbb_pulse = NULL) {
+  fixture <- corporate_action_composition_fixture(subtype, drop_bbb_pulse)
   strategy <- function(ctx, params) {
     forbidden <- grepl(
       "contractual|omitted|successor|corporate_action",
@@ -86,7 +91,7 @@ corporate_action_composition_run <- function(subtype,
       positions = opening_positions,
       cost_basis = opening_cost_basis
     ),
-    valuation_policy = ledgr_valuation_stale(1L),
+    valuation_policy = valuation_policy,
     cost_model = ledgr_cost_zero(),
     corporate_action_policy = policy
   )
@@ -311,6 +316,37 @@ testthat::test_that("[LTB-0220] composition binds each fact at the fold's bounda
   )
   testthat::expect_identical(report$source_fact_id, c("first", "second", "third"))
   testthat::expect_identical(report$entitled_parent_quantity, c(2, 2, 2))
+
+  # An INCOMPLETE run binds and posts through its stop pulse, after its last
+  # equity row: BBB has no bar on pulse 2, where the acquisition disposes AAA.
+  stopped <- corporate_action_composition_run(
+    "cash_acquisition",
+    ledgr_corporate_actions_research(),
+    "composition-stop-pulse",
+    opening_positions = c(AAA = 2, BBB = 1),
+    opening_cost_basis = c(AAA = 100, BBB = 49),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
+    drop_bbb_pulse = 2L
+  )
+  withr::defer(close(stopped$run))
+  withr::defer(ledgr_snapshot_close(stopped$snapshot))
+  stopped_con <- ledgr:::ledgr_backtest_read_connection(stopped$run)
+  withr::defer(stopped_con$close())
+  completion <- ledgr:::ledgr_run_completion_read(stopped_con$con, stopped$run$run_id)
+  testthat::expect_identical(completion$intended_terminal_status, "INCOMPLETE")
+  testthat::expect_identical(
+    DBI::dbGetQuery(stopped_con$con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?",
+                    params = list(stopped$run$run_id))$n,
+    1
+  )
+  stop_report <- ledgr:::ledgr_corporate_action_composition_report(
+    stopped_con$con,
+    stopped$run$config$data$snapshot_id,
+    stopped$run$run_id,
+    ledgr:::ledgr_corporate_action_rows(stopped_con$con, stopped$run$config$data$snapshot_id)
+  )
+  testthat::expect_identical(stop_report$entitled_parent_quantity, 2)
+  testthat::expect_identical(stop_report$modeled_cash_credited, 180)
 })
 
 # ledgr-test-profile: review
