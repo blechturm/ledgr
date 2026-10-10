@@ -48,6 +48,14 @@ small probe (`inst/design/spike_protocol.md`).
    `stage2/challenge.md` (12 survive, 5 survive with changes, S2-018
    refuted, two missed findings M1 and M2; S2-004 high to medium). Next:
    Gate 2, the maintainer's triage.
+   Gate 2 passed 2026-10-10 (maintainer): code defects and contract fixes
+   form Cut 12 "Point-in-time consistency" (draft in tickets.yml, LDG-2993
+   to LDG-3009, with the five held maintenance items); decisions S2-009
+   (typed stop), S2-010 (refuse non-positive prices), S2-014 (metrics follow
+   completion) and S2-006 (record and warn) as recommended; S2-007 and S2-011
+   to the history-wave register; S2-012 and S2-003 D2 to their existing
+   routes. The 641-line findings file is accepted over its budget. Next:
+   Stage 3 (may run alongside Cut 12).
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
