@@ -35,6 +35,14 @@ small probe (`inst/design/spike_protocol.md`).
    1"); reader inventories and notes in `stage1/`. The fixture gained
    `status_coverage = "full"` (default `"declared"` unchanged). Next: Gate 1,
    the maintainer's comprehension and completeness check.
+   Gate 1 passed 2026-10-10 (maintainer). Carried into Stage 2 as explicit
+   open items, to be probed rather than assumed: parallel sweep with
+   corporate actions; `next_open` posting with resume; promotion from a
+   differently configured experiment; valuation when the calendar is shorter
+   than the bars; a non-Americas venue (UTC date against venue date); the
+   facts reopen path in `ledgr_snapshot_open()`. The map stays an audit
+   artifact; promotion to the manual needs an editorial pass. Stage 2 started
+   the same day: analyst writes `stage2/findings.md`, then the challenger.
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
