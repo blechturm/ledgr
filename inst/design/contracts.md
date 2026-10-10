@@ -742,7 +742,7 @@ Accepted change pending:
   `ledgr_corporate_action_summary()` counts the same way and, like the fold,
   binds no fact entitled before the run's first pulse or after the last pulse
   it processed (an INCOMPLETE run's stop pulse, whose facts the fold binds
-  and posts before it stops) (Cut 12 LDG-2993). An
+  before it stops) (Cut 12 LDG-2993). An
   availability run whose invocation values no pulse (a stop on its first
   pulse, a stop on the first pulse of a resume, or a resume after its last
   pulse) still finalizes through its equity prefix: a first-pulse stop stores

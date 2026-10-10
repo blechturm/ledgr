@@ -208,8 +208,8 @@ ledgr_corporate_action_composition_report <- function(con,
     "SELECT ts_utc FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
     params = list(run_id)
   )$ts_utc, tz = "UTC"))
-  # Those pulses span the run unless it stopped: an INCOMPLETE run binds and
-  # posts through its stop pulse, which follows its last equity row (or is its
+  # Those pulses span the run unless it stopped: an INCOMPLETE run binds
+  # through its stop pulse (its last equity row, the pulse after it, or its
   # first pulse), so its window ends at the stop recorded in its diagnostics.
   window <- if (length(pulses) > 0L) pulses[c(1L, length(pulses))] else c(NA_real_, NA_real_)
   completion <- ledgr_run_completion_read(con, run_id, required = FALSE)

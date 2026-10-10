@@ -339,14 +339,54 @@ testthat::test_that("[LTB-0220] composition binds each fact at the fold's bounda
                     params = list(stopped$run$run_id))$n,
     1
   )
+  # The acquisition plus a copy entitled on pulse 3, after the stop: only the
+  # stop-pulse fact is reported.
+  shifted <- function(rows, at) {
+    out <- rows[rep(1L, length(at)), , drop = FALSE]
+    out$fact_id <- paste0("at-", at)
+    out$entitlement_time <- pulses[at]
+    rbind(rows, out)
+  }
+  stop_facts <- ledgr:::ledgr_corporate_action_rows(stopped_con$con, stopped$run$config$data$snapshot_id)
   stop_report <- ledgr:::ledgr_corporate_action_composition_report(
     stopped_con$con,
     stopped$run$config$data$snapshot_id,
     stopped$run$run_id,
-    ledgr:::ledgr_corporate_action_rows(stopped_con$con, stopped$run$config$data$snapshot_id)
+    shifted(stop_facts, 3L)
   )
+  testthat::expect_identical(stop_report$source_fact_id, stop_facts$fact_id)
   testthat::expect_identical(stop_report$entitled_parent_quantity, 2)
   testthat::expect_identical(stop_report$modeled_cash_credited, 180)
+
+  # A run that stops on its first pulse has no equity rows; a fact entitled on
+  # that pulse binds the opening positions, later facts nothing.
+  first <- corporate_action_composition_run(
+    "cash_acquisition",
+    ledgr_corporate_actions_research(),
+    "composition-first-pulse-stop",
+    opening_positions = c(AAA = 2, BBB = 1),
+    opening_cost_basis = c(AAA = 100, BBB = 49),
+    valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"),
+    drop_bbb_pulse = 1L
+  )
+  withr::defer(close(first$run))
+  withr::defer(ledgr_snapshot_close(first$snapshot))
+  first_con <- ledgr:::ledgr_backtest_read_connection(first$run)
+  withr::defer(first_con$close())
+  testthat::expect_identical(
+    DBI::dbGetQuery(first_con$con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?",
+                    params = list(first$run$run_id))$n,
+    0
+  )
+  first_facts <- ledgr:::ledgr_corporate_action_rows(first_con$con, first$run$config$data$snapshot_id)
+  first_report <- ledgr:::ledgr_corporate_action_composition_report(
+    first_con$con,
+    first$run$config$data$snapshot_id,
+    first$run$run_id,
+    shifted(first_facts, c(1L, 3L))
+  )
+  testthat::expect_identical(first_report$source_fact_id, "at-1")
+  testthat::expect_identical(first_report$entitled_parent_quantity, 2)
 })
 
 # ledgr-test-profile: review
