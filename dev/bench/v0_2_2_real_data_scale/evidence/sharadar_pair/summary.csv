@@ -1,0 +1,9 @@
+"phase","elapsed_s_accepted","peak_rss_mib_accepted","elapsed_s_candidate","peak_rss_mib_candidate","elapsed_ratio","peak_ratio"
+"availability",2974.511,5350,48.881,6202,0.016,1.159
+"explain",3058.769,4937,9.613,7946,0.003,1.609
+"promote",234.079,6948,180.075,4668,0.769,0.672
+"readers",781.518,5186,417.714,4919,0.534,0.949
+"run_equal_weight",237.229,4333,170.984,5927,0.721,1.368
+"run_momentum",155.776,2954,115.363,4015,0.741,1.359
+"sweep",2238.066,6928,317.623,3843,0.142,0.555
+"walk_forward",2287.885,3590,1894.415,3799,0.828,1.058

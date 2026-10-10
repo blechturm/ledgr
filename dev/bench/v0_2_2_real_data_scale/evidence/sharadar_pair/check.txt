@@ -1,0 +1,2 @@
+37 families compared, 37 identical; identity family identical
+SCALE_CHECK_OK

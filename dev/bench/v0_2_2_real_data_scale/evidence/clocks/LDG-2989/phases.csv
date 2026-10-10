@@ -1,0 +1,7 @@
+"pair","arm","phase","elapsed_s","peak_rss_mib"
+1,"accepted","build",25.805,1074
+1,"candidate","build",18.491,879
+2,"candidate","build",18.681,879
+2,"accepted","build",25.078,1070
+3,"accepted","build",25.235,1089
+3,"candidate","build",18.639,880

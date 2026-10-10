@@ -1,0 +1,4 @@
+"phase","elapsed_s_accepted","peak_rss_mib_accepted","elapsed_s_candidate","peak_rss_mib_candidate","elapsed_ratio","peak_ratio"
+"build",18.918,881,18.789,880,0.993,0.999
+"sweep",31.221,1535,30.089,1520,0.964,0.99
+"walk_forward",35.394,1186,34.784,1106,0.983,0.933

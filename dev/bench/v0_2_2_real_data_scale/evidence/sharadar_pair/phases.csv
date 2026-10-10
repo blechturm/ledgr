@@ -1,0 +1,17 @@
+"pair","arm","phase","elapsed_s","peak_rss_mib"
+1,"accepted","availability",2974.511,5350
+1,"accepted","explain",3058.769,4937
+1,"accepted","promote",234.079,6948
+1,"accepted","readers",781.518,5186
+1,"accepted","run_equal_weight",237.229,4333
+1,"accepted","run_momentum",155.776,2954
+1,"accepted","sweep",2238.066,6928
+1,"accepted","walk_forward",2287.885,3590
+1,"candidate","availability",48.881,6202
+1,"candidate","explain",9.613,7946
+1,"candidate","promote",180.075,4668
+1,"candidate","readers",417.714,4919
+1,"candidate","run_equal_weight",170.984,5927
+1,"candidate","run_momentum",115.363,4015
+1,"candidate","sweep",317.623,3843
+1,"candidate","walk_forward",1894.415,3799
