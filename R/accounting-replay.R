@@ -332,6 +332,39 @@ ledgr_replay_accounting_events <- function(prepared,
   )
 }
 
+# Each (instrument, time) pair's position after that instrument's last ledger
+# event at or before the time, from one sequential replay. Event timestamps
+# never decrease in event order, so the events at or before a time are a
+# prefix of the ledger and the replay's sequential `position_after` is exactly
+# what replaying that prefix produces (cumsum() over deltas accumulates in
+# long double and can differ in the last bit). One findInterval() over sorted
+# (instrument, event position) keys resolves every pair. A pair whose
+# instrument has no event by then, or whose time is NA, is 0. Returns NULL
+# when timestamps decrease in event order; callers then replay per prefix.
+ledgr_accounting_positions_at_pairs <- function(replay, query_ids, query_times) {
+  prepared <- replay$prepared
+  event_num <- as.numeric(prepared$ts_utc)
+  if (is.unsorted(event_num)) return(NULL)
+  inst <- prepared$instrument_index
+  has <- !is.na(inst)
+  big <- length(event_num) + 1
+  key <- as.numeric(inst[has]) * big + which(has)
+  ord <- order(key)
+  key <- key[ord]
+  key_inst <- inst[has][ord]
+  after <- replay$position_after[has][ord]
+  q_inst <- match(as.character(query_ids), prepared$instrument_ids)
+  prefix <- findInterval(as.numeric(as.POSIXct(query_times, tz = "UTC")), event_num)
+  out <- numeric(length(q_inst))
+  ok <- which(!is.na(q_inst) & !is.na(prefix))
+  if (length(ok) == 0L) return(out)
+  hit <- findInterval(q_inst[ok] * big + prefix[ok], key)
+  found <- hit > 0L
+  found[found] <- key_inst[hit[found]] == q_inst[ok][found]
+  out[ok[found]] <- after[hit[found]]
+  out
+}
+
 ledgr_accounting_positions_at_pulses <- function(replay, pulses_posix, instrument_ids) {
   prepared <- replay$prepared
   pulse_num <- as.numeric(as.POSIXct(pulses_posix, tz = "UTC"))

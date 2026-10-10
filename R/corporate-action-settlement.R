@@ -32,71 +32,56 @@ ledgr_corporate_action_event_meta <- function(events) {
   })
 }
 
-ledgr_corporate_action_cumulative_at <- function(times,
-                                                 deltas,
-                                                 boundaries,
-                                                 include_equal) {
-  if (length(times) == 0L) return(rep(0, length(boundaries)))
-  time_number <- as.numeric(times)
-  time_order <- order(time_number)
-  time_number <- time_number[time_order]
-  unique_times <- unique(time_number)
-  grouped <- rowsum(
-    as.numeric(deltas)[time_order],
-    group = match(time_number, unique_times),
-    reorder = FALSE
-  )
-  cumulative <- cumsum(as.numeric(grouped[, 1L]))
-  idx <- findInterval(as.numeric(boundaries), unique_times)
-  if (!isTRUE(include_equal)) {
-    equal <- idx > 0L & unique_times[pmax(idx, 1L)] == as.numeric(boundaries)
-    idx[equal] <- idx[equal] - 1L
-  }
-  ifelse(idx > 0L, cumulative[pmax(idx, 1L)], 0)
-}
-
+# The quantity each selected fact is entitled to, recounted from the ledger as
+# the fresh fold binds it. The fold binds pulse e's entitlement while it
+# processes pulse e - 1, after that pulse's dispositions and the fills decided
+# earlier, and before the fills decided at e - 1, which execute at pulse e's
+# session open (or bar, in a dense run). So the recount is the position after
+# every event at or before pulse e - 1 (`cum_boundaries`); an entitlement on
+# the run's first pulse (NA boundary) binds the opening positions. Positions
+# come from one sequential replay; a ledger whose timestamps decrease in event
+# order (never written by ledgr) is replayed per boundary instead.
 ledgr_corporate_action_past_quantities <- function(events,
                                                     rows,
                                                     selected,
                                                     instrument_ids,
-                                                    meta = NULL) {
+                                                    cum_boundaries) {
   out <- rep(0, length(selected))
   if (length(selected) == 0L || is.null(events) || nrow(events) == 0L) {
     return(out)
   }
-  if (is.null(meta)) {
-    meta <- ledgr_corporate_action_event_meta(events)
+  ids <- as.character(rows$parent_instrument_id[selected])
+  cum_boundaries <- as.POSIXct(cum_boundaries, tz = "UTC")
+  known <- ids %in% instrument_ids
+  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+
+  later <- which(known & !is.na(cum_boundaries))
+  if (length(later) > 0L) {
+    position <- ledgr_accounting_positions_at_pairs(replay, ids[later], cum_boundaries[later])
+    if (is.null(position)) {
+      event_time <- as.POSIXct(events$ts_utc, tz = "UTC")
+      position <- vapply(later, function(k) {
+        prefix <- events[event_time <= cum_boundaries[[k]], , drop = FALSE]
+        if (nrow(prefix) == 0L) return(0)
+        held <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(prefix))$positions
+        value <- unname(held[ids[[k]]])
+        if (length(value) == 0L || is.na(value)) 0 else value
+      }, numeric(1))
+    }
+    out[later] <- position
   }
-  event_time <- as.POSIXct(events$ts_utc, tz = "UTC")
-  opening <- vapply(meta, function(x) identical(x$source, "opening_position"), logical(1))
-  delta <- vapply(meta, function(x) as.numeric(x$position_delta %||% 0), numeric(1))
-  if (any(!is.finite(delta))) {
-    rlang::abort(
-      "Corporate-action entitlement encountered a non-finite position delta.",
-      class = c("ledgr_invalid_corporate_action_event", "ledgr_invalid_state")
+
+  first <- which(known & is.na(cum_boundaries))
+  if (length(first) > 0L) {
+    prepared <- replay$prepared
+    opening <- prepared$operation == 3L
+    opening_position <- rowsum(
+      prepared$position_delta[opening],
+      group = prepared$instrument_id[opening],
+      reorder = FALSE
     )
-  }
-  event_instrument <- as.character(events$instrument_id)
-  fact_instrument <- as.character(rows$parent_instrument_id[selected])
-  boundaries <- as.POSIXct(rows$entitlement_time[selected], tz = "UTC")
-  for (instrument_id in intersect(unique(fact_instrument), instrument_ids)) {
-    fact_idx <- which(fact_instrument == instrument_id)
-    event_idx <- which(event_instrument == instrument_id)
-    opening_idx <- event_idx[opening[event_idx]]
-    ordinary_idx <- event_idx[!opening[event_idx]]
-    out[fact_idx] <-
-      ledgr_corporate_action_cumulative_at(
-        event_time[opening_idx],
-        delta[opening_idx],
-        boundaries[fact_idx],
-        include_equal = TRUE
-      ) +
-      ledgr_corporate_action_cumulative_at(
-        event_time[ordinary_idx],
-        delta[ordinary_idx],
-        boundaries[fact_idx],
-        include_equal = FALSE
-      )
+    value <- opening_position[match(ids[first], rownames(opening_position)), 1L]
+    out[first] <- ifelse(is.na(value), 0, value)
   }
   out
 }
@@ -266,11 +251,17 @@ ledgr_corporate_action_plan <- function(rows,
       as.integer(start_idx) > 1L
   )
   if (length(past) > 0L) {
+    previous_pulse <- entitlement_idx[past] - 1L
+    cum_boundaries <- .POSIXct(
+      ifelse(previous_pulse >= 1L, as.numeric(pulses_posix)[pmax(previous_pulse, 1L)], NA_real_),
+      tz = "UTC"
+    )
     past_quantity <- ledgr_corporate_action_past_quantities(
       existing_events,
       rows,
       past,
-      instrument_ids
+      instrument_ids,
+      cum_boundaries
     )
     state$quantity <- replace(state$quantity, past, past_quantity)
     state$bound <- replace(state$bound, past, TRUE)

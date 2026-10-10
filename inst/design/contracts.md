@@ -733,6 +733,13 @@ Accepted change pending:
   a matching configuration. A resumed row that has no ledger event yet (it
   stopped before its opening append) posts its configured opening positions
   before execution, as a first attempt does (Cut 11 close-review correction).
+  A resumed run binds each corporate-action entitlement at or before its
+  restart pulse from the ledger exactly as the fresh fold binds it: the
+  position after every event at or before the pulse before the entitlement
+  pulse, so a fill executed at the entitlement session's open is not
+  entitled; an entitlement on the run's first pulse binds the opening
+  positions. `ledgr_corporate_action_summary()` counts the same way (Cut 12
+  LDG-2993).
   An interrupt inside the durable fold transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.

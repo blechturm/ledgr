@@ -147,15 +147,67 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
     origin = "1970-01-01",
     tz = "UTC"
   )
+  straddling <- data.frame(
+    event_id = paste0("s", 1:3), run_id = "s", ts_utc = straddling_times,
+    event_type = "FILL", instrument_id = "AAA", side = "BUY", qty = c(1, 2, 4),
+    price = 10, fee = 0, meta_json = "{}", event_seq = 1:3, stringsAsFactors = FALSE
+  )
+  straddling_replay <- ledgr:::ledgr_replay_accounting_events(
+    ledgr:::ledgr_prepare_accounting_events(straddling)
+  )
   testthat::expect_identical(
-    ledgr:::ledgr_corporate_action_cumulative_at(
-      straddling_times,
-      c(1, 2, 4),
-      straddling_times,
-      include_equal = TRUE
+    ledgr:::ledgr_accounting_positions_at_pairs(
+      straddling_replay,
+      rep("AAA", 3L),
+      straddling_times
     ),
     c(1, 3, 7)
   )
+})
+
+# A resumed plan recounts past entitlements from the ledger. The fresh fold
+# binds pulse e while processing pulse e - 1, before the fills decided there,
+# which execute at pulse e's session open; expected quantities below are that
+# rule written out by hand.
+testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the fresh fold", {
+  day <- as.POSIXct("2021-03-01", tz = "UTC") + 86400 * 0:4
+  close <- day + 21 * 3600
+  open <- day + 14.5 * 3600
+  fill <- function(seq, ts, side, qty) {
+    data.frame(event_id = paste0("r_", seq), run_id = "r", ts_utc = ts, event_type = "FILL",
+               instrument_id = "AAA", side = side, qty = qty, price = 50, fee = 0,
+               meta_json = "{}", event_seq = seq, stringsAsFactors = FALSE)
+  }
+  bound <- function(events, entitlement_pulse) {
+    rows <- corporate_action_cash_rows(entitlement = close[[entitlement_pulse]], knowledge = close[[1L]])
+    rows$snapshot_id <- "snapshot-test"
+    plan <- ledgr:::ledgr_corporate_action_plan(
+      rows = rows,
+      policy_identity = ledgr:::ledgr_corporate_action_policy_identity(ledgr_corporate_actions()),
+      pulses_posix = close,
+      instrument_ids = "AAA",
+      existing_events = events,
+      start_idx = 4L
+    )
+    testthat::expect_true(plan$state$bound[[1L]])
+    plan$state$quantity[[1L]]
+  }
+  # Buyer: decided at pulse 2, filled at pulse 3's open; not entitled at pulse 3.
+  testthat::expect_identical(bound(fill(1L, open[[3L]], "BUY", 10), 3L), 0)
+  # Seller: bought for pulse 2's open, sold at pulse 3's open; still entitled.
+  testthat::expect_identical(
+    bound(rbind(fill(1L, open[[2L]], "BUY", 10), fill(2L, open[[3L]], "SELL", 10)), 3L),
+    10
+  )
+  # Fractional quantities: the sequential position, not a long-double sum.
+  tenths <- do.call(rbind, lapply(1:10, function(k) fill(k, open[[2L]] + k, "BUY", 0.1)))
+  testthat::expect_identical(bound(tenths, 3L), Reduce(`+`, rep(0.1, 10)))
+  # First-pulse entitlement: the opening positions only.
+  opening <- ledgr:::ledgr_opening_position_event_rows("r", close[[1L]], c(AAA = 5), c(AAA = 40), 1L)
+  testthat::expect_identical(bound(rbind(opening, fill(2L, open[[2L]], "BUY", 3)), 1L), 5)
+  # Dense stamping (fills at the bar time): a fill decided at pulse 2 is
+  # stamped at pulse 3 and stays excluded.
+  testthat::expect_identical(bound(fill(1L, close[[3L]], "BUY", 10), 3L), 0)
 })
 
 # ledgr-test-profile: review

@@ -148,8 +148,8 @@ ledgr_corporate_action_result_events <- function(con,
   DBI::dbGetQuery(
     con,
     paste0(
-      "SELECT ts_utc, event_type, instrument_id, meta_json, event_seq ",
-      "FROM ledger_events WHERE run_id = ? ",
+      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, ",
+      "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ? ",
       "AND event_type IN ('FILL','CASHFLOW','DISPOSITION') ",
       "AND instrument_id IN (", placeholders, ") ORDER BY event_seq"
     ),
@@ -200,12 +200,22 @@ ledgr_corporate_action_composition_report <- function(con,
     ),
     params = list(snapshot_id)
   )$instrument_id
+  # The run's own pulses are its equity timestamps; each fact binds at the pulse
+  # before its entitlement pulse, as the fold does.
+  pulses <- as.numeric(as.POSIXct(DBI::dbGetQuery(
+    con,
+    "SELECT ts_utc FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
+    params = list(run_id)
+  )$ts_utc, tz = "UTC"))
+  entitlement <- as.numeric(as.POSIXct(rows$entitlement_time[selected], tz = "UTC"))
+  before <- findInterval(entitlement, pulses, left.open = TRUE)
+  cum_boundaries <- .POSIXct(ifelse(before >= 1L, pulses[pmax(before, 1L)], NA_real_), tz = "UTC")
   quantity <- ledgr_corporate_action_past_quantities(
     events,
     rows,
     selected,
     as.character(instrument_ids),
-    meta = meta
+    cum_boundaries
   )
   relevant <- quantity != 0
   if (!any(relevant)) return(empty)

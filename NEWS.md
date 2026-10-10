@@ -2,6 +2,13 @@
 
 ## Runs and evaluations that keep going on real data
 
+- An interrupted and resumed run now binds dividend entitlement exactly like
+  an uninterrupted run and a sweep. Previously the resumed run counted a fill
+  executed at the entitlement session's open, so a buyer on that open received
+  the dividend only after a resume and a seller lost it, changing cash and
+  equity; `ledgr_corporate_action_summary()` counted the same way and is
+  corrected too.
+
 - `ledgr_walk_forward()` gains `no_selection = c("previous", "fail")`. A fold
   in which no training candidate has a finite selection metric no longer ends
   the whole session: by default it runs its test window with the parameters

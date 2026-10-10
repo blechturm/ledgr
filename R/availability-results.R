@@ -337,15 +337,11 @@ ledgr_availability_positions_asof <- function(con, run_id, ts_utc) {
 }
 
 # Each instrument's position at each requested time, from one ledger read and
-# one replay: the position after its last event at or before that time. Event
-# timestamps never decrease in event order, so the events at or before a time
-# are a prefix of the ledger and the replay's sequential `position_after`
-# values are exactly what replaying that prefix produces (the per-time reader
-# above). ledgr_accounting_positions_at_pulses() is not used: its cumsum()
-# accumulates in long double and can differ from the replay in the last bit.
-# One findInterval() over sorted (instrument, event position) keys
-# resolves every instrument and time pair. Returns NULL when timestamps do
-# decrease in event order; callers then replay per time.
+# one replay (ledgr_accounting_positions_at_pairs()), equal to the per-time
+# reader above. ledgr_accounting_positions_at_pulses() is not used: its
+# cumsum() accumulates in long double and can differ from the replay in the
+# last bit. Returns NULL when timestamps decrease in event order; callers then
+# replay per time.
 ledgr_availability_positions_timeline <- function(con, run_id, times) {
   events <- DBI::dbGetQuery(
     con,
@@ -364,24 +360,14 @@ ledgr_availability_positions_timeline <- function(con, run_id, times) {
   }
   event_num <- as.numeric(as.POSIXct(events$ts_utc, tz = "UTC"))
   if (is.unsorted(event_num)) return(NULL)
-  prepared <- ledgr_prepare_accounting_events(events)
-  replay <- ledgr_replay_accounting_events(prepared)
-  ids <- prepared$instrument_ids
-  inst <- prepared$instrument_index
-  has <- !is.na(inst)
-  big <- length(event_num) + 1
-  key <- as.numeric(inst[has]) * big + which(has)
-  ord <- order(key)
-  key <- key[ord]
-  key_inst <- inst[has][ord]
-  after <- replay$position_after[has][ord]
-  prefix <- findInterval(as.numeric(as.POSIXct(times, tz = "UTC")), event_num)
-  q_inst <- rep(seq_along(ids), times = n_times)
-  hit <- findInterval(q_inst * big + rep(prefix, each = length(ids)), key)
-  found <- hit > 0L
-  found[found] <- key_inst[hit[found]] == q_inst[found]
-  position <- numeric(length(q_inst))
-  position[found] <- after[hit[found]]
+  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  ids <- replay$prepared$instrument_ids
+  position <- ledgr_accounting_positions_at_pairs(
+    replay,
+    rep(ids, times = n_times),
+    rep(as.POSIXct(times, tz = "UTC"), each = length(ids))
+  )
+  if (is.null(position)) return(NULL)
   list(ids = ids, position = matrix(position, nrow = length(ids), ncol = n_times, dimnames = list(ids, NULL)))
 }
 
