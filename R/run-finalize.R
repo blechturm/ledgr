@@ -553,10 +553,12 @@ ledgr_run_finalize <- function(con,
           ledgr_projection_slice(runtime_projection, pulses_posix)
         }
         # Rows keep their order (instrument, then pulse, then feature) and are
-        # appended in blocks of instruments of about 500,000 rows, built from
+        # appended in blocks of instruments of about 50,000 rows, built from
         # the feature matrices by one (feature, pulse, instrument) array.
+        # Larger blocks append no faster and raise the process peak outside
+        # the R heap (500,000 rows: about 300 MiB on the Sharadar run).
         per_instrument <- n_def * n_p
-        block <- max(1L, as.integer(500000 %/% per_instrument))
+        block <- max(1L, as.integer(50000 %/% per_instrument))
         starts <- if (length(instrument_ids) > 0L) seq.int(1L, length(instrument_ids), by = block) else integer()
         DBI::dbWithTransaction(con, {
           DBI::dbExecute(con, "DELETE FROM features WHERE run_id = ?", params = list(run_id))
