@@ -43,6 +43,11 @@ small probe (`inst/design/spike_protocol.md`).
    facts reopen path in `ledgr_snapshot_open()`. The map stays an audit
    artifact; promotion to the manual needs an editorial pass. Stage 2 started
    the same day: analyst writes `stage2/findings.md`, then the challenger.
+   Stage 2 complete 2026-10-10: `stage2/findings.md` (18 findings; 641
+   lines, over the 600-line budget, flagged for Gate 2) and
+   `stage2/challenge.md` (12 survive, 5 survive with changes, S2-018
+   refuted, two missed findings M1 and M2; S2-004 high to medium). Next:
+   Gate 2, the maintainer's triage.
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
