@@ -27,6 +27,13 @@ emit <- function(finding, collection, size, metric, value) {
   cat(sprintf("%-4s %-22s %8s %-28s %s\n", finding, collection, size, metric, signif(value, 6)))
 }
 secs <- function(expr) { t0 <- Sys.time(); force(expr); as.numeric(difftime(Sys.time(), t0, units = "secs")) }
+# Mean seconds per call, repeating a fast call until at least half a second
+# has elapsed, so timer resolution cannot set the growth exponent.
+secs_per_call <- function(fn) {
+  reps <- 0L; t0 <- Sys.time()
+  repeat { fn(); reps <- reps + 1L; total <- as.numeric(difftime(Sys.time(), t0, units = "secs")); if (total >= 0.5) break }
+  total / reps
+}
 exponent <- function(finding, collection, sizes, times) {
   emit(finding, collection, paste(range(sizes), collapse = "->"), "growth_exponent",
        log(times[[length(times)]] / times[[1L]]) / log(sizes[[length(sizes)]] / sizes[[1L]]))
@@ -60,7 +67,7 @@ if (probe("F1")) {
 
 # F2: fill recording-pulse resolution against fills.
 if (probe("F2") && exists("ledgr_fill_recording_pulses_from_evidence", envir = ns)) {
-  sizes <- c(10000L, 40000L)
+  sizes <- c(10000L, 160000L)
   nses <- 5000L
   d <- as.POSIXct("2000-01-03", tz = "UTC") + 86400 * (0:(nses - 1L))
   sessions <- data.frame(status = "open", session_open = d + 14.5 * 3600, session_close = d + 21 * 3600)
@@ -69,7 +76,7 @@ if (probe("F2") && exists("ledgr_fill_recording_pulses_from_evidence", envir = n
     fills <- data.frame(event_seq = seq_len(n), ts_utc = sessions$session_open[k], instrument_id = "A")
     diag <- data.frame(event_seq = seq_len(n), instrument_id = "A", stage = "execution", outcome = "filled",
                        decision_ts_utc = sessions$session_close[k - 1L], execution_ts_utc = sessions$session_open[k])
-    t <- secs(ns$ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions,
+    t <- secs_per_call(function() ns$ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions,
           list(execution_timing_convention = "availability_open_v2", execution_timing_version = 2L)))
     emit("F2", "fills", n, "resolution_seconds", t); t
   }, numeric(1))
@@ -134,12 +141,19 @@ if (probe("F8")) {
   exponent("F8", "members(seconds_per_fill)", sizes, times)
 }
 
-# F9: per-row timestamp tokens against rows, with a fixed set of instants.
+# F9: bar timestamp tokens on the facts-active ingest path against rows, with a
+# fixed set of instants. Times the token function the ingest actually calls.
 if (probe("F9") && exists("ledgr_fact_time_token", envir = ns)) {
   instants <- as.POSIXct("2000-01-03 21:00", tz = "UTC") + 86400 * (0:999)
   sizes <- c(100000L, 400000L)
+  ingest <- paste(deparse(ns$ledgr_availability_prepare_observations), collapse = "\n")
+  token_fn <- if (grepl("ledgr_fact_time_tokens_distinct(ts)", ingest, fixed = TRUE)) {
+    ns$ledgr_fact_time_tokens_distinct
+  } else {
+    ns$ledgr_fact_time_token
+  }
   times <- vapply(sizes, function(n) { x <- rep_len(instants, n)
-    t <- secs(ns$ledgr_fact_time_token(x)); emit("F9", "rows(1000 distinct)", n, "token_seconds", t); t }, numeric(1))
+    t <- secs_per_call(function() token_fn(x)); emit("F9", "rows(1000 distinct)", n, "token_seconds", t); t }, numeric(1))
   exponent("F9", "rows(1000 distinct)", sizes, times)
 }
 

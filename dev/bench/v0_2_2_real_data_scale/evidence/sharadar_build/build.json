@@ -1,0 +1,23 @@
+{
+  "stage": "build",
+  "canonical_build_id": "canonical-20260906T055922734354Z-78941588416a97c6",
+  "from": "1998-01-02",
+  "to": "2026-09-04",
+  "adapter_policy": "sharadar_ledgr_snapshot_adapter_v003",
+  "attempts": {
+    "build_snapshot": {
+      "elapsed_s": 270.83
+    },
+    "reopen_verify": {
+      "elapsed_s": 62.12
+    }
+  },
+  "snapshot_id": "snapshot_20261010_072957_be9d",
+  "snapshot_hash": "05436e72b9b7f1e2d588a4800d2e52eb3f0ad44305855c5014e66d87e921af88",
+  "snapshot_status": "SEALED",
+  "untraded_bars_dropped": 1018,
+  "untraded_bar_instruments": 121,
+  "elapsed_s": 334,
+  "ledgr_commit": "e5b0f1a4ca933558263562a2d6c99d04aef75abe",
+  "adapter_commit": "6be0b99e63f9feaa07f782a5bd2545c3bcccb28a"
+}

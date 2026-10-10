@@ -1,0 +1,9 @@
+"rep","variant","seconds"
+1,"copy_on_write_4096",12.12
+1,"in_place_4096",11.03
+1,"in_place_65536",4.58
+1,"copy_on_write_65536",16.66
+2,"copy_on_write_65536",17.23
+2,"in_place_65536",4.59
+2,"in_place_4096",11.03
+2,"copy_on_write_4096",11.97
