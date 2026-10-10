@@ -5,10 +5,11 @@ Preparation for the audit chartered in
 Workstream 22 runs; Stages 1 to 3 run later on one frozen commit.
 
 ```sh
-Rscript dev/audit/pit_universe/smoke.R <repo>
+Rscript dev/audit/pit_universe/smoke.R <repo> [no-compile]
 ```
 
-- `fixture.R`: `pit_audit_fixture(knowledge = "announcement" | "effective_only")`
+- `fixture.R`: `pit_audit_fixture(knowledge = "announcement" | "effective_only",
+  status_coverage = "declared" | "full")`
   builds the shared semantic fixture through ledgr's public fact constructors;
   `pit_audit_snapshot()` seals it. It follows the frozen yardstick's section B
   dataset: 40 New York sessions from 2021-03-01 (crossing the March DST
@@ -16,8 +17,9 @@ Rscript dev/audit/pit_universe/smoke.R <repo>
   s30, and fifteen instruments in the yardstick's roles (seventeen IDs, since
   ticker reuse and redomicile become separate permanent IDs). Inputs only: no
   strategies, expected values or observations.
-- `smoke.R`: checks that both knowledge variants build, seal and run a
-  holding strategy to `DONE`. It asserts nothing about behavior.
+- `smoke.R`: checks that both knowledge variants, under both status
+  coverages, build, seal and run a holding strategy to `DONE`. It asserts
+  nothing about behavior.
 - `coverage.csv`: every yardstick scenario (S01 to S41) with its guarantees,
   the yardstick's owner, whether ledgr's inputs can express it (`yes`,
   `partial`, `no`), the fixture elements and the paths Stage 1 should run.
@@ -32,6 +34,18 @@ scale fixture), so the fixture uses `ordinary_cash_dividend`. A bar on a session
 the sealed session facts mark closed seals with no refusal and no quarantine
 row (LDG-2982 recorder, `refusals` family).
 
+Status coverage (added in Stage 1 by the integrator, 2026-10-10). The
+default fixture declares trading status only for FFF and EEE. At 289d57c a
+declared status family makes every instrument-time without an applicable row
+`status_unknown` and target-restricted (inventory `PIT-03-015`), so in a
+trading run only FFF can trade (Stage 1 probe `I_paths.R` P7: 404
+`status_unknown` decisions). That partial coverage is the audit's frozen
+input and is itself an inventoried behavior, so `status_coverage = "declared"`
+stays the default and its output is unchanged. `status_coverage = "full"`
+adds `active` rows from s1 for every other instrument and for FFF and EEE
+until their declared rows begin; it changes nothing else (the snapshot hash
+differs) and is the variant the Stage 1 path probes use for trading runs.
+
 ## Inventory schema (Stage 1)
 
 `inventory.csv`, one row per audit rule (charter, Scope):
@@ -42,7 +56,7 @@ row (LDG-2982 recorder, `refusals` family).
 | `subsystem` | 1 to 14, as in the charter |
 | `owner` | `adapter`, `ledgr`, `research` or `unclear` |
 | `statement` | the observable semantic choice, in one sentence |
-| `applies_to_paths` | subset of `run sweep promote walk_forward reconstruct readers ingest` |
+| `applies_to_paths` | subset of `run sweep promote walk_forward reconstruct readers ingest` (Stage 1 adds `resume`) |
 | `code_location` | `R/file.R:function` at the frozen commit |
 | `detecting_tests` | LTB IDs or `none` |
 | `contract_heading` | contracts.md heading or `none` |

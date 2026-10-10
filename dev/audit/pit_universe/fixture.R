@@ -16,6 +16,7 @@
 #   source("dev/audit/pit_universe/fixture.R")
 #   fx <- pit_audit_fixture()                       # announcement knowledge
 #   fx <- pit_audit_fixture(knowledge = "effective_only")
+#   fx <- pit_audit_fixture(status_coverage = "full")   # tradable status rows
 #   snapshot <- pit_audit_snapshot(fx)
 
 pit_audit_tz <- "America/New_York"
@@ -52,8 +53,10 @@ pit_audit_at <- function(date, hms) {
   as.POSIXct(format(as.POSIXct(paste(as.Date(date), hms), tz = pit_audit_tz), tz = "UTC"), tz = "UTC")
 }
 
-pit_audit_fixture <- function(knowledge = c("announcement", "effective_only")) {
+pit_audit_fixture <- function(knowledge = c("announcement", "effective_only"),
+                              status_coverage = c("declared", "full")) {
   knowledge <- match.arg(knowledge)
+  status_coverage <- match.arg(status_coverage)
   cal <- pit_audit_calendar()
   s <- cal$open_days
   close_at <- function(k) pit_audit_at(s[k], if (k == 30L) "13:00:00" else "16:00:00")
@@ -145,6 +148,23 @@ pit_audit_fixture <- function(knowledge = c("announcement", "effective_only")) {
     source = "audit_fixture",
     stringsAsFactors = FALSE
   )
+  if (identical(status_coverage, "full")) {
+    # Stage 1 option (integrator, 2026-10-10). The default ("declared") keeps
+    # the frozen input: status rows for FFF and EEE only, so every uncovered
+    # instrument-time resolves to status_unknown and is target-restricted
+    # (inventory PIT-03-015). "full" adds `active` rows from s1 for every
+    # uncovered instrument and for FFF and EEE until their declared rows
+    # begin, so runs can trade; everything else is unchanged.
+    na_time <- as.POSIXct(NA, tz = "UTC")
+    others <- setdiff(instruments$instrument_id, c("FFF", "EEE"))
+    status <- rbind(
+      data.frame(instrument_id = c(others, "FFF", "EEE"),
+                 effective_from = open_at(1),
+                 effective_to = c(rep(na_time, length(others)), open_at(14), open_at(23)),
+                 status = "active", source = "audit_fixture", stringsAsFactors = FALSE),
+      status
+    )
+  }
   status$knowledge_time <- status$effective_from - 1
 
   # Corporate-action clocks must land on run pulses (session closes); a clock
@@ -186,6 +206,7 @@ pit_audit_fixture <- function(knowledge = c("announcement", "effective_only")) {
 
   list(
     knowledge = knowledge,
+    status_coverage = status_coverage,
     sessions = cal$open_days,
     closed_adhoc = cal$closed_adhoc,
     bars = bars,

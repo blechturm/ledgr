@@ -29,6 +29,12 @@ small probe (`inst/design/spike_protocol.md`).
    outputs in `stage1/`); probes run at idle CPU priority through
    `dev/audit/pit_universe/run_low.sh`. The maintainer moved the WS5
    verification session after Stage 1 (the two are independent).
+   Stage 1 complete 2026-10-10: `inventory.csv` (195 rules, 58 flagged),
+   `path_matrix.csv` (56 rows; 107 of 168 exports as entry points, the other
+   61 excluded in the map with reasons), `map.md` (ends with "Flags for Gate
+   1"); reader inventories and notes in `stage1/`. The fixture gained
+   `status_coverage = "full"` (default `"declared"` unchanged). Next: Gate 1,
+   the maintainer's comprehension and completeness check.
 4. The WS3/WS4 history wave resumes only after Gate 3.
 
 ## Goals (maintainer, 2026-10-09)
