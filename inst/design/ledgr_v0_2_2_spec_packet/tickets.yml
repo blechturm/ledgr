@@ -184,7 +184,8 @@ cuts:
     out_of_scope: "Design questions routed at Gates 2 and 3 (S2-007, S2-011, S2-012, S2-003 D2, G-013, G-014, G-015); the snapshot verification policy (WS5 session); the ledgr-research adapter changes (dividend facts, G-016); the peer-benchmark harness parity drift (dev/bench, not point-in-time); LDG-2992; exact-quantity settlement (G-010, G-019)."
     workstreams: [23, 24, 25, 26]
     closeout: "Every audit probe named by a ticket flips on the final tree; fills, ledger, equity and positions stay byte-identical on the fixture and Sharadar lanes for runs no finding touches, and every intended change (config identity, promotion evidence, metrics, corporate-action and result summaries) is listed by its ticket; fast profile within its bound; contracts, NEWS and the audit charter record each finding's resolution."
-    status: "draft"
+    accepted: "2026-10-10 by the maintainer after the cut review (NEEDS_TYPE_2), maintainer decisions 6 to 10, and two focused Codex re-reviews ending in PASS"
+    status: "open"
 review_gate:
   max_review_invocations_per_ticket: 0.5
 sequencing: >-
@@ -368,28 +369,28 @@ workstreams:
   - id: 23
     name: "Recovery and resume correctness"
     cut: 12
-    status: "draft"
+    status: "open"
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23", reason: "One claim joins LDG-2993 to LDG-2995: an interrupted and resumed availability run, a run that values no pulse and an INCOMPLETE run with a post-prefix fill each keep the evidence a fresh run keeps, open and reconstruct. The review reruns S2_entitlement, S2_stops and I_walk_forward W4 on both trees, removes each fix to prove its detector fails, checks the dividend boundary against LTB-0035, and walks the seven shapes on every changed function."}
   - id: 24
     name: "Silent inputs and ingest guarantees"
     cut: 12
-    status: "draft"
+    status: "open"
     depends_on_workstream: 23
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 24", reason: "One claim joins LDG-2996 to LDG-3000, LDG-3011 and LDG-3012: an input ledgr cannot honor is refused at ingest or reported, never silently ignored. The review reruns S2_ca_inert, S2C_dense_acquisition, S2_calendar_short, S2_nonpositive, S2C_session_posix and I_paths P11 on both trees, removes each guard to prove its detector fails, confirms research-preset Sharadar fills, ledger and equity are unchanged, and walks the seven shapes on every changed function."}
   - id: 25
     name: "Entry points, identity and disclosure"
     cut: 12
-    status: "draft"
+    status: "open"
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25", reason: "One claim joins LDG-3001 to LDG-3005 and LDG-3010: every public entry point applies the same point-in-time semantics or refuses, identity binds content under a versioned rule, and results disclose assumption-backed knowledge and the universe kind. The review reruns S2C_backtest, B_helper_ties, S2C_ties, S2_stops, S2_promote_config, A_calendar_window C6 and I_paths P6 and P8 on both trees, checks old-rule stores open and refuse resume, and walks the seven shapes on every changed function."}
   - id: 26
     name: "Held maintenance"
     cut: 12
-    status: "draft"
+    status: "open"
     depends_on_workstream: 25
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 26", reason: "One claim joins LDG-3006 to LDG-3009: the five maintenance items held since Cut 11 are closed by their exact gates: the dense reconstruction close map grows linearly with byte-identical equity; the alias-class test expects ledgr_unknown_feature_id and the full local suite has no failures; the LTB-0164 stall has a named cause with evidence and a fix or a bounded detector; check-test-gate --records accepts the documented record set; the S2-017 and S2-018 contract sentences are present; and the PIT-12-005 probe result is recorded."}
@@ -1119,7 +1120,7 @@ tickets:
   - id: "LDG-2993"
     title: "Bind resumed dividend entitlement like the fresh run"
     workstream: 23
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "S"
     dependencies: []
@@ -1129,7 +1130,7 @@ tickets:
   - id: "LDG-2994"
     title: "Finalize a run that values no pulse as an availability run"
     workstream: 23
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -1139,7 +1140,7 @@ tickets:
   - id: "LDG-2995"
     title: "Reconstruct an INCOMPLETE run through its achieved end"
     workstream: 23
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1149,7 +1150,7 @@ tickets:
   - id: "LDG-2996"
     title: "Detect and report held corporate actions ledgr does not model"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -1159,7 +1160,7 @@ tickets:
   - id: "LDG-2997"
     title: "Make a declared corporate-action refusal a typed stop"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-2996"]
@@ -1169,7 +1170,7 @@ tickets:
   - id: "LDG-2998"
     title: "Refuse a session calendar that does not cover the requested range"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1179,7 +1180,7 @@ tickets:
   - id: "LDG-2999"
     title: "Refuse non-positive prices at ingest"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1189,7 +1190,7 @@ tickets:
   - id: "LDG-3000"
     title: "Refuse session instants off their date and duplicate session instants"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1199,7 +1200,7 @@ tickets:
   - id: "LDG-3001"
     title: "Refuse ledgr_backtest() on availability-aware snapshots"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1209,7 +1210,7 @@ tickets:
   - id: "LDG-3002"
     title: "Break top-n ties in C-locale order"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1219,7 +1220,7 @@ tickets:
   - id: "LDG-3003"
     title: "Withhold metrics for incomplete performance in ledgr_compute_metrics()"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1229,7 +1230,7 @@ tickets:
   - id: "LDG-3004"
     title: "Bind run and session identity to snapshot content under a versioned rule"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-2994"]
@@ -1239,7 +1240,7 @@ tickets:
   - id: "LDG-3005"
     title: "Record the candidate's identity at promotion and warn on mismatch"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1249,7 +1250,7 @@ tickets:
   - id: "LDG-3010"
     title: "Label assumption-backed knowledge and the universe kind in results"
     workstream: 25
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1259,7 +1260,7 @@ tickets:
   - id: "LDG-3011"
     title: "Record and report off-session bars"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1269,7 +1270,7 @@ tickets:
   - id: "LDG-3012"
     title: "Require a declared price basis for availability-aware experiments"
     workstream: 24
-    status: "draft"
+    status: "open"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -1279,7 +1280,7 @@ tickets:
   - id: "LDG-3006"
     title: "Build the dense reconstruction close map in one pass"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-2995"]
@@ -1289,7 +1290,7 @@ tickets:
   - id: "LDG-3007"
     title: "Update the demo-strategy alias-class test"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1299,7 +1300,7 @@ tickets:
   - id: "LDG-3008"
     title: "Find the LTB-0164 fast-lane stall"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -1309,7 +1310,7 @@ tickets:
   - id: "LDG-3009"
     title: "Fix check-test-gate records and the remaining contract sentences"
     workstream: 26
-    status: "draft"
+    status: "open"
     priority: "P2"
     effort: "S"
     dependencies: []
