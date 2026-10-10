@@ -318,6 +318,14 @@ Measured inputs registered on 2026-10-04:
   invalidated exactness because SQL and R ordered tied mixed-case set IDs
   differently.
 
+Measured input registered on 2026-10-10 (Cut 11 Workstream 22):
+
+- [the per-run snapshot rehash](../../../dev/bench/notes/rehash_tax_findings.md):
+  after Workstream 22 it is about half of a Sharadar momentum run (about 55 s
+  per committed run), dense and point-in-time alike, dominated by R row
+  formatting of bars; one rehash per walk-forward fold is probably most of
+  the walk-forward, and `ledgr_backtest()` hashes twice.
+
 The spikes bind nothing. Cut 3 owns exact verification only. Correct the SQL
 boundary under the retained resolver's ordering, add a too-late gut and narrow
 the scope guard, then remeasure one candidate path after Cut 3. Do not invent a
