@@ -16,6 +16,8 @@ round trip; an availability-active cash dividend alongside a sale; and a
 frozen terminal write-off alongside a sale. Each evidence row contains the
 economic sweep result, ordered events and their accounting attributes,
 retained returns and trades, diagnostics, completion and final lot state.
+The same runner has an optional aggregate-only Sharadar clock mode. It writes
+no source row, identifier, price or action value.
 
 ## One Seam
 

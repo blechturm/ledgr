@@ -1,6 +1,7 @@
 # LDG-2992 compiled availability-accounting spike runner.
 #
 # Rscript spike_runner.R <ledgr_tree> <out_dir> [--gut]
+#   [--sharadar-snapshot=<path>] [--universe=<id>] [--clock-reps=<n>]
 #
 # The tree must contain the runnable spike fork. The runner writes one row per
 # case and arm, derived from the actual in-memory fold output. `--gut` corrupts
@@ -11,6 +12,15 @@ if (length(args) < 2L) stop("usage: spike_runner.R <ledgr_tree> <out_dir> [--gut
 tree <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
 out_dir <- args[[2L]]
 gut <- "--gut" %in% args
+option <- function(prefix, default = NULL) {
+  hit <- args[startsWith(args, paste0("--", prefix, "="))]
+  if (length(hit) == 0L) return(default)
+  sub(paste0("^--", prefix, "="), "", hit[[1L]])
+}
+sharadar_path <- option("sharadar-snapshot")
+sharadar_universe <- option("universe")
+clock_reps <- as.integer(option("clock-reps", "1"))
+if (is.na(clock_reps) || clock_reps < 1L) stop("`--clock-reps` must be at least one")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 .libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
@@ -259,8 +269,8 @@ evidence_value <- function(value) {
   }
   if (is.numeric(value)) {
     return(vapply(value, function(x) {
-      if (is.na(x)) return("NA")
       if (is.nan(x)) return("NaN")
+      if (is.na(x)) return("NA")
       if (is.infinite(x)) return(if (x > 0) "Inf" else "-Inf")
       sprintf("%.17g", x)
     }, character(1)))
@@ -342,3 +352,95 @@ utils::write.csv(evidence, file.path(out_dir, "cases.csv"), row.names = FALSE)
 utils::write.csv(clocks, file.path(out_dir, "clocks.csv"), row.names = FALSE)
 print(evidence[, c("case", "arm")], row.names = FALSE)
 print(clocks, row.names = FALSE)
+
+if (!is.null(sharadar_path)) {
+  if (gut) stop("Sharadar clocks cannot run with --gut")
+  sharadar_path <- normalizePath(sharadar_path, winslash = "/", mustWork = TRUE)
+  snapshot <- ledgr_snapshot_open(sharadar_path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  if (is.null(sharadar_universe)) {
+    con <- ledgr:::get_connection(snapshot)
+    values <- DBI::dbGetQuery(
+      con,
+      "SELECT DISTINCT universe_id FROM snapshot_membership_sets"
+    )$universe_id
+    if (length(values) != 1L) stop("`--universe` is required when the snapshot has other than one universe")
+    sharadar_universe <- values[[1L]]
+  }
+  source(file.path(tree, "dev/bench/v0_2_2_real_data_scale/fixture.R"))
+  make_experiment <- function(strategy, features = list()) {
+    ledgr_experiment(
+      snapshot, strategy, features = features,
+      universe = ledgr_universe_members(sharadar_universe),
+      valuation_policy = ledgr_valuation_stale(5),
+      cost_model = ledgr_cost_zero(),
+      opening = ledgr_opening(cash = 1e6)
+    )
+  }
+  workloads <- list(
+    momentum = list(
+      experiment = make_experiment(scale_momentum, list(ledgr_ind_returns(252L))),
+      params = list(lookback = 252L, n = 20L)
+    ),
+    equal_weight = list(
+      experiment = make_experiment(scale_equal_weight),
+      params = list(f = 0.95)
+    )
+  )
+  clock_rows <- list()
+  economic_fields <- c(
+    "status", "completion_json", "final_equity", "total_return",
+    "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
+    "n_trades", "win_rate", "avg_trade", "time_in_market",
+    "valuation_state", "frozen_instrument_sessions",
+    "max_frozen_equity_weight", "frozen_at_end_value",
+    "assumed_terminal_outcomes"
+  )
+  for (rep in seq_len(clock_reps)) {
+    arms <- if (rep %% 2L == 1L) c("canonical", "hybrid") else c("hybrid", "canonical")
+    for (workload in names(workloads)) {
+      item <- workloads[[workload]]
+      pair <- list()
+      for (arm in arms) {
+        compiled <- identical(arm, "hybrid")
+        options(ledgr.spike.compiled_availability = compiled)
+        started <- proc.time()[["elapsed"]]
+        sweep <- ledgr_sweep(
+          item$experiment,
+          ledgr_param_grid(one = item$params),
+          compiled_accounting_model = if (compiled) "spot_fifo" else NULL,
+          stop_on_error = TRUE
+        )
+        elapsed <- proc.time()[["elapsed"]] - started
+        pair[[arm]] <- json(normalize_frame(sweep[1L, economic_fields]))
+        clock_rows[[length(clock_rows) + 1L]] <- data.frame(
+          workload = workload,
+          repetition = rep,
+          arm = arm,
+          order = match(arm, arms),
+          elapsed_seconds = round(elapsed, 3),
+          engine_seconds = round(as.numeric(sweep$t_engine[[1L]]), 3),
+          economic_json = pair[[arm]],
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+  sharadar <- do.call(rbind, clock_rows)
+  for (workload in names(workloads)) {
+    for (rep in seq_len(clock_reps)) {
+      rows <- sharadar$workload == workload & sharadar$repetition == rep
+      values <- sharadar$economic_json[rows]
+      if (length(unique(values)) != 1L) {
+        stop("Sharadar economic outputs diverged for ", workload, " repetition ", rep)
+      }
+    }
+  }
+  options(ledgr.spike.compiled_availability = NULL)
+  utils::write.csv(
+    sharadar,
+    file.path(out_dir, "sharadar_clocks.csv"),
+    row.names = FALSE
+  )
+  print(sharadar[, setdiff(names(sharadar), "economic_json")], row.names = FALSE)
+}
