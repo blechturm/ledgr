@@ -51,14 +51,15 @@ ledgr_config_identity_rule <- function(config) {
   as.integer(version)
 }
 
-# A run or session recorded under an earlier identity rule is inspection-only:
-# resuming it or rerunning it under the current rule would hash differently.
+# A run recorded under an earlier identity rule is inspection-only: resuming
+# it under the current rule would hash differently. (A walk-forward rerun of a
+# rule-1 session forks into a new session instead.)
 ledgr_identity_rule_retired_abort <- function(subject, rule) {
   rlang::abort(
     paste0(
       subject, " was recorded under identity rule ", rule, ", which bound the store-local snapshot ID. ",
-      "It remains readable, but cannot be resumed or rerun under identity rule ", ledgr_identity_rule_version,
-      ", which binds the snapshot content hash. Start a new run_id or session."
+      "It remains readable, but cannot be resumed under identity rule ", ledgr_identity_rule_version,
+      ", which binds the snapshot content hash. Start a new run_id."
     ),
     class = c("ledgr_identity_rule_retired", "ledgr_run_hash_mismatch")
   )
