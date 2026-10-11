@@ -29,6 +29,26 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-11 [data] Derive off-session bar evidence live instead of storing it
+
+Cut 12 LDG-3011 records each sealed bar that falls on no declared open-session
+close as a row in `snapshot_observation_quarantine` (reason `off_session_bar`).
+The row is derived from hashed bars and sessions, so it stays outside the
+snapshot hash, the quarantine acknowledgement and the seal checks; deleting or
+injecting such a row therefore goes unnoticed (WS24 close review F8, accepted
+for v0.2.2 by the maintainer on 2026-10-11).
+
+A reader-side derivation would be tamper-evident by construction: the
+off-session set is an anti-join of `snapshot_bars` against the open-session
+closes in `snapshot_sessions`, both hashed. `ledgr_snapshot_quarantine()`,
+`ledgr_snapshot_info()$off_session_bar_count` and the run summary could read
+that query instead of stored rows, which would also remove the stored rows'
+special cases in the hash payload, the acknowledgement check and the seal JSON
+checks. The open question is cost on large snapshots (the anti-join runs at
+read time) and whether the supplied row's extra columns, which only the stored
+record keeps, matter to anyone. This entry authorizes no API, schema, ticket
+or release commitment.
+
 ### 2026-10-11 [execution] One execution mode: dense as a special case of availability
 
 ledgr runs in two modes that share the fold core but diverge at the edges. A
