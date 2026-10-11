@@ -23,8 +23,8 @@ object also inherits from \code{ledgr_empty_selection}.
 eligible instruments: a signal built from a context marks ineligible
 instruments in its \code{eligible} attribute, and they are never selected or
 counted. Missing values are ignored. Ties are broken deterministically by
-instrument ID in alphabetical order. The result covers the signal's whole
-axis. If no values are usable, the function returns a classed empty selection,
+instrument ID in C-locale (byte) order, whatever the session collation. The
+result covers the signal's whole axis. If no values are usable, the function returns a classed empty selection,
 all \code{FALSE}, without warning; it keeps the signal origin and flows through
 \code{ledgr_weight_equal()} and \code{ledgr_target_rebalance()} to a target that keeps
 ineligible holdings and zeroes the rest.

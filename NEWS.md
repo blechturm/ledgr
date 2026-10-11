@@ -1,5 +1,12 @@
 # ledgr (development version)
 
+## Consistent entry points and disclosed assumptions
+
+- `ledgr_select_top_n()` breaks ties by instrument ID in C-locale (byte)
+  order, the order the availability provider uses, whatever the session's
+  collation. Previously ties followed `LC_COLLATE`, so the same strategy
+  could select different instruments on machines with different locales.
+
 ## Inputs ledgr refuses or reports instead of ignoring
 
 - A snapshot no longer seals a zero or negative open, high, low or close

@@ -975,7 +975,9 @@ Accepted change pending:
   or leverage until explicit short-selling and leverage semantics are specified.
 - The v0.1.7.2 reference helper pipeline is deliberately small:
   `ledgr_signal_return()` reads already-registered `return_<lookback>` features,
-  `ledgr_select_top_n()` ignores missing signals and breaks ties by instrument ID,
+  `ledgr_select_top_n()` ignores missing signals and breaks ties by instrument ID
+  in C-locale (radix) order, the provider's id order, whatever the session
+  collation (Cut 12 LDG-3002),
   `ledgr_weight_equal()` creates long-only equal weights, and `ledgr_target_rebalance()`
   converts weights into full-universe `ledgr_target` quantities using
   decision-time equity and close prices. These helpers must not auto-register

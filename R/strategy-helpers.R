@@ -148,8 +148,8 @@ ledgr_signal_return <- function(ctx, lookback = 20L) {
 #' eligible instruments: a signal built from a context marks ineligible
 #' instruments in its `eligible` attribute, and they are never selected or
 #' counted. Missing values are ignored. Ties are broken deterministically by
-#' instrument ID in alphabetical order. The result covers the signal's whole
-#' axis. If no values are usable, the function returns a classed empty selection,
+#' instrument ID in C-locale (byte) order, whatever the session collation. The
+#' result covers the signal's whole axis. If no values are usable, the function returns a classed empty selection,
 #' all `FALSE`, without warning; it keeps the signal origin and flows through
 #' `ledgr_weight_equal()` and `ledgr_target_rebalance()` to a target that keeps
 #' ineligible holdings and zeroes the rest.
@@ -201,7 +201,9 @@ ledgr_select_top_n <- function(signal, n, partial = c("warn", "allow")) {
     return(ledgr_strategy_empty_selection(ids, origin = attr(signal, "origin")))
   }
 
-  ranked <- usable[order(-values[usable], ids[usable])]
+  # Ties break by instrument id in C-locale (radix) order, as the availability
+  # provider orders ids, whatever LC_COLLATE is.
+  ranked <- usable[order(-values[usable], ids[usable], method = "radix")]
   selected_idx <- ranked[seq_len(min(n, length(ranked)))]
 
   if (length(selected_idx) < n && identical(partial, "warn")) {

@@ -609,3 +609,18 @@ testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the ru
   close(ledgr_run(exp, run_id = "strict_cash"))
   testthat::expect_identical(pit_consistency_stored(con, "strict_cash"), stored)
 })
+
+testthat::test_that("[LTB-0229] top-n ties break in C-locale order under any collation", {
+  ids <- c("b2", "B1", "a3", "A4")
+  signal <- ledgr_signal(stats::setNames(rep(1, 4), ids), origin = "tie")
+  old <- Sys.getlocale("LC_COLLATE")
+  on.exit(suppressWarnings(Sys.setlocale("LC_COLLATE", old)), add = TRUE)
+  picked <- list()
+  for (locale in c("C", "English_United States.1252", "en_US.UTF-8")) {
+    if (!nzchar(suppressWarnings(Sys.setlocale("LC_COLLATE", locale)))) next
+    selection <- ledgr_select_top_n(signal, 2)
+    picked[[locale]] <- names(selection)[selection]
+  }
+  testthat::expect_gte(length(picked), 2L)
+  for (p in picked) testthat::expect_identical(sort(p, method = "radix"), c("A4", "B1"))
+})
