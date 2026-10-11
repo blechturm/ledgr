@@ -279,7 +279,9 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #' @param x A `ledgr_experiment`.
 #' @param ... Unused.
 #'
-#' @return A `ledgr_experiment_plan` object. Its `checks` tibble reports each
+#' @return A `ledgr_experiment_plan` object. `price_basis` is the snapshot's
+#'   declared basis (`"undeclared"` for a dense snapshot without one; an
+#'   availability-aware experiment always declares one). Its `checks` tibble reports each
 #'   family status and keeps generated-schedule and assumed-knowledge reasons
 #'   separate in `assumption_reasons`. Its `assumptions` tibble lists the
 #'   declared valuation-horizon and terminal-outcome choices, one row per
@@ -345,6 +347,7 @@ ledgr_experiment_plan <- function(x, ...) {
       availability_active = active,
       universe_type = if (is.null(x$universe_rule)) "fixed" else "membership",
       universe_id = x$universe_rule$universe_id %||% NA_character_,
+      price_basis = x$data_identity$price_basis %||% "undeclared",
       valuation_policy = x$valuation_policy,
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
@@ -361,6 +364,7 @@ ledgr_experiment_plan <- function(x, ...) {
 print.ledgr_experiment_plan <- function(x, ...) {
   cat("ledgr experiment plan\n")
   cat("Availability: ", if (isTRUE(x$availability_active)) "active" else "dense", "\n", sep = "")
+  cat("Price basis:  ", x$price_basis %||% "undeclared", "\n", sep = "")
   if (isTRUE(x$availability_active)) {
     cat("Universe:     ", x$universe_type, "\n", sep = "")
     cat("Checks:\n")

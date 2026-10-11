@@ -570,6 +570,9 @@ Seal the evidence first. After this point the inputs are frozen and
 identified by a hash. The store comes from `ledgr_temp_store()` because the
 article closes and reopens it later; a real project passes a persistent path,
 so the evidence outlives the R session.
+The snapshot declares `price_basis = "split_adjusted"`: ledgr counts shares
+in split-adjusted units, and a point-in-time experiment refuses a snapshot that
+does not say what its bars are.
 
 ```{r}
 #| label: runs
@@ -582,6 +585,7 @@ snapshot <- ledgr_snapshot_from_df(
   bars_input,
   instruments_df = instruments,
   facts = facts,
+  price_basis = "split_adjusted",
   db_path = store_path,
   snapshot_id = "survivorship-demo"
 )
@@ -1003,6 +1007,7 @@ terminal_snapshot <- ledgr_snapshot_from_df(
   bars_input,
   instruments_df = instruments,
   facts = ledgr_facts(session_facts, membership_facts, delisting),
+  price_basis = "split_adjusted",
   db_path = store_path,
   snapshot_id = "survivorship-terminal"
 )

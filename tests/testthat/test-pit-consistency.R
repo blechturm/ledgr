@@ -283,3 +283,178 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
     ledgr_snapshot_close(snapshot)
   }
 })
+
+testthat::test_that("[LTB-0225] availability-aware experiments require and disclose a price basis", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  hold <- function(ctx, params) ctx$hold()
+  experiment <- function(snapshot, ...) {
+    ledgr_experiment(snapshot, hold, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000), ...)
+  }
+  undeclared <- scale_test_events_snapshot(price_basis = NULL)
+  on.exit(ledgr_snapshot_close(undeclared), add = TRUE)
+  testthat::expect_error(
+    experiment(undeclared, universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2)),
+    class = "ledgr_price_basis_required"
+  )
+
+  declared <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(declared), add = TRUE)
+  exp <- experiment(declared, universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2))
+  plan <- ledgr_experiment_plan(exp)
+  testthat::expect_identical(plan$price_basis, "split_adjusted")
+  testthat::expect_true(any(grepl("Price basis:  split_adjusted", utils::capture.output(print(plan)), fixed = TRUE)))
+  bt <- ledgr_run(exp, run_id = "declared_basis")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_identical(ledgr_corporate_action_summary(bt)$price_basis, "split_adjusted")
+  testthat::expect_true(any(grepl("Price basis: split_adjusted", utils::capture.output(print(bt)), fixed = TRUE)))
+
+  # A dense snapshot without a declared basis runs as before.
+  dense <- ledgr_snapshot_from_df(
+    data.frame(instrument_id = "AAA", ts_utc = at(days[1:3]), open = 10, high = 10, low = 10, close = 10, volume = 1),
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(dense), add = TRUE)
+  dense_exp <- experiment(dense, universe = "AAA")
+  testthat::expect_identical(ledgr_experiment_plan(dense_exp)$price_basis, "undeclared")
+  close(ledgr_run(dense_exp, run_id = "dense_undeclared"))
+  testthat::expect_identical(ledgr_run_info(dense, "dense_undeclared")$status, "DONE")
+})
+
+testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and reported, never a pulse", {
+  days <- pit_consistency_days()
+  saturday <- as.POSIXct(paste(days[[5]] + 1, "21:00:00"), tz = "UTC")
+  add_off_session <- function(bars) {
+    extra <- bars[bars$instrument_id == "AAA", , drop = FALSE][1L, ]
+    extra$ts_utc <- saturday
+    extra[c("open", "high", "low", "close")] <- 999
+    rbind(bars, extra)
+  }
+  snapshot <- scale_test_events_snapshot(edit_bars = add_off_session)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  info <- ledgr_snapshot_info(snapshot)
+  testthat::expect_identical(info$off_session_bar_count, 1L)
+  evidence <- ledgr_snapshot_quarantine(snapshot)
+  testthat::expect_identical(evidence$reason, "off_session_bar")
+  testthat::expect_identical(evidence$supplied_instrument_id, "AAA")
+  testthat::expect_equal(evidence$supplied_ts_utc, saturday, ignore_attr = TRUE)
+  # The bar stays sealed and the record stays outside the hash: the snapshot
+  # reopens with verification.
+  con <- ledgr:::get_connection(snapshot)
+  testthat::expect_identical(
+    DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM snapshot_bars WHERE close = 999")$n,
+    1
+  )
+  db_path <- snapshot$db_path
+  snapshot_id <- snapshot$snapshot_id
+  ledgr_snapshot_close(snapshot)
+  snapshot <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
+
+  seen <- new.env()
+  seen$ts <- character()
+  spy <- function(ctx, params) {
+    seen$ts <- c(seen$ts, ctx$ts_utc)
+    ctx$hold()
+  }
+  exp <- ledgr_experiment(
+    snapshot, spy, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+  )
+  bt <- ledgr_run(exp, run_id = "off_session_run")
+  testthat::expect_false(any(substr(seen$ts, 1, 10) == as.character(days[[5]] + 1)))
+  testthat::expect_false(any(as.Date(ledgr_results(bt, "equity")$ts_utc) == days[[5]] + 1))
+  testthat::expect_true(any(grepl("Off-session bars: 1 sealed bar", utils::capture.output(summary(bt)), fixed = TRUE)))
+  # The record is derived evidence: it is not counted as quarantined, and
+  # removing it leaves the snapshot hash verifying.
+  meta <- ledgr:::ledgr_json_read_nested(ledgr_snapshot_info(snapshot)$meta_json)
+  testthat::expect_identical(as.integer(meta$quarantined_observation_count), 0L)
+  close(bt)
+  DBI::dbExecute(ledgr:::get_connection(snapshot), "DELETE FROM snapshot_observation_quarantine WHERE reason = 'off_session_bar'")
+  ledgr_snapshot_close(snapshot)
+  snapshot <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
+  testthat::expect_identical(ledgr_snapshot_info(snapshot)$off_session_bar_count, 0L)
+
+  # Under quarantine the record sits beside a quarantined row; the
+  # acknowledgement counts only the quarantined one.
+  both <- scale_test_events_snapshot(
+    edit_bars = function(bars) {
+      bars <- add_off_session(bars)
+      k <- bars$instrument_id == "BBB" & bars$ts_utc == as.POSIXct(paste(days[[2]], "21:00:00"), tz = "UTC")
+      bars$high[k] <- bars$low[k] - 1
+      bars
+    },
+    invalid_observations = "quarantine"
+  )
+  on.exit(ledgr_snapshot_close(both), add = TRUE)
+  testthat::expect_setequal(ledgr_snapshot_quarantine(both)$reason, c("off_session_bar", "ohlc_invalid"))
+  testthat::expect_identical(ledgr_snapshot_info(both)$off_session_bar_count, 1L)
+
+  clean <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(clean), add = TRUE)
+  testthat::expect_identical(ledgr_snapshot_info(clean)$off_session_bar_count, 0L)
+})
+
+pit_consistency_ca <- function(subtype, parent, entitlement, effective) {
+  ledgr_facts_equity_corporate_actions(data.frame(
+    fact_id = paste0(parent, "-", subtype), subtype = subtype, parent_instrument_id = parent,
+    entitlement_time = entitlement, effective_time = effective, knowledge_time = entitlement - 86400 * 3,
+    payment_time = effective, complete = TRUE, provenance_tier = "snapshot_bound",
+    gross_cash_per_parent_unit = 1, gross_cash_validated = TRUE,
+    recipient_instrument_id = NA_character_, recipient_identity_validated = FALSE,
+    recipient_quantity_per_parent_unit = NA_real_, recipient_quantity_validated = FALSE,
+    source = "t", stringsAsFactors = FALSE
+  ))
+}
+
+testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is reported or refused", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  buy_day <- as.character(days[[1]])
+  buy_aaa <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1, 10), buy_day)) target[["AAA"]] <- 1
+    target
+  }
+  run_summary <- function(snapshot, run_id, policy, ...) {
+    exp <- ledgr_experiment(snapshot, buy_aaa, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000),
+                            corporate_action_policy = policy, ...)
+    bt <- ledgr_run(exp, run_id = run_id)
+    on.exit(close(bt))
+    ledgr_corporate_action_summary(bt)
+  }
+  pit <- list(universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2))
+
+  # An unknown subtype on the held AAA: research reports it, strict refuses.
+  unknown <- scale_test_events_snapshot(corporate_actions = pit_consistency_ca("cash_dividend", "AAA", at(days[[5]]), at(days[[6]])))
+  on.exit(ledgr_snapshot_close(unknown), add = TRUE)
+  research <- do.call(run_summary, c(list(unknown, "unknown_research", ledgr_corporate_actions_research()), pit))
+  testthat::expect_identical(research$corporate_action_fidelity, "unsupported")
+  testthat::expect_identical(research$unsupported_facts, 1L)
+  testthat::expect_identical(research$gross_cash_posted, 0)
+  testthat::expect_error(
+    do.call(run_summary, c(list(unknown, "unknown_strict", ledgr_corporate_actions_strict()), pit)),
+    class = "ledgr_corporate_action_unsupported"
+  )
+  # Not held: nothing is reported.
+  unheld <- scale_test_events_snapshot(corporate_actions = pit_consistency_ca("cash_dividend", "BBB", at(days[[5]]), at(days[[7]])))
+  on.exit(ledgr_snapshot_close(unheld), add = TRUE)
+  quiet <- do.call(run_summary, c(list(unheld, "unknown_unheld", ledgr_corporate_actions_research()), pit))
+  testthat::expect_identical(quiet$corporate_action_fidelity, "none")
+  testthat::expect_identical(quiet$unsupported_facts, 0L)
+
+  # A held cash acquisition in a dense run: no disposition acts there.
+  dense_bars <- data.frame(instrument_id = rep(c("AAA", "CCC"), each = 5), ts_utc = rep(at(days[1:5]), 2),
+                           open = 10, high = 10, low = 10, close = 10, volume = 1)
+  dense <- ledgr_snapshot_from_df(
+    dense_bars, db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    facts = ledgr_facts(pit_consistency_ca("cash_acquisition", "AAA", at(days[[3]]), at(days[[4]])))
+  )
+  on.exit(ledgr_snapshot_close(dense), add = TRUE)
+  dense_research <- run_summary(dense, "dense_research", ledgr_corporate_actions_research(), universe = c("AAA", "CCC"))
+  testthat::expect_identical(dense_research$corporate_action_fidelity, "unsupported")
+  testthat::expect_identical(dense_research$unsupported_facts, 1L)
+  testthat::expect_error(
+    run_summary(dense, "dense_strict", ledgr_corporate_actions_strict(), universe = c("AAA", "CCC")),
+    class = "ledgr_corporate_action_unsupported"
+  )
+})

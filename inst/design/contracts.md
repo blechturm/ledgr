@@ -421,6 +421,15 @@ Accepted change pending:
   assumption and completeness/coverage metadata, and every explicitly
   acknowledged observation-quarantine row. Store-local snapshot IDs remain
   excluded. A missing rule marker on a legacy snapshot means rule 1.
+- A valid bar that falls on no declared open-session close is sealed in
+  `snapshot_bars` and never becomes a pulse on any path. Ingest records each
+  one in the quarantine table under reason `off_session_bar` (in either
+  `invalid_observations` mode); `ledgr_snapshot_quarantine()` lists it,
+  `ledgr_snapshot_info()` counts it as `off_session_bar_count` (0 when there
+  is none), and `summary()` of a result reports a non-zero count. The record
+  is derived from hashed bars and sessions, so it is outside the snapshot hash
+  and the quarantine acknowledgement; the hash rule is unchanged (Cut 12
+  LDG-3011).
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
@@ -498,7 +507,19 @@ Accepted change pending:
   calendar's civil days refuses with `ledgr_sessions_incomplete` instead of
   running over the shorter calendar (Cut 12 LDG-2998). The requested start
   includes an opening date that precedes the sealed data. The
-  package supplies no default stale horizon. `max_sessions = 0` means that only
+  package supplies no default stale horizon.
+- ledgr accounts in split-adjusted share units: no split event acts on a
+  position, so quantities, fills and marks are consistent only when bars are
+  back-adjusted for splits. An availability-aware experiment therefore
+  requires a declared price basis (`price_basis = "split_adjusted"` at
+  sealing) and refuses an undeclared one with `ledgr_price_basis_required`;
+  `distribution_adjusted` stays refused for execution. Under
+  `split_adjusted`, level rules and integer sizing read back-adjusted price
+  levels, so a quantity or price threshold before a split is in post-split
+  units, and as-traded bars across a split would book a phantom loss. The
+  declared basis appears in `ledgr_experiment_plan()`, in
+  `ledgr_corporate_action_summary()` and in `print()` of a result. A dense
+  experiment may still run undeclared (Cut 12 LDG-3012). `max_sessions = 0` means that only
   a current-session mark is permissible.
 - A character-vector universe remains a fixed basket even when it consumes
   session, trading-status, or lifetime facts. Dynamic membership is explicit
@@ -1502,6 +1523,15 @@ Accepted change pending:
   realized model P&L. A defaulted frozen-fallback write-off reads exactly
   `default: assumed worthless`. Settlement evidence is reported as evidence,
   not as an assumption.
+- A complete corporate-action fact whose effect ledgr does not model takes the
+  unsupported-quantity route when its parent is held at entitlement: a subtype
+  outside `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
+  `mixed_acquisition` and `spin_off`, and an acquisition in a dense run, where
+  no disposition acts. Under `unsupported_quantity = "refuse"` (the strict
+  preset) the run refuses at the fact's effective pulse; otherwise nothing
+  posts, the fact counts in `unsupported_facts` and `corporate_action_fidelity`
+  is `unsupported`. Ingest keeps the subtype vocabulary open (Cut 12
+  LDG-2996).
 - `ledgr_valuation_summary(bt)` reports one run's valuation state (`current`,
   `stale`, `frozen`, or `not_applicable` for dense runs), stale and frozen
   instrument-sessions and holdings, longest stale age and longest freeze,

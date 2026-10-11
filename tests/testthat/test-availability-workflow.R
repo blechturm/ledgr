@@ -106,7 +106,7 @@ testthat::test_that("effective plans disclose assumption-backed fact families", 
     close = 100:102,
     volume = 1000
   )
-  snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(sessions))
+  snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(sessions), price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(
     snapshot,
@@ -176,7 +176,7 @@ testthat::test_that(
     source = "test",
     precedence = 1L
   ))
-  no_sessions <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(status))
+  no_sessions <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(status), price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(no_sessions), add = TRUE)
   strategy <- function(ctx, params) ctx$hold()
   testthat::expect_error(
@@ -302,7 +302,7 @@ testthat::test_that("a target on the last decision fills at the final session op
   snapshot <- ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = "BBB"),
-    facts = ledgr_facts(sessions, membership)
+    facts = ledgr_facts(sessions, membership), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 

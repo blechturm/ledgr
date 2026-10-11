@@ -126,7 +126,7 @@ ws14_matrix_snapshot <- function(db_path = tempfile(fileext = ".duckdb")) {
     ),
     db_path = db_path,
     facts = matrix$facts,
-    invalid_observations = "quarantine"
+    invalid_observations = "quarantine", price_basis = "split_adjusted"
   )
 }
 

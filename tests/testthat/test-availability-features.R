@@ -32,7 +32,7 @@ availability_strict_matrix_fixture <- function() {
   ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    facts = ledgr_facts(sessions)
+    facts = ledgr_facts(sessions), price_basis = "split_adjusted"
   )
 }
 
@@ -78,7 +78,7 @@ availability_session_axis_fixture <- function() {
   ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    facts = ledgr_facts(sessions, lifetime)
+    facts = ledgr_facts(sessions, lifetime), price_basis = "split_adjusted"
   )
 }
 

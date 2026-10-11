@@ -41,7 +41,7 @@ availability_economics_snapshot <- function(ids,
   ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = ids),
-    facts = do.call(ledgr_facts, families)
+    facts = do.call(ledgr_facts, families), price_basis = "split_adjusted"
   )
 }
 

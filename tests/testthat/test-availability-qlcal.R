@@ -123,7 +123,7 @@ testthat::test_that("qlcal metadata and assumptions enter existing identity", {
       low = seq_along(dates) + 98,
       close = seq_along(dates) + 99,
       volume = 100
-    ), facts = ledgr_facts(family))
+    ), facts = ledgr_facts(family), price_basis = "split_adjusted")
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
   }
@@ -146,7 +146,7 @@ testthat::test_that("qlcal metadata and assumptions enter existing identity", {
       close = seq_along(dates) + 99,
       volume = 100
     )
-    snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(family))
+    snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(family), price_basis = "split_adjusted")
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     experiment <- ledgr_experiment(
       snapshot,
@@ -189,7 +189,7 @@ testthat::test_that("materialized qlcal sessions reopen without calendar state",
     low = 99 + seq_along(open_dates), close = 100 + seq_along(open_dates), volume = 100
   )
   db_path <- tempfile(fileext = ".duckdb")
-  snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(family), db_path = db_path)
+  snapshot <- ledgr_snapshot_from_df(bars, facts = ledgr_facts(family), db_path = db_path, price_basis = "split_adjusted")
   snapshot_id <- snapshot$snapshot_id
   ledgr_snapshot_close(snapshot)
   reopened <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
@@ -241,7 +241,7 @@ testthat::test_that("materialized sessions run in a fresh process without loadin
     low = 99 + seq_along(open_dates),
     close = 100 + seq_along(open_dates),
     volume = 100
-  ), facts = ledgr_facts(family), db_path = db_path)
+  ), facts = ledgr_facts(family), db_path = db_path, price_basis = "split_adjusted")
   snapshot_id <- snapshot$snapshot_id
   ledgr_snapshot_close(snapshot)
 

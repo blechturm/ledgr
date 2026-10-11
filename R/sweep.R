@@ -1442,7 +1442,8 @@ ledgr_sweep_run_candidate <- function(exp,
     pulses_posix = pulses_posix,
     instrument_ids = exp$universe,
     existing_events = opening_rows,
-    start_idx = 1L
+    start_idx = 1L,
+    dispositions_active = isTRUE(exp$availability$active)
   )
   execution <- ledgr_execution_spec(
     run_id = run_id,

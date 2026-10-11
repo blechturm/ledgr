@@ -2,7 +2,8 @@ ledgr_snapshot_write_availability <- function(con,
                                               snapshot_id,
                                               facts,
                                               quarantine,
-                                              invalid_observations) {
+                                              invalid_observations,
+                                              off_session = NULL) {
   status <- DBI::dbGetQuery(
     con,
     "SELECT status FROM snapshots WHERE snapshot_id = ?",
@@ -58,6 +59,19 @@ ledgr_snapshot_write_availability <- function(con,
       ), drop = FALSE]
       DBI::dbAppendTable(con, "snapshot_observation_quarantine", rows)
     }
+  }
+  # Off-session bars stay sealed in snapshot_bars and are recorded beside the
+  # quarantine rows under their own reason, in either ingest mode. They are
+  # derived from hashed bars and sessions, so they stay outside the hash and
+  # the quarantine acknowledgement (ledgr_snapshot_quarantine_counted()).
+  if (!is.null(off_session) && nrow(off_session) > 0L) {
+    rows <- off_session
+    rows$snapshot_id <- snapshot_id
+    rows <- rows[, c(
+      "snapshot_id", "quarantine_id", "supplied_instrument_id",
+      "supplied_ts_utc", "reason", "original_row_json", "provenance_json"
+    ), drop = FALSE]
+    DBI::dbAppendTable(con, "snapshot_observation_quarantine", rows)
   }
 
   DBI::dbExecute(
@@ -256,10 +270,18 @@ ledgr_snapshot_quarantine_hashed_row <- function(original_row_json) {
   )
 }
 
+# The quarantine-table rows that are acknowledged quarantine evidence: every
+# row except the off-session bar records, which are derived and unhashed.
+ledgr_snapshot_quarantine_counted <- function(rows) {
+  if (is.null(rows) || nrow(rows) == 0L || !"reason" %in% names(rows)) return(rows)
+  rows[rows$reason != ledgr_off_session_reason, , drop = FALSE]
+}
+
 ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
   tables <- ledgr_snapshot_availability_read(con, snapshot_id)
 
-  quarantine <- tables$snapshot_observation_quarantine
+  quarantine <- ledgr_snapshot_quarantine_counted(tables$snapshot_observation_quarantine)
+  tables$snapshot_observation_quarantine <- quarantine
   if (!is.null(quarantine) && nrow(quarantine) > 0L) {
     if ("original_row_json" %in% names(quarantine)) {
       quarantine$original_row_json <-
@@ -652,7 +674,7 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     }
   }
 
-  quarantine <- data$snapshot_observation_quarantine
+  quarantine <- ledgr_snapshot_quarantine_counted(data$snapshot_observation_quarantine)
   q_header <- families[
     families$family == "observation_quarantine" & families$scope_id == "invalid_observations",
     ,

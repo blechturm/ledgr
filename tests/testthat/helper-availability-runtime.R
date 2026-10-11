@@ -36,7 +36,7 @@ availability_runtime_fixture <- function(days = 5L,
   ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = "AAA"),
-    facts = facts
+    facts = facts, price_basis = "split_adjusted"
   )
 }
 

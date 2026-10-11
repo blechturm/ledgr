@@ -381,7 +381,7 @@ availability_v201_run_case <- function(arm,
     instruments_df = fixture$instruments,
     db_path = db,
     snapshot_id = "witness",
-    facts = fixture$facts
+    facts = fixture$facts, price_basis = "split_adjusted"
   )
   on.exit({
     ledgr_snapshot_close(snapshot)

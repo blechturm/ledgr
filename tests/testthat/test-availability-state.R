@@ -125,7 +125,7 @@ testthat::test_that("provider orders members before stable held nonmembers", {
       snapshot <- ledgr_snapshot_from_df(
         grid,
         instruments_df = data.frame(instrument_id = instrument_ids),
-        facts = ledgr_facts(sessions, membership)
+        facts = ledgr_facts(sessions, membership), price_basis = "split_adjusted"
       )
       on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
       config <- list(

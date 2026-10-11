@@ -749,6 +749,19 @@ ledgr_result_period_label <- function(start, end) {
   paste(labels, collapse = " to ")
 }
 
+# Sealed bars of the run's snapshot that fall on no declared open-session
+# close (LDG-3011); 0 for a snapshot without availability evidence.
+ledgr_backtest_off_session_bar_count <- function(bt) {
+  opened <- ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  if (!ledgr_experiment_store_table_exists(opened$con, "snapshot_observation_quarantine")) return(0L)
+  as.integer(DBI::dbGetQuery(
+    opened$con,
+    "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
+    params = list(bt$config$data$snapshot_id, ledgr_off_session_reason)
+  )$n[[1L]])
+}
+
 ledgr_summary_prefix_only <- function(completion) {
   isTRUE(completion$completion_evidence_available) &&
     identical(completion$complete_performance, FALSE)
@@ -927,6 +940,13 @@ summary.ledgr_backtest <- function(object,
   }
 
   ledgr_print_valuation_summary(valuation)
+  off_session <- ledgr_backtest_off_session_bar_count(object)
+  if (off_session > 0L) {
+    cat(sprintf(
+      "Off-session bars: %d sealed bar%s on no declared session close, never a pulse; see ledgr_snapshot_quarantine().\n",
+      off_session, if (off_session == 1L) "" else "s"
+    ))
+  }
   if (isTRUE(completion$completion_evidence_available)) cat("\n")
   ledgr_print_completion_info(completion, trailing_blank = FALSE)
   ledgr_print_corporate_action_summary_compact(corporate_actions)

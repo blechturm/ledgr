@@ -15,7 +15,9 @@ ledgr_experiment_plan(x, ...)
 \item{...}{Unused.}
 }
 \value{
-A \code{ledgr_experiment_plan} object. Its \code{checks} tibble reports each
+A \code{ledgr_experiment_plan} object. \code{price_basis} is the snapshot's
+declared basis (\code{"undeclared"} for a dense snapshot without one; an
+availability-aware experiment always declares one). Its \code{checks} tibble reports each
 family status and keeps generated-schedule and assumed-knowledge reasons
 separate in \code{assumption_reasons}. Its \code{assumptions} tibble lists the
 declared valuation-horizon and terminal-outcome choices, one row per

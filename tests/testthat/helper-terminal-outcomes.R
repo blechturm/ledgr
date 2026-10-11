@@ -31,7 +31,8 @@ terminal_outcome_snapshot <- function(closes, lifetime = NULL, corporate = NULL)
       instrument_id = id,
       open = close[keep],
       high = close[keep] + 1,
-      low = close[keep] - 1,
+      # Prices stay positive (LDG-2999): a close of 1 or less gets half its value.
+      low = ifelse(close[keep] > 1, close[keep] - 1, close[keep] / 2),
       close = close[keep],
       volume = 1000,
       stringsAsFactors = FALSE

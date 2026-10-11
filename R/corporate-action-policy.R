@@ -44,7 +44,10 @@
 #'   `"haircut"`, `"write_off"`, or `"refuse"`, or an ordered named character
 #'   map of exact terminal labels to those choices with a required `default`
 #'   entry.
-#' @param unsupported_quantity One of `"report_only"` or `"refuse"`.
+#' @param unsupported_quantity One of `"report_only"` or `"refuse"`. Applies
+#'   to held quantity legs (stock and mixed acquisitions, spin-offs) and to
+#'   held facts ledgr does not model: a subtype outside the supported set, or
+#'   an acquisition in a dense run.
 #' @param frozen_terminal_position One of `"write_off"`, `"last_mark"`, or
 #'   `"refuse"`. Applies to a terminal reached while the holding is frozen.
 #' @param haircut One finite fraction in `[0, 1]`, required when and only when

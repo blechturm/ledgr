@@ -145,6 +145,13 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       expected_config$corporate_actions <- actual_config$corporate_actions <- NULL
       expected_config$availability$valuation_policy <- NULL
       actual_config$availability$valuation_policy <- NULL
+      # LDG-3012 requires a declared price basis for availability-aware
+      # experiments. The frozen run was sealed without one; the current run
+      # declares split_adjusted, which enters only the data section.
+      testthat::expect_null(expected_config$data$price_basis)
+      testthat::expect_identical(actual_config$data$price_basis, "split_adjusted")
+      actual_config$data["price_basis"] <- list(NULL)
+      actual_config$data <- actual_config$data[names(expected_config$data)]
       testthat::expect_identical(actual_config, expected_config)
       actual$config_json <- expected$config_json <- NULL
       actual$config_hash <- expected$config_hash <- NULL

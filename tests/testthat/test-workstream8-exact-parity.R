@@ -384,7 +384,7 @@ testthat::test_that("prepared availability input preserves the rowwise oracle", 
       facts = facts,
       invalid_observations = "quarantine",
       snapshot_id = "workstream8-parity",
-      db_path = tempfile(fileext = ".duckdb")
+      db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted"
     )
   })
   on.exit(ledgr_snapshot_close(old_snapshot), add = TRUE)
@@ -393,7 +393,7 @@ testthat::test_that("prepared availability input preserves the rowwise oracle", 
     facts = facts,
     invalid_observations = "quarantine",
     snapshot_id = "workstream8-parity",
-    db_path = tempfile(fileext = ".duckdb")
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(new_snapshot), add = TRUE)
   testthat::expect_identical(

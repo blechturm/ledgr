@@ -50,7 +50,8 @@ ledgr_availability_validate_inputs <- function(facts,
     observations = observations$report,
     prepared_bars = observations$accepted,
     prepared_instruments = instruments,
-    quarantine_rows = quarantine
+    quarantine_rows = quarantine,
+    off_session_rows = observations$off_session
   )
 }
 
@@ -180,28 +181,51 @@ ledgr_availability_prepare_observations <- function(bars_df,
   rownames(accepted) <- NULL
 
   bad <- outcome == "quarantine_candidate"
-  quarantine <- data.frame(
-    quarantine_id = character(sum(bad)),
-    supplied_instrument_id = instrument_id[bad],
-    supplied_ts_utc = as.POSIXct(ts[bad], tz = "UTC"),
-    reason = reason[bad],
-    original_row_json = vapply(which(bad), function(i) ledgr_availability_original_row_json(bars_df[i, , drop = FALSE]), character(1)),
-    provenance_json = rep(as.character(canonical_json(list(source = "ledgr_snapshot_from_df"))), sum(bad)),
+  quarantine <- ledgr_availability_evidence_rows(
+    bars_df, which(bad), instrument_id[bad], ts[bad], reason[bad],
+    list(source = "ledgr_snapshot_from_df")
+  )
+  # A valid bar off every declared open-session close seals but is never a
+  # pulse; it is recorded as observation evidence so it stays visible.
+  off_session <- keep & outside_expectation
+  off_session_rows <- ledgr_availability_evidence_rows(
+    bars_df, which(off_session), instrument_id[off_session], ts[off_session],
+    rep(ledgr_off_session_reason, sum(off_session)),
+    list(source = "ledgr_snapshot_from_df", disposition = "sealed_not_a_pulse")
+  )
+  list(accepted = accepted, quarantine = quarantine, off_session = off_session_rows, report = report)
+}
+
+ledgr_off_session_reason <- "off_session_bar"
+
+# Observation-evidence rows (the quarantine table's shape) for the supplied
+# rows `rows` of `bars_df`; `instrument_id`, `ts` and `reason` are already
+# subset to those rows. Built per evidence row: there are as many as the input
+# has invalid or off-session bars, not one per bar.
+ledgr_availability_evidence_rows <- function(bars_df, rows, instrument_id, ts, reason, provenance) {
+  n <- length(rows)
+  out <- data.frame(
+    quarantine_id = character(n),
+    supplied_instrument_id = instrument_id,
+    supplied_ts_utc = as.POSIXct(ts, tz = "UTC"),
+    reason = reason,
+    original_row_json = vapply(rows, function(i) ledgr_availability_original_row_json(bars_df[i, , drop = FALSE]), character(1)),
+    provenance_json = rep(as.character(canonical_json(provenance)), n),
     stringsAsFactors = FALSE
   )
-  if (nrow(quarantine) > 0L) {
-    quarantine$quarantine_id <- vapply(seq_len(nrow(quarantine)), function(i) {
-      payload <- ledgr_fact_row_payload(quarantine[i, setdiff(names(quarantine), "quarantine_id"), drop = FALSE])
+  if (n > 0L) {
+    out$quarantine_id <- vapply(seq_len(n), function(i) {
+      payload <- ledgr_fact_row_payload(out[i, setdiff(names(out), "quarantine_id"), drop = FALSE])
       paste0("quarantine_", substr(digest::digest(as.character(canonical_json(payload)), algo = "sha256"), 1L, 32L))
     }, character(1))
-    if (anyDuplicated(quarantine$quarantine_id)) {
+    if (anyDuplicated(out$quarantine_id)) {
       rlang::abort(
         "Duplicate invalid observations cannot be quarantined ambiguously.",
         class = c("ledgr_observation_quarantine_duplicate", "ledgr_invalid_args")
       )
     }
   }
-  list(accepted = accepted, quarantine = quarantine, report = report)
+  out
 }
 
 ledgr_availability_observation_times <- function(x,

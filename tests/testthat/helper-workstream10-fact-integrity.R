@@ -37,7 +37,7 @@ ws10_fact_snapshot <- function(db_path = tempfile(fileext = ".duckdb")) {
     ),
     db_path = db_path,
     facts = ws10_fact_bundle(),
-    invalid_observations = "quarantine"
+    invalid_observations = "quarantine", price_basis = "split_adjusted"
   )
 }
 

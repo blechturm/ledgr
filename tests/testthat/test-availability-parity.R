@@ -236,7 +236,7 @@ testthat::test_that("completion affected IDs come only from stopped diagnostics"
   snapshot <- ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    facts = ledgr_facts(sessions)
+    facts = ledgr_facts(sessions), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
@@ -884,7 +884,7 @@ testthat::test_that("[LTB-0024] walk-forward hydrates heterogeneous gaps on the 
   snapshot <- ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
-    facts = ledgr_facts(sessions)
+    facts = ledgr_facts(sessions), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(

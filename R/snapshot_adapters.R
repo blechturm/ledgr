@@ -374,7 +374,8 @@ ledgr_snapshot_from_df <- function(bars_df,
         snapshot_id,
         validated_facts,
         availability_report$quarantine_rows,
-        invalid_observations
+        invalid_observations,
+        off_session = availability_report$off_session_rows
       )
     }
   })

@@ -157,41 +157,10 @@ ledgr_corporate_action_result_events <- function(con,
   )
 }
 
-ledgr_corporate_action_composition_report <- function(con,
-                                                       snapshot_id,
-                                                       run_id,
-                                                       rows) {
-  columns <- list(
-    source_fact_id = character(),
-    subtype = character(),
-    parent_instrument_id = character(),
-    recipient_instrument_id = character(),
-    entitled_parent_quantity = numeric(),
-    modeled_cash_credited = numeric(),
-    estimated_contractual_consideration = numeric(),
-    difference = numeric(),
-    successor_exposure_not_represented = numeric(),
-    recipient_mark = numeric(),
-    valuation_ts_utc = as.POSIXct(character(), tz = "UTC"),
-    estimate_label = character(),
-    affected_marked_exposure = numeric()
-  )
-  empty <- as.data.frame(columns, stringsAsFactors = FALSE)
-  if (is.null(rows) || nrow(rows) == 0L) return(empty)
-  subtypes <- c(
-    "cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off"
-  )
-  selected <- which(rows$complete & rows$subtype %in% subtypes)
-  if (length(selected) == 0L) return(empty)
-
-  source_rows <- rows[selected, , drop = FALSE]
-  events <- ledgr_corporate_action_result_events(
-    con,
-    run_id,
-    source_rows$parent_instrument_id
-  )
-  if (nrow(events) == 0L) return(empty)
-  meta <- ledgr_corporate_action_event_meta(events)
+# Each selected fact's entitled parent quantity as the run's fold bound it,
+# recounted from the run's ledger `events` (with their parsed `meta`); 0 for
+# a fact entitled outside the pulses the run processed.
+ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows, selected, events, meta) {
   instrument_ids <- DBI::dbGetQuery(
     con,
     paste(
@@ -238,6 +207,60 @@ ledgr_corporate_action_composition_report <- function(con,
     selected[inside],
     as.character(instrument_ids),
     cum_boundaries[inside]
+  )
+  quantity
+}
+
+# One TRUE per complete fact of a subtype ledgr does not model whose parent
+# the run held when the fact was entitled.
+ledgr_corporate_action_held_unmodeled <- function(con, snapshot_id, run_id, rows) {
+  if (is.null(rows) || nrow(rows) == 0L) return(logical())
+  selected <- which(rows$complete & !rows$subtype %in% ledgr_corporate_action_supported_subtypes())
+  if (length(selected) == 0L) return(logical())
+  events <- ledgr_corporate_action_result_events(con, run_id, rows$parent_instrument_id[selected])
+  if (nrow(events) == 0L) return(logical())
+  meta <- ledgr_corporate_action_event_meta(events)
+  quantity <- ledgr_corporate_action_run_quantities(con, snapshot_id, run_id, rows, selected, events, meta)
+  rep(TRUE, sum(quantity != 0))
+}
+
+ledgr_corporate_action_composition_report <- function(con,
+                                                       snapshot_id,
+                                                       run_id,
+                                                       rows) {
+  columns <- list(
+    source_fact_id = character(),
+    subtype = character(),
+    parent_instrument_id = character(),
+    recipient_instrument_id = character(),
+    entitled_parent_quantity = numeric(),
+    modeled_cash_credited = numeric(),
+    estimated_contractual_consideration = numeric(),
+    difference = numeric(),
+    successor_exposure_not_represented = numeric(),
+    recipient_mark = numeric(),
+    valuation_ts_utc = as.POSIXct(character(), tz = "UTC"),
+    estimate_label = character(),
+    affected_marked_exposure = numeric()
+  )
+  empty <- as.data.frame(columns, stringsAsFactors = FALSE)
+  if (is.null(rows) || nrow(rows) == 0L) return(empty)
+  subtypes <- c(
+    "cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off"
+  )
+  selected <- which(rows$complete & rows$subtype %in% subtypes)
+  if (length(selected) == 0L) return(empty)
+
+  source_rows <- rows[selected, , drop = FALSE]
+  events <- ledgr_corporate_action_result_events(
+    con,
+    run_id,
+    source_rows$parent_instrument_id
+  )
+  if (nrow(events) == 0L) return(empty)
+  meta <- ledgr_corporate_action_event_meta(events)
+  quantity <- ledgr_corporate_action_run_quantities(
+    con, snapshot_id, run_id, rows, selected, events, meta
   )
   relevant <- quantity != 0
   if (!any(relevant)) return(empty)
@@ -455,13 +478,19 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     bt$run_id,
     facts$rows
   )
+  # A held fact is unsupported when its effect is not represented: quantity
+  # legs, an acquisition in a run where no disposition acts (dense), and a
+  # subtype ledgr does not model (Cut 12 LDG-2996).
+  dispositions_active <- isTRUE(config$availability$active)
   unsupported <- if (nrow(composition) == 0L) {
     logical()
   } else {
     composition$subtype %in% c(
-      "stock_acquisition", "mixed_acquisition", "spin_off"
+      "stock_acquisition", "mixed_acquisition", "spin_off",
+      if (!dispositions_active) "cash_acquisition"
     )
   }
+  unsupported <- c(unsupported, ledgr_corporate_action_held_unmodeled(con, snapshot_id, bt$run_id, facts$rows))
 
   out <- list(
     corporate_action_fidelity = ledgr_corporate_action_fidelity(

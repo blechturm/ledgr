@@ -24,6 +24,28 @@
   before the calendar starts. Previously the run silently covered only the
   calendar's days and still reported itself complete.
 
+- An availability-aware experiment now requires a snapshot sealed with a
+  declared price basis (`price_basis = "split_adjusted"`) and refuses an
+  undeclared one with `ledgr_price_basis_required`. ledgr accounts in
+  split-adjusted share units (no split event acts on a position), so
+  as-traded bars across a split would book a phantom loss without a signal.
+  `ledgr_experiment_plan()` gains `price_basis` and prints it. Dense
+  experiments may still run undeclared.
+
+- A valid bar that falls on no declared session close (for example a vendor
+  bar on a market holiday) still seals and is still never used, but it is no
+  longer invisible: `ledgr_snapshot_quarantine()` lists it with reason
+  `off_session_bar`, `ledgr_snapshot_info()` gains `off_session_bar_count`,
+  and `summary()` of a result reports the count when it is not zero. The
+  snapshot hash is unchanged.
+
+- A held corporate action that ledgr does not model is no longer silently
+  ignored. A complete fact with a subtype outside the supported set, or an
+  acquisition in a dense run, now counts in `unsupported_facts` and makes
+  `corporate_action_fidelity` read `unsupported` under the research preset;
+  the strict preset refuses it as an unsupported quantity effect. Previously
+  such a fact never acted and the summary reported fidelity `none`.
+
 ## Runs and evaluations that keep going on real data
 
 - An interrupted and resumed run now binds dividend entitlement exactly like

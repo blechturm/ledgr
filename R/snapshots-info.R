@@ -11,9 +11,13 @@
 #' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
 #' @return A 1-row tibble with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
-#'   bar_count, instrument_count, start_date, end_date, meta_json, error_msg.
+#'   bar_count, instrument_count, off_session_bar_count, start_date, end_date,
+#'   meta_json, error_msg.
 #'
 #' `bar_count` and `instrument_count` are live counts from the snapshot tables.
+#' `off_session_bar_count` counts sealed bars that fall on no declared
+#' open-session close; they are never a pulse, and
+#' [ledgr_snapshot_quarantine()] lists them with reason `off_session_bar`.
 #' `start_date` and `end_date` are parsed from seal metadata when present.
 #' `meta_json` remains available as the raw envelope metadata written on the
 #' snapshot row. Seal-time metadata inside `meta_json` may use `n_bars` and
@@ -105,6 +109,15 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
   }
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
+  df$off_session_bar_count <- if (ledgr_experiment_store_table_exists(con, "snapshot_observation_quarantine")) {
+    as.integer(DBI::dbGetQuery(
+      con,
+      "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
+      params = list(snapshot_id, ledgr_off_session_reason)
+    )$n[[1L]])
+  } else {
+    0L
+  }
   metadata <- ledgr_snapshot_info_parse_meta(df$meta_json[[1]])
   df$start_date <- ledgr_snapshot_info_meta_chr(metadata, "start_date")
   df$end_date <- ledgr_snapshot_info_meta_chr(metadata, "end_date")
@@ -117,6 +130,7 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     "snapshot_hash",
     "bar_count",
     "instrument_count",
+    "off_session_bar_count",
     "start_date",
     "end_date",
     "meta_json",

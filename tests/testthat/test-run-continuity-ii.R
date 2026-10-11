@@ -24,7 +24,7 @@ continuity_ii_snapshot <- function(bars, ids, days, calendar = days, lifetime = 
   )
   if (!is.null(lifetime)) families <- c(families, list(lifetime))
   ledgr_snapshot_from_df(bars, data.frame(instrument_id = ids), db_path = tempfile(fileext = ".duckdb"),
-                         facts = do.call(ledgr_facts, families))
+                         facts = do.call(ledgr_facts, families), price_basis = "split_adjusted")
 }
 
 continuity_ii_equal_weight <- function(ctx, params) {

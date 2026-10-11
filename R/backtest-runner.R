@@ -1217,7 +1217,8 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     pulses_posix = pulses_posix,
     instrument_ids = instrument_ids,
     existing_events = ledgr_corporate_action_existing_events(con, run_id),
-    start_idx = start_idx
+    start_idx = start_idx,
+    dispositions_active = availability_active
   )
 
   fold_execution <- ledgr_execution_spec(

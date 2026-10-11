@@ -113,6 +113,11 @@ ledgr_corporate_action_past_quantities <- function(events,
   out
 }
 
+# Subtypes some settlement path models; any other sealed subtype is unmodeled.
+ledgr_corporate_action_supported_subtypes <- function() {
+  c("ordinary_cash_dividend", "cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off")
+}
+
 ledgr_corporate_action_clock_index <- function(clock,
                                                 pulses_posix,
                                                 label) {
@@ -148,7 +153,8 @@ ledgr_corporate_action_plan <- function(rows,
                                         pulses_posix,
                                         instrument_ids,
                                         existing_events = data.frame(),
-                                        start_idx = 1L) {
+                                        start_idx = 1L,
+                                        dispositions_active = TRUE) {
   if (is.null(policy_identity) || is.null(rows) || nrow(rows) == 0L) return(NULL)
   settings <- ledgr_corporate_action_policy_settings(policy_identity)
   if (anyDuplicated(rows$fact_id)) {
@@ -167,12 +173,20 @@ ledgr_corporate_action_plan <- function(rows,
     } else {
       rep(FALSE, nrow(rows))
     }
-  disposition_eligible <- rows$subtype %in% c(
+  acquisition <- rows$subtype %in% c(
     "cash_acquisition", "stock_acquisition", "mixed_acquisition"
-  ) & rows$complete
-  quantity_eligible <- rows$subtype %in% c(
+  )
+  disposition_eligible <- acquisition & rows$complete & isTRUE(dispositions_active)
+  # Effects ledgr does not model take the unsupported-quantity route (Cut 12
+  # decision 5): a subtype outside the supported vocabulary, and an acquisition
+  # in a run where no disposition acts (dense). A held one is refused under
+  # `unsupported_quantity = "refuse"` and reported otherwise.
+  unmodeled <- rows$complete &
+    (!rows$subtype %in% ledgr_corporate_action_supported_subtypes() |
+       (acquisition & !isTRUE(dispositions_active)))
+  quantity_eligible <- (rows$subtype %in% c(
     "stock_acquisition", "mixed_acquisition", "spin_off"
-  ) & rows$complete
+  ) & rows$complete) | unmodeled
   if (!any(cash_eligible | disposition_eligible | quantity_eligible)) {
     return(NULL)
   }

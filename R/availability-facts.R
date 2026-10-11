@@ -982,6 +982,7 @@ ledgr_facts_validate <- function(facts,
   report$prepared_bars <- NULL
   report$prepared_instruments <- NULL
   report$quarantine_rows <- NULL
+  report$off_session_rows <- NULL
   structure(report, class = c("ledgr_facts_report", "list"))
 }
 

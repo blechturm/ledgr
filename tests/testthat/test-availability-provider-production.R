@@ -30,7 +30,7 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
     instruments_df = fixture$instruments,
     db_path = db,
     snapshot_id = "provider-consumer",
-    facts = fixture$facts
+    facts = fixture$facts, price_basis = "split_adjusted"
   )
   on.exit({
     ledgr_snapshot_close(snapshot)

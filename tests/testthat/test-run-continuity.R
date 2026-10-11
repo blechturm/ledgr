@@ -122,7 +122,7 @@ testthat::test_that("[LTB-0202] a mid-loop interrupt is re-raised and an INCOMPL
         data.frame(session_date = days, status = "open", session_open = "14:30:00", session_close = "21:00:00"),
         venue_id = "V", timezone = "UTC", knowledge = "assume_effective"),
       ledgr_facts_membership_snapshots(membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective")
-    )
+    ), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(gap_snapshot), add = TRUE)
   incomplete_exp <- ledgr_experiment(
@@ -190,7 +190,7 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
     ledgr_facts_membership_snapshots(membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective")
   )
   snapshot <- ledgr_snapshot_from_df(bars, data.frame(instrument_id = c("AAA", "BBB")),
-                                     db_path = tempfile(fileext = ".duckdb"), facts = facts)
+                                     db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     c(ctx |> ledgr_selection() |> ledgr_weight_equal() |> ledgr_target_rebalance(ctx, equity_fraction = 0.9))
@@ -317,7 +317,7 @@ testthat::test_that("[LTB-0201] walk-forward reuses the previous selection or ru
     ledgr_facts_membership_snapshots(membership, universe_id = "u", complete = TRUE, knowledge = "assume_effective")
   )
   snapshot <- ledgr_snapshot_from_df(bars, data.frame(instrument_id = c("AAA", "BBB")),
-                                     db_path = tempfile(fileext = ".duckdb"), facts = facts)
+                                     db_path = tempfile(fileext = ".duckdb"), facts = facts, price_basis = "split_adjusted")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   # Trade through February, then hold cash: training windows starting in
   # March or later have constant equity and no finite Sharpe ratio.

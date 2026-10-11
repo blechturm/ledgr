@@ -244,6 +244,7 @@ testthat::test_that("[LTB-0108] summary answers before compact evidence", {
       )
     },
     ledgr_corporate_action_summary = function(...) policy,
+    ledgr_backtest_off_session_bar_count = function(...) 0L,
     .package = "ledgr"
   )
 

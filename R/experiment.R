@@ -254,6 +254,17 @@ ledgr_experiment <- function(snapshot,
     universe,
     valuation_policy
   )
+  # Accounting assumes split-adjusted share units (no split event acts), so an
+  # availability-aware experiment must say what its bars are.
+  if (isTRUE(availability$active) && is.null(price_basis)) {
+    rlang::abort(
+      paste(
+        "Availability-aware experiments require a declared price basis; seal the snapshot with",
+        "`price_basis = \"split_adjusted\"` (ledgr accounts in split-adjusted share units)."
+      ),
+      class = c("ledgr_price_basis_required", "ledgr_invalid_experiment")
+    )
+  }
   universe_rule <- availability$universe_rule
   execution_universe <- if (is.null(universe_rule)) {
     ledgr_experiment_normalize_universe(universe, universe_all)

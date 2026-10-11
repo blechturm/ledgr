@@ -312,6 +312,10 @@ about a halt is not evidence that there was none. Declare the ordinary
 Sealing binds bars and facts together under one hash. Declaring sessions also
 moves the run out of the dense mode, which requires every instrument on every
 session, and into the availability-aware mode the rest of this article uses.
+An availability-aware snapshot also declares its price basis. ledgr counts
+shares in split-adjusted units (no split event acts on a position), so
+`price_basis = "split_adjusted"` states that the bars are back-adjusted for
+splits; an experiment on a snapshot that declares no basis refuses to start.
 
 ```{r}
 #| label: seal
@@ -320,6 +324,7 @@ snapshot <- ledgr_snapshot_from_df(
   bars,
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
+  price_basis = "split_adjusted",
   db_path = tempfile(fileext = ".duckdb"),
   snapshot_id = "missing_data_demo"
 )
@@ -595,6 +600,7 @@ tryCatch(
     broken,
     instruments_df = tibble(instrument_id = c("AAA", "BBB")),
     facts = ledgr_facts(sessions, status),
+    price_basis = "split_adjusted",
     db_path = tempfile(fileext = ".duckdb"),
     snapshot_id = "missing_data_refused"
   ),
@@ -615,6 +621,7 @@ quarantined <- ledgr_snapshot_from_df(
   broken,
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
+  price_basis = "split_adjusted",
   invalid_observations = "quarantine",
   db_path = tempfile(fileext = ".duckdb"),
   snapshot_id = "missing_data_quarantined"

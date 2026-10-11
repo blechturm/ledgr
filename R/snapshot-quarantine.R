@@ -1,8 +1,12 @@
 #' Read quarantined snapshot observations
 #'
 #' Returns observations excluded while building a snapshot with
-#' `invalid_observations = "quarantine"`. The rows and reasons are read from
-#' sealed snapshot evidence without adding a new interpretation.
+#' `invalid_observations = "quarantine"`, and, under reason
+#' `off_session_bar`, valid bars that were sealed on no declared open-session
+#' close and therefore never become a pulse. The rows and reasons are read
+#' from sealed snapshot evidence without adding a new interpretation.
+#' Off-session records are derived from the hashed bars and sessions and are
+#' not themselves part of the snapshot hash.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object.
 #' @return A tibble with quarantine identifiers, supplied identifiers and

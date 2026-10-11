@@ -205,7 +205,7 @@ test_that("[LTB-0045] rule-2 identity retains frozen hashes", {
       bars,
       instruments_df = instruments,
       db_path = path,
-      facts = ws14_scale_facts(as.integer(size))
+      facts = ws14_scale_facts(as.integer(size)), price_basis = "split_adjusted"
     )
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
@@ -226,7 +226,7 @@ test_that("[LTB-0046] rule-2 hashing performs fixed encoding work", {
     ledgr_snapshot_from_df(
       ws14_scale_bars(),
       instruments_df = ws14_scale_instruments(),
-      facts = ws14_scale_facts(size)
+      facts = ws14_scale_facts(size), price_basis = "split_adjusted"
     )
   })
   on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)

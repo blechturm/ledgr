@@ -464,7 +464,7 @@ testthat::test_that("[LTB-0191] availability feature reads enforce the current d
   )
   snapshot <- ledgr_snapshot_from_df(
     ledgr_test_make_bars(c("AAA", "BBB"), pulses),
-    facts = ledgr_facts(sessions, membership)
+    facts = ledgr_facts(sessions, membership), price_basis = "split_adjusted"
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   observed <- new.env(parent = emptyenv())

@@ -19,6 +19,7 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
       "snapshot_hash",
       "bar_count",
       "instrument_count",
+      "off_session_bar_count",
       "start_date",
       "end_date",
       "meta_json",

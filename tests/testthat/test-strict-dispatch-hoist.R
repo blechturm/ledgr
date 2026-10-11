@@ -27,7 +27,7 @@ strict_dispatch_fixture <- function(instruments, days = 5L) {
   ledgr_snapshot_from_df(
     bars,
     instruments_df = data.frame(instrument_id = instruments),
-    facts = ledgr_facts(sessions)
+    facts = ledgr_facts(sessions), price_basis = "split_adjusted"
   )
 }
 
