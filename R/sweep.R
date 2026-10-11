@@ -721,7 +721,8 @@ ledgr_promote <- function(exp,
   candidate_identities <- candidate$sweep_meta$execution_assumptions$promotion_identities %||%
     list(strategy_hash = candidate$sweep_meta$strategy_hash %||% candidate$provenance$strategy_hash)
   candidate_identities$feature_set_hash <- candidate$provenance$feature_set_hash
-  promoting_identities$feature_set_hash <- ledgr_run_info(exp$snapshot, bt$run_id)$feature_set_hash
+  # The committed config carries the hash; no store read is needed.
+  promoting_identities$feature_set_hash <- bt$config$features$feature_set_hash %||% NA_character_
   identity_check <- ledgr_promotion_identity_check(candidate_identities, promoting_identities)
   ledgr_promote_write_context_or_warn(bt, candidate, note, identity_check)
   if (length(identity_check$mismatched) > 0L) {

@@ -35,8 +35,7 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
-  config <- bt$config
-  if (!ledgr_availability_config_active(config)) {
+  if (!ledgr_availability_config_active(bt$config)) {
     return(ledgr_valuation_summary_object(list(valuation_state = "not_applicable")))
   }
   if (is.null(con)) {
@@ -44,6 +43,14 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  out <- ledgr_valuation_summary_evidence(bt, con)
+  ledgr_valuation_summary_add_basis(out, bt$config, con)
+}
+
+# Valuation evidence of an availability-aware run from its diagnostics and
+# equity; the assumption flags of run lists and completion need only this.
+ledgr_valuation_summary_evidence <- function(bt, con) {
+  config <- bt$config
   policy <- config$availability$valuation_policy
   held <- "run_id = ? AND stage = 'decision' AND quantity <> 0"
   stale <- DBI::dbGetQuery(
@@ -69,9 +76,12 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
     params = list(bt$run_id)
   )
 
-  out <- ledgr_valuation_summary_compute(policy, stale, frozen, equity)
-  # What the run's point-in-time view rested on (LDG-3010): the universe kind
-  # and the fact families whose knowledge clocks or schedules were assumed.
+  ledgr_valuation_summary_compute(policy, stale, frozen, equity)
+}
+
+# What the run's point-in-time view rested on (LDG-3010): the universe kind
+# and the fact families whose knowledge clocks or schedules were assumed.
+ledgr_valuation_summary_add_basis <- function(out, config, con) {
   rule <- config$availability$universe_rule
   declared <- as.character(config$availability$declared_families %||% character())
   headers <- ledgr_fact_headers_read(con, config$data$snapshot_id)
@@ -394,8 +404,8 @@ ledgr_assumption_flags_from_memory <- function(policy, diagnostics, equity) {
 }
 
 ledgr_assumption_flags_for_run <- function(bt, con) {
-  valuation <- ledgr_valuation_summary(bt, con = con)
-  if (identical(valuation$valuation_state, "not_applicable")) return(NULL)
+  if (!ledgr_availability_config_active(bt$config)) return(NULL)
+  valuation <- ledgr_valuation_summary_evidence(bt, con)
   assumed <- DBI::dbGetQuery(
     con,
     paste(
