@@ -56,6 +56,9 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
 - `offsession_ingest.R`: Cut 12 LDG-3011 ingest clock when most bars are
   off-session, with finite and all-infinite extra values; record in
   `evidence/offsession_ingest/`.
+- `sharadar_gaps.R`: missing-bar runs on member sessions of a sealed snapshot
+  (aggregates only), the input to the LDG-3014 default stale horizon; record
+  in `evidence/sharadar_gaps/`.
 
 ## Measurement method (declared before the baseline, 2026-10-09)
 
