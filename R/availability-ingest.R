@@ -132,7 +132,11 @@ ledgr_availability_prepare_observations <- function(bars_df,
   bad_numeric <- Reduce(`|`, lapply(numeric_values, function(x) is.na(x) | !is.finite(x)))
   set_reason(bad_numeric, "ohlc_non_finite")
   set_reason(!is.na(volume) & !is.finite(volume), "volume_non_finite")
-  max_ohlc <- pmax(numeric_values$open, numeric_values$close, numeric_values$low, na.rm = TRUE)
+  # A price that is zero or negative once stored (rounded to 8 digits) can
+  # never be a mark; zero volume with positive prices stays valid.
+  non_positive <- Reduce(`|`, lapply(numeric_values, function(x) round(x, 8L) <= 0))
+  set_reason(non_positive, "ohlc_non_positive")
+  max_ohlc <-pmax(numeric_values$open, numeric_values$close, numeric_values$low, na.rm = TRUE)
   min_ohlc <- pmin(numeric_values$open, numeric_values$close, numeric_values$high, na.rm = TRUE)
   set_reason(numeric_values$high < max_ohlc | numeric_values$low > min_ohlc, "ohlc_invalid")
   outside_expectation <- !is.na(ts) & !ledgr_availability_times_are_session_closes(

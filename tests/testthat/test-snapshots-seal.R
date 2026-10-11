@@ -254,3 +254,22 @@ testthat::test_that("hashing error during seal marks snapshot FAILED with no par
   testthat::expect_true(is.na(row$snapshot_hash[[1]]))
   testthat::expect_true(is.character(row$error_msg[[1]]) && nzchar(row$error_msg[[1]]))
 })
+
+testthat::test_that("[LTB-0222] seal refuses non-positive prices written by any path", {
+  for (update in c("SET low = 0, close = 0", "SET open = -1, low = -1")) {
+    con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+    snapshot_id <- "snapshot_20250101_000000_abcd"
+    make_snapshot_with_data_seal(con, snapshot_id)
+    DBI::dbExecute(
+      con,
+      paste("UPDATE snapshot_bars", update, "WHERE snapshot_id = ? AND instrument_id = 'AAA'"),
+      params = list(snapshot_id)
+    )
+    testthat::expect_error(ledgr_snapshot_seal(con, snapshot_id), class = "ledgr_ohlc_non_positive")
+    testthat::expect_identical(
+      DBI::dbGetQuery(con, "SELECT status FROM snapshots WHERE snapshot_id = ?", params = list(snapshot_id))$status,
+      "CREATED"
+    )
+    DBI::dbDisconnect(con, shutdown = TRUE)
+  }
+})

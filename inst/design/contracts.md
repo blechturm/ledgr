@@ -425,7 +425,13 @@ Accepted change pending:
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
 - Sealing validates referential integrity and OHLC consistency before writing a
-  snapshot hash or transitioning to `SEALED`.
+  snapshot hash or transitioning to `SEALED`. Every stored open, high, low and
+  close is positive (after rounding to 8 digits): a dense snapshot refuses a
+  zero or negative price at its seal check (`ledgr_ohlc_non_positive`), and a
+  fact-bearing ingest treats the row as an invalid observation with reason
+  `ohlc_non_positive` (refused, or quarantined under
+  `invalid_observations = "quarantine"`), so no non-positive price becomes a
+  mark. Zero volume with positive prices is valid (Cut 12 LDG-2999).
 - Point-in-time fact intervals are half-open and knowledge-bounded. Session
   facts form a complete venue calendar with one open/closed row per civil date;
   daily vendor labels are mapped explicitly to declared session closes. The

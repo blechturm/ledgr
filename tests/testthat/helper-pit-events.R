@@ -2,7 +2,7 @@
 # BBB has no bar on the sixth session, CCC stops after the ninth and becomes
 # known_inactive (bankruptcy) on the tenth. Shared by the Cut 11 and Cut 12
 # tests; `second_members` adds a later complete membership set.
-scale_test_events_snapshot <- function(second_members = NULL) {
+scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identity, ...) {
   days <- as.Date("2021-01-04") + c(0:4, 7:11, 14:18)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   ids <- c("AAA", "BBB", "CCC")
@@ -13,6 +13,7 @@ scale_test_events_snapshot <- function(second_members = NULL) {
                close = 10 * k + seq_along(keep) / 10, volume = 100)
   }))
   bars <- bars[!(bars$instrument_id == "BBB" & bars$ts_utc == utc(days[[6]])), , drop = FALSE]
+  bars <- edit_bars(bars)
   calendar <- seq(min(days), max(days), by = "day")
   open <- calendar %in% days
   membership <- data.frame(effective_from = utc(days[[1]] - 1), knowledge_time = utc(days[[1]] - 1), source = "t")
@@ -31,5 +32,5 @@ scale_test_events_snapshot <- function(second_members = NULL) {
                                     knowledge_time = utc(days[[10]]) - 1, assertion = "known_inactive",
                                     terminal_event = "bankruptcy"))
   )
-  ledgr_snapshot_from_df(bars, data.frame(instrument_id = ids), db_path = tempfile(fileext = ".duckdb"), facts = facts)
+  ledgr_snapshot_from_df(bars, data.frame(instrument_id = ids), db_path = tempfile(fileext = ".duckdb"), facts = facts, ...)
 }

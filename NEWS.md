@@ -1,5 +1,16 @@
 # ledgr (development version)
 
+## Inputs ledgr refuses or reports instead of ignoring
+
+- A snapshot no longer seals a zero or negative open, high, low or close
+  (including a price that rounds to zero at the stored 8 digits). A dense
+  snapshot fails its seal check with `ledgr_ohlc_non_positive`; a snapshot
+  with point-in-time facts reports the row as `ohlc_non_positive` and refuses
+  to seal, or quarantines it under `invalid_observations = "quarantine"`.
+  Previously a zero close sealed and became a priced current mark, so equity
+  dropped while sizing helpers treated the instrument as unpriced. Zero
+  volume with positive prices stays valid.
+
 ## Runs and evaluations that keep going on real data
 
 - An interrupted and resumed run now binds dividend entitlement exactly like

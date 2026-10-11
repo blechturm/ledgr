@@ -25,7 +25,8 @@
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if the snapshot status is not `CREATED`.
 #' - `LEDGR_SNAPSHOT_EMPTY` if there are 0 bars or 0 instruments.
 #' - `LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY` if bars reference missing instruments.
-#' - `LEDGR_SNAPSHOT_OHLC_INVALID` if OHLC bars are internally inconsistent.
+#' - `LEDGR_SNAPSHOT_OHLC_INVALID` if OHLC bars are internally inconsistent,
+#'   with subclass `ledgr_ohlc_non_positive` when a price is zero or negative.
 #' - `LEDGR_SNAPSHOT_SEAL_FAILED` on hashing/transaction failures (snapshot is marked `FAILED`).
 #'
 #' @section Articles:
@@ -340,7 +341,7 @@ ledgr_snapshot_validate_for_seal <- function(con, snapshot_id) {
   bad_ohlc <- DBI::dbGetQuery(
     con,
     "
-    SELECT instrument_id, ts_utc
+    SELECT instrument_id, ts_utc, (LEAST(open, high, low, close) <= 0) AS non_positive
     FROM snapshot_bars
     WHERE snapshot_id = ?
       AND NOT (
@@ -350,13 +351,28 @@ ledgr_snapshot_validate_for_seal <- function(con, snapshot_id) {
         AND low <= open
         AND low <= high
         AND low <= close
+        AND low > 0
       )
-    ORDER BY instrument_id, ts_utc
+    ORDER BY non_positive DESC, instrument_id, ts_utc
     LIMIT 5
     ",
     params = list(snapshot_id)
   )
 
+  if (nrow(bad_ohlc) > 0 && isTRUE(as.logical(bad_ohlc$non_positive[[1L]]))) {
+    examples <- paste(
+      paste0(
+        bad_ohlc$instrument_id[as.logical(bad_ohlc$non_positive)],
+        "@",
+        format(as.POSIXct(bad_ohlc$ts_utc[as.logical(bad_ohlc$non_positive)], tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+      ),
+      collapse = ", "
+    )
+    rlang::abort(
+      sprintf("LEDGR_SNAPSHOT_OHLC_INVALID: snapshot_bars contains non-positive prices: %s", examples),
+      class = c("ledgr_ohlc_non_positive", "LEDGR_SNAPSHOT_OHLC_INVALID")
+    )
+  }
   if (nrow(bad_ohlc) > 0) {
     examples <- paste(
       paste0(

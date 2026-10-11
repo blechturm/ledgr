@@ -156,3 +156,62 @@ testthat::test_that("[LTB-0219] an INCOMPLETE run with a fill after its achieved
   testthat::expect_identical(unname(qty[["BBB"]]), 1)
   testthat::expect_identical(unname(qty[["AAA"]]), 0)
 })
+
+testthat::test_that("[LTB-0221] ingest refuses non-positive prices and keeps zero volume", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  set_aaa <- function(field, value, day = days[[3]]) function(bars) {
+    k <- bars$instrument_id == "AAA" & bars$ts_utc == at(day)
+    bars[k, field] <- value
+    bars
+  }
+  # A fact-bearing snapshot refuses a zero, a negative, or a price that rounds
+  # to zero at the stored 8 digits, naming the reason.
+  for (edit in list(set_aaa(c("low", "close"), 0), set_aaa(c("open", "low"), -1), set_aaa("low", 4e-9))) {
+    err <- testthat::expect_error(scale_test_events_snapshot(edit_bars = edit), class = "ledgr_availability_validation_failed")
+    testthat::expect_match(conditionMessage(err), "ohlc_non_positive", fixed = TRUE)
+  }
+  # Under quarantine the row is excluded and recorded with its reason.
+  quarantined <- scale_test_events_snapshot(edit_bars = set_aaa(c("low", "close"), 0), invalid_observations = "quarantine")
+  on.exit(ledgr_snapshot_close(quarantined), add = TRUE)
+  testthat::expect_identical(ledgr_snapshot_quarantine(quarantined)$reason, "ohlc_non_positive")
+  testthat::expect_identical(
+    DBI::dbGetQuery(ledgr:::get_connection(quarantined), "SELECT COUNT(*) AS n FROM snapshot_bars WHERE close <= 0 OR low <= 0")$n,
+    0
+  )
+  # Zero volume with positive prices seals and fills.
+  zero_volume <- scale_test_events_snapshot(edit_bars = function(bars) {
+    bars$volume[bars$instrument_id == "AAA"] <- 0
+    bars
+  })
+  on.exit(ledgr_snapshot_close(zero_volume), add = TRUE)
+  buy_day <- as.character(days[[2]])
+  buy <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1, 10), buy_day)) target[["AAA"]] <- 1
+    target
+  }
+  exp <- ledgr_experiment(
+    zero_volume, buy, universe = ledgr_universe_members("u"),
+    valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+  )
+  close(ledgr_run(exp, run_id = "zero_volume_fill"))
+  fills <- DBI::dbGetQuery(ledgr:::get_connection(zero_volume), "SELECT instrument_id FROM ledger_events WHERE run_id = 'zero_volume_fill' AND event_type = 'FILL'")
+  testthat::expect_identical(fills$instrument_id, "AAA")
+
+  # A dense snapshot refuses the same prices at its seal check (LTB-0222 covers
+  # other writers).
+  dense <- data.frame(
+    instrument_id = "AAA", ts_utc = at(days[1:3]), open = c(10, 11, 12), high = c(10, 11, 12),
+    low = c(10, 11, 12), close = c(10, 11, 12), volume = c(100, 0, 100)
+  )
+  for (edit in list(set_aaa(c("low", "close"), 0), set_aaa(c("open", "low"), -1), set_aaa("low", 4e-9))) {
+    testthat::expect_error(
+      ledgr_snapshot_from_df(edit(dense), db_path = tempfile(fileext = ".duckdb")),
+      class = "ledgr_ohlc_non_positive"
+    )
+  }
+  dense_ok <- ledgr_snapshot_from_df(dense, db_path = tempfile(fileext = ".duckdb"))
+  on.exit(ledgr_snapshot_close(dense_ok), add = TRUE)
+  testthat::expect_identical(ledgr_snapshot_info(dense_ok)$status, "SEALED")
+})
