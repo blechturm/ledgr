@@ -30,6 +30,35 @@ suppressMessages(pkgload::load_all(
   compile = !file.exists(file.path(tree, "src", "ledgr.dll"))
 ))
 
+open_read_only_snapshot <- function(db_path) {
+  drv <- ledgr:::ledgr_duckdb_driver()
+  con <- tryCatch(
+    DBI::dbConnect(drv, dbdir = db_path, read_only = TRUE),
+    error = function(e) {
+      try(duckdb::duckdb_shutdown(drv), silent = TRUE)
+      stop(e)
+    }
+  )
+  rows <- DBI::dbGetQuery(
+    con,
+    "SELECT snapshot_id FROM snapshots WHERE status = 'SEALED'"
+  )
+  if (nrow(rows) != 1L) {
+    DBI::dbDisconnect(con, shutdown = TRUE)
+    duckdb::duckdb_shutdown(drv)
+    stop("Sharadar clock input must contain exactly one sealed snapshot")
+  }
+  snapshot <- ledgr:::new_ledgr_snapshot(
+    db_path = db_path,
+    snapshot_id = rows$snapshot_id[[1L]],
+    metadata = list()
+  )
+  snapshot$.state$con <- con
+  snapshot$.state$drv <- drv
+  snapshot$.state$borrowed <- FALSE
+  snapshot
+}
+
 day <- function(value, time = "16:00:00") {
   as.POSIXct(paste(as.Date("2020-01-01") + value - 1L, time), tz = "UTC")
 }
@@ -356,7 +385,7 @@ print(clocks, row.names = FALSE)
 if (!is.null(sharadar_path)) {
   if (gut) stop("Sharadar clocks cannot run with --gut")
   sharadar_path <- normalizePath(sharadar_path, winslash = "/", mustWork = TRUE)
-  snapshot <- ledgr_snapshot_open(sharadar_path)
+  snapshot <- open_read_only_snapshot(sharadar_path)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   if (is.null(sharadar_universe)) {
     con <- ledgr:::get_connection(snapshot)

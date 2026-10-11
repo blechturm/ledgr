@@ -107,6 +107,56 @@ check_clocks <- function(path) {
 }
 check_clocks(normal_dir)
 
+sharadar_path <- file.path(recorded, "sharadar_clocks.csv")
+if (!file.exists(sharadar_path)) {
+  fail("recorded aggregate Sharadar clocks are missing")
+} else {
+  sharadar <- utils::read.csv(sharadar_path, stringsAsFactors = FALSE)
+  expected_columns <- c(
+    "workload", "repetition", "canonical_order", "hybrid_order",
+    "canonical_elapsed_seconds", "hybrid_elapsed_seconds", "elapsed_ratio",
+    "canonical_engine_seconds", "hybrid_engine_seconds", "engine_ratio",
+    "economic_outputs_equal"
+  )
+  if (!identical(names(sharadar), expected_columns)) {
+    fail("aggregate Sharadar clock columns differ from the declared schema")
+  } else {
+    expected_keys <- c(
+      "momentum 1", "momentum 2", "equal_weight 1", "equal_weight 2"
+    )
+    if (!identical(paste(sharadar$workload, sharadar$repetition), expected_keys)) {
+      fail("aggregate Sharadar clock rows are missing or reordered")
+    }
+    numeric_columns <- c(
+      "canonical_elapsed_seconds", "hybrid_elapsed_seconds",
+      "canonical_engine_seconds", "hybrid_engine_seconds"
+    )
+    if (any(!is.finite(as.matrix(sharadar[numeric_columns]))) ||
+        any(as.matrix(sharadar[numeric_columns]) <= 0)) {
+      fail("aggregate Sharadar clocks are not finite positive seconds")
+    }
+    expected_elapsed <- round(
+      sharadar$hybrid_elapsed_seconds / sharadar$canonical_elapsed_seconds,
+      4L
+    )
+    expected_engine <- round(
+      sharadar$hybrid_engine_seconds / sharadar$canonical_engine_seconds,
+      4L
+    )
+    if (!identical(sharadar$elapsed_ratio, expected_elapsed) ||
+        !identical(sharadar$engine_ratio, expected_engine)) {
+      fail("aggregate Sharadar ratios do not recompute from their clocks")
+    }
+    if (!identical(sharadar$canonical_order, c(1L, 2L, 1L, 2L)) ||
+        !identical(sharadar$hybrid_order, c(2L, 1L, 2L, 1L))) {
+      fail("aggregate Sharadar arms did not alternate order")
+    }
+    if (!all(sharadar$economic_outputs_equal)) {
+      fail("aggregate Sharadar evidence records an economic divergence")
+    }
+  }
+}
+
 status_after <- git("status", "--porcelain", "--", scope)
 if (!identical(status_before, status_after)) {
   fail("package or design scope changed during the rerun")

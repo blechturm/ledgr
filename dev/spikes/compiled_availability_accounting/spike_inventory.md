@@ -8,7 +8,7 @@ Workstream 24 at `437b73d3`; it is evidence only and is not merged by Cut 11.
 | Artifact | Role | Evidence |
 | --- | --- | --- |
 | `probe.R` | Prerequisite fold-share measurement, run before fork code | `prerequisite.csv` |
-| `spike_runner.R` | Three public one-candidate sweeps, each through canonical R and the hybrid fork; captures the emitted in-memory ledger and final fold state | `evidence/cases.csv`, `evidence/clocks.csv` |
+| `spike_runner.R` | Three public one-candidate sweeps, each through canonical R and the hybrid fork; optional read-only private-data clocks | `evidence/cases.csv`, `evidence/clocks.csv`, `evidence/sharadar_clocks.csv` |
 | `spike_checker.R` | Clean-tree rerun, deterministic CSV diff, arm parity, gut, size and scope guards | Prints `SPIKE CHECK OK` |
 
 The retained cases came after the fork first ran: an availability-aware fill
@@ -16,8 +16,11 @@ round trip; an availability-active cash dividend alongside a sale; and a
 frozen terminal write-off alongside a sale. Each evidence row contains the
 economic sweep result, ordered events and their accounting attributes,
 retained returns and trades, diagnostics, completion and final lot state.
-The same runner has an optional aggregate-only Sharadar clock mode. It writes
-no source row, identifier, price or action value.
+The same runner has an optional aggregate-only Sharadar clock mode. It opens
+the source with DuckDB `read_only = TRUE` and writes no source row, identifier,
+price or action value. Two alternating-order pairs showed median hybrid /
+canonical elapsed ratios of 0.9769 for momentum and 0.7086 for equal weight;
+all four economic-output pairs were exact.
 
 ## One Seam
 
@@ -65,6 +68,8 @@ used as evidence.
 - On all three retained cases, canonical and hybrid economic results, events,
   event accounting attributes, returns, trades, diagnostics, completion and
   final state are exact after removing run/sweep identity and clocks.
-- The remaining empirical question is effect size on the registered Sharadar
-  momentum and equal-weight workloads. Only aggregate paired clocks may be
-  recorded from those private inputs.
+- Effect size is workload-dependent. Momentum's two elapsed ratios straddled
+  parity at 0.9395 and 1.0143. Equal weight was stable at 0.7093 and 0.7078,
+  consistent with its larger prerequisite accounting share.
+- The evidence establishes feasibility and effect size. It does not choose a
+  public switch, runtime default or release owner.

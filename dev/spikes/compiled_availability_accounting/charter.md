@@ -1,6 +1,6 @@
 # Compiled Availability Accounting Spike
 
-**Ticket:** LDG-2992. **Status:** executing. **Branch:**
+**Ticket:** LDG-2992. **Status:** closed GREEN. **Branch:**
 `spike/compiled-availability-accounting-ws24`, forked from accepted Workstream
 24 at `437b73d3`. This branch is evidence only and is not merged by Cut 11.
 
