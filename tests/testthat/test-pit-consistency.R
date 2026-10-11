@@ -431,9 +431,11 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   testthat::expect_identical(research$corporate_action_fidelity, "unsupported")
   testthat::expect_identical(research$unsupported_facts, 1L)
   testthat::expect_identical(research$gross_cash_posted, 0)
-  testthat::expect_error(
-    do.call(run_summary, c(list(unknown, "unknown_strict", ledgr_corporate_actions_strict()), pit)),
-    class = "ledgr_corporate_action_unsupported"
+  # Strict refuses it as an unsupported quantity effect, a typed stop (LDG-2997).
+  do.call(run_summary, c(list(unknown, "unknown_strict", ledgr_corporate_actions_strict()), pit))
+  testthat::expect_identical(
+    DBI::dbGetQuery(ledgr:::get_connection(unknown), "SELECT stop_reason FROM run_completion WHERE run_id = 'unknown_strict'")$stop_reason,
+    "corporate_action_quantity_refused"
   )
   # Not held: nothing is reported.
   unheld <- scale_test_events_snapshot(corporate_actions = pit_consistency_ca("cash_dividend", "BBB", at(days[[5]]), at(days[[7]])))
@@ -453,8 +455,49 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   dense_research <- run_summary(dense, "dense_research", ledgr_corporate_actions_research(), universe = c("AAA", "CCC"))
   testthat::expect_identical(dense_research$corporate_action_fidelity, "unsupported")
   testthat::expect_identical(dense_research$unsupported_facts, 1L)
+  # A dense run has no typed stop, so strict still aborts.
   testthat::expect_error(
     run_summary(dense, "dense_strict", ledgr_corporate_actions_strict(), universe = c("AAA", "CCC")),
-    class = "ledgr_corporate_action_unsupported"
+    class = "ledgr_corporate_action_quantity_unsupported"
   )
+})
+
+testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the run typed", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  dividend <- pit_consistency_ca("ordinary_cash_dividend", "AAA", at(days[[5]]), at(days[[5]]))
+  snapshot <- scale_test_events_snapshot(corporate_actions = dividend)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  con <- ledgr:::get_connection(snapshot)
+  buy_day <- as.character(days[[1]])
+  buy_aaa <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1, 10), buy_day)) target[["AAA"]] <- 1
+    target
+  }
+  exp <- ledgr_experiment(
+    snapshot, buy_aaa, universe = ledgr_universe_members("u"), valuation_policy = ledgr_valuation_stale(2),
+    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000),
+    corporate_action_policy = ledgr_corporate_actions_strict()
+  )
+  bt <- ledgr_run(exp, run_id = "strict_cash")
+  close(bt)
+  stored <- pit_consistency_stored(con, "strict_cash")
+  # The held dividend is refused at its entitlement pulse (the fifth): the
+  # prefix through the fourth stays, with the fill and no cash posting.
+  testthat::expect_identical(ledgr_run_info(snapshot, "strict_cash")$status, "INCOMPLETE")
+  testthat::expect_identical(stored$completion$intended_terminal_status, "INCOMPLETE")
+  testthat::expect_identical(stored$completion$stop_reason, "corporate_action_cash_refused")
+  testthat::expect_identical(nrow(stored$equity), 4L)
+  testthat::expect_equal(as.POSIXct(stored$completion$achieved_end_utc, tz = "UTC"), at(days[[4]]), ignore_attr = TRUE)
+  testthat::expect_identical(stored$ledger$event_type, "FILL")
+  stop_row <- stored$diagnostics[stored$diagnostics$outcome == "stopped", , drop = FALSE]
+  testthat::expect_identical(stop_row$reason_code, "corporate_action_cash_refused")
+  testthat::expect_identical(stop_row$instrument_id, "AAA")
+  reopened <- ledgr_run_open(snapshot, "strict_cash")
+  testthat::expect_identical(ledgr_run_completion(reopened)$stop_reason, "corporate_action_cash_refused")
+  close(reopened)
+  # Rerunning returns the same stored run.
+  close(ledgr_run(exp, run_id = "strict_cash"))
+  testthat::expect_identical(pit_consistency_stored(con, "strict_cash"), stored)
 })

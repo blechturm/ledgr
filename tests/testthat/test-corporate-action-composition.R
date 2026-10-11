@@ -417,10 +417,12 @@ testthat::test_that("[LTB-0053] quantity refusal and transaction identity fail c
     cost_model = ledgr_cost_zero(),
     corporate_action_policy = ledgr_corporate_actions_strict()
   )
-  testthat::expect_error(
-    ledgr_run(strict_experiment, run_id = "composition-strict"),
-    class = "ledgr_corporate_action_quantity_unsupported"
-  )
+  # A declared refusal is a typed stop (Cut 12 LDG-2997).
+  strict_run <- ledgr_run(strict_experiment, run_id = "composition-strict")
+  withr::defer(close(strict_run))
+  strict_completion <- ledgr_run_completion(strict_run)
+  testthat::expect_identical(strict_completion$completion_status, "INCOMPLETE")
+  testthat::expect_identical(strict_completion$stop_reason, "corporate_action_quantity_refused")
 
   pulses <- strict_fixture$pulses
   rows <- data.frame(

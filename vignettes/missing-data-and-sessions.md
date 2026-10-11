@@ -308,13 +308,18 @@ decisions.
 Sealing binds bars and facts together under one hash. Declaring sessions
 also moves the run out of the dense mode, which requires every
 instrument on every session, and into the availability-aware mode the
-rest of this article uses.
+rest of this article uses. An availability-aware snapshot also declares
+its price basis. ledgr counts shares in split-adjusted units (no split
+event acts on a position), so `price_basis = "split_adjusted"` states
+that the bars are back-adjusted for splits; an experiment on a snapshot
+that declares no basis refuses to start.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(
   bars,
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
+  price_basis = "split_adjusted",
   db_path = tempfile(fileext = ".duckdb"),
   snapshot_id = "missing_data_demo"
 )
@@ -408,7 +413,7 @@ tight_run
 #> Closed Trades:                     0
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#> Price basis: split_adjusted
 #> Valuation: FROZEN - 1 holding frozen (longest 2 sessions, max 530 or 0.53% of equity)
 #>
 #> Use summary(bt) for metrics and evidence
@@ -647,6 +652,7 @@ tryCatch(
     broken,
     instruments_df = tibble(instrument_id = c("AAA", "BBB")),
     facts = ledgr_facts(sessions, status),
+    price_basis = "split_adjusted",
     db_path = tempfile(fileext = ".duckdb"),
     snapshot_id = "missing_data_refused"
   ),
@@ -654,7 +660,7 @@ tryCatch(
     conditionMessage(error)
   }
 )
-#> [1] "Availability input cannot be sealed: ohlc_invalid."
+#> [1] "Availability input cannot be sealed: ohlc_non_positive."
 ```
 
 With sessions declared you can instead admit the panel and have the
@@ -667,6 +673,7 @@ quarantined <- ledgr_snapshot_from_df(
   broken,
   instruments_df = tibble(instrument_id = c("AAA", "BBB")),
   facts = ledgr_facts(sessions, status),
+  price_basis = "split_adjusted",
   invalid_observations = "quarantine",
   db_path = tempfile(fileext = ".duckdb"),
   snapshot_id = "missing_data_quarantined"
@@ -677,7 +684,7 @@ ledgr_snapshot_quarantine(quarantined) |>
 #> # A tibble: 1 x 3
 #>   supplied_instrument_id supplied_ts_utc     reason
 #>   <chr>                  <dttm>              <chr>
-#> 1 BBB                    2020-01-16 21:00:00 ohlc_invalid
+#> 1 BBB                    2020-01-16 21:00:00 ohlc_non_positive
 ```
 
 The quarantined row is not in the panel, so that session behaves exactly

@@ -116,10 +116,12 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   strict <- corporate_action_cash_plan_fixture()
   strict$plan$state$settings[["cash_amount"]] <- "refuse"
   strict$plan$bind_boundary(2L, c(AAA = 2))
-  testthat::expect_error(
-    strict$plan$post(2L, "strict-run", 1L, handler, state),
-    class = "ledgr_corporate_action_unsupported"
-  )
+  # A declared refusal returns a typed stop and posts nothing (Cut 12 LDG-2997).
+  refused <- strict$plan$post(2L, "strict-run", 1L, handler, state)
+  testthat::expect_identical(refused$stopped$reason_code, "corporate_action_cash_refused")
+  testthat::expect_identical(refused$stopped$ids, "AAA")
+  testthat::expect_identical(refused$state$cash, state$cash)
+  testthat::expect_identical(refused$next_event_seq, 1L)
 
   duplicate_row <- rows[[1L]]
   duplicate_meta <- ledgr:::ledgr_json_read_nested(duplicate_row$meta_json[[1L]])

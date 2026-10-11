@@ -113,6 +113,39 @@ ledgr_corporate_action_past_quantities <- function(events,
   out
 }
 
+# A settlement the policy refuses, for held parents of `rows`: a typed stop
+# the fold ends an availability run with (Cut 12 LDG-2997), or, in a dense run
+# that has no stop, raises through ledgr_corporate_action_refusal_abort().
+ledgr_corporate_action_refusal <- function(rows, kind) {
+  reason <- switch(kind, cash = "corporate_action_cash_refused", quantity = "corporate_action_quantity_refused")
+  list(
+    kind = kind,
+    ids = unique(as.character(rows$parent_instrument_id)),
+    reason_code = reason,
+    reasons = reason,
+    source_fact_ids = as.character(rows$fact_id)
+  )
+}
+
+ledgr_corporate_action_refusal_abort <- function(stopped) {
+  if (identical(stopped$kind, "quantity")) {
+    rlang::abort(
+      "Corporate-action quantity effects are unsupported for held positions under the selected policy.",
+      class = c(
+        "ledgr_corporate_action_quantity_unsupported",
+        "ledgr_corporate_action_unsupported",
+        "ledgr_invalid_fold_execution"
+      ),
+      source_fact_ids = stopped$source_fact_ids
+    )
+  }
+  rlang::abort(
+    "Corporate-action cash settlement is refused by the selected policy.",
+    class = c("ledgr_corporate_action_unsupported", "ledgr_invalid_fold_execution"),
+    source_fact_ids = stopped$source_fact_ids
+  )
+}
+
 # Subtypes some settlement path models; any other sealed subtype is unmodeled.
 ledgr_corporate_action_supported_subtypes <- function() {
   c("ordinary_cash_dividend", "cash_acquisition", "stock_acquisition", "mixed_acquisition", "spin_off")
@@ -335,25 +368,15 @@ ledgr_corporate_action_plan <- function(rows,
     selected <- selected[
       !state$quantity_checked[selected] & state$bound[selected]
     ]
-    if (length(selected) == 0L) return(invisible(integer()))
+    if (length(selected) == 0L) return(NULL)
     held <- selected[state$quantity[selected] != 0]
+    # A declared refusal returns a typed stop; the fold ends the run there.
     if (length(held) > 0L &&
         identical(state$settings[["unsupported_quantity"]], "refuse")) {
-      rlang::abort(
-        paste(
-          "Corporate-action quantity effects are unsupported for held",
-          "positions under the selected policy."
-        ),
-        class = c(
-          "ledgr_corporate_action_quantity_unsupported",
-          "ledgr_corporate_action_unsupported",
-          "ledgr_invalid_fold_execution"
-        ),
-        source_fact_ids = as.character(state$rows$fact_id[held])
-      )
+      return(ledgr_corporate_action_refusal(state$rows[held, , drop = FALSE], "quantity"))
     }
     state$quantity_checked <- replace(state$quantity_checked, selected, TRUE)
-    invisible(held)
+    NULL
   }
 
   post_cash <- function(index, run_id, event_seq, output_handler, state_value,
@@ -367,10 +390,11 @@ ledgr_corporate_action_plan <- function(rows,
     if (length(held) > 0L &&
         (identical(state$settings[["cash_amount"]], "refuse") ||
          identical(state$settings[["cash_posting"]], "refuse"))) {
-      rlang::abort(
-        "Corporate-action cash settlement is refused by the selected policy.",
-        class = c("ledgr_corporate_action_unsupported", "ledgr_invalid_fold_execution")
-      )
+      return(list(
+        state = state_value,
+        next_event_seq = as.integer(event_seq),
+        stopped = ledgr_corporate_action_refusal(state$rows[held, , drop = FALSE], "cash")
+      ))
     }
     if (length(held) == 0L) {
       state$cash_posted <- replace(state$cash_posted, selected, TRUE)

@@ -425,6 +425,8 @@
 #' | `terminal_disposition` | valuation | modeled terminal outcome posted as one `DISPOSITION` before the strategy decision |
 #' | `terminal_settlement_unsupported` | valuation stop | unlabeled or refused terminal; holding preserved, no fabricated settlement |
 #' | `terminal_mark_unavailable` | valuation stop | the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete |
+#' | `corporate_action_cash_refused` | valuation stop | a held corporate-action cash settlement refused by policy; accepted prefix finalized incomplete |
+#' | `corporate_action_quantity_refused` | valuation stop | a held quantity effect or unmodeled fact refused by policy; accepted prefix finalized incomplete |
 #' | `fold_exception` | error | failed after transaction rollback |
 #'
 #' For the connected workflow and interpretation, see
@@ -449,8 +451,11 @@
 #'   `max_sessions`. Cash and quantity stay exact, but equity during the freeze
 #'   is an assumption-backed estimate, not an exact value.
 #' - **Refusal.** `valuation_horizon_exhausted`,
-#'   `terminal_settlement_unsupported` and `terminal_mark_unavailable` stop the
-#'   run `INCOMPLETE` and keep the accepted prefix. Nothing is fabricated.
+#'   `terminal_settlement_unsupported`, `terminal_mark_unavailable`,
+#'   `corporate_action_cash_refused` and `corporate_action_quantity_refused`
+#'   stop the run `INCOMPLETE` and keep the accepted prefix. Nothing is
+#'   fabricated. A dense run has no typed stop: its corporate-action refusals
+#'   raise `ledgr_corporate_action_unsupported`.
 #' - **Frozen-at-end bound.** `total_return_if_frozen_worthless` in
 #'   [ledgr_valuation_summary()] restates endpoint return with holdings still
 #'   frozen at the end valued at zero. It is a bound, not a corrected return,

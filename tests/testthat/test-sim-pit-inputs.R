@@ -487,8 +487,10 @@ testthat::test_that("[LTB-0078] committed PIT inputs regenerate and compose", {
     cost_model = ledgr_cost_zero(),
     corporate_action_policy = ledgr_corporate_actions_strict()
   )
-  testthat::expect_error(
-    ledgr_run(strict_experiment, run_id = "committed-pit-cash-strict"),
-    class = "ledgr_corporate_action_unsupported"
-  )
+  # The strict preset's cash refusal is a typed stop (Cut 12 LDG-2997).
+  strict_run <- ledgr_run(strict_experiment, run_id = "committed-pit-cash-strict")
+  on.exit(close(strict_run), add = TRUE)
+  strict_completion <- ledgr_run_completion(strict_run)
+  testthat::expect_identical(strict_completion$completion_status, "INCOMPLETE")
+  testthat::expect_identical(strict_completion$stop_reason, "corporate_action_cash_refused")
 })

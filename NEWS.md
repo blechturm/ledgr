@@ -46,6 +46,15 @@
   the strict preset refuses it as an unsupported quantity effect. Previously
   such a fact never acted and the summary reported fidelity `none`.
 
+- A corporate-action settlement refused by the policy (for example a held
+  dividend under `ledgr_corporate_actions_strict()`) now ends an
+  availability-aware run `INCOMPLETE` with its accepted prefix and stop
+  reason `corporate_action_cash_refused` or
+  `corporate_action_quantity_refused`, like a refused terminal; the run opens
+  and reruns. Previously the run failed and rolled back all its evidence. A
+  dense run has no incomplete state and still raises
+  `ledgr_corporate_action_unsupported`.
+
 ## Runs and evaluations that keep going on real data
 
 - An interrupted and resumed run now binds dividend entitlement exactly like

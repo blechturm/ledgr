@@ -572,6 +572,8 @@ without a complication uses an empty reason code.\tabular{lll}{
    \code{terminal_disposition} \tab valuation \tab modeled terminal outcome posted as one \code{DISPOSITION} before the strategy decision \cr
    \code{terminal_settlement_unsupported} \tab valuation stop \tab unlabeled or refused terminal; holding preserved, no fabricated settlement \cr
    \code{terminal_mark_unavailable} \tab valuation stop \tab the terminal choice needs a mark that does not exist; accepted prefix finalized incomplete \cr
+   \code{corporate_action_cash_refused} \tab valuation stop \tab a held corporate-action cash settlement refused by policy; accepted prefix finalized incomplete \cr
+   \code{corporate_action_quantity_refused} \tab valuation stop \tab a held quantity effect or unmodeled fact refused by policy; accepted prefix finalized incomplete \cr
    \code{fold_exception} \tab error \tab failed after transaction rollback \cr
 }
 
@@ -600,8 +602,11 @@ older than \code{max_sessions}. Cash and quantity stay exact.
 \code{max_sessions}. Cash and quantity stay exact, but equity during the freeze
 is an assumption-backed estimate, not an exact value.
 \item \strong{Refusal.} \code{valuation_horizon_exhausted},
-\code{terminal_settlement_unsupported} and \code{terminal_mark_unavailable} stop the
-run \code{INCOMPLETE} and keep the accepted prefix. Nothing is fabricated.
+\code{terminal_settlement_unsupported}, \code{terminal_mark_unavailable},
+\code{corporate_action_cash_refused} and \code{corporate_action_quantity_refused}
+stop the run \code{INCOMPLETE} and keep the accepted prefix. Nothing is
+fabricated. A dense run has no typed stop: its corporate-action refusals
+raise \code{ledgr_corporate_action_unsupported}.
 \item \strong{Frozen-at-end bound.} \code{total_return_if_frozen_worthless} in
 \code{\link[=ledgr_valuation_summary]{ledgr_valuation_summary()}} restates endpoint return with holdings still
 frozen at the end valued at zero. It is a bound, not a corrected return,

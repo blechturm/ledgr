@@ -555,7 +555,19 @@ ledgr_execute_fold <- function(execution, output_handler) {
         )
         state <- posted$state
         event_seq <- posted$next_event_seq
-        corporate_action_plan$check_quantity_effects(i)
+        refused <- posted$stopped %||% corporate_action_plan$check_quantity_effects(i)
+        # A declared corporate-action refusal ends an availability run
+        # INCOMPLETE at this pulse, like a terminal refusal; a dense run has no
+        # typed stop and aborts.
+        if (!is.null(refused)) {
+          if (!availability_active) ledgr_corporate_action_refusal_abort(refused)
+          refusal_decision <- availability_decision(ts, i, state$positions)
+          stop_valuation(
+            ts, refused$ids, refused$reason_code, rep(refused$reasons, length(refused$ids)),
+            refusal_decision$full_positions, refusal_decision$valuation
+          )
+          break
+        }
       }
 
       availability_view <- NULL

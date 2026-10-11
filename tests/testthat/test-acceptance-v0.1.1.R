@@ -350,6 +350,7 @@ testthat::test_that("AT10: Snapshot discovery APIs (list + info)", {
       "snapshot_hash",
       "bar_count",
       "instrument_count",
+      "off_session_bar_count",
       "start_date",
       "end_date",
       "meta_json",

@@ -721,6 +721,8 @@ Accepted change pending:
   | `terminal_disposition` | valuation | post one modeled `DISPOSITION` before the strategy decision |
   | `terminal_settlement_unsupported` | valuation stop | unlabeled or refused terminal; preserve the holding and never fabricate cash settlement |
   | `terminal_mark_unavailable` | valuation stop | the terminal choice needs a mark that does not exist; preserve the accepted prefix and finalize incomplete |
+  | `corporate_action_cash_refused` | valuation stop | the policy refuses a held corporate-action cash settlement (`cash_amount` or `cash_posting = "refuse"`); post nothing, preserve the accepted prefix and finalize incomplete (Cut 12 LDG-2997) |
+  | `corporate_action_quantity_refused` | valuation stop | the policy refuses a held quantity effect or unmodeled fact (`unsupported_quantity = "refuse"`); preserve the accepted prefix and finalize incomplete (Cut 12 LDG-2997) |
   | `fold_exception` | error | finalize failed after the fold transaction rolls back |
 
   An uncomplicated accepted fill has an empty reason code.
@@ -1528,7 +1530,9 @@ Accepted change pending:
   outside `ordinary_cash_dividend`, `cash_acquisition`, `stock_acquisition`,
   `mixed_acquisition` and `spin_off`, and an acquisition in a dense run, where
   no disposition acts. Under `unsupported_quantity = "refuse"` (the strict
-  preset) the run refuses at the fact's effective pulse; otherwise nothing
+  preset) an availability run stops `INCOMPLETE` with
+  `corporate_action_quantity_refused` at the fact's effective pulse and a
+  dense run raises `ledgr_corporate_action_quantity_unsupported`; otherwise nothing
   posts, the fact counts in `unsupported_facts` and `corporate_action_fidelity`
   is `unsupported`. Ingest keeps the subtype vocabulary open (Cut 12
   LDG-2996).

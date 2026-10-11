@@ -571,7 +571,10 @@ difference is which universe is declared.
 Seal the evidence first. After this point the inputs are frozen and
 identified by a hash. The store comes from `ledgr_temp_store()` because
 the article closes and reopens it later; a real project passes a
-persistent path, so the evidence outlives the R session.
+persistent path, so the evidence outlives the R session. The snapshot
+declares `price_basis = "split_adjusted"`: ledgr counts shares in
+split-adjusted units, and a point-in-time experiment refuses a snapshot
+that does not say what its bars are.
 
 ``` r
 store_path <- ledgr_temp_store(
@@ -582,6 +585,7 @@ snapshot <- ledgr_snapshot_from_df(
   bars_input,
   instruments_df = instruments,
   facts = facts,
+  price_basis = "split_adjusted",
   db_path = store_path,
   snapshot_id = "survivorship-demo"
 )
@@ -614,6 +618,7 @@ below, so the comparison isolates the universe.
 ledgr_experiment_plan(point_in_time_experiment)
 #> ledgr experiment plan
 #> Availability: active
+#> Price basis:  split_adjusted
 #> Universe:     membership
 #> Checks:
 #> # A tibble: 4 x 3
@@ -912,7 +917,7 @@ point_in_time
 #> Closed Trades:                     0
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#> Price basis: split_adjusted
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
 #>
 #> Use summary(bt) for metrics and evidence
@@ -1014,6 +1019,7 @@ terminal_snapshot <- ledgr_snapshot_from_df(
   bars_input,
   instruments_df = instruments,
   facts = ledgr_facts(session_facts, membership_facts, delisting),
+  price_basis = "split_adjusted",
   db_path = store_path,
   snapshot_id = "survivorship-terminal"
 )
@@ -1088,7 +1094,7 @@ written_off
 #> Closed Trades:                     0
 #>
 #> Corporate actions: MODELED - configured settlement conventions were exercised
-#> Price basis: UNDECLARED - distribution double counting cannot be ruled out
+#> Price basis: split_adjusted
 #> Valuation: STALE - 2 holdings valued at a permitted stale close (longest age 1 session)
 #>
 #> Use summary(bt) for metrics and evidence
