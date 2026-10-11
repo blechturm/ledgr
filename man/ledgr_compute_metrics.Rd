@@ -41,9 +41,10 @@ A list-like \code{ledgr_metrics} object.
 Compute standard metrics from backtest results
 }
 \details{
-The print method reports metrics over the persisted equity prefix. Use
-\code{summary(bt)} when completion-aware withholding and achieved-prefix
-labels are required.
+Metrics cover the persisted equity prefix. When the run's achieved
+window is shorter than requested, \code{annualized_return}, \code{volatility} and
+\code{sharpe_ratio} are withheld (\code{NA}, named in the \code{withheld} attribute), as
+\code{summary(bt)} withholds them; \code{summary(bt)} also labels the achieved prefix.
 
 Standard metrics are derived from the ledger and equity curve:
 \itemize{

@@ -874,7 +874,10 @@ Accepted change pending:
   the achieved window, total return and maximum drawdown remain visible as
   prefix-only evidence, and annualized return, annualized volatility, and
   Sharpe ratio are withheld with an explanation. Complete performance keeps
-  the established metric content and order.
+  the established metric content and order. `ledgr_compute_metrics()` follows
+  the same completion evidence: those three fields are `NA` with a `withheld`
+  attribute and print as withheld, and total return and maximum drawdown stay
+  (Cut 12 LDG-3003). Walk-forward test-window metrics inherit the rule.
 - `print.ledgr_run_info()` presents status and any recorded completion evidence
   before identity and telemetry fields without removing any field from the
   record.

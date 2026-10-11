@@ -422,9 +422,10 @@ ledgr_backtest_bench <- function(bt) {
 #'   decimal. For example, `0.02` means two percent per year. Supply either
 #'   `metric_context` or `risk_free_rate`, not both.
 #' @return A list-like `ledgr_metrics` object.
-#' @details The print method reports metrics over the persisted equity prefix.
-#'   Use `summary(bt)` when completion-aware withholding and achieved-prefix
-#'   labels are required.
+#' @details Metrics cover the persisted equity prefix. When the run's achieved
+#'   window is shorter than requested, `annualized_return`, `volatility` and
+#'   `sharpe_ratio` are withheld (`NA`, named in the `withheld` attribute), as
+#'   `summary(bt)` withholds them; `summary(bt)` also labels the achieved prefix.
 #'
 #' @details
 #' Standard metrics are derived from the ledger and equity curve:
@@ -474,12 +475,21 @@ ledgr_compute_metrics <- function(bt,
                                   metrics = "standard",
                                   metric_context = NULL,
                                   risk_free_rate = NULL) {
-  ledgr_compute_metrics_internal(
+  out <- ledgr_compute_metrics_internal(
     bt,
     metrics = metrics,
     metric_context = metric_context,
     risk_free_rate = risk_free_rate
   )
+  # Annualized figures follow completion evidence, as summary() does: a run
+  # whose achieved window is shorter than requested withholds them.
+  if (ledgr_summary_prefix_only(ledgr_backtest_completion_info(bt))) {
+    withheld <- c("annualized_return", "volatility", "sharpe_ratio")
+    for (field in withheld) out[[field]] <- NA_real_
+    attr(out, "withheld") <- withheld
+    attr(out, "withheld_reason") <- "achieved window is shorter than requested"
+  }
+  out
 }
 
 #' @rdname ledgr_compute_metrics
@@ -493,11 +503,15 @@ format.ledgr_metrics <- function(x, ...) {
   finite <- function(value, template, unavailable = "N/A") {
     if (length(value) == 1L && is.finite(value)) sprintf(template, value) else unavailable
   }
+  withheld <- attr(x, "withheld") %||% character()
+  shown <- function(field, value, template) {
+    if (field %in% withheld) "withheld (achieved window is shorter than requested)" else finite(value, template)
+  }
   values <- c(
     finite(x$total_return * 100, "%.2f%%"),
-    finite(x$annualized_return * 100, "%.2f%%"),
-    finite(x$volatility * 100, "%.2f%%"),
-    finite(x$sharpe_ratio, "%.3f"),
+    shown("annualized_return", x$annualized_return * 100, "%.2f%%"),
+    shown("volatility", x$volatility * 100, "%.2f%%"),
+    shown("sharpe_ratio", x$sharpe_ratio, "%.3f"),
     finite(x$max_drawdown * 100, "%.2f%%"),
     if (length(x$n_trades) == 1L && is.finite(x$n_trades)) {
       sprintf("%d", as.integer(x$n_trades))

@@ -7,6 +7,12 @@
   collation. Previously ties followed `LC_COLLATE`, so the same strategy
   could select different instruments on machines with different locales.
 
+- `ledgr_compute_metrics()` now withholds annualized return, volatility and
+  Sharpe ratio for a run whose achieved window is shorter than requested, as
+  `summary()` already did: the fields are `NA`, named in a `withheld`
+  attribute, and print as withheld. Walk-forward test-window metrics follow
+  the same rule.
+
 ## Inputs ledgr refuses or reports instead of ignoring
 
 - A snapshot no longer seals a zero or negative open, high, low or close

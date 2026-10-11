@@ -624,3 +624,36 @@ testthat::test_that("[LTB-0229] top-n ties break in C-locale order under any col
   testthat::expect_gte(length(picked), 2L)
   for (p in picked) testthat::expect_identical(sort(p, method = "radix"), c("A4", "B1"))
 })
+
+testthat::test_that("[LTB-0230] ledgr_compute_metrics() withholds annualized figures for incomplete performance", {
+  days <- pit_consistency_days()
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  buy_day <- as.character(days[[4]])
+  buy_bbb <- function(ctx, params) {
+    target <- ctx$hold()
+    if (identical(substr(ctx$ts_utc, 1, 10), buy_day)) target[["BBB"]] <- 1
+    target
+  }
+  experiment <- function(policy) {
+    ledgr_experiment(snapshot, buy_bbb, universe = ledgr_universe_members("u"), valuation_policy = policy,
+                     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+  }
+  # BBB has no bar on the sixth session: refuse stops there, freeze runs on.
+  stopped <- ledgr_run(experiment(ledgr_valuation_stale(0, exhausted = "refuse")), run_id = "metrics_incomplete")
+  on.exit(close(stopped), add = TRUE)
+  done <- ledgr_run(experiment(ledgr_valuation_stale(2)), run_id = "metrics_done")
+  on.exit(close(done), add = TRUE)
+  testthat::expect_identical(ledgr_run_completion(stopped)$completion_status, "INCOMPLETE")
+
+  incomplete <- ledgr_compute_metrics(stopped)
+  testthat::expect_true(all(is.na(c(incomplete$annualized_return, incomplete$volatility, incomplete$sharpe_ratio))))
+  testthat::expect_identical(attr(incomplete, "withheld"), c("annualized_return", "volatility", "sharpe_ratio"))
+  testthat::expect_true(is.finite(incomplete$total_return))
+  printed <- utils::capture.output(print(incomplete))
+  testthat::expect_true(any(grepl("Annualized Return: +withheld", printed)))
+
+  complete <- ledgr_compute_metrics(done)
+  testthat::expect_null(attr(complete, "withheld"))
+  testthat::expect_true(is.finite(complete$annualized_return))
+})
