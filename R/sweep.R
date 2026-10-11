@@ -166,7 +166,9 @@ ledgr_sweep_impl <- function(exp,
   seed <- ledgr_seed_normalize(seed)
   compiled_accounting_model <- ledgr_public_compiled_accounting_model(compiled_accounting_model)
   availability_active <- isTRUE(exp$availability$active)
-  if (availability_active && identical(compiled_accounting_model, "spot_fifo")) {
+  if (availability_active &&
+      identical(compiled_accounting_model, "spot_fifo") &&
+      !ledgr_spike_compiled_availability_enabled()) {
     rlang::abort(
       "Compiled spot-FIFO execution is unavailable for availability-aware sweeps.",
       class = c("ledgr_compiled_availability_unsupported", "ledgr_invalid_args")

@@ -297,7 +297,8 @@ ledgr_execute_fold <- function(execution, output_handler) {
   }
   if (use_compiled_spot_fifo) {
     ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
-    if (!is.null(corporate_action_plan)) {
+    if (!is.null(corporate_action_plan) &&
+        !ledgr_spike_compiled_availability_enabled()) {
       ledgr_require_compiled_spot_fifo_event_kinds(
         corporate_action_plan$event_kinds()
       )

@@ -44,6 +44,10 @@ ledgr_internal_compiled_accounting_model <- function() {
   )
 }
 
+ledgr_spike_compiled_availability_enabled <- function() {
+  isTRUE(getOption("ledgr.spike.compiled_availability", FALSE))
+}
+
 ledgr_compiled_spot_fifo_unavailable_error <- function(message = NULL) {
   if (is.null(message)) {
     message <- paste0(
