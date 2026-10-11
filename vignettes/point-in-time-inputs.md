@@ -293,11 +293,12 @@ pit_snapshot <- ledgr_snapshot_open(
 prepared; it does not adjust prices. Do not copy that declaration onto
 raw or fully adjusted vendor bars.
 
-Availability-aware runs require an explicit stale-mark policy. The flat
-strategy below makes no trades; its purpose is to show what the decision
-view knows at the three halt boundaries. `ledgr_valuation_stale(2)`
-permits a held instrument’s last real close to value it for at most two
-declared sessions; it does not create an execution price.
+Availability-aware runs value holdings under a stale-mark policy (5
+sessions by default); this one declares its own. The flat strategy below
+makes no trades; its purpose is to show what the decision view knows at
+the three halt boundaries. `ledgr_valuation_stale(2)` permits a held
+instrument’s last real close to value it for at most two declared
+sessions; it does not create an execution price.
 
 ``` r
 flat_strategy <- function(ctx, params) ctx$flat()

@@ -3,7 +3,8 @@
 #' These constructors opt an experiment into point-in-time availability
 #' semantics without adding an execution-mode flag. A membership rule selects
 #' one declared membership universe. A stale-valuation policy supplies the
-#' explicit session horizon required by every availability-aware experiment.
+#' session horizon of every availability-aware experiment; an experiment that
+#' supplies none uses `ledgr_valuation_stale()` with its defaults.
 #'
 #' `max_sessions` separates ordinarily stale valuation from what happens after
 #' it. Up to that age a carried close is a permissible mark. Beyond it,
@@ -13,7 +14,10 @@
 #' establishes an economic terminal: an aged mark proves no delisting, sale or
 #' loss, so it never creates a fill, a disposition or a cash change. Terminal
 #' outcomes come only from sealed lifetime facts and the corporate-action
-#' policy. There is no default horizon.
+#' policy. The default horizon is 5 sessions, chosen from real-data gap
+#' evidence (US equity vendor data for S&P 500 members, 1998 to 2026: a
+#' handful of held missing-bar runs exceed it and, under `"freeze"`, none
+#' stops a run). Plans and results mark a horizon of 5 as the default.
 #'
 #' The valuation policy and its stored identity use `schema_version` 2. Runs
 #' recorded under schema 1 remain readable, but cannot be resumed, rerun or
@@ -49,7 +53,7 @@ ledgr_universe_members <- function(universe_id) {
 
 #' @rdname ledgr_availability_policy
 #' @export
-ledgr_valuation_stale <- function(max_sessions, exhausted = "freeze") {
+ledgr_valuation_stale <- function(max_sessions = 5, exhausted = "freeze") {
   if (!is.numeric(max_sessions) || length(max_sessions) != 1L ||
       is.na(max_sessions) || !is.finite(max_sessions) ||
       max_sessions < 0 || max_sessions %% 1 != 0) {
@@ -82,6 +86,9 @@ ledgr_valuation_stale <- function(max_sessions, exhausted = "freeze") {
 }
 
 ledgr_valuation_policy_schema_version <- 2L
+
+# The constructor default of `max_sessions` (LDG-3014).
+ledgr_valuation_default_max_sessions <- 5L
 
 ledgr_valuation_exhausted_choices <- function() {
   c("freeze", "refuse")
@@ -135,18 +142,57 @@ ledgr_snapshot_fact_headers <- function(snapshot) {
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   }
-  if (!ledgr_experiment_store_table_exists(opened$con, "snapshot_fact_families")) {
+  ledgr_fact_headers_read(opened$con, snapshot$snapshot_id)
+}
+
+ledgr_fact_headers_read <- function(con, snapshot_id) {
+  if (!ledgr_experiment_store_table_exists(con, "snapshot_fact_families")) {
     return(data.frame())
   }
   DBI::dbGetQuery(
-    opened$con,
+    con,
     paste(
       "SELECT family, scope_id, metadata_json",
       "FROM snapshot_fact_families",
       "WHERE snapshot_id = ? ORDER BY family, scope_id"
     ),
-    params = list(snapshot$snapshot_id)
+    params = list(snapshot_id)
   )
+}
+
+# Assumption reasons per runtime fact family from sealed fact headers: a
+# knowledge clock assumed effective, or a generated session schedule. Shared
+# by ledgr_experiment_plan() and result summaries (LDG-3010).
+ledgr_fact_assumption_reasons <- function(headers) {
+  families <- c("membership", "sessions", "trading_status", "lifetime")
+  out <- stats::setNames(rep(list(character()), length(families)), families)
+  if (is.null(headers) || nrow(headers) == 0L) return(out)
+  for (i in seq_len(nrow(headers))) {
+    family <- as.character(headers$family[[i]])
+    if (!family %in% families) next
+    metadata <- ledgr_json_read_nested(headers$metadata_json[[i]])
+    reasons <- c(
+      if (identical(metadata$knowledge, "assume_effective")) "knowledge_assume_effective",
+      if (identical(metadata$schedule_basis, "generated")) "generated_schedule"
+    )
+    out[[family]] <- unique(c(out[[family]], reasons))
+  }
+  out
+}
+
+# The price basis an experiment or run executes on. ledgr accounts in
+# split-adjusted share units, so an availability-aware experiment on a snapshot
+# that declares no basis runs on that model as an assumed default (LDG-3013);
+# identity keeps the undeclared basis. A dense run keeps "undeclared".
+ledgr_price_basis_label <- function(price_basis, availability_active) {
+  if (!is.null(price_basis)) return(list(value = price_basis, default = FALSE))
+  if (isTRUE(availability_active)) return(list(value = "split_adjusted", default = TRUE))
+  list(value = "undeclared", default = FALSE)
+}
+
+ledgr_price_basis_display <- function(value, default) {
+  if (identical(value, "undeclared")) return(value)
+  paste0(value, if (isTRUE(default)) " (assumed default; the snapshot declares none)" else " (declared)")
 }
 
 ledgr_availability_activation <- function(snapshot, valuation_policy = NULL) {
@@ -207,12 +253,9 @@ ledgr_availability_validate_experiment <- function(snapshot,
       class = c("ledgr_availability_sessions_required", "ledgr_invalid_experiment")
     )
   }
-  if (is.null(valuation_policy)) {
-    rlang::abort(
-      "Availability-aware experiments require `ledgr_valuation_stale(max_sessions)`.",
-      class = c("ledgr_valuation_policy_required", "ledgr_invalid_experiment")
-    )
-  }
+  # Facts activated availability, so an omitted policy is the constructor
+  # default; it is the same record, and identity, as declaring it (LDG-3014).
+  if (is.null(valuation_policy)) valuation_policy <- ledgr_valuation_stale()
   ledgr_validate_valuation_policy(valuation_policy)
 
   rule <- if (inherits(universe, "ledgr_universe_rule")) universe else NULL
@@ -227,7 +270,7 @@ ledgr_availability_validate_experiment <- function(snapshot,
       )
     }
   }
-  c(activation, list(universe_rule = rule))
+  c(activation, list(universe_rule = rule, valuation_policy = valuation_policy))
 }
 
 ledgr_availability_validate_features <- function(features, features_mode) {
@@ -279,9 +322,11 @@ ledgr_availability_validate_features <- function(features, features_mode) {
 #' @param x A `ledgr_experiment`.
 #' @param ... Unused.
 #'
-#' @return A `ledgr_experiment_plan` object. `price_basis` is the snapshot's
-#'   declared basis (`"undeclared"` for a dense snapshot without one; an
-#'   availability-aware experiment always declares one). Its `checks` tibble reports each
+#' @return A `ledgr_experiment_plan` object. `price_basis` is the basis the
+#'   experiment executes on: the snapshot's declared basis, `"split_adjusted"`
+#'   as an assumed default for an availability-aware experiment whose snapshot
+#'   declares none (`price_basis_default` is then `TRUE`), or `"undeclared"`
+#'   for a dense snapshot without one. Its `checks` tibble reports each
 #'   family status and keeps generated-schedule and assumed-knowledge reasons
 #'   separate in `assumption_reasons`. Its `assumptions` tibble lists the
 #'   declared valuation-horizon and terminal-outcome choices, one row per
@@ -300,28 +345,8 @@ ledgr_experiment_plan <- function(x, ...) {
   }
   active <- isTRUE(x$availability$active)
   declared <- as.character(x$availability$declared_families %||% character())
-  headers <- x$availability$headers %||% data.frame()
-  assumption_backed <- character()
-  assumption_reasons <- stats::setNames(vector("list", 4L), c(
-    "membership", "sessions", "trading_status", "lifetime"
-  ))
-  if (nrow(headers) > 0L) {
-    parsed_metadata <- lapply(headers$metadata_json, ledgr_json_read_nested)
-    assumed <- vapply(parsed_metadata, function(metadata) {
-      identical(metadata$knowledge, "assume_effective") ||
-        identical(metadata$schedule_basis, "generated")
-    }, logical(1))
-    assumption_backed <- unique(as.character(headers$family[assumed]))
-    for (i in seq_len(nrow(headers))) {
-      metadata <- parsed_metadata[[i]]
-      reasons <- c(
-        if (identical(metadata$knowledge, "assume_effective")) "knowledge_assume_effective",
-        if (identical(metadata$schedule_basis, "generated")) "generated_schedule"
-      )
-      family <- as.character(headers$family[[i]])
-      assumption_reasons[[family]] <- unique(c(assumption_reasons[[family]], reasons))
-    }
-  }
+  assumption_reasons <- ledgr_fact_assumption_reasons(x$availability$headers)
+  assumption_backed <- names(assumption_reasons)[lengths(assumption_reasons) > 0L]
   checks <- data.frame(
     family = c("membership", "sessions", "trading_status", "lifetime"),
     status = vapply(
@@ -347,7 +372,8 @@ ledgr_experiment_plan <- function(x, ...) {
       availability_active = active,
       universe_type = if (is.null(x$universe_rule)) "fixed" else "membership",
       universe_id = x$universe_rule$universe_id %||% NA_character_,
-      price_basis = x$data_identity$price_basis %||% "undeclared",
+      price_basis = ledgr_price_basis_label(x$data_identity$price_basis, active)$value,
+      price_basis_default = ledgr_price_basis_label(x$data_identity$price_basis, active)$default,
       valuation_policy = x$valuation_policy,
       checks = tibble::as_tibble(checks),
       assumptions = ledgr_experiment_plan_assumptions(
@@ -364,7 +390,7 @@ ledgr_experiment_plan <- function(x, ...) {
 print.ledgr_experiment_plan <- function(x, ...) {
   cat("ledgr experiment plan\n")
   cat("Availability: ", if (isTRUE(x$availability_active)) "active" else "dense", "\n", sep = "")
-  cat("Price basis:  ", x$price_basis %||% "undeclared", "\n", sep = "")
+  cat("Price basis:  ", ledgr_price_basis_display(x$price_basis %||% "undeclared", x$price_basis_default), "\n", sep = "")
   if (isTRUE(x$availability_active)) {
     cat("Universe:     ", x$universe_type, "\n", sep = "")
     cat("Checks:\n")
@@ -395,7 +421,11 @@ ledgr_experiment_plan_assumptions <- function(valuation_policy, corporate_action
       as.character(valuation_policy$max_sessions),
       as.character(valuation_policy$exhausted %||% "freeze")
     )
-    default <- c(default, FALSE, identical(valuation_policy$exhausted %||% "freeze", "freeze"))
+    default <- c(
+      default,
+      identical(as.integer(valuation_policy$max_sessions), ledgr_valuation_default_max_sessions),
+      identical(valuation_policy$exhausted %||% "freeze", "freeze")
+    )
   }
   if (!is.null(corporate_action_policy)) {
     research <- ledgr_corporate_actions_research()

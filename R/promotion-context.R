@@ -1,9 +1,42 @@
-ledgr_promotion_context_version <- "ledgr_promotion_v1"
+ledgr_promotion_context_version <- "ledgr_promotion_v2"
 
-ledgr_promote_write_context_or_warn <- function(bt, candidate, note = NULL) {
+# Identities ledgr_promote() compares between a candidate's sweep and the
+# promoting experiment (LDG-3005). They are hashes, so they survive a saved
+# sweep's JSON round trip unchanged. Cost and risk are not compared: promotion
+# replays the candidate's own.
+ledgr_promotion_identities <- function(exp, strategy_hash = NULL) {
+  hash <- function(x) digest::digest(canonical_json(x), algo = "sha256")
+  list(
+    strategy_hash = strategy_hash %||% ledgr_strategy_source_info(exp$strategy)$hash,
+    universe_hash = hash(list(
+      instrument_ids = as.character(exp$universe),
+      universe_rule = if (is.null(exp$universe_rule)) NULL else unclass(exp$universe_rule)
+    )),
+    valuation_policy_hash = hash(if (is.null(exp$valuation_policy)) NULL else unclass(exp$valuation_policy)),
+    corporate_action_policy_hash = hash(ledgr_corporate_action_policy_identity(exp$corporate_action_policy)),
+    opening_hash = hash(ledgr_config_normalize_opening(exp$opening, exp$opening$cash))
+  )
+}
+
+# Compares the candidate's recorded identities with the promoting run's. A
+# field either side did not record (a sweep saved before LDG-3005) is not
+# compared.
+ledgr_promotion_identity_check <- function(candidate, promoting) {
+  fields <- names(promoting)
+  recorded <- vapply(fields, function(f) is.character(candidate[[f]]) && length(candidate[[f]]) == 1L, logical(1))
+  differs <- vapply(fields, function(f) recorded[[f]] && !identical(candidate[[f]], promoting[[f]]), logical(1))
+  list(
+    candidate = candidate[fields[recorded]],
+    promoting = promoting,
+    mismatched = fields[differs],
+    not_recorded = fields[!recorded]
+  )
+}
+
+ledgr_promote_write_context_or_warn <- function(bt, candidate, note = NULL, identity_check = NULL) {
   tryCatch(
     {
-      ledgr_write_promotion_context(bt, candidate, note = note)
+      ledgr_write_promotion_context(bt, candidate, note = note, identity_check = identity_check)
       invisible(TRUE)
     },
     error = function(e) {
@@ -20,7 +53,7 @@ ledgr_promote_write_context_or_warn <- function(bt, candidate, note = NULL) {
   )
 }
 
-ledgr_write_promotion_context <- function(bt, candidate, note = NULL) {
+ledgr_write_promotion_context <- function(bt, candidate, note = NULL, identity_check = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_args")
   }
@@ -53,7 +86,7 @@ ledgr_write_promotion_context <- function(bt, candidate, note = NULL) {
       as.POSIXct(Sys.time(), tz = "UTC"),
       note %||% NA_character_,
       ledgr_selected_candidate_json(candidate),
-      ledgr_source_sweep_json(candidate),
+      ledgr_source_sweep_json(candidate, identity_check),
       ledgr_candidate_summary_json(candidate$selection_view)
     )
   )
@@ -64,7 +97,7 @@ ledgr_selected_candidate_json <- function(candidate) {
   canonical_json(ledgr_candidate_summary_record(candidate$row[1, , drop = FALSE])[[1]])
 }
 
-ledgr_source_sweep_json <- function(candidate) {
+ledgr_source_sweep_json <- function(candidate, identity_check = NULL) {
   meta <- candidate$sweep_meta
   if (!is.list(meta)) {
     meta <- list()
@@ -94,7 +127,8 @@ ledgr_source_sweep_json <- function(candidate) {
     metric_context_hash = meta$metric_context_hash,
     metric_context_version = meta$metric_context_version,
     risk_chain_hash = meta$risk_chain_hash %||% candidate$provenance$risk_chain_hash,
-    risk_plan_json = meta$risk_plan_json %||% candidate$provenance$risk_plan_json
+    risk_plan_json = meta$risk_plan_json %||% candidate$provenance$risk_plan_json,
+    identity_check = identity_check
   ))
 }
 
@@ -225,6 +259,12 @@ ledgr_warning_classes <- function(warnings) {
 #' metric context used to rank the candidate. The committed run's own metric
 #' context remains available from `ledgr_metric_context(bt)`.
 #'
+#' Records written by `ledgr_promotion_v2` carry `identity_check`: the
+#' candidate's and the promoting run's identity hashes (`candidate`,
+#' `promoting`), the identities that differed (`mismatched`) and those the
+#' candidate's sweep did not record (`not_recorded`). A `ledgr_promotion_v1`
+#' record reads unchanged with `identity_check = NULL`.
+#'
 #' @section Articles:
 #' Exploratory sweeps and promotion:
 #' `vignette("sweeps", package = "ledgr")`
@@ -287,6 +327,7 @@ ledgr_fetch_promotion_context <- function(con, run_id) {
 }
 
 ledgr_parse_promotion_context <- function(row) {
+  source_sweep <- ledgr_parse_source_sweep_record(row$source_sweep_json[[1]])
   structure(list(
     run_id = as.character(row$run_id[[1]]),
     promotion_context_version = as.character(row$promotion_context_version[[1]]),
@@ -294,9 +335,21 @@ ledgr_parse_promotion_context <- function(row) {
     promoted_at_utc = as.POSIXct(row$promoted_at_utc[[1]], tz = "UTC"),
     note = if (is.na(row$note[[1]])) NULL else as.character(row$note[[1]]),
     selected_candidate = ledgr_parse_candidate_summary_record(row$selected_candidate_json[[1]]),
-    source_sweep = ledgr_parse_source_sweep_record(row$source_sweep_json[[1]]),
-    candidate_summary = ledgr_parse_candidate_summary(row$candidate_summary_json[[1]])
+    source_sweep = source_sweep,
+    candidate_summary = ledgr_parse_candidate_summary(row$candidate_summary_json[[1]]),
+    identity_check = ledgr_parse_identity_check(source_sweep$identity_check)
   ), class = c("ledgr_promotion_context", "list"))
+}
+
+# A ledgr_promotion_v1 record has no identity check and reads as NULL.
+ledgr_parse_identity_check <- function(record) {
+  if (is.null(record)) return(NULL)
+  list(
+    candidate = lapply(record$candidate, as.character),
+    promoting = lapply(record$promoting, as.character),
+    mismatched = as.character(unlist(record$mismatched, use.names = FALSE)),
+    not_recorded = as.character(unlist(record$not_recorded, use.names = FALSE))
+  )
 }
 
 ledgr_parse_json_field <- function(json) {

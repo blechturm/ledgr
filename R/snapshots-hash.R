@@ -209,6 +209,21 @@ ledgr_snapshot_hash <- function(con, snapshot_id, chunk_size = 10000) {
   digest::digest(paste0(base_hash, fact_payload), algo = "sha256")
 }
 
+# The sealed hash as stored, without recomputing it.
+ledgr_snapshot_stored_hash <- function(snapshot) {
+  release <- ledgr_snapshot_hold(snapshot)
+  on.exit(release(), add = TRUE)
+  stored <- DBI::dbGetQuery(
+    get_connection(snapshot),
+    "SELECT snapshot_hash FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot$snapshot_id)
+  )$snapshot_hash
+  if (length(stored) != 1L || is.na(stored) || !nzchar(stored)) {
+    rlang::abort("Snapshot hash missing; snapshot may not be sealed.", class = "ledgr_invalid_snapshot")
+  }
+  stored
+}
+
 ledgr_snapshot_validate <- function(snapshot) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_snapshot")

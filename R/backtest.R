@@ -151,6 +151,22 @@ ledgr_backtest <- function(snapshot = NULL,
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
   ledgr_snapshot_validate(snapshot)
+  # ledgr_backtest() runs dense execution only; a snapshot with point-in-time
+  # facts needs the session clock, membership, lifetime and valuation that
+  # ledgr_experiment() and ledgr_run() apply.
+  activation <- ledgr_availability_activation(snapshot, NULL)
+  if (isTRUE(activation$active)) {
+    rlang::abort(
+      sprintf(
+        paste(
+          "ledgr_backtest() runs dense execution only, but this snapshot declares point-in-time facts (%s).",
+          "Use ledgr_experiment() and ledgr_run(), which apply sessions, membership, lifetime and valuation."
+        ),
+        paste(activation$declared_families, collapse = ", ")
+      ),
+      class = c("ledgr_backtest_availability_unsupported", "ledgr_invalid_args")
+    )
+  }
 
   if (is.null(universe)) {
     universe <- ledgr_infer_universe_from_snapshot(snapshot)
@@ -449,7 +465,9 @@ ledgr_run_experiment <- function(exp,
   )
   window <- ledgr_experiment_window_resolve(exp, window)
   if (is.null(window)) {
-    start <- ledgr_experiment_scoring_start(exp) %||% exp$snapshot$metadata$start_date
+    # The recorded start is the clamped scoring start (LDG-3004): an opening
+    # dated before the sealed start begins at the sealed start.
+    start <- ledgr_experiment_scoring_start(exp, exp$snapshot$metadata$start_date) %||% exp$snapshot$metadata$start_date
     end <- exp$snapshot$metadata$end_date
   } else {
     start <- window$scoring_start_utc
@@ -485,7 +503,8 @@ ledgr_run_experiment <- function(exp,
     universe_rule = exp$universe_rule,
     valuation_policy = exp$valuation_policy,
     corporate_action_policy = exp$corporate_action_policy,
-    price_basis = exp$data_identity$price_basis
+    price_basis = exp$data_identity$price_basis,
+    snapshot_hash = exp$snapshot_hash %||% ledgr_snapshot_stored_hash(exp$snapshot)
   )
 
   result <- ledgr_run_config(config, metric_context = exp$metric_context)

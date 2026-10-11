@@ -58,9 +58,10 @@ testthat::test_that("availability policies activate explicitly and preserve dens
 
   snapshot <- availability_runtime_fixture(days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  testthat::expect_error(
-    ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero()),
-    class = "ledgr_valuation_policy_required"
+  # Facts activate availability; an omitted policy is the disclosed default.
+  testthat::expect_identical(
+    ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())$valuation_policy,
+    ledgr_valuation_stale()
   )
   exp <- ledgr_experiment(
     snapshot,

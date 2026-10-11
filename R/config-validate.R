@@ -352,6 +352,16 @@ validate_ledgr_config <- function(config) {
     assert_scalar_chr(config$data$snapshot_db_path, "data.snapshot_db_path")
   }
 
+  # Identity rule 2 binds the content hash; rule 1 (no field) bound the ID.
+  identity_rule <- config$identity_rule_version
+  if (!is.null(identity_rule) &&
+      (length(identity_rule) != 1L || is.na(identity_rule) || !identity_rule %in% c(1L, 2L))) {
+    rlang::abort("Config field identity_rule_version must be 1 or 2.", class = "ledgr_invalid_config")
+  }
+  if (identical(ledgr_config_identity_rule(config), 2L)) {
+    assert_scalar_chr(config$data$snapshot_hash, "data.snapshot_hash")
+  }
+
   if (!is.null(config$features) && is.list(config$features) && isTRUE(config$features$enabled)) {
     defs <- config$features$defs
     if (is.null(defs) || !is.list(defs) || length(defs) < 1) {

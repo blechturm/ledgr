@@ -158,8 +158,11 @@ print.ledgr_opening <- function(x, ...) {
 #' @param opening A `ledgr_opening` object.
 #' @param universe Character vector of instrument IDs, `NULL` for all
 #'   instruments in the snapshot, or a rule from [ledgr_universe_members()].
-#' @param valuation_policy Optional policy from [ledgr_valuation_stale()]. It is
-#'   required whenever availability facts or a membership rule are active.
+#' @param valuation_policy Optional policy from [ledgr_valuation_stale()]. When
+#'   snapshot facts make the experiment availability-aware and it is `NULL`,
+#'   `ledgr_valuation_stale()` with its defaults (5 sessions, `"freeze"`) is
+#'   used and disclosed as a default. Supplying a policy on a snapshot without
+#'   availability facts activates availability-aware execution.
 #' @param corporate_action_policy Corporate-action settlement policy. Defaults
 #'   to [ledgr_corporate_actions_research()].
 #' @param timing_model Timing model object. Defaults to
@@ -183,7 +186,10 @@ print.ledgr_opening <- function(x, ...) {
 #'   Supply either `metric_context` or `risk_free_rate`, not both.
 #' @return A `ledgr_experiment` object. Its `data_identity$price_basis` field
 #'   records `"split_adjusted"` or `NULL` when the sealed bars did not declare
-#'   a basis. Distribution-adjusted bars are refused at construction.
+#'   a basis; an availability-aware experiment on undeclared bars runs on the
+#'   split-adjusted share-unit model as a disclosed default (see
+#'   [ledgr_experiment_plan()]). Distribution-adjusted bars are refused at
+#'   construction.
 #' @section Articles:
 #' Strategy authoring:
 #' `vignette("strategy-development", package = "ledgr")`
@@ -245,7 +251,8 @@ ledgr_experiment <- function(snapshot,
   }
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
-  price_basis <- ledgr_experiment_validate_snapshot(snapshot)
+  sealed <- ledgr_experiment_validate_snapshot(snapshot)
+  price_basis <- sealed$price_basis
   ledgr_validate_corporate_action_policy(corporate_action_policy)
 
   universe_all <- ledgr_experiment_snapshot_universe(snapshot)
@@ -254,17 +261,9 @@ ledgr_experiment <- function(snapshot,
     universe,
     valuation_policy
   )
-  # Accounting assumes split-adjusted share units (no split event acts), so an
-  # availability-aware experiment must say what its bars are.
-  if (isTRUE(availability$active) && is.null(price_basis)) {
-    rlang::abort(
-      paste(
-        "Availability-aware experiments require a declared price basis; seal the snapshot with",
-        "`price_basis = \"split_adjusted\"` (ledgr accounts in split-adjusted share units)."
-      ),
-      class = c("ledgr_price_basis_required", "ledgr_invalid_experiment")
-    )
-  }
+  # Accounting assumes split-adjusted share units (no split event acts); an
+  # undeclared basis runs on that model and is disclosed as an assumed default
+  # (LDG-3013). data_identity keeps it undeclared.
   universe_rule <- availability$universe_rule
   execution_universe <- if (is.null(universe_rule)) {
     ledgr_experiment_normalize_universe(universe, universe_all)
@@ -329,7 +328,9 @@ ledgr_experiment <- function(snapshot,
       execution_mode = execution_mode,
       metric_context = metric_context,
       corporate_action_policy = corporate_action_policy,
-      data_identity = list(price_basis = price_basis)
+      data_identity = list(price_basis = price_basis),
+      # Read once here so runs bind the content hash without reopening (LDG-3004).
+      snapshot_hash = sealed$snapshot_hash
     )
   if (isTRUE(availability$active)) {
     out$availability <- list(
@@ -339,7 +340,7 @@ ledgr_experiment <- function(snapshot,
       execution_timing_version = ledgr_availability_execution_timing_version()
     )
     out$universe_rule <- universe_rule
-    out$valuation_policy <- valuation_policy
+    out$valuation_policy <- availability$valuation_policy
   }
   structure(out, class = "ledgr_experiment")
 }
@@ -356,7 +357,10 @@ ledgr_experiment_validate_snapshot <- function(snapshot) {
       class = "ledgr_invalid_experiment"
     )
   }
-  invisible(ledgr_snapshot_execution_price_basis(snapshot))
+  invisible(list(
+    price_basis = ledgr_snapshot_execution_price_basis(snapshot),
+    snapshot_hash = as.character(info$snapshot_hash[[1]])
+  ))
 }
 
 ledgr_experiment_snapshot_universe <- function(snapshot) {
@@ -588,7 +592,12 @@ print.ledgr_experiment <- function(x, ...) {
   cat("Mode:        ", x$execution_mode, "\n", sep = "")
   cat(
     "Price basis: ",
-    if (is.null(x$data_identity$price_basis)) "<undeclared>" else x$data_identity$price_basis,
+    if (is.null(x$data_identity$price_basis) && !isTRUE(x$availability$active)) {
+      "<undeclared>"
+    } else {
+      basis <- ledgr_price_basis_label(x$data_identity$price_basis, TRUE)
+      ledgr_price_basis_display(basis$value, basis$default)
+    },
     "\n",
     sep = ""
   )

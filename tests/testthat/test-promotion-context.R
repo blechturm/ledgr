@@ -37,7 +37,7 @@ testthat::test_that("promoted runs write and read durable promotion context", {
 
   context <- ledgr_promotion_context(bt)
   testthat::expect_type(context, "list")
-  testthat::expect_identical(context$promotion_context_version, "ledgr_promotion_v1")
+  testthat::expect_identical(context$promotion_context_version, "ledgr_promotion_v2")
   testthat::expect_identical(context$source, "ledgr_promote")
   testthat::expect_identical(context$note, "selected from reordered view")
   testthat::expect_identical(context$selected_candidate$candidate_id, "b")

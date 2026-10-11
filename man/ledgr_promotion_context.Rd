@@ -24,6 +24,12 @@ curves for all candidates. For sweep-promoted runs,
 \code{ledgr_metric_context(ledgr_promotion_context(bt))} returns the source sweep
 metric context used to rank the candidate. The committed run's own metric
 context remains available from \code{ledgr_metric_context(bt)}.
+
+Records written by \code{ledgr_promotion_v2} carry \code{identity_check}: the
+candidate's and the promoting run's identity hashes (\code{candidate},
+\code{promoting}), the identities that differed (\code{mismatched}) and those the
+candidate's sweep did not record (\code{not_recorded}). A \code{ledgr_promotion_v1}
+record reads unchanged with \code{identity_check = NULL}.
 }
 \section{Articles}{
 
@@ -31,3 +37,4 @@ Exploratory sweeps and promotion:
 \code{vignette("sweeps", package = "ledgr")}
 \code{system.file("doc", "sweeps.html", package = "ledgr")}
 }
+

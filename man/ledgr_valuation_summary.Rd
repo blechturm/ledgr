@@ -37,4 +37,15 @@ from final equity before computing the endpoint return. It is a bound for
 the endpoint only; it does not correct Sharpe, volatility, drawdown or the
 stored equity path. Dense runs have no valuation policy and report
 \code{valuation_state = "not_applicable"}.
+
+The summary also records what the run's point-in-time view rested on:
+\code{universe_kind} (\code{"membership"} for a membership rule, with its
+\code{universe_id}, or \code{"fixed"} for a fixed basket; \code{membership_declared} says
+whether the snapshot declares membership facts a fixed basket does not
+apply), \code{assumption_backed_families} with their \code{assumption_reasons}
+(\code{"knowledge_assume_effective"}, \code{"generated_schedule"}, joined by \code{|}, as
+in \code{\link[=ledgr_experiment_plan]{ledgr_experiment_plan()}}), and \code{max_sessions_default}, \code{TRUE} when the
+horizon is the \code{ledgr_valuation_stale()} default of 5 sessions. \code{print()}
+of a result shows these on one \verb{Point in time:} line; \code{summary()} lists them
+with the valuation evidence.
 }

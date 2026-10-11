@@ -10,7 +10,7 @@
 \usage{
 ledgr_universe_members(universe_id)
 
-ledgr_valuation_stale(max_sessions, exhausted = "freeze")
+ledgr_valuation_stale(max_sessions = 5, exhausted = "freeze")
 
 \method{print}{ledgr_universe_rule}(x, ...)
 
@@ -36,7 +36,8 @@ A classed universe rule or valuation policy.
 These constructors opt an experiment into point-in-time availability
 semantics without adding an execution-mode flag. A membership rule selects
 one declared membership universe. A stale-valuation policy supplies the
-explicit session horizon required by every availability-aware experiment.
+session horizon of every availability-aware experiment; an experiment that
+supplies none uses \code{ledgr_valuation_stale()} with its defaults.
 }
 \details{
 \code{max_sessions} separates ordinarily stale valuation from what happens after
@@ -47,7 +48,10 @@ unchanged, while \code{"refuse"} stops the run \code{INCOMPLETE}. Neither choice
 establishes an economic terminal: an aged mark proves no delisting, sale or
 loss, so it never creates a fill, a disposition or a cash change. Terminal
 outcomes come only from sealed lifetime facts and the corporate-action
-policy. There is no default horizon.
+policy. The default horizon is 5 sessions, chosen from real-data gap
+evidence (US equity vendor data for S&P 500 members, 1998 to 2026: a
+handful of held missing-bar runs exceed it and, under \code{"freeze"}, none
+stops a run). Plans and results mark a horizon of 5 as the default.
 
 The valuation policy and its stored identity use \code{schema_version} 2. Runs
 recorded under schema 1 remain readable, but cannot be resumed, rerun or
@@ -59,3 +63,4 @@ Point-in-time universe workflow:
 \code{vignette("survivorship-bias", package = "ledgr")}
 \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
+

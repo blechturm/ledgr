@@ -15,6 +15,17 @@
 #' stored equity path. Dense runs have no valuation policy and report
 #' `valuation_state = "not_applicable"`.
 #'
+#' The summary also records what the run's point-in-time view rested on:
+#' `universe_kind` (`"membership"` for a membership rule, with its
+#' `universe_id`, or `"fixed"` for a fixed basket; `membership_declared` says
+#' whether the snapshot declares membership facts a fixed basket does not
+#' apply), `assumption_backed_families` with their `assumption_reasons`
+#' (`"knowledge_assume_effective"`, `"generated_schedule"`, joined by `|`, as
+#' in [ledgr_experiment_plan()]), and `max_sessions_default`, `TRUE` when the
+#' horizon is the `ledgr_valuation_stale()` default of 5 sessions. `print()`
+#' of a result shows these on one `Point in time:` line; `summary()` lists them
+#' with the valuation evidence.
+#'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
 #'   callers should leave this as `NULL`.
@@ -58,7 +69,21 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
     params = list(bt$run_id)
   )
 
-  ledgr_valuation_summary_compute(policy, stale, frozen, equity)
+  out <- ledgr_valuation_summary_compute(policy, stale, frozen, equity)
+  # What the run's point-in-time view rested on (LDG-3010): the universe kind
+  # and the fact families whose knowledge clocks or schedules were assumed.
+  rule <- config$availability$universe_rule
+  declared <- as.character(config$availability$declared_families %||% character())
+  reasons <- ledgr_fact_assumption_reasons(ledgr_fact_headers_read(con, config$data$snapshot_id))
+  # A fixed basket does not apply membership facts, so it rests on none.
+  applied <- if (is.null(rule)) setdiff(declared, "membership") else declared
+  reasons <- reasons[names(reasons) %in% applied & lengths(reasons) > 0L]
+  out$universe_kind <- if (is.null(rule)) "fixed" else "membership"
+  out$universe_id <- rule$universe_id %||% NA_character_
+  out$membership_declared <- "membership" %in% declared
+  out$assumption_backed_families <- names(reasons)
+  out$assumption_reasons <- unname(vapply(reasons, paste, character(1), collapse = "|"))
+  out
 }
 
 # Shared arithmetic for durable runs and in-memory sweep candidates. `stale`
@@ -77,6 +102,7 @@ ledgr_valuation_summary_compute <- function(policy, stale, frozen, equity) {
       "current"
     },
     max_sessions = as.integer(policy$max_sessions),
+    max_sessions_default = identical(as.integer(policy$max_sessions), ledgr_valuation_default_max_sessions),
     exhausted = ledgr_availability_exhausted_choice(policy),
     stale_instrument_sessions = as.integer(stale$sessions),
     stale_instruments = as.integer(stale$instruments),
@@ -201,6 +227,40 @@ ledgr_valuation_headline <- function(summary) {
   "Valuation: CURRENT - every held mark was a current close"
 }
 
+# Display parts for the universe kind, assumption-backed fact families and
+# the horizon. A sweep candidate's in-memory summary has no universe fields.
+ledgr_point_in_time_basis <- function(summary) {
+  reason_labels <- c(knowledge_assume_effective = "knowledge assumed effective", generated_schedule = "generated schedule")
+  universe <- if (identical(summary$universe_kind, "membership")) {
+    sprintf("membership rule '%s'", summary$universe_id)
+  } else if (identical(summary$universe_kind, "fixed")) {
+    paste0("fixed basket", if (isTRUE(summary$membership_declared)) " (the snapshot's membership facts are not applied)")
+  }
+  families <- summary$assumption_backed_families
+  assumed <- if (length(families) > 0L) {
+    reasons <- vapply(strsplit(summary$assumption_reasons, "|", fixed = TRUE), function(r) {
+      paste(reason_labels[r], collapse = ", ")
+    }, character(1))
+    paste(sprintf("%s (%s)", families, reasons), collapse = "; ")
+  }
+  list(
+    universe = universe,
+    assumed = assumed,
+    horizon = paste0(summary$max_sessions, if (isTRUE(summary$max_sessions_default)) " (default)")
+  )
+}
+
+# One print() line naming what the point-in-time view rested on.
+ledgr_point_in_time_line <- function(summary) {
+  if (identical(summary$valuation_state, "not_applicable")) return(NULL)
+  basis <- ledgr_point_in_time_basis(summary)
+  paste0(
+    "Point in time: ", basis$universe %||% "universe not recorded",
+    "; max sessions ", basis$horizon,
+    if (!is.null(basis$assumed)) paste0("; assumption-backed facts: ", basis$assumed)
+  )
+}
+
 ledgr_valuation_percent <- function(x) {
   if (length(x) != 1L || !is.finite(x)) return("not applicable")
   sprintf("%.2f%%", 100 * x)
@@ -225,8 +285,11 @@ ledgr_print_valuation_summary <- function(summary) {
   if (is.null(headline)) return(invisible(summary))
   cat("\nValuation Evidence:\n")
   cat(headline, "\n", sep = "")
+  basis <- ledgr_point_in_time_basis(summary)
   fields <- c(
-    "Max sessions" = as.character(summary$max_sessions),
+    if (!is.null(basis$universe)) c("Universe" = basis$universe),
+    if (!is.null(basis$assumed)) c("Assumption-backed facts" = basis$assumed),
+    "Max sessions" = basis$horizon,
     "Exhausted marks" = summary$exhausted,
     "Stale instrument-sessions" = as.character(summary$stale_instrument_sessions),
     "Frozen instrument-sessions" = as.character(summary$frozen_instrument_sessions),

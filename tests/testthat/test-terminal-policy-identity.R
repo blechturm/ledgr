@@ -288,10 +288,10 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
   )
   testthat::expect_output(print(refuse), "Exhausted marks: refuse", fixed = TRUE)
 
-  # max_sessions keeps its validation and there is still no default horizon.
+  # max_sessions keeps its validation; its default is 5 sessions (LDG-3014).
   testthat::expect_identical(ledgr_valuation_stale(0)$max_sessions, 0L)
-  testthat::expect_error(ledgr_valuation_stale(), "max_sessions")
-  testthat::expect_error(ledgr_valuation_stale(exhausted = "freeze"), "max_sessions")
+  testthat::expect_identical(ledgr_valuation_stale()$max_sessions, 5L)
+  testthat::expect_identical(ledgr_valuation_stale(exhausted = "refuse")$max_sessions, 5L)
   for (bad in list(-1, 1.5, NA_real_, Inf, "2", c(1, 2), NULL)) {
     testthat::expect_error(
       ledgr_valuation_stale(bad),
@@ -532,7 +532,7 @@ testthat::test_that("[LTB-0161] policy help separates evidence from modeled choi
     "\\code{\"freeze\"} keeps the holding at its last reference",
     "\\code{\"refuse\"} stops the run \\code{INCOMPLETE}",
     "Neither choice establishes an economic terminal",
-    "There is no default horizon.",
+    "The default horizon is 5 sessions",
     "\\code{schema_version} 2"
   )
   for (text in valuation_required) {

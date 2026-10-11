@@ -122,7 +122,7 @@ summary(research_run)
 #>
 #> Corporate-Action Evidence:
 #> Corporate actions: MODELED - configured settlement conventions were exercised
-#> Price basis: split_adjusted
+#> Price basis: split_adjusted (declared)
 #>   Setting cash_amount:               gross
 #>   Identity cash_amount:              ledgr.corporate_action.cash_amount.gross.v001
 #>   Setting cash_posting:              effective_close

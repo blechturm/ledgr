@@ -374,9 +374,12 @@ ledgr_corporate_action_composition_report <- function(con,
 
 #' Read a run's complete corporate-action policy record
 #'
-#' Returns the corporate-action fidelity, declared price basis, selected policy
+#' Returns the corporate-action fidelity, price basis, selected policy
 #' settings and identities, exercised choices, refusal counts, settlement
 #' totals, and effective-date omitted-value estimates recorded for one run.
+#' `price_basis` is the declared basis, or `"split_adjusted"` with
+#' `price_basis_default = TRUE` for an availability-aware run whose snapshot
+#' declares none, or `"undeclared"` for such a dense run.
 #'
 #' @param bt A `ledgr_backtest` object.
 #' @param con An optional open database connection used internally. Public
@@ -496,6 +499,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
   refusal_stop <- !is.null(completion) && nrow(completion) == 1L &&
     isTRUE(completion$stop_reason[[1L]] %in% c("corporate_action_cash_refused", "corporate_action_quantity_refused"))
 
+  basis <- ledgr_price_basis_label(config$data$price_basis, ledgr_availability_config_active(config))
   out <- list(
     corporate_action_fidelity = ledgr_corporate_action_fidelity(
       if (any(unsupported) || refusal_stop) {
@@ -509,7 +513,8 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
       }
     ),
     facts_supplied = facts$supplied,
-    price_basis = config$data$price_basis %||% "undeclared",
+    price_basis = basis$value,
+    price_basis_default = basis$default,
     selected_settings = settings,
     selected_identities = identities,
     terminal_outcomes = terminal_outcomes,
@@ -549,7 +554,7 @@ ledgr_print_corporate_action_headline <- function(summary) {
   if (identical(summary$price_basis, "undeclared")) {
     cat("Price basis: UNDECLARED - distribution double counting cannot be ruled out\n")
   } else {
-    cat("Price basis: ", summary$price_basis, "\n", sep = "")
+    cat("Price basis: ", ledgr_price_basis_display(summary$price_basis, summary$price_basis_default), "\n", sep = "")
   }
   invisible(summary)
 }

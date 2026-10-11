@@ -13,6 +13,50 @@
   attribute, and print as withheld. Walk-forward test-window metrics follow
   the same rule.
 
+- `ledgr_backtest()` now refuses a snapshot that declares point-in-time facts
+  (sessions, membership, trading status, or lifetime) with class
+  `ledgr_backtest_availability_unsupported`. It runs dense execution only and
+  previously ignored those facts silently; use `ledgr_experiment()` and
+  `ledgr_run()`. Snapshots without facts, or with corporate actions only,
+  still run.
+
+- `ledgr_valuation_stale()` now defaults to `max_sessions = 5`, and an
+  availability-aware experiment without a `valuation_policy` runs under
+  `ledgr_valuation_stale()` instead of refusing. The default was chosen from
+  US equity vendor data for S&P 500 members, 1998 to 2026: a few held
+  missing-bar runs exceed 5 sessions and, under the `"freeze"` default, none
+  stops a run. The
+  defaulted policy has the same identity as declaring it; plans and results
+  mark a horizon of 5 as `(default)`. Snapshots without availability facts
+  stay dense.
+
+- Run identity now binds snapshot content instead of the store-local snapshot
+  ID. Runs record `identity_rule_version = 2` and the snapshot hash, so the
+  same bars sealed under two snapshot IDs give the same `config_hash`, and
+  walk-forward `experiment_hash` and `session_id` follow. Existing runs and
+  sessions stay readable under their recorded rule; resuming an older run, or
+  rerunning walk-forward arguments that match an older session, refuses with
+  `ledgr_identity_rule_retired`. A run whose opening is dated before the
+  snapshot now records the snapshot start, where it actually begins, as its
+  start.
+
+- `ledgr_promote()` now records the candidate's strategy, feature-set,
+  universe, valuation-policy, corporate-action-policy and opening identities
+  beside the promoting experiment's, in
+  `ledgr_promotion_context(bt)$identity_check`, and warns with
+  `ledgr_promote_identity_mismatch` when they differ. It still promotes.
+  Promotion context records are now `ledgr_promotion_v2`; v1 records read
+  unchanged.
+
+- Results of an availability-aware run now say what their point-in-time view
+  rested on. `print()` shows a `Point in time:` line naming the universe kind
+  (membership rule or fixed basket, noting membership facts a fixed basket
+  does not apply), the horizon, and any fact families whose knowledge clocks
+  or schedules were assumed; `summary()` lists the same with the valuation
+  evidence, and `ledgr_valuation_summary()` gains `universe_kind`,
+  `universe_id`, `membership_declared`, `assumption_backed_families`,
+  `assumption_reasons` and `max_sessions_default`.
+
 ## Inputs ledgr refuses or reports instead of ignoring
 
 - A snapshot no longer seals a zero or negative open, high, low or close
@@ -37,13 +81,15 @@
   Previously the run silently covered only the calendar's days and still
   reported itself complete.
 
-- An availability-aware experiment now requires a snapshot sealed with a
-  declared price basis (`price_basis = "split_adjusted"`) and refuses an
-  undeclared one with `ledgr_price_basis_required`. ledgr accounts in
-  split-adjusted share units (no split event acts on a position), so
-  as-traded bars across a split would book a phantom loss without a signal.
-  `ledgr_experiment_plan()` gains `price_basis` and prints it. Dense
-  experiments may still run undeclared.
+- ledgr accounts in split-adjusted share units (no split event acts on a
+  position), so as-traded bars across a split would book a phantom loss
+  without a signal. An availability-aware experiment on a snapshot sealed
+  without a price basis now runs on that model and says so: the plan, the
+  experiment, `ledgr_corporate_action_summary()` and `print()` of a result
+  show `split_adjusted (assumed default; the snapshot declares none)`, and a
+  declared basis shows `(declared)`. `ledgr_experiment_plan()` and
+  `ledgr_corporate_action_summary()` gain `price_basis_default`. The run's
+  identity keeps the basis undeclared. Dense experiments are unchanged.
 
 - A valid bar that falls on no declared session close (for example a vendor
   bar on a market holiday) still seals and is still never a pulse of an

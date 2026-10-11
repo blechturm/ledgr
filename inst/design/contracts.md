@@ -77,7 +77,12 @@ Accepted change pending:
 
 - v0.1.7 makes `ledgr_run()` the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
-  public workflow to a lower-level compatibility surface.
+  public workflow to a lower-level compatibility surface. It runs dense
+  execution only: on a snapshot that declares point-in-time facts (sessions,
+  membership, trading status, or lifetime) it refuses with
+  `ledgr_backtest_availability_unsupported` and points to `ledgr_experiment()`
+  plus `ledgr_run()` (Cut 12 LDG-3001). Corporate-action-only snapshots still
+  run.
 - There is still one canonical execution path. Public convenience APIs must
   build canonical config and delegate to the existing runner; they must not
   implement alternate pulse, fill, ledger, feature, or replay semantics.
@@ -114,7 +119,8 @@ Accepted change pending:
   writes equity and contributes metric input only from its scoring start: the
   experiment's opening date for `ledgr_run()`, `ledgr_sweep()`,
   `ledgr_promote()` and `ledgr_precompute_features()` (the snapshot start when
-  the opening is undated or dated earlier), `start` for `ledgr_backtest()`,
+  the opening is undated or dated earlier; a run records that clamped start as
+  its config start, Cut 12 LDG-3004), `start` for `ledgr_backtest()`,
   and the window start for walk-forward training and test windows. A distinct
   `execution_start_utc` refuses with `ledgr_unsupported_execution_start`; a
   scoring range with fewer than two pulses refuses with
@@ -299,7 +305,17 @@ Accepted change pending:
 - Config and feature identity fields must keep their layers distinct.
   `config_hash` identifies the logical execution config after removing
   store-local and run-local fields such as DuckDB paths, `run_id`, and
-  declaration-order diagnostics. `feature_set_hash` identifies resolved
+  declaration-order diagnostics. Every run records `identity_rule_version`.
+  Under identity rule 2 (Cut 12 LDG-3004) the config carries the sealed
+  `data.snapshot_hash` and `config_hash` drops the store-local
+  `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
+  equal identity and different content under one reused ID does not; the
+  walk-forward `experiment_hash` and `session_id` follow, and each session
+  records the rule in its `meta_json`. A config without the field was
+  recorded under rule 1, which hashed the snapshot ID. Stored runs and
+  sessions are not migrated and stay readable under their recorded rule;
+  resuming a rule-1 run, or rerunning walk-forward arguments that match a
+  rule-1 session, refuses with `ledgr_identity_rule_retired`. `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
   identifies user-supplied feature parameter values. `alias_map_hash`
   identifies alias declarations and must not change solely because a
@@ -347,9 +363,15 @@ Accepted change pending:
   need to manually extract `params[[1]]` or seed values from a sweep row.
 - Runs created through `ledgr_promote()` store durable selection-audit metadata
   in `run_promotion_context` with
-  `promotion_context_version = "ledgr_promotion_v1"`. Promotion context records
+  `promotion_context_version = "ledgr_promotion_v2"`. Promotion context records
   the selected candidate, `sweep_id`, source sweep metadata, user note, and the
-  compact selection-view summary passed to `ledgr_candidate()`.
+  compact selection-view summary passed to `ledgr_candidate()`. Version 2 adds
+  `identity_check` (Cut 12 LDG-3005): the candidate's strategy, feature-set,
+  universe, valuation-policy, corporate-action-policy and opening identity
+  hashes, recorded by the sweep in its execution assumptions, beside the
+  promoting run's, with the fields that differ and those the sweep did not
+  record. A difference warns with `ledgr_promote_identity_mismatch`; it does
+  not refuse. Version 1 records read unchanged without `identity_check`.
 - Promotion context is written only after the committed run succeeds. If the
   promotion-context write fails, ledgr warns and returns the committed run; it
   must not roll back a successful run.
@@ -422,9 +444,9 @@ Accepted change pending:
   acknowledged observation-quarantine row. Store-local snapshot IDs remain
   excluded. A missing rule marker on a legacy snapshot means rule 1.
 - A valid bar that falls on no declared open-session close is sealed in
-  `snapshot_bars` and never becomes a pulse of an availability-aware run
-  (`ledgr_backtest()` on a snapshot with facts still runs dense until Cut 12
-  LDG-3001). Ingest records each one in the quarantine table under reason
+  `snapshot_bars` and never becomes a pulse (every run on a snapshot with
+  sessions is availability-aware; `ledgr_backtest()` refuses such snapshots,
+  Cut 12 LDG-3001). Ingest records each one in the quarantine table under reason
   `off_session_bar` (in either `invalid_observations` mode);
   `ledgr_snapshot_quarantine()` lists it with `disposition`
   `sealed_not_a_pulse` (quarantined rows read `excluded`),
@@ -504,26 +526,38 @@ Accepted change pending:
   dense experiment, config, execution-spec, context, and feature-identity
   payloads.
 - Every availability-aware experiment requires a complete declared session
-  calendar over the requested range and an explicit
-  `ledgr_valuation_stale(max_sessions)` policy. A run, sweep, run window or
+  calendar over the requested range and runs under a
+  `ledgr_valuation_stale()` policy. A run, sweep, run window or
   walk-forward fold whose first or last sealed bar inside its requested range
   falls outside the declared calendar's civil days in the venue zone refuses
   with `ledgr_sessions_incomplete` instead of running over the shorter
   calendar (Cut 12 LDG-2998). The check runs at those execution
-  entry points; reading or reconstructing a stored run does not repeat it. The
-  package supplies no default stale horizon.
+  entry points; reading or reconstructing a stored run does not repeat it.
+  `ledgr_valuation_stale()` defaults to `max_sessions = 5` (decided from
+  Sharadar gap data) and `exhausted = "freeze"`. When snapshot facts make an
+  experiment availability-aware and it supplies no `valuation_policy`, it runs
+  under `ledgr_valuation_stale()`; that policy is the same record, with the
+  same config identity, as declaring it explicitly. A defaulted policy never
+  activates availability: a snapshot without availability fact families stays
+  dense. `ledgr_experiment_plan()`, `ledgr_valuation_summary()`, `summary()`
+  and `print()` of a result mark a horizon of 5 sessions as the default; the
+  marker follows the value, as for every plan assumption (Cut 12 LDG-3014).
 - ledgr accounts in split-adjusted share units: no split event acts on a
   position, so quantities, fills and marks are consistent only when bars are
-  back-adjusted for splits. An availability-aware experiment therefore
-  requires a declared price basis (`price_basis = "split_adjusted"` at
-  sealing) and refuses an undeclared one with `ledgr_price_basis_required`;
-  `distribution_adjusted` stays refused for execution. Under
+  back-adjusted for splits. An availability-aware experiment on a snapshot
+  sealed without a price basis runs on that model as an assumed default:
+  identity keeps the basis undeclared (`data_identity$price_basis` and the
+  run config's `data.price_basis` stay `NULL`), so it stays distinguishable
+  from a declared `split_adjusted`, while every disclosure surface shows
+  `split_adjusted` labeled as an assumed default (Cut 12 LDG-3013, superseding
+  the LDG-3012 refusal). `distribution_adjusted` stays refused for execution. Under
   `split_adjusted`, level rules and integer sizing read back-adjusted price
   levels, so a quantity or price threshold before a split is in post-split
   units, and as-traded bars across a split would book a phantom loss. The
-  declared basis appears in `ledgr_experiment_plan()`, in
-  `ledgr_corporate_action_summary()` and in `print()` of a result. A dense
-  experiment may still run undeclared (Cut 12 LDG-3012). `max_sessions = 0` means that only
+  basis appears in `ledgr_experiment_plan()`, in
+  `ledgr_corporate_action_summary()` (`price_basis`, `price_basis_default`)
+  and in `print()` of a result, labeled declared or assumed default. A dense
+  experiment may still run undeclared and shows `undeclared` (Cut 12 LDG-3012). `max_sessions = 0` means that only
   a current-session mark is permissible.
 - A character-vector universe remains a fixed basket even when it consumes
   session, trading-status, or lifetime facts. Dynamic membership is explicit
@@ -537,6 +571,16 @@ Accepted change pending:
   table lists the declared valuation horizon, exhaustion choice, held
   terminal map entries in order and frozen fallback, marking each value that
   equals its constructor default.
+- Results of an availability-aware run state what their point-in-time view
+  rested on. `ledgr_valuation_summary()` records `universe_kind`
+  (`"membership"` with `universe_id`, or `"fixed"`), `membership_declared`,
+  and the applied fact families whose knowledge clocks or schedules were
+  assumed (`assumption_backed_families`, `assumption_reasons`, read from the
+  sealed fact headers as the plan reads them; a fixed basket applies no
+  membership facts, so membership is never among them). `print()` of a result
+  shows one `Point in time:` line and `summary()` lists the same fields with
+  the valuation evidence. A run whose applied facts are all evidenced shows no
+  assumption label (Cut 12 LDG-3010).
 - `ledgr_facts_history()` is a retrospective audit of supplied membership or
   session assertions. `ledgr_facts_resolve()` is a separate decision-cutoff
   view using only evidence both effective and knowable at its required `at`.

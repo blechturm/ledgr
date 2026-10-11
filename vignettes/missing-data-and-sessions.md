@@ -311,8 +311,9 @@ instrument on every session, and into the availability-aware mode the
 rest of this article uses. An availability-aware snapshot also declares
 its price basis. ledgr counts shares in split-adjusted units (no split
 event acts on a position), so `price_basis = "split_adjusted"` states
-that the bars are back-adjusted for splits; an experiment on a snapshot
-that declares no basis refuses to start.
+that the bars are back-adjusted for splits. A snapshot that declares no
+basis still runs on that model, and the plan and results label the basis
+as an assumed default, so declare it when you know it.
 
 ``` r
 snapshot <- ledgr_snapshot_from_df(
@@ -375,9 +376,12 @@ work.
 When an instrument has no price today and you still hold it, something
 has to decide whether yesterday’s close is good enough to value the
 position. `ledgr_valuation_stale(max_sessions)` is the only place that
-decision lives, and ledgr ships no default `max_sessions`, because there
-is no defensible universal answer. Its second argument, `exhausted`,
-says what happens when a held mark grows older than that.
+decision lives. Its default is 5 sessions, chosen from real vendor data
+(S&P 500 members over 1998 to 2026): an experiment that names no policy
+uses it, and the plan and results mark it as the default. There is no
+universal answer, so choose the horizon your data and question need. The
+second argument, `exhausted`, says what happens when a held mark grows
+older than that.
 
 Start strict: a mark may be at most one session old.
 
@@ -413,8 +417,9 @@ tight_run
 #> Closed Trades:                     0
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: split_adjusted
+#> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 2 sessions, max 530 or 0.53% of equity)
+#> Point in time: fixed basket; max sessions 1; assumption-backed facts: sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)
 #>
 #> Use summary(bt) for metrics and evidence
 ```
@@ -514,7 +519,9 @@ ledgr_valuation_summary(loose_run)
 #>
 #> Valuation Evidence:
 #> Valuation: STALE - 1 holding valued at a permitted stale close (longest age 3 sessions)
-#>   Max sessions:                5
+#>   Universe:                    fixed basket
+#>   Assumption-backed facts:     sessions (knowledge assumed effective, generated schedule); trading_status (knowledge assumed effective)
+#>   Max sessions:                5 (default)
 #>   Exhausted marks:             freeze
 #>   Stale instrument-sessions:   3
 #>   Frozen instrument-sessions:  0

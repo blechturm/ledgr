@@ -57,17 +57,16 @@
 #' requested without the fact families needed to activate availability-aware
 #' execution.
 #'
-#' `ledgr_availability_sessions_required` and
-#' `ledgr_valuation_policy_required` are raised when availability-aware
-#' execution lacks a complete session calendar or an explicit valuation
-#' policy, respectively.
+#' `ledgr_availability_sessions_required` is raised when availability-aware
+#' execution lacks a complete session calendar.
+#'
+#' `ledgr_backtest_availability_unsupported` is raised when `ledgr_backtest()`
+#' receives a snapshot that declares point-in-time facts; use
+#' `ledgr_experiment()` and `ledgr_run()`.
 #'
 #' `ledgr_sessions_incomplete` is raised when the declared session calendar
 #' does not cover the requested start and end of a run, sweep, run window or
 #' walk-forward fold.
-#'
-#' `ledgr_price_basis_required` is raised when an availability-aware
-#' experiment uses a snapshot sealed without a declared price basis.
 #'
 #' `ledgr_membership_universe_not_found` is raised when a membership-universe
 #' rule names a universe that is not declared by the snapshot.
@@ -487,8 +486,8 @@
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
-#' @aliases ledgr_availability_sessions_required ledgr_valuation_policy_required
-#' @aliases ledgr_sessions_incomplete ledgr_price_basis_required
+#' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
+#' @aliases ledgr_sessions_incomplete
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
 #' @aliases ledgr_execution_timing_version_mismatch ledgr_policy_schema_mismatch

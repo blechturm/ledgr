@@ -16,7 +16,10 @@ callers should leave this as \code{NULL}.}
 A list-like \code{ledgr_corporate_action_summary} object.
 }
 \description{
-Returns the corporate-action fidelity, declared price basis, selected policy
+Returns the corporate-action fidelity, price basis, selected policy
 settings and identities, exercised choices, refusal counts, settlement
 totals, and effective-date omitted-value estimates recorded for one run.
+\code{price_basis} is the declared basis, or \code{"split_adjusted"} with
+\code{price_basis_default = TRUE} for an availability-aware run whose snapshot
+declares none, or \code{"undeclared"} for such a dense run.
 }

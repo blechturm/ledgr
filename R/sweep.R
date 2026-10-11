@@ -408,7 +408,8 @@ ledgr_sweep_impl <- function(exp,
     opening = exp$opening,
     compiled_accounting_model = compiled_accounting_model,
     precomputed_features = !is.null(precomputed_features),
-    stop_on_error = stop_on_error
+    stop_on_error = stop_on_error,
+    promotion_identities = ledgr_promotion_identities(exp, strategy_hash)
   )
   attr(out, "ledgr_complete_names") <- names(out)
   class(out) <- c("ledgr_sweep_results", class(out))
@@ -638,6 +639,14 @@ ledgr_candidate_reproduction_key <- function(candidate) {
 #' when `exp` was configured with different `cost_model` or `risk_chain`
 #' values.
 #'
+#' Promotion compares the candidate's strategy, feature-set, universe,
+#' valuation-policy, corporate-action-policy and opening identities with the
+#' promoting experiment's. It does not refuse a difference: it warns with
+#' `ledgr_promote_identity_mismatch`, naming the differing identities, and
+#' records both sides in the promotion context's `identity_check`. A sweep
+#' saved before these identities were recorded compares only the strategy and
+#' feature set and lists the rest as `not_recorded`.
+#'
 #' The default `require_same_snapshot = TRUE` protects same-snapshot replay. For
 #' train/test evaluation, pass a candidate selected on the train snapshot to a
 #' test-snapshot experiment and set `require_same_snapshot = FALSE` deliberately.
@@ -693,6 +702,7 @@ ledgr_promote <- function(exp,
   }
   exp <- ledgr_promote_experiment_with_candidate_cost(exp, candidate)
   exp <- ledgr_promote_experiment_with_candidate_risk(exp, candidate)
+  promoting_identities <- ledgr_promotion_identities(exp)
 
   seed <- candidate$execution_seed
   if (length(seed) != 1L || is.na(seed)) {
@@ -705,7 +715,26 @@ ledgr_promote <- function(exp,
     run_id = run_id,
     seed = seed
   )
-  ledgr_promote_write_context_or_warn(bt, candidate, note)
+  # Promotion records both sides' identities and warns on a difference; it
+  # does not refuse (Cut 12 decision 4, LDG-3005).
+  candidate_identities <- candidate$sweep_meta$execution_assumptions$promotion_identities %||%
+    list(strategy_hash = candidate$sweep_meta$strategy_hash %||% candidate$provenance$strategy_hash)
+  candidate_identities$feature_set_hash <- candidate$provenance$feature_set_hash
+  promoting_identities$feature_set_hash <- ledgr_run_info(exp$snapshot, bt$run_id)$feature_set_hash
+  identity_check <- ledgr_promotion_identity_check(candidate_identities, promoting_identities)
+  ledgr_promote_write_context_or_warn(bt, candidate, note, identity_check)
+  if (length(identity_check$mismatched) > 0L) {
+    rlang::warn(
+      sprintf(
+        paste(
+          "Promoted run '%s' differs from candidate '%s' in: %s.",
+          "Its results are not the candidate's; both identities are recorded in ledgr_promotion_context(bt)$identity_check."
+        ),
+        bt$run_id, candidate$candidate_id, paste(identity_check$mismatched, collapse = ", ")
+      ),
+      class = "ledgr_promote_identity_mismatch"
+    )
+  }
   attr(bt, "promotion_note") <- note
   bt
 }

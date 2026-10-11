@@ -34,12 +34,15 @@ if (!inherits(noval, "error")) {
   r <- tryCatch(ledgr_run(noval, run_id = "K2"), error = identity)
   cat("[K2 run]:", if (inherits(r, "error")) err(r) else "returned", "\n")
 }
-b <- ledgr_backtest(snapshot = snap, strategy = all3, universe = basket, initial_cash = 1e5,
-                    cost_model = ledgr_cost_zero(), run_id = "B_basket")
-lb <- ledgr_results(b, "ledger")
-cat(sprintf("[B ledgr_backtest basket] availability active %s; BBB %s; NNN %s\n",
-            isTRUE(b$config$availability$active), first(lb, "BBB"), first(lb, "NNN")))
-close(b)
+# Since Cut 12 LDG-3001 ledgr_backtest() refuses this snapshot; record that.
+b <- tryCatch(ledgr_backtest(snapshot = snap, strategy = all3, universe = basket, initial_cash = 1e5,
+                             cost_model = ledgr_cost_zero(), run_id = "B_basket"), error = identity)
+if (inherits(b, "error")) cat("[B ledgr_backtest basket]:", err(b), "\n") else {
+  lb <- ledgr_results(b, "ledger")
+  cat(sprintf("[B ledgr_backtest basket] availability active %s; BBB %s; NNN %s\n",
+              isTRUE(b$config$availability$active), first(lb, "BBB"), first(lb, "NNN")))
+  close(b)
+}
 # Basket with an instrument that is halted with no bars s14-s15 and one whose
 # lifetime ends (KKK, bars s1-s12).
 for (bk in list(c("AAA", "FFF"), c("AAA", "KKK"), c("AAA", "EEE"))) {

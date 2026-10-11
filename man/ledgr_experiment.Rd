@@ -39,11 +39,11 @@ advanced exact-ID workflows, but new parameterized feature sweeps should use
 \item{universe}{Character vector of instrument IDs, \code{NULL} for all
 instruments in the snapshot, or a rule from \code{\link[=ledgr_universe_members]{ledgr_universe_members()}}.}
 
-\item{valuation_policy}{Optional policy from \code{\link[=ledgr_valuation_stale]{ledgr_valuation_stale()}}. It is
-required whenever availability facts or a membership rule are active.}
-
-\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
-to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
+\item{valuation_policy}{Optional policy from \code{\link[=ledgr_valuation_stale]{ledgr_valuation_stale()}}. When
+snapshot facts make the experiment availability-aware and it is \code{NULL},
+\code{ledgr_valuation_stale()} with its defaults (5 sessions, \code{"freeze"}) is
+used and disclosed as a default. Supplying a policy on a snapshot without
+availability facts activates availability-aware execution.}
 
 \item{timing_model}{Timing model object. Defaults to
 \code{ledgr_timing_next_open()}. The timing model proposes fills; cost models
@@ -71,11 +71,17 @@ annual risk-free rate shorthand. \code{NULL} uses the default metric context.}
 
 \item{risk_free_rate}{Optional shorthand for the annual risk-free rate.
 Supply either \code{metric_context} or \code{risk_free_rate}, not both.}
+
+\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
+to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
 }
 \value{
 A \code{ledgr_experiment} object. Its \code{data_identity$price_basis} field
 records \code{"split_adjusted"} or \code{NULL} when the sealed bars did not declare
-a basis. Distribution-adjusted bars are refused at construction.
+a basis; an availability-aware experiment on undeclared bars runs on the
+split-adjusted share-unit model as a disclosed default (see
+\code{\link[=ledgr_experiment_plan]{ledgr_experiment_plan()}}). Distribution-adjusted bars are refused at
+construction.
 }
 \description{
 \code{ledgr_experiment()} bundles a sealed snapshot, strategy, features, opening

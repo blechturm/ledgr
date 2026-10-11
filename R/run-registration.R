@@ -99,6 +99,12 @@ ledgr_run_registration <- function(con,
       error = function(e) NULL
     )
     if (is.list(stored_cfg)) {
+      stored_rule <- ledgr_config_identity_rule(stored_cfg)
+      # A public run builds a rule-2 config; only a low-level config built
+      # without the field may resume a rule-1 run, since it hashes alike.
+      if (!identical(stored_rule, ledgr_config_identity_rule(cfg))) {
+        ledgr_identity_rule_retired_abort(sprintf("Run '%s'", run_id), stored_rule)
+      }
       ledgr_policy_schema_require_current(stored_cfg, run_id = run_id)
     }
     stored_cfg_hash <- run_row$config_hash[[1]]

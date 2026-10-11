@@ -93,7 +93,8 @@ ledgr_config <- function(snapshot,
                           universe_rule = NULL,
                           valuation_policy = NULL,
                           corporate_action_policy = ledgr_corporate_actions_research(),
-                          price_basis = ledgr_snapshot_execution_price_basis(snapshot)) {
+                          price_basis = ledgr_snapshot_execution_price_basis(snapshot),
+                          snapshot_hash = ledgr_snapshot_stored_hash(snapshot)) {
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
@@ -135,6 +136,7 @@ ledgr_config <- function(snapshot,
   ledgr_validate_corporate_action_policy(corporate_action_policy)
   # Experiments pass the basis they already read, so the snapshot is not reopened.
   force(price_basis)
+  force(snapshot_hash)
 
   if (!is.null(control$execution_mode)) {
     execution_mode <- control$execution_mode
@@ -175,6 +177,7 @@ ledgr_config <- function(snapshot,
   }
 
   config <- list(
+    identity_rule_version = ledgr_identity_rule_version,
     db_path = db_path,
     engine = engine,
     universe = list(instrument_ids = universe),
@@ -269,6 +272,7 @@ ledgr_config <- function(snapshot,
     data = list(
       source = "snapshot",
       snapshot_id = snapshot$snapshot_id,
+      snapshot_hash = snapshot_hash,
       snapshot_db_path = snapshot$db_path,
       price_basis = price_basis
     ),

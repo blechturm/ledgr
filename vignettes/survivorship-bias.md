@@ -573,8 +573,9 @@ identified by a hash. The store comes from `ledgr_temp_store()` because
 the article closes and reopens it later; a real project passes a
 persistent path, so the evidence outlives the R session. The snapshot
 declares `price_basis = "split_adjusted"`: ledgr counts shares in
-split-adjusted units, and a point-in-time experiment refuses a snapshot
-that does not say what its bars are.
+split-adjusted units, and a point-in-time experiment on a snapshot that
+does not say what its bars are runs on that assumption and labels it as
+a default.
 
 ``` r
 store_path <- ledgr_temp_store(
@@ -618,7 +619,7 @@ below, so the comparison isolates the universe.
 ledgr_experiment_plan(point_in_time_experiment)
 #> ledgr experiment plan
 #> Availability: active
-#> Price basis:  split_adjusted
+#> Price basis:  split_adjusted (declared)
 #> Universe:     membership
 #> Checks:
 #> # A tibble: 4 x 3
@@ -917,8 +918,9 @@ point_in_time
 #> Closed Trades:                     0
 #>
 #> Corporate actions: NOT SUPPLIED - returns may omit distributions
-#> Price basis: split_adjusted
+#> Price basis: split_adjusted (declared)
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
+#> Point in time: membership rule 'demo_members'; max sessions 2
 #>
 #> Use summary(bt) for metrics and evidence
 ```
@@ -934,6 +936,7 @@ pit_valuation
 #>
 #> Valuation Evidence:
 #> Valuation: FROZEN - 1 holding frozen (longest 3 sessions, max 1980 or 23.60% of equity); 1 still frozen at end worth 1980
+#>   Universe:                    membership rule 'demo_members'
 #>   Max sessions:                2
 #>   Exhausted marks:             freeze
 #>   Stale instrument-sessions:   4
@@ -1094,8 +1097,9 @@ written_off
 #> Closed Trades:                     0
 #>
 #> Corporate actions: MODELED - configured settlement conventions were exercised
-#> Price basis: split_adjusted
+#> Price basis: split_adjusted (declared)
 #> Valuation: STALE - 2 holdings valued at a permitted stale close (longest age 1 session)
+#> Point in time: membership rule 'demo_members'; max sessions 2; assumption-backed facts: lifetime (knowledge assumed effective)
 #>
 #> Use summary(bt) for metrics and evidence
 ```

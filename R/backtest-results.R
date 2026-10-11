@@ -744,6 +744,8 @@ print.ledgr_backtest <- function(x, ...) {
   ledgr_print_corporate_action_headline(corporate_actions)
   valuation_headline <- ledgr_valuation_headline(valuation)
   if (!is.null(valuation_headline)) cat(valuation_headline, "\n", sep = "")
+  point_in_time <- ledgr_point_in_time_line(valuation)
+  if (!is.null(point_in_time)) cat(point_in_time, "\n", sep = "")
   cat("\n")
   cat("Use summary(bt) for metrics and evidence\n")
 
@@ -954,9 +956,10 @@ summary.ledgr_backtest <- function(object,
   }
 
   ledgr_print_valuation_summary(valuation)
-  # Only an availability-aware run excludes off-session bars from its pulses
-  # (and always shares its snapshot's store); the count is snapshot-wide.
-  off_session <- if (isTRUE(object$config$availability$active)) ledgr_backtest_off_session_bar_count(object) else 0L
+  # Off-session bars exist only in snapshots with sessions, and every run on
+  # such a snapshot is availability-aware (ledgr_backtest() refuses them,
+  # LDG-3001) and shares its store; the count is snapshot-wide.
+  off_session <- ledgr_backtest_off_session_bar_count(object)
   if (off_session > 0L) {
     cat(sprintf(
       "Off-session bars: %d sealed bar%s in the snapshot on no declared session close, not a pulse of this run; see ledgr_snapshot_quarantine().\n",

@@ -149,14 +149,14 @@ ledgr_run_info(snapshot, "qty_10")
     Snapshot Hash:    6eeff5ca520c516a61e0228c5ac06d22548c9d74e4e98d1e9f71fccdd2b8a87e
     Feature Set Hash: fca1ef954400ce7477424f60b32a500cb8bd7665882cfdf37f0ee409e7d6ac5f
     Risk Chain Hash:  71863d276abfadf01e5451b8feb3ae38690b42c350db22b2740bf990358c0a11
-    Config Hash:      8478a6dab28b464e8686f9f396a204e1f51ec2a2c7215990dd5a721dea053f38
+    Config Hash:      45e410b7db2b686cc776143779ee89be5a374898dfd2d51447ef15c38ee871ae
     Strategy Hash:    bacaf6e70817b64d2a9221bc85f88607caed1e47d1da0e4a1bad4f61567f2989
     Params Hash:      3220f4b13aab31b2d35b6044d9d6e143ac6a8c9de9edd3353936006a683abdb9
     Reproducibility:  tier_1
     Execution Mode:   audit_log
     Fill Timing:      dense_bar_timestamp
     Timing Version:   N/A
-    Elapsed Sec:      1.050
+    Elapsed Sec:      0.970
     Persist Features: TRUE
     Cache Hits:       0
     Cache Misses:     2

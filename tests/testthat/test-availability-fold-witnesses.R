@@ -145,12 +145,18 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       expected_config$corporate_actions <- actual_config$corporate_actions <- NULL
       expected_config$availability$valuation_policy <- NULL
       actual_config$availability$valuation_policy <- NULL
-      # LDG-3012 requires a declared price basis for availability-aware
-      # experiments. The frozen run was sealed without one; the current run
-      # declares split_adjusted, which enters only the data section.
+      # The frozen run was sealed without a price basis; the current fixture
+      # declares split_adjusted (LDG-3012), which enters only the data section.
       testthat::expect_null(expected_config$data$price_basis)
       testthat::expect_identical(actual_config$data$price_basis, "split_adjusted")
       actual_config$data["price_basis"] <- list(NULL)
+      # Identity rule 2 (LDG-3004) records the rule and the sealed content hash;
+      # the frozen rule-1 run has neither.
+      testthat::expect_null(expected_config$identity_rule_version)
+      testthat::expect_identical(as.integer(actual_config$identity_rule_version), 2L)
+      testthat::expect_null(expected_config$data$snapshot_hash)
+      testthat::expect_true(is.character(actual_config$data$snapshot_hash) && nzchar(actual_config$data$snapshot_hash))
+      actual_config$identity_rule_version <- NULL
       actual_config$data <- actual_config$data[names(expected_config$data)]
       testthat::expect_identical(actual_config, expected_config)
       actual$config_json <- expected$config_json <- NULL
