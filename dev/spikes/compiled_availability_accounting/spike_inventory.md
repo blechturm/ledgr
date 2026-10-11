@@ -15,7 +15,7 @@ The retained cases came after the fork first ran: an availability-aware fill
 round trip; an availability-active cash dividend alongside a sale; and a
 frozen terminal write-off alongside a sale. Each evidence row contains the
 economic sweep result, ordered events and their accounting attributes,
-retained returns and trades, diagnostics, completion and final lot state.
+retained returns and trades, diagnostics and completion.
 The same runner has an optional aggregate-only Sharadar clock mode. It opens
 the source with DuckDB `read_only = TRUE` and writes no source row, identifier,
 price or action value. Two alternating-order pairs showed median hybrid /
@@ -66,8 +66,10 @@ used as evidence.
 - The FILL-only guard is broader than the kernel boundary: it rejects a plan
   whose non-FILL events are already executed by canonical R outside the batch.
 - On all three retained cases, canonical and hybrid economic results, events,
-  event accounting attributes, returns, trades, diagnostics, completion and
-  final state are exact after removing run/sweep identity and clocks.
+  event accounting attributes, returns, trades, diagnostics and completion
+  are exact after removing run/sweep identity and clocks. The spike does not
+  claim a separately captured post-fold state object; the first review found
+  that the fold return exposed its unchanged outer-state shell.
 - Effect size is workload-dependent. Momentum's two elapsed ratios straddled
   parity at 0.9395 and 1.0143. Equal weight was stable at 0.7093 and 0.7078,
   consistent with its larger prerequisite accounting share.

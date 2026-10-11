@@ -19,10 +19,11 @@ Three retained public-API cases compare a fill round trip, a cash dividend
 beside a sale, and a frozen terminal write-off beside a sale. After removing
 run/sweep identity and clocks, every pair is exact for the economic summary,
 ordered ledger events and accounting attributes, retained returns and trades,
-diagnostics, completion, cash, positions, lots, cost basis and realized state.
-The checker reruns from a clean archive and a gut that changes one compiled
-event quantity changes all three hybrid event records while leaving canonical
-records unchanged.
+diagnostics and completion. The spike makes no separate final-state claim:
+the first review found that the fold return exposes the unchanged outer-state
+shell rather than the state mutated inside the run loop. The checker reruns
+from a clean archive and a gut that changes one compiled event quantity changes
+all three hybrid event records while leaving canonical records unchanged.
 
 ## Effect Size
 

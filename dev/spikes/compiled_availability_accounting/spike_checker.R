@@ -8,8 +8,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 1L) stop("usage: spike_checker.R <ledgr_repo>")
 repo <- normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
-spike <- file.path(repo, "dev/spikes/compiled_availability_accounting")
-recorded <- file.path(spike, "evidence")
+spike_rel <- "dev/spikes/compiled_availability_accounting"
 rscript <- file.path(R.home("bin"), "Rscript")
 failures <- character()
 fail <- function(...) failures <<- c(failures, paste0(...))
@@ -19,7 +18,10 @@ git <- function(...) {
     "git", c("-C", shQuote(repo), ...), stdout = TRUE, stderr = TRUE
   ))
 }
-scope <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design")
+fork_scope <- c(
+  "R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design"
+)
+scope <- c(fork_scope, spike_rel)
 status_before <- git("status", "--porcelain", "--", scope)
 
 scratch <- tempfile("ldg2992-check-")
@@ -35,6 +37,33 @@ archive_status <- system2(
 )
 if (!identical(archive_status, 0L)) stop("could not archive the spike branch")
 utils::untar(archive, exdir = tree)
+spike <- file.path(tree, spike_rel)
+recorded <- file.path(spike, "evidence")
+required_artifacts <- c(
+  file.path(recorded, "cases.csv"),
+  file.path(recorded, "clocks.csv"),
+  file.path(recorded, "sharadar_clocks.csv"),
+  file.path(spike, "prerequisite.csv")
+)
+missing_artifacts <- required_artifacts[!file.exists(required_artifacts)]
+if (length(missing_artifacts)) {
+  fail(
+    "recorded artifacts are missing: ",
+    paste(basename(missing_artifacts), collapse = ", ")
+  )
+}
+if (file.exists(file.path(spike, "prerequisite.csv"))) {
+  prerequisite <- utils::read.csv(
+    file.path(spike, "prerequisite.csv"),
+    stringsAsFactors = FALSE
+  )
+  accounting <- prerequisite[prerequisite$component == "accounting", , drop = FALSE]
+  if (!identical(accounting$run, c("equal_weight", "momentum")) ||
+      any(!is.finite(accounting$share_of_pulse)) ||
+      any(accounting$share_of_pulse < 0.10)) {
+    fail("prerequisite accounting shares do not establish the charter gate")
+  }
+}
 
 run <- function(name, gut = FALSE) {
   out <- file.path(scratch, name)
@@ -106,6 +135,7 @@ check_clocks <- function(path) {
   }
 }
 check_clocks(normal_dir)
+check_clocks(recorded)
 
 sharadar_path <- file.path(recorded, "sharadar_clocks.csv")
 if (!file.exists(sharadar_path)) {
@@ -161,7 +191,7 @@ status_after <- git("status", "--porcelain", "--", scope)
 if (!identical(status_before, status_after)) {
   fail("package or design scope changed during the rerun")
 }
-fork_files <- git("diff", "--name-only", "437b73d3", "HEAD", "--", scope)
+fork_files <- git("diff", "--name-only", "437b73d3", "HEAD", "--", fork_scope)
 expected_fork <- sort(c("R/compiled-spot-fifo.R", "R/fold-engine.R", "R/sweep.R"))
 if (!identical(sort(fork_files), expected_fork)) {
   fail("fork package scope differs from the three declared seam files: ", paste(fork_files, collapse = ", "))

@@ -216,17 +216,8 @@ trace(
   print = FALSE,
   where = asNamespace("ledgr")
 )
-trace(
-  "ledgr_execute_fold",
-  exit = quote(assign(
-    "fold", returnValue(), envir = get(".ldg2992_capture", envir = .GlobalEnv)
-  )),
-  print = FALSE,
-  where = asNamespace("ledgr")
-)
 on.exit({
   untrace("ledgr_memory_output_handler", where = asNamespace("ledgr"))
-  untrace("ledgr_execute_fold", where = asNamespace("ledgr"))
 }, add = TRUE)
 
 if (gut) {
@@ -269,28 +260,6 @@ event_evidence <- function(events) {
   )
 }
 
-state_evidence <- function(state) {
-  lot <- state$lot_state
-  ids <- names(state$positions)
-  lots <- lapply(ids, function(id) {
-    i <- unname(lot$instrument_index[[id]])
-    if (is.null(i) || is.na(i) || lot$lot_tail[[i]] < lot$lot_head[[i]]) {
-      return(list(qty = numeric(), price = numeric()))
-    }
-    live <- seq.int(lot$lot_head[[i]], lot$lot_tail[[i]])
-    list(qty = as.numeric(lot$lot_qty[[i]][live]), price = as.numeric(lot$lot_price[[i]][live]))
-  })
-  names(lots) <- ids
-  list(
-    cash = as.numeric(state$cash),
-    positions = as.list(state$positions[ids]),
-    lots = lots,
-    cost_basis_by_instrument = as.list(lot$cost_basis_by_inst[ids]),
-    total_cost_basis = as.numeric(lot$total_cost_basis),
-    realized_pnl = as.numeric(lot$realized_pnl)
-  )
-}
-
 evidence_value <- function(value) {
   if (is.data.frame(value)) return(lapply(unclass(value), evidence_value))
   if (inherits(value, "POSIXt")) {
@@ -312,7 +281,6 @@ run_arm <- function(case_name, fixture, arm) {
   compiled <- identical(arm, "hybrid")
   options(ledgr.spike.compiled_availability = compiled)
   capture_env$handler <- NULL
-  capture_env$fold <- NULL
   start <- proc.time()[["elapsed"]]
   sweep <- ledgr_sweep(
     fixture$experiment,
@@ -323,8 +291,7 @@ run_arm <- function(case_name, fixture, arm) {
   )
   elapsed <- proc.time()[["elapsed"]] - start
   handler <- capture_env$handler
-  fold <- capture_env$fold
-  if (is.null(handler) || is.null(fold)) stop("fold capture failed for ", case_name, "/", arm)
+  if (is.null(handler)) stop("output-handler capture failed for ", case_name, "/", arm)
   economic <- sweep[1L, c(
     "status", "completion_json", "final_equity", "total_return",
     "annualized_return", "volatility", "sharpe_ratio", "max_drawdown",
@@ -343,7 +310,6 @@ run_arm <- function(case_name, fixture, arm) {
     trades_json = json(normalize_frame(ledgr_sweep_trades(sweep))),
     diagnostics_json = json(normalize_frame(handler$diagnostics())),
     completion_json = json(normalize_frame(handler$completion())),
-    final_state_json = json(state_evidence(fold$state)),
     stringsAsFactors = FALSE
   ) -> evidence
   clock <- data.frame(
@@ -456,20 +422,45 @@ if (!is.null(sharadar_path)) {
     }
   }
   sharadar <- do.call(rbind, clock_rows)
+  aggregate_rows <- list()
   for (workload in names(workloads)) {
     for (rep in seq_len(clock_reps)) {
       rows <- sharadar$workload == workload & sharadar$repetition == rep
-      values <- sharadar$economic_json[rows]
-      if (length(unique(values)) != 1L) {
+      pair <- sharadar[rows, , drop = FALSE]
+      canonical <- pair[pair$arm == "canonical", , drop = FALSE]
+      hybrid <- pair[pair$arm == "hybrid", , drop = FALSE]
+      economic_equal <- identical(canonical$economic_json, hybrid$economic_json)
+      if (!economic_equal) {
         stop("Sharadar economic outputs diverged for ", workload, " repetition ", rep)
       }
+      aggregate_rows[[length(aggregate_rows) + 1L]] <- data.frame(
+        workload = workload,
+        repetition = rep,
+        canonical_order = canonical$order,
+        hybrid_order = hybrid$order,
+        canonical_elapsed_seconds = canonical$elapsed_seconds,
+        hybrid_elapsed_seconds = hybrid$elapsed_seconds,
+        elapsed_ratio = round(
+          hybrid$elapsed_seconds / canonical$elapsed_seconds,
+          4L
+        ),
+        canonical_engine_seconds = canonical$engine_seconds,
+        hybrid_engine_seconds = hybrid$engine_seconds,
+        engine_ratio = round(
+          hybrid$engine_seconds / canonical$engine_seconds,
+          4L
+        ),
+        economic_outputs_equal = economic_equal,
+        stringsAsFactors = FALSE
+      )
     }
   }
+  aggregate <- do.call(rbind, aggregate_rows)
   options(ledgr.spike.compiled_availability = NULL)
   utils::write.csv(
-    sharadar,
+    aggregate,
     file.path(out_dir, "sharadar_clocks.csv"),
     row.names = FALSE
   )
-  print(sharadar[, setdiff(names(sharadar), "economic_json")], row.names = FALSE)
+  print(aggregate, row.names = FALSE)
 }
