@@ -88,6 +88,12 @@ ledgr_json_write_canonical_v2_verbatim <- function(x) {
   )
 }
 
+# One canonical JSON object per data-frame row, written as NDJSON in a single
+# call (the off-session record serializer's only write).
+ledgr_json_write_canonical_ndjson <- function(frame) {
+  yyjsonr::write_ndjson_str(frame, opts = .ledgr_json_write_canonical_v2_opts)
+}
+
 canonical_json <- function(x) {
   if (is.character(x) && length(x) == 1 && !is.na(x)) {
     if (isTRUE(attr(x, "ledgr_canonical_json"))) return(unname(x))

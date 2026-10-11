@@ -302,7 +302,7 @@ ledgr_availability_original_rows_json <- function(df) {
   frame <- as.data.frame(lapply(cols, function(x) if (is.list(x)) rep(NA, length(x)) else x),
                          stringsAsFactors = FALSE, optional = TRUE)
   for (j in which(listed)) frame[[j]] <- cols[[j]]
-  lines <- strsplit(yyjsonr::write_ndjson_str(frame, opts = .ledgr_json_write_canonical_v2_opts), "\n", fixed = TRUE)[[1L]]
+  lines <- strsplit(ledgr_json_write_canonical_ndjson(frame), "\n", fixed = TRUE)[[1L]]
   lines[nzchar(lines)]
 }
 

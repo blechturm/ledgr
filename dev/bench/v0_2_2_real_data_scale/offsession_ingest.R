@@ -9,6 +9,7 @@
 # One fresh process per call; appends label, case, bars, off-session count and
 # ingest seconds to <out_csv>.
 args <- commandArgs(trailingOnly = TRUE)
+.libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
 pkgload::load_all(args[[1L]], quiet = TRUE, compile = FALSE)
 label <- args[[2L]]
 out <- args[[3L]]
