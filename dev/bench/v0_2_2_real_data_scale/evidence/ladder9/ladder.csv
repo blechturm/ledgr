@@ -1,0 +1,6 @@
+ticket,commit,verdict
+LDG-2999,247c2a04,identical
+LDG-3000,45f34728,identical
+LDG-2998,7721aa30,identical
+LDG-3012-3011-2996,34b9fdeb,different
+LDG-2997,02837f13,identical
