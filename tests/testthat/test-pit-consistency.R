@@ -306,6 +306,32 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
     testthat::expect_identical(ledgr_run_info(ny, run_id)$status, "DONE")
     testthat::expect_identical(ledgr_sweep(exp, ledgr_param_grid(a = list()))$status[[1]], "DONE")
   }
+
+  # Bars that start a day before the calendar: a request from the calendar's
+  # first civil day covers every bar it asks for, so it runs; a request from
+  # the first bar does not, and a bare window beyond the calendar refuses.
+  late <- ledgr_snapshot_from_df(
+    data.frame(instrument_id = "AAA", ts_utc = ny_close, open = 10, high = 10, low = 10, close = 10, volume = 1),
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    facts = ledgr_facts(ledgr_facts_sessions(
+      data.frame(session_date = ny_days[-1], status = "open", session_open = "09:30:00", session_close = "16:00:00"),
+      venue_id = "XNYS", timezone = "America/New_York", knowledge = "assume_effective"
+    ))
+  )
+  on.exit(ledgr_snapshot_close(late), add = TRUE)
+  late_exp <- function(...) {
+    ledgr_experiment(late, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+                     cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, ...))
+  }
+  close(ledgr_run(late_exp(date = ny_days[[2]]), run_id = "late_calendar_opening"))
+  testthat::expect_identical(ledgr_run_info(late, "late_calendar_opening")$status, "DONE")
+  testthat::expect_identical(ledgr_sweep(late_exp(date = ny_days[[2]]), ledgr_param_grid(a = list()))$status[[1]], "DONE")
+  window <- ledgr_experiment_window(late_exp(), as.POSIXct(paste(ny_days[[2]], "00:00:00"), tz = "UTC"), ny_close[[5]])
+  close(ledgr_run_window(late_exp(), window = window, run_id = "late_calendar_window"))
+  testthat::expect_identical(ledgr_run_info(late, "late_calendar_window")$status, "DONE")
+  testthat::expect_error(ledgr_run(late_exp(), run_id = "late_calendar_full"), class = "ledgr_sessions_incomplete")
+  testthat::expect_error(ledgr_experiment_window(late_exp(), ny_close[[1]], ny_close[[3]]),
+                         class = "ledgr_sessions_incomplete")
 })
 
 testthat::test_that("[LTB-0225] availability-aware experiments require and disclose a price basis", {
@@ -361,6 +387,7 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   evidence <- ledgr_snapshot_quarantine(snapshot)
   testthat::expect_identical(evidence$reason, "off_session_bar")
   testthat::expect_identical(evidence$disposition, "sealed_not_a_pulse")
+  testthat::expect_true(grepl("\"close\":999", evidence$original_row_json, fixed = TRUE))
   testthat::expect_identical(evidence$supplied_instrument_id, "AAA")
   testthat::expect_equal(evidence$supplied_ts_utc, saturday, ignore_attr = TRUE)
   # The bar stays sealed and the record stays outside the hash: the snapshot
@@ -391,6 +418,12 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_true(any(grepl("Off-session bars: 1 sealed bar in the snapshot", utils::capture.output(summary(bt)), fixed = TRUE)))
   # The record is derived evidence: it is not counted as quarantined, and
   # removing it leaves the snapshot hash verifying.
+  # A dense run (ledgr_backtest() on the same snapshot) does use the bar, so
+  # its summary reports no off-session count.
+  dense_bt <- ledgr_backtest(snapshot = snapshot, strategy = function(ctx, params) ctx$hold(), universe = "AAA",
+                             initial_cash = 1000, cost_model = ledgr_cost_zero(), run_id = "off_session_dense")
+  testthat::expect_false(any(grepl("Off-session bars", utils::capture.output(summary(dense_bt)), fixed = TRUE)))
+  close(dense_bt)
   meta <- ledgr:::ledgr_json_read_nested(ledgr_snapshot_info(snapshot)$meta_json)
   testthat::expect_identical(as.integer(meta$quarantined_observation_count), 0L)
   close(bt)

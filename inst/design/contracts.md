@@ -506,10 +506,10 @@ Accepted change pending:
 - Every availability-aware experiment requires a complete declared session
   calendar over the requested range and an explicit
   `ledgr_valuation_stale(max_sessions)` policy. A run, sweep, run window or
-  walk-forward fold whose requested range, clamped to the sealed bars as the
-  scoring start is, falls outside the declared calendar's civil days in the
-  venue zone refuses with `ledgr_sessions_incomplete` instead of running over
-  the shorter calendar (Cut 12 LDG-2998). The check runs at those execution
+  walk-forward fold whose first or last sealed bar inside its requested range
+  falls outside the declared calendar's civil days in the venue zone refuses
+  with `ledgr_sessions_incomplete` instead of running over the shorter
+  calendar (Cut 12 LDG-2998). The check runs at those execution
   entry points; reading or reconstructing a stored run does not repeat it. The
   package supplies no default stale horizon.
 - ledgr accounts in split-adjusted share units: no split event acts on a

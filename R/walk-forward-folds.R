@@ -646,8 +646,7 @@ ledgr_experiment_window_validate_pulses <- function(exp, window) {
       ledgr_precompute_snapshot_meta(exp$snapshot)$snapshot_hash,
       bars_by_id
     )
-    sealed <- ledgr_precompute_snapshot_meta(exp$snapshot)
-    ledgr_availability_require_coverage(provider, window$scoring_start_utc, window$scoring_end_utc, sealed$start, sealed$end)
+    ledgr_availability_require_coverage(provider, ledgr_snapshot_bar_range(get_connection(exp$snapshot), exp$snapshot$snapshot_id, window$scoring_start_utc, window$scoring_end_utc))
     calendar <- ledgr_availability_calendar(
       provider,
       window$scoring_start_utc,

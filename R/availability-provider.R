@@ -292,18 +292,18 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash, histo
   ledgr_availability_provider_build_prepared(data, config, snapshot_hash, history)
 }
 
-# The declared calendar must cover the requested range, which execution entry
-# points (run, sweep, run window, walk-forward fold) check before they build a
-# calendar; readers of a stored run do not. The range is clamped to the sealed
-# bars, as the scoring start is, and compared on the venue's civil days: from
-# the first session row's effective_from to the last row's (exclusive)
-# effective_to. A shorter calendar would otherwise truncate the run silently.
-ledgr_availability_require_coverage <- function(provider, start_ts_utc, end_ts_utc, sealed_start, sealed_end) {
-  as_utc <- function(x) {
-    as.POSIXct(ledgr_normalize_ts_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  }
-  start <- max(as_utc(start_ts_utc), as_utc(sealed_start), na.rm = TRUE)
-  end <- min(as_utc(end_ts_utc), as_utc(sealed_end), na.rm = TRUE)
+# The declared calendar must cover the sealed bars a run is asked to run,
+# which execution entry points (run, sweep, run window, walk-forward fold)
+# check before they build a calendar; readers of a stored run do not. The
+# first and last sealed bar inside the requested range
+# (ledgr_snapshot_bar_range()) must fall on the calendar's civil days in the
+# venue zone: from the first session row's effective_from to the last row's
+# (exclusive) effective_to. A shorter calendar would otherwise truncate the
+# run silently. A range with no sealed bar is left to the pulse checks.
+ledgr_availability_require_coverage <- function(provider, bar_range) {
+  start <- bar_range$first
+  end <- bar_range$last
+  if (length(start) != 1L || length(end) != 1L || is.na(start) || is.na(end)) return(invisible(TRUE))
   declared <- provider$sessions
   covered_from <- if (nrow(declared) > 0L) min(as.POSIXct(declared$effective_from, tz = "UTC")) else NA
   covered_to <- if (nrow(declared) > 0L) max(as.POSIXct(declared$effective_to, tz = "UTC")) else NA

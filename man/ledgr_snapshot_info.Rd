@@ -19,7 +19,7 @@ meta_json, error_msg.
 
 \code{bar_count} and \code{instrument_count} are live counts from the snapshot tables.
 \code{off_session_bar_count} counts sealed bars that fall on no declared
-open-session close; they are never a pulse, and
+open-session close; they are never a pulse of an availability-aware run, and
 \code{\link[=ledgr_snapshot_quarantine]{ledgr_snapshot_quarantine()}} lists them with reason \code{off_session_bar}.
 \code{start_date} and \code{end_date} are parsed from seal metadata when present.
 \code{meta_json} remains available as the raw envelope metadata written on the

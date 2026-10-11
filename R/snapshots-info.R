@@ -16,7 +16,7 @@
 #'
 #' `bar_count` and `instrument_count` are live counts from the snapshot tables.
 #' `off_session_bar_count` counts sealed bars that fall on no declared
-#' open-session close; they are never a pulse, and
+#' open-session close; they are never a pulse of an availability-aware run, and
 #' [ledgr_snapshot_quarantine()] lists them with reason `off_session_bar`.
 #' `start_date` and `end_date` are parsed from seal metadata when present.
 #' `meta_json` remains available as the raw envelope metadata written on the
@@ -157,15 +157,14 @@ ledgr_snapshot_info_meta_chr <- function(metadata, field) {
   as.character(value)
 }
 
-# The sealed snapshot's first and last bar timestamps, from its seal metadata.
-ledgr_snapshot_sealed_range <- function(con, snapshot_id) {
-  meta <- ledgr_snapshot_info_parse_meta(DBI::dbGetQuery(
+# The first and last sealed bar timestamps inside [start, end] (UTC), one
+# indexed aggregate over snapshot_bars; NA when the range holds no bar.
+ledgr_snapshot_bar_range <- function(con, snapshot_id, start_ts_utc, end_ts_utc) {
+  as_utc <- function(x) as.POSIXct(ledgr_normalize_ts_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
+  out <- DBI::dbGetQuery(
     con,
-    "SELECT meta_json FROM snapshots WHERE snapshot_id = ?",
-    params = list(snapshot_id)
-  )$meta_json[1L])
-  list(
-    start = ledgr_snapshot_info_meta_chr(meta, "start_date"),
-    end = ledgr_snapshot_info_meta_chr(meta, "end_date")
+    "SELECT MIN(ts_utc) AS first, MAX(ts_utc) AS last FROM snapshot_bars WHERE snapshot_id = ? AND ts_utc >= ? AND ts_utc <= ?",
+    params = list(snapshot_id, as_utc(start_ts_utc), as_utc(end_ts_utc))
   )
+  list(first = as.POSIXct(out$first[[1L]], tz = "UTC"), last = as.POSIXct(out$last[[1L]], tz = "UTC"))
 }

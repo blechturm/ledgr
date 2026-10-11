@@ -248,7 +248,7 @@ ledgr_sweep_impl <- function(exp,
       meta$snapshot_hash,
       bars_by_id
     )
-    ledgr_availability_require_coverage(provider, range$scoring_start, range$scoring_end, meta$start, meta$end)
+    ledgr_availability_require_coverage(provider, ledgr_snapshot_bar_range(snapshot_con, exp$snapshot$snapshot_id, range$scoring_start, range$scoring_end))
     calendar <- ledgr_availability_calendar(provider, range$warmup_start, range$scoring_end)
     pulses_posix <- calendar$pulses_posix
     pulses_iso <- calendar$pulses_iso

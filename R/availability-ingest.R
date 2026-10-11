@@ -209,8 +209,9 @@ ledgr_off_session_reason <- "off_session_bar"
 
 # Observation-evidence rows (the quarantine table's shape) for the supplied
 # rows `rows` of `bars_df`; `instrument_id`, `ts` and `reason` are already
-# subset to those rows. Built per evidence row: there are as many as the input
-# has invalid or off-session bars, not one per bar.
+# subset to those rows. Built per row for quarantine candidates (invalid bars),
+# whose digest ids and saved copies enter the hash; off-session rows, which
+# can be most bars, are built column-wise above.
 ledgr_availability_evidence_rows <- function(bars_df, rows, instrument_id, ts, reason, provenance) {
   n <- length(rows)
   out <- data.frame(
@@ -273,15 +274,21 @@ ledgr_availability_times_are_session_closes <- function(
   tokens %in% ledgr_fact_time_token(session_rows$session_close)
 }
 
-# ledgr_availability_original_row_json() for every row of `df` at once, for
-# rows whose numbers are finite (accepted bars): the columns are formatted
-# once, keys sorted, and the frame written as NDJSON, one canonical object per
-# row. Byte-identical to the per-row form.
+# ledgr_availability_original_row_json() for every row of `df` at once: the
+# columns are formatted once, keys sorted, and the frame written as NDJSON,
+# one canonical object per row, byte-identical to the per-row form. Text is
+# written as UTF-8 (the writer requires it). An infinite value in an extra
+# column, which the per-row form writes as a string, takes the per-row form.
 ledgr_availability_original_rows_json <- function(df) {
   if (nrow(df) == 0L) return(character())
+  if (any(vapply(df, function(x) is.numeric(x) && any(is.infinite(x)), logical(1)))) {
+    return(vapply(seq_len(nrow(df)), function(i) ledgr_availability_original_row_json(df[i, , drop = FALSE]), character(1)))
+  }
   cols <- lapply(df, function(x) {
     if (inherits(x, "POSIXt")) return(ledgr_fact_time_tokens_distinct(x))
     if (inherits(x, "Date")) return(as.character(x))
+    if (is.factor(x)) x <- as.character(x)
+    if (is.character(x)) return(enc2utf8(unname(x)))
     unname(x)
   })
   frame <- as.data.frame(cols[order(names(cols))], stringsAsFactors = FALSE, optional = TRUE)
