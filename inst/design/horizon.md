@@ -29,6 +29,42 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-11 [execution] One execution mode: dense as a special case of availability
+
+ledgr runs in two modes that share the fold core but diverge at the edges. A
+dense run takes its pulses from the bars and requires every instrument on
+every pulse; an availability-aware run takes its pulses from a declared
+session calendar and handles missing bars, stale marks, membership, lifetime
+and typed stops. Cut 12 found most of its consistency defects on that
+boundary:
+
+- a dense run has no `INCOMPLETE` state or completion record, so a strict
+  corporate-action refusal still aborts there while an availability run stops
+  typed (LDG-2997);
+- an acquisition never acts in a dense run, because dispositions live on the
+  availability path (LDG-2996);
+- `ledgr_backtest()` runs dense on a point-in-time snapshot and uses bars the
+  availability path excludes (LDG-3001, LDG-3011);
+- run, sweep and window entry points differ in calendar and history-start
+  rules.
+
+Each new guarantee is built twice or carved out for dense. The observation: a
+dense experiment could be an availability-aware experiment with an implied
+calendar (the bars' own timestamps), full membership, no lifetime facts and a
+valuation policy that never needs a stale mark. ledgr would then have one
+calendar rule, one completion model, one stop vocabulary and one
+corporate-action path.
+
+Questions to settle before any design: whether dense identity survives (the
+asset-availability synthesis makes canonical omission the identity of dense
+mode, so config and snapshot hashes may move); the clock cost of the
+availability decision path on dense workloads and the peer benchmark; what an
+implied calendar means for irregular or intraday bars; and whether
+`ledgr_backtest()` stays as a convenience wrapper. A first spike would run the
+dense fixtures through the availability path with an implied calendar and
+compare outputs and clocks. This entry authorizes no API, schema, ticket or
+release commitment.
+
 ### 2026-10-05 [ux] Non-fungible portfolio sleeves and mandate attribution
 
 The Momento application case distinguishes an active stock book, a benchmark
