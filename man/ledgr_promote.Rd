@@ -51,9 +51,10 @@ Promotion compares the candidate's strategy, feature-set, universe,
 valuation-policy, corporate-action-policy and opening identities with the
 promoting experiment's. It does not refuse a difference: it warns with
 \code{ledgr_promote_identity_mismatch}, naming the differing identities, and
-records both sides in the promotion context's \code{identity_check}. A sweep
-saved before these identities were recorded compares only the strategy and
-feature set and lists the rest as \code{not_recorded}.
+records both sides in the promotion context's \code{identity_check}. A
+walk-forward candidate, or a sweep saved before these identities were
+recorded, compares only the strategy and feature set and lists the rest as
+\code{not_recorded}.
 
 The default \code{require_same_snapshot = TRUE} protects same-snapshot replay. For
 train/test evaluation, pass a candidate selected on the train snapshot to a

@@ -34,9 +34,9 @@
   ID. Runs record `identity_rule_version = 2` and the snapshot hash, so the
   same bars sealed under two snapshot IDs give the same `config_hash`, and
   walk-forward `experiment_hash` and `session_id` follow. Existing runs and
-  sessions stay readable under their recorded rule; resuming an older run, or
-  rerunning walk-forward arguments that match an older session, refuses with
-  `ledgr_identity_rule_retired`. A run whose opening is dated before the
+  sessions stay readable under their recorded rule; resuming an older run
+  refuses with `ledgr_identity_rule_retired`, and rerunning an older
+  walk-forward session starts a new one. A run whose opening is dated before the
   snapshot now records the snapshot start, where it actually begins, as its
   start.
 

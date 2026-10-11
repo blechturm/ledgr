@@ -314,8 +314,10 @@ Accepted change pending:
   records the rule in its `meta_json`. A config without the field was
   recorded under rule 1, which hashed the snapshot ID. Stored runs and
   sessions are not migrated and stay readable under their recorded rule;
-  resuming a rule-1 run, or rerunning walk-forward arguments that match a
-  rule-1 session, refuses with `ledgr_identity_rule_retired`. `feature_set_hash` identifies resolved
+  resuming a rule-1 run refuses with `ledgr_identity_rule_retired`. Rerunning
+  walk-forward arguments recorded under rule 1 forks into a new session, as a
+  rerun under another ledgr version already does, since `session_id` includes
+  the version. `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
   identifies user-supplied feature parameter values. `alias_map_hash`
   identifies alias declarations and must not change solely because a
@@ -370,7 +372,8 @@ Accepted change pending:
   universe, valuation-policy, corporate-action-policy and opening identity
   hashes, recorded by the sweep in its execution assumptions, beside the
   promoting run's, with the fields that differ and those the sweep did not
-  record. A difference warns with `ledgr_promote_identity_mismatch`; it does
+  record (a walk-forward candidate records only strategy and feature-set
+  identity). A difference warns with `ledgr_promote_identity_mismatch`; it does
   not refuse. Version 1 records read unchanged without `identity_check`.
 - Promotion context is written only after the committed run succeeds. If the
   promotion-context write fails, ledgr warns and returns the committed run; it

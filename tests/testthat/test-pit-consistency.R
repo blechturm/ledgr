@@ -826,6 +826,22 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
   testthat::expect_identical(ledgr_valuation_summary(clean)$assumption_backed_families, character())
   testthat::expect_true("Point in time: membership rule 'u'; max sessions 2" %in% utils::capture.output(print(clean)))
   testthat::expect_false(any(grepl("Assumption-backed", utils::capture.output(summary(clean)), fixed = TRUE)))
+
+  # A membership rule rests only on its own universe: an assumed second
+  # universe in the same snapshot does not label an evidenced one.
+  second <- data.frame(effective_from = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"),
+                       knowledge_time = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"), source = "t")
+  second$members <- I(list(c("AAA", "BBB")))
+  mixed <- scale_test_events_snapshot(knowledge = "evidenced", extra_facts = ledgr_facts_membership_snapshots(
+    second, universe_id = "v", complete = TRUE, knowledge = "assume_effective"
+  ))
+  on.exit(ledgr_snapshot_close(mixed), add = TRUE)
+  evidenced_rule <- run(mixed, ledgr_universe_members("u"), "kind_mixed_u")
+  on.exit(close(evidenced_rule), add = TRUE)
+  testthat::expect_identical(ledgr_valuation_summary(evidenced_rule)$assumption_backed_families, character())
+  assumed_rule <- run(mixed, ledgr_universe_members("v"), "kind_mixed_v")
+  on.exit(close(assumed_rule), add = TRUE)
+  testthat::expect_identical(ledgr_valuation_summary(assumed_rule)$assumption_backed_families, "membership")
 })
 
 testthat::test_that("[LTB-0235] promotion records both identities and warns on a mismatch", {
@@ -951,7 +967,8 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, plain$config$backtest$start_ts_utc)
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, one$metadata$start_date)
 
-  # A walk-forward session records rule 2; a rerun matching a rule-1 session refuses.
+  # A walk-forward session records rule 2. A rule-1 session is not matched: a
+  # rerun forks, as across ledgr versions (maintainer decision on review F2).
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
@@ -967,11 +984,4 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")
   testthat::expect_identical(nrow(session), 1L)
   testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 2L)
-  identity <- ledgr:::ledgr_walk_forward_session_identity(
-    exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"
-  )
-  testthat::expect_identical(identity$session_id, session$session_id[[1]])
-  testthat::expect_false(identical(identity$legacy_session_id, identity$session_id))
-  DBI::dbExecute(wf_con, "UPDATE walk_forward_sessions SET session_id = ?", params = list(identity$legacy_session_id))
-  testthat::expect_error(do.call(ledgr_walk_forward, wf_args), class = "ledgr_identity_rule_retired")
 })

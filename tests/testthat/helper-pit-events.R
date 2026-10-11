@@ -5,7 +5,7 @@
 # membership assume their knowledge clocks unless `knowledge = "evidenced"`.
 scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identity, sessions_from = NULL, sessions_to = NULL,
                                        price_basis = "split_adjusted", corporate_actions = NULL,
-                                       knowledge = "assume_effective", ...) {
+                                       knowledge = "assume_effective", extra_facts = NULL, ...) {
   days <- as.Date("2021-01-04") + c(0:4, 7:11, 14:18)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   ids <- c("AAA", "BBB", "CCC")
@@ -35,7 +35,8 @@ scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identi
     ledgr_facts_lifetime(data.frame(instrument_id = "CCC", effective_from = utc(days[[10]]),
                                     knowledge_time = utc(days[[10]]) - 1, assertion = "known_inactive",
                                     terminal_event = "bankruptcy")),
-    corporate_actions
+    corporate_actions,
+    extra_facts
   )))
   ledgr_snapshot_from_df(bars, data.frame(instrument_id = ids), db_path = tempfile(fileext = ".duckdb"), facts = facts,
                          price_basis = price_basis, ...)

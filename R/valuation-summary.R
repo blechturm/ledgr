@@ -74,7 +74,13 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
   # and the fact families whose knowledge clocks or schedules were assumed.
   rule <- config$availability$universe_rule
   declared <- as.character(config$availability$declared_families %||% character())
-  reasons <- ledgr_fact_assumption_reasons(ledgr_fact_headers_read(con, config$data$snapshot_id))
+  headers <- ledgr_fact_headers_read(con, config$data$snapshot_id)
+  # A membership rule applies only its own universe's membership facts.
+  if (!is.null(rule) && nrow(headers) > 0L) {
+    other <- headers$family == "membership" & headers$scope_id != rule$universe_id
+    headers <- headers[!other, , drop = FALSE]
+  }
+  reasons <- ledgr_fact_assumption_reasons(headers)
   # A fixed basket does not apply membership facts, so it rests on none.
   applied <- if (is.null(rule)) setdiff(declared, "membership") else declared
   reasons <- reasons[names(reasons) %in% applied & lengths(reasons) > 0L]

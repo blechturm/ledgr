@@ -110,9 +110,6 @@ ledgr_walk_forward <- function(exp,
 
   session_identity <- ledgr_walk_forward_session_identity(exp, grid, folds, selection_rule, seed, opening_state_policy, no_selection)
   session_id <- session_identity$session_id
-  if (ledgr_walk_forward_session_exists(exp, session_identity$legacy_session_id)) {
-    ledgr_identity_rule_retired_abort(sprintf("Walk-forward session '%s'", session_identity$legacy_session_id), 1L)
-  }
   fold_rows <- list()
   score_rows <- list()
   fold_results <- list()
@@ -310,14 +307,10 @@ ledgr_walk_forward_session_identity <- function(exp,
   cost_model_hash <- exp$cost_model_hash %||% ledgr_cost_model_hash(exp$cost_model)
   risk_chain <- exp$risk_chain %||% ledgr_risk_none()
   risk_chain_hash <- exp$risk_chain_hash %||% ledgr_risk_chain_hash(risk_chain)
-  base_config <- ledgr_walk_forward_base_config(exp, meta)
-  experiment_hash <- ledgr_walk_forward_experiment_hash(base_config)
-  # The same arguments under identity rule 1 (store-local snapshot ID), so a
-  # rerun of a session recorded under it refuses instead of forking (LDG-3004).
-  legacy_config <- base_config
-  legacy_config$identity_rule_version <- NULL
-  legacy_config$data$snapshot_hash <- NULL
-  legacy_experiment_hash <- ledgr_walk_forward_experiment_hash(legacy_config)
+  # Under identity rule 2 the experiment hash binds snapshot content. A
+  # session recorded under rule 1 is not matched: like a session from another
+  # ledgr version, a rerun forks into a new session (LDG-3004).
+  experiment_hash <- ledgr_walk_forward_experiment_hash(ledgr_walk_forward_base_config(exp, meta))
   param_grid_hash <- ledgr_walk_forward_param_grid_hash(grid)
   fold_list_hash <- ledgr_fold_list_hash(folds)
   selection_rule_hash <- selection_rule$selection_rule_hash
@@ -334,22 +327,8 @@ ledgr_walk_forward_session_identity <- function(exp,
     opening_state_policy = opening_state_policy,
     no_selection = no_selection
   )
-  legacy_session_id <- ledgr_walk_forward_session_id(
-    snapshot_hash = meta$snapshot_hash,
-    experiment_hash = legacy_experiment_hash,
-    param_grid_hash = param_grid_hash,
-    fold_list_hash = fold_list_hash,
-    selection_rule_hash = selection_rule_hash,
-    metric_context_hash = metric_context_hash,
-    cost_model_hash = cost_model_hash,
-    risk_chain_hash = risk_chain_hash,
-    master_seed = seed,
-    opening_state_policy = opening_state_policy,
-    no_selection = no_selection
-  )
   list(
     session_id = session_id,
-    legacy_session_id = legacy_session_id,
     snapshot_hash = meta$snapshot_hash,
     experiment_hash = experiment_hash,
     param_grid_hash = param_grid_hash,
@@ -1125,16 +1104,5 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
   cost_basis <- as.numeric(total_basis) / as.numeric(held)
   names(cost_basis) <- names(held)
   ledgr_opening(cash = final_cash, positions = held, cost_basis = cost_basis)
-}
-
-ledgr_walk_forward_session_exists <- function(exp, session_id) {
-  opened <- ledgr_run_store_open(exp$snapshot$db_path)
-  on.exit(ledgr_run_store_close(opened), add = TRUE)
-  if (!ledgr_experiment_store_table_exists(opened$con, "walk_forward_sessions")) return(FALSE)
-  nrow(DBI::dbGetQuery(
-    opened$con,
-    "SELECT 1 FROM walk_forward_sessions WHERE session_id = ? LIMIT 1",
-    params = list(session_id)
-  )) > 0L
 }
 

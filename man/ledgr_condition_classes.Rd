@@ -20,6 +20,8 @@
 \alias{ledgr_availability_sessions_required}
 \alias{ledgr_backtest_availability_unsupported}
 \alias{ledgr_sessions_incomplete}
+\alias{ledgr_identity_rule_retired}
+\alias{ledgr_promote_identity_mismatch}
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
 \alias{ledgr_execution_timing_version_mismatch}
@@ -201,6 +203,11 @@ execution lacks a complete session calendar.
 \code{ledgr_backtest_availability_unsupported} is raised when \code{ledgr_backtest()}
 receives a snapshot that declares point-in-time facts; use
 \code{ledgr_experiment()} and \code{ledgr_run()}.
+
+\code{ledgr_identity_rule_retired} is raised when a run recorded under identity
+rule 1 is resumed; it remains readable. \code{ledgr_promote_identity_mismatch} is
+a warning raised when a promoted candidate's recorded identities differ from
+the promoting experiment's.
 
 \code{ledgr_sessions_incomplete} is raised when the declared session calendar
 does not cover the requested start and end of a run, sweep, run window or

@@ -433,6 +433,14 @@ again it was valued at its real close and the freeze ended, which is why
 nothing is still frozen at the end. The equity on the frozen sessions is
 an estimate, and the warning says so before any metric.
 
+The `Point in time:` line says what the run rested on: the universe
+(here the fixed basket you passed), the stale-mark horizon, and the
+facts ledgr took on assumption rather than on evidence. This calendar
+was generated rather than taken from a venue’s record, and neither the
+calendar nor the halt records say when they became known, so ledgr
+assumed they were known as soon as they took effect. Facts that carry
+their own knowledge times drop off that list.
+
 ``` r
 ledgr_run_explain(tight_run, "BBB") |>
   select(ts_utc, mark_source, mark_age, target_restriction_reason)

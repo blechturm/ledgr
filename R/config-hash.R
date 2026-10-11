@@ -33,7 +33,7 @@ config_hash_payload <- function(config) {
       NA_character_
     }, character(1))
     if (all(!is.na(feature_ids))) {
-      payload$features$defs <- payload$features$defs[order(feature_ids)]
+      payload$features$defs <- payload$features$defs[order(feature_ids, method = "radix")]
     }
   }
   payload

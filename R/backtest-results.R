@@ -956,10 +956,14 @@ summary.ledgr_backtest <- function(object,
   }
 
   ledgr_print_valuation_summary(valuation)
-  # Off-session bars exist only in snapshots with sessions, and every run on
-  # such a snapshot is availability-aware (ledgr_backtest() refuses them,
-  # LDG-3001) and shares its store; the count is snapshot-wide.
-  off_session <- ledgr_backtest_off_session_bar_count(object)
+  # Off-session bars exist only in snapshots with sessions; the count is
+  # snapshot-wide. A dense run stored before ledgr_backtest() refused such
+  # snapshots (LDG-3001) used those bars as pulses, so it reports none.
+  off_session <- if (ledgr_availability_config_active(object$config)) {
+    ledgr_backtest_off_session_bar_count(object)
+  } else {
+    0L
+  }
   if (off_session > 0L) {
     cat(sprintf(
       "Off-session bars: %d sealed bar%s in the snapshot on no declared session close, not a pulse of this run; see ledgr_snapshot_quarantine().\n",

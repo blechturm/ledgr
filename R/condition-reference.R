@@ -64,6 +64,11 @@
 #' receives a snapshot that declares point-in-time facts; use
 #' `ledgr_experiment()` and `ledgr_run()`.
 #'
+#' `ledgr_identity_rule_retired` is raised when a run recorded under identity
+#' rule 1 is resumed; it remains readable. `ledgr_promote_identity_mismatch` is
+#' a warning raised when a promoted candidate's recorded identities differ from
+#' the promoting experiment's.
+#'
 #' `ledgr_sessions_incomplete` is raised when the declared session calendar
 #' does not cover the requested start and end of a run, sweep, run window or
 #' walk-forward fold.
@@ -487,7 +492,7 @@
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
 #' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
-#' @aliases ledgr_sessions_incomplete
+#' @aliases ledgr_sessions_incomplete ledgr_identity_rule_retired ledgr_promote_identity_mismatch
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
 #' @aliases ledgr_execution_timing_version_mismatch ledgr_policy_schema_mismatch

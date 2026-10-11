@@ -17,6 +17,13 @@ sensitive to execution inputs such as snapshot identity, universe, strategy,
 parameters, feature definitions, timing model, cost identity, opening state,
 and seed.
 
+Every run records \code{identity_rule_version}. Under identity rule 2 the
+snapshot identity in \code{config_hash} is the sealed content hash
+(\code{data.snapshot_hash}), not the store-local \code{data.snapshot_id}: the same
+bars sealed under two snapshot IDs give the same \code{config_hash}. A config
+without the field was recorded under rule 1, which hashed the snapshot ID;
+it stays readable, but resuming it refuses with \code{ledgr_identity_rule_retired}.
+
 \code{feature_set_hash} identifies the resolved concrete feature definitions by
 hashing the set of feature fingerprints. It changes when concrete feature
 parameters change, even if user-facing aliases stay the same.
@@ -74,7 +81,8 @@ strategy/feature/alias identity, metric-context identity, \code{cost_model_hash}
 \code{session_id} identifies a walk-forward session envelope. It includes
 snapshot, experiment, parameter-grid, fold-list, selection-rule,
 metric-context, cost-model, risk-chain, master-seed, and opening-state policy
-identity. These fields identify what ledgr evaluated; they do not prove that
+identity; its experiment identity follows the identity rule of
+\code{config_hash}. These fields identify what ledgr evaluated; they do not prove that
 the candidate-selection protocol was statistically sound.
 }
 

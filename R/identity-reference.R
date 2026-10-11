@@ -11,6 +11,13 @@
 #' parameters, feature definitions, timing model, cost identity, opening state,
 #' and seed.
 #'
+#' Every run records `identity_rule_version`. Under identity rule 2 the
+#' snapshot identity in `config_hash` is the sealed content hash
+#' (`data.snapshot_hash`), not the store-local `data.snapshot_id`: the same
+#' bars sealed under two snapshot IDs give the same `config_hash`. A config
+#' without the field was recorded under rule 1, which hashed the snapshot ID;
+#' it stays readable, but resuming it refuses with `ledgr_identity_rule_retired`.
+#'
 #' `feature_set_hash` identifies the resolved concrete feature definitions by
 #' hashing the set of feature fingerprints. It changes when concrete feature
 #' parameters change, even if user-facing aliases stay the same.
@@ -60,7 +67,8 @@
 #' `session_id` identifies a walk-forward session envelope. It includes
 #' snapshot, experiment, parameter-grid, fold-list, selection-rule,
 #' metric-context, cost-model, risk-chain, master-seed, and opening-state policy
-#' identity. These fields identify what ledgr evaluated; they do not prove that
+#' identity; its experiment identity follows the identity rule of
+#' `config_hash`. These fields identify what ledgr evaluated; they do not prove that
 #' the candidate-selection protocol was statistically sound.
 #'
 #' @section Locator metadata:
