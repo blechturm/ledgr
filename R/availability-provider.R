@@ -295,11 +295,12 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash, histo
 # The declared calendar must cover the sealed bars a run is asked to run,
 # which execution entry points (run, sweep, run window, walk-forward fold)
 # check before they build a calendar; readers of a stored run do not. The
-# first and last sealed bar inside the requested range
-# (ledgr_snapshot_bar_range()) must fall on the calendar's civil days in the
-# venue zone: from the first session row's effective_from to the last row's
-# (exclusive) effective_to. A shorter calendar would otherwise truncate the
-# run silently. A range with no sealed bar is left to the pulse checks.
+# first and last sealed bar inside the requested range (one aggregate over
+# the bars, ledgr_snapshot_bar_range()) must fall on the calendar's civil
+# days in the venue zone: from the first session row's effective_from to the
+# last row's (exclusive) effective_to. A shorter calendar would otherwise
+# truncate the run silently. A range with no sealed bar is left to the pulse
+# checks. The bar range is snapshot-wide, not limited to the universe.
 ledgr_availability_require_coverage <- function(provider, bar_range) {
   start <- bar_range$first
   end <- bar_range$last
@@ -310,7 +311,7 @@ ledgr_availability_require_coverage <- function(provider, bar_range) {
   if (!isTRUE(start >= covered_from) || !isTRUE(end < covered_to)) {
     rlang::abort(
       sprintf(
-        "The declared session calendar (%s to %s) does not cover the requested range %s to %s.",
+        "The declared session calendar (%s to %s) does not cover the requested sealed bars, %s to %s.",
         if (nrow(declared) > 0L) as.character(min(declared$session_date)) else "none",
         if (nrow(declared) > 0L) as.character(max(declared$session_date)) else "none",
         ledgr_normalize_ts_utc(start),

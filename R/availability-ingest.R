@@ -276,14 +276,13 @@ ledgr_availability_times_are_session_closes <- function(
 
 # ledgr_availability_original_row_json() for every row of `df` at once: the
 # columns are formatted once, keys sorted, and the frame written as NDJSON,
-# one canonical object per row, byte-identical to the per-row form. Text is
-# written as UTF-8 (the writer requires it). An infinite value in an extra
-# column, which the per-row form writes as a string, takes the per-row form.
+# one canonical object per row, byte-identical to the per-row form; text is
+# written as UTF-8 in both. A row holding an infinite value in an extra column,
+# which the per-row form writes as a string, is rewritten by that form; only
+# such rows are visited.
 ledgr_availability_original_rows_json <- function(df) {
   if (nrow(df) == 0L) return(character())
-  if (any(vapply(df, function(x) is.numeric(x) && any(is.infinite(x)), logical(1)))) {
-    return(vapply(seq_len(nrow(df)), function(i) ledgr_availability_original_row_json(df[i, , drop = FALSE]), character(1)))
-  }
+  infinite <- Reduce(`|`, lapply(df, function(x) if (is.numeric(x)) is.infinite(x) else rep(FALSE, nrow(df))), rep(FALSE, nrow(df)))
   cols <- lapply(df, function(x) {
     if (inherits(x, "POSIXt")) return(ledgr_fact_time_tokens_distinct(x))
     if (inherits(x, "Date")) return(as.character(x))
@@ -293,7 +292,11 @@ ledgr_availability_original_rows_json <- function(df) {
   })
   frame <- as.data.frame(cols[order(names(cols))], stringsAsFactors = FALSE, optional = TRUE)
   lines <- strsplit(yyjsonr::write_ndjson_str(frame, opts = .ledgr_json_write_canonical_v2_opts), "\n", fixed = TRUE)[[1L]]
-  lines[nzchar(lines)]
+  lines <- lines[nzchar(lines)]
+  # The per-row form writes an infinite value as a string; only those rows
+  # take it.
+  for (i in which(infinite)) lines[[i]] <- ledgr_availability_original_row_json(df[i, , drop = FALSE])
+  lines
 }
 
 ledgr_availability_original_row_json <- function(row) {
@@ -303,6 +306,9 @@ ledgr_availability_original_row_json <- function(row) {
     if (inherits(value, "Date")) return(as.character(value))
     if (length(value) == 0L || is.na(value)) return(NULL)
     if (is.numeric(value) && !is.finite(value)) return(as.character(value))
+    if (is.factor(value)) value <- as.character(value)
+    # The JSON writer requires UTF-8 text.
+    if (is.character(value)) value <- enc2utf8(value)
     unname(value)
   })
   as.character(canonical_json(payload))

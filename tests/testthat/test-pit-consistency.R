@@ -447,6 +447,29 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_setequal(ledgr_snapshot_quarantine(both)$reason, c("off_session_bar", "ohlc_invalid"))
   testthat::expect_identical(ledgr_snapshot_info(both)$off_session_bar_count, 1L)
 
+  # Records keep the supplied row: latin1 text is written as UTF-8 and an
+  # infinite extra value as a string, both as canonical JSON.
+  cafe <- "café"
+  odd <- scale_test_events_snapshot(edit_bars = function(bars) {
+    extra <- rbind(bars[bars$instrument_id == "AAA", , drop = FALSE][1L, ], bars[bars$instrument_id == "BBB", , drop = FALSE][1L, ])
+    extra$ts_utc <- saturday
+    bars <- rbind(bars, extra)
+    bars$note <- "plain"
+    bars$score <- 1
+    off <- bars$ts_utc == saturday
+    bars$note[off] <- iconv(cafe, "UTF-8", "latin1")
+    bars$score[off & bars$instrument_id == "AAA"] <- Inf
+    bars
+  })
+  on.exit(ledgr_snapshot_close(odd), add = TRUE)
+  records <- ledgr_snapshot_quarantine(odd)
+  records <- records[order(records$supplied_instrument_id), , drop = FALSE]
+  testthat::expect_identical(records$supplied_instrument_id, c("AAA", "BBB"))
+  testthat::expect_true(all(grepl(paste0("\"note\":\"", cafe, "\""), records$original_row_json, fixed = TRUE)))
+  testthat::expect_true(grepl("\"score\":\"Inf\"", records$original_row_json[[1L]], fixed = TRUE))
+  testthat::expect_true(grepl("\"score\":1", records$original_row_json[[2L]], fixed = TRUE))
+  testthat::expect_true(all(vapply(records$original_row_json, ledgr:::ledgr_snapshot_valid_canonical_json, logical(1))))
+
   clean <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(clean), add = TRUE)
   testthat::expect_identical(ledgr_snapshot_info(clean)$off_session_bar_count, 0L)

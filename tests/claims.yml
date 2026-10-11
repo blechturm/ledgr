@@ -2518,7 +2518,7 @@ claims:
   - id: "LCL-0222"
     source: "Cut 12 LDG-2998, audit S2-005"
     scope: "An availability-aware run, sweep, run window or walk-forward refuses with ledgr_sessions_incomplete when the first or last sealed bar inside its requested range falls outside the declared calendar's civil days in the venue zone; a covered window, an opening dated on or before the first session, and a request from the calendar's first day when bars start earlier all run, with run and sweep agreeing"
-    oracle_class: "the named refusal class on run, sweep, walk-forward and a bare window for calendars ending early or starting late; DONE for covered requests on UTC and New York calendars"
+    oracle_class: "the named refusal class on run, sweep and walk-forward for calendars ending early or starting late, and on a bare window for a calendar starting late; DONE for covered requests on UTC and New York calendars"
     detecting_blocks: ["LTB-0224"]
     promised_profile: "fast"
     owner: "maintainer"

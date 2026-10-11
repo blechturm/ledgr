@@ -158,7 +158,7 @@ ledgr_snapshot_info_meta_chr <- function(metadata, field) {
 }
 
 # The first and last sealed bar timestamps inside [start, end] (UTC), one
-# indexed aggregate over snapshot_bars; NA when the range holds no bar.
+# aggregate over snapshot_bars (a few ms at Sharadar scale); NA when the range holds no bar.
 ledgr_snapshot_bar_range <- function(con, snapshot_id, start_ts_utc, end_ts_utc) {
   as_utc <- function(x) as.POSIXct(ledgr_normalize_ts_utc(x), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   out <- DBI::dbGetQuery(
