@@ -940,10 +940,12 @@ summary.ledgr_backtest <- function(object,
   }
 
   ledgr_print_valuation_summary(valuation)
-  off_session <- ledgr_backtest_off_session_bar_count(object)
+  # Only an availability-aware run excludes off-session bars from its pulses
+  # (and always shares its snapshot's store); the count is snapshot-wide.
+  off_session <- if (isTRUE(object$config$availability$active)) ledgr_backtest_off_session_bar_count(object) else 0L
   if (off_session > 0L) {
     cat(sprintf(
-      "Off-session bars: %d sealed bar%s on no declared session close, never a pulse; see ledgr_snapshot_quarantine().\n",
+      "Off-session bars: %d sealed bar%s in the snapshot on no declared session close, not a pulse of this run; see ledgr_snapshot_quarantine().\n",
       off_session, if (off_session == 1L) "" else "s"
     ))
   }

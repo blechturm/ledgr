@@ -187,11 +187,20 @@ ledgr_availability_prepare_observations <- function(bars_df,
   )
   # A valid bar off every declared open-session close seals but is never a
   # pulse; it is recorded as observation evidence so it stays visible.
+  # Built column-wise: a vendor whose stamps miss the calendar can make most
+  # bars off-session. The id is the (instrument, time) key, unique because
+  # duplicate keys are refused above.
   off_session <- keep & outside_expectation
-  off_session_rows <- ledgr_availability_evidence_rows(
-    bars_df, which(off_session), instrument_id[off_session], ts[off_session],
-    rep(ledgr_off_session_reason, sum(off_session)),
-    list(source = "ledgr_snapshot_from_df", disposition = "sealed_not_a_pulse")
+  off_session_rows <- data.frame(
+    quarantine_id = paste0("off_session_", instrument_id[off_session], "@", ts_token[off_session], recycle0 = TRUE),
+    supplied_instrument_id = instrument_id[off_session],
+    supplied_ts_utc = as.POSIXct(ts[off_session], tz = "UTC"),
+    reason = rep(ledgr_off_session_reason, sum(off_session)),
+    original_row_json = ledgr_availability_original_rows_json(bars_df[off_session, , drop = FALSE]),
+    provenance_json = rep(as.character(canonical_json(list(
+      source = "ledgr_snapshot_from_df", disposition = "sealed_not_a_pulse"
+    ))), sum(off_session)),
+    stringsAsFactors = FALSE
   )
   list(accepted = accepted, quarantine = quarantine, off_session = off_session_rows, report = report)
 }
@@ -262,6 +271,22 @@ ledgr_availability_times_are_session_closes <- function(
     tokens = ledgr_fact_time_token(ts)) {
   if (is.null(session_rows)) return(rep(TRUE, length(ts)))
   tokens %in% ledgr_fact_time_token(session_rows$session_close)
+}
+
+# ledgr_availability_original_row_json() for every row of `df` at once, for
+# rows whose numbers are finite (accepted bars): the columns are formatted
+# once, keys sorted, and the frame written as NDJSON, one canonical object per
+# row. Byte-identical to the per-row form.
+ledgr_availability_original_rows_json <- function(df) {
+  if (nrow(df) == 0L) return(character())
+  cols <- lapply(df, function(x) {
+    if (inherits(x, "POSIXt")) return(ledgr_fact_time_tokens_distinct(x))
+    if (inherits(x, "Date")) return(as.character(x))
+    unname(x)
+  })
+  frame <- as.data.frame(cols[order(names(cols))], stringsAsFactors = FALSE, optional = TRUE)
+  lines <- strsplit(yyjsonr::write_ndjson_str(frame, opts = .ledgr_json_write_canonical_v2_opts), "\n", fixed = TRUE)[[1L]]
+  lines[nzchar(lines)]
 }
 
 ledgr_availability_original_row_json <- function(row) {

@@ -9,7 +9,9 @@ ledgr_snapshot_quarantine(snapshot)
 }
 \value{
 A tibble with quarantine identifiers, supplied identifiers and timestamps,
-reasons, original row JSON, and provenance JSON. A snapshot with no
+reasons, original row JSON, provenance JSON, and \code{disposition}
+(\code{"excluded"} for a quarantined row, \code{"sealed_not_a_pulse"} for an
+off-session bar). A snapshot with no
 quarantined observations returns a zero-row tibble with the same columns.
 }
 \description{

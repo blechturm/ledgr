@@ -491,10 +491,14 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     )
   }
   unsupported <- c(unsupported, ledgr_corporate_action_held_unmodeled(con, snapshot_id, bt$run_id, facts$rows))
+  # A run stopped on a refused settlement did not represent that effect.
+  completion <- ledgr_run_completion_read(con, bt$run_id, required = FALSE)
+  refusal_stop <- !is.null(completion) && nrow(completion) == 1L &&
+    isTRUE(completion$stop_reason[[1L]] %in% c("corporate_action_cash_refused", "corporate_action_quantity_refused"))
 
   out <- list(
     corporate_action_fidelity = ledgr_corporate_action_fidelity(
-      if (any(unsupported)) {
+      if (any(unsupported) || refusal_stop) {
         "unsupported"
       } else if (length(cash_meta) > 0L || length(disposition_meta) > 0L) {
         "modeled"

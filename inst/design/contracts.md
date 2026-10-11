@@ -422,14 +422,17 @@ Accepted change pending:
   acknowledged observation-quarantine row. Store-local snapshot IDs remain
   excluded. A missing rule marker on a legacy snapshot means rule 1.
 - A valid bar that falls on no declared open-session close is sealed in
-  `snapshot_bars` and never becomes a pulse on any path. Ingest records each
-  one in the quarantine table under reason `off_session_bar` (in either
-  `invalid_observations` mode); `ledgr_snapshot_quarantine()` lists it,
+  `snapshot_bars` and never becomes a pulse of an availability-aware run
+  (`ledgr_backtest()` on a snapshot with facts still runs dense until Cut 12
+  LDG-3001). Ingest records each one in the quarantine table under reason
+  `off_session_bar` (in either `invalid_observations` mode);
+  `ledgr_snapshot_quarantine()` lists it with `disposition`
+  `sealed_not_a_pulse` (quarantined rows read `excluded`),
   `ledgr_snapshot_info()` counts it as `off_session_bar_count` (0 when there
-  is none), and `summary()` of a result reports a non-zero count. The record
-  is derived from hashed bars and sessions, so it is outside the snapshot hash
-  and the quarantine acknowledgement; the hash rule is unchanged (Cut 12
-  LDG-3011).
+  is none), and `summary()` of an availability-aware result reports the
+  snapshot-wide count when it is not zero. The record is derived from hashed
+  bars and sessions, so it is outside the snapshot hash and the quarantine
+  acknowledgement; the hash rule is unchanged (Cut 12 LDG-3011).
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
@@ -503,10 +506,11 @@ Accepted change pending:
 - Every availability-aware experiment requires a complete declared session
   calendar over the requested range and an explicit
   `ledgr_valuation_stale(max_sessions)` policy. A run, sweep, run window or
-  walk-forward fold whose requested start or end falls outside the declared
-  calendar's civil days refuses with `ledgr_sessions_incomplete` instead of
-  running over the shorter calendar (Cut 12 LDG-2998). The requested start
-  includes an opening date that precedes the sealed data. The
+  walk-forward fold whose requested range, clamped to the sealed bars as the
+  scoring start is, falls outside the declared calendar's civil days in the
+  venue zone refuses with `ledgr_sessions_incomplete` instead of running over
+  the shorter calendar (Cut 12 LDG-2998). The check runs at those execution
+  entry points; reading or reconstructing a stored run does not repeat it. The
   package supplies no default stale horizon.
 - ledgr accounts in split-adjusted share units: no split event acts on a
   position, so quantities, fills and marks are consistent only when bars are

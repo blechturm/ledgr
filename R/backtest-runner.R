@@ -795,6 +795,10 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     snapshot_hash_for_features
   )
 
+  if (availability_active) {
+    sealed <- ledgr_snapshot_sealed_range(con, snapshot_id)
+    ledgr_availability_require_coverage(availability_provider, start_ts_utc, end_ts_utc, sealed$start, sealed$end)
+  }
   calendar <- if (availability_active) {
     ledgr_availability_calendar(availability_provider, start_ts_utc, end_ts_utc)
   } else {

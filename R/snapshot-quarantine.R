@@ -10,7 +10,9 @@
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object.
 #' @return A tibble with quarantine identifiers, supplied identifiers and
-#'   timestamps, reasons, original row JSON, and provenance JSON. A snapshot
+#'   timestamps, reasons, original row JSON, provenance JSON, and
+#'   `disposition` (`"excluded"` for a quarantined row, `"sealed_not_a_pulse"`
+#'   for an off-session bar). A snapshot
 #'   with no quarantined observations returns a zero-row tibble with the same
 #'   columns.
 #' @export
@@ -33,7 +35,7 @@ ledgr_snapshot_quarantine <- function(snapshot) {
     )
   }
 
-  tibble::as_tibble(DBI::dbGetQuery(
+  rows <- DBI::dbGetQuery(
     opened$con,
     paste(
       "SELECT quarantine_id, supplied_instrument_id, supplied_ts_utc,",
@@ -42,5 +44,7 @@ ledgr_snapshot_quarantine <- function(snapshot) {
       "WHERE snapshot_id = ? ORDER BY quarantine_id"
     ),
     params = list(snapshot$snapshot_id)
-  ))
+  )
+  rows$disposition <- c("excluded", "sealed_not_a_pulse")[1L + (rows$reason == ledgr_off_session_reason)]
+  tibble::as_tibble(rows)
 }

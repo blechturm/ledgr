@@ -156,3 +156,16 @@ ledgr_snapshot_info_meta_chr <- function(metadata, field) {
   }
   as.character(value)
 }
+
+# The sealed snapshot's first and last bar timestamps, from its seal metadata.
+ledgr_snapshot_sealed_range <- function(con, snapshot_id) {
+  meta <- ledgr_snapshot_info_parse_meta(DBI::dbGetQuery(
+    con,
+    "SELECT meta_json FROM snapshots WHERE snapshot_id = ?",
+    params = list(snapshot_id)
+  )$meta_json[1L])
+  list(
+    start = ledgr_snapshot_info_meta_chr(meta, "start_date"),
+    end = ledgr_snapshot_info_meta_chr(meta, "end_date")
+  )
+}

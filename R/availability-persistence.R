@@ -433,6 +433,9 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
   if (identical(rule, 1L)) return(invisible(TRUE))
 
   data <- ledgr_snapshot_availability_read(con, snapshot_id)
+  # Off-session records are derived and unhashed; the seal checks below cover
+  # the hashed quarantine rows only.
+  data$snapshot_observation_quarantine <- ledgr_snapshot_quarantine_counted(data$snapshot_observation_quarantine)
   families <- data$snapshot_fact_families
   if (nrow(families) == 0L) {
     rlang::abort(
@@ -471,7 +474,7 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
   for (table_name in names(json_columns)) {
     rows <- data[[table_name]]
     for (column_name in json_columns[[table_name]]) {
-      if (nrow(rows) > 0L && !all(vapply(rows[[column_name]], ledgr_snapshot_valid_canonical_json, logical(1)))) {
+      if (nrow(rows) > 0L && !all(vapply(unique(rows[[column_name]]), ledgr_snapshot_valid_canonical_json, logical(1)))) {
         rlang::abort(
           sprintf("%s.%s is not valid canonical JSON.", table_name, column_name),
           class = c("ledgr_snapshot_fact_json_invalid", "ledgr_invalid_state")
@@ -674,7 +677,7 @@ ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
     }
   }
 
-  quarantine <- ledgr_snapshot_quarantine_counted(data$snapshot_observation_quarantine)
+  quarantine <- data$snapshot_observation_quarantine
   q_header <- families[
     families$family == "observation_quarantine" & families$scope_id == "invalid_observations",
     ,

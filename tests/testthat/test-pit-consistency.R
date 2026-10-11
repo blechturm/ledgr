@@ -282,6 +282,30 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
     close(inside)
     ledgr_snapshot_close(snapshot)
   }
+
+  # A New York calendar whose civil days start at 05:00Z: an opening dated on
+  # the first session, or before the sealed bars, runs from the sealed start
+  # (the scoring-start rule), and the run and the sweep agree.
+  ny_days <- as.Date("2021-03-01") + 0:4
+  ny_close <- as.POSIXct(paste(ny_days, "16:00:00"), tz = "America/New_York")
+  attr(ny_close, "tzone") <- "UTC"
+  ny <- ledgr_snapshot_from_df(
+    data.frame(instrument_id = "AAA", ts_utc = ny_close, open = 10, high = 10, low = 10, close = 10, volume = 1),
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    facts = ledgr_facts(ledgr_facts_sessions(
+      data.frame(session_date = ny_days, status = "open", session_open = "09:30:00", session_close = "16:00:00"),
+      venue_id = "XNYS", timezone = "America/New_York", knowledge = "assume_effective"
+    ))
+  )
+  on.exit(ledgr_snapshot_close(ny), add = TRUE)
+  for (opening_date in list(ny_days[[1]], ny_days[[1]] - 10)) {
+    exp <- ledgr_experiment(ny, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = opening_date))
+    run_id <- paste0("ny_opening_", as.character(opening_date))
+    close(ledgr_run(exp, run_id = run_id))
+    testthat::expect_identical(ledgr_run_info(ny, run_id)$status, "DONE")
+    testthat::expect_identical(ledgr_sweep(exp, ledgr_param_grid(a = list()))$status[[1]], "DONE")
+  }
 })
 
 testthat::test_that("[LTB-0225] availability-aware experiments require and disclose a price basis", {
@@ -336,6 +360,7 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_identical(info$off_session_bar_count, 1L)
   evidence <- ledgr_snapshot_quarantine(snapshot)
   testthat::expect_identical(evidence$reason, "off_session_bar")
+  testthat::expect_identical(evidence$disposition, "sealed_not_a_pulse")
   testthat::expect_identical(evidence$supplied_instrument_id, "AAA")
   testthat::expect_equal(evidence$supplied_ts_utc, saturday, ignore_attr = TRUE)
   # The bar stays sealed and the record stays outside the hash: the snapshot
@@ -363,7 +388,7 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   bt <- ledgr_run(exp, run_id = "off_session_run")
   testthat::expect_false(any(substr(seen$ts, 1, 10) == as.character(days[[5]] + 1)))
   testthat::expect_false(any(as.Date(ledgr_results(bt, "equity")$ts_utc) == days[[5]] + 1))
-  testthat::expect_true(any(grepl("Off-session bars: 1 sealed bar", utils::capture.output(summary(bt)), fixed = TRUE)))
+  testthat::expect_true(any(grepl("Off-session bars: 1 sealed bar in the snapshot", utils::capture.output(summary(bt)), fixed = TRUE)))
   # The record is derived evidence: it is not counted as quarantined, and
   # removing it leaves the snapshot hash verifying.
   meta <- ledgr:::ledgr_json_read_nested(ledgr_snapshot_info(snapshot)$meta_json)
@@ -455,11 +480,18 @@ testthat::test_that("[LTB-0227] a held corporate action ledgr does not model is 
   dense_research <- run_summary(dense, "dense_research", ledgr_corporate_actions_research(), universe = c("AAA", "CCC"))
   testthat::expect_identical(dense_research$corporate_action_fidelity, "unsupported")
   testthat::expect_identical(dense_research$unsupported_facts, 1L)
-  # A dense run has no typed stop, so strict still aborts.
+  # A dense run has no typed stop, so strict still aborts; a dense sweep
+  # candidate fails the same way.
   testthat::expect_error(
     run_summary(dense, "dense_strict", ledgr_corporate_actions_strict(), universe = c("AAA", "CCC")),
     class = "ledgr_corporate_action_quantity_unsupported"
   )
+  dense_sweep <- ledgr_sweep(
+    ledgr_experiment(dense, buy_aaa, universe = c("AAA", "CCC"), cost_model = ledgr_cost_zero(),
+                     opening = ledgr_opening(cash = 1000), corporate_action_policy = ledgr_corporate_actions_strict()),
+    ledgr_param_grid(a = list())
+  )
+  testthat::expect_identical(dense_sweep$error_class[[1L]], "ledgr_corporate_action_quantity_unsupported")
 })
 
 testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the run typed", {
@@ -496,6 +528,7 @@ testthat::test_that("[LTB-0228] a declared corporate-action refusal stops the ru
   testthat::expect_identical(stop_row$instrument_id, "AAA")
   reopened <- ledgr_run_open(snapshot, "strict_cash")
   testthat::expect_identical(ledgr_run_completion(reopened)$stop_reason, "corporate_action_cash_refused")
+  testthat::expect_identical(ledgr_corporate_action_summary(reopened)$corporate_action_fidelity, "unsupported")
   close(reopened)
   # Rerunning returns the same stored run.
   close(ledgr_run(exp, run_id = "strict_cash"))

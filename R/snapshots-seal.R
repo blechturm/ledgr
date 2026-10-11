@@ -277,7 +277,7 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
     metadata <- put_if_missing(
       metadata,
       "quarantined_observation_count",
-      as.integer(nrow(availability$snapshot_observation_quarantine))
+      as.integer(nrow(ledgr_snapshot_quarantine_counted(availability$snapshot_observation_quarantine)))
     )
   }
 

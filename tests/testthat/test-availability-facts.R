@@ -524,9 +524,11 @@ testthat::test_that("[LTB-0062] explicit quarantine is publicly readable and has
   testthat::expect_equal(nrow(stored_bars), 2L)
   testthat::expect_equal(nrow(quarantine), 2L)
   testthat::expect_setequal(quarantine$reason, c("ohlc_invalid", "instrument_unknown"))
+  testthat::expect_identical(public_quarantine$disposition, c("excluded", "excluded"))
+  stored_columns <- setdiff(names(public_quarantine), "disposition")
   testthat::expect_identical(
-    as.data.frame(public_quarantine),
-    quarantine[, names(public_quarantine), drop = FALSE]
+    as.data.frame(public_quarantine)[, stored_columns, drop = FALSE],
+    quarantine[, stored_columns, drop = FALSE]
   )
   testthat::expect_true(any(grepl('"high":8', quarantine$original_row_json, fixed = TRUE)))
   testthat::expect_identical(

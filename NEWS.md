@@ -20,9 +20,9 @@
 
 - An availability-aware run, sweep, run window or walk-forward fold now
   refuses with `ledgr_sessions_incomplete` when the declared session calendar
-  does not cover its requested start and end, including an opening date
-  before the calendar starts. Previously the run silently covered only the
-  calendar's days and still reported itself complete.
+  does not cover the dates of its sealed bars that it was asked to run.
+  Previously the run silently covered only the calendar's days and still
+  reported itself complete.
 
 - An availability-aware experiment now requires a snapshot sealed with a
   declared price basis (`price_basis = "split_adjusted"`) and refuses an
@@ -33,10 +33,12 @@
   experiments may still run undeclared.
 
 - A valid bar that falls on no declared session close (for example a vendor
-  bar on a market holiday) still seals and is still never used, but it is no
-  longer invisible: `ledgr_snapshot_quarantine()` lists it with reason
-  `off_session_bar`, `ledgr_snapshot_info()` gains `off_session_bar_count`,
-  and `summary()` of a result reports the count when it is not zero. The
+  bar on a market holiday) still seals and is still never a pulse of an
+  availability-aware run, but it is no longer invisible:
+  `ledgr_snapshot_quarantine()` lists it with reason `off_session_bar` and
+  gains a `disposition` column (`excluded` or `sealed_not_a_pulse`),
+  `ledgr_snapshot_info()` gains `off_session_bar_count`, and `summary()` of
+  an availability-aware result reports the count when it is not zero. The
   snapshot hash is unchanged.
 
 - A held corporate action that ledgr does not model is no longer silently
@@ -51,9 +53,9 @@
   availability-aware run `INCOMPLETE` with its accepted prefix and stop
   reason `corporate_action_cash_refused` or
   `corporate_action_quantity_refused`, like a refused terminal; the run opens
-  and reruns. Previously the run failed and rolled back all its evidence. A
-  dense run has no incomplete state and still raises
-  `ledgr_corporate_action_unsupported`.
+  and reruns, and its corporate-action fidelity reads `unsupported`.
+  Previously the run failed and rolled back all its evidence. A dense run has
+  no incomplete state and still raises `ledgr_corporate_action_unsupported`.
 
 ## Runs and evaluations that keep going on real data
 
