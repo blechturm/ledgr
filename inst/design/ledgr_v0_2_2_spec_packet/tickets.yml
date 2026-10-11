@@ -369,10 +369,11 @@ workstreams:
   - id: 23
     name: "Recovery and resume correctness"
     cut: 12
-    status: "open"
+    status: "complete"
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23", reason: "One claim joins LDG-2993 to LDG-2995: an interrupted and resumed availability run, a run that values no pulse and an INCOMPLETE run with a post-prefix fill each keep the evidence a fresh run keeps, open and reconstruct. The review reruns S2_entitlement, S2_stops and I_walk_forward W4 on both trees, removes each fix to prove its detector fails, checks the dividend boundary against LTB-0035, and walks the seven shapes on every changed function."}
+    decisions: "Maintainer, 2026-10-11: accepted on the Codex close review PASS at 434e92db (0 blocking findings across 3 tickets), after an agent review loop (CHANGES_REQUIRED three times, then PASS). The momentum-run peak rise is recorded as within the declared noise rule; a preset heap shows it follows R's heap-growth schedule. A resumed run's persisted feature rows can differ from the uninterrupted run's (pre-existing); the contract states they are outside the resume agreement, and routing is open."
   - id: 24
     name: "Silent inputs and ingest guarantees"
     cut: 12
