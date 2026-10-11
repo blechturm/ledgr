@@ -277,26 +277,33 @@ ledgr_availability_times_are_session_closes <- function(
 # ledgr_availability_original_row_json() for every row of `df` at once: the
 # columns are formatted once, keys sorted, and the frame written as NDJSON,
 # one canonical object per row, byte-identical to the per-row form; text is
-# written as UTF-8 in both. A row holding an infinite value in an extra column,
-# which the per-row form writes as a string, is rewritten by that form; only
-# such rows are visited.
+# written as UTF-8 in both. A numeric column holding an infinite value, which
+# the per-row form writes as a string, is written as a list column in the same
+# pass; no row is visited on its own.
 ledgr_availability_original_rows_json <- function(df) {
   if (nrow(df) == 0L) return(character())
-  infinite <- Reduce(`|`, lapply(df, function(x) if (is.numeric(x)) is.infinite(x) else rep(FALSE, nrow(df))), rep(FALSE, nrow(df)))
   cols <- lapply(df, function(x) {
     if (inherits(x, "POSIXt")) return(ledgr_fact_time_tokens_distinct(x))
     if (inherits(x, "Date")) return(as.character(x))
     if (is.factor(x)) x <- as.character(x)
     if (is.character(x)) return(enc2utf8(unname(x)))
+    if (is.numeric(x) && any(is.infinite(x))) {
+      # The per-row form writes an infinite value as the string "Inf" or
+      # "-Inf"; a list column carries those cells beside the numbers.
+      out <- as.list(unname(x))
+      infinite <- which(is.infinite(x))
+      out[infinite] <- as.list(as.character(x[infinite]))
+      return(out)
+    }
     unname(x)
   })
-  frame <- as.data.frame(cols[order(names(cols))], stringsAsFactors = FALSE, optional = TRUE)
+  cols <- cols[order(names(cols))]
+  listed <- vapply(cols, is.list, logical(1))
+  frame <- as.data.frame(lapply(cols, function(x) if (is.list(x)) rep(NA, length(x)) else x),
+                         stringsAsFactors = FALSE, optional = TRUE)
+  for (j in which(listed)) frame[[j]] <- cols[[j]]
   lines <- strsplit(yyjsonr::write_ndjson_str(frame, opts = .ledgr_json_write_canonical_v2_opts), "\n", fixed = TRUE)[[1L]]
-  lines <- lines[nzchar(lines)]
-  # The per-row form writes an infinite value as a string; only those rows
-  # take it.
-  for (i in which(infinite)) lines[[i]] <- ledgr_availability_original_row_json(df[i, , drop = FALSE])
-  lines
+  lines[nzchar(lines)]
 }
 
 ledgr_availability_original_row_json <- function(row) {

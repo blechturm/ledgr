@@ -4,6 +4,7 @@
 #   K1 calendar s1..s30, bars s1..s40 (AAA bought at s1 and held)
 #   K2 calendar s10..s40, bars s1..s40
 #   K3 full calendar, opening dated 2021-02-01 (before the sealed start)
+#   K4 full calendar, opening dated 2021-03-01 (the first session)
 # For each: run status, completion row (intended and achieved bounds,
 # complete_performance), stored config window, equity rows, summary heading,
 # and the sweep's scoring_range for the same experiment.
@@ -20,7 +21,6 @@ ids <- c("AAA", "GGG")
 bars <- fx$bars[fx$bars$instrument_id %in% ids, ]
 strategy <- function(ctx, params) { t <- ctx$hold(); if (ctx$ts_utc == params$buy_ts) t[["AAA"]] <- 10; t }
 first_close <- function(sessions) iso(pit_audit_at(min(sessions$session_date[sessions$status == "open"]), "16:00:00"))
-
 probe <- function(label, sessions, opening = ledgr_opening(cash = 1e4)) {
   db <- tempfile(fileext = ".duckdb")
   facts <- ledgr_facts(ledgr_facts_sessions(sessions, venue_id = "XNYS", timezone = pit_audit_tz, knowledge = "assume_effective"))
@@ -49,6 +49,9 @@ probe <- function(label, sessions, opening = ledgr_opening(cash = 1e4)) {
               format(sw$final_equity[[1]], nsmall = 2), if (is.null(sr)) "<not found>" else paste(unlist(sr), collapse = "..")))
 }
 s30 <- cal$open_days[[30L]]; s10 <- cal$open_days[[10L]]
-probe("K1_cal_to_s30", cal$sessions[cal$sessions$session_date <= s30, ])
-probe("K2_cal_from_s10", cal$sessions[cal$sessions$session_date >= s10, ])
-probe("K3_opening_early", cal$sessions, opening = ledgr_opening(cash = 1e4, date = as.Date("2021-02-01")))
+# Each case is caught on its own, so a refusal does not stop the later cases.
+safe <- function(label, ...) tryCatch(probe(label, ...), error = function(e) cat(paste0("[", label, "] ERROR ", class(e)[[1]], " - ", conditionMessage(e)), fill = TRUE))
+safe("K1_cal_to_s30", cal$sessions[cal$sessions$session_date <= s30, ])
+safe("K2_cal_from_s10", cal$sessions[cal$sessions$session_date >= s10, ])
+safe("K3_opening_early", cal$sessions, opening = ledgr_opening(cash = 1e4, date = as.Date("2021-02-01")))
+safe("K4_opening_first_session", cal$sessions, opening = ledgr_opening(cash = 1e4, date = as.Date("2021-03-01")))

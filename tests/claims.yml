@@ -2548,7 +2548,7 @@ claims:
     owner: "maintainer"
     protected_contract_or_defect: "G-008: an off-session bar sealed, was excluded at runtime and appeared in no retrospective view; the ingest report was discarded on success, against availability synthesis s4.4."
     oracle_independence: "Expected values follow from the added Saturday bar and the contract rule; hash independence is checked by verification after deleting the record."
-    smallest_failing_change: "Do not write the record, hash it, count it in the quarantine acknowledgement, label its disposition as excluded, or drop the summary count."
+    smallest_failing_change: "Do not write the record, hash it, count it in the quarantine acknowledgement, label its disposition as excluded, drop the summary count, or serialize exceptional rows one at a time."
     cheapest_adequate_lane: "Three snapshot builds, one short run and one verified reopen; fast."
     overlapping_evidence: "Audit probe I_paths P11."
   - id: "LCL-0225"

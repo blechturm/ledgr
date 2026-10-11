@@ -469,6 +469,14 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_true(grepl("\"score\":\"Inf\"", records$original_row_json[[1L]], fixed = TRUE))
   testthat::expect_true(grepl("\"score\":1", records$original_row_json[[2L]], fixed = TRUE))
   testthat::expect_true(all(vapply(records$original_row_json, ledgr:::ledgr_snapshot_valid_canonical_json, logical(1))))
+  # The record serializer never visits a row on its own, even when every row
+  # holds an exceptional value: it matches the per-row form with that form
+  # unavailable.
+  exceptional <- data.frame(instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
+                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = cafe)
+  expected <- vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
+  testthat::local_mocked_bindings(ledgr_availability_original_row_json = function(...) stop("per-row serializer used"), .package = "ledgr")
+  testthat::expect_identical(ledgr:::ledgr_availability_original_rows_json(exceptional), expected)
 
   clean <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(clean), add = TRUE)

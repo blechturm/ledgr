@@ -13,7 +13,7 @@
 #   P8 basket      P1 with a character-vector universe (fixed basket)
 #   P9 dense       bars only (no facts) for five continuous instruments
 #   P10 early      opening dated before the sealed start: run vs sweep start
-#   P11 offbar     an extra AAA bar on a closed ad hoc weekday: ingest, run
+#   P11 offbar     an extra AAA bar on a closed ad hoc weekday: ingest, run, evidence surfaces
 #   P12 pulse      ledgr_pulse_snapshot() on the point-in-time snapshot
 #   P13 backtest   ledgr_backtest() (lower-level wrapper) on the point-in-time
 #                  snapshot; ledgr_indicator_dev() at a halted session
@@ -246,6 +246,12 @@ if (inherits(snapo, "error")) say("P11 offbar", "seal ", err(snapo)) else {
   if (inherits(bt11, "error")) say("P11 offbar", "run ", err(bt11)) else {
     say("P11 offbar", "sealed bars ", nrow(fxo$bars), "; pulses seen ", length(seen$ts), "; AAA close 999 seen: ", any(seen$aaa == 999, na.rm = TRUE),
         "; off-session ts seen: ", iso(extra$ts_utc) %in% seen$ts)
+    # Cut 12 LDG-3011 evidence surfaces (absent on the pre-cut tree).
+    q11 <- ledgr_snapshot_quarantine(snapo)
+    say("P11 offbar", "snapshot info off_session_bar_count ", ledgr_snapshot_info(snapo)$off_session_bar_count %||% "absent",
+        "; quarantine rows ", nrow(q11), " reasons ", paste(q11$reason, collapse = ","),
+        "; dispositions ", paste(q11$disposition %||% "absent", collapse = ","))
+    say("P11 offbar", "summary off-session line: ", paste(grep("Off-session", capture.output(summary(bt11)), value = TRUE), collapse = " "))
     close(bt11)
   }
   ledgr_snapshot_close(snapo)

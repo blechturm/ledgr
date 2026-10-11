@@ -53,6 +53,9 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
   arm; samples each child's resident memory every 0.25 s and attributes
   elapsed time and peak memory to the logged phases.
 - `probes.R`: one growth-shape probe per finding.
+- `offsession_ingest.R`: Cut 12 LDG-3011 ingest clock when most bars are
+  off-session, with finite and all-infinite extra values; record in
+  `evidence/offsession_ingest/`.
 
 ## Measurement method (declared before the baseline, 2026-10-09)
 
