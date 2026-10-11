@@ -246,3 +246,40 @@ testthat::test_that("[LTB-0223] session instants must fall on their date and sta
   late_close[[4]] <- at(days[[5]], "00:30:00")
   testthat::expect_error(build(calendar(open, late_close)), class = "ledgr_session_instant_off_date")
 })
+
+testthat::test_that("[LTB-0224] a calendar that does not cover the requested range refuses", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  hold <- function(ctx, params) ctx$hold()
+  experiment <- function(snapshot) {
+    ledgr_experiment(
+      snapshot, hold, universe = ledgr_universe_members("u"),
+      valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+    )
+  }
+  fold <- function(train_start, test_end) {
+    ledgr:::ledgr_fold_list(
+      list(ledgr_fold(at(train_start), at(days[[7]]), at(days[[8]]), at(test_end), fold_seq = 1L)),
+      constructor = list(type_id = "explicit")
+    )
+  }
+  # The calendar ends before the last bar (K1), or starts after the first (K2).
+  for (case in list(list(to = days[[10]], wf = c(days[[2]], days[[13]]), inside = days[c(1, 10)]),
+                    list(from = days[[4]], wf = c(days[[2]], days[[10]]), inside = days[c(4, 15)]))) {
+    snapshot <- scale_test_events_snapshot(sessions_from = case$from, sessions_to = case$to)
+    exp <- experiment(snapshot)
+    testthat::expect_error(ledgr_run(exp, run_id = "short_calendar"), class = "ledgr_sessions_incomplete")
+    testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
+    testthat::expect_error(
+      ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = fold(case$wf[[1]], case$wf[[2]]),
+                         selection_rule = ledgr_rule_argmax("sharpe_ratio")),
+      class = "ledgr_sessions_incomplete"
+    )
+    # A window the calendar covers runs.
+    window <- ledgr_experiment_window(exp, at(case$inside[[1]]), at(case$inside[[2]]))
+    inside <- ledgr_run_window(exp, window = window, run_id = "covered_window")
+    testthat::expect_identical(ledgr_run_info(snapshot, "covered_window")$status, "DONE")
+    close(inside)
+    ledgr_snapshot_close(snapshot)
+  }
+})

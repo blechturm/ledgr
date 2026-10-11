@@ -19,6 +19,7 @@
 \alias{ledgr_availability_inactive}
 \alias{ledgr_availability_sessions_required}
 \alias{ledgr_valuation_policy_required}
+\alias{ledgr_sessions_incomplete}
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
 \alias{ledgr_execution_timing_version_mismatch}
@@ -198,6 +199,10 @@ execution.
 \code{ledgr_valuation_policy_required} are raised when availability-aware
 execution lacks a complete session calendar or an explicit valuation
 policy, respectively.
+
+\code{ledgr_sessions_incomplete} is raised when the declared session calendar
+does not cover the requested start and end of a run, sweep, run window or
+walk-forward fold.
 
 \code{ledgr_membership_universe_not_found} is raised when a membership-universe
 rule names a universe that is not declared by the snapshot.

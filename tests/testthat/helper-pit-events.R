@@ -2,7 +2,7 @@
 # BBB has no bar on the sixth session, CCC stops after the ninth and becomes
 # known_inactive (bankruptcy) on the tenth. Shared by the Cut 11 and Cut 12
 # tests; `second_members` adds a later complete membership set.
-scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identity, ...) {
+scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identity, sessions_from = NULL, sessions_to = NULL, ...) {
   days <- as.Date("2021-01-04") + c(0:4, 7:11, 14:18)
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   ids <- c("AAA", "BBB", "CCC")
@@ -14,7 +14,7 @@ scale_test_events_snapshot <- function(second_members = NULL, edit_bars = identi
   }))
   bars <- bars[!(bars$instrument_id == "BBB" & bars$ts_utc == utc(days[[6]])), , drop = FALSE]
   bars <- edit_bars(bars)
-  calendar <- seq(min(days), max(days), by = "day")
+  calendar <- seq(sessions_from %||% min(days), sessions_to %||% max(days), by = "day")
   open <- calendar %in% days
   membership <- data.frame(effective_from = utc(days[[1]] - 1), knowledge_time = utc(days[[1]] - 1), source = "t")
   membership$members <- I(list(ids))

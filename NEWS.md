@@ -18,6 +18,12 @@
   day. Previously such a calendar sealed; `ledgr_run()` then failed with an
   unclassified database error while `ledgr_sweep()` reported success.
 
+- An availability-aware run, sweep, run window or walk-forward fold now
+  refuses with `ledgr_sessions_incomplete` when the declared session calendar
+  does not cover its requested start and end, including an opening date
+  before the calendar starts. Previously the run silently covered only the
+  calendar's days and still reported itself complete.
+
 ## Runs and evaluations that keep going on real data
 
 - An interrupted and resumed run now binds dividend entitlement exactly like

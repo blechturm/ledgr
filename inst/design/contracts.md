@@ -492,7 +492,12 @@ Accepted change pending:
   dense experiment, config, execution-spec, context, and feature-identity
   payloads.
 - Every availability-aware experiment requires a complete declared session
-  calendar and an explicit `ledgr_valuation_stale(max_sessions)` policy. The
+  calendar over the requested range and an explicit
+  `ledgr_valuation_stale(max_sessions)` policy. A run, sweep, run window or
+  walk-forward fold whose requested start or end falls outside the declared
+  calendar's civil days refuses with `ledgr_sessions_incomplete` instead of
+  running over the shorter calendar (Cut 12 LDG-2998). The requested start
+  includes an opening date that precedes the sealed data. The
   package supplies no default stale horizon. `max_sessions = 0` means that only
   a current-session mark is permissible.
 - A character-vector universe remains a fixed basket even when it consumes

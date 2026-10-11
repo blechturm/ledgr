@@ -294,7 +294,7 @@ ledgr_availability_provider_build <- function(data, config, snapshot_hash, histo
 
 ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {
   sessions <- provider$sessions
-  sessions <- sessions[sessions$status == "open", , drop = FALSE]
+  declared <- sessions
   # `ledgr_normalize_ts_utc()` emits ISO8601 with `T`/`Z`, which base `as.POSIXct`
   # cannot parse without an explicit format: it falls back to `%Y-%m-%d` and
   # silently truncates the bound to midnight, dropping the final session close.
@@ -308,6 +308,24 @@ ledgr_availability_calendar <- function(provider, start_ts_utc, end_ts_utc) {
     tz = "UTC",
     format = "%Y-%m-%dT%H:%M:%SZ"
   )
+  # The declared calendar must cover the whole requested range: its civil days
+  # run from the first row's effective_from to the last row's (exclusive)
+  # effective_to. A shorter calendar would otherwise truncate the run silently.
+  covered_from <- if (nrow(declared) > 0L) min(as.POSIXct(declared$effective_from, tz = "UTC")) else NA
+  covered_to <- if (nrow(declared) > 0L) max(as.POSIXct(declared$effective_to, tz = "UTC")) else NA
+  if (!isTRUE(start >= covered_from) || !isTRUE(end < covered_to)) {
+    rlang::abort(
+      sprintf(
+        "The declared session calendar (%s to %s) does not cover the requested range %s to %s.",
+        if (nrow(declared) > 0L) as.character(min(declared$session_date)) else "none",
+        if (nrow(declared) > 0L) as.character(max(declared$session_date)) else "none",
+        ledgr_normalize_ts_utc(start_ts_utc),
+        ledgr_normalize_ts_utc(end_ts_utc)
+      ),
+      class = c("ledgr_sessions_incomplete", "ledgr_invalid_config")
+    )
+  }
+  sessions <- sessions[sessions$status == "open", , drop = FALSE]
   sessions <- sessions[
     !is.na(sessions$session_close) &
       sessions$session_close >= start &
