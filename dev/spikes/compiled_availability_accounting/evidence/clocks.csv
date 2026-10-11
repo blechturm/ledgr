@@ -1,0 +1,7 @@
+"case","arm","elapsed_seconds","engine_seconds"
+"fill_round_trip","canonical",0.75,0.43
+"fill_round_trip","hybrid",1.19,0.42
+"cashflow_with_sale","canonical",0.14,0.01
+"cashflow_with_sale","hybrid",0.22,0.11
+"terminal_with_sale","canonical",0.2,0.03
+"terminal_with_sale","hybrid",0.16,0.06
