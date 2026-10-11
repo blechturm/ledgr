@@ -11,6 +11,13 @@
   dropped while sizing helpers treated the instrument as unpriced. Zero
   volume with positive prices stays valid.
 
+- `ledgr_facts_sessions()` refuses a session whose POSIXct open or close
+  falls on another date in the venue zone (`ledgr_session_instant_off_date`)
+  and two open sessions that share an open or close instant
+  (`ledgr_session_instant_duplicate`), for example a vendor row shifted by one
+  day. Previously such a calendar sealed; `ledgr_run()` then failed with an
+  unclassified database error while `ledgr_sweep()` reported success.
+
 ## Runs and evaluations that keep going on real data
 
 - An interrupted and resumed run now binds dividend entitlement exactly like

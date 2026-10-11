@@ -96,7 +96,9 @@ Session rows require \code{session_date}, \code{status}, \code{session_open}, an
 may be omitted only with \code{knowledge = "assume_effective"}. Every civil date
 in the declared range appears exactly once. Open-session times may be
 POSIXct timestamps or local \code{HH:MM:SS} strings; closed rows have missing open
-and close times.
+and close times. A POSIXct open or close must fall on its \code{session_date} in
+the venue zone (\code{ledgr_session_instant_off_date}), and no two open sessions
+may share an open or a close instant (\code{ledgr_session_instant_duplicate}).
 }
 \section{Errors}{
 

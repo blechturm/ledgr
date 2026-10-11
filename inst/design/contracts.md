@@ -438,7 +438,11 @@ Accepted change pending:
   expected-session clock is independent of observation presence.
 - Local session wall times must resolve to exactly one UTC instant. Ambiguous
   fall-back and nonexistent spring-forward labels fail closed; an explicit
-  POSIXct instant is already disambiguated and remains valid.
+  POSIXct instant is already disambiguated and remains valid. An open
+  session's open and close instants must fall on its `session_date` in the
+  venue zone (`ledgr_session_instant_off_date`), and no two open sessions
+  share an open or a close instant (`ledgr_session_instant_duplicate`);
+  both are refused when the sessions family is built (Cut 12 LDG-3000).
 - `ledgr_facts_membership_snapshots()` accepts either row-per-member evidence
   or a `members` list-column, never both. Both shapes normalize to the same set
   headers and member assertions before hashing. `character(0)` is an empty set;

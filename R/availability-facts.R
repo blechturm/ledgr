@@ -49,7 +49,9 @@ ledgr_fact_schema_version <- 1L
 #' may be omitted only with `knowledge = "assume_effective"`. Every civil date
 #' in the declared range appears exactly once. Open-session times may be
 #' POSIXct timestamps or local `HH:MM:SS` strings; closed rows have missing open
-#' and close times.
+#' and close times. A POSIXct open or close must fall on its `session_date` in
+#' the venue zone (`ledgr_session_instant_off_date`), and no two open sessions
+#' may share an open or a close instant (`ledgr_session_instant_duplicate`).
 #'
 #' @section Errors:
 #' Structural input failures inherit from `ledgr_invalid_args`. The primary
@@ -660,6 +662,28 @@ ledgr_facts_sessions <- function(df,
   }
   if (any(is_open & session_open >= session_close, na.rm = TRUE)) {
     rlang::abort("Every session open must precede its close.", class = c("ledgr_session_invalid", "ledgr_invalid_args"))
+  }
+  # POSIXct instants are taken as given, so they are checked against their
+  # session_date in the venue zone; two sessions sharing an instant (a shifted
+  # vendor row) would make one pulse two sessions.
+  if (anyDuplicated(session_open[is_open]) || anyDuplicated(session_close[is_open])) {
+    rlang::abort(
+      "Open sessions must not share a session open or close instant.",
+      class = c("ledgr_session_instant_duplicate", "ledgr_session_invalid", "ledgr_invalid_args")
+    )
+  }
+  local_date <- function(x) format(x[is_open], "%Y-%m-%d", tz = timezone)
+  off_date <- local_date(session_open) != as.character(session_date[is_open]) |
+    local_date(session_close) != as.character(session_date[is_open])
+  if (any(off_date)) {
+    rlang::abort(
+      sprintf(
+        "Session open and close must fall on their session_date in %s; off-date session(s): %s.",
+        timezone,
+        paste(utils::head(as.character(session_date[is_open][off_date]), 5L), collapse = ", ")
+      ),
+      class = c("ledgr_session_instant_off_date", "ledgr_session_invalid", "ledgr_invalid_args")
+    )
   }
   effective_from <- ledgr_session_times(
     rep("00:00:00", length(session_date)),

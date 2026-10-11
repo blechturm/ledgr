@@ -215,3 +215,34 @@ testthat::test_that("[LTB-0221] ingest refuses non-positive prices and keeps zer
   on.exit(ledgr_snapshot_close(dense_ok), add = TRUE)
   testthat::expect_identical(ledgr_snapshot_info(dense_ok)$status, "SEALED")
 })
+
+testthat::test_that("[LTB-0223] session instants must fall on their date and stay distinct", {
+  days <- as.Date(c("2021-03-01", "2021-03-02", "2021-03-03", "2021-03-04", "2021-03-05"))
+  at <- function(d, hms) as.POSIXct(paste(d, hms), tz = "America/New_York")
+  calendar <- function(open, close) {
+    data.frame(session_date = days, status = "open", session_open = open, session_close = close)
+  }
+  build <- function(sessions) {
+    ledgr_facts_sessions(sessions, venue_id = "XNYS", timezone = "America/New_York", knowledge = "assume_effective")
+  }
+  open <- do.call(c, lapply(days, at, hms = "09:30:00"))
+  close <- do.call(c, lapply(days, at, hms = "16:00:00"))
+  testthat::expect_s3_class(build(calendar(open, close)), "ledgr_facts_sessions")
+
+  # One session's instants on the next date, distinct from every other session.
+  shifted_open <- open
+  shifted_close <- close
+  shifted_open[[2]] <- at(days[[3]], "07:00:00")
+  shifted_close[[2]] <- at(days[[3]], "08:00:00")
+  testthat::expect_error(build(calendar(shifted_open, shifted_close)), class = "ledgr_session_instant_off_date")
+  # A vendor off-by-one: the 2021-03-02 row repeats the 2021-03-03 instants.
+  dup_open <- open
+  dup_close <- close
+  dup_open[[2]] <- open[[3]]
+  dup_close[[2]] <- close[[3]]
+  testthat::expect_error(build(calendar(dup_open, dup_close)), class = "ledgr_session_instant_duplicate")
+  # A close past local midnight is off its date even when the open is not.
+  late_close <- close
+  late_close[[4]] <- at(days[[5]], "00:30:00")
+  testthat::expect_error(build(calendar(open, late_close)), class = "ledgr_session_instant_off_date")
+})
