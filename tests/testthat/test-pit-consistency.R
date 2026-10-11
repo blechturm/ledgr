@@ -473,8 +473,9 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   # holds an exceptional value: the whole frame is one NDJSON write, the bytes
   # match the per-row form, and that form is never called.
   exceptional <- data.frame(instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
-                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = cafe)
-  expected <- vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
+                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = iconv(cafe, "UTF-8", "latin1"))
+  testthat::expect_identical(Encoding(exceptional$note), rep("latin1", 3L))
+  expected <-vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
   writes <- 0L
   write_ndjson <- ledgr:::ledgr_json_write_canonical_ndjson
   testthat::local_mocked_bindings(
