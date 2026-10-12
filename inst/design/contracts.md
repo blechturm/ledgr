@@ -74,6 +74,7 @@ Accepted change pending:
 - [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 - [Equity corporate actions](decisions.md#equity-corporate-actions)
 - [Accounting-core consolidation](decisions.md#accounting-core-consolidation)
+- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - v0.1.7 makes `ledgr_run()` the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
@@ -436,6 +437,7 @@ Accepted change pending:
 Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
+- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Backtests run against sealed snapshots.
 - Snapshot hash rule 1 covers normalized bars and instruments only and remains
@@ -522,6 +524,7 @@ Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
 - [Equity corporate actions](decisions.md#equity-corporate-actions)
+- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
@@ -788,6 +791,10 @@ Accepted change pending:
   An uncomplicated accepted fill has an empty reason code.
 
 ## Persistence Contract
+
+Accepted change pending:
+
+- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - ledgr-owned DuckDB drivers explicitly use session-local extension and secret
   storage when the installed DuckDB exposes that control. This avoids shared-home
@@ -1972,6 +1979,7 @@ Accepted change pending:
 Accepted change pending:
 
 - [Testing architecture](decisions.md#testing-architecture)
+- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:

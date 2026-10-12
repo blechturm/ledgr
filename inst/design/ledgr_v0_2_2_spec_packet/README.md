@@ -1,9 +1,9 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 6 are closed after maintainer acceptance of all
-fifteen workstreams. Cut 7's independent review returned
-`PASS_AFTER_PATCHES`; its four patches are incorporated, the maintainer
-accepted the cut on 2026-10-06, and Workstream 16 is review-pending.
+**Status:** Cuts 1 through 12 are closed after maintainer acceptance of all
+26 workstreams through 2026-10-12. Cut 13 is next: the two ordered WS5-A
+snapshot-verification tickets form one workstream, and the separately claimed
+`ledgr_sweep_save()` defect forms another.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -38,11 +38,8 @@ ledger.
   task-oriented routes.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
-- `tickets.yml`: sole ticket and sequencing authority. It records twelve
-  complete Cut 1 tickets, eleven complete Cut 2 tickets, four complete Cut 3
-  tickets, one complete Cut 4 ticket, two complete Cut 5 tickets and nine
-  complete Cut 6 tickets. Cut 7 has three complete implementation tickets;
-  its evidence ticket remains open on the absolute fast timing gate.
+- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 12 are
+  closed; Cut 13 is the next ticket cut.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.

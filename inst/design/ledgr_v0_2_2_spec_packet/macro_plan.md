@@ -1,13 +1,12 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-9 are complete and accepted: 49 tickets across 19 workstreams. They close the
-design-memory and long-window optimization foundation, terminal outcomes and
-frozen holdings, feature-map addressing, the audited antipattern repairs, and
-(Cut 9) one scoring boundary with a temporary rule that restarts feature state
-at every scoring start. Point-in-time history (WS3) and recursive-indicator
-semantics (WS4) are the next design wave; their shared history-start decision
-replaces the temporary rule.
+12 are complete and accepted: 26 workstreams. Cut 12 closes the systematic
+point-in-time consistency audit and the held maintenance needed to restore the
+fast-profile gate. Cut 13 implements the accepted WS5-A snapshot-verification
+policy before the point-in-time history (WS3) and recursive-indicator (WS4)
+implementation cut. Their shared history-start decision replaces Cut 9's
+temporary rule.
 
 **Date:** 2026-10-03
 
@@ -325,6 +324,20 @@ Measured input registered on 2026-10-10 (Cut 11 Workstream 22):
   per committed run), dense and point-in-time alike, dominated by R row
   formatting of bars; one rehash per walk-forward fold is probably most of
   the walk-forward, and `ledgr_backtest()` hashes twice.
+
+Accepted authority registered on 2026-10-12 (WS5-A):
+
+- the [snapshot-verification synthesis](../rfc/rfc_snapshot_verification_policy_v0_2_2_synthesis.md),
+  accepted by the maintainer after a Type 1 final review, binds hash rule 3
+  (R-owned column-major binary bytes, seed v2 Section 5), a PID-guarded
+  process-local verified set, three read classes, refusal of missing-marker,
+  rule-1 and rule-2 snapshots for content use, and two ordered direct
+  tickets: the fast rule first with complete-verification coverage retained,
+  proof reuse second from a source-derived consumer census. Its
+  [conformance spike](../spikes/snapshot_hash_rule_3_conformance_spike/closeout.md)
+  closed GREEN on Windows and Ubuntu. WS5-B feature-artifact policy stays
+  after WS3 and WS4, as stated above. Sequencing is in the 2026-10-12
+  routing amendment under change control.
 
 The spikes bind nothing. Cut 3 owns exact verification only. Correct the SQL
 boundary under the retained resolver's ordering, add a too-late gut and narrow
@@ -660,3 +673,19 @@ with "canonical_json() received a character input that is not valid JSON"
 (`R/sweep-persistence-schema.R`); it reproduces on the pre-Cut-12 tree
 be3aaf0a. The `test-demo-strategies.R` failure is already owned by Cut 12
 LDG-3007.
+
+2026-10-12 maintainer amendment, routing the accepted WS5-A synthesis:
+(1) Cut 13 carries both ordered WS5-A tickets in one workstream and one Type 1
+close review: rule 3 first, with complete verification retained, then the
+PID-guarded verified set from a source-derived census of current consumers.
+Later WS3/WS4 readers join that census when introduced; they do not delay the
+accepted reuse mechanism. Cut 13 lands before the WS7 estimator proof and the
+WS8 integrated record so that Sharadar evidence is recorded once under the
+final snapshot identity, and the ledgr-research lake is rebuilt once under
+rule 3 together with the dividend-facts adapter change (G-016).
+(2) The `ledgr_sweep_save()` defect routed above also belongs to Cut 13, but
+in a separate workstream and close review because persistence correctness and
+snapshot verification make different claims. (3) WS5-B is unchanged and
+still follows WS3/WS4. The resulting order is: Cut 12 close, Cut 13, the
+WS3/WS4 history wave and implementation cut, the lake rebuild under rule 3
+with dividend facts, WS7, the WS6 probe, WS8.
