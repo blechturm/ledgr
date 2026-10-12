@@ -649,3 +649,14 @@ facts, so every Sharadar result so far excludes dividends; emitting
 related LFB-013), and until it lands Sharadar results and the WS7 proof state
 "dividends excluded" in their headline. The WS5 verification session was
 moved after audit Stage 1 and is next after Cut 12's cut review.
+
+2026-10-12 maintainer amendment, after the Workstream 25 reviews: one
+pre-existing defect found by the Workstream 25 close review is routed to the
+next ticket cut after Cut 12, where it needs a ticket: `ledgr_sweep_save()`
+fails on a feature-map sweep whose candidates each resolve to a single feature
+fingerprint (for example `ledgr_feature_map(signal =
+ledgr_ind_sma(ledgr_param("n")))` with `ledgr_feature_grid(n = c(2L, 3L))`)
+with "canonical_json() received a character input that is not valid JSON"
+(`R/sweep-persistence-schema.R`); it reproduces on the pre-Cut-12 tree
+be3aaf0a. The `test-demo-strategies.R` failure is already owned by Cut 12
+LDG-3007.
