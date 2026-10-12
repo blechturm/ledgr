@@ -213,7 +213,8 @@
   Sealing finds the
   availability tables with one catalogue query, and a store whose schema
   matches one already validated in the session is not validated again; a
-  changed or damaged schema is still checked and still fails.
+  store whose columns, constraints or schema marker differ is still checked
+  and still fails.
 
 ## Scoring and feature starts
 

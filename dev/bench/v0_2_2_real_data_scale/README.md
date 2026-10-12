@@ -67,7 +67,10 @@ Rscript dev/bench/v0_2_2_real_data_scale/probes.R <repo> <out_dir> [F1 ...]
   once beforehand; the harness loads them with `compile = FALSE`.
 - A failing child is retried once; a second failure stops the pair.
 - Noise rule: a registered phase regresses when the candidate/accepted median
-  elapsed or peak ratio exceeds 1.05.
+  elapsed or peak ratio exceeds 1.05. The rule applies to clocks taken with
+  this method's default process settings; a run with altered settings (for
+  example a preset R heap) is a diagnostic outside the rule (maintainer,
+  2026-10-12).
 - Per ticket: the fixture lane's full family comparison against the
   predecessor commit, and paired clocks (three pairs) on the phases the
   ticket touches; the growth-shape probe for its finding before and after.
