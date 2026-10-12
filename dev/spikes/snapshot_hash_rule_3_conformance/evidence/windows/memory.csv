@@ -1,0 +1,3 @@
+"platform","case","rows","elapsed_seconds","peak_rss_bytes","output_bytes"
+"windows","bars",5e+06,3.74,148746240,64
+"windows","facts",3e+05,3.53,417763328,65650994

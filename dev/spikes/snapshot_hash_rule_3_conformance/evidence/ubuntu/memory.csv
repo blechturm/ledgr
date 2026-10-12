@@ -1,0 +1,3 @@
+"platform","case","rows","elapsed_seconds","peak_rss_bytes","output_bytes"
+"ubuntu","bars",5e+06,5.191,130392064,64
+"ubuntu","facts",3e+05,0.979,473612288,65650994
