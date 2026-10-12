@@ -642,7 +642,11 @@ testthat::test_that("create-side runs.status metadata parser fails loudly on une
   testthat::expect_identical(row$status, "DONE")
 })
 
-testthat::test_that("[LTB-0130] a store's schema is validated once per session until it changes", {
+testthat::test_that("[LTB-0130] a schema catalogue is validated once per session until it changes", {
+  # The cache is per session and per catalogue (LDG-3018); start it empty so
+  # earlier blocks cannot have validated this catalogue already.
+  cache <- ledgr:::.ledgr_schema_validation_cache
+  rm(list = ls(cache, all.names = TRUE), envir = cache)
   calls <- 0L
   full_validation <- ledgr:::ledgr_validate_schema
   testthat::local_mocked_bindings(
@@ -692,9 +696,10 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
   )
   ledgr_snapshot_close(snapshot)
 
-  # A byte-for-byte copy at another path is a different file and is validated.
+  # A byte-for-byte copy at another path has the same catalogue: no new
+  # validation.
   testthat::expect_true(file.copy(path, copy))
-  testthat::expect_identical(validations(init_and_close(copy)), 1L)
+  testthat::expect_identical(validations(init_and_close(copy)), 0L)
 
   # A check constraint weakened on the same columns and keys is validated again
   # and fails.
@@ -718,11 +723,15 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
   DBI::dbDisconnect(con, shutdown = TRUE)
   testthat::expect_identical(validations(testthat::expect_error(init_and_close(copy))), 1L)
 
-  # A second store is validated on its own.
-  testthat::expect_identical(validations(init_and_close(second)), 1L)
+  # A second store, and an in-memory store, with the same catalogue are not
+  # validated again.
   testthat::expect_identical(validations(init_and_close(second)), 0L)
+  testthat::expect_identical(validations({
+    memory <- ledgr_db_init(":memory:")
+    DBI::dbDisconnect(memory, shutdown = TRUE)
+  }), 0L)
 
-  # A rewritten version marker is validated again.
+  # A rewritten marker timestamp leaves the catalogue unchanged.
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = second)
   DBI::dbExecute(
     con,
@@ -731,11 +740,12 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
      WHERE key = 'experiment_store_schema_version'"
   )
   DBI::dbDisconnect(con, shutdown = TRUE)
-  testthat::expect_identical(validations(init_and_close(second)), 1L)
+  testthat::expect_identical(validations(init_and_close(second)), 0L)
 
-  # A store replaced at the same path is validated again.
+  # A store replaced at the same path with the same catalogue is not validated
+  # again either.
   unlink(store_files(second), force = TRUE)
-  testthat::expect_identical(validations(init_and_close(second)), 1L)
+  testthat::expect_identical(validations(init_and_close(second)), 0L)
 
   # A changed catalogue is validated again, and a failing store fails on every
   # call with the same condition class.
@@ -747,6 +757,16 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
   testthat::expect_identical(validations(first_failure <- failure_class()), 1L)
   testthat::expect_true("error" %in% first_failure)
   testthat::expect_identical(validations(testthat::expect_identical(failure_class(), first_failure)), 1L)
+
+  # A dropped nullable column carries no constraint, so only the column part
+  # of the fingerprint sees it; it is validated and fails.
+  unconstrained <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(store_files(unconstrained), force = TRUE), add = TRUE)
+  init_and_close(unconstrained)
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = unconstrained)
+  DBI::dbExecute(con, "ALTER TABLE runs DROP COLUMN label")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  testthat::expect_identical(validations(testthat::expect_error(init_and_close(unconstrained))), 1L)
 })
 
 testthat::test_that("[LTB-0239] a proven-empty store gets the current schema without the legacy migration", {

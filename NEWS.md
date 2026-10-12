@@ -206,6 +206,14 @@
   pulse, and matches the stored equity exactly; it used to fail with
   `ledgr_missing_bars`.
 
+- Creating and opening stores costs less. A new, empty store gets the current
+  schema directly instead of through the upgrade path for older stores, so
+  `ledgr_db_init()` and a small `ledgr_snapshot_from_df()` take about two
+  thirds of their previous time in one measurement. Sealing finds the
+  availability tables with one catalogue query, and a store whose schema
+  matches one already validated in the session is not validated again; a
+  changed or damaged schema is still checked and still fails.
+
 ## Scoring and feature starts
 
 These changes alter results for dated and windowed work; undated runs and

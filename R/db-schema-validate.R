@@ -780,13 +780,15 @@ ledgr_validate_schema <- function(con) {
 
 .ledgr_schema_validation_cache <- new.env(parent = emptyenv())
 
-# Pay schema validation once per store and session. The key is the store file,
-# its schema version marker and the time that marker was written, and a
-# fingerprint of the catalogue (every table, column, type, nullability and
-# constraint with its text), read in one query of a few milliseconds. A
-# different file, a migrated schema, a replaced file or a changed catalogue is
-# therefore validated again. Only a successful validation is remembered: a
-# store that fails validation fails on every call. In-memory stores and stores
+# Pay schema validation once per catalogue and session. The full validator
+# reads only the catalogue, so its result is a function of the schema version
+# marker and a fingerprint of that catalogue (every table, column, type,
+# nullability, order and constraint with its text), read in one query of a few
+# milliseconds; the key is exactly those (LDG-3018, amending LDG-2916's
+# per-store key). A store whose catalogue was already validated in the session
+# (another store, a copy, a replaced file, an in-memory store) is not validated
+# again; a changed catalogue or marker value is. Only a successful validation
+# is remembered: a store that fails validation fails on every call. Stores
 # without a marker are always validated. The public `ledgr_validate_schema()`
 # stays a full check on every call.
 ledgr_validate_schema_once <- function(con) {
@@ -802,16 +804,10 @@ ledgr_validate_schema_once <- function(con) {
 }
 
 ledgr_schema_validation_key <- function(con) {
-  path <- tryCatch(DBI::dbGetInfo(con)$dbname, error = function(e) NULL)
-  if (!is.character(path) || length(path) != 1L || is.na(path) ||
-      !nzchar(path) || identical(path, ":memory:")) {
-    return(NULL)
-  }
   marker <- tryCatch(
     DBI::dbGetQuery(
       con,
       "SELECT m.value,
-              CAST(m.updated_at_utc AS VARCHAR) AS updated_at,
               (SELECT md5(string_agg(
                  c.table_name || '.' || c.column_name || ':' || c.data_type || ':' ||
                    c.is_nullable::VARCHAR, ',' ORDER BY c.table_name, c.column_index))
@@ -831,9 +827,7 @@ ledgr_schema_validation_key <- function(con) {
     return(NULL)
   }
   paste(
-    normalizePath(path, winslash = "/", mustWork = FALSE),
     marker$value[[1L]],
-    marker$updated_at[[1L]],
     marker$columns_fp[[1L]],
     marker$constraints_fp[[1L]],
     sep = "\r"
