@@ -29,6 +29,44 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-12 [execution] Close the gap between the committed run and the ephemeral sweep
+
+On the v0.2.1.0 peer record (500 instruments, 1,260 sessions, 630,000 bars)
+the committed `ledgr_run()` row took 57.9 s cold with a 45.5 s engine phase,
+while the public compiled sweep took 20.1 s with an 11.3 s engine phase and
+the canonical sweep 37.9 s with 28.8 s, on identical bars and strategy. The
+durable run is the audited product path: ledger, resume, provenance and
+reopen live there. When it is three times slower than the throwaway path,
+research drifts to the throwaway path.
+
+Three levers were visible on 2026-10-12, in order of least semantic risk:
+
+1. The per-run snapshot rehash, about 5 s of the engine phase at this shape
+   and about 55 s per Sharadar run. The WS5-A verification cycle (rule 3 and
+   the process-local verified set) owns it in v0.2.2; whatever lands there is
+   subtracted first.
+2. Per-pulse persistence inside the fold. The durable engine phase was about
+   17 s slower than the canonical sweep's on the record; most of that is
+   DuckDB writes of events, equity and strategy state per pulse. The
+   Workstream 6 fill-event flush
+   (`ledgr_v0_2_2_spec_packet/writer_scaling_closeout.md`) shipped after the
+   record, so the remaining gap must be re-measured on the v0.2.2 record
+   before any lever is sized. The roadmap's "one store connection per
+   composite call" row touches the same boundary.
+3. The compiled accounting model for committed runs. `ledgr_run()` refuses
+   `compiled_accounting_model = "spot_fifo"`, so the 4x engine result exists
+   only on the ephemeral sweep. Widening it is owned by the compiled-execution
+   envelope row in the RFC pipeline
+   (`rfc/README.md#compiled-execution-envelope`) and the older entry below,
+   "Decide whether compiled spot-FIFO should become the default"; parity
+   through the existing canonical oracle is the gate, and the LDG-2992
+   closeout is the carrier evidence.
+
+Measure the gap on the v0.2.2 peer and Sharadar records first, then decide
+which lever is worth a cycle. The maintainer parked this on 2026-10-12 for
+the release after v0.2.2 because v0.2.2 is full. This entry authorizes no
+API, schema, ticket or release commitment.
+
 ### 2026-10-11 [data] Derive off-session bar evidence live instead of storing it
 
 Cut 12 LDG-3011 records each sealed bar that falls on no declared open-session
@@ -84,6 +122,41 @@ implied calendar means for irregular or intraday bars; and whether
 dense fixtures through the availability path with an implied calendar and
 compare outputs and clocks. This entry authorizes no API, schema, ticket or
 release commitment.
+
+### 2026-10-10 [research] Durable factor and decision evidence
+
+External practitioner feedback from an integrated research, paper and live
+platform identified a traceability gap. ledgr durably records target intent,
+risk and execution diagnostics, fills, costs, ledger events and accounting,
+and can persist declared feature rows. It does not preserve the factor or
+prediction actually used to rank an instrument, its rank or selection, and
+the weights handed to target construction as one queryable decision chain.
+
+That chain matters for ex-post information-coefficient and rank-decay work,
+prediction calibration and drift, attribution between factor, construction,
+cost and execution, and eventual backtest/paper/live comparison. The stages
+must remain distinct:
+
+```text
+factor or prediction -> rank or selection -> weights -> target
+  -> costs and fills -> accounting outcome
+```
+
+Do not infer an artifact store or retain arbitrary callback objects from this
+observation. After the WS3/WS4 history amendment has bound causal cutoff,
+instrument and feature identity, first inventory the existing feature,
+diagnostic, target and result evidence. Then run one bounded public-API spike
+that follows a single factor through run, sweep, walk-forward and reopen and
+measures storage and read cost. If the gap survives, a dedicated RFC decides
+the smallest opt-in decision-evidence contract and its retention policy.
+
+WS3 owns downstream-compatible point-in-time identity, not factor capture.
+The later ML RFC owns model artifacts, fitting provenance and prediction
+lifecycle. A future paper/live handoff may consume the same evidence shape.
+The existing prediction-store and ML horizon notes are related but narrower:
+this question also applies to ordinary non-ML factors. Research-side evidence
+is `LFB-028` in `ledgr-research/docs/governance/ledgr-feedback.md`. This entry
+authorizes no API, schema, ticket or release commitment.
 
 ### 2026-10-05 [ux] Non-fungible portfolio sleeves and mandate attribution
 
@@ -276,6 +349,28 @@ lofty goal of 2 GB peak at the EXP-0003 shape (`ledgr_roadmap.md`,
 `dev/spikes/ctx_frame_views/churn_findings.md`). The publication rule above
 applies to memory as well: no comparative memory claim until the suite
 exists.
+
+**Parity as onboarding trust, on dense known shapes (maintainer,
+2026-10-12).** The suite's first job is to give external users a reason to
+trust an implementation built with LLM assistance: on the strategies,
+indicators and shapes they already know, ledgr must produce the same fills
+and equity as the peers or explain every residual, as the current record's
+per-bar divergence attribution already does for backtrader (position sizing)
+and quantstrat (fill timing). The same rows are a testing ground that catches
+implementation errors, and speed claims on them become defensible because the
+parity table proves that the fast number and the slow number compute the same
+thing. The majority of parity shapes therefore stay dense, daily and
+conventional (SMA crossover, momentum, mean reversion, TTR indicators);
+point-in-time universes stay out of the parity majority because
+implementation differences between engines grow large there and would be
+read as ledgr's error. Two consequences recorded the same day: once dense
+becomes a special case of the availability core (the 2026-10-11 execution
+entry above), the dense parity suite is the byte-for-byte regression oracle
+for that unification; and the suite may carry one point-in-time row of a
+different kind, labelled a demonstration and never a parity or speed claim,
+showing what a dense engine computes on a survivorship-free universe with
+listings and delistings and why it is wrong. This addendum changes no
+publication rule above.
 
 ### 2026-09-29 [execution] Design homework: where intent meets the universe and the market
 

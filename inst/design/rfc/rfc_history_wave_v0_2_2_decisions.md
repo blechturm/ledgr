@@ -32,6 +32,9 @@ linked below.
   the two-clock path; lifetime corrections deferred with a trigger.
 - Sharadar goal: the full available S&P span, 1998-2026, runs without stops;
   the adapter drops carried zero-volume bars (LFB-027).
+- Durable factor and prediction evidence is routed downstream, not into WS3:
+  the amendment preserves the identity needed to join future decision evidence
+  to history, while capture, retention and reopening remain a separate RFC.
 
 **Still open:** Session D (indicator labels, recommendations ready), Session E
 (memory budget: proposed no more than +10% peak from WS3/WS4, the real
@@ -105,6 +108,25 @@ executor's checks (`claims`, `burnin`) with outputs, and the adapter read
 | ID | Sev | Finding | Verified | Recommendation | Decision |
 | --- | --- | --- | --- | --- | --- |
 | UX-1 | blocking | The public history surface is proposed in the [research strategy UX brief](../ledgr_v0_2_2_spec_packet/research_strategy_ux_brief.md) but not adopted; v11 s3 binds `ctx$window()` while the brief proposes `ledgr_history_frame()` outside `ctx` | confirmed: brief status "Active, non-binding" | Adopt the brief; reconcile with `ctx$window()` in the amendment | **accept** (maintainer, 2026-10-08): the brief is the WS3 history direction. The amendment reconciles it with v11's `ctx$window()` and settles the brief's remaining open names |
+
+### Routed downstream obligation: durable factor evidence
+
+External practitioner feedback recorded as research finding `LFB-028` asks
+for the factor or prediction used for ranking to remain traceable through
+selection, weights, target intent, costs, execution and outcome. ledgr already
+owns durable downstream economic evidence, but not that coherent research
+chain.
+
+This does not expand WS3 into an artifact store. The stage 3 amendment must
+only keep the history contract compatible with a later evidence owner: a
+future record must be able to identify the run or candidate, decision pulse,
+instrument, history cutoff, feature or model identity, and the inclusion or
+exclusion decision without inventing a second point-in-time history contract.
+The future evidence RFC decides capture, schema, retention, reopening and
+paper/live use after WS3/WS4 is accepted. Model fitting and artifact lifecycle
+remain with the ML RFC. The parked upstream record is the 2026-10-10 durable
+factor entry in `../horizon.md`; no API, schema or release commitment is made
+here.
 
 ## Session A: what history a strategy sees
 
