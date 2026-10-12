@@ -76,7 +76,7 @@ ledgr_snapshot_write_availability <- function(con,
 
   DBI::dbExecute(
     con,
-    "UPDATE snapshots SET hash_rule_version = 2 WHERE snapshot_id = ? AND status = 'CREATED'",
+    "UPDATE snapshots SET hash_rule_version = 3 WHERE snapshot_id = ? AND status = 'CREATED'",
     params = list(snapshot_id)
   )
   invisible(TRUE)
@@ -149,22 +149,43 @@ ledgr_snapshot_write_fact_family <- function(con, snapshot_id, family) {
 ledgr_snapshot_hash_rule_version <- function(con, snapshot_id) {
   if (!ledgr_experiment_store_table_exists(con, "snapshots") ||
       !"hash_rule_version" %in% ledgr_experiment_store_columns(con, "snapshots")) {
-    return(1L)
+    return(NA_integer_)
   }
   value <- DBI::dbGetQuery(
     con,
     "SELECT hash_rule_version FROM snapshots WHERE snapshot_id = ?",
     params = list(snapshot_id)
   )$hash_rule_version
-  if (length(value) == 0L || is.na(value[[1L]])) return(1L)
+  if (length(value) == 0L || is.na(value[[1L]])) return(NA_integer_)
   value <- as.integer(value[[1L]])
-  if (!value %in% c(1L, 2L)) {
+  if (!value %in% c(1L, 2L, 3L)) {
     rlang::abort(
       sprintf("Unsupported snapshot hash rule version: %s.", value),
       class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")
     )
   }
   value
+}
+
+ledgr_snapshot_require_hash_rule3 <- function(rule) {
+  if (length(rule) != 1L || is.na(rule) || rule %in% c(1L, 2L)) {
+    shown <- if (length(rule) != 1L || is.na(rule)) "missing" else
+      as.character(as.integer(rule))
+    rlang::abort(
+      paste0(
+        "Snapshot hash rule ", shown,
+        " is not executable. Rebuild the snapshot from source under hash rule 3."
+      ),
+      class = c("ledgr_snapshot_rebuild_required", "ledgr_invalid_state")
+    )
+  }
+  if (!identical(as.integer(rule), ledgr_snapshot_hash_rule3_version)) {
+    rlang::abort(
+      sprintf("Unsupported snapshot hash rule version: %s.", rule),
+      class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")
+    )
+  }
+  invisible(TRUE)
 }
 
 ledgr_snapshot_availability_tables <- function() {
@@ -226,7 +247,7 @@ ledgr_snapshot_availability_read <- function(con, snapshot_id) {
 # The stored field is untouched. A user still reads the complete supplied row.
 #
 # Maintainer decision, 2026-09-22, after close review W9-F5. This changes the
-# rule-2 hash of any snapshot that has a quarantined row whose supplied file
+# snapshot root of any snapshot that has a quarantined row whose supplied file
 # carried columns beyond the canonical set.
 ledgr_snapshot_quarantine_hashed_row_keys <- function() {
   c("instrument_id", "ts_utc", "open", "high", "low", "close", "volume")
@@ -286,7 +307,46 @@ ledgr_snapshot_quarantine_counted <- function(rows) {
   rows[rows$reason != ledgr_off_session_reason, , drop = FALSE]
 }
 
-ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
+ledgr_snapshot_availability_presence_sql <- function() {
+  tables <- names(ledgr_snapshot_availability_tables())
+  queries <- vapply(
+    tables,
+    function(table) {
+      sprintf(
+        "(SELECT 1 AS present FROM %s WHERE snapshot_id = ? LIMIT 1)",
+        table
+      )
+    },
+    character(1)
+  )
+  paste0(
+    "EXISTS(SELECT 1 FROM (",
+    paste(queries, collapse = " UNION ALL "),
+    ") AS snapshot_availability_rows)"
+  )
+}
+
+ledgr_snapshot_availability_empty_hash_payload <- function() {
+  out <- paste0(
+    '{"fact_schema_version":1,"schema":"ledgr_snapshot_hash_rule_3",',
+    '"tables":{"snapshot_equity_corporate_actions":[],',
+    '"snapshot_fact_families":[],"snapshot_lifetime":[],',
+    '"snapshot_membership":[],"snapshot_membership_sets":[],',
+    '"snapshot_observation_quarantine":[],"snapshot_sessions":[],',
+    '"snapshot_trading_status":[]}}'
+  )
+  attr(out, "ledgr_canonical_json") <- TRUE
+  out
+}
+
+ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id,
+                                                     has_rows = NULL) {
+  # The empty projection has fixed rule-3 bytes. Hashing supplies the presence
+  # result from its envelope query, avoiding eight empty-table reads while
+  # still detecting an orphaned row in any table after external tampering.
+  if (!is.null(has_rows) && !isTRUE(has_rows)) {
+    return(ledgr_snapshot_availability_empty_hash_payload())
+  }
   tables <- ledgr_snapshot_availability_read(con, snapshot_id)
 
   quarantine <- ledgr_snapshot_quarantine_counted(tables$snapshot_observation_quarantine)
@@ -302,7 +362,10 @@ ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
       names(quarantine)
     )
     if (length(order_by) > 0L) {
-      quarantine <- quarantine[do.call(order, unname(quarantine[order_by])), , drop = FALSE]
+      quarantine <- quarantine[do.call(
+        order,
+        c(unname(quarantine[order_by]), list(method = "radix"))
+      ), , drop = FALSE]
       rownames(quarantine) <- NULL
     }
     keep <- setdiff(names(quarantine), "quarantine_id")
@@ -312,10 +375,10 @@ ledgr_snapshot_availability_hash_payload <- function(con, snapshot_id) {
   normalized <- lapply(tables, function(df) {
     ledgr_fact_json_verbatim(ledgr_fact_frame_payload_json(df))
   })
-  normalized <- normalized[order(names(normalized))]
+  normalized <- normalized[order(names(normalized), method = "radix")]
   payload <- list(
     fact_schema_version = ledgr_fact_schema_version,
-    schema = "ledgr_snapshot_hash_rule_2",
+    schema = "ledgr_snapshot_hash_rule_3",
     tables = normalized
   )
   out <- as.character(ledgr_json_write_canonical_v2_verbatim(payload))
@@ -438,17 +501,20 @@ ledgr_snapshot_membership_sweep_rows <- function(membership,
 }
 
 ledgr_snapshot_validate_availability_for_seal <- function(con, snapshot_id) {
-  rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
-  if (identical(rule, 1L)) return(invisible(TRUE))
-
   data <- ledgr_snapshot_availability_read(con, snapshot_id)
   # Off-session records are derived and unhashed; the seal checks below cover
   # the hashed quarantine rows only.
   data$snapshot_observation_quarantine <- ledgr_snapshot_quarantine_counted(data$snapshot_observation_quarantine)
   families <- data$snapshot_fact_families
   if (nrow(families) == 0L) {
+    row_count <- sum(vapply(
+      data[setdiff(names(data), "snapshot_fact_families")],
+      nrow,
+      integer(1)
+    ))
+    if (row_count == 0L) return(invisible(TRUE))
     rlang::abort(
-      "Hash rule 2 requires at least one declared fact-family header.",
+      "Snapshot fact rows require a declared fact-family header.",
       class = c("ledgr_snapshot_fact_family_missing", "ledgr_invalid_state")
     )
   }

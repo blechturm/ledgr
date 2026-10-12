@@ -14,6 +14,7 @@ ledgr_snapshot_info(con, snapshot_id)
 \value{
 A 1-row tibble with:
 snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
+hash_rule_version, verified_in_process,
 bar_count, instrument_count, off_session_bar_count, start_date, end_date,
 meta_json, error_msg.
 

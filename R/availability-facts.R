@@ -1105,7 +1105,7 @@ ledgr_fact_json_verbatim <- function(x) {
 ledgr_fact_canonical_frame <- function(df) {
   if (is.null(df) || nrow(df) == 0L) return(data.frame())
   out <- as.data.frame(df, stringsAsFactors = FALSE)
-  out <- out[order(names(out))]
+  out <- out[order(names(out), method = "radix")]
   for (name in names(out)) {
     column <- out[[name]]
     if (inherits(column, "POSIXt")) {

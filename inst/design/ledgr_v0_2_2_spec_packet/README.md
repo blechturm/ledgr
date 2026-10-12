@@ -3,8 +3,9 @@
 **Status:** Cuts 1 through 12 are closed after maintainer acceptance of all
 26 workstreams through 2026-10-12. Cut 13's independent review returned
 `PASS_AFTER_PATCHES`; the patches are incorporated and the maintainer accepted
-the cut on 2026-10-12. Workstream 27 is open with LDG-3019 and LDG-3020 for
-rule-3 snapshot verification. Independent Workstream 28 remains open with
+the cut on 2026-10-12. Workstream 27 is active: LDG-3019's rule-3 encoder and
+refusal boundary are implemented and recorded, and LDG-3020's process-local
+verification reuse is next. Independent Workstream 28 remains open with
 LDG-3021 for the separately claimed `ledgr_sweep_save()` defect.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
@@ -41,7 +42,8 @@ ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 12 are
-  closed; draft Cut 13 awaits independent cut review and maintainer acceptance.
+  closed; Cut 13 is accepted, Workstream 27 is active and Workstream 28 may
+  proceed independently.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.

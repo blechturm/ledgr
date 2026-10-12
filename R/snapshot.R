@@ -287,6 +287,15 @@ print.ledgr_snapshot <- function(x, ...) {
   }
   cat("Database:    ", x$db_path, "\n")
   cat("Snapshot ID: ", paste0(substr(x$snapshot_id, 1, 32), if (nchar(x$snapshot_id) > 32) "..." else ""), "\n")
+  hash_rule <- meta$snapshot_hash_rule_version
+  hash_label <- if (is.null(hash_rule) || length(hash_rule) != 1L) {
+    "unknown"
+  } else if (is.na(hash_rule)) {
+    "missing"
+  } else {
+    as.character(hash_rule)
+  }
+  cat("Hash rule:   ", hash_label, "(not verified in this process)\n")
 
   state <- snapshot_state(x)
   if (!is.null(state$con) && DBI::dbIsValid(state$con)) {

@@ -1,5 +1,14 @@
 # ledgr (development version)
 
+## Portable snapshot verification
+
+- New snapshots use snapshot hash rule 3, a portable R-owned binary identity
+  with fixed 10,000-row blocks and an explicit byte-order check. Snapshot
+  information reports the rule. Snapshots with a missing, rule-1, or rule-2
+  marker remain metadata-readable but refuse content-dependent use with
+  `ledgr_snapshot_rebuild_required`; rebuild them from source. ledgr does not
+  migrate, reinterpret, or fall back to an older hash format.
+
 ## Consistent entry points and disclosed assumptions
 
 - `ledgr_select_top_n()` breaks ties by instrument ID in C-locale (byte)

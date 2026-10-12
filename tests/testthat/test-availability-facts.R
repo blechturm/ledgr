@@ -383,7 +383,7 @@ testthat::test_that("quarantine classifies malformed observation timestamps row 
 })
 
 # ledgr-test-profile: review
-testthat::test_that("fact-free snapshots retain hash rule 1", {
+testthat::test_that("fact-free snapshots use the same hash rule 3", {
   bars <- data.frame(
     instrument_id = c("AAA", "AAA"),
     ts_utc = as.POSIXct(c("2024-01-01", "2024-01-02"), tz = "UTC"),
@@ -398,13 +398,16 @@ testthat::test_that("fact-free snapshots retain hash rule 1", {
   testthat::expect_identical(first_info$snapshot_hash, second_info$snapshot_hash)
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash_rule_version(ledgr:::get_connection(first), first$snapshot_id),
-    1L
+    3L
   )
-  testthat::expect_null(first$metadata$snapshot_hash_rule_version)
+  testthat::expect_identical(
+    ledgr_snapshot_info(first)$hash_rule_version[[1L]],
+    3L
+  )
 })
 
 # ledgr-test-profile: review
-testthat::test_that("hash rule 2 is canonical and facts survive reopening", {
+testthat::test_that("hash rule 3 is canonical and facts survive reopening", {
   db_path <- tempfile(fileext = ".duckdb")
   bars <- availability_test_bars()
   sessions <- ledgr_facts_sessions(
@@ -426,7 +429,7 @@ testthat::test_that("hash rule 2 is canonical and facts survive reopening", {
   id <- snapshot$snapshot_id
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash_rule_version(ledgr:::get_connection(snapshot), id),
-    2L
+    3L
   )
   ledgr_snapshot_close(snapshot)
 

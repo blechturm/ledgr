@@ -191,11 +191,11 @@ test_that("[LTB-0044] constructors retain validation precedence", {
 })
 
 # ledgr-test-profile: review
-test_that("[LTB-0045] rule-2 identity retains frozen hashes", {
+test_that("[LTB-0045] rule-3 identity retains frozen hashes", {
   expected <- c(
-    `0` = "d148f57b818a615db3cb9a1a4ae78db9b972b537ba20e1528dbc5c3596b088f9",
-    `20000` = "5f612f017cfefcb503833342acb1082e9c8ca5cfe3ad05f2bb029c474fa26148",
-    `100000` = "d03a9d7f7faac4d87de0d421c92f4afaf23c7795049e5084abb739032a00fe68"
+    `0` = "e42f33b7173243b3111170eab139fe1d820aad87ff0e6ede89ca34f2113081c5",
+    `20000` = "a310d15f90620cf5b806e859b4197888deb76112663d0594a7f1ba260f8479e4",
+    `100000` = "ae0a425bbf7f0752156283e6f736b6bfffd6b6d2340be1b40a498054980987bf"
   )
   bars <- ws14_scale_bars()
   instruments <- ws14_scale_instruments()
@@ -216,12 +216,12 @@ test_that("[LTB-0045] rule-2 identity retains frozen hashes", {
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   expect_identical(
     ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]],
-    "c4b2aea914f46e4ff97b6eead3fe7a42d618f56a8e948b4f256ab5cd03e4aa85"
+    "c39b76f2c4dcbc6c7334c9f5d7a8b1dd5f8955e4a5652d9cda1400ee2f933314"
   )
 })
 
 # ledgr-test-profile: review
-test_that("[LTB-0046] rule-2 hashing performs fixed encoding work", {
+test_that("[LTB-0046] fact projection performs fixed encoding work", {
   snapshots <- lapply(c(20L, 200L), function(size) {
     ledgr_snapshot_from_df(
       ws14_scale_bars(),

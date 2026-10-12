@@ -15,6 +15,9 @@
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
 \alias{ledgr_snapshot_hash_invalid_timestamp}
+\alias{ledgr_snapshot_rebuild_required}
+\alias{ledgr_snapshot_hash_rule_unsupported}
+\alias{ledgr_snapshot_hash_order_invalid}
 \alias{ledgr_invalid_valuation_policy}
 \alias{ledgr_availability_inactive}
 \alias{ledgr_availability_sessions_required}
@@ -186,6 +189,15 @@ fails closed because the ledger event stream and lot state must not diverge.
 \code{ledgr_snapshot_hash_invalid_timestamp} is raised when snapshot hashing sees
 a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
 timestamp representation drift instead of silently re-keying sealed data.
+
+\code{ledgr_snapshot_rebuild_required} is raised when a content-dependent read
+reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
+snapshots remain metadata-readable but are not executable; rebuild them
+from source under rule 3. ledgr does not migrate or reinterpret their roots.
+
+\code{ledgr_snapshot_hash_rule_unsupported} is raised for an unrecognized future
+hash-rule marker. \code{ledgr_snapshot_hash_order_invalid} is raised when source
+rows are not in the bytewise order required by rule 3.
 }
 
 \section{Availability classes}{
