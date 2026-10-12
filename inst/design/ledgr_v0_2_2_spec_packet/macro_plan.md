@@ -689,3 +689,30 @@ snapshot verification make different claims. (3) WS5-B is unchanged and
 still follows WS3/WS4. The resulting order is: Cut 12 close, Cut 13, the
 WS3/WS4 history wave and implementation cut, the lake rebuild under rule 3
 with dividend facts, WS7, the WS6 probe, WS8.
+
+2026-10-12 maintainer amendment, pre-CRAN legacy removal: ledgr carries no
+backward compatibility before its first CRAN release, as the README already
+states ("stored artifacts, database schemas, and APIs may change without a
+deprecation cycle, so expect to rerun experiments after upgrading"). v0.2.2
+removes the compatibility code that contradicts this: the experiment-store
+migration and legacy schema path, the readers that tolerate unmigrated
+stores, the saved-sweep schema 1 to 3 readers, identity rule 1, schema-1
+valuation and corporate-action policy records, the legacy strategy-provenance
+markers, the `fill_model` refusal argument, the `as_tibble(type =)` alias and
+the unreachable metric-kernel fallback (an agent inventory on 2026-10-12
+counts about 950 R lines and 1,700 test lines). A store, saved sweep, policy
+record or identity whose version is not current is refused with one classed
+condition that says to recreate it. The current schema is today defined only
+inside the legacy path (the LDG-3016 template replays it), so removal starts
+with one current-schema definition used by fresh stores, the validator and
+the parity test. Route: a focused RFC, because it changes `contracts.md`
+promises (older stores, rule-1 sessions, migration, pre-provenance tolerance)
+and the accepted snapshot-verification synthesis's legacy-readability clause.
+The direction is decided, so the seed skips the research input and the cycle
+settles only the refusal gate, the schema authority and the contract text.
+The RFC runs alongside Cut 13, which proceeds as accepted and adds no
+compatibility beyond what its synthesis binds. The removal cut follows Cut 13
+and precedes the WS3/WS4 history wave, so new history code meets only current
+shapes. The resulting order is: Cut 13, the legacy-removal cut, the WS3/WS4
+history wave and implementation cut, the lake rebuild under rule 3 with
+dividend facts, WS7, the WS6 probe, WS8.
