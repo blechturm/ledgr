@@ -1,4 +1,7 @@
 testthat::test_that("[LTB-0131] public calls open the store once, plus once per committed run, and leave no connection open", {
+  # A session's first fresh store builds the schema template once on an
+  # in-memory database (LDG-3016); build it before counting store opens.
+  invisible(ledgr:::ledgr_schema_template())
   connections <- new.env(parent = emptyenv())
   connections$all <- list()
   real_connect <- DBI::dbConnect
@@ -41,6 +44,71 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
   testthat::expect_identical(opens(ledgr_results(bt, "fills")), 1L)
   testthat::expect_identical(opens(close(bt)), 1L)
   testthat::expect_identical(opens(ledgr_snapshot_info(snapshot)), 1L)
+  # Sweeps, precompute, the data-first wrapper, walk-forward, promotion and
+  # the interactive contexts are covered by LTB-0241 (review).
+
+  # A connection the caller opened stays open and is reused, not reopened.
+  held <- ledgr:::get_connection(snapshot)
+  testthat::expect_identical(length(connections$all), 8L)
+  ledgr_snapshot_info(snapshot)
+  ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+  testthat::expect_true(DBI::dbIsValid(held))
+  testthat::expect_identical(length(connections$all), 8L)
+  ledgr_snapshot_close(snapshot)
+  testthat::expect_false(DBI::dbIsValid(held))
+
+  # A snapshot that borrowed a call's held connection does not close it.
+  release <- ledgr:::ledgr_store_hold(path)
+  borrower <- ledgr_snapshot_open(path)
+  held_store <- ledgr:::get_connection(borrower)
+  ledgr_snapshot_close(borrower)
+  testthat::expect_true(DBI::dbIsValid(held_store))
+  release()
+  testthat::expect_false(DBI::dbIsValid(held_store))
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0241] composite and interactive calls open the store once per read or commit and leave none open", {
+  # A session's first fresh store builds the schema template once on an
+  # in-memory database (LDG-3016); build it before counting store opens.
+  invisible(ledgr:::ledgr_schema_template())
+  connections <- new.env(parent = emptyenv())
+  connections$all <- list()
+  real_connect <- DBI::dbConnect
+  testthat::local_mocked_bindings(
+    dbConnect = function(drv, ...) {
+      con <- real_connect(drv, ...)
+      connections$all[[length(connections$all) + 1L]] <- con
+      con
+    },
+    .package = "DBI"
+  )
+  # Opens made by one public call, after checking that no connection opened
+  # so far, by this call or an earlier one, is still live.
+  opens <- function(expr) {
+    before <- length(connections$all)
+    force(expr)
+    live <- vapply(connections$all, DBI::dbIsValid, logical(1))
+    testthat::expect_false(any(live))
+    length(connections$all) - before
+  }
+
+  bars <- data.frame(
+    ts_utc = rep(as.POSIXct(paste(as.Date("2026-02-02") + 0:3, "16:00:00"), tz = "UTC"), each = 2L),
+    instrument_id = rep(c("AAA", "BBB"), 4L),
+    open = 10, high = 10, low = 10, close = 10, volume = 1000
+  )
+  path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(path, paste0(path, ".wal")), force = TRUE), add = TRUE)
+  strategy <- function(ctx, params) ctx$flat()
+  grid <- ledgr_param_grid(a = list(), b = list())
+
+  testthat::expect_identical(opens(
+    snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "lifecycle")
+  ), 1L)
+  testthat::expect_identical(opens(
+    exp <- ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+  ), 1L)
   testthat::expect_identical(opens(ledgr_feature_contract_check(snapshot, list(ledgr_ind_returns(1)))), 1L)
   testthat::expect_identical(opens(precomputed <- ledgr_precompute_features(exp, grid)), 1L)
   testthat::expect_identical(opens(ledgr_sweep(exp, grid)), 1L)
@@ -49,16 +117,6 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
   testthat::expect_identical(opens(close(ledgr_backtest(
     snapshot = snapshot, strategy = strategy, initial_cash = 1000, cost_model = ledgr_cost_zero()
   ))), 3L)
-
-  # A connection the caller opened stays open and is reused, not reopened.
-  held <- ledgr:::get_connection(snapshot)
-  testthat::expect_identical(length(connections$all), 15L)
-  ledgr_snapshot_info(snapshot)
-  ledgr_experiment(snapshot, strategy, opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
-  testthat::expect_true(DBI::dbIsValid(held))
-  testthat::expect_identical(length(connections$all), 15L)
-  ledgr_snapshot_close(snapshot)
-  testthat::expect_false(DBI::dbIsValid(held))
 
   # Composite calls open the store once for their own reads and writes, plus
   # once for each run they commit; the readers of what they wrote open once.
@@ -116,16 +174,8 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
     c("2020-01-05T00:00:00Z", "2020-01-06T00:00:00Z")
   )), 1L)
   testthat::expect_identical(opens(close(dev)), 0L)
-
-  # A snapshot that borrowed a call's held connection does not close it.
-  release <- ledgr:::ledgr_store_hold(wf_path)
-  borrower <- ledgr_snapshot_open(wf_path)
-  held_store <- ledgr:::get_connection(borrower)
-  ledgr_snapshot_close(borrower)
-  testthat::expect_true(DBI::dbIsValid(held_store))
-  release()
-  testthat::expect_false(DBI::dbIsValid(held_store))
   ledgr_snapshot_close(wf_snapshot)
+  ledgr_snapshot_close(snapshot)
 })
 
 testthat::test_that("[LTB-0132] ledgr opens a store the user holds open with their own DuckDB connection", {

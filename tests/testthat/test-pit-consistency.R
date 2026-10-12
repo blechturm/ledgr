@@ -257,31 +257,78 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
       valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
     )
   }
-  fold <- function(train_start, test_end) {
-    ledgr:::ledgr_fold_list(
-      list(ledgr_fold(at(train_start), at(days[[7]]), at(days[[8]]), at(test_end), fold_seq = 1L)),
-      constructor = list(type_id = "explicit")
+  # The calendar ends before the last bar (K1): every entry point refuses and
+  # a window the calendar covers runs.
+  short_end <- scale_test_events_snapshot(sessions_to = days[[10]])
+  on.exit(ledgr_snapshot_close(short_end), add = TRUE)
+  exp <- experiment(short_end)
+  testthat::expect_error(ledgr_run(exp, run_id = "short_calendar"), class = "ledgr_sessions_incomplete")
+  testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[13]]), fold_seq = 1L)),
+    constructor = list(type_id = "explicit")
+  )
+  testthat::expect_error(
+    ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
+    class = "ledgr_sessions_incomplete"
+  )
+  window <- ledgr_experiment_window(exp, at(days[[1]]), at(days[[10]]))
+  close(ledgr_run_window(exp, window = window, run_id = "covered_window"))
+  testthat::expect_identical(ledgr_run_info(short_end, "covered_window")$status, "DONE")
+
+  # The calendar starts after the first bar (K2): the run refuses.
+  late_start <- scale_test_events_snapshot(sessions_from = days[[4]])
+  on.exit(ledgr_snapshot_close(late_start), add = TRUE)
+  testthat::expect_error(ledgr_run(experiment(late_start), run_id = "short_calendar"), class = "ledgr_sessions_incomplete")
+
+  # New York bars that start a day before the calendar: the full request and a
+  # bare window over the uncovered day refuse. LTB-0240 holds the variants.
+  ny_days <- as.Date("2021-03-01") + 0:4
+  ny_close <- as.POSIXct(paste(ny_days, "16:00:00"), tz = "America/New_York")
+  attr(ny_close, "tzone") <- "UTC"
+  late <- ledgr_snapshot_from_df(
+    data.frame(instrument_id = "AAA", ts_utc = ny_close, open = 10, high = 10, low = 10, close = 10, volume = 1),
+    db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
+    facts = ledgr_facts(ledgr_facts_sessions(
+      data.frame(session_date = ny_days[-1], status = "open", session_open = "09:30:00", session_close = "16:00:00"),
+      venue_id = "XNYS", timezone = "America/New_York", knowledge = "assume_effective"
+    ))
+  )
+  on.exit(ledgr_snapshot_close(late), add = TRUE)
+  late_exp <- ledgr_experiment(late, hold, universe = "AAA", valuation_policy = ledgr_valuation_stale(1),
+                               cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+  testthat::expect_error(ledgr_run(late_exp, run_id = "late_calendar_full"), class = "ledgr_sessions_incomplete")
+  testthat::expect_error(ledgr_experiment_window(late_exp, ny_close[[1]], ny_close[[3]]),
+                         class = "ledgr_sessions_incomplete")
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0240] calendar coverage holds on every entry point and on New York calendars", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
+  hold <- function(ctx, params) ctx$hold()
+  experiment <- function(snapshot) {
+    ledgr_experiment(
+      snapshot, hold, universe = ledgr_universe_members("u"),
+      valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
     )
   }
-  # The calendar ends before the last bar (K1), or starts after the first (K2).
-  for (case in list(list(to = days[[10]], wf = c(days[[2]], days[[13]]), inside = days[c(1, 10)]),
-                    list(from = days[[4]], wf = c(days[[2]], days[[10]]), inside = days[c(4, 15)]))) {
-    snapshot <- scale_test_events_snapshot(sessions_from = case$from, sessions_to = case$to)
-    exp <- experiment(snapshot)
-    testthat::expect_error(ledgr_run(exp, run_id = "short_calendar"), class = "ledgr_sessions_incomplete")
-    testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
-    testthat::expect_error(
-      ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = fold(case$wf[[1]], case$wf[[2]]),
-                         selection_rule = ledgr_rule_argmax("sharpe_ratio")),
-      class = "ledgr_sessions_incomplete"
-    )
-    # A window the calendar covers runs.
-    window <- ledgr_experiment_window(exp, at(case$inside[[1]]), at(case$inside[[2]]))
-    inside <- ledgr_run_window(exp, window = window, run_id = "covered_window")
-    testthat::expect_identical(ledgr_run_info(snapshot, "covered_window")$status, "DONE")
-    close(inside)
-    ledgr_snapshot_close(snapshot)
-  }
+  # K2 on the remaining entry points, and a window the calendar covers.
+  snapshot <- scale_test_events_snapshot(sessions_from = days[[4]])
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  exp <- experiment(snapshot)
+  testthat::expect_error(ledgr_sweep(exp, ledgr_param_grid(a = list())), class = "ledgr_sessions_incomplete")
+  folds <- ledgr:::ledgr_fold_list(
+    list(ledgr_fold(at(days[[2]]), at(days[[7]]), at(days[[8]]), at(days[[10]]), fold_seq = 1L)),
+    constructor = list(type_id = "explicit")
+  )
+  testthat::expect_error(
+    ledgr_walk_forward(exp, grid = ledgr_param_grid(a = list()), folds = folds, selection_rule = ledgr_rule_argmax("sharpe_ratio")),
+    class = "ledgr_sessions_incomplete"
+  )
+  window <- ledgr_experiment_window(exp, at(days[[4]]), at(days[[15]]))
+  close(ledgr_run_window(exp, window = window, run_id = "covered_window"))
+  testthat::expect_identical(ledgr_run_info(snapshot, "covered_window")$status, "DONE")
 
   # A New York calendar whose civil days start at 05:00Z: an opening dated on
   # the first session, or before the sealed bars, runs from the sealed start
@@ -308,8 +355,7 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
   }
 
   # Bars that start a day before the calendar: a request from the calendar's
-  # first civil day covers every bar it asks for, so it runs; a request from
-  # the first bar does not, and a bare window beyond the calendar refuses.
+  # first civil day covers every bar it asks for, so it runs.
   late <- ledgr_snapshot_from_df(
     data.frame(instrument_id = "AAA", ts_utc = ny_close, open = 10, high = 10, low = 10, close = 10, volume = 1),
     db_path = tempfile(fileext = ".duckdb"), price_basis = "split_adjusted",
@@ -329,9 +375,6 @@ testthat::test_that("[LTB-0224] a calendar that does not cover the requested ran
   window <- ledgr_experiment_window(late_exp(), as.POSIXct(paste(ny_days[[2]], "00:00:00"), tz = "UTC"), ny_close[[5]])
   close(ledgr_run_window(late_exp(), window = window, run_id = "late_calendar_window"))
   testthat::expect_identical(ledgr_run_info(late, "late_calendar_window")$status, "DONE")
-  testthat::expect_error(ledgr_run(late_exp(), run_id = "late_calendar_full"), class = "ledgr_sessions_incomplete")
-  testthat::expect_error(ledgr_experiment_window(late_exp(), ny_close[[1]], ny_close[[3]]),
-                         class = "ledgr_sessions_incomplete")
 })
 
 testthat::test_that("[LTB-0225] availability-aware experiments disclose their price basis", {
@@ -843,7 +886,17 @@ testthat::test_that("[LTB-0234] results name the universe kind and the assumptio
   testthat::expect_identical(ledgr_valuation_summary(clean)$assumption_backed_families, character())
   testthat::expect_true("Point in time: membership rule 'u'; max sessions 2" %in% utils::capture.output(print(clean)))
   testthat::expect_false(any(grepl("Assumption-backed", utils::capture.output(summary(clean)), fixed = TRUE)))
+  # LTB-0243 (review) covers two universes of different knowledge.
+})
 
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0243] a membership rule rests only on its own universe's assumptions", {
+  hold <- function(ctx, params) ctx$hold()
+  run <- function(snapshot, universe, run_id) {
+    exp <- ledgr_experiment(snapshot, hold, universe = universe, valuation_policy = ledgr_valuation_stale(2),
+                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000))
+    ledgr_run(exp, run_id = run_id)
+  }
   # A membership rule rests only on its own universe: an assumed second
   # universe in the same snapshot does not label an evidenced one.
   second <- data.frame(effective_from = as.POSIXct("2021-01-03 21:00:00", tz = "UTC"),
@@ -896,12 +949,10 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
     "feature_set_hash"
   ))
 
+  # One policy variant and the feature-set variant stay here; LTB-0242
+  # (review) covers the universe, valuation, corporate-action and opening ones.
   variants <- list(
     strategy_hash = experiment(strategy = buy_twice),
-    universe_hash = experiment(universe = c("AAA", "BBB")),
-    valuation_policy_hash = experiment(valuation = ledgr_valuation_stale(0, exhausted = "refuse")),
-    corporate_action_policy_hash = experiment(policy = ledgr_corporate_actions_strict()),
-    opening_hash = experiment(cash = 500),
     feature_set_hash = experiment(features = ledgr_feature_map(signal = ledgr_ind_sma(2L)))
   )
   for (field in names(variants)) {
@@ -930,6 +981,49 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
   testthat::expect_identical(legacy$promotion_context_version, "ledgr_promotion_v1")
   testthat::expect_null(legacy$identity_check)
   testthat::expect_identical(legacy$selected_candidate$candidate_id, "q1")
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0242] promotion warns on each policy, universe and opening identity", {
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  buy <- function(ctx, params) {
+    target <- ctx$hold()
+    ids <- ctx$tradable()
+    if (length(ids)) target[ids] <- params$qty
+    target
+  }
+  buy_twice <- function(ctx, params) {
+    target <- ctx$hold()
+    ids <- ctx$tradable()
+    if (length(ids)) target[ids] <- 2 * params$qty
+    target
+  }
+  experiment <- function(strategy = buy, universe = ledgr_universe_members("u"), valuation = ledgr_valuation_stale(2),
+                         policy = ledgr_corporate_actions_research(), cash = 1000, features = list()) {
+    ledgr_experiment(snapshot, strategy, universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
+                     opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features)
+  }
+  sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
+  candidate <- ledgr_candidate(sweep, which = 1L)
+
+  variants <- list(
+    universe_hash = experiment(universe = c("AAA", "BBB")),
+    valuation_policy_hash = experiment(valuation = ledgr_valuation_stale(0, exhausted = "refuse")),
+    corporate_action_policy_hash = experiment(policy = ledgr_corporate_actions_strict()),
+    opening_hash = experiment(cash = 500)
+  )
+  for (field in names(variants)) {
+    run_id <- paste0("promote_", field)
+    testthat::expect_warning(
+      bt <- ledgr_promote(variants[[field]], candidate, run_id = run_id),
+      class = "ledgr_promote_identity_mismatch"
+    )
+    check <- ledgr_promotion_context(bt)$identity_check
+    testthat::expect_identical(check$mismatched, field, info = field)
+    testthat::expect_false(identical(check$candidate[[field]], check$promoting[[field]]), info = field)
+    close(bt)
+  }
 })
 
 testthat::test_that("[LTB-0236] run and session identity bind snapshot content under identity rule 2", {
@@ -985,6 +1079,13 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, plain$config$backtest$start_ts_utc)
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, one$metadata$start_date)
 
+  # LTB-0244 (review) covers walk-forward session identity and the rule-1 fork.
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0244] walk-forward sessions record identity rule 2 and fork from a rule-1 session", {
+  days <- pit_consistency_days()
+  at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   # A walk-forward session records rule 2. A rule-1 session is not matched: a
   # rerun forks, as across ledgr versions (maintainer decision on review F2).
   snapshot <- scale_test_events_snapshot()

@@ -19,10 +19,8 @@ ledgr_doc_sentences <- function(path) {
   lines[in_code] <- ""
   paragraph <- cumsum(!nzchar(trimws(lines)))
   paragraphs <- vapply(split(lines, paragraph), paste, character(1), collapse = " ")
-  out <- unlist(lapply(paragraphs, function(text) {
-    text <- gsub("\\s+", " ", gsub("[>#*`]+", " ", text))
-    strsplit(trimws(text), "(?<=[.!?])\\s+(?=[A-Z])", perl = TRUE)[[1L]]
-  }), use.names = FALSE)
+  text <- trimws(gsub("\\s+", " ", gsub("[>#*`]+", " ", paragraphs)))
+  out <- unlist(strsplit(text, "(?<=[.!?])\\s+(?=[A-Z])", perl = TRUE), use.names = FALSE)
   out[nzchar(out)]
 }
 
@@ -38,8 +36,17 @@ ledgr_doc_terminal_claim_problems <- function(root) {
     list.files(file.path(root, "man"), pattern = "[.]Rd$", full.names = TRUE)
   )
   sources <- sources[file.exists(sources)]
+  # A flagged sentence names Sharadar, or uses frozen or freeze, equity and
+  # exact together, so only files holding those words are split into
+  # sentences.
+  candidate <- vapply(sources, function(path) {
+    text <- readLines(path, warn = FALSE, encoding = "UTF-8")
+    has <- function(pattern) any(grepl(pattern, text, ignore.case = TRUE, perl = TRUE))
+    any(grepl("Sharadar", text, fixed = TRUE)) ||
+      (has("\\bexact\\b") && has("\\bequity\\b") && has("\\b(frozen|freeze)\\b"))
+  }, logical(1))
   out <- character()
-  for (path in sources) {
+  for (path in sources[candidate]) {
     sentences <- ledgr_doc_sentences(path)
     sharadar <- sentences[grepl("Sharadar", sentences, fixed = TRUE)]
     bad <- sharadar[!vapply(sharadar, function(x) grepl(boundary, x, fixed = TRUE), logical(1))]
