@@ -5,9 +5,11 @@
 `PASS_AFTER_PATCHES`; the patches are incorporated and the maintainer accepted
 the cut on 2026-10-12. Workstream 27 is awaiting Type 1 close review:
 LDG-3019's rule-3 encoder and refusal boundary and LDG-3020's process-local
-verification reuse are implemented and recorded. Independent Workstream 28
-remains open with LDG-3021 for the separately claimed `ledgr_sweep_save()`
-defect.
+verification reuse are implemented and recorded. The integrated Windows fast
+profile passes at 110.260 seconds, and GitHub Actions run 38305153540 passes
+the acceptance layer, semantic fast runs and `R CMD check`. Independent
+Workstream 28 remains open with LDG-3021 for the separately claimed
+`ledgr_sweep_save()` defect.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That

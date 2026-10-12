@@ -35,6 +35,21 @@ shape. It completed in 506.96 seconds and its self-checker passed. Median
 candidate/baseline ratios were 0.901 to 1.009 cold and 0.910 to 0.961 warm;
 none required a retry. Exact semantic records match for all three shapes.
 
+After rebasing onto release head `b31d523f`, the integrated tree passed the
+ordinary Windows fast profile at 566 of 566 blocks, zero skipped or failed,
+in 110.260 seconds against the fixed 112-second bound. The machine-readable
+record is under `integrated_fast/`. GitHub Actions run 38305153540 passed the
+v0.1.x acceptance layer, three semantic fast-profile runs and `R CMD check`
+at final commit `f5a54cae`. Its 187.007-second Ubuntu median is advisory under
+the accepted synthesis; the registered Windows host owns the timing gate.
+
+Integration exposed two stale test-harness assumptions, neither in product
+code. AT7 claimed a cold-process raw-tamper oracle but retained the warm proof
+created by seal; `8e0a75c5` resets that private proof before the load. The
+installed-package check excludes `dev/bench`; `f94fe9a5` and `f5a54cae` make
+the two source-only claim blocks execute an explicit absence assertion there
+while preserving their full source and record oracles in a checkout.
+
 ## Compatibility boundary
 
 Only rule-3 snapshots are executable through content-dependent paths. Missing,

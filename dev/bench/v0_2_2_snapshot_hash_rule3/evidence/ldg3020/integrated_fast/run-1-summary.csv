@@ -1,0 +1,2 @@
+"profile","mode","elapsed_seconds","expected_blocks","executed_blocks","skipped_blocks","failed_blocks","r_version","testthat_version"
+"fast","ordinary",110.26,566,566,0,0,"4.6.1","3.3.2"
