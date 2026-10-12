@@ -22,9 +22,13 @@ The CI workflow shows the portable isolated-CRAN invocation. It prepares an
 empty library, exports its recorded manifest and a read-only work directory,
 runs this same runner with `--mode=cran`, then applies the CRAN clock.
 
-The ordinary fast gate is the same command with `--mode=ordinary`. It fails
-above 90 seconds. If run 1 reports `exceeded=true`, run indices 2 and 3 in
-fresh processes before the checker applies the registered median rule. Inspect
+The ordinary fast gate is the same command with `--mode=ordinary`. Its bound is
+`ordinary_fast_max_seconds` in `test-gates.yml`. If run 1 reports
+`exceeded=true`, run indices 2 and 3 in fresh processes before the checker
+applies the registered median rule. The checker accepts one run within the
+bound, or three runs judged by their median (three serial runs are accepted
+even when run 1 was within the bound); it refuses any other record set as
+incomplete. Inspect
 the retained census and timings; do not widen the bound, drop selection, or
 remove the measured full-collection checkpoint that stabilizes collector debt.
 

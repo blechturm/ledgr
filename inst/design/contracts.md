@@ -566,6 +566,11 @@ Accepted change pending:
   session, trading-status, or lifetime facts. Dynamic membership is explicit
   through `ledgr_universe_members(universe_id)` and must name a membership
   universe declared by the snapshot.
+- Trading-status coverage is all or nothing. Without a trading-status family
+  no instrument is restricted by status. Once the family holds any row, every
+  instrument-time without an applicable status assertion is `status_unknown`:
+  target-restricted, allowing hold or exit only (Cut 12 LDG-3009, audit
+  S2-018).
 - `ledgr_experiment_plan()` is read-only disclosure of effective availability,
   universe, valuation, and fact-family checks. It distinguishes disabled,
   omitted, declared, and assumption-backed families without executing a
@@ -643,7 +648,11 @@ Accepted change pending:
   run identity.
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
-  `target_restriction_reason`, `admissible`, `priced`, and `mark_age` planes.
+  `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
+  and `mark_source` planes. `risk_mark` is the close a holding is valued and
+  risk-checked at (`NA` without a permissible or frozen mark) and
+  `mark_source` names it: `current_close`, `stale_close`, `frozen_close`,
+  `expired_close` or `missing`.
   The decision axis Daxis is `ctx$universe` in its existing order. The
   allocation membership M is Daxis in dense contexts and `ctx$members` in
   availability contexts; Daxis may additionally contain held nonmembers.
@@ -1310,7 +1319,8 @@ Accepted change pending:
   logic. The bound fields are `id`, `open`, `high`, `low`, `close`, `volume`,
   `position`, and `feature`, and in every context the eligibility planes
   `member`, `target_restricted`, `target_restriction_reason`, and
-  `admissible`. `ctx$vec$feature(feature_id)` returns the current
+  `admissible`; availability-aware contexts add `held`, `priced`, `mark_age`,
+  `risk_mark` and `mark_source`. `ctx$vec$feature(feature_id)` returns the current
   universe-aligned vector for one active alias or registered engine feature
   ID. Active aliases resolve before concrete IDs; an unknown name fails with
   `ledgr_unknown_feature_id` and lists both namespaces separately.

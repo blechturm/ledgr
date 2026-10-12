@@ -88,10 +88,16 @@ ledgr_test_gate_decide <- function(seconds, bound, confirmation_runs = 2L) {
     ledgr_test_abort("Test timing evidence is invalid.", "ledgr_test_timing_invalid")
   }
   confirmation_runs <- as.integer(confirmation_runs)
-  required <- if (seconds[[1L]] > bound) 1L + confirmation_runs else 1L
-  if (length(seconds) != required) {
+  # One run within the bound suffices. Otherwise, and whenever confirmation
+  # runs were recorded anyway, the full set is judged by its median.
+  full <- 1L + confirmation_runs
+  complete <- length(seconds) == full || (length(seconds) == 1L && seconds[[1L]] <= bound)
+  if (!complete) {
     ledgr_test_abort(
-      sprintf("Timing gate requires %d run(s), received %d.", required, length(seconds)),
+      sprintf(
+        "Timing gate requires 1 run within the bound or %d runs, received %d.",
+        full, length(seconds)
+      ),
       "ledgr_test_timing_protocol_incomplete"
     )
   }

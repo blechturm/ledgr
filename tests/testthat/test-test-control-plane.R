@@ -231,6 +231,22 @@ testthat::test_that("deliberately slow timing and missing release evidence fail 
     ledgr_test_gate_decide(c(91, 92), 90, 2L),
     class = "ledgr_test_timing_protocol_incomplete"
   )
+  # An over-bound first run without its confirmations is incomplete; a full
+  # record set is judged by its median even when run 1 was within the bound.
+  testthat::expect_error(
+    ledgr_test_gate_decide(91, 90, 2L),
+    class = "ledgr_test_timing_protocol_incomplete"
+  )
+  testthat::expect_error(
+    ledgr_test_gate_decide(c(89, 88), 90, 2L),
+    class = "ledgr_test_timing_protocol_incomplete"
+  )
+  testthat::expect_identical(ledgr_test_gate_decide(c(89, 91, 88), 90, 2L), 89)
+  testthat::expect_identical(ledgr_test_gate_decide(c(91, 89, 88), 90, 2L), 89)
+  testthat::expect_error(
+    ledgr_test_gate_decide(c(89, 91, 92), 90, 2L),
+    class = "ledgr_test_timing_gate_failed"
+  )
   slow_seconds <- unname(system.time(Sys.sleep(0.02))[["elapsed"]])
   testthat::expect_error(
     ledgr_test_gate_decide(rep(slow_seconds, 3L), 0.001, 2L),
@@ -476,4 +492,47 @@ testthat::test_that("heavy protocols require an owner invocation and checker", {
     ledgr_test_heavy_protocols_read(registry),
     class = "ledgr_test_heavy_registry_invalid"
   )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0237] check-test-gate accepts the documented record set and refuses an incomplete one", {
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
+  rscript <- file.path(R.home("bin"), "Rscript")
+  bound <- yaml::read_yaml(file.path(root, "tests", "test-gates.yml"))$ordinary_fast_max_seconds
+  check_records <- function(seconds) {
+    records <- tempfile("ledgr-gate-records-")
+    dir.create(records)
+    on.exit(unlink(records, recursive = TRUE), add = TRUE)
+    for (i in seq_along(seconds)) {
+      utils::write.csv(
+        data.frame(profile = "fast", key = "test-probe.R::block-1::1", status = "passed"),
+        file.path(records, sprintf("run-%d-census.csv", i)), row.names = FALSE
+      )
+      utils::write.csv(
+        data.frame(profile = "fast", mode = "ordinary", elapsed_seconds = seconds[[i]], expected_blocks = 1L,
+                   executed_blocks = 1L, skipped_blocks = 0L, failed_blocks = 0L),
+        file.path(records, sprintf("run-%d-summary.csv", i)), row.names = FALSE
+      )
+    }
+    paste(suppressWarnings(system2(
+      rscript,
+      c("--vanilla", shQuote(file.path(root, "tools", "check-test-gate.R")), "--profile=fast", "--mode=ordinary",
+        shQuote(paste0("--records=", records))),
+      stdout = TRUE, stderr = TRUE
+    )), collapse = "\n")
+  }
+  # tests/README.md: one run within the bound, or three runs judged by their
+  # median; three serial runs are accepted even when run 1 was within it.
+  testthat::expect_match(check_records(bound - 1), "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  testthat::expect_match(check_records(c(bound - 1, bound - 2, bound - 3)), "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  testthat::expect_match(check_records(c(bound + 1, bound - 2, bound - 3)), "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  incomplete <- check_records(c(bound - 1, bound - 2))
+  testthat::expect_no_match(incomplete, "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  testthat::expect_match(incomplete, "requires 1 run within the bound or 3 runs, received 2", fixed = TRUE)
+  unconfirmed <- check_records(bound + 1)
+  testthat::expect_no_match(unconfirmed, "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  testthat::expect_match(unconfirmed, "received 1", fixed = TRUE)
+  over <- check_records(c(bound - 1, bound + 1, bound + 2))
+  testthat::expect_no_match(over, "LEDGR_TEST_GATE_OK", fixed = TRUE)
+  testthat::expect_match(over, "Fast test gate failed", fixed = TRUE)
 })
