@@ -53,8 +53,23 @@ changes the surfaces they would police:
 
 The rationale for mechanical gates over more review: the per-ticket review
 loop is strong, but nothing reads the whole package between cuts, so drift
-accumulates exactly where reviews do not look. This entry authorizes no
-ticket or release commitment.
+accumulates exactly where reviews do not look.
+
+**For the hygiene workstream: pin the collation of documentation
+generation (2026-10-12).** Regenerating the man pages with roxygen2 7.3.3
+from a shell whose `LC_COLLATE` differs from the maintainer's usual
+environment reordered `NAMESPACE` (export lines) and 27 unrelated Rd files
+(argument order and blank lines) with no content change; the thirteen-export
+documentation chore (`90a701d1`) kept only its seven intended pages and
+reverted the rest by hand. Same class of defect as the quarantine ordering
+found in the snapshot-verification cycle: a sort that depends on the
+session locale. The workstream adds a `tools/document.R` entry point that
+sets `LC_COLLATE = "C"` (or `Sys.setlocale("LC_COLLATE", "C")`) before
+`roxygen2::roxygenise()`, names the roxygen2 version it expects, and makes
+one such regeneration the committed baseline so later diffs show content
+only. roxygen2 is not installed for the current R; the chore used the copy
+in the previous R version's user library, which the entry point should not
+assume. This entry authorizes no ticket or release commitment.
 
 ### 2026-10-12 [architecture] Where the package's weight is, and the four levers that reduce it
 

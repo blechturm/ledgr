@@ -758,4 +758,8 @@ v0.2.2, report-only until then: enforcing the export census (168 exports
 and 84 S3 methods, those unused by any man example, vignette or article
 become internal) and the test-oracle rule for the 848 unregistered blocks,
 because both touch surfaces the execution-core consolidation changes.
-Parked in `horizon.md` under the 2026-10-12 infrastructure entry.
+Parked in `horizon.md` under the 2026-10-12 infrastructure entry, which
+also holds one more item for this workstream: a documentation-generation
+entry point that pins `LC_COLLATE` to `C` before `roxygen2::roxygenise()`,
+after a regeneration from a differently collated shell reordered
+`NAMESPACE` and 27 unrelated Rd files without content change (`90a701d1`).
