@@ -44,9 +44,12 @@ changes the surfaces they would police:
   before the strategy-context and result-reader surfaces settle would make
   the WS3/WS4 cut fight a gate on a surface it is about to replace.
 - Test-oracle rule. 1,096 `test_that()` blocks, 248 with a registered claim.
-  A new block names its claim or states its oracle class in the title; the
-  848 unregistered blocks are classified when the suites they live in are
-  rewritten, not in one pass.
+  Correction, same day: the accepted testing-architecture synthesis binds
+  that unregistered blocks need no durable ID and leaves undeclared claims
+  to its Shrink, Merge and Delete reviews (Section 2.4 and line 107), so a
+  per-block rule would reopen an accepted decision. The count stays a
+  signal; the 848 blocks are classified through that existing lane when
+  their suites are rewritten, not by a new gate.
 
 The rationale for mechanical gates over more review: the per-ticket review
 loop is strong, but nothing reads the whole package between cuts, so drift
