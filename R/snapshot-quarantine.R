@@ -28,6 +28,11 @@ ledgr_snapshot_quarantine <- function(snapshot) {
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   }
+  ledgr_snapshot_ensure_verified(
+    opened$con,
+    snapshot$snapshot_id,
+    snapshot_db_path = snapshot$db_path
+  )
   info <- ledgr_snapshot_info(opened$con, snapshot$snapshot_id)
   if (!identical(info$status[[1L]], "SEALED")) {
     rlang::abort(

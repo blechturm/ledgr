@@ -24,6 +24,10 @@
 #' snapshot row. Seal-time metadata inside `meta_json` may use `n_bars` and
 #' `n_instruments`; the public columns are `bar_count` and
 #' `instrument_count`. Metadata is not part of `snapshot_hash`.
+#' `verified_in_process` is `TRUE` only when the current process holds the
+#' exact snapshot-store, snapshot-id, stored-root, and rule tuple in its private
+#' PID-bound verified set. Reading metadata does not establish that proof, and
+#' the value is never persisted or serialized.
 #' @details
 #' Errors:
 #' - `ledgr_invalid_con` if `con` is not a valid DBI connection.
@@ -51,11 +55,15 @@
 #' DBI::dbDisconnect(con, shutdown = TRUE)
 #' @export
 ledgr_snapshot_info <- function(con, snapshot_id) {
+  store_key <- NULL
   if (inherits(con, "ledgr_snapshot")) {
+    store_key <- ledgr_store_key(con$db_path)
     snapshot_id <- con$snapshot_id
     release <- ledgr_snapshot_hold(con)
     on.exit(release(), add = TRUE)
     con <- get_connection(con)
+  } else {
+    store_key <- ledgr_snapshot_connection_store_key(con)
   }
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
@@ -112,7 +120,12 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
   df$hash_rule_version <- as.integer(df$hash_rule_version)
-  df$verified_in_process <- FALSE
+  df$verified_in_process <- ledgr_snapshot_verified_contains(
+    store_key,
+    snapshot_id,
+    df$snapshot_hash[[1L]],
+    df$hash_rule_version[[1L]]
+  )
   df$off_session_bar_count <- if (ledgr_experiment_store_table_exists(con, "snapshot_observation_quarantine")) {
     as.integer(DBI::dbGetQuery(
       con,

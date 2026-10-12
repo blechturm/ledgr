@@ -157,6 +157,7 @@ ledgr_sweep_impl <- function(exp,
   }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   if (!is.logical(stop_on_error) || length(stop_on_error) != 1L || is.na(stop_on_error)) {
     rlang::abort("`stop_on_error` must be TRUE or FALSE.", class = "ledgr_invalid_args")
   }
@@ -682,6 +683,7 @@ ledgr_promote <- function(exp,
   }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   if (identical(candidate$status, "INCOMPLETE")) {
     rlang::abort(
       sprintf("Cannot promote incomplete candidate '%s'.", candidate$candidate_id),

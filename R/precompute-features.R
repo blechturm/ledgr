@@ -56,6 +56,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
   ledgr_validate_feature_factory_grid(exp, param_grid)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
 
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- ledgr_precompute_scoring_range(

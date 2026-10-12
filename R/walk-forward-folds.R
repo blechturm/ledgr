@@ -524,6 +524,7 @@ ledgr_experiment_window <- function(exp,
   opening_state_policy <- match.arg(opening_state_policy)
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   scoring_start <- ledgr_walk_forward_posix(start_utc, "`start_utc`")
   scoring_end <- ledgr_walk_forward_posix(end_utc, "`end_utc`")

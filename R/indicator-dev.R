@@ -26,6 +26,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
+  ledgr_snapshot_ensure_handle(snapshot)
   if (!is.character(instrument_id) || length(instrument_id) != 1 || is.na(instrument_id) || !nzchar(instrument_id)) {
     rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

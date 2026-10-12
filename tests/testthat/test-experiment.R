@@ -128,7 +128,7 @@ testthat::test_that("ledgr_experiment rejects unsealed snapshots", {
 
   testthat::expect_error(
     ledgr_experiment(snapshot = snapshot, strategy = strategy, cost_model = ledgr_cost_zero()),
-    class = "ledgr_invalid_experiment"
+    class = "LEDGR_SNAPSHOT_NOT_SEALED"
   )
 })
 

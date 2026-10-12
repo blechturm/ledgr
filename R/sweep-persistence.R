@@ -80,6 +80,7 @@ ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
 #'   tibble.
 #' @export
 ledgr_sweep_open <- function(snapshot, sweep_id) {
+  ledgr_snapshot_ensure_handle(snapshot)
   db_path <- ledgr_run_store_snapshot_path(snapshot)
   sweep_id <- ledgr_sweep_normalize_id(sweep_id)
 

@@ -173,7 +173,7 @@ testthat::test_that("saved sweep open validates snapshot identity and schema com
   )
   testthat::expect_error(
     ledgr_sweep_open(snapshot, "open_me"),
-    class = "ledgr_sweep_snapshot_hash_mismatch"
+    class = "LEDGR_SNAPSHOT_CORRUPTED"
   )
   DBI::dbExecute(
     con,

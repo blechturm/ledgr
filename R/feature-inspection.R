@@ -104,6 +104,7 @@ ledgr_feature_contract_check <- function(snapshot,
                                          feature_params = NULL) {
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(snapshot)
   ledgr_feature_contract_check_validate_snapshot(snapshot)
   if (is.function(features) && !inherits(features, "ledgr_indicator")) {
     rlang::abort(

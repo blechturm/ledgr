@@ -335,6 +335,7 @@ testthat::test_that("sealed snapshot inspection verifies evidence and connection
     "UPDATE snapshot_membership SET member = FALSE WHERE snapshot_id = ? AND instrument_id = 'AAA'",
     params = list(snapshot$snapshot_id)
   )
+  ledgr:::ledgr_snapshot_verified_reset()
   testthat::expect_error(
     ledgr_facts_resolve(corrupt, "membership", "research", "2024-01-15T00:00:00Z"),
     class = "ledgr_facts_snapshot_hash_mismatch"
@@ -370,6 +371,7 @@ testthat::test_that("snapshot resolution works in a fresh process without a fact
   root <- normalizePath(testthat::test_path("..", ".."), winslash = "/")
   installed_root <- normalizePath(system.file(package = "ledgr"), winslash = "/")
   writeLines(c(
+    ".libPaths(c(Sys.getenv('R_LIBS_USER'), .libPaths()))",
     "args <- commandArgs(trailingOnly = TRUE)",
     "if (file.exists(file.path(args[[1L]], 'DESCRIPTION')) && !identical(Sys.getenv('R_COVR'), 'true')) {",
     "  pkgload::load_all(args[[1L]], quiet = TRUE)",

@@ -88,6 +88,7 @@ ledgr_walk_forward <- function(exp,
   }
   release <- ledgr_snapshot_hold(exp$snapshot)
   on.exit(release(), add = TRUE)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   folds <- ledgr_validate_fold_list(folds)
   selection_rule <- ledgr_validate_selection_rule(selection_rule)
   seed <- ledgr_seed_normalize(seed)

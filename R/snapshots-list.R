@@ -140,8 +140,10 @@ ledgr_snapshot_list <- function(con, status = NULL) {
 #' @param db_path Path to an existing DuckDB file.
 #' @param snapshot_id Snapshot id to load. The snapshot must exist and be
 #'   `SEALED`.
-#' @param verify Logical scalar. If `TRUE`, recompute the snapshot hash and
-#'   compare it with the stored hash before returning.
+#' @param verify Logical scalar. If `TRUE`, recompute the complete rule-3
+#'   snapshot hash and compare it with the stored hash before returning, even
+#'   when this process already verified the same snapshot tuple. If `FALSE`,
+#'   opening is metadata-only; the first snapshot-dependent use verifies cold.
 #' @return A lazy `ledgr_snapshot` object.
 #' @details
 #' `ledgr_snapshot_open()` never creates or overwrites snapshots. It only returns
@@ -221,14 +223,14 @@ ledgr_snapshot_open <- function(db_path, snapshot_id = NULL, verify = FALSE) {
   }
 
   if (isTRUE(verify)) {
-    stored_hash <- info$snapshot_hash[[1]]
-    if (is.null(stored_hash) || is.na(stored_hash) || !nzchar(stored_hash)) {
-      rlang::abort("Snapshot hash missing; snapshot may not be sealed.", class = "ledgr_invalid_snapshot")
-    }
-    computed_hash <- ledgr_snapshot_hash(con, snapshot_id)
-    if (!identical(computed_hash, stored_hash)) {
-      rlang::abort("Snapshot hash mismatch; snapshot may be corrupted.", class = "ledgr_invalid_snapshot")
-    }
+    ledgr_snapshot_ensure_verified(
+      con,
+      snapshot_id,
+      snapshot_db_path = db_path,
+      force = TRUE,
+      corruption_class = "ledgr_invalid_snapshot",
+      corruption_message = "Snapshot hash mismatch; snapshot may be corrupted."
+    )
   }
 
   metadata <- list()

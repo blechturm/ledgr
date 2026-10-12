@@ -281,21 +281,26 @@ ledgr_facts_inspection_source <- function(x) {
   }
   opened <- ledgr_snapshot_connection(x)
   if (isTRUE(opened$opened_new)) on.exit(ledgr_snapshot_close(x), add = TRUE)
-  info <- ledgr_snapshot_info(opened$con, x$snapshot_id)
-  if (!identical(info$status[[1L]], "SEALED")) {
-    rlang::abort(
-      "Facts inspection requires a SEALED snapshot.",
-      class = c("ledgr_facts_snapshot_not_sealed", "LEDGR_SNAPSHOT_NOT_SEALED")
-    )
-  }
-  stored_hash <- info$snapshot_hash[[1L]]
-  computed_hash <- ledgr_snapshot_hash(opened$con, x$snapshot_id)
-  if (is.na(stored_hash) || !nzchar(stored_hash) || !identical(stored_hash, computed_hash)) {
-    rlang::abort(
-      "Snapshot hash mismatch; facts inspection refuses corrupted evidence.",
-      class = c("ledgr_facts_snapshot_hash_mismatch", "ledgr_invalid_snapshot")
-    )
-  }
+  stored_hash <- tryCatch(
+    ledgr_snapshot_ensure_verified(
+      opened$con,
+      x$snapshot_id,
+      snapshot_db_path = x$db_path,
+      corruption_class = c(
+        "ledgr_facts_snapshot_hash_mismatch",
+        "ledgr_invalid_snapshot"
+      ),
+      corruption_message = paste(
+        "Snapshot hash mismatch; facts inspection refuses corrupted evidence."
+      )
+    ),
+    LEDGR_SNAPSHOT_NOT_SEALED = function(e) {
+      rlang::abort(
+        "Facts inspection requires a SEALED snapshot.",
+        class = c("ledgr_facts_snapshot_not_sealed", "LEDGR_SNAPSHOT_NOT_SEALED")
+      )
+    }
+  )
   data <- ledgr_availability_provider_data(opened$con, x$snapshot_id)
   data$families <- DBI::dbGetQuery(
     opened$con,

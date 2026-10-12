@@ -18,50 +18,16 @@ ledgr_run_snapshot_guard <- function(con,
     }
   )
 
-  snap <- DBI::dbGetQuery(
-    con,
-    "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
-    params = list(snapshot_id)
+  stored_snapshot_hash <- tryCatch(
+    ledgr_snapshot_ensure_verified(
+      con,
+      snapshot_id,
+      snapshot_db_path = snapshot_db_path
+    ),
+    error = function(e) {
+      fail_run(conditionMessage(e), class = class(e)[[1L]])
+    }
   )
-  if (nrow(snap) != 1) {
-    fail_run(
-      sprintf("Snapshot not found: %s", snapshot_id),
-      class = "LEDGR_SNAPSHOT_NOT_FOUND"
-    )
-  }
-  if (!identical(snap$status[[1]], "SEALED")) {
-    fail_run(
-      paste0(
-        "LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED ",
-        "for backtests (got ", snap$status[[1]], ")."
-      ),
-      class = "LEDGR_SNAPSHOT_NOT_SEALED"
-    )
-  }
-  stored_snapshot_hash <- snap$snapshot_hash[[1]]
-  if (!is.character(stored_snapshot_hash) ||
-    length(stored_snapshot_hash) != 1 ||
-    is.na(stored_snapshot_hash) ||
-    !nzchar(stored_snapshot_hash)) {
-    fail_run(
-      paste0(
-        "LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing ",
-        "snapshot_hash."
-      ),
-      class = "LEDGR_SNAPSHOT_NOT_SEALED"
-    )
-  }
-
-  recomputed <- ledgr_snapshot_hash(con, snapshot_id)
-  if (!identical(recomputed, stored_snapshot_hash)) {
-    fail_run(
-      paste0(
-        "LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match ",
-        "recomputed hash."
-      ),
-      class = "LEDGR_SNAPSHOT_CORRUPTED"
-    )
-  }
 
   ids_sql <- paste(
     DBI::dbQuoteString(con, instrument_ids),

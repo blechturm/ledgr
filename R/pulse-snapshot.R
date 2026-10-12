@@ -52,6 +52,7 @@ ledgr_pulse_snapshot <- function(snapshot,
   if (!inherits(snapshot, "ledgr_snapshot")) {
     rlang::abort("`snapshot` must be a ledgr_snapshot object.", class = "ledgr_invalid_args")
   }
+  ledgr_snapshot_ensure_handle(snapshot)
   if (!is.character(universe) || length(universe) < 1 || anyNA(universe) || any(!nzchar(universe))) {
     rlang::abort("`universe` must be a non-empty character vector.", class = "ledgr_invalid_args")
   }
