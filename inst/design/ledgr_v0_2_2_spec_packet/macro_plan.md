@@ -718,6 +718,12 @@ settles only the refusal gate, the schema authority and the contract text.
 The RFC runs alongside Cut 13, which proceeds as accepted and adds no
 compatibility beyond what its synthesis binds. The removal cut follows Cut 13
 and precedes the WS3/WS4 history wave, so new history code meets only current
-shapes. The resulting order is: Cut 13, the legacy-removal cut, the WS3/WS4
-history wave and implementation cut, the lake rebuild under rule 3 with
-dividend facts, WS7, the WS6 probe, WS8.
+shapes. Maintainer, same day, on the RFC response: once no stored format is
+kept compatible, the ledgr-research lake is rebuilt after every store-format
+change, so the Cut 13 amendment's "rebuilt once" no longer holds. The first
+rebuild follows the removal cut, under rule 3 without dividends, so the WS3/WS4
+reviews keep their real-data lane. The rebuild is a scripted, timed step whose
+time is recorded by the cut that forces it. The resulting order is: Cut 13,
+the legacy-removal cut, an interim lake rebuild under rule 3, the WS3/WS4
+history wave and implementation cut, the lake rebuild with dividend facts,
+WS7, the WS6 probe, WS8.
