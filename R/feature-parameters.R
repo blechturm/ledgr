@@ -314,6 +314,12 @@ ledgr_param_constructor <- function(name) {
 #' @param features A feature map, parameterized declaration, indicator, bundle,
 #'   or list of feature declarations.
 #' @return A tibble with at least `param_name`, `alias`, and `argument`.
+#' @examples
+#' features <- ledgr_feature_map(
+#'   fast = ledgr_ind_sma(ledgr_param("fast_n")),
+#'   slow = ledgr_ind_sma(ledgr_param("slow_n"))
+#' )
+#' ledgr_parameters(features)
 #' @export
 ledgr_parameters <- function(features) {
   rows <- ledgr_parameter_rows(features)

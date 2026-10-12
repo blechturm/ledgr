@@ -16,6 +16,37 @@
 #'   `max_frozen_equity_weight`, `frozen_at_end_value`,
 #'   `assumed_terminal_outcomes`) from `completion_json`, and print reports
 #'   attempted, done, incomplete, and failed counts per window.
+#' @examples
+#' bars <- ledgr_sim_bars(n_instruments = 2, n_days = 60, seed = 1)
+#' snapshot <- ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+#' strategy <- function(ctx, params) {
+#'   targets <- ctx$flat()
+#'   targets[] <- params$qty
+#'   targets
+#' }
+#' exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
+#' grid <- ledgr_param_grid(small = list(qty = 1), large = list(qty = 2))
+#' folds <- ledgr_folds_rolling(
+#'   start = min(bars$ts_utc),
+#'   end = max(bars$ts_utc),
+#'   train_window = "5 weeks",
+#'   test_window = "3 weeks",
+#'   step = "3 weeks"
+#' )
+#' wf <- ledgr_walk_forward(
+#'   exp,
+#'   grid = grid,
+#'   folds = folds,
+#'   selection_rule = ledgr_rule_argmax("sharpe_ratio"),
+#'   seed = 1L
+#' )
+#'
+#' reopened <- ledgr_walk_forward_open(snapshot, wf$session_id)
+#' reopened$status
+#' ledgr_walk_forward_scores(snapshot, wf$session_id)
+#' ledgr_walk_forward_folds(snapshot, wf$session_id)
+#'
+#' ledgr_snapshot_close(snapshot)
 #' @export
 ledgr_walk_forward_open <- function(snapshot, session_id) {
   data <- ledgr_walk_forward_read_session(snapshot, session_id, verify_runs = TRUE)

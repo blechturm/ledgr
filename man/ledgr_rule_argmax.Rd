@@ -23,4 +23,5 @@ top-N, stability-region, and arbitrary-function selectors are deferred.
 }
 \examples{
 ledgr_rule_argmax("sharpe_ratio")
+ledgr_rule_argmin("max_drawdown")
 }

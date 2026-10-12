@@ -123,11 +123,23 @@ strategy <- function(ctx, params) {
 }
 exp <- ledgr_experiment(snapshot, strategy, cost_model = ledgr_cost_zero())
 grid <- ledgr_param_grid(flat = list(qty = 0), long = list(qty = 1))
-sweep <- ledgr_sweep(exp, grid, retain = ledgr_sweep_retention("completed"))
+sweep <- ledgr_sweep(
+  exp,
+  grid,
+  retain = ledgr_sweep_retention(returns = "completed", trades = "closed")
+)
 
 long <- ledgr_sweep_returns(sweep)
 long[!is.na(long$period_return), ]
 ledgr_sweep_returns_wide(sweep, value = "equity")
+ledgr_sweep_trades(sweep)
+
+returns <- ledgr_sweep_returns_matrix(sweep)
+dim(returns)
+head(ledgr_sweep_returns_data_frame(sweep))
+if (requireNamespace("xts", quietly = TRUE)) {
+  head(ledgr_sweep_returns_xts(sweep))
+}
 
 ledgr_snapshot_close(snapshot)
 }

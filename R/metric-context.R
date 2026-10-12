@@ -20,6 +20,10 @@
 #' `vignette("metrics-and-accounting", package = "ledgr")`
 #' `system.file("doc", "metrics-and-accounting.html", package = "ledgr")`
 #'
+#' @examples
+#' ledgr_calendar(trading_days_per_year = 252, bars_per_day = 1)
+#' ledgr_calendar_us_equity(bars_per_day = 390L)
+#' ledgr_calendar_crypto()
 #' @export
 ledgr_calendar <- function(trading_days_per_year,
                            bars_per_day = 1L,

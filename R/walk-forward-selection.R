@@ -11,6 +11,7 @@ ledgr_selection_rule_schema_version <- "v1"
 #' @return A `ledgr_selection_rule` object.
 #' @examples
 #' ledgr_rule_argmax("sharpe_ratio")
+#' ledgr_rule_argmin("max_drawdown")
 #' @export
 ledgr_rule_argmax <- function(metric) {
   ledgr_selection_rule(type_id = "argmax", metric = metric, direction = "max")

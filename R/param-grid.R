@@ -103,7 +103,13 @@ ledgr_param_grid_auto_label <- function(params) {
 #' @examples
 #' fg <- ledgr_feature_grid(fast_n = c(10L, 20L), slow_n = 40L, .filter = fast_n < slow_n)
 #' sg <- ledgr_strategy_grid(qty = c(50L, 100L))
-#' ledgr_grid_cross(features = fg, strategy = sg)
+#' grid <- ledgr_grid_cross(features = fg, strategy = sg)
+#' grid
+#'
+#' ledgr_grid_add_baseline(
+#'   grid,
+#'   flat = list(feature = list(fast_n = 10L, slow_n = 40L), strategy = list(qty = 0L))
+#' )
 #' @export
 ledgr_feature_grid <- function(..., .filter = NULL) {
   filter_expr <- substitute(.filter)

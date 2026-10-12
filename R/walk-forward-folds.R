@@ -40,6 +40,13 @@ ledgr_fold_list_schema_version <- "v1"
 #'   test_window = "3 months",
 #'   step = "3 months"
 #' )
+#'
+#' ledgr_folds_anchored(
+#'   start = "2020-01-01",
+#'   end = "2021-12-31",
+#'   train_window_initial = "1 year",
+#'   test_window = "3 months"
+#' )
 #' @export
 ledgr_fold <- function(train_start,
                        train_end,

@@ -16,3 +16,10 @@ A tibble with at least \code{param_name}, \code{alias}, and \code{argument}.
 \description{
 Inspect parameter references in feature declarations
 }
+\examples{
+features <- ledgr_feature_map(
+  fast = ledgr_ind_sma(ledgr_param("fast_n")),
+  slow = ledgr_ind_sma(ledgr_param("slow_n"))
+)
+ledgr_parameters(features)
+}
