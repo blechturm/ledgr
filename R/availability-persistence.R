@@ -182,8 +182,17 @@ ledgr_snapshot_availability_tables <- function() {
 
 ledgr_snapshot_availability_read <- function(con, snapshot_id) {
   tables <- ledgr_snapshot_availability_tables()
+  # One catalogue read finds which availability tables exist (LDG-3017).
+  existing <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name IN (",
+      paste(DBI::dbQuoteString(con, names(tables)), collapse = ", "),
+      ")"
+    )
+  )$table_name
   out <- lapply(names(tables), function(table_name) {
-    if (!ledgr_experiment_store_table_exists(con, table_name)) return(data.frame())
+    if (!table_name %in% existing) return(data.frame())
     DBI::dbGetQuery(
       con,
       sprintf(

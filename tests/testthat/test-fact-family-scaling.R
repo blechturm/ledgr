@@ -427,3 +427,45 @@ test_that("[LTB-0049] physical fact-row order cannot move identity", {
   )
   expect_silent(ledgr_snapshot_validate(snapshot))
 })
+
+test_that("[LTB-0248] availability tables are found with one catalogue read per call", {
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  con <- ledgr:::get_connection(snapshot)
+  tables <- ledgr:::ledgr_snapshot_availability_tables()
+  # Reference: the per-table reads, each guarded by its own existence check.
+  reference <- function(con) {
+    present <- DBI::dbListTables(con)
+    out <- lapply(names(tables), function(table_name) {
+      if (!table_name %in% present) return(data.frame())
+      DBI::dbGetQuery(con, sprintf("SELECT * EXCLUDE (snapshot_id) FROM %s WHERE snapshot_id = ? ORDER BY %s",
+                                   table_name, tables[[table_name]]), params = list(snapshot$snapshot_id))
+    })
+    stats::setNames(out, names(tables))
+  }
+  catalogue <- 0L
+  get_query <- DBI::dbGetQuery
+  read <- function(con) {
+    catalogue <<- 0L
+    testthat::with_mocked_bindings(
+      ledgr:::ledgr_snapshot_availability_read(con, snapshot$snapshot_id),
+      dbGetQuery = function(conn, statement, ...) {
+        if (grepl("information_schema.tables", statement, fixed = TRUE)) catalogue <<- catalogue + 1L
+        get_query(conn, statement, ...)
+      },
+      .package = "DBI"
+    )
+  }
+  testthat::expect_identical(read(con), reference(con))
+  testthat::expect_identical(catalogue, 1L)
+
+  # Missing tables read as empty frames, still from one catalogue read.
+  partial <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(partial, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(partial, "CREATE TABLE snapshot_sessions (snapshot_id TEXT, venue_id TEXT, session_date DATE)")
+  DBI::dbExecute(partial, "INSERT INTO snapshot_sessions VALUES (?, 'V', DATE '2021-01-04')", params = list(snapshot$snapshot_id))
+  got <- read(partial)
+  testthat::expect_identical(got, reference(partial))
+  testthat::expect_identical(nrow(got$snapshot_sessions), 1L)
+  testthat::expect_identical(catalogue, 1L)
+})
