@@ -47,6 +47,15 @@ testthat::test_that("[LTB-0252] complete verification is PID-bound and truthful"
     ledgr_snapshot_validate(reopened)
   })
   testthat::expect_identical(counted$count, 2L)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0257] stable keys and seal lifecycle fail closed", {
+  path <- tempfile(fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_df(verification_test_bars(), db_path = path)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  id <- snapshot$snapshot_id
+  root <- ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
 
   ledgr_snapshot_close(snapshot)
   second_path <- tempfile(fileext = ".duckdb")
