@@ -165,9 +165,11 @@ Two companions to the levers, from the 2026-10-12 review of this entry:
   1,000 to 2,000 lines.
 
 Order: lever 1 before lever 4, because one run shape means one reader;
-lever 2 is independent and lower risk; lever 3 is already scheduled. After
-v0.2.2 the sequence this entry suggests is: the unification probe, the fold
-split, the unification slices, with the defensive-code audit alongside.
+lever 2 is independent and lower risk; lever 3 is already scheduled. The
+unification probe runs in v0.2.2 between the legacy-removal cut and the
+WS3/WS4 implementation cut (maintainer, 2026-10-12). After v0.2.2 the
+sequence this entry suggests is: lever 2, the fold split, the unification
+slices, with the defensive-code audit alongside.
 Identity: unification moves dense config and snapshot identity, because
 canonical omission is dense mode's identity today. After the pre-CRAN
 legacy-removal cut that costs a version and fingerprint bump plus a lake
@@ -357,12 +359,14 @@ If green, the removal lands as parity-gated slices, each one workstream:
 the pulse calendar, the context, the guard and reconstruction, then
 `ledgr_backtest()` as a thin alias or deleted. Unification stays after the
 WS3/WS4 history wave, per the roadmap row "Post-v0.2.2 execution-core
-consolidation". Proposed by the 2026-10-12 review and recommended here,
-not decided: run the probe itself before the WS3/WS4 implementation cut, so
-that if it is green WS3/WS4 build history on the availability path only and
-leave dense to the unification, instead of building history for both modes
-and deleting half later. The probe is small and binds nothing, so it fits a
-full release; the roadmap row changes only on the maintainer's decision.
+consolidation". Decided by the maintainer on 2026-10-12, after the review's
+proposal: the probe itself runs in v0.2.2, between the legacy-removal cut
+and the WS3/WS4 implementation cut, so that if it is green WS3/WS4 build
+history on the availability path only and leave dense to the unification,
+instead of building history for both modes and deleting half later, and if
+it is red the history cut knows it serves two modes and the unification
+becomes an RFC. The macro plan's change control records the order; the
+probe binds nothing and the unification decision stays post-v0.2.2.
 The probe binds nothing.
 
 ### 2026-10-10 [research] Durable factor and decision evidence

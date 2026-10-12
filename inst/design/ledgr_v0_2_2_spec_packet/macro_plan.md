@@ -763,3 +763,25 @@ also holds one more item for this workstream: a documentation-generation
 entry point that pins `LC_COLLATE` to `C` before `roxygen2::roxygenise()`,
 after a regeneration from a differently collated shell reordered
 `NAMESPACE` and 27 unrelated Rd files without content change (`90a701d1`).
+
+2026-10-12 maintainer amendment, the one-execution-mode probe: the probe
+shaped in `horizon.md` (the 2026-10-11 execution entry's addendum) runs in
+v0.2.2, after the legacy-removal cut and its interim lake rebuild and before
+the WS3/WS4 history wave resumes its implementation cut. It is a probe under
+`spike_protocol.md` Section 1, not a spike with a charter: one script,
+`dev/spikes/one_execution_mode/probe.R`, runs the registered dense fixtures
+through the availability path with an implied calendar, full membership, no
+facts and a never-stale valuation policy, diffs fills, ledger, equity,
+positions and metrics against today's dense path, times the dense peer
+fixture on both paths, and includes a dense fixture with one missing bar;
+`probe_findings.md` is its one-page record. It binds nothing and changes no
+product code. Its result routes: green, with the dense peer fixture not
+materially slower, means the WS3/WS4 implementation cut builds history on
+the availability path only and the post-v0.2.2 consolidation is a deletion;
+a dense-only branch inside the fold, context or guard, or a material
+slowdown, means the history cut serves both modes and the consolidation
+opens as an RFC. The unification itself stays after v0.2.2 (roadmap row
+"Post-v0.2.2 execution-core consolidation"). The resulting order is: Cut
+13, the legacy-removal cut, the interim lake rebuild under rule 3, the
+one-execution-mode probe, the WS3/WS4 history wave and implementation cut,
+the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
