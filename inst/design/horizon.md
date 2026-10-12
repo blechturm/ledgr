@@ -29,6 +29,30 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-12 [infrastructure] Structural gates deferred to the release after v0.2.2
+
+The legacy-removal cut carries a codebase-hygiene workstream (macro plan,
+2026-10-12 amendment): report-only census tools, then failing fast-profile
+blocks for uncalled functions and undocumented error classes, a lint job,
+one styler commit, the helper rule in the optimization style manual and one
+Verification Contract clause. Two further gates were measured the same day
+and deliberately left report-only until the execution-core consolidation
+changes the surfaces they would police:
+
+- Export census. 168 exports and 84 S3 methods; an export used by no man
+  example, vignette or article becomes `@keywords internal`. Enforcing it
+  before the strategy-context and result-reader surfaces settle would make
+  the WS3/WS4 cut fight a gate on a surface it is about to replace.
+- Test-oracle rule. 1,096 `test_that()` blocks, 248 with a registered claim.
+  A new block names its claim or states its oracle class in the title; the
+  848 unregistered blocks are classified when the suites they live in are
+  rewritten, not in one pass.
+
+The rationale for mechanical gates over more review: the per-ticket review
+loop is strong, but nothing reads the whole package between cuts, so drift
+accumulates exactly where reviews do not look. This entry authorizes no
+ticket or release commitment.
+
 ### 2026-10-12 [architecture] Where the package's weight is, and the four levers that reduce it
 
 Sized on 2026-10-12 at `a2464434`: 121 R files, 54,702 lines; 177 test

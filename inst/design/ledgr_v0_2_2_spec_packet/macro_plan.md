@@ -727,3 +727,35 @@ time is recorded by the cut that forces it. The resulting order is: Cut 13,
 the legacy-removal cut, an interim lake rebuild under rule 3, the WS3/WS4
 history wave and implementation cut, the lake rebuild with dividend facts,
 WS7, the WS6 probe, WS8.
+
+2026-10-12 maintainer amendment, codebase hygiene in the legacy-removal cut:
+the cut carries a third workstream, one claim and one Type 1 close review,
+because its instruments are the ones the removal already needs and because
+the WS3/WS4 code should land under gates rather than ahead of them.
+Measured on 2026-10-12: 421 distinct classes are raised by `rlang::abort()`
+and 131 are documented in `R/condition-reference.R`; 647 of 1,623 functions
+have exactly one call site; about a dozen non-exported, non-S3 functions
+have no caller (`ledgr_estimate_bars_per_year()` was cited as live by two
+reviews this week); no lint or style configuration exists; 248 of 1,096
+test blocks carry a registered claim. The workstream (1) adds
+`tools/check-codebase-contracts.R`, report-only at first, whose census of
+openers, version branches, uncalled functions and undocumented classes
+serves Workstreams A and B; (2) after those workstreams land, turns the
+first two checks into failing blocks of a `test-codebase-contracts.R` in
+the fast profile, registered as claims with a structural-detector oracle
+and a gut, following `test-documentation-contracts.R`: every non-exported,
+non-S3 function has a call site, and every class raised by `abort()` is
+documented in the condition reference or carries an internal prefix; (3)
+adds a `.lintr` and a separate lint job to the CI workflow, advisory for one
+cut and then blocking, and runs styler once in its own commit immediately
+after the removal lands, when the tree has already been touched everywhere;
+(4) adds one Verification Contract clause naming the structural detectors,
+with a small Type 1 review because it defines claims; and (5) adds the helper
+rule to `inst/design/manual/optimization_coding_style.qmd` as a review
+criterion beside the seven shapes: a function exists because it has a
+contract someone can name or a second caller. Deferred to the release after
+v0.2.2, report-only until then: enforcing the export census (168 exports
+and 84 S3 methods, those unused by any man example, vignette or article
+become internal) and the test-oracle rule for the 848 unregistered blocks,
+because both touch surfaces the execution-core consolidation changes.
+Parked in `horizon.md` under the 2026-10-12 infrastructure entry.
