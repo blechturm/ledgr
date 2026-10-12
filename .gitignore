@@ -109,6 +109,11 @@ inst/extdata/.DS_Store
 /.tmp/
 /vignettes/.quarto/
 
+# Raw benchmark records are local, regenerable inputs to tracked summaries.
+/dev/bench/v0_2_2_real_data_scale/evidence/clocks/*/accepted-*/
+/dev/bench/v0_2_2_real_data_scale/evidence/clocks/*/candidate-*/
+/dev/bench/v0_2_2_real_data_scale/evidence/ladder*/*/
+
 # Quarto build artifacts and its auto-generated nested .gitignore
 /inst/design/manual/.quarto/
 /inst/design/manual/_files/

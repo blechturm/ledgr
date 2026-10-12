@@ -504,6 +504,36 @@ ledgr_snapshot_from_df <- function(bars_df,
 #' ledgr_snapshot_info(snapshot)
 #' ledgr_snapshot_close(snapshot)
 #' @export
+ledgr_snapshot_from_csv <- function(csv_path,
+                                    instruments_csv_path = NULL,
+                                    db_path = NULL,
+                                    snapshot_id = NULL,
+                                    facts = NULL,
+                                    invalid_observations = c("error", "quarantine"),
+                                    price_basis = NULL) {
+  ledgr_validate_snapshot_id(snapshot_id)
+  bars_df <- ledgr_csv_read_bars_for_snapshot(csv_path)
+
+  instruments_df <- NULL
+  if (!is.null(instruments_csv_path)) {
+    instruments_df <- ledgr_read_csv_strict(
+      instruments_csv_path,
+      encoding = "UTF-8",
+      strict = TRUE
+    )
+  }
+
+  ledgr_snapshot_from_df(
+    bars_df = bars_df,
+    instruments_df = instruments_df,
+    db_path = db_path,
+    snapshot_id = snapshot_id,
+    facts = facts,
+    invalid_observations = invalid_observations,
+    price_basis = price_basis
+  )
+}
+
 ledgr_snapshot_format_distinct_ts_utc <- function(x) {
   # The bars timestamp column holds one distinct value per session, repeated
   # once per instrument, so formatting every row repeats the same conversion
@@ -621,36 +651,6 @@ ledgr_snapshot_normalize_ts_utc <- function(ts_raw) {
 # changes what reads the file.
 ledgr_csv_read_bars_for_snapshot <- function(path) {
   ledgr_read_csv_strict(path, encoding = "UTF-8", strict = TRUE)
-}
-
-ledgr_snapshot_from_csv <- function(csv_path,
-                                    instruments_csv_path = NULL,
-                                    db_path = NULL,
-                                    snapshot_id = NULL,
-                                    facts = NULL,
-                                    invalid_observations = c("error", "quarantine"),
-                                    price_basis = NULL) {
-  ledgr_validate_snapshot_id(snapshot_id)
-  bars_df <- ledgr_csv_read_bars_for_snapshot(csv_path)
-
-  instruments_df <- NULL
-  if (!is.null(instruments_csv_path)) {
-    instruments_df <- ledgr_read_csv_strict(
-      instruments_csv_path,
-      encoding = "UTF-8",
-      strict = TRUE
-    )
-  }
-
-  ledgr_snapshot_from_df(
-    bars_df = bars_df,
-    instruments_df = instruments_df,
-    db_path = db_path,
-    snapshot_id = snapshot_id,
-    facts = facts,
-    invalid_observations = invalid_observations,
-    price_basis = price_basis
-  )
 }
 
 ledgr_yahoo_extract_bars <- function(x, symbol) {
