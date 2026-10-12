@@ -808,8 +808,8 @@ testthat::test_that("[LTB-0239] a proven-empty store gets the current schema wit
   testthat::expect_identical(ledgr:::ledgr_experiment_store_version(fresh), ledgr:::ledgr_experiment_store_schema_version)
   testthat::expect_true(ledgr_validate_schema(fresh))
 
-  # Trigger support belongs to the DuckDB build: once a session saw it fail,
-  # later stores do not attempt the statements again.
+  # Trigger support belongs to the DuckDB build: the template probes it once
+  # per session, and later stores skip the statements when it is absent.
   supported <- ledgr:::.ledgr_schema_template_cache[[ledgr:::ledgr_schema_trigger_support_key()]]
   testthat::expect_true(is.logical(supported) && length(supported) == 1L)
   statements <- character()

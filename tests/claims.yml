@@ -2669,7 +2669,7 @@ claims:
     protected_contract_or_defect: "S2-016 and S2-015: config_hash and walk-forward identity carried the store-local snapshot ID and no content hash, and ledgr_run() recorded an opening date before the sealed start as its config start."
     oracle_independence: "Snapshot hashes come from sealing; the rule-1 run record is rewritten from stored JSON by removing the rule-2 fields."
     smallest_failing_change: "Keep snapshot_id in the hash payload, drop the resume rule check, or record the unclamped start (dropping the session meta rule is caught by LCL-0242, review)."
-    cheapest_adequate_lane: "Four tiny snapshots and five short runs; fast."
+    cheapest_adequate_lane: "Three tiny snapshots and six short runs; fast."
     overlapping_evidence: "Probes A_calendar_window C6, S2_calendar_short K3 and I_paths P10; test-availability-causality.R (\"future facts change identity without rewriting prior context\") keeps snapshots differing only in facts distinct."
   - id: "LCL-0235"
     source: "Cut 12 LDG-3009, held item 4"

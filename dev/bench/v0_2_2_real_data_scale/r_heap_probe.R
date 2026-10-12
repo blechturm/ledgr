@@ -6,8 +6,8 @@
 # statistics, runs the phase and prints the max-used heap (Ncells plus Vcells,
 # MB) and elapsed seconds. Max-used heap excludes DuckDB's native memory, so
 # it shows R's share of a peak; it still moves with when collection runs (a
-# preset heap changes it), so it bounds R allocation changes rather than
-# isolating them.
+# preset heap changes it), so a difference between two trees is a coarse
+# signal of R allocation change, not a bound on it.
 args <- commandArgs(trailingOnly = TRUE)
 repo <- args[[1]]
 suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))
