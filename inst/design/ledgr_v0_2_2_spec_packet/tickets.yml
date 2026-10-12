@@ -399,6 +399,7 @@ workstreams:
     depends_on_workstream: 25
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 26", reason: "One claim joins LDG-3006 to LDG-3009: the five maintenance items held since Cut 11 are closed by their exact gates: the dense reconstruction close map grows linearly with byte-identical equity; the alias-class test expects ledgr_unknown_feature_id and the full local suite has no failures; the LTB-0164 stall has a named cause with evidence and a fix or a bounded detector; check-test-gate --records accepts the documented record set; the S2-017 and S2-018 contract sentences are present; and the PIT-12-005 probe result is recorded."}
+    decisions: "Maintainer, 2026-10-12: LDG-3015 joins this workstream and owns the ordinary fast-profile gate (delegated from Workstream 25 decision 4, briefly held by LDG-3008). The fast-profile overrun is rebalanced under the accepted testing architecture, not by changing it: no wider bound, no default-to-review rule and no enforced per-block budget."
 tickets:
   - id: "LDG-2923"
     title: "Census contract authority and outbound rules"
@@ -1329,8 +1330,8 @@ tickets:
     priority: "P2"
     effort: "S"
     dependencies: []
-    scope: "Held item 3. LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane, open since Cut 9. A current-tree timing baseline over repeated runs is recorded first; the cause is investigated, not the block moved. Maintainer, 2026-10-12: this ticket also carries the ordinary fast-profile gate delegated from Workstream 25 (decision 4 there): the lane is over its 112 s bound before Workstream 25 (137 s locally at be3aaf0a) and after it (148 s locally at 863ce3c1), so the bound is brought back here."
-    acceptance: ["the cause is named with evidence", "it is fixed, or a bounded detector records the stall", "the fast profile stays within its bound over three runs"]
+    scope: "Held item 3. LTB-0164 intermittently takes about 13 s instead of 3 s in the fast lane, open since Cut 9. A current-tree timing baseline over repeated runs is recorded first; the cause is investigated, not the block moved. Maintainer, 2026-10-12: this ticket briefly carried the ordinary fast-profile gate delegated from Workstream 25 (decision 4 there); the gate now belongs to LDG-3015, because the lane's overrun is accumulated test cost, not this stall (LTB-0164 took 3.06 to 3.20 s in all three complete runs at 5dc47b3d)."
+    acceptance: ["the cause is named with evidence", "it is fixed, or a bounded detector records the stall", "LTB-0164's time over repeated runs is recorded (the fast-profile bound is LDG-3015's)"]
     evidence: []
   - id: "LDG-3009"
     title: "Fix check-test-gate records and the remaining contract sentences"
@@ -1341,4 +1342,14 @@ tickets:
     dependencies: []
     scope: "Held item 4 plus contract residuals. tools/check-test-gate.R --records refused three recorded ordinary runs ('Timing gate requires 1 run(s), received 3'); the tool or tests/README.md is wrong and is fixed. The Context and Availability Contracts name the risk_mark and mark_source planes (S2-017) and state that partial trading-status coverage makes uncovered instrument-times status_unknown (S2-018 residual). PIT-12-005 (recording pulse derived two ways) is probed once on the fixture."
     acceptance: ["check-test-gate --records accepts the documented record set and refuses an incomplete one", "both contract sentences are present", "the PIT-12-005 probe result (agree or diverge, with evidence) is recorded"]
+    evidence: []
+  - id: "LDG-3015"
+    title: "Rebalance fast-profile evidence under the accepted testing architecture"
+    workstream: 26
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: "Maintainer, 2026-10-12. The ordinary fast profile is over its fixed 112 s ceiling from accumulated test cost, not from the LTB-0164 stall: median 147.65 s over three local runs at 5dc47b3d (147.72, 145.97, 147.65); test-pit-consistency.R alone takes 37.9 s and the 20 fast blocks above 1.5 s take 56.2 s. Under the testing-architecture synthesis (rfc_testing_architecture_v0_2_0_2_synthesis.md: fast stays the default membership, review holds extended or redundant integration evidence, slower evidence justifies its cheapest adequate lane, and the ceiling is a fixed budget), every fast block above 1.5 s is audited; 1.5 s is an audit trigger, not a gate. Each audited block is shrunk; split into a cheap failure-sensitive fast detector plus a review differential; moved to review only when equivalent fast evidence protects the ordinary edit path; or kept fast with a recorded reason when no cheaper adequate oracle exists. Every major claim family keeps at least one representative public-path integration in fast; repeated variants, cross-surface matrices, sweep and walk-forward combinations and recovery permutations go to review. No mutable snapshot or live handle is shared between blocks; reusing an immutable fixture or consolidating overlapping runs inside one block is allowed. Not changed: the 112 s bound, the fast default and the profile rule; a default-to-review rule or an enforced per-block budget would be an architecture change needing Type 2 review. Engineering target: at most 100 s (non-binding), so the gate regains headroom."
+    acceptance: ["check-test-gate passes the ordinary fast profile over three local runs, with the median at or near the 100 s target", "the isolated CRAN fast profile passes its gate and the complete review profile passes", "every audited block has a recorded disposition (shrunk, split, moved, or kept with its reason)", "every moved or split block's claim in tests/claims.yml names its detecting blocks and promised profile, and every major claim family keeps at least one fast public-path block", "no two blocks share a mutable snapshot or live handle"]
     evidence: []
