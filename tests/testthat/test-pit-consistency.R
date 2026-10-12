@@ -60,6 +60,16 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   testthat::expect_true(any(grepl("no valued pulse", utils::capture.output(print(reopened)), fixed = TRUE)))
   close(reopened)
   close(ledgr_run(first, run_id = "first_pulse_stop"))
+  # LTB-0245 (review) covers the interrupted-and-resumed permutations.
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0245] interrupted availability runs resume to what the uninterrupted run stores", {
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  con <- ledgr:::get_connection(snapshot)
+  days <- pit_consistency_days()
+
 
   # A run interrupted before the pulse that stops it, then resumed, stores what
   # the uninterrupted run stores.
@@ -463,6 +473,44 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   snapshot <- ledgr_snapshot_open(db_path, snapshot_id, verify = TRUE)
   testthat::expect_identical(ledgr_snapshot_info(snapshot)$off_session_bar_count, 0L)
 
+  # LTB-0247 (review) covers quarantine beside the record and latin1/Inf rows end to end.
+  cafe <- "caf\u00e9"
+  # The record serializer never visits a row on its own, even when every row
+  # holds an exceptional value: the whole frame is one NDJSON write, the bytes
+  # match the per-row form, and that form is never called.
+  exceptional <- data.frame(instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
+                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = iconv(cafe, "UTF-8", "latin1"))
+  testthat::expect_identical(Encoding(exceptional$note), rep("latin1", 3L))
+  expected <-vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
+  writes <- 0L
+  write_ndjson <- ledgr:::ledgr_json_write_canonical_ndjson
+  testthat::local_mocked_bindings(
+    ledgr_availability_original_row_json = function(...) stop("per-row serializer used"),
+    ledgr_json_write_canonical_ndjson = function(frame) {
+      writes <<- writes + 1L
+      write_ndjson(frame)
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_identical(ledgr:::ledgr_availability_original_rows_json(exceptional), expected)
+  testthat::expect_identical(writes, 1L)
+
+  clean <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(clean), add = TRUE)
+  testthat::expect_identical(ledgr_snapshot_info(clean)$off_session_bar_count, 0L)
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0247] off-session records sit beside quarantine and keep latin1 and infinite values", {
+  days <- pit_consistency_days()
+  saturday <- as.POSIXct(paste(days[[5]] + 1, "21:00:00"), tz = "UTC")
+  add_off_session <- function(bars) {
+    extra <- bars[bars$instrument_id == "AAA", , drop = FALSE][1L, ]
+    extra$ts_utc <- saturday
+    extra[c("open", "high", "low", "close")] <- 999
+    rbind(bars, extra)
+  }
+
   # Under quarantine the record sits beside a quarantined row; the
   # acknowledgement counts only the quarantined one.
   both <- scale_test_events_snapshot(
@@ -500,29 +548,6 @@ testthat::test_that("[LTB-0226] an off-session bar is sealed, recorded and repor
   testthat::expect_true(grepl("\"score\":\"Inf\"", records$original_row_json[[1L]], fixed = TRUE))
   testthat::expect_true(grepl("\"score\":1", records$original_row_json[[2L]], fixed = TRUE))
   testthat::expect_true(all(vapply(records$original_row_json, ledgr:::ledgr_snapshot_valid_canonical_json, logical(1))))
-  # The record serializer never visits a row on its own, even when every row
-  # holds an exceptional value: the whole frame is one NDJSON write, the bytes
-  # match the per-row form, and that form is never called.
-  exceptional <- data.frame(instrument_id = "AAA", ts_utc = saturday + 86400 * 0:2, open = 1, high = 1, low = 1,
-                            close = 1, volume = 1, score = c(Inf, -Inf, Inf), note = iconv(cafe, "UTF-8", "latin1"))
-  testthat::expect_identical(Encoding(exceptional$note), rep("latin1", 3L))
-  expected <-vapply(1:3, function(i) ledgr:::ledgr_availability_original_row_json(exceptional[i, , drop = FALSE]), character(1))
-  writes <- 0L
-  write_ndjson <- ledgr:::ledgr_json_write_canonical_ndjson
-  testthat::local_mocked_bindings(
-    ledgr_availability_original_row_json = function(...) stop("per-row serializer used"),
-    ledgr_json_write_canonical_ndjson = function(frame) {
-      writes <<- writes + 1L
-      write_ndjson(frame)
-    },
-    .package = "ledgr"
-  )
-  testthat::expect_identical(ledgr:::ledgr_availability_original_rows_json(exceptional), expected)
-  testthat::expect_identical(writes, 1L)
-
-  clean <- scale_test_events_snapshot()
-  on.exit(ledgr_snapshot_close(clean), add = TRUE)
-  testthat::expect_identical(ledgr_snapshot_info(clean)$off_session_bar_count, 0L)
 })
 
 pit_consistency_ca <- function(subtype, parent, entitlement, effective) {
@@ -807,6 +832,19 @@ testthat::test_that("[LTB-0233] availability-aware experiments default to a disc
   testthat::expect_true(valuation$max_sessions_default)
   testthat::expect_true(any(grepl("^  Max sessions: +5 \\(default\\)$", utils::capture.output(summary(bt_omitted)))))
   testthat::expect_true(any(grepl("max sessions 5 (default)", utils::capture.output(print(bt_omitted)), fixed = TRUE)))
+  # LTB-0246 (review) covers a declared horizon and the dense default.
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0246] a declared horizon carries no default marker and the default never activates availability", {
+  hold <- function(ctx, params) ctx$hold()
+  testthat::expect_identical(ledgr_valuation_stale(), ledgr_valuation_stale(5, exhausted = "freeze"))
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- function(...) {
+    ledgr_experiment(snapshot, hold, universe = ledgr_universe_members("u"), cost_model = ledgr_cost_zero(),
+                     opening = ledgr_opening(cash = 1000), ...)
+  }
 
   # A declared horizon other than the default carries no marker.
   bt_two <- ledgr_run(experiment(valuation_policy = ledgr_valuation_stale(2)), run_id = "horizon_two")
