@@ -1,7 +1,10 @@
 # Synthesis: Pre-CRAN Legacy Removal For v0.2.2
 
-**Status:** Awaiting Type 1 final review. Binding for the legacy-removal cut
-once the maintainer accepts; implements as direct tickets; no further RFC.
+**Status:** Accepted by the maintainer on 2026-10-12 after the Type 1 final
+review (`rfc_pre_cran_legacy_removal_v0_2_2_final_review.md`) returned
+PASS_AFTER_PATCHES and its three patches were applied in place (revision
+history). Binding for the legacy-removal cut; implements as direct tickets;
+no further RFC.
 **Author/date:** Claude (Fable 5.1), 2026-10-12. Author of the Type 2
 response; not author of either seed (a separate Claude session wrote both).
 **Inputs:** seed v2, the response, the response review, seed v1, the macro
@@ -91,9 +94,23 @@ creating views.
 (raised to 119) and `format_fingerprint`. The fingerprint is
 `canonical_json()` of a named list of every binding in the package
 namespace that matches `^ledgr_[a-z_]+_(schema|rule)_version$` and is a
-length-one atomic value (18 today, from `ledgr_fact_schema_version` to
-`ledgr_selection_rule_schema_version`; the two functions the pattern also
-matches are excluded by the atomic test), plus two named entries the cut
+length-one atomic value. At `164e15ba` that is exactly these 18:
+`ledgr_business_objective_schema_version`,
+`ledgr_corporate_action_policy_schema_version`,
+`ledgr_cost_schema_version`, `ledgr_experiment_store_schema_version`,
+`ledgr_fact_schema_version`, `ledgr_fold_list_schema_version`,
+`ledgr_fold_schema_version`, `ledgr_identity_rule_version`,
+`ledgr_objective_criterion_schema_version`, `ledgr_risk_schema_version`,
+`ledgr_saved_sweep_schema_version`, `ledgr_selection_rule_schema_version`,
+`ledgr_sweep_filter_schema_version`, `ledgr_sweep_retention_schema_version`,
+`ledgr_timing_schema_version`, `ledgr_valuation_policy_schema_version`,
+`ledgr_walk_forward_candidate_schema_version` and
+`ledgr_walk_forward_schema_version`. The two functions the pattern also
+matches (`ledgr_snapshot_hash_rule_version()`,
+`ledgr_sweep_assert_parent_schema_version()`) are excluded by the atomic
+test. The store version is in the list and also the marker's own key; the
+redundancy is harmless and keeps the rule free of exceptions. Plus two
+named entries the cut
 introduces as constants: the execution-timing version (today the literal 2
 at `R/execution-timing.R:51-52`) and the current snapshot hash rule that
 Cut 13 LDG-3019 defines. Provenance versions that readers already compare
@@ -283,12 +300,17 @@ Gates the ticket cut retains:
    single equality assertion; a remaining version branch fails the review.
 7. **Config census.** Every `ledgr_run_config()` caller in `tests/` and
    `dev/bench` carries `identity_rule_version` and `data.snapshot_hash`.
-8. **Claims.** Retire LCL-0028 (LTB-0033) and LCL-0158 to LCL-0160; rewrite
-   LCL-0026 (LTB-0028), LCL-0039 (LTB-0050), LCL-0200 (LTB-0200), LCL-0242
-   (LTB-0244), LCL-0034 and LCL-0237 (LTB-0239) without their migration or
-   trigger arms, keeping seal, replay, the no-selection record and rule-2
-   identity; LCL-0234 drops rule 1; LCL-0128's expected hit count follows
-   the article text; the nine unregistered blocks in
+8. **Claims.** Retire LCL-0028 (LTB-0033) and LCL-0160 (LTB-0160), whose
+   whole scope is schema-1 readability. Rewrite, dropping only the schema-1
+   clause and keeping the current-behaviour coverage: LCL-0158 (LTB-0158,
+   schema-2 policy identity) and LCL-0159 (LTB-0159, the valuation
+   `freeze`/`refuse` choice in identity). Rewrite without their migration
+   or trigger arms, keeping seal, replay, the no-selection record and
+   rule-2 identity: LCL-0026 (LTB-0028), LCL-0039 (LTB-0050), LCL-0200
+   (LTB-0200), LCL-0242 (LTB-0244), LCL-0034 (LTB-0039 to LTB-0041, the
+   catalogue-once claim) and LCL-0237 (LTB-0239, which carries the trigger
+   and legacy-migration arms). LCL-0234 drops rule 1; LCL-0128's expected
+   hit count follows the article text; the nine unregistered blocks in
    `test-experiment-store-schema.R` go with the code.
 9. **Cost.** Paired clocks on store open, `ledgr_db_init()` and
    `ledgr_snapshot_from_df()` show no regression; the fast and review
@@ -327,6 +349,7 @@ Gates the ticket cut retains:
   gate and fingerprint are its enforcement point.
 - **Execution-core consolidation** (roadmap row, parked): inherits one
   opener and one gate; it must not add a second.
+
 ## 10. Acceptance Routing
 
 On maintainer acceptance: set the pipeline row `pre-cran-legacy-removal` to
@@ -347,3 +370,8 @@ routes to `NEEDS_TYPE_2`.
 ## Revision History
 
 - 2026-10-12 - Initial synthesis after seed v2 and the response review.
+- 2026-10-12 - Final-review patches (PASS_AFTER_PATCHES): LCL-0158 and
+  LCL-0159 are rewritten, not retired, because their scope is current
+  schema-2 identity; LCL-0034 is attached to its own blocks LTB-0039 to
+  LTB-0041 and the trigger arm to LCL-0237; the 18 fingerprint constants
+  are listed by name; one missing blank line restored.
