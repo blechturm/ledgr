@@ -29,6 +29,12 @@ after LDG-3019 and about 139.96 seconds on the adjacent accepted base. These
 comparisons support the expected reuse effect but do not replace the
 registered-host gate.
 
+The registered ordinary long-window suite compares LDG-3019 commit
+`d4d3c06b` with LDG-3020 commit `40df12d0` over five alternating pairs per
+shape. It completed in 506.96 seconds and its self-checker passed. Median
+candidate/baseline ratios were 0.901 to 1.009 cold and 0.910 to 0.961 warm;
+none required a retry. Exact semantic records match for all three shapes.
+
 ## Compatibility boundary
 
 Only rule-3 snapshots are executable through content-dependent paths. Missing,
