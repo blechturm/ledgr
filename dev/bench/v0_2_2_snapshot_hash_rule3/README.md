@@ -24,6 +24,13 @@ gate is the median microseconds per bar (at most 1.5) and the log-log endpoint
 growth exponent (at most 1.10) on the fixed Windows host with DuckDB threads
 set to one. RSS is disclosed, not gated.
 
+The agent-provisional LDG-3020 record is in `evidence/ldg3020/`. It compares
+accepted rule-3 commit `028a3c57` with process-local reuse commit `7367d28c`
+in three alternating fresh-process pairs, records exact fixture-family
+identity, and carries the registered long-window summary and checker result.
+The private rule-2 Sharadar lake is not migrated, resealed or read by this
+record.
+
 `fixture_families.csv` and `fixture_phases.csv` are the aggregate-only
 vendor-neutral fixture record after LDG-3019. The private rule-2 Sharadar lake
 must refuse and is not migrated or resealed by this cut; its rule-3 rebuild

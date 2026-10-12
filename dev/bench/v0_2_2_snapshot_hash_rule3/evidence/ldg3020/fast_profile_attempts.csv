@@ -1,0 +1,6 @@
+record,tree,run1_s,run2_s,run3_s,median_s,bound_s,gate_passed,disposition
+ws27-fast-correction,candidate,109.67,,,109.67,112,TRUE,"accepted one-run record; exact production tree; the later review-only COMMIT-failure detector was not yet present"
+ws27-fast-final,candidate,121.80,120.70,114.28,120.70,112,FALSE,"retained failed record; every block passed"
+ws27-fast-base-now,accepted_ldg3019,112.28,,,112.28,112,FALSE,"adjacent-base diagnostic under the same slow host window"
+ws27-fast-final-r2,candidate,133.48,111.34,123.07,123.07,112,FALSE,"retained failed record; every block passed"
+ws27-fast-final-r3,candidate,122.04,120.89,124.34,122.04,112,FALSE,"retained failed record after heavy boundary matrix moved to review; every block passed"
