@@ -796,6 +796,9 @@ testthat::test_that("[LTB-0239] a proven-empty store gets the current schema wit
   legacy <- connect()
   on.exit(DBI::dbDisconnect(legacy, shutdown = TRUE), add = TRUE)
   suppressMessages(ledgr:::ledgr_create_schema_legacy(legacy, ledgr:::ledgr_schema_catalogue(legacy)))
+  # The session's first fresh store builds the template through the legacy
+  # path once; build it before counting, so the block does not depend on order.
+  invisible(ledgr:::ledgr_schema_template())
   migrations <- 0L
   fresh <- connect()
   on.exit(DBI::dbDisconnect(fresh, shutdown = TRUE), add = TRUE)
@@ -807,7 +810,7 @@ testthat::test_that("[LTB-0239] a proven-empty store gets the current schema wit
 
   # Trigger support belongs to the DuckDB build: once a session saw it fail,
   # later stores do not attempt the statements again.
-  supported <- ledgr:::.ledgr_schema_template_cache[[paste("triggers", utils::packageVersion("duckdb"))]]
+  supported <- ledgr:::.ledgr_schema_template_cache[[ledgr:::ledgr_schema_trigger_support_key()]]
   testthat::expect_true(is.logical(supported) && length(supported) == 1L)
   statements <- character()
   execute <- DBI::dbExecute

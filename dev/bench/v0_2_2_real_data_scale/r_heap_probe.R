@@ -4,9 +4,10 @@
 #
 # Builds the fixture snapshot, then for each public phase resets R's gc
 # statistics, runs the phase and prints the max-used heap (Ncells plus Vcells,
-# MB) and elapsed seconds. Unlike process RSS, max-used heap does not depend
-# on when collection runs or on DuckDB's allocator, so it separates R
-# allocation changes from peak-RSS timing noise.
+# MB) and elapsed seconds. Max-used heap excludes DuckDB's native memory, so
+# it shows R's share of a peak; it still moves with when collection runs (a
+# preset heap changes it), so it bounds R allocation changes rather than
+# isolating them.
 args <- commandArgs(trailingOnly = TRUE)
 repo <- args[[1]]
 suppressMessages(pkgload::load_all(repo, quiet = TRUE, compile = FALSE))

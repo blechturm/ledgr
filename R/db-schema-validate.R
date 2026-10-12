@@ -816,7 +816,7 @@ ledgr_schema_validation_key <- function(con) {
                  k.table_name || ':' || k.constraint_type || ':' ||
                    array_to_string(k.constraint_column_names, '|') || ':' ||
                    coalesce(k.constraint_text, '') || ':' || coalesce(k.expression, ''), ','
-                 ORDER BY k.table_name, k.constraint_type, k.constraint_index))
+                 ORDER BY k.table_name, k.constraint_type, array_to_string(k.constraint_column_names, '|'), coalesce(k.constraint_text, ''), coalesce(k.expression, '')))
                FROM duckdb_constraints() k WHERE k.schema_name = 'main') AS constraints_fp
        FROM ledgr_schema_metadata m
        WHERE m.key = 'experiment_store_schema_version'"

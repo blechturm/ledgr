@@ -242,7 +242,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
 }
 
 # Dense reconstruction requires a finite close for every instrument at every
-# pulse and keys them by ISO timestamp.
+# pulse and returns them as an instrument x pulse matrix.
 ledgr_derived_state_dense_close_map <- function(con, ids_sql, instrument_ids, pulses, start_ts, end_ts) {
   bars_close <- DBI::dbGetQuery(
     con,

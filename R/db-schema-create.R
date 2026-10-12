@@ -496,7 +496,7 @@ ledgr_create_schema_legacy <- function(con, catalogue) {
 # Replaying them reproduces the same tables, columns, defaults, constraints
 # and indexes; a parity test compares the two catalogues (LDG-3016).
 ledgr_schema_template <- function() {
-  key <- paste(ledgr_experiment_store_schema_version, utils::packageVersion("duckdb"), sep = "/")
+  key <- paste(ledgr_experiment_store_schema_version, ledgr_schema_duckdb_version(), sep = "/")
   cached <- .ledgr_schema_template_cache[[key]]
   if (!is.null(cached)) return(cached)
   drv <- duckdb::duckdb()
@@ -505,10 +505,24 @@ ledgr_schema_template <- function() {
   ledgr_create_schema_legacy(con, ledgr_schema_catalogue(con, schema = "main"))
   tables <- DBI::dbGetQuery(con, "SELECT sql FROM duckdb_tables() WHERE schema_name = 'main' ORDER BY table_oid")$sql
   indexes <- DBI::dbGetQuery(con, "SELECT sql FROM duckdb_indexes() WHERE schema_name = 'main' ORDER BY index_oid")$sql
+  # Trigger support is a property of the DuckDB build; probe it here, on a
+  # store nothing else uses, so no store-specific failure decides it.
+  assign(ledgr_schema_trigger_support_key(), any(ledgr_schema_try_triggers(con)), envir = .ledgr_schema_template_cache)
   statements <- c(tables, indexes)
   assign(key, statements, envir = .ledgr_schema_template_cache)
   statements
 }
+
+ledgr_schema_duckdb_version <- function() {
+  version <- .ledgr_schema_template_cache[["duckdb_version"]]
+  if (is.null(version)) {
+    version <- as.character(utils::packageVersion("duckdb"))
+    assign("duckdb_version", version, envir = .ledgr_schema_template_cache)
+  }
+  version
+}
+
+ledgr_schema_trigger_support_key <- function() paste("triggers", ledgr_schema_duckdb_version())
 
 .ledgr_schema_template_cache <- new.env(parent = emptyenv())
 
@@ -530,11 +544,14 @@ ledgr_schema_create_fresh <- function(con) {
 ledgr_schema_create_triggers <- function(con) {
   # Best-effort immutability enforcement for SEALED snapshots (DuckDB trigger support varies by build).
   # If triggers are unsupported, this is a no-op and must be enforced by ledgr write-paths (later tickets).
-  # Support is a property of the DuckDB build, so a session that saw both
-  # statements fail skips them on later stores instead of failing again (LDG-3016).
-  key <- paste("triggers", utils::packageVersion("duckdb"))
-  if (identical(.ledgr_schema_template_cache[[key]], FALSE)) return(invisible(FALSE))
-  ok <- vapply(c("snapshot_bars", "snapshot_instruments"), function(table_name) {
+  # Support is a property of the DuckDB build: once the schema template has
+  # probed it and found none, stores skip the statements (LDG-3016).
+  if (identical(.ledgr_schema_template_cache[[ledgr_schema_trigger_support_key()]], FALSE)) return(invisible(FALSE))
+  invisible(any(ledgr_schema_try_triggers(con)))
+}
+
+ledgr_schema_try_triggers <- function(con) {
+  vapply(c("snapshot_bars", "snapshot_instruments"), function(table_name) {
     sql <- sprintf(
       "
       CREATE TRIGGER IF NOT EXISTS ledgr_block_%s_write
@@ -549,6 +566,4 @@ ledgr_schema_create_triggers <- function(con) {
     )
     !inherits(try(DBI::dbExecute(con, sql), silent = TRUE), "try-error")
   }, logical(1))
-  if (is.null(.ledgr_schema_template_cache[[key]])) assign(key, any(ok), envir = .ledgr_schema_template_cache)
-  invisible(any(ok))
 }

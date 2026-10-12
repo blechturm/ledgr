@@ -207,9 +207,10 @@
   `ledgr_missing_bars`.
 
 - Creating and opening stores costs less. A new, empty store gets the current
-  schema directly instead of through the upgrade path for older stores, so
-  `ledgr_db_init()` and a small `ledgr_snapshot_from_df()` take about two
-  thirds of their previous time in one measurement. Sealing finds the
+  schema directly instead of through the upgrade path for older stores, and
+  in one measurement `ledgr_db_init()` took about a quarter and a small
+  `ledgr_snapshot_from_df()` a little over half of their previous time.
+  Sealing finds the
   availability tables with one catalogue query, and a store whose schema
   matches one already validated in the session is not validated again; a
   changed or damaged schema is still checked and still fails.
