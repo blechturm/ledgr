@@ -64,6 +64,10 @@ testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {
     repository, "dev", "bench", "v0_2_2_long_window_regression",
     release_name
   )
+  testthat::skip_if_not(
+    file.exists(script),
+    "Long-window regression sources are unavailable during installed-package tests."
+  )
   result <- suppressWarnings(system2(
     file.path(R.home("bin"), "Rscript"), shQuote(script),
     stdout = TRUE, stderr = TRUE
@@ -84,6 +88,12 @@ testthat::test_that("[LTB-0182] the terminal release fixture stays release-only 
   }
   suite <- file.path(repository, "dev", "bench", "v0_2_2_long_window_regression")
   script_name <- paste0("terminal_", "release.R")
+  testthat::skip_if_not(
+    file.exists(file.path(suite, script_name)) &&
+      file.exists(file.path(suite, paste0("run_", "release.R"))) &&
+      file.exists(file.path(suite, "evidence", "terminal_release", "expected.json")),
+    "Long-window regression sources are unavailable during installed-package tests."
+  )
   forbidden <- c(
     list.files(file.path(repository, "tests"), recursive = TRUE, full.names = TRUE),
     list.files(file.path(repository, ".github", "workflows"), recursive = TRUE, full.names = TRUE)
