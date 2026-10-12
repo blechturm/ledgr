@@ -113,7 +113,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   if (availability_active) {
     marks <- ledgr_derived_state_availability_marks(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
   } else {
-    close_map <- ledgr_derived_state_dense_close_map(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
+    marks <- ledgr_derived_state_dense_close_map(con, ids_sql, instrument_ids, pulses, start_ts, end_ts)
   }
 
   # The rebuild covers events through its last pulse. An INCOMPLETE run can hold
@@ -152,11 +152,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     t <- pulses[i]
     positions <- stats::setNames(positions_mat[, i], instrument_ids)
     held <- positions[abs(positions) > 0]
-    close_by_id <- if (availability_active) {
-      marks[, i]
-    } else {
-      get(format(t, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), envir = close_map, inherits = FALSE)
-    }
+    close_by_id <- marks[, i]
     positions_value <- 0
     if (length(held) > 0) {
       ids <- names(held)
@@ -264,24 +260,35 @@ ledgr_derived_state_dense_close_map <- function(con, ids_sql, instrument_ids, pu
     rlang::abort("No bars found for pulse calendar during derived-state reconstruction.", class = "ledgr_missing_bars")
   }
 
-  close_map <- new.env(parent = emptyenv())
-  for (i in seq_along(pulses)) {
-    t <- pulses[i]
-    key <- format(as.POSIXct(t, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    rows <- bars_close[bars_close$ts_utc == t, , drop = FALSE]
-    if (nrow(rows) != length(instrument_ids)) {
-      rlang::abort(sprintf("Missing bars.close for universe at ts_utc=%s.", key), class = "ledgr_missing_bars")
+  # One pass by index (LDG-3006): each bar lands in an instrument x pulse
+  # matrix shaped like the availability marks; the checks then run per pulse
+  # in the original order and report the first failing pulse.
+  n_inst <- length(instrument_ids)
+  n_pulse <- length(pulses)
+  pulse_idx <- match(as.numeric(as.POSIXct(bars_close$ts_utc, tz = "UTC")), as.numeric(as.POSIXct(pulses, tz = "UTC")))
+  inst_idx <- match(as.character(bars_close$instrument_id), instrument_ids)
+  placed <- !is.na(pulse_idx) & !is.na(inst_idx)
+  cells <- cbind(inst_idx[placed], pulse_idx[placed])
+  close_mat <- matrix(NA_real_, n_inst, n_pulse, dimnames = list(instrument_ids, NULL))
+  close_mat[cells] <- as.numeric(bars_close$close[placed])
+  present <- matrix(FALSE, n_inst, n_pulse)
+  present[cells] <- TRUE
+  bad_count <- tabulate(pulse_idx[!is.na(pulse_idx)], nbins = n_pulse) != n_inst
+  bad_missing <- colSums(!present) > 0L
+  bad_value <- colSums(!is.finite(close_mat)) > 0L
+  first <- which(bad_count | bad_missing | bad_value)[1L]
+  if (!is.na(first)) {
+    key <- format(as.POSIXct(pulses[[first]], tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    message <- if (bad_count[[first]]) {
+      "Missing bars.close for universe at ts_utc=%s."
+    } else if (bad_missing[[first]]) {
+      "Missing bars.close for some instruments at ts_utc=%s."
+    } else {
+      "bars.close must be finite (no NA) at ts_utc=%s for mark-to-market."
     }
-    close_by_id <- stats::setNames(as.numeric(rows$close), as.character(rows$instrument_id))
-    if (any(!(instrument_ids %in% names(close_by_id)))) {
-      rlang::abort(sprintf("Missing bars.close for some instruments at ts_utc=%s.", key), class = "ledgr_missing_bars")
-    }
-    if (anyNA(close_by_id[instrument_ids]) || any(!is.finite(close_by_id[instrument_ids]))) {
-      rlang::abort(sprintf("bars.close must be finite (no NA) at ts_utc=%s for mark-to-market.", key), class = "ledgr_missing_bars")
-    }
-    assign(key, close_by_id[instrument_ids], envir = close_map)
+    rlang::abort(sprintf(message, key), class = "ledgr_missing_bars")
   }
-  close_map
+  close_mat
 }
 
 # The pulses an availability-aware run valued: its open-session calendar up to

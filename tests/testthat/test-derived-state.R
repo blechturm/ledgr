@@ -227,3 +227,33 @@ testthat::test_that("rebuild failure does not delete existing equity_curve rows"
   testthat::expect_equal(nrow(eq), 1L)
   testthat::expect_identical(eq$ts_utc[[1]], "2000-01-01T00:00:00Z")
 })
+
+testthat::test_that("[LTB-0238] the dense close map is one indexed pass with per-pulse checks in order", {
+  con <- DBI::dbConnect(duckdb::duckdb(), ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ts <- as.POSIXct("2020-01-01 21:00:00", tz = "UTC") + 86400 * 0:3
+  ids <- c("AAA", "BBB")
+  close_map <- function(bars) {
+    DBI::dbWriteTable(con, "bars", bars, overwrite = TRUE)
+    ids_sql <- paste(DBI::dbQuoteString(con, ids), collapse = ", ")
+    ledgr:::ledgr_derived_state_dense_close_map(con, ids_sql, ids, ts, ts[[1]], ts[[4]])
+  }
+  full <- data.frame(instrument_id = rep(ids, each = 4L), ts_utc = rep(ts, 2L), close = c(1, 2, 3, 4, 11, 12, 13, 14))
+  marks <- close_map(full[sample(nrow(full)), ])
+  testthat::expect_identical(marks, matrix(c(1, 11, 2, 12, 3, 13, 4, 14), 2L, dimnames = list(ids, NULL)))
+  testthat::expect_identical(marks[, 3], c(AAA = 3, BBB = 13))
+
+  # Pulse 2 lacks BBB and pulse 3 has a non-finite close: the earlier pulse wins.
+  gap <- full[!(full$instrument_id == "BBB" & full$ts_utc == ts[[2]]), ]
+  gap$close[gap$instrument_id == "AAA" & gap$ts_utc == ts[[3]]] <- NaN
+  testthat::expect_error(close_map(gap), "Missing bars.close for universe at ts_utc=2020-01-02T21:00:00Z.",
+                         fixed = TRUE, class = "ledgr_missing_bars")
+  # A duplicated AAA row keeps the count but leaves BBB missing.
+  dup <- rbind(full[!(full$instrument_id == "BBB" & full$ts_utc == ts[[3]]), ], full[full$instrument_id == "AAA" & full$ts_utc == ts[[3]], ])
+  testthat::expect_error(close_map(dup), "Missing bars.close for some instruments at ts_utc=2020-01-03T21:00:00Z.",
+                         fixed = TRUE, class = "ledgr_missing_bars")
+  bad <- full
+  bad$close[bad$instrument_id == "BBB" & bad$ts_utc == ts[[4]]] <- Inf
+  testthat::expect_error(close_map(bad), "bars.close must be finite (no NA) at ts_utc=2020-01-04T21:00:00Z for mark-to-market.",
+                         fixed = TRUE, class = "ledgr_missing_bars")
+})

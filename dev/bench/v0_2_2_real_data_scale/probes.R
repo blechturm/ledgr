@@ -198,6 +198,28 @@ if (probe("F13") && exists("ledgr_pulse_context_vec", envir = ns)) {
   ledgr_snapshot_close(s)
 }
 
+# H1 (Cut 12 LDG-3006): dense ledgr_state_reconstruct() against pulses; the
+# close map was built by scanning every bar once per pulse.
+if (probe("H1")) {
+  sizes <- c(1000L, 4000L)
+  times <- vapply(sizes, function(d) {
+    days <- as.POSIXct("2000-01-03 21:00:00", tz = "UTC") + 86400 * (0:(d - 1L))
+    ids <- sprintf("I%03d", 1:100)
+    bars <- data.frame(instrument_id = rep(ids, each = d), ts_utc = rep(days, 100L),
+                       open = 10, high = 11, low = 9, close = 10 + rep(seq_len(d), 100L) / d, volume = 1)
+    db <- tempfile(fileext = ".duckdb")
+    s <- ledgr_snapshot_from_df(bars, db_path = db)
+    exp <- ledgr_experiment(s, function(ctx, params) { t <- ctx$hold(); t[] <- 1; t },
+                            cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1e6))
+    close(ledgr_run(exp, run_id = "h1"))
+    ledgr_snapshot_close(s)
+    con <- DBI::dbConnect(duckdb::duckdb(), db)
+    on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+    t <- secs(ledgr_state_reconstruct("h1", con)); emit("H1", "pulses", d, "reconstruct_seconds", t); t
+  }, numeric(1))
+  exponent("H1", "pulses", sizes, times)
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(out_dir, "probes.csv"), row.names = FALSE)
 cat("PROBES_OK", nrow(out), "rows\n")

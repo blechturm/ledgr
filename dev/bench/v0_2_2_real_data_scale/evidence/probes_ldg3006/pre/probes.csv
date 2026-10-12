@@ -1,0 +1,4 @@
+"finding","collection","size","metric","value"
+"H1","pulses","1000","reconstruct_seconds",1.45618
+"H1","pulses","4000","reconstruct_seconds",10.8856
+"H1","pulses","1000->4000","growth_exponent",1.45108
