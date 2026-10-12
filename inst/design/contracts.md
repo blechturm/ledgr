@@ -74,7 +74,6 @@ Accepted change pending:
 - [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 - [Equity corporate actions](decisions.md#equity-corporate-actions)
 - [Accounting-core consolidation](decisions.md#accounting-core-consolidation)
-- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - v0.1.7 makes `ledgr_run()` the public single-run API over a
   `ledgr_experiment` object. `ledgr_backtest()` is demoted from the recommended
@@ -215,11 +214,13 @@ Accepted change pending:
   requires a future explicit contract.
 - Production entry into the fold core must be guarded by the Snapshot Contract
   trust boundary. Production run and sweep setup must enforce the accepted
-  sealed-snapshot guard before fold construction: committed runs recompute and
-  compare the sealed snapshot hash, and sweep evaluation validates a sealed
-  snapshot handle and carries the stored snapshot hash through compact
-  candidate provenance. Primitive fold hot paths may then rely on trusted
-  normalized snapshot inputs.
+  sealed-snapshot guard before fold construction. Committed runs ensure a
+  current-process verified entry for the snapshot; a miss recomputes the
+  complete rule-3 root and compares it with the stored root. Sweep and
+  walk-forward evaluation ensure once at their first content-dependent outer
+  read, before candidate or fold execution; inner guards reuse that entry.
+  Compact candidate provenance still carries the stored root. Primitive fold
+  hot paths may then rely on trusted normalized snapshot inputs.
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not compute, reinterpret, or rewrite fill prices,
   fees, cash deltas, or cost metadata.
@@ -437,17 +438,35 @@ Accepted change pending:
 Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
-- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Backtests run against sealed snapshots.
-- Snapshot hash rule 1 covers normalized bars and instruments only and remains
-  byte-identical for snapshots with no declared availability facts. Snapshot
-  IDs and envelope metadata do not alter artifact hashes.
-- Snapshot hash rule 2 covers the rule-1 bars and instruments plus every
-  normalized point-in-time fact-family header and row, its recorded knowledge
-  assumption and completeness/coverage metadata, and every explicitly
-  acknowledged observation-quarantine row. Store-local snapshot IDs remain
-  excluded. A missing rule marker on a legacy snapshot means rule 1.
+- Snapshot hash rule 3 is the sole executable content-identity rule. Its exact
+  bytes are defined by
+  `rfc/rfc_snapshot_verification_policy_v0_2_2_seed_v2.md`, Section 5:
+  R-owned column-major binary blocks of 10,000 logical rows; bytewise UTF-8
+  composite-key order asserted in R; little-endian typed payloads with a
+  presence byte per field; the existing exact fact projection with the three
+  accepted rule-3 changes; and domain-separated block, section and root
+  SHA-256. Snapshot IDs and envelope metadata remain excluded.
+- Every newly sealed snapshot records `hash_rule_version = 3`. A missing
+  marker, rule 1 or rule 2 is legacy: metadata-only reads may open it, but any
+  read whose output depends on snapshot rows refuses with
+  `ledgr_snapshot_rebuild_required` and names the rebuild route. There is no
+  migration, fallback encoder or missing-marker default. An unrecognized
+  future marker refuses with `ledgr_snapshot_hash_rule_unsupported`.
+- Snapshot content reads have three classes. Metadata-only reads may return
+  status, root, rule, counts and timestamp ranges without proving rows.
+  Durable-result-only reads use persisted run-store evidence and compare its
+  recorded root without proving snapshot rows. Every snapshot-dependent read
+  ensures a current-process verified entry before row values affect execution,
+  identity, metrics, marks, reports or returned data. Row values, including
+  instrument IDs returned by snapshot summary, are not metadata.
+- Content identity, a successful complete verification, a current-process
+  verified entry and possession of a stored root are distinct. The verified
+  entry is private, process-local, PID-guarded and keyed by snapshot-store key,
+  snapshot ID, stored root and rule. Only a committed seal or a successful
+  complete recomputation may establish it; failure removes it; it is never
+  serialized. In-memory or unresolved stores are never entered.
 - A valid bar that falls on no declared open-session close is sealed in
   `snapshot_bars` and never becomes a pulse (every run on a snapshot with
   sessions is availability-aware; `ledgr_backtest()` refuses such snapshots,
@@ -459,7 +478,8 @@ Accepted change pending:
   is none), and `summary()` of an availability-aware result reports the
   snapshot-wide count when it is not zero. The record is derived from hashed
   bars and sessions, so it is outside the snapshot hash and the quarantine
-  acknowledgement; the hash rule is unchanged (Cut 12 LDG-3011).
+  acknowledgement; rule 3 continues to exclude that derived record (Cut 12
+  LDG-3011).
 - Snapshot hash timestamp inputs must be POSIXct values. Non-POSIXct `ts_utc`
   vectors fail closed during hashing rather than being string-formatted through
   an implicit representation that could silently re-key a snapshot.
@@ -493,11 +513,13 @@ Accepted change pending:
   reasons, original payloads, provenance, and the acknowledgement are hashed,
   reopenable audit evidence and never runtime bars. Structural duplicates,
   malformed facts, and an empty valid partition still fail closed.
-- Split snapshot/run DB mode must verify the source snapshot hash from the
-  snapshot DB while writing run artifacts to the run DB.
+- Split snapshot/run DB mode must ensure the source snapshot from the snapshot
+  DB while writing run artifacts to the run DB. Any reusable entry is keyed by
+  the snapshot store, never the run store.
 - `ledgr_snapshot_open(db_path, snapshot_id)` may reopen an existing sealed
   snapshot. It must never create, silently overwrite, or silently reseal a
-  snapshot. `verify = TRUE` recomputes the snapshot hash before returning.
+  snapshot. `verify = TRUE` always recomputes the complete rule-3 root before
+  returning, even when the snapshot is already verified in the process.
 - Snapshot sealing, loading, and fold-entry guards form the trust boundary for
   normalized market data. After a production caller has accepted a sealed
   snapshot under its execution mode's guard, fold-core hot paths may treat bars,
@@ -524,7 +546,6 @@ Accepted change pending:
 
 - [Point-in-time historical projection](decisions.md#point-in-time-historical-projection)
 - [Equity corporate actions](decisions.md#equity-corporate-actions)
-- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Availability-aware execution activates when a snapshot declares membership,
   sessions, trading-status, or lifetime facts, or when an experiment declares a
@@ -597,12 +618,13 @@ Accepted change pending:
   view using only evidence both effective and knowable at its required `at`.
   Both accept normalized facts or a sealed snapshot and return eager classed
   lists with `rows`, supporting `evidence`, and serializable `metadata`.
-  Snapshot calls verify sealed state and artifact hash on every call, close
-  only connections they opened, perform no persistent write, and invoke no
-  callback. Explicit membership IDs retain true, false, and unknown states in
-  request order; default resolution enumerates current members only and never
-  discovers future members. Complete-set omission cites the set header rather
-  than fabricating a negative fact. Neither result is a strategy context.
+  Snapshot calls ensure a current-process verified entry before reading fact
+  rows, close only connections they opened, perform no persistent write, and
+  invoke no callback. Explicit membership IDs retain true, false, and unknown
+  states in request order; default resolution enumerates current members only
+  and never discovers future members. Complete-set omission cites the set
+  header rather than fabricating a negative fact. Neither result is a strategy
+  context.
 - Default fact-inspection prints are curated by family and operation while the
   complete programmatic evidence remains unchanged in `$rows` and `$evidence`.
   Membership history exposes evidence type, membership state, effective time,
@@ -792,10 +814,6 @@ Accepted change pending:
 
 ## Persistence Contract
 
-Accepted change pending:
-
-- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
-
 - ledgr-owned DuckDB drivers explicitly use session-local extension and secret
   storage when the installed DuckDB exposes that control. This avoids shared-home
   startup notices on affected versions without suppressing package messages,
@@ -816,7 +834,8 @@ Accepted change pending:
 - Experiment-store schema 113 and saved-sweep schema 4 add normalized
   point-in-time fact and quarantine evidence. Migration is transactional and
   writes its version marker last. Existing sealed snapshots retain their stored
-  hashes and are never resealed or rehash-migrated.
+  hashes and are never resealed or rehash-migrated. A legacy hash rule remains
+  metadata-readable but is not executable by a snapshot-dependent path.
 - Experiment-store schema 114 adds `run_completion` and `run_diagnostics`.
   Availability-aware direct runs persist one decision trace row per invoked
   axis ID plus ordered risk, execution, reconciliation, and stop evidence.
@@ -1631,7 +1650,7 @@ Accepted change pending:
   valuation output.
 - `ledgr_state_reconstruct()` is the public reconstruction entry point for a
   run id and DBI connection. It delegates to the shared derived-state rebuild
-  path, which verifies snapshot-backed sources before rebuilding derived
+  path, which ensures snapshot-backed sources before rebuilding derived
   artifacts. A dense run is rebuilt on its bar timestamps and requires every
   close. An availability-aware run (Cut 11, LDG-2978) is rebuilt on its
   open-session calendar through its last fully valued pulse, with each held
@@ -1979,7 +1998,6 @@ Accepted change pending:
 Accepted change pending:
 
 - [Testing architecture](decisions.md#testing-architecture)
-- [Snapshot verification policy](decisions.md#snapshot-verification-policy)
 
 - Full regression tests must pass before release-ticket completion.
 - Package check target:
@@ -2013,3 +2031,7 @@ Accepted change pending:
   public production run/sweep paths cannot reach fold execution without the
   accepted sealed-snapshot guard. The guard belongs at entry/setup boundaries,
   not inside per-cell, per-feature, or per-pulse hot loops.
+- The production rule-3 encoder must reproduce the conformance spike's ten
+  golden roots on both Windows and Ubuntu CI. Hosted-CI clocks are advisory;
+  the registered one-thread local benchmark host owns the absolute cost and
+  growth gates.
