@@ -29,6 +29,106 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-12 [architecture] Where the package's weight is, and the four levers that reduce it
+
+Sized on 2026-10-12 at `a2464434`: 121 R files, 54,702 lines; 177 test
+files, 56,536 lines. By subsystem: availability 6,570 lines in 11 files,
+sweep 5,985 in 6 (`R/sweep.R` alone 2,629), features and indicators 5,199
+in 13, backtest 4,588 in 6, strategy context 4,067 in 9, walk-forward 3,087
+in 5. The pre-CRAN legacy removal RFC takes out about 950 R and 1,700 test
+lines, roughly 2% and 3%; it removes code that lies about what a store can
+be, not the weight.
+
+The weight is duplication of paths: the package runs the same economics
+two or three ways and proves them equal. Four levers would reduce it, in
+order of payoff. None is authorized here.
+
+1. One execution mode, dense as a special case of availability (the
+   2026-10-11 execution entry below). Today there are two of almost
+   everything: a dense pulse calendar from bar timestamps and a session
+   calendar; a fast prepared context (`use_fast_context <-
+   !availability_active`) and a general per-pulse helper path; dense and
+   availability coverage checks in the run guard; dense and availability
+   reconstruction in `R/derived-state.R`; `ledgr_backtest()` as a dense-only
+   wrapper with its own validate and guard. A dense snapshot with an implied
+   calendar and no facts deletes one side of each pair. Reading estimate:
+   3,000 to 5,000 lines and one semantics instead of two parity
+   obligations.
+2. One output handler. The persistent and memory handlers stage the same
+   fill events, equity and diagnostics and are held equivalent by contract
+   and parity tests. One handler with a sink interface (DuckDB or memory)
+   removes the second implementation and the suite that guards it, and
+   closes most of the committed-run-versus-sweep gap parked in the
+   2026-10-12 execution entry, because the sweep stops being a separately
+   optimized engine.
+3. Retire the context frame views and shrink the context surface
+   (scheduled: RFC pipeline `ctx-frame-retirement`, and the strategy
+   context design session in the roadmap). `R/pulse-context.R` is 1,311
+   lines for a surface of about thirty members; a typical strategy uses
+   six.
+4. Merge the three result-reader families (`R/backtest-results.R`,
+   `R/availability-results.R`, `R/corporate-action-results.R`), which read
+   the ledger and equity with their own helpers and print paths. After
+   lever 1 there is one run shape, so there should be one reader.
+
+Measure before touching: `R/sweep-retention.R` (1,379 lines) and
+`R/business-objective.R` (1,343) are large for what they do and may carry
+their own frame-per-row shapes; the `mirai` parallel sweep path is a second
+execution environment ranked below single-core work. File-count or
+line-count cleanups on their own are not a lever.
+
+Order matters: lever 1 first, because levers 2 and 4 each shrink by half
+once there is one run shape, and lever 3 is already scheduled. This entry
+records a direction; it authorizes no API, schema, ticket or release
+commitment.
+
+### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
+
+The Sharadar adapter in ledgr-research emits no corporate-action facts, so
+every Sharadar result states "dividends excluded" (audit G-016, LFB-013).
+The macro plan's 2026-10-12 routing amendment rebuilds the lake once, under
+hash rule 3 and with dividend facts, after Cut 13 and the WS3/WS4 cut and
+before WS7. This note records what that mapping needs, so it is not
+rediscovered then.
+
+1. Three vendor facts decide everything and are not recorded anywhere in
+   this repository: whether the actions table's `date` is the ex-date only,
+   with no declared or record date; whether a dividend `value` is per
+   as-traded share or already split-adjusted; and which action types are
+   cash (`dividend`, special dividends) rather than splits, spin-offs or
+   mergers. Write the answers into the adapter's build notes first.
+2. One row per cash dividend through `ledgr_facts_equity_corporate_actions()`:
+   `subtype = "ordinary_cash_dividend"`, `complete = TRUE`,
+   `gross_cash_validated = TRUE`, `gross_cash_per_parent_unit` in the lake's
+   unit basis, `parent_instrument_id` equal to the id the bars and lifetime
+   facts use, `entitlement_time` and `effective_time` both the ex-date's
+   session close in UTC, `payment_time` optional, `provenance_tier =
+   "upstream_vintage_bound"` with the adapter's `upstream_build_id` and a
+   `bar_vintage_id`, and a `fact_id` stable across rebuilds (ticker, ex-date,
+   amount). Splits are not mapped because the bars are split-adjusted.
+   Mergers and spin-offs stay out of the first mapping and are disclosed,
+   not entered as incomplete rows.
+3. `knowledge_time` must not be `NA`: cash is due at the later of the
+   posting pulse and the knowledge pulse (`R/corporate-action-settlement.R`,
+   `cash_due_idx`), and a missing knowledge index never posts (audit
+   S2-003). The vendor supplies no declaration date, so set it equal to
+   `entitlement_time`, the history wave's "known when effective, disclosed"
+   assumption (register D1-F7) applied by hand until ledgr binds it, and say
+   so in the build notes.
+4. The lake declares `split_adjusted`, so held quantities are in post-split
+   units. A dividend declared per share before a later split must be
+   divided by the cumulative later split factor unless the vendor already
+   does that. Check one name with a large split and dividends on both sides.
+5. Seal under rule 3 after Cut 13 lands; the builder refuses duplicates and
+   bad clocks.
+6. Run the G-025 buy-and-hold reconciliation against the vendor's
+   `closeadj` on a few tickers immediately after the rebuild, not as WS8's
+   last item. ledgr credits cash and does not reinvest, so compare the
+   implied dividend stream or a reinvesting strategy, not raw equity.
+
+This entry authorizes no adapter change, fact, ticket or release
+commitment; LFB-013 in ledgr-research remains the research-side home.
+
 ### 2026-10-12 [execution] Close the gap between the committed run and the ephemeral sweep
 
 On the v0.2.1.0 peer record (500 instruments, 1,260 sessions, 630,000 bars)
