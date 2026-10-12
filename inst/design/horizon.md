@@ -29,6 +29,45 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-12 [research] Prove or retire the thinly used product surfaces with real data
+
+A per-file census on 2026-10-12 (117 R files) found that the 23,000 lines no
+article touches are the engine, while about 4,500 lines, 8% of the package,
+sit in product surfaces that are large, thinly taught and separable:
+
+| Block | Lines | Exports | Article uses |
+| --- | ---: | ---: | ---: |
+| Validation toolkit (`validation-pbo`, `-dsr`, `-min-track-record`, `-k-ratio`) | 1,329 | 4 | 15 |
+| `business-objective.R` | 1,343 | 9 | 5 |
+| `sweep-filter.R`, `sweep-review.R`, the three `sweep-retention` projections | about 1,000 | 5 | 9 |
+| `sim-pit-inputs.R`, `indicator-dev.R`, `signal-strategy.R` | 976 | 3 | 0 |
+| `walk-forward-inspection.R` beyond open, scores and folds | part of 782 | 3 | 0 |
+
+Each came from an accepted synthesis (the validation toolkit and business
+objectives from v0.1.9.6), so removing any of them is a product decision
+with its contract sentences, not a cleanup. Article use is a signal, not a
+verdict: the statistics surface is thinly taught because it is statistics,
+and the simulation aids have zero article use and heavy test use.
+
+Maintainer, 2026-10-12: park for the release after v0.2.2. The plan is to
+use every one of these surfaces in actual research on the Sharadar lake
+first, and then be ruthless: a block that did not earn its keep is removed
+under the pre-CRAN policy, one maintainer decision per block, recorded in
+the roadmap as retired before CRAN with the contract sentences it removes,
+riding whichever cut is already deleting surfaces. No deprecation cycle.
+
+Companion package question, same day. Splitting surfaces into a companion
+package is worth it when the satellite has a different dependency profile,
+release cadence or audience, and when the seam between the two is stable.
+Neither holds yet: the heavy optional dependencies (`quantmod`, `qlcal`,
+`TTR`, `xts`, `mirai`) are already in Suggests, the research package already
+holds the vendor adapters, and the public seams the consolidation will
+change (strategy context, result readers, execution mode) are exactly where
+a split would freeze the wrong boundary. Revisit after the real-data pass
+and after the execution-core consolidation, when the surviving surfaces and
+the stable seams are known. This entry authorizes no removal, deprecation,
+package split, ticket or release commitment.
+
 ### 2026-10-12 [infrastructure] Structural gates deferred to the release after v0.2.2
 
 The legacy-removal cut carries a codebase-hygiene workstream (macro plan,
