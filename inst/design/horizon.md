@@ -60,7 +60,9 @@ order of payoff. None is authorized here.
    removes the second implementation and the suite that guards it, and
    closes most of the committed-run-versus-sweep gap parked in the
    2026-10-12 execution entry, because the sweep stops being a separately
-   optimized engine.
+   optimized engine. It does not depend on lever 1: persistent versus
+   memory is a different axis from dense versus availability, so it is the
+   lower-risk lever and may go first after v0.2.2 (review, 2026-10-12).
 3. Retire the context frame views and shrink the context surface
    (scheduled: RFC pipeline `ctx-frame-retirement`, and the strategy
    context design session in the roadmap). `R/pulse-context.R` is 1,311
@@ -77,10 +79,59 @@ their own frame-per-row shapes; the `mirai` parallel sweep path is a second
 execution environment ranked below single-core work. File-count or
 line-count cleanups on their own are not a lever.
 
-Order matters: lever 1 first, because levers 2 and 4 each shrink by half
-once there is one run shape, and lever 3 is already scheduled. This entry
-records a direction; it authorizes no API, schema, ticket or release
-commitment.
+Two companions to the levers, from the 2026-10-12 review of this entry:
+
+- **Split the fold into phase functions, before unification.**
+  `ledgr_execute_fold()` (`R/fold-engine.R:238-1417`, 1,180 lines) is about
+  280 lines of setup and one pulse loop whose body runs about 880 lines in a
+  fixed sequence: inputs and corporate actions, the availability decision
+  (176 lines), context build, strategy call and target validation, fill
+  planning, accounting, event emission, availability valuation, then state
+  update, telemetry, checkpoint and interrupt. `availability_active` is
+  tested 29 times in the file and `sample_telemetry` runs through every
+  phase. Extract one phase per commit as top-level package functions
+  (byte-compiled at install; a closure body is JIT-compiled only for its
+  first instance), passing one fold-state environment for scalars, flags
+  and references. Condition from the optimization style manual's shape 7:
+  per-pulse buffers stay written by `collapse::setv()` or outside that
+  environment, because a vector held in an environment is copied whole on
+  every subassignment. Gates: the fixture ladder identical at every commit,
+  paired clocks (about ten extra calls per pulse are microseconds against
+  milliseconds), the seven shapes walked. `ledgr_run_fold_impl()`
+  (`R/backtest-runner.R:698`, 675 lines) gets the same treatment next. After
+  the split, each phase shows its dense-versus-availability fork in one
+  place, so lever 1 becomes a per-phase deletion with a per-phase witness,
+  and the probe's first kill condition becomes legible. The probe itself
+  can run on the unsplit fold, since it only compares outputs, and is the
+  cheaper step.
+- **Audit the defensive code; collapse, do not delete.** There are 1,533
+  `abort` and `stop` calls in `R/`, in three groups: public-function input
+  checks with named classes (about 386, needed, claims test them);
+  validator helpers (173 functions, about 5,680 lines, 352 aborts, mostly
+  needed but called repeatedly, for example `validate_ledgr_config()` from
+  six sites and `ledgr_validate_feature_map_object()` from eleven); and
+  other internal invariants (about 793), the real candidates. Two
+  mechanisms: validate once at construction and mark the object, where the
+  mark is a class, not an attribute (attributes drop through subsetting),
+  and never crosses a persistence boundary, so the store re-validates; and
+  one internal assertion helper, `ledgr_assert(cond, "what broke")`, for
+  impossible states, keeping an error class wherever a registered claim
+  asserts one. Internal invariants stay because much of ledgr is written by
+  agents and these checks fail at the line that caused the mistake rather
+  than three layers later. Route: a Type 2 audit brief producing a table
+  and proposed tickets, per `rfc_cycle.md`; the review's unverified guess is
+  1,000 to 2,000 lines.
+
+Order: lever 1 before lever 4, because one run shape means one reader;
+lever 2 is independent and lower risk; lever 3 is already scheduled. After
+v0.2.2 the sequence this entry suggests is: the unification probe, the fold
+split, the unification slices, with the defensive-code audit alongside.
+Identity: unification moves dense config and snapshot identity, because
+canonical omission is dense mode's identity today. After the pre-CRAN
+legacy-removal cut that costs a version and fingerprint bump plus a lake
+rebuild, so land it in the same release as another format change to save a
+rebuild (review, 2026-10-12). This entry records a direction; it
+authorizes no API, schema, ticket or release commitment.
 
 ### 2026-10-12 [adapters] Sharadar dividend-fact mapping before the WS7 lake rebuild
 
@@ -241,21 +292,36 @@ whether it is a deletion or a redesign:
   peer fixture and the long-window dense fixtures both ways and diffs the
   result surfaces; expected rows and the checker come only after that run.
   At most ten cases, generated by what the first run fails.
-- Kill condition: a dense result that cannot be reproduced through the
-  availability path without a dense-only branch inside the fold, the
-  context or the guard. Then the unification is a redesign and needs an
-  RFC, not a cut.
-- Supporting evidence, not gates: the engine-phase clock of the dense peer
-  fixture on the availability path against today's dense path, with the
-  fast prepared context either made availability-aware or shown to cost no
-  more than the per-pulse helper path at this shape; and whether dense
-  config and snapshot identity move.
+- Kill conditions, either one: a dense result that cannot be reproduced
+  through the availability path without a dense-only branch inside the
+  fold, the context or the guard; or the dense peer fixture materially
+  slower on the availability path, because the fast prepared context
+  (`use_fast_context <- !availability_active`, `R/backtest-runner.R:977`)
+  cannot be made availability-aware at no material cost. The first means
+  the unification is a redesign and needs an RFC; the second means it would
+  make the common case slow, the drift the execution-gap entry describes
+  (review, 2026-10-12: the clock is a kill condition, not evidence).
+- One required case: a dense fixture with one missing bar. Dense refuses it
+  today; through an implied calendar it could quietly become a stale mark
+  or a skip. The strictness must survive as the explicit policy choice,
+  "never stale" meaning refuse, or dense results change meaning with no
+  visible error (review, 2026-10-12).
+- Supporting evidence: whether dense config and snapshot identity move.
+  After the pre-CRAN legacy-removal cut an identity move costs a version
+  and fingerprint bump plus a lake rebuild, so it is cheap if landed with
+  another format change.
 
 If green, the removal lands as parity-gated slices, each one workstream:
 the pulse calendar, the context, the guard and reconstruction, then
-`ledgr_backtest()` as a thin alias or deleted. Sequenced after the WS3/WS4
-history wave, per the roadmap row "Post-v0.2.2 execution-core
-consolidation". The probe binds nothing.
+`ledgr_backtest()` as a thin alias or deleted. Unification stays after the
+WS3/WS4 history wave, per the roadmap row "Post-v0.2.2 execution-core
+consolidation". Proposed by the 2026-10-12 review and recommended here,
+not decided: run the probe itself before the WS3/WS4 implementation cut, so
+that if it is green WS3/WS4 build history on the availability path only and
+leave dense to the unification, instead of building history for both modes
+and deleting half later. The probe is small and binds nothing, so it fits a
+full release; the roadmap row changes only on the maintainer's decision.
+The probe binds nothing.
 
 ### 2026-10-10 [research] Durable factor and decision evidence
 
