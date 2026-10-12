@@ -242,6 +242,9 @@ testthat::test_that("AT7: Tamper detection on load (runner)", {
   gc()
   Sys.sleep(0.05)
 
+  # A raw DBI mutation after a warm proof is outside the supported trust
+  # boundary. Model the cold process promised by LCL-0001 before loading.
+  ledgr:::ledgr_snapshot_verified_reset()
   cfg <- v011_make_runner_cfg(db_path, snapshot_id, universe_ids = c("AAA"), start_ts_utc = "2020-01-01T00:00:00Z", end_ts_utc = "2020-01-02T00:00:00Z")
   testthat::expect_error(ledgr_run_config(cfg, run_id = "run-v011-tamper"), class = "LEDGR_SNAPSHOT_CORRUPTED")
 })
