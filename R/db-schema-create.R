@@ -530,36 +530,25 @@ ledgr_schema_create_fresh <- function(con) {
 ledgr_schema_create_triggers <- function(con) {
   # Best-effort immutability enforcement for SEALED snapshots (DuckDB trigger support varies by build).
   # If triggers are unsupported, this is a no-op and must be enforced by ledgr write-paths (later tickets).
-  try(
-    DBI::dbExecute(
-      con,
+  # Support is a property of the DuckDB build, so a session that saw both
+  # statements fail skips them on later stores instead of failing again (LDG-3016).
+  key <- paste("triggers", utils::packageVersion("duckdb"))
+  if (identical(.ledgr_schema_template_cache[[key]], FALSE)) return(invisible(FALSE))
+  ok <- vapply(c("snapshot_bars", "snapshot_instruments"), function(table_name) {
+    sql <- sprintf(
       "
-      CREATE TRIGGER IF NOT EXISTS ledgr_block_snapshot_bars_write
-      BEFORE INSERT OR UPDATE OR DELETE ON snapshot_bars
+      CREATE TRIGGER IF NOT EXISTS ledgr_block_%s_write
+      BEFORE INSERT OR UPDATE OR DELETE ON %s
       FOR EACH ROW
       WHEN (SELECT status FROM snapshots WHERE snapshot_id = COALESCE(NEW.snapshot_id, OLD.snapshot_id)) = 'SEALED'
       BEGIN
         SELECT RAISE(ABORT, 'LEDGR_SNAPSHOT_IMMUTABLE');
       END;
-      "
-    ),
-    silent = TRUE
-  )
-  try(
-    DBI::dbExecute(
-      con,
-      "
-      CREATE TRIGGER IF NOT EXISTS ledgr_block_snapshot_instruments_write
-      BEFORE INSERT OR UPDATE OR DELETE ON snapshot_instruments
-      FOR EACH ROW
-      WHEN (SELECT status FROM snapshots WHERE snapshot_id = COALESCE(NEW.snapshot_id, OLD.snapshot_id)) = 'SEALED'
-      BEGIN
-        SELECT RAISE(ABORT, 'LEDGR_SNAPSHOT_IMMUTABLE');
-      END;
-      "
-    ),
-    silent = TRUE
-  )
-
-  invisible(TRUE)
+      ",
+      table_name, table_name
+    )
+    !inherits(try(DBI::dbExecute(con, sql), silent = TRUE), "try-error")
+  }, logical(1))
+  if (is.null(.ledgr_schema_template_cache[[key]])) assign(key, any(ok), envir = .ledgr_schema_template_cache)
+  invisible(any(ok))
 }

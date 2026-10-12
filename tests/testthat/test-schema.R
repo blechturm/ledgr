@@ -785,6 +785,24 @@ testthat::test_that("[LTB-0239] a proven-empty store gets the current schema wit
   testthat::expect_identical(ledgr:::ledgr_experiment_store_version(fresh), ledgr:::ledgr_experiment_store_schema_version)
   testthat::expect_true(ledgr_validate_schema(fresh))
 
+  # Trigger support belongs to the DuckDB build: once a session saw it fail,
+  # later stores do not attempt the statements again.
+  supported <- ledgr:::.ledgr_schema_template_cache[[paste("triggers", utils::packageVersion("duckdb"))]]
+  testthat::expect_true(is.logical(supported) && length(supported) == 1L)
+  statements <- character()
+  execute <- DBI::dbExecute
+  again <- connect()
+  on.exit(DBI::dbDisconnect(again, shutdown = TRUE), add = TRUE)
+  testthat::with_mocked_bindings(
+    ledgr_create_schema(again),
+    dbExecute = function(conn, statement, ...) {
+      statements <<- c(statements, statement)
+      execute(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+  testthat::expect_identical(any(grepl("CREATE TRIGGER", statements, fixed = TRUE)), isTRUE(supported))
+
   # An interrupted creation leaves no table and no marker, and a retry works.
   interrupted <- connect()
   on.exit(DBI::dbDisconnect(interrupted, shutdown = TRUE), add = TRUE)

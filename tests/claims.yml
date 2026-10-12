@@ -2697,7 +2697,7 @@ claims:
     overlapping_evidence: "Reconstruction suites (test-derived-state.R, test-experiment-run.R, test-acceptance-v0.1.0.R) and the fixture-lane equity byte identity; growth probe H1 in dev/bench/v0_2_2_real_data_scale/probes.R."
   - id: "LCL-0237"
     source: "Cut 12 LDG-3016"
-    scope: "A proven-empty store receives the current schema and version marker in one transaction without entering the legacy migration; its tables, columns, defaults, constraints and indexes equal the legacy-path result; an interrupted creation leaves no table and no marker; a store already holding a table keeps the legacy path"
+    scope: "A proven-empty store receives the current schema and version marker in one transaction without entering the legacy migration; its tables, columns, defaults, constraints and indexes equal the legacy-path result; an interrupted creation leaves no table and no marker; a store already holding a table keeps the legacy path; once a session saw trigger creation fail, later stores do not attempt it again"
     oracle_class: "Zero migration calls and catalogue identity against a legacy-built store; empty catalogue and version 0 after an injected failing statement, then a successful retry; one migration call for an unmarked store with a table"
     detecting_blocks: ["LTB-0239"]
     promised_profile: "fast"
