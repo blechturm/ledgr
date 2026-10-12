@@ -23,8 +23,21 @@ ledgr_create_schema <- function(con) {
     return(invisible(TRUE))
   }
 
-  schema <- "main"
-  catalogue <- ledgr_schema_catalogue(con, schema = schema)
+  catalogue <- ledgr_schema_catalogue(con, schema = "main")
+  if (nrow(catalogue$tables) == 0L) {
+    # A proven-empty store gets the current schema directly; the legacy
+    # migration pass exists for stores that already hold tables (LDG-3016).
+    ledgr_schema_create_fresh(con)
+  } else {
+    ledgr_create_schema_legacy(con, catalogue)
+  }
+  ledgr_schema_create_triggers(con)
+  invisible(TRUE)
+}
+
+# Creates or upgrades the schema of a store that already holds tables, and
+# builds the fresh-store template on an empty in-memory store.
+ledgr_create_schema_legacy <- function(con, catalogue) {
   existing_experiment_store <- ledgr_experiment_store_has_artifacts(
     con,
     table_names = catalogue$tables$table_name
@@ -475,7 +488,46 @@ ledgr_create_schema <- function(con) {
   }
 
   ledgr_experiment_store_check_schema(con, write = TRUE, inform = existing_experiment_store)
+  invisible(TRUE)
+}
 
+# The current schema as DuckDB's own CREATE statements, captured once per
+# session by building it through the legacy path on an empty in-memory store.
+# Replaying them reproduces the same tables, columns, defaults, constraints
+# and indexes; a parity test compares the two catalogues (LDG-3016).
+ledgr_schema_template <- function() {
+  key <- paste(ledgr_experiment_store_schema_version, utils::packageVersion("duckdb"), sep = "/")
+  cached <- .ledgr_schema_template_cache[[key]]
+  if (!is.null(cached)) return(cached)
+  drv <- duckdb::duckdb()
+  con <- DBI::dbConnect(drv, ":memory:")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema_legacy(con, ledgr_schema_catalogue(con, schema = "main"))
+  tables <- DBI::dbGetQuery(con, "SELECT sql FROM duckdb_tables() WHERE schema_name = 'main' ORDER BY table_oid")$sql
+  indexes <- DBI::dbGetQuery(con, "SELECT sql FROM duckdb_indexes() WHERE schema_name = 'main' ORDER BY index_oid")$sql
+  statements <- c(tables, indexes)
+  assign(key, statements, envir = .ledgr_schema_template_cache)
+  statements
+}
+
+.ledgr_schema_template_cache <- new.env(parent = emptyenv())
+
+# One transaction: every current-schema statement, then the version marker
+# last, so an interrupted creation leaves no table and no marker.
+ledgr_schema_create_fresh <- function(con) {
+  statements <- ledgr_schema_template()
+  DBI::dbWithTransaction(con, {
+    for (statement in statements) DBI::dbExecute(con, statement)
+    DBI::dbExecute(
+      con,
+      "INSERT INTO ledgr_schema_metadata (key, value, updated_at_utc) VALUES ('experiment_store_schema_version', ?, ?)",
+      params = list(as.character(ledgr_experiment_store_schema_version), as.POSIXct(Sys.time(), tz = "UTC"))
+    )
+  })
+  invisible(TRUE)
+}
+
+ledgr_schema_create_triggers <- function(con) {
   # Best-effort immutability enforcement for SEALED snapshots (DuckDB trigger support varies by build).
   # If triggers are unsupported, this is a no-op and must be enforced by ledgr write-paths (later tickets).
   try(

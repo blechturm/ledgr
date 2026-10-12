@@ -748,3 +748,63 @@ testthat::test_that("[LTB-0130] a store's schema is validated once per session u
   testthat::expect_true("error" %in% first_failure)
   testthat::expect_identical(validations(testthat::expect_identical(failure_class(), first_failure)), 1L)
 })
+
+testthat::test_that("[LTB-0239] a proven-empty store gets the current schema without the legacy migration", {
+  catalogue_of <- function(con) {
+    q <- function(sql) DBI::dbGetQuery(con, sql)
+    constraints <- q("SELECT table_name, constraint_type, constraint_text, expression FROM duckdb_constraints() WHERE schema_name = 'main'")
+    list(
+      tables = q("SELECT table_name, sql FROM duckdb_tables() WHERE schema_name = 'main' ORDER BY table_name"),
+      indexes = q("SELECT index_name, table_name, sql FROM duckdb_indexes() WHERE schema_name = 'main' ORDER BY index_name"),
+      columns = q("SELECT table_name, column_name, ordinal_position, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'main' ORDER BY table_name, ordinal_position"),
+      constraints = sort(do.call(paste, c(constraints, sep = " | "))),
+      marker = q("SELECT key, value FROM ledgr_schema_metadata ORDER BY key")
+    )
+  }
+  connect <- function() DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  migrations <- 0L
+  migrate <- ledgr:::ledgr_experiment_store_migrate
+  testthat::local_mocked_bindings(
+    ledgr_experiment_store_migrate = function(...) {
+      migrations <<- migrations + 1L
+      migrate(...)
+    },
+    .package = "ledgr"
+  )
+
+  # The fresh store matches the legacy-path catalogue and never migrates.
+  legacy <- connect()
+  on.exit(DBI::dbDisconnect(legacy, shutdown = TRUE), add = TRUE)
+  suppressMessages(ledgr:::ledgr_create_schema_legacy(legacy, ledgr:::ledgr_schema_catalogue(legacy)))
+  migrations <- 0L
+  fresh <- connect()
+  on.exit(DBI::dbDisconnect(fresh, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(fresh)
+  testthat::expect_identical(migrations, 0L)
+  testthat::expect_identical(catalogue_of(fresh), catalogue_of(legacy))
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(fresh), ledgr:::ledgr_experiment_store_schema_version)
+  testthat::expect_true(ledgr_validate_schema(fresh))
+
+  # An interrupted creation leaves no table and no marker, and a retry works.
+  interrupted <- connect()
+  on.exit(DBI::dbDisconnect(interrupted, shutdown = TRUE), add = TRUE)
+  statements <- ledgr:::ledgr_schema_template()
+  testthat::with_mocked_bindings(
+    testthat::expect_error(ledgr_create_schema(interrupted)),
+    ledgr_schema_template = function() append(statements, "CREATE TABLE broken (", after = 5L),
+    .package = "ledgr"
+  )
+  testthat::expect_identical(nrow(ledgr:::ledgr_schema_catalogue(interrupted)$tables), 0L)
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(interrupted), 0L)
+  ledgr_create_schema(interrupted)
+  testthat::expect_identical(catalogue_of(interrupted)$tables, catalogue_of(legacy)$tables)
+
+  # A store that already holds a table but no marker keeps the legacy path.
+  unmarked <- connect()
+  on.exit(DBI::dbDisconnect(unmarked, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(unmarked, "CREATE TABLE strategy_state (run_id TEXT NOT NULL, ts_utc TIMESTAMP NOT NULL, state_json TEXT NOT NULL, PRIMARY KEY (run_id, ts_utc))")
+  migrations <- 0L
+  suppressMessages(ledgr_create_schema(unmarked))
+  testthat::expect_identical(migrations, 1L)
+  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(unmarked), ledgr:::ledgr_experiment_store_schema_version)
+})
