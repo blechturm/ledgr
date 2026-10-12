@@ -682,7 +682,12 @@ Later WS3/WS4 readers join that census when introduced; they do not delay the
 accepted reuse mechanism. Cut 13 lands before the WS7 estimator proof and the
 WS8 integrated record so that Sharadar evidence is recorded once under the
 final snapshot identity, and the ledgr-research lake is rebuilt once under
-rule 3 together with the dividend-facts adapter change (G-016).
+rule 3 together with the dividend-facts adapter change (G-016). The mapping
+that change needs (vendor facts to pin down, the exact fact-row fields, the
+non-missing knowledge-time assumption, the split-unit check and the G-025
+reconciliation) is parked, non-binding, in
+[`horizon.md`](../horizon.md#2026-10-12-adapters-sharadar-dividend-fact-mapping-before-the-ws7-lake-rebuild);
+the WS7 cut takes it up with LFB-013 when the rebuild is scheduled.
 (2) The `ledgr_sweep_save()` defect routed above also belongs to Cut 13, but
 in a separate workstream and close review because persistence correctness and
 snapshot verification make different claims. (3) WS5-B is unchanged and
