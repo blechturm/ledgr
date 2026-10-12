@@ -119,6 +119,7 @@ ledgr_feature_contract_check <- function(snapshot,
     features,
     feature_params = feature_params
   )
+  ledgr_snapshot_ensure_handle(snapshot)
   counts <- ledgr_snapshot_bar_counts(snapshot)
 
   if (nrow(contracts) == 0L || nrow(counts) == 0L) {

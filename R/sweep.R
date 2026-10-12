@@ -211,6 +211,7 @@ ledgr_sweep_impl <- function(exp,
     )
   }
 
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   meta <- ledgr_precompute_snapshot_meta(exp$snapshot)
   range <- if (is.null(window)) {
     ledgr_precompute_scoring_range(meta, start = ledgr_experiment_scoring_start(exp, meta$start))
@@ -697,6 +698,7 @@ ledgr_promote <- function(exp,
       class = "ledgr_promote_failed_candidate"
     )
   }
+  ledgr_snapshot_ensure_handle(exp$snapshot)
 
   if (isTRUE(require_same_snapshot)) {
     ledgr_candidate_validate_same_snapshot(exp, candidate)

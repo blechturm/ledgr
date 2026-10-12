@@ -24,6 +24,14 @@ gate is the median microseconds per bar (at most 1.5) and the log-log endpoint
 growth exponent (at most 1.10) on the fixed Windows host with DuckDB threads
 set to one. RSS is disclosed, not gated.
 
+The agent-provisional LDG-3020 record is in `evidence/ldg3020/`. It repeats
+the same 50-instrument vendor-neutral fixture after process-local proof reuse
+and records the three ordinary fast-profile runs made on the implementation
+host. The fast CSVs are semantic gate evidence only: all 566 blocks pass, but
+their 122.38-second median exceeds the registered 112-second host bound. A
+same-session accepted-base control also exceeds the bound at 115.35 seconds.
+The registered CI host therefore remains the binding timing check.
+
 `fixture_families.csv` and `fixture_phases.csv` are the aggregate-only
 vendor-neutral fixture record after LDG-3019. The private rule-2 Sharadar lake
 must refuse and is not migrated or resealed by this cut; its rule-3 rebuild

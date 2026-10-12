@@ -591,6 +591,7 @@ ledgr_experiment_window <- function(exp,
   scoring_end <- sealed$end
   hydration_start <- scoring_start
   execution_start <- scoring_start
+  ledgr_snapshot_ensure_handle(exp$snapshot)
 
   out <- structure(
     list(

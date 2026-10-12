@@ -465,8 +465,10 @@ Accepted change pending:
   verified entry and possession of a stored root are distinct. The verified
   entry is private, process-local, PID-guarded and keyed by snapshot-store key,
   snapshot ID, stored root and rule. Only a committed seal or a successful
-  complete recomputation may establish it; failure removes it; it is never
-  serialized. In-memory or unresolved stores are never entered.
+  complete recomputation may establish it. A failed status or verification
+  check removes every entry for the matching snapshot store and snapshot ID,
+  so restoring an older root cannot reactivate a stale proof. The entry is
+  never serialized. In-memory or unresolved stores are never entered.
 - A valid bar that falls on no declared open-session close is sealed in
   `snapshot_bars` and never becomes a pulse (every run on a snapshot with
   sessions is availability-aware; `ledgr_backtest()` refuses such snapshots,

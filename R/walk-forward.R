@@ -93,6 +93,7 @@ ledgr_walk_forward <- function(exp,
   seed <- ledgr_seed_normalize(seed)
   opening_state_policy <- match.arg(opening_state_policy)
   opening_state_policy <- ledgr_walk_forward_opening_state_policy(opening_state_policy)
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   if (identical(opening_state_policy, "carry_test_state")) {
     ledgr_walk_forward_refuse_noncontiguous_carry(exp, folds)
   }

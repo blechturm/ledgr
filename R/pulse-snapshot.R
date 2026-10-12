@@ -105,6 +105,7 @@ ledgr_pulse_snapshot <- function(snapshot,
   }
 
   # The context reads bars and features once, here; it keeps no connection.
+  ledgr_snapshot_ensure_handle(snapshot)
   opened <- ledgr_open_dedicated_snapshot(snapshot)
   on.exit(ledgr_snapshot_close(opened$snapshot), add = TRUE)
   con <- opened$con

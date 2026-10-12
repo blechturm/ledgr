@@ -91,6 +91,17 @@ ledgr_sweep_open <- function(snapshot, sweep_id) {
   parent <- ledgr_sweep_fetch_parent(opened$con, sweep_id)
   ledgr_sweep_assert_parent_snapshot(parent, snapshot, opened$con)
   ledgr_sweep_assert_parent_schema_version(parent)
+  ledgr_snapshot_ensure_handle(
+    snapshot,
+    corruption_class = c(
+      "ledgr_sweep_snapshot_hash_mismatch",
+      "ledgr_invalid_args"
+    ),
+    corruption_message = sprintf(
+      "Saved sweep snapshot hash mismatch for snapshot: %s",
+      snapshot$snapshot_id
+    )
+  )
 
   candidates <- ledgr_sweep_fetch_candidates(opened$con, sweep_id)
   returns <- ledgr_sweep_fetch_returns(opened$con, sweep_id, candidates)

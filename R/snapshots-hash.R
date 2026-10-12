@@ -537,35 +537,11 @@ ledgr_snapshot_stored_hash <- function(snapshot) {
 }
 
 ledgr_snapshot_validate <- function(snapshot) {
-  if (!inherits(snapshot, "ledgr_snapshot")) {
-    rlang::abort(
-      "`snapshot` must be a ledgr_snapshot object.",
-      class = "ledgr_invalid_snapshot"
-    )
-  }
-
-  release <- ledgr_snapshot_hold(snapshot)
-  on.exit(release(), add = TRUE)
-  con <- get_connection(snapshot)
-  stored <- DBI::dbGetQuery(
-    con,
-    "SELECT snapshot_hash FROM snapshots WHERE snapshot_id = ?",
-    params = list(snapshot$snapshot_id)
-  )$snapshot_hash[[1L]]
-  if (is.null(stored) || is.na(stored) || !nzchar(stored)) {
-    rlang::abort(
-      "Snapshot hash missing; snapshot may not be sealed.",
-      class = "ledgr_invalid_snapshot"
-    )
-  }
-
-  computed <- ledgr_snapshot_hash(con, snapshot$snapshot_id)
-  if (!identical(computed, stored)) {
-    rlang::abort(
-      "Snapshot hash mismatch; snapshot may be corrupted.",
-      class = "ledgr_invalid_snapshot"
-    )
-  }
-
+  ledgr_snapshot_ensure_handle(
+    snapshot,
+    force = TRUE,
+    corruption_class = "ledgr_invalid_snapshot",
+    corruption_message = "Snapshot hash mismatch; snapshot may be corrupted."
+  )
   invisible(TRUE)
 }

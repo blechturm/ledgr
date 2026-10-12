@@ -357,9 +357,14 @@ ledgr_experiment_validate_snapshot <- function(snapshot) {
       class = "ledgr_invalid_experiment"
     )
   }
+  snapshot_hash <- ledgr_snapshot_ensure_verified(
+    opened$con,
+    snapshot$snapshot_id,
+    snapshot_db_path = snapshot$db_path
+  )
   invisible(list(
     price_basis = ledgr_snapshot_execution_price_basis(snapshot),
-    snapshot_hash = as.character(info$snapshot_hash[[1]])
+    snapshot_hash = as.character(snapshot_hash)
   ))
 }
 

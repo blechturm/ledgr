@@ -141,6 +141,10 @@ testthat::test_that("[LTB-0001] tamper detection fails loud when SEALED snapshot
   gc()
   Sys.sleep(0.05)
 
+  # Raw DBI mutation is outside the supported sealed-snapshot contract. A
+  # fresh process starts without the seal-time proof and must detect it.
+  ledgr:::ledgr_snapshot_verified_reset()
+
   cfg <- runner_snapshot_config(fx$path, fx$snapshot_id, universe_ids = c("AAA"))
   testthat::expect_error(
     ledgr_run_config(cfg, run_id = "run-snapshot-tamper"),

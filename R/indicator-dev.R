@@ -33,6 +33,7 @@ ledgr_indicator_dev <- function(snapshot, instrument_id, ts_utc, lookback = 50L)
     rlang::abort("`lookback` must be an integer >= 1.", class = "ledgr_invalid_args")
   }
   ts_norm <- ledgr_normalize_ts_utc(ts_utc)
+  ledgr_snapshot_ensure_handle(snapshot)
 
   # The window is read here; `test_dates()` opens the snapshot for each call.
   opened <- ledgr_open_dedicated_snapshot(snapshot)

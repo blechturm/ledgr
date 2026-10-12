@@ -70,10 +70,10 @@ testthat::test_that("[LTB-0250] old hash rules are readable but not executable",
   id <- snapshot$snapshot_id
   current <- ledgr_snapshot_info(snapshot)
   testthat::expect_identical(current$hash_rule_version[[1L]], 3L)
-  testthat::expect_identical(current$verified_in_process[[1L]], FALSE)
+  testthat::expect_identical(current$verified_in_process[[1L]], TRUE)
   testthat::expect_match(
     paste(capture.output(print(snapshot)), collapse = "\n"),
-    "Hash rule:    3 \\(not verified in this process\\)",
+    "Hash rule:    3 \\(verified in this process\\)",
     perl = TRUE
   )
 
@@ -175,6 +175,7 @@ testthat::test_that("run, timestamp, price, and stored-hash guards still detect 
     "UPDATE snapshot_bars SET close = close + 0.01 WHERE snapshot_id = ?",
     params = list(id)
   )
+  ledgr:::ledgr_snapshot_verified_reset()
   testthat::expect_error(ledgr_run(exp), class = "LEDGR_SNAPSHOT_CORRUPTED")
   DBI::dbExecute(
     con,
