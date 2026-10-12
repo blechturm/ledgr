@@ -1,0 +1,17 @@
+"run","samples","fills","component","seconds","share_of_pulse"
+"momentum",7213,8798,"t_pulse",39.49,1
+"momentum",7213,8798,"t_bars",0.32,0.0081
+"momentum",7213,8798,"t_ctx",5.76,0.1459
+"momentum",7213,8798,"t_strat",1.3,0.0329
+"momentum",7213,8798,"t_fill",1.62,0.041
+"momentum",7213,8798,"t_state",6.06,0.1535
+"momentum",7213,8798,"t_event",1.03,0.0261
+"equal_weight",7213,155402,"t_pulse",114.19,1
+"equal_weight",7213,155402,"t_bars",0.42,0.0037
+"equal_weight",7213,155402,"t_ctx",6.79,0.0595
+"equal_weight",7213,155402,"t_strat",1.39,0.0122
+"equal_weight",7213,155402,"t_fill",18.6,0.1629
+"equal_weight",7213,155402,"t_state",27.4,0.24
+"equal_weight",7213,155402,"t_event",20.09,0.1759
+"equal_weight",7213,155402,"accounting",47.49,0.4159
+"momentum",7213,8798,"accounting",7.09,0.1795
