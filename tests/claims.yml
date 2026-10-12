@@ -2602,7 +2602,7 @@ claims:
   - id: "LCL-0229"
     source: "Cut 12 LDG-3001, audit S2C backtest, cut decision 6"
     scope: "ledgr_backtest() refuses a snapshot that declares sessions, membership, trading-status or lifetime facts with a typed error before writing a run; dense and corporate-action-only snapshots still run"
-    oracle_class: "Typed refusal class, named families and ledgr_run() pointer in the message, zero runs in the store; DONE runs for a fact-free and a corporate-action-only snapshot"
+    oracle_class: "Typed refusal class, named families and ledgr_run() pointer in the message, zero runs in the store; a trading-status-only snapshot refuses naming trading_status; DONE runs for a fact-free and a corporate-action-only snapshot"
     detecting_blocks: ["LTB-0231"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -2650,7 +2650,7 @@ claims:
   - id: "LCL-0233"
     source: "Cut 12 LDG-3005, audit S2-006, cut decision 4"
     scope: "ledgr_promote() records the candidate's and the promoting run's strategy, feature-set, universe, valuation-policy, corporate-action-policy and opening identities, warns with ledgr_promote_identity_mismatch naming each differing identity, stays silent for the same experiment, and reads a ledgr_promotion_v1 record unchanged"
-    oracle_class: "Warning class and the single mismatched field for five one-input variants; empty mismatch and equal identities for the same variant; NULL identity_check for a rewritten v1 record"
+    oracle_class: "Warning class and the single mismatched field for six one-input variants (strategy, universe, valuation policy, corporate-action policy, opening, feature map); empty mismatch and equal identities for the same variant; NULL identity_check for a rewritten v1 record"
     detecting_blocks: ["LTB-0235"]
     promised_profile: "fast"
     owner: "maintainer"
@@ -2662,7 +2662,7 @@ claims:
   - id: "LCL-0234"
     source: "Cut 12 LDG-3004, audit S2-015 and S2-016, cut decision 7"
     scope: "Run identity binds the sealed snapshot hash under identity_rule_version 2: identical content under two snapshot IDs gives equal config hashes, different content under one reused ID does not; a rule-1 run opens and its resume refuses with ledgr_identity_rule_retired; a run records the clamped scoring start; a walk-forward session records rule 2 (a rule-1 session is not matched and a rerun forks, maintainer decision on review F2)"
-    oracle_class: "config_hash equality and inequality, stored rule and snapshot hash, refusal classes, the recorded start against a run without an opening date, the session meta rule"
+    oracle_class: "config_hash equality and inequality, stored rule and snapshot hash, refusal classes, the recorded start against a run without an opening date, the session meta rule; a session rewritten as rule 1 records it stays readable and a rerun of its arguments adds a distinct rule-2 session"
     detecting_blocks: ["LTB-0236"]
     promised_profile: "fast"
     owner: "maintainer"

@@ -1105,4 +1105,3 @@ ledgr_walk_forward_opening_from_run <- function(exp, run_id) {
   names(cost_basis) <- names(held)
   ledgr_opening(cash = final_cash, positions = held, cost_basis = cost_basis)
 }
-

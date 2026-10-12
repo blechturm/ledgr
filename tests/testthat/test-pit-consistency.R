@@ -659,6 +659,23 @@ testthat::test_that("[LTB-0231] ledgr_backtest() refuses snapshots with point-in
   testthat::expect_match(conditionMessage(err), "ledgr_run()", fixed = TRUE)
   testthat::expect_identical(nrow(ledgr_run_list(facts_snapshot)), 0L)
 
+  # Trading-status facts alone also refuse (each activating family counts).
+  status_days <- as.POSIXct(paste(pit_consistency_days()[1:4], "21:00:00"), tz = "UTC")
+  status_only <- ledgr_snapshot_from_df(
+    data.frame(instrument_id = "AAA", ts_utc = status_days, open = 10, high = 10, low = 10, close = 10, volume = 1),
+    data.frame(instrument_id = "AAA"), db_path = tempfile(fileext = ".duckdb"),
+    facts = ledgr_facts(ledgr_facts_trading_status(data.frame(
+      instrument_id = "AAA", effective_from = status_days[[2]], knowledge_time = status_days[[1]],
+      status = "halted", source = "t"
+    )))
+  )
+  on.exit(ledgr_snapshot_close(status_only), add = TRUE)
+  status_err <- testthat::expect_error(
+    ledgr_backtest(status_only, hold, cost_model = ledgr_cost_zero(), run_id = "refused_status"),
+    class = "ledgr_backtest_availability_unsupported"
+  )
+  testthat::expect_match(conditionMessage(status_err), "point-in-time facts (trading_status)", fixed = TRUE)
+
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   bars <- data.frame(instrument_id = "AAA", ts_utc = at(days),
@@ -860,9 +877,9 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
     target
   }
   experiment <- function(strategy = buy, universe = ledgr_universe_members("u"), valuation = ledgr_valuation_stale(2),
-                         policy = ledgr_corporate_actions_research(), cash = 1000) {
+                         policy = ledgr_corporate_actions_research(), cash = 1000, features = list()) {
     ledgr_experiment(snapshot, strategy, universe = universe, valuation_policy = valuation, cost_model = ledgr_cost_zero(),
-                     opening = ledgr_opening(cash = cash), corporate_action_policy = policy)
+                     opening = ledgr_opening(cash = cash), corporate_action_policy = policy, features = features)
   }
   sweep <- ledgr_sweep(experiment(), ledgr_param_grid(q1 = list(qty = 1)))
   candidate <- ledgr_candidate(sweep, which = 1L)
@@ -884,7 +901,8 @@ testthat::test_that("[LTB-0235] promotion records both identities and warns on a
     universe_hash = experiment(universe = c("AAA", "BBB")),
     valuation_policy_hash = experiment(valuation = ledgr_valuation_stale(0, exhausted = "refuse")),
     corporate_action_policy_hash = experiment(policy = ledgr_corporate_actions_strict()),
-    opening_hash = experiment(cash = 500)
+    opening_hash = experiment(cash = 500),
+    feature_set_hash = experiment(features = ledgr_feature_map(signal = ledgr_ind_sma(2L)))
   )
   for (field in names(variants)) {
     run_id <- paste0("promote_", field)
@@ -984,4 +1002,39 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   session <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions")
   testthat::expect_identical(nrow(session), 1L)
   testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 2L)
+
+  # Rewrite the session as identity rule 1 recorded it: the rule-1 session ID
+  # (experiment hash over the store-local snapshot ID) and no rule in meta_json.
+  identity <- ledgr:::ledgr_walk_forward_session_identity(
+    exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"
+  )
+  testthat::expect_identical(identity$session_id, session$session_id[[1]])
+  rule1_config <- ledgr:::ledgr_walk_forward_base_config(exp, ledgr:::ledgr_precompute_snapshot_meta(snapshot))
+  rule1_config$identity_rule_version <- NULL
+  rule1_config$data$snapshot_hash <- NULL
+  rule1_id <- ledgr:::ledgr_walk_forward_session_id(
+    snapshot_hash = identity$snapshot_hash,
+    experiment_hash = ledgr:::ledgr_walk_forward_experiment_hash(rule1_config),
+    param_grid_hash = identity$param_grid_hash, fold_list_hash = identity$fold_list_hash,
+    selection_rule_hash = identity$selection_rule_hash, metric_context_hash = identity$metric_context_hash,
+    cost_model_hash = identity$cost_model_hash, risk_chain_hash = identity$risk_chain_hash,
+    master_seed = NULL, opening_state_policy = "carry_test_state", no_selection = "previous"
+  )
+  testthat::expect_false(identical(rule1_id, identity$session_id))
+  rule1_meta <- ledgr:::ledgr_json_read_nested(session$meta_json[[1]])
+  rule1_meta$identity_rule_version <- NULL
+  for (table in c("walk_forward_scores", "walk_forward_folds")) {
+    DBI::dbExecute(wf_con, paste("UPDATE", table, "SET session_id = ?"), params = list(rule1_id))
+  }
+  DBI::dbExecute(wf_con, "UPDATE walk_forward_sessions SET session_id = ?, meta_json = ?",
+                 params = list(rule1_id, as.character(ledgr:::canonical_json(rule1_meta))))
+  # Rerunning the same arguments neither refuses nor reuses the rule-1 session.
+  rerun <- do.call(ledgr_walk_forward, wf_args)
+  sessions <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions ORDER BY session_id")
+  testthat::expect_setequal(sessions$session_id, c(rule1_id, identity$session_id))
+  rules <- vapply(sessions$meta_json, function(m) {
+    as.integer(ledgr:::ledgr_json_read_nested(m)$identity_rule_version %||% 1L)
+  }, integer(1))
+  testthat::expect_identical(unname(rules[match(c(rule1_id, identity$session_id), sessions$session_id)]), c(1L, 2L))
+  testthat::expect_identical(ledgr_walk_forward_open(snapshot, rule1_id)$session_id, rule1_id)
 })

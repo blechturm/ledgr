@@ -63,4 +63,3 @@ Point-in-time universe workflow:
 \code{vignette("survivorship-bias", package = "ledgr")}
 \code{system.file("doc", "survivorship-bias.html", package = "ledgr")}
 }
-

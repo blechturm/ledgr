@@ -66,4 +66,3 @@ Exploratory sweeps and promotion:
 \code{vignette("sweeps", package = "ledgr")}
 \code{system.file("doc", "sweeps.html", package = "ledgr")}
 }
-
