@@ -348,6 +348,8 @@ testthat::test_that("AT10: Snapshot discovery APIs (list + info)", {
       "created_at_utc",
       "sealed_at_utc",
       "snapshot_hash",
+      "hash_rule_version",
+      "verified_in_process",
       "bar_count",
       "instrument_count",
       "off_session_bar_count",

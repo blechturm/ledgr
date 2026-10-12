@@ -11,6 +11,7 @@
 #' @param snapshot_id Snapshot id (must exist) when `con` is a connection.
 #' @return A 1-row tibble with:
 #'   snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
+#'   hash_rule_version, verified_in_process,
 #'   bar_count, instrument_count, off_session_bar_count, start_date, end_date,
 #'   meta_json, error_msg.
 #'
@@ -72,6 +73,7 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
       s.created_at_utc,
       s.sealed_at_utc,
       s.snapshot_hash,
+      s.hash_rule_version,
       COALESCE(b.bar_count, 0) AS bar_count,
       COALESCE(i.instrument_count, 0) AS instrument_count,
       s.meta_json,
@@ -109,6 +111,8 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
   }
   df$bar_count <- as.integer(df$bar_count)
   df$instrument_count <- as.integer(df$instrument_count)
+  df$hash_rule_version <- as.integer(df$hash_rule_version)
+  df$verified_in_process <- FALSE
   df$off_session_bar_count <- if (ledgr_experiment_store_table_exists(con, "snapshot_observation_quarantine")) {
     as.integer(DBI::dbGetQuery(
       con,
@@ -128,6 +132,8 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     "created_at_utc",
     "sealed_at_utc",
     "snapshot_hash",
+    "hash_rule_version",
+    "verified_in_process",
     "bar_count",
     "instrument_count",
     "off_session_bar_count",

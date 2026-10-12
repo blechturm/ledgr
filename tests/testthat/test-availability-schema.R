@@ -61,7 +61,7 @@ testthat::test_that("availability migration is transactional and writes its mark
 })
 
 # ledgr-test-profile: review
-testthat::test_that("legacy sealed snapshots keep rule 1 and are not rehashed", {
+testthat::test_that("missing-marker snapshots stay readable but do not verify", {
   db_path <- tempfile(fileext = ".duckdb")
   bars <- data.frame(
     instrument_id = "AAA",
@@ -74,8 +74,8 @@ testthat::test_that("legacy sealed snapshots keep rule 1 and are not rehashed", 
   con <- ledgr:::get_connection(snapshot)
   DBI::dbExecute(
     con,
-    "UPDATE ledgr_schema_metadata SET value = '112'
-     WHERE key = 'experiment_store_schema_version'"
+    "UPDATE snapshots SET hash_rule_version = NULL WHERE snapshot_id = ?",
+    params = list(id)
   )
   ledgr_snapshot_close(snapshot)
 
@@ -89,6 +89,11 @@ testthat::test_that("legacy sealed snapshots keep rule 1 and are not rehashed", 
   testthat::expect_identical(row$status[[1L]], "SEALED")
   testthat::expect_identical(row$snapshot_hash[[1L]], hash)
   testthat::expect_true(is.na(row$hash_rule_version[[1L]]))
-  testthat::expect_identical(ledgr:::ledgr_snapshot_hash_rule_version(con, id), 1L)
-  testthat::expect_identical(ledgr:::ledgr_snapshot_hash(con, id), hash)
+  testthat::expect_true(is.na(
+    ledgr:::ledgr_snapshot_hash_rule_version(con, id)
+  ))
+  testthat::expect_error(
+    ledgr:::ledgr_snapshot_hash(con, id),
+    class = "ledgr_snapshot_rebuild_required"
+  )
 })

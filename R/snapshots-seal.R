@@ -85,7 +85,10 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   snap <- DBI::dbGetQuery(
     con,
-    "SELECT status, snapshot_hash, sealed_at_utc FROM snapshots WHERE snapshot_id = ?",
+    paste(
+      "SELECT status, snapshot_hash, sealed_at_utc, hash_rule_version",
+      "FROM snapshots WHERE snapshot_id = ?"
+    ),
     params = list(snapshot_id)
   )
   if (nrow(snap) != 1) {
@@ -94,6 +97,7 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   status <- snap$status[[1]]
   if (identical(status, "SEALED")) {
+    ledgr_snapshot_require_hash_rule3(snap$hash_rule_version[[1L]])
     hash <- snap$snapshot_hash[[1]]
     if (!is.character(hash) || length(hash) != 1 || is.na(hash) || !nzchar(hash)) {
       hash <- ledgr_snapshot_hash(con, snapshot_id)
@@ -266,19 +270,25 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
   metadata <- put_if_missing(metadata, "end_date", ledgr_normalize_ts_utc(bar_stats$end_date[[1]]))
 
   hash_rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
-  if (identical(hash_rule, 2L)) {
+  if (identical(hash_rule, ledgr_snapshot_hash_rule3_version)) {
     availability <- ledgr_snapshot_availability_read(con, snapshot_id)
     metadata <- put_if_missing(metadata, "snapshot_hash_rule_version", hash_rule)
-    metadata <- put_if_missing(
-      metadata,
-      "fact_family_count",
-      as.integer(nrow(availability$snapshot_fact_families))
-    )
-    metadata <- put_if_missing(
-      metadata,
-      "quarantined_observation_count",
-      as.integer(nrow(ledgr_snapshot_quarantine_counted(availability$snapshot_observation_quarantine)))
-    )
+    quarantine_count <- as.integer(nrow(ledgr_snapshot_quarantine_counted(
+      availability$snapshot_observation_quarantine
+    )))
+    if (nrow(availability$snapshot_fact_families) > 0L ||
+        quarantine_count > 0L) {
+      metadata <- put_if_missing(
+        metadata,
+        "fact_family_count",
+        as.integer(nrow(availability$snapshot_fact_families))
+      )
+      metadata <- put_if_missing(
+        metadata,
+        "quarantined_observation_count",
+        quarantine_count
+      )
+    }
   }
 
   metadata

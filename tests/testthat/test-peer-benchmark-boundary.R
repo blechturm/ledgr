@@ -36,8 +36,13 @@ testthat::test_that("Stage L freezes optimization oracles", {
     ledgr_stage_l_validate_static_coverage_oracle(bars, c("A", "B"))
   )
   testthat::expect_identical(
-    ledgr_snapshot_hash_format_ts_utc(axis),
-    ledgr_stage_l_snapshot_hash_ts_oracle(axis)
+    ledgr:::ledgr_snapshot_hash_encode_time(axis),
+    c(
+      as.raw(c(1L, 1L)),
+      unlist(lapply(as.integer(axis), function(value) {
+        c(writeBin(value, raw(), size = 4L, endian = "little"), raw(4L))
+      }), use.names = FALSE)
+    )
   )
 })
 

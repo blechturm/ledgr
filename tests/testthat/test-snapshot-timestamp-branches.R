@@ -213,14 +213,13 @@ test_that("sub-second POSIXct input is still rejected", {
   )
 })
 
-# Snapshot identity pin. The hash below is a literal, computed at c0a2a32
-# before the LDG-2789 rewrite and unchanged by it. The three input forms take
-# three different branches of ledgr_snapshot_normalize_ts_utc() and must all
-# seal to it. If a future change to timestamp normalization moves this value,
-# it has changed durable snapshot identity and needs its own decision, not a
-# new literal here. Registered as LCL-0015.
+# Snapshot identity pin. The hash below is the rule-3 literal adopted by
+# rfc_snapshot_verification_policy_v0_2_2_synthesis.md. The three input forms
+# take three different branches of ledgr_snapshot_normalize_ts_utc() and must
+# all seal to it. A future byte change needs its own decision rather than a new
+# literal here. Registered as LCL-0015.
 test_that("[LTB-0018] the checked-in bars fixture seals to its pinned snapshot hash", {
-  pinned <- "58dd5b2c7cc5beb57b07130ec36d62fb47b3f61175e2e4e001f98b729dbf2bbd"
+  pinned <- "e4e3467d796da722838a97ecbad8312354031479637b8e07cccb7380817ad0c6"
 
   hash_of <- function(snap) {
     con <- ledgr_db_init(snap$db_path)
