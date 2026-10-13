@@ -64,8 +64,9 @@ ledger.
   into Workstream 29's close review. The Type 1 close review required
   corrections through `0699ba3c`. Its focused re-review found three bounded
   residues, corrected with detecting evidence at `1a240476`. The corrected
-  fast record passes at a 107.03-second median. The cold-open clock remains an
-  honestly recorded miss for maintainer adjudication.
+  fast record passes at a 107.03-second median. The maintainer accepted
+  Workstream 29 and its honestly recorded cold-open miss on 2026-10-13;
+  Workstream 30 is next.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -625,10 +626,11 @@ stay exact. Existing condition classes are documented rather than renamed. No
 migration, legacy reader, missing-marker fallback, public diagnostic opener or
 compatibility alias is authorized.
 
-One cut review, one focused re-review and three planned Type 1 workstream close
-reviews is five invocations over fourteen tickets, 0.357 against the 0.5 gate.
-The added backlog-reconciliation ticket is sized by the cut review's 228
-undocumented classes and helper census; it is not review padding.
+Five review invocations have run over fourteen tickets, 0.357 against the 0.5
+gate. The Workstream 30 and final Workstream 31 close reviews would make seven
+over fourteen, exactly 0.500. The added backlog-reconciliation ticket is sized
+by the cut review's 228 undocumented classes and helper census; it is not
+review padding.
 
 ## Expected later artifacts
 

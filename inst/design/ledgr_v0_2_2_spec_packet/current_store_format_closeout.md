@@ -1,7 +1,7 @@
 # Workstream 29 Closeout: One Current Schema And One Store Gate
 
-**Status:** Agent-provisional after focused re-review corrections; awaiting
-maintainer acceptance of the correction evidence and cold-open clock.
+**Status:** Accepted by the maintainer on 2026-10-13 after the focused
+re-review corrections and explicit acceptance of the cold-open clock.
 **Date:** 2026-10-13
 **Baseline commit:** `24bcc161`
 **Implementation and correction range:** `24bcc161..1a240476`
@@ -215,5 +215,8 @@ that re-review were corrected with failure-sensitive evidence rather than a
 sixth invocation. The planned Workstream 30 and 31 close reviews would bring
 the cut to 7/14 = 0.5.
 
-No pass is claimed here. LDG-3027 and Workstream 29 remain `review_pending`
-until the maintainer accepts the correction evidence and the cold-open miss.
+The maintainer accepted the failure-sensitive N1 through N3 corrections at
+`1a240476` and this record at `5508ddb8` without a sixth review invocation.
+LDG-3027 and Workstream 29 are complete. The steady-state integrity-gate cost
+of about 1.1 ms per open is accepted; the fresh-process 1.512 clock remains a
+recorded miss and is not relabelled.

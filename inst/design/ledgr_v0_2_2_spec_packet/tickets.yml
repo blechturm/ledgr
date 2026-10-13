@@ -456,12 +456,12 @@ workstreams:
   - id: 29
     name: "One current schema and one store gate"
     cut: 14
-    status: "review_pending"
+    status: "complete"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 29", reason: "One claim joins LDG-3024 through LDG-3027: every package-owned persistent store is created or opened through one current schema and one marker-pair gate, and strict catalogue validation has one DDL authority. The review starts from LDG-3022's source census, reproduces the pre-cut/current catalogue oracle, mutates each marker cause and catalogue dimension, checks the ATTACH-before-view boundary and interrupted creation, verifies the opener census is complete, walks the seven optimization shapes on every changed path and compares current-store rows and outputs at each commit."}
     integration_evidence: "Agent-provisional range 24bcc161..1a240476. The Type 1 close review returned CHANGES_REQUIRED at invocation four: split-store print/summary failed on Windows, one review witness still expected schema 118, the performance comparison used the wrong baseline, five detector gaps remained and the closeout overstated its record. Corrections 1377977d, d68aae4b and 0699ba3c gate the attached snapshot catalogue before view creation, isolate all catalogue reads, use a full normalized pre-cut row fixture, strengthen the rollback and source detectors, restore split-store result-reader coverage and record the exact per-ticket ladder. The focused re-review at invocation five confirmed all ten original findings closed and found three bounded residues. Correction 1a240476 adds view definitions to the validation signature, pins the held run-store and cached backtest gates and proves an outdated attached store detaches before any temporary view is created. Removing each correction fails its owner. Ladder23 records only the declared 118-to-119 run-info change at LDG-3025, then 51/51 exact at LDG-3026 and the correction implementation; Ladder22 is 51/51 exact for LDG-3027. Five alternating processes against the actual 24bcc161 baseline give ratios 0.866 for primed open plus validation, 0.856 for a validation-cache hit, 1.043 for re-init and 0.988 for a small snapshot. Cold open plus close is a recorded 1.512 fresh-process miss; steady state costs about 1.1 ms per open, or roughly 1.07 to 1.11 times pre-cut. It remains returned to the maintainer rather than relabelled. The ordinary fast profile passes 562/562 at a 107.03-second median against 112; the review profile passes 336/336 in 290.18 seconds with one pre-existing optional-path skip. current_store_format_closeout.md carries the full record and seven-shape walk."
-    accepted: null
+    accepted: "2026-10-13 by the maintainer after accepting the failure-sensitive N1 through N3 corrections at 1a240476 and record correction 5508ddb8 without a sixth review invocation. The steady-state store gate cost of about 1.1 ms per open, roughly 1.07 to 1.11 times pre-cut, is accepted as the mandatory integrity cost; the 1.512 fresh-process clock remains recorded as a miss rather than relabelled."
   - id: 30
     name: "Current-only records and public surfaces"
     cut: 14
@@ -1547,7 +1547,7 @@ tickets:
   - id: "LDG-3027"
     title: "Validate current stores by catalogue comparison"
     workstream: 29
-    status: "review_pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3026"]
