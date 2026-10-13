@@ -150,7 +150,7 @@ ledgr_backtest <- function(snapshot = NULL,
   }
   release <- ledgr_snapshot_hold(snapshot)
   on.exit(release(), add = TRUE)
-  ledgr_snapshot_validate(snapshot)
+  ledgr_snapshot_ensure_handle(snapshot)
   # ledgr_backtest() runs dense execution only; a snapshot with point-in-time
   # facts needs the session clock, membership, lifetime and valuation that
   # ledgr_experiment() and ledgr_run() apply.

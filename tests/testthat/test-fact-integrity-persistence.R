@@ -1,6 +1,6 @@
 # ledgr-test-file-profile: review
 
-testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-2 identity and detect timestamp tampering", {
+testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-3 identity and detect timestamp tampering", {
   manifest <- ws10_read_oracle_manifest()
   snapshot_record <- manifest[
     manifest$record_type == "snapshot",
@@ -48,6 +48,9 @@ testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-2 identity 
     params = list(snapshot_id)
   )
   testthat::expect_true(changed > 0L)
+  # The SQL write is outside the supported public workflow. Clear the proof
+  # established by the earlier facts read so this models a cold process.
+  ledgr:::ledgr_snapshot_verified_reset()
   condition <- tryCatch(
     ledgr_facts_resolve(
       reopened,

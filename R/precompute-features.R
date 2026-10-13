@@ -63,6 +63,7 @@ ledgr_precompute_features <- function(exp, param_grid, start = NULL, end = NULL)
     start = start %||% ledgr_experiment_scoring_start(exp, meta$start),
     end = end
   )
+  ledgr_snapshot_ensure_handle(exp$snapshot)
   bars_by_id <- ledgr_precompute_fetch_bars(exp$snapshot, exp$universe, range$warmup_start, range$scoring_end)
   ledgr_precompute_validate_static_coverage(bars_by_id, exp$universe)
 

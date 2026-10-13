@@ -588,6 +588,7 @@ ledgr_backtest_availability_dense <- function(bt, con) {
 }
 
 ledgr_backtest_availability <- function(bt, con) {
+  ledgr_backtest_ensure_snapshot(bt, con)
   if (ledgr_availability_config_active(bt$config)) {
     ledgr_backtest_availability_active(bt, con)
   } else {
@@ -632,6 +633,7 @@ ledgr_run_explain <- function(bt, instrument_id, ts_utc = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  ledgr_backtest_ensure_snapshot(bt)
   if (!is.character(instrument_id) || length(instrument_id) != 1L ||
       is.na(instrument_id) || !nzchar(instrument_id)) {
     rlang::abort("`instrument_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")

@@ -143,6 +143,7 @@ ledgr_estimate_bars_per_year <- function(bt, equity, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  ledgr_backtest_ensure_snapshot(bt, con)
   snapshot_id <- bt$config$data$snapshot_id
   if (!is.null(bt$config$data) && is.list(bt$config$data) && identical(bt$config$data$source, "snapshot")) {
     run_db_path <- bt$config$db_path
@@ -719,6 +720,7 @@ print.ledgr_backtest <- function(x, ...) {
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
   on.exit(opened$close(), add = TRUE)
+  ledgr_backtest_ensure_snapshot(x, con)
   headline <- ledgr_backtest_headline_metrics(con, x$run_id)
   corporate_actions <- ledgr_corporate_action_summary(x, con = con)
   valuation <- ledgr_valuation_summary(x, con = con)
@@ -877,6 +879,7 @@ summary.ledgr_backtest <- function(object,
   }
   release <- ledgr_backtest_hold(object)
   on.exit(release(), add = TRUE)
+  ledgr_backtest_ensure_snapshot(object)
 
   computed <- ledgr_compute_metrics(
     object,

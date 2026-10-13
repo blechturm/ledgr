@@ -24,9 +24,9 @@ Transitions a snapshot from \code{CREATED} to \code{SEALED} and stores a determi
 \details{
 Snapshot mutability rule: sealing computes the hash while status is
 \code{CREATED}. Calling \code{ledgr_snapshot_seal()} again on an already sealed
-snapshot is idempotent: it returns the existing snapshot hash and does not
-mutate snapshot contents. After sealing, snapshot write operations must be
-rejected by ledgr code paths.
+snapshot is idempotent: it ensures the current-process proof, returns the
+existing snapshot hash, and does not mutate snapshot contents. After
+sealing, snapshot write operations must be rejected by ledgr code paths.
 When basic metadata such as \code{start_date}, \code{end_date}, \code{n_bars}, or
 \code{n_instruments} is missing, sealing derives it from the imported snapshot
 tables. Metadata does not contribute to \code{snapshot_hash}.
@@ -34,7 +34,8 @@ tables. Metadata does not contribute to \code{snapshot_hash}.
 Errors:
 \itemize{
 \item \code{LEDGR_SNAPSHOT_NOT_FOUND} if \code{snapshot_id} does not exist.
-\item Already sealed snapshots return their existing hash idempotently.
+\item Already sealed snapshots ensure and return their existing hash
+idempotently.
 \item \code{LEDGR_SNAPSHOT_NOT_MUTABLE} if the snapshot status is not \code{CREATED}.
 \item \code{LEDGR_SNAPSHOT_EMPTY} if there are 0 bars or 0 instruments.
 \item \code{LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY} if bars reference missing instruments.

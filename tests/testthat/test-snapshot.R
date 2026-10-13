@@ -47,12 +47,7 @@ test_that("ledgr_snapshot opens and closes connections lazily", {
 })
 
 test_that("ledgr_snapshot print and summary produce output", {
-  test_con <- get_test_connection()
-  on.exit(close_test_connection(test_con), add = TRUE)
-
-  DBI::dbAppendTable(
-    test_con$con,
-    "snapshot_bars",
+  snap <- ledgr_snapshot_from_df(
     data.frame(
       snapshot_id = "snap_2",
       instrument_id = "TEST_A",
@@ -63,21 +58,10 @@ test_that("ledgr_snapshot print and summary produce output", {
       close = 100.5,
       volume = 1000,
       stringsAsFactors = FALSE
-    )
+    ),
+    db_path = tempfile(fileext = ".duckdb")
   )
-
-  close_test_connection(test_con)
-
-  snap <- ledgr:::new_ledgr_snapshot(
-    db_path = test_con$db_path,
-    snapshot_id = "snap_2",
-    metadata = list(
-      n_bars = 1L,
-      n_instruments = 1L,
-      start_date = "2020-01-01T00:00:00Z",
-      end_date = "2020-01-01T00:00:00Z"
-    )
-  )
+  on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   output <- capture.output(print(snap))
   expect_true(any(grepl("ledgr_snapshot", output)))

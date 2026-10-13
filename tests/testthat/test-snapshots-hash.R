@@ -46,13 +46,14 @@ testthat::test_that("snapshot hash is deterministic across repeated calls and ch
   testthat::expect_equal(h1, h3)
 })
 
-testthat::test_that("snapshot hash timestamp formatting fails closed on non-POSIXct input", {
-  testthat::expect_identical(
-    ledgr:::ledgr_snapshot_hash_format_ts_utc(as.POSIXct("2020-01-01", tz = "UTC")),
-    "2020-01-01T00:00:00Z"
+testthat::test_that("snapshot hash timestamp encoding fails closed on invalid input", {
+  encoded <- ledgr:::ledgr_snapshot_hash_encode_time(
+    as.POSIXct("2020-01-01", tz = "UTC")
   )
+  testthat::expect_type(encoded, "raw")
+  testthat::expect_identical(length(encoded), 9L)
   testthat::expect_error(
-    ledgr:::ledgr_snapshot_hash_format_ts_utc("2020-01-01T00:00:00Z"),
+    ledgr:::ledgr_snapshot_hash_encode_time("2020-01-01T00:00:00Z"),
     class = "ledgr_snapshot_hash_invalid_timestamp"
   )
 })
@@ -198,70 +199,11 @@ testthat::test_that("snapshot hashing uses 8-decimal numeric encoding (adversari
   h2 <- ledgr:::ledgr_snapshot_hash(con, s2, chunk_size = 1)
   testthat::expect_identical(h1, h2)
 
-  token <- function(x) {
-    if (is.null(x)) return("null")
-    if (is.atomic(x) && length(x) == 1 && is.na(x)) return("NA")
-    if (is.character(x)) return(x)
-    as.character(x)
-  }
-
-  fmt_ts_utc <- function(x) {
-    if (inherits(x, "POSIXt")) return(format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
-    as.character(x)
-  }
-
-  fmt_num8 <- function(x) {
-    if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) return("NA")
-    x <- as.numeric(x)
-    if (is.na(x) || !is.finite(x)) stop("unexpected numeric in test")
-    sprintf("%.8f", round(x, 8))
-  }
-
-  inst <- DBI::dbGetQuery(
+  DBI::dbExecute(
     con,
-    "
-    SELECT instrument_id, symbol, currency, asset_class, multiplier, tick_size, meta_json
-    FROM snapshot_instruments
-    WHERE snapshot_id = ?
-    ORDER BY instrument_id
-    ",
-    params = list(s1)
+    "UPDATE snapshot_bars SET close = close + 0.00000002 WHERE snapshot_id = ?",
+    params = list(s2)
   )
-  bar <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT instrument_id, ts_utc, open, high, low, close, volume
-    FROM snapshot_bars
-    WHERE snapshot_id = ?
-    ORDER BY instrument_id, ts_utc
-    ",
-    params = list(s1)
-  )
-
-  inst_line <- paste(
-    token(inst$instrument_id[[1]]),
-    token(inst$symbol[[1]]),
-    token(inst$currency[[1]]),
-    token(inst$asset_class[[1]]),
-    fmt_num8(inst$multiplier[[1]]),
-    fmt_num8(inst$tick_size[[1]]),
-    token(inst$meta_json[[1]]),
-    sep = "|"
-  )
-  bars_line <- paste(
-    token(bar$instrument_id[[1]]),
-    token(fmt_ts_utc(bar$ts_utc[[1]])),
-    fmt_num8(bar$open[[1]]),
-    fmt_num8(bar$high[[1]]),
-    fmt_num8(bar$low[[1]]),
-    fmt_num8(bar$close[[1]]),
-    fmt_num8(bar$volume[[1]]),
-    sep = "|"
-  )
-
-  inst_block_hash <- digest::digest(paste0(inst_line, "\n"), algo = "sha256")
-  bars_block_hash <- digest::digest(paste0(bars_line, "\n"), algo = "sha256")
-  expected <- digest::digest(paste0(inst_block_hash, bars_block_hash), algo = "sha256")
-
-  testthat::expect_identical(h1, expected)
+  h3 <- ledgr:::ledgr_snapshot_hash(con, s2, chunk_size = 1)
+  testthat::expect_false(identical(h1, h3))
 })

@@ -270,6 +270,10 @@ close.ledgr_snapshot <- function(con, ...) {
 print.ledgr_snapshot <- function(x, ...) {
   meta <- x$metadata
   if (!is.list(meta)) meta <- list()
+  info <- tryCatch(
+    ledgr_snapshot_info(x),
+    error = function(e) NULL
+  )
 
   n_bars <- meta$n_bars
   n_instruments <- meta$n_instruments
@@ -287,6 +291,23 @@ print.ledgr_snapshot <- function(x, ...) {
   }
   cat("Database:    ", x$db_path, "\n")
   cat("Snapshot ID: ", paste0(substr(x$snapshot_id, 1, 32), if (nchar(x$snapshot_id) > 32) "..." else ""), "\n")
+  hash_rule <- if (is.null(info)) {
+    meta$snapshot_hash_rule_version
+  } else {
+    info$hash_rule_version[[1L]]
+  }
+  hash_label <- if (is.null(hash_rule) || length(hash_rule) != 1L) {
+    "unknown"
+  } else if (is.na(hash_rule)) {
+    "missing"
+  } else {
+    as.character(hash_rule)
+  }
+  verified <- !is.null(info) && isTRUE(info$verified_in_process[[1L]])
+  cat(
+    "Hash rule:   ", hash_label,
+    if (verified) "(verified in this process)\n" else "(not verified in this process)\n"
+  )
 
   state <- snapshot_state(x)
   if (!is.null(state$con) && DBI::dbIsValid(state$con)) {
@@ -318,6 +339,7 @@ print.ledgr_snapshot <- function(x, ...) {
 #' ledgr_snapshot_close(snapshot)
 #' @export
 summary.ledgr_snapshot <- function(object, ...) {
+  ledgr_snapshot_ensure_handle(object)
   opened <- ledgr_snapshot_connection(object)
   if (isTRUE(opened$opened_new)) {
     on.exit(ledgr_snapshot_close(object), add = TRUE)

@@ -1,0 +1,102 @@
+{
+  "shape_id": "fact_churn_terminal",
+  "commit": "d4d3c06b2e83e7c2f350b715776ccd89ac90c4cb",
+  "product_tree_status": "",
+  "package_version": "0.2.1.0",
+  "r_version": "4.6.1",
+  "duckdb_version": "1.5.6.9000",
+  "collapse_version": "2.1.8",
+  "snapshot": {
+    "snapshot_id": "lwreg_fact_churn_terminal",
+    "snapshot_hash": "4cf271c531f6e4883449ef33b1aaa2403d981de2c7e25beb38a2e88b73aa6278",
+    "status": "SEALED"
+  },
+  "cold": {
+    "status": "DONE",
+    "elapsed_s": 5.1999999999999993,
+    "setup_s": 2.7500000000000004,
+    "loop_s": 2.2999999999999998,
+    "finalize_s": 0.14999999999999947,
+    "strategy_calls": 757,
+    "identities": {
+      "equity": {
+        "rows": 757,
+        "hash": "2639853852f23ae3c73f9c5852bc795f9208377b701a830f5ef7c3fa7789d990"
+      },
+      "fills": {
+        "rows": 0,
+        "hash": "ea482d8d3d50e661e3ecf6e6089c803e9d91fe05b064e1a47cfeb24b17b09e6e"
+      },
+      "trades": {
+        "rows": 0,
+        "hash": "dd2c0701da67061312b5450440e3796b438eef53d4a962f811170d1a4d944bc6"
+      },
+      "diagnostics": {
+        "rows": 76457,
+        "hash": "6c8af57d7511aa0aa50b5fbe667218b0c688281b6659fb2e65511ab5be18675e"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "9614b1452bad02b44be2aaf0e95c4042955bf27734924eec7004f6640d69036c"
+      }
+    }
+  },
+  "warm": {
+    "status": "DONE",
+    "elapsed_s": 4.3299999999999992,
+    "setup_s": 2.4400000000000004,
+    "loop_s": 1.5599999999999987,
+    "finalize_s": 0.33000000000000007,
+    "strategy_calls": 757,
+    "identities": {
+      "equity": {
+        "rows": 757,
+        "hash": "2639853852f23ae3c73f9c5852bc795f9208377b701a830f5ef7c3fa7789d990"
+      },
+      "fills": {
+        "rows": 0,
+        "hash": "ea482d8d3d50e661e3ecf6e6089c803e9d91fe05b064e1a47cfeb24b17b09e6e"
+      },
+      "trades": {
+        "rows": 0,
+        "hash": "dd2c0701da67061312b5450440e3796b438eef53d4a962f811170d1a4d944bc6"
+      },
+      "diagnostics": {
+        "rows": 76457,
+        "hash": "6c8af57d7511aa0aa50b5fbe667218b0c688281b6659fb2e65511ab5be18675e"
+      },
+      "strategy_state": {
+        "rows": 757,
+        "hash": "9614b1452bad02b44be2aaf0e95c4042955bf27734924eec7004f6640d69036c"
+      }
+    }
+  },
+  "facts_resolve": {
+    "cold_s": 0.91999999999999993,
+    "warm_s": 0.86000000000000121,
+    "cold": {
+      "schema_version": 1,
+      "rows": {
+        "rows": 100,
+        "hash": "a544cea49b4f63adcf40dc6f31a38b57348b6535a5f693eb94abd2ee706ff9ed"
+      },
+      "evidence": {
+        "rows": 101,
+        "hash": "42cd2e5d4d72d82f609c84ffac159449f7c1039bf1a3dba7b893504edda8d789"
+      },
+      "metadata": "863ee537c7ee42b88d153d860ff3b56e205ccbd841aac6abccde3d9e25fbc964"
+    },
+    "warm": {
+      "schema_version": 1,
+      "rows": {
+        "rows": 100,
+        "hash": "a544cea49b4f63adcf40dc6f31a38b57348b6535a5f693eb94abd2ee706ff9ed"
+      },
+      "evidence": {
+        "rows": 101,
+        "hash": "42cd2e5d4d72d82f609c84ffac159449f7c1039bf1a3dba7b893504edda8d789"
+      },
+      "metadata": "863ee537c7ee42b88d153d860ff3b56e205ccbd841aac6abccde3d9e25fbc964"
+    }
+  }
+}

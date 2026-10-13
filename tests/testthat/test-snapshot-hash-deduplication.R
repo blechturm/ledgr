@@ -12,191 +12,209 @@ stage_n_with_namespace_binding <- function(name, value, fn) {
   fn()
 }
 
-stage_n_current_hash <- function(con, snapshot_id, chunk_size) {
-  stage_n_with_namespace_binding(
-    "ledgr_snapshot_hash_format_distinct_ts_utc",
-    ledgr:::ledgr_snapshot_hash_format_ts_utc,
-    function() ledgr:::ledgr_snapshot_hash(
-      con,
-      snapshot_id,
-      chunk_size = chunk_size
-    )
-  )
-}
-
-stage_n_chunk_tokens <- function(x, chunk_size, formatter) {
-  if (!length(x)) return(character())
-  starts <- seq.int(1L, length(x), by = chunk_size)
-  unlist(lapply(starts, function(start) {
-    stop <- min(length(x), start + chunk_size - 1L)
-    formatter(x[start:stop])
-  }), use.names = FALSE)
-}
-
-stage_n_hash_source <- function(fn) {
-  paste(deparse(body(fn), width.cutoff = 500L), collapse = "\n")
-}
-
 # ledgr-test-profile: review
-testthat::test_that("within-chunk timestamp remapping is byte-identical", {
-  base <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC")
-  chunk_sizes <- c(1L, 2L, 17L, 9999L, 10000L, 10001L, 50000L)
-
-  for (chunk_size in chunk_sizes) {
-    row_counts <- unique(pmax(0L, chunk_size + c(-1L, 0L, 1L)))
-    for (row_count in row_counts) {
-      repeated <- base + ((seq_len(row_count) - 1L) %% 23L) * 86400
-      unique_values <- base + (seq_len(row_count) - 1L) * 86400
-      for (axis in list(repeated, unique_values)) {
-        current <- stage_n_chunk_tokens(
-          axis,
-          chunk_size,
-          ledgr_stage_l_snapshot_hash_ts_oracle
-        )
-        candidate <- stage_n_chunk_tokens(
-          axis,
-          chunk_size,
-          ledgr:::ledgr_snapshot_hash_format_distinct_ts_utc
-        )
-        testthat::expect_identical(candidate, current)
-        testthat::expect_identical(
-          charToRaw(paste0(candidate, collapse = "\n")),
-          charToRaw(paste0(current, collapse = "\n"))
-        )
-      }
-    }
-  }
-
-  testthat::expect_error(
-    ledgr:::ledgr_snapshot_hash_format_distinct_ts_utc(
-      "2020-01-01T16:00:00Z"
-    ),
-    class = "ledgr_snapshot_hash_invalid_timestamp"
-  )
-})
-# ledgr-test-profile: review
-testthat::test_that("formatter-count gate detects restored per-row work", {
-  axis <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") +
-    seq.int(0L, 1259L) * 86400
-  registered <- rep(axis, times = 500L)
-  observed <- new.env(parent = emptyenv())
-  observed$inputs <- 0L
-  original <- ledgr:::ledgr_snapshot_hash_format_ts_utc
-
-  testthat::local_mocked_bindings(
-    ledgr_snapshot_hash_format_ts_utc = function(x) {
-      observed$inputs <- observed$inputs + length(x)
-      original(x)
-    },
-    .package = "ledgr"
-  )
-  candidate <- stage_n_chunk_tokens(
-    registered,
-    10000L,
-    ledgr:::ledgr_snapshot_hash_format_distinct_ts_utc
-  )
-  testthat::expect_length(candidate, 630000L)
-  testthat::expect_identical(observed$inputs, 79380L)
-  testthat::expect_lte(observed$inputs / length(registered), 0.20)
-
-  observed$inputs <- 0L
-  mutant <- stage_n_chunk_tokens(
-    registered,
-    10000L,
-    ledgr:::ledgr_snapshot_hash_format_ts_utc
-  )
-  testthat::expect_identical(mutant, candidate)
-  testthat::expect_identical(observed$inputs, length(registered))
-  testthat::expect_gt(observed$inputs / length(registered), 0.20)
-})
-
-testthat::test_that("hash deduplication source is bounded and singular", {
-  helper_source <- stage_n_hash_source(
-    ledgr:::ledgr_snapshot_hash_format_distinct_ts_utc
-  )
-  hash_source <- stage_n_hash_source(ledgr:::ledgr_snapshot_hash)
-
-  testthat::expect_match(helper_source, "unique\\(x\\)")
-  testthat::expect_match(helper_source, "match\\(x, distinct\\)")
-  testthat::expect_match(
-    helper_source,
-    "ledgr_snapshot_hash_format_ts_utc\\(distinct\\)"
-  )
-  testthat::expect_false(grepl("option|Sys.getenv|cache", helper_source))
-  testthat::expect_equal(
-    lengths(regmatches(
-      hash_source,
-      gregexpr(
-        "ledgr_snapshot_hash_format_distinct_ts_utc\\(",
-        hash_source
-      )
-    )),
-    1L
-  )
-})
-
-testthat::test_that("rule 1 hashes remain exact across registered chunk sizes", {
+testthat::test_that("[LTB-0251] rule-3 blocks are fixed and order checked", {
   bars <- ledgr_test_make_bars(
-    c("AAA", "BBB", "CCC"),
-    as.Date("2020-01-01") + 0:19
+    "AAA",
+    as.Date("1990-01-01") + 0:10000
   )
-  bars$volume[c(1L, 17L, 41L)] <- NA_real_
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   con <- ledgr:::get_connection(snapshot)
   id <- snapshot$snapshot_id
   stored <- ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
 
-  for (chunk_size in c(1L, 2L, 17L, 9999L, 10000L, 10001L, 50000L)) {
-    current <- stage_n_current_hash(con, id, chunk_size)
-    candidate <- ledgr:::ledgr_snapshot_hash(con, id, chunk_size)
-    testthat::expect_identical(candidate, current)
-    testthat::expect_identical(candidate, stored)
-  }
-})
-
-testthat::test_that("availability rule 2 hashes retain the unchanged base hash", {
-  snapshot <- availability_runtime_fixture(days = 4L)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  con <- ledgr:::get_connection(snapshot)
-  id <- snapshot$snapshot_id
   testthat::expect_identical(
-    ledgr:::ledgr_snapshot_hash_rule_version(con, id),
-    2L
-  )
-
-  current <- stage_n_current_hash(con, id, 2L)
-  candidate <- ledgr:::ledgr_snapshot_hash(con, id, chunk_size = 2L)
-  testthat::expect_identical(candidate, current)
-  testthat::expect_identical(
-    candidate,
-    ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
-  )
-})
-
-# ledgr-test-profile: review
-testthat::test_that("a snapshot sealed by the old formatter reopens unchanged", {
-  path <- tempfile(fileext = ".duckdb")
-  bars <- ledgr_test_make_bars(
-    c("AAA", "BBB"),
-    as.Date("2020-01-01") + 0:5
-  )
-  old <- stage_n_with_namespace_binding(
-    "ledgr_snapshot_hash_format_distinct_ts_utc",
-    ledgr:::ledgr_snapshot_hash_format_ts_utc,
-    function() ledgr_snapshot_from_df(bars, db_path = path)
-  )
-  id <- old$snapshot_id
-  stored <- ledgr_snapshot_info(old)$snapshot_hash[[1L]]
-  ledgr_snapshot_close(old)
-
-  reopened <- ledgr_snapshot_open(path, id, verify = TRUE)
-  on.exit(ledgr_snapshot_close(reopened), add = TRUE)
-  testthat::expect_identical(
-    ledgr_snapshot_info(reopened)$snapshot_hash[[1L]],
+    ledgr:::ledgr_snapshot_hash(con, id, chunk_size = 4096L),
     stored
   )
-  testthat::expect_silent(ledgr_snapshot_validate(reopened))
+  testthat::expect_identical(
+    ledgr:::ledgr_snapshot_hash(con, id, chunk_size = 7777L),
+    stored
+  )
+
+  hostile <- data.frame(
+    instrument_id = c("BBB", "AAA"),
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_snapshot_hash_block(
+      hostile,
+      1L,
+      0L,
+      c(instrument_id = "text"),
+      "instrument_id"
+    ),
+    class = "ledgr_snapshot_hash_order_invalid"
+  )
+
+  source <- paste(
+    deparse(body(ledgr:::ledgr_snapshot_hash_stream_section),
+      width.cutoff = 500L
+    ),
+    collapse = "\n"
+  )
+  testthat::expect_match(source, "ledgr_snapshot_hash_rule3_block_rows")
+  testthat::expect_match(source, "max_chunks")
+  testthat::expect_match(source, "vector\\(\"list\", max_chunks\\)")
+  testthat::expect_no_match(source, "c\\(pending")
+  testthat::expect_no_match(source, "append\\(")
+})
+
+testthat::test_that("[LTB-0250] old hash rules are readable but not executable", {
+  path <- tempfile(fileext = ".duckdb")
+  snapshot <- ledgr_snapshot_from_df(
+    ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2),
+    db_path = path
+  )
+  id <- snapshot$snapshot_id
+  current <- ledgr_snapshot_info(snapshot)
+  testthat::expect_identical(current$hash_rule_version[[1L]], 3L)
+  testthat::expect_identical(current$verified_in_process[[1L]], TRUE)
+  testthat::expect_match(
+    paste(capture.output(print(snapshot)), collapse = "\n"),
+    "Hash rule:    3 \\(verified in this process\\)",
+    perl = TRUE
+  )
+
+  strategy <- function(ctx, params) ctx$flat()
+  experiment <- ledgr_experiment(
+    snapshot,
+    strategy,
+    cost_model = ledgr_cost_zero()
+  )
+  completed <- ledgr_run(experiment, run_id = "rule3-completed")
+  initial_cash <- completed$config$backtest$initial_cash
+  close(completed)
+  ledgr_snapshot_close(snapshot)
+
+  incomplete_snapshot <- availability_runtime_fixture(
+    days = 4L,
+    bar_days = c(1L, 2L, 4L)
+  )
+  incomplete_path <- incomplete_snapshot$db_path
+  incomplete_id <- incomplete_snapshot$snapshot_id
+  incomplete_experiment <- ledgr_experiment(
+    incomplete_snapshot,
+    function(ctx, params) {
+      target <- ctx$hold()
+      target[["AAA"]] <- 1
+      target
+    },
+    valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
+    cost_model = ledgr_cost_zero()
+  )
+  incomplete <- ledgr_run(
+    incomplete_experiment,
+    run_id = "rule3-incomplete"
+  )
+  testthat::expect_identical(
+    ledgr_run_info(incomplete_snapshot, incomplete$run_id)$status,
+    "INCOMPLETE"
+  )
+  close(incomplete)
+  ledgr_snapshot_close(incomplete_snapshot)
+
+  expect_rebuild <- function(expr, rule) {
+    shown <- if (is.na(rule)) "missing" else as.character(rule)
+    message <- paste0(
+      "Snapshot hash rule ", shown,
+      " is not executable. Rebuild the snapshot from source under hash rule 3."
+    )
+    testthat::expect_error(
+      force(expr),
+      message,
+      class = "ledgr_snapshot_rebuild_required",
+      fixed = TRUE
+    )
+  }
+
+  for (rule in list(NA_integer_, 1L, 2L)) {
+    con <- ledgr_db_init(path)
+    DBI::dbExecute(
+      con,
+      "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ?",
+      params = list(rule, id)
+    )
+    DBI::dbDisconnect(con, shutdown = TRUE)
+    reopened <- ledgr_snapshot_open(path, id, verify = FALSE)
+    info <- ledgr_snapshot_info(reopened)
+    testthat::expect_identical(info$hash_rule_version[[1L]], rule)
+    expect_rebuild(ledgr_snapshot_open(path, id, verify = TRUE), rule)
+    expect_rebuild(ledgr_snapshot_validate(reopened), rule)
+    expect_rebuild(ledgr_snapshot_seal(reopened), rule)
+    expect_rebuild(
+      ledgr_facts_history(reopened, "membership", "legacy-guard"),
+      rule
+    )
+    expect_rebuild(
+      ledgr_pulse_snapshot(
+        reopened,
+        universe = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z"
+      ),
+      rule
+    )
+    expect_rebuild(
+      ledgr_indicator_dev(
+        reopened,
+        instrument_id = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z",
+        lookback = 2L
+      ),
+      rule
+    )
+
+    incomplete_con <- ledgr_db_init(incomplete_path)
+    DBI::dbExecute(
+      incomplete_con,
+      "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ?",
+      params = list(rule, incomplete_id)
+    )
+    DBI::dbDisconnect(incomplete_con, shutdown = TRUE)
+    incomplete_reopened <- ledgr_snapshot_open(
+      incomplete_path,
+      incomplete_id,
+      verify = FALSE
+    )
+    expect_rebuild(
+      ledgr_run_open(incomplete_reopened, "rule3-incomplete"),
+      rule
+    )
+    ledgr_snapshot_close(incomplete_reopened)
+    expect_rebuild(
+      ledgr_run(
+        experiment,
+        params = list(rule = rule),
+        run_id = paste0("legacy-guard-", ifelse(is.na(rule), "missing", rule))
+      ),
+      rule
+    )
+
+    con <- ledgr_db_init(path)
+    expect_rebuild(
+      ledgr:::ledgr_rebuild_derived_state(
+        con,
+        completed$run_id,
+        initial_cash = initial_cash
+      ),
+      rule
+    )
+    DBI::dbDisconnect(con, shutdown = TRUE)
+    ledgr_snapshot_close(reopened)
+  }
+
+  con <- ledgr_db_init(path)
+  DBI::dbExecute(
+    con,
+    "UPDATE snapshots SET hash_rule_version = 99 WHERE snapshot_id = ?",
+    params = list(id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_snapshot_hash(con, id),
+    class = "ledgr_snapshot_hash_rule_unsupported"
+  )
+  DBI::dbDisconnect(con, shutdown = TRUE)
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -219,6 +237,7 @@ testthat::test_that("run, timestamp, price, and stored-hash guards still detect 
     "UPDATE snapshot_bars SET close = close + 0.01 WHERE snapshot_id = ?",
     params = list(id)
   )
+  ledgr:::ledgr_snapshot_verified_reset()
   testthat::expect_error(ledgr_run(exp), class = "LEDGR_SNAPSHOT_CORRUPTED")
   DBI::dbExecute(
     con,

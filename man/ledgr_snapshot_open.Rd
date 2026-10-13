@@ -12,8 +12,10 @@ ledgr_snapshot_open(db_path, snapshot_id = NULL, verify = FALSE)
 \item{snapshot_id}{Snapshot id to load. The snapshot must exist and be
 \code{SEALED}.}
 
-\item{verify}{Logical scalar. If \code{TRUE}, recompute the snapshot hash and
-compare it with the stored hash before returning.}
+\item{verify}{Logical scalar. If \code{TRUE}, recompute the complete rule-3
+snapshot hash and compare it with the stored hash before returning, even
+when this process already verified the same snapshot tuple. If \code{FALSE},
+opening is metadata-only; the first snapshot-dependent use verifies cold.}
 }
 \value{
 A lazy \code{ledgr_snapshot} object.

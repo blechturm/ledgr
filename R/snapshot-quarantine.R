@@ -35,6 +35,11 @@ ledgr_snapshot_quarantine <- function(snapshot) {
       class = "LEDGR_SNAPSHOT_NOT_SEALED"
     )
   }
+  ledgr_snapshot_ensure_verified(
+    opened$con,
+    snapshot$snapshot_id,
+    snapshot_db_path = snapshot$db_path
+  )
 
   rows <- DBI::dbGetQuery(
     opened$con,

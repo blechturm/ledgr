@@ -14,6 +14,7 @@ ledgr_snapshot_info(con, snapshot_id)
 \value{
 A 1-row tibble with:
 snapshot_id, status, created_at_utc, sealed_at_utc, snapshot_hash,
+hash_rule_version, verified_in_process,
 bar_count, instrument_count, off_session_bar_count, start_date, end_date,
 meta_json, error_msg.
 
@@ -26,6 +27,10 @@ open-session close; they are never a pulse of an availability-aware run, and
 snapshot row. Seal-time metadata inside \code{meta_json} may use \code{n_bars} and
 \code{n_instruments}; the public columns are \code{bar_count} and
 \code{instrument_count}. Metadata is not part of \code{snapshot_hash}.
+\code{verified_in_process} is \code{TRUE} only when the current process holds
+the exact snapshot-store, snapshot-id, stored-root, and rule tuple in its
+private PID-bound verified set. Reading metadata does not establish that
+proof, and the value is never persisted or serialized.
 }
 \description{
 Returns snapshot metadata plus computed row counts for bars and instruments.

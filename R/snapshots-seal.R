@@ -5,9 +5,9 @@
 #'
 #' Snapshot mutability rule: sealing computes the hash while status is
 #' `CREATED`. Calling `ledgr_snapshot_seal()` again on an already sealed
-#' snapshot is idempotent: it returns the existing snapshot hash and does not
-#' mutate snapshot contents. After sealing, snapshot write operations must be
-#' rejected by ledgr code paths.
+#' snapshot is idempotent: it ensures the current-process proof, returns the
+#' existing snapshot hash, and does not mutate snapshot contents. After
+#' sealing, snapshot write operations must be rejected by ledgr code paths.
 #' When basic metadata such as `start_date`, `end_date`, `n_bars`, or
 #' `n_instruments` is missing, sealing derives it from the imported snapshot
 #' tables. Metadata does not contribute to `snapshot_hash`.
@@ -21,7 +21,8 @@
 #' @details
 #' Errors:
 #' - `LEDGR_SNAPSHOT_NOT_FOUND` if `snapshot_id` does not exist.
-#' - Already sealed snapshots return their existing hash idempotently.
+#' - Already sealed snapshots ensure and return their existing hash
+#'   idempotently.
 #' - `LEDGR_SNAPSHOT_NOT_MUTABLE` if the snapshot status is not `CREATED`.
 #' - `LEDGR_SNAPSHOT_EMPTY` if there are 0 bars or 0 instruments.
 #' - `LEDGR_SNAPSHOT_REFERENTIAL_INTEGRITY` if bars reference missing instruments.
@@ -85,7 +86,10 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   snap <- DBI::dbGetQuery(
     con,
-    "SELECT status, snapshot_hash, sealed_at_utc FROM snapshots WHERE snapshot_id = ?",
+    paste(
+      "SELECT status, snapshot_hash, sealed_at_utc, hash_rule_version",
+      "FROM snapshots WHERE snapshot_id = ?"
+    ),
     params = list(snapshot_id)
   )
   if (nrow(snap) != 1) {
@@ -94,10 +98,12 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   status <- snap$status[[1]]
   if (identical(status, "SEALED")) {
-    hash <- snap$snapshot_hash[[1]]
-    if (!is.character(hash) || length(hash) != 1 || is.na(hash) || !nzchar(hash)) {
-      hash <- ledgr_snapshot_hash(con, snapshot_id)
-    }
+    hash <- ledgr_snapshot_ensure_verified(
+      con,
+      snapshot_id,
+      snapshot_db_path = if (is.null(snapshot_obj)) NULL else snapshot_obj$db_path,
+      connection_is_snapshot_store = is.null(snapshot_obj)
+    )
     if (!is.null(snapshot_obj)) {
       snapshot_obj$metadata$snapshot_hash <- hash
       return(invisible(list(hash = hash, snapshot = snapshot_obj)))
@@ -201,6 +207,16 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
 
   DBI::dbExecute(con, "COMMIT")
   on.exit(NULL, add = FALSE)
+  ledgr_snapshot_verified_register(
+    if (is.null(snapshot_obj)) {
+      ledgr_snapshot_connection_store_key(con)
+    } else {
+      ledgr_store_key(snapshot_obj$db_path)
+    },
+    snapshot_id,
+    hash,
+    ledgr_snapshot_hash_rule3_version
+  )
   ledgr_checkpoint_duckdb(con, strict = TRUE)
 
   if (!is.null(snapshot_obj)) {
@@ -266,19 +282,25 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
   metadata <- put_if_missing(metadata, "end_date", ledgr_normalize_ts_utc(bar_stats$end_date[[1]]))
 
   hash_rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
-  if (identical(hash_rule, 2L)) {
+  if (identical(hash_rule, ledgr_snapshot_hash_rule3_version)) {
     availability <- ledgr_snapshot_availability_read(con, snapshot_id)
     metadata <- put_if_missing(metadata, "snapshot_hash_rule_version", hash_rule)
-    metadata <- put_if_missing(
-      metadata,
-      "fact_family_count",
-      as.integer(nrow(availability$snapshot_fact_families))
-    )
-    metadata <- put_if_missing(
-      metadata,
-      "quarantined_observation_count",
-      as.integer(nrow(ledgr_snapshot_quarantine_counted(availability$snapshot_observation_quarantine)))
-    )
+    quarantine_count <- as.integer(nrow(ledgr_snapshot_quarantine_counted(
+      availability$snapshot_observation_quarantine
+    )))
+    if (nrow(availability$snapshot_fact_families) > 0L ||
+        quarantine_count > 0L) {
+      metadata <- put_if_missing(
+        metadata,
+        "fact_family_count",
+        as.integer(nrow(availability$snapshot_fact_families))
+      )
+      metadata <- put_if_missing(
+        metadata,
+        "quarantined_observation_count",
+        quarantine_count
+      )
+    }
   }
 
   metadata

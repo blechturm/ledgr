@@ -17,6 +17,8 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
       "created_at_utc",
       "sealed_at_utc",
       "snapshot_hash",
+      "hash_rule_version",
+      "verified_in_process",
       "bar_count",
       "instrument_count",
       "off_session_bar_count",
@@ -30,6 +32,8 @@ testthat::test_that("ledgr_snapshot_info returns required columns and counts", {
   testthat::expect_true(grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", info0$created_at_utc[[1]]))
   testthat::expect_true(is.na(info0$sealed_at_utc[[1]]))
   testthat::expect_true(is.na(info0$snapshot_hash[[1]]))
+  testthat::expect_identical(info0$hash_rule_version[[1]], 3L)
+  testthat::expect_false(info0$verified_in_process[[1]])
   testthat::expect_equal(info0$bar_count[[1]], 0L)
   testthat::expect_equal(info0$instrument_count[[1]], 0L)
   testthat::expect_true(is.na(info0$start_date[[1]]))

@@ -416,8 +416,8 @@ ledgr_snapshot_from_df <- function(bars_df,
   if (!is.null(price_basis)) {
     metadata$price_basis <- price_basis
   }
+  metadata$snapshot_hash_rule_version <- ledgr_snapshot_hash_rule3_version
   if (!is.null(availability_report)) {
-    metadata$snapshot_hash_rule_version <- 2L
     metadata$fact_family_count <- length(facts$families) +
       as.integer(identical(invalid_observations, "quarantine"))
     metadata$quarantined_observation_count <- nrow(availability_report$quarantine_rows)

@@ -39,28 +39,11 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
     snapshot_db_path <- ledgr_snapshot_db_path_from_config(cfg, run_db_path)
     ledgr_prepare_snapshot_source_tables(con, snapshot_db_path, run_db_path)
 
-    snap <- DBI::dbGetQuery(
+    stored_snapshot_hash <- ledgr_snapshot_ensure_verified(
       con,
-      "SELECT status, snapshot_hash FROM snapshots WHERE snapshot_id = ?",
-      params = list(snapshot_id)
+      snapshot_id,
+      snapshot_db_path = snapshot_db_path
     )
-    if (nrow(snap) != 1) {
-      rlang::abort(sprintf("Snapshot not found for reconstruction: %s", snapshot_id), class = "LEDGR_SNAPSHOT_NOT_FOUND")
-    }
-    if (!identical(snap$status[[1]], "SEALED")) {
-      rlang::abort(
-        sprintf("LEDGR_SNAPSHOT_NOT_SEALED: snapshot status must be SEALED for reconstruction (got %s).", snap$status[[1]]),
-        class = "LEDGR_SNAPSHOT_NOT_SEALED"
-      )
-    }
-    stored_snapshot_hash <- snap$snapshot_hash[[1]]
-    if (!is.character(stored_snapshot_hash) || length(stored_snapshot_hash) != 1 || is.na(stored_snapshot_hash) || !nzchar(stored_snapshot_hash)) {
-      rlang::abort("LEDGR_SNAPSHOT_NOT_SEALED: SEALED snapshot is missing snapshot_hash.", class = "LEDGR_SNAPSHOT_NOT_SEALED")
-    }
-    recomputed <- ledgr_snapshot_hash(con, snapshot_id)
-    if (!identical(recomputed, stored_snapshot_hash)) {
-      rlang::abort("LEDGR_SNAPSHOT_CORRUPTED: stored snapshot_hash does not match recomputed hash.", class = "LEDGR_SNAPSHOT_CORRUPTED")
-    }
 
     ledgr_prepare_snapshot_runtime_views(con, snapshot_id, instrument_ids, start_ts_utc, end_ts_utc)
   }

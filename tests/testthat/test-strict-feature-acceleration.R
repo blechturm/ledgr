@@ -175,14 +175,6 @@ testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
 })
 
 testthat::test_that("[LTB-0144] strict helper provenance is availability-only", {
-  testthat::expect_identical(
-    ledgr:::ledgr_feature_engine_version(FALSE),
-    "80d1ae6d2165196044db3f0d1944d69f21b76e264d2df16df49e23f448a7c681"
-  )
-  testthat::expect_identical(
-    ledgr:::ledgr_feature_engine_version(TRUE),
-    "6bd61d705a94f2cd955b5eab2a526f65e36419393de0baef4d95c64718658a76"
-  )
   source <- paste(deparse(body(ledgr:::ledgr_feature_engine_version)), collapse = "\n")
   helpers <- c(
     "ledgr_compute_feature_series_strict_scalar",
@@ -194,12 +186,23 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   for (helper in helpers) {
     testthat::expect_match(source, helper, fixed = TRUE)
   }
-  testthat::expect_identical(
-    ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
-    "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
-  )
-  testthat::expect_identical(
-    ledgr:::ledgr_indicator_fingerprint(ledgr_ind_returns(5L)),
-    "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed"
-  )
+  under_covr <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
+  if (!under_covr) {
+    testthat::expect_identical(
+      ledgr:::ledgr_feature_engine_version(FALSE),
+      "80d1ae6d2165196044db3f0d1944d69f21b76e264d2df16df49e23f448a7c681"
+    )
+    testthat::expect_identical(
+      ledgr:::ledgr_feature_engine_version(TRUE),
+      "6bd61d705a94f2cd955b5eab2a526f65e36419393de0baef4d95c64718658a76"
+    )
+    testthat::expect_identical(
+      ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
+      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
+    )
+    testthat::expect_identical(
+      ledgr:::ledgr_indicator_fingerprint(ledgr_ind_returns(5L)),
+      "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed"
+    )
+  }
 })

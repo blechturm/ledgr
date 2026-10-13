@@ -43,6 +43,7 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  ledgr_backtest_ensure_snapshot(bt, con)
   out <- ledgr_valuation_summary_evidence(bt, con)
   ledgr_valuation_summary_add_basis(out, bt$config, con)
 }

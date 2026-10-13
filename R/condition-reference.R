@@ -49,6 +49,15 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
+#' `ledgr_snapshot_rebuild_required` is raised when a content-dependent read
+#' reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
+#' snapshots remain metadata-readable but are not executable; rebuild them
+#' from source under rule 3. ledgr does not migrate or reinterpret their roots.
+#'
+#' `ledgr_snapshot_hash_rule_unsupported` is raised for an unrecognized future
+#' hash-rule marker. `ledgr_snapshot_hash_order_invalid` is raised when source
+#' rows are not in the bytewise order required by rule 3.
+#'
 #' @section Availability classes:
 #' `ledgr_invalid_valuation_policy` is raised for malformed stale-valuation
 #' policies or constructor arguments.
@@ -490,6 +499,9 @@
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
+#' @aliases ledgr_snapshot_rebuild_required
+#' @aliases ledgr_snapshot_hash_rule_unsupported
+#' @aliases ledgr_snapshot_hash_order_invalid
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
 #' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
 #' @aliases ledgr_sessions_incomplete ledgr_identity_rule_retired ledgr_promote_identity_mismatch
