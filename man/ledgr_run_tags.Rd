@@ -18,8 +18,8 @@ only.}
 A tibble with \code{run_id}, \code{tag}, and \code{created_at_utc}.
 }
 \description{
-Lists mutable run tags stored in a ledgr experiment store. This is a
-read-only operation and does not migrate legacy stores.
+Lists mutable run tags stored in a current ledgr experiment store. Older,
+newer, unmarked or fingerprint-mismatched stores refuse before the read.
 }
 \examples{
 bars <- subset(ledgr_demo_bars, instrument_id == "DEMO_01")

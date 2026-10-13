@@ -1073,7 +1073,7 @@ ledgr_backtest_bar_counts <- function(bt, con = NULL) {
   query_con <- con
   close_query <- function() invisible(FALSE)
   if (!isTRUE(use_existing)) {
-    opened <- ledgr_open_duckdb_with_retry(bt$db_path)
+    opened <- ledgr_store_open(bt$db_path, mode = "open")
     query_con <- opened$con
     close_query <- function() {
       suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))

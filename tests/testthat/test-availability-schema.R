@@ -49,7 +49,11 @@ testthat::test_that("an older availability store refuses without mutation", {
     class = "ledgr_store_rebuild_required"
   )
   testthat::expect_identical(error$cause, "older")
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 112L)
+  recorded <- DBI::dbGetQuery(
+    con,
+    "SELECT value FROM ledgr_schema_metadata WHERE key = 'experiment_store_schema_version'"
+  )$value[[1L]]
+  testthat::expect_identical(recorded, "112")
   testthat::expect_false("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
   testthat::expect_false(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
 })

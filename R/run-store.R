@@ -11,9 +11,10 @@ ledgr_run_store_open <- function(db_path) {
 
   held <- ledgr_held_store(db_path)
   if (!is.null(held)) {
+    ledgr_store_assert_current(held, db_path)
     return(list(con = held, drv = NULL, borrowed = TRUE))
   }
-  opened <- ledgr_open_duckdb_with_retry(db_path)
+  opened <- ledgr_store_open(db_path, mode = "open")
   attr(opened$con, "ledgr_duckdb_drv") <- opened$drv
   opened
 }
@@ -82,7 +83,7 @@ ledgr_run_store_optional_join <- function(con, table_name, alias, on_sql) {
 }
 
 ledgr_run_store_fetch <- function(con, include_archived = FALSE, run_id = NULL, snapshot_id = NULL) {
-  ledgr_experiment_store_check_schema(con, write = FALSE)
+  ledgr_store_assert_current(con)
   if (!ledgr_experiment_store_table_exists(con, "runs")) {
     return(tibble::tibble())
   }
@@ -1113,7 +1114,6 @@ ledgr_run_open <- function(snapshot, run_id) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
 
   row <- DBI::dbGetQuery(
     opened$con,
@@ -1243,7 +1243,6 @@ ledgr_run_label <- function(snapshot, run_id, label = NULL) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   DBI::dbExecute(
@@ -1287,7 +1286,6 @@ ledgr_run_archive <- function(snapshot, run_id, reason = NULL) {
   snapshot_id <- ledgr_run_store_snapshot_id(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE, inform = TRUE)
   ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
 
   DBI::dbExecute(

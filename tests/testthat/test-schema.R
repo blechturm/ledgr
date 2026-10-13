@@ -187,13 +187,9 @@ testthat::test_that("[LTB-0040] schema gate refuses damaged marker states", {
   )
 })
 
-testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", {
+testthat::test_that("[LTB-0041] current creation keeps its structural boundary", {
   create_source <- paste(
     readLines(testthat::test_path("..", "..", "R", "db-schema-create.R")),
-    collapse = "\n"
-  )
-  runner_source <- paste(
-    readLines(testthat::test_path("..", "..", "R", "backtest-runner.R")),
     collapse = "\n"
   )
   public_source <- paste(
@@ -211,12 +207,7 @@ testthat::test_that("[LTB-0041] schema shortcut keeps its structural boundary", 
   )
   testthat::expect_no_match(
     create_source,
-    "if \\(table_exists\\([^)]*\\)\\) \\{[\\s\\S]{0,120}return\\(invisible\\(TRUE\\)\\)",
-    perl = TRUE
-  )
-  testthat::expect_match(
-    runner_source,
-    "ledgr_create_schema\\(con\\)[\\s\\S]+ledgr_validate_schema_once\\(con\\)",
+    "legacy|migrat|template|trigger",
     perl = TRUE
   )
   testthat::expect_match(
@@ -747,12 +738,23 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
 testthat::test_that("[LTB-0239] current creation bypasses every legacy helper", {
   con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  testthat::local_mocked_bindings(
-    ledgr_create_schema_legacy = function(...) stop("legacy builder called"),
-    ledgr_experiment_store_migrate = function(...) stop("migration called"),
-    ledgr_schema_template = function(...) stop("template called"),
-    .package = "ledgr"
+  retired <- c(
+    "ledgr_create_schema_legacy",
+    "ledgr_experiment_store_migrate",
+    "ledgr_schema_template"
   )
+  package_r <- list.files(
+    testthat::test_path("..", "..", "R"),
+    pattern = "[.]R$", full.names = TRUE
+  )
+  package_source <- paste(unlist(lapply(package_r, readLines)), collapse = "\n")
+  testthat::expect_false(any(vapply(
+    retired,
+    grepl,
+    logical(1),
+    x = package_source,
+    fixed = TRUE
+  )))
   testthat::expect_true(ledgr_create_schema(con))
   testthat::expect_true(ledgr:::ledgr_store_assert_current(con))
   testthat::expect_true(ledgr_validate_schema(con))

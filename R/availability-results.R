@@ -292,7 +292,7 @@ ledgr_availability_snapshot_connection <- function(bt, run_con) {
   if (identical(path, ":memory:") || ledgr_same_db_path(path, bt$db_path)) {
     return(list(con = run_con, close = function() invisible(FALSE)))
   }
-  opened <- ledgr_open_duckdb_with_retry(path)
+  opened <- ledgr_store_open(path, mode = "open")
   list(
     con = opened$con,
     close = function() {

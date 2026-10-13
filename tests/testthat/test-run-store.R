@@ -313,7 +313,7 @@ testthat::test_that("ledgr_run_open rejects incomplete runs and archived complet
   testthat::expect_identical(info$error_msg, "bad params")
 })
 
-testthat::test_that("ledgr_run_list reads legacy stores without mutating them", {
+testthat::test_that("ledgr_run_list refuses unmarked stores without mutating them", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -408,15 +408,9 @@ testthat::test_that("ledgr_run_list reads legacy stores without mutating them", 
   snapshot <- new_ledgr_snapshot(db_path, "legacy-snapshot")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  runs <- ledgr_run_list(snapshot)
-  testthat::expect_true("legacy-run" %in% runs$run_id)
-  testthat::expect_identical(runs$reproducibility_level[runs$run_id == "legacy-run"], "legacy")
-  testthat::expect_false(runs$completion_evidence_available[[1L]])
-  testthat::expect_true(is.na(runs$requested_start_utc[[1L]]))
-  testthat::expect_identical(runs$affected_instrument_ids[[1L]], NA_character_)
   testthat::expect_error(
-    ledgr_run_open(snapshot, "legacy-run"),
-    class = "ledgr_invalid_run"
+    ledgr_run_list(snapshot),
+    class = "ledgr_store_rebuild_required"
   )
 
   reopened <- ledgr_test_open_duckdb(db_path)

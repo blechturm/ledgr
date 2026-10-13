@@ -141,7 +141,7 @@ testthat::test_that("ledgr_run_archive hides runs by default and is idempotent",
   )
 })
 
-testthat::test_that("metadata writes migrate legacy stores before updating", {
+testthat::test_that("metadata writes refuse unmarked stores", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -236,19 +236,12 @@ testthat::test_that("metadata writes migrate legacy stores before updating", {
   snapshot <- new_ledgr_snapshot(db_path, "legacy-snapshot")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  labeled <- NULL
-  testthat::expect_message(
-    labeled <- ledgr_run_label(snapshot, "legacy-metadata-run", "legacy failed"),
-    "Upgraded ledgr experiment-store schema",
-    fixed = TRUE
+  testthat::expect_error(
+    ledgr_run_label(snapshot, "legacy-metadata-run", "legacy failed"),
+    class = "ledgr_store_rebuild_required"
   )
-  testthat::expect_s3_class(labeled, "ledgr_snapshot")
-  labeled_info <- ledgr_run_info(snapshot, "legacy-metadata-run")
-  testthat::expect_identical(labeled_info$label, "legacy failed")
-  testthat::expect_identical(labeled_info$status, "FAILED")
-
-  ledgr_run_archive(snapshot, "legacy-metadata-run", reason = "legacy cleanup")
-  archived <- ledgr_run_info(snapshot, "legacy-metadata-run")
-  testthat::expect_true(archived$archived)
-  testthat::expect_identical(archived$archive_reason, "legacy cleanup")
+  testthat::expect_error(
+    ledgr_run_archive(snapshot, "legacy-metadata-run", reason = "cleanup"),
+    class = "ledgr_store_rebuild_required"
+  )
 })

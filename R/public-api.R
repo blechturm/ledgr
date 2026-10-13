@@ -167,6 +167,7 @@ ledgr_state_reconstruct <- function(run_id, con) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
+  ledgr_store_assert_current(con)
   if (!is.character(run_id) || length(run_id) != 1 || is.na(run_id) || !nzchar(run_id)) {
     rlang::abort("`run_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

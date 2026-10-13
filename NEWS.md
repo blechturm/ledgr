@@ -1,5 +1,13 @@
 # ledgr (development version)
 
+## Current-only experiment stores
+
+- Experiment-store schema 119 is opened through one marker-pair gate. Every
+  package-owned persistent-store path refuses an older, newer, unmarked,
+  malformed, or fingerprint-mismatched store with
+  `ledgr_store_rebuild_required`; pre-CRAN migrations and tolerant readers
+  have been removed.
+
 ## Sweep persistence
 
 - `ledgr_sweep_save()` now saves sweeps whose candidates resolve to exactly

@@ -396,6 +396,7 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     con <- opened$con
     on.exit(opened$close(), add = TRUE)
   }
+  ledgr_store_assert_current(con, bt$db_path)
   ledgr_backtest_ensure_snapshot(bt, con)
   config <- bt$config
   snapshot_id <- config$data$snapshot_id

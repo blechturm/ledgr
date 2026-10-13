@@ -1004,7 +1004,6 @@ ledgr_walk_forward_bind_rows <- function(rows) {
 ledgr_walk_forward_write_session <- function(exp, session_row, fold_rows, score_rows) {
   opened <- ledgr_run_store_open(exp$snapshot$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = TRUE)
   session_id <- session_row$session_id[[1]]
   DBI::dbWithTransaction(opened$con, {
     DBI::dbExecute(opened$con, "DELETE FROM walk_forward_scores WHERE session_id = ?", params = list(session_id))

@@ -64,7 +64,6 @@ ledgr_write_promotion_context <- function(bt, candidate, note = NULL, identity_c
   opened <- ledgr_run_store_open(bt$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
   con <- opened$con
-  ledgr_create_schema(con)
   DBI::dbExecute(
     con,
     "
@@ -307,7 +306,7 @@ ledgr_run_promotion_context <- function(exp, run_id) {
 }
 
 ledgr_fetch_promotion_context <- function(con, run_id) {
-  ledgr_experiment_store_check_schema(con, write = FALSE)
+  ledgr_store_assert_current(con)
   if (!ledgr_experiment_store_table_exists(con, "run_promotion_context")) {
     return(NULL)
   }

@@ -80,6 +80,7 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
+  ledgr_store_assert_current(con)
   if (!is.character(snapshot_id) || length(snapshot_id) != 1 || is.na(snapshot_id) || !nzchar(snapshot_id)) {
     rlang::abort("`snapshot_id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }

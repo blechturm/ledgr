@@ -28,7 +28,7 @@ testthat::test_that("schema creation remains idempotent with snapshot tables", {
   testthat::expect_true(ledgr_validate_schema(con))
 })
 
-testthat::test_that("migration adds runs.snapshot_id, drops data_hash, and preserves existing rows", {
+testthat::test_that("schema creation refuses a non-empty unmarked store", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
@@ -56,33 +56,13 @@ testthat::test_that("migration adds runs.snapshot_id, drops data_hash, and prese
     "
   )
 
-  testthat::expect_true(ledgr_create_schema(con))
-  testthat::expect_true(ledgr_validate_schema(con))
-
-  cols <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT column_name, is_nullable
-    FROM information_schema.columns
-    WHERE table_schema = 'main' AND table_name = 'runs' AND column_name = 'snapshot_id'
-    "
+  testthat::expect_error(
+    ledgr_create_schema(con),
+    class = "ledgr_store_rebuild_required"
   )
-  testthat::expect_equal(nrow(cols), 1L)
-  testthat::expect_identical(cols$is_nullable[[1]], "YES")
-
-  run_cols <- DBI::dbGetQuery(
-    con,
-    "
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'main' AND table_name = 'runs'
-    "
-  )$column_name
-  testthat::expect_false("data_hash" %in% run_cols)
-
-  row <- DBI::dbGetQuery(con, "SELECT run_id, snapshot_id FROM runs WHERE run_id = 'old-run'")
-  testthat::expect_equal(nrow(row), 1L)
-  testthat::expect_true(is.na(row$snapshot_id[[1]]))
+  row <- DBI::dbGetQuery(con, "SELECT run_id, data_hash FROM runs")
+  testthat::expect_identical(row$run_id, "old-run")
+  testthat::expect_identical(row$data_hash, "d1")
 })
 
 testthat::test_that("snapshots.status enum and PK/NOT NULL constraints are enforced", {

@@ -15,6 +15,7 @@ ledgr_validate_schema <- function(con) {
   if (!DBI::dbIsValid(con)) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
+  ledgr_store_assert_current(con)
 
   schema <- "main"
   catalogue <- ledgr_schema_catalogue(con, schema = schema)
@@ -558,12 +559,6 @@ ledgr_validate_schema <- function(con) {
   table_exists <- function(table_name) {
     ledgr_schema_catalogue_table_exists(catalogue, table_name)
   }
-
-  ledgr_experiment_store_check_schema(
-    con,
-    write = FALSE,
-    table_names = catalogue$tables$table_name
-  )
 
   get_columns <- function(table_name) {
     ledgr_schema_catalogue_columns(catalogue, table_name)

@@ -34,6 +34,9 @@ ledgr_prepare_snapshot_source_tables <- function(con, snapshot_db_path, run_db_p
     )
   }
 
+  verified <- ledgr_store_open(snapshot_db_path, mode = "open")
+  ledgr_run_store_close(verified)
+
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.instruments"), silent = TRUE)
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.bars"), silent = TRUE)
   try(DBI::dbExecute(con, "DROP VIEW IF EXISTS temp.snapshots"), silent = TRUE)

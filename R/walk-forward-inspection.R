@@ -344,7 +344,6 @@ ledgr_walk_forward_read_session <- function(snapshot, session_id, verify_runs = 
   }
   opened <- ledgr_run_store_open(ledgr_run_store_snapshot_path(snapshot))
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
 
   session <- DBI::dbGetQuery(
     opened$con,
@@ -382,7 +381,6 @@ ledgr_walk_forward_read_session <- function(snapshot, session_id, verify_runs = 
 ledgr_walk_forward_read_run_config_from_snapshot <- function(snapshot, run_id) {
   opened <- ledgr_run_store_open(ledgr_run_store_snapshot_path(snapshot))
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_experiment_store_check_schema(opened$con, write = FALSE)
   ledgr_walk_forward_read_run_config(opened$con, snapshot, run_id)
 }
 

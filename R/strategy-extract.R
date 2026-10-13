@@ -11,7 +11,7 @@ ledgr_strategy_extract_parse_json <- function(json, empty = list(), label = "JSO
 }
 
 ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
-  ledgr_experiment_store_check_schema(con, write = FALSE)
+  ledgr_store_assert_current(con)
   if (!ledgr_experiment_store_table_exists(con, "runs")) {
     return(tibble::tibble())
   }

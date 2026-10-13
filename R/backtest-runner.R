@@ -722,7 +722,7 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     set.seed(as.integer(seed))
   }
 
-  opened <- ledgr_open_duckdb_with_retry(db_path)
+  opened <- ledgr_store_open(db_path, mode = "create")
   drv <- opened$drv
   con <- opened$con
   on.exit({
@@ -731,7 +731,6 @@ ledgr_run_fold_impl <- function(config, run_id, control, metric_context, exit_st
     suppressWarnings(try(duckdb::duckdb_shutdown(drv), silent = TRUE))
   }, add = TRUE)
 
-  ledgr_create_schema(con)
   ledgr_validate_schema_once(con)
 
   registration <- ledgr_run_registration(

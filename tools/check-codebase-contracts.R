@@ -398,7 +398,8 @@ if (length(caller_rows) > 0L) {
 }
 
 guard_names <- c(
-  "ledgr_store_open", "ledgr_validate_schema", "ledgr_check_schema",
+  "ledgr_store_open", "ledgr_store_assert_current",
+  "ledgr_validate_schema", "ledgr_check_schema",
   "ledgr_create_schema", "ledgr_snapshot_ensure_verified"
 )
 calls_by_owner <- split(r_calls$call[!is.na(r_calls$owner)],
@@ -1139,7 +1140,13 @@ summary <- data.frame(
     sum(condition_classes$public &
           (!condition_classes$documented_alias |
              !condition_classes$documented_description)),
-    sum(connection_rows$persistent_store & connection_rows$current_guard == "none"),
+    sum(
+      connection_rows$persistent_store &
+        connection_rows$current_guard == "none" &
+        !connection_rows$owner %in% c(
+          "ledgr_open_duckdb_with_retry", "ledgr_join_open_duckdb"
+        )
+    ),
     sum(helper_rows$classification == "uncalled_private"),
     sum(run_config_rows$identity_rule_version != "supplied" |
           run_config_rows$data_snapshot_hash != "supplied"),

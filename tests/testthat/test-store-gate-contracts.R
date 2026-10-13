@@ -215,3 +215,72 @@ testthat::test_that("[LTB-0261] store creation is empty-only and transactional",
   ledgr:::ledgr_store_create_current(interrupted)
   testthat::expect_true(ledgr:::ledgr_store_assert_current(interrupted))
 })
+
+testthat::test_that("[LTB-0262] every persistent store route reaches one gate", {
+  package_dir <- testthat::test_path("..", "..", "R")
+  package_files <- list.files(package_dir, pattern = "[.]R$", full.names = TRUE)
+  source_rows <- unlist(lapply(package_files, function(path) {
+    lines <- readLines(path, warn = FALSE)
+    lines <- lines[!grepl("^\\s*#", lines)]
+    paste(basename(path), trimws(lines), sep = ":")
+  }))
+
+  low_open <- source_rows[grepl("ledgr_open_duckdb_with_retry", source_rows, fixed = TRUE)]
+  testthat::expect_identical(
+    sort(sub(":.*$", "", low_open), method = "radix"),
+    c("public-api.R", "store-gate.R")
+  )
+  direct_connect <- source_rows[grepl("DBI::dbConnect", source_rows, fixed = TRUE)]
+  testthat::expect_identical(
+    sort(sub(":.*$", "", direct_connect), method = "radix"),
+    c("csv-utils.R", "public-api.R", "public-api.R")
+  )
+
+  function_source <- function(name) {
+    paste(deparse(get(name, envir = asNamespace("ledgr"))), collapse = "\n")
+  }
+  asserted_entries <- c(
+    "ledgr_snapshot_create", "ledgr_snapshot_info", "ledgr_snapshot_list",
+    "ledgr_snapshot_seal", "ledgr_state_reconstruct",
+    "ledgr_validate_schema", "ledgr_corporate_action_summary",
+    "ledgr_valuation_summary"
+  )
+  for (name in asserted_entries) {
+    testthat::expect_match(
+      function_source(name),
+      "ledgr_store_assert_current",
+      fixed = TRUE,
+      info = name
+    )
+  }
+
+  cached_entries <- c(
+    "ledgr_snapshot_connection", "ledgr_backtest_open",
+    "ledgr_backtest_read_connection", "ledgr_run_store_open"
+  )
+  for (name in cached_entries) {
+    testthat::expect_match(
+      function_source(name),
+      "ledgr_store_assert_current|ledgr_store_open",
+      perl = TRUE,
+      info = name
+    )
+  }
+
+  attach_source <- function_source("ledgr_prepare_snapshot_source_tables")
+  testthat::expect_match(
+    attach_source,
+    "ledgr_store_open\\(snapshot_db_path, mode = \"open\"\\)[\\s\\S]+ATTACH",
+    perl = TRUE
+  )
+
+  retired <- c(
+    "ledgr_create_schema_legacy", "ledgr_experiment_store_migrate",
+    "ledgr_experiment_store_upgrade_", "ledgr_experiment_store_ensure_",
+    "ledgr_schema_template", "ledgr_schema_try_triggers"
+  )
+  package_source <- paste(source_rows, collapse = "\n")
+  testthat::expect_false(any(vapply(
+    retired, grepl, logical(1), x = package_source, fixed = TRUE
+  )))
+})

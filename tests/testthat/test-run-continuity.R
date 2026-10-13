@@ -211,7 +211,7 @@ testthat::test_that("[LTB-0199] an unpriced eligible member is skipped, capped a
   testthat::expect_identical(skips$target, c(0, 22))
 })
 
-testthat::test_that("[LTB-0200] the walk-forward no-selection policy, its record and the schema 118 migration", {
+testthat::test_that("[LTB-0200] the walk-forward no-selection policy and current record", {
   # Inspection: a previous fold reports no train selection score even when its
   # candidate's train row is INCOMPLETE with a finite value; a none fold has no
   # selected row.
@@ -258,35 +258,27 @@ testthat::test_that("[LTB-0200] the walk-forward no-selection policy, its record
     do.call(ledgr:::ledgr_walk_forward_session_id, c(id_args, list(no_selection = "previous")))
   ))
 
-  # Migration: a schema 117 fold table gains selection_source, selected folds
-  # backfill to train, unselected folds stay NULL, and every CHECK survives.
+  # The current schema owns selection_source directly; no migration path
+  # remains in the package.
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  ledgr_create_schema(con)
+  columns <- ledgr:::ledgr_experiment_store_columns(con, "walk_forward_folds")
+  testthat::expect_true("selection_source" %in% columns)
   DBI::dbExecute(con, "
-    CREATE TABLE walk_forward_folds (
-      session_id TEXT NOT NULL, fold_id TEXT NOT NULL, fold_seq INTEGER NOT NULL, scheme TEXT NOT NULL,
-      train_start_utc TIMESTAMP NOT NULL, train_end_utc TIMESTAMP NOT NULL,
-      test_start_utc TIMESTAMP NOT NULL, test_end_utc TIMESTAMP NOT NULL,
-      hydration_start_utc TIMESTAMP NOT NULL, train_scoring_start_utc TIMESTAMP NOT NULL,
-      test_scoring_start_utc TIMESTAMP NOT NULL,
-      opening_state_policy TEXT NOT NULL CHECK (opening_state_policy IN ('carry_test_state','flat_test_state')),
-      selected_candidate_key TEXT, selected_at_utc TIMESTAMP, test_run_id TEXT,
-      status TEXT NOT NULL CHECK (status IN ('DONE','FAILED','INTERRUPTED','PARTIAL')),
-      PRIMARY KEY (session_id, fold_seq), UNIQUE (session_id, fold_id))")
-  DBI::dbExecute(con, "
-    INSERT INTO walk_forward_folds VALUES
-      ('s', 'f1', 1, 'rolling', '2020-01-01', '2020-01-31', '2020-02-01', '2020-02-29', '2020-01-01',
-       '2020-01-01', '2020-02-01', 'carry_test_state', 'k1', '2020-02-01', 'r1', 'DONE'),
-      ('s', 'f2', 2, 'rolling', '2020-02-01', '2020-02-29', '2020-03-01', '2020-03-31', '2020-02-01',
-       '2020-02-01', '2020-03-01', 'carry_test_state', NULL, NULL, NULL, 'FAILED')")
-  testthat::expect_true(ledgr:::ledgr_experiment_store_upgrade_walk_forward_folds(con))
-  migrated <- DBI::dbGetQuery(con, "SELECT fold_seq, status, selection_source FROM walk_forward_folds ORDER BY fold_seq")
-  testthat::expect_identical(migrated$status, c("DONE", "FAILED"))
-  testthat::expect_identical(migrated$selection_source, c("train", NA))
-  testthat::expect_false(ledgr:::ledgr_experiment_store_upgrade_walk_forward_folds(con))
+    INSERT INTO walk_forward_folds (
+      session_id, fold_id, fold_seq, scheme, train_start_utc, train_end_utc,
+      test_start_utc, test_end_utc, hydration_start_utc,
+      train_scoring_start_utc, test_scoring_start_utc, opening_state_policy,
+      selection_source, status
+    ) VALUES (
+      's', 'f1', 1, 'rolling', '2020-01-01', '2020-01-31',
+      '2020-02-01', '2020-02-29', '2020-01-01', '2020-01-01',
+      '2020-02-01', 'carry_test_state', 'train', 'DONE'
+    )")
   testthat::expect_error(DBI::dbExecute(con, "UPDATE walk_forward_folds SET selection_source = 'guess'"))
   testthat::expect_error(DBI::dbExecute(con, "UPDATE walk_forward_folds SET status = 'MAYBE'"))
-  testthat::expect_error(DBI::dbExecute(con, "INSERT INTO walk_forward_folds SELECT * FROM walk_forward_folds WHERE fold_seq = 1"))
+  testthat::expect_error(DBI::dbExecute(con, "INSERT INTO walk_forward_folds SELECT * FROM walk_forward_folds"))
 })
 
 # ledgr-test-profile: review
