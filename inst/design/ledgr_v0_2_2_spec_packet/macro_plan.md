@@ -788,3 +788,91 @@ opens as an RFC. The unification itself stays after v0.2.2 (roadmap row
 13, the legacy-removal cut, the interim lake rebuild under rule 3, the
 one-execution-mode probe, the WS3/WS4 history wave and implementation cut,
 the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
+2026-10-13 maintainer amendment, planning-document cleanup after the probe:
+the roadmap no longer works as a planning document, and this plan's
+change-control log has become the only place the current order lives, restated
+by each amendment. One governance cut, after the one-execution-mode probe
+and before the WS3/WS4 implementation cut, rewrites both together, scans
+`horizon.md`, sweeps the central governance files, folds the probe result
+in, and applies the governance-lifecycle synthesis
+(`rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md`, accepted 2026-10-14;
+Sections 2 to 7 own the rules and Section 7 the wording). Its four
+workstreams each carry one claim and one Type 1 close review:
+
+1. Rules and guard: the accepted rules go into `rfc_cycle.md`, the design
+   index and `AGENTS.md`, and the governance guard lands in report mode with
+   its reviewed baseline. Check mode starts no earlier than the cut after
+   this one, and only once workstream 4's header normalization and the
+   reviewed baseline and fixtures exist (synthesis Section 6).
+2. `contracts.md`: the present-tense pass and rule-group addresses, and
+   reconciliation of the `decisions.md` bridge with its back-links.
+3. Planning documents: the roadmap and remaining-order rewrites and the
+   horizon scan.
+4. Records: synthesis status headers, the packet `README.md` trim and the
+   evidence form for open tickets.
+
+Two parts of the synthesis do not wait for this cut. M1 (the 0.5 gate is
+retired; the ratio of independent verdicts to completed tickets is recorded
+at cut close and as a packet total; a third correction round on one
+workstream goes to the maintainer) and M2 (a review that returns findings
+writes a file in the owning packet) apply from the first review after
+acceptance, so they govern the rest of Cut 14 (synthesis Section 5).
+Acceptance preceded the history-wave amendment to v11, so that amendment
+is the first supersession carrier under the synthesis's rules (Section 7);
+the history wave owns it. The bullets below are the scope the cut inherits.
+
+- Roadmap: the milestone table holds releases only, one row each, in release
+  order. Shipped releases keep date, a one-sentence goal and the packet link.
+  v0.2.2 gets one row with its goal and a link to this plan, without
+  cut-by-cut status. A short next-release list names the themes already
+  scheduled for it, and a few lines state later direction (paper trading,
+  operations, small-scale live trading). The roughly thirty topic rows leave:
+  done rows are deleted because their packets record them, parked rows move
+  to `horizon.md` or the RFC pipeline, and each generic "v0.2.x Planned" row
+  is checked (corporate actions shipped in v0.2.1.0 as equity corporate
+  actions). A row is at most two sentences and changes only when a release
+  opens or ships; a documentation-contract test may pin that.
+- This plan: one current "Remaining order" section, each step with a
+  one-line reason and its owner, becomes the only place the sequence lives.
+  Each change-control amendment shrinks to one dated line naming its source,
+  and the amendment narratives move to a history file, as
+  `roadmap_history.md` did for the roadmap.
+- Horizon scan (maintainer, 2026-10-13): every entry under `Open` in
+  `horizon.md` (85 entries over about 4,100 lines) is classified against the
+  shipped packets, `tickets.yml`, the RFC pipeline and `contracts.md` as
+  shipped, superseded, promoted (owned by a ticket, an RFC row or this plan)
+  or genuinely open, with the evidence for each class named. Shipped and
+  superseded entries move to `horizon_archive.md` behind a redirect stub, a
+  promoted entry keeps only a pointer to its owner, and the genuinely open
+  entries stay. The scan records the classification table, so the
+  maintainer can see in one page what has shipped and what is still open.
+- Governance-file sweep (maintainer, 2026-10-13): each `decisions.md` row is
+  checked against `contracts.md`, and a row whose rule a standing heading
+  already holds leaves with that heading cited, which is the exit its own
+  rule requires and which earlier closeouts skipped. Candidates include the
+  four v0.1.9.5 batch rows, equity corporate actions, accounting-core
+  consolidation, testing architecture and the feature-map read surface.
+  The packet `README.md` is trimmed to its role, the design index
+  `README.md` and `AGENTS.md` are checked for stale entry points, and the
+  sweep records what it removed and where each item now lives. Stale
+  synthesis status headers are corrected: historical-projection v10 still
+  reads "ACCEPTED" although v11 replaced it, and the snapshot-verification
+  synthesis does not show at its top that the accepted legacy-removal
+  synthesis (Section 5) amends its legacy-readability rule, which the Cut 14
+  ticket cut applies. The cut applies the accepted synthesis's header and
+  notice rules to these records.
+- Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
+  `contracts.md` states each current rule in the present tense and moves
+  release history out (41 lines cite release versions, plus schema-number
+  history and about 24 legacy or historical mentions); history belongs in
+  NEWS and the packets. Rewording can change a rule, so its workstream's
+  Type 1 close review compares old and new text clause by clause, and the
+  documentation-contract pins move with the sentences they pin.
+
+Not a package design change. The contracts pass and the guard define
+claims, so the work is a cut with close reviews, not a documentation chore
+(maintainer, 2026-10-13, changed from the chore first scheduled). The
+resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
+under rule 3, the one-execution-mode probe, the governance cut, the WS3/WS4
+history wave and implementation cut, the lake rebuild with dividend facts,
+WS7, the WS6 probe, WS8.
