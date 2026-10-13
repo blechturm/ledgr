@@ -833,8 +833,9 @@ result in.
   sweep records what it removed and where each item now lives. Stale
   synthesis status headers are corrected: historical-projection v10 still
   reads "ACCEPTED" although v11 replaced it, and the snapshot-verification
-  synthesis does not show at its top that Cut 14 amended its
-  legacy-readability rule. If the governance RFC on supersession rules is
+  synthesis does not show at its top that the accepted legacy-removal
+  synthesis (Section 5) amends its legacy-readability rule, which the Cut 14
+  ticket cut applies. If the governance RFC on supersession rules is
   accepted by then, the sweep applies its rules instead.
 - Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
   `contracts.md` states each current rule in the present tense and moves
