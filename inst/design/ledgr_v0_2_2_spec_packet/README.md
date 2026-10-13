@@ -3,20 +3,17 @@
 **Status:** Cuts 1 through 12 are closed after maintainer acceptance of all
 26 workstreams through 2026-10-12. Cut 13's independent review returned
 `PASS_AFTER_PATCHES`; the patches are incorporated and the maintainer accepted
-the cut on 2026-10-12. Workstream 27's Type 1 close review returned
-`CHANGES_REQUIRED`; its three blocking findings and four record findings are
-corrected, with a focused re-review pending. LDG-3019's rule-3 encoder and
-refusal boundary and LDG-3020's process-local verification reuse remain
-agent-provisional until that re-review passes and the maintainer accepts them.
-The correction fast lane passes 566 of 566 blocks in 110.04 seconds. Final
-full-matrix run 38371833556 is green on both Ubuntu jobs and Windows: the
-rule-3 roots, ordinary and isolated-CRAN profiles, R CMD checks and the 87.25
-percent coverage gate all pass. The focused-review residue is corrected at
-`2e15d34e`: its touched suites and legacy-reader mutation are green. Its three
-post-residue fast runs pass all 566 blocks semantically but miss the fixed
-timing gate at a 131.70-second median; the miss is recorded, not relabeled.
-Independent Workstream 28 remains open with LDG-3021 for the separately
-claimed `ledgr_sweep_save()` defect.
+the cut on 2026-10-12. Workstream 27's final focused Type 1 re-review returned
+`PASS` at `fa41283d`, and the maintainer accepted it on 2026-10-13. LDG-3019's
+rule-3 encoder and refusal boundary and LDG-3020's process-local verification
+reuse are complete. The correction fast lane passes 566 of 566 blocks in
+110.04 seconds. Final full-matrix run 38371833556 is green on both Ubuntu jobs
+and Windows: the rule-3 roots, ordinary and isolated-CRAN profiles, R CMD
+checks and the 87.25 percent coverage gate all pass. The checked-in
+post-residue fast record keeps its 131.70-second loaded-host timing miss; the
+reviewer's three alternating scratch pairs measured 108.04 seconds at
+`fa41283d` against 107.84 seconds at the preceding tree. Workstream 28 remains
+open with LDG-3021 for the separately claimed `ledgr_sweep_save()` defect.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
