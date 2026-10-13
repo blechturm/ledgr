@@ -202,6 +202,25 @@ testthat::test_that("[LTB-0263] strict validation uses the complete current cata
   DBI::dbExecute(temporary$con, "CREATE TEMP TABLE transient(value INTEGER)")
   testthat::expect_true(ledgr_validate_schema(temporary$con))
 
+  attached_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(attached_path, paste0(attached_path, ".wal"))), add = TRUE)
+  DBI::dbExecute(
+    temporary$con,
+    paste0(
+      "ATTACH ", DBI::dbQuoteString(temporary$con, attached_path),
+      " AS foreign_catalog"
+    )
+  )
+  on.exit(
+    try(DBI::dbExecute(temporary$con, "DETACH foreign_catalog"), silent = TRUE),
+    add = TRUE
+  )
+  DBI::dbExecute(
+    temporary$con,
+    "CREATE TABLE foreign_catalog.main.transient(value INTEGER)"
+  )
+  testthat::expect_true(ledgr_validate_schema(temporary$con))
+
   opened <- connect_current()
   on.exit(DBI::dbDisconnect(opened$con, shutdown = TRUE), add = TRUE)
   DBI::dbExecute(opened$con, "DROP TABLE snapshot_sessions")
