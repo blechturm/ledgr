@@ -1,5 +1,12 @@
 # ledgr (development version)
 
+## Sweep persistence
+
+- `ledgr_sweep_save()` now saves sweeps whose candidates resolve to exactly
+  one feature fingerprint. Parameterized feature maps, concrete one-feature
+  maps, and plain one-feature lists reopen and promote with their existing
+  identity and provenance.
+
 ## Portable snapshot verification
 
 - New snapshots use snapshot hash rule 3, a portable R-owned binary identity

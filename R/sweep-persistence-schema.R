@@ -18,6 +18,10 @@ ledgr_sweep_storage_json <- function(x) {
   as.character(canonical_json(x))
 }
 
+ledgr_sweep_storage_fingerprints_json <- function(x) {
+  ledgr_sweep_storage_json(as.list(x))
+}
+
 ledgr_sweep_storage_parent_row <- function(sweep,
                                            sweep_id = attr(sweep, "sweep_id", exact = TRUE),
                                            snapshot_id = attr(sweep, "snapshot_id", exact = TRUE),
@@ -129,7 +133,9 @@ ledgr_sweep_storage_candidate_rows <- function(sweep,
       feature_params_json = ledgr_sweep_storage_json(row$feature_params[[1]] %||% list()),
       warnings_json = ledgr_sweep_storage_json(ledgr_sweep_storage_warning_records(row$warnings[[1]])),
       feature_set_hash = as.character(provenance$feature_set_hash),
-      feature_fingerprints_json = ledgr_sweep_storage_json(row$feature_fingerprints[[1]]),
+      feature_fingerprints_json = ledgr_sweep_storage_fingerprints_json(
+        row$feature_fingerprints[[1]]
+      ),
       provenance_json = ledgr_sweep_storage_json(provenance),
       cost_model_hash = as.character(cost_model_hash),
       metric_context_hash = as.character(metric_context_hash),
