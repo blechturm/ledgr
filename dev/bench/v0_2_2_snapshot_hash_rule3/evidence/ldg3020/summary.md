@@ -61,6 +61,17 @@ isolated-CRAN fast profiles, R CMD check and the 87.25 percent coverage gate
 all passed. Hosted medians remain advisory: the Ubuntu release ordinary-fast
 median was 154.702 seconds and the isolated-CRAN median was 152.614 seconds.
 
+The focused re-review residue at `2e15d34e` keeps the rule-3 golden roots and
+the touched hash, reuse, availability, seal, control-plane and documentation
+suites green. LTB-0250 now refuses pulse-snapshot and indicator-development
+reads for each legacy marker; removing only those two verification calls makes
+the block fail six times. The retained `residue_fast/` record passes all 566
+blocks with zero skips or failures in 131.01, 131.70 and 131.92 seconds. Its
+131.70-second median fails the unchanged 112-second bound and is not called a
+timing pass. Against `correction_fast/run-1-census.csv`, matched block time
+rises broadly from 107.72 to 128.09 seconds; the strengthened legacy block
+accounts for 0.61 seconds of the approximately 20-second increase.
+
 Integration exposed stale test-harness assumptions. AT7 and the persisted-fact
 corruption blocks claimed cold-process raw-tamper oracles while retaining the
 proof established by seal or an earlier read; they now clear that private

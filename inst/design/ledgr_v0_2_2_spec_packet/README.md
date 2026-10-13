@@ -11,7 +11,10 @@ agent-provisional until that re-review passes and the maintainer accepts them.
 The correction fast lane passes 566 of 566 blocks in 110.04 seconds. Final
 full-matrix run 38371833556 is green on both Ubuntu jobs and Windows: the
 rule-3 roots, ordinary and isolated-CRAN profiles, R CMD checks and the 87.25
-percent coverage gate all pass.
+percent coverage gate all pass. The focused-review residue is corrected at
+`2e15d34e`: its touched suites and legacy-reader mutation are green. Its three
+post-residue fast runs pass all 566 blocks semantically but miss the fixed
+timing gate at a 131.70-second median; the miss is recorded, not relabeled.
 Independent Workstream 28 remains open with LDG-3021 for the separately
 claimed `ledgr_sweep_save()` defect.
 
