@@ -59,7 +59,9 @@ ledger.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
   closed. Accepted Cut 14 contains Workstreams 29 through 31 and LDG-3022
   through LDG-3035. The preparatory Workstream 31 slice is complete through
-  LDG-3023; Workstream 29 is open at LDG-3024.
+  LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
+  and a8416492 correct the census and lint records, with confirmation folded
+  into Workstream 29's close review. Workstream 29 is open at LDG-3024.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
