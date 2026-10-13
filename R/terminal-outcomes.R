@@ -234,11 +234,10 @@ ledgr_disposition_post <- function(ids,
   )
 }
 
-# Summary key for every recorded disposition policy id: held-terminal choices
-# (v002 and the historical v001) and frozen-terminal fallbacks.
+# Summary key for every recorded disposition policy id.
 ledgr_terminal_policy_id_keys <- function() {
   ids <- ledgr_corporate_action_policy_ids()
-  held <- c(ids$held_terminal_position, ledgr_corporate_action_policy_ids_v1()$held_terminal_position)
+  held <- ids$held_terminal_position
   frozen <- ids$frozen_terminal_position
   stats::setNames(
     c(paste0("held_terminal_position.", names(held)), paste0("frozen_terminal_position.", names(frozen))),

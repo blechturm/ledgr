@@ -345,7 +345,7 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   ids <- c(frozen_ids, frozen_ids[[1L]], "batch-dense")
   flags <- ledgr:::ledgr_run_assumption_flags_many(con, ids)
   testthat::expect_identical(query_count, one_run_queries)
-  testthat::expect_identical(query_count, 4L)
+  testthat::expect_identical(query_count, 3L)
   testthat::expect_identical(flags$run_id, ids)
   testthat::expect_identical(
     flags$valuation_state,

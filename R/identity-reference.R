@@ -14,9 +14,9 @@
 #' Every run records `identity_rule_version`. Under identity rule 2 the
 #' snapshot identity in `config_hash` is the sealed content hash
 #' (`data.snapshot_hash`), not the store-local `data.snapshot_id`: the same
-#' bars sealed under two snapshot IDs give the same `config_hash`. A config
-#' without the field was recorded under rule 1, which hashed the snapshot ID;
-#' it stays readable, but resuming it refuses with `ledgr_identity_rule_retired`.
+#' bars sealed under two snapshot IDs give the same `config_hash`. Every
+#' current config carries rule 2 and a snapshot hash; missing or different
+#' identity records are invalid rather than inferred or migrated.
 #'
 #' `feature_set_hash` identifies the resolved concrete feature definitions by
 #' hashing the set of feature fingerprints. It changes when concrete feature
@@ -51,11 +51,8 @@
 #'
 #' Sweeps expose `risk_chain_hash` on candidate rows and carry
 #' `risk_plan_json` in row-level provenance and reproduction keys. Saved sweeps
-#' store both fields on the parent sweep row and candidate rows; the first
-#' `ledgr_sweep_save()` against a v0.1.9.2 store performs an additive schema
-#' migration for these risk identity columns. Missing pre-v0.1.9.3 risk fields
-#' reopen as the no-op risk plan in memory; stored historical config JSON is not
-#' rewritten by the compatibility normalizer.
+#' store both fields on the parent sweep row and candidate rows. Saved sweeps
+#' carry the current schema and exact risk identity; other schemas are invalid.
 #'
 #' @section Walk-forward identity:
 #' `candidate_key` identifies one walk-forward fold/window/candidate evaluation.

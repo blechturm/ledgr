@@ -263,7 +263,7 @@ testthat::test_that("[LTB-0200] the walk-forward no-selection policy and current
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
-  columns <- ledgr:::ledgr_experiment_store_columns(con, "walk_forward_folds")
+  columns <- ledgr_test_store_columns(con, "walk_forward_folds")
   testthat::expect_true("selection_source" %in% columns)
   DBI::dbExecute(con, "
     INSERT INTO walk_forward_folds (

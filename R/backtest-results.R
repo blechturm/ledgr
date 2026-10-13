@@ -772,7 +772,6 @@ ledgr_result_period_label <- function(start, end) {
 ledgr_backtest_off_session_bar_count <- function(bt) {
   opened <- ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
-  if (!ledgr_experiment_store_table_exists(opened$con, "snapshot_observation_quarantine")) return(0L)
   as.integer(DBI::dbGetQuery(
     opened$con,
     "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
@@ -1168,8 +1167,7 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' @param x A `ledgr_backtest` object.
 #' @param what Result table to extract: `"equity"`, `"returns"`, `"fills"`,
 #'   `"trades"`, or `"ledger"`.
-#' @param ... Unused.
-#' @param type Deprecated alias for `what`.
+#' @param ... Must be empty.
 #' @return A tibble with the requested result table.
 #' @details
 #' `what = "fills"` returns execution fill rows, including opening and closing
@@ -1226,12 +1224,12 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' tibble::as_tibble(bt, what = "equity")
 #' close(bt)
 #' @export
-as_tibble.ledgr_backtest <- function(x, what = "equity", ..., type = NULL) {
+as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
+  rlang::check_dots_empty()
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
-  if (!is.null(type)) what <- type
   what <- ledgr_match_result_table(what)
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con

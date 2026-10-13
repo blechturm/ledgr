@@ -1,7 +1,4 @@
 ledgr_corporate_action_rows <- function(con, snapshot_id) {
-  if (!ledgr_experiment_store_table_exists(con, "snapshot_equity_corporate_actions")) {
-    return(data.frame())
-  }
   DBI::dbGetQuery(
     con,
     paste(

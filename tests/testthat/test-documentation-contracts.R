@@ -1468,8 +1468,7 @@ testthat::test_that("condition help exposes stable classes and final-bar behavio
   doc <- paste(readLines(condition_path, warn = FALSE), collapse = "\n")
 
   classes <- c(
-    "ledgr_legacy_fill_model_shape",
-    "ledgr_legacy_config_shape",
+    "ledgr_store_rebuild_required",
     "ledgr_cost_model_unspecified",
     "ledgr_invalid_cost_chain_order",
     "ledgr_invalid_cost_model",
@@ -1487,7 +1486,7 @@ testthat::test_that("condition help exposes stable classes and final-bar behavio
 
   testthat::expect_match(doc, "stable top-level condition classes", fixed = TRUE)
   testthat::expect_match(doc, "assert on these", fixed = TRUE)
-  testthat::expect_match(doc, "does not translate the legacy shape", fixed = TRUE)
+  testthat::expect_match(doc, "does not migrate old", fixed = TRUE)
   testthat::expect_match(doc, "ledgr_cost_zero", fixed = TRUE)
   testthat::expect_match(doc, "price-transform steps before explicit-fee steps", fixed = TRUE)
   testthat::expect_no_match(doc, "deprecat", ignore.case = TRUE)
@@ -1573,14 +1572,16 @@ testthat::test_that("v0.2.0 workflow teaching includes the survivorship journey"
   )
   testthat::expect_match(
     docs$contracts,
-    "Historical configs without that field return\\s+`NA_character_`"
+    "Current configs always carry the field",
+    fixed = TRUE
   )
   testthat::expect_match(
-    docs$contracts,
-    paste0(
-      "must not infer a no-op plan, substitute current\\s+",
-      "experiment state, add a top-level `risk_plan_json` field"
-    )
+    gsub("\\s+", " ", docs$contracts),
+    paste(
+      "must not infer a plan, substitute current experiment state,",
+      "add a top-level `risk_plan_json` field"
+    ),
+    fixed = TRUE
   )
   testthat::expect_match(
     docs$contracts,
@@ -2120,23 +2121,25 @@ testthat::test_that("[LTB-0127] each shared fact is stated in its home and contr
 # House rule 11 and style guide section 3: no internal shorthand a user cannot
 # act on in the README or a user article, source or rendered. The one named
 # exception is "accelerator" inside the compiled-accounting section of Sweeps.
+ledgr_doc_maintainer_term_patterns <- c(
+  "fold core" = "(?i)\\bfold core\\b",
+  "oracle" = "(?i)\\boracles?\\b",
+  "touchpoint" = "(?i)\\btouchpoints?\\b",
+  "accelerator" = "(?i)\\baccelerators?\\b",
+  "legacy" = "(?i)\\blegacy\\b",
+  "pre-provenance" = "(?i)\\bpre-provenance\\b",
+  "parity contract" = "(?i)\\bparity contracts?\\b",
+  "composable bundle" = "(?i)\\bcomposable bundles?\\b",
+  "B2" = "\\bB2\\b",
+  "ticket or test ID" = "\\b(LDG|LTB|LCL)-[0-9]"
+)
+
 ledgr_doc_maintainer_terms <- function(root) {
   documents <- c(
     file.path(root, c("README.Rmd", "README.md")),
     list.files(file.path(root, "vignettes"), pattern = "[.](qmd|md)$", full.names = TRUE, recursive = TRUE)
   )
-  terms <- c(
-    "fold core" = "(?i)\\bfold core\\b",
-    "oracle" = "(?i)\\boracles?\\b",
-    "touchpoint" = "(?i)\\btouchpoints?\\b",
-    "accelerator" = "(?i)\\baccelerators?\\b",
-    "legacy" = "(?i)\\blegacy\\b",
-    "pre-provenance" = "(?i)\\bpre-provenance\\b",
-    "parity contract" = "(?i)\\bparity contracts?\\b",
-    "composable bundle" = "(?i)\\bcomposable bundles?\\b",
-    "B2" = "\\bB2\\b",
-    "ticket or test ID" = "\\b(LDG|LTB|LCL)-[0-9]"
-  )
+  terms <- ledgr_doc_maintainer_term_patterns
   out <- character()
   for (path in documents) {
     lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
@@ -2161,6 +2164,14 @@ testthat::test_that("[LTB-0128] user articles use no maintainer shorthand", {
   root <- testthat::test_path("..", "..")
   testthat::skip_if_not(file.exists(file.path(root, "README.Rmd")), "article sources not available during installed-package tests")
   testthat::expect_identical(ledgr_doc_maintainer_terms(root), character())
+  testthat::expect_identical(
+    names(ledgr_doc_maintainer_term_patterns),
+    c(
+      "fold core", "oracle", "touchpoint", "accelerator", "legacy",
+      "pre-provenance", "parity contract", "composable bundle", "B2",
+      "ticket or test ID"
+    )
+  )
 })
 
 testthat::test_that("[LTB-0129] the ledgr_indicator help documents both scalar arities", {

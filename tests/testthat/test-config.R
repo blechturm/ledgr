@@ -33,6 +33,8 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "buy_and_hold", params = list(z = 1, a = 2))
   )
 
@@ -48,6 +50,8 @@ testthat::test_that("canonicalization is stable across key ordering (including n
     ),
     universe = list(instrument_ids = c("B", "A")),
     engine = list(tz = "UTC", seed = 1L),
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     db_path = "db.duckdb"
   )
 
@@ -74,6 +78,8 @@ testthat::test_that("hash is deterministic and sensitive to small changes", {
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "x")
   )
 
@@ -103,8 +109,10 @@ testthat::test_that("config hash excludes storage paths and run-local diagnostic
     data = list(
       source = "snapshot",
       snapshot_id = "snap-a",
-      snapshot_db_path = "snapshot-a.duckdb"
+      snapshot_db_path = "snapshot-a.duckdb",
+      snapshot_hash = "hash-a"
     ),
+    identity_rule_version = 2L,
     strategy = list(id = "x")
   )
 
@@ -119,7 +127,7 @@ testthat::test_that("config hash excludes storage paths and run-local diagnostic
 
   cfg3 <- cfg
   cfg3$data$snapshot_id <- "snap-b"
-  testthat::expect_false(identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg3)))
+  testthat::expect_identical(ledgr:::config_hash(cfg), ledgr:::config_hash(cfg3))
 })
 
 testthat::test_that("config hash excludes derived feature-set hash surface", {
@@ -136,6 +144,8 @@ testthat::test_that("config hash excludes derived feature-set hash surface", {
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     features = list(
       enabled = TRUE,
       defs = list(list(id = "sma_2", fingerprint = "feature-fingerprint")),
@@ -168,7 +178,9 @@ testthat::test_that("config hash excludes sweep retention policy", {
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
-    strategy = list(id = "x")
+    strategy = list(id = "x"),
+    data = list(source = "snapshot", snapshot_id = "test", snapshot_hash = "hash"),
+    identity_rule_version = 2L
   )
 
   cfg_top_level <- cfg
@@ -201,12 +213,14 @@ testthat::test_that("cost-model config hash is stable across internal cost-bound
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "x", params = list())
   )
 
   testthat::expect_identical(
     ledgr:::config_hash(cfg),
-    "9e29021ba11784777f4adc93d5569e49eb1d90d49bd48bb04a030a6b0a2300cc"
+    "6df73a6552b06a913587167c132fdc7d16c789f2431f25f4b65a125fb6c31bf5"
   )
 })
 
@@ -224,6 +238,8 @@ testthat::test_that("instrument_ids ordering affects canonical JSON and hash", {
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "x")
   )
 
@@ -248,6 +264,8 @@ testthat::test_that("validation fails loud on required fields and constraints", 
     ),
     timing_model = ledgr_test_timing_model(),
     cost_model = cost_cfg,
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L,
     strategy = list(id = "x")
   )
 
@@ -279,10 +297,6 @@ testthat::test_that("validation fails loud on required fields and constraints", 
   cfg_bad_timing <- base_cfg
   cfg_bad_timing$timing_model$type_id <- "market"
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg_bad_timing), "timing_model.type_id", fixed = TRUE)
-
-  cfg_legacy_fill <- base_cfg
-  cfg_legacy_fill$fill_model <- list(type = "next_open", spread_bps = 1, commission_fixed = 0)
-  testthat::expect_error(ledgr:::ledgr_validate_config(cfg_legacy_fill), class = "ledgr_legacy_config_shape")
 
   cfg_bad_pulse <- base_cfg
   cfg_bad_pulse$backtest$pulse <- "INTRADAY"
@@ -317,7 +331,12 @@ testthat::test_that("validation passes for a minimal valid config (list and JSON
     timing_model = ledgr_test_timing_model(),
     cost_model = ledgr_test_cost_config(),
     strategy = list(id = "x", params = list()),
-    data = list(source = "snapshot", snapshot_id = "test-snapshot")
+    data = list(
+      source = "snapshot",
+      snapshot_id = "test-snapshot",
+      snapshot_hash = "test-hash"
+    ),
+    identity_rule_version = 2L
   )
 
   testthat::expect_error(ledgr:::ledgr_validate_config(cfg), NA)

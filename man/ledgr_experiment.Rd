@@ -14,7 +14,6 @@ ledgr_experiment(
   timing_model = ledgr_timing_next_open(),
   cost_model,
   risk_chain = ledgr_risk_none(),
-  fill_model = NULL,
   persist_features = TRUE,
   execution_mode = "audit_log",
   metric_context = NULL,
@@ -57,10 +56,6 @@ trip crosses approximately \code{spread_bps} basis points before explicit fees.}
 
 \item{risk_chain}{Target-risk chain object. Defaults to
 \code{ledgr_risk_none()} for explicit no-risk execution.}
-
-\item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
-with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus
-\code{cost_model}.}
 
 \item{persist_features}{Logical scalar.}
 

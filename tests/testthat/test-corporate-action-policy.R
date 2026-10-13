@@ -39,9 +39,14 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
   )], use.names = FALSE)
   testthat::expect_false(any(unlist(research$identity) %in% short_values))
 
-  baseline <- list(
-    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(research)
-  )
+  policy_config <- function(policy) {
+    list(
+      corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy),
+      data = list(source = "snapshot", snapshot_hash = "test-hash"),
+      identity_rule_version = 2L
+    )
+  }
+  baseline <- policy_config(research)
   alternatives <- list(
     ledgr_corporate_actions(cash_amount = "refuse"),
     ledgr_corporate_actions(cash_posting = "next_open"),
@@ -49,9 +54,7 @@ testthat::test_that("[LTB-0032] corporate-action policy is closed and versioned"
     ledgr_corporate_actions(unsupported_quantity = "refuse")
   )
   hashes <- vapply(alternatives, function(policy) {
-    ledgr:::config_hash(list(
-      corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy)
-    ))
+    ledgr:::config_hash(policy_config(policy))
   }, character(1))
   testthat::expect_true(all(hashes != ledgr:::config_hash(baseline)))
 
@@ -237,45 +240,4 @@ testthat::test_that("[LTB-0060] release surfaces limit corporate-action claims",
       )
     }
   }
-})
-
-# ledgr-test-profile: review
-testthat::test_that("[LTB-0033] legacy runs do not acquire a policy on reopen", {
-  db_path <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(db_path), add = TRUE)
-  bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:2)
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  exp <- ledgr_experiment(
-    snapshot,
-    function(ctx, params) ctx$flat(),
-    cost_model = ledgr_cost_zero()
-  )
-  bt <- ledgr_run(exp, run_id = "legacy-policy-absence")
-  close(bt)
-
-  con <- get_connection(snapshot)
-  row <- DBI::dbGetQuery(
-    con,
-    "SELECT config_json FROM runs WHERE run_id = ?",
-    params = list("legacy-policy-absence")
-  )
-  legacy <- ledgr:::ledgr_json_read_config(row$config_json[[1L]])
-  legacy$corporate_actions <- NULL
-  legacy_json <- canonical_json(legacy)
-  legacy_hash <- ledgr:::config_hash(legacy)
-  DBI::dbExecute(
-    con,
-    "UPDATE runs SET config_json = ?, config_hash = ? WHERE run_id = ?",
-    params = list(legacy_json, legacy_hash, "legacy-policy-absence")
-  )
-
-  reopened <- ledgr_run_open(snapshot, "legacy-policy-absence")
-  on.exit(close(reopened), add = TRUE)
-  testthat::expect_null(reopened$config$corporate_actions)
-  testthat::expect_null(
-    ledgr:::ledgr_json_read_config(
-      ledgr_run_info(snapshot, "legacy-policy-absence")$config_json
-    )$corporate_actions
-  )
 })

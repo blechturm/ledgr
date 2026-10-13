@@ -2,7 +2,7 @@ ledgr_compare_test_table_counts <- function(con) {
   tables <- c("runs", "run_provenance", "run_telemetry", "ledger_events", "equity_curve", "features")
   stats::setNames(
     vapply(tables, function(table) {
-      if (!ledgr:::ledgr_experiment_store_table_exists(con, table)) return(NA_integer_)
+      if (!table %in% ledgr_test_store_tables(con)) return(NA_integer_)
       as.integer(DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n[[1]])
     }, integer(1)),
     tables

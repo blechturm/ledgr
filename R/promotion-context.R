@@ -307,9 +307,6 @@ ledgr_run_promotion_context <- function(exp, run_id) {
 
 ledgr_fetch_promotion_context <- function(con, run_id) {
   ledgr_store_assert_current(con)
-  if (!ledgr_experiment_store_table_exists(con, "run_promotion_context")) {
-    return(NULL)
-  }
   row <- DBI::dbGetQuery(
     con,
     "

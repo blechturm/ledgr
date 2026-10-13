@@ -127,15 +127,11 @@ ledgr_snapshot_info <- function(con, snapshot_id) {
     df$snapshot_hash[[1L]],
     df$hash_rule_version[[1L]]
   )
-  df$off_session_bar_count <- if (ledgr_experiment_store_table_exists(con, "snapshot_observation_quarantine")) {
-    as.integer(DBI::dbGetQuery(
-      con,
-      "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
-      params = list(snapshot_id, ledgr_off_session_reason)
-    )$n[[1L]])
-  } else {
-    0L
-  }
+  df$off_session_bar_count <- as.integer(DBI::dbGetQuery(
+    con,
+    "SELECT COUNT(*) AS n FROM snapshot_observation_quarantine WHERE snapshot_id = ? AND reason = ?",
+    params = list(snapshot_id, ledgr_off_session_reason)
+  )$n[[1L]])
   metadata <- ledgr_snapshot_info_parse_meta(df$meta_json[[1]])
   df$start_date <- ledgr_snapshot_info_meta_chr(metadata, "start_date")
   df$end_date <- ledgr_snapshot_info_meta_chr(metadata, "end_date")

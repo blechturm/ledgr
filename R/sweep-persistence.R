@@ -374,7 +374,7 @@ ledgr_sweep_assert_snapshot_row <- function(con, snapshot_id, snapshot_hash) {
 
 ledgr_sweep_assert_parent_schema_version <- function(parent) {
   version <- as.integer(parent$sweep_schema_version[[1]])
-  if (is.na(version) || version > ledgr_saved_sweep_schema_version || version < 1L) {
+  if (is.na(version) || !identical(version, ledgr_saved_sweep_schema_version)) {
     rlang::abort(
       sprintf(
         "Saved sweep schema version %s is incompatible with this ledgr version.",
@@ -438,9 +438,6 @@ ledgr_sweep_fetch_returns <- function(con, sweep_id, candidates) {
 }
 
 ledgr_sweep_fetch_trades <- function(con, sweep_id, candidates) {
-  if (!ledgr_experiment_store_table_exists(con, "sweep_trades")) {
-    return(ledgr_sweep_empty_trades(include_sweep_id = TRUE))
-  }
   trades <- DBI::dbGetQuery(
     con,
     "
@@ -571,22 +568,11 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
 }
 
 ledgr_sweep_reconstruct_risk_identity <- function(parent, candidates) {
-  version <- as.integer(parent$sweep_schema_version[[1]])
-  noop <- ledgr_sweep_reconstruct_noop_risk_identity()
   parent_has_risk <- all(c("risk_chain_hash", "risk_plan_json") %in% names(parent))
   candidate_has_risk <- all(c("risk_chain_hash", "risk_plan_json") %in% names(candidates))
-  if (version < 2L) {
-    ledgr_sweep_assert_legacy_risk_unambiguous(parent, candidates, noop, parent_has_risk, candidate_has_risk)
-    return(list(
-      parent_hash = noop$risk_chain_hash,
-      parent_plan = noop$risk_plan_json,
-      candidate_hashes = rep(noop$risk_chain_hash, nrow(candidates)),
-      candidate_plans = rep(noop$risk_plan_json, nrow(candidates))
-    ))
-  }
   if (!parent_has_risk || !candidate_has_risk) {
     rlang::abort(
-      "Saved sweep schema v2 requires risk_chain_hash and risk_plan_json columns.",
+      "Saved sweep schema 4 requires risk_chain_hash and risk_plan_json columns.",
       class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
     )
   }
@@ -624,49 +610,6 @@ ledgr_sweep_reconstruct_risk_identity <- function(parent, candidates) {
     parent_plan = parent_plan,
     candidate_hashes = candidate_hashes,
     candidate_plans = candidate_plans
-  )
-}
-
-ledgr_sweep_assert_legacy_risk_unambiguous <- function(parent,
-                                                       candidates,
-                                                       noop,
-                                                       parent_has_risk,
-                                                       candidate_has_risk) {
-  nonempty <- function(x) {
-    is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
-  }
-  assert_value <- function(hash, plan, label) {
-    has_hash <- nonempty(hash)
-    has_plan <- nonempty(plan)
-    if (!has_hash && !has_plan) {
-      return(invisible(TRUE))
-    }
-    if (!has_hash || !has_plan ||
-        !identical(as.character(hash), noop$risk_chain_hash) ||
-        !identical(as.character(canonical_json(plan)), noop$risk_plan_json)) {
-      rlang::abort(
-        sprintf("Saved sweep schema v1 has ambiguous risk identity in %s.", label),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-    invisible(TRUE)
-  }
-  if (isTRUE(parent_has_risk)) {
-    assert_value(parent$risk_chain_hash[[1]], parent$risk_plan_json[[1]], "parent row")
-  }
-  if (isTRUE(candidate_has_risk)) {
-    for (i in seq_len(nrow(candidates))) {
-      assert_value(candidates$risk_chain_hash[[i]], candidates$risk_plan_json[[i]], "candidate row")
-    }
-  }
-  invisible(TRUE)
-}
-
-ledgr_sweep_reconstruct_noop_risk_identity <- function() {
-  risk <- ledgr_risk_none()
-  list(
-    risk_chain_hash = ledgr_risk_chain_hash(risk),
-    risk_plan_json = ledgr_risk_plan_json(risk)
   )
 }
 

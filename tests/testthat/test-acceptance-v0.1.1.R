@@ -15,7 +15,7 @@ v011_make_csv <- function(lines, bom = FALSE) {
 }
 
 v011_make_runner_cfg <- function(db_path, snapshot_id, universe_ids, start_ts_utc, end_ts_utc) {
-  ledgr_test_modernize_config(list(
+  cfg <- ledgr_test_modernize_config(list(
     db_path = db_path,
     engine = list(seed = 1L, tz = "UTC"),
     data = list(source = "snapshot", snapshot_id = snapshot_id),
@@ -30,6 +30,11 @@ v011_make_runner_cfg <- function(db_path, snapshot_id, universe_ids, start_ts_ut
     features = list(enabled = FALSE, defs = list()),
     strategy = list(id = "hold_zero", params = list())
   ))
+  cfg$identity_rule_version <- 2L
+  if (is.null(cfg$data$snapshot_hash)) {
+    stop("test helper failed to obtain the current snapshot hash", call. = FALSE)
+  }
+  cfg
 }
 
 testthat::test_that("AT1: Snapshot create", {

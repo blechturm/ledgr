@@ -211,10 +211,9 @@ testthat::test_that("[LTB-0028] corporate-action rows persist, seal, and move id
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE))
   DBI::dbDisconnect(con, shutdown = TRUE)
   con <- ledgr_db_init(no_facts_path)
-  testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(
-    con,
-    "snapshot_equity_corporate_actions"
-  ))
+  testthat::expect_true(
+    "snapshot_equity_corporate_actions" %in% ledgr_test_store_tables(con)
+  )
   testthat::expect_identical(
     ledgr:::ledgr_experiment_store_version(con),
     ledgr:::ledgr_experiment_store_schema_version

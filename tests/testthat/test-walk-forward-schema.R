@@ -121,7 +121,7 @@ testthat::test_that("walk-forward schema stores compact identity rows without pl
   )
   table_columns <- lapply(
     c("walk_forward_sessions", "walk_forward_folds", "walk_forward_scores"),
-    function(table_name) ledgr:::ledgr_experiment_store_columns(con, table_name)
+    function(table_name) ledgr_test_store_columns(con, table_name)
   )
   names(table_columns) <- c("walk_forward_sessions", "walk_forward_folds", "walk_forward_scores")
   all_columns <- unlist(table_columns, use.names = FALSE)

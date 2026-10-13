@@ -92,21 +92,21 @@ ledgr_run_registration <- function(con,
       )
     }
   } else {
-    # A run recorded under a retired policy schema is inspection-only. Refuse
-    # it by name before the hash check rather than reinterpreting it.
-    stored_cfg <- tryCatch(
-      ledgr_json_read_config(run_row$config_json[[1]]),
-      error = function(e) NULL
-    )
-    if (is.list(stored_cfg)) {
-      stored_rule <- ledgr_config_identity_rule(stored_cfg)
-      # A public run builds a rule-2 config; only a low-level config built
-      # without the field may resume a rule-1 run, since it hashes alike.
-      if (!identical(stored_rule, ledgr_config_identity_rule(cfg))) {
-        ledgr_identity_rule_retired_abort(sprintf("Run '%s'", run_id), stored_rule)
-      }
-      ledgr_policy_schema_require_current(stored_cfg, run_id = run_id)
+    stored_cfg <- ledgr_json_read_config(run_row$config_json[[1]])
+    if (!identical(
+      as.integer(stored_cfg$identity_rule_version),
+      ledgr_identity_rule_version
+    ) || !is.character(stored_cfg$data$snapshot_hash) ||
+        length(stored_cfg$data$snapshot_hash) != 1L ||
+        is.na(stored_cfg$data$snapshot_hash) ||
+        !nzchar(stored_cfg$data$snapshot_hash)) {
+      rlang::abort(
+        sprintf("Run '%s' has an invalid current identity record.", run_id),
+        class = "ledgr_invalid_config"
+      )
     }
+    ledgr_policy_schema_require_current(stored_cfg, run_id = run_id)
+    ledgr_execution_timing_require_current(stored_cfg)
     stored_cfg_hash <- run_row$config_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
       rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")

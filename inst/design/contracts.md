@@ -368,7 +368,7 @@ Accepted change pending:
   promoting run's, with the fields that differ and those the sweep did not
   record (a walk-forward candidate records only strategy and feature-set
   identity). A difference warns with `ledgr_promote_identity_mismatch`; it does
-  not refuse. Version 1 records read unchanged without `identity_check`.
+  not refuse. Current promotion records always carry version 2.
 - Promotion context is written only after the committed run succeeds. If the
   promotion-context write fails, ledgr warns and returns the committed run; it
   must not roll back a successful run.
@@ -415,13 +415,10 @@ Accepted change pending:
   `v001` keeps its earlier meaning.
 - `ledgr_valuation_stale(max_sessions, exhausted = "freeze")` records
   `schema_version = 2` with `exhausted` of `"freeze"` or `"refuse"`. The field
-  is invalid under schema 1, and no default `max_sessions` exists.
-- Schema-1 policy records stay readable in their exact historical shape. A
-  schema-1 valuation record reads as `exhausted = "refuse"`, the only behavior
-  it ever had. Executing, resuming, rerunning or promoting into a run recorded
-  under either schema-1 policy fails with `ledgr_policy_schema_mismatch`, and
-  a schema-1 corporate-action policy object is refused when validated. Nothing
-  recorded under schema 1 is reinterpreted under schema-2 meaning.
+  is invalid under any other schema, and no default `max_sessions` exists.
+- Every executable or inspectable current config carries schema-2
+  corporate-action and valuation policy records. Missing or different policy
+  schemas are invalid rather than inferred, translated or migrated.
 
 ## Snapshot Contract
 
@@ -958,10 +955,10 @@ Accepted change pending:
   statistic counts closed trade rows rather than fill rows. The computation is
   unchanged.
 - `ledgr_run_info()` exposes the committed run's `risk_chain_hash` by reading
-  recorded config identity. Historical configs without that field return
-  `NA_character_`; inspection must not infer a no-op plan, substitute current
-  experiment state, add a top-level `risk_plan_json` field, execute recovered
-  strategy code, or write persistent rows.
+  recorded config identity. Current configs always carry the field; inspection
+  must not infer a plan, substitute current experiment state, add a top-level
+  `risk_plan_json` field, execute recovered strategy code, or write persistent
+  rows.
 - Completed and failed v0.1.5+ runs persist compact `run_telemetry`:
   `status`, `execution_mode`, elapsed seconds, pulse count, `persist_features`,
   and feature-cache hit/miss counts. Detailed per-component telemetry remains
@@ -1555,8 +1552,8 @@ Accepted change pending:
   evidence read-only. Availability-aware runs expose requested and achieved
   windows, terminal status and stop reason, last fully valued and executed
   times, complete or incomplete performance, and affected instrument IDs from
-  recorded stop diagnostics. Dense and historical runs without that evidence
-  report it as unknown; inspection must not reconstruct or persist it.
+  recorded stop diagnostics. Dense runs without that evidence report it as
+  unknown; inspection must not reconstruct or persist it.
 - `ledgr_results(bt, what = "fills")` returns execution fill rows, including
   opening and closing actions. `ledgr_results(bt, what = "trades")` returns
   closed trade rows only. Public `n_trades` and `win_rate` metrics are computed
@@ -1588,8 +1585,8 @@ Accepted change pending:
 - Run information, reopened summaries, and comparisons expose timing version
   and convention provenance. Comparison metadata reports selected-set-wide
   `fill_timing_comparable` and `fill_timing_comparability_reason` without
-  filtering or changing historical metrics. Differing or unknown conventions
-  cannot support fill equivalence; matching conventions establish timing
+  filtering or changing recorded metrics. Differing conventions cannot
+  support fill equivalence; matching conventions establish timing
   compatibility only, not economic equivalence.
 - `ledgr_run_tag()`, `ledgr_run_untag()`, and `ledgr_run_tags()` manage mutable
   run grouping metadata in `run_tags`. Tags must not alter run identity hashes,
@@ -1650,11 +1647,11 @@ Accepted change pending:
 - `ledgr_run_fills()` and `ledgr_results(bt, "equity")` are user-facing
   read helpers over existing run artifacts; they must not become alternate
   reconstruction implementations.
-- Historical runs retain their recorded config, hashes, events, diagnostics,
+- Current runs retain their recorded config, hashes, events, diagnostics,
   projections, completion evidence, and fill timestamps byte for byte. Reads
   may classify timing provenance and derive unambiguous pulse alignment, but
   must not write it back, replay strategy code, recompute fill eligibility, or
-  restamp historical events.
+  restamp recorded events.
 - `ledgr_run_fills(bt)` has exactly one public formal and eagerly returns the
   full fills-schema tibble for empty and populated runs. It has no public
   cursor, lazy-read, or row-threshold mode.
@@ -1670,7 +1667,8 @@ Accepted change pending:
   invented lineage. `review$top` is a lineage-free presentation table, not a
   promotion-ready candidate surface.
 - Sweep-result restoration preserves `risk_chain_hash` and `risk_plan_json`
-  when present and preserves their historical absence as `NULL` rather than
+  when present and preserves their absence on compatible plain input as `NULL`
+  rather than
   synthesizing provenance.
 - Public standard metrics use the equity rows returned by
   `ledgr_results(bt, what = "equity")` and the closed trade rows returned by

@@ -292,7 +292,7 @@ testthat::test_that("timing version enters active identity and stays absent from
   ))
   testthat::expect_error(
     ledgr:::ledgr_execution_timing_require_current(legacy_config),
-    class = "ledgr_execution_timing_version_mismatch"
+    class = "ledgr_invalid_config"
   )
 
   meta <- ledgr:::ledgr_precompute_snapshot_meta(snapshot)
@@ -377,80 +377,6 @@ testthat::test_that("timing version enters active identity and stays absent from
   )
 })
 
-# ledgr-test-profile: heavy_protocol
-testthat::test_that("legacy timing is read-only and mixed versions reject fill equivalence", {
-  snapshot <- availability_runtime_fixture(days = 4L)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  calls <- new.env(parent = emptyenv())
-  calls$n <- 0L
-  exp <- availability_timing_experiment(snapshot, calls)
-  modern <- ledgr_run(exp, run_id = "timing-v2")
-  legacy_source <- ledgr_run(exp, run_id = "timing-v1")
-  close(modern)
-  close(legacy_source)
-  legacy_identity <- availability_make_legacy_timing_run(snapshot$db_path, "timing-v1")
-  before <- availability_timing_store_contents(snapshot$db_path, "timing-v1")
-
-  legacy_info <- ledgr_run_info(snapshot, "timing-v1")
-  modern_info <- ledgr_run_info(snapshot, "timing-v2")
-  testthat::expect_identical(legacy_info$execution_timing_version, 1L)
-  testthat::expect_identical(legacy_info$execution_timing_convention, "availability_close_v1")
-  testthat::expect_identical(legacy_info$execution_timing_source, "legacy_config_inference")
-  testthat::expect_identical(modern_info$execution_timing_version, 2L)
-  testthat::expect_identical(modern_info$execution_timing_convention, "availability_open_v2")
-
-  legacy <- ledgr_run_open(snapshot, "timing-v1")
-  on.exit(close(legacy), add = TRUE)
-  legacy_fills <- ledgr_run_fills(legacy)
-  testthat::expect_identical(
-    legacy_fills$ts_utc,
-    as.POSIXct("2020-01-02 16:00:00", tz = "UTC")
-  )
-  testthat::expect_identical(legacy_fills$ts_utc, legacy_fills$recording_pulse_ts_utc)
-  testthat::expect_output(
-    summary(legacy),
-    "Fill Timing:         availability_close_v1",
-    fixed = TRUE
-  )
-
-  comparison <- ledgr_run_compare(snapshot, run_ids = c("timing-v1", "timing-v2"))
-  testthat::expect_identical(
-    comparison$execution_timing_convention,
-    c("availability_close_v1", "availability_open_v2")
-  )
-  testthat::expect_false(attr(comparison, "fill_timing_comparable", exact = TRUE))
-  testthat::expect_identical(
-    attr(comparison, "fill_timing_comparability_reason", exact = TRUE),
-    "mixed_timing_conventions"
-  )
-  testthat::expect_true(all(is.finite(comparison$final_equity)))
-  testthat::expect_error(
-    ledgr:::ledgr_comparison_assert_fill_timing_comparable(comparison),
-    class = "ledgr_fill_timing_not_comparable"
-  )
-  testthat::expect_output(print(comparison), "Fill timing comparable: no")
-
-  testthat::expect_identical(
-    availability_timing_store_contents(snapshot$db_path, "timing-v1"),
-    before
-  )
-  testthat::expect_identical(
-    legacy_info$config_json,
-    as.character(legacy_identity$config_json)
-  )
-  testthat::expect_identical(legacy_info$config_hash, legacy_identity$config_hash)
-  calls_before_resume <- calls$n
-  testthat::expect_error(
-    ledgr_run(exp, run_id = "timing-v1"),
-    class = "ledgr_run_hash_mismatch"
-  )
-  testthat::expect_identical(calls$n, calls_before_resume)
-  testthat::expect_identical(
-    availability_timing_store_contents(snapshot$db_path, "timing-v1"),
-    before
-  )
-})
-
 testthat::test_that("unknown timing evidence is never promoted to version two", {
   provider <- ledgr:::ledgr_availability_provider_version()
   cases <- list(
@@ -476,6 +402,6 @@ testthat::test_that("unknown timing evidence is never promoted to version two", 
   )))
   testthat::expect_error(
     ledgr:::ledgr_execution_timing_require_current(cases[[1L]]),
-    class = "ledgr_execution_timing_version_mismatch"
+    class = "ledgr_invalid_config"
   )
 })

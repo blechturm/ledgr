@@ -13,7 +13,14 @@ testthat::test_that("current schema retains normalized availability tables", {
     "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
   )$table_name
   testthat::expect_true(all(names(ledgr:::ledgr_snapshot_availability_tables()) %in% tables))
-  testthat::expect_true("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
+  snapshot_columns <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT column_name FROM information_schema.columns",
+      "WHERE table_schema = 'main' AND table_name = 'snapshots'"
+    )
+  )$column_name
+  testthat::expect_true("hash_rule_version" %in% snapshot_columns)
   testthat::expect_invisible(ledgr_validate_schema(con))
 })
 
@@ -54,44 +61,17 @@ testthat::test_that("an older availability store refuses without mutation", {
     "SELECT value FROM ledgr_schema_metadata WHERE key = 'experiment_store_schema_version'"
   )$value[[1L]]
   testthat::expect_identical(recorded, "112")
-  testthat::expect_false("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
-  testthat::expect_false(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
-})
-
-# ledgr-test-profile: review
-testthat::test_that("missing-marker snapshots stay readable but do not verify", {
-  db_path <- tempfile(fileext = ".duckdb")
-  bars <- data.frame(
-    instrument_id = "AAA",
-    ts_utc = as.POSIXct("2024-01-01", tz = "UTC"),
-    open = 10, high = 11, low = 9, close = 10, volume = 100
-  )
-  snapshot <- ledgr_snapshot_from_df(bars, db_path = db_path)
-  id <- snapshot$snapshot_id
-  hash <- ledgr_snapshot_info(snapshot)$snapshot_hash[[1L]]
-  con <- ledgr:::get_connection(snapshot)
-  DBI::dbExecute(
+  snapshot_columns <- DBI::dbGetQuery(
     con,
-    "UPDATE snapshots SET hash_rule_version = NULL WHERE snapshot_id = ?",
-    params = list(id)
-  )
-  ledgr_snapshot_close(snapshot)
-
-  con <- ledgr_db_init(db_path)
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  row <- DBI::dbGetQuery(
+    paste(
+      "SELECT column_name FROM information_schema.columns",
+      "WHERE table_schema = 'main' AND table_name = 'snapshots'"
+    )
+  )$column_name
+  tables <- DBI::dbGetQuery(
     con,
-    "SELECT status, snapshot_hash, hash_rule_version FROM snapshots WHERE snapshot_id = ?",
-    params = list(id)
-  )
-  testthat::expect_identical(row$status[[1L]], "SEALED")
-  testthat::expect_identical(row$snapshot_hash[[1L]], hash)
-  testthat::expect_true(is.na(row$hash_rule_version[[1L]]))
-  testthat::expect_true(is.na(
-    ledgr:::ledgr_snapshot_hash_rule_version(con, id)
-  ))
-  testthat::expect_error(
-    ledgr:::ledgr_snapshot_hash(con, id),
-    class = "ledgr_snapshot_rebuild_required"
-  )
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+  )$table_name
+  testthat::expect_false("hash_rule_version" %in% snapshot_columns)
+  testthat::expect_false("snapshot_fact_families" %in% tables)
 })

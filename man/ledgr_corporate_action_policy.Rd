@@ -82,6 +82,4 @@ beyond its valuation horizon. Its research default \code{"write_off"} is reporte
 as an assumption; the strict preset refuses.
 
 The policy object and its stored identity use \code{policy_schema_version} 2.
-Runs recorded under schema 1 remain readable, but cannot be resumed, rerun
-or promoted into under schema 2.
 }

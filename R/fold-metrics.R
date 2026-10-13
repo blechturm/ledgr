@@ -8,15 +8,9 @@ ledgr_bars_per_year_from_pulses <- function(pulses_posix) {
 
 ledgr_metrics_from_equity_fills <- function(equity,
                                             fills,
-                                            bars_per_year = 252,
-                                            risk_free_rate = 0,
-                                            metric_kernel = NULL) {
-  if (!is.null(metric_kernel)) {
-    bars_per_year <- metric_kernel$bars_per_year
-    rf_period_return <- metric_kernel$rf_period_return
-  } else {
-    rf_period_return <- compute_rf_period_return(risk_free_rate, bars_per_year)
-  }
+                                            metric_kernel) {
+  bars_per_year <- metric_kernel$bars_per_year
+  rf_period_return <- metric_kernel$rf_period_return
   equity_values <- equity$equity
   total_return <- if (length(equity_values) == 0L ||
       !is.finite(equity_values[[1]]) ||

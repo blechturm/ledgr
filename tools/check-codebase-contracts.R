@@ -18,8 +18,8 @@ output_arg <- value_arg(
 output <- normalizePath(output_arg, winslash = "/", mustWork = FALSE)
 source_commit <- value_arg("source-commit", "working-tree")
 mode <- value_arg("mode", "report")
-if (!identical(mode, "report")) {
-  stop("LDG-3022 supports only --mode=report.", call. = FALSE)
+if (!mode %in% c("report", "check")) {
+  stop("`--mode` must be report or check.", call. = FALSE)
 }
 
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
@@ -576,11 +576,27 @@ if (length(version_rows) == 0L) {
     "file", "line", "owner", "record_kind", "expression",
     "persisted_or_convention", "persistence_evidence", "fingerprint_member",
     "atomic_scalar", "outside_fingerprint", "comparison_operator",
-    "equality_assertion"
+    "equality_assertion", "current_only_violation"
   ))
 } else {
   version_rows <- do.call(rbind, version_rows)
   version_rows <- unique(version_rows)
+  legacy_pattern <- paste(
+    c(
+      "availability_close_v1",
+      "ledgr_config_identity_rule",
+      "identity_rule_version.*(?:NULL|1L)",
+      "policy_schema_version.*1L",
+      "retention_schema_version.*1L",
+      "sweep_schema_version.*(?:<|>|1L|2L|3L)"
+    ),
+    collapse = "|"
+  )
+  version_rows$current_only_violation <- grepl(
+    legacy_pattern,
+    version_rows$expression,
+    perl = TRUE
+  ) & version_rows$record_kind != "binding"
 }
 
 ## Hand-built run-config census -------------------------------------------
@@ -671,6 +687,14 @@ resolve_config_expression <- function(expr, entry, before = Inf,
       if (!is.null(found)) {
         formals <- names(as.list(found$definition$rhs[[2L]]))
         body <- found$definition$rhs[[3L]]
+        body_text <- deparse_one(body)
+        if (grepl("identity_rule_version", body_text, fixed = TRUE) &&
+            grepl("snapshot_hash", body_text, fixed = TRUE)) {
+          return(status_pair(
+            "supplied", "supplied", paste0("helper:", helper, ":current"),
+            text
+          ))
+        }
         returned <- if (is.call(body) && identical(call_name(body), "{")) {
           tail(as.list(body)[-1L], 1L)[[1L]]
         } else {
@@ -1148,9 +1172,11 @@ summary <- data.frame(
         )
     ),
     sum(helper_rows$classification == "uncalled_private"),
-    sum(run_config_rows$identity_rule_version != "supplied" |
-          run_config_rows$data_snapshot_hash != "supplied"),
-    sum(version_rows$outside_fingerprint)
+    sum(run_config_rows$consumer != "config_builder" &
+          (run_config_rows$identity_rule_version != "supplied" |
+             run_config_rows$data_snapshot_hash != "supplied")),
+    sum(version_rows$outside_fingerprint) +
+      sum(version_rows$current_only_violation)
   ),
   stringsAsFactors = FALSE
 )
@@ -1176,3 +1202,20 @@ cat(sprintf(
   nrow(condition_rows),
   sum(summary$findings)
 ))
+
+if (identical(mode, "check")) {
+  bad_configs <- run_config_rows$consumer != "config_builder" &
+    (run_config_rows$identity_rule_version != "supplied" |
+       run_config_rows$data_snapshot_hash != "supplied")
+  bad_versions <- version_rows$current_only_violation
+  if (any(bad_configs) || any(bad_versions)) {
+    stop(sprintf(
+      paste0(
+        "LEDGR_CODEBASE_CENSUS_FAILED current-only versions=%d ",
+        "run_configs=%d."
+      ),
+      sum(bad_versions),
+      sum(bad_configs)
+    ), call. = FALSE)
+  }
+}

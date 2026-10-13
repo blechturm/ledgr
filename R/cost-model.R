@@ -298,13 +298,6 @@ ledgr_cost_model_unspecified <- function(arg = "cost_model") {
   )
 }
 
-ledgr_legacy_fill_model_abort <- function(arg = "fill_model") {
-  rlang::abort(
-    sprintf("`%s` is a legacy v0.1.8 shape and is no longer accepted. Use `timing_model` plus `cost_model`.", arg),
-    class = "ledgr_legacy_fill_model_shape"
-  )
-}
-
 ledgr_experiment_normalize_timing_model <- function(timing_model) {
   if (!inherits(timing_model, "ledgr_timing_model")) {
     rlang::abort("`timing_model` must be a ledgr timing model object.", class = "ledgr_invalid_timing_model")

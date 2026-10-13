@@ -1,17 +1,8 @@
 #' ledgr condition classes
 #'
 #' ledgr uses stable top-level condition classes for public cost-model,
-#' timing-model, execution-window, saved-sweep, retained-series, and
-#' legacy-shape failures. User tests should assert on these classes instead of
-#' parsing message text.
-#'
-#' @section Legacy shape classes:
-#' `ledgr_legacy_fill_model_shape` is raised when callers pass the v0.1.8
-#' `fill_model` shape or legacy scalar cost fields to public entry points.
-#' ledgr fails closed; it does not translate the legacy shape.
-#'
-#' `ledgr_legacy_config_shape` is raised when reopening a stored config whose
-#' execution shape still contains legacy fill/cost fields.
+#' timing-model, execution-window, saved-sweep, and retained-series failures.
+#' User tests should assert on these classes instead of parsing message text.
 #'
 #' @section Cost and timing classes:
 #' `ledgr_cost_model_unspecified` is raised when a public execution entry point
@@ -49,14 +40,10 @@
 #' a non-POSIXct `ts_utc` representation. Snapshot hashes fail closed on driver
 #' timestamp representation drift instead of silently re-keying sealed data.
 #'
-#' `ledgr_snapshot_rebuild_required` is raised when a content-dependent read
-#' reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
-#' snapshots remain metadata-readable but are not executable; rebuild them
-#' from source under rule 3. ledgr does not migrate or reinterpret their roots.
-#'
 #' `ledgr_snapshot_hash_rule_unsupported` is raised for an unrecognized future
-#' hash-rule marker. `ledgr_snapshot_hash_order_invalid` is raised when source
-#' rows are not in the bytewise order required by rule 3.
+#' or missing hash-rule marker in a current store.
+#' `ledgr_snapshot_hash_order_invalid` is raised when source rows are not in
+#' the bytewise order required by rule 3.
 #'
 #' @section Store-format classes:
 #' `ledgr_store_rebuild_required` is raised when a persistent store is older,
@@ -79,10 +66,8 @@
 #' receives a snapshot that declares point-in-time facts; use
 #' `ledgr_experiment()` and `ledgr_run()`.
 #'
-#' `ledgr_identity_rule_retired` is raised when a run recorded under identity
-#' rule 1 is resumed; it remains readable. `ledgr_promote_identity_mismatch` is
-#' a warning raised when a promoted candidate's recorded identities differ from
-#' the promoting experiment's.
+#' `ledgr_promote_identity_mismatch` is a warning raised when a promoted
+#' candidate's recorded identities differ from the promoting experiment's.
 #'
 #' `ledgr_sessions_incomplete` is raised when the declared session calendar
 #' does not cover the requested start and end of a run, sweep, run window or
@@ -94,15 +79,10 @@
 #' `ledgr_compiled_availability_unsupported` is raised before execution when
 #' availability-aware execution is combined with the compiled spot-FIFO path.
 #'
-#' `ledgr_execution_timing_version_mismatch` is raised when an active legacy or
-#' unknown timing config is submitted for current execution. Historical runs
-#' remain inspectable, but they cannot resume under corrected timing semantics.
-#'
 #' `ledgr_policy_schema_mismatch` is raised when a config or stored run carries
-#' a retired corporate-action or valuation policy schema and is submitted for
-#' execution, resume, rerun or promotion. Such runs remain readable through
-#' `ledgr_run_open()`, `ledgr_run_info()` and result readers, which report the
-#' recorded identity unchanged; they are never reinterpreted under schema 2.
+#' a non-current corporate-action or valuation policy schema. Current stores
+#' carry schema 2; ledgr does not infer, migrate, or reinterpret older policy
+#' records.
 #'
 #' `ledgr_fill_timing_not_comparable` is raised by fill-equivalence validation
 #' when selected runs have differing or unknown execution-timing conventions.
@@ -497,24 +477,22 @@
 #' inherits(attr(err, "condition"), "ledgr_invalid_cost_chain_order")
 #'
 #' @name ledgr_condition_classes
-#' @aliases ledgr_condition_classes ledgr_legacy_fill_model_shape
-#' @aliases ledgr_legacy_config_shape ledgr_cost_model_unspecified
+#' @aliases ledgr_condition_classes ledgr_cost_model_unspecified
 #' @aliases ledgr_invalid_cost_chain_order ledgr_invalid_cost_model
 #' @aliases ledgr_invalid_timing_model ledgr_invalid_fill_proposal
 #' @aliases ledgr_invalid_fill_context ledgr_run_not_found
 #' @aliases ledgr_unresolved_feature_id ledgr_run_window_too_short
 #' @aliases ledgr_invalid_lot_fill
 #' @aliases ledgr_snapshot_hash_invalid_timestamp
-#' @aliases ledgr_snapshot_rebuild_required
 #' @aliases ledgr_snapshot_hash_rule_unsupported
 #' @aliases ledgr_snapshot_hash_order_invalid
 #' @aliases ledgr_store_rebuild_required ledgr_invalid_store
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
 #' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
-#' @aliases ledgr_sessions_incomplete ledgr_identity_rule_retired ledgr_promote_identity_mismatch
+#' @aliases ledgr_sessions_incomplete ledgr_promote_identity_mismatch
 #' @aliases ledgr_membership_universe_not_found
 #' @aliases ledgr_compiled_availability_unsupported
-#' @aliases ledgr_execution_timing_version_mismatch ledgr_policy_schema_mismatch
+#' @aliases ledgr_policy_schema_mismatch
 #' @aliases ledgr_fill_timing_not_comparable
 #' @aliases ledgr_session_time_ambiguous ledgr_session_time_nonexistent
 #' @aliases ledgr_fact_ambiguous_membership_shape ledgr_fact_invalid_membership_list

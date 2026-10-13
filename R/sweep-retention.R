@@ -60,11 +60,13 @@ ledgr_sweep_retention_normalize <- function(retain) {
       class = c("ledgr_invalid_sweep_retention", "ledgr_invalid_args")
     )
   }
-  legacy_version <- identical(retain$retention_schema_version, 1L)
-  current_version <- identical(retain$retention_schema_version, ledgr_sweep_retention_schema_version)
-  trades <- retain$trades %||% "none"
+  current_version <- identical(
+    retain$retention_schema_version,
+    ledgr_sweep_retention_schema_version
+  )
+  trades <- retain$trades
   if (!is.list(retain) ||
-      (!legacy_version && !current_version) ||
+      !current_version ||
       !is.character(retain$returns) ||
       length(retain$returns) != 1L ||
       is.na(retain$returns) ||

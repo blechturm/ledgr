@@ -18,15 +18,11 @@ ledgr_backtest_terminal_evidence <- function(bt, con = NULL) {
     completion = completion,
     completion_json = ledgr_completion_json(
       completion,
-      affected_instrument_ids = if (ledgr_experiment_store_table_exists(opened$con, "run_diagnostics")) {
-        ledgr_stopped_instrument_ids(DBI::dbGetQuery(
-          opened$con,
-          "SELECT instrument_id, outcome FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq",
-          params = list(bt$run_id)
-        ))
-      } else {
-        character()
-      },
+      affected_instrument_ids = ledgr_stopped_instrument_ids(DBI::dbGetQuery(
+        opened$con,
+        "SELECT instrument_id, outcome FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq",
+        params = list(bt$run_id)
+      )),
       assumptions = if (ledgr_availability_config_active(bt$config)) {
         ledgr_assumption_flags_for_run(bt, opened$con)
       } else {
@@ -65,26 +61,20 @@ ledgr_run_completion_info_empty <- function() {
 }
 
 ledgr_run_completion_info <- function(con, run_id) {
-  if (!ledgr_experiment_store_table_exists(con, "run_completion")) {
-    return(ledgr_run_completion_info_empty())
-  }
   completion <- ledgr_run_completion_read(con, run_id, required = FALSE)
   if (is.null(completion) || nrow(completion) == 0L) {
     return(ledgr_run_completion_info_empty())
   }
-  affected_ids <- character()
-  if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
-    stopped <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT instrument_id FROM run_diagnostics",
-        "WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq"
-      ),
-      params = list(run_id)
-    )
-    affected_ids <- unique(as.character(stopped$instrument_id))
-    affected_ids <- affected_ids[!is.na(affected_ids) & nzchar(affected_ids)]
-  }
+  stopped <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT instrument_id FROM run_diagnostics",
+      "WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq"
+    ),
+    params = list(run_id)
+  )
+  affected_ids <- unique(as.character(stopped$instrument_id))
+  affected_ids <- affected_ids[!is.na(affected_ids) & nzchar(affected_ids)]
   ledgr_run_completion_info_from_rows(completion, affected_ids)
 }
 
@@ -113,7 +103,7 @@ ledgr_run_completion_info_many <- function(con, run_ids) {
     lapply(run_ids, function(run_id) ledgr_run_completion_info_empty()),
     run_ids
   )
-  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "run_completion")) {
+  if (length(run_ids) == 0L) {
     return(out)
   }
   quoted_ids <- paste(DBI::dbQuoteString(con, unique(run_ids)), collapse = ", ")
@@ -124,20 +114,17 @@ ledgr_run_completion_info_many <- function(con, run_ids) {
       quoted_ids
     )
   )
-  stopped <- data.frame(run_id = character(), instrument_id = character())
-  if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
-    stopped <- DBI::dbGetQuery(
-      con,
-      sprintf(
-        paste(
-          "SELECT run_id, instrument_id FROM run_diagnostics",
-          "WHERE run_id IN (%s) AND outcome = 'stopped'",
-          "ORDER BY run_id, diagnostic_seq"
-        ),
-        quoted_ids
-      )
+  stopped <- DBI::dbGetQuery(
+    con,
+    sprintf(
+      paste(
+        "SELECT run_id, instrument_id FROM run_diagnostics",
+        "WHERE run_id IN (%s) AND outcome = 'stopped'",
+        "ORDER BY run_id, diagnostic_seq"
+      ),
+      quoted_ids
     )
-  }
+  )
   for (run_id in unique(run_ids)) {
     row <- completion[completion$run_id == run_id, , drop = FALSE]
     if (nrow(row) == 0L) next

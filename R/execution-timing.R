@@ -39,15 +39,12 @@ ledgr_execution_timing_provenance <- function(config) {
   }
 
   version <- availability$execution_timing_version
-  if (is.null(version)) {
-    return(list(
-      execution_timing_version = 1L,
-      execution_timing_convention = "availability_close_v1",
-      execution_timing_source = "legacy_config_inference"
-    ))
-  }
   if (is.numeric(version) && length(version) == 1L && !is.na(version) &&
-      is.finite(version) && identical(as.integer(version), 2L) && version == 2) {
+      is.finite(version) &&
+      identical(
+        as.integer(version),
+        ledgr_availability_execution_timing_rule_version
+      ) && version == ledgr_availability_execution_timing_rule_version) {
     return(list(
       execution_timing_version = 2L,
       execution_timing_convention = "availability_open_v2",
@@ -74,11 +71,8 @@ ledgr_execution_timing_require_current <- function(config) {
     ledgr_availability_execution_timing_rule_version
   )) {
     rlang::abort(
-      paste0(
-        "Availability-aware execution requires the current execution timing version; ",
-        "legacy or unknown timing configs are inspection-only."
-      ),
-      class = c("ledgr_execution_timing_version_mismatch", "ledgr_run_hash_mismatch")
+      "Availability-aware execution requires execution timing version 2.",
+      class = "ledgr_invalid_config"
     )
   }
   invisible(TRUE)
@@ -138,7 +132,7 @@ ledgr_fill_recording_pulses_from_evidence <- function(fills,
   if (identical(timing$execution_timing_convention, "dense_bar_timestamp")) {
     return(as.POSIXct(fills$ts_utc, tz = "UTC"))
   }
-  if (!timing$execution_timing_convention %in% c("availability_close_v1", "availability_open_v2") ||
+  if (!identical(timing$execution_timing_convention, "availability_open_v2") ||
       !is.data.frame(diagnostics) || nrow(diagnostics) == 0L ||
       !is.data.frame(sessions) || nrow(sessions) == 0L) {
     return(unavailable)
@@ -224,36 +218,28 @@ ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
     return(rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), nrow(fills)))
   }
 
-  diagnostics <- if (ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
-    DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT event_seq, instrument_id, stage, outcome,",
-        "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
-        "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
-        "ORDER BY diagnostic_seq"
-      ),
-      params = list(bt$run_id)
-    )
-  } else {
-    data.frame()
-  }
+  diagnostics <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT event_seq, instrument_id, stage, outcome,",
+      "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
+      "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
+      "ORDER BY diagnostic_seq"
+    ),
+    params = list(bt$run_id)
+  )
 
   snapshot <- ledgr_availability_snapshot_connection(bt, con)
   on.exit(snapshot$close(), add = TRUE)
   snapshot_id <- as.character(bt$config$data$snapshot_id)
-  sessions <- if (ledgr_experiment_store_table_exists(snapshot$con, "snapshot_sessions")) {
-    DBI::dbGetQuery(
-      snapshot$con,
-      paste(
-        "SELECT status, session_open, session_close FROM snapshot_sessions",
-        "WHERE snapshot_id = ? ORDER BY session_close"
-      ),
-      params = list(snapshot_id)
-    )
-  } else {
-    data.frame()
-  }
+  sessions <- DBI::dbGetQuery(
+    snapshot$con,
+    paste(
+      "SELECT status, session_open, session_close FROM snapshot_sessions",
+      "WHERE snapshot_id = ? ORDER BY session_close"
+    ),
+    params = list(snapshot_id)
+  )
   ledgr_fill_recording_pulses_from_evidence(fills, diagnostics, sessions, timing)
 }
 

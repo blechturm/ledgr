@@ -211,9 +211,6 @@ ledgr_write_run_telemetry <- function(con,
                                       persist_features,
                                       feature_cache_hits,
                                       feature_cache_misses) {
-  if (!ledgr_experiment_store_table_exists(con, "run_telemetry")) {
-    return(invisible(FALSE))
-  }
   DBI::dbExecute(
     con,
     "

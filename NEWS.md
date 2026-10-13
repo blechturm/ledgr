@@ -8,6 +8,16 @@
   `ledgr_store_rebuild_required`; pre-CRAN migrations and tolerant readers
   have been removed.
 
+- Stored experiment records are current-only as well: run and walk-forward
+  identity rule 2, policy schema 2, saved-sweep schema 4, retention schema 2,
+  current provenance and execution timing version 2 are required. Older
+  records are not inferred, translated or reopened; rebuild the research store
+  from its source inputs with this ledgr version.
+
+- Removed the pre-release public `fill_model` argument, the `type` alias for
+  `as_tibble.ledgr_backtest()`, and their dedicated compatibility conditions.
+  Use `timing_model`, a classed `cost_model`, and `what`, respectively.
+
 ## Sweep persistence
 
 - `ledgr_sweep_save()` now saves sweeps whose candidates resolve to exactly
@@ -19,9 +29,8 @@
 
 - New snapshots use snapshot hash rule 3, a portable R-owned binary identity
   with fixed 10,000-row blocks and an explicit byte-order check. Snapshot
-  information reports the rule. Snapshots with a missing, rule-1, or rule-2
-  marker remain metadata-readable but refuse content-dependent use with
-  `ledgr_snapshot_rebuild_required`; rebuild them from source. ledgr does not
+  information reports the rule. Current stores require the rule-3 marker;
+  missing or different markers are invalid stored evidence. ledgr does not
   migrate, reinterpret, or fall back to an older hash format.
 
 - Complete rule-3 verification is reused inside one process through a private,
@@ -65,12 +74,10 @@
 - Run identity now binds snapshot content instead of the store-local snapshot
   ID. Runs record `identity_rule_version = 2` and the snapshot hash, so the
   same bars sealed under two snapshot IDs give the same `config_hash`, and
-  walk-forward `experiment_hash` and `session_id` follow. Existing runs and
-  sessions stay readable under their recorded rule; resuming an older run
-  refuses with `ledgr_identity_rule_retired`, and rerunning an older
-  walk-forward session starts a new one. A run whose opening is dated before the
-  snapshot now records the snapshot start, where it actually begins, as its
-  start.
+  walk-forward `experiment_hash` and `session_id` follow. Rule 2 is the only
+  readable stored identity; older research stores must be rebuilt. A run whose
+  opening is dated before the snapshot now records the snapshot start, where
+  it actually begins, as its start.
 
 - `ledgr_promote()` now records the candidate's strategy, feature-set,
   universe, valuation-policy, corporate-action-policy and opening identities

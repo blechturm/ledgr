@@ -4,7 +4,7 @@
 \alias{as_tibble.ledgr_backtest}
 \title{Extract tidy backtest tables}
 \usage{
-\method{as_tibble}{ledgr_backtest}(x, what = "equity", ..., type = NULL)
+\method{as_tibble}{ledgr_backtest}(x, what = "equity", ...)
 }
 \arguments{
 \item{x}{A \code{ledgr_backtest} object.}
@@ -12,9 +12,8 @@
 \item{what}{Result table to extract: \code{"equity"}, \code{"returns"}, \code{"fills"},
 \code{"trades"}, or \code{"ledger"}.}
 
-\item{...}{Unused.}
+\item{...}{Must be empty.}
 
-\item{type}{Deprecated alias for \code{what}.}
 }
 \value{
 A tibble with the requested result table.

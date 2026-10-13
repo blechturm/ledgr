@@ -308,9 +308,7 @@ ledgr_walk_forward_session_identity <- function(exp,
   cost_model_hash <- exp$cost_model_hash %||% ledgr_cost_model_hash(exp$cost_model)
   risk_chain <- exp$risk_chain %||% ledgr_risk_none()
   risk_chain_hash <- exp$risk_chain_hash %||% ledgr_risk_chain_hash(risk_chain)
-  # Under identity rule 2 the experiment hash binds snapshot content. A
-  # session recorded under rule 1 is not matched: like a session from another
-  # ledgr version, a rerun forks into a new session (LDG-3004).
+  # The experiment hash binds sealed snapshot content under identity rule 2.
   experiment_hash <- ledgr_walk_forward_experiment_hash(ledgr_walk_forward_base_config(exp, meta))
   param_grid_hash <- ledgr_walk_forward_param_grid_hash(grid)
   fold_list_hash <- ledgr_fold_list_hash(folds)
@@ -1056,9 +1054,6 @@ ledgr_walk_forward_run_or_open <- function(exp,
 ledgr_walk_forward_run_status <- function(exp, run_id) {
   opened <- ledgr_run_store_open(exp$snapshot$db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  if (!ledgr_experiment_store_table_exists(opened$con, "runs")) {
-    return(NA_character_)
-  }
   row <- DBI::dbGetQuery(
     opened$con,
     "SELECT status FROM runs WHERE run_id = ? LIMIT 1",

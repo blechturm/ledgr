@@ -1,6 +1,8 @@
 terminal_policy_hash <- function(policy) {
   ledgr:::config_hash(list(
-    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy)
+    corporate_actions = ledgr:::ledgr_corporate_action_policy_identity(policy),
+    data = list(source = "snapshot", snapshot_hash = "test-hash"),
+    identity_rule_version = 2L
   ))
 }
 
@@ -216,18 +218,18 @@ testthat::test_that("[LTB-0158] terminal policy schema 2 is closed and identity-
       names(ids$held_terminal_position)
     )
   )
-  testthat::expect_false(any(
-    ids$held_terminal_position %in%
-      ledgr:::ledgr_corporate_action_policy_ids_v1()$held_terminal_position
+  testthat::expect_false(exists(
+    "ledgr_corporate_action_policy_ids_v1",
+    envir = asNamespace("ledgr"),
+    inherits = FALSE
   ))
 
-  # A schema-1 identity is readable as schema 1 and never accepted as schema 2.
+  # Only the current identity is accepted.
   schema1 <- terminal_policy_schema1_blocks()$corporate_actions
   testthat::expect_identical(schema1$policy_schema_version, 1L)
-  testthat::expect_identical(ledgr:::ledgr_corporate_action_identity_schema(schema1), 1L)
   testthat::expect_error(
-    ledgr:::ledgr_policy_schema_require_current(list(corporate_actions = schema1)),
-    class = "ledgr_policy_schema_mismatch"
+    ledgr:::ledgr_corporate_action_identity_schema(schema1),
+    class = "ledgr_invalid_config"
   )
   relabeled <- schema1
   relabeled$policy_schema_version <- 2L
@@ -337,10 +339,12 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
     ledgr:::ledgr_walk_forward_experiment_hash(configs$refuse)
   ))
 
-  # Schema 1 is readable but never receives an implicit exhausted value.
+  # Only the exact current schema is accepted.
   schema1 <- terminal_policy_schema1_blocks()$valuation_policy
   testthat::expect_identical(schema1$schema_version, 1L)
-  testthat::expect_identical(ledgr:::ledgr_valuation_policy_record_version(schema1), 1L)
+  testthat::expect_true(is.na(
+    ledgr:::ledgr_valuation_policy_record_version(schema1)
+  ))
   old_object <- structure(schema1, class = c("ledgr_valuation_policy", "list"))
   testthat::expect_error(
     ledgr:::ledgr_validate_valuation_policy(old_object),
@@ -359,7 +363,7 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
     ledgr:::ledgr_policy_schema_require_current(list(
       availability = list(valuation_policy = schema1)
     )),
-    class = "ledgr_policy_schema_mismatch"
+    class = "ledgr_invalid_config"
   )
   with_new_field <- c(schema1, list(exhausted = "freeze"))
   testthat::expect_true(is.na(ledgr:::ledgr_valuation_policy_record_version(with_new_field)))
@@ -374,127 +378,6 @@ testthat::test_that("[LTB-0159] valuation exhaustion is versioned and identity-c
       availability = list(valuation_policy = unclass(freeze))
     )),
     TRUE
-  )
-})
-
-# ledgr-test-profile: fast
-testthat::test_that("[LTB-0160] schema-1 runs stay readable and refuse execution", {
-  snapshot <- availability_runtime_fixture(days = 4L)
-  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  calls <- new.env(parent = emptyenv())
-  calls$n <- 0L
-  strategy <- function(ctx, params) {
-    calls$n <- calls$n + 1L
-    targets <- ctx$hold()
-    targets[["AAA"]] <- params$qty
-    targets
-  }
-  exp <- ledgr_experiment(
-    snapshot,
-    strategy,
-    valuation_policy = ledgr_valuation_stale(2),
-    cost_model = ledgr_cost_zero(),
-    opening = ledgr_opening(cash = 10000)
-  )
-  bt <- ledgr_run(exp, params = list(qty = 1), run_id = "schema1-policy")
-  close(bt)
-
-  # A fresh run records both policies at schema 2.
-  current <- availability_run_config(bt)
-  testthat::expect_identical(current$corporate_actions$policy_schema_version, 2L)
-  testthat::expect_identical(current$availability$valuation_policy$schema_version, 2L)
-  testthat::expect_identical(current$availability$valuation_policy$exhausted, "freeze")
-
-  # Rewrite it to the exact pre-ticket identity the same experiment recorded.
-  legacy <- terminal_policy_schema1_blocks()
-  config <- current
-  config$corporate_actions <- legacy$corporate_actions
-  config$availability$valuation_policy <- legacy$valuation_policy
-  legacy_json <- canonical_json(config)
-  opened <- ledgr_test_open_duckdb(snapshot$db_path)
-  DBI::dbExecute(
-    opened$con,
-    "UPDATE runs SET config_json = ?, config_hash = ? WHERE run_id = ?",
-    params = list(legacy_json, ledgr:::config_hash(config), "schema1-policy")
-  )
-  ledgr_test_close_duckdb(opened$con, opened$drv)
-
-  # Reopen and every reader report the recorded schema-1 identity unchanged.
-  reopened <- ledgr_run_open(snapshot, "schema1-policy")
-  on.exit(close(reopened), add = TRUE, after = FALSE)
-  testthat::expect_identical(reopened$config$corporate_actions, legacy$corporate_actions)
-  testthat::expect_identical(
-    reopened$config$availability$valuation_policy,
-    legacy$valuation_policy
-  )
-  info <- ledgr_run_info(snapshot, "schema1-policy")
-  testthat::expect_identical(as.character(info$config_json), as.character(legacy_json))
-  ca_summary <- ledgr_corporate_action_summary(reopened)
-  testthat::expect_identical(
-    ca_summary$selected_identities,
-    unlist(legacy$corporate_actions[c(
-      "cash_amount", "cash_posting", "held_terminal_position",
-      "unsupported_quantity"
-    )])
-  )
-  testthat::expect_identical(
-    unname(ca_summary$selected_settings),
-    c("gross", "effective_close", "last_permissible", "report_only")
-  )
-  testthat::expect_identical(nrow(ledgr_run_fills(reopened)), 1L)
-  testthat::expect_output(
-    ledgr:::ledgr_print_corporate_action_summary(ca_summary),
-    "Identity held_terminal_position:   ledgr.corporate_action.held_terminal_position.last_permissible.v001",
-    fixed = TRUE
-  )
-  testthat::expect_output(summary(reopened), "Corporate actions: NOT SUPPLIED", fixed = TRUE)
-
-  before <- terminal_policy_store_contents(snapshot$db_path, "schema1-policy")
-
-  # Rerun of the DONE run under its id refuses by name, without work.
-  calls_before <- calls$n
-  testthat::expect_error(
-    ledgr_run(exp, params = list(qty = 1), run_id = "schema1-policy"),
-    class = "ledgr_policy_schema_mismatch"
-  )
-  testthat::expect_identical(calls$n, calls_before)
-  # Promotion into it refuses the same way and writes no promotion context.
-  results <- ledgr_sweep(exp, ledgr_param_grid(one = list(qty = 1)), seed = 1L)
-  candidate <- ledgr_candidate(results, 1L)
-  calls_before <- calls$n
-  testthat::expect_error(
-    ledgr_promote(exp, candidate, run_id = "schema1-policy"),
-    class = "ledgr_policy_schema_mismatch"
-  )
-  testthat::expect_identical(calls$n, calls_before)
-  testthat::expect_identical(
-    terminal_policy_store_contents(snapshot$db_path, "schema1-policy"),
-    before
-  )
-
-  # An interrupted schema-1 run cannot resume either.
-  opened <- ledgr_test_open_duckdb(snapshot$db_path)
-  DBI::dbExecute(
-    opened$con,
-    "UPDATE runs SET status = 'RUNNING' WHERE run_id = ?",
-    params = list("schema1-policy")
-  )
-  ledgr_test_close_duckdb(opened$con, opened$drv)
-  interrupted <- terminal_policy_store_contents(snapshot$db_path, "schema1-policy")
-  testthat::expect_error(
-    ledgr_run(exp, params = list(qty = 1), run_id = "schema1-policy"),
-    class = "ledgr_policy_schema_mismatch"
-  )
-  testthat::expect_identical(calls$n, calls_before)
-  testthat::expect_identical(
-    terminal_policy_store_contents(snapshot$db_path, "schema1-policy"),
-    interrupted
-  )
-
-  # A submitted schema-1 config is refused before execution as well.
-  testthat::expect_error(
-    ledgr:::ledgr_run_prepare_config(reopened$config),
-    class = "ledgr_policy_schema_mismatch"
   )
 })
 

@@ -540,7 +540,7 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
     frozen_at_end_value = rep(NA_real_, length(run_ids)),
     assumed_terminal_outcomes = rep(NA_integer_, length(run_ids))
   )
-  if (length(run_ids) == 0L || !ledgr_experiment_store_table_exists(con, "run_diagnostics")) {
+  if (length(run_ids) == 0L) {
     return(out)
   }
   quoted <- paste(DBI::dbQuoteString(con, unique(run_ids)), collapse = ", ")

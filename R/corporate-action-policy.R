@@ -34,8 +34,6 @@
 #' as an assumption; the strict preset refuses.
 #'
 #' The policy object and its stored identity use `policy_schema_version` 2.
-#' Runs recorded under schema 1 remain readable, but cannot be resumed, rerun
-#' or promoted into under schema 2.
 #'
 #' @param cash_amount One of `"gross"` or `"refuse"`.
 #' @param cash_posting One of `"effective_close"`, `"next_open"`, or
@@ -100,31 +98,6 @@ ledgr_corporate_action_policy_ids <- function() {
       write_off = "ledgr.corporate_action.frozen_terminal_position.write_off.v001",
       last_mark = "ledgr.corporate_action.frozen_terminal_position.last_mark.v001",
       refuse = "ledgr.corporate_action.frozen_terminal_position.refuse.v001"
-    )
-  )
-}
-
-# Historical schema-1 identities. They are decoded for reading stored runs
-# and are never constructed or executed.
-ledgr_corporate_action_policy_ids_v1 <- function() {
-  list(
-    cash_amount = c(
-      gross = "ledgr.corporate_action.cash_amount.gross.v001",
-      refuse = "ledgr.corporate_action.cash_amount.refuse.v001"
-    ),
-    cash_posting = c(
-      effective_close = "ledgr.corporate_action.cash_posting.effective_close.v001",
-      next_open = "ledgr.corporate_action.cash_posting.next_open.v001",
-      refuse = "ledgr.corporate_action.cash_posting.refuse.v001"
-    ),
-    held_terminal_position = c(
-      last_permissible = "ledgr.corporate_action.held_terminal_position.last_permissible.v001",
-      last_mark = "ledgr.corporate_action.held_terminal_position.last_mark.v001",
-      refuse = "ledgr.corporate_action.held_terminal_position.refuse.v001"
-    ),
-    unsupported_quantity = c(
-      report_only = "ledgr.corporate_action.unsupported_quantity.report_only.v001",
-      refuse = "ledgr.corporate_action.unsupported_quantity.refuse.v001"
     )
   )
 }
@@ -285,13 +258,6 @@ ledgr_corporate_actions_strict <- function() {
 }
 
 ledgr_validate_corporate_action_policy <- function(policy) {
-  if (inherits(policy, "ledgr_corporate_action_policy") &&
-      identical(policy$policy_schema_version, 1L)) {
-    ledgr_corporate_action_policy_abort(paste0(
-      "Corporate-action policy schema 1 is retired. Construct the policy ",
-      "again with `ledgr_corporate_actions()` (schema 2)."
-    ))
-  }
   if (!inherits(policy, "ledgr_corporate_action_policy") ||
       !identical(
         policy$policy_schema_version,
@@ -366,14 +332,13 @@ ledgr_corporate_action_policy_from_identity <- function(identity) {
   )
 }
 
-# Validates a stored corporate-action identity once and returns its schema
-# version with, for schema 2, the policy it names. Schema 1 is accepted only in
-# its exact historical shape so that stored runs stay readable; execution
-# separately requires the current schema.
+# Validates a stored corporate-action identity once and returns its policy.
 ledgr_corporate_action_identity_decode <- function(identity) {
   if (!is.list(identity) ||
-      !(identical(identity$policy_schema_version, 1L) ||
-        identical(identity$policy_schema_version, 2L))) {
+      !identical(
+        identity$policy_schema_version,
+        ledgr_corporate_action_policy_schema_version
+      )) {
     rlang::abort(
       "Config field corporate_actions must contain a versioned policy identity.",
       class = "ledgr_invalid_config"
@@ -384,20 +349,6 @@ ledgr_corporate_action_identity_decode <- function(identity) {
       "Config field corporate_actions contains an unknown or incomplete policy identity.",
       class = "ledgr_invalid_config"
     )
-  }
-  if (identical(identity$policy_schema_version, 1L)) {
-    ids <- ledgr_corporate_action_policy_ids_v1()
-    fields <- names(ids)
-    valid <- vapply(fields, function(field) {
-      value <- identity[[field]]
-      is.character(value) && length(value) == 1L && !is.na(value) &&
-        value %in% ids[[field]]
-    }, logical(1))
-    if (!all(valid) ||
-        !identical(sort(names(identity)), sort(c("policy_schema_version", fields)))) {
-      invalid()
-    }
-    return(list(schema = 1L, policy = NULL))
   }
   policy <- tryCatch(
     ledgr_corporate_action_policy_from_identity(identity),
@@ -417,7 +368,7 @@ ledgr_corporate_action_identity_decode <- function(identity) {
       !identical(observed, expected)) {
     invalid()
   }
-  list(schema = 2L, policy = policy)
+  list(schema = ledgr_corporate_action_policy_schema_version, policy = policy)
 }
 
 ledgr_corporate_action_identity_schema <- function(identity) {

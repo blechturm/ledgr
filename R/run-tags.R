@@ -173,10 +173,6 @@ ledgr_run_tags <- function(snapshot, run_id = NULL) {
   if (!is.null(run_id)) {
     ledgr_run_store_assert_run_exists(opened$con, run_id, snapshot_id = snapshot_id)
   }
-  if (!ledgr_experiment_store_table_exists(opened$con, "run_tags")) {
-    return(ledgr_run_tags_empty())
-  }
-
   if (is.null(run_id)) {
     out <- DBI::dbGetQuery(
       opened$con,

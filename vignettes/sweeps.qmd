@@ -518,9 +518,8 @@ Retention does not change execution identity. It changes which derived evidence
 is kept after the same candidate execution.
 
 Saved sweeps persist the same risk identity fields on the parent sweep row and
-candidate rows. Opening an older store may perform an additive saved-sweep
-schema migration for `risk_chain_hash` and `risk_plan_json`; it does not rewrite
-candidate results or create committed run artifacts.
+candidate rows. They reopen only from the current experiment-store and saved-
+sweep formats; ledgr does not migrate an older research store in place.
 
 ## What Retained Returns Can And Cannot Validate
 

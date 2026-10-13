@@ -12,24 +12,9 @@ ledgr_strategy_extract_parse_json <- function(json, empty = list(), label = "JSO
 
 ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
   ledgr_store_assert_current(con)
-  if (!ledgr_experiment_store_table_exists(con, "runs")) {
-    return(tibble::tibble())
-  }
-
-  runs_cols <- ledgr_experiment_store_columns(con, "runs")
-  run_expr <- function(column, default = "NULL") {
-    if (column %in% runs_cols) paste0("r.", column) else default
-  }
-  prov_expr <- function(column, default = "NULL") {
-    if (ledgr_run_store_has_col(con, "run_provenance", column)) {
-      sprintf("(SELECT p.%s FROM run_provenance p WHERE p.run_id = r.run_id LIMIT 1)", column)
-    } else {
-      default
-    }
-  }
   where <- "r.run_id = ?"
   params <- list(run_id)
-  if (!is.null(snapshot_id) && "snapshot_id" %in% runs_cols) {
+  if (!is.null(snapshot_id)) {
     where <- paste(where, "AND r.snapshot_id = ?")
     params <- c(params, list(snapshot_id))
   }
@@ -38,31 +23,21 @@ ledgr_strategy_extract_fetch <- function(con, run_id, snapshot_id = NULL) {
     "
     SELECT
       r.run_id,
-      %s AS status,
-      %s AS strategy_type,
-      %s AS strategy_source,
-      %s AS strategy_source_hash,
-      %s AS strategy_source_capture_method,
-      %s AS strategy_params_json,
-      %s AS strategy_params_hash,
-      COALESCE(%s, 'legacy') AS reproducibility_level,
-      %s AS ledgr_version,
-      %s AS R_version,
-      %s AS dependency_versions_json
+      r.status,
+      p.strategy_type,
+      p.strategy_source,
+      p.strategy_source_hash,
+      p.strategy_source_capture_method,
+      p.strategy_params_json,
+      p.strategy_params_hash,
+      p.reproducibility_level,
+      p.ledgr_version,
+      p.R_version,
+      p.dependency_versions_json
     FROM runs r
+    INNER JOIN run_provenance p ON p.run_id = r.run_id
     WHERE %s
     ",
-    run_expr("status"),
-    prov_expr("strategy_type"),
-    prov_expr("strategy_source"),
-    prov_expr("strategy_source_hash"),
-    prov_expr("strategy_source_capture_method"),
-    prov_expr("strategy_params_json"),
-    prov_expr("strategy_params_hash"),
-    prov_expr("reproducibility_level"),
-    prov_expr("ledgr_version"),
-    prov_expr("R_version"),
-    prov_expr("dependency_versions_json"),
     where
   )
   tibble::as_tibble(DBI::dbGetQuery(con, sql, params = params))
@@ -75,12 +50,11 @@ ledgr_strategy_source_available <- function(source) {
 ledgr_strategy_extract_warnings <- function(row, source_available) {
   warnings <- character()
   level <- row$reproducibility_level[[1]]
-  capture_method <- row$strategy_source_capture_method[[1]]
 
-  if (!isTRUE(source_available) || identical(capture_method, "legacy_pre_provenance")) {
-    warnings <- c(warnings, "No stored strategy source is available for this legacy/pre-provenance run.")
+  if (!isTRUE(source_available)) {
+    warnings <- c(warnings, "No stored strategy source is available for this configured strategy.")
   }
-  if (!is.na(level) && nzchar(level) && !level %in% c("tier_1", "legacy")) {
+  if (!is.na(level) && nzchar(level) && !identical(level, "tier_1")) {
     warnings <- c(
       warnings,
       sprintf(
@@ -114,8 +88,8 @@ ledgr_strategy_extract_warnings <- function(row, source_available) {
 #' environment or ledgr's unexported functions; a strategy that needs those was
 #' not Tier 1 when it ran.
 #'
-#' Legacy/pre-provenance runs and strategy types without capturable source may
-#' return `NA` for `strategy_source_text`.
+#' Strategy types without capturable source may return `NA` for
+#' `strategy_source_text`.
 #'
 #' @param snapshot A sealed `ledgr_snapshot` object. Use
 #'   `ledgr_snapshot_open(db_path, snapshot_id)` to resume from a durable

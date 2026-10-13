@@ -16,7 +16,6 @@ ledgr_backtest(
   timing_model = ledgr_timing_next_open(),
   cost_model,
   risk_chain = ledgr_risk_none(),
-  fill_model = NULL,
   execution_mode = "audit_log",
   checkpoint_every = 10000L,
   persist_features = TRUE,
@@ -58,13 +57,6 @@ for explicit zero-cost execution.}
 \item{risk_chain}{Target-risk chain object. Defaults to
 \code{ledgr_risk_none()} for explicit no-risk execution.}
 
-\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
-to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
-
-\item{fill_model}{Legacy v0.1.8 fill model argument. Supplying it now fails
-with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus
-\code{cost_model}.}
-
 \item{execution_mode}{Execution mode ("db_live" or "audit_log").}
 
 \item{checkpoint_every}{Flush interval for audit_log mode.}
@@ -79,6 +71,9 @@ with \code{ledgr_legacy_fill_model_shape}; use \code{timing_model} plus
 
 \item{data}{Optional data frame/tibble or \code{ledgr_snapshot}. Exactly one of
 \code{snapshot} and \code{data} may be supplied.}
+
+\item{corporate_action_policy}{Corporate-action settlement policy. Defaults
+to \code{\link[=ledgr_corporate_actions_research]{ledgr_corporate_actions_research()}}.}
 }
 \value{
 A \code{ledgr_backtest} object.

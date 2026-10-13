@@ -53,9 +53,7 @@ evidence (US equity vendor data for S&P 500 members, 1998 to 2026: a
 handful of held missing-bar runs exceed it and, under \code{"freeze"}, none
 stops a run). Plans and results mark a horizon of 5 as the default.
 
-The valuation policy and its stored identity use \code{schema_version} 2. Runs
-recorded under schema 1 remain readable, but cannot be resumed, rerun or
-promoted into under schema 2.
+The valuation policy and its stored identity use \code{schema_version} 2.
 }
 \section{Articles}{
 

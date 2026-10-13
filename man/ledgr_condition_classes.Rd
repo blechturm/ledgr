@@ -2,8 +2,6 @@
 % Please edit documentation in R/condition-reference.R
 \name{ledgr_condition_classes}
 \alias{ledgr_condition_classes}
-\alias{ledgr_legacy_fill_model_shape}
-\alias{ledgr_legacy_config_shape}
 \alias{ledgr_cost_model_unspecified}
 \alias{ledgr_invalid_cost_chain_order}
 \alias{ledgr_invalid_cost_model}
@@ -15,7 +13,6 @@
 \alias{ledgr_run_window_too_short}
 \alias{ledgr_invalid_lot_fill}
 \alias{ledgr_snapshot_hash_invalid_timestamp}
-\alias{ledgr_snapshot_rebuild_required}
 \alias{ledgr_snapshot_hash_rule_unsupported}
 \alias{ledgr_snapshot_hash_order_invalid}
 \alias{ledgr_store_rebuild_required}
@@ -25,11 +22,9 @@
 \alias{ledgr_availability_sessions_required}
 \alias{ledgr_backtest_availability_unsupported}
 \alias{ledgr_sessions_incomplete}
-\alias{ledgr_identity_rule_retired}
 \alias{ledgr_promote_identity_mismatch}
 \alias{ledgr_membership_universe_not_found}
 \alias{ledgr_compiled_availability_unsupported}
-\alias{ledgr_execution_timing_version_mismatch}
 \alias{ledgr_policy_schema_mismatch}
 \alias{ledgr_fill_timing_not_comparable}
 \alias{ledgr_session_time_ambiguous}
@@ -133,20 +128,9 @@
 \title{ledgr condition classes}
 \description{
 ledgr uses stable top-level condition classes for public cost-model,
-timing-model, execution-window, saved-sweep, retained-series, and
-legacy-shape failures. User tests should assert on these classes instead of
-parsing message text.
+timing-model, execution-window, saved-sweep, and retained-series failures.
+User tests should assert on these classes instead of parsing message text.
 }
-\section{Legacy shape classes}{
-
-\code{ledgr_legacy_fill_model_shape} is raised when callers pass the v0.1.8
-\code{fill_model} shape or legacy scalar cost fields to public entry points.
-ledgr fails closed; it does not translate the legacy shape.
-
-\code{ledgr_legacy_config_shape} is raised when reopening a stored config whose
-execution shape still contains legacy fill/cost fields.
-}
-
 \section{Cost and timing classes}{
 
 \code{ledgr_cost_model_unspecified} is raised when a public execution entry point
@@ -192,14 +176,10 @@ fails closed because the ledger event stream and lot state must not diverge.
 a non-POSIXct \code{ts_utc} representation. Snapshot hashes fail closed on driver
 timestamp representation drift instead of silently re-keying sealed data.
 
-\code{ledgr_snapshot_rebuild_required} is raised when a content-dependent read
-reaches a snapshot with a missing, rule-1, or rule-2 hash marker. Such
-snapshots remain metadata-readable but are not executable; rebuild them
-from source under rule 3. ledgr does not migrate or reinterpret their roots.
-
 \code{ledgr_snapshot_hash_rule_unsupported} is raised for an unrecognized future
-hash-rule marker. \code{ledgr_snapshot_hash_order_invalid} is raised when source
-rows are not in the bytewise order required by rule 3.
+or missing hash-rule marker in a current store.
+\code{ledgr_snapshot_hash_order_invalid} is raised when source rows are not in
+the bytewise order required by rule 3.
 }
 
 \section{Store-format classes}{
@@ -226,10 +206,8 @@ execution lacks a complete session calendar.
 receives a snapshot that declares point-in-time facts; use
 \code{ledgr_experiment()} and \code{ledgr_run()}.
 
-\code{ledgr_identity_rule_retired} is raised when a run recorded under identity
-rule 1 is resumed; it remains readable. \code{ledgr_promote_identity_mismatch} is
-a warning raised when a promoted candidate's recorded identities differ from
-the promoting experiment's.
+\code{ledgr_promote_identity_mismatch} is a warning raised when a promoted
+candidate's recorded identities differ from the promoting experiment's.
 
 \code{ledgr_sessions_incomplete} is raised when the declared session calendar
 does not cover the requested start and end of a run, sweep, run window or
@@ -241,15 +219,10 @@ rule names a universe that is not declared by the snapshot.
 \code{ledgr_compiled_availability_unsupported} is raised before execution when
 availability-aware execution is combined with the compiled spot-FIFO path.
 
-\code{ledgr_execution_timing_version_mismatch} is raised when an active legacy or
-unknown timing config is submitted for current execution. Historical runs
-remain inspectable, but they cannot resume under corrected timing semantics.
-
 \code{ledgr_policy_schema_mismatch} is raised when a config or stored run carries
-a retired corporate-action or valuation policy schema and is submitted for
-execution, resume, rerun or promotion. Such runs remain readable through
-\code{ledgr_run_open()}, \code{ledgr_run_info()} and result readers, which report the
-recorded identity unchanged; they are never reinterpreted under schema 2.
+a non-current corporate-action or valuation policy schema. Current stores
+carry schema 2; ledgr does not infer, migrate, or reinterpret older policy
+records.
 
 \code{ledgr_fill_timing_not_comparable} is raised by fill-equivalence validation
 when selected runs have differing or unknown execution-timing conventions.

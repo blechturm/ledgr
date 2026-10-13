@@ -1092,20 +1092,9 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   on.exit(ledgr_snapshot_close(other), add = TRUE)
   testthat::expect_false(identical(run_hash(one, "reuse_a"), run_hash(other, "reuse_b")))
 
-  # A run recorded under rule 1 opens, and resuming it refuses by name.
-  con <- ledgr:::get_connection(one)
-  legacy <- ledgr:::ledgr_json_read_config(DBI::dbGetQuery(con, "SELECT config_json FROM runs WHERE run_id = 'id_one'")$config_json[[1]])
-  legacy$identity_rule_version <- NULL
-  legacy$data$snapshot_hash <- NULL
-  DBI::dbExecute(con, "UPDATE runs SET config_json = ?, config_hash = ? WHERE run_id = 'id_one'",
-                 params = list(as.character(ledgr:::canonical_json(legacy)), ledgr:::config_hash(legacy)))
-  reopened <- ledgr_run_open(one, "id_one")
-  testthat::expect_identical(nrow(ledgr_results(reopened, "equity")), 4L)
-  close(reopened)
-  testthat::expect_error(
-    ledgr_run(ledgr_experiment(one, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)), run_id = "id_one"),
-    class = "ledgr_identity_rule_retired"
-  )
+  current <- ledgr_run_open(one, "id_one")
+  testthat::expect_identical(nrow(ledgr_results(current, "equity")), 4L)
+  close(current)
 
   # The recorded start is the clamped scoring start (S2_calendar_short K3, I_paths P10).
   early <- ledgr_experiment(one, flat, cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000, date = days[[1]] - 30))
@@ -1117,15 +1106,14 @@ testthat::test_that("[LTB-0236] run and session identity bind snapshot content u
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, plain$config$backtest$start_ts_utc)
   testthat::expect_identical(bt_early$config$backtest$start_ts_utc, one$metadata$start_date)
 
-  # LTB-0244 (review) covers walk-forward session identity and the rule-1 fork.
+  # LTB-0244 (review) covers walk-forward session identity.
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0244] walk-forward sessions record identity rule 2 and fork from a rule-1 session", {
+testthat::test_that("[LTB-0244] walk-forward sessions use current content identity", {
   days <- pit_consistency_days()
   at <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
-  # A walk-forward session records rule 2. A rule-1 session is not matched: a
-  # rerun forks, as across ledgr versions (maintainer decision on review F2).
+  # A walk-forward session records rule 2 and reuses the same current identity.
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   exp <- ledgr_experiment(snapshot, function(ctx, params) ctx$hold(), universe = ledgr_universe_members("u"),
@@ -1142,38 +1130,19 @@ testthat::test_that("[LTB-0244] walk-forward sessions record identity rule 2 and
   testthat::expect_identical(nrow(session), 1L)
   testthat::expect_identical(as.integer(ledgr:::ledgr_json_read_nested(session$meta_json[[1]])$identity_rule_version), 2L)
 
-  # Rewrite the session as identity rule 1 recorded it: the rule-1 session ID
-  # (experiment hash over the store-local snapshot ID) and no rule in meta_json.
   identity <- ledgr:::ledgr_walk_forward_session_identity(
     exp, wf_args$grid, folds, wf_args$selection_rule, NULL, "carry_test_state", "previous"
   )
   testthat::expect_identical(identity$session_id, session$session_id[[1]])
-  rule1_config <- ledgr:::ledgr_walk_forward_base_config(exp, ledgr:::ledgr_precompute_snapshot_meta(snapshot))
-  rule1_config$identity_rule_version <- NULL
-  rule1_config$data$snapshot_hash <- NULL
-  rule1_id <- ledgr:::ledgr_walk_forward_session_id(
-    snapshot_hash = identity$snapshot_hash,
-    experiment_hash = ledgr:::ledgr_walk_forward_experiment_hash(rule1_config),
-    param_grid_hash = identity$param_grid_hash, fold_list_hash = identity$fold_list_hash,
-    selection_rule_hash = identity$selection_rule_hash, metric_context_hash = identity$metric_context_hash,
-    cost_model_hash = identity$cost_model_hash, risk_chain_hash = identity$risk_chain_hash,
-    master_seed = NULL, opening_state_policy = "carry_test_state", no_selection = "previous"
+  do.call(ledgr_walk_forward, wf_args)
+  sessions <- DBI::dbGetQuery(
+    wf_con,
+    "SELECT session_id, meta_json FROM walk_forward_sessions"
   )
-  testthat::expect_false(identical(rule1_id, identity$session_id))
-  rule1_meta <- ledgr:::ledgr_json_read_nested(session$meta_json[[1]])
-  rule1_meta$identity_rule_version <- NULL
-  for (table in c("walk_forward_scores", "walk_forward_folds")) {
-    DBI::dbExecute(wf_con, paste("UPDATE", table, "SET session_id = ?"), params = list(rule1_id))
-  }
-  DBI::dbExecute(wf_con, "UPDATE walk_forward_sessions SET session_id = ?, meta_json = ?",
-                 params = list(rule1_id, as.character(ledgr:::canonical_json(rule1_meta))))
-  # Rerunning the same arguments neither refuses nor reuses the rule-1 session.
-  rerun <- do.call(ledgr_walk_forward, wf_args)
-  sessions <- DBI::dbGetQuery(wf_con, "SELECT session_id, meta_json FROM walk_forward_sessions ORDER BY session_id")
-  testthat::expect_setequal(sessions$session_id, c(rule1_id, identity$session_id))
-  rules <- vapply(sessions$meta_json, function(m) {
-    as.integer(ledgr:::ledgr_json_read_nested(m)$identity_rule_version %||% 1L)
-  }, integer(1))
-  testthat::expect_identical(unname(rules[match(c(rule1_id, identity$session_id), sessions$session_id)]), c(1L, 2L))
-  testthat::expect_identical(ledgr_walk_forward_open(snapshot, rule1_id)$session_id, rule1_id)
+  testthat::expect_identical(nrow(sessions), 1L)
+  testthat::expect_identical(sessions$session_id[[1]], identity$session_id)
+  testthat::expect_identical(
+    ledgr_walk_forward_open(snapshot, identity$session_id)$session_id,
+    identity$session_id
+  )
 })

@@ -19,9 +19,7 @@
 #' handful of held missing-bar runs exceed it and, under `"freeze"`, none
 #' stops a run). Plans and results mark a horizon of 5 as the default.
 #'
-#' The valuation policy and its stored identity use `schema_version` 2. Runs
-#' recorded under schema 1 remain readable, but cannot be resumed, rerun or
-#' promoted into under schema 2.
+#' The valuation policy and its stored identity use `schema_version` 2.
 #'
 #' @param universe_id Non-empty membership-universe identifier.
 #' @param max_sessions Non-negative whole number of venue sessions for which a
@@ -94,8 +92,7 @@ ledgr_valuation_exhausted_choices <- function() {
   c("freeze", "refuse")
 }
 
-# Returns the schema version of a valuation-policy record, or NA when the
-# record matches neither the exact historical schema-1 shape nor schema 2.
+# Returns the schema version of an exact current valuation-policy record.
 ledgr_valuation_policy_record_version <- function(x) {
   if (!is.list(x) || !identical(x$type_id, "stale_sessions") ||
       !is.integer(x$max_sessions) || length(x$max_sessions) != 1L ||
@@ -103,12 +100,9 @@ ledgr_valuation_policy_record_version <- function(x) {
     return(NA_integer_)
   }
   fields <- sort(names(x))
-  v1_fields <- sort(c("schema_version", "type_id", "max_sessions"))
-  if (identical(x$schema_version, 1L) && identical(fields, v1_fields)) {
-    return(1L)
-  }
+  required <- sort(c("schema_version", "type_id", "max_sessions", "exhausted"))
   if (identical(x$schema_version, 2L) &&
-      identical(fields, sort(c(v1_fields, "exhausted"))) &&
+      identical(fields, required) &&
       is.character(x$exhausted) && length(x$exhausted) == 1L &&
       !is.na(x$exhausted) &&
       x$exhausted %in% ledgr_valuation_exhausted_choices()) {
@@ -146,9 +140,6 @@ ledgr_snapshot_fact_headers <- function(snapshot) {
 }
 
 ledgr_fact_headers_read <- function(con, snapshot_id) {
-  if (!ledgr_experiment_store_table_exists(con, "snapshot_fact_families")) {
-    return(data.frame())
-  }
   DBI::dbGetQuery(
     con,
     paste(
@@ -215,15 +206,6 @@ ledgr_availability_activation <- function(snapshot, valuation_policy = NULL) {
 
 ledgr_validate_valuation_policy <- function(x) {
   version <- ledgr_valuation_policy_record_version(x)
-  if (inherits(x, "ledgr_valuation_policy") && identical(version, 1L)) {
-    rlang::abort(
-      paste0(
-        "Valuation policy schema 1 is retired. Construct the policy again ",
-        "with `ledgr_valuation_stale()` (schema 2)."
-      ),
-      class = c("ledgr_invalid_valuation_policy", "ledgr_invalid_experiment")
-    )
-  }
   if (!inherits(x, "ledgr_valuation_policy") ||
       !identical(version, ledgr_valuation_policy_schema_version)) {
     rlang::abort(

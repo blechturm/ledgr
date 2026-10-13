@@ -80,10 +80,10 @@ ledgr_checkpoint_duckdb <- function(con, strict = FALSE) {
   invisible(out)
 }
 
-#' Initialize or open a ledgr DuckDB database (v0.1.0)
+#' Initialize or open a ledgr DuckDB database
 #'
-#' Opens a DuckDB database at `db_path`, creates the v0.1.0 schema if needed,
-#' and validates it.
+#' Opens a DuckDB database at `db_path`, creates the current schema when the
+#' file is empty, and otherwise requires the current version and fingerprint.
 #'
 #' @param db_path Path to a DuckDB database file (or `":memory:"`).
 #' @return A DBI connection.
