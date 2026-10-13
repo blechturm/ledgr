@@ -793,8 +793,8 @@ the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
 the roadmap no longer works as a planning document, and this plan's
 change-control log has become the only place the current order lives, restated
 by each amendment. One documentation chore, after the one-execution-mode
-probe and before the WS3/WS4 implementation cut, rewrites both together and
-folds the probe result in.
+probe and before the WS3/WS4 implementation cut, rewrites both together,
+scans `horizon.md`, and folds the probe result in.
 
 - Roadmap: the milestone table holds releases only, one row each, in release
   order. Shipped releases keep date, a one-sentence goal and the packet link.
@@ -812,6 +812,15 @@ folds the probe result in.
   Each change-control amendment shrinks to one dated line naming its source,
   and the amendment narratives move to a history file, as
   `roadmap_history.md` did for the roadmap.
+- Horizon scan (maintainer, 2026-10-13): every entry under `Open` in
+  `horizon.md` (85 entries over about 4,100 lines) is classified against the
+  shipped packets, `tickets.yml`, the RFC pipeline and `contracts.md` as
+  shipped, superseded, promoted (owned by a ticket, an RFC row or this plan)
+  or genuinely open, with the evidence for each class named. Shipped and
+  superseded entries move to `horizon_archive.md` behind a redirect stub, a
+  promoted entry keeps only a pointer to its owner, and the genuinely open
+  entries stay. The scan records the classification table, so the
+  maintainer can see in one page what has shipped and what is still open.
 
 Not a design change. It needs a Type 1 review only if it adds the
 documentation-contract test, because that test defines a claim. The
