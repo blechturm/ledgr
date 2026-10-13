@@ -44,6 +44,10 @@ record is under `integrated_fast/`. GitHub Actions run 38305153540 passed the
 v0.1.x acceptance layer, three semantic fast-profile runs and `R CMD check`
 at final commit `f5a54cae`. Its 187.007-second Ubuntu median is advisory under
 the accepted synthesis; the registered Windows host owns the timing gate.
+Full-matrix run 38353460555 at correction commit `27f81de3` runs the focused
+production root suite explicitly; that step passes on Windows release, Ubuntu
+release and Ubuntu R 4.6. This is the first CI evidence that directly executes
+the rule-3 golden-root block on Ubuntu.
 
 The post-review correction fast record is checked in under `correction_fast/`.
 It executes 566 of 566 blocks with zero skipped or failed in 110.04 seconds;
