@@ -1,6 +1,7 @@
 #' Create the current ledgr DuckDB schema
 #'
-#' Creates all required ledgr tables and forward-migrates legacy schemas.
+#' Creates the current ledgr schema in a proven-empty store, or verifies that
+#' an existing store is current.
 #'
 #' @param con A DBI connection to DuckDB.
 #' @return Invisibly returns `TRUE` on success.
@@ -15,24 +16,7 @@ ledgr_create_schema <- function(con) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
 
-  schema_state <- ledgr_experiment_store_check_schema(con, write = FALSE)
-  if (identical(
-    as.integer(schema_state$schema_version),
-    as.integer(ledgr_experiment_store_schema_version)
-  )) {
-    return(invisible(TRUE))
-  }
-
-  catalogue <- ledgr_schema_catalogue(con, schema = "main")
-  if (nrow(catalogue$tables) == 0L) {
-    # A proven-empty store gets the current schema directly; the legacy
-    # migration pass exists for stores that already hold tables (LDG-3016).
-    ledgr_schema_create_fresh(con)
-  } else {
-    ledgr_create_schema_legacy(con, catalogue)
-  }
-  ledgr_schema_create_triggers(con)
-  invisible(TRUE)
+  ledgr_store_create_current(con)
 }
 
 # Creates or upgrades the schema of a store that already holds tables, and

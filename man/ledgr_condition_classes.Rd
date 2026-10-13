@@ -18,6 +18,8 @@
 \alias{ledgr_snapshot_rebuild_required}
 \alias{ledgr_snapshot_hash_rule_unsupported}
 \alias{ledgr_snapshot_hash_order_invalid}
+\alias{ledgr_store_rebuild_required}
+\alias{ledgr_invalid_store}
 \alias{ledgr_invalid_valuation_policy}
 \alias{ledgr_availability_inactive}
 \alias{ledgr_availability_sessions_required}
@@ -198,6 +200,14 @@ from source under rule 3. ledgr does not migrate or reinterpret their roots.
 \code{ledgr_snapshot_hash_rule_unsupported} is raised for an unrecognized future
 hash-rule marker. \code{ledgr_snapshot_hash_order_invalid} is raised when source
 rows are not in the bytewise order required by rule 3.
+}
+
+\section{Store-format classes}{
+
+\code{ledgr_store_rebuild_required} is raised when a persistent store is older,
+newer, unmarked, malformed, or carries a format fingerprint different from
+this ledgr build. Before the first CRAN release ledgr does not migrate old
+stores: rebuild them with the current package.
 }
 
 \section{Availability classes}{

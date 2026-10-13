@@ -10,27 +10,8 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
     ledgr:::ledgr_schema_normalized_catalogue(con)
   }
 
-  legacy_path <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(paste0(legacy_path, c("", ".wal")), force = TRUE), add = TRUE)
-  legacy <- connect(legacy_path)
-  suppressMessages(ledgr:::ledgr_create_schema_legacy(
-    legacy,
-    ledgr:::ledgr_schema_catalogue(legacy)
-  ))
-  DBI::dbDisconnect(legacy, shutdown = TRUE)
-  legacy <- connect(legacy_path)
-  on.exit(DBI::dbDisconnect(legacy, shutdown = TRUE), add = TRUE)
-  expected <- ledgr:::ledgr_schema_normalized_catalogue(legacy)
-
   definition <- ledgr:::ledgr_current_schema_definition()
-  actual <- render(definition)
-  testthat::expect_identical(
-    ledgr:::ledgr_schema_catalogue_difference(expected, actual),
-    list(
-      missing = ledgr:::ledgr_schema_catalogue_rows(expected)[0L, ],
-      extra = ledgr:::ledgr_schema_catalogue_rows(actual)[0L, ]
-    )
-  )
+  expected <- render(definition)
 
   root <- testthat::test_path("..", "..")
   golden <- utils::read.csv(

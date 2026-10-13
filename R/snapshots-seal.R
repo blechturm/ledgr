@@ -215,7 +215,7 @@ ledgr_snapshot_seal <- function(con, snapshot_id) {
     },
     snapshot_id,
     hash,
-    ledgr_snapshot_hash_rule3_version
+    ledgr_snapshot_content_hash_rule_version
   )
   ledgr_checkpoint_duckdb(con, strict = TRUE)
 
@@ -282,7 +282,7 @@ ledgr_snapshot_metadata_for_seal <- function(con, snapshot_id) {
   metadata <- put_if_missing(metadata, "end_date", ledgr_normalize_ts_utc(bar_stats$end_date[[1]]))
 
   hash_rule <- ledgr_snapshot_hash_rule_version(con, snapshot_id)
-  if (identical(hash_rule, ledgr_snapshot_hash_rule3_version)) {
+  if (identical(hash_rule, ledgr_snapshot_content_hash_rule_version)) {
     availability <- ledgr_snapshot_availability_read(con, snapshot_id)
     metadata <- put_if_missing(metadata, "snapshot_hash_rule_version", hash_rule)
     quarantine_count <- as.integer(nrow(ledgr_snapshot_quarantine_counted(

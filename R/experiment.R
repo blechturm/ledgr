@@ -337,7 +337,7 @@ ledgr_experiment <- function(snapshot,
       active = TRUE,
       declared_families = availability$declared_families,
       headers = availability$headers,
-      execution_timing_version = ledgr_availability_execution_timing_version()
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
     )
     out$universe_rule <- universe_rule
     out$valuation_policy <- availability$valuation_policy

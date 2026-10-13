@@ -58,6 +58,12 @@
 #' hash-rule marker. `ledgr_snapshot_hash_order_invalid` is raised when source
 #' rows are not in the bytewise order required by rule 3.
 #'
+#' @section Store-format classes:
+#' `ledgr_store_rebuild_required` is raised when a persistent store is older,
+#' newer, unmarked, malformed, or carries a format fingerprint different from
+#' this ledgr build. Before the first CRAN release ledgr does not migrate old
+#' stores: rebuild them with the current package.
+#'
 #' @section Availability classes:
 #' `ledgr_invalid_valuation_policy` is raised for malformed stale-valuation
 #' policies or constructor arguments.
@@ -502,6 +508,7 @@
 #' @aliases ledgr_snapshot_rebuild_required
 #' @aliases ledgr_snapshot_hash_rule_unsupported
 #' @aliases ledgr_snapshot_hash_order_invalid
+#' @aliases ledgr_store_rebuild_required ledgr_invalid_store
 #' @aliases ledgr_invalid_valuation_policy ledgr_availability_inactive
 #' @aliases ledgr_availability_sessions_required ledgr_backtest_availability_unsupported
 #' @aliases ledgr_sessions_incomplete ledgr_identity_rule_retired ledgr_promote_identity_mismatch

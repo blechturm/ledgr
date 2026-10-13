@@ -3,7 +3,10 @@ testthat::test_that("current schema retains normalized availability tables", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
 
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 118L)
+  testthat::expect_identical(
+    ledgr:::ledgr_experiment_store_version(con),
+    ledgr:::ledgr_experiment_store_schema_version
+  )
   testthat::expect_identical(ledgr:::ledgr_saved_sweep_schema_version, 4L)
   tables <- DBI::dbGetQuery(
     con,
@@ -14,7 +17,7 @@ testthat::test_that("current schema retains normalized availability tables", {
   testthat::expect_invisible(ledgr_validate_schema(con))
 })
 
-testthat::test_that("availability migration is transactional and writes its marker last", {
+testthat::test_that("an older availability store refuses without mutation", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   DBI::dbExecute(
@@ -41,23 +44,14 @@ testthat::test_that("availability migration is transactional and writes its mark
      )"
   )
 
-  testthat::expect_error(
-    ledgr:::ledgr_experiment_store_migrate(
-      con,
-      from_version = 112L,
-      simulate_failure = TRUE,
-      inform = FALSE
-    ),
-    class = "ledgr_schema_migration_simulated_failure"
+  error <- testthat::expect_error(
+    ledgr_create_schema(con),
+    class = "ledgr_store_rebuild_required"
   )
+  testthat::expect_identical(error$cause, "older")
   testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 112L)
   testthat::expect_false("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
   testthat::expect_false(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
-
-  testthat::expect_true(ledgr:::ledgr_experiment_store_migrate(con, 112L, inform = FALSE))
-  testthat::expect_identical(ledgr:::ledgr_experiment_store_version(con), 118L)
-  testthat::expect_true("hash_rule_version" %in% ledgr:::ledgr_experiment_store_columns(con, "snapshots"))
-  testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(con, "snapshot_fact_families"))
 })
 
 # ledgr-test-profile: review

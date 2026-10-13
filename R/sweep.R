@@ -401,7 +401,7 @@ ledgr_sweep_impl <- function(exp,
     execution_mode = exp$execution_mode,
     timing_model = exp$timing_model,
     execution_timing_version = if (availability_active) {
-      ledgr_availability_execution_timing_version()
+      ledgr_availability_execution_timing_rule_version
     } else {
       NULL
     },
@@ -2481,7 +2481,7 @@ ledgr_sweep_availability_config <- function(exp) {
       universe_rule = if (is.null(exp$universe_rule)) NULL else unclass(exp$universe_rule),
       valuation_policy = unclass(exp$valuation_policy),
       provider_version = ledgr_availability_provider_version(),
-      execution_timing_version = ledgr_availability_execution_timing_version()
+      execution_timing_version = ledgr_availability_execution_timing_rule_version
     )
   )
 }

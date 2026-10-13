@@ -1,4 +1,4 @@
-ledgr_experiment_store_schema_version <- 118L
+ledgr_experiment_store_schema_version <- 119L
 ledgr_saved_sweep_schema_version <- 4L
 
 ledgr_experiment_store_table_exists <- function(con, table_name) {
@@ -564,36 +564,21 @@ ledgr_experiment_store_version <- function(con, table_names = NULL) {
 }
 
 ledgr_experiment_store_assert_supported <- function(con, table_names = NULL) {
-  version <- ledgr_experiment_store_version(con, table_names = table_names)
-  if (version > ledgr_experiment_store_schema_version) {
-    rlang::abort(
-      sprintf(
-        "This DuckDB file uses ledgr experiment-store schema version %s, but this ledgr build supports only %s.",
-        version,
-        ledgr_experiment_store_schema_version
-      ),
-      class = "ledgr_future_schema_version"
-    )
-  }
-  invisible(version)
+  ledgr_store_assert_current(con)
+  invisible(ledgr_experiment_store_schema_version)
 }
 
 ledgr_experiment_store_check_schema <- function(con,
                                                 write = FALSE,
                                                 inform = FALSE,
                                                 table_names = NULL) {
-  version <- ledgr_experiment_store_assert_supported(
-    con,
-    table_names = table_names
-  )
+  ledgr_store_assert_current(con)
+  version <- ledgr_experiment_store_schema_version
   if (!isTRUE(write)) {
     return(invisible(list(
       schema_version = version,
       is_legacy = version < ledgr_experiment_store_schema_version
     )))
-  }
-  if (version < ledgr_experiment_store_schema_version) {
-    ledgr_experiment_store_migrate(con, from_version = version, inform = inform)
   }
   ledgr_experiment_store_ensure_run_telemetry_columns(con)
   ledgr_experiment_store_ensure_availability_run_tables(con)

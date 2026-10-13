@@ -98,12 +98,11 @@ ledgr_db_init <- function(db_path) {
     rlang::abort("`db_path` must be a non-empty character scalar.", class = "ledgr_invalid_args")
   }
 
-  opened <- ledgr_open_duckdb_with_retry(db_path)
+  opened <- ledgr_store_open(db_path, mode = "create")
   con <- opened$con
   drv <- opened$drv
   attr(con, "ledgr_duckdb_drv") <- drv
 
-  ledgr_create_schema(con)
   ledgr_validate_schema_once(con)
   con
 }

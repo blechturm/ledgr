@@ -270,15 +270,10 @@ ledgr_snapshot_from_df <- function(bars_df,
     add = TRUE
   )
 
-  if (identical(db_path, ":memory:") || !file.exists(db_path)) {
-    drv <- ledgr_duckdb_driver()
-    con <- DBI::dbConnect(drv, dbdir = db_path)
-    attr(con, "ledgr_duckdb_drv") <- drv
-    ledgr_create_schema(con)
-  } else {
-    con <- ledgr_db_init(db_path)
-    drv <- attr(con, "ledgr_duckdb_drv")
-  }
+  opened <- ledgr_store_open(db_path, mode = "create")
+  con <- opened$con
+  drv <- opened$drv
+  attr(con, "ledgr_duckdb_drv") <- drv
 
   snapshot_id <- ledgr_snapshot_create(con, snapshot_id = snapshot_id, meta = list())
 
@@ -416,7 +411,7 @@ ledgr_snapshot_from_df <- function(bars_df,
   if (!is.null(price_basis)) {
     metadata$price_basis <- price_basis
   }
-  metadata$snapshot_hash_rule_version <- ledgr_snapshot_hash_rule3_version
+  metadata$snapshot_hash_rule_version <- ledgr_snapshot_content_hash_rule_version
   if (!is.null(availability_report)) {
     metadata$fact_family_count <- length(facts$families) +
       as.integer(identical(invalid_observations, "quarantine"))

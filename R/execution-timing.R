@@ -1,6 +1,4 @@
-ledgr_availability_execution_timing_version <- function() {
-  2L
-}
+ledgr_availability_execution_timing_rule_version <- 2L
 
 ledgr_execution_timing_provenance <- function(config) {
   unknown <- function(source = "unknown_config") {
@@ -71,7 +69,10 @@ ledgr_execution_timing_from_json <- function(config_json) {
 ledgr_execution_timing_require_current <- function(config) {
   if (!ledgr_availability_config_active(config)) return(invisible(TRUE))
   timing <- ledgr_execution_timing_provenance(config)
-  if (!identical(timing$execution_timing_version, ledgr_availability_execution_timing_version())) {
+  if (!identical(
+    timing$execution_timing_version,
+    ledgr_availability_execution_timing_rule_version
+  )) {
     rlang::abort(
       paste0(
         "Availability-aware execution requires the current execution timing version; ",

@@ -134,7 +134,7 @@ testthat::test_that("[LTB-0027] corporate-action facts validate each sealed fiel
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move identity", {
+testthat::test_that("[LTB-0028] corporate-action rows persist, seal, and move identity", {
   bars <- equity_corporate_action_bars()
   facts <- ledgr_facts(
     ledgr_facts_equity_corporate_actions(equity_corporate_action_rows())
@@ -209,24 +209,15 @@ testthat::test_that("[LTB-0028] corporate-action rows migrate, seal, and move id
   ledgr_snapshot_close(no_facts)
   con <- ledgr_db_init(no_facts_path)
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE))
-  DBI::dbExecute(con, "DROP TABLE snapshot_equity_corporate_actions")
-  DBI::dbExecute(
-    con,
-    "UPDATE ledgr_schema_metadata SET value = '115'
-     WHERE key = 'experiment_store_schema_version'"
-  )
   DBI::dbDisconnect(con, shutdown = TRUE)
-  testthat::expect_message(
-    con <- ledgr_db_init(no_facts_path),
-    "Upgraded ledgr experiment-store schema from version 115 to 118"
-  )
+  con <- ledgr_db_init(no_facts_path)
   testthat::expect_true(ledgr:::ledgr_experiment_store_table_exists(
     con,
     "snapshot_equity_corporate_actions"
   ))
   testthat::expect_identical(
     ledgr:::ledgr_experiment_store_version(con),
-    118L
+    ledgr:::ledgr_experiment_store_schema_version
   )
   testthat::expect_identical(
     ledgr:::ledgr_snapshot_hash(con, no_facts$snapshot_id),

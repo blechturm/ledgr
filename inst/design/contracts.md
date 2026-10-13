@@ -155,7 +155,7 @@ Accepted change pending:
   `FAILED` on a failed test run). `"fail"` keeps the session-ending
   `ledgr_walk_forward_no_selection`. Every fold row records `selection_source`
   (`train`, `previous`, `none`, or `NULL` for a failed fold without a
-  selection; experiment-store schema 118). None folds are omitted from
+  selection; current experiment-store schema). None folds are omitted from
   selected rows and refuse candidate extraction; a previous fold's candidate
   provenance names its source and source fold. The policy is stored in
   session meta, a session without it reads as `"fail"`, and the printed

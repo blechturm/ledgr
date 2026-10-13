@@ -179,7 +179,10 @@ ledgr_snapshot_require_hash_rule3 <- function(rule) {
       class = c("ledgr_snapshot_rebuild_required", "ledgr_invalid_state")
     )
   }
-  if (!identical(as.integer(rule), ledgr_snapshot_hash_rule3_version)) {
+  if (!identical(
+    as.integer(rule),
+    ledgr_snapshot_content_hash_rule_version
+  )) {
     rlang::abort(
       sprintf("Unsupported snapshot hash rule version: %s.", rule),
       class = c("ledgr_snapshot_hash_rule_unsupported", "ledgr_invalid_state")

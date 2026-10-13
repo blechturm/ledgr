@@ -1,7 +1,4 @@
 testthat::test_that("[LTB-0131] public calls open the store once, plus once per committed run, and leave no connection open", {
-  # A session's first fresh store builds the schema template once on an
-  # in-memory database (LDG-3016); build it before counting store opens.
-  invisible(ledgr:::ledgr_schema_template())
   connections <- new.env(parent = emptyenv())
   connections$all <- list()
   real_connect <- DBI::dbConnect
@@ -69,9 +66,6 @@ testthat::test_that("[LTB-0131] public calls open the store once, plus once per 
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0241] composite and interactive calls open the store once per read or commit and leave none open", {
-  # A session's first fresh store builds the schema template once on an
-  # in-memory database (LDG-3016); build it before counting store opens.
-  invisible(ledgr:::ledgr_schema_template())
   connections <- new.env(parent = emptyenv())
   connections$all <- list()
   real_connect <- DBI::dbConnect
