@@ -1180,11 +1180,15 @@ ledgr_run_open <- function(snapshot, run_id) {
     if (isTRUE(snapshot_opened$opened_new)) {
       on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
     }
-    snapshot_info <- ledgr_snapshot_info(snapshot_opened$con, snapshot_id)
+    snapshot_hash <- ledgr_snapshot_ensure_verified(
+      snapshot_opened$con,
+      snapshot_id,
+      snapshot_db_path = snapshot$db_path
+    )
     provider <- ledgr_availability_provider(
       snapshot_opened$con,
       cfg,
-      as.character(snapshot_info$snapshot_hash[[1L]])
+      as.character(snapshot_hash)
     )
     calendar <- ledgr_availability_calendar(
       provider,

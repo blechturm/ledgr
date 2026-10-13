@@ -64,9 +64,12 @@ testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {
     repository, "dev", "bench", "v0_2_2_long_window_regression",
     release_name
   )
-  if (!file.exists(script)) {
-    testthat::expect_false(dir.exists(dirname(script)))
-  } else {
+  checkout <- file.exists(file.path(repository, ".git")) ||
+    file.exists(file.path(repository, ".Rbuildignore"))
+  if (checkout) {
+    testthat::expect_true(file.exists(script))
+    build_ignore <- readLines(file.path(repository, ".Rbuildignore"), warn = FALSE)
+    testthat::expect_true("^dev(/|$)" %in% build_ignore)
     result <- suppressWarnings(system2(
       file.path(R.home("bin"), "Rscript"), shQuote(script),
       stdout = TRUE, stderr = TRUE
@@ -77,6 +80,10 @@ testthat::test_that("[LTB-0154] release-only regression cases stay explicit", {
       "Release-only cases require the explicit --release flag.",
       fixed = TRUE
     )
+  } else {
+    testthat::expect_false(file.exists(file.path(repository, ".git")))
+    testthat::expect_false(file.exists(file.path(repository, ".Rbuildignore")))
+    testthat::expect_false(dir.exists(file.path(repository, "dev")))
   }
 })
 
@@ -88,9 +95,12 @@ testthat::test_that("[LTB-0182] the terminal release fixture stays release-only 
   }
   suite <- file.path(repository, "dev", "bench", "v0_2_2_long_window_regression")
   script_name <- paste0("terminal_", "release.R")
-  if (!dir.exists(suite)) {
-    testthat::expect_false(dir.exists(suite))
-  } else {
+  checkout <- file.exists(file.path(repository, ".git")) ||
+    file.exists(file.path(repository, ".Rbuildignore"))
+  if (checkout) {
+    testthat::expect_true(dir.exists(suite))
+    build_ignore <- readLines(file.path(repository, ".Rbuildignore"), warn = FALSE)
+    testthat::expect_true("^dev(/|$)" %in% build_ignore)
     forbidden <- c(
       list.files(file.path(repository, "tests"), recursive = TRUE, full.names = TRUE),
       list.files(file.path(repository, ".github", "workflows"), recursive = TRUE, full.names = TRUE)
@@ -120,5 +130,9 @@ testthat::test_that("[LTB-0182] the terminal release fixture stays release-only 
     testthat::expect_identical(record$valuation$frozen_at_end_count, "1")
     testthat::expect_identical(record$valuation$longest_freeze_sessions, "38")
     testthat::expect_true(length(unlist(record$warning)) > 0L)
+  } else {
+    testthat::expect_false(file.exists(file.path(repository, ".git")))
+    testthat::expect_false(file.exists(file.path(repository, ".Rbuildignore")))
+    testthat::expect_false(dir.exists(file.path(repository, "dev")))
   }
 })

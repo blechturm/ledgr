@@ -653,8 +653,11 @@ price-input carry must not feed zero returns into return and volatility
 features), PIT-G-014 (whether a carry chain equals one continuous run) and
 PIT-G-015 (the history start covers mark history and dividend entitlement),
 and Session E trims the decision trace only where omitted rows are exactly
-reconstructible. WS7 acceptance adds two checks: the estimator's sample on
-carried inputs (G-013) and the run's dividend status (G-016). WS8 adds one
+reconstructible. WS7 acceptance adds three checks: the estimator's sample on
+carried inputs (G-013), the run's dividend status (G-016), and elapsed time
+plus peak RSS for the one rule-3 lake rebuild. The memory number is evidence
+for the persisted-data execution-placement RFC, not a WS7 optimization gate.
+WS8 adds one
 buy-and-hold reconciliation of the Sharadar build against the vendor's
 dividend-adjusted close (G-025). The Sharadar adapter emits no corporate-action
 facts, so every Sharadar result so far excludes dividends; emitting

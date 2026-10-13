@@ -97,6 +97,14 @@ testthat::test_that("[LTB-0252] complete verification is PID-bound and truthful"
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
     ledgr:::ledgr_store_key(second_path), id, root, 3L
   ))
+  testthat::expect_false(identical(
+    ledgr:::ledgr_snapshot_verified_key(
+      ledgr:::ledgr_store_key(path), id, root, 3L
+    ),
+    ledgr:::ledgr_snapshot_verified_key(
+      ledgr:::ledgr_store_key(path), paste0(id, "-other"), root, 3L
+    )
+  ))
   DBI::dbDisconnect(run_con, shutdown = TRUE)
   run_con <- NULL
 
@@ -468,6 +476,37 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   })
   testthat::expect_identical(facts_count$count, 1L)
 
+  incomplete_snapshot <- availability_runtime_fixture(
+    days = 4L,
+    bar_days = c(1L, 2L, 4L)
+  )
+  on.exit(ledgr_snapshot_close(incomplete_snapshot), add = TRUE)
+  incomplete_exp <- ledgr_experiment(
+    incomplete_snapshot,
+    function(ctx, params) {
+      target <- ctx$hold()
+      target[["AAA"]] <- 1
+      target
+    },
+    valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
+    cost_model = ledgr_cost_zero()
+  )
+  incomplete <- ledgr_run(incomplete_exp, run_id = "verification-incomplete")
+  close(incomplete)
+  testthat::expect_identical(
+    ledgr_run_info(incomplete_snapshot, "verification-incomplete")$status,
+    "INCOMPLETE"
+  )
+  ledgr:::ledgr_snapshot_verified_reset()
+  incomplete_count <- verification_count_hashes({
+    reopened <- ledgr_run_open(
+      incomplete_snapshot,
+      "verification-incomplete"
+    )
+    close(reopened)
+  })
+  testthat::expect_identical(incomplete_count$count, 1L)
+
   ledgr:::ledgr_snapshot_verified_reset()
   reconstruction_count <- verification_count_hashes({
     con <- ledgr_db_init(snapshot$db_path)
@@ -501,4 +540,53 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
     on.exit(lapply(wf$test_runs, close), add = TRUE)
   })
   testthat::expect_identical(walk_count$count, 1L)
+
+  split_snapshot_path <- tempfile(fileext = ".duckdb")
+  split_run_path <- tempfile(fileext = ".duckdb")
+  split_snapshot <- ledgr_snapshot_from_df(
+    verification_test_bars(3L),
+    db_path = split_snapshot_path
+  )
+  on.exit(ledgr_snapshot_close(split_snapshot), add = TRUE)
+  split_root <- ledgr_snapshot_info(split_snapshot)$snapshot_hash[[1L]]
+  ledgr:::ledgr_snapshot_verified_reset()
+  split_result <- ledgr_backtest(
+    snapshot = split_snapshot,
+    strategy = function(ctx, params) ctx$flat(),
+    universe = "AAA",
+    start = "2020-01-01",
+    end = "2020-01-03",
+    initial_cash = 1000,
+    db_path = split_run_path,
+    cost_model = ledgr_cost_zero()
+  )
+  on.exit(close(split_result), add = TRUE)
+  snapshot_key <- ledgr:::ledgr_store_key(split_snapshot_path)
+  run_key <- ledgr:::ledgr_store_key(split_run_path)
+  testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
+    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
+  testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
+    run_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
+
+  ledgr:::ledgr_snapshot_verified_reset()
+  split_con <- ledgr_db_init(split_run_path)
+  on.exit(DBI::dbDisconnect(split_con, shutdown = TRUE), add = TRUE)
+  ledgr_state_reconstruct(split_result$run_id, split_con)
+  testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
+    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
+  testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
+    run_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
+
+  ledgr:::ledgr_snapshot_verified_reset()
+  ledgr:::ledgr_backtest_ensure_snapshot(split_result)
+  testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
+    snapshot_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
+  testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
+    run_key, split_snapshot$snapshot_id, split_root, 3L
+  ))
 })

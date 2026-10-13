@@ -17,7 +17,9 @@ times at 0.5M, 1M, 2M and 5M bars, the encoder-only share, and fresh-child RSS
 for a 5M-bar verification and the retained 300,000-row fact projection. The
 timing includes DuckDB retrieval and rule-3 encoding. The fresh-child RSS is a
 conservative whole-process peak: it includes construction of the synthetic
-store as well as verification or fact projection.
+store as well as verification or fact projection. The close review's size walk
+found about 125 MB of additional whole-process peak per million bars,
+attributable to DuckDB retrieval rather than to the fixed-block R encoder.
 
 The accepted LDG-3019 record is in `evidence/ldg3019/`. The registered cost
 gate is the median microseconds per bar (at most 1.5) and the log-log endpoint
@@ -30,7 +32,8 @@ and records the three ordinary fast-profile runs made on the implementation
 host. The fast CSVs are semantic gate evidence only: all 566 blocks pass, but
 their 122.38-second median exceeds the registered 112-second host bound. A
 same-session accepted-base control also exceeds the bound at 115.35 seconds.
-The registered CI host therefore remains the binding timing check.
+The registered Workstream 8 Windows host therefore remains the binding timing
+check; hosted CI clocks are advisory.
 
 `fixture_families.csv` and `fixture_phases.csv` are the aggregate-only
 vendor-neutral fixture record after LDG-3019. The private rule-2 Sharadar lake

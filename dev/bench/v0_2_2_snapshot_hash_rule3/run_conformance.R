@@ -168,6 +168,19 @@ dst <- seal_root(
     as.POSIXct("2020-11-01 05:30:00", tz = "UTC")
   )
 )
+numeric_instruments <- oracle$r3_make_instruments("AAA")
+numeric_instruments$multiplier <- NA_real_
+numeric_instruments$tick_size <- -1e-10
+numeric_bars <- oracle$r3_make_bars(
+  "AAA",
+  as.POSIXct("2020-01-01", tz = "UTC")
+)
+numeric_bars$open <- 1.234567895
+numeric_bars$high <- 9e14 + 0.25
+numeric_bars$low <- 1.000000005
+numeric_bars$close <- 2.500000005
+numeric_bars$volume <- NA_real_
+numeric <- seal_root(numeric_instruments, numeric_bars)
 mutated <- base_bars
 mutated$close[[1L]] <- mutated$close[[1L]] + 0.01
 mutation <- seal_root(base_instruments, mutated)
@@ -175,15 +188,17 @@ mutation <- seal_root(base_instruments, mutated)
 seal_cases <- data.frame(
   case = c(
     "dense_baseline", "insertion_fetch_threads", "fixed_block_boundary",
-    "unicode_mixed_case", "dst_same_instant", "covered_value_mutation"
+    "unicode_mixed_case", "dst_same_instant", "numeric_edges",
+    "covered_value_mutation"
   ),
-  root = c(baseline, insertion, boundary, unicode, dst, mutation),
+  root = c(baseline, insertion, boundary, unicode, dst, numeric, mutation),
   expected = c(
     expected$root[expected$case == "dense_baseline"],
     expected$root[expected$case == "insertion_fetch_threads"],
     expected$root[expected$case == "fixed_block_boundary"],
     expected$root[expected$case == "unicode_mixed_case"],
     expected$root[expected$case == "dst_same_instant"],
+    expected$root[expected$case == "numeric_edges"],
     expected$comparison_root[expected$case == "covered_value_mutation"]
   ),
   stringsAsFactors = FALSE

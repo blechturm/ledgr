@@ -13,15 +13,17 @@ remainder.
 
 The fresh-child whole-process peak was 1,072,869,376 bytes while verifying a
 prepared 5M-bar store. The retained 300,000-row fact projection emitted
-67,750,987 bytes, took 3.83 seconds and peaked at 603,635,712 bytes.
-These are disclosure measurements, not gates. The bar encoder retains one
-fixed 10,000-row logical block; the larger process peak includes the package,
-DuckDB connection and mapped snapshot database. Fact projection still
-materializes its accepted single JSON record
-and remains the later memory-release obligation recorded by the synthesis.
+67,750,987 bytes, took 3.83 seconds and peaked at 603,635,712 bytes. These are
+disclosure measurements, not gates. The close review's size walk measured
+about 125 MB of additional whole-process peak per million bars and attributed
+that growth to DuckDB retrieval, not to the fixed 10,000-row R encoder. This
+retrieval boundary is routed to the persisted-data execution-placement RFC;
+the WS7 lake rebuild must report the rule-3 rebuild peak beside elapsed time.
+Fact projection still materializes its accepted single JSON record and remains
+the later memory-release obligation recorded by the synthesis.
 
 `production_cases.csv` is byte-identical to the accepted Windows and Ubuntu
-spike corpus. `production_seals.csv` separately records the six cases exercised
+spike corpus. `production_seals.csv` separately records the seven cases exercised
 through an unchanged real schema and seal. The all-facts corpus uses two enum
 labels rejected by the production schema at the RFC baseline, and hostile
 order is impossible after the seal query's `ORDER BY`; those remain production

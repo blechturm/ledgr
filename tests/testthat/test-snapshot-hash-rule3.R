@@ -185,6 +185,22 @@ testthat::test_that("[LTB-0249] production rule 3 matches the spike corpus", {
   )
   testthat::expect_identical(facts, roots[["facts"]])
 
+  fact_snapshot <- availability_runtime_fixture(days = 3L)
+  on.exit(ledgr_snapshot_close(fact_snapshot), add = TRUE)
+  fact_con <- ledgr:::get_connection(fact_snapshot)
+  DBI::dbExecute(
+    fact_con,
+    paste(
+      "UPDATE snapshot_sessions SET status = 'closed'",
+      "WHERE snapshot_id = ? AND session_date = DATE '2020-01-02'"
+    ),
+    params = list(fact_snapshot$snapshot_id)
+  )
+  testthat::expect_error(
+    ledgr_snapshot_validate(fact_snapshot),
+    class = "ledgr_invalid_snapshot"
+  )
+
   original <- list(
     instrument_id = "AAA",
     ts_utc = "2020-01-02T21:00:00Z",

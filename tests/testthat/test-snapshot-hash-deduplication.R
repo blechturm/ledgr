@@ -88,6 +88,33 @@ testthat::test_that("[LTB-0250] old hash rules are readable but not executable",
   close(completed)
   ledgr_snapshot_close(snapshot)
 
+  incomplete_snapshot <- availability_runtime_fixture(
+    days = 4L,
+    bar_days = c(1L, 2L, 4L)
+  )
+  incomplete_path <- incomplete_snapshot$db_path
+  incomplete_id <- incomplete_snapshot$snapshot_id
+  incomplete_experiment <- ledgr_experiment(
+    incomplete_snapshot,
+    function(ctx, params) {
+      target <- ctx$hold()
+      target[["AAA"]] <- 1
+      target
+    },
+    valuation_policy = ledgr_valuation_stale(0L, exhausted = "refuse"),
+    cost_model = ledgr_cost_zero()
+  )
+  incomplete <- ledgr_run(
+    incomplete_experiment,
+    run_id = "rule3-incomplete"
+  )
+  testthat::expect_identical(
+    ledgr_run_info(incomplete_snapshot, incomplete$run_id)$status,
+    "INCOMPLETE"
+  )
+  close(incomplete)
+  ledgr_snapshot_close(incomplete_snapshot)
+
   expect_rebuild <- function(expr, rule) {
     shown <- if (is.na(rule)) "missing" else as.character(rule)
     message <- paste0(
@@ -120,6 +147,24 @@ testthat::test_that("[LTB-0250] old hash rules are readable but not executable",
       ledgr_facts_history(reopened, "membership", "legacy-guard"),
       rule
     )
+
+    incomplete_con <- ledgr_db_init(incomplete_path)
+    DBI::dbExecute(
+      incomplete_con,
+      "UPDATE snapshots SET hash_rule_version = ? WHERE snapshot_id = ?",
+      params = list(rule, incomplete_id)
+    )
+    DBI::dbDisconnect(incomplete_con, shutdown = TRUE)
+    incomplete_reopened <- ledgr_snapshot_open(
+      incomplete_path,
+      incomplete_id,
+      verify = FALSE
+    )
+    expect_rebuild(
+      ledgr_run_open(incomplete_reopened, "rule3-incomplete"),
+      rule
+    )
+    ledgr_snapshot_close(incomplete_reopened)
     expect_rebuild(
       ledgr_run(
         experiment,

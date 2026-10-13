@@ -20,7 +20,7 @@ indicator-dev.R,reader,3,ledgr_indicator_dev,ledgr_snapshot_ensure_handle
 precompute-features.R,reader,3,ledgr_precompute_features|ledgr_sweep|ledgr_walk_forward,ledgr_snapshot_ensure_handle at outer entry
 pulse-snapshot.R,reader,3,ledgr_pulse_snapshot,ledgr_snapshot_ensure_handle
 run-snapshot.R,reader,3,ledgr_run|resume,ledgr_snapshot_ensure_verified
-run-store.R,durable_reader,2,ledgr_run_open,durable result and stored-root comparison only
+run-store.R,reader,3,ledgr_run_open (INCOMPLETE),ledgr_snapshot_ensure_verified before availability-provider reconstruction
 snapshot.R,reader,1+3,print.ledgr_snapshot|summary.ledgr_snapshot,metadata lookup only for print; ensure for summary
 snapshot_adapters.R,writer,NA,adapter ingest and metadata,seal establishes proof after commit
 snapshot-quarantine.R,reader,3,ledgr_snapshot_quarantine,ledgr_snapshot_ensure_verified

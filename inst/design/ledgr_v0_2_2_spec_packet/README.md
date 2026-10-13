@@ -3,13 +3,13 @@
 **Status:** Cuts 1 through 12 are closed after maintainer acceptance of all
 26 workstreams through 2026-10-12. Cut 13's independent review returned
 `PASS_AFTER_PATCHES`; the patches are incorporated and the maintainer accepted
-the cut on 2026-10-12. Workstream 27 is awaiting Type 1 close review:
-LDG-3019's rule-3 encoder and refusal boundary and LDG-3020's process-local
-verification reuse are implemented and recorded. The integrated Windows fast
-profile passes at 110.260 seconds, and GitHub Actions run 38305153540 passes
-the acceptance layer, semantic fast runs and `R CMD check`. Independent
-Workstream 28 remains open with LDG-3021 for the separately claimed
-`ledgr_sweep_save()` defect.
+the cut on 2026-10-12. Workstream 27's Type 1 close review returned
+`CHANGES_REQUIRED`; its three blocking findings and four record findings are
+corrected, with a focused re-review pending. LDG-3019's rule-3 encoder and
+refusal boundary and LDG-3020's process-local verification reuse remain
+agent-provisional until that re-review passes and the maintainer accepts them.
+Independent Workstream 28 remains open with LDG-3021 for the separately
+claimed `ledgr_sweep_save()` defect.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -45,9 +45,9 @@ ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 12 are
-  closed; Cut 13 is accepted, Workstream 27 awaits Type 1 close review and
+  closed; Cut 13 is accepted, Workstream 27 awaits focused Type 1 re-review and
   Workstream 28 may proceed independently. LDG-3019 and LDG-3020 have landed;
-  Workstream 27 remains open until independent review passes and the maintainer
+  Workstream 27 remains open until the correction passes and the maintainer
   accepts it.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and

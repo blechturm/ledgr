@@ -33,7 +33,9 @@ The registered ordinary long-window suite compares LDG-3019 commit
 `d4d3c06b` with LDG-3020 commit `40df12d0` over five alternating pairs per
 shape. It completed in 506.96 seconds and its self-checker passed. Median
 candidate/baseline ratios were 0.901 to 1.009 cold and 0.910 to 0.961 warm;
-none required a retry. Exact semantic records match for all three shapes.
+none required a retry. Exact semantic records match for all three shapes. The
+complete checked-in record is under `long_window_record/` and reproduces with
+`dev/bench/v0_2_2_long_window_regression/check_record.R`.
 
 After rebasing onto release head `b31d523f`, the integrated tree passed the
 ordinary Windows fast profile at 566 of 566 blocks, zero skipped or failed,
@@ -43,12 +45,30 @@ v0.1.x acceptance layer, three semantic fast-profile runs and `R CMD check`
 at final commit `f5a54cae`. Its 187.007-second Ubuntu median is advisory under
 the accepted synthesis; the registered Windows host owns the timing gate.
 
+The post-review correction fast record is checked in under `correction_fast/`.
+It executes 566 of 566 blocks with zero skipped or failed in 110.04 seconds;
+the ordinary gate passes against the unchanged 112-second bound on its first
+run.
+
 Integration exposed two stale test-harness assumptions, neither in product
 code. AT7 claimed a cold-process raw-tamper oracle but retained the warm proof
 created by seal; `8e0a75c5` resets that private proof before the load. The
-installed-package check excludes `dev/bench`; `f94fe9a5` and `f5a54cae` make
-the two source-only claim blocks execute an explicit absence assertion there
-while preserving their full source and record oracles in a checkout.
+installed-package check excludes `dev/bench`; the corrected claim blocks
+distinguish a checkout from an installed package through `.git` or
+`.Rbuildignore`: a checkout must contain the suite, while an installed package
+must exclude `dev`.
+
+## Seven-shape walk for verification reuse
+
+1. No one-row frames are accumulated; the verified set stores one scalar key.
+2. No snapshot table is subset inside an id loop.
+3. No per-element parsing or formatting was added.
+4. No row-wise JSON encoding was added.
+5. The envelope and complete root are each read once per cold outer call; warm
+   calls compare one prepared scalar key.
+6. Lookup is a hashed environment access, not a scan over verified entries.
+7. The environment grows by one tuple per verified snapshot identity, never by
+   one value per bar, pulse, candidate or fold.
 
 ## Compatibility boundary
 
