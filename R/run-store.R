@@ -609,6 +609,7 @@ ledgr_run_info_from_row <- function(row, db_path) {
     function(x) is.null(x) || length(x) == 0L || is.na(x),
     logical(1)
   ))
+  info$legacy_pre_provenance <- FALSE
   structure(info, class = c("ledgr_run_info", "list"))
 }
 
