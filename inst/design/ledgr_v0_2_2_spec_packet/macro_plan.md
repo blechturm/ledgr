@@ -830,7 +830,19 @@ result in.
   consolidation, testing architecture and the feature-map read surface.
   The packet `README.md` is trimmed to its role, the design index
   `README.md` and `AGENTS.md` are checked for stale entry points, and the
-  sweep records what it removed and where each item now lives.
+  sweep records what it removed and where each item now lives. Stale
+  synthesis status headers are corrected: historical-projection v10 still
+  reads "ACCEPTED" although v11 replaced it, and the snapshot-verification
+  synthesis does not show at its top that Cut 14 amended its
+  legacy-readability rule. If the governance RFC on supersession rules is
+  accepted by then, the sweep applies its rules instead.
+- Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
+  `contracts.md` states each current rule in the present tense and moves
+  release history out (41 lines cite release versions, plus schema-number
+  history and about 24 legacy or historical mentions); history belongs in
+  NEWS and the packets. Rewording can change a rule, so this part gets one
+  small Type 1 review that compares old and new text clause by clause, and
+  the documentation-contract pins move with the sentences they pin.
 
 Not a design change. It needs a Type 1 review only if it adds the
 documentation-contract test, because that test defines a claim. The
