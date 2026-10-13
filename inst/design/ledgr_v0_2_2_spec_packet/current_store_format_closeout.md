@@ -1,10 +1,10 @@
 # Workstream 29 Closeout: One Current Schema And One Store Gate
 
-**Status:** Agent-provisional after close-review corrections; awaiting focused
-Type 1 re-review and maintainer adjudication of the cold-open clock.
+**Status:** Agent-provisional after focused re-review corrections; awaiting
+maintainer acceptance of the correction evidence and cold-open clock.
 **Date:** 2026-10-13
 **Baseline commit:** `24bcc161`
-**Implementation and correction range:** `24bcc161..0699ba3c`
+**Implementation and correction range:** `24bcc161..1a240476`
 **Tickets:** LDG-3024 through LDG-3027
 
 ## A. Claim And Boundary
@@ -38,13 +38,14 @@ record-level and public-call legacy branches.
 | LDG-3026 | `0a3f2d29` | all persistent connection families gated; legacy schema machinery deleted |
 | LDG-3027 | `73403097`, `7baa434f`, `93a63d59`, `48f447df` | strict catalogue validation, evidence corrections and profile alignment |
 | Review corrections | `1377977d`, `d68aae4b`, `0699ba3c` | split-store repair, full golden rows, stronger detectors and corrected evidence |
+| Re-review corrections | `1a240476` | view-aware cache identity, exact held/cached pins and attached-store cleanup witness |
 
 ## C. Schema And Store-Gate Evidence
 
 LTB-0258 / LCL-0256 renders the new definition into a fresh store and compares
-it row by row with a committed normalized fixture built by the pre-cut path,
-closed and reopened before normalization. The fixture names baseline
-`24bcc161`, DuckDB 1.5.6.9000 and this population:
+it row by row with a committed normalized fixture built by the pre-cut public
+snapshot-sealing path, then closed and reopened before normalization. The
+fixture names baseline `24bcc161`, DuckDB 1.5.6.9000 and this population:
 
 - 32 table rows;
 - 2,058 ordered-column attribute rows;
@@ -116,8 +117,10 @@ the full normalized catalogue. Successful fresh-store creation skips a
 redundant immediate validation because the same exact DDL has just committed.
 Failures are never cached.
 
-The registered cache mutation removed the index component from the key and
-made two LTB-0263 assertions fail after same-path replacement.
+The validation signature also includes each current-database, main-schema,
+non-internal view definition because full normalization observes its columns.
+The registered cache mutations remove either the index or view component;
+the missing-index and cached-extra-view witnesses then fail.
 
 ## F. Exactness
 
@@ -149,10 +152,14 @@ baseline `24bcc161` and five alternating fresh processes:
 | existing-store `ledgr_db_init()` | 0.02885 s | 0.03009 s | 1.043 | PASS |
 | five-row snapshot build | 0.19420 s | 0.19190 s | 0.988 | PASS |
 
-The cold opener adds one mandatory marker query to a pre-cut path that did not
-verify a store. Its 12.43 ms median increase is recorded as a miss under the
-reviewer's expanded 1.05 comparison, not hidden in package loading. The other
-four boundaries meet the rule. The raw record and method are in
+The cold-process ratio is valid, but about 10 ms of its 12.43 ms increase is a
+one-time first-call cost under uncompiled `pkgload`, not the marker query.
+Steady-state measurements put the gate near 1.1 ms per open, including about
+0.55 ms for the mandatory marker query, or roughly 1.07 to 1.11 times the
+pre-cut open. It therefore remains a MISS under the 1.05 comparison. Reusing a
+quoted marker identifier could save about 0.26 ms, but that fixed-size change
+was not used to weaken or bypass the gate. The other four boundaries meet the
+rule. The raw record and method are in
 `dev/bench/v0_2_2_pre_cran_removal/schema_validation/`.
 
 The correction fast record at `.tmp/ws29-correction-fast` ran all 562 blocks
@@ -202,9 +209,11 @@ fixture ladder and corrected paired clocks are available to the reviewer.
 
 The Workstream 29 Type 1 review also confirms the Workstream 31 preparatory
 checkpoint corrections recorded at `d85ec87e` and `a8416492`, as the packet
-requires. The close review was invocation four. The requested focused
-re-review is invocation five, making 5/14 = 0.357 against the 0.5 gate; the
-planned Workstream 30 and 31 close reviews would bring the cut to 7/14 = 0.5.
+requires. The close review was invocation four and the focused re-review was
+invocation five, making 5/14 = 0.357 against the 0.5 gate. N1 through N3 from
+that re-review were corrected with failure-sensitive evidence rather than a
+sixth invocation. The planned Workstream 30 and 31 close reviews would bring
+the cut to 7/14 = 0.5.
 
-No re-review result is claimed here. LDG-3027 and Workstream 29 remain
-`review_pending` until focused independent review and maintainer acceptance.
+No pass is claimed here. LDG-3027 and Workstream 29 remain `review_pending`
+until the maintainer accepts the correction evidence and the cold-open miss.

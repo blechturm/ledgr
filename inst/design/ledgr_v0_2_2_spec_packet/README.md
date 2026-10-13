@@ -62,9 +62,10 @@ ledger.
   LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
   and a8416492 correct the census and lint records, with confirmation folded
   into Workstream 29's close review. The Type 1 close review required
-  corrections, now recorded through `0699ba3c`; the focused re-review is next.
-  The corrected fast record passes at a 107.03-second median. The cold-open
-  clock remains an honestly recorded 1.512 miss for maintainer adjudication.
+  corrections through `0699ba3c`. Its focused re-review found three bounded
+  residues, corrected with detecting evidence at `1a240476`. The corrected
+  fast record passes at a 107.03-second median. The cold-open clock remains an
+  honestly recorded miss for maintainer adjudication.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.

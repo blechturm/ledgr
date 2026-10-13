@@ -45,6 +45,10 @@ are:
 - 0.988 for a five-row snapshot build.
 
 The four existing-work boundaries meet the 1.05 rule. The cold opener does
-not: its median rises from 24.29 ms to 36.72 ms because the new mandatory
-marker query has no pre-cut counterpart. The miss is recorded, not passed or
-hidden in package loading, and remains for maintainer adjudication.
+not: its fresh-process median rises from 24.29 ms to 36.72 ms. A focused
+re-review attributes about 10 ms of that increase to one-time first-call work
+under uncompiled `pkgload`, rather than to the marker query. Its steady-state
+gate cost is about 1.1 ms per open, including about 0.55 ms for the marker
+query, or roughly 1.07 to 1.11 times the pre-cut open. The miss is recorded,
+not passed or hidden in package loading, and remains for maintainer
+adjudication.
