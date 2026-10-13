@@ -61,9 +61,10 @@ ledger.
   through LDG-3035. The preparatory Workstream 31 slice is complete through
   LDG-3023. A Type 1 checkpoint returned CHANGES_REQUIRED; commits d85ec87e
   and a8416492 correct the census and lint records, with confirmation folded
-  into Workstream 29's close review. Workstream 29 is implementation-complete
-  and awaits Type 1 review; its unchanged 112-second fast gate currently has
-  a recorded 114.28-second P-core median and requires explicit adjudication.
+  into Workstream 29's close review. The Type 1 close review required
+  corrections, now recorded through `0699ba3c`; the focused re-review is next.
+  The corrected fast record passes at a 107.03-second median. The cold-open
+  clock remains an honestly recorded 1.512 miss for maintainer adjudication.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
