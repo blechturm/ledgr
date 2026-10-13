@@ -194,12 +194,15 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   for (helper in helpers) {
     testthat::expect_match(source, helper, fixed = TRUE)
   }
-  testthat::expect_identical(
-    ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
-    "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
-  )
-  testthat::expect_identical(
-    ledgr:::ledgr_indicator_fingerprint(ledgr_ind_returns(5L)),
-    "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed"
-  )
+  under_covr <- requireNamespace("covr", quietly = TRUE) && covr::in_covr()
+  if (!under_covr) {
+    testthat::expect_identical(
+      ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
+      "b4ad728b2fc042225c7ba5d7423d4c1321c38c6d5300a0cf04098d610c13b9bc"
+    )
+    testthat::expect_identical(
+      ledgr:::ledgr_indicator_fingerprint(ledgr_ind_returns(5L)),
+      "9e59cad71da4e6ffd035b1783dcc98c38cc9c17318abb21aa21839ca235218ed"
+    )
+  }
 })

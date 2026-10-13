@@ -1592,7 +1592,7 @@ claims:
     promised_profile: "fast"
     owner: "maintainer"
     protected_contract_or_defect: "Every helper capable of changing strict cached values participates in the availability engine digest; the dense engine and public indicator fingerprints stay unchanged."
-    oracle_independence: "The expected digests are computed from the full function payload, while the source membership assertions independently fail if one helper is omitted from that payload."
+    oracle_independence: "The expected digests are computed from the full function payload, while the source membership assertions independently fail if one helper is omitted from that payload. Literal public indicator fingerprints are asserted outside covr, whose tracing deliberately changes closure bodies."
     smallest_failing_change: "Remove any named strict helper from ledgr_feature_engine_version(), change a built-in definition, or let the availability-only implementation alter the dense payload."
     cheapest_adequate_lane: "Pure fingerprint construction with no snapshot; fast, because provenance changes are deterministic and independent of execution scale."
     overlapping_evidence: "Existing fingerprint stability tests pin the public indicators and older cache helpers; they predate the strict vector helper set."
