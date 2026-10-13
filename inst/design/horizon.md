@@ -29,6 +29,35 @@ an architecture note, or a spec packet.
 
 ## Open
 
+### 2026-10-13 [adapters] Exchange archives as a free, survivorship-complete real-data source
+
+ledgr has no users (maintainer, 2026-10-13), and a newcomer cannot reproduce a
+point-in-time result without paid survivorship-free data: free US equity
+sources drop delisted companies or forbid redistribution. Crypto exchange bulk
+archives (for example Binance's public data portal) appear to keep the full
+history of pairs the venue later delisted, which would make them the one free,
+survivorship-complete real universe. Unverified: archive coverage, delisting
+dates, and the terms on fetching versus redistributing. A Deep Research prompt
+drafted on 2026-10-13 is meant to check them.
+
+Shape if it holds: a fetch-at-runtime adapter (the user downloads under the
+exchange's terms; ledgr ships no data) that seals a snapshot with lifetime
+facts from the venue's listing history, plus one article: a point-in-time
+study of how much of crypto cross-sectional momentum is survivorship bias,
+against a naive universe of today's surviving pairs. The audience framing
+decides who arrives. Crypto factor and portfolio research (daily, long-only,
+research-minded) fits ledgr; trading bots, intraday, leverage and perpetuals
+do not. The article is written for the first group and says what ledgr does
+not do.
+
+Semantics to settle first: a pair delisted on one venue is untradeable there,
+not a dead asset, so the adapter labels that terminal outcome as
+venue-specific and maps it honestly onto the existing terminal policies.
+Prerequisite: the spot-crypto readiness probe (the 2026-09-14 entry below:
+fractional accounting, 24/7 sessions, one venue, one quote currency); the
+one-execution-mode probe's implied calendar may already cover the session
+side. This entry authorizes no adapter, API, data commitment or release scope.
+
 ### 2026-10-12 [research] Prove or retire the thinly used product surfaces with real data
 
 A per-file census on 2026-10-12 (117 R files) found that the 23,000 lines no
