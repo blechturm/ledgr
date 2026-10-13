@@ -21,6 +21,14 @@ ledgr_ws28_strategy <- function(ctx, params) {
   targets
 }
 
+ledgr_ws28_comparable_promotion_context <- function(x) {
+  x[intersect(
+    c("run_id", "promoted_at_utc", "source_sweep"),
+    names(x)
+  )] <- NULL
+  x
+}
+
 ledgr_ws28_expect_roundtrip <- function(sweep, reopened, sweep_id) {
   fields <- c(
     "candidate_id", "candidate_row", "status", "completion_json",
@@ -33,15 +41,12 @@ ledgr_ws28_expect_roundtrip <- function(sweep, reopened, sweep_id) {
     testthat::expect_identical(reopened[[field]], sweep[[field]], info = field)
   }
 
+  testthat::expect_identical(
+    reopened$feature_fingerprints,
+    sweep$feature_fingerprints
+  )
+
   for (i in seq_len(nrow(sweep))) {
-    testthat::expect_identical(
-      unname(as.character(reopened$feature_fingerprints[[i]])),
-      unname(as.character(sweep$feature_fingerprints[[i]]))
-    )
-    testthat::expect_identical(
-      typeof(reopened$feature_fingerprints[[i]]),
-      typeof(sweep$feature_fingerprints[[i]])
-    )
     testthat::expect_identical(
       as.character(canonical_json(reopened$provenance[[i]])),
       as.character(canonical_json(sweep$provenance[[i]]))
@@ -119,20 +124,43 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
     reopened <- ledgr_sweep_open(snapshot, sweep_id)
     ledgr_ws28_expect_roundtrip(sweep, reopened, sweep_id)
 
-    candidate <- ledgr_candidate(reopened, 1L)
-    promoted <- testthat::expect_no_warning(
+    in_memory_candidate <- ledgr_candidate(sweep, 1L)
+    reopened_candidate <- ledgr_candidate(reopened, 1L)
+    in_memory_promoted <- testthat::expect_no_warning(
       ledgr_promote(
         experiment,
-        candidate,
-        run_id = paste0("promoted_", case_name)
+        in_memory_candidate,
+        run_id = paste0("promoted_memory_", case_name)
       )
     )
-    on.exit(close(promoted), add = TRUE)
-    identity_check <- ledgr_promotion_context(promoted)$identity_check
+    reopened_promoted <- testthat::expect_no_warning(
+      ledgr_promote(
+        experiment,
+        reopened_candidate,
+        run_id = paste0("promoted_reopened_", case_name)
+      )
+    )
+    in_memory_context <- ledgr_promotion_context(in_memory_promoted)
+    reopened_context <- ledgr_promotion_context(reopened_promoted)
+    close(in_memory_promoted)
+    close(reopened_promoted)
     testthat::expect_identical(
-      identity_check$candidate,
-      identity_check$promoting,
-      info = case_name
+      ledgr_ws28_comparable_promotion_context(reopened_context),
+      ledgr_ws28_comparable_promotion_context(in_memory_context),
+      info = paste(case_name, "promotion context")
+    )
+    for (context in list(in_memory_context, reopened_context)) {
+      testthat::expect_identical(
+        context$identity_check$candidate,
+        context$identity_check$promoting,
+        info = case_name
+      )
+    }
+
+    testthat::expect_identical(
+      reopened_context$source_sweep$sweep_id,
+      sweep_id,
+      info = paste(case_name, "reopened source sweep")
     )
 
     reopened_cases[[case_name]] <- reopened
@@ -153,8 +181,8 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
     ),
     class = "ledgr_promote_identity_mismatch"
   )
-  on.exit(close(mismatch_run), add = TRUE)
   mismatch <- ledgr_promotion_context(mismatch_run)$identity_check
+  close(mismatch_run)
   testthat::expect_true("feature_set_hash" %in% mismatch$mismatched)
 
   featureless <- ledgr_experiment(
@@ -196,7 +224,7 @@ testthat::test_that("[LTB-0257] one-feature sweeps save, reopen and promote exac
     stored$feature_fingerprints_json[stored$sweep_id == "multi_feature"],
     vapply(
       multi_sweep$feature_fingerprints,
-      function(x) as.character(canonical_json(as.list(x))),
+      function(x) as.character(canonical_json(x)),
       character(1)
     )
   )

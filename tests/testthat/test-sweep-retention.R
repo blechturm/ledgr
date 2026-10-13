@@ -18,7 +18,11 @@ ledgr_sweep_retention_comparable_rows <- function(x) {
   out$params <- vapply(out$params, ledgr:::canonical_json, character(1))
   out$feature_params <- vapply(out$feature_params, ledgr:::canonical_json, character(1))
   out$warnings <- vapply(out$warnings, ledgr:::canonical_json, character(1))
-  out$feature_fingerprints <- vapply(out$feature_fingerprints, ledgr:::canonical_json, character(1))
+  out$feature_fingerprints <- vapply(
+    out$feature_fingerprints,
+    function(x) ledgr:::canonical_json(as.list(x)),
+    character(1)
+  )
   out$provenance <- vapply(out$provenance, ledgr:::canonical_json, character(1))
   attr(out, "sweep_id") <- NULL
   attr(out, "sweep_retention") <- NULL

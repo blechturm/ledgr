@@ -523,6 +523,14 @@ ledgr_sweep_fetch_universe <- function(con, snapshot_id) {
   as.character(rows$instrument_id)
 }
 
+ledgr_sweep_reconstruct_feature_fingerprints <- function(json) {
+  value <- ledgr_json_read_nested(json)
+  if (inherits(value, "AsIs")) {
+    class(value) <- setdiff(class(value), "AsIs")
+  }
+  value
+}
+
 ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, universe = character()) {
   parent <- parent[1, , drop = FALSE]
   risk_identity <- ledgr_sweep_reconstruct_risk_identity(parent, candidates)
@@ -557,7 +565,10 @@ ledgr_sweep_reconstruct <- function(parent, candidates, returns, trades, univers
     params = lapply(candidates$params_json, ledgr_json_read_nested),
     feature_params = lapply(candidates$feature_params_json, ledgr_json_read_nested),
     warnings = lapply(candidates$warnings_json, ledgr_json_read_nested),
-    feature_fingerprints = lapply(candidates$feature_fingerprints_json, ledgr_json_read_nested),
+    feature_fingerprints = lapply(
+      candidates$feature_fingerprints_json,
+      ledgr_sweep_reconstruct_feature_fingerprints
+    ),
     risk_chain_hash = risk_identity$candidate_hashes,
     provenance = provenance
   )

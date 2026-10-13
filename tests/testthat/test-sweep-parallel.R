@@ -27,7 +27,11 @@ ledgr_parallel_sweep_comparable <- function(x) {
   out <- as.data.frame(x[, !names(x) %in% volatile, drop = FALSE])
   out$params <- vapply(out$params, ledgr:::canonical_json, character(1))
   out$feature_params <- vapply(out$feature_params, ledgr:::canonical_json, character(1))
-  out$feature_fingerprints <- vapply(out$feature_fingerprints, ledgr:::canonical_json, character(1))
+  out$feature_fingerprints <- vapply(
+    out$feature_fingerprints,
+    function(x) ledgr:::canonical_json(as.list(x)),
+    character(1)
+  )
   attr(out, "sweep_id") <- NULL
   attr(out, "snapshot_id") <- NULL
   attr(out, "snapshot_hash") <- NULL
