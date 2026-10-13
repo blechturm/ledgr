@@ -8,9 +8,10 @@ the cut on 2026-10-12. Workstream 27's Type 1 close review returned
 corrected, with a focused re-review pending. LDG-3019's rule-3 encoder and
 refusal boundary and LDG-3020's process-local verification reuse remain
 agent-provisional until that re-review passes and the maintainer accepts them.
-The correction fast lane passes 566 of 566 blocks in 110.04 seconds, and full
-matrix run 38353460555 directly reproduces the rule-3 roots on both Ubuntu
-jobs and Windows.
+The correction fast lane passes 566 of 566 blocks in 110.04 seconds. Final
+full-matrix run 38371833556 is green on both Ubuntu jobs and Windows: the
+rule-3 roots, ordinary and isolated-CRAN profiles, R CMD checks and the 87.25
+percent coverage gate all pass.
 Independent Workstream 28 remains open with LDG-3021 for the separately
 claimed `ledgr_sweep_save()` defect.
 

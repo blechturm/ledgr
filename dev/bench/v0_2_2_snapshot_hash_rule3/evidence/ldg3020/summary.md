@@ -54,13 +54,25 @@ It executes 566 of 566 blocks with zero skipped or failed in 110.04 seconds;
 the ordinary gate passes against the unchanged 112-second bound on its first
 run.
 
-Integration exposed two stale test-harness assumptions, neither in product
-code. AT7 claimed a cold-process raw-tamper oracle but retained the warm proof
-created by seal; `8e0a75c5` resets that private proof before the load. The
-installed-package check excludes `dev/bench`; the corrected claim blocks
-distinguish a checkout from an installed package through `.git` or
-`.Rbuildignore`: a checkout must contain the suite, while an installed package
-must exclude `dev`.
+At final correction commit `1241a8ff`, manually dispatched full-tier GitHub
+Actions run 38371833556 passed on Windows release, Ubuntu release and Ubuntu
+R 4.6. The production rule-3 roots reproduced on all three jobs; ordinary and
+isolated-CRAN fast profiles, R CMD check and the 87.25 percent coverage gate
+all passed. Hosted medians remain advisory: the Ubuntu release ordinary-fast
+median was 154.702 seconds and the isolated-CRAN median was 152.614 seconds.
+
+Integration exposed stale test-harness assumptions. AT7 and the persisted-fact
+corruption blocks claimed cold-process raw-tamper oracles while retaining the
+proof established by seal or an earlier read; they now clear that private
+proof before the public load. Literal engine and indicator fingerprints run
+outside covr because its instrumentation changes closure bodies, while source
+membership remains asserted under covr. Checkout-only source claims use
+independent `.git` or `.Rbuildignore` markers: a checkout must contain the
+suite, while an installed package must exclude `dev`. One product integration
+issue was also corrected: `ledgr_pulse_snapshot()` and
+`ledgr_indicator_dev()` now verify through their existing dedicated read
+connection rather than opening a verification connection and then reopening
+the store. LTB-0241 keeps the one-connection contract failure-sensitive.
 
 ## Seven-shape walk for verification reuse
 
