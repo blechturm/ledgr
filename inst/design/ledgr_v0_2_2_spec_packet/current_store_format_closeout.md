@@ -154,10 +154,18 @@ P-core record at
 562 blocks in 114.53, 114.16 and 114.28 seconds, median 114.28. Both gate
 checks fail and are recorded as failures, not passes.
 
-Against the accepted WS28 retry, median block time rises by about 2.17
-seconds, spread across unrelated files. The new fast opener detector accounts
-for about 0.18 seconds. This evidence does not authorize an exception; the
-maintainer must accept one or require a correction after independent review.
+Against the accepted P-core WS28 retry, fast membership falls from 566 to 562
+blocks. Twenty-two retired legacy and migration blocks with a 4.81-second
+median sum are replaced by eighteen current-format blocks with a 1.52-second
+sum, saving 3.29 seconds in the directly changed set. The two new fast opener
+blocks account for about 0.18 seconds.
+
+Common-block medians rose by about 5.46 seconds across unrelated files, while
+the complete controlled lane nevertheless improved from the accepted WS28
+retry median of 115.05 seconds to 114.28 seconds. Workstream 29 therefore
+reduces the lane but does not erase its inherited miss. This evidence does not
+authorize an exception; the maintainer must accept one or require a correction
+after independent review.
 
 ## H. The Seven Shapes And Their Replacements
 
