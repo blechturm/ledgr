@@ -233,7 +233,10 @@ testthat::test_that("[LTB-0262] every persistent store route reaches one gate", 
   direct_connect <- source_rows[grepl("DBI::dbConnect", source_rows, fixed = TRUE)]
   testthat::expect_identical(
     sort(sub(":.*$", "", direct_connect), method = "radix"),
-    c("csv-utils.R", "public-api.R", "public-api.R")
+    c(
+      "csv-utils.R", "db-schema-validate.R",
+      "public-api.R", "public-api.R"
+    )
   )
 
   function_source <- function(name) {

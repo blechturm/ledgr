@@ -16,4 +16,5 @@ ledgr_create_schema <- function(con) {
     stop("`con` must be a valid DBI connection.", call. = FALSE)
   }
   ledgr_store_create_current(con)
+  invisible(TRUE)
 }

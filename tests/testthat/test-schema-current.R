@@ -81,20 +81,146 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
   source_files <- list.files(
     file.path(root, "R"), pattern = "[.]R$", full.names = TRUE
   )
-  source_files <- source_files[
-    basename(source_files) != "db-schema-current.R"
-  ]
-  production_source <- paste(
-    unlist(lapply(source_files, readLines, warn = FALSE)),
-    collapse = "\n"
-  )
-  testthat::expect_false(grepl(
-    "ledgr_schema_render_current\\s*\\(",
-    production_source,
-    perl = TRUE
-  ))
+  source_files <- source_files[basename(source_files) != "db-schema-current.R"]
+  render_callers <- basename(source_files[vapply(
+    source_files,
+    function(path) {
+      grepl(
+        "ledgr_schema_render_current\\s*\\(",
+        paste(readLines(path, warn = FALSE), collapse = "\n"),
+        perl = TRUE
+      )
+    },
+    logical(1)
+  )])
+  testthat::expect_identical(render_callers, "db-schema-validate.R")
   testthat::expect_true(all(grepl(
     "^CREATE (TABLE|INDEX)",
     ledgr:::ledgr_current_schema_statements()
+  )))
+})
+
+testthat::test_that("[LTB-0263] strict validation uses the complete current catalogue", {
+  connect_current <- function(path = ":memory:") {
+    ledgr:::ledgr_store_open(path, mode = "create")
+  }
+  expect_mutation <- function(sql, message) {
+    opened <- connect_current()
+    on.exit(DBI::dbDisconnect(opened$con, shutdown = TRUE))
+    DBI::dbExecute(opened$con, sql)
+    error <- testthat::expect_error(ledgr_validate_schema(opened$con))
+    testthat::expect_s3_class(error, "simpleError")
+    testthat::expect_identical(conditionMessage(error), message)
+  }
+
+  expect_mutation(
+    "ALTER TABLE runs DROP COLUMN label",
+    "Missing columns in runs: label"
+  )
+  expect_mutation(
+    "ALTER TABLE runs ALTER COLUMN schema_version SET DEFAULT 120",
+    paste0(
+      "Schema catalogue mismatch: column runs.schema_version differs in ",
+      "column_default (expected 109, got 120)."
+    )
+  )
+  expect_mutation(
+    "ALTER TABLE runs ADD COLUMN surprise INTEGER",
+    "Schema catalogue mismatch: extra column runs.surprise."
+  )
+  expect_mutation(
+    "DROP TABLE bars",
+    "Missing table: bars"
+  )
+  expect_mutation(
+    "DROP INDEX idx_snapshot_sessions_close",
+    paste0(
+      "Schema catalogue mismatch: missing index ",
+      "snapshot_sessions.idx_snapshot_sessions_close."
+    )
+  )
+
+  opened <- connect_current()
+  on.exit(DBI::dbDisconnect(opened$con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(opened$con, "DROP TABLE snapshot_sessions")
+  DBI::dbExecute(opened$con, paste(
+    "CREATE TABLE snapshot_sessions (",
+    "snapshot_id VARCHAR NOT NULL, venue_id VARCHAR NOT NULL,",
+    "session_date DATE NOT NULL, effective_from TIMESTAMP NOT NULL,",
+    "effective_to TIMESTAMP NOT NULL, knowledge_time TIMESTAMP,",
+    "status VARCHAR NOT NULL CHECK (status IN ('open')),",
+    "session_open TIMESTAMP, session_close TIMESTAMP,",
+    "provenance_json VARCHAR NOT NULL,",
+    "PRIMARY KEY (snapshot_id, venue_id, session_date))"
+  ))
+  testthat::expect_error(
+    ledgr_validate_schema(opened$con),
+    paste0(
+      "snapshot_sessions.status must enforce status values ",
+      "(open, closed)."
+    ),
+    fixed = TRUE
+  )
+
+  files <- function(path) c(path, paste0(path, ".wal"))
+  path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(files(path), force = TRUE), add = TRUE)
+  con <- ledgr_db_init(path)
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  rm(
+    list = ls(ledgr:::.ledgr_schema_validation_cache, all.names = TRUE),
+    envir = ledgr:::.ledgr_schema_validation_cache
+  )
+  con <- ledgr_db_init(path)
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  damaged <- DBI::dbConnect(
+    duckdb::duckdb(shared_home = FALSE),
+    dbdir = path
+  )
+  DBI::dbExecute(damaged, "DROP INDEX idx_snapshot_sessions_close")
+  DBI::dbDisconnect(damaged, shutdown = TRUE)
+  for (attempt in 1:2) {
+    testthat::expect_error(
+      ledgr_db_init(path),
+      paste0(
+        "Schema catalogue mismatch: missing index ",
+        "snapshot_sessions.idx_snapshot_sessions_close."
+      ),
+      fixed = TRUE
+    )
+  }
+
+  noncurrent <- connect_current()
+  on.exit(DBI::dbDisconnect(noncurrent$con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(
+    noncurrent$con,
+    paste0(
+      "UPDATE ledgr_schema_metadata SET value = '118' ",
+      "WHERE key = 'experiment_store_schema_version'"
+    )
+  )
+  DBI::dbExecute(noncurrent$con, "DROP TABLE bars")
+  error <- testthat::expect_error(
+    ledgr_validate_schema(noncurrent$con),
+    class = "ledgr_store_rebuild_required"
+  )
+  testthat::expect_identical(error$cause, "older")
+
+  sweep_source <- paste(
+    deparse(ledgr:::ledgr_sweep_assert_schema_compatible),
+    collapse = "\n"
+  )
+  testthat::expect_match(
+    sweep_source,
+    "ledgr_validate_schema_once(con)",
+    fixed = TRUE
+  )
+  testthat::expect_no_match(
+    sweep_source,
+    "sweep_candidates|sweep_returns|sweep_trades",
+    perl = TRUE
+  )
+  testthat::expect_false(file.exists(testthat::test_path(
+    "..", "..", "R", "schema-catalogue.R"
   )))
 })

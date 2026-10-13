@@ -377,11 +377,6 @@ ledgr_snapshot_from_df <- function(bars_df,
 
   DBI::dbExecute(
     con,
-    "CREATE INDEX IF NOT EXISTS idx_snapshot_bars_ts ON snapshot_bars(snapshot_id, ts_utc)"
-  )
-
-  DBI::dbExecute(
-    con,
     paste0(
       "CREATE OR REPLACE TEMP VIEW bars AS ",
       "SELECT instrument_id, ts_utc, open, high, low, close, volume ",

@@ -614,11 +614,15 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
   cache <- ledgr:::.ledgr_schema_validation_cache
   rm(list = ls(cache, all.names = TRUE), envir = cache)
   calls <- 0L
-  full_validation <- ledgr:::ledgr_validate_schema
+  full_validation <- ledgr:::ledgr_schema_validate_catalogue
   testthat::local_mocked_bindings(
-    ledgr_validate_schema = function(con) {
+    ledgr_schema_validate_catalogue = function(actual, expected = NULL) {
       calls <<- calls + 1L
-      full_validation(con)
+      if (is.null(expected)) {
+        full_validation(actual)
+      } else {
+        full_validation(actual, expected)
+      }
     },
     .package = "ledgr"
   )

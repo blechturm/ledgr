@@ -184,7 +184,7 @@ ledgr_store_create_current <- function(con, path = NULL) {
   )$table_name
   if (length(tables) > 0L) {
     ledgr_store_assert_current(con, path)
-    return(invisible(TRUE))
+    return(invisible(FALSE))
   }
   statements <- ledgr_current_schema_statements()
   now <- as.POSIXct(Sys.time(), tz = "UTC")
@@ -225,9 +225,12 @@ ledgr_store_open <- function(path, mode = c("open", "create"),
     }
   }, add = TRUE)
   if (identical(mode, "create")) {
-    ledgr_store_create_current(opened$con, path)
+    opened$created_current <- isTRUE(
+      ledgr_store_create_current(opened$con, path)
+    )
   } else {
     ledgr_store_assert_current(opened$con, path)
+    opened$created_current <- FALSE
   }
   ok <- TRUE
   opened

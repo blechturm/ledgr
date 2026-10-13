@@ -320,50 +320,7 @@ ledgr_sweep_assert_id_available <- function(con, sweep_id) {
 }
 
 ledgr_sweep_assert_schema_compatible <- function(con, write = FALSE) {
-  required <- list(
-    sweeps = c(
-      "sweep_id", "snapshot_id", "snapshot_hash", "created_at_utc",
-      "engine_version", "sweep_schema_version", "note", "retention_json",
-      "metric_context_json", "metric_context_hash", "metric_context_version",
-      "cost_model_hash", "cost_plan_json", "execution_assumptions_json",
-      "feature_union_hash", "feature_engine_version", "candidate_features_json",
-      "grid_json"
-    ),
-    sweep_candidates = c(
-      "sweep_id", "candidate_id", "candidate_row", "status", "final_equity",
-      "metrics_json", "total_return", "annualized_return", "volatility",
-      "sharpe_ratio", "max_drawdown", "n_trades", "win_rate", "avg_trade",
-      "time_in_market", "execution_seed", "error_class", "error_msg",
-      "params_json", "feature_params_json", "warnings_json",
-      "feature_set_hash", "feature_fingerprints_json", "provenance_json",
-      "cost_model_hash", "metric_context_hash"
-    ),
-    sweep_returns = c("sweep_id", "candidate_row", "pulse_index", "ts_utc", "equity", "period_return")
-  )
-  if (isTRUE(write)) {
-    required$sweeps <- c(required$sweeps, "risk_chain_hash", "risk_plan_json")
-    required$sweep_candidates <- c(required$sweep_candidates, "risk_chain_hash", "risk_plan_json")
-    required$sweep_candidates <- c(required$sweep_candidates, "completion_json")
-    required$sweep_trades <- c(
-      "sweep_id", "candidate_row", "trade_seq", "close_ts_utc",
-      "realized_pnl", "win_loss"
-    )
-  }
-  for (table in names(required)) {
-    if (!ledgr_experiment_store_table_exists(con, table)) {
-      rlang::abort(
-        sprintf("Saved sweep schema is missing required table: %s", table),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-    missing <- setdiff(required[[table]], ledgr_experiment_store_columns(con, table))
-    if (length(missing) > 0L) {
-      rlang::abort(
-        sprintf("Saved sweep schema table %s is missing required column(s): %s.", table, paste(missing, collapse = ", ")),
-        class = c("ledgr_sweep_schema_incompatible", "ledgr_invalid_store")
-      )
-    }
-  }
+  ledgr_validate_schema_once(con)
   invisible(TRUE)
 }
 

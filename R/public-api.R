@@ -103,7 +103,9 @@ ledgr_db_init <- function(db_path) {
   drv <- opened$drv
   attr(con, "ledgr_duckdb_drv") <- drv
 
-  ledgr_validate_schema_once(con)
+  if (!isTRUE(opened$created_current)) {
+    ledgr_validate_schema_once(con)
+  }
   con
 }
 

@@ -359,6 +359,10 @@ ledgr_current_schema_definition <- function() {
       idx_snapshot_sessions_close = paste(
         "CREATE INDEX idx_snapshot_sessions_close ON snapshot_sessions",
         "(snapshot_id, venue_id, session_close)"
+      ),
+      idx_snapshot_bars_ts = paste(
+        "CREATE INDEX idx_snapshot_bars_ts ON snapshot_bars",
+        "(snapshot_id, ts_utc)"
       )
     )
   )
@@ -491,8 +495,8 @@ ledgr_schema_catalogue_difference <- function(expected, actual) {
   expected_key <- key(expected_rows)
   actual_key <- key(actual_rows)
   list(
-    missing = expected_rows[!(expected_key %in% actual_key), , drop = FALSE],
-    extra = actual_rows[!(actual_key %in% expected_key), , drop = FALSE]
+    missing = expected_rows[is.na(match(expected_key, actual_key)), , drop = FALSE],
+    extra = actual_rows[is.na(match(actual_key, expected_key)), , drop = FALSE]
   )
 }
 
