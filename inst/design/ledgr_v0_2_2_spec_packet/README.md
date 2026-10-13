@@ -18,6 +18,10 @@ P-core-pinned record sets missed the unchanged 112-second gate by 1.91 and
 failures, leaves the bound unchanged and moves no tests ahead of next-version
 fold-core unification. Final Cut 13 review accounting is 6 invocations over 3
 tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
+Accepted Cut 14 now owns the pre-CRAN legacy-removal synthesis and the macro
+plan's codebase-hygiene amendment. Its fourteen tickets across three
+workstreams passed cut review after patches on 2026-10-13. Implementation
+opens with the report-only LDG-3022 census.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -53,8 +57,8 @@ ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
-  closed. Workstreams 27 and 28 and LDG-3019 through LDG-3021 are complete and
-  accepted.
+  closed. Accepted Cut 14 contains Workstreams 29 through 31 and LDG-3022
+  through LDG-3035; Workstream 31 is open at LDG-3022.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
@@ -572,6 +576,50 @@ over four tickets, 0.750. This is chosen rather than inherent: one combined
 workstream would meet 0.500, but would combine a present defect with a distinct
 temporary product-semantic decision. The cut records that cost rather than
 adding ceremonial work.
+
+## Cut 14: Pre-CRAN legacy removal and structural hygiene
+
+**Status:** Accepted by the maintainer on 2026-10-13 after independent cut
+review and focused re-review. Every required patch is incorporated, and
+implementation opens with LDG-3022.
+
+Authority is the accepted pre-CRAN legacy-removal synthesis, its Type 1 final
+review, and the macro plan's 2026-10-12 legacy-removal,
+interim-lake-rebuild and codebase-hygiene amendments. The cut consolidates the
+synthesis's contract changes now, removes its RFC-pipeline obligation, and
+amends the temporary legacy-readability clauses in the accepted WS5-A
+synthesis. `tickets.yml` remains the sole execution and sequencing authority.
+
+The cut has three claims:
+
+| Workstream | Tickets | Claim |
+| --- | --- | --- |
+| 29 One current schema and one store gate | LDG-3024 to LDG-3027 | every persistent ledgr store is created or opened through schema 119, one marker-pair gate and one strict catalogue authority |
+| 30 Current-only records and public surfaces | LDG-3028 to LDG-3031 | no supported record or call surface retains a legacy branch, current outputs stay exact, and the private lake is rebuilt under the final format |
+| 31 Structural codebase hygiene | LDG-3022, LDG-3023, LDG-3032 to LDG-3035 | the measured helper and condition backlog is reconciled before the source census becomes two failure-sensitive gates, lint moves from advisory to blocking, and the helper rule becomes standing review guidance |
+
+The sequence deliberately crosses Workstream 31 once. LDG-3022's report-only
+census and LDG-3023's advisory lint land before product deletion. Workstream 29
+then centralizes schema and opening, Workstream 30 removes record and call-form
+compatibility and rebuilds the research lake, and Workstream 31 finishes with
+the isolated style pass, explicit backlog reconciliation, blocking lint,
+structural tests and standing rules. This lets the same source-derived evidence
+guide removal and later detect its regression without combining the three
+review claims.
+
+The spec-cut choices are closed. `ledgr_db_init()` keeps its public name and
+means create-empty-or-open-current. The store marker holds version 119 and
+typed canonical JSON written by a dedicated radix-order serializer over an
+independent literal oracle of the enumerated format constants. The rebuild
+condition has a closed five-cause vocabulary. Existing public validator errors
+stay exact. Existing condition classes are documented rather than renamed. No
+migration, legacy reader, missing-marker fallback, public diagnostic opener or
+compatibility alias is authorized.
+
+One cut review, one focused re-review and three planned Type 1 workstream close
+reviews is five invocations over fourteen tickets, 0.357 against the 0.5 gate.
+The added backlog-reconciliation ticket is sized by the cut review's 228
+undocumented classes and helper census; it is not review padding.
 
 ## Expected later artifacts
 

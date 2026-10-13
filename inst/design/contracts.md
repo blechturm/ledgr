@@ -257,9 +257,7 @@ Accepted change pending:
 - Fill timing and cost application are separate execution-contract layers.
   v0.1.9.1 exposes `timing_model = ledgr_timing_next_open()` and requires an
   explicit classed `cost_model`, such as `ledgr_cost_zero()` when the caller
-  wants zero transaction costs. Legacy `fill_model`, `spread_bps`, and
-  `commission_fixed` config shapes must fail closed with classed migration
-  errors instead of being silently interpreted.
+  wants zero transaction costs.
 - Cost-model identity is part of execution identity. `cost_plan_json` is the
   canonical serialized cost plan, and `cost_model_hash` is the SHA-256 hash of
   that plan. Sweep persistence and walk-forward candidate/session identity
@@ -284,11 +282,9 @@ Accepted change pending:
   risk controls, cost estimation, or automatic candidate selection. Those
   remain separate future layers or RFC topics.
 - Risk-enabled sweep rows expose `risk_chain_hash`, and row-level provenance
-  carries `risk_plan_json`. Saved sweep schema v2 stores `risk_chain_hash` and
-  `risk_plan_json` on `sweeps` and `sweep_candidates`; the first
-  `ledgr_sweep_save()` against a v0.1.9.2 store performs an additive schema
-  migration for those risk identity columns. A v0.1.9.2 saved sweep with
-  unambiguous missing risk fields reopens as the no-op risk plan in memory.
+  carries `risk_plan_json`. Saved sweep schema 4 stores `risk_chain_hash` and
+  `risk_plan_json` on `sweeps` and `sweep_candidates`; any other saved-sweep
+  schema value refuses with `ledgr_sweep_schema_incompatible`.
   Promotion must preserve the selected candidate's risk identity and re-execute
   through `ledgr_run()`; retained return rows are not replayed as committed
   evidence.
@@ -313,13 +309,9 @@ Accepted change pending:
   `data.snapshot_id`, so identical content sealed under two snapshot IDs gives
   equal identity and different content under one reused ID does not; the
   walk-forward `experiment_hash` and `session_id` follow, and each session
-  records the rule in its `meta_json`. A config without the field was
-  recorded under rule 1, which hashed the snapshot ID. Stored runs and
-  sessions are not migrated and stay readable under their recorded rule;
-  resuming a rule-1 run refuses with `ledgr_identity_rule_retired`. Rerunning
-  walk-forward arguments recorded under rule 1 forks into a new session, as a
-  rerun under another ledgr version already does, since `session_id` includes
-  the version. `feature_set_hash` identifies resolved
+  records the rule in its `meta_json`. Every config and session carries
+  identity rule 2; a missing or different rule is refused rather than inferred
+  or migrated. `feature_set_hash` identifies resolved
   concrete feature definitions by feature fingerprints. `feature_params_hash`
   identifies user-supplied feature parameter values. `alias_map_hash`
   identifies alias declarations and must not change solely because a
@@ -406,9 +398,7 @@ Accepted change pending:
 - `ledgr_config()` is an internal construction helper in v0.1.4. It returns an
   S3 object of class `ledgr_config`, validates the object before returning, and
   has a concise print method for diagnostics.
-- `validate_ledgr_config()` is the internal validator name used by execution
-  code. It delegates to the same schema checks as the legacy
-  `ledgr_validate_config()` helper.
+- `validate_ledgr_config()` is the internal validator used by execution code.
 - Exporting direct config construction remains deferred. v0.1.7 public
   workflows start with `ledgr_experiment()` and run with `ledgr_run()`.
 - Corporate-action and valuation policies use schema 2 (terminal-outcomes
@@ -448,12 +438,10 @@ Accepted change pending:
   presence byte per field; the existing exact fact projection with the three
   accepted rule-3 changes; and domain-separated block, section and root
   SHA-256. Snapshot IDs and envelope metadata remain excluded.
-- Every newly sealed snapshot records `hash_rule_version = 3`. A missing
-  marker, rule 1 or rule 2 is legacy: metadata-only reads may open it, but any
-  read whose output depends on snapshot rows refuses with
-  `ledgr_snapshot_rebuild_required` and names the rebuild route. There is no
-  migration, fallback encoder or missing-marker default. An unrecognized
-  future marker refuses with `ledgr_snapshot_hash_rule_unsupported`.
+- Every newly sealed snapshot records `hash_rule_version = 3`. In a current
+  store, a snapshot row whose marker is missing or is not 3 is invalid stored
+  evidence and refuses with `ledgr_snapshot_hash_rule_unsupported`. No legacy
+  root, fallback encoder or missing-marker default remains executable.
 - Snapshot content reads have three classes. Metadata-only reads may return
   status, root, rule, counts and timestamp ranges without proving rows.
   Durable-result-only reads use persisted run-store evidence and compare its
@@ -667,12 +655,9 @@ Accepted change pending:
   walk-forward descendant identity, sweep execution assumptions, and candidate
   reproduction keys. Dense configs omit the field and retain their recorded
   dense timing model.
-- A stored active config with the recognized availability-provider version and
-  no execution-timing version is inferred read-only as
-  `availability_close_v1`. Explicit version 2 is `availability_open_v2`;
-  inconsistent or unrecognized evidence is `unknown`. Legacy or unknown active
-  configs cannot resume under current execution semantics and require a new
-  run identity.
+- Every stored active config carries execution-timing version 2 and the
+  `availability_open_v2` convention. A missing or different version is
+  refused; no timing convention is inferred from stored rows.
 - Availability-aware contexts expose `ctx$members` and universe-aligned
   `ctx$vec$member`, `held`, `target_restricted`,
   `target_restriction_reason`, `admissible`, `priced`, `mark_age`, `risk_mark`
@@ -827,19 +812,24 @@ Accepted change pending:
 - Cross-connection read-back is part of the persistence contract: completed
   runs and their `ledger_events`, `features`, and `equity_curve` rows must be
   visible from a newly opened connection.
-- Runtime schema creation and validation must be read-only with respect to
-  data rows in ledgr tables except for deliberate schema migration or DDL. They
-  may inspect DuckDB metadata to verify table shape and constraints, but must
-  not prove constraints by writing invalid probe rows into ledgr tables.
+- Experiment-store schema 119 is the sole current store schema. One opener and
+  one gate compare its version and canonical format fingerprint before any
+  package-owned persistent read or write. `mode = "create"` may initialize an
+  empty file transactionally with the marker written last; every non-empty
+  older, newer, unmarked, invalid or fingerprint-mismatched store refuses with
+  `ledgr_store_rebuild_required`. The current DDL is defined once, validation
+  compares normalized DuckDB catalogues, and no migration path is supported
+  before the first CRAN release.
+- Runtime schema creation and validation must not write data rows in ledgr
+  tables. They may create current DDL and inspect DuckDB metadata to verify
+  table shape and constraints, but must not prove constraints by writing
+  invalid probe rows into ledgr tables.
   Constraint enforcement belongs in isolated tests with disposable database
   connections.
-- Experiment-store schema 113 and saved-sweep schema 4 add normalized
-  point-in-time fact and quarantine evidence. Migration is transactional and
-  writes its version marker last. Existing sealed snapshots retain their stored
-  hashes and are never resealed or rehash-migrated. A legacy hash rule remains
-  metadata-readable but is not executable by a snapshot-dependent path.
-- Experiment-store schema 114 adds `run_completion` and `run_diagnostics`.
-  Availability-aware direct runs persist one decision trace row per invoked
+- Current stores carry normalized point-in-time fact and quarantine evidence.
+  Existing sealed snapshots retain their stored hashes and are never resealed
+  in place.
+- Availability-aware direct runs persist one decision trace row per invoked
   axis ID plus ordered risk, execution, reconciliation, and stop evidence.
   Expected valuation exhaustion, unavailable risk marks, unsupported terminal
   settlement, and reconciliation stops return through the normal fold
@@ -885,11 +875,10 @@ Accepted change pending:
   exception before or after a pulse flush rolls back all fill rows from that
   invocation, and a failed in-memory sweep candidate exposes none of its
   staged rows to another candidate.
-- Experiment-store schema 115 adds nullable canonical `completion_json` to
-  sweep-candidate and walk-forward score evidence and admits `INCOMPLETE` on
-  those rows. Migration rebuilds the two constrained tables transactionally,
-  preserves existing rows and keys, and leaves saved-sweep schema 4 and all
-  candidate, sweep, run, and walk-forward identity formats unchanged.
+- Sweep-candidate and walk-forward score evidence carries nullable canonical
+  `completion_json` and admits `INCOMPLETE` on those rows. Saved-sweep schema 4
+  and candidate, sweep, run, and walk-forward identity formats remain
+  distinct.
 - Availability-aware `DONE` and `INCOMPLETE` completion rows are terminal
   evidence. Repeating an achieved `INCOMPLETE` run ID verifies identity and
   validates the exact stored equity timestamp prefix and recorded stop
@@ -938,8 +927,8 @@ Accepted change pending:
 - v0.1.7 public experiment-store APIs are snapshot-first. A `db_path` appears
   in normal workflows only at snapshot creation or snapshot loading.
 - `ledgr_run_list()` and `ledgr_run_info()` are read-only experiment-store
-  discovery APIs. They must tolerate legacy/pre-provenance stores and treat
-  missing telemetry as missing/`NA`, not as corruption.
+  discovery APIs. In a current store, row absence for unfinished telemetry is
+  missing/`NA`, not corruption.
 - `ledgr_run_list()` appends the recorded completion projection in this order:
   `completion_evidence_available`, `completion_status`,
   `requested_start_utc`, `requested_end_utc`, `achieved_start_utc`,
@@ -1249,9 +1238,6 @@ domain table.
 - v0.1.7 public experiment workflows accept only functional strategies with
   signature `function(ctx, params)`. `params` defaults to `list()` and is passed
   as the second argument. `ctx$params` is not part of the public contract.
-- Legacy lower-level paths may retain older signatures temporarily only as
-  explicit compatibility surfaces; they must not be taught in user-facing
-  v0.1.7 workflows.
 - Strategy reproducibility is tiered:
   - Tier 1: self-contained `function(ctx, params)` style logic with explicit
     parameters and no unresolved external objects.
@@ -1311,12 +1297,10 @@ domain table.
 - Sweep mode inherits the public preflight semantics. Sweep may accept Tier 1
   and Tier 2 strategies, but Tier 3 strategies must be rejected before
   execution.
-- v0.1.5+ run provenance stores `strategy_source_hash`,
+- Run provenance stores `strategy_source_hash`,
   `strategy_params_hash`, captured strategy source where available,
-  dependency versions, R version, and reproducibility tier. Legacy strategy
-  metadata may be tolerated for historical run inspection, but modern
-  experiment execution must not treat R6 strategy objects as supported Tier 2
-  strategies.
+  dependency versions, R version, and reproducibility tier. Experiment
+  execution must not treat R6 strategy objects as supported Tier 2 strategies.
 - `strategy_source_hash` is R-version-sensitive and should be compared directly
   only between runs created under the same `R_version`.
 - `ledgr_run_strategy(trust = FALSE)` is inspection-only: it returns stored
@@ -2037,3 +2021,15 @@ Accepted change pending:
   golden roots on both Windows and Ubuntu CI. Hosted-CI clocks are advisory;
   the registered one-thread local benchmark host owns the absolute cost and
   growth gates.
+- Package code obtains a persistent store connection through
+  `ledgr_store_open(path, mode)` or passes a borrowed, cached or
+  caller-supplied connection through its one existing-connection check. The
+  connection census must fail if a package entry opens, accepts, borrows or
+  attaches a persistent ledgr store without checking the current store version
+  and format fingerprint first.
+- The format fingerprint enumerates every namespace binding matching
+  `^ledgr_[a-z_]+_(schema|rule)_version$` whose value is a length-one atomic
+  scalar. A dedicated serializer applies radix key order without depending on
+  locale collation. Its independent literal oracle fails when a matching
+  binding is omitted, an extra binding appears or either replacement constant
+  keeps its former name.

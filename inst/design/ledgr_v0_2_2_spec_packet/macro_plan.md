@@ -1,12 +1,12 @@
 # ledgr v0.2.2 Macro Plan
 
 **Status:** Maintainer planning record; accepted on 2026-10-03. Cuts 1 through
-12 are complete and accepted: 26 workstreams. Cut 12 closes the systematic
-point-in-time consistency audit and the held maintenance needed to restore the
-fast-profile gate. Cut 13 implements the accepted WS5-A snapshot-verification
-policy before the point-in-time history (WS3) and recursive-indicator (WS4)
-implementation cut. Their shared history-start decision replaces Cut 9's
-temporary rule.
+13 are complete and accepted. Draft Cut 14 owns the accepted pre-CRAN legacy
+removal and its codebase-hygiene amendment; its cut-review corrections await
+focused re-review before implementation. The interim rule-3 lake rebuild and
+one-execution-mode probe then precede the point-in-time history (WS3) and
+recursive-indicator (WS4) implementation cut. Their shared history-start
+decision replaces Cut 9's temporary rule.
 
 **Date:** 2026-10-03
 

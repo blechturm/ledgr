@@ -39,9 +39,10 @@ Post-v1 work lives in the obligations of Section 9 at their own windows.
   claim none; durable-result-only reads need no snapshot proof; every read
   whose output depends on snapshot rows ensures the set first. Aggregates
   (counts, timestamp ranges) are metadata; row values are not.
-- **D5. Compatibility:** the rule marker is mandatory; missing, rule-1 and
-  rule-2 snapshots stay metadata-readable and refuse every content use with
-  one classed rebuild condition; no migration, no missing-marker fallback.
+- **D5. Compatibility (amended by the accepted pre-CRAN legacy-removal
+  synthesis):** the store gate refuses any non-current store before a snapshot
+  row is read. Inside a current store, the rule marker is mandatory and only
+  rule 3 is valid; no migration, legacy reader or missing-marker fallback.
 - **D6. UX:** `verify = FALSE` opens metadata; the first trust-bearing use
   verifies cold; `verify = TRUE` and `ledgr_snapshot_validate()` always
   recompute; no public trust, scope or skip switch; snapshot information
@@ -162,21 +163,19 @@ call established. The first class-3 call in a process, usually
 ### 3.5 Compatibility
 
 `hash_rule_version` becomes mandatory on `SEALED` rows written by rule 3.
-`ledgr_snapshot_hash_rule_version()` no longer returns 1 for a missing
-marker (`R/availability-persistence.R:159`); missing, 1 and 2 are legacy.
-A legacy snapshot opens for metadata and refuses every class-3 use and
-every seal-time path with one classed condition naming the rebuild route.
-No rule-1 or rule-2 encoder remains executable once the refusal tests pass.
+The accepted pre-CRAN legacy-removal synthesis supersedes this section's
+temporary readability boundary at its Cut 14 ticket cut. A store whose schema
+marker and format fingerprint are not current refuses before metadata or row
+reads. Within a current store, a missing snapshot rule or any value other than
+3 is invalid stored evidence and refuses; no rule-1 or rule-2 reader or encoder
+remains executable.
 Package fixtures are rebuilt from source at test time; the LTB-0018 literal
 is re-pinned to the rule-3 root by decision; identity rule 2 already folds
 the root into `config_hash` and `session_id`, so run and session identity
-fork as the contracts foresee. Legacy run records stay readable through
-durable-result-only surfaces; an `INCOMPLETE` availability run's reopen
-rebuilds its provider from snapshot facts (`R/run-store.R:1173`) and
-`summary()`/`print()` use snapshot-dependent readers
-(`R/backtest-results.R:870`), so those refuse until the source snapshot is
-rebuilt under rule 3. The Sharadar lake is rebuilt in ledgr-research;
-ticket 1 records the rebuild time.
+fork as the contracts foresee. Legacy run and sweep rows are unreachable after
+the store gate; current rows retain the three read classes from Section 3.4.
+The Sharadar lake is rebuilt in ledgr-research after the removal cut under
+rule 3 without dividends, and that cut records the rebuild time.
 
 ### 3.6 UX
 
@@ -226,7 +225,7 @@ Applied at ticket cut, not before implementation:
   hash on every call" (`contracts.md:597`) becomes an ensure.
 - Persistence Contract: derived-state reconstruction ensures; "existing
   sealed snapshots retain their stored hashes and are never resealed"
-  stays, with the added sentence that legacy rules are not executable.
+  stays. The later pre-CRAN store gate makes non-current stores unreachable.
 - Verification Contract: the fold-core guard regression clause stays; add
   that the production encoder reproduces the spike's golden roots on both
   CI platforms.
@@ -276,8 +275,10 @@ Detecting gates, retained by the cut:
    explicit validation recomputes on a warm entry; a failed check removes it.
 7. Census completeness: every `snapshot_*` reader is classified; a reader
    without a class fails the review.
-8. Legacy refusal: a missing-marker, rule-1 and rule-2 snapshot each open for
-   metadata and refuse every class-3 entry with the one classed condition.
+8. Current-store enforcement (amended by the accepted pre-CRAN legacy-removal
+   synthesis): older, newer, unmarked, invalid and fingerprint-mismatched
+   stores refuse before every read class. In a current store, a missing or
+   non-3 snapshot rule refuses as invalid stored evidence.
 
 ## 7. Failure Scenarios
 
@@ -348,3 +349,6 @@ canonicalizer or a DuckDB-defined byte. A design finding routes to
   `summary()` moved to class 3; legacy-run readability narrowed to
   durable-result-only surfaces; cost gates bound to the registered benchmark
   host with CI advisory and the bar population named.
+- 2026-10-13 - Cut 14 applies the accepted pre-CRAN legacy-removal amendment:
+  non-current stores now refuse at one store gate, so the temporary legacy
+  snapshot and run readability clauses are unreachable.

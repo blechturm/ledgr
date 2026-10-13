@@ -135,8 +135,11 @@ hashing, or execution contracts.
 This policy permits intentional breaking changes before CRAN. It does not
 permit accidental drift. Fingerprint pins, release gates, contract tests,
 hash-verification checks, and reproducibility discipline remain load-bearing
-for current-version trust and agent containment. Once ledgr reaches CRAN, the
-project must define an explicit compatibility and deprecation policy.
+for current-version trust and agent containment. Before CRAN, the current-store
+gate and canonical format fingerprint enforce the recreate-after-upgrade
+boundary; no migration or legacy reader is implied.
+Before the first CRAN release, the project must define an explicit
+compatibility and deprecation policy.
 
 ---
 
