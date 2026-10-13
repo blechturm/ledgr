@@ -792,10 +792,25 @@ the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
 2026-10-13 maintainer amendment, planning-document cleanup after the probe:
 the roadmap no longer works as a planning document, and this plan's
 change-control log has become the only place the current order lives, restated
-by each amendment. One documentation chore, after the one-execution-mode
-probe and before the WS3/WS4 implementation cut, rewrites both together,
-scans `horizon.md`, sweeps the central governance files, and folds the probe
-result in.
+by each amendment. One governance cut, after the one-execution-mode probe
+and before the WS3/WS4 implementation cut, rewrites both together, scans
+`horizon.md`, sweeps the central governance files, folds the probe result
+in, and applies the governance-lifecycle RFC
+(`rfc/rfc_governance_lifecycle_v0_2_2_seed_v2.md`, synthesis pending) once
+it is accepted. Its four workstreams each carry one claim and one Type 1
+close review:
+
+1. Rules and guard: the accepted rules go into `rfc_cycle.md`, the design
+   index and `AGENTS.md`, and the governance guard lands in report mode with
+   its baseline; its check mode follows one cut later.
+2. `contracts.md`: the present-tense pass and rule-group addresses, and
+   reconciliation of the `decisions.md` bridge with its back-links.
+3. Planning documents: the roadmap and remaining-order rewrites and the
+   horizon scan.
+4. Records: synthesis status headers, the packet `README.md` trim and the
+   evidence form for open tickets.
+
+The bullets below are the scope the cut inherits.
 
 - Roadmap: the milestone table holds releases only, one row each, in release
   order. Shipped releases keep date, a one-sentence goal and the packet link.
@@ -836,18 +851,19 @@ result in.
   synthesis does not show at its top that the accepted legacy-removal
   synthesis (Section 5) amends its legacy-readability rule, which the Cut 14
   ticket cut applies. If the governance RFC on supersession rules is
-  accepted by then, the sweep applies its rules instead.
+  accepted by then, the cut applies its rules instead.
 - Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
   `contracts.md` states each current rule in the present tense and moves
   release history out (41 lines cite release versions, plus schema-number
   history and about 24 legacy or historical mentions); history belongs in
-  NEWS and the packets. Rewording can change a rule, so this part gets one
-  small Type 1 review that compares old and new text clause by clause, and
-  the documentation-contract pins move with the sentences they pin.
+  NEWS and the packets. Rewording can change a rule, so its workstream's
+  Type 1 close review compares old and new text clause by clause, and the
+  documentation-contract pins move with the sentences they pin.
 
-Not a design change. It needs a Type 1 review only if it adds the
-documentation-contract test, because that test defines a claim. The
+Not a package design change. The contracts pass and the guard define
+claims, so the work is a cut with close reviews, not a documentation chore
+(maintainer, 2026-10-13, changed from the chore first scheduled). The
 resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
-under rule 3, the one-execution-mode probe, the planning-document cleanup,
-the WS3/WS4 history wave and implementation cut, the lake rebuild with
-dividend facts, WS7, the WS6 probe, WS8.
+under rule 3, the one-execution-mode probe, the governance cut, the WS3/WS4
+history wave and implementation cut, the lake rebuild with dividend facts,
+WS7, the WS6 probe, WS8.
