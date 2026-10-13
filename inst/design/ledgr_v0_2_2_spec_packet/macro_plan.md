@@ -794,7 +794,8 @@ the roadmap no longer works as a planning document, and this plan's
 change-control log has become the only place the current order lives, restated
 by each amendment. One documentation chore, after the one-execution-mode
 probe and before the WS3/WS4 implementation cut, rewrites both together,
-scans `horizon.md`, and folds the probe result in.
+scans `horizon.md`, sweeps the central governance files, and folds the probe
+result in.
 
 - Roadmap: the milestone table holds releases only, one row each, in release
   order. Shipped releases keep date, a one-sentence goal and the packet link.
@@ -821,6 +822,15 @@ scans `horizon.md`, and folds the probe result in.
   promoted entry keeps only a pointer to its owner, and the genuinely open
   entries stay. The scan records the classification table, so the
   maintainer can see in one page what has shipped and what is still open.
+- Governance-file sweep (maintainer, 2026-10-13): each `decisions.md` row is
+  checked against `contracts.md`, and a row whose rule a standing heading
+  already holds leaves with that heading cited, which is the exit its own
+  rule requires and which earlier closeouts skipped. Candidates include the
+  four v0.1.9.5 batch rows, equity corporate actions, accounting-core
+  consolidation, testing architecture and the feature-map read surface.
+  The packet `README.md` is trimmed to its role, the design index
+  `README.md` and `AGENTS.md` are checked for stale entry points, and the
+  sweep records what it removed and where each item now lives.
 
 Not a design change. It needs a Type 1 review only if it adds the
 documentation-contract test, because that test defines a claim. The
