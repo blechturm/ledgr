@@ -14,8 +14,11 @@ post-residue fast record keeps its 131.70-second loaded-host timing miss; the
 reviewer's three alternating scratch pairs measured 108.04 seconds at
 `fa41283d` against 107.84 seconds at the preceding tree. Workstream 28 is
 agent-provisional at `d8b78a78`: LDG-3021 fixes the separately claimed
-`ledgr_sweep_save()` singleton-fingerprint defect and awaits Type 1 close
-review.
+`ledgr_sweep_save()` singleton-fingerprint defect. Its Type 1 close review
+returned three findings: correction `3691f5f8` closes the two semantic and
+detector findings, while the unchanged 112-second fast gate awaits maintainer
+adjudication after two correctness-clean P-core-pinned record sets missed at
+113.91- and 115.05-second medians.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
