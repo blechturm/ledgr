@@ -1,0 +1,4 @@
+ticket,commit,verdict
+LDG-3025,a265b6aa,expected_schema_version_only
+LDG-3026,0a3f2d29,identical
+WS29-correction,1377977d,identical

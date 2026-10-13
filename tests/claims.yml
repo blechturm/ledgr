@@ -2744,7 +2744,7 @@ claims:
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Creation must not repair an unrecognized store or leave a partly current store after interruption."
-    oracle_independence: "The catalogue comparison uses LDG-3024's independent normalizer; one failure is invalid SQL inside the DDL sequence and the other aborts exactly when the fingerprint value is requested."
+    oracle_independence: "The catalogue comparison uses LDG-3024's independent normalizer; one failure is invalid SQL inside the DDL sequence and the other makes the metadata table reject exactly the format-fingerprint insert."
     smallest_failing_change: "Create a file in open mode, treat a non-empty unmarked store as empty, write either marker outside the transaction, or replay only part of the DDL."
     cheapest_adequate_lane: "Several tiny DuckDB stores and a complete catalogue comparison; review."
     overlapping_evidence: "LCL-0256 proves the DDL catalogue, not the create/open state machine or rollback."

@@ -186,21 +186,34 @@ testthat::test_that("[LTB-0261] store creation is empty-only and transactional",
     c("experiment_store_schema_version", "format_fingerprint")
   )
 
-  marker_interrupted <- DBI::dbConnect(
-    duckdb::duckdb(shared_home = FALSE), dbdir = ":memory:"
-  )
-  on.exit(DBI::dbDisconnect(marker_interrupted, shutdown = TRUE), add = TRUE)
-  testthat::with_mocked_bindings(
-    testthat::expect_error(
-      ledgr:::ledgr_store_create_current(marker_interrupted),
-      "injected fingerprint failure",
+    marker_interrupted <- DBI::dbConnect(
+      duckdb::duckdb(shared_home = FALSE), dbdir = ":memory:"
+    )
+    on.exit(DBI::dbDisconnect(marker_interrupted, shutdown = TRUE), add = TRUE)
+    marker_statements <- ledgr:::ledgr_current_schema_statements()
+    marker_statement <- grep(
+      "CREATE TABLE ledgr_schema_metadata",
+      marker_statements,
       fixed = TRUE
-    ),
-    ledgr_store_current_fingerprint = function() {
-      stop("injected fingerprint failure", call. = FALSE)
-    },
-    .package = "ledgr"
-  )
+    )
+    testthat::expect_length(marker_statement, 1L)
+    marker_statements[[marker_statement]] <- sub(
+      "updated_at_utc TIMESTAMP NOT NULL)",
+      paste0(
+        "updated_at_utc TIMESTAMP NOT NULL, ",
+        "CHECK(\"key\" <> 'format_fingerprint'))"
+      ),
+      marker_statements[[marker_statement]],
+      fixed = TRUE
+    )
+    testthat::with_mocked_bindings(
+      testthat::expect_error(
+        ledgr:::ledgr_store_create_current(marker_interrupted),
+        class = "duckdb_error"
+      ),
+      ledgr_current_schema_statements = function() marker_statements,
+      .package = "ledgr"
+    )
   testthat::expect_identical(
     DBI::dbGetQuery(
       marker_interrupted,
