@@ -1,25 +1,23 @@
 # ledgr v0.2.2 Spec Packet
 
-**Status:** Cuts 1 through 12 are closed after maintainer acceptance of all
-26 workstreams through 2026-10-12. Cut 13's independent review returned
-`PASS_AFTER_PATCHES`; the patches are incorporated and the maintainer accepted
-the cut on 2026-10-12. Workstream 27's final focused Type 1 re-review returned
-`PASS` at `fa41283d`, and the maintainer accepted it on 2026-10-13. LDG-3019's
-rule-3 encoder and refusal boundary and LDG-3020's process-local verification
-reuse are complete. The correction fast lane passes 566 of 566 blocks in
-110.04 seconds. Final full-matrix run 38371833556 is green on both Ubuntu jobs
-and Windows: the rule-3 roots, ordinary and isolated-CRAN profiles, R CMD
-checks and the 87.25 percent coverage gate all pass. The checked-in
-post-residue fast record keeps its 131.70-second loaded-host timing miss; the
-reviewer's three alternating scratch pairs measured 108.04 seconds at
-`fa41283d` against 107.84 seconds at the preceding tree. Workstream 28 is
-agent-provisional at `d8b78a78`: LDG-3021 fixes the separately claimed
-`ledgr_sweep_save()` singleton-fingerprint defect. Its Type 1 close review
-returned three findings: correction `3691f5f8` closes the two semantic and
-detector findings. The maintainer accepted an explicit timing exception after
-two correctness-clean P-core-pinned record sets missed the unchanged gate by
-1.91 and 3.05 seconds at their medians. The records remain failures, the bound
-is unchanged, and no tests move ahead of next-version fold-core unification.
+**Status:** Cuts 1 through 13 are closed. Workstream 27's final focused Type 1
+re-review returned `PASS` at `fa41283d`, and the maintainer accepted it on
+2026-10-13. LDG-3019's rule-3 encoder and refusal boundary and LDG-3020's
+process-local verification reuse are complete. The correction fast lane passes
+566 of 566 blocks in 110.04 seconds. Final full-matrix run 38371833556 is green
+on both Ubuntu jobs and Windows: the rule-3 roots, ordinary and isolated-CRAN
+profiles, R CMD checks and the 87.25 percent coverage gate all pass. The
+checked-in post-residue fast record keeps its 131.70-second loaded-host timing
+miss; the reviewer's three alternating scratch pairs measured 108.04 seconds
+at `fa41283d` against 107.84 seconds at the preceding tree. Workstream 28's
+focused Type 1 re-review returned `PASS` at `901325af`, and the maintainer
+accepted it on 2026-10-13. LDG-3021's singleton-fingerprint persistence,
+reopen and promotion repair is complete. Its two correctness-clean
+P-core-pinned record sets missed the unchanged 112-second gate by 1.91 and
+3.05 seconds at their medians. The accepted exception keeps those records as
+failures, leaves the bound unchanged and moves no tests ahead of next-version
+fold-core unification. Final Cut 13 review accounting is 6 invocations over 3
+tickets, 2.000 against the 0.5 gate, recorded as a historical breach.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -54,10 +52,9 @@ ledger.
   task-oriented routes.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
-- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 12 are
-  closed; Cut 13 is accepted; Workstream 27 is complete and accepted; and
-  Workstream 28 awaits its Type 1 close review. LDG-3019 and LDG-3020 are
-  complete, while LDG-3021 is agent-provisional at `d8b78a78`.
+- `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 13 are
+  closed. Workstreams 27 and 28 and LDG-3019 through LDG-3021 are complete and
+  accepted.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
