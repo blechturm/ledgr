@@ -16,9 +16,10 @@ reviewer's three alternating scratch pairs measured 108.04 seconds at
 agent-provisional at `d8b78a78`: LDG-3021 fixes the separately claimed
 `ledgr_sweep_save()` singleton-fingerprint defect. Its Type 1 close review
 returned three findings: correction `3691f5f8` closes the two semantic and
-detector findings, while the unchanged 112-second fast gate awaits maintainer
-adjudication after two correctness-clean P-core-pinned record sets missed at
-113.91- and 115.05-second medians.
+detector findings. The maintainer accepted an explicit timing exception after
+two correctness-clean P-core-pinned record sets missed the unchanged gate by
+1.91 and 3.05 seconds at their medians. The records remain failures, the bound
+is unchanged, and no tests move ahead of next-version fold-core unification.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
