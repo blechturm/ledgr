@@ -538,7 +538,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
       opening_state_policy = "flat_test_state",
       seed = 1L
     ))
-    on.exit(lapply(wf$test_runs, close), add = TRUE)
+    lapply(wf$test_runs, close)
   })
   testthat::expect_identical(walk_count$count, 1L)
 
@@ -573,7 +573,11 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
 
   ledgr:::ledgr_snapshot_verified_reset()
   split_con <- ledgr_db_init(split_run_path)
-  on.exit(DBI::dbDisconnect(split_con, shutdown = TRUE), add = TRUE)
+  on.exit({
+    if (DBI::dbIsValid(split_con)) {
+      DBI::dbDisconnect(split_con, shutdown = TRUE)
+    }
+  }, add = TRUE)
   ledgr_state_reconstruct(split_result$run_id, split_con)
   testthat::expect_true(ledgr:::ledgr_snapshot_verified_contains(
     snapshot_key, split_snapshot$snapshot_id, split_root, 3L
@@ -581,6 +585,7 @@ testthat::test_that("[LTB-0254] outer execution and reader calls verify once", {
   testthat::expect_false(ledgr:::ledgr_snapshot_verified_contains(
     run_key, split_snapshot$snapshot_id, split_root, 3L
   ))
+  DBI::dbDisconnect(split_con, shutdown = TRUE)
 
   ledgr:::ledgr_snapshot_verified_reset()
   ledgr:::ledgr_backtest_ensure_snapshot(split_result)

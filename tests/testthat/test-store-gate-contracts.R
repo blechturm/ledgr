@@ -1,3 +1,4 @@
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
   expected_types <- c(
     ledgr_availability_execution_timing_rule_version = "integer",

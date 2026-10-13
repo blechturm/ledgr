@@ -4,17 +4,15 @@ availability-persistence.R,reader_writer,3,ledgr_experiment|ledgr_run|ledgr_fact
 availability-policy.R,reader,3,ledgr_experiment|ledgr_backtest,enclosing class-3 guard
 availability-provider.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward|result reports,enclosing class-3 guard
 availability-results.R,reader,3,ledgr_results|ledgr_run_explain|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
-availability-schema.R,schema,NA,none,not a content reader
 backtest.R,reader,3,ledgr_backtest|ledgr_run,ledgr_snapshot_ensure_handle|ledgr_run_snapshot_guard
 backtest-results.R,reader,2+3,ledgr_compute_metrics|print.ledgr_backtest|summary.ledgr_backtest,guard only before snapshot-dependent branch
 corporate-action-results.R,reader,3,ledgr_corporate_action_summary|print.ledgr_backtest|summary.ledgr_backtest,ledgr_backtest_ensure_snapshot
 corporate-action-settlement.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward,enclosing class-3 guard
 csv-utils.R,writer,NA,adapter ingest,not a content reader
-db-schema-create.R,schema,NA,store creation,not a content reader
+db-schema-current.R,schema,NA,current DDL and catalogue,not a content reader
 db-schema-validate.R,schema,NA,schema validation,not a content reader
 execution-timing.R,reader,3,ledgr_run|ledgr_sweep|ledgr_walk_forward,enclosing class-3 guard
 experiment.R,reader,3,ledgr_experiment,ledgr_experiment_validate_snapshot
-experiment-store-schema.R,schema,NA,store schema,not a content reader
 feature-inspection.R,reader,3,ledgr_feature_contract_check,ledgr_snapshot_ensure_handle
 indicator-dev.R,reader,3,ledgr_indicator_dev,ledgr_snapshot_ensure_handle
 precompute-features.R,reader,3,ledgr_precompute_features|ledgr_sweep|ledgr_walk_forward,ledgr_snapshot_ensure_handle at outer entry

@@ -331,7 +331,7 @@ testthat::test_that("ledgr_run_compare respects archive and incomplete-run rules
   )
 })
 
-testthat::test_that("ledgr_run_compare tolerates legacy pre-provenance runs without mutation", {
+testthat::test_that("ledgr_run_compare refuses an unmarked legacy store without mutation", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
   opened <- ledgr_test_open_duckdb(db_path)
@@ -420,17 +420,17 @@ testthat::test_that("ledgr_run_compare tolerates legacy pre-provenance runs with
   snapshot <- new_ledgr_snapshot(db_path, "snap")
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
 
-  cmp <- ledgr_run_compare(snapshot, run_ids = "legacy-compare")
+  error <- testthat::expect_error(
+    ledgr_run_compare(snapshot, run_ids = "legacy-compare"),
+    class = "ledgr_store_rebuild_required"
+  )
+  testthat::expect_identical(error$cause, "missing_marker")
 
   reopened <- ledgr_test_open_duckdb(db_path)
   after_tables <- DBI::dbGetQuery(reopened$con, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' ORDER BY table_name")
   ledgr_test_close_duckdb(reopened$con, reopened$drv)
 
   testthat::expect_identical(after_tables, before_tables)
-  testthat::expect_identical(cmp$run_id, "legacy-compare")
-  testthat::expect_identical(cmp$reproducibility_level, "legacy")
-  testthat::expect_true(is.na(cmp$strategy_source_hash))
-  testthat::expect_true(is.na(cmp$strategy_params_hash))
 })
 
 testthat::test_that("[LTB-0134] run tags are character whether or not a run is tagged", {
