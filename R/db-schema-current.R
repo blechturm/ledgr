@@ -379,25 +379,37 @@ ledgr_schema_render_current <- function(con,
   invisible(TRUE)
 }
 
-ledgr_schema_normalized_catalogue <- function(con, schema = "main") {
+ledgr_schema_normalized_catalogue <- function(con, schema = "main",
+                                              catalog = NULL) {
   whitespace <- function(x) {
     x[is.na(x)] <- ""
     trimws(gsub("[[:space:]]+", " ", x))
   }
-  query <- function(sql) DBI::dbGetQuery(con, sql, params = list(schema))
+  catalog <- ledgr_store_catalog(catalog)
+  catalog_predicate <- if (is.null(catalog)) "current_database()" else "?"
+  query <- function(sql) {
+    DBI::dbGetQuery(
+      con,
+      sql,
+      params = if (is.null(catalog)) list(schema) else list(catalog, schema)
+    )
+  }
 
   tables <- query(
     "SELECT table_name
      FROM information_schema.tables
-     WHERE table_schema = ? AND table_type = 'BASE TABLE'
-     ORDER BY table_name"
+     WHERE table_catalog = %s AND table_schema = ?
+       AND table_type = 'BASE TABLE'
+     ORDER BY table_name" |>
+      sprintf(catalog_predicate)
   )
   columns <- query(
     "SELECT table_name, column_name, ordinal_position, data_type,
             is_nullable, coalesce(column_default, '') AS column_default
      FROM information_schema.columns
-     WHERE table_schema = ?
-     ORDER BY table_name, ordinal_position"
+     WHERE table_catalog = %s AND table_schema = ?
+     ORDER BY table_name, ordinal_position" |>
+      sprintf(catalog_predicate)
   )
   constraints <- query(
     "SELECT table_name, constraint_type,
@@ -409,17 +421,20 @@ ledgr_schema_normalized_catalogue <- function(con, schema = "main") {
             coalesce(expression, '') AS expression,
             coalesce(constraint_text, '') AS constraint_text
      FROM duckdb_constraints()
-     WHERE schema_name = ? AND constraint_type <> 'NOT NULL'
+     WHERE database_name = %s AND schema_name = ?
+       AND constraint_type <> 'NOT NULL'
      ORDER BY table_name, constraint_type, column_names, referenced_table,
-              referenced_column_names, expression, constraint_text"
+              referenced_column_names, expression, constraint_text" |>
+      sprintf(catalog_predicate)
   )
   indexes <- query(
     "SELECT index_name, table_name, is_unique, is_primary,
             coalesce(expressions, '') AS expressions,
             coalesce(sql, '') AS sql
      FROM duckdb_indexes()
-     WHERE schema_name = ?
-     ORDER BY index_name"
+     WHERE database_name = %s AND schema_name = ?
+     ORDER BY index_name" |>
+      sprintf(catalog_predicate)
   )
 
   columns$data_type <- toupper(whitespace(columns$data_type))

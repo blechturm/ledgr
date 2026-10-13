@@ -23,6 +23,54 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
     unique(golden$duckdb_version),
     as.character(utils::packageVersion("duckdb"))
   )
+  golden_rows <- utils::read.csv(
+    file.path(
+      root, "tests", "testthat", "fixtures",
+      "schema-current-golden-rows.csv"
+    ),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  testthat::expect_identical(
+    unique(golden_rows$pre_cut_commit),
+    "24bcc161"
+  )
+  testthat::expect_identical(
+    unique(golden_rows$duckdb_version),
+    as.character(utils::packageVersion("duckdb"))
+  )
+  golden_rows$pre_cut_commit <- NULL
+  golden_rows$duckdb_version <- NULL
+  expected_rows <- ledgr:::ledgr_schema_catalogue_rows(expected)
+  row_key <- function(x) {
+    do.call(paste, c(x, sep = "\r"))
+  }
+  missing <- golden_rows[
+    is.na(match(row_key(golden_rows), row_key(expected_rows))),
+    ,
+    drop = FALSE
+  ]
+  extra <- expected_rows[
+    is.na(match(row_key(expected_rows), row_key(golden_rows))),
+    ,
+    drop = FALSE
+  ]
+  testthat::expect_identical(
+    nrow(missing),
+    0L,
+    info = paste(
+      "missing pre-cut catalogue rows:",
+      paste(paste(missing$dimension, missing$object), collapse = ", ")
+    )
+  )
+  testthat::expect_identical(
+    nrow(extra),
+    0L,
+    info = paste(
+      "extra current-definition rows:",
+      paste(paste(extra$dimension, extra$object), collapse = ", ")
+    )
+  )
   digest <- ledgr:::ledgr_schema_catalogue_digest(expected)
   rownames(digest) <- NULL
   testthat::expect_identical(
@@ -140,6 +188,19 @@ testthat::test_that("[LTB-0263] strict validation uses the complete current cata
       "snapshot_sessions.idx_snapshot_sessions_close."
     )
   )
+
+  expect_mutation(
+    "ALTER TABLE runs ALTER COLUMN schema_version SET DATA TYPE BIGINT",
+    paste0(
+      "Schema catalogue mismatch: column runs.schema_version differs in ",
+      "data_type (expected INTEGER, got BIGINT)."
+    )
+  )
+
+  temporary <- connect_current()
+  on.exit(DBI::dbDisconnect(temporary$con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(temporary$con, "CREATE TEMP TABLE transient(value INTEGER)")
+  testthat::expect_true(ledgr_validate_schema(temporary$con))
 
   opened <- connect_current()
   on.exit(DBI::dbDisconnect(opened$con, shutdown = TRUE), add = TRUE)

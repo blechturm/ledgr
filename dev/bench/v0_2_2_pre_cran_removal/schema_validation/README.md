@@ -30,3 +30,21 @@ moved that index into the sole definition and removed the runtime DDL. A
 successfully sealed public snapshot built from pre-cut `24bcc161` has the
 revised golden's exact four digests, including 54 index-attribute rows and
 SHA-256 `f0c419002c5401507eaee66b644e0bf273611571b20d01ad9069e9b0c83dd15a`.
+
+## Close-review correction
+
+`correction_pairs.csv` replaces the misleading candidate comparison above.
+It uses the actual Workstream 29 baseline `24bcc161`, five alternating fresh
+processes and the expanded correction runner. Median candidate/pre-cut ratios
+are:
+
+- 1.512 for a cold `ledgr_run_store_open()` plus close;
+- 0.866 for a primed open plus `ledgr_validate_schema_once()`;
+- 0.856 for a validation-cache hit on an open connection;
+- 1.043 for `ledgr_db_init()` on an existing durable store; and
+- 0.988 for a five-row snapshot build.
+
+The four existing-work boundaries meet the 1.05 rule. The cold opener does
+not: its median rises from 24.29 ms to 36.72 ms because the new mandatory
+marker query has no pre-cut counterpart. The miss is recorded, not passed or
+hidden in package loading, and remains for maintainer adjudication.

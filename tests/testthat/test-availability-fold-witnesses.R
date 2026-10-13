@@ -99,6 +99,13 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       testthat::expect_identical(expected$engine_version, "0.2.0.1")
       actual$engine_version <- NULL
       expected$engine_version <- NULL
+      # Cut 14 deliberately replaces schema 118 with the current-only schema
+      # 119. The frozen evidence remains unchanged; all other persisted
+      # identity fields stay under exact comparison below.
+      testthat::expect_identical(expected$schema_version, "118")
+      testthat::expect_identical(actual$schema_version, "119")
+      actual$schema_version <- NULL
+      expected$schema_version <- NULL
       # LDG-2851 renamed `ctx$vec$positions` to `ctx$vec$position` after the
       # freeze, so the witness strategy's source differs by exactly that
       # rename, and so do the values derived from it: the source hash, the

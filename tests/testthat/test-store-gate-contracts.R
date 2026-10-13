@@ -125,6 +125,16 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   expect_cause(marker_store("118"), "older", 118L)
   expect_cause(marker_store("999"), "newer", 999L)
   expect_cause(marker_store(NULL), "missing_marker")
+
+  temp_only <- connect()
+  DBI::dbExecute(
+    temp_only,
+    paste0(
+      "CREATE TEMP TABLE ledgr_schema_metadata(",
+      "key VARCHAR, value VARCHAR, updated_at_utc TIMESTAMP)"
+    )
+  )
+  expect_cause(temp_only, "missing_marker")
   expect_cause(marker_store("not-an-integer"), "invalid_marker")
   expect_cause(marker_store("119"), "missing_marker", 119L)
   expect_cause(marker_store("119", "not-json"), "invalid_marker", 119L)
@@ -149,20 +159,13 @@ testthat::test_that("[LTB-0261] store creation is empty-only and transactional",
   files <- function(path) c(path, paste0(path, ".wal"))
   empty <- tempfile(fileext = ".duckdb")
   on.exit(unlink(files(empty), force = TRUE), add = TRUE)
+  testthat::expect_false(file.exists(empty))
   error <- testthat::expect_error(
     ledgr:::ledgr_store_open(empty, mode = "open"),
     class = "ledgr_store_rebuild_required"
   )
   testthat::expect_identical(error$cause, "missing_marker")
-  inspect <- ledgr:::ledgr_open_duckdb_with_retry(empty)
-  testthat::expect_identical(
-    DBI::dbGetQuery(
-      inspect$con,
-      "SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = 'main'"
-    )$n[[1L]],
-    0
-  )
-  DBI::dbDisconnect(inspect$con, shutdown = TRUE)
+  testthat::expect_false(file.exists(empty))
 
   nonempty <- tempfile(fileext = ".duckdb")
   on.exit(unlink(files(nonempty), force = TRUE), add = TRUE)
@@ -181,6 +184,40 @@ testthat::test_that("[LTB-0261] store creation is empty-only and transactional",
   testthat::expect_identical(
     names(ledgr:::ledgr_store_read_markers(memory$con)),
     c("experiment_store_schema_version", "format_fingerprint")
+  )
+
+  marker_interrupted <- DBI::dbConnect(
+    duckdb::duckdb(shared_home = FALSE), dbdir = ":memory:"
+  )
+  on.exit(DBI::dbDisconnect(marker_interrupted, shutdown = TRUE), add = TRUE)
+  testthat::with_mocked_bindings(
+    testthat::expect_error(
+      ledgr:::ledgr_store_create_current(marker_interrupted),
+      "injected fingerprint failure",
+      fixed = TRUE
+    ),
+    ledgr_store_current_fingerprint = function() {
+      stop("injected fingerprint failure", call. = FALSE)
+    },
+    .package = "ledgr"
+  )
+  testthat::expect_identical(
+    DBI::dbGetQuery(
+      marker_interrupted,
+      paste0(
+        "SELECT COUNT(*) AS n FROM information_schema.tables ",
+        "WHERE table_catalog = current_database() AND table_schema = 'main'"
+      )
+    )$n[[1L]],
+    0
+  )
+  testthat::expect_identical(
+    ledgr:::ledgr_store_read_markers(marker_interrupted),
+    character()
+  )
+  ledgr:::ledgr_store_create_current(marker_interrupted)
+  testthat::expect_true(
+    ledgr:::ledgr_store_assert_current(marker_interrupted)
   )
   expected <- ledgr:::ledgr_schema_normalized_catalogue(memory$con)
   reference <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ":memory:")
@@ -272,10 +309,45 @@ testthat::test_that("[LTB-0262] every persistent store route reaches one gate", 
     )
   }
 
+  cached_source <- lapply(cached_entries, function(name) {
+    function_source(name)
+  })
+  names(cached_source) <- cached_entries
+  testthat::expect_match(
+    cached_source$ledgr_snapshot_connection,
+    "DBI::dbIsValid\\(con\\)[\\s\\S]+ledgr_store_assert_current\\(con",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    cached_source$ledgr_snapshot_connection,
+    "ledgr_held_store[\\s\\S]+ledgr_store_assert_current\\(held",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    cached_source$ledgr_backtest_read_connection,
+    "DBI::dbIsValid\\(state\\$con\\)[\\s\\S]+ledgr_store_assert_current\\(state\\$con",
+    perl = TRUE
+  )
+  testthat::expect_match(
+    cached_source$ledgr_backtest_read_connection,
+    "ledgr_held_store[\\s\\S]+ledgr_store_assert_current\\(held_store",
+    perl = TRUE
+  )
+
+  attach_rows <- source_rows[grepl("ATTACH ", source_rows, fixed = TRUE)]
+  testthat::expect_identical(
+    sub(":.*$", "", attach_rows),
+    "snapshot-source.R"
+  )
+
   attach_source <- function_source("ledgr_prepare_snapshot_source_tables")
   testthat::expect_match(
     attach_source,
-    "ledgr_store_open\\(snapshot_db_path, mode = \"open\"\\)[\\s\\S]+ATTACH",
+    paste0(
+      "ATTACH[\\s\\S]+ledgr_store_assert_current\\(",
+      "[\\s\\S]+catalog = \"ledgr_snapshot_src\"",
+      "[\\s\\S]+CREATE TEMP VIEW"
+    ),
     perl = TRUE
   )
 

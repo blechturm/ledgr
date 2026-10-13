@@ -50,7 +50,6 @@ ledgr_sweep_save <- function(sweep, snapshot, sweep_id = NULL, note = NULL) {
 
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_store_assert_current(opened$con, db_path)
   ledgr_sweep_assert_schema_compatible(opened$con, write = TRUE)
   ledgr_sweep_assert_snapshot_matches(opened$con, sweep, snapshot)
   ledgr_sweep_assert_id_available(opened$con, sweep_id)
@@ -85,7 +84,6 @@ ledgr_sweep_open <- function(snapshot, sweep_id) {
 
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_store_assert_current(opened$con, db_path)
   ledgr_sweep_assert_schema_compatible(opened$con, write = FALSE)
 
   parent <- ledgr_sweep_fetch_parent(opened$con, sweep_id)
@@ -119,7 +117,6 @@ ledgr_sweep_list <- function(snapshot) {
   db_path <- ledgr_run_store_snapshot_path(snapshot)
   opened <- ledgr_run_store_open(db_path)
   on.exit(ledgr_run_store_close(opened), add = TRUE)
-  ledgr_store_assert_current(opened$con, db_path)
   ledgr_sweep_assert_schema_compatible(opened$con, write = FALSE)
 
   rows <- DBI::dbGetQuery(

@@ -58,7 +58,7 @@ ledgr_schema_normalize_display_type <- function(x) {
     )) return("TIMESTAMP")
     one
   }
-  vapply(x, normalize_one, character(1))
+  vapply(x, normalize_one, character(1), USE.NAMES = FALSE)
 }
 
 ledgr_schema_constraint_signature <- function(x) {
@@ -380,28 +380,31 @@ ledgr_schema_validate_catalogue <- function(
   invisible(TRUE)
 }
 
-ledgr_schema_validation_key <- function(con, catalogue = NULL) {
-  if (is.null(catalogue)) {
-    catalogue <- ledgr_schema_normalized_catalogue(con)
-  }
-  markers <- ledgr_store_read_markers(con)
-  digest <- ledgr_schema_catalogue_digest(catalogue)
-  paste(
-    markers[["experiment_store_schema_version"]],
-    markers[["format_fingerprint"]],
-    paste(digest$dimension, digest$rows, digest$sha256, collapse = "\r"),
-    sep = "\r"
+ledgr_schema_validation_signature <- function(con) {
+  row <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT ",
+      "(SELECT md5(string_agg(table_name || ':' || sql, ',' ",
+      "ORDER BY table_name)) FROM duckdb_tables() ",
+      "WHERE database_name = current_database() ",
+      "AND schema_name = 'main') AS tables, ",
+      "(SELECT md5(string_agg(",
+      "index_name || ':' || sql, ',' ORDER BY index_name)) ",
+      "FROM duckdb_indexes() WHERE database_name = current_database() ",
+      "AND schema_name = 'main') AS indexes"
+    )
   )
+  paste(unname(unlist(row[1L, ], use.names = FALSE)), collapse = "\r")
 }
 
 ledgr_validate_schema_once <- function(con) {
-  ledgr_store_assert_current(con)
-  actual <- ledgr_schema_normalized_catalogue(con)
-  key <- ledgr_schema_validation_key(con, actual)
-  if (isTRUE(.ledgr_schema_validation_cache[[key]])) {
+  signature <- ledgr_schema_validation_signature(con)
+  if (isTRUE(.ledgr_schema_validation_cache[[signature]])) {
     return(invisible(TRUE))
   }
+  actual <- ledgr_schema_normalized_catalogue(con)
   ledgr_schema_validate_catalogue(actual)
-  assign(key, TRUE, envir = .ledgr_schema_validation_cache)
+  assign(signature, TRUE, envir = .ledgr_schema_validation_cache)
   invisible(TRUE)
 }

@@ -83,22 +83,50 @@ ledgr_store_rebuild_abort <- function(cause,
   )
 }
 
-ledgr_store_read_markers <- function(con) {
-  has_metadata <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT COUNT(*) AS n FROM information_schema.tables ",
-      "WHERE table_schema = 'main' AND table_name = 'ledgr_schema_metadata'"
+ledgr_store_catalog <- function(catalog = NULL) {
+  if (is.null(catalog)) return(NULL)
+  if (!is.character(catalog) || length(catalog) != 1L ||
+      is.na(catalog) || !nzchar(catalog)) {
+    rlang::abort(
+      "`catalog` must be NULL or a non-empty character scalar.",
+      class = "ledgr_internal_error"
     )
-  )$n[[1L]] > 0L
-  if (!has_metadata) return(character())
-  rows <- DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT key, value FROM ledgr_schema_metadata ",
-      "WHERE key IN ('experiment_store_schema_version', 'format_fingerprint')"
+  }
+  catalog
+}
+
+ledgr_store_read_markers <- function(con, catalog = NULL) {
+  catalog <- ledgr_store_catalog(catalog)
+  metadata_id <- if (is.null(catalog)) {
+    DBI::Id(schema = "main", table = "ledgr_schema_metadata")
+  } else {
+    DBI::Id(
+      catalog = catalog,
+      schema = "main",
+      table = "ledgr_schema_metadata"
     )
+  }
+  metadata <- DBI::dbQuoteIdentifier(con, metadata_id)
+  rows <- tryCatch(
+    DBI::dbGetQuery(
+      con,
+      paste0(
+        "SELECT key, value FROM ", metadata, " ",
+        "WHERE key IN ",
+        "('experiment_store_schema_version', 'format_fingerprint')"
+      )
+    ),
+    error = function(error) {
+      if (inherits(error, "duckdb_error") &&
+          identical(error$error_type, "CATALOG") &&
+          identical(unname(error$extra_info[["error_subtype"]]),
+                    "MISSING_ENTRY")) {
+        return(NULL)
+      }
+      stop(error)
+    }
   )
+  if (is.null(rows)) return(character())
   stats::setNames(as.character(rows$value), as.character(rows$key))
 }
 
@@ -127,12 +155,12 @@ ledgr_store_differing_constants <- function(recorded, current) {
   keys[differs]
 }
 
-ledgr_store_assert_current <- function(con, path = NULL) {
+ledgr_store_assert_current <- function(con, path = NULL, catalog = NULL) {
   if (!DBI::dbIsValid(con)) {
     rlang::abort("`con` must be a valid DBI connection.", class = "ledgr_invalid_con")
   }
   path <- ledgr_store_path(con, path)
-  markers <- ledgr_store_read_markers(con)
+  markers <- ledgr_store_read_markers(con, catalog = catalog)
   marker <- function(key) {
     if (!key %in% names(markers)) return(NULL)
     unname(markers[[key]])
@@ -157,6 +185,10 @@ ledgr_store_assert_current <- function(con, path = NULL) {
   if (is.null(fingerprint)) {
     ledgr_store_rebuild_abort("missing_marker", path, version)
   }
+  current_fingerprint <- ledgr_store_current_fingerprint()
+  if (identical(fingerprint, current_fingerprint)) {
+    return(invisible(TRUE))
+  }
   recorded <- ledgr_store_parse_fingerprint(fingerprint)
   if (is.null(recorded)) {
     ledgr_store_rebuild_abort(
@@ -179,7 +211,8 @@ ledgr_store_create_current <- function(con, path = NULL) {
     con,
     paste0(
       "SELECT table_name FROM information_schema.tables ",
-      "WHERE table_schema = 'main'"
+      "WHERE table_catalog = current_database() ",
+      "AND table_schema = 'main'"
     )
   )$table_name
   if (length(tables) > 0L) {
@@ -213,6 +246,13 @@ ledgr_store_create_current <- function(con, path = NULL) {
 ledgr_store_open <- function(path, mode = c("open", "create"),
                              attempts = 50L, sleep_s = 0.05) {
   mode <- match.arg(mode)
+  if (identical(mode, "open") && !identical(path, ":memory:") &&
+      !file.exists(path)) {
+    ledgr_store_rebuild_abort(
+      "missing_marker",
+      normalizePath(path, winslash = "/", mustWork = FALSE)
+    )
+  }
   opened <- ledgr_open_duckdb_with_retry(path, attempts, sleep_s)
   ok <- FALSE
   on.exit({

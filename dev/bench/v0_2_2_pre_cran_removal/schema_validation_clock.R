@@ -2,11 +2,10 @@
 #
 #   Rscript schema_validation_clock.R <repo> <label> <out_csv> [repetitions]
 #
-# One invocation records the three ticket-owned clocks in alternating A/A or
-# candidate/pre-cut runs. The caller owns alternation and labels. Each timed
-# operation uses a fresh durable store where construction is part of the
-# named clock. The comparator clears the process-local validation cache so it
-# measures ledgr_run_store_open() plus one full ledgr_validate_schema_once().
+# One invocation records the five ticket-owned clocks in alternating A/A or
+# candidate/pre-cut runs. The caller owns alternation and labels. Stores are
+# created outside every clock except small_snapshot. The warm clocks prime the
+# session catalogue before timing so they expose repeated-call overhead.
 args <- commandArgs(trailingOnly = TRUE)
 .libPaths(c("C:/Users/maxth/AppData/Local/R/win-library/4.6", .libPaths()))
 pkgload::load_all(args[[1L]], quiet = TRUE, compile = FALSE)
@@ -40,23 +39,33 @@ for (repetition in seq_len(repetitions)) {
   comparator_path <- tempfile(fileext = ".duckdb")
   con <- ledgr_db_init(comparator_path)
   DBI::dbDisconnect(con, shutdown = TRUE)
-  rm(
-    list = ls(ledgr:::.ledgr_schema_validation_cache, all.names = TRUE),
-    envir = ledgr:::.ledgr_schema_validation_cache
-  )
-  comparator <- elapsed({
+
+  cold_open_close <- elapsed({
+    opened <- ledgr:::ledgr_run_store_open(comparator_path)
+    ledgr:::ledgr_run_store_close(opened)
+  })
+
+  primed <- ledgr:::ledgr_run_store_open(comparator_path)
+  ledgr:::ledgr_validate_schema_once(primed$con)
+  ledgr:::ledgr_run_store_close(primed)
+  warm_open_validate <- elapsed({
     opened <- ledgr:::ledgr_run_store_open(comparator_path)
     ledgr:::ledgr_validate_schema_once(opened$con)
     ledgr:::ledgr_run_store_close(opened)
   })
-  unlink(store_files(comparator_path), force = TRUE)
 
-  init_path <- tempfile(fileext = ".duckdb")
-  init <- elapsed({
-    con <- ledgr_db_init(init_path)
+  opened <- ledgr:::ledgr_run_store_open(comparator_path)
+  ledgr:::ledgr_validate_schema_once(opened$con)
+  validate_once <- elapsed({
+    ledgr:::ledgr_validate_schema_once(opened$con)
+  })
+  ledgr:::ledgr_run_store_close(opened)
+
+  reinit <- elapsed({
+    con <- ledgr_db_init(comparator_path)
     DBI::dbDisconnect(con, shutdown = TRUE)
   })
-  unlink(store_files(init_path), force = TRUE)
+  unlink(store_files(comparator_path), force = TRUE)
 
   snapshot_path <- tempfile(fileext = ".duckdb")
   snapshot <- elapsed({
@@ -72,8 +81,14 @@ for (repetition in seq_len(repetitions)) {
   rows[[repetition]] <- data.frame(
     label = label,
     repetition = repetition + pair_offset,
-    clock = c("open_validate", "db_init", "small_snapshot"),
-    elapsed_s = c(comparator, init, snapshot),
+    clock = c(
+      "cold_open_close", "warm_open_validate", "validate_schema_once",
+      "reinit", "small_snapshot"
+    ),
+    elapsed_s = c(
+      cold_open_close, warm_open_validate, validate_once,
+      reinit, snapshot
+    ),
     stringsAsFactors = FALSE
   )
 }
