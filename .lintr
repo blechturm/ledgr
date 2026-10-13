@@ -1,0 +1,28 @@
+linters: list(
+    brace_linter = brace_linter(),
+    commas_linter = commas_linter(),
+    function_left_parentheses_linter = function_left_parentheses_linter(),
+    indentation_linter = indentation_linter(),
+    infix_spaces_linter = infix_spaces_linter(),
+    paren_body_linter = paren_body_linter(),
+    semicolon_linter = semicolon_linter(),
+    spaces_inside_linter = spaces_inside_linter(),
+    spaces_left_parentheses_linter = spaces_left_parentheses_linter(),
+    trailing_whitespace_linter = trailing_whitespace_linter()
+  )
+exclusions: list(
+    "R/cpp11.R",
+    "dev",
+    "docs",
+    "inst",
+    "src",
+    "vendor",
+    "lib",
+    "lib-wsl",
+    ".tmp",
+    ".agents",
+    ".claude",
+    ".understand-anything",
+    "test-profile-artifacts"
+  )
+encoding: "UTF-8"

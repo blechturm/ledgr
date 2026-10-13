@@ -105,6 +105,50 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "event $EVENT, ref $REF, tier $tier, run $run" >> "$GITHUB_STEP_SUMMARY"
 
+  lint-advisory:
+    name: Lint (advisory through LDG-3031)
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::lintr
+            any::styler
+
+      - name: Run advisory lint
+        id: lint
+        continue-on-error: true
+        run: |
+          Rscript --vanilla tools/run-advisory-lint.R --output=lint-artifacts --source-commit=${{ github.sha }} --fail-on-findings=true
+
+      - name: Record advisory status
+        if: always()
+        shell: bash
+        env:
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+        run: |
+          echo "### Advisory lint" >> "$GITHUB_STEP_SUMMARY"
+          echo "Outcome: $LINT_OUTCOME (non-blocking through LDG-3031)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload advisory lint record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: advisory-lint
+          path: lint-artifacts
+          if-no-files-found: error
+
   R-CMD-check:
     needs: plan
     if: needs.plan.outputs.run == 'true'
