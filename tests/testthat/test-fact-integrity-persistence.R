@@ -48,6 +48,9 @@ testthat::test_that("[LTB-0151] fresh and reopened facts retain rule-3 identity 
     params = list(snapshot_id)
   )
   testthat::expect_true(changed > 0L)
+  # The SQL write is outside the supported public workflow. Clear the proof
+  # established by the earlier facts read so this models a cold process.
+  ledgr:::ledgr_snapshot_verified_reset()
   condition <- tryCatch(
     ledgr_facts_resolve(
       reopened,

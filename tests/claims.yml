@@ -1676,7 +1676,7 @@ claims:
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Fresh and reopened snapshots expose identical verified membership evidence, and changing one persisted membership timestamp makes public facts inspection fail with the existing hash-mismatch class and exact message."
-    oracle_independence: "The rule-3 hash is a decision-authorized literal; public ledgr_facts_resolve() recomputes identity from persisted rows rather than accepting a family object's stored digest."
+    oracle_independence: "The rule-3 hash is a decision-authorized literal; after the raw SQL mutation clears the earlier process proof, public ledgr_facts_resolve() recomputes identity from persisted rows rather than accepting a family object's stored digest."
     smallest_failing_change: "Trust the stored snapshot hash, omit membership timestamps from rule-3 hashing, change reopen hydration, or weaken the public mismatch condition."
     cheapest_adequate_lane: "One ten-bar file-backed snapshot with six small fact shapes; review, because persistence and reopen are the behavior under test."
     overlapping_evidence: "LTB-0048 covers broad persisted field corruption through ledgr_run(); this block pins timestamp corruption through the public facts-inspection boundary and exact reopened evidence."
