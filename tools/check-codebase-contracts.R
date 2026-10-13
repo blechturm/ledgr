@@ -69,6 +69,53 @@ deparse_one <- function(x) {
   paste(deparse(x, width.cutoff = 500L), collapse = " ")
 }
 
+child_nodes <- function(x) {
+  if (is.pairlist(x)) return(list())
+  if (!(is.call(x) || is.expression(x) || is.list(x))) {
+    return(list())
+  }
+  positions <- seq_along(x)
+  keep <- vapply(positions, function(i) {
+    nzchar(paste(deparse(x[[i]]), collapse = ""))
+  }, logical(1))
+  lapply(positions[keep], function(i) x[[i]])
+}
+
+literal_strings <- function(x) {
+  if (is.character(x)) return(as.character(x))
+  if (is.call(x) && identical(call_name(x), "c")) {
+    return(unlist(lapply(as.list(x)[-1L], literal_strings), use.names = FALSE))
+  }
+  character()
+}
+
+ast_nodes <- function(x) {
+  out <- vector("list", 0L)
+  ordinal <- 0L
+  walk <- function(node) {
+    ordinal <<- ordinal + 1L
+    here <- ordinal
+    if (is.call(node)) {
+      name <- call_name(node)
+      kind <- if (!is.na(name) && name %in% c("<-", "=") &&
+                    length(node) >= 3L && is.symbol(node[[2L]])) {
+        "assignment"
+      } else {
+        "call"
+      }
+      out[[length(out) + 1L]] <<- list(
+        ordinal = here,
+        kind = kind,
+        name = if (kind == "assignment") as.character(node[[2L]]) else name,
+        node = node
+      )
+    }
+    for (child in child_nodes(node)) walk(child)
+  }
+  walk(x)
+  out
+}
+
 top_definitions <- function(path, parsed = parse_source(path)) {
   refs <- attr(parsed, "srcref")
   out <- vector("list", 0L)
@@ -109,7 +156,8 @@ source_index <- function(paths) {
       lines = read_source(path),
       parsed = parsed,
       data = data,
-      definitions = top_definitions(path, parsed)
+      definitions = top_definitions(path, parsed),
+      nodes = ast_nodes(parsed)
     )
   })
 }
@@ -150,12 +198,15 @@ empty_frame <- function(columns) {
   setNames(as.data.frame(rep(list(character()), length(columns))), columns)
 }
 
-namespace_lines <- read_source(file.path(root, "NAMESPACE"))
-exports <- sub("^export\\(([^)]+)\\)$", "\\1", grep("^export\\(", namespace_lines, value = TRUE))
-s3_rows <- grep("^S3method\\(", namespace_lines, value = TRUE)
-s3_methods <- vapply(strsplit(sub("^S3method\\((.*)\\)$", "\\1", s3_rows), ",", fixed = TRUE), function(x) {
-  paste0(trimws(x[[1L]]), ".", trimws(x[[2L]]))
-}, character(1))
+namespace_calls <- as.list(parse(file.path(root, "NAMESPACE"), keep.source = FALSE))
+exports <- unique(vapply(Filter(function(x) identical(call_name(x), "export"), namespace_calls), function(x) {
+  as.character(x[[2L]])
+}, character(1)))
+s3_methods <- unique(vapply(Filter(function(x) identical(call_name(x), "S3method"), namespace_calls), function(x) {
+  generic <- if (is.character(x[[2L]])) x[[2L]] else as.character(x[[2L]])
+  method <- if (is.character(x[[3L]])) x[[3L]] else as.character(x[[3L]])
+  paste0(generic, ".", method)
+}, character(1)))
 
 r_index <- source_index("R")
 test_index <- source_index("tests/testthat")
@@ -167,41 +218,137 @@ call_rows <- function(index) {
   for (entry in index) {
     calls <- entry$data[entry$data$token == "SYMBOL_FUNCTION_CALL", , drop = FALSE]
     if (nrow(calls) == 0L) next
-    for (i in seq_len(nrow(calls))) {
-      rows[[length(rows) + 1L]] <- data.frame(
-        file = entry$file,
-        line = as.integer(calls$line1[[i]]),
-        owner = owner_at(entry$definitions, calls$line1[[i]]),
-        call = calls$text[[i]],
-        stringsAsFactors = FALSE
-      )
-    }
+    rows[[length(rows) + 1L]] <- data.frame(
+      file = rep(entry$file, nrow(calls)),
+      line = as.integer(calls$line1),
+      owner = vapply(calls$line1, function(line) {
+        owner_at(entry$definitions, line)
+      }, character(1)),
+      call = calls$text,
+      stringsAsFactors = FALSE
+    )
   }
   if (length(rows) == 0L) return(empty_frame(c("file", "line", "owner", "call")))
   do.call(rbind, rows)
 }
 
 r_calls <- call_rows(r_index)
-all_calls <- call_rows(all_index)
 
 ## Connection census -------------------------------------------------------
 
 connection_names <- c(
   "dbConnect", "ledgr_open_duckdb_with_retry", "ledgr_db_init",
   "ledgr_run_store_open", "get_connection", "ledgr_held_store",
-  "ledgr_store_register"
+  "ledgr_store_register", "ledgr_snapshot_connection",
+  "ledgr_backtest_open"
 )
-connection_rows <- r_calls[r_calls$call %in% connection_names, , drop = FALSE]
-if (nrow(connection_rows) > 0L) {
-  connection_rows$entry_kind <- unname(c(
-    dbConnect = "direct_connect",
-    ledgr_open_duckdb_with_retry = "path_opener",
-    ledgr_db_init = "public_init",
-    ledgr_run_store_open = "run_store_opener",
-    get_connection = "cached_or_handle_connection",
-    ledgr_held_store = "held_store_borrow",
-    ledgr_store_register = "held_store_register"
-  )[connection_rows$call])
+
+call_occurrences <- function(entry, targets) {
+  nodes <- Filter(function(x) {
+    identical(x$kind, "call") && !is.na(x$name) && x$name %in% targets
+  }, entry$nodes)
+  if (length(nodes) == 0L) return(list())
+  token_rows <- entry$data[
+    entry$data$token == "SYMBOL_FUNCTION_CALL" & entry$data$text %in% targets,
+    c("text", "line1"), drop = FALSE
+  ]
+  line_queues <- split(as.integer(token_rows$line1), token_rows$text)
+  positions <- setNames(integer(length(line_queues)), names(line_queues))
+  lapply(nodes, function(item) {
+    name <- item$name
+    positions[[name]] <<- positions[[name]] + 1L
+    lines <- line_queues[[name]]
+    line <- if (is.null(lines) || positions[[name]] > length(lines)) {
+      NA_integer_
+    } else {
+      lines[[positions[[name]]]]
+    }
+    list(
+      file = entry$file,
+      line = line,
+      owner = owner_at(entry$definitions, line),
+      name = name,
+      call = item$node,
+      ordinal = item$ordinal
+    )
+  })
+}
+
+call_argument <- function(call, name = NULL, position = NULL) {
+  args <- as.list(call)[-1L]
+  tags <- names(args)
+  if (is.null(tags)) tags <- rep("", length(args))
+  if (!is.null(name)) {
+    hit <- which(tags == name)
+    if (length(hit) > 0L) return(args[[hit[[1L]]]])
+  }
+  if (!is.null(position)) {
+    positional <- which(!nzchar(tags))
+    if (length(positional) >= position) return(args[[positional[[position]]]])
+  }
+  NULL
+}
+
+is_memory_literal <- function(x) {
+  is.character(x) && length(x) == 1L && identical(x, ":memory:")
+}
+
+duckdb_driver_is_memory <- function(x) {
+  if (!is.call(x) || !identical(call_name(x), "duckdb")) return(FALSE)
+  dbdir <- call_argument(x, "dbdir")
+  if (is.null(dbdir)) return(TRUE)
+  is_memory_literal(dbdir)
+}
+
+connection_is_memory <- function(name, call) {
+  if (identical(name, "dbConnect")) {
+    dbdir <- call_argument(call, "dbdir", 2L)
+    if (!is.null(dbdir)) return(is_memory_literal(dbdir))
+    driver <- call_argument(call, position = 1L)
+    return(duckdb_driver_is_memory(driver))
+  }
+  args <- as.list(call)[-1L]
+  any(vapply(args, is_memory_literal, logical(1)))
+}
+
+connection_items <- unlist(lapply(r_index, call_occurrences,
+                                  targets = connection_names), recursive = FALSE)
+connection_rows <- if (length(connection_items) == 0L) {
+  data.frame(
+    file = character(), line = integer(), owner = character(),
+    entry_kind = character(), call = character(), persistent_store = logical(),
+    classification = character(), current_guard = character(),
+    stringsAsFactors = FALSE
+  )
+} else {
+  do.call(rbind, lapply(connection_items, function(item) {
+    memory <- connection_is_memory(item$name, item$call)
+    data.frame(
+      file = item$file,
+      line = item$line,
+      owner = item$owner,
+      entry_kind = unname(c(
+        dbConnect = "direct_connect",
+        ledgr_open_duckdb_with_retry = "path_opener",
+        ledgr_db_init = "public_init",
+        ledgr_run_store_open = "run_store_opener",
+        get_connection = "cached_or_handle_connection",
+        ledgr_held_store = "held_store_borrow",
+        ledgr_store_register = "held_store_register",
+        ledgr_snapshot_connection = "cached_or_handle_connection",
+        ledgr_backtest_open = "cached_or_handle_connection"
+      )[[item$name]]),
+      call = item$name,
+      persistent_store = !memory,
+      classification = if (memory) {
+        "in_memory_reference_catalogue"
+      } else {
+        "persistent_ledgr_store"
+      },
+      current_guard = "none",
+      stringsAsFactors = FALSE
+    )
+  }))
 }
 
 attach_rows <- vector("list", 0L)
@@ -220,7 +367,11 @@ for (entry in r_index) {
   }
 }
 if (length(attach_rows) > 0L) {
-  connection_rows <- rbind(connection_rows, do.call(rbind, attach_rows))
+  attached <- do.call(rbind, attach_rows)
+  attached$persistent_store <- TRUE
+  attached$classification <- "persistent_ledgr_store"
+  attached$current_guard <- "none"
+  connection_rows <- rbind(connection_rows, attached[, names(connection_rows)])
 }
 
 caller_rows <- vector("list", 0L)
@@ -239,42 +390,43 @@ for (entry in r_index) {
   }
 }
 if (length(caller_rows) > 0L) {
-  connection_rows <- rbind(connection_rows, do.call(rbind, caller_rows))
+  supplied <- do.call(rbind, caller_rows)
+  supplied$persistent_store <- TRUE
+  supplied$classification <- "persistent_ledgr_store"
+  supplied$current_guard <- "none"
+  connection_rows <- rbind(connection_rows, supplied[, names(connection_rows)])
+}
+
+guard_names <- c(
+  "ledgr_store_open", "ledgr_validate_schema", "ledgr_check_schema",
+  "ledgr_create_schema", "ledgr_snapshot_ensure_verified"
+)
+calls_by_owner <- split(r_calls$call[!is.na(r_calls$owner)],
+                        r_calls$owner[!is.na(r_calls$owner)])
+guard_cache <- new.env(parent = emptyenv())
+reachable_guards <- function(owner, seen = character()) {
+  if (is.na(owner) || !nzchar(owner) || owner %in% seen) return(character())
+  cached <- guard_cache[[owner]]
+  if (!is.null(cached)) return(cached)
+  direct <- unique(as.character(calls_by_owner[[owner]]))
+  direct <- direct[!is.na(direct)]
+  found <- intersect(direct, guard_names)
+  callees <- setdiff(direct, c(guard_names, seen, owner))
+  nested <- unlist(lapply(callees, reachable_guards,
+                          seen = c(seen, owner)), use.names = FALSE)
+  answer <- sort(unique(c(found, nested)), method = "radix")
+  guard_cache[[owner]] <- answer
+  answer
 }
 
 if (nrow(connection_rows) > 0L) {
-  connection_rows$persistent_store <- TRUE
-  connection_rows$classification <- "persistent_ledgr_store"
-  connection_rows$current_guard <- "none"
   for (i in seq_len(nrow(connection_rows))) {
-    entry <- r_index[[match(connection_rows$file[[i]], vapply(r_index, `[[`, character(1), "file"))]]
     owner <- connection_rows$owner[[i]]
-    definition <- Filter(function(x) identical(x$name, owner), entry$definitions)
-    context <- if (length(definition) == 1L) definition_text(entry, definition[[1L]]) else entry$lines[[connection_rows$line[[i]]]]
-    if (!identical(connection_rows$entry_kind[[i]], "exported_caller_connection") &&
-        grepl(":memory:", context, fixed = TRUE)) {
-      connection_rows$persistent_store[[i]] <- FALSE
-      connection_rows$classification[[i]] <- "in_memory_reference_catalogue"
-    } else if (grepl("read_csv|csv", ifelse(is.na(owner), "", owner), ignore.case = TRUE)) {
-      connection_rows$persistent_store[[i]] <- FALSE
-      connection_rows$classification[[i]] <- "csv_parser"
+    present <- reachable_guards(owner)
+    if (length(present) > 0L) {
+      connection_rows$current_guard[[i]] <- paste(present, collapse = ";")
     }
-    guard_names <- c(
-      "ledgr_store_open", "ledgr_validate_schema", "ledgr_check_schema",
-      "ledgr_create_schema", "ledgr_snapshot_ensure_verified"
-    )
-    present <- guard_names[vapply(guard_names, grepl, logical(1), x = context, fixed = TRUE)]
-    if (length(present) > 0L) connection_rows$current_guard[[i]] <- paste(present, collapse = ";")
   }
-  connection_rows <- connection_rows[, c(
-    "file", "line", "owner", "entry_kind", "call", "persistent_store",
-    "classification", "current_guard"
-  )]
-} else {
-  connection_rows <- empty_frame(c(
-    "file", "line", "owner", "entry_kind", "call", "persistent_store",
-    "classification", "current_guard"
-  ))
 }
 
 ## Version and convention census ------------------------------------------
@@ -301,6 +453,28 @@ fingerprint_names <- c(
 )
 
 version_rows <- vector("list", 0L)
+write_calls <- c(
+  "dbAppendTable", "dbExecute", "dbWriteTable", "write_ndjson_str",
+  "canonical_json", "ledgr_json_write_canonical_ndjson"
+)
+write_owners <- unique(r_calls$owner[r_calls$call %in% write_calls &
+                                      !is.na(r_calls$owner)])
+definition_lookup <- unlist(lapply(r_index, function(entry) {
+  setNames(lapply(entry$definitions, function(definition) {
+    list(entry = entry, definition = definition)
+  }), vapply(entry$definitions, `[[`, character(1), "name"))
+}), recursive = FALSE)
+
+binding_write_sites <- function(name) {
+  owners <- write_owners[vapply(write_owners, function(owner) {
+    found <- definition_lookup[[owner]]
+    if (is.null(found)) return(FALSE)
+    text <- definition_text(found$entry, found$definition)
+    grepl(sprintf("\\b%s\\b", name), text, perl = TRUE)
+  }, logical(1))]
+  sort(unique(owners), method = "radix")
+}
+
 for (entry in r_index) {
   for (definition in entry$definitions) {
     name <- definition$name
@@ -308,41 +482,90 @@ for (entry in r_index) {
     if (!version_like) next
     rhs <- definition$rhs
     is_atomic_scalar <- is.atomic(rhs) && length(rhs) == 1L
+    write_sites <- binding_write_sites(name)
     version_rows[[length(version_rows) + 1L]] <- data.frame(
       file = definition$file,
       line = definition$line,
       owner = name,
       record_kind = "binding",
       expression = deparse_one(definition$expression),
-      persisted_or_convention = name %in% fingerprint_names || grepl("schema_version|rule_version", name),
+      persisted_or_convention = length(write_sites) > 0L,
+      persistence_evidence = if (length(write_sites) > 0L) {
+        paste0("write_site:", paste(write_sites, collapse = ";"))
+      } else {
+        "none"
+      },
       fingerprint_member = name %in% fingerprint_names,
       atomic_scalar = is_atomic_scalar,
       outside_fingerprint = is_atomic_scalar && !name %in% fingerprint_names,
+      comparison_operator = "",
+      equality_assertion = FALSE,
       stringsAsFactors = FALSE
     )
   }
-  comparison_tokens <- entry$data[
-    entry$data$token %in% c("EQ", "NE", "GT", "GE", "LT", "LE", "SPECIAL") |
-      (entry$data$token == "SYMBOL_FUNCTION_CALL" & entry$data$text == "identical"),
-    , drop = FALSE
+
+  strings <- entry$data[entry$data$token == "STR_CONST", , drop = FALSE]
+  if (nrow(strings) > 0L) {
+    values <- vapply(strings$text, function(text) {
+      tryCatch(eval(parse(text = text), envir = baseenv()), error = function(e) "")
+    }, character(1))
+    keep <- grepl("^[A-Za-z][A-Za-z0-9_.-]*_v[0-9]+$", values, perl = TRUE)
+    for (i in which(keep)) {
+      version_rows[[length(version_rows) + 1L]] <- data.frame(
+        file = entry$file,
+        line = as.integer(strings$line1[[i]]),
+        owner = owner_at(entry$definitions, strings$line1[[i]]),
+        record_kind = "convention_string",
+        expression = values[[i]],
+        persisted_or_convention = TRUE,
+        persistence_evidence = "convention_literal",
+        fingerprint_member = FALSE,
+        atomic_scalar = TRUE,
+        outside_fingerprint = FALSE,
+        comparison_operator = "",
+        equality_assertion = FALSE,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  comparison_names <- c("==", "!=", ">", ">=", "<", "<=", "identical")
+  comparisons <- Filter(function(x) {
+    identical(x$kind, "call") && !is.na(x$name) && x$name %in% comparison_names
+  }, entry$nodes)
+  token_rows <- entry$data[
+    entry$data$text %in% comparison_names &
+      entry$data$token %in% c("EQ", "NE", "GT", "GE", "LT", "LE",
+                               "SYMBOL_FUNCTION_CALL"),
+    c("text", "line1"), drop = FALSE
   ]
-  candidate_lines <- unique(comparison_tokens$line1)
-  candidate_lines <- candidate_lines[candidate_lines >= 1L & candidate_lines <= length(entry$lines)]
-  for (line in candidate_lines) {
-    from <- max(1L, line - 2L)
-    to <- min(length(entry$lines), line + 2L)
-    expression <- paste(entry$lines[from:to], collapse = " ")
-    if (!grepl("version|schema|rule_[0-9]+|_v[0-9]+", expression)) next
+  line_queues <- split(as.integer(token_rows$line1), token_rows$text)
+  positions <- setNames(integer(length(line_queues)), names(line_queues))
+  for (item in comparisons) {
+    operator <- item$name
+    positions[[operator]] <- positions[[operator]] + 1L
+    lines <- line_queues[[operator]]
+    line <- if (is.null(lines) || positions[[operator]] > length(lines)) {
+      NA_integer_
+    } else {
+      lines[[positions[[operator]]]]
+    }
+    expression <- deparse_one(item$node)
+    if (!grepl("version|schema|rule_[0-9]+|_v[0-9]+", expression,
+               ignore.case = TRUE)) next
     version_rows[[length(version_rows) + 1L]] <- data.frame(
       file = entry$file,
       line = as.integer(line),
       owner = owner_at(entry$definitions, line),
       record_kind = "read_branch_or_equality",
-      expression = trimws(expression),
+      expression = expression,
       persisted_or_convention = TRUE,
+      persistence_evidence = "comparison",
       fingerprint_member = FALSE,
       atomic_scalar = FALSE,
       outside_fingerprint = FALSE,
+      comparison_operator = operator,
+      equality_assertion = operator %in% c("==", "!=", "identical"),
       stringsAsFactors = FALSE
     )
   }
@@ -350,8 +573,9 @@ for (entry in r_index) {
 if (length(version_rows) == 0L) {
   version_rows <- empty_frame(c(
     "file", "line", "owner", "record_kind", "expression",
-    "persisted_or_convention", "fingerprint_member", "atomic_scalar",
-    "outside_fingerprint"
+    "persisted_or_convention", "persistence_evidence", "fingerprint_member",
+    "atomic_scalar", "outside_fingerprint", "comparison_operator",
+    "equality_assertion"
   ))
 } else {
   version_rows <- do.call(rbind, version_rows)
@@ -360,18 +584,10 @@ if (length(version_rows) == 0L) {
 
 ## Hand-built run-config census -------------------------------------------
 
-child_nodes <- function(x) {
-  positions <- seq_along(x)
-  positions <- positions[vapply(positions, function(i) {
-    !identical(as.character(x[i]), "")
-  }, logical(1))]
-  lapply(positions, function(i) x[[i]])
-}
-
 call_has_name <- function(x, target) {
   if (is.call(x)) {
     if (target %in% names(x)) return(TRUE)
-    nodes <- child_nodes(x)[-1L]
+    nodes <- as.list(x)[-1L]
     return(any(vapply(nodes, call_has_name, logical(1), target = target)))
   }
   if (is.pairlist(x) || is.expression(x) || is.list(x)) {
@@ -388,31 +604,176 @@ collect_named_calls <- function(x, target, out = list()) {
   out
 }
 
+config_shape <- function(x) {
+  if (!is.call(x) || !identical(call_name(x), "list")) return(FALSE)
+  fields <- names(as.list(x))
+  all(c("data", "strategy") %in% fields) ||
+    all(c("engine", "universe", "backtest", "strategy") %in% fields)
+}
+
+status_pair <- function(identity = "indeterminate", snapshot = "indeterminate",
+                        origin = "indeterminate", origin_expression = "") {
+  list(
+    identity_rule_version = identity,
+    data_snapshot_hash = snapshot,
+    config_origin = origin,
+    origin_expression = origin_expression
+  )
+}
+
+definition_for <- function(name, index) {
+  for (entry in index) {
+    hit <- Filter(function(x) identical(x$name, name) && isTRUE(x$is_function),
+                  entry$definitions)
+    if (length(hit) > 0L) return(list(entry = entry, definition = hit[[1L]]))
+  }
+  NULL
+}
+
+resolve_config_expression <- function(expr, entry, before = Inf,
+                                      visited = character()) {
+  text <- deparse_one(expr)
+  if (is.call(expr) && identical(call_name(expr), "ledgr_config")) {
+    return(status_pair("supplied", "supplied", "ledgr_config", text))
+  }
+  if (is.call(expr) && identical(call_name(expr), "list")) {
+    return(status_pair(
+      if (call_has_name(expr, "identity_rule_version")) "supplied" else "absent",
+      if (call_has_name(expr, "snapshot_hash")) "supplied" else "absent",
+      "list_literal",
+      text
+    ))
+  }
+  if (is.call(expr) && call_name(expr) %in% c("$", "[[") &&
+      grepl("(?:[$]|\\[\\[)config(?:\\]\\])?$", text, perl = TRUE)) {
+    return(status_pair("supplied", "supplied", "run_derived", text))
+  }
+  if (is.symbol(expr)) {
+    name <- as.character(expr)
+    assignments <- Filter(function(item) {
+      identical(item$kind, "assignment") && identical(item$name, name) &&
+        item$ordinal < before
+    }, entry$nodes)
+    if (length(assignments) == 0L) {
+      return(status_pair(origin = "unresolved_symbol", origin_expression = text))
+    }
+    assignment <- assignments[[length(assignments)]]
+    return(resolve_config_expression(
+      assignment$node[[3L]], entry, assignment$ordinal,
+      visited = visited
+    ))
+  }
+  if (is.call(expr)) {
+    helper <- call_name(expr)
+    if (!is.na(helper) && !helper %in% visited) {
+      found <- definition_for(helper, c(test_index, bench_index, r_index))
+      if (!is.null(found)) {
+        formals <- names(as.list(found$definition$rhs[[2L]]))
+        body <- found$definition$rhs[[3L]]
+        returned <- if (is.call(body) && identical(call_name(body), "{")) {
+          tail(as.list(body)[-1L], 1L)[[1L]]
+        } else {
+          body
+        }
+        if (is.symbol(returned) && as.character(returned) %in% formals) {
+          formal <- as.character(returned)
+          actual <- call_argument(expr, formal, match(formal, formals))
+          if (!is.null(actual)) {
+            result <- resolve_config_expression(
+              actual, entry, before, visited = c(visited, helper)
+            )
+            result$config_origin <- paste0(
+              "helper:", helper, ":pass_through:", result$config_origin
+            )
+            return(result)
+          }
+        }
+        body_nodes <- ast_nodes(found$definition$rhs)
+        body_start <- found$definition$line
+        body_end <- found$definition$line_end
+        candidates <- Filter(function(item) {
+          identical(item$kind, "call") &&
+            item$name %in% c("ledgr_config", "list")
+        }, body_nodes)
+        candidates <- Filter(function(item) {
+          item_text <- deparse_one(item$node)
+          identical(item$name, "ledgr_config") || config_shape(item$node) ||
+            grepl("identity_rule_version|snapshot_hash", item_text)
+        }, candidates)
+        if (length(candidates) == 1L) {
+          result <- resolve_config_expression(
+            candidates[[1L]]$node, found$entry, candidates[[1L]]$ordinal,
+            visited = c(visited, helper)
+          )
+          result$config_origin <- paste0("helper:", helper, ":", result$config_origin)
+          return(result)
+        }
+        if (length(candidates) > 1L || (!is.na(body_start) && !is.na(body_end))) {
+          return(status_pair(origin = paste0("helper:", helper, ":indeterminate"),
+                             origin_expression = text))
+        }
+      }
+    }
+  }
+  status_pair(origin_expression = text)
+}
+
+config_consumers <- c("ledgr_run_config", "ledgr_run_fold")
 run_config_rows <- vector("list", 0L)
 for (entry in c(test_index, bench_index)) {
-  calls <- collect_named_calls(entry$parsed, "ledgr_run_config")
-  call_lines <- entry$data$line1[
-    entry$data$token == "SYMBOL_FUNCTION_CALL" & entry$data$text == "ledgr_run_config"
-  ]
-  for (i in seq_along(calls)) {
-    call <- calls[[i]]
-    line <- if (i <= length(call_lines)) as.integer(call_lines[[i]]) else NA_integer_
+  occurrences <- call_occurrences(entry, config_consumers)
+  for (item in occurrences) {
+    config <- call_argument(item$call, "config", 1L)
+    resolved <- if (is.null(config)) {
+      status_pair(origin = "missing_config_argument")
+    } else {
+      resolve_config_expression(config, entry, item$ordinal)
+    }
+    run_config_rows[[length(run_config_rows) + 1L]] <- data.frame(
+      file = item$file,
+      line = item$line,
+      owner = item$owner,
+      consumer = item$name,
+      config_origin = resolved$config_origin,
+      identity_rule_version = resolved$identity_rule_version,
+      data_snapshot_hash = resolved$data_snapshot_hash,
+      origin_expression = resolved$origin_expression,
+      expression = deparse_one(item$call),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  builders <- Filter(function(item) config_shape(item$call),
+                     call_occurrences(entry, "list"))
+  for (item in builders) {
+    resolved <- resolve_config_expression(item$call, entry, item$ordinal)
+    already <- vapply(run_config_rows, function(row) {
+      identical(row$file, entry$file) &&
+        identical(row$origin_expression, deparse_one(item$call))
+    }, logical(1))
+    if (length(already) > 0L && any(already)) next
     run_config_rows[[length(run_config_rows) + 1L]] <- data.frame(
       file = entry$file,
-      line = line,
-      owner = owner_at(entry$definitions, line),
-      identity_rule_version = call_has_name(call, "identity_rule_version"),
-      data_snapshot_hash = call_has_name(call, "snapshot_hash"),
-      expression = deparse_one(call),
+      line = item$line,
+      owner = item$owner,
+      consumer = "config_builder",
+      config_origin = resolved$config_origin,
+      identity_rule_version = resolved$identity_rule_version,
+      data_snapshot_hash = resolved$data_snapshot_hash,
+      origin_expression = resolved$origin_expression,
+      expression = deparse_one(item$call),
       stringsAsFactors = FALSE
     )
   }
 }
 if (length(run_config_rows) == 0L) {
-  run_config_rows <- empty_frame(c(
-    "file", "line", "owner", "identity_rule_version", "data_snapshot_hash",
-    "expression"
-  ))
+  run_config_rows <- data.frame(
+    file = character(), line = integer(), owner = character(),
+    consumer = character(), config_origin = character(),
+    identity_rule_version = character(), data_snapshot_hash = character(),
+    origin_expression = character(), expression = character(),
+    stringsAsFactors = FALSE
+  )
 } else {
   run_config_rows <- do.call(rbind, run_config_rows)
 }
@@ -443,26 +804,19 @@ build_dynamic_map <- function(index) {
   rows <- vector("list", 0L)
   dispatch <- c("get", "get0", "mget", "match.fun", "do.call", "exists", "assign")
   for (entry in index) {
-    calls <- entry$data[
-      entry$data$token == "SYMBOL_FUNCTION_CALL" & entry$data$text %in% dispatch,
-      , drop = FALSE
-    ]
-    if (nrow(calls) == 0L) next
-    for (line in unique(calls$line1)) {
-      from <- max(1L, line)
-      to <- min(length(entry$lines), line + 3L)
-      text <- paste(entry$lines[from:to], collapse = " ")
-      matches <- regmatches(
-        text,
-        gregexpr("['\"][.]?[A-Za-z][A-Za-z0-9_.]*['\"]", text, perl = TRUE)
-      )[[1L]]
-      if (identical(matches, character(0)) || identical(matches, "")) next
-      names_found <- substring(matches, 2L, nchar(matches) - 1L)
+    calls <- call_occurrences(entry, dispatch)
+    if (length(calls) == 0L) next
+    for (item in calls) {
+      args <- as.list(item$call)[-1L]
+      names_found <- unique(unlist(lapply(args, literal_strings), use.names = FALSE))
+      names_found <- names_found[
+        grepl("^[.]?[A-Za-z][A-Za-z0-9_.]*$", names_found, perl = TRUE)
+      ]
       for (name in unique(names_found)) {
         rows[[length(rows) + 1L]] <- data.frame(
           name = name,
           file = entry$file,
-          line = as.integer(line),
+          line = as.integer(item$line),
           stringsAsFactors = FALSE
         )
       }
@@ -556,84 +910,143 @@ condition_reference <- read_source(file.path(root, "R", "condition-reference.R")
 alias_lines <- grep("^#' @aliases ", condition_reference, value = TRUE)
 documented_aliases <- unique(unlist(strsplit(sub("^#' @aliases ", "", alias_lines), "[[:space:]]+")))
 prose <- condition_reference[grepl("^#'", condition_reference) & !grepl("^#' @aliases ", condition_reference)]
+prose_tokens <- unique(unlist(regmatches(
+  prose,
+  gregexpr("\\bledgr_[A-Za-z0-9_]+\\b", prose, perl = TRUE)
+), use.names = FALSE))
 
-literal_strings <- function(x) {
-  if (is.character(x)) return(x)
-  if (is.call(x) && identical(call_name(x), "c")) {
-    values <- unlist(lapply(as.list(x)[-1L], literal_strings), use.names = FALSE)
-    if (length(values) == length(x) - 1L) return(values)
+symbols_in <- function(x) {
+  if (is.symbol(x)) return(as.character(x))
+  if (is.call(x) || is.pairlist(x) || is.expression(x) || is.list(x)) {
+    return(unique(unlist(lapply(child_nodes(x), symbols_in), use.names = FALSE)))
   }
   character()
 }
 
-abort_calls <- vector("list", 0L)
-walk_conditions <- function(x, file) {
-  if (is.call(x)) {
-    leaf <- call_name(x)
-    if (leaf %in% c("abort", "stop", "warning", "warn")) {
-      abort_calls[[length(abort_calls) + 1L]] <<- list(file = file, leaf = leaf, call = x)
-    }
-  }
-  if (is.call(x) || is.pairlist(x) || is.expression(x) || is.list(x)) {
-    for (child in child_nodes(x)) walk_conditions(child, file)
-  }
-  invisible(NULL)
-}
-for (entry in r_index) walk_conditions(entry$parsed, entry$file)
-
-condition_line_queues <- lapply(r_index, function(entry) {
-  keep <- entry$data$token == "SYMBOL_FUNCTION_CALL" &
-    entry$data$text %in% c("abort", "stop", "warning", "warn")
+condition_row <- function(file, line, call_kind, condition_class = "",
+                          recoverable = FALSE, expression = "") {
   data.frame(
-    file = rep(entry$file, sum(keep)),
-    leaf = entry$data$text[keep],
-    line = entry$data$line1[keep],
+    file = file,
+    line = as.integer(line),
+    call_kind = call_kind,
+    condition_class = condition_class,
+    recoverable = recoverable,
+    expression = expression,
+    documented_alias = condition_class %in% documented_aliases,
+    documented_description = condition_class %in% prose_tokens,
+    internal_prefix = startsWith(condition_class, "ledgr_internal_"),
     stringsAsFactors = FALSE
   )
-})
-condition_line_queues <- do.call(rbind, condition_line_queues)
-queue_position <- integer(nrow(condition_line_queues))
+}
+
+condition_names <- c("abort", "stop", "warning", "warn")
+condition_calls <- unlist(lapply(r_index, call_occurrences,
+                                 targets = condition_names), recursive = FALSE)
 condition_rows <- vector("list", 0L)
-for (item in abort_calls) {
-  candidates <- which(
-    condition_line_queues$file == item$file &
-      condition_line_queues$leaf == item$leaf &
-      queue_position == 0L
-  )
-  line <- if (length(candidates) == 0L) NA_integer_ else condition_line_queues$line[[candidates[[1L]]]]
-  if (length(candidates) > 0L) queue_position[[candidates[[1L]]]] <- 1L
+wrapper_specs <- vector("list", 0L)
+
+for (item in condition_calls) {
   call <- item$call
   named <- names(as.list(call))
   class_index <- which(named == "class")
   classes <- if (length(class_index) == 1L) literal_strings(call[[class_index]]) else character()
-  if (identical(item$leaf, "abort") && length(classes) > 0L) {
+  classed <- item$name %in% c("abort", "warn") && length(class_index) == 1L
+  if (classed && length(classes) > 0L) {
     for (class in classes) {
-      condition_rows[[length(condition_rows) + 1L]] <- data.frame(
-        file = item$file,
-        line = line,
-        call_kind = "abort_class",
-        condition_class = class,
-        recoverable = TRUE,
-        expression = deparse_one(call[[class_index]]),
-        documented_alias = class %in% documented_aliases,
-        documented_description = any(grepl(class, prose, fixed = TRUE)),
-        internal_prefix = startsWith(class, "ledgr_internal_"),
-        stringsAsFactors = FALSE
+      condition_rows[[length(condition_rows) + 1L]] <- condition_row(
+        item$file, item$line,
+        if (identical(item$name, "abort")) "abort_class" else "warning_class",
+        class, TRUE, deparse_one(call[[class_index]])
       )
     }
-  } else {
-    condition_rows[[length(condition_rows) + 1L]] <- data.frame(
-      file = item$file,
-      line = line,
-      call_kind = if (identical(item$leaf, "abort")) "abort_dynamic" else item$leaf,
-      condition_class = "",
-      recoverable = FALSE,
-      expression = if (length(class_index) == 1L) deparse_one(call[[class_index]]) else deparse_one(call),
-      documented_alias = FALSE,
-      documented_description = FALSE,
-      internal_prefix = FALSE,
-      stringsAsFactors = FALSE
+  }
+  unresolved <- classed && length(setdiff(symbols_in(call[[class_index]]), c("c"))) > 0L
+  if (!classed || unresolved || length(classes) == 0L) {
+    kind <- if (identical(item$name, "abort")) {
+      "abort_dynamic"
+    } else if (identical(item$name, "warn")) {
+      "warning_dynamic"
+    } else {
+      item$name
+    }
+    condition_rows[[length(condition_rows) + 1L]] <- condition_row(
+      item$file, item$line, kind, expression = if (length(class_index) == 1L) {
+        deparse_one(call[[class_index]])
+      } else {
+        deparse_one(call)
+      }
     )
+  }
+
+  if (classed && !is.na(item$owner)) {
+    found <- definition_lookup[[item$owner]]
+    if (!is.null(found)) {
+      formals <- names(as.list(found$definition$rhs[[2L]]))
+      dynamic_formals <- intersect(symbols_in(call[[class_index]]), formals)
+      if (length(dynamic_formals) > 0L) {
+        wrapper_specs[[length(wrapper_specs) + 1L]] <- list(
+          name = item$owner,
+          class_expression = call[[class_index]],
+          definition = found$definition
+        )
+      }
+    }
+  }
+}
+
+actual_for_formal <- function(call, formal, formals) {
+  args <- as.list(call)[-1L]
+  tags <- names(args)
+  if (is.null(tags)) tags <- rep("", length(args))
+  named <- which(tags == formal)
+  if (length(named) > 0L) return(args[[named[[1L]]]])
+  position <- match(formal, names(formals))
+  positional <- which(!nzchar(tags))
+  if (!is.na(position) && length(positional) >= position) {
+    return(args[[positional[[position]]]])
+  }
+  default <- formals[[formal]]
+  if (is.null(default) || identical(default, quote(expr = ))) return(NULL)
+  default
+}
+
+resolved_class_literals <- function(x, call, formals, seen = character()) {
+  if (is.character(x)) return(as.character(x))
+  if (is.symbol(x) && as.character(x) %in% names(formals)) {
+    name <- as.character(x)
+    if (name %in% seen) return(character())
+    actual <- actual_for_formal(call, name, formals)
+    if (is.null(actual)) return(character())
+    return(resolved_class_literals(actual, call, formals, c(seen, name)))
+  }
+  if (is.call(x) && identical(call_name(x), "c")) {
+    return(unlist(lapply(as.list(x)[-1L], resolved_class_literals,
+                         call = call, formals = formals, seen = seen),
+                  use.names = FALSE))
+  }
+  character()
+}
+
+for (spec in wrapper_specs) {
+  formals <- as.list(spec$definition$rhs[[2L]])
+  invocations <- unlist(lapply(r_index, call_occurrences,
+                               targets = spec$name), recursive = FALSE)
+  for (item in invocations) {
+    classes <- unique(resolved_class_literals(
+      spec$class_expression, item$call, formals
+    ))
+    for (class in classes) {
+      condition_rows[[length(condition_rows) + 1L]] <- condition_row(
+        item$file, item$line, "abort_wrapper_class", class, TRUE,
+        deparse_one(item$call)
+      )
+    }
+    if (length(classes) == 0L) {
+      condition_rows[[length(condition_rows) + 1L]] <- condition_row(
+        item$file, item$line, "abort_wrapper_dynamic",
+        expression = deparse_one(item$call)
+      )
+    }
   }
 }
 if (length(condition_rows) == 0L) {
@@ -647,7 +1060,9 @@ if (length(condition_rows) == 0L) {
 }
 
 condition_class_rows <- condition_rows[
-  condition_rows$call_kind == "abort_class",
+  condition_rows$call_kind %in% c(
+    "abort_class", "abort_wrapper_class", "warning_class"
+  ),
   , drop = FALSE
 ]
 if (nrow(condition_class_rows) > 0L) {
@@ -718,13 +1133,16 @@ summary <- data.frame(
     nrow(helper_rows), nrow(run_config_rows), nrow(version_rows)
   ),
   findings = c(
-    sum(condition_rows$call_kind != "abort_class"),
+    sum(!condition_rows$call_kind %in% c(
+      "abort_class", "abort_wrapper_class", "warning_class"
+    )),
     sum(condition_classes$public &
           (!condition_classes$documented_alias |
              !condition_classes$documented_description)),
     sum(connection_rows$persistent_store & connection_rows$current_guard == "none"),
     sum(helper_rows$classification == "uncalled_private"),
-    sum(!run_config_rows$identity_rule_version | !run_config_rows$data_snapshot_hash),
+    sum(run_config_rows$identity_rule_version != "supplied" |
+          run_config_rows$data_snapshot_hash != "supplied"),
     sum(version_rows$outside_fingerprint)
   ),
   stringsAsFactors = FALSE
