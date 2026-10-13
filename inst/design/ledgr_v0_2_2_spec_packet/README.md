@@ -12,8 +12,10 @@ and Windows: the rule-3 roots, ordinary and isolated-CRAN profiles, R CMD
 checks and the 87.25 percent coverage gate all pass. The checked-in
 post-residue fast record keeps its 131.70-second loaded-host timing miss; the
 reviewer's three alternating scratch pairs measured 108.04 seconds at
-`fa41283d` against 107.84 seconds at the preceding tree. Workstream 28 remains
-open with LDG-3021 for the separately claimed `ledgr_sweep_save()` defect.
+`fa41283d` against 107.84 seconds at the preceding tree. Workstream 28 is
+agent-provisional at `d8b78a78`: LDG-3021 fixes the separately claimed
+`ledgr_sweep_save()` singleton-fingerprint defect and awaits Type 1 close
+review.
 
 This packet is the durable home for the v0.2.2 release plan. The release goal,
 scope boundary and dependency structure are recorded in `macro_plan.md`. That
@@ -49,10 +51,9 @@ ledger.
 - `../rfc/README.md`: the LDG-2929 current RFC pipeline for active, due,
   deliberately parked and accepted-obligation work.
 - `tickets.yml`: sole ticket and sequencing authority. Cuts 1 through 12 are
-  closed; Cut 13 is accepted, Workstream 27 awaits focused Type 1 re-review and
-  Workstream 28 may proceed independently. LDG-3019 and LDG-3020 have landed;
-  Workstream 27 remains open until the correction passes and the maintainer
-  accepts it.
+  closed; Cut 13 is accepted; Workstream 27 is complete and accepted; and
+  Workstream 28 awaits its Type 1 close review. LDG-3019 and LDG-3020 are
+  complete, while LDG-3021 is agent-provisional at `d8b78a78`.
 - `terminal_outcomes_reconciliation.md`: LDG-2961 index mapping every
   terminal-outcomes synthesis rule and gate case to one ticket, block and
   contract section.
