@@ -2829,7 +2829,7 @@ claims:
     owner: "maintainer"
     protected_contract_or_defect: "The exact portable rule-3 byte contract accepted in the snapshot-verification synthesis."
     oracle_independence: "Expected roots were produced by the standalone conformance-spike encoder before production implementation; the test does not derive them from production helpers."
-    smallest_failing_change: "Change one field byte, ordering rule, block boundary, domain separator, projected fact label or covered value without the accepted identity change."
+    smallest_failing_change: "Change one field byte, ordering rule, block boundary, domain separator, projected fact row value or covered value without the accepted identity change."
     cheapest_adequate_lane: "Review: the corpus includes the minimum ten accepted cases and one 10,001-row boundary without a population benchmark."
     overlapping_evidence: "LCL-0015 pins the historical adapter fixture; LCL-0249 separately protects the bounded fixed-block implementation shape."
   - id: "LCL-0248"

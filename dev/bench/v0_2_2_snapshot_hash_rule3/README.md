@@ -16,9 +16,10 @@ does not weaken validation to make them seal.
 times at 0.5M, 1M, 2M and 5M bars, the encoder-only share, and fresh-child RSS
 for a 5M-bar verification and the retained 300,000-row fact projection. The
 timing includes DuckDB retrieval and rule-3 encoding. The fresh-child RSS is a
-conservative whole-process peak: it includes construction of the synthetic
-store as well as verification or fact projection. The close review's size walk
-found about 125 MB of additional whole-process peak per million bars,
+whole-process peak for opening the parent-prepared synthetic store and running
+verification or fact projection; the parent constructs the store before the
+child starts, so store construction is not measured. The close review's size
+walk found about 125 MB of additional whole-process peak per million bars,
 attributable to DuckDB retrieval rather than to the fixed-block R encoder.
 
 The accepted LDG-3019 record is in `evidence/ldg3019/`. The registered cost

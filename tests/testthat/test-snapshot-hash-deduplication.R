@@ -147,6 +147,23 @@ testthat::test_that("[LTB-0250] old hash rules are readable but not executable",
       ledgr_facts_history(reopened, "membership", "legacy-guard"),
       rule
     )
+    expect_rebuild(
+      ledgr_pulse_snapshot(
+        reopened,
+        universe = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z"
+      ),
+      rule
+    )
+    expect_rebuild(
+      ledgr_indicator_dev(
+        reopened,
+        instrument_id = "AAA",
+        ts_utc = "2020-01-03T00:00:00Z",
+        lookback = 2L
+      ),
+      rule
+    )
 
     incomplete_con <- ledgr_db_init(incomplete_path)
     DBI::dbExecute(

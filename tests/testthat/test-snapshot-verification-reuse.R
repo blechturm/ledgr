@@ -357,6 +357,7 @@ testthat::test_that("[LTB-0255] every snapshot-table source file is classified",
   testthat::expect_match(required, "summary.ledgr_snapshot", fixed = TRUE)
   testthat::expect_match(required, "ledgr_facts_history", fixed = TRUE)
   testthat::expect_match(required, "ledgr_snapshot_quarantine", fixed = TRUE)
+  testthat::expect_match(required, "ledgr_run_open", fixed = TRUE)
   testthat::expect_match(required, "ledgr_sweep_open", fixed = TRUE)
   testthat::expect_match(required, "ledgr_pulse_snapshot", fixed = TRUE)
   testthat::expect_match(required, "ledgr_indicator_dev", fixed = TRUE)

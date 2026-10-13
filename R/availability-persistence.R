@@ -288,7 +288,10 @@ ledgr_snapshot_quarantine_parse_hashed_row <- function(value) {
     invalid(sprintf("is missing required bar key(s): %s", paste(missing, collapse = ", ")))
   }
   keep <- intersect(ledgr_snapshot_quarantine_hashed_row_keys(), names(parsed))
-  as.character(canonical_json(parsed[keep]))
+  # These are already-parsed scalar bar fields. Encode the explicit radix
+  # order directly so the general config encoder's locale cannot enter rule 3.
+  keep <- keep[order(keep, method = "radix")]
+  as.character(ledgr_json_write_canonical_v2(parsed[keep]))
 }
 
 ledgr_snapshot_quarantine_hashed_row <- function(original_row_json) {
