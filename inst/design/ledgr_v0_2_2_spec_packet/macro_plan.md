@@ -795,14 +795,16 @@ change-control log has become the only place the current order lives, restated
 by each amendment. One governance cut, after the one-execution-mode probe
 and before the WS3/WS4 implementation cut, rewrites both together, scans
 `horizon.md`, sweeps the central governance files, folds the probe result
-in, and applies the governance-lifecycle RFC
-(`rfc/rfc_governance_lifecycle_v0_2_2_seed_v2.md`, synthesis pending) once
-it is accepted. Its four workstreams each carry one claim and one Type 1
-close review:
+in, and applies the governance-lifecycle synthesis
+(`rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md`, accepted 2026-10-14;
+Sections 2 to 7 own the rules and Section 7 the wording). Its four
+workstreams each carry one claim and one Type 1 close review:
 
 1. Rules and guard: the accepted rules go into `rfc_cycle.md`, the design
    index and `AGENTS.md`, and the governance guard lands in report mode with
-   its baseline; its check mode follows one cut later.
+   its reviewed baseline. Check mode starts no earlier than the cut after
+   this one, and only once workstream 4's header normalization and the
+   reviewed baseline and fixtures exist (synthesis Section 6).
 2. `contracts.md`: the present-tense pass and rule-group addresses, and
    reconciliation of the `decisions.md` bridge with its back-links.
 3. Planning documents: the roadmap and remaining-order rewrites and the
@@ -810,7 +812,15 @@ close review:
 4. Records: synthesis status headers, the packet `README.md` trim and the
    evidence form for open tickets.
 
-The bullets below are the scope the cut inherits.
+Two parts of the synthesis do not wait for this cut. M1 (the 0.5 gate is
+retired; the ratio of independent verdicts to completed tickets is recorded
+at cut close and as a packet total; a third correction round on one
+workstream goes to the maintainer) and M2 (a review that returns findings
+writes a file in the owning packet) apply from the first review after
+acceptance, so they govern the rest of Cut 14 (synthesis Section 5).
+Acceptance preceded the history-wave amendment to v11, so that amendment
+is the first supersession carrier under the synthesis's rules (Section 7);
+the history wave owns it. The bullets below are the scope the cut inherits.
 
 - Roadmap: the milestone table holds releases only, one row each, in release
   order. Shipped releases keep date, a one-sentence goal and the packet link.
@@ -850,8 +860,8 @@ The bullets below are the scope the cut inherits.
   reads "ACCEPTED" although v11 replaced it, and the snapshot-verification
   synthesis does not show at its top that the accepted legacy-removal
   synthesis (Section 5) amends its legacy-readability rule, which the Cut 14
-  ticket cut applies. If the governance RFC on supersession rules is
-  accepted by then, the cut applies its rules instead.
+  ticket cut applies. The cut applies the accepted synthesis's header and
+  notice rules to these records.
 - Contracts present-tense pass (maintainer, 2026-10-13): after Cut 14 merges,
   `contracts.md` states each current rule in the present tense and moves
   release history out (41 lines cite release versions, plus schema-number
