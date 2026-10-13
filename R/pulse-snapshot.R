@@ -104,11 +104,16 @@ ledgr_pulse_snapshot <- function(snapshot,
     }
   }
 
-  # The context reads bars and features once, here; it keeps no connection.
-  ledgr_snapshot_ensure_handle(snapshot)
+  # The context verifies and reads bars and features once through the same
+  # dedicated connection; it keeps no connection.
   opened <- ledgr_open_dedicated_snapshot(snapshot)
   on.exit(ledgr_snapshot_close(opened$snapshot), add = TRUE)
   con <- opened$con
+  ledgr_snapshot_ensure_verified(
+    con,
+    snapshot$snapshot_id,
+    snapshot_db_path = snapshot$db_path
+  )
 
   e <- new.env(parent = emptyenv())
   e$ts_utc <- ts_norm

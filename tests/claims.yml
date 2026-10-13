@@ -332,7 +332,7 @@ claims:
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Set-wise persisted rendering must retain the deliberately re-pinned rule-3 hashes and public run-start detection of every hashed-table mutation without making physical insertion order significant."
-    oracle_independence: "Three rule-3 scale hashes and one quarantine-matrix hash are decision-authorized literals; eight direct SQL mutations leave the stored hash untouched; physical rows are independently deleted and reinserted in reverse order."
+    oracle_independence: "Three rule-3 scale hashes and one quarantine-matrix hash are decision-authorized literals; eight direct SQL mutations leave the stored hash untouched, then clear the seal-established process proof before the public run; physical rows are independently deleted and reinserted in reverse order."
     smallest_failing_change: "Omit one table or identity field, trust the stored hash, change one rendered byte, or remove one persisted-table ordering key."
     cheapest_adequate_lane: "The frozen 100,000-row hash and eight public corruption runs require real stores and belong in review; one combined block per claim avoids duplicating setup."
     overlapping_evidence: "The rule-3 corpus protects exact encoder bytes, but does not enumerate mutations across all eight current fact tables or the registered fact-population hashes."

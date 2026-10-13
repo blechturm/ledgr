@@ -360,6 +360,9 @@ test_that("[LTB-0048] every persisted fact table remains corruption-bound", {
       stored_hash,
       info = table
     )
+    # Raw writes are outside the supported public workflow. Clear the proof
+    # established by seal so this assertion models a cold process.
+    ledgr:::ledgr_snapshot_verified_reset()
     expect_error(
       ledgr_run(
         ws14_matrix_experiment(snapshot),
