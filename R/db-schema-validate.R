@@ -392,7 +392,11 @@ ledgr_schema_validation_signature <- function(con) {
       "(SELECT md5(string_agg(",
       "index_name || ':' || sql, ',' ORDER BY index_name)) ",
       "FROM duckdb_indexes() WHERE database_name = current_database() ",
-      "AND schema_name = 'main') AS indexes"
+      "AND schema_name = 'main') AS indexes, ",
+      "(SELECT md5(string_agg(",
+      "view_name || ':' || coalesce(sql, ''), ',' ORDER BY view_name)) ",
+      "FROM duckdb_views() WHERE database_name = current_database() ",
+      "AND schema_name = 'main' AND NOT internal AND NOT temporary) AS views"
     )
   )
   paste(unname(unlist(row[1L, ], use.names = FALSE)), collapse = "\r")

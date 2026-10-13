@@ -646,7 +646,11 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
   path <- tempfile(fileext = ".duckdb")
   second <- tempfile(fileext = ".duckdb")
   copy <- tempfile(fileext = ".duckdb")
-  on.exit(unlink(c(store_files(path), store_files(second), store_files(copy)), force = TRUE), add = TRUE)
+  view_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(
+    store_files(path), store_files(second), store_files(copy),
+    store_files(view_path)
+  ), force = TRUE), add = TRUE)
   snapshot <- ledgr_snapshot_from_df(bars, db_path = path, snapshot_id = "validation_once")
   exp <- ledgr_experiment(
     snapshot,
@@ -700,6 +704,21 @@ testthat::test_that("[LTB-0130] a schema catalogue is validated once per session
     memory <- ledgr_db_init(":memory:")
     DBI::dbDisconnect(memory, shutdown = TRUE)
   }), 0L)
+
+  # A new main-schema view changes the columns observed by full validation,
+  # so it must also invalidate a previously successful signature.
+  testthat::expect_identical(validations(init_and_close(view_path)), 0L)
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = view_path)
+  DBI::dbExecute(con, "CREATE VIEW zz_view AS SELECT 1 AS x")
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  testthat::expect_identical(
+    validations(testthat::expect_error(
+      init_and_close(view_path),
+      "Schema catalogue mismatch: extra column zz_view.x.",
+      fixed = TRUE
+    )),
+    1L
+  )
 
   # A rewritten marker timestamp leaves the catalogue unchanged.
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = second)

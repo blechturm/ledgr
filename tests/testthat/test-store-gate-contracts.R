@@ -346,6 +346,22 @@ testthat::test_that("[LTB-0262] every persistent store route reaches one gate", 
     "ledgr_held_store[\\s\\S]+ledgr_store_assert_current\\(held_store",
     perl = TRUE
   )
+  testthat::expect_match(
+    cached_source$ledgr_run_store_open,
+    paste0(
+      "ledgr_held_store\\(db_path\\)",
+      "[\\s\\S]+ledgr_store_assert_current\\(held, db_path\\)"
+    ),
+    perl = TRUE
+  )
+  testthat::expect_match(
+    cached_source$ledgr_backtest_open,
+    paste0(
+      "DBI::dbIsValid\\(con\\)",
+      "[\\s\\S]+ledgr_store_assert_current\\(con, bt\\$db_path\\)"
+    ),
+    perl = TRUE
+  )
 
   attach_rows <- source_rows[grepl("ATTACH ", source_rows, fixed = TRUE)]
   testthat::expect_identical(
@@ -362,6 +378,55 @@ testthat::test_that("[LTB-0262] every persistent store route reaches one gate", 
       "[\\s\\S]+CREATE TEMP VIEW"
     ),
     perl = TRUE
+  )
+
+  files <- function(path) c(path, paste0(path, ".wal"))
+  run_path <- tempfile(fileext = ".duckdb")
+  snapshot_path <- tempfile(fileext = ".duckdb")
+  on.exit(unlink(c(files(run_path), files(snapshot_path)), force = TRUE),
+    add = TRUE
+  )
+  run_con <- ledgr_db_init(run_path)
+  on.exit({
+    if (DBI::dbIsValid(run_con)) {
+      DBI::dbDisconnect(run_con, shutdown = TRUE)
+    }
+  }, add = TRUE)
+  snapshot_con <- ledgr_db_init(snapshot_path)
+  DBI::dbExecute(
+    snapshot_con,
+    paste0(
+      "UPDATE ledgr_schema_metadata SET value = '118' ",
+      "WHERE key = 'experiment_store_schema_version'"
+    )
+  )
+  DBI::dbDisconnect(snapshot_con, shutdown = TRUE)
+
+  old_snapshot <- testthat::expect_error(
+    ledgr:::ledgr_prepare_snapshot_source_tables(
+      run_con,
+      snapshot_path,
+      run_path
+    ),
+    class = "ledgr_store_rebuild_required"
+  )
+  testthat::expect_identical(old_snapshot$cause, "older")
+  testthat::expect_identical(
+    DBI::dbGetQuery(
+      run_con,
+      paste0(
+        "SELECT COUNT(*) AS n FROM duckdb_databases() ",
+        "WHERE database_name = 'ledgr_snapshot_src'"
+      )
+    )$n[[1L]],
+    0
+  )
+  testthat::expect_identical(
+    DBI::dbGetQuery(
+      run_con,
+      "SELECT COUNT(*) AS n FROM duckdb_views() WHERE temporary AND NOT internal"
+    )$n[[1L]],
+    0
   )
 
   retired <- c(
