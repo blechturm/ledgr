@@ -36,6 +36,7 @@ Suggests:
     dplyr,
     ggplot2,
     gridExtra,
+    jsonlite,
     knitr,
     microbenchmark,
     mirai,
