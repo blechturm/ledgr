@@ -788,3 +788,34 @@ opens as an RFC. The unification itself stays after v0.2.2 (roadmap row
 13, the legacy-removal cut, the interim lake rebuild under rule 3, the
 one-execution-mode probe, the WS3/WS4 history wave and implementation cut,
 the lake rebuild with dividend facts, WS7, the WS6 probe, WS8.
+
+2026-10-13 maintainer amendment, planning-document cleanup after the probe:
+the roadmap no longer works as a planning document, and this plan's
+change-control log has become the only place the current order lives, restated
+by each amendment. One documentation chore, after the one-execution-mode
+probe and before the WS3/WS4 implementation cut, rewrites both together and
+folds the probe result in.
+
+- Roadmap: the milestone table holds releases only, one row each, in release
+  order. Shipped releases keep date, a one-sentence goal and the packet link.
+  v0.2.2 gets one row with its goal and a link to this plan, without
+  cut-by-cut status. A short next-release list names the themes already
+  scheduled for it, and a few lines state later direction (paper trading,
+  operations, small-scale live trading). The roughly thirty topic rows leave:
+  done rows are deleted because their packets record them, parked rows move
+  to `horizon.md` or the RFC pipeline, and each generic "v0.2.x Planned" row
+  is checked (corporate actions shipped in v0.2.1.0 as equity corporate
+  actions). A row is at most two sentences and changes only when a release
+  opens or ships; a documentation-contract test may pin that.
+- This plan: one current "Remaining order" section, each step with a
+  one-line reason and its owner, becomes the only place the sequence lives.
+  Each change-control amendment shrinks to one dated line naming its source,
+  and the amendment narratives move to a history file, as
+  `roadmap_history.md` did for the roadmap.
+
+Not a design change. It needs a Type 1 review only if it adds the
+documentation-contract test, because that test defines a claim. The
+resulting order is: Cut 13, the legacy-removal cut, the interim lake rebuild
+under rule 3, the one-execution-mode probe, the planning-document cleanup,
+the WS3/WS4 history wave and implementation cut, the lake rebuild with
+dividend facts, WS7, the WS6 probe, WS8.
