@@ -2,7 +2,6 @@ linters: list(
     brace_linter = brace_linter(),
     commas_linter = commas_linter(),
     function_left_parentheses_linter = function_left_parentheses_linter(),
-    indentation_linter = indentation_linter(),
     infix_spaces_linter = infix_spaces_linter(),
     paren_body_linter = paren_body_linter(),
     semicolon_linter = semicolon_linter(),

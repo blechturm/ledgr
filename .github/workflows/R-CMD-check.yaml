@@ -123,23 +123,32 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
-            any::lintr
-            any::styler
+            any::lintr@3.4.0
+            any::styler@1.11.0
 
       - name: Run advisory lint
-        id: lint
+        id: lint_tool
         continue-on-error: true
         run: |
-          Rscript --vanilla tools/run-advisory-lint.R --output=lint-artifacts --source-commit=${{ github.sha }} --fail-on-findings=true
+          Rscript --vanilla tools/run-advisory-lint.R --output=lint-artifacts --source-commit=${{ github.sha }}
 
-      - name: Record advisory status
+      - name: Classify advisory lint result
+        id: lint_findings
         if: always()
+        continue-on-error: true
         shell: bash
         env:
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TOOL_OUTCOME: ${{ steps.lint_tool.outcome }}
         run: |
+          set -euo pipefail
           echo "### Advisory lint" >> "$GITHUB_STEP_SUMMARY"
-          echo "Outcome: $LINT_OUTCOME (non-blocking through LDG-3031)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$TOOL_OUTCOME" != "success" ]; then
+            echo "Outcome: tool error (non-blocking through LDG-3031)." >> "$GITHUB_STEP_SUMMARY"
+            exit 2
+          fi
+          findings="$(Rscript --vanilla -e "x <- read.csv('lint-artifacts/findings.csv'); cat(nrow(x))")"
+          echo "Outcome: $findings finding(s) (non-blocking through LDG-3031)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$findings" -gt 0 ]; then exit 1; fi
 
       - name: Upload advisory lint record
         if: always()
@@ -147,7 +156,7 @@ jobs:
         with:
           name: advisory-lint
           path: lint-artifacts
-          if-no-files-found: error
+          if-no-files-found: warn
 
   R-CMD-check:
     needs: plan

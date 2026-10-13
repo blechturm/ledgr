@@ -36,6 +36,29 @@ if (!requireNamespace("styler", quietly = TRUE)) {
 
 config <- file.path(root, ".lintr")
 if (!file.exists(config)) stop("The repository .lintr file is missing.", call. = FALSE)
+
+if (!identical(source_commit, "working-tree")) {
+  git <- Sys.which("git")
+  if (!nzchar(git)) stop("Cannot verify --source-commit without git.", call. = FALSE)
+  git_output <- function(...) {
+    result <- system2(git, c("-C", root, ...), stdout = TRUE, stderr = TRUE)
+    status <- attr(result, "status")
+    if (!is.null(status) && status != 0L) {
+      stop(paste(result, collapse = "\n"), call. = FALSE)
+    }
+    result
+  }
+  expected <- git_output("rev-parse", source_commit)[[1L]]
+  head <- git_output("rev-parse", "HEAD")[[1L]]
+  if (!identical(expected, head)) {
+    stop("--source-commit does not resolve to HEAD.", call. = FALSE)
+  }
+  dirty <- git_output("status", "--porcelain=v1", "--untracked-files=all")
+  if (length(dirty) > 0L) {
+    stop("--source-commit requires a clean working tree.", call. = FALSE)
+  }
+}
+
 dir.create(output, recursive = TRUE, showWarnings = FALSE)
 if (!dir.exists(output)) stop("Cannot create the lint output directory.", call. = FALSE)
 
@@ -46,18 +69,20 @@ relative_path <- function(path) {
 }
 
 included_roots <- c("R", "tests", "tools")
-excluded_paths <- c(
-  "R/cpp11.R", "dev", "docs", "inst", "src", "vendor", "lib",
-  "lib-wsl", ".tmp", ".agents", ".claude", ".understand-anything",
-  "test-profile-artifacts"
-)
+lint_settings <- as.list(lintr:::read_config_file(config))
+excluded_paths <- unlist(lint_settings$exclusions, use.names = FALSE)
+excluded_paths <- gsub("\\\\", "/", excluded_paths)
+
+is_excluded <- function(path) {
+  any(path == excluded_paths | startsWith(path, paste0(excluded_paths, "/")))
+}
 
 files <- unlist(lapply(included_roots, function(path) {
   full <- file.path(root, path)
   if (!dir.exists(full)) return(character())
   list.files(full, pattern = "\\.[Rr]$", recursive = TRUE, full.names = TRUE)
 }), use.names = FALSE)
-files <- files[!relative_path(files) %in% excluded_paths]
+files <- files[!vapply(relative_path(files), is_excluded, logical(1))]
 files <- files[order(relative_path(files), method = "radix")]
 
 if (length(files) == 0L) stop("The advisory lint source set is empty.", call. = FALSE)
