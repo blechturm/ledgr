@@ -1,0 +1,14 @@
+"cut","invocations","recorded_tickets","line","phrase","phrase_on_line","completed_tickets","dropped_tickets"
+1,8,12,16,"Actual count 8/12 = 0.667",TRUE,12,0
+2,8,11,31,"Actual Cut 2 review count 8/11 = 0.727",TRUE,11,0
+3,2,4,46,"Actual review count 2/4 = 0.500",TRUE,4,0
+4,3,1,61,"Actual count is 3/1 = 3.000",TRUE,1,0
+5,4,2,76,"Actual review count is 4/2 = 2.000",TRUE,2,0
+6,6,9,97,"Count 6/9 = 0.667",TRUE,9,0
+7,3,4,112,"Three invocations over four tickets is 0.750",TRUE,4,0
+8,2,2,127,"Final count two reviews over two tickets",TRUE,2,0
+9,5,4,142,"one cut review and four agent close-review invocations over four tickets",TRUE,4,0
+10,5,4,157,"one cut review, two focused cut re-reviews, one close review and one focused close re-review over four tickets",TRUE,4,0
+11,8,17,174,"Final Cut 11 review accounting is 8 invocations over 17 tickets",TRUE,17,0
+12,21,26,189,"Review accounting is 21 invocations over 26 tickets",TRUE,25,1
+13,6,3,204,"Final review accounting is six invocations over three Cut 13 tickets",TRUE,3,0

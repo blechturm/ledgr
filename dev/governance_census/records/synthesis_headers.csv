@@ -1,0 +1,48 @@
+"file","status_start","pending_final_review","draft","superseded","final_review_file"
+"rfc_accounting_core_consolidation_v0_2_0_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_active_parameterized_feature_aliases_v0_1_8_x_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_api_naming_consistency_v0_1_9_5_synthesis.md","accepted 2026-06-12 final review",FALSE,FALSE,FALSE,TRUE
+"rfc_api_representation_hardening_v0_2_0_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_asset_availability_point_in_time_universes_v0_1_9_8_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_availability_hot_path_representation_v0_2_0_x_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_chainable_risk_oms_policy_boundary_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_collapse_primitive_internals_v0_1_9_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_compiled_hot_frame_b2_v0_1_9_x_synthesis.md","synthesis binding artifact pending",TRUE,FALSE,FALSE,TRUE
+"rfc_equity_settlement_post_v0_2_0_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_feature_map_read_surface_v0_2_x_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_feature_projection_shape_and_lookback_v0_1_8_x_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,TRUE
+"rfc_governance_review_post_v0_2_0_1_synthesis.md","rejected by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_governance_review_post_v0_2_0_1_synthesis_v2.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_grid_level_feature_artifacts_wide_runtime_views_v0_1_8_x_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_indicator_codebase_simplification_v0_1_8_x_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_ledgr_oms_seed_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_multi_output_indicator_ux_synthesis.md","accepted design — binding",FALSE,FALSE,FALSE,FALSE
+"rfc_optimization_round_v0_1_8_7_synthesis.md","(none)",FALSE,FALSE,FALSE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v10.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v11.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v2.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v3.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v4.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v5.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v6.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v7.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v8.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_point_in_time_historical_projection_v0_2_x_synthesis_v9.md","superseded 2026-09-26 by",FALSE,FALSE,TRUE,FALSE
+"rfc_pre_cran_legacy_removal_v0_2_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_public_transaction_cost_model_api_v0_1_9_x_synthesis.md","accepted synthesis — binding",FALSE,FALSE,FALSE,FALSE
+"rfc_pulse_context_data_model_consolidation_v0_1_8_3_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_research_workflow_artifact_topology_v0_1_8_x_synthesis.md","accepted synthesis - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_risk_free_rate_metric_context_v0_1_8_1_synthesis.md","accepted design - binding",FALSE,FALSE,FALSE,FALSE
+"rfc_snapshot_verification_policy_v0_2_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_strategy_authoring_helpers_v0_1_8_x_synthesis.md","synthesis binding artifact pending",TRUE,FALSE,FALSE,TRUE
+"rfc_strategy_callback_contract_addendum_v0_1_8_10_synthesis.md","synthesis binding artifact pending",TRUE,FALSE,FALSE,TRUE
+"rfc_strategy_context_surface_v0_2_x_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,FALSE
+"rfc_sweep_artifact_persistence_v0_1_9_x_synthesis.md","binding synthesis for the",FALSE,FALSE,FALSE,FALSE
+"rfc_sweep_candidate_promotion_contract_v0_1_8_synthesis.md","draft synthesis for review",FALSE,TRUE,FALSE,FALSE
+"rfc_sweep_promotion_context_v0_1_8_synthesis.md","draft synthesis for final",FALSE,TRUE,FALSE,FALSE
+"rfc_sweep_single_core_optimization_routes_v0_1_8_synthesis.md","accepted design — optimization",FALSE,FALSE,FALSE,FALSE
+"rfc_terminal_outcomes_v0_2_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_testing_architecture_v0_2_0_2_synthesis.md","accepted by the maintainer",FALSE,FALSE,FALSE,TRUE
+"rfc_validation_toolkit_v0_1_9_x_synthesis.md","accepted 2026-06-12 final review",FALSE,FALSE,FALSE,TRUE
+"rfc_walk_forward_evaluation_v0_1_9_x_synthesis.md","accepted synthesis with amendment",FALSE,FALSE,FALSE,TRUE
