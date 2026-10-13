@@ -1,5 +1,5 @@
 "key","value"
 "fingerprint_members","18"
-"mode","report"
+"mode","check"
 "root","."
-"source_commit","a8416492"
+"source_commit","working-tree"
