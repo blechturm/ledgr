@@ -1,0 +1,8 @@
+"key","value"
+"excluded_paths","R/cpp11.R;dev;docs;inst;src;vendor;lib;lib-wsl;.tmp;.agents;.claude;.understand-anything;test-profile-artifacts"
+"included_roots","R;tests;tools"
+"lintr_version","3.4.0"
+"mode","advisory"
+"source_commit","05aa3efd"
+"source_files","329"
+"styler_version","1.11.0"

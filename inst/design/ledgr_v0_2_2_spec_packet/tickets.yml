@@ -456,7 +456,7 @@ workstreams:
   - id: 29
     name: "One current schema and one store gate"
     cut: 14
-    status: "pending"
+    status: "open"
     depends_on_workstream: null
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 29", reason: "One claim joins LDG-3024 through LDG-3027: every package-owned persistent store is created or opened through one current schema and one marker-pair gate, and strict catalogue validation has one DDL authority. The review starts from LDG-3022's source census, reproduces the pre-cut/current catalogue oracle, mutates each marker cause and catalogue dimension, checks the ATTACH-before-view boundary and interrupted creation, verifies the opener census is complete, walks the seven optimization shapes on every changed path and compares current-store rows and outputs at each commit."}
@@ -1506,17 +1506,17 @@ tickets:
   - id: "LDG-3023"
     title: "Start one-cut advisory lint"
     workstream: 31
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3022"]
     scope: "Add a repository .lintr and a separate CI lint job before the removal edits begin. The job is explicitly advisory throughout LDG-3024 to LDG-3031, records its findings and must not make another CI job green or red. Configure only rules the final whole-tree style pass can satisfy without semantic edits; exclude generated, archived, vendored and local evidence paths explicitly. Do not run styler in this ticket. LDG-3032 owns the one formatting pass and promotion to blocking."
     acceptance: ["the checked-in .lintr parses and a local lintr run produces a deterministic file-and-line report over the intended package, test and tool sources", "CI has one separately named lint job whose advisory status is visible and whose failure cannot mask or replace tests, package checks or coverage", "the baseline record names the exact commit, lintr and styler versions, included paths, excluded paths and finding counts by linter", "a deliberately lint-violating scratch file appears in the local report while the advisory job semantics remain non-blocking", "the ticket changes no formatted package source, test profile, condition, schema, identity or runtime output"]
-    evidence: []
+    evidence: ["Commit 05aa3efd adds a repository .lintr, tools/run-advisory-lint.R and the separately named CI job Lint (advisory through LDG-3031). The job shares only the plan decision with R-CMD-check, records its own failed step outcome and artifact, and has both step- and job-level continuation; it cannot make tests, package checks or coverage green or red.", "The clean-commit baseline under dev/bench/v0_2_2_pre_cran_removal/lint records lintr 3.4.0, styler 1.11.0, 329 included R/, tests/ and tools/ source files, and the explicit generated, archived, vendored, library and local-evidence exclusions. Two complete passes produced byte-identical records with 726 formatter-only findings: brace 23, indentation 687, infix spaces 3 and semicolon 13. No styler run or formatted source change occurred.", "A scratch file containing unspaced assignment, braces, infix and a semicolon produced seven findings. Advisory mode wrote the record and exited zero; the CI-style --fail-on-findings=true mode wrote the same record and exited one, which the advisory CI step contains. LDG-3024 opens after this one-cut advisory interval begins."]
   - id: "LDG-3024"
     title: "Define the current schema once"
     workstream: 29
-    status: "pending"
+    status: "open"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3023"]
