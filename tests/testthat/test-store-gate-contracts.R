@@ -144,6 +144,7 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
   )
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0261] store creation is empty-only and transactional", {
   files <- function(path) c(path, paste0(path, ".wal"))
   empty <- tempfile(fileext = ".duckdb")
