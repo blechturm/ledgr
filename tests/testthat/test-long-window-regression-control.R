@@ -120,7 +120,9 @@ testthat::test_that("[LTB-0182] the terminal release fixture stays release-only 
     testthat::expect_true(any(grepl("\"terminal\"", readLines(file.path(suite, paste0("run_", "release.R")), warn = FALSE), fixed = TRUE)))
 
     # The checked-in record crosses every case the fixture promises.
-    record <- jsonlite::read_json(file.path(suite, "evidence", "terminal_release", "expected.json"))
+    record <- yyjsonr::read_json_file(file.path(
+      suite, "evidence", "terminal_release", "expected.json"
+    ))
     testthat::expect_identical(record$status, "DONE")
     outcomes <- unlist(record$terminal_outcomes)
     testthat::expect_identical(substr(outcomes, 1L, 3L), c("T10", "T15", "T20"))
