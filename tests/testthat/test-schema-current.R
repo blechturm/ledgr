@@ -100,6 +100,7 @@ testthat::test_that("[LTB-0258] current schema definition matches the pre-cut ca
   )))
 })
 
+# ledgr-test-profile: review
 testthat::test_that("[LTB-0263] strict validation uses the complete current catalogue", {
   connect_current <- function(path = ":memory:") {
     ledgr:::ledgr_store_open(path, mode = "create")
