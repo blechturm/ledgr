@@ -910,7 +910,10 @@ WS7, the WS6 probe, WS8.
 
 2026-10-14 maintainer amendment, unowned-debt routing: issues that no ticket
 owned were routed. The identity-hashing collation defect and the
-identity-type looseness go to Cut 14 (`tickets.yml`), the store gate's
-per-open cost to the WS29 acceptance decision, three review-found hot spots,
-CI cadence and fast-lane headroom to WS8 (above), and the audit, fold split,
-adoption item and packet path to the next release (Section 5).
+identity-type looseness go to Cut 14 (`tickets.yml`). The store gate's
+per-open cost is accepted as a component miss: about 1.1 ms per store open,
+under 0.1 percent of any public call, with end-to-end clocks unchanged
+(maintainer, 2026-10-14; recorded in the WS29 decisions). Three review-found
+hot spots, CI cadence and fast-lane headroom go to WS8 (above), and the
+audit, fold split, adoption item and packet path to the next release
+(Section 5).
